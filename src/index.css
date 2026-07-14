@@ -188,4 +188,8 @@
   body {
     @apply bg-background text-foreground;}
   html {
-    @apply font-sans;}}
+    @apply font-sans;}
+  button:not(:disabled) {
+    cursor: pointer;}
+  button:disabled {
+    cursor: not-allowed;}}
