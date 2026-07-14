@@ -16,6 +16,7 @@ const withColorTheme = (Story: () => React.ReactElement, context: { globals: { c
 export const preview = definePreview({
   addons: [addonA11y()],
   parameters: {
+    layout: 'centered',
     controls: {
       matchers: {
         color: /(background|color)$/i,
