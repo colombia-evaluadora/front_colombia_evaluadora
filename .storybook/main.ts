@@ -1,4 +1,8 @@
 import { defineMain } from '@storybook/react-vite/node';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineMain({
   framework: '@storybook/react-vite',
@@ -14,17 +18,17 @@ export default defineMain({
   core: {
     builder: '@storybook/builder-vite',
   },
-  async viteFinal(config, { configType }) {
+  async viteFinal(config) {
     const { mergeConfig } = await import('vite');
-
-    if (configType === 'DEVELOPMENT') {
-      // Your development configuration goes here
-    }
-    if (configType === 'PRODUCTION') {
-      // Your production configuration goes here.
-    }
+    const tailwindcss = (await import('@tailwindcss/vite')).default;
 
     return mergeConfig(config, {
+      plugins: [tailwindcss()],
+      resolve: {
+        alias: {
+          '@': path.resolve(dirname, '../src'),
+        },
+      },
       optimizeDeps: {
         include: ['storybook-dark-mode'],
       },
