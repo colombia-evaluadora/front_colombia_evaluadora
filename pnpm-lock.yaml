@@ -23,12 +23,18 @@ importers:
       '@phosphor-icons/react':
         specifier: ^2.1.10
         version: 2.1.10(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      '@shadcn/helpers':
+        specifier: ^0.1.0
+        version: 0.1.0(@tanstack/ai-client@0.20.0)(@tanstack/ai@0.40.0)
       '@shadcn/react':
         specifier: ^0.2.1
         version: 0.2.1(@types/react@19.2.17)(react@19.2.7)
       '@tailwindcss/vite':
         specifier: ^4.3.2
         version: 4.3.2(vite@8.1.4(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0))
+      '@tanstack/ai-react':
+        specifier: ^0.16.4
+        version: 0.16.4(@tanstack/ai@0.40.0)(@types/react@19.2.17)(react@19.2.7)
       '@tanstack/react-form':
         specifier: ^1.33.2
         version: 1.33.2(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -179,6 +185,9 @@ packages:
 
   '@adobe/css-tools@4.5.0':
     resolution: {integrity: sha512-6OzddxPio9UiWTCemp4N8cYLV2ZN1ncRnV1cVGtve7dhPOtRkleRyx32GQCYSwDYgaHU3USMm84tNsvKzRCa1Q==}
+
+  '@ag-ui/core@0.0.52':
+    resolution: {integrity: sha512-Xo0bUaNV56EqylzcrAuhUkQX7et7+SZIrqZZtEByGwEq/I1EHny6ZMkWHLkKR7UNi0FJZwJyhKYmKJS3B2SEgA==}
 
   '@babel/code-frame@7.29.7':
     resolution: {integrity: sha512-Aup7aUOfpbAUg2ROOJN6Iw5f9DMBlzu0mIkm/malLQFN/YQgO48wCj0Kxa3sEHJvPVFg7siR+qRInwXd2qhQKw==}
@@ -1355,6 +1364,20 @@ packages:
   '@sec-ant/readable-stream@0.4.1':
     resolution: {integrity: sha512-831qok9r2t8AlxLko40y2ebgSDhenenCatLVeW/uBtnHPyhHOvG0C7TvfgecV+wHzIm5KUICgzmVpWS+IMEAeg==}
 
+  '@shadcn/helpers@0.1.0':
+    resolution: {integrity: sha512-A80apw7i2ZcuwgKKW51zmPSaUXfzLeAQ28XmACB/KeIAVA7PQuaON1hyIEHU3yvk9oriCaWuzU20r0CgieYmmA==}
+    peerDependencies:
+      '@tanstack/ai': '>=0.40.0 <0.41.0'
+      '@tanstack/ai-client': '>=0.20.0 <0.21.0'
+      ai: '>=7.0.0 <8'
+    peerDependenciesMeta:
+      '@tanstack/ai':
+        optional: true
+      '@tanstack/ai-client':
+        optional: true
+      ai:
+        optional: true
+
   '@shadcn/react@0.2.1':
     resolution: {integrity: sha512-5krgi3dRMKb5jH6a+qPzVJUy/54s0kKE4Rw4LjDfLqOdVQTWKUgxWf1kW8r912I0jX/Lzxqc+pgjkjWxUIK5BQ==}
     peerDependencies:
@@ -1588,6 +1611,35 @@ packages:
     resolution: {integrity: sha512-eHpMeX4JXfVNJDEcsouTeCBubJBTcTLigeaw/NTUW6PB5ATKKXdyonnXgTBX2VuRbjz1hjfz6C5XAhr52ImQXA==}
     peerDependencies:
       vite: ^5.2.0 || ^6 || ^7 || ^8
+
+  '@tanstack/ai-client@0.20.0':
+    resolution: {integrity: sha512-pxx940CaZ/eQGYiYpOWvVuQCBLqnJgS/PUn6+vKtyV6W4G8vZ+SqJf3UI/pDyqre7wv048G5cu6/EEj8dBn5JA==}
+
+  '@tanstack/ai-event-client@0.6.8':
+    resolution: {integrity: sha512-h7/HLz9u2LF9ba6uKFMnSZkFlkzQONJ5u3Hi+4qGxpsHyvcGRtW6v186jaFLoklndhEwyC49ytkC4eafi7Qq8w==}
+
+  '@tanstack/ai-react@0.16.4':
+    resolution: {integrity: sha512-GTVX0Th8oz5VPKymUJei/9V9p3II2lJfE3sVhGHKY+tG4aRFnGsys0dwTCHCjEsSjZWWLtmm/ryrpdaT7P8tcg==}
+    peerDependencies:
+      '@mcp-ui/client': ^7
+      '@tanstack/ai': ^0.40.0
+      '@types/react': '>=18.0.0'
+      react: '>=18.0.0'
+    peerDependenciesMeta:
+      '@mcp-ui/client':
+        optional: true
+
+  '@tanstack/ai-utils@0.3.1':
+    resolution: {integrity: sha512-fgbjd5DohL3k5rTWr/KInauLVYMiHVm0cnmTsNrzL3cr4wWhEld5vmFSrjiwUWACAuONjZa+uBXuS+ZSO8fwDQ==}
+
+  '@tanstack/ai@0.40.0':
+    resolution: {integrity: sha512-7942RQkjHccHRL9lTuqAjcgt5z+281HJEvWSSEIX9ZDgntSj5Xt9cOK8SL5tXtGrjj2ZpGnzaFdog5lE4QD07A==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      '@opentelemetry/api': '>=1.9.0'
+    peerDependenciesMeta:
+      '@opentelemetry/api':
+        optional: true
 
   '@tanstack/devtools-event-client@0.4.4':
     resolution: {integrity: sha512-6T5Yop/793YI+H+5J8Hsyj4kCih9sl4t3ElLgKioW5hk3ocn+ZdSJ94tT7vL7uabxSugWYBZlOTMPzEw2puvQw==}
@@ -3111,6 +3163,9 @@ packages:
     resolution: {integrity: sha512-CiyeOxFT/JZyN5m0z9PfXw4SCBJ6Sygz1Dpl0wqjlhDEGGBP1GnsUVEL0p63hoG1fcj3fHynXi9NYO4nWOL+qQ==}
     engines: {node: '>= 0.8'}
 
+  partial-json@0.1.7:
+    resolution: {integrity: sha512-Njv/59hHaokb/hRUjce3Hdv12wd60MtM9Z5Olmn+nehe0QDAsRtRbJPvJ0Z91TusF0SuZRIvnM+S4l6EIP8leA==}
+
   path-browserify@1.0.1:
     resolution: {integrity: sha512-b7uo2UCUOYZcnF/3ID0lulOJi/bafxa1xPe7ZPsammBSpjSWQkjNxlt635YGS2MiR9GjvuXCtz2emr3jbsz98g==}
 
@@ -3915,6 +3970,10 @@ packages:
 snapshots:
 
   '@adobe/css-tools@4.5.0': {}
+
+  '@ag-ui/core@0.0.52':
+    dependencies:
+      zod: 3.25.76
 
   '@babel/code-frame@7.29.7':
     dependencies:
@@ -4861,6 +4920,11 @@ snapshots:
 
   '@sec-ant/readable-stream@0.4.1': {}
 
+  '@shadcn/helpers@0.1.0(@tanstack/ai-client@0.20.0)(@tanstack/ai@0.40.0)':
+    optionalDependencies:
+      '@tanstack/ai': 0.40.0
+      '@tanstack/ai-client': 0.20.0
+
   '@shadcn/react@0.2.1(@types/react@19.2.17)(react@19.2.7)':
     optionalDependencies:
       '@types/react': 19.2.17
@@ -5077,6 +5141,37 @@ snapshots:
       '@tailwindcss/oxide': 4.3.2
       tailwindcss: 4.3.2
       vite: 8.1.4(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)
+
+  '@tanstack/ai-client@0.20.0':
+    dependencies:
+      '@tanstack/ai': 0.40.0
+      '@tanstack/ai-event-client': 0.6.8
+      '@tanstack/ai-utils': 0.3.1
+    transitivePeerDependencies:
+      - '@opentelemetry/api'
+
+  '@tanstack/ai-event-client@0.6.8':
+    dependencies:
+      '@tanstack/devtools-event-client': 0.4.4
+
+  '@tanstack/ai-react@0.16.4(@tanstack/ai@0.40.0)(@types/react@19.2.17)(react@19.2.7)':
+    dependencies:
+      '@tanstack/ai': 0.40.0
+      '@tanstack/ai-client': 0.20.0
+      '@types/react': 19.2.17
+      react: 19.2.7
+    transitivePeerDependencies:
+      - '@opentelemetry/api'
+
+  '@tanstack/ai-utils@0.3.1': {}
+
+  '@tanstack/ai@0.40.0':
+    dependencies:
+      '@ag-ui/core': 0.0.52
+      '@standard-schema/spec': 1.1.0
+      '@tanstack/ai-event-client': 0.6.8
+      '@tanstack/ai-utils': 0.3.1
+      partial-json: 0.1.7
 
   '@tanstack/devtools-event-client@0.4.4': {}
 
@@ -6547,6 +6642,8 @@ snapshots:
   parse-ms@4.0.0: {}
 
   parseurl@1.3.3: {}
+
+  partial-json@0.1.7: {}
 
   path-browserify@1.0.1: {}
 
