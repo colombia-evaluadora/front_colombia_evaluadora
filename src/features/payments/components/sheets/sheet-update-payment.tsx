@@ -1,6 +1,6 @@
 import { useState } from "react"
 
-import { PencilIcon } from "lucide-react"
+import { PencilIcon } from "@phosphor-icons/react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"

@@ -1,6 +1,6 @@
 import { useState } from "react"
 
-import { XIcon } from "lucide-react"
+import { XIcon } from "@phosphor-icons/react"
 
 import {
   AlertDialog,

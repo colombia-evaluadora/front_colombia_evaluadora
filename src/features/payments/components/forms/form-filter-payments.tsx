@@ -1,11 +1,11 @@
 import { useForm } from "@tanstack/react-form"
 import {
-  BanknoteIcon,
-  CircleCheckBigIcon,
+  CurrencyDollarIcon,
+  CheckCircleIcon,
   CircleDashedIcon,
-  CircleDotIcon,
-  CircleXIcon,
-} from "lucide-react"
+  CircleHalfIcon,
+  XCircleIcon,
+} from "@phosphor-icons/react"
 
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
@@ -130,7 +130,7 @@ export function FilterPaymentsForm({
                     />
                     <FieldContent className="min-w-0">
                       <FieldTitle className="w-full min-w-0">
-                        <CircleDotIcon className="size-4 shrink-0 text-muted-foreground" />
+                        <CircleHalfIcon className="size-4 shrink-0 text-muted-foreground" />
                         <span className="truncate">Processing</span>
                       </FieldTitle>
                     </FieldContent>
@@ -148,7 +148,7 @@ export function FilterPaymentsForm({
                     />
                     <FieldContent className="min-w-0">
                       <FieldTitle className="w-full min-w-0">
-                        <CircleCheckBigIcon className="size-4 shrink-0 text-muted-foreground" />
+                        <CheckCircleIcon className="size-4 shrink-0 text-muted-foreground" />
                         <span className="truncate">Success</span>
                       </FieldTitle>
                     </FieldContent>
@@ -166,7 +166,7 @@ export function FilterPaymentsForm({
                     />
                     <FieldContent className="min-w-0">
                       <FieldTitle className="w-full min-w-0">
-                        <CircleXIcon className="size-4 shrink-0 text-muted-foreground" />
+                        <XCircleIcon className="size-4 shrink-0 text-muted-foreground" />
                         <span className="truncate">Failed</span>
                       </FieldTitle>
                     </FieldContent>
@@ -192,7 +192,7 @@ export function FilterPaymentsForm({
               data-invalid={isInvalid}
             >
               <FieldLabel>
-                <BanknoteIcon />
+                <CurrencyDollarIcon />
                 Monto (USD)
               </FieldLabel>
               <div className="flex items-center gap-2">

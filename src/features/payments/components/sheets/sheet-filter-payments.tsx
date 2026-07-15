@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { EraserIcon, FilterIcon } from "lucide-react"
+import { EraserIcon, FunnelIcon } from "@phosphor-icons/react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -48,7 +48,7 @@ export function FilterPaymentsSheet({
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger render={<Button variant="outline" />}>
-        <FilterIcon />
+        <FunnelIcon />
         <span className="sr-only md:not-sr-only">Filtros</span>
         {activeFilterCount > 0 && <span>· {activeFilterCount}</span>}
       </SheetTrigger>

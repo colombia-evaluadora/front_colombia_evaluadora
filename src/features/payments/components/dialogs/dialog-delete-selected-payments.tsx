@@ -1,6 +1,6 @@
 import { useState } from "react"
 
-import { Trash2Icon } from "lucide-react"
+import { TrashIcon } from "@phosphor-icons/react"
 import { toast } from "sonner"
 
 import {
@@ -54,7 +54,7 @@ export function DeleteSelectedPaymentsDialog({
           />
         }
       >
-        <Trash2Icon data-icon="inline-start" />
+        <TrashIcon data-icon="inline-start" />
         <span aria-hidden="true" className="md:hidden">
           ({count})
         </span>

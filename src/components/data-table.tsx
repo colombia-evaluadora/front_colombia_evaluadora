@@ -2,10 +2,10 @@ import { flexRender, type Column, type Table } from "@tanstack/react-table"
 import {
   ArrowDownIcon,
   ArrowUpIcon,
-  ChevronsUpDownIcon,
+  CaretUpDownIcon,
   ColumnsIcon,
-  EyeOffIcon,
-} from "lucide-react"
+  EyeSlashIcon,
+} from "@phosphor-icons/react"
 
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -50,8 +50,8 @@ export function DataTable({
   const skeletonRowCount = table.getState().pagination.pageSize
 
   return (
-    <div className="overflow-hidden rounded-md border">
-      <UITable>
+    <div className="overflow-x-auto rounded-md border w-full border-border">
+      <UITable className="w-full">
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow
@@ -201,7 +201,7 @@ export function DataTableColumnHeader<TData, TValue>({
           ) : sorted === "asc" ? (
             <ArrowUpIcon data-icon="inline-end" />
           ) : (
-            <ChevronsUpDownIcon data-icon="inline-end" />
+            <CaretUpDownIcon data-icon="inline-end" />
           )}
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start">
@@ -236,7 +236,7 @@ export function DataTableColumnHeader<TData, TValue>({
               <>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => column.toggleVisibility(false)}>
-                  <EyeOffIcon data-icon="inline-start" />
+                  <EyeSlashIcon data-icon="inline-start" />
                   Ocultar
                 </DropdownMenuItem>
               </>
