@@ -5,7 +5,7 @@ import { Pagination } from "@/components/pagination"
 import { useDataTable } from "@/hooks/use-data-table"
 
 import { useAuditsQuery } from "../../api/query/use-audits-query"
-import { useAuditSessionPagination } from "../../hooks/use-audit-session-pagination"
+import { useTablePagination } from "@/hooks/use-table-pagination"
 import { useAuditSessionFilters } from "../../hooks/use-audit-session-filters"
 
 import { columns } from "./columns-audit-session"
@@ -17,7 +17,7 @@ import { AuditSessionStatsCards } from "../stats/audit-session-stats-cards"
 
 export function AuditSessionDataTable() {
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } =
-    useAuditSessionPagination()
+    useTablePagination()
   const { filters, queryFilters, applyFilters, clearAllFilters, activeFilterCount } =
     useAuditSessionFilters()
   const { data, isPending, isError, refetch } = useAuditsQuery({

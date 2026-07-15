@@ -5,7 +5,7 @@ import { Pagination } from "@/components/pagination"
 import { useDataTable } from "@/hooks/use-data-table"
 
 import { useTableOperationsQuery } from "../../api/query/use-table-operations-query"
-import { useTableOperationsPagination } from "../../hooks/use-table-operations-pagination"
+import { useTablePagination } from "@/hooks/use-table-pagination"
 import { useTableOperationsFilters } from "../../hooks/use-table-operations-filters"
 
 import { columns } from "./columns-table-operations"
@@ -23,7 +23,7 @@ export function TableOperationsDataTable({
   tableSlug,
 }: TableOperationsDataTableProps) {
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } =
-    useTableOperationsPagination()
+    useTablePagination()
   const { filters, queryFilters, applyFilters, clearAllFilters, activeFilterCount } =
     useTableOperationsFilters()
   const { data, isPending, isError, refetch } = useTableOperationsQuery({

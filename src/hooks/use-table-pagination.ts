@@ -1,12 +1,20 @@
 import { useCallback } from "react"
 import type { SortingState } from "@tanstack/react-table"
+import { useNavigate, useSearch } from "@tanstack/react-router"
 
 import type { DataTableFilters } from "@/hooks/use-data-table"
-import { auditoriaTablaDetalleRoute } from "@/router"
 
-export function useTableOperationsPagination(): DataTableFilters {
-  const search = auditoriaTablaDetalleRoute.useSearch()
-  const navigate = auditoriaTablaDetalleRoute.useNavigate()
+export function useTablePagination(): DataTableFilters {
+  const search = useSearch({ strict: false }) as {
+    page?: number
+    pageSize?: number
+    sortBy?: string
+    sortDir?: "asc" | "desc"
+  }
+  const navigate = useNavigate() as unknown as (opts: {
+    search: (prev: Record<string, unknown>) => Record<string, unknown>
+    replace?: boolean
+  }) => void
 
   const sorting: SortingState = search.sortBy
     ? [{ id: search.sortBy, desc: search.sortDir === "desc" }]
@@ -15,7 +23,10 @@ export function useTableOperationsPagination(): DataTableFilters {
   const goToPage = useCallback(
     (nextPageIndex: number) => {
       navigate({
-        search: (prev) => ({ ...prev, page: nextPageIndex }),
+        search: (prev: Record<string, unknown>) => ({
+          ...prev,
+          page: nextPageIndex,
+        }),
         replace: true,
       })
     },
@@ -25,7 +36,11 @@ export function useTableOperationsPagination(): DataTableFilters {
   const setPageSize = useCallback(
     (nextPageSize: number) => {
       navigate({
-        search: (prev) => ({ ...prev, pageSize: nextPageSize, page: 0 }),
+        search: (prev: Record<string, unknown>) => ({
+          ...prev,
+          pageSize: nextPageSize,
+          page: 0,
+        }),
         replace: true,
       })
     },
@@ -33,10 +48,10 @@ export function useTableOperationsPagination(): DataTableFilters {
   )
 
   const setSorting = useCallback(
-    (next: SortingState) => {
+    (next: { id: string; desc: boolean }[]) => {
       const [first] = next
       navigate({
-        search: (prev) => ({
+        search: (prev: Record<string, unknown>) => ({
           ...prev,
           sortBy: first?.id,
           sortDir: first ? (first.desc ? "desc" : "asc") : undefined,
@@ -49,8 +64,8 @@ export function useTableOperationsPagination(): DataTableFilters {
   )
 
   return {
-    pageIndex: search.page,
-    pageSize: search.pageSize,
+    pageIndex: search.page ?? 0,
+    pageSize: search.pageSize ?? 10,
     goToPage,
     setPageSize,
     sorting,

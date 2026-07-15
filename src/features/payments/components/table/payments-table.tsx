@@ -5,7 +5,7 @@ import { Pagination } from "@/components/pagination"
 import { useDataTable } from "@/hooks/use-data-table"
 
 import { usePaymentsQuery } from "../../api/query/use-payments-query"
-import { usePagination } from "@/hooks/use-pagination"
+import { useTablePagination } from "@/hooks/use-table-pagination"
 import { usePaymentsFilters } from "../../hooks/use-payments-filters"
 
 import { columns } from "./columns"
@@ -17,7 +17,7 @@ import { ClearSelectionDialog } from "../dialogs/dialog-clear-selection"
 
 export function PaymentsDataTable() {
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } =
-    usePagination()
+    useTablePagination()
   const { filters, queryFilters, applyFilters, clearAllFilters, activeFilterCount } =
     usePaymentsFilters()
   const { data, isPending, isError, refetch } = usePaymentsQuery({
