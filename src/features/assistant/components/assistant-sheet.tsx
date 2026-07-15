@@ -1,0 +1,39 @@
+import { ChatCircleTextIcon } from "@phosphor-icons/react"
+
+import { Button } from "@/components/ui/button"
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet"
+
+import { useAssistantChat } from "../hooks/use-assistant-chat"
+import { ChatComposer } from "./chat-composer"
+import { ChatMessageList } from "./chat-message-list"
+
+export function AssistantSheet() {
+  const { messages, sendMessage, isLoading, error } = useAssistantChat()
+
+  return (
+    <Sheet>
+      <SheetTrigger render={<Button variant="secondary" size="icon" />}>
+        <ChatCircleTextIcon />
+        <span className="sr-only">Abrir asistente</span>
+      </SheetTrigger>
+      <SheetContent side="right" className="flex w-full flex-col sm:max-w-md">
+        <SheetHeader>
+          <SheetTitle>Asistente</SheetTitle>
+        </SheetHeader>
+        <ChatMessageList messages={messages} isLoading={isLoading} />
+        {error && (
+          <p className="px-6 text-sm text-destructive">
+            No se pudo obtener respuesta.
+          </p>
+        )}
+        <ChatComposer onSend={sendMessage} disabled={isLoading} />
+      </SheetContent>
+    </Sheet>
+  )
+}
