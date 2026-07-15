@@ -30,6 +30,10 @@ export const paths = {
       path: "/",
       getHref: () => "/app",
     },
+    auditoria: {
+      path: "auditoria",
+      getHref: () => "/app/auditoria",
+    },
     reportes: {
       path: "reportes",
       getHref: () => "/app/reportes",
