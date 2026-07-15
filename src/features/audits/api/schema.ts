@@ -23,3 +23,30 @@ export const auditsSearchSchema = z.object({
   startedTo: z.string().optional().catch(undefined),
 })
 export type AuditsSearch = z.infer<typeof auditsSearchSchema>
+
+export const OPERATION_TYPES = ["INSERT", "UPDATE", "DELETE"] as const
+
+export const tableOperationsFiltersFormSchema = z.object({
+  author: z.string(),
+  operations: z.array(z.enum(OPERATION_TYPES)),
+  occurredFrom: z.string(),
+  occurredTo: z.string(),
+})
+export type TableOperationsFiltersFormInput = z.input<
+  typeof tableOperationsFiltersFormSchema
+>
+export type TableOperationsFiltersFormValues = z.infer<
+  typeof tableOperationsFiltersFormSchema
+>
+
+export const tableOperationsSearchSchema = z.object({
+  page: z.coerce.number().int().nonnegative().catch(0).default(0),
+  pageSize: z.coerce.number().int().positive().catch(10).default(10),
+  sortBy: z.string().optional().catch(undefined),
+  sortDir: z.enum(["asc", "desc"]).optional().catch(undefined),
+  author: z.string().optional().catch(undefined),
+  operations: z.array(z.enum(OPERATION_TYPES)).optional().catch(undefined),
+  occurredFrom: z.string().optional().catch(undefined),
+  occurredTo: z.string().optional().catch(undefined),
+})
+export type TableOperationsSearch = z.infer<typeof tableOperationsSearchSchema>

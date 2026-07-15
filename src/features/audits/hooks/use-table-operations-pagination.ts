@@ -2,11 +2,11 @@ import { useCallback } from "react"
 import type { SortingState } from "@tanstack/react-table"
 
 import type { DataTableFilters } from "@/hooks/use-data-table"
-import { auditoriaRoute } from "@/router"
+import { auditoriaTablaDetalleRoute } from "@/router"
 
-export function usePagination(): DataTableFilters {
-  const search = auditoriaRoute.useSearch()
-  const navigate = auditoriaRoute.useNavigate()
+export function useTableOperationsPagination(): DataTableFilters {
+  const search = auditoriaTablaDetalleRoute.useSearch()
+  const navigate = auditoriaTablaDetalleRoute.useNavigate()
 
   const sorting: SortingState = search.sortBy
     ? [{ id: search.sortBy, desc: search.sortDir === "desc" }]

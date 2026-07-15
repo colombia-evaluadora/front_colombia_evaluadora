@@ -15,11 +15,11 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 
-interface ClearSelectionDialogProps {
+interface ClearSelectionTableOperationsDialogProps {
   resetSelection: () => void
 }
 
-export function ClearSelectionDialog({ resetSelection }: ClearSelectionDialogProps) {
+export function ClearSelectionTableOperationsDialog({ resetSelection }: ClearSelectionTableOperationsDialogProps) {
   const [open, setOpen] = useState(false)
 
   return (
@@ -34,7 +34,7 @@ export function ClearSelectionDialog({ resetSelection }: ClearSelectionDialogPro
         <AlertDialogHeader>
           <AlertDialogTitle>¿Limpiar la selección?</AlertDialogTitle>
           <AlertDialogDescription>
-            Se deseleccionarán todas las sesiones seleccionadas.
+            Se deseleccionarán todas las operaciones seleccionadas.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

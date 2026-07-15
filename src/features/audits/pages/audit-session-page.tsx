@@ -6,9 +6,9 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 
-import { AuditsDataTable } from "../components/table/audits-table"
+import { AuditSessionDataTable } from "../components/table/audit-session-table"
 
-export function AuditsPage() {
+export function AuditSessionPage() {
   return (
     <Card>
       <CardHeader>
@@ -18,7 +18,7 @@ export function AuditsPage() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <AuditsDataTable />
+        <AuditSessionDataTable />
       </CardContent>
     </Card>
   )

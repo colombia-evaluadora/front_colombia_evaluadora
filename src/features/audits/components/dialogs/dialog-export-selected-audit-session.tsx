@@ -18,15 +18,15 @@ import { Button } from "@/components/ui/button"
 import { useExportSelectedAudits } from "../../api/mutations/export-selected-audits"
 import type { ExportFormat } from "../../api/types/audit"
 
-interface ExportSelectedAuditsDialogProps {
+interface ExportSelectedAuditSessionDialogProps {
   selectedIds: string[]
   resetSelection: () => void
 }
 
-export function ExportSelectedAuditsDialog({
+export function ExportSelectedAuditSessionDialog({
   selectedIds,
   resetSelection,
-}: ExportSelectedAuditsDialogProps) {
+}: ExportSelectedAuditSessionDialogProps) {
   const [open, setOpen] = useState(false)
   const count = selectedIds.length
 

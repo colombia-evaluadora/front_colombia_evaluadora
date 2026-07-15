@@ -21,7 +21,10 @@ import {
 } from "@/features/auth/api/schema"
 import { paymentsSearchSchema } from "@/features/payments/api/schema"
 import { PaymentsErrorPage } from "@/features/payments/pages/payments-error-page"
-import { auditsSearchSchema } from "@/features/audits/api/schema"
+import {
+  auditsSearchSchema,
+  tableOperationsSearchSchema,
+} from "@/features/audits/api/schema"
 
 const LandingPage = lazyRouteComponent(
   () => import("@/features/landing/pages/landing-page"),
@@ -47,9 +50,17 @@ const PaymentsPage = lazyRouteComponent(
   () => import("@/features/payments/pages/payments-page"),
   "PaymentsPage"
 )
-const AuditsPage = lazyRouteComponent(
-  () => import("@/features/audits/pages/audits-page"),
-  "AuditsPage"
+const AuditSessionPage = lazyRouteComponent(
+  () => import("@/features/audits/pages/audit-session-page"),
+  "AuditSessionPage"
+)
+const AuditTablesPage = lazyRouteComponent(
+  () => import("@/features/audits/pages/audit-tables-page"),
+  "AuditTablesPage"
+)
+const TableOperationsPage = lazyRouteComponent(
+  () => import("@/features/audits/pages/table-operations-page"),
+  "TableOperationsPage"
 )
 
 interface RouterContext {
@@ -162,7 +173,20 @@ export const auditoriaRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.auditoria.path,
   validateSearch: auditsSearchSchema,
-  component: AuditsPage,
+  component: AuditSessionPage,
+})
+
+export const auditoriaTablasRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.auditoriaTablas.path,
+  component: AuditTablesPage,
+})
+
+export const auditoriaTablaDetalleRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.auditoriaTablaDetalle.path,
+  validateSearch: tableOperationsSearchSchema,
+  component: TableOperationsPage,
 })
 
 const reportesRoute = createRoute({
@@ -191,6 +215,8 @@ const routeTree = rootRoute.addChildren([
   appLayoutRoute.addChildren([
     paymentsRoute,
     auditoriaRoute,
+    auditoriaTablasRoute,
+    auditoriaTablaDetalleRoute,
     reportesRoute,
     usuariosRoute,
     configuracionRoute,

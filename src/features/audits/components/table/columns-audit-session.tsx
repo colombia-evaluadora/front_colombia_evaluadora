@@ -132,4 +132,4 @@ export const columns: ColumnDef<AuditSession>[] = [
   },
 ]
 
-export type AuditsTable = Table<AuditSession>
+export type AuditSessionTable = Table<AuditSession>
