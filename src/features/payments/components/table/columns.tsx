@@ -4,8 +4,8 @@ import { DeletePaymentDialog } from "../dialogs/dialog-delete-payment"
 import { DataTableColumnHeader } from "@/components/data-table"
 import { UpdatePaymentSheet } from "../sheets/sheet-update-payment"
 import {
+  PAYMENT_STATUS_BADGE,
   PAYMENT_STATUS_LABELS,
-  PAYMENT_STATUS_VARIANTS,
 } from "../../api/ui-mappings"
 import type { Payment, PaymentStatus } from "../../api/types/payment"
 import { Badge } from "@/components/ui/badge"
@@ -52,11 +52,14 @@ export const columns: ColumnDef<Payment>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Estado" />
     ),
-    cell: ({ row }) => (
-      <Badge variant={PAYMENT_STATUS_VARIANTS[row.getValue<PaymentStatus>("status")]}>
-        {PAYMENT_STATUS_LABELS[row.getValue<PaymentStatus>("status")]}
-      </Badge>
-    ),
+    cell: ({ row }) => {
+      const status = row.getValue<PaymentStatus>("status")
+      return (
+        <Badge {...PAYMENT_STATUS_BADGE[status]}>
+          {PAYMENT_STATUS_LABELS[status]}
+        </Badge>
+      )
+    },
   },
   {
     accessorKey: "amount",

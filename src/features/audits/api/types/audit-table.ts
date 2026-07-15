@@ -41,3 +41,16 @@ export interface TableOperationsQueryResponse {
   pageCount: number
   totalCount: number
 }
+
+// Igual que exportar: se calcula sobre lo seleccionado (`ids`) o, si no hay
+// selección, sobre lo que coincide con los filtros activos (`filters`).
+export interface TableOperationsStatsRequest {
+  ids?: string[]
+  filters?: TableOperationsQueryFilters
+}
+
+export interface TableOperationsStats {
+  inserts: number
+  updates: number
+  deletes: number
+}

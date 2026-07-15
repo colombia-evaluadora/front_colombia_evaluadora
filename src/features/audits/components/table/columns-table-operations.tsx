@@ -5,12 +5,10 @@ import { Avatar, AvatarBadge, AvatarFallback, AvatarImage } from "@/components/u
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { DataTableColumnHeader } from "@/components/data-table"
-import { cn } from "@/lib/utils"
 
 import {
-  OPERATION_TYPE_CLASSNAMES,
+  OPERATION_TYPE_BADGE,
   OPERATION_TYPE_LABELS,
-  OPERATION_TYPE_VARIANTS,
 } from "../../api/ui-mappings"
 import type { OperationType, TableOperation } from "../../api/types/audit-table"
 
@@ -55,10 +53,7 @@ export const columns: ColumnDef<TableOperation>[] = [
     cell: ({ row }) => {
       const operation = row.getValue<OperationType>("operation")
       return (
-        <Badge
-          variant={OPERATION_TYPE_VARIANTS[operation]}
-          className={cn(OPERATION_TYPE_CLASSNAMES[operation])}
-        >
+        <Badge {...OPERATION_TYPE_BADGE[operation]}>
           {OPERATION_TYPE_LABELS[operation]}
         </Badge>
       )
@@ -85,9 +80,9 @@ export const columns: ColumnDef<TableOperation>[] = [
           </Avatar>
           <div className="flex min-w-0 flex-col gap-1">
             <span className="truncate font-semibold">{op.authorName}</span>
-            <span className="w-fit truncate rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+            <Badge variant="fill" color="muted">
               {op.ip}
-            </span>
+            </Badge>
           </div>
         </div>
       )

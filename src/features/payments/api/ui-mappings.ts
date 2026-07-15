@@ -10,12 +10,12 @@ export const PAYMENT_STATUS_LABELS: Record<PaymentStatus, string> = {
   failed: "Fallido",
 }
 
-export const PAYMENT_STATUS_VARIANTS: Record<
+export const PAYMENT_STATUS_BADGE: Record<
   PaymentStatus,
-  "outline" | "secondary" | "default" | "destructive"
+  { variant: "fill" | "outline"; color: "primary" | "secondary" | "destructive" }
 > = {
-  pending: "outline",
-  processing: "secondary",
-  success: "default",
-  failed: "destructive",
+  pending: { variant: "outline", color: "secondary" },
+  processing: { variant: "fill", color: "secondary" },
+  success: { variant: "fill", color: "primary" },
+  failed: { variant: "fill", color: "destructive" },
 }
