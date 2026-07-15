@@ -49,7 +49,7 @@ function applySorting(
 }
 
 export const paymentsHandlers = [
-  http.post("/payments/query", async ({ request }) => {
+  http.post("/api/payments/query", async ({ request }) => {
     await delay(300)
     const body = (await request.json()) as PaymentsQueryRequest
     const { filters, sorting, pageIndex, pageSize } = body
@@ -67,7 +67,7 @@ export const paymentsHandlers = [
     })
   }),
 
-  http.post("/payments", async ({ request }) => {
+  http.post("/api/payments", async ({ request }) => {
     await delay(300)
     const values = (await request.json()) as PaymentFormValues
     const payment: Payment = {
@@ -81,7 +81,7 @@ export const paymentsHandlers = [
     return HttpResponse.json({ status: "ok", message: "Pago creado." })
   }),
 
-  http.patch("/payments/:id", async ({ request, params }) => {
+  http.patch("/api/payments/:id", async ({ request, params }) => {
     await delay(300)
     const values = (await request.json()) as PaymentFormValues
     const index = paymentsDb.findIndex((p) => p.id === params.id)
@@ -95,7 +95,7 @@ export const paymentsHandlers = [
     return HttpResponse.json({ status: "ok", message: "Pago actualizado." })
   }),
 
-  http.delete("/payments/:id", async ({ params }) => {
+  http.delete("/api/payments/:id", async ({ params }) => {
     await delay(300)
     const index = paymentsDb.findIndex((p) => p.id === params.id)
     if (index === -1) {
@@ -108,7 +108,7 @@ export const paymentsHandlers = [
     return HttpResponse.json({ status: "ok", message: "Pago eliminado." })
   }),
 
-  http.post("/payments/bulk-delete", async ({ request }) => {
+  http.post("/api/payments/bulk-delete", async ({ request }) => {
     await delay(300)
     const ids = (await request.json()) as string[]
     const idSet = new Set(ids)
@@ -125,7 +125,7 @@ export const paymentsHandlers = [
     })
   }),
 
-  http.post("/payments/delete-all", async ({ request }) => {
+  http.post("/api/payments/delete-all", async ({ request }) => {
     await delay(300)
     const filters = (await request.json()) as PaymentsQueryRequest["filters"]
     const toRemove = new Set(applyFilters(paymentsDb, filters).map((p) => p.id))

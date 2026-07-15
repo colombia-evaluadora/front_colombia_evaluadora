@@ -3,6 +3,7 @@ import { toast } from "sonner"
 
 import { env } from "@/config/env"
 import { paths } from "@/config/paths"
+import { queryClient } from "./query-client"
 
 // Persistido en localStorage solo para que la sesión mock sobreviva a un
 // reload mientras se prueba la UI. No es representativo de cómo se
@@ -50,6 +51,8 @@ api.interceptors.response.use(
       // reintentaría redirigir a /login en loop infinito.
       const onLoginPage = window.location.pathname === paths.auth.login.path
       if (error.response?.status === 401 && !onLoginPage) {
+        setAuthToken(null)
+        queryClient.clear()
         const redirectTo = window.location.pathname
         window.location.href = paths.auth.login.getHref(redirectTo)
       }

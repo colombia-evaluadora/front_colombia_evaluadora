@@ -2,7 +2,7 @@ import * as z from "zod"
 
 const createEnv = () => {
   const EnvSchema = z.object({
-    API_URL: z.string().optional().default(""),
+    API_URL: z.string().optional().default("/api"),
     ENABLE_API_MOCKING: z
       .string()
       .refine((s) => s === "true" || s === "false")
@@ -10,6 +10,9 @@ const createEnv = () => {
       .optional()
       .default(true),
     APP_URL: z.string().optional().default("http://localhost:5173"),
+    // Identifica esta app ante el backend SSO (ej. `?app=` en /sso-admin/myMenu)
+    // para que sepa de qué aplicación traer rutas/menú/permisos.
+    NAME: z.string().optional().default("COLOMBIA-EVALUADORA"),
   })
 
   const envVars = Object.entries(import.meta.env).reduce<Record<string, string>>(
