@@ -18,7 +18,7 @@ export const paths = {
       getHref: () => "/app",
     },
     payments: {
-      path: "",
+      path: "/",
       getHref: () => "/app",
     },
     reportes: {

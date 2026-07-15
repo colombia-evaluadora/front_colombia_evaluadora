@@ -209,6 +209,7 @@ export function DataTableColumnHeader<TData, TValue>({
             {column.getCanSort() && (
               <>
                 <DropdownMenuCheckboxItem
+                  closeOnClick
                   checked={sorted === "asc"}
                   onCheckedChange={() =>
                     sorted === "asc"
@@ -220,6 +221,7 @@ export function DataTableColumnHeader<TData, TValue>({
                   Asc
                 </DropdownMenuCheckboxItem>
                 <DropdownMenuCheckboxItem
+                  closeOnClick
                   checked={sorted === "desc"}
                   onCheckedChange={() =>
                     sorted === "desc"
