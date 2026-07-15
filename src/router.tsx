@@ -169,9 +169,9 @@ export const paymentsRoute = createRoute({
   component: PaymentsPage,
 })
 
-export const auditoriaRoute = createRoute({
+export const auditoriaSesionesRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
-  path: paths.app.auditoria.path,
+  path: paths.app.auditoriaSesiones.path,
   validateSearch: auditsSearchSchema,
   component: AuditSessionPage,
 })
@@ -214,7 +214,7 @@ const routeTree = rootRoute.addChildren([
   restorePasswordRoute,
   appLayoutRoute.addChildren([
     paymentsRoute,
-    auditoriaRoute,
+    auditoriaSesionesRoute,
     auditoriaTablasRoute,
     auditoriaTablaDetalleRoute,
     reportesRoute,
