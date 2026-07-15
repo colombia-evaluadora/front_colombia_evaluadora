@@ -18,7 +18,7 @@ export function AssistantSheet() {
 
   return (
     <Sheet>
-      <SheetTrigger render={<Button variant="secondary" size="icon" />}>
+      <SheetTrigger render={<Button variant="outline" size="icon" />}>
         <ChatCircleTextIcon />
         <span className="sr-only">Abrir asistente</span>
       </SheetTrigger>
