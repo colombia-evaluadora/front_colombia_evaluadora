@@ -1,15 +1,33 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
-import type { AuditTable } from "../types/audit-table"
+import type {
+  AuditTablesQueryRequest,
+  AuditTablesQueryResponse,
+} from "../types/audit-table"
 
-function fetchAuditTables(): Promise<AuditTable[]> {
-  return api.get("/audit-tables")
+interface UseAuditTablesQueryParams {
+  filters: AuditTablesQueryRequest["filters"]
+  sorting: AuditTablesQueryRequest["sorting"]
+  pageIndex: number
+  pageSize: number
 }
 
-export function useAuditTablesQuery() {
+function fetchAuditTables(
+  body: AuditTablesQueryRequest
+): Promise<AuditTablesQueryResponse> {
+  return api.post("/audit-tables/query", body)
+}
+
+export const auditTablesQueryKey = (params: UseAuditTablesQueryParams) => [
+  "audit-tables",
+  params,
+]
+
+export function useAuditTablesQuery(params: UseAuditTablesQueryParams) {
   return useQuery({
-    queryKey: ["audit-tables"],
-    queryFn: fetchAuditTables,
+    queryKey: auditTablesQueryKey(params),
+    queryFn: () => fetchAuditTables(params),
+    placeholderData: (previous) => previous,
   })
 }

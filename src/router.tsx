@@ -23,6 +23,7 @@ import { paymentsSearchSchema } from "@/features/payments/api/schema"
 import { PaymentsErrorPage } from "@/features/payments/pages/payments-error-page"
 import {
   auditsSearchSchema,
+  auditTablesSearchSchema,
   tableOperationsSearchSchema,
 } from "@/features/audits/api/schema"
 
@@ -179,6 +180,7 @@ export const auditoriaSesionesRoute = createRoute({
 export const auditoriaTablasRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.auditoriaTablas.path,
+  validateSearch: auditTablesSearchSchema,
   component: AuditTablesPage,
 })
 

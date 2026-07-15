@@ -7,6 +7,23 @@ export interface AuditTable {
   operationsToday: number
 }
 
+export interface AuditTablesQueryFilters {
+  name?: string
+}
+
+export interface AuditTablesQueryRequest {
+  filters: AuditTablesQueryFilters
+  sorting: { id: string; desc: boolean }[]
+  pageIndex: number
+  pageSize: number
+}
+
+export interface AuditTablesQueryResponse {
+  rows: AuditTable[]
+  pageCount: number
+  totalCount: number
+}
+
 export type OperationType = "INSERT" | "UPDATE" | "DELETE"
 
 export interface TableOperation {

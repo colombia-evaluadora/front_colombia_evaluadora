@@ -7,7 +7,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Link } from "@tanstack/react-router"
-import { AuditTablesGrid } from "../components/tables/audit-tables-grid"
+import { AuditTablesGrid } from "../components/table/audit-tables-grid"
 import { paths } from "@/config/paths"
 import { Button } from "@/components/ui/button"
 
