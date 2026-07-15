@@ -21,6 +21,7 @@ import {
 } from "@/features/auth/api/schema"
 import { paymentsSearchSchema } from "@/features/payments/api/schema"
 import { PaymentsErrorPage } from "@/features/payments/pages/payments-error-page"
+import { auditsSearchSchema } from "@/features/audits/api/schema"
 
 const LandingPage = lazyRouteComponent(
   () => import("@/features/landing/pages/landing-page"),
@@ -45,6 +46,10 @@ const ProtectedLayout = lazyRouteComponent(
 const PaymentsPage = lazyRouteComponent(
   () => import("@/features/payments/pages/payments-page"),
   "PaymentsPage"
+)
+const AuditsPage = lazyRouteComponent(
+  () => import("@/features/audits/pages/audits-page"),
+  "AuditsPage"
 )
 
 interface RouterContext {
@@ -153,6 +158,13 @@ export const paymentsRoute = createRoute({
   component: PaymentsPage,
 })
 
+export const auditoriaRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.auditoria.path,
+  validateSearch: auditsSearchSchema,
+  component: AuditsPage,
+})
+
 const reportesRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.reportes.path,
@@ -178,6 +190,7 @@ const routeTree = rootRoute.addChildren([
   restorePasswordRoute,
   appLayoutRoute.addChildren([
     paymentsRoute,
+    auditoriaRoute,
     reportesRoute,
     usuariosRoute,
     configuracionRoute,
