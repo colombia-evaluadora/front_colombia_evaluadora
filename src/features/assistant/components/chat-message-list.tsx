@@ -1,11 +1,6 @@
 import type { UIMessage } from "@tanstack/ai-react"
 
-import {
-  Message,
-  MessageAvatar,
-  MessageContent,
-  MessageGroup,
-} from "@/components/ui/message"
+import { Message, MessageContent, MessageGroup } from "@/components/ui/message"
 import {
   MessageScroller,
   MessageScrollerContent,
@@ -34,23 +29,28 @@ export function ChatMessageList({ messages, isLoading }: ChatMessageListProps) {
         <MessageScrollerViewport>
           <MessageScrollerContent>
             <MessageGroup>
-              {messages.map((message) => (
-                <MessageScrollerItem key={message.id}>
-                  <Message
-                    align={message.role === "user" ? "end" : "start"}
-                    className="max-w-[85%]"
-                  >
-                    {message.role !== "user" && (
-                      <MessageAvatar>IA</MessageAvatar>
-                    )}
-                    <MessageContent>{messageText(message)}</MessageContent>
-                  </Message>
-                </MessageScrollerItem>
-              ))}
+              {messages.map((message) =>
+                message.role === "user" ? (
+                  <MessageScrollerItem key={message.id}>
+                    <Message align="end" className="max-w-[85%]">
+                      <MessageContent className="rounded-2xl bg-muted px-4 py-2.5">
+                        {messageText(message)}
+                      </MessageContent>
+                    </Message>
+                  </MessageScrollerItem>
+                ) : (
+                  <MessageScrollerItem key={message.id}>
+                    <Message align="start" className="max-w-none">
+                      <MessageContent className="leading-relaxed">
+                        {messageText(message)}
+                      </MessageContent>
+                    </Message>
+                  </MessageScrollerItem>
+                )
+              )}
               {isLoading && (
                 <MessageScrollerItem>
-                  <Message align="start" className="max-w-[85%]">
-                    <MessageAvatar>IA</MessageAvatar>
+                  <Message align="start" className="max-w-none">
                     <MessageContent>
                       <Spinner />
                     </MessageContent>
