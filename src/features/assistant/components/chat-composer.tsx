@@ -76,7 +76,7 @@ export function ChatComposer({ onSend, disabled }: ChatComposerProps) {
         </form.Field>
         <InputGroupAddon align="block-end" className="pt-1">
           <DropdownMenu>
-            <DropdownMenuTrigger render={<InputGroupButton aria-label="Add files" type="button" size="icon-sm" variant="outline" className="bg-white"><PlusIcon /></InputGroupButton>} />
+            <DropdownMenuTrigger render={<InputGroupButton aria-label="Add files" type="button" size="icon-sm" variant="outline"><PlusIcon /></InputGroupButton>} />
             <DropdownMenuContent
               align="start"
               side="top"

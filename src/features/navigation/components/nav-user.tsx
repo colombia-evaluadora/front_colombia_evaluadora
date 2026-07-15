@@ -1,7 +1,9 @@
 import { CaretUpDownIcon, SignOutIcon } from "@phosphor-icons/react"
+import { useNavigate } from "@tanstack/react-router"
 import { toast } from "sonner"
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { paths } from "@/config/paths"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,10 +22,14 @@ import {
 import { useUser, useLogout } from "@/lib/auth"
 
 export function NavUser() {
+  const navigate = useNavigate()
   const { data: user, isPending } = useUser()
   const logoutMutation = useLogout({
     mutationConfig: {
-      onSuccess: () => toast.success("Sesión cerrada."),
+      onSuccess: () => {
+        toast.success("Sesión cerrada.")
+        navigate({ to: paths.auth.login.path })
+      },
     },
   })
 

@@ -3,6 +3,7 @@ import { ArrowLeftIcon } from "@phosphor-icons/react"
 import { Link, useNavigate, useSearch } from "@tanstack/react-router"
 
 import icon from "@/assets/icon.svg"
+import loginBg from "@/assets/login.jpg"
 import logo from "@/assets/logo.svg"
 import { Button } from "@/components/ui/button"
 import { paths } from "@/config/paths"
@@ -72,8 +73,12 @@ export function LoginPage() {
           </div>
         </div>
       </div>
-      <div className="relative hidden overflow-hidden bg-gradient-to-br from-[#7e14ff] to-[#47bfff] lg:flex lg:items-center lg:justify-center">
-        <img src={icon} alt="" className="size-40 drop-shadow-2xl" />
+      <div
+        className="relative hidden overflow-hidden bg-cover bg-center lg:flex lg:items-center lg:justify-center"
+        style={{ backgroundImage: `url(${loginBg})` }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-br from-[#7e14ff]/80 to-[#47bfff]/80" />
+        <img src={icon} alt="" className="relative size-40 drop-shadow-2xl" />
       </div>
 
     </div>
