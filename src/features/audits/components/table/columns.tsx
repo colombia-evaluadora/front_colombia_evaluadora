@@ -3,6 +3,7 @@ import { CheckIcon } from "@phosphor-icons/react"
 
 import { Avatar, AvatarBadge, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
+import { Checkbox } from "@/components/ui/checkbox"
 import { DataTableColumnHeader } from "@/components/data-table"
 
 import {
@@ -31,6 +32,32 @@ function formatDuration(session: AuditSession): string {
 
 export const columns: ColumnDef<AuditSession>[] = [
   {
+    id: "select",
+    header: ({ table }) => (
+      <Checkbox
+        aria-label="Seleccionar página"
+        className="translate-y-0.5"
+        checked={table.getIsAllPageRowsSelected()}
+        indeterminate={
+          !table.getIsAllPageRowsSelected() &&
+          table.getIsSomePageRowsSelected()
+        }
+        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+      />
+    ),
+    cell: ({ row }) => (
+      <Checkbox
+        aria-label={`Seleccionar ${row.original.authorName}`}
+        className="translate-y-0.5"
+        checked={row.getIsSelected()}
+        onCheckedChange={(value) => row.toggleSelected(!!value)}
+      />
+    ),
+    enableSorting: false,
+    enableHiding: false,
+    size: 32,
+  },
+  {
     id: "authorIp",
     accessorKey: "authorName",
     header: ({ column }) => (
@@ -53,7 +80,7 @@ export const columns: ColumnDef<AuditSession>[] = [
           </Avatar>
           <div className="flex min-w-0 flex-col gap-1">
             <span className="truncate font-semibold">{session.authorName}</span>
-            <span className="w-fit truncate rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+            <span className="w-fit truncate bg-muted px-2 py-0.5 text-xs text-muted-foreground">
               {session.ip}
             </span>
           </div>

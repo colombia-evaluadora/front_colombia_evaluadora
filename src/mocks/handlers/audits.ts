@@ -5,7 +5,14 @@ import type {
   AuditSession,
   AuditsQueryRequest,
   AuditsQueryResponse,
+  ExportFormat,
+  ExportResult,
 } from "@/features/audits/api/types/audit"
+
+const EXPORT_FORMAT_LABELS: Record<ExportFormat, string> = {
+  pdf: "PDF",
+  excel: "Excel",
+}
 
 function applyFilters(
   rows: AuditSession[],
@@ -74,6 +81,33 @@ export const auditsHandlers = [
       rows,
       pageCount,
       totalCount,
+    })
+  }),
+
+  http.post("/api/audits/export", async ({ request }) => {
+    await delay(600)
+    const { ids, format } = (await request.json()) as {
+      ids: string[]
+      format: ExportFormat
+    }
+
+    return HttpResponse.json<ExportResult>({
+      status: "ok",
+      message: `${ids.length} sesión(es) exportada(s) a ${EXPORT_FORMAT_LABELS[format]}.`,
+    })
+  }),
+
+  http.post("/api/audits/export-all", async ({ request }) => {
+    await delay(600)
+    const { filters, format } = (await request.json()) as {
+      filters: AuditsQueryRequest["filters"]
+      format: ExportFormat
+    }
+    const count = applyFilters(auditsDb, filters).length
+
+    return HttpResponse.json<ExportResult>({
+      status: "ok",
+      message: `${count} sesión(es) exportada(s) a ${EXPORT_FORMAT_LABELS[format]}.`,
     })
   }),
 ]
