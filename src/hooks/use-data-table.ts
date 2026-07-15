@@ -1,23 +1,43 @@
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import {
-  useReactTable,
   getCoreRowModel,
+  getFilteredRowModel,
+  useReactTable,
   type ColumnDef,
+  type ColumnFiltersState,
   type RowSelectionState,
   type SortingState,
+  type Table,
+  type Updater,
+  type VisibilityState,
 } from "@tanstack/react-table"
 
-interface UseDataTableParams<TData> {
-  columns: ColumnDef<TData>[]
-  data: TData[]
-  pageCount: number
-  getRowId: (row: TData) => string
+/**
+ * Contract every entity's URL-filters hook (`usePaymentsFilters` and
+ * whatever comes next) must satisfy to plug into `useDataTable` directly —
+ * pagination/sorting state plus the setters that push it back to the URL.
+ */
+export interface DataTableFilters {
   pageIndex: number
   pageSize: number
   goToPage: (pageIndex: number) => void
   setPageSize: (pageSize: number) => void
   sorting: SortingState
-  setSorting: (sorting: SortingState) => void
+  setSorting: (next: SortingState) => void
+}
+
+interface UseDataTableOptions<TData> extends DataTableFilters {
+  columns: ColumnDef<TData, any>[]
+  data: TData[]
+  pageCount: number
+  getRowId: (row: TData) => string
+}
+
+interface UseDataTableResult<TData> {
+  table: Table<TData>
+  selectedIds: string[]
+  hasSelection: boolean
+  resetSelection: () => void
 }
 
 export function useDataTable<TData>({
@@ -31,44 +51,59 @@ export function useDataTable<TData>({
   setPageSize,
   sorting,
   setSorting,
-}: UseDataTableParams<TData>) {
+}: UseDataTableOptions<TData>): UseDataTableResult<TData> {
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
+
+  const onSortingChange = (updater: Updater<SortingState>) => {
+    const next = typeof updater === "function" ? updater(sorting) : updater
+    setSorting(next)
+  }
+
+  const onPaginationChange = (
+    updater: Updater<{ pageIndex: number; pageSize: number }>
+  ) => {
+    const current = { pageIndex, pageSize }
+    const next = typeof updater === "function" ? updater(current) : updater
+    if (next.pageIndex !== current.pageIndex) goToPage(next.pageIndex)
+    if (next.pageSize !== current.pageSize) setPageSize(next.pageSize)
+  }
 
   const table = useReactTable({
     data,
     columns,
     pageCount,
-    getRowId,
-    state: {
-      pagination: { pageIndex, pageSize },
-      sorting,
-      rowSelection,
-    },
-    manualPagination: true,
-    manualSorting: true,
     manualFiltering: true,
-    onPaginationChange: (updater) => {
-      const next =
-        typeof updater === "function"
-          ? updater({ pageIndex, pageSize })
-          : updater
-      if (next.pageSize !== pageSize) {
-        setPageSize(next.pageSize)
-      } else {
-        goToPage(next.pageIndex)
-      }
+    manualSorting: true,
+    manualPagination: true,
+    state: {
+      sorting,
+      columnFilters,
+      columnVisibility,
+      rowSelection,
+      pagination: { pageIndex, pageSize },
     },
-    onSortingChange: (updater) => {
-      const next = typeof updater === "function" ? updater(sorting) : updater
-      setSorting(next)
-    },
+    onSortingChange,
+    onColumnFiltersChange: setColumnFilters,
+    onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
+    onPaginationChange,
     getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getRowId: (row) => getRowId(row),
+    enableRowSelection: true,
   })
 
-  const selectedIds = Object.keys(rowSelection).filter((id) => rowSelection[id])
-  const hasSelection = selectedIds.length > 0
-  const resetSelection = () => setRowSelection({})
+  const selectedIds = useMemo(
+    () => Object.keys(rowSelection).filter((id) => rowSelection[id] === true),
+    [rowSelection]
+  )
 
-  return { table, selectedIds, hasSelection, resetSelection }
+  return {
+    table,
+    selectedIds,
+    hasSelection: selectedIds.length > 0,
+    resetSelection: () => setRowSelection({}),
+  }
 }

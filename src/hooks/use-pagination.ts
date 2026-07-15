@@ -1,31 +1,66 @@
-import { useState } from "react"
+import { useCallback, useState } from "react"
+import { useNavigate, useSearch } from "@tanstack/react-router"
 import type { SortingState } from "@tanstack/react-table"
 
-export interface UsePaginationResult {
-  pageIndex: number
-  pageSize: number
-  goToPage: (pageIndex: number) => void
-  setPageSize: (pageSize: number) => void
-  sorting: SortingState
-  setSorting: (sorting: SortingState) => void
-}
+import type { DataTableFilters } from "./use-data-table"
 
-export function usePagination(initialPageSize = 10): UsePaginationResult {
-  const [pageIndex, setPageIndex] = useState(0)
-  const [pageSize, setPageSizeState] = useState(initialPageSize)
-  const [sorting, setSorting] = useState<SortingState>([])
+const DEFAULT_PAGE_SIZE = 10
 
-  const setPageSize = (size: number) => {
-    setPageSizeState(size)
-    setPageIndex(0)
-  }
+export function usePagination(): DataTableFilters {
+  const { pageIndex: rawPageIndex, pageSize: rawPageSize } = useSearch({
+    from: "/app/",
+    select: (search) => ({
+      pageIndex: search.pageIndex,
+      pageSize: search.pageSize,
+    }),
+  })
+  const navigate = useNavigate({ from: "/app" })
 
-  return {
-    pageIndex,
-    pageSize,
-    goToPage: setPageIndex,
-    setPageSize,
-    sorting,
-    setSorting,
-  }
+  const pageIndex = rawPageIndex ?? 0
+  const pageSize = rawPageSize ?? DEFAULT_PAGE_SIZE
+
+  const [sorting, setSortingState] = useState<SortingState>([])
+
+  const goToPage = useCallback(
+    (nextPageIndex: number) => {
+      navigate({
+        to: "/app",
+        search: (prev) => ({
+          ...prev,
+          pageIndex: nextPageIndex > 0 ? nextPageIndex : undefined,
+        }),
+        replace: true,
+      })
+    },
+    [navigate]
+  )
+
+  const setPageSize = useCallback(
+    (nextPageSize: number) => {
+      navigate({
+        to: "/app",
+        search: (prev) => ({
+          ...prev,
+          pageSize: nextPageSize !== DEFAULT_PAGE_SIZE ? nextPageSize : undefined,
+          pageIndex: undefined,
+        }),
+        replace: true,
+      })
+    },
+    [navigate]
+  )
+
+  const setSorting = useCallback(
+    (next: SortingState) => {
+      setSortingState(next)
+      navigate({
+        to: "/app",
+        search: (prev) => ({ ...prev, pageIndex: undefined }),
+        replace: true,
+      })
+    },
+    [navigate]
+  )
+
+  return { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting }
 }
