@@ -8,7 +8,7 @@ import type {
 } from "../api/schema"
 import type { AuditsQueryRequest } from "../api/types/audit"
 
-export interface AuditsFilters {
+export interface AuditSessionFilters {
   filters: AuditFiltersFormInput
   queryFilters: AuditsQueryRequest["filters"]
   applyFilters: (values: AuditFiltersFormValues) => void
@@ -16,7 +16,7 @@ export interface AuditsFilters {
   activeFilterCount: number
 }
 
-export function useAuditsFilters(): AuditsFilters {
+export function useAuditSessionFilters(): AuditSessionFilters {
   const search = auditoriaRoute.useSearch()
   const navigate = auditoriaRoute.useNavigate()
 

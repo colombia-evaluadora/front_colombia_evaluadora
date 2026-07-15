@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils"
 import { useAuditsStatsQuery } from "../../api/query/use-audits-stats-query"
 import type { AuditsQueryRequest } from "../../api/types/audit"
 
-interface AuditsStatsCardsProps {
+interface AuditSessionStatsCardsProps {
   selectedIds: string[]
   hasSelection: boolean
   filters: AuditsQueryRequest["filters"]
@@ -21,11 +21,11 @@ interface StatTile {
   iconClassName: string
 }
 
-export function AuditsStatsCards({
+export function AuditSessionStatsCards({
   selectedIds,
   hasSelection,
   filters,
-}: AuditsStatsCardsProps) {
+}: AuditSessionStatsCardsProps) {
   // Igual que exportar: con selección se calcula sobre lo seleccionado, sin
   // selección se calcula sobre lo que coincide con los filtros activos.
   const { data } = useAuditsStatsQuery(

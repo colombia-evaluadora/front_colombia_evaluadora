@@ -18,11 +18,11 @@ import { Button } from "@/components/ui/button"
 import { useExportAudits } from "../../api/mutations/export-audits"
 import type { AuditsQueryRequest, ExportFormat } from "../../api/types/audit"
 
-interface ExportAuditsDialogProps {
+interface ExportAuditSessionDialogProps {
   filters: AuditsQueryRequest["filters"]
 }
 
-export function ExportAuditsDialog({ filters }: ExportAuditsDialogProps) {
+export function ExportAuditSessionDialog({ filters }: ExportAuditSessionDialogProps) {
   const [open, setOpen] = useState(false)
 
   const exportAll = useExportAudits({

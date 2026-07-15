@@ -16,23 +16,23 @@ import type {
   AuditFiltersFormInput,
   AuditFiltersFormValues,
 } from "../../api/schema"
-import { FilterAuditsForm } from "../forms/form-filter-audits"
+import { FilterAuditSessionForm } from "../forms/form-filter-audit-session"
 
-const FILTER_AUDITS_FORM_ID = "filter-audits-form"
+const FILTER_AUDIT_SESSION_FORM_ID = "filter-audits-form"
 
-interface FilterAuditsSheetProps {
+interface FilterAuditSessionSheetProps {
   activeFilterCount: number
   filters: AuditFiltersFormInput
   applyFilters: (values: AuditFiltersFormValues) => void
   clearAllFilters: () => void
 }
 
-export function FilterAuditsSheet({
+export function FilterAuditSessionSheet({
   activeFilterCount,
   filters,
   applyFilters,
   clearAllFilters,
-}: FilterAuditsSheetProps) {
+}: FilterAuditSessionSheetProps) {
   const [open, setOpen] = useState(false)
 
   function handleSubmit(values: AuditFiltersFormValues) {
@@ -60,8 +60,8 @@ export function FilterAuditsSheet({
           </SheetDescription>
         </SheetHeader>
 
-        <FilterAuditsForm
-          id={FILTER_AUDITS_FORM_ID}
+        <FilterAuditSessionForm
+          id={FILTER_AUDIT_SESSION_FORM_ID}
           defaultValues={filters}
           onSubmit={handleSubmit}
         />
@@ -76,7 +76,7 @@ export function FilterAuditsSheet({
             <EraserIcon data-icon="inline-start" />
             Limpiar todo
           </Button>
-          <Button type="submit" form={FILTER_AUDITS_FORM_ID}>
+          <Button type="submit" form={FILTER_AUDIT_SESSION_FORM_ID}>
             Aplicar
           </Button>
         </SheetFooter>
