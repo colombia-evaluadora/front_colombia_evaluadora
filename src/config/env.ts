@@ -5,8 +5,10 @@ const createEnv = () => {
     API_URL: z.string().optional().default("/api"),
     ENABLE_API_MOCKING: z
       .string()
-      .refine((s) => s === "true" || s === "false")
-      .transform((s) => s === "true")
+      .refine((s) => s === "active" || s === "inactive", {
+        message: "ENABLE_API_MOCKING must be either 'active' or 'inactive'"
+      })
+      .transform((s) => s === "active")
       .optional()
       .default(true),
     APP_URL: z.string().optional().default("http://localhost:5173"),
