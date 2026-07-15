@@ -15,7 +15,10 @@ import { queryClient } from "@/lib/query-client"
 import { NotFoundPage } from "@/components/layout/not-found-page"
 import { ErrorPage } from "@/components/layout/error-page"
 import { ComingSoonPage } from "@/components/layout/coming-soon-page"
-import { loginSearchSchema } from "@/features/auth/api/schema"
+import {
+  loginSearchSchema,
+  restorePasswordSearchSchema,
+} from "@/features/auth/api/schema"
 import { paymentsSearchSchema } from "@/features/payments/api/schema"
 import { PaymentsErrorPage } from "@/features/payments/pages/payments-error-page"
 
@@ -26,6 +29,14 @@ const LandingPage = lazyRouteComponent(
 const LoginPage = lazyRouteComponent(
   () => import("@/features/auth/pages/login-page"),
   "LoginPage"
+)
+const ForgotPasswordPage = lazyRouteComponent(
+  () => import("@/features/auth/pages/forgot-password-page"),
+  "ForgotPasswordPage"
+)
+const RestorePasswordPage = lazyRouteComponent(
+  () => import("@/features/auth/pages/restore-password-page"),
+  "RestorePasswordPage"
 )
 const ProtectedLayout = lazyRouteComponent(
   () => import("@/components/layout/protected-layout"),
@@ -92,6 +103,31 @@ const loginRoute = createRoute({
   component: LoginPage,
 })
 
+const forgotPasswordRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: paths.auth.forgotPassword.path,
+  head: () => ({
+    meta: [
+      { title: `Recuperar contraseña · ${APP_NAME}` },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
+  }),
+  component: ForgotPasswordPage,
+})
+
+const restorePasswordRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: paths.auth.restorePassword.path,
+  validateSearch: restorePasswordSearchSchema,
+  head: () => ({
+    meta: [
+      { title: `Restablecer contraseña · ${APP_NAME}` },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
+  }),
+  component: RestorePasswordPage,
+})
+
 const appLayoutRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: paths.app.root.path,
@@ -138,6 +174,8 @@ const configuracionRoute = createRoute({
 const routeTree = rootRoute.addChildren([
   landingRoute,
   loginRoute,
+  forgotPasswordRoute,
+  restorePasswordRoute,
   appLayoutRoute.addChildren([
     paymentsRoute,
     reportesRoute,

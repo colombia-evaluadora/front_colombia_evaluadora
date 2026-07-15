@@ -28,6 +28,16 @@ export type LoginInput = z.infer<typeof loginInputSchema>
 const loginWithEmailAndPassword = (data: LoginInput): Promise<AuthResponse> =>
   api.post("/auth/login", data)
 
+// Mismo endpoint/contrato que el backend real (GET .../forgotPassword?email=):
+// nunca revela si el email existe, siempre resuelve con éxito.
+const forgotPassword = (email: string): Promise<void> =>
+  api.get("/sso-admin/forgotPassword", { params: { email } })
+
+const restorePassword = (data: {
+  token: string
+  password: string
+}): Promise<void> => api.post("/sso-admin/restorePassword", data)
+
 export function useUser() {
   return useQuery({
     queryKey: USER_QUERY_KEY,
@@ -65,6 +75,24 @@ export function useLogout({
       queryClient.clear()
       mutationConfig?.onSuccess?.(...args)
     },
+  })
+}
+
+export function useForgotPassword({
+  mutationConfig,
+}: { mutationConfig?: MutationConfig<typeof forgotPassword> } = {}) {
+  return useMutation({
+    mutationFn: forgotPassword,
+    ...mutationConfig,
+  })
+}
+
+export function useRestorePassword({
+  mutationConfig,
+}: { mutationConfig?: MutationConfig<typeof restorePassword> } = {}) {
+  return useMutation({
+    mutationFn: restorePassword,
+    ...mutationConfig,
   })
 }
 
