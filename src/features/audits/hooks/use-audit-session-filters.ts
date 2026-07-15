@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from "react"
 
-import { auditoriaRoute } from "@/router"
+import { auditoriaSesionesRoute } from "@/router"
 
 import type {
   AuditFiltersFormInput,
@@ -17,8 +17,8 @@ export interface AuditSessionFilters {
 }
 
 export function useAuditSessionFilters(): AuditSessionFilters {
-  const search = auditoriaRoute.useSearch()
-  const navigate = auditoriaRoute.useNavigate()
+  const search = auditoriaSesionesRoute.useSearch()
+  const navigate = auditoriaSesionesRoute.useNavigate()
 
   const applyFilters = useCallback(
     (values: AuditFiltersFormValues) => {
