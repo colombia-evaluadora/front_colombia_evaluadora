@@ -1,34 +1,21 @@
-import { useCallback, useState } from "react"
-import { useNavigate, useSearch } from "@tanstack/react-router"
+import { useCallback } from "react"
 import type { SortingState } from "@tanstack/react-table"
 
-import type { DataTableFilters } from "./use-data-table"
-
-const DEFAULT_PAGE_SIZE = 10
+import type { DataTableFilters } from "@/hooks/use-data-table"
+import { paymentsRoute } from "@/router"
 
 export function usePagination(): DataTableFilters {
-  const { pageIndex: rawPageIndex, pageSize: rawPageSize } = useSearch({
-    from: "/app/",
-    select: (search) => ({
-      pageIndex: search.pageIndex,
-      pageSize: search.pageSize,
-    }),
-  })
-  const navigate = useNavigate({ from: "/app" })
+  const search = paymentsRoute.useSearch()
+  const navigate = paymentsRoute.useNavigate()
 
-  const pageIndex = rawPageIndex ?? 0
-  const pageSize = rawPageSize ?? DEFAULT_PAGE_SIZE
-
-  const [sorting, setSortingState] = useState<SortingState>([])
+  const sorting: SortingState = search.sortBy
+    ? [{ id: search.sortBy, desc: search.sortDir === "desc" }]
+    : []
 
   const goToPage = useCallback(
     (nextPageIndex: number) => {
       navigate({
-        to: "/app",
-        search: (prev) => ({
-          ...prev,
-          pageIndex: nextPageIndex > 0 ? nextPageIndex : undefined,
-        }),
+        search: (prev) => ({ ...prev, page: nextPageIndex }),
         replace: true,
       })
     },
@@ -38,12 +25,7 @@ export function usePagination(): DataTableFilters {
   const setPageSize = useCallback(
     (nextPageSize: number) => {
       navigate({
-        to: "/app",
-        search: (prev) => ({
-          ...prev,
-          pageSize: nextPageSize !== DEFAULT_PAGE_SIZE ? nextPageSize : undefined,
-          pageIndex: undefined,
-        }),
+        search: (prev) => ({ ...prev, pageSize: nextPageSize, page: 0 }),
         replace: true,
       })
     },
@@ -52,15 +34,26 @@ export function usePagination(): DataTableFilters {
 
   const setSorting = useCallback(
     (next: SortingState) => {
-      setSortingState(next)
+      const [first] = next
       navigate({
-        to: "/app",
-        search: (prev) => ({ ...prev, pageIndex: undefined }),
+        search: (prev) => ({
+          ...prev,
+          sortBy: first?.id,
+          sortDir: first ? (first.desc ? "desc" : "asc") : undefined,
+          page: 0,
+        }),
         replace: true,
       })
     },
     [navigate]
   )
 
-  return { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting }
+  return {
+    pageIndex: search.page,
+    pageSize: search.pageSize,
+    goToPage,
+    setPageSize,
+    sorting,
+    setSorting,
+  }
 }

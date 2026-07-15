@@ -1,10 +1,10 @@
 import { useCallback, useMemo } from "react"
-import { useNavigate, useSearch } from "@tanstack/react-router"
+
+import { paymentsRoute } from "@/router"
 
 import type {
   PaymentFiltersFormInput,
   PaymentFiltersFormValues,
-  PaymentsSearch,
 } from "../api/schema"
 import type { PaymentsQueryRequest } from "../api/types/payment"
 
@@ -17,40 +17,19 @@ export interface PaymentsFilters {
 }
 
 export function usePaymentsFilters(): PaymentsFilters {
-  // Selects only the filter fields so this hook doesn't re-render when
-  // page/pageSize change on the same route (that's usePagination's job).
-  //
-  // `from` differs between the two calls below on purpose: `useSearch`
-  // keys off the route id ("/app/", trailing slash — payments is the
-  // index route under /app), while `useNavigate`/`to` key off the
-  // fullPath ("/app", no trailing slash). Mixing these up has broken this
-  // exact hook before (see commit 171d123) — don't "fix" it into one string.
-  const search = useSearch({
-    from: "/app/",
-    select: (search) => ({
-      email: search.email,
-      status: search.status,
-      amountMin: search.amountMin,
-      amountMax: search.amountMax,
-    }),
-  })
-  const navigate = useNavigate({ from: "/app" })
-
-  const email = search.email ?? ""
-  const statuses = useMemo(() => search.status ?? [], [search.status])
-  const amountMin = search.amountMin ?? null
-  const amountMax = search.amountMax ?? null
+  const search = paymentsRoute.useSearch()
+  const navigate = paymentsRoute.useNavigate()
 
   const applyFilters = useCallback(
     (values: PaymentFiltersFormValues) => {
       navigate({
-        to: "/app",
-        search: (prev: PaymentsSearch) => ({
+        search: (prev) => ({
+          ...prev,
           email: values.email || undefined,
-          status: values.statuses.length ? values.statuses : undefined,
-          amountMin: values.amountMin ?? undefined,
-          amountMax: values.amountMax ?? undefined,
-          pageSize: prev.pageSize,
+          statuses: values.statuses.length ? values.statuses : undefined,
+          amountMin: values.amountMin,
+          amountMax: values.amountMax,
+          page: 0,
         }),
         replace: true,
       })
@@ -60,36 +39,42 @@ export function usePaymentsFilters(): PaymentsFilters {
 
   const clearAllFilters = useCallback(() => {
     navigate({
-      to: "/app",
-      search: (prev: PaymentsSearch) => ({ pageSize: prev.pageSize }),
+      search: (prev) => ({
+        ...prev,
+        email: undefined,
+        statuses: undefined,
+        amountMin: undefined,
+        amountMax: undefined,
+        page: 0,
+      }),
       replace: true,
     })
   }, [navigate])
 
   const queryFilters: PaymentsQueryRequest["filters"] = useMemo(
     () => ({
-      email: email || undefined,
-      status: statuses.length ? statuses : undefined,
-      amountMin: amountMin ?? undefined,
-      amountMax: amountMax ?? undefined,
+      email: search.email,
+      status: search.statuses,
+      amountMin: search.amountMin,
+      amountMax: search.amountMax,
     }),
-    [email, statuses, amountMin, amountMax]
+    [search.email, search.statuses, search.amountMin, search.amountMax]
   )
 
   const activeFilterCount = useMemo(() => {
     let n = 0
-    if (email) n += 1
-    n += statuses.length
-    if (amountMin != null || amountMax != null) n += 1
+    if (search.email) n += 1
+    n += search.statuses?.length ?? 0
+    if (search.amountMin != null || search.amountMax != null) n += 1
     return n
-  }, [email, statuses, amountMin, amountMax])
+  }, [search.email, search.statuses, search.amountMin, search.amountMax])
 
   return {
     filters: {
-      email,
-      statuses,
-      amountMin: amountMin?.toString() ?? "",
-      amountMax: amountMax?.toString() ?? "",
+      email: search.email ?? "",
+      statuses: search.statuses ?? [],
+      amountMin: search.amountMin?.toString() ?? "",
+      amountMax: search.amountMax?.toString() ?? "",
     },
     queryFilters,
     applyFilters,

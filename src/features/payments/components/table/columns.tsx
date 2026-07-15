@@ -45,7 +45,6 @@ export const columns: ColumnDef<Payment>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Email" />
     ),
-    enableColumnFilter: true,
   },
   {
     accessorKey: "status",
@@ -58,8 +57,6 @@ export const columns: ColumnDef<Payment>[] = [
         {PAYMENT_STATUS_LABELS[row.getValue<PaymentStatus>("status")]}
       </Badge>
     ),
-    filterFn: "equals",
-    enableColumnFilter: true,
   },
   {
     accessorKey: "amount",

@@ -1,9 +1,11 @@
+"use no memo"
+
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
 import { useDataTable } from "@/hooks/use-data-table"
-import { usePagination } from "@/hooks/use-pagination"
 
 import { usePaymentsQuery } from "../../api/query/use-payments-query"
+import { usePagination } from "@/hooks/use-pagination"
 import { usePaymentsFilters } from "../../hooks/use-payments-filters"
 
 import { columns } from "./columns"
@@ -18,7 +20,6 @@ export function PaymentsDataTable() {
     usePagination()
   const { filters, queryFilters, applyFilters, clearAllFilters, activeFilterCount } =
     usePaymentsFilters()
-
   const { data, isPending, isError, refetch } = usePaymentsQuery({
     filters: queryFilters,
     sorting,
