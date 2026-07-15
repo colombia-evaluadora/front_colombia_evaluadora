@@ -9,6 +9,7 @@ export interface AuditSession {
   startedAt: string
   endedAt: string | null
   status: SessionStatus
+  operationsCount: number
 }
 
 export interface AuditsQueryFilters {
@@ -36,4 +37,17 @@ export type ExportFormat = "pdf" | "excel"
 export interface ExportResult {
   status: "ok" | "error"
   message: string
+}
+
+// Igual que exportar: se calcula sobre lo seleccionado (`ids`) o, si no hay
+// selección, sobre lo que coincide con los filtros activos (`filters`).
+export interface AuditsStatsRequest {
+  ids?: string[]
+  filters?: AuditsQueryFilters
+}
+
+export interface AuditsStats {
+  sessionsToday: number
+  activeSessions: number
+  operationsToday: number
 }

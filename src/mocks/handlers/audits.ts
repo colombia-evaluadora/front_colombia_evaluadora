@@ -5,6 +5,8 @@ import type {
   AuditSession,
   AuditsQueryRequest,
   AuditsQueryResponse,
+  AuditsStats,
+  AuditsStatsRequest,
   ExportFormat,
   ExportResult,
 } from "@/features/audits/api/types/audit"
@@ -37,6 +39,25 @@ function applyFilters(
     }
     return true
   })
+}
+
+function isToday(iso: string): boolean {
+  const date = new Date(iso)
+  const now = new Date()
+  return (
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth() &&
+    date.getDate() === now.getDate()
+  )
+}
+
+function computeStats(rows: AuditSession[]): AuditsStats {
+  const todayRows = rows.filter((row) => isToday(row.startedAt))
+  return {
+    sessionsToday: todayRows.length,
+    activeSessions: rows.filter((row) => row.status === "active").length,
+    operationsToday: todayRows.reduce((sum, row) => sum + row.operationsCount, 0),
+  }
 }
 
 function durationMs(row: AuditSession): number {
@@ -82,6 +103,16 @@ export const auditsHandlers = [
       pageCount,
       totalCount,
     })
+  }),
+
+  http.post("/api/audits/stats", async ({ request }) => {
+    await delay(200)
+    const { ids, filters } = (await request.json()) as AuditsStatsRequest
+    const scoped = ids
+      ? auditsDb.filter((row) => ids.includes(row.id))
+      : applyFilters(auditsDb, filters ?? {})
+
+    return HttpResponse.json<AuditsStats>(computeStats(scoped))
   }),
 
   http.post("/api/audits/export", async ({ request }) => {

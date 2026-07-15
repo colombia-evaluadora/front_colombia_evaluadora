@@ -13,6 +13,7 @@ import { FilterAuditsSheet } from "../sheets/sheet-filter-audits"
 import { ExportSelectedAuditsDialog } from "../dialogs/dialog-export-selected-audits"
 import { ExportAuditsDialog } from "../dialogs/dialog-export-audits"
 import { ClearSelectionDialog } from "../dialogs/dialog-clear-selection"
+import { AuditsStatsCards } from "../stats/audits-stats-cards"
 
 export function AuditsDataTable() {
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } =
@@ -41,6 +42,11 @@ export function AuditsDataTable() {
 
   return (
     <>
+      <AuditsStatsCards
+        selectedIds={selectedIds}
+        hasSelection={hasSelection}
+        filters={queryFilters}
+      />
       <div className="mb-2 flex flex-wrap items-center justify-between gap-x-2 gap-y-2">
         <div className="flex gap-2">
           {hasSelection ? (
