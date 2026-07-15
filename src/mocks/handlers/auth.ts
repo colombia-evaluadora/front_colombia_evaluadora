@@ -2,6 +2,7 @@ import { http, HttpResponse, delay } from "msw"
 
 import {
   consumePasswordResetToken,
+  createMockAccessToken,
   createPasswordResetToken,
   findUserByCredentials,
   findUserByEmail,
@@ -30,11 +31,19 @@ export const authHandlers = [
       )
     }
 
-    const { password: _password, ...safeUser } = user
-    return HttpResponse.json({ user: safeUser, token: `mock-token-${user.id}` })
+    // Mismo contrato que el backend real: solo token/refreshToken/expiresIn,
+    // sin objeto "user" — el front lo deriva del propio JWT.
+    return HttpResponse.json({
+      token: createMockAccessToken(user),
+      refreshToken: `mock-refresh-${user.id}`,
+      expiresIn: 3600,
+    })
   }),
 
-  http.get("/api/auth/me", ({ request }) => {
+  // El backend real no tiene /auth/me: la sesión se restaura pidiendo un
+  // token nuevo acá (normalmente vía cookie de refresh; en el mock, como no
+  // hay cookie, se re-emite a partir del Bearer todavía vigente).
+  http.post("/api/auth/refresh", ({ request }) => {
     const token = getBearerToken(request)
     const user = token ? findUserByToken(token) : undefined
 
@@ -42,8 +51,11 @@ export const authHandlers = [
       return HttpResponse.json({ message: "No autenticado." }, { status: 401 })
     }
 
-    const { password: _password, ...safeUser } = user
-    return HttpResponse.json(safeUser)
+    return HttpResponse.json({
+      token: createMockAccessToken(user),
+      refreshToken: `mock-refresh-${user.id}`,
+      expiresIn: 3600,
+    })
   }),
 
   http.post("/api/auth/logout", async () => {

@@ -1,11 +1,16 @@
 import { useQuery } from "@tanstack/react-query"
 
+import { env } from "@/config/env"
 import { api } from "@/lib/api-client"
+import { toNavItemDtos } from "../menu-mapper"
 import { getNavIcon } from "../ui-mappings"
-import type { NavItem, NavItemDto } from "../types/nav-item"
+import type { NavItem, RouteResponseDto } from "../types/nav-item"
 
-function fetchNavItemsDto(): Promise<NavItemDto[]> {
-  return api.get("/navigation/menu")
+async function fetchNavItemsDto() {
+  const routes: RouteResponseDto[] = await api.get("/sso-admin/myMenu", {
+    params: { app: env.NAME },
+  })
+  return toNavItemDtos(routes)
 }
 
 async function fetchNavItems(): Promise<NavItem[]> {

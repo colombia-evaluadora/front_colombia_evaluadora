@@ -24,3 +24,16 @@ export interface NavItem {
   icon: Icon
   items?: NavSubItem[]
 }
+
+// Forma real del backend SSO (GET /sso-admin/myMenu?app=): lista plana,
+// jerarquía vía `idParent`, ya filtrada por rol del lado del servidor.
+export interface RouteResponseDto {
+  id: number
+  name: string
+  icon: string
+  path: string
+  menuOrder: number
+  type: string
+  idParent: number | null
+  roleIds: number[]
+}
