@@ -3,6 +3,7 @@ import { useState } from "react"
 import { Link, useLocation } from "@tanstack/react-router"
 import { CaretRightIcon } from "@phosphor-icons/react"
 
+import { Button } from "@/components/ui/button"
 import {
   Collapsible,
   CollapsibleContent,
@@ -24,7 +25,7 @@ import type { NavSubItem } from "@/features/navigation/api/types/nav-item"
 import type { Icon } from "@phosphor-icons/react"
 
 export function NavMain() {
-  const { data: items, isPending } = useNavItemsQuery()
+  const { data: items, isPending, isError, refetch } = useNavItemsQuery()
   const { pathname } = useLocation()
 
   if (isPending) {
@@ -37,6 +38,19 @@ export function NavMain() {
             </SidebarMenuItem>
           ))}
         </SidebarMenu>
+      </SidebarGroup>
+    )
+  }
+
+  if (isError) {
+    return (
+      <SidebarGroup>
+        <div className="px-2 py-1.5 text-sm text-muted-foreground group-data-[collapsible=icon]:hidden">
+          Ocurrió un error al cargar el menú.{" "}
+          <Button variant="link" className="h-auto p-0" onClick={() => refetch()}>
+            Reintentar
+          </Button>
+        </div>
       </SidebarGroup>
     )
   }
