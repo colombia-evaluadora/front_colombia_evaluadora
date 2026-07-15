@@ -1,24 +1,17 @@
-import { useMutation, useQueryClient, type UseMutationOptions } from "@tanstack/react-query"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 
+import { api } from "@/lib/api-client"
+import type { MutationConfig } from "@/lib/react-query"
 import type { MutationResult, PaymentsQueryRequest } from "../types/payment"
 
-async function deleteAllPayments(
+function deleteAllPayments(
   filters: PaymentsQueryRequest["filters"]
 ): Promise<MutationResult> {
-  const response = await fetch("/payments/delete-all", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(filters),
-  })
-  return response.json()
+  return api.post("/payments/delete-all", filters)
 }
 
 interface UseDeleteAllPaymentsOptions {
-  mutationConfig?: UseMutationOptions<
-    MutationResult,
-    Error,
-    PaymentsQueryRequest["filters"]
-  >
+  mutationConfig?: MutationConfig<typeof deleteAllPayments>
 }
 
 export function useDeleteAllPayments({

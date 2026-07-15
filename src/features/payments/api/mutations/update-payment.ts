@@ -1,5 +1,7 @@
-import { useMutation, useQueryClient, type UseMutationOptions } from "@tanstack/react-query"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 
+import { api } from "@/lib/api-client"
+import type { MutationConfig } from "@/lib/react-query"
 import type { MutationResult } from "../types/payment"
 import type { PaymentFormValues } from "../schema"
 
@@ -8,17 +10,12 @@ interface UpdatePaymentInput {
   values: PaymentFormValues
 }
 
-async function updatePayment({ id, values }: UpdatePaymentInput): Promise<MutationResult> {
-  const response = await fetch(`/payments/${id}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(values),
-  })
-  return response.json()
+function updatePayment({ id, values }: UpdatePaymentInput): Promise<MutationResult> {
+  return api.patch(`/payments/${id}`, values)
 }
 
 interface UseUpdatePaymentOptions {
-  mutationConfig?: UseMutationOptions<MutationResult, Error, UpdatePaymentInput>
+  mutationConfig?: MutationConfig<typeof updatePayment>
 }
 
 export function useUpdatePayment({ mutationConfig }: UseUpdatePaymentOptions = {}) {

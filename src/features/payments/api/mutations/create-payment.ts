@@ -1,19 +1,15 @@
-import { useMutation, useQueryClient, type UseMutationOptions } from "@tanstack/react-query"
-
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { api } from "@/lib/api-client"
+import type { MutationConfig } from "@/lib/react-query"
 import type { MutationResult } from "../types/payment"
 import type { PaymentFormValues } from "../schema"
 
-async function createPayment(values: PaymentFormValues): Promise<MutationResult> {
-  const response = await fetch("/payments", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(values),
-  })
-  return response.json()
+function createPayment(values: PaymentFormValues): Promise<MutationResult> {
+  return api.post("/payments", values)
 }
 
 interface UseCreatePaymentOptions {
-  mutationConfig?: UseMutationOptions<MutationResult, Error, PaymentFormValues>
+  mutationConfig?: MutationConfig<typeof createPayment>
 }
 
 export function useCreatePayment({ mutationConfig }: UseCreatePaymentOptions = {}) {

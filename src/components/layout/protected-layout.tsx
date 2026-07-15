@@ -24,9 +24,9 @@ export function ProtectedLayout() {
             </div>
 
         <div className="flex gap-2">
-          <AssistantSheet />
           <ModeToggle />
           <ColorThemeToggle />
+          <AssistantSheet />
         </div>
         </header>
         <div className="min-w-0 flex-1">

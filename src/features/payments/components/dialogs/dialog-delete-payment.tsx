@@ -1,6 +1,6 @@
 import { useState } from "react"
 
-import { Trash2Icon } from "lucide-react"
+import { TrashIcon } from "@phosphor-icons/react"
 import { toast } from "sonner"
 
 import {
@@ -51,7 +51,7 @@ export function DeletePaymentDialog({ payment }: DeletePaymentDialogProps) {
         }
       >
         <span className="sr-only">Eliminar pago</span>
-        <Trash2Icon />
+        <TrashIcon />
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>

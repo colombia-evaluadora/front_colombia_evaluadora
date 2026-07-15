@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 
+import { api } from "@/lib/api-client"
 import type { PaymentsQueryRequest, PaymentsQueryResponse } from "../types/payment"
 
 interface UsePaymentsQueryParams {
@@ -9,16 +10,8 @@ interface UsePaymentsQueryParams {
   pageSize: number
 }
 
-async function fetchPayments(
-  body: PaymentsQueryRequest
-): Promise<PaymentsQueryResponse> {
-  const response = await fetch("/payments/query", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  })
-  if (!response.ok) throw new Error("No se pudieron cargar los pagos.")
-  return response.json()
+function fetchPayments(body: PaymentsQueryRequest): Promise<PaymentsQueryResponse> {
+  return api.post("/payments/query", body)
 }
 
 export const paymentsQueryKey = (params: UsePaymentsQueryParams) => [

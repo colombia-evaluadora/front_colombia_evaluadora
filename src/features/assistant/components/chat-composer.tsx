@@ -1,13 +1,22 @@
 import { useRef, useState } from "react"
 import { useForm } from "@tanstack/react-form"
-import { PaperclipIcon, PaperPlaneTiltIcon, XIcon } from "@phosphor-icons/react"
+import {
+  ArrowUpIcon,
+  PaperclipIcon,
+  PlusIcon,
+} from "@phosphor-icons/react"
 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupButton,
-  InputGroupInput,
-  InputGroupText,
+  InputGroupTextarea,
 } from "@/components/ui/input-group"
 
 interface ChatComposerProps {
@@ -16,7 +25,6 @@ interface ChatComposerProps {
 }
 
 export function ChatComposer({ onSend, disabled }: ChatComposerProps) {
-  const [attachedFile, setAttachedFile] = useState<File | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const form = useForm({
@@ -33,7 +41,6 @@ export function ChatComposer({ onSend, disabled }: ChatComposerProps) {
   })
 
   function clearAttachedFile() {
-    setAttachedFile(null)
     if (fileInputRef.current) {
       fileInputRef.current.value = ""
     }
@@ -47,62 +54,49 @@ export function ChatComposer({ onSend, disabled }: ChatComposerProps) {
       }}
       className="border-t p-4"
     >
-      <InputGroup>
+      <InputGroup className=" bg-muted px-2 py-1">
         <form.Field name="message">
           {(field) => (
-            <InputGroupInput
+            <InputGroupTextarea
               value={field.state.value}
               onChange={(event) => field.handleChange(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault()
+                  form.handleSubmit()
+                }
+              }}
               placeholder="Escribe un mensaje..."
               disabled={disabled}
+              rows={1}
+              className="min-h-9 border-none bg-transparent px-2 py-1.5"
               aria-label="Mensaje para el asistente"
             />
           )}
         </form.Field>
-        <InputGroupAddon align="block-end">
-          <input
-            ref={fileInputRef}
-            type="file"
-            className="hidden"
-            onChange={(event) =>
-              setAttachedFile(event.target.files?.[0] ?? null)
-            }
-          />
-          <InputGroupButton
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            disabled={disabled}
-            onClick={() => fileInputRef.current?.click()}
-            aria-label="Adjuntar archivo"
-          >
-            <PaperclipIcon />
-          </InputGroupButton>
-          {attachedFile && (
-            <>
-              <InputGroupText className="max-w-32 truncate">
-                {attachedFile.name}
-              </InputGroupText>
-              <InputGroupButton
-                type="button"
-                variant="ghost"
-                size="icon-xs"
-                onClick={clearAttachedFile}
-                aria-label="Quitar archivo adjunto"
-              >
-                <XIcon />
-              </InputGroupButton>
-            </>
-          )}
+        <InputGroupAddon align="block-end" className="pt-1">
+          <DropdownMenu>
+            <DropdownMenuTrigger render={<InputGroupButton aria-label="Add files" type="button" size="icon-sm" variant="outline" className="bg-white"><PlusIcon /></InputGroupButton>} />
+            <DropdownMenuContent
+              align="start"
+              side="top"
+              className="w-44"
+            >
+              <DropdownMenuItem>
+                <PaperclipIcon />
+                Add Photos & Files
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           <InputGroupButton
             type="submit"
-            size="icon-sm"
             variant="default"
+            size="icon-sm"
             className="ml-auto"
-            disabled={disabled}
-            aria-label="Enviar mensaje"
           >
-            <PaperPlaneTiltIcon />
+            <ArrowUpIcon />
+            <span className="sr-only">Send</span>
           </InputGroupButton>
         </InputGroupAddon>
       </InputGroup>
