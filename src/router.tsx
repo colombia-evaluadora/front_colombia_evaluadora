@@ -3,7 +3,6 @@ import {
   createRoute,
   createRouter,
   redirect,
-  stripSearchParams,
   lazyRouteComponent,
   Outlet,
 } from "@tanstack/react-router"
@@ -17,8 +16,8 @@ import { NotFoundPage } from "@/components/layout/not-found-page"
 import { ErrorPage } from "@/components/layout/error-page"
 import { ComingSoonPage } from "@/components/layout/coming-soon-page"
 import { loginSearchSchema } from "@/features/auth/api/schema"
-import { PaymentsErrorPage } from "@/features/payments/pages/payments-error-page"
 import { paymentsSearchSchema } from "@/features/payments/api/schema"
+import { PaymentsErrorPage } from "@/features/payments/pages/payments-error-page"
 
 const LandingPage = lazyRouteComponent(
   () => import("@/features/landing/pages/landing-page"),
@@ -110,13 +109,10 @@ const appLayoutRoute = createRoute({
   component: ProtectedLayout,
 })
 
-const paymentsRoute = createRoute({
+export const paymentsRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.payments.path,
   validateSearch: paymentsSearchSchema,
-  search: {
-    middlewares: [stripSearchParams({ pageIndex: 0, pageSize: 10 })],
-  },
   errorComponent: PaymentsErrorPage,
   component: PaymentsPage,
 })

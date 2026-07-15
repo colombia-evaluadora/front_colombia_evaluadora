@@ -1,3 +1,5 @@
+"use no memo"
+
 import { flexRender, type Column, type Table } from "@tanstack/react-table"
 import {
   ArrowDownIcon,

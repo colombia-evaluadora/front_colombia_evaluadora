@@ -1,10 +1,10 @@
+"use no memo"
+
 import { useMemo, useState } from "react"
 import {
   getCoreRowModel,
-  getFilteredRowModel,
   useReactTable,
   type ColumnDef,
-  type ColumnFiltersState,
   type RowSelectionState,
   type SortingState,
   type Table,
@@ -12,11 +12,6 @@ import {
   type VisibilityState,
 } from "@tanstack/react-table"
 
-/**
- * Contract every entity's URL-filters hook (`usePaymentsFilters` and
- * whatever comes next) must satisfy to plug into `useDataTable` directly —
- * pagination/sorting state plus the setters that push it back to the URL.
- */
 export interface DataTableFilters {
   pageIndex: number
   pageSize: number
@@ -52,7 +47,6 @@ export function useDataTable<TData>({
   sorting,
   setSorting,
 }: UseDataTableOptions<TData>): UseDataTableResult<TData> {
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
 
@@ -79,18 +73,15 @@ export function useDataTable<TData>({
     manualPagination: true,
     state: {
       sorting,
-      columnFilters,
       columnVisibility,
       rowSelection,
       pagination: { pageIndex, pageSize },
     },
     onSortingChange,
-    onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
     onPaginationChange,
     getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
     getRowId: (row) => getRowId(row),
     enableRowSelection: true,
   })

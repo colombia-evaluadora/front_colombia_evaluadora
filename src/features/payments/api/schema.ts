@@ -31,12 +31,14 @@ export type PaymentFiltersFormInput = z.input<typeof paymentFiltersFormSchema>
 export type PaymentFiltersFormValues = z.infer<typeof paymentFiltersFormSchema>
 
 export const paymentsSearchSchema = z.object({
-  email: z.string().optional(),
-  status: z.array(z.enum(PAYMENT_STATUSES)).optional(),
-  amountMin: z.number().optional(),
-  amountMax: z.number().optional(),
-  pageIndex: z.number().optional(),
-  pageSize: z.number().optional(),
+  page: z.coerce.number().int().nonnegative().catch(0).default(0),
+  pageSize: z.coerce.number().int().positive().catch(10).default(10),
+  sortBy: z.string().optional().catch(undefined),
+  sortDir: z.enum(["asc", "desc"]).optional().catch(undefined),
+  email: z.string().optional().catch(undefined),
+  statuses: z.array(z.enum(PAYMENT_STATUSES)).optional().catch(undefined),
+  amountMin: z.coerce.number().nonnegative().optional().catch(undefined),
+  amountMax: z.coerce.number().nonnegative().optional().catch(undefined),
 })
 
 export type PaymentsSearch = z.infer<typeof paymentsSearchSchema>
