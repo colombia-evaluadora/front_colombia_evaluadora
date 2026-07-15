@@ -29,7 +29,7 @@ export function ProtectedLayout() {
           <AssistantSheet />
         </div>
         </header>
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 p-4">
           <Outlet />
         </div>
       </SidebarInset>

@@ -2,16 +2,20 @@ import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tansta
 import * as z from "zod"
 
 import { api, setAuthToken } from "./api-client"
-import { toAuthUser, type AuthUser } from "./auth-mapper"
+import { toAuthUserFromToken, type AuthUser } from "./auth-mapper"
 import type { MutationConfig } from "./react-query"
-import type { AuthResponse, User } from "@/types/api"
+import type { AuthResponse } from "@/types/api"
 
 const USER_QUERY_KEY = ["auth-user"]
 
+// El backend no expone un "/auth/me": la sesión se restaura pidiendo un
+// access token nuevo (el refresh token viaja en una cookie httpOnly, nunca
+// visible acá) y derivando el usuario de sus claims.
 async function getUser(): Promise<AuthUser | null> {
   try {
-    const user: User = await api.get("/auth/me")
-    return toAuthUser(user)
+    const { token }: AuthResponse = await api.post("/auth/refresh")
+    setAuthToken(token)
+    return toAuthUserFromToken(token)
   } catch {
     return null
   }
@@ -54,7 +58,7 @@ export function useLogin({
     ...mutationConfig,
     onSuccess: (data, ...args) => {
       setAuthToken(data.token)
-      queryClient.setQueryData(USER_QUERY_KEY, toAuthUser(data.user))
+      queryClient.setQueryData(USER_QUERY_KEY, toAuthUserFromToken(data.token))
       mutationConfig?.onSuccess?.(data, ...args)
     },
   })
@@ -97,9 +101,8 @@ export function useRestorePassword({
 }
 
 // Usado en `beforeLoad` de las rutas protegidas (TanStack Router). Es async
-// porque debe poder disparar y esperar el fetch de /auth/me la primera vez
-// (recarga de página) en vez de asumir "sin sesión" solo porque la query
-// todavía no corrió.
+// porque debe poder disparar y esperar el refresh la primera vez (recarga de
+// página) en vez de asumir "sin sesión" solo porque la query todavía no corrió.
 export async function hasSession(queryClient: QueryClient): Promise<boolean> {
   const user = await queryClient.ensureQueryData({
     queryKey: USER_QUERY_KEY,

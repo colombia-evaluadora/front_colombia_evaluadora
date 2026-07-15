@@ -62,6 +62,15 @@ export function LoginPage() {
 
             <LoginForm id={LOGIN_FORM_ID} onSubmit={handleSubmit} />
 
+            <div className="text-right text-sm">
+              <Link
+                to={paths.auth.forgotPassword.path}
+                className="text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+              >
+                ¿Olvidaste tu contraseña?
+              </Link>
+            </div>
+
             <Button
               type="submit"
               form={LOGIN_FORM_ID}

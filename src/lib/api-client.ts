@@ -38,10 +38,11 @@ api.interceptors.request.use(authRequestInterceptor)
 api.interceptors.response.use(
   (response) => response.data,
   (error) => {
-    // /auth/me se llama para *comprobar* si hay sesión — un 401 ahí es una
-    // respuesta normal ("no autenticado"), no un fallo que deba redirigir.
-    // getUser() en lib/auth.ts ya lo captura y devuelve null.
-    const isSessionCheck = error.config?.url === "/auth/me"
+    // /auth/refresh se llama para *comprobar* si hay sesión (no hay /auth/me
+    // en el backend real) — un 401 ahí es una respuesta normal ("no
+    // autenticado"), no un fallo que deba redirigir. getUser() en lib/auth.ts
+    // ya lo captura y devuelve null.
+    const isSessionCheck = error.config?.url === "/auth/refresh"
 
     if (!isSessionCheck) {
       const message = error.response?.data?.message || error.message
