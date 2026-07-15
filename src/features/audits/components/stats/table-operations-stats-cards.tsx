@@ -1,15 +1,16 @@
-import { CalendarIcon, LightningIcon, UsersIcon, type Icon } from "@phosphor-icons/react"
+import { PencilIcon, PlusCircleIcon, TrashIcon, type Icon } from "@phosphor-icons/react"
 
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 
-import { useAuditsStatsQuery } from "../../api/query/use-audits-stats-query"
-import type { AuditsQueryRequest } from "../../api/types/audit"
+import { useTableOperationsStatsQuery } from "../../api/query/use-table-operations-stats-query"
+import type { TableOperationsQueryRequest } from "../../api/types/audit-table"
 
-interface AuditSessionStatsCardsProps {
+interface TableOperationsStatsCardsProps {
+  tableSlug: string
   selectedIds: string[]
   hasSelection: boolean
-  filters: AuditsQueryRequest["filters"]
+  filters: TableOperationsQueryRequest["filters"]
 }
 
 const numberFormatter = new Intl.NumberFormat("es-CO")
@@ -21,35 +22,36 @@ interface StatTile {
   iconClassName: string
 }
 
-export function AuditSessionStatsCards({
+export function TableOperationsStatsCards({
+  tableSlug,
   selectedIds,
   hasSelection,
   filters,
-}: AuditSessionStatsCardsProps) {
+}: TableOperationsStatsCardsProps) {
   // Igual que exportar: con selección se calcula sobre lo seleccionado, sin
   // selección se calcula sobre lo que coincide con los filtros activos.
-  const { data } = useAuditsStatsQuery(
-    hasSelection ? { ids: selectedIds } : { filters }
+  const { data } = useTableOperationsStatsQuery(
+    hasSelection ? { tableSlug, ids: selectedIds } : { tableSlug, filters }
   )
 
   const tiles: StatTile[] = [
     {
-      icon: CalendarIcon,
-      value: data?.sessionsToday,
-      label: "Sesiones",
+      icon: PlusCircleIcon,
+      value: data?.inserts,
+      label: "Insert",
       iconClassName: "bg-info/10 text-info",
     },
     {
-      icon: UsersIcon,
-      value: data?.activeSessions,
-      label: "Sesiones activas",
-      iconClassName: "bg-success/10 text-success",
+      icon: PencilIcon,
+      value: data?.updates,
+      label: "Update",
+      iconClassName: "bg-warning/10 text-warning",
     },
     {
-      icon: LightningIcon,
-      value: data?.operationsToday,
-      label: "Operaciones",
-      iconClassName: "bg-warning/10 text-warning",
+      icon: TrashIcon,
+      value: data?.deletes,
+      label: "Delete",
+      iconClassName: "bg-destructive/10 text-destructive",
     },
   ]
 

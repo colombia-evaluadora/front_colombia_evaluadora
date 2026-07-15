@@ -7,8 +7,8 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { DataTableColumnHeader } from "@/components/data-table"
 
 import {
+  SESSION_STATUS_BADGE,
   SESSION_STATUS_LABELS,
-  SESSION_STATUS_VARIANTS,
 } from "../../api/ui-mappings"
 import type { AuditSession, SessionStatus } from "../../api/types/audit"
 
@@ -80,9 +80,9 @@ export const columns: ColumnDef<AuditSession>[] = [
           </Avatar>
           <div className="flex min-w-0 flex-col gap-1">
             <span className="truncate font-semibold">{session.authorName}</span>
-            <span className="w-fit truncate bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+            <Badge variant="fill" color="muted">
               {session.ip}
-            </span>
+            </Badge>
           </div>
         </div>
       )
@@ -124,7 +124,7 @@ export const columns: ColumnDef<AuditSession>[] = [
     cell: ({ row }) => {
       const status = row.getValue<SessionStatus>("status")
       return (
-        <Badge variant={SESSION_STATUS_VARIANTS[status]}>
+        <Badge {...SESSION_STATUS_BADGE[status]}>
           {SESSION_STATUS_LABELS[status]}
         </Badge>
       )

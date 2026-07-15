@@ -13,6 +13,7 @@ import { FilterTableOperationsSheet } from "../sheets/sheet-filter-table-operati
 import { ExportSelectedTableOperationsDialog } from "../dialogs/dialog-export-selected-table-operations"
 import { ExportTableOperationsDialog } from "../dialogs/dialog-export-table-operations"
 import { ClearSelectionTableOperationsDialog } from "../dialogs/dialog-clear-selection-table-operations"
+import { TableOperationsStatsCards } from "../stats/table-operations-stats-cards"
 
 interface TableOperationsDataTableProps {
   tableSlug: string
@@ -48,6 +49,12 @@ export function TableOperationsDataTable({
 
   return (
     <>
+      <TableOperationsStatsCards
+        tableSlug={tableSlug}
+        selectedIds={selectedIds}
+        hasSelection={hasSelection}
+        filters={queryFilters}
+      />
       <div className="mb-2 flex flex-wrap items-center justify-between gap-x-2 gap-y-2">
         <div className="flex gap-2">
           {hasSelection ? (

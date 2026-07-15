@@ -10,6 +10,8 @@ import type {
   TableOperationsQueryFilters,
   TableOperationsQueryRequest,
   TableOperationsQueryResponse,
+  TableOperationsStats,
+  TableOperationsStatsRequest,
 } from "@/features/audits/api/types/audit-table"
 
 const EXPORT_FORMAT_LABELS: Record<ExportFormat, string> = {
@@ -86,6 +88,14 @@ function getTableRows(slug: string): TableOperation[] {
   return tableOperationsDb[slug] ?? []
 }
 
+function computeStats(rows: TableOperation[]): TableOperationsStats {
+  return {
+    inserts: rows.filter((row) => row.operation === "INSERT").length,
+    updates: rows.filter((row) => row.operation === "UPDATE").length,
+    deletes: rows.filter((row) => row.operation === "DELETE").length,
+  }
+}
+
 export const auditTablesHandlers = [
   http.get("/api/audit-tables", async () => {
     await delay(200)
@@ -120,6 +130,21 @@ export const auditTablesHandlers = [
         pageCount,
         totalCount,
       })
+    }
+  ),
+
+  http.post(
+    "/api/audit-tables/:slug/operations/stats",
+    async ({ request, params }) => {
+      await delay(200)
+      const { ids, filters } = (await request.json()) as TableOperationsStatsRequest
+      const slug = params.slug as string
+      const rows = getTableRows(slug)
+      const scoped = ids
+        ? rows.filter((row) => ids.includes(row.id))
+        : applyFilters(rows, filters ?? {})
+
+      return HttpResponse.json<TableOperationsStats>(computeStats(scoped))
     }
   ),
 
