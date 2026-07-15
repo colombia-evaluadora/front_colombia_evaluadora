@@ -50,3 +50,24 @@ export const tableOperationsSearchSchema = z.object({
   occurredTo: z.string().optional().catch(undefined),
 })
 export type TableOperationsSearch = z.infer<typeof tableOperationsSearchSchema>
+
+// Las cards de "auditoría por tabla" no tienen filtros propios todavía,
+// solo paginación + orden (mismo set que las otras search schemas).
+export const auditTablesFiltersFormSchema = z.object({
+  name: z.string(),
+})
+export type AuditTablesFiltersFormInput = z.input<
+  typeof auditTablesFiltersFormSchema
+>
+export type AuditTablesFiltersFormValues = z.infer<
+  typeof auditTablesFiltersFormSchema
+>
+
+export const auditTablesSearchSchema = z.object({
+  page: z.coerce.number().int().nonnegative().catch(0).default(0),
+  pageSize: z.coerce.number().int().positive().catch(10).default(10),
+  sortBy: z.string().optional().catch(undefined),
+  sortDir: z.enum(["asc", "desc"]).optional().catch(undefined),
+  name: z.string().optional().catch(undefined),
+})
+export type AuditTablesSearch = z.infer<typeof auditTablesSearchSchema>

@@ -14,14 +14,11 @@ import { ExportSelectedTableOperationsDialog } from "../dialogs/dialog-export-se
 import { ExportTableOperationsDialog } from "../dialogs/dialog-export-table-operations"
 import { ClearSelectionTableOperationsDialog } from "../dialogs/dialog-clear-selection-table-operations"
 import { TableOperationsStatsCards } from "../stats/table-operations-stats-cards"
+import { useParams } from "@tanstack/react-router"
 
-interface TableOperationsDataTableProps {
-  tableSlug: string
-}
-
-export function TableOperationsDataTable({
-  tableSlug,
-}: TableOperationsDataTableProps) {
+export function TableOperationsDataTable() {
+  
+  const { tableSlug } = useParams({ strict: false }) as { tableSlug: string }
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } =
     useTablePagination()
   const { filters, queryFilters, applyFilters, clearAllFilters, activeFilterCount } =

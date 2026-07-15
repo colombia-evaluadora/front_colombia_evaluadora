@@ -4,8 +4,9 @@ import { auditTablesDb } from "../db/audit-tables"
 import { tableOperationsDb } from "../db/table-operations"
 import type {
   AuditTable,
-  ExportFormat,
-  ExportResult,
+  AuditTablesQueryFilters,
+  AuditTablesQueryRequest,
+  AuditTablesQueryResponse,
   TableOperation,
   TableOperationsQueryFilters,
   TableOperationsQueryRequest,
@@ -13,6 +14,7 @@ import type {
   TableOperationsStats,
   TableOperationsStatsRequest,
 } from "@/features/audits/api/types/audit-table"
+import type { ExportFormat, ExportResult } from "@/features/audits/api/types/audit"
 
 const EXPORT_FORMAT_LABELS: Record<ExportFormat, string> = {
   pdf: "PDF",
@@ -84,6 +86,30 @@ function applySorting(
   return desc ? sorted.reverse() : sorted
 }
 
+function applyAuditTablesSorting(
+  rows: AuditTable[],
+  sorting: AuditTablesQueryRequest["sorting"]
+): AuditTable[] {
+  if (!sorting.length) return rows
+  const [{ id, desc }] = sorting
+  const sorted = [...rows].sort((a, b) => {
+    const av = a[id as keyof AuditTable]
+    const bv = b[id as keyof AuditTable]
+    if (av === bv) return 0
+    return av > bv ? 1 : -1
+  })
+  return desc ? sorted.reverse() : sorted
+}
+
+function applyAuditTablesFilters(
+  rows: AuditTable[],
+  filters: AuditTablesQueryFilters
+): AuditTable[] {
+  if (!filters.name) return rows
+  const needle = filters.name.toLowerCase()
+  return rows.filter((row) => row.name.toLowerCase().includes(needle))
+}
+
 function getTableRows(slug: string): TableOperation[] {
   return tableOperationsDb[slug] ?? []
 }
@@ -97,15 +123,32 @@ function computeStats(rows: TableOperation[]): TableOperationsStats {
 }
 
 export const auditTablesHandlers = [
-  http.get("/api/audit-tables", async () => {
+  http.post("/api/audit-tables/query", async ({ request }) => {
     await delay(200)
+    const { filters, sorting, pageIndex, pageSize } =
+      (await request.json()) as AuditTablesQueryRequest
+
     const tables: AuditTable[] = auditTablesDb.map((table) => ({
       ...table,
       operationsToday: getTableRows(table.slug).filter((row) =>
         isToday(row.occurredAt)
       ).length,
     }))
-    return HttpResponse.json(tables)
+
+    const filtered = applyAuditTablesSorting(
+      applyAuditTablesFilters(tables, filters),
+      sorting
+    )
+    const totalCount = filtered.length
+    const pageCount = Math.max(1, Math.ceil(totalCount / pageSize))
+    const start = pageIndex * pageSize
+    const rows = filtered.slice(start, start + pageSize)
+
+    return HttpResponse.json<AuditTablesQueryResponse>({
+      rows,
+      pageCount,
+      totalCount,
+    })
   }),
 
   http.post(

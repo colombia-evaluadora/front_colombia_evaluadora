@@ -39,8 +39,8 @@ export const paths = {
       getHref: () => "/app/auditoria-tablas",
     },
     auditoriaTablaDetalle: {
-      path: "auditoria-tablas/$slug",
-      getHref: (slug: string) => `/app/auditoria-tablas/${slug}`,
+      path: "auditoria-tablas/$tableSlug",
+      getHref: (tableSlug: string) => `/app/auditoria-tablas/${tableSlug}`,
     },
     reportes: {
       path: "reportes",
