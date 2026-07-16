@@ -50,15 +50,29 @@ function pickOccurredAt(): Date {
   return faker.date.recent({ days: 30, refDate: startOfToday() })
 }
 
-// Generador de valores "realistas" por nombre de campo. Compartido por
-// `createEntityFields` y `createChanges` para que el valor del registro
-// en el momento de la operación coincida con el `after` del diff.
+// Generador de valores "realistas" por nombre de campo para `entityFields`
+// (snapshot del estado actual del registro). Para DELETE devuelve `null`
+// porque el registro ya no existe.
 function generateFieldValue(
   field: string,
   entityName: string,
   operation: OperationType
 ): string | null {
   if (operation === "DELETE") return null
+  if (field === "Nombre") return entityName
+  if (field === "Código")
+    return `INS-${faker.number.int({ min: 1000, max: 9999 })}`
+  return faker.lorem.words({ min: 1, max: 3 })
+}
+
+// Generador del valor HISTÓRICO de un campo antes de una operación. Para
+// DELETE es clave: aunque el registro ya no exista, el valor que tenía
+// sigue siendo parte del audit trail y debe mostrarse en el dialog. No
+// depende del estado "actual" del registro.
+function generatePreviousFieldValue(
+  field: string,
+  entityName: string
+): string {
   if (field === "Nombre") return entityName
   if (field === "Código")
     return `INS-${faker.number.int({ min: 1000, max: 9999 })}`
@@ -124,12 +138,16 @@ function createChanges(
       }
     }
 
-    // DELETE: había valor, ya no.
+    // DELETE: había valor, ya no. El `before` se genera desde el nombre
+    // (no desde `entityFields`, que para DELETE es todo null) — sino el
+    // filtro `before !== after` del handler los descartaba y el dialog
+    // quedaba en "Esta operación no tiene campos para mostrar".
     if (operation === "DELETE") {
+      const previous = generatePreviousFieldValue(field, entityName)
       return {
         fieldIndex: index,
         field,
-        before: entityValue,
+        before: previous,
         after: null,
         current: null,
       }

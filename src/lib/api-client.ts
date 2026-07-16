@@ -43,18 +43,10 @@ export const api = Axios.create({
   baseURL: env.API_URL,
 })
 
-// RFC 10008 (junio 2026): el método QUERY es safe + idempotente, con body
-// (a diferencia de GET) y cacheable (a diferencia de POST). Es el verb
-// correcto para queries complejas que no entran cómodo en query params
-// (filtros anidados, sorts compuestos, etc.). Axios acepta métodos custom
-// vía `request({ method })` — no hay helper built-in.
-api.query = <T>(url: string, data?: unknown): Promise<T> =>
-  api
-    .request<T>({ method: "QUERY", url, data })
-    .then((response) => response.data) as Promise<T>
-
 api.interceptors.request.use(authRequestInterceptor)
 api.interceptors.response.use(
+  // El response interceptor desenvuelve `response.data` — todas las llamadas
+  // a `api.*` (incluyendo `api.query`) resuelven con el body directo.
   (response) => response.data,
   (error) => {
     // /auth/refresh se llama para *comprobar* si hay sesión (no hay /auth/me
@@ -81,3 +73,12 @@ api.interceptors.response.use(
     return Promise.reject(error)
   }
 )
+
+// RFC 10008 (junio 2026): el método QUERY es safe + idempotente, con body
+// (a diferencia de GET) y cacheable (a diferencia de POST). Es el verb
+// correcto para queries complejas que no entran cómodo en query params
+// (filtros anidados, sorts compuestos, etc.). Axios acepta métodos custom
+// vía `request({ method })` — no hay helper built-in. Como el response
+// interceptor ya desenvuelve `response.data`, casteamos el resultado a `T`.
+api.query = <T>(url: string, data?: unknown): Promise<T> =>
+  api.request<T>({ method: "QUERY", url, data }) as unknown as Promise<T>
