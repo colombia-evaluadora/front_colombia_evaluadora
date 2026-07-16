@@ -25,6 +25,9 @@ interface FilterTableOperationsSheetProps {
   filters: TableOperationsFiltersFormInput
   applyFilters: (values: TableOperationsFiltersFormValues) => void
   clearAllFilters: () => void
+  // Campos de la tabla auditada — se inyectan en el form para el dropdown
+  // de filtros por campo.
+  availableFields: string[]
 }
 
 export function FilterTableOperationsSheet({
@@ -32,6 +35,7 @@ export function FilterTableOperationsSheet({
   filters,
   applyFilters,
   clearAllFilters,
+  availableFields,
 }: FilterTableOperationsSheetProps) {
   const [open, setOpen] = useState(false)
 
@@ -64,6 +68,7 @@ export function FilterTableOperationsSheet({
           id={FILTER_TABLE_OPERATIONS_FORM_ID}
           defaultValues={filters}
           onSubmit={handleSubmit}
+          availableFields={availableFields}
         />
 
         <SheetFooter className="flex-row items-center justify-between gap-2">

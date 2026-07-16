@@ -5,6 +5,7 @@ import { Pagination } from "@/components/pagination"
 import { useDataTable } from "@/hooks/use-data-table"
 
 import { useTableOperationsQuery } from "../../api/query/use-table-operations-query"
+import { useAuditTableQuery } from "../../api/query/use-audit-table-query"
 import { useTablePagination } from "@/hooks/use-table-pagination"
 import { useTableOperationsFilters } from "../../hooks/use-table-operations-filters"
 
@@ -30,6 +31,8 @@ export function TableOperationsDataTable() {
     pageIndex,
     pageSize,
   })
+  const { data: auditTable } = useAuditTableQuery({ tableSlug })
+  const availableFields = auditTable?.fields ?? []
 
   const { table, selectedIds, hasSelection, resetSelection } = useDataTable({
     columns,
@@ -74,6 +77,7 @@ export function TableOperationsDataTable() {
             filters={filters}
             applyFilters={applyFilters}
             clearAllFilters={clearAllFilters}
+            availableFields={availableFields}
           />
         </div>
       </div>

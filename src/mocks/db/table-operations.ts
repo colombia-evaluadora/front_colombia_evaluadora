@@ -1,10 +1,11 @@
 import { faker } from "@faker-js/faker"
 
 import type {
+  OperationChange,
   OperationType,
   TableOperation,
 } from "@/features/audits/api/types/audit-table"
-import { auditTablesDb } from "./audit-tables"
+import { auditTablesDb, getTableFields } from "./audit-tables"
 
 const ENTITY_NAMES_BY_TABLE: Record<string, string[]> = {
   tnivel_ensenanza: ["Preescolar", "Primaria", "Secundaria", "Media", "Superior"],
@@ -49,22 +50,115 @@ function pickOccurredAt(): Date {
   return faker.date.recent({ days: 30, refDate: startOfToday() })
 }
 
+// Generador de valores "realistas" por nombre de campo. Compartido por
+// `createEntityFields` y `createChanges` para que el valor del registro
+// en el momento de la operación coincida con el `after` del diff.
+function generateFieldValue(
+  field: string,
+  entityName: string,
+  operation: OperationType
+): string | null {
+  if (operation === "DELETE") return null
+  if (field === "Nombre") return entityName
+  if (field === "Código")
+    return `INS-${faker.number.int({ min: 1000, max: 9999 })}`
+  return faker.lorem.words({ min: 1, max: 3 })
+}
+
+function createEntityFields(
+  tableSlug: string,
+  operation: OperationType,
+  entityName: string
+): Record<string, string | null> {
+  const fields = getTableFields(tableSlug)
+  return Object.fromEntries(
+    fields.map((field) => [
+      field,
+      generateFieldValue(field, entityName, operation),
+    ])
+  )
+}
+
 function createOperation(tableSlug: string): TableOperation {
   const names = ENTITY_NAMES_BY_TABLE[tableSlug] ?? ["Registro"]
+  const entityName = faker.helpers.arrayElement(names)
+  const operation = pickOperation()
 
   return {
     id: faker.string.uuid(),
-    operation: pickOperation(),
+    operation,
     authorName: faker.person.fullName(),
     authorAvatarUrl: faker.datatype.boolean(0.7)
       ? faker.image.avatarGitHub()
       : null,
     authorVerified: faker.datatype.boolean(0.8),
     ip: faker.internet.ipv4(),
-    entityName: faker.helpers.arrayElement(names),
+    entityName,
     entityId: `#${faker.number.int({ min: 100, max: 999 })}`,
     occurredAt: pickOccurredAt().toISOString(),
+    // Snapshot de los valores del registro en el momento de la operación.
+    // Lo consume el handler para resolver los filtros por campo del sheet.
+    entityFields: createEntityFields(tableSlug, operation, entityName),
   }
+}
+
+function createChanges(
+  tableSlug: string,
+  operation: OperationType,
+  entityName: string,
+  entityFields: Record<string, string | null>
+): OperationChange[] {
+  const fields = getTableFields(tableSlug)
+
+  return fields.map((field, index) => {
+    const entityValue = entityFields[field]
+
+    // INSERT: no había valor anterior, solo el nuevo (igual al snapshot).
+    if (operation === "INSERT") {
+      return {
+        fieldIndex: index,
+        field,
+        before: null,
+        after: entityValue,
+        current: entityValue,
+      }
+    }
+
+    // DELETE: había valor, ya no.
+    if (operation === "DELETE") {
+      return {
+        fieldIndex: index,
+        field,
+        before: entityValue,
+        after: null,
+        current: null,
+      }
+    }
+
+    // UPDATE: el "after" coincide con el snapshot; el "before" se genera
+    // distinto. Para que el diff tenga sentido, `after` debe diferir de
+    // `before` (de lo contrario no hay revert posible). Si el generador
+    // nos dio el mismo valor, forzamos un cambio.
+    const baseBefore =
+      generateFieldValue(field, entityName, operation) ?? "—"
+    const before =
+      baseBefore === entityValue
+        ? `${baseBefore} (anterior)`
+        : baseBefore
+
+    // Simulamos que ~30% de las veces una operación posterior cambió el
+    // campo: el "Registro actual" difiere de "Después del cambio".
+    const drifted = faker.datatype.boolean(0.3)
+    const current = drifted ? faker.lorem.words({ min: 1, max: 3 }) : entityValue
+
+    return {
+      fieldIndex: index,
+      field,
+      before,
+      after: entityValue,
+      current,
+    }
+  })
 }
 
 faker.seed(20260716)
@@ -81,3 +175,26 @@ export const tableOperationsDb: Record<string, TableOperation[]> =
       ),
     ])
   )
+
+// Diff por operación: almacenado separado del `TableOperation` público porque
+// el listado paginado no necesita cargar el detalle hasta que se abre el
+// diálogo. La clave es `${tableSlug}:${operationId}`.
+export const tableOperationChangesDb: Record<
+  string,
+  Record<string, OperationChange[]>
+> = Object.fromEntries(
+  auditTablesDb.map((table) => [
+    table.slug,
+    Object.fromEntries(
+      (tableOperationsDb[table.slug] ?? []).map((op) => [
+        op.id,
+        createChanges(
+          table.slug,
+          op.operation,
+          op.entityName,
+          op.entityFields
+        ),
+      ])
+    ),
+  ])
+)

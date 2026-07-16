@@ -11,6 +11,7 @@ import {
   OPERATION_TYPE_LABELS,
 } from "../../api/ui-mappings"
 import type { OperationType, TableOperation } from "../../api/types/audit-table"
+import { ViewOperationChangesDialog } from "../dialogs/dialog-view-operation-changes"
 
 function initials(name: string): string {
   const [first, second] = name.trim().split(/\s+/)
@@ -123,6 +124,17 @@ export const columns: ColumnDef<TableOperation>[] = [
         </div>
       )
     },
+  },
+  {
+    id: "actions",
+    header: () => <span className="sr-only">Acciones</span>,
+    cell: ({ row }) => 
+    <ViewOperationChangesDialog
+      operationId={row.original.id}
+    />,
+    enableSorting: false,
+    enableHiding: false,
+    size: 48,
   },
 ]
 

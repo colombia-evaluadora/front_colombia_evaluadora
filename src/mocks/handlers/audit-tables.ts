@@ -1,12 +1,16 @@
 import { http, HttpResponse, delay } from "msw"
 
 import { auditTablesDb } from "../db/audit-tables"
-import { tableOperationsDb } from "../db/table-operations"
+import { tableOperationChangesDb, tableOperationsDb } from "../db/table-operations"
+import type { FieldFilter } from "@/features/audits/api/schema"
 import type {
   AuditTable,
   AuditTablesQueryFilters,
   AuditTablesQueryRequest,
   AuditTablesQueryResponse,
+  OperationChangesResponse,
+  RevertOperationChangeInput,
+  RevertOperationChangeResponse,
   TableOperation,
   TableOperationsQueryFilters,
   TableOperationsQueryRequest,
@@ -29,6 +33,21 @@ function isToday(iso: string): boolean {
     date.getMonth() === now.getMonth() &&
     date.getDate() === now.getDate()
   )
+}
+
+function matchesFieldFilter(row: TableOperation, filter: FieldFilter): boolean {
+  const value = row.entityFields[filter.field]
+  if (value === undefined || value === null) return false
+  const needle = filter.value.toLowerCase()
+  const haystack = value.toLowerCase()
+  switch (filter.condition) {
+    case "contains":
+      return haystack.includes(needle)
+    case "equals":
+      return haystack === needle
+    case "startsWith":
+      return haystack.startsWith(needle)
+  }
 }
 
 function applyFilters(
@@ -58,6 +77,12 @@ function applyFilters(
     if (
       filters.occurredTo &&
       row.occurredAt > `${filters.occurredTo}T23:59:59.999Z`
+    ) {
+      return false
+    }
+    if (
+      filters.fieldFilters?.length &&
+      !filters.fieldFilters.every((filter) => matchesFieldFilter(row, filter))
     ) {
       return false
     }
@@ -123,6 +148,22 @@ function computeStats(rows: TableOperation[]): TableOperationsStats {
 }
 
 export const auditTablesHandlers = [
+  http.get("/api/audit-tables/:slug", async ({ params }) => {
+    await delay(150)
+    const slug = params.slug as string
+    const table = auditTablesDb.find((row) => row.slug === slug)
+    if (!table) {
+      return HttpResponse.json({ message: "Tabla no encontrada." }, { status: 404 })
+    }
+    const full: AuditTable = {
+      ...table,
+      operationsToday: getTableRows(slug).filter((row) =>
+        isToday(row.occurredAt)
+      ).length,
+    }
+    return HttpResponse.json(full)
+  }),
+
   http.post("/api/audit-tables/query", async ({ request }) => {
     await delay(200)
     const { filters, sorting, pageIndex, pageSize } =
@@ -221,6 +262,106 @@ export const auditTablesHandlers = [
       return HttpResponse.json<ExportResult>({
         status: "ok",
         message: `${count} operación(es) exportada(s) a ${EXPORT_FORMAT_LABELS[format]}.`,
+      })
+    }
+  ),
+
+  http.post(
+    "/api/audit-tables/:slug/operations/:operationId/changes",
+    async ({ request, params }) => {
+      await delay(250)
+      const slug = params.slug as string
+      const operationId = params.operationId as string
+
+      const body = (await request.json().catch(() => ({}))) as {
+        showAll?: boolean
+      }
+      const showAll = body.showAll ?? false
+
+      const operation = getTableRows(slug).find((row) => row.id === operationId)
+      if (!operation) {
+        return HttpResponse.json(
+          { message: "Operación no encontrada." },
+          { status: 404 }
+        )
+      }
+
+      const allChanges = tableOperationChangesDb[slug]?.[operationId] ?? []
+      // Solo mostramos lo que efectivamente cambió: UPDATE con `before` ===
+      // `after`, INSERT con `before === null`, DELETE con `after === null`.
+      // Eso es lo que el usuario puede revertir. Cuando el frontend pide
+      // `showAll` (toggle "Mostrar todos los campos") devolvemos la lista
+      // completa de campos — útiles para ver el contexto del registro.
+      const changes = showAll
+        ? allChanges
+        : allChanges.filter((change) => change.before !== change.after)
+      const changedFields = allChanges.filter(
+        (change) => change.before !== change.after
+      ).length
+
+      return HttpResponse.json<OperationChangesResponse>({
+        operationId,
+        operation: operation.operation,
+        entityName: operation.entityName,
+        entityId: operation.entityId,
+        totalFields: allChanges.length,
+        changedFields,
+        changes,
+      })
+    }
+  ),
+
+  http.post(
+    "/api/audit-tables/:slug/operations/:operationId/changes/revert",
+    async ({ request, params }) => {
+      await delay(500)
+      const slug = params.slug as string
+      const operationId = params.operationId as string
+      const { changes } = (await request.json()) as RevertOperationChangeInput
+
+      const operation = getTableRows(slug).find((row) => row.id === operationId)
+      if (!operation) {
+        return HttpResponse.json<RevertOperationChangeResponse>(
+          {
+            status: "error",
+            message: "Operación no encontrada.",
+            revertedFields: 0,
+          },
+          { status: 404 }
+        )
+      }
+
+      const allChanges = tableOperationChangesDb[slug]?.[operationId] ?? []
+      const validIndexes = new Set(allChanges.map((change) => change.fieldIndex))
+      const requested = changes.filter((change) =>
+        validIndexes.has(change.fieldIndex)
+      )
+
+      if (!requested.length) {
+        return HttpResponse.json<RevertOperationChangeResponse>({
+          status: "error",
+          message: "No se especificaron campos válidos para revertir.",
+          revertedFields: 0,
+        })
+      }
+
+      // En un backend real acá iría la escritura; en el mock solo marcamos
+      // el cambio como revertido. `after` y `current` pasan a `before`
+      // para reflejar lo que efectivamente quedó en el registro.
+      requested.forEach(({ fieldIndex }) => {
+        const target = allChanges.find(
+          (change) => change.fieldIndex === fieldIndex
+        )
+        if (!target) return
+        const reverted = target.before
+        target.after = reverted
+        target.current = reverted
+      })
+
+      return HttpResponse.json<RevertOperationChangeResponse>({
+        status: "ok",
+        message: `Se revirtieron ${requested.length} campo(s) de "${operation.entityName}".`,
+        revertedFields: requested.length,
       })
     }
   ),
