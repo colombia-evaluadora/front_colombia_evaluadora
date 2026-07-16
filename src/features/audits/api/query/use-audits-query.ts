@@ -11,7 +11,7 @@ interface UseAuditsQueryParams {
 }
 
 function fetchAudits(body: AuditsQueryRequest): Promise<AuditsQueryResponse> {
-  return api.post("/audits/query", body)
+  return api.query("/audits/query", body)
 }
 
 export const auditsQueryKey = (params: UseAuditsQueryParams) => [

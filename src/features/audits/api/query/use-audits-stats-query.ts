@@ -4,7 +4,7 @@ import { api } from "@/lib/api-client"
 import type { AuditsStats, AuditsStatsRequest } from "../types/audit"
 
 function fetchAuditsStats(body: AuditsStatsRequest): Promise<AuditsStats> {
-  return api.post("/audits/stats", body)
+  return api.query("/audits/stats", body)
 }
 
 export function useAuditsStatsQuery(params: AuditsStatsRequest) {

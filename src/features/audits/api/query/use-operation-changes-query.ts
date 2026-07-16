@@ -15,9 +15,11 @@ function fetchOperationChanges({
   operationId,
   showAll,
 }: UseOperationChangesQueryParams): Promise<OperationChangesResponse> {
-  return api.post(
+  // GET: estamos leyendo un recurso específico (los cambios de una
+  // operación), no ejecutando una acción.
+  return api.get(
     `/audit-tables/${tableSlug}/operations/${operationId}/changes`,
-    { showAll: showAll ?? false }
+    { params: { showAll: showAll ?? false } }
   )
 }
 
