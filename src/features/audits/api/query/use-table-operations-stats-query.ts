@@ -14,7 +14,7 @@ function fetchTableOperationsStats({
   tableSlug,
   ...body
 }: UseTableOperationsStatsQueryParams): Promise<TableOperationsStats> {
-  return api.post(`/audit-tables/${tableSlug}/operations/stats`, body)
+  return api.query(`/audit-tables/${tableSlug}/operations/stats`, body)
 }
 
 export function useTableOperationsStatsQuery(

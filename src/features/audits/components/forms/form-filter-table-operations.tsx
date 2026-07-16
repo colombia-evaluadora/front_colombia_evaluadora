@@ -48,7 +48,6 @@ import {
 import type { OperationType } from "../../api/types/audit-table"
 
 const DATE_FORMAT = "yyyy-MM-dd"
-const SELECT_PLACEHOLDER = "__placeholder__"
 
 interface FilterTableOperationsFormProps {
   id: string
@@ -347,14 +346,11 @@ function FieldFilterSection({ field, availableFields }: FieldFilterSectionProps)
         <Field orientation="vertical" className="gap-2">
           <FieldLabel htmlFor="field-filter-field">Campo</FieldLabel>
           <Select
-            value={composerField === "" ? SELECT_PLACEHOLDER : composerField}
-            onValueChange={(value) => {
-              if (value === SELECT_PLACEHOLDER || value === null) return
-              setComposerField(value)
-            }}
+            value={composerField}
+            onValueChange={(value) => setComposerField(value ?? "")}
           >
             <SelectTrigger id="field-filter-field" size="sm" className="w-full">
-              <SelectValue placeholder="Seleccionar" />
+              <SelectValue placeholder="Elegí un campo de la tabla" />
             </SelectTrigger>
             <SelectContent>
               {availableFields.map((option) => (
@@ -369,20 +365,17 @@ function FieldFilterSection({ field, availableFields }: FieldFilterSectionProps)
         <Field orientation="vertical" className="gap-2">
           <FieldLabel htmlFor="field-filter-condition">Condición</FieldLabel>
           <Select
-            value={
-              composerCondition === "" ? SELECT_PLACEHOLDER : composerCondition
+            value={composerCondition}
+            onValueChange={(value) =>
+              setComposerCondition((value ?? "") as FieldFilterCondition | "")
             }
-            onValueChange={(value) => {
-              if (value === SELECT_PLACEHOLDER) return
-              setComposerCondition(value as FieldFilterCondition)
-            }}
           >
             <SelectTrigger
               id="field-filter-condition"
               size="sm"
               className="w-full"
             >
-              <SelectValue placeholder="Seleccionar" />
+              <SelectValue placeholder="Elegí cómo comparar" />
             </SelectTrigger>
             <SelectContent>
               {FIELD_FILTER_CONDITIONS.map((option) => (
@@ -400,7 +393,7 @@ function FieldFilterSection({ field, availableFields }: FieldFilterSectionProps)
             id="field-filter-value"
             type="text"
             autoComplete="off"
-            placeholder="Escribí un valor…"
+            placeholder="Escribí el texto a buscar…"
             value={composerValue}
             onChange={(event) => setComposerValue(event.target.value)}
             className="h-9"

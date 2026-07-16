@@ -16,7 +16,7 @@ interface UseAuditTablesQueryParams {
 function fetchAuditTables(
   body: AuditTablesQueryRequest
 ): Promise<AuditTablesQueryResponse> {
-  return api.post("/audit-tables/query", body)
+  return api.query("/audit-tables/query", body)
 }
 
 export const auditTablesQueryKey = (params: UseAuditTablesQueryParams) => [

@@ -1,6 +1,8 @@
 import { http, HttpResponse, delay } from "msw"
 import { faker } from "@faker-js/faker"
 
+import { httpQuery } from "./_http-query"
+
 import { paymentsDb } from "../db/payments"
 import type {
   Payment,
@@ -49,7 +51,7 @@ function applySorting(
 }
 
 export const paymentsHandlers = [
-  http.post("/api/payments/query", async ({ request }) => {
+  httpQuery("/api/payments/query", async ({ request }) => {
     await delay(300)
     const body = (await request.json()) as PaymentsQueryRequest
     const { filters, sorting, pageIndex, pageSize } = body

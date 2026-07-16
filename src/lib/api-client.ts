@@ -5,6 +5,15 @@ import { env } from "@/config/env"
 import { paths } from "@/config/paths"
 import { queryClient } from "./query-client"
 
+declare module "axios" {
+  export interface AxiosInstance {
+    // RFC 10008: verb "safe + idempotente con body" para queries complejas.
+    // `api.query` corre por el response interceptor que ya desenvuelve
+    // `response.data`, así que la promesa resuelve a `T` directo.
+    query<T = unknown>(url: string, data?: unknown): Promise<T>
+  }
+}
+
 // Persistido en localStorage solo para que la sesión mock sobreviva a un
 // reload mientras se prueba la UI. No es representativo de cómo se
 // guardaría un token contra un backend real.
@@ -33,6 +42,16 @@ function authRequestInterceptor(config: InternalAxiosRequestConfig) {
 export const api = Axios.create({
   baseURL: env.API_URL,
 })
+
+// RFC 10008 (junio 2026): el método QUERY es safe + idempotente, con body
+// (a diferencia de GET) y cacheable (a diferencia de POST). Es el verb
+// correcto para queries complejas que no entran cómodo en query params
+// (filtros anidados, sorts compuestos, etc.). Axios acepta métodos custom
+// vía `request({ method })` — no hay helper built-in.
+api.query = <T>(url: string, data?: unknown): Promise<T> =>
+  api
+    .request<T>({ method: "QUERY", url, data })
+    .then((response) => response.data) as Promise<T>
 
 api.interceptors.request.use(authRequestInterceptor)
 api.interceptors.response.use(

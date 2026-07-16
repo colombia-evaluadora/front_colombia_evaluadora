@@ -11,7 +11,7 @@ interface UsePaymentsQueryParams {
 }
 
 function fetchPayments(body: PaymentsQueryRequest): Promise<PaymentsQueryResponse> {
-  return api.post("/payments/query", body)
+  return api.query("/payments/query", body)
 }
 
 export const paymentsQueryKey = (params: UsePaymentsQueryParams) => [

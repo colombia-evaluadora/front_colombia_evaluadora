@@ -1,5 +1,7 @@
 import { http, HttpResponse, delay } from "msw"
 
+import { httpQuery } from "./_http-query"
+
 import { auditTablesDb } from "../db/audit-tables"
 import { tableOperationChangesDb, tableOperationsDb } from "../db/table-operations"
 import type { FieldFilter } from "@/features/audits/api/schema"
@@ -164,7 +166,7 @@ export const auditTablesHandlers = [
     return HttpResponse.json(full)
   }),
 
-  http.post("/api/audit-tables/query", async ({ request }) => {
+  httpQuery("/api/audit-tables/query", async ({ request }) => {
     await delay(200)
     const { filters, sorting, pageIndex, pageSize } =
       (await request.json()) as AuditTablesQueryRequest
@@ -192,7 +194,7 @@ export const auditTablesHandlers = [
     })
   }),
 
-  http.post(
+  httpQuery(
     "/api/audit-tables/:slug/operations/query",
     async ({ request, params }) => {
       await delay(300)
@@ -217,7 +219,7 @@ export const auditTablesHandlers = [
     }
   ),
 
-  http.post(
+  httpQuery(
     "/api/audit-tables/:slug/operations/stats",
     async ({ request, params }) => {
       await delay(200)
@@ -266,17 +268,13 @@ export const auditTablesHandlers = [
     }
   ),
 
-  http.post(
+  http.get(
     "/api/audit-tables/:slug/operations/:operationId/changes",
     async ({ request, params }) => {
       await delay(250)
       const slug = params.slug as string
       const operationId = params.operationId as string
-
-      const body = (await request.json().catch(() => ({}))) as {
-        showAll?: boolean
-      }
-      const showAll = body.showAll ?? false
+      const showAll = new URL(request.url).searchParams.get("showAll") === "true"
 
       const operation = getTableRows(slug).find((row) => row.id === operationId)
       if (!operation) {

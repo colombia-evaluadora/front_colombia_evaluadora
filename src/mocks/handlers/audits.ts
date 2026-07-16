@@ -1,5 +1,7 @@
 import { http, HttpResponse, delay } from "msw"
 
+import { httpQuery } from "./_http-query"
+
 import { auditsDb } from "../db/audits"
 import type {
   AuditSession,
@@ -87,7 +89,7 @@ function applySorting(
 }
 
 export const auditsHandlers = [
-  http.post("/api/audits/query", async ({ request }) => {
+  httpQuery("/api/audits/query", async ({ request }) => {
     await delay(300)
     const body = (await request.json()) as AuditsQueryRequest
     const { filters, sorting, pageIndex, pageSize } = body
@@ -105,7 +107,7 @@ export const auditsHandlers = [
     })
   }),
 
-  http.post("/api/audits/stats", async ({ request }) => {
+  httpQuery("/api/audits/stats", async ({ request }) => {
     await delay(200)
     const { ids, filters } = (await request.json()) as AuditsStatsRequest
     const scoped = ids

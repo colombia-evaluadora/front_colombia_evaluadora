@@ -18,7 +18,7 @@ function fetchTableOperations(
   params: UseTableOperationsQueryParams
 ): Promise<TableOperationsQueryResponse> {
   const { tableSlug, ...body } = params
-  return api.post(`/audit-tables/${tableSlug}/operations/query`, body)
+  return api.query(`/audit-tables/${tableSlug}/operations/query`, body)
 }
 
 export function useTableOperationsQuery(params: UseTableOperationsQueryParams) {
