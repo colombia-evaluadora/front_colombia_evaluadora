@@ -29,6 +29,9 @@ export function useTableOperationsFilters(): TableOperationsFilters {
           operations: values.operations.length ? values.operations : undefined,
           occurredFrom: values.occurredFrom || undefined,
           occurredTo: values.occurredTo || undefined,
+          fieldFilters: values.fieldFilters.length
+            ? values.fieldFilters
+            : undefined,
           page: 0,
         }),
         replace: true,
@@ -45,6 +48,7 @@ export function useTableOperationsFilters(): TableOperationsFilters {
         operations: undefined,
         occurredFrom: undefined,
         occurredTo: undefined,
+        fieldFilters: undefined,
         page: 0,
       }),
       replace: true,
@@ -57,8 +61,15 @@ export function useTableOperationsFilters(): TableOperationsFilters {
       operations: search.operations,
       occurredFrom: search.occurredFrom,
       occurredTo: search.occurredTo,
+      fieldFilters: search.fieldFilters,
     }),
-    [search.author, search.operations, search.occurredFrom, search.occurredTo]
+    [
+      search.author,
+      search.operations,
+      search.occurredFrom,
+      search.occurredTo,
+      search.fieldFilters,
+    ]
   )
 
   const activeFilterCount = useMemo(() => {
@@ -66,8 +77,15 @@ export function useTableOperationsFilters(): TableOperationsFilters {
     if (search.author) n += 1
     n += search.operations?.length ?? 0
     if (search.occurredFrom || search.occurredTo) n += 1
+    n += search.fieldFilters?.length ?? 0
     return n
-  }, [search.author, search.operations, search.occurredFrom, search.occurredTo])
+  }, [
+    search.author,
+    search.operations,
+    search.occurredFrom,
+    search.occurredTo,
+    search.fieldFilters,
+  ])
 
   return {
     filters: {
@@ -75,6 +93,7 @@ export function useTableOperationsFilters(): TableOperationsFilters {
       operations: search.operations ?? [],
       occurredFrom: search.occurredFrom ?? "",
       occurredTo: search.occurredTo ?? "",
+      fieldFilters: search.fieldFilters ?? [],
     },
     queryFilters,
     applyFilters,

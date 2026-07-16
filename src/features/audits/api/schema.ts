@@ -26,11 +26,41 @@ export type AuditsSearch = z.infer<typeof auditsSearchSchema>
 
 export const OPERATION_TYPES = ["INSERT", "UPDATE", "DELETE"] as const
 
+// El campo a filtrar es dinámico (varía por tabla auditada: "Código",
+// "Nombre", etc. para tnivel_ensenanza; otro set para tdepartamento, etc.),
+// así que el schema lo valida como string. La UI del sheet recibe la
+// lista disponible por tabla y la muestra en el Select.
+
+export const FIELD_FILTER_CONDITIONS = [
+  "contains",
+  "equals",
+  "startsWith",
+] as const
+export type FieldFilterCondition =
+  (typeof FIELD_FILTER_CONDITIONS)[number]
+
+export const FIELD_FILTER_CONDITION_LABELS: Record<
+  FieldFilterCondition,
+  string
+> = {
+  contains: "Contiene",
+  equals: "Es igual a",
+  startsWith: "Empieza con",
+}
+
+export const fieldFilterSchema = z.object({
+  field: z.string().min(1),
+  condition: z.enum(FIELD_FILTER_CONDITIONS),
+  value: z.string().min(1),
+})
+export type FieldFilter = z.infer<typeof fieldFilterSchema>
+
 export const tableOperationsFiltersFormSchema = z.object({
   author: z.string(),
   operations: z.array(z.enum(OPERATION_TYPES)),
   occurredFrom: z.string(),
   occurredTo: z.string(),
+  fieldFilters: z.array(fieldFilterSchema),
 })
 export type TableOperationsFiltersFormInput = z.input<
   typeof tableOperationsFiltersFormSchema
@@ -48,6 +78,9 @@ export const tableOperationsSearchSchema = z.object({
   operations: z.array(z.enum(OPERATION_TYPES)).optional().catch(undefined),
   occurredFrom: z.string().optional().catch(undefined),
   occurredTo: z.string().optional().catch(undefined),
+  // El router URL-encodea y JSON-parsea los search params automáticamente;
+  // pasar el array directo evita el doble encoding que rompe el refresh.
+  fieldFilters: z.array(fieldFilterSchema).optional().catch(undefined),
 })
 export type TableOperationsSearch = z.infer<typeof tableOperationsSearchSchema>
 
