@@ -23,6 +23,20 @@ const EXPORT_FORMAT_LABELS: Record<ExportFormat, string> = {
   excel: "Excel",
 }
 
+// Los campos "desde/hasta" ahora vienen del picker de fecha+hora — el
+// valor puede ser "yyyy-MM-dd" (fecha sola, formularios viejos o si el
+// usuario nunca tocó el TimePicker) o "yyyy-MM-dd'T'HH:mm" (con hora).
+// Antes esto se armaba concatenando `${value}T00:00:00.000Z` a mano, lo
+// que rompía apenas el valor ya traía su propia "T" (quedaba con dos).
+// `new Date(...).toISOString()` normaliza los dos casos sin ese bug.
+function toComparableIso(value: string, boundary: "start" | "end"): string {
+  const hasTime = value.includes("T")
+  const iso = hasTime
+    ? value
+    : `${value}T${boundary === "start" ? "00:00:00.000" : "23:59:59.999"}`
+  return new Date(iso).toISOString()
+}
+
 function applyFilters(
   rows: AuditSession[],
   filters: AuditsQueryRequest["filters"]
@@ -38,10 +52,16 @@ function applyFilters(
     if (filters.status?.length && !filters.status.includes(row.status)) {
       return false
     }
-    if (filters.startedFrom && row.startedAt < `${filters.startedFrom}T00:00:00.000Z`) {
+    if (
+      filters.startedFrom &&
+      row.startedAt < toComparableIso(filters.startedFrom, "start")
+    ) {
       return false
     }
-    if (filters.startedTo && row.startedAt > `${filters.startedTo}T23:59:59.999Z`) {
+    if (
+      filters.startedTo &&
+      row.startedAt > toComparableIso(filters.startedTo, "end")
+    ) {
       return false
     }
     return true
@@ -92,13 +112,13 @@ function applySessionOperationFilters(
     }
     if (
       filters.occurredFrom &&
-      row.occurredAt < `${filters.occurredFrom}T00:00:00.000Z`
+      row.occurredAt < toComparableIso(filters.occurredFrom, "start")
     ) {
       return false
     }
     if (
       filters.occurredTo &&
-      row.occurredAt > `${filters.occurredTo}T23:59:59.999Z`
+      row.occurredAt > toComparableIso(filters.occurredTo, "end")
     ) {
       return false
     }

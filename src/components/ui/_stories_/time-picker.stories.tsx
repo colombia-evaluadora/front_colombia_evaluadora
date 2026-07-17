@@ -12,7 +12,7 @@ export const Default = meta.story({
   render: () => {
     const [value, setValue] = useState<string | undefined>("09:30")
     return (
-      <TimePicker value={value} onChange={setValue} />
+      <TimePicker value={value} onChange={setValue} className="rounded-md border" />
     )
   },
 })
@@ -20,13 +20,13 @@ export const Default = meta.story({
 export const Empty = meta.story({
   render: () => {
     const [value, setValue] = useState<string | undefined>(undefined)
-    return <TimePicker value={value} onChange={setValue} />
+    return <TimePicker value={value} onChange={setValue} className="rounded-md border" />
   },
 })
 
 export const Afternoon = meta.story({
   render: () => {
     const [value, setValue] = useState<string | undefined>("15:45")
-    return <TimePicker value={value} onChange={setValue} />
+    return <TimePicker value={value} onChange={setValue} className="rounded-md border" />
   },
 })

@@ -57,21 +57,6 @@ export function TableOperationsDataTable() {
       />
       <div className="mb-2 flex flex-wrap items-center justify-between gap-x-2 gap-y-2">
         <div className="flex gap-2">
-          {hasSelection ? (
-            <>
-              <ExportSelectedTableOperationsDialog
-                tableSlug={tableSlug}
-                selectedIds={selectedIds}
-                resetSelection={resetSelection}
-              />
-              <ClearSelectionTableOperationsDialog resetSelection={resetSelection} />
-            </>
-          ) : (
-            <ExportTableOperationsDialog tableSlug={tableSlug} filters={queryFilters} />
-          )}
-        </div>
-        <div className="flex gap-2">
-          <DataTableViewOptions table={table} />
           <FilterTableOperationsSheet
             activeFilterCount={activeFilterCount}
             filters={filters}
@@ -79,6 +64,21 @@ export function TableOperationsDataTable() {
             clearAllFilters={clearAllFilters}
             availableFields={availableFields}
           />
+          <DataTableViewOptions table={table} />
+        </div>
+        <div className="flex gap-2">
+          {hasSelection ? (
+            <>
+              <ClearSelectionTableOperationsDialog resetSelection={resetSelection} />
+              <ExportSelectedTableOperationsDialog
+                tableSlug={tableSlug}
+                selectedIds={selectedIds}
+                resetSelection={resetSelection}
+              />
+            </>
+          ) : (
+            <ExportTableOperationsDialog tableSlug={tableSlug} filters={queryFilters} />
+          )}
         </div>
       </div>
       <DataTable

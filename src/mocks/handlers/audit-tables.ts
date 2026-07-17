@@ -43,6 +43,19 @@ function isToday(iso: string): boolean {
   )
 }
 
+// Los campos "desde/hasta" ahora vienen del picker de fecha+hora — el
+// valor puede ser "yyyy-MM-dd" (fecha sola) o "yyyy-MM-dd'T'HH:mm" (con
+// hora). `new Date(...).toISOString()` normaliza los dos casos en vez
+// de concatenar `${value}T00:00:00.000Z` a mano, que rompía si el
+// valor ya traía su propia "T".
+function toComparableIso(value: string, boundary: "start" | "end"): string {
+  const hasTime = value.includes("T")
+  const iso = hasTime
+    ? value
+    : `${value}T${boundary === "start" ? "00:00:00.000" : "23:59:59.999"}`
+  return new Date(iso).toISOString()
+}
+
 function matchesFieldFilter(row: TableOperation, filter: FieldFilter): boolean {
   const value = row.entityFields[filter.field]
   if (value === undefined || value === null) return false
@@ -78,13 +91,13 @@ function applyFilters(
     }
     if (
       filters.occurredFrom &&
-      row.occurredAt < `${filters.occurredFrom}T00:00:00.000Z`
+      row.occurredAt < toComparableIso(filters.occurredFrom, "start")
     ) {
       return false
     }
     if (
       filters.occurredTo &&
-      row.occurredAt > `${filters.occurredTo}T23:59:59.999Z`
+      row.occurredAt > toComparableIso(filters.occurredTo, "end")
     ) {
       return false
     }
