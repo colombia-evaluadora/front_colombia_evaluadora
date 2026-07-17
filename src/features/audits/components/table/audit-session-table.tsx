@@ -49,26 +49,26 @@ export function AuditSessionDataTable() {
       />
       <div className="mb-2 flex flex-wrap items-center justify-between gap-x-2 gap-y-2">
         <div className="flex gap-2">
-          {hasSelection ? (
-            <>
-              <ExportSelectedAuditSessionDialog
-                selectedIds={selectedIds}
-                resetSelection={resetSelection}
-              />
-              <ClearSelectionAuditSessionDialog resetSelection={resetSelection} />
-            </>
-          ) : (
-            <ExportAuditSessionDialog filters={queryFilters} />
-          )}
-        </div>
-        <div className="flex gap-2">
-          <DataTableViewOptions table={table} />
           <FilterAuditSessionSheet
             activeFilterCount={activeFilterCount}
             filters={filters}
             applyFilters={applyFilters}
             clearAllFilters={clearAllFilters}
           />
+        </div>
+        <div className="flex gap-2">
+          {hasSelection ? (
+            <>
+              <ClearSelectionAuditSessionDialog resetSelection={resetSelection} />
+              <ExportSelectedAuditSessionDialog
+                selectedIds={selectedIds}
+                resetSelection={resetSelection}
+              />
+            </>
+          ) : (
+            <ExportAuditSessionDialog filters={queryFilters} />
+          )}
+          <DataTableViewOptions table={table} />
         </div>
       </div>
       <DataTable

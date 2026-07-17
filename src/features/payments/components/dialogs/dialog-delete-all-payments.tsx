@@ -44,7 +44,8 @@ export function DeleteAllPaymentsDialog({ filters }: DeleteAllPaymentsDialogProp
       <AlertDialogTrigger
         render={
           <Button
-            variant="destructive"
+            variant="fill"
+            color="destructive"
             aria-label="Eliminar pagos filtrados"
           />
         }

@@ -64,7 +64,6 @@ export function TableOperationsDataTable() {
             clearAllFilters={clearAllFilters}
             availableFields={availableFields}
           />
-          <DataTableViewOptions table={table} />
         </div>
         <div className="flex gap-2">
           {hasSelection ? (
@@ -79,6 +78,7 @@ export function TableOperationsDataTable() {
           ) : (
             <ExportTableOperationsDialog tableSlug={tableSlug} filters={queryFilters} />
           )}
+          <DataTableViewOptions table={table} />
         </div>
       </div>
       <DataTable

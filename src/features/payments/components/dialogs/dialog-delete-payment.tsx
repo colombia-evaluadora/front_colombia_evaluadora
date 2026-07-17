@@ -44,9 +44,10 @@ export function DeletePaymentDialog({ payment }: DeletePaymentDialogProps) {
       <AlertDialogTrigger
         render={
           <Button
-            variant="destructive"
+            variant="fill"
+            color="destructive"
             size="icon"
-            className="size-8 text-destructive hover:text-destructive"
+            className="size-8"
           />
         }
       >

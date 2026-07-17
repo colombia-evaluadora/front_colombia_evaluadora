@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { EraserIcon, FunnelIcon } from "@phosphor-icons/react"
+import { EraserIcon, FunnelIcon, XIcon } from "@phosphor-icons/react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -46,41 +46,61 @@ export function FilterAuditSessionSheet({
   }
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger render={<Button variant="outline" />}>
-        <FunnelIcon />
-        <span className="sr-only md:not-sr-only">Filtros</span>
-        {activeFilterCount > 0 && <span>· {activeFilterCount}</span>}
-      </SheetTrigger>
-      <SheetContent className="flex w-full flex-col gap-0 sm:max-w-sm">
-        <SheetHeader>
-          <SheetTitle>Filtros</SheetTitle>
-          <SheetDescription>
-            {activeFilterCount > 0 ? `${activeFilterCount} filtro${activeFilterCount === 1 ? "" : "s"} activo${activeFilterCount === 1 ? "" : "s"}.` : "Sin filtros activos."}
-          </SheetDescription>
-        </SheetHeader>
+    <div className="flex items-center">
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetTrigger
+          render={
+            <Button variant={activeFilterCount > 0 ? "fill" : "outline"} />
+          }
+        >
+          <FunnelIcon />
+          <span className="sr-only md:not-sr-only">Filtros</span>
+          {activeFilterCount > 0 && <span>· {activeFilterCount}</span>}
+        </SheetTrigger>
+        <SheetContent className="flex w-full flex-col gap-0 sm:max-w-sm">
+          <SheetHeader>
+            <SheetTitle>Filtros</SheetTitle>
+            <SheetDescription>
+              {activeFilterCount > 0 ? `${activeFilterCount} filtro${activeFilterCount === 1 ? "" : "s"} activo${activeFilterCount === 1 ? "" : "s"}.` : "Sin filtros activos."}
+            </SheetDescription>
+          </SheetHeader>
 
-        <FilterAuditSessionForm
-          id={FILTER_AUDIT_SESSION_FORM_ID}
-          defaultValues={filters}
-          onSubmit={handleSubmit}
-        />
+          <FilterAuditSessionForm
+            id={FILTER_AUDIT_SESSION_FORM_ID}
+            defaultValues={filters}
+            onSubmit={handleSubmit}
+          />
 
-        <SheetFooter className="flex-row items-center justify-between gap-2">
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={handleClearAll}
-            disabled={activeFilterCount === 0}
-          >
-            <EraserIcon data-icon="inline-start" />
-            Limpiar todo
-          </Button>
-          <Button type="submit" form={FILTER_AUDIT_SESSION_FORM_ID}>
-            Aplicar
-          </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+          <SheetFooter className="flex-row items-center justify-between gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={handleClearAll}
+              disabled={activeFilterCount === 0}
+            >
+              <EraserIcon data-icon="inline-start" />
+              Limpiar todo
+            </Button>
+            <Button type="submit" form={FILTER_AUDIT_SESSION_FORM_ID}>
+              Aplicar
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
+      {/* Clear rápido sin abrir el sheet — solo visible si hay algo
+          para limpiar. */}
+      {activeFilterCount > 0 && (
+        <Button
+          type="button"
+          variant="fill"
+          size="icon"
+          className="border-l-0"
+          aria-label="Limpiar filtros"
+          onClick={clearAllFilters}
+        >
+          <XIcon />
+        </Button>
+      )}
+    </div>
   )
 }
