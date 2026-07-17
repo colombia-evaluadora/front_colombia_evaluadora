@@ -14,52 +14,18 @@ type ClockMode = "hour" | "minute"
 interface TimePickerProps {
   value?: string
   onChange?: (value: string) => void
-  // Se llaman al click en Cancelar/Aceptar. El componente no tiene
-  // noción de "abierto/cerrado" (eso lo maneja quien lo envuelve en un
-  // Popover/Dialog) — Cancelar descarta cualquier texto tipeado sin
-  // confirmar (blur) y vuelve al último estado commiteado; Aceptar
-  // fuerza el commit de lo que esté tipeado en ese momento.
-  onCancel?: () => void
-  onAccept?: () => void
   className?: string
 }
 
-/**
- * TimePicker con dos vistas: text input (Material 3, default) y
- * analog clock (Material 2, alternativa). La primera permite tipear
- * hora y minuto directamente con inputs numéricos; la segunda es un
- * clock-face clickeable con barrido horario.
- *
- * El value es un string "HH:mm" en formato 24h (lo que se guarda en
- * la base / lo que se serializa). Internamente todo el estado (hour,
- * text drafts) vive en 12h — la conversión a 24h pasa una sola vez,
- * en `commit`, justo antes de subir el string al padre.
- */
-export function TimePicker({
-  value,
-  onChange,
-  onCancel,
-  onAccept,
-  className,
-}: TimePickerProps) {
+export function TimePicker({ value, onChange, className }: TimePickerProps) {
   const [view, setView] = React.useState<"text" | "analog">("text")
-
-  // hour/minute/period son la fuente de verdad (12h). Se actualizan
-  // sincrónicamente en el mismo handler que dispara `onChange`, así
-  // que tanto el clock-face como el text input siempre pintan el
-  // mismo estado — no hace falta un draft duplicado en el clock.
   const [hour, setHour] = React.useState(() => extractHour(value))
   const [minute, setMinute] = React.useState(() => extractMinute(value))
   const [period, setPeriod] = React.useState<Period>(() => derivePeriod(value))
 
-  // Drafts de texto: separados de hour/minute porque mientras el user
-  // tipea (ej. borra el campo para escribir "11") el valor intermedio
-  // no siempre es un número válido de 1-2 dígitos completo.
   const [hourText, setHourText] = React.useState(() => pad(hour))
   const [minuteText, setMinuteText] = React.useState(() => pad(minute))
 
-  // Si cambia el value desde afuera (form reset, etc.), sincronizamos
-  // todo — incluidos los drafts de texto.
   React.useEffect(() => {
     const h = extractHour(value)
     const m = extractMinute(value)
@@ -90,29 +56,11 @@ export function TimePicker({
     commit(hour, safe, period)
   }
 
-  function handleCancel() {
-    // Descarta cualquier texto tipeado sin confirmar y vuelve al
-    // último estado commiteado.
-    setHourText(pad(hour))
-    setMinuteText(pad(minute))
-    onCancel?.()
-  }
-
-  function handleAccept() {
-    // Fuerza el commit de cualquier edición de texto pendiente (si el
-    // user tipeó y no hizo blur) antes de avisar al padre.
-    commitHourText()
-    commitMinuteText()
-    onAccept?.()
-  }
-
   return (
-    <div className={cn("flex flex-col gap-6 border p-4", className)}>
-      {/* Header único para las dos vistas — texto fijo "Ingresar
-          hora" e ícono fijo de reloj. Lo único que cambia entre
-          vistas es el contenido de abajo (inputs de texto vs
-          clock-face); el header no debería "saltar" de label ni de
-          ícono solo porque cambiás de modo de entrada. */}
+    <div
+      data-slot="time-picker"
+      className={cn("bg-background flex flex-col gap-4 p-3", className)}
+    >
       <div className="flex items-center justify-between">
         <span className="text-muted-foreground text-xs font-medium uppercase tracking-wider">
           Ingresar hora
@@ -155,28 +103,11 @@ export function TimePicker({
           />
         )}
       </div>
-
-      <div className="flex justify-end gap-2">
-        <Button type="button" variant="ghost" size="sm" onClick={handleCancel}>
-          Cancelar
-        </Button>
-        <Button type="button" size="sm" onClick={handleAccept}>
-          Aceptar
-        </Button>
-      </div>
     </div>
   )
 }
 
-/**
- * Toggle AM/PM compartido por las dos vistas. Usa el `ToggleGroup` del
- * design system (mismo componente que cualquier otro grupo exclusivo
- * de la app) en vez de un `<div>` con dos `<button>` crudos — así
- * hereda foco, hover y el estilo "on" (`bg-muted text-foreground`) sin
- * reinventarlo. `multiple={false}` lo vuelve exclusivo (radio-like);
- * el guard en `onValueChange` evita que quede sin selección si Base UI
- * permite des-presionar el único ítem activo.
- */
+
 function PeriodToggle({
   period,
   onPeriodChange,
@@ -294,10 +225,7 @@ function AnalogClockView({
   onSelectMinute: (minute: number) => void
   onPeriodChange: (p: Period) => void
 }) {
-  // Modo del reloj: "hour" muestra los 12 números; al hacer click pasa
-  // a "minute" y muestra múltiplos de 5. El readout de abajo ("HH" /
-  // "mm") permite volver a "hour" en cualquier momento — sin eso el
-  // reloj queda pegado en modo minuto sin forma de reabrir horas.
+
   const [mode, setMode] = React.useState<ClockMode>("hour")
 
   function handleClick(value: number) {
@@ -308,17 +236,7 @@ function AnalogClockView({
       onSelectMinute(value)
     }
   }
-
-  // La manecilla es una barra vertical anclada por abajo al centro:
-  // con `rotate(0deg)` ya apunta hacia arriba, que es exactamente
-  // donde están posicionados el "12" (modo hora) y el "0" (modo
-  // minuto) — ver `angle` más abajo, que usa el mismo offset de -90°
-  // para calcular las posiciones de los chips. Por eso acá NO restamos
-  // 90: alinear ambos cálculos (uno con el offset y otro sin él) es lo
-  // que producía el desfase de 90°. Tampoco sumamos `minute/60` a la
-  // hora — eso sería el barrido "real" de un reloj de pared, pero acá
-  // la manecilla tiene que apuntar exacto al chip resaltado, no a un
-  // punto intermedio entre dos horas.
+  
   const hourAngle = hour * 30
   const minuteAngle = minute * 6
 
@@ -370,12 +288,7 @@ function AnalogClockView({
       </div>
 
       <div className="relative aspect-square w-56 shrink-0 rounded-full border bg-background">
-        {/* Marcas horarias (12 alrededor) o marcas de minutos
-            (cada 5), según `mode`. Reusa `buttonVariants` (mismo
-            foco/hover/transition que cualquier Button de la app) con
-            un override a círculo — el clock-face es de por sí una
-            excepción visual al `rounded-none` general, como los
-            Avatar. */}
+
         {values.map((value, i) => {
           const angle = (i * 30 - 90) * (Math.PI / 180)
           const leftPct = 50 + 42 * Math.cos(angle)

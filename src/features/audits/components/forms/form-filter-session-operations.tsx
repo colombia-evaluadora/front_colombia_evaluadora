@@ -1,19 +1,12 @@
 import { useForm } from "@tanstack/react-form"
 import {
-  CalendarIcon,
   PencilIcon,
   PlusCircleIcon,
   TrashIcon,
 } from "@phosphor-icons/react"
-import { format, parseISO } from "date-fns"
-import { es } from "date-fns/locale"
-import type { DateRange } from "react-day-picker"
 
-import { Button } from "@/components/ui/button"
-import { Calendar } from "@/components/ui/calendar"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Separator } from "@/components/ui/separator"
 import {
   Field,
@@ -31,8 +24,7 @@ import {
   type SessionOperationsFiltersFormValues,
 } from "../../api/schema"
 import type { OperationType } from "../../api/types/audit-table"
-
-const DATE_FORMAT = "yyyy-MM-dd"
+import { FieldDateTimePopover } from "./field-date-time-popover"
 
 interface FilterSessionOperationsFormProps {
   id: string
@@ -164,63 +156,26 @@ export function FilterSessionOperationsForm({
 
       <Separator />
 
+      {/* Dos campos independientes (no un único rango) — cada uno
+          combina Calendar + TimePicker en el mismo popover para elegir
+          fecha y hora sin tener que abrir dos controles distintos. */}
       <form.Field
         name="occurredFrom"
-        children={(fromField) => (
-          <form.Field
-            name="occurredTo"
-            children={(toField) => {
-              const range: DateRange | undefined = fromField.state.value
-                ? {
-                    from: parseISO(fromField.state.value),
-                    to: toField.state.value
-                      ? parseISO(toField.state.value)
-                      : undefined,
-                  }
-                : undefined
-
-              const label = range?.from
-                ? range.to
-                  ? range.from.getFullYear() === range.to.getFullYear()
-                    ? `${format(range.from, "d MMM", { locale: es })} – ${format(range.to, "d MMM yyyy", { locale: es })}`
-                    : `${format(range.from, "d MMM yyyy", { locale: es })} – ${format(range.to, "d MMM yyyy", { locale: es })}`
-                  : format(range.from, "d MMM yyyy", { locale: es })
-                : "Rango de fechas"
-
-              const handleSelect = (next: DateRange | undefined) => {
-                fromField.handleChange(next?.from ? format(next.from, DATE_FORMAT) : "")
-                toField.handleChange(next?.to ? format(next.to, DATE_FORMAT) : "")
-              }
-
-              return (
-                <Field orientation="vertical" className="gap-2">
-                  <FieldLabel>Fecha (rango)</FieldLabel>
-                  <Popover>
-                    <PopoverTrigger
-                      render={
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="w-full justify-start font-normal"
-                        />
-                      }
-                    >
-                      <CalendarIcon data-icon="inline-start" />
-                      {label}
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="range"
-                        selected={range}
-                        onSelect={handleSelect}
-                        locale={es}
-                        numberOfMonths={1}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </Field>
-              )
-            }}
+        children={(field) => (
+          <FieldDateTimePopover
+            label="Desde"
+            value={field.state.value}
+            onChange={field.handleChange}
+          />
+        )}
+      />
+      <form.Field
+        name="occurredTo"
+        children={(field) => (
+          <FieldDateTimePopover
+            label="Hasta"
+            value={field.state.value}
+            onChange={field.handleChange}
           />
         )}
       />
