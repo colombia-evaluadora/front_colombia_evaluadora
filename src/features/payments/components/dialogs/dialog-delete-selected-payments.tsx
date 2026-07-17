@@ -49,7 +49,8 @@ export function DeleteSelectedPaymentsDialog({
       <AlertDialogTrigger
         render={
           <Button
-            variant="destructive"
+            variant="fill"
+            color="destructive"
             aria-label={`Eliminar ${count} seleccionados`}
           />
         }

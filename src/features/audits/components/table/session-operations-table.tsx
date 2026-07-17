@@ -48,27 +48,27 @@ export function SessionOperationsDataTable({ sessionId }: SessionOperationsDataT
     <>
       <div className="mb-2 flex flex-wrap items-center justify-between gap-x-2 gap-y-2">
         <div className="flex gap-2">
-          {hasSelection ? (
-            <>
-              <ExportSelectedSessionOperationsDialog
-                sessionId={sessionId}
-                selectedIds={selectedIds}
-                resetSelection={resetSelection}
-              />
-              <ClearSelectionSessionOperationsDialog resetSelection={resetSelection} />
-            </>
-          ) : (
-            <ExportSessionOperationsDialog sessionId={sessionId} />
-          )}
-        </div>
-        <div className="flex gap-2">
-          <DataTableViewOptions table={table} />
           <FilterSessionOperationsSheet
             activeFilterCount={activeFilterCount}
             filters={filters}
             applyFilters={applyFilters}
             clearAllFilters={clearAllFilters}
           />
+        </div>
+        <div className="flex gap-2">
+          {hasSelection ? (
+            <>
+              <ClearSelectionSessionOperationsDialog resetSelection={resetSelection} />
+              <ExportSelectedSessionOperationsDialog
+                sessionId={sessionId}
+                selectedIds={selectedIds}
+                resetSelection={resetSelection}
+              />
+            </>
+          ) : (
+            <ExportSessionOperationsDialog sessionId={sessionId} />
+          )}
+          <DataTableViewOptions table={table} />
         </div>
       </div>
       <DataTable

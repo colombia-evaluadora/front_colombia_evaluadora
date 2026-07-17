@@ -1,6 +1,6 @@
 import { useState } from "react"
 
-import { XIcon } from "@phosphor-icons/react"
+import { XSquareIcon } from "@phosphor-icons/react"
 
 import {
   AlertDialog,
@@ -25,14 +25,15 @@ export function ClearSelectionAuditSessionDialog({ resetSelection }: ClearSelect
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger
-        render={<Button variant="outline" aria-label="Limpiar selección" />}
+        render={
+          <Button variant="outline" size="icon" aria-label="Deseleccionar" />
+        }
       >
-        <XIcon />
-        <span className="sr-only md:not-sr-only">Limpiar</span>
+        <XSquareIcon />
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>¿Limpiar la selección?</AlertDialogTitle>
+          <AlertDialogTitle>¿Deseleccionar todo?</AlertDialogTitle>
           <AlertDialogDescription>
             Se deseleccionarán todas las sesiones seleccionadas.
           </AlertDialogDescription>
@@ -45,7 +46,7 @@ export function ClearSelectionAuditSessionDialog({ resetSelection }: ClearSelect
               setOpen(false)
             }}
           >
-            Limpiar
+            Deseleccionar
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

@@ -302,7 +302,7 @@ function AnalogClockView({
               onClick={() => handleClick(value)}
               className={cn(
                 buttonVariants({
-                  variant: isSelected ? "default" : "ghost",
+                  variant: isSelected ? "fill" : "ghost",
                   size: "icon-sm",
                 }),
                 "absolute rounded-full text-sm normal-case tracking-normal",

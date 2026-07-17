@@ -108,7 +108,13 @@ const landingRoute = createRoute({
   component: LandingPage,
 })*/
 
-
+const homeRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: paths.home.path,
+  beforeLoad: () => {
+    throw redirect({ to: paths.auth.login.path })
+  },
+})
 
 const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -226,6 +232,7 @@ const configuracionRoute = createRoute({
 
 const routeTree = rootRoute.addChildren([
 //  landingRoute,
+  homeRoute,
   loginRoute,
   forgotPasswordRoute,
   restorePasswordRoute,

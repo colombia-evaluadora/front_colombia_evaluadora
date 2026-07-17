@@ -91,7 +91,7 @@ export function ChatComposer({ onSend, disabled }: ChatComposerProps) {
 
           <InputGroupButton
             type="submit"
-            variant="default"
+            variant="fill"
             size="icon-sm"
             className="ml-auto"
           >

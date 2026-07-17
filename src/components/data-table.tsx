@@ -137,10 +137,11 @@ export function DataTableViewOptions({ table }: DataTableViewOptionsProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        render={<Button variant="outline" aria-label="Columnas visibles" />}
+        render={
+          <Button variant="outline" size="icon" aria-label="Columnas visibles" />
+        }
       >
-        <ColumnsIcon data-icon="inline-start" />
-        <span className="sr-only md:not-sr-only">Columnas</span>
+        <ColumnsIcon />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-44">
         <DropdownMenuGroup>
