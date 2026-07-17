@@ -208,7 +208,7 @@ export function FilterSessionOperationsForm({
                       <CalendarIcon data-icon="inline-start" />
                       {label}
                     </PopoverTrigger>
-                    <PopoverContent className="w-64 p-0" align="start">
+                    <PopoverContent className="w-auto p-0" align="start">
                       <Calendar
                         mode="range"
                         selected={range}

@@ -129,7 +129,13 @@ function Calendar({
     <div
       data-slot="calendar"
       className={cn(
-        "group/calendar bg-background p-3 [--cell-radius:0] [--cell-size:--spacing(8)] in-data-[slot=card-content]:bg-transparent in-data-[slot=popover-content]:bg-transparent",
+        // El ancho es del propio componente, no algo que cada caller
+        // tenga que fijar desde afuera (ej. `PopoverContent className`)
+        // — sino, cambia de tamaño entre la vista de días y la de
+        // meses/años según lo que el padre haya puesto. `w-64` es el
+        // ancho natural de 7 columnas de `--cell-size` (2rem) más el
+        // padding del propio calendario.
+        "group/calendar bg-background w-64 p-3 [--cell-radius:0] [--cell-size:--spacing(8)] in-data-[slot=card-content]:bg-transparent in-data-[slot=popover-content]:bg-transparent",
         String.raw`rtl:**:[.rdp-button\_next>svg]:rotate-180`,
         String.raw`rtl:**:[.rdp-button\_previous>svg]:rotate-180`,
         className
