@@ -24,13 +24,19 @@ function createAuditSession(): AuditSession {
       ? faker.date.soon({ days: 1, refDate: startedAt })
       : null
 
+  // El avatar y la verificación están correlacionados: si está verificado
+  // tiene foto de perfil + chulito (badge), si no, solo las iniciales.
+  // Así la lectura visual queda consistente: o "perfil completo" o
+  // "solo iniciales".
+  const authorVerified = faker.datatype.boolean(0.7)
+
   return {
     id: faker.string.uuid(),
     authorName: faker.person.fullName(),
-    authorAvatarUrl: faker.datatype.boolean(0.7)
+    authorAvatarUrl: authorVerified
       ? faker.image.avatarGitHub()
       : null,
-    authorVerified: faker.datatype.boolean(0.8),
+    authorVerified,
     ip: faker.internet.ipv4(),
     startedAt: startedAt.toISOString(),
     endedAt: endedAt ? endedAt.toISOString() : null,

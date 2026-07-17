@@ -1,10 +1,13 @@
 import type { ColumnDef, Table } from "@tanstack/react-table"
-import { CheckIcon } from "@phosphor-icons/react"
+import { Link } from "@tanstack/react-router"
+import { CheckIcon, ListMagnifyingGlassIcon } from "@phosphor-icons/react"
 
 import { Avatar, AvatarBadge, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { DataTableColumnHeader } from "@/components/data-table"
+import { paths } from "@/config/paths"
 
 import {
   SESSION_STATUS_BADGE,
@@ -129,6 +132,38 @@ export const columns: ColumnDef<AuditSession>[] = [
         </Badge>
       )
     },
+  },
+  {
+    id: "operations",
+    accessorKey: "operationsCount",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Operaciones" />
+    ),
+    cell: ({ row }) => (
+      <span className="font-medium">{row.original.operationsCount}</span>
+    ),
+  },
+  {
+    id: "actions",
+    header: () => <span className="sr-only">Acciones</span>,
+    cell: ({ row }) => (
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        aria-label={`Ver operaciones de la sesión de ${row.original.authorName}`}
+        render={
+          <Link
+            to={paths.app.auditoriaSesionOperaciones.getHref(row.original.id)}
+          />
+        }
+        nativeButton={false}
+      >
+        <ListMagnifyingGlassIcon weight="bold" />
+      </Button>
+    ),
+    enableSorting: false,
+    enableHiding: false,
+    size: 48,
   },
 ]
 

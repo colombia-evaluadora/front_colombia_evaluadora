@@ -24,6 +24,7 @@ import { PaymentsErrorPage } from "@/features/payments/pages/payments-error-page
 import {
   auditsSearchSchema,
   auditTablesSearchSchema,
+  sessionOperationsSearchSchema,
   tableOperationsSearchSchema,
 } from "@/features/audits/api/schema"
 
@@ -63,15 +64,19 @@ const TableOperationsPage = lazyRouteComponent(
   () => import("@/features/audits/pages/table-operations-page"),
   "TableOperationsPage"
 )
+const SessionOperationsPage = lazyRouteComponent(
+  () => import("@/features/audits/pages/session-operations-page"),
+  "SessionOperationsPage"
+)
 
 interface RouterContext {
   queryClient: QueryClient
 }
 
 const APP_NAME = "Colombia Evaluadora"
-const APP_DESCRIPTION = "Colombia Evaluadora: gestión de pagos con filtros, orden y paginación."
-const SITE_URL = env.APP_URL
-const OG_IMAGE = `${SITE_URL}/favicon.svg`
+// const APP_DESCRIPTION = "Colombia Evaluadora: gestión de pagos con filtros, orden y paginación."
+// const SITE_URL = env.APP_URL
+// const OG_IMAGE = `${SITE_URL}/favicon.svg`
 
 const rootRoute = createRootRouteWithContext<RouterContext>()({
   component: Outlet,
@@ -80,6 +85,7 @@ const rootRoute = createRootRouteWithContext<RouterContext>()({
   }),
 })
 
+/*
 const landingRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: paths.home.path,
@@ -100,7 +106,9 @@ const landingRoute = createRoute({
     links: [{ rel: "canonical", href: SITE_URL }],
   }),
   component: LandingPage,
-})
+})*/
+
+
 
 const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -191,6 +199,13 @@ export const auditoriaTablaDetalleRoute = createRoute({
   component: TableOperationsPage,
 })
 
+export const auditoriaSesionOperacionesRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.auditoriaSesionOperaciones.path,
+  validateSearch: sessionOperationsSearchSchema,
+  component: SessionOperationsPage,
+})
+
 const reportesRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.reportes.path,
@@ -210,7 +225,7 @@ const configuracionRoute = createRoute({
 })
 
 const routeTree = rootRoute.addChildren([
-  landingRoute,
+//  landingRoute,
   loginRoute,
   forgotPasswordRoute,
   restorePasswordRoute,
@@ -219,6 +234,7 @@ const routeTree = rootRoute.addChildren([
     auditoriaSesionesRoute,
     auditoriaTablasRoute,
     auditoriaTablaDetalleRoute,
+    auditoriaSesionOperacionesRoute,
     reportesRoute,
     usuariosRoute,
     configuracionRoute,

@@ -1,5 +1,10 @@
 import { useForm } from "@tanstack/react-form"
-import { CalendarIcon, CheckCircleIcon, CircleDashedIcon } from "@phosphor-icons/react"
+import {
+  CalendarIcon,
+  PencilIcon,
+  PlusCircleIcon,
+  TrashIcon,
+} from "@phosphor-icons/react"
 import { format, parseISO } from "date-fns"
 import { es } from "date-fns/locale"
 import type { DateRange } from "react-day-picker"
@@ -21,32 +26,32 @@ import {
 } from "@/components/ui/field"
 
 import {
-  auditFiltersFormSchema,
-  type AuditFiltersFormInput,
-  type AuditFiltersFormValues,
+  sessionOperationsFiltersFormSchema,
+  type SessionOperationsFiltersFormInput,
+  type SessionOperationsFiltersFormValues,
 } from "../../api/schema"
-import type { SessionStatus } from "../../api/types/audit"
+import type { OperationType } from "../../api/types/audit-table"
 
 const DATE_FORMAT = "yyyy-MM-dd"
 
-interface FilterAuditSessionFormProps {
+interface FilterSessionOperationsFormProps {
   id: string
-  defaultValues: AuditFiltersFormInput
-  onSubmit: (values: AuditFiltersFormValues) => void
+  defaultValues: SessionOperationsFiltersFormInput
+  onSubmit: (values: SessionOperationsFiltersFormValues) => void
 }
 
-export function FilterAuditSessionForm({
+export function FilterSessionOperationsForm({
   id,
   defaultValues,
   onSubmit,
-}: FilterAuditSessionFormProps) {
+}: FilterSessionOperationsFormProps) {
   const form = useForm({
     defaultValues,
     validators: {
-      onSubmit: auditFiltersFormSchema,
+      onSubmit: sessionOperationsFiltersFormSchema,
     },
     onSubmit: ({ value }) => {
-      onSubmit(auditFiltersFormSchema.parse(value))
+      onSubmit(sessionOperationsFiltersFormSchema.parse(value))
     },
   })
 
@@ -60,75 +65,71 @@ export function FilterAuditSessionForm({
       className="flex flex-1 flex-col gap-4 overflow-y-auto px-4"
     >
       <form.Field
-        name="author"
-        children={(field) => (
-          <Field orientation="vertical" className="gap-2">
-            <FieldLabel htmlFor={field.name}>Autor / IP</FieldLabel>
-            <Input
-              id={field.name}
-              name={field.name}
-              type="text"
-              autoComplete="off"
-              placeholder="ej. Juan Pérez o 190.2.45.12"
-              value={field.state.value}
-              onBlur={field.handleBlur}
-              onChange={(event) => field.handleChange(event.target.value)}
-              className="h-9"
-            />
-          </Field>
-        )}
-      />
-
-      <Separator />
-
-      <form.Field
-        name="statuses"
+        name="operations"
         mode="array"
         children={(field) => {
-          const toggle = (status: SessionStatus, checked: boolean) => {
+          const toggle = (operation: OperationType, checked: boolean) => {
             if (checked) {
-              field.pushValue(status)
+              field.pushValue(operation)
             } else {
-              const index = field.state.value.indexOf(status)
+              const index = field.state.value.indexOf(operation)
               if (index > -1) field.removeValue(index)
             }
           }
           return (
             <FieldSet>
-              <FieldLegend variant="label">Estado</FieldLegend>
+              <FieldLegend variant="label">Operación</FieldLegend>
               <FieldGroup className="grid grid-cols-2 gap-3">
-                <FieldLabel htmlFor="status-filter-active" className="min-w-0">
+                <FieldLabel htmlFor="session-operation-filter-insert" className="min-w-0">
                   <Field orientation="horizontal">
                     <Checkbox
-                      id="status-filter-active"
+                      id="session-operation-filter-insert"
                       name={field.name}
-                      checked={field.state.value.includes("active")}
+                      checked={field.state.value.includes("INSERT")}
                       onCheckedChange={(checked) =>
-                        toggle("active", checked === true)
+                        toggle("INSERT", checked === true)
                       }
                     />
                     <FieldContent className="min-w-0">
                       <FieldTitle className="w-full min-w-0">
-                        <CircleDashedIcon className="size-4 shrink-0 text-muted-foreground" />
-                        <span className="truncate">Activo</span>
+                        <PlusCircleIcon className="size-4 shrink-0 text-muted-foreground" />
+                        <span className="truncate">Insert</span>
                       </FieldTitle>
                     </FieldContent>
                   </Field>
                 </FieldLabel>
-                <FieldLabel htmlFor="status-filter-closed" className="min-w-0">
+                <FieldLabel htmlFor="session-operation-filter-update" className="min-w-0">
                   <Field orientation="horizontal">
                     <Checkbox
-                      id="status-filter-closed"
+                      id="session-operation-filter-update"
                       name={field.name}
-                      checked={field.state.value.includes("closed")}
+                      checked={field.state.value.includes("UPDATE")}
                       onCheckedChange={(checked) =>
-                        toggle("closed", checked === true)
+                        toggle("UPDATE", checked === true)
                       }
                     />
                     <FieldContent className="min-w-0">
                       <FieldTitle className="w-full min-w-0">
-                        <CheckCircleIcon className="size-4 shrink-0 text-muted-foreground" />
-                        <span className="truncate">Cerrada</span>
+                        <PencilIcon className="size-4 shrink-0 text-muted-foreground" />
+                        <span className="truncate">Update</span>
+                      </FieldTitle>
+                    </FieldContent>
+                  </Field>
+                </FieldLabel>
+                <FieldLabel htmlFor="session-operation-filter-delete" className="min-w-0">
+                  <Field orientation="horizontal">
+                    <Checkbox
+                      id="session-operation-filter-delete"
+                      name={field.name}
+                      checked={field.state.value.includes("DELETE")}
+                      onCheckedChange={(checked) =>
+                        toggle("DELETE", checked === true)
+                      }
+                    />
+                    <FieldContent className="min-w-0">
+                      <FieldTitle className="w-full min-w-0">
+                        <TrashIcon className="size-4 shrink-0 text-muted-foreground" />
+                        <span className="truncate">Delete</span>
                       </FieldTitle>
                     </FieldContent>
                   </Field>
@@ -142,10 +143,32 @@ export function FilterAuditSessionForm({
       <Separator />
 
       <form.Field
-        name="startedFrom"
+        name="tableSlug"
+        children={(field) => (
+          <Field orientation="vertical" className="gap-2">
+            <FieldLabel htmlFor={field.name}>Tabla</FieldLabel>
+            <Input
+              id={field.name}
+              name={field.name}
+              type="text"
+              autoComplete="off"
+              placeholder="ej. tnivel_ensenanza"
+              value={field.state.value}
+              onBlur={field.handleBlur}
+              onChange={(event) => field.handleChange(event.target.value)}
+              className="h-9"
+            />
+          </Field>
+        )}
+      />
+
+      <Separator />
+
+      <form.Field
+        name="occurredFrom"
         children={(fromField) => (
           <form.Field
-            name="startedTo"
+            name="occurredTo"
             children={(toField) => {
               const range: DateRange | undefined = fromField.state.value
                 ? {
