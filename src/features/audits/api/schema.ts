@@ -104,3 +104,33 @@ export const auditTablesSearchSchema = z.object({
   name: z.string().optional().catch(undefined),
 })
 export type AuditTablesSearch = z.infer<typeof auditTablesSearchSchema>
+
+// Filtros del listado de operaciones dentro de una sesión. A diferencia
+// de `tableOperationsSearchSchema`, no hay `author` (todas las ops son
+// del mismo autor — el de la sesión) ni `fieldFilters` (dependen de la
+// tabla y acá pueden ser N tablas). Sí hay un `tableSlug` libre para
+// acotar a una sola tabla dentro de la sesión.
+export const sessionOperationsFiltersFormSchema = z.object({
+  operations: z.array(z.enum(OPERATION_TYPES)),
+  tableSlug: z.string(),
+  occurredFrom: z.string(),
+  occurredTo: z.string(),
+})
+export type SessionOperationsFiltersFormInput = z.input<
+  typeof sessionOperationsFiltersFormSchema
+>
+export type SessionOperationsFiltersFormValues = z.infer<
+  typeof sessionOperationsFiltersFormSchema
+>
+
+export const sessionOperationsSearchSchema = z.object({
+  page: z.coerce.number().int().nonnegative().catch(0).default(0),
+  pageSize: z.coerce.number().int().positive().catch(10).default(10),
+  sortBy: z.string().optional().catch(undefined),
+  sortDir: z.enum(["asc", "desc"]).optional().catch(undefined),
+  operations: z.array(z.enum(OPERATION_TYPES)).optional().catch(undefined),
+  tableSlug: z.string().optional().catch(undefined),
+  occurredFrom: z.string().optional().catch(undefined),
+  occurredTo: z.string().optional().catch(undefined),
+})
+export type SessionOperationsSearch = z.infer<typeof sessionOperationsSearchSchema>

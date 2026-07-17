@@ -34,6 +34,11 @@ export const paths = {
       path: "auditoria-sesiones",
       getHref: () => "/app/auditoria-sesiones",
     },
+    auditoriaSesionOperaciones: {
+      path: "auditoria-sesiones/$sessionId/operaciones",
+      getHref: (sessionId: string) =>
+        `/app/auditoria-sesiones/${sessionId}/operaciones`,
+    },
     auditoriaTablas: {
       path: "auditoria-tablas",
       getHref: () => "/app/auditoria-tablas",

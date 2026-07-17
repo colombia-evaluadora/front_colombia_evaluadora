@@ -198,7 +198,9 @@ export function FilterTableOperationsForm({
 
               const label = range?.from
                 ? range.to
-                  ? `${format(range.from, "d MMM", { locale: es })} – ${format(range.to, "d MMM yyyy", { locale: es })}`
+                  ? range.from.getFullYear() === range.to.getFullYear()
+                    ? `${format(range.from, "d MMM", { locale: es })} – ${format(range.to, "d MMM yyyy", { locale: es })}`
+                    : `${format(range.from, "d MMM yyyy", { locale: es })} – ${format(range.to, "d MMM yyyy", { locale: es })}`
                   : format(range.from, "d MMM yyyy", { locale: es })
                 : "Rango de fechas"
 
@@ -223,7 +225,7 @@ export function FilterTableOperationsForm({
                       <CalendarIcon data-icon="inline-start" />
                       {label}
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
+                    <PopoverContent className="w-64 p-0" align="start">
                       <Calendar
                         mode="range"
                         selected={range}
@@ -231,19 +233,6 @@ export function FilterTableOperationsForm({
                         locale={es}
                         numberOfMonths={1}
                       />
-                      {range?.from && (
-                        <div className="border-t p-2">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="w-full"
-                            onClick={() => handleSelect(undefined)}
-                          >
-                            Limpiar rango
-                          </Button>
-                        </div>
-                      )}
                     </PopoverContent>
                   </Popover>
                 </Field>

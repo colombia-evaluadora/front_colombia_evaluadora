@@ -28,12 +28,19 @@ import { useParams } from "@tanstack/react-router"
 
 interface ViewOperationChangesDialogProps {
   operationId: string
+  // Opcional: cuando se usa dentro de un contexto donde la ruta no expone
+  // `tableSlug` (ej. la sheet de operaciones de una sesión, donde las ops
+  // pueden ser de varias tablas), se pasa explícito. Si no, se toma del
+  // route via useParams.
+  tableSlug?: string
 }
 export function ViewOperationChangesDialog({
   operationId,
+  tableSlug: tableSlugProp,
 }: ViewOperationChangesDialogProps) {
   const [open, setOpen] = useState(false)
-  const { tableSlug } = useParams({ strict: false }) as { tableSlug: string }
+  const routeParams = useParams({ strict: false }) as { tableSlug?: string }
+  const tableSlug = tableSlugProp ?? routeParams.tableSlug ?? ""
 
   const [showAll, setShowAll] = useState(false)
 

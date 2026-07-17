@@ -51,3 +51,41 @@ export interface AuditsStats {
   activeSessions: number
   operationsToday: number
 }
+
+// Una operación dentro de una sesión de auditoría. Es la misma `TableOperation`
+// pero se le agrega `tableSlug` para poder agrupar/rutear al dialog de
+// cambios correspondiente (`ViewOperationChangesDialog` lo necesita para
+// fetchear el detalle).
+export interface SessionOperation {
+  id: string
+  tableSlug: string
+  operation: import("./audit-table").OperationType
+  entityName: string
+  entityId: string
+  occurredAt: string
+}
+
+export interface SessionOperationsFilters {
+  operations?: import("./audit-table").OperationType[]
+  tableSlug?: string
+  occurredFrom?: string
+  occurredTo?: string
+}
+
+export interface SessionOperationsQueryRequest {
+  sessionId: string
+  filters: SessionOperationsFilters
+  sorting: { id: string; desc: boolean }[]
+  pageIndex: number
+  pageSize: number
+}
+
+export interface SessionOperationsResponse {
+  rows: SessionOperation[]
+  pageCount: number
+  totalCount: number
+}
+
+export interface SessionOperationsExportRequest {
+  ids?: string[]
+}

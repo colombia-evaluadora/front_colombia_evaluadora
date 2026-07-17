@@ -1,7 +1,13 @@
 import { http, HttpResponse, delay } from "msw"
 
 import { httpQuery } from "./_http-query"
+import {
+  getSessionOperationById,
+  getSessionOperationChanges,
+  applySessionOperationRevert,
+} from "./_session-operations"
 
+import { auditsDb } from "../db/audits"
 import { auditTablesDb } from "../db/audit-tables"
 import { tableOperationChangesDb, tableOperationsDb } from "../db/table-operations"
 import type { FieldFilter } from "@/features/audits/api/schema"
@@ -149,6 +155,18 @@ function computeStats(rows: TableOperation[]): TableOperationsStats {
   }
 }
 
+// Las operaciones de sesión tienen id `{sessionId}-op-{index}`. Este
+// helper parsea el id, encuentra la sesión correspondiente y devuelve la
+// operación generada por el módulo compartido.
+function findSessionOperation(operationId: string) {
+  const separatorIndex = operationId.lastIndexOf("-op-")
+  if (separatorIndex <= 0) return null
+  const sessionId = operationId.slice(0, separatorIndex)
+  const session = auditsDb.find((row) => row.id === sessionId)
+  if (!session) return null
+  return getSessionOperationById(session, operationId)
+}
+
 export const auditTablesHandlers = [
   http.get("/api/audit-tables/:slug", async ({ params }) => {
     await delay(150)
@@ -276,15 +294,28 @@ export const auditTablesHandlers = [
       const operationId = params.operationId as string
       const showAll = new URL(request.url).searchParams.get("showAll") === "true"
 
-      const operation = getTableRows(slug).find((row) => row.id === operationId)
-      if (!operation) {
+      // Primero buscamos en `tableOperationsDb[slug]`. Si no está, puede
+      // ser una operación generada on-the-fly para una sesión
+      // (`{sessionId}-op-{index}`) — la regeneramos para mostrar sus
+      // cambios.
+      const tableOp = getTableRows(slug).find(
+        (row) => row.id === operationId
+      )
+      const sessionOp = !tableOp
+        ? findSessionOperation(operationId)
+        : null
+
+      if (!tableOp && !sessionOp) {
         return HttpResponse.json(
           { message: "Operación no encontrada." },
           { status: 404 }
         )
       }
 
-      const allChanges = tableOperationChangesDb[slug]?.[operationId] ?? []
+      const allChanges = tableOp
+        ? (tableOperationChangesDb[slug]?.[operationId] ?? [])
+        : getSessionOperationChanges(sessionOp!)
+
       // Solo mostramos lo que efectivamente cambió: UPDATE con `before` ===
       // `after`, INSERT con `before === null`, DELETE con `after === null`.
       // Eso es lo que el usuario puede revertir. Cuando el frontend pide
@@ -296,6 +327,8 @@ export const auditTablesHandlers = [
       const changedFields = allChanges.filter(
         (change) => change.before !== change.after
       ).length
+
+      const operation = tableOp ?? sessionOp!
 
       return HttpResponse.json<OperationChangesResponse>({
         operationId,
@@ -317,8 +350,15 @@ export const auditTablesHandlers = [
       const operationId = params.operationId as string
       const { changes } = (await request.json()) as RevertOperationChangeInput
 
-      const operation = getTableRows(slug).find((row) => row.id === operationId)
-      if (!operation) {
+      // Misma lógica que en /changes: primero tabla, después sesión.
+      const tableOp = getTableRows(slug).find(
+        (row) => row.id === operationId
+      )
+      const sessionOp = !tableOp
+        ? findSessionOperation(operationId)
+        : null
+
+      if (!tableOp && !sessionOp) {
         return HttpResponse.json<RevertOperationChangeResponse>(
           {
             status: "error",
@@ -329,37 +369,76 @@ export const auditTablesHandlers = [
         )
       }
 
-      const allChanges = tableOperationChangesDb[slug]?.[operationId] ?? []
-      const validIndexes = new Set(allChanges.map((change) => change.fieldIndex))
-      const requested = changes.filter((change) =>
-        validIndexes.has(change.fieldIndex)
-      )
+      // Para operaciones de sesión, el "revert" en el mock se aplica al
+      // cache vía `applySessionOperationRevert`. Para tablas, mutamos
+      // `tableOperationChangesDb` igual que antes.
+      let allChanges: ReturnType<typeof getSessionOperationChanges>
+      let entityName: string
+      let fieldIndexes: number[]
 
-      if (!requested.length) {
-        return HttpResponse.json<RevertOperationChangeResponse>({
-          status: "error",
-          message: "No se especificaron campos válidos para revertir.",
-          revertedFields: 0,
-        })
-      }
-
-      // En un backend real acá iría la escritura; en el mock solo marcamos
-      // el cambio como revertido. `after` y `current` pasan a `before`
-      // para reflejar lo que efectivamente quedó en el registro.
-      requested.forEach(({ fieldIndex }) => {
-        const target = allChanges.find(
-          (change) => change.fieldIndex === fieldIndex
+      if (tableOp) {
+        allChanges =
+          tableOperationChangesDb[slug]?.[operationId] ?? []
+        entityName = tableOp.entityName
+        const validIndexes = new Set(
+          allChanges.map((change) => change.fieldIndex)
         )
-        if (!target) return
-        const reverted = target.before
-        target.after = reverted
-        target.current = reverted
-      })
+        fieldIndexes = changes
+          .filter((change) => validIndexes.has(change.fieldIndex))
+          .map((change) => change.fieldIndex)
+        if (fieldIndexes.length === 0) {
+          return HttpResponse.json<RevertOperationChangeResponse>({
+            status: "error",
+            message: "No se especificaron campos válidos para revertir.",
+            revertedFields: 0,
+          })
+        }
+        fieldIndexes.forEach((fieldIndex) => {
+          const target = allChanges.find(
+            (change) => change.fieldIndex === fieldIndex
+          )
+          if (!target) return
+          const reverted = target.before
+          target.after = reverted
+          target.current = reverted
+        })
+      } else {
+        // sessionOp no es null acá (validado arriba)
+        const session = auditsDb.find((row) =>
+          row.id.startsWith(operationId.split("-op-")[0])
+        )
+        // Necesitamos la sesión para delegar al helper — si no la
+        // encontramos caemos al 404.
+        if (!session) {
+          return HttpResponse.json<RevertOperationChangeResponse>({
+            status: "error",
+            message: "Operación no encontrada.",
+            revertedFields: 0,
+          })
+        }
+        const validIndexes = new Set(
+          getSessionOperationChanges(sessionOp!).map(
+            (change) => change.fieldIndex
+          )
+        )
+        fieldIndexes = changes
+          .filter((change) => validIndexes.has(change.fieldIndex))
+          .map((change) => change.fieldIndex)
+        if (fieldIndexes.length === 0) {
+          return HttpResponse.json<RevertOperationChangeResponse>({
+            status: "error",
+            message: "No se especificaron campos válidos para revertir.",
+            revertedFields: 0,
+          })
+        }
+        applySessionOperationRevert(session, operationId, fieldIndexes)
+        entityName = sessionOp!.entityName
+      }
 
       return HttpResponse.json<RevertOperationChangeResponse>({
         status: "ok",
-        message: `Se revirtieron ${requested.length} campo(s) de "${operation.entityName}".`,
-        revertedFields: requested.length,
+        message: `Se revirtieron ${fieldIndexes.length} campo(s) de "${entityName}".`,
+        revertedFields: fieldIndexes.length,
       })
     }
   ),

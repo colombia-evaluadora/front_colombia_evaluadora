@@ -1,6 +1,7 @@
 import { http, HttpResponse, delay } from "msw"
 
 import { httpQuery } from "./_http-query"
+import { getSessionOperations } from "./_session-operations"
 
 import { auditsDb } from "../db/audits"
 import type {
@@ -11,6 +12,10 @@ import type {
   AuditsStatsRequest,
   ExportFormat,
   ExportResult,
+  SessionOperation,
+  SessionOperationsFilters,
+  SessionOperationsQueryRequest,
+  SessionOperationsResponse,
 } from "@/features/audits/api/types/audit"
 
 const EXPORT_FORMAT_LABELS: Record<ExportFormat, string> = {
@@ -72,6 +77,57 @@ function sortValue(row: AuditSession, id: string) {
   if (id === "authorIp") return row.authorName
   return row[id as keyof AuditSession]
 }
+
+function applySessionOperationFilters(
+  rows: SessionOperation[],
+  filters: SessionOperationsFilters
+): SessionOperation[] {
+  return rows.filter((row) => {
+    if (filters.tableSlug && row.tableSlug !== filters.tableSlug) return false
+    if (
+      filters.operations?.length &&
+      !filters.operations.includes(row.operation)
+    ) {
+      return false
+    }
+    if (
+      filters.occurredFrom &&
+      row.occurredAt < `${filters.occurredFrom}T00:00:00.000Z`
+    ) {
+      return false
+    }
+    if (
+      filters.occurredTo &&
+      row.occurredAt > `${filters.occurredTo}T23:59:59.999Z`
+    ) {
+      return false
+    }
+    return true
+  })
+}
+
+function sessionOperationSortValue(row: SessionOperation, id: string): string {
+  return row[id as keyof SessionOperation] ?? ""
+}
+
+function applySortingSessionOps(
+  rows: SessionOperation[],
+  sorting: SessionOperationsQueryRequest["sorting"]
+): SessionOperation[] {
+  if (!sorting.length) return rows
+  const [{ id, desc }] = sorting
+  const sorted = [...rows].sort((a, b) => {
+    const av = sessionOperationSortValue(a, id)
+    const bv = sessionOperationSortValue(b, id)
+    if (av === bv) return 0
+    return av > bv ? 1 : -1
+  })
+  return desc ? sorted.reverse() : sorted
+}
+
+// Genera las operaciones de una sesión (delegado al módulo compartido
+// `_session-operations` que cachea por sesión para que el listing y el
+// dialog de "Ver cambios" vean los mismos datos).
 
 function applySorting(
   rows: AuditSession[],
@@ -143,4 +199,82 @@ export const auditsHandlers = [
       message: `${count} sesión(es) exportada(s) a ${EXPORT_FORMAT_LABELS[format]}.`,
     })
   }),
+
+  // Lookup puntual de una sesión — la página de operaciones la usa para
+  // el header (autor, IP, rango de fechas).
+  http.get("/api/audits/sessions/:sessionId", async ({ params }) => {
+    await delay(150)
+    const sessionId = params.sessionId as string
+    const session = auditsDb.find((row) => row.id === sessionId)
+    if (!session) {
+      return HttpResponse.json(
+        { message: "Sesión no encontrada." },
+        { status: 404 }
+      )
+    }
+    return HttpResponse.json<AuditSession>(session)
+  }),
+
+  // QUERY paginada y filtrable. Las operaciones de una sesión se generan
+  // on-the-fly (determinísticas por seed) y el filtrado/orden/paginación
+  // se aplica en memoria antes de devolver la página.
+  httpQuery(
+    "/api/audits/sessions/:sessionId/operations",
+    async ({ request, params }) => {
+      await delay(250)
+      const sessionId = params.sessionId as string
+      const session = auditsDb.find((row) => row.id === sessionId)
+      if (!session) {
+        return HttpResponse.json(
+          { message: "Sesión no encontrada." },
+          { status: 404 }
+        )
+      }
+
+      const body = (await request.json()) as SessionOperationsQueryRequest
+      const { filters, sorting, pageIndex, pageSize } = body
+
+      const all = getSessionOperations(session)
+      const filtered = applySortingSessionOps(
+        applySessionOperationFilters(all, filters),
+        sorting
+      )
+      const totalCount = filtered.length
+      const pageCount = Math.max(1, Math.ceil(totalCount / pageSize))
+      const start = pageIndex * pageSize
+      const rows = filtered.slice(start, start + pageSize)
+
+      return HttpResponse.json<SessionOperationsResponse>({
+        rows,
+        pageCount,
+        totalCount,
+      })
+    }
+  ),
+
+  // Exporta un subset de operaciones o todas las de la sesión (cuando
+  // `ids` viene vacío).
+  http.post(
+    "/api/audits/sessions/:sessionId/operations/export",
+    async ({ request, params }) => {
+      await delay(600)
+      const sessionId = params.sessionId as string
+      const session = auditsDb.find((row) => row.id === sessionId)
+      const total = session?.operationsCount ?? 0
+
+      const { ids, format } = (await request.json()) as {
+        ids: string[]
+        format: ExportFormat
+      }
+
+      // Sin `ids` ⇒ exportamos todas las operaciones de la sesión
+      // (es lo que dispara el botón "Exportar todo" del top bar).
+      const count = ids.length > 0 ? ids.length : total
+
+      return HttpResponse.json<ExportResult>({
+        status: "ok",
+        message: `${count} operación(es) exportada(s) a ${EXPORT_FORMAT_LABELS[format]}.`,
+      })
+    }
+  ),
 ]
