@@ -1,0 +1,102 @@
+/* Generated from code-tokens/ — do not edit, run `node scripts/figma/figma-to-css.mjs` */
+
+:root {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.147 0.004 49.25);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.147 0.004 49.25);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.147 0.004 49.25);
+  --primary: oklch(0.513 0.11 163.565);
+  --primary-foreground: oklch(0.979 0.021 166.113);
+  --secondary: oklch(0.967 0.001 286.375);
+  --secondary-foreground: oklch(0.21 0.006 285.885);
+  --muted: oklch(0.96 0.002 17.195);
+  --muted-foreground: oklch(0.547 0.021 43.085);
+  --accent: oklch(0.96 0.002 17.195);
+  --accent-foreground: oklch(0.214 0.009 43.066);
+  --destructive: oklch(0.583 0.239 28.615);
+  --info: oklch(0.619 0.207 259.232);
+  --warning: oklch(0.798 0.164 82.681);
+  --success: oklch(0.702 0.158 160.438);
+  --border: oklch(0.922 0.005 34.309);
+  --input: oklch(0.922 0.005 34.309);
+  --ring: oklch(0.714 0.014 41.161);
+  --chart-1: oklch(0.807 0.101 250.446);
+  --chart-2: oklch(0.619 0.207 259.232);
+  --chart-3: oklch(0.547 0.246 262.866);
+  --chart-4: oklch(0.488 0.243 264.405);
+  --chart-5: oklch(0.424 0.198 265.499);
+  --sidebar: oklch(0.986 0.002 67.802);
+  --sidebar-foreground: oklch(0.147 0.004 49.25);
+  --sidebar-primary: oklch(0.603 0.134 160.836);
+  --sidebar-primary-foreground: oklch(0.979 0.021 166.113);
+  --sidebar-accent: oklch(0.96 0.002 17.195);
+  --sidebar-accent-foreground: oklch(0.214 0.009 43.066);
+  --sidebar-border: oklch(0.922 0.005 34.309);
+  --sidebar-ring: oklch(0.714 0.014 41.161);
+  --radius: 0.875rem;
+}
+
+.dark {
+  --background: oklch(0.147 0.004 49.25);
+  --foreground: oklch(0.986 0.002 67.802);
+  --card: oklch(0.214 0.009 43.066);
+  --card-foreground: oklch(0.986 0.002 67.802);
+  --popover: oklch(0.214 0.009 43.066);
+  --popover-foreground: oklch(0.986 0.002 67.802);
+  --primary: oklch(0.434 0.09 165.794);
+  --primary-foreground: oklch(0.979 0.021 166.113);
+  --secondary: oklch(0.274 0.005 286.033);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.268 0.011 36.494);
+  --muted-foreground: oklch(0.714 0.014 41.161);
+  --accent: oklch(0.268 0.011 36.494);
+  --accent-foreground: oklch(0.986 0.002 67.802);
+  --destructive: oklch(0.702 0.189 22.228);
+  --info: oklch(0.619 0.207 259.232);
+  --warning: oklch(0.772 0.173 65.367);
+  --success: oklch(0.702 0.158 160.438);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.547 0.021 43.085);
+  --chart-1: oklch(0.807 0.101 250.446);
+  --chart-2: oklch(0.619 0.207 259.232);
+  --chart-3: oklch(0.547 0.246 262.866);
+  --chart-4: oklch(0.488 0.243 264.405);
+  --chart-5: oklch(0.424 0.198 265.499);
+  --sidebar: oklch(0.214 0.009 43.066);
+  --sidebar-foreground: oklch(0.986 0.002 67.802);
+  --sidebar-primary: oklch(0.702 0.158 160.438);
+  --sidebar-primary-foreground: oklch(0.261 0.05 173.096);
+  --sidebar-accent: oklch(0.268 0.011 36.494);
+  --sidebar-accent-foreground: oklch(0.986 0.002 67.802);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.547 0.021 43.085);
+  --radius: 0.875rem;
+}
+
+[data-color-theme='blue'] {
+  --primary: oklch(0.424 0.198 265.499);
+  --primary-foreground: oklch(0.97 0.014 254.604);
+  --chart-1: oklch(0.878 0.169 91.907);
+  --chart-2: oklch(0.772 0.173 65.367);
+  --chart-3: oklch(0.667 0.169 53.381);
+  --chart-4: oklch(0.557 0.158 45.257);
+  --chart-5: oklch(0.475 0.136 44.981);
+  --sidebar-primary: oklch(0.619 0.207 259.232);
+  --sidebar-primary-foreground: oklch(0.97 0.014 254.604);
+}
+
+.dark[data-color-theme='blue'] {
+  --primary: oklch(0.424 0.198 265.499);
+  --primary-foreground: oklch(0.97 0.014 254.604);
+  --chart-1: oklch(0.878 0.169 91.907);
+  --chart-2: oklch(0.772 0.173 65.367);
+  --chart-3: oklch(0.667 0.169 53.381);
+  --chart-4: oklch(0.557 0.158 45.257);
+  --chart-5: oklch(0.475 0.136 44.981);
+  --sidebar-primary: oklch(0.619 0.207 259.232);
+  --sidebar-primary-foreground: oklch(0.97 0.014 254.604);
+}
+
