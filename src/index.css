@@ -200,5 +200,8 @@
     @apply font-sans;}
   button:not(:disabled) {
     cursor: pointer;}
+  ::selection {
+    background: var(--primary);
+    color: var(--primary-foreground);}
   button:disabled {
     cursor: not-allowed;}}
