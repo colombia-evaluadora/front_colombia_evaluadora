@@ -123,9 +123,17 @@ function buildToken(name, declValue, original) {
 }
 
 // Selector per mode (matches what figma-to-css emits).
-const SELECTORS = {
+// For Blue modes, the theme.css only declares the variables that actually
+// *change* — everything else inherits from the corresponding base selector.
+// We must parse the base first and then overlay the Blue overrides, otherwise
+// Figma ends up with an incomplete token set for those modes.
+const BASE_SELECTORS = {
   'Light': ':root',
   'Dark': '.dark',
+};
+const OVERRIDE_SELECTORS = {
+  'Light': null,
+  'Dark': null,
   'Blue Light': "[data-color-theme='blue']",
   'Blue Dark': ".dark[data-color-theme='blue']",
 };
@@ -136,12 +144,32 @@ const themeCss = readFileSync(themePath, 'utf8');
 
 const written = [];
 for (const mode of MODES) {
-  const decls = parseBlock(themeCss, SELECTORS[mode]);
+  // Layer the base selector first (so we get every variable declared on
+  // :root / .dark) and then the Blue override selector on top so the
+  // customisations win.
+  const layers = [BASE_SELECTORS[mode.replace(/^Blue /, '')] ?? BASE_SELECTORS[mode]];
+  if (OVERRIDE_SELECTORS[mode]) layers.push(OVERRIDE_SELECTORS[mode]);
 
+  const decls = {};
+  for (const selector of layers) {
+    for (const [name, value] of Object.entries(parseBlock(themeCss, selector))) {
+      decls[name] = value;
+    }
+  }
+
+  // Prefer the existing JSON for the current mode as the metadata cache so
+  // Figma scopes / variable IDs are preserved. For Blue modes we ALSO seed
+  // from the base JSON so tokens that come from inheritance already carry
+  // their original scopes (e.g. sidebar-* from Light/Dark).
   const tokensPath = findExistingTokens(mode);
-  const existing = tokensPath
-    ? JSON.parse(readFileSync(tokensPath, 'utf8'))
-    : {};
+  let existing = tokensPath ? JSON.parse(readFileSync(tokensPath, 'utf8')) : {};
+  if (mode.startsWith('Blue')) {
+    const basePath = findExistingTokens(mode === 'Blue Light' ? 'Light' : 'Dark');
+    if (basePath) {
+      const base = JSON.parse(readFileSync(basePath, 'utf8'));
+      existing = { ...base, ...existing };
+    }
+  }
 
   const out = { $extensions: { 'com.figma.modeName': mode } };
   for (const [name, value] of Object.entries(decls)) {

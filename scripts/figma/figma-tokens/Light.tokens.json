@@ -315,12 +315,12 @@
     "$value": {
       "colorSpace": "srgb",
       "components": [
-        0.9062756548600005,
+        0.9063085054008327,
         0,
-        0.0335417036861883
+        0.0407832227544625
       ],
       "alpha": 1,
-      "hex": "#E70009"
+      "hex": "#E7000A"
     },
     "$extensions": {
       "com.figma.scopes": [
@@ -359,9 +359,9 @@
     "$value": {
       "colorSpace": "srgb",
       "components": [
-        0.9415722728236141,
-        0.6944824109349959,
-        0.0053821608916836
+        0.941443651047525,
+        0.6945574440912878,
+        0.0051461352380261
       ],
       "alpha": 1,
       "hex": "#F0B101"
@@ -623,12 +623,12 @@
     "$value": {
       "colorSpace": "srgb",
       "components": [
-        0.012217772290544,
-        0.5996015082930845,
-        0.3997547946858059
+        0.0086011212054418,
+        0.599650946194219,
+        0.4003111390541577
       ],
       "alpha": 1,
-      "hex": "#039966"
+      "hex": "#029966"
     },
     "$extensions": {
       "com.figma.scopes": [
@@ -747,18 +747,6 @@
       ],
       "com.figma.codeSyntax": {
         "WEB": "var(--sidebar-ring)"
-      }
-    }
-  },
-  "radius": {
-    "$type": "number",
-    "$value": 14,
-    "$extensions": {
-      "com.figma.scopes": [
-        "CORNER_RADIUS"
-      ],
-      "com.figma.codeSyntax": {
-        "WEB": "var(--radius)"
       }
     }
   }
