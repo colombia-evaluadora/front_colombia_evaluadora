@@ -19,8 +19,8 @@
  *
  * Usage: node scripts/figma/figma-to-css.mjs [tokens-dir] [out-file]
  */
-import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { readFileSync, writeFileSync, readdirSync, mkdirSync } from 'node:fs';
+import { join, dirname } from 'node:path';
 import { parse, converter } from 'culori';
 
 const TOKENS_DIR = process.argv[2] ?? 'scripts/figma/figma-tokens';
@@ -36,7 +36,11 @@ const MODES = [
 const toOklch = converter('oklch');
 const round = (n, d) => +n.toFixed(d);
 
+// Token-name → CSS-var-name renames. css-to-figma.mjs holds the inverse map
+// (CSS_VAR_TO_TOKEN); keep both in sync.
 const NUMBER_MAP = { 'radius-lg': '--radius' };
+// Tokens intentionally not emitted to CSS. css-to-figma.mjs re-injects these
+// from the existing JSON so they survive the roundtrip; keep both lists in sync.
 const SKIP_NUMBERS = new Set(['radius-sm', 'radius-md', 'radius-xl', 'radius-2xl']);
 
 function findFile(mode) {
@@ -63,13 +67,23 @@ function flatten(obj, prefix = '') {
 }
 
 function cssColor(value) {
-  const raw = value && typeof value === 'object' && 'hex' in value
-    ? (value.hex ?? String(value))
-    : String(value);
-  const c = toOklch(parse(raw));
+  let c = null;
+  if (value && typeof value === 'object') {
+    if (typeof value.hex === 'string') {
+      c = toOklch(parse(value.hex));
+    }
+    // Fallback: no usable hex, rebuild from DTCG components (0..1 floats).
+    if (!c && Array.isArray(value.components)) {
+      const [r = 0, g = 0, b = 0] = value.components;
+      c = toOklch({ mode: 'rgb', r, g, b });
+    }
+  } else {
+    c = toOklch(parse(String(value)));
+  }
   if (!c) return null;
-  const L = round(c.l ?? 0, 3);
-  const C = round(c.c ?? 0, 3);
+  // 4 decimals: enough for visual fidelity, keeps roundtrip drift negligible.
+  const L = round(c.l ?? 0, 4);
+  const C = round(c.c ?? 0, 4);
   const H = c.h === undefined || Number.isNaN(c.h) ? 0 : round(c.h, 3);
   // Figma exports alpha as a separate field on the value object; `hex` is RGB-only.
   const rawAlpha =
@@ -81,17 +95,40 @@ function cssColor(value) {
   return alpha < 1 ? `oklch(${L} ${C} ${H} / ${round(alpha * 100, 1)}%)` : base;
 }
 
-function tokensToDecls(tokens) {
+/** Read a DTCG number/dimension value as CSS px. Handles {value, unit} objects. */
+function numberToPx(value) {
+  if (value && typeof value === 'object') {
+    const v = parseFloat(value.value);
+    if (Number.isNaN(v)) return null;
+    return value.unit === 'rem' ? v * 16 : v; // px (or unitless) otherwise
+  }
+  const v = parseFloat(value);
+  return Number.isNaN(v) ? null : v;
+}
+
+function tokensToDecls(tokens, mode) {
   const decls = {};
+  const sourceOf = {}; // varName -> full token path, to detect collisions
   for (const [name, { type, value }] of Object.entries(tokens)) {
     const varName = name.split('/').pop();
+    if (sourceOf[varName] && sourceOf[varName] !== name) {
+      console.warn(
+        `  [warn] ${mode}: "${name}" collides with "${sourceOf[varName]}" on --${varName}; last one wins`
+      );
+    }
+    sourceOf[varName] = name;
     if (type === 'color') {
       const css = cssColor(value);
       if (css) decls[`--${varName}`] = css;
+      else console.warn(`  [warn] ${mode}: color token "${name}" could not be parsed, skipped`);
     } else if (type === 'number' || type === 'dimension') {
       if (SKIP_NUMBERS.has(varName)) continue;
       const target = NUMBER_MAP[varName] ?? `--${varName}`;
-      const px = typeof value === 'object' ? parseFloat(value.value) : parseFloat(value);
+      const px = numberToPx(value);
+      if (px === null) {
+        console.warn(`  [warn] ${mode}: ${type} token "${name}" has no numeric value, skipped`);
+        continue;
+      }
       decls[target] = `${round(px / 16, 4)}rem`;
     }
   }
@@ -101,10 +138,10 @@ function tokensToDecls(tokens) {
 const declsByMode = {};
 for (const { mode } of MODES) {
   const raw = JSON.parse(readFileSync(findFile(mode), 'utf8'));
-  declsByMode[mode] = tokensToDecls(flatten(raw));
+  declsByMode[mode] = tokensToDecls(flatten(raw), mode);
 }
 
-let css = '/* Generated from code-tokens/ — do not edit, run `node scripts/figma/figma-to-css.mjs` */\n\n';
+let css = '/* Generated from figma-tokens/ — do not edit, run `node scripts/figma/figma-to-css.mjs` */\n\n';
 for (const { mode, selector, base } of MODES) {
   let decls = declsByMode[mode];
   if (base) {
@@ -118,5 +155,6 @@ for (const { mode, selector, base } of MODES) {
   css += '}\n\n';
 }
 
+mkdirSync(dirname(OUT_FILE), { recursive: true });
 writeFileSync(OUT_FILE, css);
 console.log(`theme.css written (${css.split('\n').length} lines).`);
