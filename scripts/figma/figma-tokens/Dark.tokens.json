@@ -139,9 +139,9 @@
     "$value": {
       "colorSpace": "srgb",
       "components": [
-        0.0033453225659319,
-        0.3768213161127822,
-        0.2708009714407498
+        0.0024233117244758,
+        0.3768389508608034,
+        0.2710789154439939
       ],
       "alpha": 1,
       "hex": "#016045"
@@ -747,18 +747,6 @@
       ],
       "com.figma.codeSyntax": {
         "WEB": "var(--sidebar-ring)"
-      }
-    }
-  },
-  "radius": {
-    "$type": "number",
-    "$value": 14,
-    "$extensions": {
-      "com.figma.scopes": [
-        "CORNER_RADIUS"
-      ],
-      "com.figma.codeSyntax": {
-        "WEB": "var(--radius)"
       }
     }
   }
