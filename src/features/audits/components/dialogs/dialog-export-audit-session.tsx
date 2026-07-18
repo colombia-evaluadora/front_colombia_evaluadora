@@ -45,7 +45,7 @@ export function ExportAuditSessionDialog({ filters }: ExportAuditSessionDialogPr
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
-        render={<Button variant="outline" aria-label="Exportar sesiones filtradas" />}
+        render={<Button color="primary" aria-label="Exportar sesiones filtradas" />}
       >
         <DownloadSimpleIcon data-icon="inline-start" />
         <span className="sr-only md:not-sr-only">Exportar</span>
@@ -74,6 +74,7 @@ export function ExportAuditSessionDialog({ filters }: ExportAuditSessionDialogPr
             </Button>
             <Button
               type="button"
+              color="primary"
               disabled={exportAll.isPending}
               onClick={() => handleExport("pdf")}
             >

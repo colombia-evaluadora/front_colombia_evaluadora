@@ -53,7 +53,7 @@ export function ExportSelectedTableOperationsDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
-        render={<Button variant="outline" aria-label={`Exportar ${count} seleccionadas`} />}
+        render={<Button color="primary" aria-label={`Exportar ${count} seleccionadas`} />}
       >
         <DownloadSimpleIcon data-icon="inline-start" />
         <span aria-hidden="true" className="md:hidden">
@@ -84,6 +84,7 @@ export function ExportSelectedTableOperationsDialog({
             </Button>
             <Button
               type="button"
+              color="primary"
               disabled={exportSelected.isPending}
               onClick={() => handleExport("pdf")}
             >
