@@ -50,7 +50,7 @@ export function FilterAuditSessionSheet({
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger
           render={
-            <Button variant={activeFilterCount > 0 ? "fill" : "outline"} />
+            <Button variant={activeFilterCount > 0 ? "fill" : "outline"} color="primary" />
           }
         >
           <FunnelIcon />
@@ -74,14 +74,14 @@ export function FilterAuditSessionSheet({
           <SheetFooter className="flex-row items-center justify-between gap-2">
             <Button
               type="button"
-              variant="ghost"
+              color="muted"
               onClick={handleClearAll}
               disabled={activeFilterCount === 0}
             >
               <EraserIcon data-icon="inline-start" />
               Limpiar todo
             </Button>
-            <Button type="submit" form={FILTER_AUDIT_SESSION_FORM_ID}>
+            <Button type="submit" form={FILTER_AUDIT_SESSION_FORM_ID} color="primary">
               Aplicar
             </Button>
           </SheetFooter>
@@ -92,7 +92,8 @@ export function FilterAuditSessionSheet({
       {activeFilterCount > 0 && (
         <Button
           type="button"
-          variant="fill"
+          variant="soft"
+          color="primary"
           size="icon"
           className="border-l-0"
           aria-label="Limpiar filtros"

@@ -55,7 +55,7 @@ export function ExportSelectedSessionOperationsDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
         render={
-          <Button variant="outline" aria-label={`Exportar ${count} seleccionadas`} />
+          <Button color="primary" aria-label={`Exportar ${count} seleccionadas`} />
         }
       >
         <DownloadSimpleIcon data-icon="inline-start" />
@@ -89,6 +89,7 @@ export function ExportSelectedSessionOperationsDialog({
             </Button>
             <Button
               type="button"
+              color="primary"
               disabled={exportSelected.isPending}
               onClick={() => handleExport("pdf")}
             >

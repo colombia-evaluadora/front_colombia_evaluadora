@@ -1,5 +1,4 @@
 import { useEffect } from "react"
-import { ArrowLeftIcon } from "@phosphor-icons/react"
 import { Link, useNavigate, useSearch } from "@tanstack/react-router"
 
 import icon from "@/assets/icon.svg"
@@ -33,21 +32,12 @@ export function LoginPage() {
   return (
     <div className="grid min-h-svh lg:grid-cols-2">
       <div className="flex flex-col p-6 md:p-10">
-        <div className="flex items-center justify-between">
-          <Button
-            variant="ghost"
-            size="sm"
-            render={<Link to={paths.home.getHref()} />}
-            nativeButton={false}
-          >
-            <ArrowLeftIcon data-icon="inline-start" />
-            Volver
-          </Button>
+        <div className="flex items-center justify-center">
+      
           <Link to={paths.home.getHref()}>
             <img src={logo} alt="Colombia Evaluadora" className="h-10 w-auto" />
           </Link>
 
-          <div className="w-30" />
 
         </div>
 
@@ -73,6 +63,7 @@ export function LoginPage() {
 
             <Button
               type="submit"
+              color="primary"
               form={LOGIN_FORM_ID}
               disabled={loginMutation.isPending}
               className="w-full"

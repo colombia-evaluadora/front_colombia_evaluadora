@@ -54,7 +54,7 @@ export function FilterTableOperationsSheet({
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger
           render={
-            <Button variant={activeFilterCount > 0 ? "fill" : "outline"} />
+            <Button variant={activeFilterCount > 0 ? "soft" : "outline"} color={activeFilterCount > 0 ? "primary" : "secondary"} />
           }
         >
           <FunnelIcon />
@@ -86,18 +86,17 @@ export function FilterTableOperationsSheet({
               <EraserIcon data-icon="inline-start" />
               Limpiar todo
             </Button>
-            <Button type="submit" form={FILTER_TABLE_OPERATIONS_FORM_ID}>
+            <Button type="submit" form={FILTER_TABLE_OPERATIONS_FORM_ID}  color="primary">
               Aplicar
             </Button>
           </SheetFooter>
         </SheetContent>
       </Sheet>
-      {/* Clear rápido sin abrir el sheet — solo visible si hay algo
-          para limpiar. */}
       {activeFilterCount > 0 && (
         <Button
           type="button"
-          variant="fill"
+          variant="soft"
+          color="primary"
           size="icon"
           className="border-l-0"
           aria-label="Limpiar filtros"

@@ -49,7 +49,7 @@ export function ExportSessionOperationsDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
-        render={<Button variant="outline" aria-label="Exportar todas las operaciones" />}
+        render={<Button color="primary" aria-label="Exportar todas las operaciones" />}
       >
         <DownloadSimpleIcon data-icon="inline-start" />
         <span className="sr-only md:not-sr-only">Exportar</span>
@@ -77,6 +77,7 @@ export function ExportSessionOperationsDialog({
             </Button>
             <Button
               type="button"
+              color="primary"
               disabled={exportAll.isPending}
               onClick={() => handleExport("pdf")}
             >

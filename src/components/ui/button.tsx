@@ -13,10 +13,11 @@ const buttonVariants = cva(
     variants: {
       variant: {
         fill: "bg-primary text-primary-foreground hover:bg-primary/80",
+        soft: "",
         outline:
-          "border-primary bg-transparent hover:bg-muted hover:text-primary aria-expanded:bg-muted aria-expanded:text-primary dark:hover:bg-input/30",
+          "border-primary bg-transparent hover:bg-muted aria-expanded:bg-muted dark:hover:bg-input/30",
         ghost:
-          "hover:bg-muted hover:text-primary aria-expanded:bg-muted aria-expanded:text-primary dark:hover:bg-muted/50",
+          "hover:bg-muted aria-expanded:bg-muted dark:hover:bg-muted/50",
         link: "text-primary underline underline-offset-4 hover:underline",
       },
       color: {
@@ -77,10 +78,58 @@ const buttonVariants = cva(
           "bg-success/10 text-success hover:bg-success/20 focus-visible:border-success/40 focus-visible:ring-success/20 dark:bg-success/20 dark:hover:bg-success/30 dark:focus-visible:ring-success/40",
       },
       {
+        variant: "soft",
+        color: "primary",
+        class:
+          "border-primary/30 bg-primary/10 text-primary hover:bg-primary/20 aria-expanded:bg-primary/20 focus-visible:ring-primary/20",
+      },
+      {
+        variant: "soft",
+        color: "secondary",
+        class:
+          "border-secondary/30 bg-secondary/10 text-secondary-foreground hover:bg-secondary/20 aria-expanded:bg-secondary/20 focus-visible:ring-ring/30",
+      },
+      {
+        variant: "soft",
+        color: "muted",
+        class:
+          "border-border bg-muted text-muted-foreground hover:bg-muted/70 aria-expanded:bg-muted/70 focus-visible:ring-ring/30",
+      },
+      {
+        variant: "soft",
+        color: "destructive",
+        class:
+          "border-destructive/30 bg-destructive/10 text-destructive hover:bg-destructive/20 aria-expanded:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
+      },
+      {
+        variant: "soft",
+        color: "info",
+        class:
+          "border-info/30 bg-info/10 text-info hover:bg-info/20 aria-expanded:bg-info/20 focus-visible:border-info/40 focus-visible:ring-info/20 dark:bg-info/20 dark:hover:bg-info/30 dark:focus-visible:ring-info/40",
+      },
+      {
+        variant: "soft",
+        color: "warning",
+        class:
+          "border-warning/30 bg-warning/10 text-warning hover:bg-warning/20 aria-expanded:bg-warning/20 focus-visible:border-warning/40 focus-visible:ring-warning/20 dark:bg-warning/20 dark:hover:bg-warning/30 dark:focus-visible:ring-warning/40",
+      },
+      {
+        variant: "soft",
+        color: "success",
+        class:
+          "border-success/30 bg-success/10 text-success hover:bg-success/20 aria-expanded:bg-success/20 focus-visible:border-success/40 focus-visible:ring-success/20 dark:bg-success/20 dark:hover:bg-success/30 dark:focus-visible:ring-success/40",
+      },
+      {
+        variant: "outline",
+        color: "muted",
+        class:
+          "border-border text-muted-foreground hover:bg-muted hover:text-muted-foreground aria-expanded:text-muted-foreground focus-visible:ring-ring/30",
+      },
+      {
         variant: "outline",
         color: "primary",
         class:
-          "border-primary/30 text-primary hover:bg-primary/10 focus-visible:ring-primary/20",
+          "border-primary text-primary hover:bg-primary/10 hover:text-primary aria-expanded:text-primary focus-visible:ring-primary/20",
       },
       {
         variant: "outline",
@@ -108,7 +157,7 @@ const buttonVariants = cva(
     ],
     defaultVariants: {
       variant: "fill",
-      color: "primary",
+      color: "secondary",
       size: "default",
     },
   }
@@ -117,7 +166,7 @@ const buttonVariants = cva(
 function Button({
   className,
   variant = "fill",
-  color = "primary",
+  color = "muted",
   size = "default",
   ...props
 }: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {

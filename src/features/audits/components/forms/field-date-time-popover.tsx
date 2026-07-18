@@ -77,6 +77,7 @@ export function FieldDateTimePopover({
             <Button
               type="button"
               variant="outline"
+              color="muted"
               className="w-full justify-start font-normal"
             />
           }
