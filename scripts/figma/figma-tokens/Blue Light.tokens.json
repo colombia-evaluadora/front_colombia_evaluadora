@@ -266,6 +266,28 @@
       }
     }
   },
+  "accent": {
+    "$type": "color",
+    "$value": {
+      "colorSpace": "srgb",
+      "components": [
+        0.95296097,
+        0.9456481,
+        0.94564733
+      ],
+      "alpha": 1,
+      "hex": "#F3F1F1"
+    },
+    "$extensions": {
+      "com.figma.scopes": [
+        "ALL_FILLS",
+        "STROKE_COLOR"
+      ],
+      "com.figma.codeSyntax": {
+        "WEB": "var(--accent)"
+      }
+    }
+  },
   "accent-foreground": {
     "$type": "color",
     "$value": {
@@ -373,6 +395,28 @@
       ],
       "com.figma.codeSyntax": {
         "WEB": "var(--success)"
+      }
+    }
+  },
+  "border": {
+    "$type": "color",
+    "$value": {
+      "colorSpace": "srgb",
+      "components": [
+        0.91132932,
+        0.89414433,
+        0.88985022
+      ],
+      "alpha": 1,
+      "hex": "#E8E4E3"
+    },
+    "$extensions": {
+      "com.figma.scopes": [
+        "ALL_FILLS",
+        "STROKE_COLOR"
+      ],
+      "com.figma.codeSyntax": {
+        "WEB": "var(--border)"
       }
     }
   },

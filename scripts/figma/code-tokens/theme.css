@@ -11,11 +11,13 @@
   --secondary-foreground: oklch(0.21 0.006 285.885);
   --muted: oklch(0.96 0.002 17.2);
   --muted-foreground: oklch(0.547 0.021 43.1);
+  --accent: oklch(0.96 0.002 17.2);
   --accent-foreground: oklch(0.214 0.009 43.1);
   --destructive: oklch(0.577 0.245 27.325);
   --info: oklch(0.623 0.214 259.815);
   --warning: oklch(0.795 0.184 86.047);
   --success: oklch(0.696 0.17 162.48);
+  --border: oklch(0.922 0.005 34.3);
   --input: oklch(0.922 0.005 34.3);
   --ring: oklch(0.714 0.014 41.2);
   --chart-1: oklch(0.809 0.105 251.813);
