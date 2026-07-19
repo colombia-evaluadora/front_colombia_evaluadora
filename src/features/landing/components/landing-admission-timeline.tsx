@@ -96,7 +96,7 @@ function TimelineCard({ step, isFirst, isLast }: TimelineCardProps) {
 export function LandingAdmissionTimeline() {
   return (
     <section className="bg-white py-20">
-      <h2 className="font-heading mb-14 px-8 text-center text-2xl font-bold text-gray-900">
+      <h2 className="mb-14 px-8 text-center text-2xl font-bold text-gray-900">
         Proceso de Admisión Escolar 2026
       </h2>
 

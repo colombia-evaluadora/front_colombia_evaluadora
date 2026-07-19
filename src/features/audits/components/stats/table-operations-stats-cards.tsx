@@ -69,10 +69,10 @@ export function TableOperationsStatsCards({
               <tile.icon weight="fill" className="size-5" />
             </span>
             <div className="flex flex-col">
-              <span className="text-2xl font-bold text-foreground">
+              <h3 className="text-2xl font-bold text-foreground">
                 {tile.value != null ? numberFormatter.format(tile.value) : "—"}
-              </span>
-              <span className="text-sm text-muted-foreground">{tile.label}</span>
+              </h3>
+              <p className="text-sm text-muted-foreground">{tile.label}</p>
             </div>
           </CardContent>
         </Card>
