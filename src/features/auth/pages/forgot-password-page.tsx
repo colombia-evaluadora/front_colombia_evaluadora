@@ -50,7 +50,7 @@ export function ForgotPasswordPage() {
           <div className="w-full max-w-sm space-y-6">
             {submitted ? (
               <div className="space-y-4 text-center">
-                <h1 className="font-heading text-2xl font-semibold">Revisa tu correo</h1>
+                <h1 className="text-2xl font-semibold">Revisa tu correo</h1>
                 <p className="text-sm text-muted-foreground">
                   Si el email está registrado, te enviamos un enlace para
                   restablecer tu contraseña.
@@ -67,7 +67,7 @@ export function ForgotPasswordPage() {
             ) : (
               <>
                 <div className="space-y-1 text-center">
-                  <h1 className="font-heading text-2xl font-semibold">
+                  <h1 className="text-2xl font-semibold">
                     ¿Olvidaste tu contraseña?
                   </h1>
                   <p className="text-sm text-muted-foreground">

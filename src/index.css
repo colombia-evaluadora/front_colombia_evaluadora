@@ -190,4 +190,33 @@
     background: var(--primary);
     color: var(--primary-foreground);
   }
+
+  /* Typography — titles in Noto, body in Inter */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading;
+  }
+  h1 {
+    @apply text-4xl leading-tight font-bold;
+  }
+  h2 {
+    @apply text-3xl leading-tight font-bold;
+  }
+  h3 {
+    @apply text-2xl leading-tight font-semibold;
+  }
+  h4 {
+    @apply text-xl leading-snug font-semibold;
+  }
+  h5 {
+    @apply text-lg leading-snug font-semibold;
+  }
+  h6 {
+    @apply text-base leading-snug font-semibold;
+  }
+  p {
+    @apply text-sm leading-normal;
+  }
+  small {
+    @apply text-xs leading-snug;
+  }
 }

@@ -59,7 +59,7 @@ export function RestorePasswordPage() {
           <div className="w-full max-w-sm space-y-6">
             {!token ? (
               <div className="space-y-4 text-center">
-                <h1 className="font-heading text-2xl font-semibold">Enlace inválido</h1>
+                <h1 className="text-2xl font-semibold">Enlace inválido</h1>
                 <p className="text-sm text-muted-foreground">
                   Este enlace de recuperación no es válido o ya expiró.
                   Solicita uno nuevo.
@@ -76,7 +76,7 @@ export function RestorePasswordPage() {
             ) : (
               <>
                 <div className="space-y-1 text-center">
-                  <h1 className="font-heading text-2xl font-semibold">
+                  <h1 className="text-2xl font-semibold">
                     Restablecer contraseña
                   </h1>
                   <p className="text-sm text-muted-foreground">
