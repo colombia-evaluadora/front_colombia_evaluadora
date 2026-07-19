@@ -44,7 +44,7 @@ export function LoginPage() {
         <div className="flex flex-1 flex-col items-center justify-center">
           <div className="w-full max-w-sm space-y-6">
             <div className="space-y-1 text-center">
-              <h1 className="text-2xl font-semibold">Iniciar sesión</h1>
+              <h1 className="font-heading text-2xl font-semibold">Iniciar sesión</h1>
               <p className="text-sm text-muted-foreground">
                 Ingresa tus credenciales para acceder.
               </p>

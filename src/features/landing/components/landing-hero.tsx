@@ -15,7 +15,7 @@ export function LandingHero() {
     <section className="flex min-h-screen items-center bg-[#1e2235] px-8 pt-20 md:px-16">
       <div className="mx-auto flex w-full max-w-7xl flex-col items-center gap-12 md:flex-row">
         <div className="flex-1 text-center md:text-left">
-          <h1 className="text-4xl leading-tight font-bold text-white md:text-5xl">
+          <h1 className="font-heading text-4xl leading-tight font-bold text-white md:text-5xl">
             Colombia Evaluadora
             <br />
             ETC
