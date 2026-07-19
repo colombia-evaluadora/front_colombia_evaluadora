@@ -24,10 +24,11 @@ const toRgb = converter('rgb');
 const CSS_DIR = process.argv[2] ?? 'scripts/figma/code-tokens';
 const TOKENS_DIR = process.argv[3] ?? 'scripts/figma/figma-tokens';
 
-const MODES = ['Light', 'Dark', 'Blue Light', 'Blue Dark'];
-
 // The single consolidated file that figma-to-css emits.
 const THEME_FILE = 'theme.css';
+// Read it up-front so the theme-discovery regex below can see all
+// [data-color-theme='X'] selectors that exist in the file.
+const themeCss = readFileSync(join(CSS_DIR, THEME_FILE), 'utf8');
 
 // Inverse of NUMBER_MAP in figma-to-css.mjs: CSS var name → token name.
 const CSS_VAR_TO_TOKEN = { radius: 'radius-lg' };
@@ -45,9 +46,20 @@ function findExistingTokens(mode) {
   const files = readdirSync(TOKENS_DIR).filter((f) => f.endsWith('.tokens.json'));
   const norm = (s) => s.toLowerCase().replace(/[^a-z]/g, '');
   const target = norm(mode);
-  const exact = files.find(
-    (f) => norm(f).includes(target) && (target.includes('blue') || !norm(f).includes('blue'))
-  );
+  // Tokens file names look like "Blue Light.tokens.json". A "<Theme> Light" mode
+  // must match a file containing both "<theme>" and "light" — but not collide
+  // with another theme that happens to share a substring (rare, but e.g.
+  // "Blue Light" and "Light" both contain "light"). To avoid that we require
+  // the theme word to appear too, when present.
+  const exact = files.find((f) => {
+    const n = norm(f);
+    if (!n.includes(target)) return false;
+    // Strip the "light"/"dark" suffix from the mode and require that token to
+    // also appear in the filename, so "Light" doesn't match "Blue Light".
+    const base = target.replace(/light|dark/g, '');
+    if (base && !n.includes(base)) return false;
+    return true;
+  });
   return exact ? join(TOKENS_DIR, exact) : null;
 }
 
@@ -72,6 +84,8 @@ function flattenExisting(obj, out = {}, path = '') {
 
 function parseBlock(css, selector) {
   // Escape any regex-special chars in the selector, then capture its {...}.
+  // Multiple blocks for the same selector (e.g. three `:root` blocks in
+  // theme.css — fonts, radius, colors) all get merged into one decl map.
   // NOTE: `[^}]*` assumes flat blocks (no nested rules/@media), which is what
   // figma-to-css emits. Hand-edited CSS with nesting will not parse correctly.
   const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -130,7 +144,20 @@ function remToPx(str) {
   return m[2] === 'rem' ? v * 16 : v; // px or unitless → px
 }
 
-function buildToken(name, declValue, original) {
+function buildToken(name, declValue, original, aliasTarget) {
+  // Alias: emit a DTCG reference to the target token. Figma shows this as a
+  // variable-binding in the picker instead of a raw color, and the token
+  // tracks the source across themes/modes.
+  if (aliasTarget !== undefined && aliasTarget !== null) {
+    return {
+      $type: original?.$type ?? 'color',
+      $value: `{${aliasTarget}}`,
+      $extensions: original?.$extensions ?? {
+        'com.figma.scopes': ['ALL_FILLS', 'STROKE_COLOR'],
+        'com.figma.codeSyntax': { WEB: `var(--${name})` },
+      },
+    };
+  }
   if (declValue.startsWith('oklch(')) {
     return {
       $type: 'color',
@@ -157,36 +184,64 @@ function buildToken(name, declValue, original) {
 }
 
 // Selector per mode (matches what figma-to-css emits).
-// For Blue modes, the theme.css only declares the variables that actually
+// For colored modes, the theme.css only declares the variables that actually
 // *change* — everything else inherits from the corresponding base selector.
-// We must parse the base first and then overlay the Blue overrides, otherwise
+// We must parse the base first and then overlay the override on top, otherwise
 // Figma ends up with an incomplete token set for those modes.
 const BASE_SELECTORS = {
   'Light': ':root',
   'Dark': '.dark',
 };
-const OVERRIDE_SELECTORS = {
-  'Blue Light': "[data-color-theme='blue']",
-  'Blue Dark': ".dark[data-color-theme='blue']",
-};
+
+// Discover colored themes from the CSS itself so we don't silently drop
+// `data-color-theme='red'`, `'green'`, etc. when they exist. Each colored
+// theme generates two Figma modes: "<Name> Light" and "<Name> Dark".
+const themeRe = /\[data-color-theme=['"]([\w-]+)['"]\]/g;
+const themeNames = new Set();
+let tm;
+while ((tm = themeRe.exec(themeCss))) themeNames.add(tm[1]);
+const MODES = ['Light', 'Dark'];
+for (const t of themeNames) {
+  MODES.push(`${t[0].toUpperCase()}${t.slice(1)} Light`);
+  MODES.push(`${t[0].toUpperCase()}${t.slice(1)} Dark`);
+}
+const OVERRIDE_SELECTORS = {};
+for (const t of themeNames) {
+  const cap = t[0].toUpperCase() + t.slice(1);
+  OVERRIDE_SELECTORS[`${cap} Light`] = `[data-color-theme='${t}']`;
+  OVERRIDE_SELECTORS[`${cap} Dark`] = `.dark[data-color-theme='${t}']`;
+}
 
 mkdirSync(TOKENS_DIR, { recursive: true });
-const themePath = join(CSS_DIR, THEME_FILE);
-const themeCss = readFileSync(themePath, 'utf8');
 
 const written = [];
+const declsByModeForRef = {};
 for (const mode of MODES) {
   // Layer the base selector first (so we get every variable declared on
-  // :root / .dark) and then the Blue override selector on top so the
+  // :root / .dark) and then the colored-theme override on top so its
   // customisations win.
-  const baseMode = mode.replace(/^Blue /, '');
+  const baseMode = mode.endsWith('Dark') ? 'Dark' : 'Light';
   const layers = [BASE_SELECTORS[baseMode]];
   if (OVERRIDE_SELECTORS[mode]) layers.push(OVERRIDE_SELECTORS[mode]);
 
   const decls = {};
+  const aliases = {}; // varName -> referenced varName, so we can emit $value: "{ref}"
   for (const selector of layers) {
     for (const [name, value] of Object.entries(parseBlock(themeCss, selector))) {
       decls[name] = value;
+      const m = value.match(/^var\(--([\w-]+)\)$/);
+      if (m) aliases[name] = m[1];
+    }
+  }
+  // Look up an alias target that lives in the base mode (e.g. Red Dark
+  // inherits `card-foreground: var(--foreground)` from .dark). Any mode
+  // whose name contains a space is a "colored theme" override.
+  if (mode.includes(' ')) {
+    const baseDecls = declsByModeForRef[baseMode] ?? {};
+    for (const name of Object.keys(decls)) {
+      if (aliases[name]) continue;
+      const m = decls[name].match(/^var\(--([\w-]+)\)$/);
+      if (m && baseDecls[m[1]] !== undefined) aliases[name] = m[1];
     }
   }
 
@@ -196,7 +251,7 @@ for (const mode of MODES) {
   // their original scopes (e.g. sidebar-* from Light/Dark).
   const tokensPath = findExistingTokens(mode);
   let existing = tokensPath ? flattenExisting(JSON.parse(readFileSync(tokensPath, 'utf8'))) : {};
-  if (mode.startsWith('Blue')) {
+  if (mode.includes(' ')) {
     const basePath = findExistingTokens(baseMode);
     if (basePath) {
       const base = flattenExisting(JSON.parse(readFileSync(basePath, 'utf8')));
@@ -208,7 +263,10 @@ for (const mode of MODES) {
   for (const [varName, value] of Object.entries(decls)) {
     // Undo figma-to-css renames (e.g. --radius → radius-lg).
     const name = CSS_VAR_TO_TOKEN[varName] ?? varName;
-    const token = buildToken(name, value, existing[name]);
+    const aliasTarget = aliases[varName]
+      ? (CSS_VAR_TO_TOKEN[aliases[varName]] ?? aliases[varName])
+      : undefined;
+    const token = buildToken(name, value, existing[name], aliasTarget);
     if (token) out[name] = token;
     else console.warn(`  [warn] ${mode}: --${varName} = "${value}" is not a color/size, skipped`);
   }
@@ -230,5 +288,6 @@ for (const mode of MODES) {
   const outPath = join(TOKENS_DIR, `${mode}.tokens.json`);
   writeFileSync(outPath, JSON.stringify(out, null, 2) + '\n');
   written.push(outPath);
+  declsByModeForRef[mode] = decls;
 }
 console.log(`Wrote ${written.length} tokens file(s):\n${written.map((f) => `  ${f}`).join('\n')}`);

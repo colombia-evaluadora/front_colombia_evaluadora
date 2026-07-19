@@ -26,14 +26,27 @@ import { parse, converter } from 'culori';
 const TOKENS_DIR = process.argv[2] ?? 'scripts/figma/figma-tokens';
 const OUT_FILE = process.argv[3] ?? 'scripts/figma/code-tokens/theme.css';
 
+const toOklch = converter('oklch');
+
+// Discover available modes from the .tokens.json filenames so we don't hardcode
+// only Blue. Every "<Theme> Light" / "<Theme> Dark" file becomes a colored
+// override selector in theme.css.
+const modeFiles = readdirSync(TOKENS_DIR).filter((f) => f.endsWith('.tokens.json'));
 const MODES = [
   { mode: 'Light', selector: ':root', base: null },
   { mode: 'Dark', selector: '.dark', base: null },
-  { mode: 'Blue Light', selector: "[data-color-theme='blue']", base: 'Light' },
-  { mode: 'Blue Dark', selector: ".dark[data-color-theme='blue']", base: 'Dark' },
 ];
-
-const toOklch = converter('oklch');
+for (const f of modeFiles) {
+  const m = f.match(/^(.+?)\s+(Light|Dark)\.tokens\.json$/);
+  if (!m) continue;
+  const [, theme, shade] = m;
+  const modeName = `${theme} ${shade}`;
+  if (MODES.some((x) => x.mode === modeName)) continue;
+  const selector = shade === 'Dark'
+    ? `.dark[data-color-theme='${theme.toLowerCase()}']`
+    : `[data-color-theme='${theme.toLowerCase()}']`;
+  MODES.push({ mode: modeName, selector, base: shade });
+}
 const round = (n, d) => +n.toFixed(d);
 
 // Token-name → CSS-var-name renames. css-to-figma.mjs holds the inverse map
@@ -118,6 +131,13 @@ function tokensToDecls(tokens, mode) {
     }
     sourceOf[varName] = name;
     if (type === 'color') {
+      // DTCG alias: "{otherVar}" — re-emit as CSS var(--otherVar) so the
+      // dependency chain survives the roundtrip instead of inlining colors.
+      if (typeof value === 'string' && value.startsWith('{') && value.endsWith('}')) {
+        const target = value.slice(1, -1).split('/').pop();
+        decls[`--${varName}`] = `var(--${target})`;
+        continue;
+      }
       const css = cssColor(value);
       if (css) decls[`--${varName}`] = css;
       else console.warn(`  [warn] ${mode}: color token "${name}" could not be parsed, skipped`);
