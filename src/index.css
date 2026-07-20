@@ -36,47 +36,47 @@
 /* Colors */
 :root {
   /* ---------- SUPERFICIES ------------------------ */
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.155 0.01 241.2);   /* gris azulado oscuro */
-  --card: oklch(1 0 0);
+  --background: #FFFFFF;
+  --foreground: #090D10;   /* gris azulado oscuro */
+  --card: #FFFFFF;
   --card-foreground: var(--foreground);
-  --popover: oklch(1 0 0);
+  --popover: #FFFFFF;
   --popover-foreground: var(--foreground);
 
   /* ---------- MARCA ------------------------------------------ */
-  --primary: oklch(0.55 0.134 241.2);
-  --primary-foreground: oklch(0.985 0.005 241.2);
-  --secondary: oklch(0.56 0.145 125.2);
-  --secondary-foreground: oklch(0.985 0.008 125.2);
-  --accent: oklch(0.737 0.166 121.9);
-  --accent-foreground: oklch(0.24 0.06 125.2);
+  --primary: #0079B5;
+  --primary-foreground: #F7FBFD;
+  --secondary: #618200;
+  --secondary-foreground: #F9FBF5;
+  --accent: #99B928;
+  --accent-foreground: #192400;
 
   /* ---------- SEMÁNTICOS --------------------------- */
-  --destructive: oklch(0.577 0.245 27.3);
-  --destructive-foreground: oklch(0.985 0.01 27.3);
-  --success: oklch(0.56 0.145 125.2);
-  --success-foreground: oklch(0.985 0.008 125.2);
-  --warning: oklch(0.795 0.184 86);
-  --warning-foreground: oklch(0.28 0.07 86);
-  --info: oklch(0.55 0.134 241.2);
-  --info-foreground: oklch(0.985 0.005 241.2);
-  --muted: oklch(0.967 0.004 241.2);
-  --muted-foreground: oklch(0.5 0.018 241.2);
+  --destructive: #E40017;
+  --destructive-foreground: #FFF8F7;
+  --success: #618200;
+  --success-foreground: #F9FBF5;
+  --warning: #EAB300;
+  --warning-foreground: #352600;
+  --info: #0079B5;
+  --info-foreground: #F7FBFD;
+  --muted: #D6DBE5;            /* sync Figma live (file key TiXgfMnpIhgDrN1rLmeV0T) */
+  --muted-foreground: #666E7A;
 
   /* ---------- BORDES / FOCO ---------------------------------- */
-  --border: oklch(0.925 0.006 241.2);
-  --input: oklch(0.925 0.006 241.2);
-  --ring: oklch(0.6 0.134 241.2);
+  --border: #E3E7EA;
+  --input: #E3E7EA;
+  --ring: #1788C8;
 
   /* ---------- CHARTS ----------------------------------------- */
-  --chart-1: oklch(0.6 0.134 241.2);
-  --chart-2: oklch(0.651 0.145 125.2);
-  --chart-3: oklch(0.45 0.12 245);
-  --chart-4: oklch(0.78 0.14 121.9);
-  --chart-5: oklch(0.78 0.1 235);
+  --chart-1: #1788C8;
+  --chart-2: #7B9E2B;
+  --chart-3: #00598F;
+  --chart-4: #A9C558;
+  --chart-5: #74C2EE;
 
   /* ---------- SIDEBAR -------------------- */
-  --sidebar: oklch(0.985 0.003 241.2);
+  --sidebar: #F8FAFC;
   --sidebar-foreground: var(--foreground);
   --sidebar-primary: var(--primary);
   --sidebar-primary-foreground: var(--primary-foreground);
@@ -84,102 +84,247 @@
   --sidebar-accent-foreground: var(--foreground);
   --sidebar-border: var(--border);
   --sidebar-ring: var(--ring);
+
+  /* ---------- STROKES (alpha 30%) --------------------------- */
+  --primary-stroke: #0079B54D;
+  --foreground-stroke: #090D104D;
+  --info-stroke: #0079B54D;
+  --destructive-stroke: #E400174D;
+  --warning-stroke: #EAB3004D;
+  --success-stroke: #6182004D;
+  --muted-stroke: #D6DBE54D;
+  --secondary-stroke: #6182004D;
+
+  /* ---------- SOFT FILLS (alpha 22%) ----------------------- */
+  --primary-22: #0079B538;
+  --foreground-22: #090D1038;
+  --info-22: #0079B538;
+  --destructive-22: #E4001738;
+  --warning-22: #EAB30038;
+  --success-22: #61820038;
+  --muted-22: #D6DBE538;
+  --secondary-22: #61820038;
 }
 
 .dark {
   /* ---------- SUPERFICIES ------------------------ */
-  --background: oklch(0.155 0.012 245);
-  --foreground: oklch(0.97 0.005 241.2);
-  --card: oklch(0.205 0.015 245);
+  --background: #080D11;
+  --foreground: #F2F6F8;
+  --card: #11181E;
   --card-foreground: var(--foreground);
-  --popover: oklch(0.205 0.015 245);
+  --popover: #11181E;
   --popover-foreground: var(--foreground);
 
   /* ---------- MARCA ------------------------------------------ */
-  --primary: oklch(0.68 0.13 241.2);
-  --primary-foreground: oklch(0.15 0.04 241.2);
-  --secondary: oklch(0.68 0.14 125.2);
-  --secondary-foreground: oklch(0.16 0.05 125.2);
-  --accent: oklch(0.78 0.15 121.9);
-  --accent-foreground: oklch(0.2 0.05 125.2);
+  --primary: #40A1E1;
+  --primary-foreground: #000D18;
+  --secondary: #84A73C;
+  --secondary-foreground: #091000;
+  --accent: #A8C64E;
+  --accent-foreground: #111A00;
 
   /* ---------- SEMÁNTICOS --------------------------- */
-  --destructive: oklch(0.704 0.191 22.2);
-  --destructive-foreground: oklch(0.16 0.05 22.2);
-  --success: oklch(0.68 0.14 125.2);
-  --success-foreground: oklch(0.16 0.05 125.2);
-  --warning: oklch(0.769 0.188 70.1);
-  --warning-foreground: oklch(0.2 0.06 70.1);
-  --info: oklch(0.68 0.13 241.2);
-  --info-foreground: oklch(0.15 0.04 241.2);
-  --muted: oklch(0.24 0.012 245);
-  --muted-foreground: oklch(0.72 0.015 241.2);
+  --destructive: #FF6568;
+  --destructive-foreground: #1E0304;
+  --success: #84A73C;
+  --success-foreground: #091000;
+  --warning: #F69E00;
+  --warning-foreground: #221200;
+  --info: #40A1E1;
+  --info-foreground: #000D18;
+  --muted: #424752;            /* sync Figma live */
+  --muted-foreground: #99A3B2;
 
   /* ---------- BORDES / FOCO ---------------------------------- */
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.68 0.13 241.2);
+  --border: #FFFFFF1A;        /* blanco al 10% */
+  --input: #FFFFFF26;         /* blanco al 15% */
+  --ring: #40A1E1;
 
   /* ---------- CHARTS ----------------------------------------- */
-  --chart-1: oklch(0.7 0.13 241.2);
-  --chart-2: oklch(0.74 0.15 125.2);
-  --chart-3: oklch(0.55 0.13 245);
-  --chart-4: oklch(0.85 0.15 121.9);
-  --chart-5: oklch(0.84 0.09 235);
+  --chart-1: #47A7E7;
+  --chart-2: #95BB46;
+  --chart-3: #1777B8;
+  --chart-4: #BEDD66;
+  --chart-5: #8FD5FD;
 
   /* ---------- SIDEBAR -------------------- */
-  --sidebar: oklch(0.185 0.014 245);
+  --sidebar: #0E1319;
   --sidebar-foreground: var(--foreground);
   --sidebar-primary: var(--primary);
   --sidebar-primary-foreground: var(--primary-foreground);
   --sidebar-accent: var(--muted);
   --sidebar-accent-foreground: var(--foreground);
-  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-border: #FFFFFF1A;
   --sidebar-ring: var(--ring);
+
+  /* ---------- STROKES (alpha 30%) --------------------------- */
+  --primary-stroke: #40A1E14D;
+  --foreground-stroke: #F2F6F84D;
+  --info-stroke: #40A1E14D;
+  --destructive-stroke: #FF65684D;
+  --warning-stroke: #F69E004D;
+  --success-stroke: #84A73C4D;
+  --muted-stroke: #4247524D;
+  --secondary-stroke: #84A73C4D;
+
+  /* ---------- SOFT FILLS (alpha 22%) ----------------------- */
+  --primary-22: #40A1E138;
+  --foreground-22: #F2F6F838;
+  --info-22: #40A1E138;
+  --destructive-22: #FF656838;
+  --warning-22: #F69E0038;
+  --success-22: #84A73C38;
+  --muted-22: #42475238;
+  --secondary-22: #84A73C38;
 }
 
 [data-color-theme='red'] {
+  /* ---------- SUPERFICIES ------------------------ */
+  --background: #FFFFFF;
+  --foreground: #090D10;
+  --card: #FFFFFF;
+  --card-foreground: var(--foreground);
+  --popover: #FFFFFF;
+  --popover-foreground: var(--foreground);
+
   /* ---------- MARCA ------------------------------------------ */
-  --primary: oklch(0.545 0.219 28.2);
-  --primary-foreground: oklch(0.985 0.008 28.2);
-  --secondary: oklch(0.32 0.005 106.7);
-  --secondary-foreground: oklch(0.985 0.002 106.7);
-  --accent: oklch(0.78 0.1 28.2);
-  --accent-foreground: oklch(0.28 0.09 28.2);
+  --primary: #D20B11;
+  --primary-foreground: #FFF8F7;
+  --secondary: #333330;
+  --secondary-foreground: #FAFAF9;
+  --accent: #F19F93;
+  --accent-foreground: #4C110D;
+
+  /* ---------- SEMÁNTICOS --------------------------- */
+  --destructive: #E40017;
+  --destructive-foreground: #FFF8F7;
+  --success: #618200;
+  --success-foreground: #F9FBF5;
+  --warning: #EAB300;
+  --warning-foreground: #352600;
+  --info: #0079B5;
+  --info-foreground: #F7FBFD;
+  --muted: #DBCFCF;            /* sync Figma live Red Light */
+  --muted-foreground: #756161;
 
   /* ---------- BORDES / FOCO ---------------------------------- */
-  --ring: oklch(0.545 0.219 28.2);
+  --border: #E3E7EA;
+  --input: #E3E7EA;
+  --ring: #D20B11;
 
-  /* ---------- CHARTS ------------------- */
-  --chart-1: oklch(0.545 0.219 28.2);
-  --chart-2: oklch(0.35 0.005 106.7);
-  --chart-3: oklch(0.42 0.17 28.2); 
-  --chart-4: oklch(0.75 0.12 28.2); 
-  --chart-5: oklch(0.68 0.01 106.7);
+  /* ---------- CHARTS ----------------------------------------- */
+  --chart-1: #D20B11;
+  --chart-2: #3B3B38;
+  --chart-3: #940307;
+  --chart-4: #F08F83;
+  --chart-5: #999992;
+
+  /* ---------- SIDEBAR -------------------- */
+  --sidebar: #F8FAFC;
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--muted);
+  --sidebar-accent-foreground: var(--foreground);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
+
+  /* ---------- STROKES (alpha 30%) --------------------------- */
+  --primary-stroke: #D20B114D;
+  --foreground-stroke: #090D104D;
+  --info-stroke: #0079B54D;
+  --destructive-stroke: #E400174D;
+  --warning-stroke: #EAB3004D;
+  --success-stroke: #6182004D;
+  --muted-stroke: #DBCFCF4D;
+  --secondary-stroke: #3333304D;
+
+  /* ---------- SOFT FILLS (alpha 22%) ----------------------- */
+  --primary-22: #D20B1138;
+  --foreground-22: #090D1038;
+  --info-22: #0079B538;
+  --destructive-22: #E4001738;
+  --warning-22: #EAB30038;
+  --success-22: #61820038;
+  --muted-22: #DBCFCF38;
+  --secondary-22: #33333038;
 }
 
 .dark[data-color-theme='red'] {
+  /* ---------- SUPERFICIES ------------------------ */
+  --background: #080D11;
+  --foreground: #F2F6F8;
+  --card: #1E1214;            /* sync Figma live Red Dark (warm) */
+  --card-foreground: var(--foreground);
+  --popover: #11181E;
+  --popover-foreground: var(--foreground);
+
   /* ---------- MARCA ------------------------------------------ */
-  --primary: oklch(0.66 0.2 25);
-  --primary-foreground: oklch(0.15 0.05 28.2);
-  --secondary: oklch(0.75 0.005 106.7);
-  --secondary-foreground: oklch(0.18 0.004 106.7);
-  --accent: oklch(0.72 0.13 28.2);
-  --accent-foreground: oklch(0.16 0.05 28.2);
+  --primary: #F4514F;
+  --primary-foreground: #1C0202;
+  --secondary: #AEAEAB;
+  --secondary-foreground: #121210;
+  --accent: #EB8376;
+  --accent-foreground: #1E0403;
+
+  /* ---------- SEMÁNTICOS --------------------------- */
+  --destructive: #FF6568;
+  --destructive-foreground: #1E0304;
+  --success: #84A73C;
+  --success-foreground: #091000;
+  --warning: #F69E00;
+  --warning-foreground: #221200;
+  --info: #40A1E1;
+  --info-foreground: #000D18;
+  --muted: #473D3D;            /* sync Figma live Red Dark */
+  --muted-foreground: #A89494;
 
   /* ---------- BORDES / FOCO ---------------------------------- */
-  --ring: oklch(0.66 0.2 25);
+  --border: #FFFFFF1A;
+  --input: #FFFFFF26;
+  --ring: #F4514F;
 
   /* ---------- CHARTS ----------------------------------------- */
-  --chart-1: oklch(0.68 0.19 25);
-  --chart-2: oklch(0.72 0.005 106.7);
-  --chart-3: oklch(0.55 0.19 27);
-  --chart-4: oklch(0.82 0.1 28.2);
-  --chart-5: oklch(0.5 0.008 106.7);
+  --chart-1: #F75D59;
+  --chart-2: #A5A5A1;
+  --chart-3: #C9302D;
+  --chart-4: #FEABA0;
+  --chart-5: #64645E;
+
+  /* ---------- SIDEBAR -------------------- */
+  --sidebar: #0E1319;
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--muted);
+  --sidebar-accent-foreground: var(--foreground);
+  --sidebar-border: #FFFFFF1A;
+  --sidebar-ring: var(--ring);
+
+  /* ---------- STROKES (alpha 30%) --------------------------- */
+  --primary-stroke: #F4514F4D;
+  --foreground-stroke: #F2F6F84D;
+  --info-stroke: #40A1E14D;
+  --destructive-stroke: #FF65684D;
+  --warning-stroke: #F69E004D;
+  --success-stroke: #84A73C4D;
+  --muted-stroke: #473D3D4D;
+  --secondary-stroke: #AEAEAB4D;
+
+  /* ---------- SOFT FILLS (alpha 22%) ----------------------- */
+  --primary-22: #F4514F38;
+  --foreground-22: #F2F6F838;
+  --info-22: #40A1E138;
+  --destructive-22: #FF656838;
+  --warning-22: #F69E0038;
+  --success-22: #84A73C38;
+  --muted-22: #473D3D38;
+  --secondary-22: #AEAEAB38;
 }
 
+
 @theme inline {
-  /* ---------- SUPERFICIES ------------------------------------ */
+  /* ---------- SUPERFICIES ------------------------ */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -195,7 +340,7 @@
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
 
-  /* ---------- SEMÁNTICOS ------------------------------------- */
+  /* ---------- SEMÁNTICOS --------------------------- */
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-success: var(--success);
@@ -219,7 +364,7 @@
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
 
-  /* ---------- SIDEBAR ---------------------------------------- */
+  /* ---------- SIDEBAR -------------------- */
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -228,6 +373,26 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+
+  /* ---------- STROKES (alpha 30%) --------------------------- */
+  --color-primary-stroke: var(--primary-stroke);
+  --color-foreground-stroke: var(--foreground-stroke);
+  --color-info-stroke: var(--info-stroke);
+  --color-destructive-stroke: var(--destructive-stroke);
+  --color-warning-stroke: var(--warning-stroke);
+  --color-success-stroke: var(--success-stroke);
+  --color-muted-stroke: var(--muted-stroke);
+  --color-secondary-stroke: var(--secondary-stroke);
+
+  /* ---------- SOFT FILLS (alpha 22%) ----------------------- */
+  --color-primary-22: var(--primary-22);
+  --color-foreground-22: var(--foreground-22);
+  --color-info-22: var(--info-22);
+  --color-destructive-22: var(--destructive-22);
+  --color-warning-22: var(--warning-22);
+  --color-success-22: var(--success-22);
+  --color-muted-22: var(--muted-22);
+  --color-secondary-22: var(--secondary-22);
 }
 /* Base styles */
 

@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react"
 import { ThemeProvider as NextThemesProvider } from "next-themes"
 
-type ColorTheme = "emerald" | "blue"
+type ColorTheme = "emerald" | "red"
 
 type ColorThemeProviderProps = {
   children: React.ReactNode
@@ -34,8 +34,8 @@ function ColorThemeProvider({
   useEffect(() => {
     const root = window.document.documentElement
 
-    if (colorTheme === "blue") {
-      root.setAttribute("data-color-theme", "blue")
+    if (colorTheme === "red") {
+      root.setAttribute("data-color-theme", "red")
     } else {
       root.removeAttribute("data-color-theme")
     }
