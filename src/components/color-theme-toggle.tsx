@@ -24,8 +24,8 @@ export function ColorThemeToggle() {
           <DropdownMenuItem onClick={() => setColorTheme("emerald")}>
             Emerald
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setColorTheme("blue")}>
-            Blue
+          <DropdownMenuItem onClick={() => setColorTheme("red")}>
+            Red
           </DropdownMenuItem>
         </DropdownMenuGroup>
       </DropdownMenuContent>
