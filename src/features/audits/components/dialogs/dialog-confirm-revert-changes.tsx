@@ -1,6 +1,6 @@
 import { useState } from "react"
 
-import { ArrowCounterClockwiseIcon } from "@phosphor-icons/react"
+import { ArrowCounterClockwiseIcon, SpinnerIcon } from "@phosphor-icons/react"
 import { toast } from "sonner"
 
 import {
@@ -15,7 +15,6 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
-import { Spinner } from "@/components/ui/spinner"
 
 import { useRevertOperationChange } from "../../api/mutations/revert-operation-change"
 
@@ -92,9 +91,16 @@ export function DialogConfirmRevertChanges({
           </AlertDialogCancel>
           <AlertDialogAction
             disabled={revertChange.isPending}
+            aria-busy={revertChange.isPending}
             onClick={handleConfirm}
           >
-            {revertChange.isPending ? <Spinner /> : null}
+            {/* El spinner reemplaza al icono en vez de sumarse: así el ancho
+                del botón no salta al entrar en loading. */}
+            {revertChange.isPending ? (
+              <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+            ) : (
+              <ArrowCounterClockwiseIcon data-icon="inline-start" />
+            )}
             Revertir
           </AlertDialogAction>
         </AlertDialogFooter>
