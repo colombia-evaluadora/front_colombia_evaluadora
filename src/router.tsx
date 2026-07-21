@@ -27,6 +27,7 @@ import {
   sessionOperationsSearchSchema,
   tableOperationsSearchSchema,
 } from "@/features/audits/api/schema"
+import { academicPeriodsSearchSchema } from "@/features/establishment/api/schema"
 
 const LandingPage = lazyRouteComponent(
   () => import("@/features/landing/pages/landing-page"),
@@ -67,6 +68,10 @@ const TableOperationsPage = lazyRouteComponent(
 const SessionOperationsPage = lazyRouteComponent(
   () => import("@/features/audits/pages/session-operations-page"),
   "SessionOperationsPage"
+)
+const AcademicPeriodsPage = lazyRouteComponent(
+  () => import("@/features/establishment/pages/academic-periods-page"),
+  "AcademicPeriodsPage"
 )
 
 interface RouterContext {
@@ -212,6 +217,13 @@ export const auditoriaSesionOperacionesRoute = createRoute({
   component: SessionOperationsPage,
 })
 
+export const periodosAcademicosRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.periodosAcademicos.path,
+  validateSearch: academicPeriodsSearchSchema,
+  component: AcademicPeriodsPage,
+})
+
 const reportesRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.reportes.path,
@@ -242,6 +254,7 @@ const routeTree = rootRoute.addChildren([
     auditoriaTablasRoute,
     auditoriaTablaDetalleRoute,
     auditoriaSesionOperacionesRoute,
+    periodosAcademicosRoute,
     reportesRoute,
     usuariosRoute,
     configuracionRoute,
