@@ -1,6 +1,6 @@
 import { useState } from "react"
 
-import { TrashIcon } from "@phosphor-icons/react"
+import { SpinnerIcon, TrashIcon } from "@phosphor-icons/react"
 import { toast } from "sonner"
 
 import {
@@ -65,9 +65,17 @@ export function DeleteAllPaymentsDialog({ filters }: DeleteAllPaymentsDialogProp
           <AlertDialogCancel>Cancelar</AlertDialogCancel>
           <AlertDialogAction
             disabled={deleteAll.isPending}
+            aria-busy={deleteAll.isPending}
             onClick={() => deleteAll.mutate(filters)}
           >
-            {deleteAll.isPending ? "Eliminando..." : "Eliminar todo"}
+            {/* El spinner reemplaza al icono en vez de sumarse: así el ancho
+                del botón no salta al entrar en loading. */}
+            {deleteAll.isPending ? (
+              <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+            ) : (
+              <TrashIcon data-icon="inline-start" />
+            )}
+            Eliminar todo
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

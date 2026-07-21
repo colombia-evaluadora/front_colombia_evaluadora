@@ -1,6 +1,11 @@
 import { useState } from "react"
 
-import { DownloadSimpleIcon, FilePdfIcon, FileXlsIcon } from "@phosphor-icons/react"
+import {
+  DownloadSimpleIcon,
+  FilePdfIcon,
+  FileXlsIcon,
+  SpinnerIcon,
+} from "@phosphor-icons/react"
 import { toast } from "sonner"
 
 import {
@@ -50,6 +55,13 @@ export function ExportSelectedTableOperationsDialog({
     exportSelected.mutate({ tableSlug, ids: selectedIds, format })
   }
 
+  // Los dos botones comparten la misma mutación, así que `isPending` sola no
+  // distingue cuál se pulsó. `variables` guarda el input en vuelo — con eso
+  // el spinner sale solo en el botón que disparó la exportación.
+  const pendingFormat = exportSelected.isPending
+    ? exportSelected.variables?.format
+    : undefined
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
@@ -77,18 +89,28 @@ export function ExportSelectedTableOperationsDialog({
               type="button"
               variant="outline"
               disabled={exportSelected.isPending}
+              aria-busy={pendingFormat === "excel"}
               onClick={() => handleExport("excel")}
             >
-              <FileXlsIcon data-icon="inline-start" />
+              {pendingFormat === "excel" ? (
+                <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+              ) : (
+                <FileXlsIcon data-icon="inline-start" />
+              )}
               Excel
             </Button>
             <Button
               type="button"
               color="primary"
               disabled={exportSelected.isPending}
+              aria-busy={pendingFormat === "pdf"}
               onClick={() => handleExport("pdf")}
             >
-              <FilePdfIcon data-icon="inline-start" />
+              {pendingFormat === "pdf" ? (
+                <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+              ) : (
+                <FilePdfIcon data-icon="inline-start" />
+              )}
               PDF
             </Button>
           </div>
