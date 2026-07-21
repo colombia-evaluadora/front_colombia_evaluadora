@@ -1,6 +1,7 @@
 import type { ColumnDef, Table } from "@tanstack/react-table"
 
 import { Badge } from "@/components/ui/badge"
+import { Checkbox } from "@/components/ui/checkbox"
 import { DataTableColumnHeader } from "@/components/data-table"
 
 import {
@@ -23,6 +24,34 @@ function formatDate(value: string): string {
 }
 
 export const columns: ColumnDef<AcademicPeriod>[] = [
+  {
+    id: "select",
+    header: ({ table }) => (
+      <Checkbox
+        color="neutral"
+        aria-label="Seleccionar página"
+        className="translate-y-0.5"
+        checked={table.getIsAllPageRowsSelected()}
+        indeterminate={
+          !table.getIsAllPageRowsSelected() &&
+          table.getIsSomePageRowsSelected()
+        }
+        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+      />
+    ),
+    cell: ({ row }) => (
+      <Checkbox
+        color="neutral"
+        aria-label={`Seleccionar periodo ${row.original.name}`}
+        className="translate-y-0.5"
+        checked={row.getIsSelected()}
+        onCheckedChange={(value) => row.toggleSelected(!!value)}
+      />
+    ),
+    enableSorting: false,
+    enableHiding: false,
+    size: 32,
+  },
   {
     id: "schoolYearId",
     accessorKey: "schoolYearId",
