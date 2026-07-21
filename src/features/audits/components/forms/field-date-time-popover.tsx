@@ -8,6 +8,7 @@ import { Field, FieldLabel } from "@/components/ui/field"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Separator } from "@/components/ui/separator"
 import { TimePicker } from "@/components/ui/time-picker"
+import { cn } from "@/lib/utils"
 
 // Formato del valor que sube al form: fecha + hora en un solo string,
 // sin timezone (hora local tal cual la eligió el usuario). date-fns
@@ -72,17 +73,22 @@ export function FieldDateTimePopover({
     <Field orientation="vertical" className="gap-2">
       <FieldLabel>{label}</FieldLabel>
       <Popover>
+        {/* El trigger NO es un botón visualmente: se estila como el
+            `Input` del resto del form (fondo transparente, solo borde
+            inferior) para que el campo se lea como un input con
+            popover y no como un botón relleno. */}
         <PopoverTrigger
           render={
-            <Button
+            <button
               type="button"
-              variant="outline"
-              color="muted"
-              className="w-full justify-start font-normal"
+              className={cn(
+                "flex h-9 w-full min-w-0 cursor-pointer items-center gap-2 border border-transparent border-b-input bg-transparent px-0 py-1 text-left text-base transition-[color,border-color] outline-none hover:border-b-ring/50 focus-visible:border-b-ring data-[popup-open]:border-b-ring md:text-sm",
+                selected ? "text-foreground" : "text-muted-foreground"
+              )}
             />
           }
         >
-          <CalendarIcon data-icon="inline-start" />
+          <CalendarIcon className="size-4 shrink-0 text-muted-foreground" />
           {displayLabel}
         </PopoverTrigger>
         <PopoverContent className="w-auto gap-0 p-0" align="start">

@@ -14,20 +14,30 @@ const ThemeApplier = ({
   palette: Palette
   children: ReactNode
 }) => {
+  // Mismo contrato que la app (`src/components/theme-provider.tsx`):
+  // la paleta va en `data-theme` ('red' o ausente = default) y el modo
+  // en la clase `.dark` — que es de la que depende el
+  // `@custom-variant dark (&:is(.dark *))` de `index.css`.
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', palette)
+    const root = document.documentElement
+    const [color, mode] = palette.split('-')
+
+    if (color === 'default') {
+      root.removeAttribute('data-theme')
+    } else {
+      root.setAttribute('data-theme', color)
+    }
+    root.classList.toggle('dark', mode === 'dark')
+
     return () => {
-      document.documentElement.removeAttribute('data-theme')
+      root.removeAttribute('data-theme')
+      root.classList.remove('dark')
     }
   }, [palette])
 
   return <>{children}</>
 }
 
-// eslint-disable-next-line react-refresh/only-export-components -- preview.tsx
-// exports `preview` config alongside the helper component above; Fast Refresh
-// warnings no aplican porque Storybook carga este archivo una sola vez al
-// inicio, no por story.
 const withTheme = (
   Story: () => React.ReactElement,
   context: { globals: { palette?: Palette } }
