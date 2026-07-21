@@ -30,6 +30,8 @@ export type AcademicPeriodsFiltersFormValues = z.infer<
   typeof academicPeriodsFiltersFormSchema
 >
 
+export const ACADEMIC_PERIOD_STATUSES = ["ACTIVO", "INACTIVO"] as const
+
 export const academicPeriodsSearchSchema = z.object({
   page: z.coerce.number().int().nonnegative().catch(0).default(0),
   pageSize: z.coerce.number().int().positive().catch(10).default(10),
@@ -37,6 +39,6 @@ export const academicPeriodsSearchSchema = z.object({
   sortDir: z.enum(["asc", "desc"]).optional().catch(undefined),
   sedeName: z.string().optional().catch(undefined),
   schoolYearId: z.coerce.number().optional().catch(undefined),
-  statusId: z.array(z.coerce.number()).optional().catch(undefined),
+  status: z.enum(ACADEMIC_PERIOD_STATUSES).optional().catch(undefined),
 })
 export type AcademicPeriodsSearch = z.infer<typeof academicPeriodsSearchSchema>
