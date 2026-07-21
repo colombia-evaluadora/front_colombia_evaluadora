@@ -177,6 +177,21 @@ const badgeVariants = cva(
   }
 )
 
+/**
+ * Etiqueta compacta para representar estado, categoría o conteo.
+ *
+ * Combina `variant` (forma: fill / soft / outline) con `color` (tono
+ * semántico: 8 colores) para dar 24 combinaciones sincronizadas con
+ * Figma "Design Tokens — Tailwind Sync".
+ *
+ * Construido sobre `@base-ui/react/use-render` — soporta `render` para
+ * montar como `<a>`, `<button>`, etc. preservando accesibilidad.
+ *
+ * @example
+ *   <Badge variant="soft" color="success">Activo</Badge>
+ *   <Badge variant="outline" color="warning">Pendiente</Badge>
+ *   <Badge render={<a href="?status=draft" />}>Borrador</Badge>
+ */
 function Badge({
   className,
   variant = "fill",

@@ -29,9 +29,6 @@ export default defineMain({
           '@': path.resolve(dirname, '../src'),
         },
       },
-      optimizeDeps: {
-        include: ['storybook-dark-mode'],
-      },
     });
   },
 });

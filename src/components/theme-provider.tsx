@@ -1,22 +1,29 @@
 import { createContext, useContext, useEffect, useState } from "react"
-import { ThemeProvider as NextThemesProvider } from "next-themes"
+import { ThemeProvider as NextThemesProvider, useTheme } from "next-themes"
 
-type ColorTheme = "emerald" | "red"
+// Las 4 combinaciones del design system, sincronizadas con Figma.
+// Un solo atributo `data-theme` en `<html>` para que el CSS de `index.css`
+// pueda usar selectores simples (`[data-theme="red-dark"]`) sin combinar
+// `.dark` + `[data-color-theme='red']` — que es la fuente del bug previo.
+type Theme = "default-light" | "default-dark" | "red-light" | "red-dark"
 
-type ColorThemeProviderProps = {
-  children: React.ReactNode
-  defaultColorTheme?: ColorTheme
-  storageKey?: string
-}
+type ColorTheme = "default" | "red"
+type Mode = "light" | "dark"
 
 type ColorThemeProviderState = {
-  colorTheme: ColorTheme
-  setColorTheme: (colorTheme: ColorTheme) => void
+  theme: Theme
+  palette: ColorTheme
+  mode: Mode
+  setPalette: (palette: ColorTheme) => void
+  setMode: (mode: Mode) => void
 }
 
 const initialState: ColorThemeProviderState = {
-  colorTheme: "emerald",
-  setColorTheme: () => null,
+  theme: "default-light",
+  palette: "default",
+  mode: "light",
+  setPalette: () => null,
+  setMode: () => null,
 }
 
 const ColorThemeProviderContext =
@@ -24,28 +31,38 @@ const ColorThemeProviderContext =
 
 function ColorThemeProvider({
   children,
-  defaultColorTheme = "emerald",
+  defaultColorTheme = "default",
   storageKey = "vite-ui-color-theme",
-}: ColorThemeProviderProps) {
-  const [colorTheme, setColorTheme] = useState<ColorTheme>(
+}: {
+  children: React.ReactNode
+  defaultColorTheme?: ColorTheme
+  storageKey?: string
+}) {
+  const [palette, setPaletteState] = useState<ColorTheme>(
     () => (localStorage.getItem(storageKey) as ColorTheme) || defaultColorTheme
   )
 
+  const { resolvedTheme } = useTheme()
+  const mode: Mode = resolvedTheme === "dark" ? "dark" : "light"
+
+  const theme: Theme = `${palette}-${mode}` as Theme
+
   useEffect(() => {
     const root = window.document.documentElement
+    root.setAttribute("data-theme", theme)
+  }, [theme])
 
-    if (colorTheme === "red") {
-      root.setAttribute("data-color-theme", "red")
-    } else {
-      root.removeAttribute("data-color-theme")
-    }
-  }, [colorTheme])
-
-  const value = {
-    colorTheme,
-    setColorTheme: (colorTheme: ColorTheme) => {
-      localStorage.setItem(storageKey, colorTheme)
-      setColorTheme(colorTheme)
+  const value: ColorThemeProviderState = {
+    theme,
+    palette,
+    mode,
+    setPalette: (palette) => {
+      localStorage.setItem(storageKey, palette)
+      setPaletteState(palette)
+    },
+    setMode: () => {
+      // `setMode` lo maneja NextThemesProvider vía `attribute="class"`.
+      // Esta función queda como no-op para mantener la API del context.
     },
   }
 
@@ -58,10 +75,8 @@ function ColorThemeProvider({
 
 export const useColorTheme = () => {
   const context = useContext(ColorThemeProviderContext)
-
   if (context === undefined)
     throw new Error("useColorTheme must be used within a ColorThemeProvider")
-
   return context
 }
 
