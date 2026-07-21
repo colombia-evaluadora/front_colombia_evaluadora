@@ -1,0 +1,79 @@
+import type { ColumnDef, Table } from "@tanstack/react-table"
+
+import { Badge } from "@/components/ui/badge"
+import { DataTableColumnHeader } from "@/components/data-table"
+
+import {
+  ACADEMIC_PERIOD_STATUS_BADGE,
+  ACADEMIC_PERIOD_STATUS_LABELS,
+} from "../../api/ui-mappings"
+import type {
+  AcademicPeriod,
+  AcademicPeriodStatus,
+} from "../../api/types/academic-period/academic-period"
+
+// Las fechas llegan como "yyyy-MM-dd" (date-only). Parsearlas con
+// `new Date(...)` las interpreta como UTC medianoche y `toLocaleDateString`
+// puede correr un día según la zona horaria, así que las formateamos a
+// mano a "dd/MM/yyyy".
+function formatDate(value: string): string {
+  const [year, month, day] = value.slice(0, 10).split("-")
+  if (!year || !month || !day) return value
+  return `${day}/${month}/${year}`
+}
+
+export const columns: ColumnDef<AcademicPeriod>[] = [
+  {
+    id: "schoolYearId",
+    accessorKey: "schoolYearId",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Año lectivo" />
+    ),
+    cell: ({ row }) => (
+      <span className="font-medium">{row.original.schoolYearId}</span>
+    ),
+  },
+  {
+    id: "sedeName",
+    accessorKey: "sedeName",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Sede" />
+    ),
+    cell: ({ row }) => (
+      <span className="truncate">{row.original.sedeName}</span>
+    ),
+  },
+  {
+    id: "status",
+    accessorKey: "status",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Estado" />
+    ),
+    cell: ({ row }) => {
+      const status = row.getValue<AcademicPeriodStatus>("status")
+      return (
+        <Badge {...ACADEMIC_PERIOD_STATUS_BADGE[status]}>
+          {ACADEMIC_PERIOD_STATUS_LABELS[status]}
+        </Badge>
+      )
+    },
+  },
+  {
+    id: "startDate",
+    accessorKey: "startDate",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Fecha inicio" />
+    ),
+    cell: ({ row }) => <span>{formatDate(row.original.startDate)}</span>,
+  },
+  {
+    id: "endDate",
+    accessorKey: "endDate",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Fecha finalización" />
+    ),
+    cell: ({ row }) => <span>{formatDate(row.original.endDate)}</span>,
+  },
+]
+
+export type AcademicPeriodTable = Table<AcademicPeriod>
