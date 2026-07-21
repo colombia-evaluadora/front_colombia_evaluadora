@@ -111,8 +111,11 @@ function Calendar({
   // para que visualicen el rango de la misma forma que el day view:
   // start sólido (`bg-primary`), resto del rango en `bg-muted`. Si no
   // hay rango, los bounds quedan null y no se marca nada.
-  const selectedFrom = (selected as { from?: Date } | undefined)?.from
-  const selectedTo = (selected as { to?: Date } | undefined)?.to
+  // `selected` cambia de forma según el modo: `Date` en single, `Date[]`
+  // en multiple, `{from,to}` en range. Normalizamos a un par from/to para
+  // que las vistas de mes/año marquen el seleccionado en los tres casos
+  // (en single, from === to → se pinta sólido, sin middle).
+  const { from: selectedFrom, to: selectedTo } = normalizeSelected(selected)
   const bounds = {
     fromYearMonth: selectedFrom
       ? `${selectedFrom.getFullYear()}-${selectedFrom.getMonth()}`
@@ -230,6 +233,22 @@ function Calendar({
       )}
     </div>
   )
+}
+
+function normalizeSelected(selected: unknown): {
+  from?: Date
+  to?: Date
+} {
+  if (!selected) return {}
+  if (selected instanceof Date) return { from: selected, to: selected }
+  if (Array.isArray(selected)) {
+    const dates = (selected as Date[]).filter((d) => d instanceof Date)
+    if (dates.length === 0) return {}
+    const sorted = [...dates].sort((a, b) => a.getTime() - b.getTime())
+    return { from: sorted[0], to: sorted[sorted.length - 1] }
+  }
+  const range = selected as { from?: Date; to?: Date }
+  return { from: range.from, to: range.to }
 }
 
 const MONTH_LABELS_ES = [
@@ -536,6 +555,7 @@ function CalendarDayButton({
   return (
     <Button
       variant="ghost"
+      color="neutral"
       size="icon"
       data-day={day.date.toLocaleDateString(locale?.code)}
       data-selected-single={

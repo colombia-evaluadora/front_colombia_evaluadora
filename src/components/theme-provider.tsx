@@ -2,9 +2,10 @@ import { createContext, useContext, useEffect, useState } from "react"
 import { ThemeProvider as NextThemesProvider, useTheme } from "next-themes"
 
 // Las 4 combinaciones del design system, sincronizadas con Figma.
-// Un solo atributo `data-theme` en `<html>` para que el CSS de `index.css`
-// pueda usar selectores simples (`[data-theme="red-dark"]`) sin combinar
-// `.dark` + `[data-color-theme='red']` — que es la fuente del bug previo.
+// Se combinan en dos ejes ortogonales sobre `<html>`: la paleta va en
+// `data-theme` ("red" o ausente = default) y el modo en la clase `.dark`
+// (next-themes). Es el mismo par de ejes que emiten los selectores de
+// `index.css`: `[data-theme='red']` y `.dark[data-theme='red']`.
 type Theme = "default-light" | "default-dark" | "red-light" | "red-dark"
 
 type ColorTheme = "default" | "red"
@@ -47,10 +48,20 @@ function ColorThemeProvider({
 
   const theme: Theme = `${palette}-${mode}` as Theme
 
+  // `data-theme` lleva SOLO la paleta ("red"; el default no tiene nombre y
+  // se representa quitando el atributo). El modo lo pone `next-themes` con
+  // la clase `.dark` en <html> — de la que además depende el
+  // `@custom-variant dark (&:is(.dark *))` de `index.css`, así que el modo
+  // NO puede vivir en este atributo. Los selectores generados son
+  // `[data-theme='red']` y `.dark[data-theme='red']`.
   useEffect(() => {
     const root = window.document.documentElement
-    root.setAttribute("data-theme", theme)
-  }, [theme])
+    if (palette === "default") {
+      root.removeAttribute("data-theme")
+    } else {
+      root.setAttribute("data-theme", palette)
+    }
+  }, [palette])
 
   const value: ColorThemeProviderState = {
     theme,

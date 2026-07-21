@@ -255,26 +255,22 @@ function AnalogClockView({
         <div className="flex items-center gap-1 text-4xl font-semibold">
           <Button
             type="button"
-            variant="ghost"
+            variant={mode === "hour" ? "soft" : "ghost"}
+            color={mode === "hour" ? "primary" : "neutral"}
             size="sm"
             onClick={() => setMode("hour")}
-            className={cn(
-              "h-auto px-2 py-1 text-4xl normal-case tracking-normal",
-              mode === "hour" && "text-primary"
-            )}
+            className="h-auto px-2 py-1 text-4xl normal-case tracking-normal"
           >
             {pad(hour)}
           </Button>
           <span>:</span>
           <Button
             type="button"
-            variant="ghost"
+            variant={mode === "minute" ? "soft" : "ghost"}
+            color={mode === "minute" ? "primary" : "neutral"}
             size="sm"
             onClick={() => setMode("minute")}
-            className={cn(
-              "h-auto px-2 py-1 text-4xl normal-case tracking-normal",
-              mode === "minute" && "text-primary"
-            )}
+            className="h-auto px-2 py-1 text-4xl normal-case tracking-normal"
           >
             {pad(minute)}
           </Button>
@@ -302,7 +298,8 @@ function AnalogClockView({
               onClick={() => handleClick(value)}
               className={cn(
                 buttonVariants({
-                  variant: isSelected ? "fill" : "ghost",
+                  variant: isSelected ? "soft" : "ghost",
+                  color: isSelected ? "primary" : "neutral",
                   size: "icon-sm",
                 }),
                 "absolute rounded-full text-sm normal-case tracking-normal",
