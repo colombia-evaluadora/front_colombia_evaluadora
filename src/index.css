@@ -8,7 +8,8 @@
 @import "@fontsource-variable/inter";
 @import "@fontsource-variable/noto-sans";
 
-:root {
+:root,
+[data-theme="default-light"] {
   --font-sans: 'Inter Variable', sans-serif;
   --font-heading: 'Noto Sans Variable', sans-serif;
 }
@@ -19,7 +20,8 @@
 }
 
 /* Radius variables */
-:root {
+:root,
+[data-theme="default-light"] {
   --radius: 0.875rem;
 }
 
@@ -34,7 +36,8 @@
 }
 
 /* Colors */
-:root {
+:root,
+[data-theme="default-light"] {
   /* ---------- SUPERFICIES ------------------------ */
   --background: #FFFFFF;
   --foreground: #090D10;   /* gris azulado oscuro */
@@ -106,7 +109,8 @@
   --secondary-22: #61820038;
 }
 
-.dark {
+[data-theme="default-dark"] {
+
   /* ---------- SUPERFICIES ------------------------ */
   --background: #080D11;
   --foreground: #F2F6F8;
@@ -178,7 +182,7 @@
   --secondary-22: #84A73C38;
 }
 
-[data-color-theme='red'] {
+[data-theme='red-light'] {
   /* ---------- SUPERFICIES ------------------------ */
   --background: #FFFFFF;
   --foreground: #090D10;
@@ -220,7 +224,7 @@
   --chart-5: #999992;
 
   /* ---------- SIDEBAR -------------------- */
-  --sidebar: #F8FAFC;
+  --sidebar: #fcf8f8;
   --sidebar-foreground: var(--foreground);
   --sidebar-primary: var(--primary);
   --sidebar-primary-foreground: var(--primary-foreground);
@@ -250,7 +254,7 @@
   --secondary-22: #33333038;
 }
 
-.dark[data-color-theme='red'] {
+[data-theme='red-dark'] {
   /* ---------- SUPERFICIES ------------------------ */
   --background: #080D11;
   --foreground: #F2F6F8;
@@ -292,7 +296,7 @@
   --chart-5: #64645E;
 
   /* ---------- SIDEBAR -------------------- */
-  --sidebar: #0E1319;
+  --sidebar: #190e0e;
   --sidebar-foreground: var(--foreground);
   --sidebar-primary: var(--primary);
   --sidebar-primary-foreground: var(--primary-foreground);

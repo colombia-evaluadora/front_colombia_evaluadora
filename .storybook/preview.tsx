@@ -1,86 +1,78 @@
 /// <reference types="vite/client" />
+import { useEffect, type ReactNode } from 'react'
 import { definePreview } from '@storybook/react-vite'
 import addonA11y from '@storybook/addon-a11y'
+import addonDocs from '@storybook/addon-docs'
 import '../src/index.css'
 
-// Hay 4 combinaciones de tema (2 colores × 2 modos) definidas en `src/index.css`:
-//   :root                             — Light (default, sin prefijo de color)
-//   .dark                             — Dark
-//   [data-color-theme='red']          — Red · Light
-//   .dark[data-color-theme='red']     — Red · Dark
+type Palette = 'default-light' | 'default-dark' | 'red-light' | 'red-dark'
+
+// Aplica `data-theme` en `<html>` post-commit → no dispara el refresh que
+// Storybook vigila en "preview changed". Con esto el `<body>` toma
+// `--background` correcto vía el `bg-background` que Tailwind aplica en
+// index.css, y los componentes dentro del story heredan las variables.
 //
-// El toolbar expone las 4 combinaciones explícitamente; aplica tanto
-// `data-color-theme` como la clase `dark` según la selección, de modo que el
-// preview refleja el tema final sin depender del toggle de dark mode.
-type ThemeMode = 'light' | 'dark' | 'red-light' | 'red-dark'
+// Componente interno porque el decorator `withTheme` no puede llamar al
+// hook directamente: no es componente (nombre sin mayúscula) ni hook con
+// prefijo `use`, así que las reglas de react-hooks se quejan.
+const ThemeApplier = ({
+  palette,
+  children,
+}: {
+  palette: Palette
+  children: ReactNode
+}) => {
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', palette)
+    return () => {
+      document.documentElement.removeAttribute('data-theme')
+    }
+  }, [palette])
 
-const withColorTheme = (
+  return <>{children}</>
+}
+
+// eslint-disable-next-line react-refresh/only-export-components -- preview.tsx
+// exports `preview` config alongside the helper component above; Fast Refresh
+// warnings no aplican porque Storybook carga este archivo una sola vez al
+// inicio, no por story.
+const withTheme = (
   Story: () => React.ReactElement,
-  context: { globals: { colorTheme?: ThemeMode } }
+  context: { globals: { palette?: Palette } }
 ) => {
-  const colorTheme = context.globals.colorTheme ?? 'light'
-  const root = document.documentElement
-
-  // Reset para que cada combinación parta de un estado conocido
-  root.removeAttribute('data-color-theme')
-  root.classList.remove('dark')
-
-  switch (colorTheme) {
-    case 'light':
-      // default: sin atributos extra
-      break
-    case 'dark':
-      root.classList.add('dark')
-      break
-    case 'red-light':
-      root.setAttribute('data-color-theme', 'red')
-      break
-    case 'red-dark':
-      root.setAttribute('data-color-theme', 'red')
-      root.classList.add('dark')
-      break
-  }
-
-  return <Story />
+  const palette: Palette = context.globals.palette ?? 'default-light'
+  return <ThemeApplier palette={palette}><Story /></ThemeApplier>
 }
 
 export const preview = definePreview({
-  addons: [addonA11y()],
+  addons: [addonA11y(), addonDocs()],
   parameters: {
-    layout: 'centered',
-    controls: {
-      matchers: {
-        color: /(background|color)$/i,
-        date: /Date$/i,
-      },
+    darkMode: {
+      default: 'light',
+      apply: false,
+      stylePreview: true,
     },
     a11y: {
       test: 'todo',
     },
-    darkMode: {
-      stylePreview: true,
-      classTarget: 'html',
-      darkClass: 'dark',
-      lightClass: 'light',
-    },
   },
   globalTypes: {
-    colorTheme: {
-      name: 'Color theme',
-      description: 'Combinación de paleta de color y modo (4 temas del design system)',
-      defaultValue: 'light',
+    palette: {
+      name: 'Palette',
+      description: 'Paleta de colores',
+      defaultValue: 'default-light',
       toolbar: {
         icon: 'paintbrush',
         items: [
-          { value: 'light', title: 'Light' },
-          { value: 'dark', title: 'Dark' },
+          { value: 'default-light', title: 'Default · Light' },
+          { value: 'default-dark', title: 'Default · Dark' },
           { value: 'red-light', title: 'Red · Light' },
           { value: 'red-dark', title: 'Red · Dark' },
         ],
       },
     },
   },
-  decorators: [withColorTheme],
+  decorators: [withTheme],
 })
 
 export default preview

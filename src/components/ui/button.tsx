@@ -297,6 +297,21 @@ const buttonVariants = cva(
   }
 )
 
+/**
+ * Componente que dispara una acción o evento.
+ *
+ * Combina `variant` (forma: fill / soft / outline / ghost / link) con
+ * `color` (tono semántico: 8 colores del design system) para dar 40
+ * combinaciones sincronizadas con Figma "Design Tokens — Tailwind Sync".
+ *
+ * Construido sobre `@base-ui/react/button`.
+ *
+ * @example
+ *   <Button variant="fill" color="primary">Guardar</Button>
+ *   <Button variant="soft" color="info">Borrador</Button>
+ *   <Button variant="ghost" color="neutral">Cancelar</Button>
+ *   <Button render={<a href="/docs" />} variant="link">Ver docs</Button>
+ */
 function Button({
   className,
   variant = "fill",
