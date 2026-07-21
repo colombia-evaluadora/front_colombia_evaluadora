@@ -38,6 +38,7 @@ export const columns: ColumnDef<AuditSession>[] = [
     id: "select",
     header: ({ table }) => (
       <Checkbox
+        color="neutral"
         aria-label="Seleccionar página"
         className="translate-y-0.5"
         checked={table.getIsAllPageRowsSelected()}
@@ -50,6 +51,7 @@ export const columns: ColumnDef<AuditSession>[] = [
     ),
     cell: ({ row }) => (
       <Checkbox
+        color="neutral"
         aria-label={`Seleccionar ${row.original.authorName}`}
         className="translate-y-0.5"
         checked={row.getIsSelected()}
