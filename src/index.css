@@ -204,7 +204,7 @@
   --warning-foreground: #352600;
   --info: #0079B5;
   --info-foreground: #F7FBFD;
-  --muted: #DBCFCF;            /* sync Figma live Red Light */
+  --muted: #DBD1D1;            /* sync Figma live Red Light */
   --muted-foreground: #756161;
 
   /* ---------- BORDES / FOCO ---------------------------------- */
@@ -236,7 +236,7 @@
   --destructive-stroke: #E400174D;
   --warning-stroke: #EAB3004D;
   --success-stroke: #6182004D;
-  --muted-stroke: #DBCFCF4D;
+  --muted-stroke: #DBD1D14D;
   --secondary-stroke: #3333304D;
 
   /* ---------- SOFT FILLS (alpha 22%) ----------------------- */
@@ -246,7 +246,7 @@
   --destructive-22: #E4001738;
   --warning-22: #EAB30038;
   --success-22: #61820038;
-  --muted-22: #DBCFCF38;
+  --muted-22: #DBD1D138;
   --secondary-22: #33333038;
 }
 
