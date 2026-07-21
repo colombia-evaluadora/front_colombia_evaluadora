@@ -113,4 +113,54 @@ export const navigationMenu: RouteResponseDto[] = [
     idParent: null,
     roleIds: [1, 2],
   },
+  {
+    "id": 12,
+    "name": "Establecimiento Educativo",
+    "icon": "School-Icon",
+    "path": "/app/establecimiento-educativo",
+    "menuOrder": 2,
+    "type": "GROUP",
+    "idParent": null,
+    "roleIds": [1, 2]
+  },
+  {
+    "id": 13,
+    "name": "Establecimiento",
+    "icon": "",
+    "path": "/app/establecimiento-educativo/general",
+    "menuOrder": 0,
+    "type": "ITEM",
+    "idParent": 12,
+    "roleIds": [1, 2]
+  },
+  {
+    "id": 14,
+    "name": "Sedes Educativas",
+    "icon": "",
+    "path": "/app/establecimiento-educativo/sedes",
+    "menuOrder": 1,
+    "type": "ITEM",
+    "idParent": 12,
+    "roleIds": [1, 2]
+  },
+  {
+    "id": 15,
+    "name": "Funcionarios",
+    "icon": "",
+    "path": "/app/establecimiento-educativo/funcionarios",
+    "menuOrder": 2,
+    "type": "ITEM",
+    "idParent": 12,
+    "roleIds": [1, 2]
+  },
+  {
+    "id": 16,
+    "name": "Periodos Académicos",
+    "icon": "",
+    "path": "/app/establecimiento-educativo/periodos",
+    "menuOrder": 3,
+    "type": "ITEM",
+    "idParent": 12,
+    "roleIds": [1, 2]
+  }
 ]
