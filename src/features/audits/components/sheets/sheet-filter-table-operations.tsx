@@ -54,7 +54,7 @@ export function FilterTableOperationsSheet({
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger
           render={
-            <Button variant={activeFilterCount > 0 ? "soft" : "outline"} color="primary" />
+            <Button variant={activeFilterCount > 0 ? "soft" : "outline"} color="secondary" />
           }
         >
           <FunnelIcon />
@@ -96,7 +96,7 @@ export function FilterTableOperationsSheet({
         <Button
           type="button"
           variant="soft"
-          color="primary"
+          color="secondary"
           size="icon"
           className="border-l-0"
           aria-label="Limpiar filtros"

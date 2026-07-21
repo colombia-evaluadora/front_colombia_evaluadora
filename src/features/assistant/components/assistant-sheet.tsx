@@ -20,7 +20,7 @@ export function AssistantSheet() {
   return (
     <Sheet>
       <MessageScrollerProvider>
-        <SheetTrigger render={<Button variant="outline" size="icon" />}>
+        <SheetTrigger render={<Button variant="outline" size="icon" color="muted" />}>
           <ChatCircleTextIcon />
           <span className="sr-only">Abrir asistente</span>
         </SheetTrigger>
