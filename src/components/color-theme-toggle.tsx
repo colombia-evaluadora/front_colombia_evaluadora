@@ -11,7 +11,7 @@ import {
 import { useColorTheme } from "@/components/theme-provider"
 
 export function ColorThemeToggle() {
-  const { setColorTheme } = useColorTheme()
+  const { setPalette } = useColorTheme()
 
   return (
     <DropdownMenu>
@@ -21,10 +21,10 @@ export function ColorThemeToggle() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuGroup>
-          <DropdownMenuItem onClick={() => setColorTheme("emerald")}>
-            Emerald
+          <DropdownMenuItem onClick={() => setPalette("default")}>
+            Default
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setColorTheme("red")}>
+          <DropdownMenuItem onClick={() => setPalette("red")}>
             Red
           </DropdownMenuItem>
         </DropdownMenuGroup>
