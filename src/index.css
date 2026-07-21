@@ -8,8 +8,7 @@
 @import "@fontsource-variable/inter";
 @import "@fontsource-variable/noto-sans";
 
-:root,
-[data-theme="default-light"] {
+:root {
   --font-sans: 'Inter Variable', sans-serif;
   --font-heading: 'Noto Sans Variable', sans-serif;
 }
@@ -20,8 +19,7 @@
 }
 
 /* Radius variables */
-:root,
-[data-theme="default-light"] {
+:root {
   --radius: 0.875rem;
 }
 
@@ -36,8 +34,7 @@
 }
 
 /* Colors */
-:root,
-[data-theme="default-light"] {
+:root {
   /* ---------- SUPERFICIES ------------------------ */
   --background: #FFFFFF;
   --foreground: #090D10;   /* gris azulado oscuro */
@@ -83,8 +80,8 @@
   --sidebar-foreground: var(--foreground);
   --sidebar-primary: var(--primary);
   --sidebar-primary-foreground: var(--primary-foreground);
-  --sidebar-accent: var(--primary);
-  --sidebar-accent-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--muted);
+  --sidebar-accent-foreground: var(--foreground);
   --sidebar-border: var(--border);
   --sidebar-ring: var(--ring);
 
@@ -109,8 +106,7 @@
   --secondary-22: #61820038;
 }
 
-[data-theme="default-dark"] {
-
+.dark {
   /* ---------- SUPERFICIES ------------------------ */
   --background: #080D11;
   --foreground: #F2F6F8;
@@ -182,7 +178,7 @@
   --secondary-22: #84A73C38;
 }
 
-[data-theme='red-light'] {
+[data-theme='red'] {
   /* ---------- SUPERFICIES ------------------------ */
   --background: #FFFFFF;
   --foreground: #090D10;
@@ -254,11 +250,11 @@
   --secondary-22: #33333038;
 }
 
-[data-theme='red-dark'] {
+.dark[data-theme='red'] {
   /* ---------- SUPERFICIES ------------------------ */
   --background: #080D11;
   --foreground: #F2F6F8;
-  --card: #1E1214;            /* sync Figma live Red Dark (warm) */
+  --card: #1E1214;
   --card-foreground: var(--foreground);
   --popover: #11181E;
   --popover-foreground: var(--foreground);
