@@ -7,7 +7,7 @@ import { AppProvider } from './provider'
 async function enableMocking() {
   if (!env.ENABLE_API_MOCKING) return
   const { worker } = await import('./mocks/browser')
-  return worker.start({ onUnhandledRequest: 'bypass' })
+  return worker.start({ onUnhandledRequest: 'error' })
 }
 
 enableMocking().then(() => {
