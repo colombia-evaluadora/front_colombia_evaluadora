@@ -26,10 +26,11 @@ export function ClearSelectionAuditSessionDialog({ resetSelection }: ClearSelect
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger
         render={
-          <Button variant="outline" size="icon" aria-label="Deseleccionar" />
+          <Button variant="outline" aria-label="Deseleccionar" />
         }
       >
         <XSquareIcon />
+        <span className="sr-only md:not-sr-only">Deseleccionar</span>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
