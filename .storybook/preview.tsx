@@ -7,14 +7,6 @@ import '../src/index.css'
 
 type Palette = 'default-light' | 'default-dark' | 'red-light' | 'red-dark'
 
-// Aplica `data-theme` en `<html>` post-commit → no dispara el refresh que
-// Storybook vigila en "preview changed". Con esto el `<body>` toma
-// `--background` correcto vía el `bg-background` que Tailwind aplica en
-// index.css, y los componentes dentro del story heredan las variables.
-//
-// Componente interno porque el decorator `withTheme` no puede llamar al
-// hook directamente: no es componente (nombre sin mayúscula) ni hook con
-// prefijo `use`, así que las reglas de react-hooks se quejan.
 const ThemeApplier = ({
   palette,
   children,
