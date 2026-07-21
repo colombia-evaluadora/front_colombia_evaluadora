@@ -58,7 +58,7 @@ export function DataTable({
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow
               key={headerGroup.id}
-              className="bg-muted/50 hover:bg-muted/50"
+              className="bg-muted-22 hover:bg-muted-22"
             >
               {headerGroup.headers.map((header) => (
                 <TableHead key={header.id} className="text-foreground">

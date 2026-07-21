@@ -16,6 +16,7 @@ export const columns: ColumnDef<SessionOperation>[] = [
     id: "select",
     header: ({ table }) => (
       <Checkbox
+        color="neutral"
         aria-label="Seleccionar página"
         className="translate-y-0.5"
         checked={table.getIsAllPageRowsSelected()}
@@ -28,6 +29,7 @@ export const columns: ColumnDef<SessionOperation>[] = [
     ),
     cell: ({ row }) => (
       <Checkbox
+        color="neutral"
         aria-label={`Seleccionar ${row.original.entityName}`}
         className="translate-y-0.5"
         checked={row.getIsSelected()}
