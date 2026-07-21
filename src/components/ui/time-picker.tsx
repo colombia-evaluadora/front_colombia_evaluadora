@@ -293,7 +293,12 @@ function AnalogClockView({
             mode === "hour" ? value === hour : value === minute
           return (
             <button
-              key={value}
+              /* Key por posición, no por `value`: 5 y 10 aparecen en las dos
+                 listas (horas y minutos) en índices distintos, así que con
+                 `key={value}` React reutilizaba ese nodo y el `transition-all`
+                 de `buttonVariants` animaba el cambio de `left`/`top`. Por
+                 índice, cada slot se queda quieto y solo cambia la etiqueta. */
+              key={i}
               type="button"
               onClick={() => handleClick(value)}
               className={cn(
