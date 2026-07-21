@@ -48,8 +48,8 @@ export const paths = {
       getHref: (tableSlug: string) => `/app/auditoria-tablas/${tableSlug}`,
     },
     periodosAcademicos: {
-      path: "periodos-academicos",
-      getHref: () => "/app/periodos-academicos",
+      path: "establecimiento-educativo/periodos",
+      getHref: () => "/app/establecimiento-educativo/periodos",
     },
     reportes: {
       path: "reportes",
