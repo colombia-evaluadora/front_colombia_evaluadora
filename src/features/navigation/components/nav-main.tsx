@@ -19,6 +19,7 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
+import { cn } from "@/lib/utils"
 
 import { useNavItemsQuery } from "@/features/navigation/api/query/use-nav-items-query"
 import type { NavSubItem } from "@/features/navigation/api/types/nav-item"
@@ -115,9 +116,8 @@ function NavCollapsibleItem({
   isActive,
   pathname,
 }: NavCollapsibleItemProps) {
-  const [defaultOpen] = useState(
-    () => isActive || items.some((sub) => sub.url === pathname)
-  )
+  const hasActiveChild = items.some((sub) => sub.url === pathname)
+  const [defaultOpen] = useState(() => isActive || hasActiveChild)
 
   return (
     <Collapsible
@@ -129,6 +129,15 @@ function NavCollapsibleItem({
         render={
           <SidebarMenuButton
             tooltip={title}
+            /**
+             * Collapsed to icons the sub-items are hidden, so the parent icon
+             * has to carry the active state itself. Expanded, the highlighted
+             * sub-item already shows it — hence the icon-mode-only classes.
+             */
+            className={cn(
+              (isActive || hasActiveChild) &&
+                "group-data-[collapsible=icon]:bg-sidebar-accent group-data-[collapsible=icon]:font-medium group-data-[collapsible=icon]:text-sidebar-accent-foreground"
+            )}
             render={<Link to={items[0].url} />}
           />
         }
