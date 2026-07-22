@@ -51,6 +51,10 @@ export const paths = {
       path: "establecimiento-educativo/periodos",
       getHref: () => "/app/establecimiento-educativo/periodos",
     },
+    periodosAcademicosAgregar: {
+      path: "establecimiento-educativo/periodos/agregar",
+      getHref: () => "/app/establecimiento-educativo/periodos/agregar",
+    },
     reportes: {
       path: "reportes",
       getHref: () => "/app/reportes",

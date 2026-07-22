@@ -15,3 +15,9 @@ export const ACADEMIC_PERIOD_STATUS_BADGE: Record<AcademicPeriodStatus, BadgePro
   ACTIVO: { variant: "fill", color: "success" },
   INACTIVO: { variant: "fill", color: "secondary" },
 }
+
+export const JORNADA_OPTIONS: { id: number; name: string }[] = [
+  { id: 1, name: "Mañana" },
+  { id: 2, name: "Tarde" },
+  { id: 3, name: "Noche" },
+]
