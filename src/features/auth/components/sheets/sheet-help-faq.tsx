@@ -153,7 +153,16 @@ function HelpFaqSheetContent({ data }: { data: HelpSheetData }) {
                     {data.support.email}
                   </a>
                 </p>
-                <p>{data.support.phone}</p>
+                <p>
+                  <a
+                    className="hover:text-foreground underline underline-offset-3"
+                    // `tel:` no admite espacios ni paréntesis: el número se
+                    // muestra formateado pero se marca en crudo.
+                    href={`tel:${data.support.phone.replace(/[^+\d]/g, "")}`}
+                  >
+                    {data.support.phone}
+                  </a>
+                </p>
                 <p>{data.support.hours}</p>
               </div>
             </ItemContent>
