@@ -1,5 +1,9 @@
 import { Link, useNavigate } from "@tanstack/react-router"
-import { ArrowLeftIcon, ShieldCheckIcon } from "@phosphor-icons/react"
+import {
+  ArrowLeftIcon,
+  KeyIcon,
+  ShieldCheckIcon,
+} from "@phosphor-icons/react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -34,6 +38,13 @@ export function ForgotPasswordPage() {
   return (
     <>
       <CardHeader className="text-center">
+        <div className="bg-primary/10 mx-auto flex size-14 items-center justify-center rounded-full">
+          <KeyIcon
+            weight="duotone"
+            className="text-primary size-7"
+            aria-hidden="true"
+          />
+        </div>
         <CardTitle>¿Olvidaste tu contraseña?</CardTitle>
         <CardDescription>
           Ingresa tu email y te enviaremos un enlace para restablecerla.

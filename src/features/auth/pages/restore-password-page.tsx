@@ -1,6 +1,7 @@
 import {
   ArrowLeftIcon,
   ClockCountdownIcon,
+  KeyIcon,
   LinkBreakIcon,
   ShieldCheckIcon,
   WarningCircleIcon,
@@ -128,6 +129,13 @@ export function RestorePasswordPage() {
       ) : (
         <>
           <CardHeader className="text-center">
+            <div className="bg-primary/10 mx-auto flex size-14 items-center justify-center rounded-full">
+              <KeyIcon
+                weight="duotone"
+                className="text-primary size-7"
+                aria-hidden="true"
+              />
+            </div>
             <CardTitle>Restablecer contraseña</CardTitle>
             <CardDescription>
               Ingresa tu nueva contraseña.
