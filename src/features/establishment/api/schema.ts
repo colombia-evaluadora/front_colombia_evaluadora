@@ -26,9 +26,14 @@ export type AcademicPeriodFormValues = z.infer<typeof academicPeriodFormSchema>
 
 export const academicPeriodsFiltersFormSchema = z.object({
   sedeName: z.string(),
-  schoolYearId: z.number().optional(),
-  statusId: z.array(z.number()),
+  schoolYearId: z.string(),
+  status: z.string(),
+  startFrom: z.string(),
+  startTo: z.string(),
 })
+export type AcademicPeriodsFiltersFormInput = z.input<
+  typeof academicPeriodsFiltersFormSchema
+>
 export type AcademicPeriodsFiltersFormValues = z.infer<
   typeof academicPeriodsFiltersFormSchema
 >
@@ -41,5 +46,7 @@ export const academicPeriodsSearchSchema = z.object({
   sedeName: z.string().optional().catch(undefined),
   schoolYearId: z.coerce.number().optional().catch(undefined),
   status: z.enum(ACADEMIC_PERIOD_STATUSES).optional().catch(undefined),
+  startFrom: z.string().optional().catch(undefined),
+  startTo: z.string().optional().catch(undefined),
 })
 export type AcademicPeriodsSearch = z.infer<typeof academicPeriodsSearchSchema>

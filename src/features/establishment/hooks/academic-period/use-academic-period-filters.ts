@@ -2,17 +2,19 @@ import { useCallback, useMemo } from "react"
 
 import { periodosAcademicosRoute } from "@/router"
 
-import type { AcademicPeriodsQueryFilters } from "../../api/types/academic-period/academic-period"
-import type { AcademicPeriodStatus } from "../../api/types/academic-period/academic-period"
+import type {
+  AcademicPeriodsFiltersFormInput,
+  AcademicPeriodsFiltersFormValues,
+} from "../../api/schema"
+import type {
+  AcademicPeriodsQueryFilters,
+  AcademicPeriodStatus,
+} from "../../api/types/academic-period/academic-period"
 
 export interface AcademicPeriodFilters {
-  sedeName: string
-  schoolYearId: number | undefined
-  status: AcademicPeriodStatus | undefined
+  filters: AcademicPeriodsFiltersFormInput
   queryFilters: AcademicPeriodsQueryFilters
-  setSedeName: (value: string) => void
-  setSchoolYearId: (value: number | undefined) => void
-  setStatus: (value: AcademicPeriodStatus | undefined) => void
+  applyFilters: (values: AcademicPeriodsFiltersFormValues) => void
   clearAllFilters: () => void
   activeFilterCount: number
 }
@@ -21,30 +23,20 @@ export function useAcademicPeriodFilters(): AcademicPeriodFilters {
   const search = periodosAcademicosRoute.useSearch()
   const navigate = periodosAcademicosRoute.useNavigate()
 
-  const setSedeName = useCallback(
-    (value: string) => {
+  const applyFilters = useCallback(
+    (values: AcademicPeriodsFiltersFormValues) => {
       navigate({
-        search: (prev) => ({ ...prev, sedeName: value || undefined, page: 0 }),
-        replace: true,
-      })
-    },
-    [navigate]
-  )
-
-  const setSchoolYearId = useCallback(
-    (value: number | undefined) => {
-      navigate({
-        search: (prev) => ({ ...prev, schoolYearId: value, page: 0 }),
-        replace: true,
-      })
-    },
-    [navigate]
-  )
-
-  const setStatus = useCallback(
-    (value: AcademicPeriodStatus | undefined) => {
-      navigate({
-        search: (prev) => ({ ...prev, status: value, page: 0 }),
+        search: (prev) => ({
+          ...prev,
+          sedeName: values.sedeName || undefined,
+          schoolYearId: values.schoolYearId
+            ? Number(values.schoolYearId)
+            : undefined,
+          status: (values.status as AcademicPeriodStatus) || undefined,
+          startFrom: values.startFrom || undefined,
+          startTo: values.startTo || undefined,
+          page: 0,
+        }),
         replace: true,
       })
     },
@@ -58,6 +50,8 @@ export function useAcademicPeriodFilters(): AcademicPeriodFilters {
         sedeName: undefined,
         schoolYearId: undefined,
         status: undefined,
+        startFrom: undefined,
+        startTo: undefined,
         page: 0,
       }),
       replace: true,
@@ -69,8 +63,16 @@ export function useAcademicPeriodFilters(): AcademicPeriodFilters {
       sedeName: search.sedeName,
       schoolYearId: search.schoolYearId,
       status: search.status ? [search.status] : undefined,
+      startFrom: search.startFrom,
+      startTo: search.startTo,
     }),
-    [search.sedeName, search.schoolYearId, search.status]
+    [
+      search.sedeName,
+      search.schoolYearId,
+      search.status,
+      search.startFrom,
+      search.startTo,
+    ]
   )
 
   const activeFilterCount = useMemo(() => {
@@ -78,17 +80,26 @@ export function useAcademicPeriodFilters(): AcademicPeriodFilters {
     if (search.sedeName) n += 1
     if (search.schoolYearId) n += 1
     if (search.status) n += 1
+    if (search.startFrom || search.startTo) n += 1
     return n
-  }, [search.sedeName, search.schoolYearId, search.status])
+  }, [
+    search.sedeName,
+    search.schoolYearId,
+    search.status,
+    search.startFrom,
+    search.startTo,
+  ])
 
   return {
-    sedeName: search.sedeName ?? "",
-    schoolYearId: search.schoolYearId,
-    status: search.status,
+    filters: {
+      sedeName: search.sedeName ?? "",
+      schoolYearId: search.schoolYearId ? String(search.schoolYearId) : "",
+      status: search.status ?? "",
+      startFrom: search.startFrom ?? "",
+      startTo: search.startTo ?? "",
+    },
     queryFilters,
-    setSedeName,
-    setSchoolYearId,
-    setStatus,
+    applyFilters,
     clearAllFilters,
     activeFilterCount,
   }
