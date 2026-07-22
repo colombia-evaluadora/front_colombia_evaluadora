@@ -2,7 +2,16 @@ import * as z from "zod"
 
 import { loginInputSchema, type LoginInput } from "@/lib/auth"
 
-export const loginFormSchema = loginInputSchema
+// El schema de la API solo exige que la contraseña venga; el del formulario
+// además avisa del largo mínimo antes de gastar un intento contra el
+// servidor. La política completa vive en `passwordRules`, que solo aplica
+// donde se *crea* una contraseña.
+export const loginFormSchema = loginInputSchema.extend({
+  password: z
+    .string()
+    .min(1, "Requerido")
+    .min(8, "Debe tener al menos 8 caracteres."),
+})
 export type LoginFormValues = LoginInput
 
 export const loginSearchSchema = z.object({
@@ -15,8 +24,16 @@ export const forgotPasswordFormSchema = z.object({
 })
 export type ForgotPasswordFormValues = z.infer<typeof forgotPasswordFormSchema>
 
+// El usuario es el correo, así que pedirlo por correo sería circular: la
+// identidad se prueba con el documento.
 export const forgotUsernameFormSchema = z.object({
-  email: z.email("Email inválido"),
+  document: z
+    .string()
+    .trim()
+    .min(1, "Requerido")
+    .regex(/^\d+$/, "Debe contener solo números, sin puntos ni espacios.")
+    .min(6, "Debe tener al menos 6 dígitos.")
+    .max(15, "Debe tener máximo 15 dígitos."),
 })
 export type ForgotUsernameFormValues = z.infer<typeof forgotUsernameFormSchema>
 

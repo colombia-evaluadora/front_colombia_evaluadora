@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { useForm } from "@tanstack/react-form"
-import { EyeIcon, EyeSlashIcon } from "@phosphor-icons/react"
+import { EyeIcon, EyeSlashIcon, InfoIcon } from "@phosphor-icons/react"
 
 import {
   Field,
@@ -53,6 +53,9 @@ export function RestorePasswordForm({ id, onSubmit }: RestorePasswordFormProps) 
           {(field) => {
             const isInvalid =
               field.state.meta.isTouched && !field.state.meta.isValid
+            // Cumple todas las reglas de `passwordRules`: por eso el mensaje
+            // es "Fuerte" y no solo "válida".
+            const isStrong = !isInvalid && field.state.value.length > 0
             return (
               <Field data-invalid={isInvalid}>
                 <FieldLabel htmlFor={field.name}>Nueva contraseña</FieldLabel>
@@ -90,6 +93,12 @@ export function RestorePasswordForm({ id, onSubmit }: RestorePasswordFormProps) 
                     errors={field.state.meta.errors}
                   />
                 )}
+                {isStrong && (
+                  <p className="text-success flex items-center gap-1.5 text-sm">
+                    <InfoIcon className="size-4 shrink-0" aria-hidden="true" />
+                    Fuerte
+                  </p>
+                )}
               </Field>
             )
           }}
@@ -98,6 +107,9 @@ export function RestorePasswordForm({ id, onSubmit }: RestorePasswordFormProps) 
           {(field) => {
             const isInvalid =
               field.state.meta.isTouched && !field.state.meta.isValid
+            // El `.refine` del schema apunta su error a este campo, así que
+            // "válido y con contenido" ya significa que coinciden.
+            const matches = !isInvalid && field.state.value.length > 0
             return (
               <Field data-invalid={isInvalid}>
                 <FieldLabel htmlFor={field.name}>
@@ -132,6 +144,12 @@ export function RestorePasswordForm({ id, onSubmit }: RestorePasswordFormProps) 
                 </InputGroup>
                 {isInvalid && (
                   <FieldError errors={field.state.meta.errors} />
+                )}
+                {matches && (
+                  <p className="text-success flex items-center gap-1.5 text-sm">
+                    <InfoIcon className="size-4 shrink-0" aria-hidden="true" />
+                    Las contraseñas coinciden
+                  </p>
                 )}
               </Field>
             )

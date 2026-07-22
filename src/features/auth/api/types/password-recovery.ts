@@ -32,8 +32,11 @@ export interface ResetTokenStatusResponse {
   issuedAt?: number
 }
 
-/** Respuesta de "no recuerdo mi usuario". El correo llega enmascarado. */
+/**
+ * Respuesta de "no recuerdo mi usuario". El usuario *es* el correo con el
+ * que se ingresa, y va completo: el documento con el que se consultó ya
+ * hace de prueba de identidad.
+ */
 export interface ForgotUsernameResponse {
   username: string
-  maskedEmail: string
 }

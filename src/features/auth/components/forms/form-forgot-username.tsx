@@ -2,7 +2,6 @@ import { useForm } from "@tanstack/react-form"
 
 import {
   Field,
-  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
@@ -21,7 +20,7 @@ interface ForgotUsernameFormProps {
 
 export function ForgotUsernameForm({ id, onSubmit }: ForgotUsernameFormProps) {
   const form = useForm({
-    defaultValues: { email: "" } as ForgotUsernameFormValues,
+    defaultValues: { document: "" } as ForgotUsernameFormValues,
     validators: {
       onChange: forgotUsernameFormSchema,
     },
@@ -37,28 +36,27 @@ export function ForgotUsernameForm({ id, onSubmit }: ForgotUsernameFormProps) {
       }}
     >
       <FieldGroup>
-        <form.Field name="email">
+        <form.Field name="document">
           {(field) => {
             const isInvalid =
               field.state.meta.isTouched && !field.state.meta.isValid
             return (
               <Field data-invalid={isInvalid}>
-                <FieldLabel htmlFor={field.name}>Email</FieldLabel>
+                <FieldLabel htmlFor={field.name}>
+                  Número de documento
+                </FieldLabel>
                 <Input
                   id={field.name}
                   name={field.name}
-                  type="email"
-                  autoComplete="email"
-                  placeholder="nombre@empresa.com"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  placeholder="1020304050"
                   value={field.state.value}
                   onBlur={field.handleBlur}
                   onChange={(e) => field.handleChange(e.target.value)}
                   aria-invalid={isInvalid}
-                  aria-describedby={`${field.name}-hint`}
                 />
-                <FieldDescription id={`${field.name}-hint`}>
-                  Usa el correo asociado a tu cuenta.
-                </FieldDescription>
                 {isInvalid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             )
