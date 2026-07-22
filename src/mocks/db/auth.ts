@@ -2,8 +2,8 @@ import type { User } from "@/types/api"
 
 export const authUsers: (User & {
   password: string
-  /** Nombre de usuario con el que se ingresa al sistema. */
-  username: string
+  /** Documento de identidad: con esto se recupera el usuario. */
+  document: string
 })[] = [
   {
     id: "1",
@@ -11,7 +11,7 @@ export const authUsers: (User & {
     password: "password",
     name: "Admin Demo",
     role: "ADMIN",
-    username: "admin.demo",
+    document: "1020304050",
   },
   {
     id: "2",
@@ -19,9 +19,14 @@ export const authUsers: (User & {
     password: "password",
     name: "Usuario Demo",
     role: "USER",
-    username: "usuario.demo",
+    document: "1098765432",
   },
 ]
+
+/** El usuario con el que se ingresa es el correo. */
+export function findUserByDocument(document: string) {
+  return authUsers.find((u) => u.document === document.trim())
+}
 
 export function findUserByCredentials(email: string, password: string) {
   return authUsers.find((u) => u.email === email && u.password === password)

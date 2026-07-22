@@ -110,6 +110,7 @@ export function LoginForm({ id, onSubmit }: LoginFormProps) {
                     <InputGroupButton
                       size="icon-xs"
                       onClick={() => setShowPassword((v) => !v)}
+                      className="text-muted-foreground hover:text-primary"
                       aria-label={
                         showPassword
                           ? "Ocultar contraseña"

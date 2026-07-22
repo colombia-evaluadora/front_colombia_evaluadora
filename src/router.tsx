@@ -169,7 +169,7 @@ const forgotUsernameRoute = createRoute({
   path: paths.auth.forgotUsername.path,
   head: () => ({
     meta: [
-      { title: `Recuperar usuario · ${APP_NAME}` },
+      { title: `Recuperar correo · ${APP_NAME}` },
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),

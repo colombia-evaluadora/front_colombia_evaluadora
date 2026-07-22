@@ -33,7 +33,7 @@ export function ForgotUsernamePage() {
   })
 
   function handleSubmit(values: ForgotUsernameFormValues) {
-    forgotUsernameMutation.mutate(values.email)
+    forgotUsernameMutation.mutate(values.document)
   }
 
   return (
@@ -47,18 +47,17 @@ export function ForgotUsernamePage() {
                 aria-hidden="true"
               />
             </div>
-            <CardTitle className="text-xl">Este es tu usuario</CardTitle>
+            <CardTitle className="text-xl">Este es tu correo</CardTitle>
             <CardDescription>
-              Encontramos la cuenta asociada a{" "}
-              <span className="font-semibold break-all">
-                {found.maskedEmail}
-              </span>
+              Encontramos la cuenta asociada a ese documento.
             </CardDescription>
           </CardHeader>
 
           <CardContent>
             <div className="bg-success/10 flex flex-col items-center gap-1 p-4 text-center">
-              <p className="text-muted-foreground text-xs">Tu usuario es</p>
+              <p className="text-muted-foreground text-xs">
+                Ingresa al sistema con
+              </p>
               <p className="text-success text-lg font-semibold break-all">
                 {found.username}
               </p>
@@ -93,9 +92,10 @@ export function ForgotUsernamePage() {
                 aria-hidden="true"
               />
             </div>
-            <CardTitle>¿No recuerdas tu usuario?</CardTitle>
+            <CardTitle>¿No recuerdas tu correo?</CardTitle>
             <CardDescription>
-              Ingresa el correo registrado y te decimos con qué usuario entras.
+              Ingresa tu número de documento y te decimos con qué correo
+              entras.
             </CardDescription>
           </CardHeader>
 
@@ -114,7 +114,7 @@ export function ForgotUsernamePage() {
               disabled={forgotUsernameMutation.isPending}
               className="w-full"
             >
-              Consultar usuario
+              Consultar correo
             </Button>
             <Button
               render={<Link to={paths.auth.login.path} />}

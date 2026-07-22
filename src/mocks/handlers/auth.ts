@@ -6,10 +6,9 @@ import {
   createPasswordResetToken,
   expirePasswordResetToken,
   findUserByCredentials,
-  findUserByEmail,
+  findUserByDocument,
   findUserByToken,
   getPasswordResetTokenStatus,
-  maskEmail,
   setUserPassword,
 } from "../db/auth"
 
@@ -86,25 +85,21 @@ export const authHandlers = [
     return HttpResponse.json({ token, expiresIn })
   }),
 
-  // Recuperar usuario a partir del correo registrado.
+  // Recuperar usuario a partir del documento: el usuario es el correo, así
+  // que pedirlo por correo no tendría sentido.
   http.get("/api/sso-admin/forgotUsername", async ({ request }) => {
     await delay(300)
-    const email = new URL(request.url).searchParams.get("email") ?? ""
-    const user = findUserByEmail(email.trim().toLowerCase())
+    const document = new URL(request.url).searchParams.get("document") ?? ""
+    const user = findUserByDocument(document)
 
     if (!user) {
       return HttpResponse.json(
-        { message: "No encontramos una cuenta con ese correo electrónico." },
+        { message: "No encontramos una cuenta con ese número de documento." },
         { status: 404 }
       )
     }
 
-    // El correo sale enmascarado desde acá: el front solo lo pinta, nunca
-    // recibe la dirección completa.
-    return HttpResponse.json({
-      username: user.username,
-      maskedEmail: maskEmail(user.email),
-    })
+    return HttpResponse.json({ username: user.email })
   }),
 
   // Endpoint solo-mock: la pantalla de confirmación lo consulta para saber
