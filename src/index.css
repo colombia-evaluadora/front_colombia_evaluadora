@@ -21,6 +21,20 @@
 /* Radius variables */
 :root {
   --radius: 0.875rem;
+  /* Animaciones del Accordion (data-open / data-closed). El componente las
+     referencia como `animate-accordion-up|down`, y Base UI inyecta el alto
+     con la variable `--accordion-panel-height` por panel. */
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+}
+
+@keyframes accordion-down {
+  from { height: 0 }
+  to   { height: var(--accordion-panel-height) }
+}
+@keyframes accordion-up {
+  from { height: var(--accordion-panel-height) }
+  to   { height: 0 }
 }
 
 @theme inline {
@@ -31,6 +45,8 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+  --animate-accordion-down: var(--animate-accordion-down);
+  --animate-accordion-up: var(--animate-accordion-up);
 }
 
 /* Colors */

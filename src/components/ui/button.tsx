@@ -26,7 +26,7 @@ const buttonVariants = cva(
         // Ghost en Figma: solo texto del color, hover bg-X/10
         ghost: "bg-transparent",
         // Link en Figma: texto del color + underline
-        link: "bg-transparent underline underline-offset-4 hover:underline",
+        link: "bg-transparent !p-0 underline underline-offset-4 hover:underline",
       },
       color: {
         primary: "",

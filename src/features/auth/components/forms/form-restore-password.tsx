@@ -51,14 +51,18 @@ export function RestorePasswordForm({ id, onSubmit }: RestorePasswordFormProps) 
                   name={field.name}
                   type="password"
                   autoComplete="new-password"
-                  minLength={6}
+                  placeholder="Ingresa tu nueva contraseña"
                   value={field.state.value}
                   onBlur={field.handleBlur}
                   onChange={(e) => field.handleChange(e.target.value)}
                   aria-invalid={isInvalid}
+                  aria-describedby={`${field.name}-error`}
                 />
                 {isInvalid && (
-                  <FieldError errors={field.state.meta.errors} />
+                  <FieldError
+                    id={`${field.name}-error`}
+                    errors={field.state.meta.errors}
+                  />
                 )}
               </Field>
             )
@@ -78,7 +82,7 @@ export function RestorePasswordForm({ id, onSubmit }: RestorePasswordFormProps) 
                   name={field.name}
                   type="password"
                   autoComplete="new-password"
-                  minLength={6}
+                  placeholder="Repite tu nueva contraseña"
                   value={field.state.value}
                   onBlur={field.handleBlur}
                   onChange={(e) => field.handleChange(e.target.value)}
