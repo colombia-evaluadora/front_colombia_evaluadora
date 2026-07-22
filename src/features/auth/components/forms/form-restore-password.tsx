@@ -75,6 +75,7 @@ export function RestorePasswordForm({ id, onSubmit }: RestorePasswordFormProps) 
                   <InputGroupAddon align="inline-end">
                     <InputGroupButton
                       size="icon-xs"
+                      className="text-muted-foreground hover:text-primary"
                       onClick={() => setShowPassword((v) => !v)}
                       aria-label={
                         showPassword
@@ -129,6 +130,7 @@ export function RestorePasswordForm({ id, onSubmit }: RestorePasswordFormProps) 
                   />
                   <InputGroupAddon align="inline-end">
                     <InputGroupButton
+                      className="text-muted-foreground hover:text-primary"
                       size="icon-xs"
                       onClick={() => setShowConfirmPassword((v) => !v)}
                       aria-label={

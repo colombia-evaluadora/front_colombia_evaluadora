@@ -1,6 +1,6 @@
 import { useEffect } from "react"
 import { useNavigate, useSearch } from "@tanstack/react-router"
-import { ShieldCheckIcon } from "@phosphor-icons/react"
+import { SignInIcon, ShieldCheckIcon } from "@phosphor-icons/react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -41,6 +41,13 @@ export function LoginPage() {
   return (
     <>
       <CardHeader className="text-center">
+        <div className="bg-primary/10 mx-auto flex size-14 items-center justify-center rounded-full">
+          <SignInIcon
+            weight="duotone"
+            className="text-primary size-7"
+            aria-hidden="true"
+          />
+        </div>
         <CardTitle>Iniciar sesión</CardTitle>
         <CardDescription>Ingresa tus credenciales para acceder.</CardDescription>
       </CardHeader>

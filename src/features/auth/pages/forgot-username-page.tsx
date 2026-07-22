@@ -86,9 +86,10 @@ export function ForgotUsernamePage() {
       ) : (
         <>
           <CardHeader className="text-center">
-            <div className="bg-primary/10 mx-auto flex size-20 items-center justify-center rounded-full">
+            <div className="bg-primary/10 mx-auto flex size-14 items-center justify-center rounded-full">
               <IdentificationCardIcon
-                className="text-primary size-9"
+                weight="duotone"
+                className="text-primary size-7"
                 aria-hidden="true"
               />
             </div>
