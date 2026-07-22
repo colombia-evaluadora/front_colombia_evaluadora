@@ -52,18 +52,24 @@ export function findUserByEmail(email: string) {
 }
 
 // token -> email, simula el link que el backend real envía por correo.
-const passwordResetTokens = new Map<string, string>()
+// En el mock el token es estático y no se consume: así el link
+// /restore-password?token=... sigue funcionando entre recargas y se puede
+// guardar en favoritos mientras se desarrolla la pantalla.
+export const MOCK_PASSWORD_RESET_TOKEN = "mock-reset-token"
+
+// Precargado con el usuario demo para que el token sirva aunque no se haya
+// pasado antes por /forgot-password.
+const passwordResetTokens = new Map<string, string>([
+  [MOCK_PASSWORD_RESET_TOKEN, authUsers[0].email],
+])
 
 export function createPasswordResetToken(email: string): string {
-  const token = `reset-${crypto.randomUUID()}`
-  passwordResetTokens.set(token, email)
-  return token
+  passwordResetTokens.set(MOCK_PASSWORD_RESET_TOKEN, email)
+  return MOCK_PASSWORD_RESET_TOKEN
 }
 
 export function consumePasswordResetToken(token: string): string | undefined {
-  const email = passwordResetTokens.get(token)
-  if (email) passwordResetTokens.delete(token)
-  return email
+  return passwordResetTokens.get(token)
 }
 
 export function setUserPassword(email: string, password: string) {

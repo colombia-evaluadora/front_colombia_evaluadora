@@ -7,7 +7,6 @@ import {
   FieldLabel,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-
 import { loginFormSchema, type LoginFormValues } from "../../api/schema"
 
 interface LoginFormProps {
@@ -45,6 +44,7 @@ export function LoginForm({ id, onSubmit }: LoginFormProps) {
                   name={field.name}
                   type="email"
                   autoComplete="username"
+                  placeholder="nombre@empresa.com"
                   value={field.state.value}
                   onBlur={field.handleBlur}
                   onChange={(e) => field.handleChange(e.target.value)}
@@ -57,6 +57,7 @@ export function LoginForm({ id, onSubmit }: LoginFormProps) {
             )
           }}
         </form.Field>
+
         <form.Field name="password">
           {(field) => {
             const isInvalid =
@@ -69,6 +70,7 @@ export function LoginForm({ id, onSubmit }: LoginFormProps) {
                   name={field.name}
                   type="password"
                   autoComplete="current-password"
+                  placeholder="Ingresa tu contraseña"
                   value={field.state.value}
                   onBlur={field.handleBlur}
                   onChange={(e) => field.handleChange(e.target.value)}
