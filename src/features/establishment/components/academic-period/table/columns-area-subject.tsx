@@ -5,7 +5,7 @@ import { DataTableColumnHeader } from "@/components/data-table"
 
 import type {
   AreaSubject,
-} from "../../api/types/academic-period/area-subject"
+} from "../../../api/types/academic-period/area-subject"
 
 export const columns: ColumnDef<AreaSubject>[] = [
   {

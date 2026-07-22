@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/card"
 import { paths } from "@/config/paths"
 
-import { AcademicPeriodsDataTable } from "../components/academic-period/academic-periods-table"
+import { AcademicPeriodsDataTable } from "../components/academic-period/table/academic-periods-table"
 
 export function AcademicPeriodsPage() {
   return (

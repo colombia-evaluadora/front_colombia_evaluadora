@@ -10,8 +10,8 @@ import { Button } from "@/components/ui/button"
 import { useDataTable } from "@/hooks/use-data-table"
 
 import { useEvaluationPeriodsQuery } from "../../../api/query/use-evaluation-periods-query"
-import { columns } from "../columns-evaluation-periods"
-import { CreateEvaluationPeriodDialog } from "../dialog-create-evaluation-period"
+import { columns } from "../table/columns-evaluation-periods"
+import { CreateEvaluationPeriodDialog } from "../dialogs/dialog-create-evaluation-period"
 
 export function TabEvaluationPeriods() {
   const [sorting, setSorting] = useState<SortingState>([])

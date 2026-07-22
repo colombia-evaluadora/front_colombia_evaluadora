@@ -9,7 +9,8 @@ import { Pagination } from "@/components/pagination"
 import { Button } from "@/components/ui/button"
 import { useDataTable } from "@/hooks/use-data-table"
 
-import { columns } from "../columns-area-subject"
+import { columns } from "../table/columns-area-subject"
+import { CreateAreaSubjectDialog } from "../dialogs/dialog-create-area-subject"
 import { useAreaSubjectQuery } from "@/features/establishment/api/query/use-area-subject"
 
 export function TabAreaSubject() {
@@ -23,8 +24,6 @@ export function TabAreaSubject() {
     pageIndex,
     pageSize,
   })
-
-  console.log(useAreaSubjectQuery)
 
   const goToPage = setPageIndex
   const changePageSize = (size: number) => {
@@ -44,8 +43,6 @@ export function TabAreaSubject() {
     sorting,
     setSorting,
   })
-
-  console.log(data)
 
   return (
     <>
@@ -68,6 +65,7 @@ export function TabAreaSubject() {
             <FileXlsIcon className="text-success" />
           </Button>
         </div>
+        <CreateAreaSubjectDialog />
       </div>
 
       <DataTable
