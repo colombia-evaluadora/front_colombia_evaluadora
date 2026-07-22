@@ -10,11 +10,6 @@ import { Separator } from "@/components/ui/separator"
 import { TimePicker } from "@/components/ui/time-picker"
 import { cn } from "@/lib/utils"
 
-// Formato del valor que sube al form: fecha + hora en un solo string,
-// sin timezone (hora local tal cual la eligió el usuario). date-fns
-// `parseISO` la interpreta como local — no como UTC — que es lo que
-// queremos acá (a diferencia de `new Date(str)` con un string sin "Z",
-// que también es local, pero parseISO es explícito sobre eso).
 const DATE_TIME_FORMAT = "yyyy-MM-dd'T'HH:mm"
 
 interface FieldDateTimePopoverProps {
@@ -24,17 +19,6 @@ interface FieldDateTimePopoverProps {
   placeholder?: string
 }
 
-/**
- * Campo "fecha + hora": un popover principal compacto con el
- * `Calendar` (modo día único — cada extremo del filtro, Desde/Hasta,
- * es su propio campo independiente, no un rango) más una fila resumen
- * con la hora elegida. El `TimePicker` completo (con el clock-face)
- * solo se abre en un SEGUNDO popover anidado al tocar esa fila —
- * así el popover principal no crece de más mostrando el picker
- * entero todo el tiempo. Popover-dentro-de-Popover es válido acá:
- * son dos overlays anclados independientes, no un modal dentro de
- * otro modal.
- */
 export function FieldDateTimePopover({
   label,
   value,
@@ -55,7 +39,6 @@ export function FieldDateTimePopover({
       onChange("")
       return
     }
-    // Si ya había una hora elegida, la preservamos al cambiar de día.
     const next = selected
       ? setMinutes(setHours(date, selected.getHours()), selected.getMinutes())
       : date
@@ -73,10 +56,6 @@ export function FieldDateTimePopover({
     <Field orientation="vertical" className="gap-2">
       <FieldLabel>{label}</FieldLabel>
       <Popover>
-        {/* El trigger NO es un botón visualmente: se estila como el
-            `Input` del resto del form (fondo transparente, solo borde
-            inferior) para que el campo se lea como un input con
-            popover y no como un botón relleno. */}
         <PopoverTrigger
           render={
             <button
@@ -99,11 +78,6 @@ export function FieldDateTimePopover({
             locale={es}
           />
           <Separator />
-          {/* Botón de hora a todo el ancho — sin label al lado (el
-              ícono de reloj + el placeholder "--:--" ya dejan claro
-              qué es). El TimePicker completo (clock-face incluido)
-              solo aparece al abrir este segundo popover, no ocupa
-              espacio en el popover principal. */}
           <Popover>
             <PopoverTrigger
               render={

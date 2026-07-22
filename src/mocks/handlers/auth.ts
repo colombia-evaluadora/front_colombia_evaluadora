@@ -4,9 +4,10 @@ import {
   consumePasswordResetToken,
   createMockAccessToken,
   createPasswordResetToken,
+  expirePasswordResetToken,
   findUserByCredentials,
-  findUserByEmail,
   findUserByToken,
+  getPasswordResetTokenStatus,
   setUserPassword,
 } from "../db/auth"
 
@@ -64,21 +65,38 @@ export const authHandlers = [
   }),
 
   // Mismo contrato que el backend real (GET /sso-admin/forgotPassword?email=):
-  // nunca revela si el email existe, siempre resuelve 200. El link de reseteo
-  // no se puede "enviar" en un mock, así que el token queda logueado en
-  // consola para poder probar el flujo de /restore-password localmente.
+  // nunca revela si el email existe, siempre resuelve 200. Diferencia con el
+  // real: acá devolvemos el token en el body, porque en un mock no hay correo
+  // que abrir — es lo que le permite a /check-email mostrar el vencimiento
+  // real y llegar a /restore-password. El front trata el body como opcional.
   http.get("/api/sso-admin/forgotPassword", async ({ request }) => {
     await delay(300)
     const email = new URL(request.url).searchParams.get("email") ?? ""
-    const user = findUserByEmail(email)
 
-    if (user) {
-      const token = createPasswordResetToken(email)
-      console.info(
-        `[mock] Link de reseteo para ${email}: /restore-password?token=${token}`
-      )
-    }
+    // El token se emite exista o no el usuario: si no existe, el reseteo
+    // después no cambia nada, pero la respuesta no delata la diferencia.
+    const { token, expiresIn } = createPasswordResetToken(email)
 
+    console.info(
+      `[mock] Link de reseteo para ${email}: /restore-password?token=${token}`
+    )
+
+    return HttpResponse.json({ token, expiresIn })
+  }),
+
+  // Endpoint solo-mock: la pantalla de confirmación lo consulta para saber
+  // cuántos segundos le quedan al enlace y para distinguir "venció" de
+  // "no existe".
+  http.get("/api/sso-admin/resetTokenStatus", ({ request }) => {
+    const token = new URL(request.url).searchParams.get("token") ?? ""
+    return HttpResponse.json(getPasswordResetTokenStatus(token))
+  }),
+
+  // Atajo de desarrollo para probar la pantalla de "enlace expirado" sin
+  // esperar los 30 minutos.
+  http.post("/api/sso-admin/expireResetToken", async ({ request }) => {
+    const { token } = (await request.json()) as { token: string }
+    expirePasswordResetToken(token)
     return new HttpResponse(null, { status: 200 })
   }),
 
@@ -88,11 +106,17 @@ export const authHandlers = [
       token: string
       password: string
     }
-    const email = consumePasswordResetToken(token)
+    const { email, status } = consumePasswordResetToken(token)
 
     if (!email) {
       return HttpResponse.json(
-        { message: "El enlace de recuperación no es válido o ya expiró." },
+        {
+          code: status,
+          message:
+            status === "expired"
+              ? "El enlace de recuperación ya expiró. Solicita uno nuevo."
+              : "El enlace de recuperación no es válido.",
+        },
         { status: 400 }
       )
     }

@@ -14,6 +14,11 @@ export const paths = {
       path: "/forgot-password",
       getHref: () => "/forgot-password",
     },
+    checkEmail: {
+      path: "/check-email",
+      getHref: (token?: string | null) =>
+        `/check-email${token ? `?token=${encodeURIComponent(token)}` : ""}`,
+    },
     restorePassword: {
       path: "/restore-password",
       getHref: (token?: string | null) =>

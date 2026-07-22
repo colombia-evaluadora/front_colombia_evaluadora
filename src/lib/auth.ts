@@ -33,9 +33,33 @@ const loginWithEmailAndPassword = (data: LoginInput): Promise<AuthResponse> =>
   api.post("/auth/login", data)
 
 // Mismo endpoint/contrato que el backend real (GET .../forgotPassword?email=):
-// nunca revela si el email existe, siempre resuelve con éxito.
-const forgotPassword = (email: string): Promise<void> =>
+// nunca revela si el email existe, siempre resuelve con éxito. El body es
+// opcional: el backend real responde vacío (el enlace va por correo), el mock
+// devuelve el token para poder seguir el flujo sin bandeja de entrada.
+export interface ForgotPasswordResponse {
+  token?: string
+  expiresIn?: number
+}
+
+const forgotPassword = (email: string): Promise<ForgotPasswordResponse> =>
   api.get("/sso-admin/forgotPassword", { params: { email } })
+
+export type ResetTokenStatus = "valid" | "expired" | "invalid"
+
+export interface ResetTokenStatusResponse {
+  status: ResetTokenStatus
+  /** Segundos restantes; 0 si venció o el token no existe. */
+  expiresIn: number
+  /** Correo al que se envió el enlace. Ausente si el token no existe. */
+  email?: string
+  /** Epoch ms en que se envió el enlace. */
+  issuedAt?: number
+}
+
+const getResetTokenStatus = (
+  token: string
+): Promise<ResetTokenStatusResponse> =>
+  api.get("/sso-admin/resetTokenStatus", { params: { token } })
 
 const restorePassword = (data: {
   token: string
@@ -88,6 +112,26 @@ export function useForgotPassword({
   return useMutation({
     mutationFn: forgotPassword,
     ...mutationConfig,
+  })
+}
+
+/**
+ * Estado del enlace de reseteo. Se consulta una sola vez por token: la
+ * cuenta regresiva la lleva la UI a partir del `expiresIn` que devuelve,
+ * sin repreguntar al servidor cada segundo.
+ */
+export const resetTokenStatusQueryKey = (token: string | undefined) => [
+  "reset-token-status",
+  token,
+]
+
+export function useResetTokenStatus(token: string | undefined) {
+  return useQuery({
+    queryKey: resetTokenStatusQueryKey(token),
+    queryFn: () => getResetTokenStatus(token!),
+    enabled: !!token,
+    staleTime: Infinity,
+    retry: false,
   })
 }
 
