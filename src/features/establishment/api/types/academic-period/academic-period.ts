@@ -36,6 +36,9 @@ export interface AcademicPeriodsQueryFilters {
   sedeName?: string
   schoolYearId?: number
   status?: AcademicPeriodStatus[]
+  // Rango sobre `startDate` (yyyy-MM-dd, inclusivo).
+  startFrom?: string
+  startTo?: string
 }
 
 export interface AcademicPeriodsQueryRequest {

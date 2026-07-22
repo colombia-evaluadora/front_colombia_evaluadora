@@ -3,46 +3,21 @@
 
 import { DataTable } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
-import { Input } from "@/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { useDataTable } from "@/hooks/use-data-table"
 import { useTablePagination } from "@/hooks/use-table-pagination"
 
 import { useAcademicPeriodsQuery } from "../../../api/query/use-academic-periods-query"
-import { ACADEMIC_PERIOD_STATUS_LABELS } from "../../../api/ui-mappings"
-import type { AcademicPeriodStatus } from "../../../api/types/academic-period/academic-period"
 import { useAcademicPeriodFilters } from "../../../hooks/academic-period/use-academic-period-filters"
 import { columns } from "./columns-academic-periods"
 import { ExportAcademicPeriodsDialog } from "../dialogs/dialog-export-academic-periods"
-
-const ALL = "Todos"
-
-const YEAR_OPTIONS = Array.from(
-  { length: new Date().getFullYear() - 2020 + 1 },
-  (_, i) => new Date().getFullYear() - i
-)
-
-const STATUS_OPTIONS: AcademicPeriodStatus[] = ["ACTIVO", "INACTIVO"]
+import { FilterAcademicPeriodsSheet } from "../sheets/sheet-filter-academic-periods"
 
 export function AcademicPeriodsDataTable() {
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } =
     useTablePagination()
 
-  const {
-    sedeName,
-    schoolYearId,
-    status,
-    queryFilters,
-    setSedeName,
-    setSchoolYearId,
-    setStatus,
-  } = useAcademicPeriodFilters()
+  const { filters, queryFilters, applyFilters, clearAllFilters, activeFilterCount } =
+    useAcademicPeriodFilters()
 
   const { data, isPending, isError, refetch } = useAcademicPeriodsQuery({
     filters: queryFilters,
@@ -67,69 +42,12 @@ export function AcademicPeriodsDataTable() {
   return (
     <>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap items-center gap-2">
-            <div className="flex flex-col gap-1">
-
-          <label className="text-sm font-medium">Buscar</label>
-          <Input
-            type="text"
-            autoComplete="off"
-            placeholder="Buscar por sede…"
-            value={sedeName}
-            onChange={(event) => setSedeName(event.target.value)}
-          />
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium">Año lectivo</label>
-
-            <Select
-              value={schoolYearId ? String(schoolYearId) : ALL}
-              onValueChange={(value) =>
-                setSchoolYearId(value !== ALL ? Number(value) : undefined)
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Seleccionar" />
-              </SelectTrigger>
-
-              <SelectContent>
-                <SelectItem value={ALL}>Todos</SelectItem>
-
-                {YEAR_OPTIONS.map((year) => (
-                  <SelectItem key={year} value={String(year)}>
-                    {year}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium">Estado</label>
-
-            <Select
-              value={status ?? ALL}
-              onValueChange={(value) =>
-                setStatus(value !== ALL ? (value as AcademicPeriodStatus) : undefined)
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Todos" />
-              </SelectTrigger>
-
-              <SelectContent>
-                <SelectItem value={ALL}>Todos</SelectItem>
-
-                {STATUS_OPTIONS.map((option) => (
-                  <SelectItem key={option} value={option}>
-                    {ACADEMIC_PERIOD_STATUS_LABELS[option]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
+        <FilterAcademicPeriodsSheet
+          activeFilterCount={activeFilterCount}
+          filters={filters}
+          applyFilters={applyFilters}
+          clearAllFilters={clearAllFilters}
+        />
 
         <ExportAcademicPeriodsDialog filters={queryFilters} />
       </div>

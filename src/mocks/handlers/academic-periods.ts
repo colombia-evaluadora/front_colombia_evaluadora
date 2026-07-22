@@ -34,6 +34,13 @@ function applyFilters(
     if (filters.status?.length && !filters.status.includes(row.status)) {
       return false
     }
+    // Rango sobre startDate (yyyy-MM-dd ordena cronológicamente como string).
+    if (filters.startFrom && row.startDate < filters.startFrom) {
+      return false
+    }
+    if (filters.startTo && row.startDate > filters.startTo) {
+      return false
+    }
     return true
   })
 }
