@@ -14,17 +14,14 @@ import {
 import { useDataTable } from "@/hooks/use-data-table"
 import { useTablePagination } from "@/hooks/use-table-pagination"
 
-import { useAcademicPeriodsQuery } from "../../api/query/use-academic-periods-query"
-import { ACADEMIC_PERIOD_STATUS_LABELS } from "../../api/ui-mappings"
-import type { AcademicPeriodStatus } from "../../api/types/academic-period/academic-period"
-import { useAcademicPeriodFilters } from "../../hooks/academic-period/use-academic-period-filters"
+import { useAcademicPeriodsQuery } from "../../../api/query/use-academic-periods-query"
+import { ACADEMIC_PERIOD_STATUS_LABELS } from "../../../api/ui-mappings"
+import type { AcademicPeriodStatus } from "../../../api/types/academic-period/academic-period"
+import { useAcademicPeriodFilters } from "../../../hooks/academic-period/use-academic-period-filters"
 import { columns } from "./columns-academic-periods"
 import { ExportAcademicPeriodsDialog } from "../dialogs/dialog-export-academic-periods"
 
 const ALL = "Todos"
-
-const BOX =
-  "h-11 w-56 rounded-lg border border-input bg-transparent px-3 text-sm transition-colors hover:border-ring/50 focus-visible:border-ring aria-invalid:border-destructive data-[size=default]:h-11"
 
 const YEAR_OPTIONS = Array.from(
   { length: new Date().getFullYear() - 2020 + 1 },
@@ -80,7 +77,6 @@ export function AcademicPeriodsDataTable() {
             placeholder="Buscar por sede…"
             value={sedeName}
             onChange={(event) => setSedeName(event.target.value)}
-            className={BOX}
           />
           </div>
 
@@ -93,7 +89,7 @@ export function AcademicPeriodsDataTable() {
                 setSchoolYearId(value !== ALL ? Number(value) : undefined)
               }
             >
-              <SelectTrigger className={BOX}>
+              <SelectTrigger>
                 <SelectValue placeholder="Seleccionar" />
               </SelectTrigger>
 
@@ -118,7 +114,7 @@ export function AcademicPeriodsDataTable() {
                 setStatus(value !== ALL ? (value as AcademicPeriodStatus) : undefined)
               }
             >
-              <SelectTrigger className={BOX}>
+              <SelectTrigger>
                 <SelectValue placeholder="Todos" />
               </SelectTrigger>
 

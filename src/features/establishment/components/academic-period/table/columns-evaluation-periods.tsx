@@ -4,11 +4,11 @@ import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { DataTableColumnHeader } from "@/components/data-table"
 
-import { EVALUATION_PERIOD_STATUS_BADGE } from "../../api/ui-mappings"
+import { EVALUATION_PERIOD_STATUS_BADGE } from "../../../api/ui-mappings"
 import type {
   EvaluationPeriod,
   EvaluationPeriodStatus,
-} from "../../api/types/academic-period/evaluation-period"
+} from "../../../api/types/academic-period/evaluation-period"
 
 function formatDate(value: string): string {
   const [year, month, day] = value.slice(0, 10).split("-")

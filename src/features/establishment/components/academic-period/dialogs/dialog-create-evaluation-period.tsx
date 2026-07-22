@@ -26,10 +26,10 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
-import { useCreateEvaluationPeriod } from "../../api/mutations/create-evaluation-period"
-import { EVALUATION_PERIOD_STATUSES } from "../../api/ui-mappings"
-import type { EvaluationPeriodStatus } from "../../api/types/academic-period/evaluation-period"
-import { FieldDatePopover } from "./field-date-popover"
+import { useCreateEvaluationPeriod } from "../../../api/mutations/create-evaluation-period"
+import { EVALUATION_PERIOD_STATUSES } from "../../../api/ui-mappings"
+import type { EvaluationPeriodStatus } from "../../../api/types/academic-period/evaluation-period"
+import { FieldDatePopover } from "../field-date-popover"
 
 const STATUS_TUPLE = [
   "No iniciado",
@@ -58,9 +58,6 @@ const EMPTY: EvaluationPeriodFormValues = {
   peso: 0,
   estado: "No iniciado",
 }
-
-const BOX =
-  "h-10 w-full rounded-lg border border-input bg-transparent px-3 text-sm transition-colors hover:border-ring/50 focus-visible:border-ring aria-invalid:border-destructive data-[size=default]:h-10"
 
 const FORM_ID = "evaluation-period-form"
 
@@ -118,7 +115,6 @@ export function CreateEvaluationPeriodDialog() {
                     id={field.name}
                     type="number"
                     min={1}
-                    className={BOX}
                     value={Number.isNaN(field.state.value) ? "" : field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.valueAsNumber)}
@@ -139,7 +135,6 @@ export function CreateEvaluationPeriodDialog() {
                   <FieldLabel htmlFor={field.name}>Nombre</FieldLabel>
                   <Input
                     id={field.name}
-                    className={BOX}
                     value={field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value)}
@@ -160,7 +155,6 @@ export function CreateEvaluationPeriodDialog() {
                   <FieldLabel htmlFor={field.name}>Abreviación</FieldLabel>
                   <Input
                     id={field.name}
-                    className={BOX}
                     placeholder="ej. PE1"
                     value={field.state.value}
                     onBlur={field.handleBlur}
@@ -185,7 +179,6 @@ export function CreateEvaluationPeriodDialog() {
                     type="number"
                     min={0}
                     max={100}
-                    className={BOX}
                     placeholder="ej. 25"
                     value={Number.isNaN(field.state.value) ? "" : field.state.value}
                     onBlur={field.handleBlur}
@@ -246,7 +239,7 @@ export function CreateEvaluationPeriodDialog() {
                     value && field.handleChange(value as EvaluationPeriodStatus)
                   }
                 >
-                  <SelectTrigger id={field.name} className={BOX}>
+                  <SelectTrigger id={field.name}>
                     <SelectValue placeholder="Seleccionar" />
                   </SelectTrigger>
                   <SelectContent>

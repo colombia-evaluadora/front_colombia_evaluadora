@@ -7,11 +7,11 @@ import { DataTableColumnHeader } from "@/components/data-table"
 import {
   ACADEMIC_PERIOD_STATUS_BADGE,
   ACADEMIC_PERIOD_STATUS_LABELS,
-} from "../../api/ui-mappings"
+} from "../../../api/ui-mappings"
 import type {
   AcademicPeriod,
   AcademicPeriodStatus,
-} from "../../api/types/academic-period/academic-period"
+} from "../../../api/types/academic-period/academic-period"
 
 // Las fechas llegan como "yyyy-MM-dd" (date-only). Parsearlas con
 // `new Date(...)` las interpreta como UTC medianoche y `toLocaleDateString`

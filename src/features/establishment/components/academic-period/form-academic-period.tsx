@@ -53,9 +53,6 @@ const EMPTY_VALUES: AcademicPeriodFormInput = {
   breaks: [],
 }
 
-const BOX =
-  "h-11 w-full rounded-lg border border-input bg-transparent px-3 text-sm transition-colors hover:border-ring/50 focus-visible:border-ring aria-invalid:border-destructive data-[size=default]:h-11"
-
 const STATUS_OPTIONS = Object.keys(
   ACADEMIC_PERIOD_STATUS_LABELS
 ) as AcademicPeriodStatus[]
@@ -152,7 +149,6 @@ export function AcademicPeriodForm({
                 type="number"
                 min={1}
                 placeholder="Agregar Periodo Académico Anterior"
-                className={BOX}
                 value={field.state.value ?? ""}
                 onBlur={field.handleBlur}
                 onChange={(e) =>
@@ -177,7 +173,7 @@ export function AcademicPeriodForm({
                   value && field.handleChange(value as AcademicPeriodStatus)
                 }
               >
-                <SelectTrigger id={field.name} className={BOX}>
+                <SelectTrigger id={field.name}>
                   <SelectValue placeholder="Agregar estado" />
                 </SelectTrigger>
                 <SelectContent>
@@ -207,11 +203,7 @@ export function AcademicPeriodForm({
                     value && field.handleChange(Number(value))
                   }
                 >
-                  <SelectTrigger
-                    id={field.name}
-                    className={BOX}
-                    aria-invalid={isInvalid}
-                  >
+                  <SelectTrigger id={field.name} aria-invalid={isInvalid}>
                     <SelectValue placeholder="Seleccionar" />
                   </SelectTrigger>
                   <SelectContent>
@@ -262,7 +254,6 @@ export function AcademicPeriodForm({
                 type="number"
                 min={0}
                 placeholder="Agregar"
-                className={BOX}
                 value={field.state.value ?? ""}
                 onBlur={field.handleBlur}
                 onChange={(e) =>
