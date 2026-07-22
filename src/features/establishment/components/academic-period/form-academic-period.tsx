@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Switch } from "@/components/ui/switch"
 import { TimePicker } from "@/components/ui/time-picker"
 import { cn } from "@/lib/utils"
 import {
@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
+import { useAcademicPeriodsQuery } from "../../api/query/use-academic-periods-query"
 import {
   academicPeriodFormSchema,
   type AcademicPeriodFormInput,
@@ -26,6 +27,7 @@ import {
 import {
   ACADEMIC_PERIOD_STATUS_LABELS,
   JORNADA_OPTIONS,
+  SEDE_OPTIONS,
 } from "../../api/ui-mappings"
 import type { AcademicPeriodStatus } from "../../api/types/academic-period/academic-period"
 import { FieldDatePopover } from "./field-date-popover"
@@ -43,6 +45,7 @@ const EMPTY_VALUES: AcademicPeriodFormInput = {
   startDate: "",
   endDate: "",
   enrollmentDeadline: "",
+  sedeId: 0,
   previousPeriodId: null,
   status: "ACTIVO",
   jornadaId: 0,
@@ -77,6 +80,15 @@ export function AcademicPeriodForm({
     },
   })
 
+  // Periodos existentes para el select "Periodo académico anterior".
+  const { data: periodsData } = useAcademicPeriodsQuery({
+    filters: {},
+    sorting: [],
+    pageIndex: 0,
+    pageSize: 100,
+  })
+  const previousPeriodOptions = periodsData?.rows ?? []
+
   return (
     <form
       id={id}
@@ -86,13 +98,16 @@ export function AcademicPeriodForm({
       }}
     >
       <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
+        {/* Fila 1: fechas */}
         <form.Field name="startDate">
           {(field) => {
             const isInvalid =
               field.state.meta.isTouched && !field.state.meta.isValid
             return (
               <Field data-invalid={isInvalid}>
-                <FieldLabel htmlFor={field.name}>Fecha Inicio*</FieldLabel>
+                <FieldLabel htmlFor={field.name}>
+                  Inicio del período académico*
+                </FieldLabel>
                 <FieldDatePopover
                   id={field.name}
                   value={field.state.value}
@@ -111,7 +126,9 @@ export function AcademicPeriodForm({
               field.state.meta.isTouched && !field.state.meta.isValid
             return (
               <Field data-invalid={isInvalid}>
-                <FieldLabel htmlFor={field.name}>Fecha Finalización*</FieldLabel>
+                <FieldLabel htmlFor={field.name}>
+                  Fin del período académico*
+                </FieldLabel>
                 <FieldDatePopover
                   id={field.name}
                   value={field.state.value}
@@ -125,40 +142,84 @@ export function AcademicPeriodForm({
         </form.Field>
 
         <form.Field name="enrollmentDeadline">
-          {(field) => (
-            <Field>
-              <FieldLabel htmlFor={field.name}>Fecha Matrícula</FieldLabel>
-              <FieldDatePopover
-                id={field.name}
-                value={field.state.value}
-                onChange={field.handleChange}
-              />
-            </Field>
-          )}
+          {(field) => {
+            const isInvalid =
+              field.state.meta.isTouched && !field.state.meta.isValid
+            return (
+              <Field data-invalid={isInvalid}>
+                <FieldLabel htmlFor={field.name}>
+                  Fecha límite de matrícula*
+                </FieldLabel>
+                <FieldDatePopover
+                  id={field.name}
+                  value={field.state.value}
+                  onChange={field.handleChange}
+                  invalid={isInvalid}
+                />
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
+              </Field>
+            )
+          }}
+        </form.Field>
+
+        {/* Fila 2: sede, periodo anterior, estado */}
+        <form.Field name="sedeId">
+          {(field) => {
+            const isInvalid =
+              field.state.meta.isTouched && !field.state.meta.isValid
+            return (
+              <Field data-invalid={isInvalid}>
+                <FieldLabel htmlFor={field.name}>Sede*</FieldLabel>
+                <Select
+                  value={field.state.value ? String(field.state.value) : ""}
+                  onValueChange={(value) =>
+                    value && field.handleChange(Number(value))
+                  }
+                >
+                  <SelectTrigger id={field.name} aria-invalid={isInvalid}>
+                    <SelectValue placeholder="Seleccionar" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      {SEDE_OPTIONS.map((sede) => (
+                        <SelectItem key={sede.id} value={String(sede.id)}>
+                          {sede.name}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
+              </Field>
+            )
+          }}
         </form.Field>
 
         <form.Field name="previousPeriodId">
           {(field) => (
             <Field>
               <FieldLabel htmlFor={field.name}>
-                Periodo Académico Anterior
+                Periodo académico anterior
               </FieldLabel>
-              <Input
-                id={field.name}
-                name={field.name}
-                type="number"
-                min={1}
-                placeholder="Agregar Periodo Académico Anterior"
-                value={field.state.value ?? ""}
-                onBlur={field.handleBlur}
-                onChange={(e) =>
-                  field.handleChange(
-                    Number.isNaN(e.target.valueAsNumber)
-                      ? null
-                      : e.target.valueAsNumber
-                  )
+              <Select
+                value={field.state.value ? String(field.state.value) : ""}
+                onValueChange={(value) =>
+                  field.handleChange(value ? Number(value) : null)
                 }
-              />
+              >
+                <SelectTrigger id={field.name}>
+                  <SelectValue placeholder="Seleccione un período" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    {previousPeriodOptions.map((period) => (
+                      <SelectItem key={period.id} value={String(period.id)}>
+                        {period.name} — {period.sedeName}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
             </Field>
           )}
         </form.Field>
@@ -174,7 +235,7 @@ export function AcademicPeriodForm({
                 }
               >
                 <SelectTrigger id={field.name}>
-                  <SelectValue placeholder="Agregar estado" />
+                  <SelectValue placeholder="Seleccionar" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
@@ -190,6 +251,7 @@ export function AcademicPeriodForm({
           )}
         </form.Field>
 
+        {/* Fila 3: jornada, hora inicio, hora final */}
         <form.Field name="jornadaId">
           {(field) => {
             const isInvalid =
@@ -222,38 +284,47 @@ export function AcademicPeriodForm({
           }}
         </form.Field>
 
-        <form.Field name="reservationEnabled">
+        <form.Field name="scheduleStartTime">
           {(field) => (
             <Field>
-              <FieldLabel>Activación/Desactivación de reserva</FieldLabel>
-              <RadioGroup
-                value={field.state.value ? "si" : "no"}
-                onValueChange={(value) => field.handleChange(value === "si")}
-                className="flex flex-row items-center gap-6 pt-2"
-              >
-                <label className="flex items-center gap-2 text-sm">
-                  <RadioGroupItem value="si" id={`${field.name}-si`} />
-                  Sí
-                </label>
-                <label className="flex items-center gap-2 text-sm">
-                  <RadioGroupItem value="no" id={`${field.name}-no`} />
-                  No
-                </label>
-              </RadioGroup>
+              <FieldLabel htmlFor={field.name}>Hora inicio</FieldLabel>
+              <FieldTimePopover
+                id={field.name}
+                value={field.state.value}
+                onChange={field.handleChange}
+                placeholder="Seleccione una hora"
+              />
             </Field>
           )}
         </form.Field>
 
+        <form.Field name="scheduleEndTime">
+          {(field) => (
+            <Field>
+              <FieldLabel htmlFor={field.name}>Hora final</FieldLabel>
+              <FieldTimePopover
+                id={field.name}
+                value={field.state.value}
+                onChange={field.handleChange}
+                placeholder="Seleccione una hora"
+              />
+            </Field>
+          )}
+        </form.Field>
+
+        {/* Fila 4: bloques, descansos, reserva */}
         <form.Field name="defaultBlocksCount">
           {(field) => (
             <Field>
-              <FieldLabel htmlFor={field.name}># de bloques por defecto</FieldLabel>
+              <FieldLabel htmlFor={field.name}>
+                Número de bloques de la jornada
+              </FieldLabel>
               <Input
                 id={field.name}
                 name={field.name}
                 type="number"
                 min={0}
-                placeholder="Agregar"
+                placeholder="Ingrese la cantidad"
                 value={field.state.value ?? ""}
                 onBlur={field.handleBlur}
                 onChange={(e) =>
@@ -268,40 +339,29 @@ export function AcademicPeriodForm({
           )}
         </form.Field>
 
-        <form.Field name="scheduleStartTime">
-          {(field) => (
-            <Field>
-              <FieldLabel htmlFor={field.name}>Hora inicio</FieldLabel>
-              <FieldTimePopover
-                id={field.name}
-                value={field.state.value}
-                onChange={field.handleChange}
-              />
-            </Field>
-          )}
-        </form.Field>
-
-        <form.Field name="scheduleEndTime">
-          {(field) => (
-            <Field>
-              <FieldLabel htmlFor={field.name}>Hora final</FieldLabel>
-              <FieldTimePopover
-                id={field.name}
-                value={field.state.value}
-                onChange={field.handleChange}
-              />
-            </Field>
-          )}
-        </form.Field>
-
         <form.Field name="breaks" mode="array">
           {(field) => (
             <Field>
-              <FieldLabel>Descansos</FieldLabel>
+              <FieldLabel>Cantidad y horarios de descanso</FieldLabel>
               <BreaksField
                 value={field.state.value}
                 onAdd={(brk) => field.pushValue(brk)}
                 onRemove={(index) => field.removeValue(index)}
+              />
+            </Field>
+          )}
+        </form.Field>
+
+        <form.Field name="reservationEnabled">
+          {(field) => (
+            <Field orientation="horizontal" className="items-center justify-between">
+              <FieldLabel htmlFor={field.name}>
+                Habilitar reserva de cupos
+              </FieldLabel>
+              <Switch
+                id={field.name}
+                checked={field.state.value}
+                onCheckedChange={(checked) => field.handleChange(checked)}
               />
             </Field>
           )}
@@ -319,6 +379,7 @@ function formatTime12(value: string): string {
   const h12 = h % 12 === 0 ? 12 : h % 12
   return `${h12}:${String(m).padStart(2, "0")}${period}`
 }
+
 function BreaksField({
   value,
   onAdd,
@@ -335,14 +396,14 @@ function BreaksField({
           <button
             type="button"
             className={cn(
-              "border-input hover:border-ring/50 data-[popup-open]:border-ring flex h-11 w-full items-center justify-between gap-2 rounded-lg border bg-transparent px-3 text-left text-sm outline-none transition-colors",
+              "flex h-10 w-full items-center justify-between gap-1.5 border border-transparent border-b-input bg-transparent px-0 py-2 text-left text-sm outline-none transition-[color,border-color] hover:border-b-ring/50 focus-visible:border-b-ring data-[popup-open]:border-b-ring",
               value.length === 0 && "text-muted-foreground"
             )}
           />
         }
       >
         <span className="truncate">
-          {value.length > 0 ? `${value.length} descanso(s)` : "Seleccionar"}
+          {value.length > 0 ? `${value.length} descanso(s)` : "Agregar"}
         </span>
         <CaretDownIcon className="text-muted-foreground size-4 shrink-0" />
       </PopoverTrigger>
