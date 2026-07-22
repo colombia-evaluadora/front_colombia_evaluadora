@@ -32,49 +32,9 @@ export type LoginInput = z.infer<typeof loginInputSchema>
 const loginWithEmailAndPassword = (data: LoginInput): Promise<AuthResponse> =>
   api.post("/auth/login", data)
 
-// Mismo endpoint/contrato que el backend real (GET .../forgotPassword?email=):
-// nunca revela si el email existe, siempre resuelve con éxito. El body es
-// opcional: el backend real responde vacío (el enlace va por correo), el mock
-// devuelve el token para poder seguir el flujo sin bandeja de entrada.
-export interface ForgotPasswordResponse {
-  token?: string
-  expiresIn?: number
-}
-
-const forgotPassword = (email: string): Promise<ForgotPasswordResponse> =>
-  api.get("/sso-admin/forgotPassword", { params: { email } })
-
-// Recuperar usuario a partir del correo registrado. El backend responde con
-// el correo ya enmascarado — el front nunca ve la dirección completa.
-export interface ForgotUsernameResponse {
-  username: string
-  maskedEmail: string
-}
-
-const forgotUsername = (email: string): Promise<ForgotUsernameResponse> =>
-  api.get("/sso-admin/forgotUsername", { params: { email } })
-
-export type ResetTokenStatus = "valid" | "expired" | "invalid"
-
-export interface ResetTokenStatusResponse {
-  status: ResetTokenStatus
-  /** Segundos restantes; 0 si venció o el token no existe. */
-  expiresIn: number
-  /** Correo al que se envió el enlace. Ausente si el token no existe. */
-  email?: string
-  /** Epoch ms en que se envió el enlace. */
-  issuedAt?: number
-}
-
-const getResetTokenStatus = (
-  token: string
-): Promise<ResetTokenStatusResponse> =>
-  api.get("/sso-admin/resetTokenStatus", { params: { token } })
-
-const restorePassword = (data: {
-  token: string
-  password: string
-}): Promise<void> => api.post("/sso-admin/restorePassword", data)
+// Los flujos de recuperación (contraseña y usuario) viven en
+// features/auth/api — acá queda solo lo que hace a la sesión, que usa toda
+// la app (router, layouts protegidos, menú).
 
 export function useUser() {
   return useQuery({
@@ -116,52 +76,6 @@ export function useLogout({
   })
 }
 
-export function useForgotPassword({
-  mutationConfig,
-}: { mutationConfig?: MutationConfig<typeof forgotPassword> } = {}) {
-  return useMutation({
-    mutationFn: forgotPassword,
-    ...mutationConfig,
-  })
-}
-
-export function useForgotUsername({
-  mutationConfig,
-}: { mutationConfig?: MutationConfig<typeof forgotUsername> } = {}) {
-  return useMutation({
-    mutationFn: forgotUsername,
-    ...mutationConfig,
-  })
-}
-
-/**
- * Estado del enlace de reseteo. Se consulta una sola vez por token: la
- * cuenta regresiva la lleva la UI a partir del `expiresIn` que devuelve,
- * sin repreguntar al servidor cada segundo.
- */
-export const resetTokenStatusQueryKey = (token: string | undefined) => [
-  "reset-token-status",
-  token,
-]
-
-export function useResetTokenStatus(token: string | undefined) {
-  return useQuery({
-    queryKey: resetTokenStatusQueryKey(token),
-    queryFn: () => getResetTokenStatus(token!),
-    enabled: !!token,
-    staleTime: Infinity,
-    retry: false,
-  })
-}
-
-export function useRestorePassword({
-  mutationConfig,
-}: { mutationConfig?: MutationConfig<typeof restorePassword> } = {}) {
-  return useMutation({
-    mutationFn: restorePassword,
-    ...mutationConfig,
-  })
-}
 
 // Usado en `beforeLoad` de las rutas protegidas (TanStack Router). Es async
 // porque debe poder disparar y esperar el refresh la primera vez (recarga de

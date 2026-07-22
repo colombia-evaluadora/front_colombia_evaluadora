@@ -75,7 +75,7 @@ function HelpFaqSheetContent({ data }: { data: HelpSheetData }) {
           <h3 className="px-1 text-base font-semibold">
             ¿No puedes iniciar sesión?
           </h3>
-          <Accordion className="rounded-md border">
+          <Accordion className="border">
             {data.faqs.map((faq) => (
               <AccordionItem key={faq.id} value={faq.id}>
                 <AccordionTrigger className="px-4">
