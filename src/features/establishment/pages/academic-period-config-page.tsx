@@ -8,7 +8,6 @@ import {
   CardAction,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
@@ -42,7 +41,20 @@ export function AcademicPeriodConfigPage() {
   return (
     <Card>
       <CardHeader>
-        <CardAction>
+        <CardAction className="flex gap-2">
+          <Button
+            type="submit"
+            size="sm"
+            color="primary"
+            form={FORM_ID}
+            disabled={createPeriod.isPending}
+            aria-busy={createPeriod.isPending}
+          >
+            {createPeriod.isPending && (
+              <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+            )}
+            Guardar
+          </Button>
           <Button
             size="sm"
             render={<Link to={paths.app.periodosAcademicos.getHref()} />}
@@ -62,20 +74,6 @@ export function AcademicPeriodConfigPage() {
 
         {saved && <EvaluationPeriodsSection />}
       </CardContent>
-      <CardFooter className="justify-end gap-2">
-        <Button
-          type="submit"
-          color="primary"
-          form={FORM_ID}
-          disabled={createPeriod.isPending}
-          aria-busy={createPeriod.isPending}
-        >
-          {createPeriod.isPending && (
-            <SpinnerIcon data-icon="inline-start" className="animate-spin" />
-          )}
-          Guardar
-        </Button>
-      </CardFooter>
     </Card>
   )
 }
