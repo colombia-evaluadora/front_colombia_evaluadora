@@ -1,4 +1,6 @@
+import { useState } from "react"
 import { useForm } from "@tanstack/react-form"
+import { EyeIcon, EyeSlashIcon } from "@phosphor-icons/react"
 
 import {
   Field,
@@ -7,6 +9,12 @@ import {
   FieldLabel,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from "@/components/ui/input-group"
 import { loginFormSchema, type LoginFormValues } from "../../api/schema"
 
 interface LoginFormProps {
@@ -15,6 +23,10 @@ interface LoginFormProps {
 }
 
 export function LoginForm({ id, onSubmit }: LoginFormProps) {
+  // Toggle propio de "ver contraseña": el nativo de Edge se oculta por CSS
+  // (ver `::-ms-reveal` en index.css) para no tener dos ojitos.
+  const [showPassword, setShowPassword] = useState(false)
+
   const form = useForm({
     defaultValues: { email: "", password: "" } as LoginFormValues,
     validators: {
@@ -65,17 +77,33 @@ export function LoginForm({ id, onSubmit }: LoginFormProps) {
             return (
               <Field data-invalid={isInvalid}>
                 <FieldLabel htmlFor={field.name}>Contraseña</FieldLabel>
-                <Input
-                  id={field.name}
-                  name={field.name}
-                  type="password"
-                  autoComplete="current-password"
-                  placeholder="Ingresa tu contraseña"
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  aria-invalid={isInvalid}
-                />
+                <InputGroup>
+                  <InputGroupInput
+                    id={field.name}
+                    name={field.name}
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="current-password"
+                    placeholder="Ingresa tu contraseña"
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    aria-invalid={isInvalid}
+                  />
+                  <InputGroupAddon align="inline-end">
+                    <InputGroupButton
+                      size="icon-xs"
+                      onClick={() => setShowPassword((v) => !v)}
+                      aria-label={
+                        showPassword
+                          ? "Ocultar contraseña"
+                          : "Mostrar contraseña"
+                      }
+                      aria-pressed={showPassword}
+                    >
+                      {showPassword ? <EyeSlashIcon /> : <EyeIcon />}
+                    </InputGroupButton>
+                  </InputGroupAddon>
+                </InputGroup>
                 {isInvalid && (
                   <FieldError errors={field.state.meta.errors} />
                 )}
