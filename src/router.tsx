@@ -9,13 +9,13 @@ import {
 import type { QueryClient } from "@tanstack/react-query"
 
 import { paths } from "@/config/paths"
-import { env } from "@/config/env"
 import { hasSession } from "@/lib/auth"
 import { queryClient } from "@/lib/query-client"
 import { NotFoundPage } from "@/components/layout/not-found-page"
 import { ErrorPage } from "@/components/layout/error-page"
 import { ComingSoonPage } from "@/components/layout/coming-soon-page"
 import {
+  checkEmailSearchSchema,
   loginSearchSchema,
   restorePasswordSearchSchema,
 } from "@/features/auth/api/schema"
@@ -39,6 +39,10 @@ const LoginPage = lazyRouteComponent(
 const ForgotPasswordPage = lazyRouteComponent(
   () => import("@/features/auth/pages/forgot-password-page"),
   "ForgotPasswordPage"
+)
+const CheckEmailPage = lazyRouteComponent(
+  () => import("@/features/auth/pages/check-email-page"),
+  "CheckEmailPage"
 )
 const RestorePasswordPage = lazyRouteComponent(
   () => import("@/features/auth/pages/restore-password-page"),
@@ -146,6 +150,19 @@ const forgotPasswordRoute = createRoute({
   component: ForgotPasswordPage,
 })
 
+const checkEmailRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: paths.auth.checkEmail.path,
+  validateSearch: checkEmailSearchSchema,
+  head: () => ({
+    meta: [
+      { title: `Revisa tu correo · ${APP_NAME}` },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
+  }),
+  component: CheckEmailPage,
+})
+
 const restorePasswordRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: paths.auth.restorePassword.path,
@@ -235,6 +252,7 @@ const routeTree = rootRoute.addChildren([
   homeRoute,
   loginRoute,
   forgotPasswordRoute,
+  checkEmailRoute,
   restorePasswordRoute,
   appLayoutRoute.addChildren([
     paymentsRoute,

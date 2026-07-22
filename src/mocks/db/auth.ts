@@ -51,25 +51,101 @@ export function findUserByEmail(email: string) {
   return authUsers.find((u) => u.email === email)
 }
 
-// token -> email, simula el link que el backend real envía por correo.
-// En el mock el token es estático y no se consume: así el link
-// /restore-password?token=... sigue funcionando entre recargas y se puede
-// guardar en favoritos mientras se desarrolla la pantalla.
+// token -> email + vencimiento, simula el link que el backend real envía por
+// correo. En el mock el token es estático y no se consume al usarlo: así el
+// link /restore-password?token=... sigue funcionando entre recargas y se
+// puede guardar en favoritos mientras se desarrolla la pantalla. Lo único
+// que lo invalida es el tiempo.
 export const MOCK_PASSWORD_RESET_TOKEN = "mock-reset-token"
+
+/**
+ * Vida del enlace de reseteo. En producción son 30 minutos; acá está en 10
+ * segundos a propósito, para poder ver el contador llegar a cero y las
+ * pantallas de "expiró" sin esperar.
+ */
+export const PASSWORD_RESET_TTL_SECONDS = 30 * 60
+
+interface PasswordResetEntry {
+  email: string
+  /** Epoch ms en que se emitió (es decir, cuándo se "envió" el correo). */
+  issuedAt: number
+  /** Epoch ms en que el token deja de servir. */
+  expiresAt: number
+}
 
 // Precargado con el usuario demo para que el token sirva aunque no se haya
 // pasado antes por /forgot-password.
-const passwordResetTokens = new Map<string, string>([
-  [MOCK_PASSWORD_RESET_TOKEN, authUsers[0].email],
+const passwordResetTokens = new Map<string, PasswordResetEntry>([
+  [
+    MOCK_PASSWORD_RESET_TOKEN,
+    {
+      email: authUsers[0].email,
+      issuedAt: Date.now(),
+      expiresAt: Date.now() + PASSWORD_RESET_TTL_SECONDS * 1000,
+    },
+  ],
 ])
 
-export function createPasswordResetToken(email: string): string {
-  passwordResetTokens.set(MOCK_PASSWORD_RESET_TOKEN, email)
-  return MOCK_PASSWORD_RESET_TOKEN
+export function createPasswordResetToken(email: string): {
+  token: string
+  expiresIn: number
+} {
+  const issuedAt = Date.now()
+  passwordResetTokens.set(MOCK_PASSWORD_RESET_TOKEN, {
+    email,
+    issuedAt,
+    expiresAt: issuedAt + PASSWORD_RESET_TTL_SECONDS * 1000,
+  })
+  return {
+    token: MOCK_PASSWORD_RESET_TOKEN,
+    expiresIn: PASSWORD_RESET_TTL_SECONDS,
+  }
 }
 
-export function consumePasswordResetToken(token: string): string | undefined {
-  return passwordResetTokens.get(token)
+export type PasswordResetTokenStatus = "valid" | "expired" | "invalid"
+
+/**
+ * Estado de un token de reseteo. El token es la única fuente: de él salen el
+ * email al que se envió, cuándo se envió (`issuedAt`) y cuántos segundos le
+ * quedan (`expiresIn`, 0 si venció o no existe). Eso es lo que alimenta la
+ * pantalla de "revisa tu correo" sin necesidad de más query params.
+ */
+export function getPasswordResetTokenStatus(token: string): {
+  status: PasswordResetTokenStatus
+  expiresIn: number
+  email?: string
+  issuedAt?: number
+} {
+  const entry = passwordResetTokens.get(token)
+  if (!entry) return { status: "invalid", expiresIn: 0 }
+
+  const remaining = Math.max(0, Math.ceil((entry.expiresAt - Date.now()) / 1000))
+  return {
+    status: remaining > 0 ? "valid" : "expired",
+    expiresIn: remaining,
+    email: entry.email,
+    issuedAt: entry.issuedAt,
+  }
+}
+
+/**
+ * Devuelve el email asociado si el token todavía sirve. El segundo valor
+ * distingue "no existe" de "venció" para que la UI muestre el mensaje
+ * correcto.
+ */
+export function consumePasswordResetToken(token: string): {
+  email?: string
+  status: PasswordResetTokenStatus
+} {
+  const { status } = getPasswordResetTokenStatus(token)
+  if (status !== "valid") return { status }
+  return { email: passwordResetTokens.get(token)!.email, status }
+}
+
+/** Solo para probar el camino de vencimiento sin esperar 30 minutos. */
+export function expirePasswordResetToken(token: string) {
+  const entry = passwordResetTokens.get(token)
+  if (entry) entry.expiresAt = Date.now()
 }
 
 export function setUserPassword(email: string, password: string) {

@@ -64,6 +64,14 @@ export const passwordRules: readonly PasswordRule[] = [
   },
 ] as const
 
+// La pantalla de confirmación se identifica solo con el token: de él salen
+// el email destino, cuándo se envió y cuánto le queda. Nada de eso viaja en
+// la URL, así la página es recargable/compartible sin exponer el correo.
+export const checkEmailSearchSchema = z.object({
+  token: z.string().optional(),
+})
+export type CheckEmailSearch = z.infer<typeof checkEmailSearchSchema>
+
 export const restorePasswordFormSchema = z
   .object({
     password: z.string().min(1, "Requerido").superRefine((value, ctx) => {
