@@ -73,6 +73,10 @@ const AcademicPeriodsPage = lazyRouteComponent(
   () => import("@/features/establishment/pages/academic-periods-page"),
   "AcademicPeriodsPage"
 )
+const AcademicPeriodConfigPage = lazyRouteComponent(
+  () => import("@/features/establishment/pages/academic-period-config-page"),
+  "AcademicPeriodConfigPage"
+)
 
 interface RouterContext {
   queryClient: QueryClient
@@ -224,6 +228,12 @@ export const periodosAcademicosRoute = createRoute({
   component: AcademicPeriodsPage,
 })
 
+export const periodosAcademicosAgregarRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.periodosAcademicosAgregar.path,
+  component: AcademicPeriodConfigPage,
+})
+
 const reportesRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.reportes.path,
@@ -255,6 +265,7 @@ const routeTree = rootRoute.addChildren([
     auditoriaTablaDetalleRoute,
     auditoriaSesionOperacionesRoute,
     periodosAcademicosRoute,
+    periodosAcademicosAgregarRoute,
     reportesRoute,
     usuariosRoute,
     configuracionRoute,

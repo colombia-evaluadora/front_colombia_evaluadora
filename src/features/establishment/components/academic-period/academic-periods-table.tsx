@@ -23,6 +23,9 @@ import { ExportAcademicPeriodsDialog } from "../dialogs/dialog-export-academic-p
 
 const ALL = "Todos"
 
+const BOX =
+  "h-11 w-56 rounded-lg border border-input bg-transparent px-3 text-sm transition-colors hover:border-ring/50 focus-visible:border-ring aria-invalid:border-destructive data-[size=default]:h-11"
+
 const YEAR_OPTIONS = Array.from(
   { length: new Date().getFullYear() - 2020 + 1 },
   (_, i) => new Date().getFullYear() - i
@@ -77,7 +80,7 @@ export function AcademicPeriodsDataTable() {
             placeholder="Buscar por sede…"
             value={sedeName}
             onChange={(event) => setSedeName(event.target.value)}
-            className="h-9 w-full sm:w-56 rounded-xs border"
+            className={BOX}
           />
           </div>
 
@@ -90,7 +93,7 @@ export function AcademicPeriodsDataTable() {
                 setSchoolYearId(value !== ALL ? Number(value) : undefined)
               }
             >
-              <SelectTrigger className="h-11 w-56 rounded-xs border">
+              <SelectTrigger className={BOX}>
                 <SelectValue placeholder="Seleccionar" />
               </SelectTrigger>
 
@@ -115,7 +118,7 @@ export function AcademicPeriodsDataTable() {
                 setStatus(value !== ALL ? (value as AcademicPeriodStatus) : undefined)
               }
             >
-              <SelectTrigger className="h-11 w-56 rounded-xs border">
+              <SelectTrigger className={BOX}>
                 <SelectValue placeholder="Todos" />
               </SelectTrigger>
 

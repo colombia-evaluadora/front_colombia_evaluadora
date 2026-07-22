@@ -1,20 +1,23 @@
 import { z } from "zod"
 
+export const ACADEMIC_PERIOD_STATUSES = ["ACTIVO", "INACTIVO"] as const
+
+
 export const academicPeriodFormSchema = z.object({
   startDate: z.string().min(1, "La fecha de inicio es obligatoria"),
   endDate: z.string().min(1, "La fecha de finalización es obligatoria"),
-  enrollmentDeadline: z.string().optional(),
-  previousPeriodId: z.number().optional(),
-  statusId: z.number,
-  jornadaId: z.number,
+  enrollmentDeadline: z.string(),
+  previousPeriodId: z.number().int().positive().nullable(),
+  status: z.enum(ACADEMIC_PERIOD_STATUSES),
+  jornadaId: z.number().int().positive("La jornada es obligatoria"),
   reservationEnabled: z.boolean(),
-  defaultBlocksCount: z.coerce.number().optional(),
-  scheduleStartTime: z.string().optional(),
-  scheduleEndTime: z.string().optional(),
+  defaultBlocksCount: z.number().int().nonnegative().nullable(),
+  scheduleStartTime: z.string(),
+  scheduleEndTime: z.string(),
   breaks: z.array(
     z.object({
-      startTime: z.string(),
-      endTime: z.string(),
+      startTime: z.string().min(1),
+      endTime: z.string().min(1),
     })
   ),
 })
@@ -29,8 +32,6 @@ export const academicPeriodsFiltersFormSchema = z.object({
 export type AcademicPeriodsFiltersFormValues = z.infer<
   typeof academicPeriodsFiltersFormSchema
 >
-
-export const ACADEMIC_PERIOD_STATUSES = ["ACTIVO", "INACTIVO"] as const
 
 export const academicPeriodsSearchSchema = z.object({
   page: z.coerce.number().int().nonnegative().catch(0).default(0),
