@@ -37,20 +37,22 @@ export function FieldDatePopover({
             type="button"
             aria-invalid={invalid}
             className={cn(
-              "border-input flex h-11 w-full min-w-0 cursor-pointer items-center justify-between gap-2 rounded-lg border bg-transparent px-3 py-1 text-left text-sm outline-none transition-colors hover:border-ring/50 focus-visible:border-ring data-[popup-open]:border-ring aria-invalid:border-destructive",
+              "flex h-9 w-full min-w-0 cursor-pointer items-center gap-2 border border-transparent border-b-input bg-transparent px-0 py-1 text-left text-base transition-[color,border-color] outline-none hover:border-b-ring/50 focus-visible:border-b-ring data-[popup-open]:border-b-ring aria-invalid:border-b-destructive md:text-sm",
               selected ? "text-foreground" : "text-muted-foreground"
             )}
           />
         }
       >
-        <span className="truncate">{displayLabel}</span>
         <CalendarIcon className="size-4 shrink-0 text-muted-foreground" />
+        {displayLabel}
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
         <Calendar
           mode="single"
           selected={selected}
-          onSelect={(date: Date) => onChange(date ? format(date, DATE_FORMAT) : "")}
+          onSelect={(date: Date) =>
+            onChange(date ? format(date, DATE_FORMAT) : "")
+          }
           locale={es}
         />
       </PopoverContent>
