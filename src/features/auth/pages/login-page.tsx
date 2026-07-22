@@ -83,7 +83,7 @@ export function LoginPage() {
             <Button
               render={<Link to={paths.auth.forgotPassword.path} />}
               nativeButton={false}
-              className="self-center sm:self-auto sm:ml-auto"
+              className="self-center "
               variant="link"
               color="muted"
             >

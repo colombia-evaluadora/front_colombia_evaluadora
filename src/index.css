@@ -433,6 +433,14 @@
     color: var(--primary-foreground);
   }
 
+  /* Edge dibuja su propio ojito de "revelar contraseña" (y una X para
+     limpiar) dentro del input. Los formularios usan su propio toggle, así
+     que quedarían dos controles encimados. */
+  input::-ms-reveal,
+  input::-ms-clear {
+    display: none;
+  }
+
   /* Typography — titles in Noto, body in Inter */
   h1, h2, h3, h4, h5, h6 {
     @apply font-heading;
