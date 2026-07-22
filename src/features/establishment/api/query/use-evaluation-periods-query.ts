@@ -6,27 +6,29 @@ import type {
   EvaluationPeriodsQueryRequest,
 } from "../types/academic-period/evaluation-period"
 
-interface UseAcademicPeriodsQueryParams {
+interface UseEvaluationPeriodsQueryParams {
   filters: EvaluationPeriodsQueryRequest["filters"]
   sorting: EvaluationPeriodsQueryRequest["sorting"]
   pageIndex: number
   pageSize: number
 }
 
-function fetchAcademicPeriods(
+function fetchEvaluationPeriods(
   body: EvaluationPeriodsQueryRequest
 ): Promise<EvaluationPeriodsQueryResponse> {
   return api.query("/evaluation-periods/query", body)
 }
 
 export const evaluationPeriodsQueryKey = (
-  params: UseAcademicPeriodsQueryParams
-) => ["academic-periods", params]
+  params: UseEvaluationPeriodsQueryParams
+) => ["evaluation-periods", params]
 
-export function useEvaluationPeriodsQuery(params: UseAcademicPeriodsQueryParams) {
+export function useEvaluationPeriodsQuery(
+  params: UseEvaluationPeriodsQueryParams
+) {
   return useQuery({
     queryKey: evaluationPeriodsQueryKey(params),
-    queryFn: () => fetchAcademicPeriods(params),
+    queryFn: () => fetchEvaluationPeriods(params),
     placeholderData: (previous) => previous,
   })
 }
