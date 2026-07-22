@@ -17,6 +17,12 @@ function getBearerToken(request: Request): string | null {
   return header.startsWith("Bearer ") ? header.slice("Bearer ".length) : null
 }
 
+// Sin "recordar" el token muere al cerrar la pestaña. Con "recordar" dura
+// 30 días: tiempo suficiente para no obligar a re-loguear seguido y
+// acotado para que un token robado no sea eterno.
+const SHORT_SESSION_SECONDS = 60 * 60
+const LONG_SESSION_SECONDS = 30 * 24 * 60 * 60
+
 export const authHandlers = [
   http.post("/api/auth/login", async ({ request }) => {
     await delay(300)
@@ -24,6 +30,7 @@ export const authHandlers = [
       email: string
       password: string
     }
+    const rememberMe = request.headers.get("x-remember-me") === "true"
     const user = findUserByCredentials(email, password)
 
     if (!user) {
@@ -38,7 +45,7 @@ export const authHandlers = [
     return HttpResponse.json({
       token: createMockAccessToken(user),
       refreshToken: `mock-refresh-${user.id}`,
-      expiresIn: 3600,
+      expiresIn: rememberMe ? LONG_SESSION_SECONDS : SHORT_SESSION_SECONDS,
     })
   }),
 
@@ -53,10 +60,14 @@ export const authHandlers = [
       return HttpResponse.json({ message: "No autenticado." }, { status: 401 })
     }
 
+    // El refresh respeta la elección del login original: si la sesión era
+    // persistente, se mantiene.
+    const rememberMe = localStorage.getItem("auth_remember_me") === "true"
+
     return HttpResponse.json({
       token: createMockAccessToken(user),
       refreshToken: `mock-refresh-${user.id}`,
-      expiresIn: 3600,
+      expiresIn: rememberMe ? LONG_SESSION_SECONDS : SHORT_SESSION_SECONDS,
     })
   }),
 

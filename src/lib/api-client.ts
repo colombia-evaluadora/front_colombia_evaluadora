@@ -14,9 +14,9 @@ declare module "axios" {
   }
 }
 
-// Persistido en localStorage solo para que la sesión sobreviva a un reload
-// mientras se prueba la UI. No es representativo de cómo se guardaría un
-// token contra un backend real.
+// Persistido en localStorage solo cuando el usuario marcó "Mantener sesión".
+// Si no, el token vive en memoria y muere con la pestaña — mismo efecto que
+// un refresh token que expira al cerrar el navegador.
 //
 // La clave va namespaced por modo: el token que emite MSW es un JWT sin
 // firma (`alg: none`, ver mocks/db/auth.ts) que el gateway real rechaza con
@@ -26,14 +26,23 @@ declare module "axios" {
 const TOKEN_STORAGE_KEY = env.ENABLE_API_MOCKING
   ? "mock_auth_token"
   : "auth_token"
-let authToken: string | null = localStorage.getItem(TOKEN_STORAGE_KEY)
+const REMEMBER_KEY = "auth_remember_me"
+let authToken: string | null = localStorage.getItem(REMEMBER_KEY)
+  ? localStorage.getItem(TOKEN_STORAGE_KEY)
+  : null
 
 export function setAuthToken(token: string | null) {
   authToken = token
-  if (token) {
-    localStorage.setItem(TOKEN_STORAGE_KEY, token)
-  } else {
+  // El token en memoria siempre se actualiza para que la pestaña actual
+  // funcione; el storage solo se toca si el usuario pidió "recordar".
+  if (token === null) {
     localStorage.removeItem(TOKEN_STORAGE_KEY)
+    localStorage.removeItem(REMEMBER_KEY)
+  } else {
+    authToken = token
+    if (localStorage.getItem(REMEMBER_KEY)) {
+      localStorage.setItem(TOKEN_STORAGE_KEY, token)
+    }
   }
 }
 

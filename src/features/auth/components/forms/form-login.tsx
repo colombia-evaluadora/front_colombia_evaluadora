@@ -9,6 +9,7 @@ import {
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import {
   InputGroup,
@@ -29,7 +30,11 @@ export function LoginForm({ id, onSubmit }: LoginFormProps) {
   const [showPassword, setShowPassword] = useState(false)
 
   const form = useForm({
-    defaultValues: { email: "", password: "" } as LoginFormValues,
+    defaultValues: {
+      email: "",
+      password: "",
+      rememberMe: false,
+    } as LoginFormValues,
     validators: {
       onChange: loginFormSchema,
     },
@@ -128,6 +133,26 @@ export function LoginForm({ id, onSubmit }: LoginFormProps) {
               </Field>
             )
           }}
+        </form.Field>
+
+        <form.Field name="rememberMe">
+          {(field) => (
+            // `Field` en horizontal: el checkbox va pegado a la izquierda y
+            // el label a la derecha, alineados con el inicio de los inputs.
+            <Field orientation="horizontal">
+              <Checkbox
+                id={field.name}
+                checked={field.state.value}
+                onCheckedChange={(checked) => field.handleChange(checked === true)}
+              />
+              <FieldLabel
+                htmlFor={field.name}
+                className="font-normal"
+              >
+                Mantener sesión iniciada
+              </FieldLabel>
+            </Field>
+          )}
         </form.Field>
       </FieldGroup>
     </form>
