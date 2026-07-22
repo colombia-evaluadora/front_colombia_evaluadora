@@ -1,6 +1,6 @@
 import * as z from "zod"
 
-import { loginInputSchema, type LoginInput } from "@/lib/auth"
+import { loginInputSchema } from "@/lib/auth"
 
 // El schema de la API solo exige que la contraseña venga; el del formulario
 // además avisa del largo mínimo antes de gastar un intento contra el
@@ -11,8 +11,12 @@ export const loginFormSchema = loginInputSchema.extend({
     .string()
     .min(1, "Requerido")
     .min(8, "Debe tener al menos 8 caracteres."),
+  // Sin marcar: la sesión dura lo que indique el backend (unos minutos).
+  // Marcada: el backend devuelve un token de larga duración — la sesión
+  // sobrevive a cerrar y reabrir el navegador.
+  rememberMe: z.boolean(),
 })
-export type LoginFormValues = LoginInput
+export type LoginFormValues = z.infer<typeof loginFormSchema>
 
 export const loginSearchSchema = z.object({
   redirectTo: z.string().optional(),
