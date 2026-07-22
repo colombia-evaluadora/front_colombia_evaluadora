@@ -15,6 +15,11 @@ export const forgotPasswordFormSchema = z.object({
 })
 export type ForgotPasswordFormValues = z.infer<typeof forgotPasswordFormSchema>
 
+export const forgotUsernameFormSchema = z.object({
+  email: z.email("Email inválido"),
+})
+export type ForgotUsernameFormValues = z.infer<typeof forgotUsernameFormSchema>
+
 /**
  * Política de contraseñas: misma que la API mockeada en
  * `mocks/handlers/auth.ts::consumePasswordResetToken`.

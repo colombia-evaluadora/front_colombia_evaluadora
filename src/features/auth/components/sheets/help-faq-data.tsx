@@ -84,16 +84,17 @@ export const defaultHelpData: HelpSheetData = {
     {
       id: "forgot-username",
       title: "No recuerdo mi usuario",
-      description:
-        "Recupera tu usuario con tu documento o correo alternativo.",
+      description: "Recupera tu usuario con el correo registrado.",
       icon: UserCircleIcon,
       body: (
         <p>
           Si no recuerdas tu usuario, selecciona "Recuperar usuario" e
-          ingresa tu número de documento o el correo electrónico
-          registrado para consultarlo.
+          ingresa el correo electrónico registrado para consultarlo.
           <br />
-          <Link to="/" className={supportLinkClass}>
+          <Link
+            to={paths.auth.forgotUsername.path}
+            className={supportLinkClass}
+          >
             Recuperar usuario →
           </Link>
         </p>

@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import {
   ArrowLeftIcon,
   ClockCountdownIcon,
@@ -34,6 +34,39 @@ import type { RestorePasswordFormValues } from "../api/schema"
 
 const RESTORE_PASSWORD_FORM_ID = "restore-password-form"
 
+/**
+ * Segundos restantes del enlace. Arranca del `expiresIn` que devolvió el
+ * servidor y descuenta contra un `deadline` fijo, así que no acumula drift
+ * ni pide nada: el vencimiento se detecta del lado del cliente. Devuelve
+ * `null` mientras no se sepa.
+ */
+function useCountdown(expiresIn: number | undefined) {
+  const [remaining, setRemaining] = useState<number | null>(null)
+
+  useEffect(() => {
+    if (expiresIn === undefined) {
+      setRemaining(null)
+      return
+    }
+
+    const deadline = Date.now() + expiresIn * 1000
+    const tick = () =>
+      setRemaining(Math.max(0, Math.ceil((deadline - Date.now()) / 1000)))
+
+    tick()
+    const id = setInterval(tick, 1000)
+    return () => clearInterval(id)
+  }, [expiresIn])
+
+  return remaining
+}
+
+function formatRemaining(seconds: number): string {
+  const mins = Math.floor(seconds / 60)
+  const secs = seconds % 60
+  return `${mins}:${String(secs).padStart(2, "0")}`
+}
+
 export function RestorePasswordPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -47,15 +80,19 @@ export function RestorePasswordPage() {
   const { data: tokenStatus, isPending: isCheckingToken } =
     useResetTokenStatus(token)
 
+  // El contador corre en el cliente: cuando llega a cero cambiamos la card
+  // sin volver a preguntarle al servidor. El submit revalida igual.
+  const remaining = useCountdown(
+    tokenStatus?.status === "valid" ? tokenStatus.expiresIn : undefined
+  )
+  const isExpired = tokenStatus?.status === "expired" || remaining === 0
+
   const restorePasswordMutation = useRestorePassword({
     mutationConfig: {
       onSuccess: () => {
         toast.success("Contraseña actualizada. Ya puedes iniciar sesión.")
         navigate({ to: paths.auth.login.path })
       },
-      // El token pudo vencer entre que se abrió la página y se envió el
-      // form: refrescamos su estado para caer en la card correcta en vez de
-      // dejar el formulario ahí con un toast de error.
       onError: () => {
         queryClient.invalidateQueries({
           queryKey: resetTokenStatusQueryKey(token),
@@ -63,22 +100,6 @@ export function RestorePasswordPage() {
       },
     },
   })
-
-  // Si el enlace vence con la página abierta, la card de "expiró" aparece
-  // sola: no esperamos al submit para avisar.
-  const expiresIn = tokenStatus?.status === "valid" ? tokenStatus.expiresIn : undefined
-
-  useEffect(() => {
-    if (expiresIn === undefined) return
-
-    const id = setTimeout(() => {
-      queryClient.invalidateQueries({
-        queryKey: resetTokenStatusQueryKey(token),
-      })
-    }, expiresIn * 1000)
-
-    return () => clearTimeout(id)
-  }, [expiresIn, queryClient, token])
 
   function handleSubmit(values: RestorePasswordFormValues) {
     if (!token) return
@@ -139,7 +160,7 @@ export function RestorePasswordPage() {
                 </Button>
               </CardFooter>
             </>
-          ) : tokenStatus?.status === "expired" ? (
+          ) : isExpired ? (
             <>
               <CardHeader className="text-center">
                 <div className="relative mx-auto size-20">
@@ -182,6 +203,20 @@ export function RestorePasswordPage() {
                 <CardTitle>Restablecer contraseña</CardTitle>
                 <CardDescription>
                   Ingresa tu nueva contraseña.
+                  {remaining !== null && (
+                    <>
+                      <br />
+                      Este enlace vence en{" "}
+                      <span
+                        className="font-semibold tabular-nums"
+                        // Solo el tiempo se relee; sin esto un lector de
+                        // pantalla anunciaría la frase entera cada segundo.
+                        aria-live="polite"
+                      >
+                        {formatRemaining(remaining)}
+                      </span>
+                    </>
+                  )}
                 </CardDescription>
               </CardHeader>
 

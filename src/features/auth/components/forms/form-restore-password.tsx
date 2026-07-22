@@ -26,9 +26,6 @@ interface RestorePasswordFormProps {
 }
 
 export function RestorePasswordForm({ id, onSubmit }: RestorePasswordFormProps) {
-  // Toggle propio de "ver contraseña": el nativo de Edge se oculta por CSS
-  // (ver `::-ms-reveal` en index.css) para no tener dos ojitos. Cada campo
-  // lleva el suyo para poder comparar lo escrito sin revelar los dos.
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 

@@ -23,8 +23,6 @@ interface LoginFormProps {
 }
 
 export function LoginForm({ id, onSubmit }: LoginFormProps) {
-  // Toggle propio de "ver contraseña": el nativo de Edge se oculta por CSS
-  // (ver `::-ms-reveal` en index.css) para no tener dos ojitos.
   const [showPassword, setShowPassword] = useState(false)
 
   const form = useForm({

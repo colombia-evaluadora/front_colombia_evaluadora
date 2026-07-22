@@ -40,6 +40,10 @@ const ForgotPasswordPage = lazyRouteComponent(
   () => import("@/features/auth/pages/forgot-password-page"),
   "ForgotPasswordPage"
 )
+const ForgotUsernamePage = lazyRouteComponent(
+  () => import("@/features/auth/pages/forgot-username-page"),
+  "ForgotUsernamePage"
+)
 const CheckEmailPage = lazyRouteComponent(
   () => import("@/features/auth/pages/check-email-page"),
   "CheckEmailPage"
@@ -150,6 +154,18 @@ const forgotPasswordRoute = createRoute({
   component: ForgotPasswordPage,
 })
 
+const forgotUsernameRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: paths.auth.forgotUsername.path,
+  head: () => ({
+    meta: [
+      { title: `Recuperar usuario · ${APP_NAME}` },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
+  }),
+  component: ForgotUsernamePage,
+})
+
 const checkEmailRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: paths.auth.checkEmail.path,
@@ -252,6 +268,7 @@ const routeTree = rootRoute.addChildren([
   homeRoute,
   loginRoute,
   forgotPasswordRoute,
+  forgotUsernameRoute,
   checkEmailRoute,
   restorePasswordRoute,
   appLayoutRoute.addChildren([
