@@ -1,12 +1,17 @@
 import type { User } from "@/types/api"
 
-export const authUsers: (User & { password: string })[] = [
+export const authUsers: (User & {
+  password: string
+  /** Nombre de usuario con el que se ingresa al sistema. */
+  username: string
+})[] = [
   {
     id: "1",
     email: "admin@example.com",
     password: "password",
     name: "Admin Demo",
     role: "ADMIN",
+    username: "admin.demo",
   },
   {
     id: "2",
@@ -14,6 +19,7 @@ export const authUsers: (User & { password: string })[] = [
     password: "password",
     name: "Usuario Demo",
     role: "USER",
+    username: "usuario.demo",
   },
 ]
 
@@ -49,6 +55,17 @@ export function findUserByToken(token: string) {
 
 export function findUserByEmail(email: string) {
   return authUsers.find((u) => u.email === email)
+}
+
+/**
+ * "carlos.mendoza@x.com" -> "car•••••@x.com". Enmascarar es tarea del
+ * backend: la dirección completa nunca debe salir en la respuesta de
+ * "recuperar usuario", donde alcanza con reconocerla.
+ */
+export function maskEmail(email: string): string {
+  const [local, domain] = email.split("@")
+  if (!domain) return email
+  return `${local.slice(0, 3)}${"•".repeat(Math.max(3, local.length - 3))}@${domain}`
 }
 
 // token -> email + vencimiento, simula el link que el backend real envía por

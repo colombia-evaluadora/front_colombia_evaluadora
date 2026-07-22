@@ -90,6 +90,15 @@ export function LoginPage() {
               <span>¿Olvidaste tu contraseña?</span>
             </Button>
             <Button
+              render={<Link to={paths.auth.forgotUsername.path} />}
+              nativeButton={false}
+              className="self-center"
+              variant="link"
+              color="muted"
+            >
+              <span>¿No recuerdas tu usuario?</span>
+            </Button>
+            <Button
               type="submit"
               color="primary"
               form={LOGIN_FORM_ID}

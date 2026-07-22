@@ -44,6 +44,16 @@ export interface ForgotPasswordResponse {
 const forgotPassword = (email: string): Promise<ForgotPasswordResponse> =>
   api.get("/sso-admin/forgotPassword", { params: { email } })
 
+// Recuperar usuario a partir del correo registrado. El backend responde con
+// el correo ya enmascarado — el front nunca ve la dirección completa.
+export interface ForgotUsernameResponse {
+  username: string
+  maskedEmail: string
+}
+
+const forgotUsername = (email: string): Promise<ForgotUsernameResponse> =>
+  api.get("/sso-admin/forgotUsername", { params: { email } })
+
 export type ResetTokenStatus = "valid" | "expired" | "invalid"
 
 export interface ResetTokenStatusResponse {
@@ -111,6 +121,15 @@ export function useForgotPassword({
 }: { mutationConfig?: MutationConfig<typeof forgotPassword> } = {}) {
   return useMutation({
     mutationFn: forgotPassword,
+    ...mutationConfig,
+  })
+}
+
+export function useForgotUsername({
+  mutationConfig,
+}: { mutationConfig?: MutationConfig<typeof forgotUsername> } = {}) {
+  return useMutation({
+    mutationFn: forgotUsername,
     ...mutationConfig,
   })
 }

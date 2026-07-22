@@ -14,6 +14,10 @@ export const paths = {
       path: "/forgot-password",
       getHref: () => "/forgot-password",
     },
+    forgotUsername: {
+      path: "/forgot-username",
+      getHref: () => "/forgot-username",
+    },
     checkEmail: {
       path: "/check-email",
       getHref: (token?: string | null) =>
