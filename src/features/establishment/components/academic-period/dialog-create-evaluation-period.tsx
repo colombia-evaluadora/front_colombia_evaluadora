@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { useForm } from "@tanstack/react-form"
-import { PlusCircleIcon } from "@phosphor-icons/react"
+import { PlusCircleIcon, SpinnerIcon } from "@phosphor-icons/react"
+import { toast } from "sonner"
 import { z } from "zod"
 
 import { Button } from "@/components/ui/button"
@@ -25,25 +26,17 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
+import { useCreateEvaluationPeriod } from "../../api/mutations/create-evaluation-period"
+import { EVALUATION_PERIOD_STATUSES } from "../../api/ui-mappings"
+import type { EvaluationPeriodStatus } from "../../api/types/academic-period/evaluation-period"
 import { FieldDatePopover } from "./field-date-popover"
 
-export interface EvaluationPeriod {
-  codigo: number
-  nombre: string
-  abreviacion: string
-  startDate: string
-  endDate: string
-  peso: number
-  estado: string
-}
-
-// Estados provisorios del skeleton (hasta tener el catálogo real del backend).
-export const EVALUATION_STATUS_OPTIONS = [
+const STATUS_TUPLE = [
   "No iniciado",
   "En curso",
   "Cargado",
   "Habilitado",
-] as const
+] as const satisfies readonly EvaluationPeriodStatus[]
 
 const evaluationPeriodFormSchema = z.object({
   codigo: z.number().int().positive("El código es obligatorio"),
@@ -52,7 +45,7 @@ const evaluationPeriodFormSchema = z.object({
   startDate: z.string().min(1, "La fecha de inicio es obligatoria"),
   endDate: z.string().min(1, "La fecha de fin es obligatoria"),
   peso: z.number().min(0).max(100),
-  estado: z.enum(EVALUATION_STATUS_OPTIONS),
+  estado: z.enum(STATUS_TUPLE),
 })
 type EvaluationPeriodFormValues = z.infer<typeof evaluationPeriodFormSchema>
 
@@ -71,22 +64,24 @@ const BOX =
 
 const FORM_ID = "evaluation-period-form"
 
-interface CreateEvaluationPeriodDialogProps {
-  onCreate: (row: EvaluationPeriod) => void
-}
-
-export function CreateEvaluationPeriodDialog({
-  onCreate,
-}: CreateEvaluationPeriodDialogProps) {
+export function CreateEvaluationPeriodDialog() {
   const [open, setOpen] = useState(false)
+
+  const createEvaluation = useCreateEvaluationPeriod({
+    mutationConfig: {
+      onSuccess: () => {
+        toast.success("Periodo de evaluación creado.")
+        form.reset()
+        setOpen(false)
+      },
+    },
+  })
 
   const form = useForm({
     defaultValues: EMPTY,
     validators: { onSubmit: evaluationPeriodFormSchema },
     onSubmit: ({ value }) => {
-      onCreate(evaluationPeriodFormSchema.parse(value))
-      form.reset()
-      setOpen(false)
+      createEvaluation.mutate(evaluationPeriodFormSchema.parse(value))
     },
   })
 
@@ -248,10 +243,7 @@ export function CreateEvaluationPeriodDialog({
                 <Select
                   value={field.state.value}
                   onValueChange={(value) =>
-                    value &&
-                    field.handleChange(
-                      value as EvaluationPeriodFormValues["estado"]
-                    )
+                    value && field.handleChange(value as EvaluationPeriodStatus)
                   }
                 >
                   <SelectTrigger id={field.name} className={BOX}>
@@ -259,7 +251,7 @@ export function CreateEvaluationPeriodDialog({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
-                      {EVALUATION_STATUS_OPTIONS.map((option) => (
+                      {EVALUATION_PERIOD_STATUSES.map((option) => (
                         <SelectItem key={option} value={option}>
                           {option}
                         </SelectItem>
@@ -276,7 +268,16 @@ export function CreateEvaluationPeriodDialog({
           <DialogClose render={<Button type="button" variant="ghost" />}>
             Cancelar
           </DialogClose>
-          <Button type="submit" color="primary" form={FORM_ID}>
+          <Button
+            type="submit"
+            color="primary"
+            form={FORM_ID}
+            disabled={createEvaluation.isPending}
+            aria-busy={createEvaluation.isPending}
+          >
+            {createEvaluation.isPending && (
+              <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+            )}
             Agregar
           </Button>
         </DialogFooter>
