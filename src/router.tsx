@@ -28,10 +28,10 @@ import {
   tableOperationsSearchSchema,
 } from "@/features/audits/api/schema"
 
-const LandingPage = lazyRouteComponent(
+/*const LandingPage = lazyRouteComponent(
   () => import("@/features/landing/pages/landing-page"),
   "LandingPage"
-)
+)*/
 const LoginPage = lazyRouteComponent(
   () => import("@/features/auth/pages/login-page"),
   "LoginPage"
@@ -51,6 +51,10 @@ const CheckEmailPage = lazyRouteComponent(
 const RestorePasswordPage = lazyRouteComponent(
   () => import("@/features/auth/pages/restore-password-page"),
   "RestorePasswordPage"
+)
+const AuthLayout = lazyRouteComponent(
+  () => import("@/components/layout/auth-layout"),
+  "AuthLayout"
 )
 const ProtectedLayout = lazyRouteComponent(
   () => import("@/components/layout/protected-layout"),
@@ -124,8 +128,14 @@ const homeRoute = createRoute({
   },
 })
 
-const loginRoute = createRoute({
+const authLayoutRoute = createRoute({
   getParentRoute: () => rootRoute,
+  id: "_auth",
+  component: AuthLayout,
+})
+
+const loginRoute = createRoute({
+  getParentRoute: () => authLayoutRoute,
   path: paths.auth.login.path,
   validateSearch: loginSearchSchema,
   head: () => ({
@@ -143,7 +153,7 @@ const loginRoute = createRoute({
 })
 
 const forgotPasswordRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => authLayoutRoute,
   path: paths.auth.forgotPassword.path,
   head: () => ({
     meta: [
@@ -155,7 +165,7 @@ const forgotPasswordRoute = createRoute({
 })
 
 const forgotUsernameRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => authLayoutRoute,
   path: paths.auth.forgotUsername.path,
   head: () => ({
     meta: [
@@ -167,7 +177,7 @@ const forgotUsernameRoute = createRoute({
 })
 
 const checkEmailRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => authLayoutRoute,
   path: paths.auth.checkEmail.path,
   validateSearch: checkEmailSearchSchema,
   head: () => ({
@@ -180,7 +190,7 @@ const checkEmailRoute = createRoute({
 })
 
 const restorePasswordRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => authLayoutRoute,
   path: paths.auth.restorePassword.path,
   validateSearch: restorePasswordSearchSchema,
   head: () => ({
@@ -266,11 +276,13 @@ const configuracionRoute = createRoute({
 const routeTree = rootRoute.addChildren([
 //  landingRoute,
   homeRoute,
-  loginRoute,
-  forgotPasswordRoute,
-  forgotUsernameRoute,
-  checkEmailRoute,
-  restorePasswordRoute,
+  authLayoutRoute.addChildren([
+    loginRoute,
+    forgotPasswordRoute,
+    forgotUsernameRoute,
+    checkEmailRoute,
+    restorePasswordRoute,
+  ]),
   appLayoutRoute.addChildren([
     paymentsRoute,
     auditoriaSesionesRoute,

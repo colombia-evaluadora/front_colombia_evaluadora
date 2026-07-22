@@ -130,17 +130,26 @@ export type PasswordResetTokenStatus = "valid" | "expired" | "invalid"
 export function getPasswordResetTokenStatus(token: string): {
   status: PasswordResetTokenStatus
   expiresIn: number
-  email?: string
+  ttlSeconds: number
+  maskedEmail?: string
   issuedAt?: number
 } {
   const entry = passwordResetTokens.get(token)
-  if (!entry) return { status: "invalid", expiresIn: 0 }
+  if (!entry) {
+    return {
+      status: "invalid",
+      expiresIn: 0,
+      ttlSeconds: PASSWORD_RESET_TTL_SECONDS,
+    }
+  }
 
   const remaining = Math.max(0, Math.ceil((entry.expiresAt - Date.now()) / 1000))
   return {
     status: remaining > 0 ? "valid" : "expired",
     expiresIn: remaining,
-    email: entry.email,
+    ttlSeconds: PASSWORD_RESET_TTL_SECONDS,
+    // Enmascarado desde acá: la dirección completa no sale en la respuesta.
+    maskedEmail: maskEmail(entry.email),
     issuedAt: entry.issuedAt,
   }
 }

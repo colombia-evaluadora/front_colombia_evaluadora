@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { useForm } from "@tanstack/react-form"
+import { Link } from "@tanstack/react-router"
 import { EyeIcon, EyeSlashIcon } from "@phosphor-icons/react"
 
 import {
@@ -15,6 +16,8 @@ import {
   InputGroupButton,
   InputGroupInput,
 } from "@/components/ui/input-group"
+import { paths } from "@/config/paths"
+
 import { loginFormSchema, type LoginFormValues } from "../../api/schema"
 
 interface LoginFormProps {
@@ -48,7 +51,15 @@ export function LoginForm({ id, onSubmit }: LoginFormProps) {
               field.state.meta.isTouched && !field.state.meta.isValid
             return (
               <Field data-invalid={isInvalid}>
-                <FieldLabel htmlFor={field.name}>Email</FieldLabel>
+                <div className="flex items-center justify-between gap-2">
+                  <FieldLabel htmlFor={field.name}>Email</FieldLabel>
+                  <Link
+                    to={paths.auth.forgotUsername.path}
+                    className="text-muted-foreground hover:text-primary text-xs underline underline-offset-4"
+                  >
+                    ¿Lo olvidaste?
+                  </Link>
+                </div>
                 <Input
                   id={field.name}
                   name={field.name}
@@ -74,7 +85,15 @@ export function LoginForm({ id, onSubmit }: LoginFormProps) {
               field.state.meta.isTouched && !field.state.meta.isValid
             return (
               <Field data-invalid={isInvalid}>
-                <FieldLabel htmlFor={field.name}>Contraseña</FieldLabel>
+                <div className="flex items-center justify-between gap-2">
+                  <FieldLabel htmlFor={field.name}>Contraseña</FieldLabel>
+                  <Link
+                    to={paths.auth.forgotPassword.path}
+                    className="text-muted-foreground hover:text-primary text-xs underline underline-offset-4"
+                  >
+                    ¿La olvidaste?
+                  </Link>
+                </div>
                 <InputGroup>
                   <InputGroupInput
                     id={field.name}
