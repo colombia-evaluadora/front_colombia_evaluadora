@@ -40,7 +40,7 @@ export const areaSubjectsDb: AreaSubject[] = [
   createAreaSubject({
     codigo: 4,
     areaGeneral: "TECNOLOGÍA E INFORMÁTICA",
-    nombreInterno: "TECNOLOGÍA E INFORMÁTICA",
+    nombreInterno: "INFORMÁTICA",
     abreviacion: "INFORMÁTICA",
     ordenReportes: 4,
   }),
