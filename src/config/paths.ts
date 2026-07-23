@@ -47,6 +47,32 @@ export const paths = {
       path: "auditoria-tablas/$tableSlug",
       getHref: (tableSlug: string) => `/app/auditoria-tablas/${tableSlug}`,
     },
+    establishments: {
+      root: {
+          path: "establecimiento-educativo",
+          getHref: () => "/app/establecimiento-educativo",
+      },
+
+      general: {
+          path: "establecimiento-educativo/general",
+          getHref: () => "/app/establecimiento-educativo/general",
+      },
+
+      campuses: {
+          path: "establecimiento-educativo/sedes",
+          getHref: () => "/app/establecimiento-educativo/sedes",
+      },
+
+      officials: {
+          path: "establecimiento-educativo/funcionarios",
+          getHref: () => "/app/establecimiento-educativo/funcionarios",
+      },
+
+      academicPeriods: {
+          path: "establecimiento-educativo/periodos",
+          getHref: () => "/app/establecimiento-educativo/periodos",
+      },
+  },
     reportes: {
       path: "reportes",
       getHref: () => "/app/reportes",

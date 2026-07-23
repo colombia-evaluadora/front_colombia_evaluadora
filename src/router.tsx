@@ -27,6 +27,7 @@ import {
   sessionOperationsSearchSchema,
   tableOperationsSearchSchema,
 } from "@/features/audits/api/schema"
+import { establishmentsSearchSchema } from "@/features/establishment/api/establishment-schema"
 
 const LandingPage = lazyRouteComponent(
   () => import("@/features/landing/pages/landing-page"),
@@ -67,6 +68,10 @@ const TableOperationsPage = lazyRouteComponent(
 const SessionOperationsPage = lazyRouteComponent(
   () => import("@/features/audits/pages/session-operations-page"),
   "SessionOperationsPage"
+)
+const EstablishmentsPage = lazyRouteComponent(
+  () => import("@/features/establishment/pages/establishments-page"),
+  "EstablishmentsPage"
 )
 
 interface RouterContext {
@@ -205,6 +210,13 @@ export const auditoriaTablaDetalleRoute = createRoute({
   component: TableOperationsPage,
 })
 
+export const establishmentsRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.establishments.general.path,
+  validateSearch: establishmentsSearchSchema,
+  component: EstablishmentsPage,
+})
+
 export const auditoriaSesionOperacionesRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.auditoriaSesionOperaciones.path,
@@ -242,6 +254,7 @@ const routeTree = rootRoute.addChildren([
     auditoriaTablasRoute,
     auditoriaTablaDetalleRoute,
     auditoriaSesionOperacionesRoute,
+    establishmentsRoute,
     reportesRoute,
     usuariosRoute,
     configuracionRoute,
