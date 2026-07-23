@@ -17,6 +17,10 @@ import { useCreateAcademicPeriod } from "../api/mutations/create-academic-period
 import type { AcademicPeriodFormValues } from "../api/schema"
 import { AcademicPeriodForm } from "../components/academic-period/form-academic-period"
 import { EvaluationPeriodsSection } from "../components/academic-period/evaluation-periods-section"
+import {
+  DEFAULT_JORNADA,
+  type Jornada,
+} from "../components/academic-period/schedule/schedule-data"
 
 const FORM_ID = "academic-period-config-form"
 
@@ -24,6 +28,8 @@ export function AcademicPeriodConfigPage() {
   const navigate = useNavigate()
   const [saved, setSaved] = useState(false)
   const [showBanner, setShowBanner] = useState(false)
+  // La jornada guardada alimenta la grilla del horario (tab Grados).
+  const [jornada, setJornada] = useState<Jornada>(DEFAULT_JORNADA)
 
   const createPeriod = useCreateAcademicPeriod({
     mutationConfig: {
@@ -35,6 +41,12 @@ export function AcademicPeriodConfigPage() {
   })
 
   function handleSubmit(values: AcademicPeriodFormValues) {
+    setJornada({
+      startTime: values.scheduleStartTime,
+      endTime: values.scheduleEndTime,
+      blocksCount: values.defaultBlocksCount,
+      breaks: values.breaks,
+    })
     createPeriod.mutate(values)
   }
 
@@ -72,7 +84,7 @@ export function AcademicPeriodConfigPage() {
 
         <AcademicPeriodForm id={FORM_ID} onSubmit={handleSubmit} />
 
-        {saved && <EvaluationPeriodsSection />}
+        {saved && <EvaluationPeriodsSection jornada={jornada} />}
       </CardContent>
     </Card>
   )

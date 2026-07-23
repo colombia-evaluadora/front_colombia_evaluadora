@@ -9,8 +9,9 @@ import { TabRatingScales } from "./tabs/tab-rating-scales"
 import { TabAreaSubject } from "./tabs/tab-area-subject"
 import { TabEvaluationCriteria } from "./tabs/tab-evaluation-criteria"
 import { TabAcademicAssignments } from "./tabs/tab-academic-assignments"
+import type { Jornada } from "./schedule/schedule-data"
 
-const TABS: { value: string; label: string; Component: ComponentType }[] = [
+const TABS: { value: string; label: string; Component: ComponentType<any> }[] = [
   { value: "evaluacion", label: "Periodos de evaluación", Component: TabEvaluationPeriods },
   { value: "promocion", label: "Criterios de promoción", Component: TabPromotionCriteria },
   { value: "grados", label: "Grados", Component: TabGrades },
@@ -20,7 +21,11 @@ const TABS: { value: string; label: string; Component: ComponentType }[] = [
   { value: "asignaciones", label: "Asignaciones académicas", Component: TabAcademicAssignments },
 ]
 
-export function EvaluationPeriodsSection() {
+interface EvaluationPeriodsSectionProps {
+  jornada: Jornada
+}
+
+export function EvaluationPeriodsSection({ jornada }: EvaluationPeriodsSectionProps) {
   return (
     <Tabs defaultValue="evaluacion" className="w-full">
       <TabsList variant="line" className="w-full justify-start overflow-x-auto">
@@ -33,7 +38,7 @@ export function EvaluationPeriodsSection() {
 
       {TABS.map(({ value, Component }) => (
         <TabsContent key={value} value={value} className="mt-4">
-          <Component />
+          {value === "grados" ? <TabGrades jornada={jornada} /> : <Component />}
         </TabsContent>
       ))}
     </Tabs>
