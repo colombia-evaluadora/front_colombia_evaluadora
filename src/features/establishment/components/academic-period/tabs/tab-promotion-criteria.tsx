@@ -3,7 +3,7 @@ import { toast } from "sonner"
 import { z } from "zod"
 
 import { Button } from "@/components/ui/button"
-import { Field, FieldError, FieldLabel } from "@/components/ui/field"
+import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
   Select,
@@ -77,7 +77,13 @@ const EMPTY: ApprovalValues = {
 
 const FORM_ID = "approval-parameters-form"
 
-export function TabPromotionCriteria() {
+interface TabPromotionCriteriaProps {
+  // Oculta el botón interno cuando el contenedor (ej. diálogo del grado) ya
+  // provee su propia barra de acciones.
+  hideSubmit?: boolean
+}
+
+export function TabPromotionCriteria({ hideSubmit = false }: TabPromotionCriteriaProps) {
   const form = useForm({
     defaultValues: EMPTY,
     validators: {
@@ -306,11 +312,13 @@ export function TabPromotionCriteria() {
         )}
       </form.Field>
 
-      <div className="mt-6 flex justify-end">
-        <Button type="submit" color="primary">
-          Guardar
-        </Button>
-      </div>
+      {!hideSubmit && (
+        <div className="mt-6 flex justify-end">
+          <Button type="submit" color="primary">
+            Guardar
+          </Button>
+        </div>
+      )}
     </form>
   )
 }
