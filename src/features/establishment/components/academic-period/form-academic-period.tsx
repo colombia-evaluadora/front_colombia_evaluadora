@@ -177,7 +177,12 @@ export function AcademicPeriodForm({
                   }
                 >
                   <SelectTrigger id={field.name} aria-invalid={isInvalid}>
-                    <SelectValue placeholder="Seleccionar" />
+                    <SelectValue placeholder="Seleccionar">
+                      {(value) =>
+                        SEDE_OPTIONS.find((s) => String(s.id) === value)?.name ??
+                        ""
+                      }
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
@@ -208,7 +213,14 @@ export function AcademicPeriodForm({
                 }
               >
                 <SelectTrigger id={field.name}>
-                  <SelectValue placeholder="Seleccione un período" />
+                  <SelectValue placeholder="Seleccione un período">
+                    {(value) => {
+                      const p = previousPeriodOptions.find(
+                        (o) => String(o.id) === value
+                      )
+                      return p ? `${p.name} — ${p.sedeName}` : ""
+                    }}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
@@ -235,7 +247,15 @@ export function AcademicPeriodForm({
                 }
               >
                 <SelectTrigger id={field.name}>
-                  <SelectValue placeholder="Seleccionar" />
+                  <SelectValue placeholder="Seleccionar">
+                    {(value) =>
+                      value
+                        ? ACADEMIC_PERIOD_STATUS_LABELS[
+                            value as AcademicPeriodStatus
+                          ]
+                        : ""
+                    }
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
@@ -266,7 +286,12 @@ export function AcademicPeriodForm({
                   }
                 >
                   <SelectTrigger id={field.name} aria-invalid={isInvalid}>
-                    <SelectValue placeholder="Seleccionar" />
+                    <SelectValue placeholder="Seleccionar">
+                      {(value) =>
+                        JORNADA_OPTIONS.find((j) => String(j.id) === value)
+                          ?.name ?? ""
+                      }
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>

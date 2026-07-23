@@ -106,7 +106,7 @@ export function TabPromotionCriteria() {
         <form.Field name="curriculumNode">
           {(field) => (
             <Field>
-              <FieldLabel>Nodo curricular*</FieldLabel>
+              <FieldLabel className="flex-1">Nodo curricular*</FieldLabel>
 
               <Select
                 value={field.state.value}
@@ -133,7 +133,7 @@ export function TabPromotionCriteria() {
         <form.Field name="maxFailedRecovery">
           {(field) => (
             <Field>
-              <FieldLabel>
+              <FieldLabel className="flex-1">
                 Cantidad máxima reprobadas para nivelar*
               </FieldLabel>
 
@@ -151,7 +151,7 @@ export function TabPromotionCriteria() {
         <form.Field name="absencePercentage">
           {(field) => (
             <Field>
-              <FieldLabel>
+              <FieldLabel className="flex-1">
                 Porcentaje mínimo de inasistencia para reprobar una asignatura*
               </FieldLabel>
 
@@ -169,7 +169,7 @@ export function TabPromotionCriteria() {
         <form.Field name="maxLeveledSubjects">
           {(field) => (
             <Field>
-              <FieldLabel>
+              <FieldLabel className="flex-1">
                 Máximo de Áreas/Asignaturas niveladas para ser promovido*
               </FieldLabel>
 
@@ -195,7 +195,7 @@ export function TabPromotionCriteria() {
         <form.Field name="applyAverageApproval">
           {(field) => (
             <Field>
-              <FieldLabel>
+              <FieldLabel className="flex-1">
                 ¿Aplica la aprobación por promedio?*
               </FieldLabel>
 
@@ -223,7 +223,7 @@ export function TabPromotionCriteria() {
         <form.Field name="basePercentage">
           {(field) => (
             <Field>
-              <FieldLabel>Porcentaje base*</FieldLabel>
+              <FieldLabel className="flex-1">Porcentaje base*</FieldLabel>
 
               <Input
                 type="number"
@@ -239,7 +239,7 @@ export function TabPromotionCriteria() {
         <form.Field name="minimumSubjectPercentage">
           {(field) => (
             <Field>
-              <FieldLabel>
+              <FieldLabel className="flex-1">
                 Porcentaje mínimo de Área/Asignatura*
               </FieldLabel>
 
@@ -257,7 +257,7 @@ export function TabPromotionCriteria() {
         <form.Field name="maxFailedForAverage">
           {(field) => (
             <Field>
-              <FieldLabel>
+              <FieldLabel className="flex-1">
                 Cantidad máxima de asignaturas reprobadas para considerar la aprobación por promedio*
               </FieldLabel>
 

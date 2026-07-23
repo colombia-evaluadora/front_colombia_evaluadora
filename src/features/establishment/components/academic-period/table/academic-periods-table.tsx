@@ -1,7 +1,7 @@
 "use no memo"
 
 
-import { DataTable } from "@/components/data-table"
+import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
 import { useDataTable } from "@/hooks/use-data-table"
 import { useTablePagination } from "@/hooks/use-table-pagination"
@@ -10,6 +10,8 @@ import { useAcademicPeriodsQuery } from "../../../api/query/use-academic-periods
 import { useAcademicPeriodFilters } from "../../../hooks/academic-period/use-academic-period-filters"
 import { columns } from "./columns-academic-periods"
 import { ExportAcademicPeriodsDialog } from "../dialogs/dialog-export-academic-periods"
+import { ExportSelectedAcademicPeriodsDialog } from "../dialogs/dialog-export-selected-academic-periods"
+import { ClearSelectionAcademicPeriodsDialog } from "../dialogs/dialog-clear-selection-academic-periods"
 import { FilterAcademicPeriodsSheet } from "../sheets/sheet-filter-academic-periods"
 
 export function AcademicPeriodsDataTable() {
@@ -26,7 +28,7 @@ export function AcademicPeriodsDataTable() {
     pageSize,
   })
 
-  const { table } = useDataTable({
+  const { table, selectedIds, hasSelection, resetSelection } = useDataTable({
     columns,
     data: data?.rows ?? [],
     pageCount: data?.pageCount ?? -1,
@@ -49,7 +51,20 @@ export function AcademicPeriodsDataTable() {
           clearAllFilters={clearAllFilters}
         />
 
-        <ExportAcademicPeriodsDialog filters={queryFilters} />
+        <div className="flex gap-2">
+          {hasSelection ? (
+            <>
+              <ClearSelectionAcademicPeriodsDialog resetSelection={resetSelection} />
+              <ExportSelectedAcademicPeriodsDialog
+                selectedIds={selectedIds}
+                resetSelection={resetSelection}
+              />
+            </>
+          ) : (
+            <ExportAcademicPeriodsDialog filters={queryFilters} />
+          )}
+          <DataTableViewOptions table={table} />
+        </div>
       </div>
 
       <DataTable

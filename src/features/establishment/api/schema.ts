@@ -6,7 +6,8 @@ export const ACADEMIC_PERIOD_STATUSES = ["ACTIVO", "INACTIVO"] as const
 export const academicPeriodFormSchema = z.object({
   startDate: z.string().min(1, "La fecha de inicio es obligatoria"),
   endDate: z.string().min(1, "La fecha de finalización es obligatoria"),
-  enrollmentDeadline: z.string(),
+  enrollmentDeadline: z.string().min(1, "La fecha límite de matrícula es obligatoria"),
+  sedeId: z.number().int().positive("La sede es obligatoria"),
   previousPeriodId: z.number().int().positive().nullable(),
   status: z.enum(ACADEMIC_PERIOD_STATUSES),
   jornadaId: z.number().int().positive("La jornada es obligatoria"),
