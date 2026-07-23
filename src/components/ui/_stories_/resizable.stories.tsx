@@ -9,7 +9,7 @@ const meta = preview.meta({
 
 export const Horizontal = meta.story({
   render: () => (
-    <ResizablePanelGroup direction="horizontal" className="h-40 w-96 rounded-md border">
+    <ResizablePanelGroup orientation="horizontal" className="h-40 w-96 rounded-md border">
       <ResizablePanel defaultSize={50}>
         <div className="flex h-full items-center justify-center text-sm">One</div>
       </ResizablePanel>
@@ -23,7 +23,7 @@ export const Horizontal = meta.story({
 
 export const Vertical = meta.story({
   render: () => (
-    <ResizablePanelGroup direction="vertical" className="h-56 w-64 rounded-md border">
+    <ResizablePanelGroup orientation="vertical" className="h-56 w-64 rounded-md border">
       <ResizablePanel defaultSize={50}>
         <div className="flex h-full items-center justify-center text-sm">Top</div>
       </ResizablePanel>
