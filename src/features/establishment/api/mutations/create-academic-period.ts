@@ -9,8 +9,6 @@ import type {
   CreateAcademicPeriodRequest,
 } from "../types/academic-period/academic-period"
 
-const DEFAULT_SEDE_ID = 1
-
 export function toCreateAcademicPeriodRequest(
   values: AcademicPeriodFormValues
 ): CreateAcademicPeriodRequest {
@@ -19,7 +17,7 @@ export function toCreateAcademicPeriodRequest(
     : new Date().getFullYear()
 
   return {
-    sedeId: DEFAULT_SEDE_ID,
+    sedeId: values.sedeId,
     previousPeriodId: values.previousPeriodId,
     schoolYearId,
     status: values.status,

@@ -137,7 +137,9 @@ export function TabEvaluationCriteria() {
                 field.state.meta.isTouched && !field.state.meta.isValid
               return (
                 <Field data-invalid={isInvalid}>
-                  <FieldLabel htmlFor={field.name}>{cfg.label}</FieldLabel>
+                  <FieldLabel htmlFor={field.name} className="flex-1">
+                    {cfg.label}
+                  </FieldLabel>
                   <Select
                     value={field.state.value}
                     onValueChange={(value) => value && field.handleChange(value)}
