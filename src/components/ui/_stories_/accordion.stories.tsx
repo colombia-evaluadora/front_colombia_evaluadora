@@ -9,7 +9,7 @@ const meta = preview.meta({
 
 export const SingleOpen = meta.story({
   render: () => (
-    <Accordion type="single" defaultValue="item-1" className="w-96">
+    <Accordion defaultValue={['item-1']} className="w-96">
       <AccordionItem value="item-1">
         <AccordionTrigger>Is it accessible?</AccordionTrigger>
         <AccordionContent>Yes. It adheres to the WAI-ARIA design pattern.</AccordionContent>
@@ -24,7 +24,7 @@ export const SingleOpen = meta.story({
 
 export const MultipleOpen = meta.story({
   render: () => (
-    <Accordion type="multiple" defaultValue={['item-1', 'item-2']} className="w-96">
+    <Accordion multiple defaultValue={['item-1', 'item-2']} className="w-96">
       <AccordionItem value="item-1">
         <AccordionTrigger>First item</AccordionTrigger>
         <AccordionContent>Both items can be open at the same time.</AccordionContent>
