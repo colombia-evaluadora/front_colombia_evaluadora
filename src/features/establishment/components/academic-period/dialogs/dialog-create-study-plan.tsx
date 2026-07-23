@@ -1,0 +1,373 @@
+import { useState } from "react"
+import { useForm } from "@tanstack/react-form"
+import { PlusCircleIcon, SpinnerIcon } from "@phosphor-icons/react"
+import { toast } from "sonner"
+import { z } from "zod"
+
+import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { Field, FieldError, FieldLabel } from "@/components/ui/field"
+import { Input } from "@/components/ui/input"
+import { Switch } from "@/components/ui/switch"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+
+import { useCreateStudyPlanItem } from "../../../api/mutations/create-study-plan"
+
+const ASIGNATURA_OPTIONS = [
+  "MATEMÁTICAS",
+  "CIENCIAS SOCIALES",
+  "CIENCIAS NATURALES",
+  "LENGUA CASTELLANA",
+  "INGLÉS",
+  "EDUCACIÓN FÍSICA",
+  "TECNOLOGÍA E INFORMÁTICA",
+]
+
+const FORMATO_CALIFICACION_OPTIONS = ["Numérico", "Conceptual", "Cualitativo"]
+
+const CRITERIO_NOTA_OPTIONS = [
+  "Promedio",
+  "Promedio ponderado",
+  "Última nota",
+  "Sumatoria",
+]
+
+const studyPlanFormSchema = z.object({
+  asignatura: z.string().min(1, "La asignatura es obligatoria"),
+  intensidadHoraria: z.number().min(0),
+  influenciaArea: z.number().min(0).max(100),
+  numeroCreditos: z.number().min(0),
+  influyeDesempeno: z.boolean(),
+  matriculaObligatoria: z.boolean(),
+  aprobacionObligatoria: z.boolean(),
+  formatoCalificacion: z.string(),
+  criterioNota: z.string(),
+})
+type StudyPlanFormValues = z.infer<typeof studyPlanFormSchema>
+
+const EMPTY: StudyPlanFormValues = {
+  asignatura: "",
+  intensidadHoraria: 0,
+  influenciaArea: 0,
+  numeroCreditos: 0,
+  influyeDesempeno: true,
+  matriculaObligatoria: false,
+  aprobacionObligatoria: false,
+  formatoCalificacion: "",
+  criterioNota: "",
+}
+
+const FORM_ID = "study-plan-form"
+
+export function CreateStudyPlanDialog() {
+  const [open, setOpen] = useState(false)
+  // Cuando está apagado, los campos avanzados quedan deshabilitados (defaults).
+  const [personalizar, setPersonalizar] = useState(false)
+
+  const createStudyPlanItem = useCreateStudyPlanItem({
+    mutationConfig: {
+      onSuccess: () => {
+        toast.success("Asignatura agregada al plan de estudio.")
+        form.reset()
+        setPersonalizar(false)
+        setOpen(false)
+      },
+    },
+  })
+
+  const form = useForm({
+    defaultValues: EMPTY,
+    validators: { onSubmit: studyPlanFormSchema },
+    onSubmit: ({ value }) => {
+      createStudyPlanItem.mutate({
+        ...studyPlanFormSchema.parse(value),
+        codigo: Date.now(),
+      })
+    },
+  })
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger render={<Button color="primary" size="sm" />}>
+        <PlusCircleIcon weight="fill" data-icon="inline-start" />
+        Agregar
+      </DialogTrigger>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
+        <DialogHeader>
+          <DialogTitle>Agregar plan de estudio</DialogTitle>
+          <DialogDescription>
+            Completá los datos de la asignatura del plan de estudio.
+          </DialogDescription>
+        </DialogHeader>
+
+        <form
+          id={FORM_ID}
+          onSubmit={(e) => {
+            e.preventDefault()
+            form.handleSubmit()
+          }}
+          className="flex flex-col gap-4"
+        >
+          <div className="grid gap-4 sm:grid-cols-3">
+            <form.Field name="asignatura">
+              {(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor={field.name}>Asignaturas*</FieldLabel>
+                    <Select
+                      value={field.state.value}
+                      onValueChange={(value) => value && field.handleChange(value)}
+                    >
+                      <SelectTrigger id={field.name} aria-invalid={isInvalid}>
+                        <SelectValue placeholder="Seleccionar" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          {ASIGNATURA_OPTIONS.map((option) => (
+                            <SelectItem key={option} value={option}>
+                              {option}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                  </Field>
+                )
+              }}
+            </form.Field>
+
+            <form.Field name="intensidadHoraria">
+              {(field) => (
+                <Field>
+                  <FieldLabel htmlFor={field.name}>Intensidad horaria*</FieldLabel>
+                  <Input
+                    id={field.name}
+                    type="number"
+                    min={0}
+                    placeholder="Seleccionar"
+                    value={Number.isNaN(field.state.value) ? "" : field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.valueAsNumber)}
+                  />
+                </Field>
+              )}
+            </form.Field>
+
+            <form.Field name="influenciaArea">
+              {(field) => (
+                <Field>
+                  <FieldLabel htmlFor={field.name}>Influencia área*</FieldLabel>
+                  <Input
+                    id={field.name}
+                    type="number"
+                    min={0}
+                    max={100}
+                    placeholder="Seleccionar"
+                    value={Number.isNaN(field.state.value) ? "" : field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.valueAsNumber)}
+                  />
+                </Field>
+              )}
+            </form.Field>
+
+            <form.Field name="numeroCreditos">
+              {(field) => (
+                <Field>
+                  <FieldLabel htmlFor={field.name}>Número de créditos *</FieldLabel>
+                  <Input
+                    id={field.name}
+                    type="number"
+                    min={0}
+                    placeholder="Seleccionar"
+                    value={Number.isNaN(field.state.value) ? "" : field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.valueAsNumber)}
+                  />
+                </Field>
+              )}
+            </form.Field>
+          </div>
+
+          <label className="flex w-fit items-center gap-3 text-sm font-medium">
+            Personalizar
+            <Switch checked={personalizar} onCheckedChange={setPersonalizar} />
+          </label>
+
+          <div
+            className={cn(
+              "grid gap-4 sm:grid-cols-3",
+              !personalizar && "pointer-events-none opacity-50"
+            )}
+          >
+            <form.Field name="influyeDesempeno">
+              {(field) => (
+                <Field>
+                  <FieldLabel>
+                    Influye en el desempeño académico (S/N)
+                  </FieldLabel>
+                  <RadioGroup
+                    className="flex gap-6 pt-2"
+                    disabled={!personalizar}
+                    value={field.state.value ? "si" : "no"}
+                    onValueChange={(value) => field.handleChange(value === "si")}
+                  >
+                    <label className="flex items-center gap-2">
+                      <RadioGroupItem value="si" />
+                      Sí
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <RadioGroupItem value="no" />
+                      No
+                    </label>
+                  </RadioGroup>
+                </Field>
+              )}
+            </form.Field>
+
+            <form.Field name="matriculaObligatoria">
+              {(field) => (
+                <Field>
+                  <FieldLabel>Matrícula obligatoria (S/N)</FieldLabel>
+                  <RadioGroup
+                    className="flex gap-6 pt-2"
+                    disabled={!personalizar}
+                    value={field.state.value ? "si" : "no"}
+                    onValueChange={(value) => field.handleChange(value === "si")}
+                  >
+                    <label className="flex items-center gap-2">
+                      <RadioGroupItem value="si" />
+                      Sí
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <RadioGroupItem value="no" />
+                      No
+                    </label>
+                  </RadioGroup>
+                </Field>
+              )}
+            </form.Field>
+
+            <form.Field name="aprobacionObligatoria">
+              {(field) => (
+                <Field>
+                  <FieldLabel>Aprobación obligatoria (S/N)</FieldLabel>
+                  <RadioGroup
+                    className="flex gap-6 pt-2"
+                    disabled={!personalizar}
+                    value={field.state.value ? "si" : "no"}
+                    onValueChange={(value) => field.handleChange(value === "si")}
+                  >
+                    <label className="flex items-center gap-2">
+                      <RadioGroupItem value="si" />
+                      Sí
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <RadioGroupItem value="no" />
+                      No
+                    </label>
+                  </RadioGroup>
+                </Field>
+              )}
+            </form.Field>
+
+            <form.Field name="formatoCalificacion">
+              {(field) => (
+                <Field>
+                  <FieldLabel htmlFor={field.name}>
+                    Formato de calificación
+                  </FieldLabel>
+                  <Select
+                    value={field.state.value}
+                    disabled={!personalizar}
+                    onValueChange={(value) => value && field.handleChange(value)}
+                  >
+                    <SelectTrigger id={field.name}>
+                      <SelectValue placeholder="Seleccionar" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        {FORMATO_CALIFICACION_OPTIONS.map((option) => (
+                          <SelectItem key={option} value={option}>
+                            {option}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                </Field>
+              )}
+            </form.Field>
+
+            <form.Field name="criterioNota">
+              {(field) => (
+                <Field>
+                  <FieldLabel htmlFor={field.name}>
+                    Criterio para calcular la nota de la asignatura
+                  </FieldLabel>
+                  <Select
+                    value={field.state.value}
+                    disabled={!personalizar}
+                    onValueChange={(value) => value && field.handleChange(value)}
+                  >
+                    <SelectTrigger id={field.name}>
+                      <SelectValue placeholder="Seleccionar" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        {CRITERIO_NOTA_OPTIONS.map((option) => (
+                          <SelectItem key={option} value={option}>
+                            {option}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                </Field>
+              )}
+            </form.Field>
+          </div>
+        </form>
+
+        <DialogFooter className="sm:justify-between">
+          <DialogClose render={<Button type="button" variant="ghost" />}>
+            Cancelar
+          </DialogClose>
+          <Button
+            type="submit"
+            color="primary"
+            form={FORM_ID}
+            disabled={createStudyPlanItem.isPending}
+            aria-busy={createStudyPlanItem.isPending}
+          >
+            {createStudyPlanItem.isPending && (
+              <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+            )}
+            Agregar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}

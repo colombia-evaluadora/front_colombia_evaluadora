@@ -6,6 +6,8 @@ import { auditTablesHandlers } from "./audit-tables"
 import { academicPeriodsHandlers } from "./academic-periods"
 import { evaluationPeriodsHandlers } from "./evaluation-periods"
 import { gradesHandlers } from "./grades"
+import { gradeGroupsHandlers } from "./grade-groups"
+import { studyPlansHandlers } from "./study-plans"
 import { ratingScalesHandlers } from "./rating-scales"
 import { areaSubjectsHandlers } from "./area-subject"
 
@@ -18,6 +20,8 @@ export const handlers = [
   ...academicPeriodsHandlers,
   ...evaluationPeriodsHandlers,
   ...gradesHandlers,
+  ...gradeGroupsHandlers,
+  ...studyPlansHandlers,
   ...areaSubjectsHandlers,
   ...ratingScalesHandlers,
 ]

@@ -50,14 +50,12 @@ function computeCells(
         const slotId = run[i]
         const subjectId = daySchedule[slotId]
 
-        // Celda vacía: se queda 1x1 para seguir siendo destino de arrastre.
         if (!subjectId) {
           map[slotId] = { skip: false, rowSpan: 1, blockSlots: [slotId] }
           i++
           continue
         }
 
-        // Fusiona franjas contiguas con la misma materia dentro de la corrida.
         let j = i
         while (j + 1 < run.length && daySchedule[run[j + 1]] === subjectId) j++
 
@@ -86,13 +84,16 @@ function spaced(text: string): string {
 }
 
 interface ScheduleBuilderProps {
-  // La jornada (hora inicio/fin, bloques y descansos) viene del periodo
-  // académico; el horario solo la consume, no la redefine.
   jornada: Jornada
   onClose: () => void
+  hideActions?: boolean
 }
 
-export function ScheduleBuilder({ jornada, onClose }: ScheduleBuilderProps) {
+export function ScheduleBuilder({
+  jornada,
+  onClose,
+  hideActions = false,
+}: ScheduleBuilderProps) {
   const [gradeGroup, setGradeGroup] = useState(GRADE_GROUP_OPTIONS[0])
   const [schedule, setSchedule] = useState<Schedule>({})
   const [draggingId, setDraggingId] = useState<string | null>(null)
@@ -389,14 +390,16 @@ export function ScheduleBuilder({ jornada, onClose }: ScheduleBuilderProps) {
       )}
 
       {/* Acciones */}
-      <div className="flex justify-end gap-2">
-        <Button type="button" variant="outline" onClick={onClose}>
-          Cancelar
-        </Button>
-        <Button type="button" color="primary" onClick={handleSave}>
-          Guardar
-        </Button>
-      </div>
+      {!hideActions && (
+        <div className="flex justify-end gap-2">
+          <Button type="button" variant="outline" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button type="button" color="primary" onClick={handleSave}>
+            Guardar
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

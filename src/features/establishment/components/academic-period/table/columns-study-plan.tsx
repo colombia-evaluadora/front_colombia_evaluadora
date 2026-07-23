@@ -1,0 +1,96 @@
+import type { ColumnDef, Table } from "@tanstack/react-table"
+
+import { Checkbox } from "@/components/ui/checkbox"
+import { DataTableColumnHeader } from "@/components/data-table"
+
+import type { StudyPlanItem } from "../../../api/types/academic-period/study-plan"
+
+export const columns: ColumnDef<StudyPlanItem>[] = [
+  {
+    id: "select",
+    header: ({ table }) => (
+      <Checkbox
+        color="neutral"
+        aria-label="Seleccionar página"
+        className="translate-y-0.5"
+        checked={table.getIsAllPageRowsSelected()}
+        indeterminate={
+          !table.getIsAllPageRowsSelected() &&
+          table.getIsSomePageRowsSelected()
+        }
+        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+      />
+    ),
+    cell: ({ row }) => (
+      <Checkbox
+        color="neutral"
+        aria-label={`Seleccionar ${row.original.asignatura}`}
+        className="translate-y-0.5"
+        checked={row.getIsSelected()}
+        onCheckedChange={(value) => row.toggleSelected(!!value)}
+      />
+    ),
+    enableSorting: false,
+    enableHiding: false,
+    size: 32,
+  },
+  {
+    id: "asignatura",
+    accessorKey: "asignatura",
+    header: ({ column }) => (
+      <DataTableColumnHeader
+        column={column}
+        title="Asignaturas"
+      />
+    ),
+    cell: ({ row }) => (
+      <span className="font-medium">{row.original.asignatura}</span>
+    ),
+  },
+  {
+    id: "intensidadHoraria",
+    accessorKey: "intensidadHoraria",
+    header: ({ column }) => (
+      <DataTableColumnHeader
+        column={column}
+        title="Intensidad horaria"
+      />
+    ),
+    cell: ({ row }) => <span>{row.original.intensidadHoraria}</span>,
+  },
+  {
+    id: "influenciaArea",
+    accessorKey: "influenciaArea",
+    header: ({ column }) => (
+      <DataTableColumnHeader
+        column={column}
+        title="Influencia área"
+      />
+    ),
+    cell: ({ row }) => <span>{row.original.influenciaArea}%</span>,
+  },
+  {
+    id: "numeroCreditos",
+    accessorKey: "numeroCreditos",
+    header: ({ column }) => (
+      <DataTableColumnHeader
+        column={column}
+        title="Número de créditos"
+      />
+    ),
+    cell: ({ row }) => <span>{row.original.numeroCreditos}</span>,
+  },
+  {
+    id: "influyeDesempeno",
+    accessorKey: "influyeDesempeno",
+    header: ({ column }) => (
+      <DataTableColumnHeader
+        column={column}
+        title="Influye en el desempeño académico (S/N)"
+      />
+    ),
+    cell: ({ row }) => <span>{row.original.influyeDesempeno ? "S" : "N"}</span>,
+  },
+]
+
+export type StudyPlanTable = Table<StudyPlanItem>
