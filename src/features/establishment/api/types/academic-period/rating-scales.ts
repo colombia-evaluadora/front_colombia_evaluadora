@@ -1,5 +1,19 @@
 export type RatingScaleType = "Fortaleza" | "Debilidad"
 
+export type RatingSymbolCategory = "carita" | "valoracion"
+
+// "emoji" ahora; cuando lleguen las imágenes reales será "imagen" y `valor`
+// pasará a ser la URL de la imagen en vez del carácter emoji.
+export type RatingSymbolKind = "emoji" | "imagen"
+
+export interface RatingSymbol {
+  id: string
+  categoria: RatingSymbolCategory
+  kind: RatingSymbolKind
+  valor: string
+  label: string
+}
+
 export interface TeachingLevel {
   id: number
   nombre: string

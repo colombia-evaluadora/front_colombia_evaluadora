@@ -18,6 +18,7 @@ import { useTeachingLevelsQuery } from "../../../api/query/use-teaching-levels-q
 import { RATING_SCALE_TYPE_BADGE } from "../../../api/ui-mappings"
 import type { RatingScale } from "../../../api/types/academic-period/rating-scales"
 import { CreateRatingScaleDialog } from "../dialogs/dialog-create-rating-scale"
+import { RatingSymbolView } from "../rating-symbol"
 
 export function TabRatingScales() {
   const { data: levels = [], isPending: levelsPending } =
@@ -161,7 +162,9 @@ function ScalesSubTable({ scales }: { scales: RatingScale[] }) {
                 {scale.tipo}
               </Badge>
             </TableCell>
-            <TableCell className="text-lg">{scale.iconografia}</TableCell>
+            <TableCell className="text-lg">
+              <RatingSymbolView value={scale.iconografia} />
+            </TableCell>
           </TableRow>
         ))}
       </TableBody>
