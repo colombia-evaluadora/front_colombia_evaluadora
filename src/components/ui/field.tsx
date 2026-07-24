@@ -69,7 +69,9 @@ const fieldVariants = cva(
       },
       variant: {
         plain: "",
-        outlined: "relative gap-1.5 [&>[data-slot=field-label]]:w-fit",
+        // El label se apoya sobre el borde superior y sobresale ~8px: `mt-2`
+        // reserva ese espacio para que no lo pise lo que haya arriba.
+        outlined: "relative mt-2 gap-1.5 [&>[data-slot=field-label]]:w-fit",
         filled: "relative gap-1.5 [&>[data-slot=field-label]]:w-fit",
         // `standard` flota el label por encima del input: reserva espacio
         // arriba (`mt-3`) para no pisar el campo anterior. El margen no afecta
