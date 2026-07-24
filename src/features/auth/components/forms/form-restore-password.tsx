@@ -72,7 +72,7 @@ export function RestorePasswordForm({ id, onSubmit }: RestorePasswordFormProps) 
                     aria-invalid={isInvalid}
                     aria-describedby={`${field.name}-error`}
                   />
-                  <InputGroupAddon align="inline-end">
+                  <InputGroupAddon align="inline-end" className="mr-2">
                     <InputGroupButton
                       size="icon-xs"
                       className="text-muted-foreground hover:text-primary"
@@ -128,7 +128,7 @@ export function RestorePasswordForm({ id, onSubmit }: RestorePasswordFormProps) 
                     onChange={(e) => field.handleChange(e.target.value)}
                     aria-invalid={isInvalid}
                   />
-                  <InputGroupAddon align="inline-end">
+                  <InputGroupAddon align="inline-end" className="mr-2">
                     <InputGroupButton
                       className="text-muted-foreground hover:text-primary"
                       size="icon-xs"

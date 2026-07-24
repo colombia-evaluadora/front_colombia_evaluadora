@@ -55,16 +55,8 @@ export function LoginForm({ id, onSubmit }: LoginFormProps) {
             const isInvalid =
               field.state.meta.isTouched && !field.state.meta.isValid
             return (
-              <Field data-invalid={isInvalid}>
-                <div className="flex items-center justify-between gap-2">
-                  <FieldLabel htmlFor={field.name}>Email</FieldLabel>
-                  <Link
-                    to={paths.auth.forgotUsername.path}
-                    className="text-muted-foreground hover:text-primary text-xs underline underline-offset-4"
-                  >
-                    ¿Lo olvidaste?
-                  </Link>
-                </div>
+              <Field variant="outlined" data-invalid={isInvalid}>
+                <FieldLabel htmlFor={field.name}>Email</FieldLabel>
                 <Input
                   id={field.name}
                   name={field.name}
@@ -76,6 +68,14 @@ export function LoginForm({ id, onSubmit }: LoginFormProps) {
                   onChange={(e) => field.handleChange(e.target.value)}
                   aria-invalid={isInvalid}
                 />
+                <div className="flex justify-end">
+                  <Link
+                    to={paths.auth.forgotUsername.path}
+                    className="text-muted-foreground hover:text-primary text-xs underline underline-offset-4"
+                  >
+                    ¿Lo olvidaste?
+                  </Link>
+                </div>
                 {isInvalid && (
                   <FieldError errors={field.state.meta.errors} />
                 )}
@@ -89,17 +89,9 @@ export function LoginForm({ id, onSubmit }: LoginFormProps) {
             const isInvalid =
               field.state.meta.isTouched && !field.state.meta.isValid
             return (
-              <Field data-invalid={isInvalid}>
-                <div className="flex items-center justify-between gap-2">
-                  <FieldLabel htmlFor={field.name}>Contraseña</FieldLabel>
-                  <Link
-                    to={paths.auth.forgotPassword.path}
-                    className="text-muted-foreground hover:text-primary text-xs underline underline-offset-4"
-                  >
-                    ¿La olvidaste?
-                  </Link>
-                </div>
-                <InputGroup>
+              <Field variant="outlined" data-invalid={isInvalid}>
+                <FieldLabel htmlFor={field.name}>Contraseña</FieldLabel>
+                <InputGroup className="rounded-md border-input has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20 has-[[data-slot][aria-invalid=true]]:border-destructive">
                   <InputGroupInput
                     id={field.name}
                     name={field.name}
@@ -111,7 +103,7 @@ export function LoginForm({ id, onSubmit }: LoginFormProps) {
                     onChange={(e) => field.handleChange(e.target.value)}
                     aria-invalid={isInvalid}
                   />
-                  <InputGroupAddon align="inline-end">
+                  <InputGroupAddon align="inline-end" className="mr-2">
                     <InputGroupButton
                       size="icon-xs"
                       onClick={() => setShowPassword((v) => !v)}
@@ -127,6 +119,14 @@ export function LoginForm({ id, onSubmit }: LoginFormProps) {
                     </InputGroupButton>
                   </InputGroupAddon>
                 </InputGroup>
+                <div className="flex justify-end">
+                  <Link
+                    to={paths.auth.forgotPassword.path}
+                    className="text-muted-foreground hover:text-primary text-xs underline underline-offset-4"
+                  >
+                    ¿La olvidaste?
+                  </Link>
+                </div>
                 {isInvalid && (
                   <FieldError errors={field.state.meta.errors} />
                 )}
