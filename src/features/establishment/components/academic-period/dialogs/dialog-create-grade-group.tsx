@@ -84,7 +84,7 @@ export function CreateGradeGroupDialog() {
         <PlusCircleIcon weight="fill" data-icon="inline-start" />
         Agregar
       </DialogTrigger>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-3xl" showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Agregar grupo</DialogTitle>
           <DialogDescription>Completá los datos del grupo.</DialogDescription>
@@ -96,7 +96,7 @@ export function CreateGradeGroupDialog() {
             e.preventDefault()
             form.handleSubmit()
           }}
-          className="grid gap-x-4 gap-y-4 sm:grid-cols-2"
+          className="grid gap-x-4 gap-y-4 sm:grid-cols-3"
         >
           <form.Field name="codigo">
             {(field) => {
@@ -226,22 +226,36 @@ export function CreateGradeGroupDialog() {
           </form.Field>
         </form>
 
-        <DialogFooter className="sm:justify-between">
-          <DialogClose render={<Button type="button" variant="ghost" />}>
+        <DialogFooter>
+          {/* Guardar solo aparece cuando el formulario tiene todos los datos. */}
+          <form.Subscribe
+            selector={(state) =>
+              gradeGroupFormSchema.safeParse(state.values).success
+            }
+          >
+            {(isComplete) =>
+              isComplete ? (
+                <Button
+                  type="submit"
+                  color="primary"
+                  form={FORM_ID}
+                  disabled={createGradeGroup.isPending}
+                  aria-busy={createGradeGroup.isPending}
+                >
+                  {createGradeGroup.isPending && (
+                    <SpinnerIcon
+                      data-icon="inline-start"
+                      className="animate-spin"
+                    />
+                  )}
+                  Guardar
+                </Button>
+              ) : null
+            }
+          </form.Subscribe>
+          <DialogClose render={<Button type="button" variant="outline" />}>
             Cancelar
           </DialogClose>
-          <Button
-            type="submit"
-            color="primary"
-            form={FORM_ID}
-            disabled={createGradeGroup.isPending}
-            aria-busy={createGradeGroup.isPending}
-          >
-            {createGradeGroup.isPending && (
-              <SpinnerIcon data-icon="inline-start" className="animate-spin" />
-            )}
-            Agregar
-          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

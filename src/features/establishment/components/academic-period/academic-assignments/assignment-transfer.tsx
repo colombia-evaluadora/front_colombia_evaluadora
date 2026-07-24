@@ -121,7 +121,7 @@ export function AssignmentTransfer({
           </Button>
         </div>
 
-        <ul className="flex max-h-80 flex-col overflow-y-auto rounded-lg border">
+        <ul className="flex max-h-80 flex-col overflow-y-auto border">
           {filteredAvailable.length === 0 ? (
             <li className="p-4 text-center text-sm text-muted-foreground">
               Sin asignaturas disponibles.
@@ -186,7 +186,7 @@ export function AssignmentTransfer({
           </div>
         </div>
 
-        <ul className="flex max-h-80 flex-col overflow-y-auto rounded-lg border">
+        <ul className="flex max-h-80 flex-col overflow-y-auto border">
           {filteredAssigned.length === 0 ? (
             <li className="p-4 text-center text-sm text-muted-foreground">
               Sin asignaturas asignadas.
