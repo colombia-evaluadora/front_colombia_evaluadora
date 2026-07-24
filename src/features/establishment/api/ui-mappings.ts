@@ -19,20 +19,20 @@ export const ACADEMIC_PERIOD_STATUS_BADGE: Record<AcademicPeriodStatus, BadgePro
 }
 
 export const EVALUATION_PERIOD_STATUSES: EvaluationPeriodStatus[] = [
-  "No iniciado",
-  "En curso",
-  "Cargado",
-  "Habilitado",
+  "NO Calificable",
+  "Calificable",
+  "En Recuperaciones",
+  "Habilitados para algunas asignaturas",
 ]
 
 export const EVALUATION_PERIOD_STATUS_BADGE: Record<
   EvaluationPeriodStatus,
   BadgeProps
 > = {
-  "No iniciado": { variant: "fill", color: "secondary" },
-  "En curso": { variant: "fill", color: "info" },
-  Cargado: { variant: "fill", color: "warning" },
-  Habilitado: { variant: "fill", color: "success" },
+  "Habilitados para algunas asignaturas": { variant: "fill", color: "secondary" },
+  "Calificable": { variant: "fill", color: "info" },
+  "En Recuperaciones": { variant: "fill", color: "warning" },
+  "NO Calificable": { variant: "fill", color: "success" },
 }
 
 export const RATING_SCALE_TYPES: RatingScaleType[] = ["Fortaleza", "Debilidad"]
