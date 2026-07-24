@@ -33,6 +33,11 @@ export type CreateEvaluationPeriodRequest = EvaluationPeriod
 
 export type UpdateEvaluationPeriodRequest = EvaluationPeriod
 
+export interface MutationResult {
+  status: "ok" | "error"
+  message: string
+}
+
 export type ExportFormat = "pdf" | "excel"
 
 export interface ExportResult {

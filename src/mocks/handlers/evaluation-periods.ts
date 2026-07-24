@@ -134,4 +134,22 @@ export const evaluationPeriodsHandlers = [
 
     return HttpResponse.json(body, { status: 201 })
   }),
+
+  http.delete("/api/evaluation-periods/:codigo", async ({ params }) => {
+    await delay(300)
+    const index = evaluationPeriodsDb.findIndex(
+      (p) => String(p.codigo) === String(params.codigo)
+    )
+    if (index === -1) {
+      return HttpResponse.json(
+        { status: "error", message: "Periodo de evaluación no encontrado." },
+        { status: 404 }
+      )
+    }
+    evaluationPeriodsDb.splice(index, 1)
+    return HttpResponse.json({
+      status: "ok",
+      message: "Periodo de evaluación eliminado.",
+    })
+  }),
 ]

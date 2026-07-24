@@ -9,6 +9,8 @@ import type {
   EvaluationPeriod,
   EvaluationPeriodStatus,
 } from "../../../api/types/academic-period/evaluation-period"
+import { DeleteEvaluationPeriodDialog } from "../dialogs/dialog-delete-evaluation-period"
+import { EditEvaluationPeriodButton } from "./edit-evaluation-period-button"
 
 function formatDate(value: string): string {
   const [year, month, day] = value.slice(0, 10).split("-")
@@ -109,6 +111,19 @@ export const columns: ColumnDef<EvaluationPeriod>[] = [
         <Badge {...EVALUATION_PERIOD_STATUS_BADGE[estado]}>{estado}</Badge>
       )
     },
+  },
+  {
+    id: "actions",
+    header: () => <span className="sr-only">Acciones</span>,
+    cell: ({ row }) => (
+      <div className="flex items-center justify-end gap-1">
+        <EditEvaluationPeriodButton period={row.original} />
+        <DeleteEvaluationPeriodDialog period={row.original} />
+      </div>
+    ),
+    enableSorting: false,
+    enableHiding: false,
+    size: 96,
   },
 ]
 
