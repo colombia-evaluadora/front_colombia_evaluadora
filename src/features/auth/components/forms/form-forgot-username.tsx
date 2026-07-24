@@ -41,7 +41,7 @@ export function ForgotUsernameForm({ id, onSubmit }: ForgotUsernameFormProps) {
             const isInvalid =
               field.state.meta.isTouched && !field.state.meta.isValid
             return (
-              <Field data-invalid={isInvalid}>
+              <Field variant="outlined" data-invalid={isInvalid}>
                 <FieldLabel htmlFor={field.name}>
                   Número de documento
                 </FieldLabel>

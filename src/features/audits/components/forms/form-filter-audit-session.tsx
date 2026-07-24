@@ -55,7 +55,7 @@ export function FilterAuditSessionForm({
       <form.Field
         name="author"
         children={(field) => (
-          <Field orientation="vertical" className="gap-2">
+          <Field orientation="vertical" variant="outlined" className="gap-2">
             <FieldLabel htmlFor={field.name}>Autor / IP</FieldLabel>
             <Input
               id={field.name}
