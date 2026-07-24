@@ -1,5 +1,6 @@
 import {
   ArrowLeftIcon,
+  ArrowRightIcon,
   ClockCountdownIcon,
   LinkBreakIcon,
   PasswordIcon,
@@ -171,6 +172,11 @@ export function RestorePasswordPage() {
               className="w-full"
             >
               Guardar contraseña
+              {restorePasswordMutation.isPending ? (
+                <Spinner data-icon="inline-end" />
+              ) : (
+                <ArrowRightIcon data-icon="inline-end" />
+              )}
             </Button>
 
             <Button

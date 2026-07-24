@@ -1,6 +1,10 @@
 import { useEffect } from "react"
 import { useNavigate, useSearch } from "@tanstack/react-router"
-import { ShieldLockIcon, ShieldIcon } from "@/components/ui/icons"
+import {
+  ArrowRightIcon,
+  ShieldLockIcon,
+  ShieldIcon,
+} from "@/components/ui/icons"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -11,6 +15,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
+import { Spinner } from "@/components/ui/spinner"
 import { paths } from "@/config/paths"
 import { useLogin } from "@/lib/auth"
 
@@ -65,6 +70,11 @@ export function LoginPage() {
           className="w-full"
         >
           Ingresar
+          {loginMutation.isPending ? (
+            <Spinner data-icon="inline-end" />
+          ) : (
+            <ArrowRightIcon data-icon="inline-end" />
+          )}
         </Button>
         <div className="flex w-full items-center gap-3">
           <Separator className="flex-1" />

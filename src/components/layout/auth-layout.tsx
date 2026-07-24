@@ -25,7 +25,7 @@ export function AuthLayout() {
           <Outlet />
         </Card>
 
-        <p className="text-muted text-sm mt-auto">
+        <p className="text-muted text-center text-sm">
           Versión 4.2.1 <span aria-hidden="true">|</span> © 2024 Colombia
           Evaluadora ETC <span aria-hidden="true">|</span> Todos los derechos
           reservados.

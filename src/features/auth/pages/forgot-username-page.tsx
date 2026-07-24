@@ -2,6 +2,7 @@ import { useState } from "react"
 import { Link } from "@tanstack/react-router"
 import {
   ArrowLeftIcon,
+  ArrowRightIcon,
   IdentificationCardIcon,
   ShieldIcon,
   UserCircleIcon,
@@ -15,6 +16,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { Spinner } from "@/components/ui/spinner"
 import { paths } from "@/config/paths"
 
 import { useForgotUsername } from "../api/mutations/forgot-username"
@@ -116,6 +118,11 @@ export function ForgotUsernamePage() {
               className="w-full"
             >
               Consultar correo
+              {forgotUsernameMutation.isPending ? (
+                <Spinner data-icon="inline-end" />
+              ) : (
+                <ArrowRightIcon data-icon="inline-end" />
+              )}
             </Button>
             <Button
               render={<Link to={paths.auth.login.path} />}
