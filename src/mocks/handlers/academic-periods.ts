@@ -123,4 +123,19 @@ export const academicPeriodsHandlers = [
 
     return HttpResponse.json(newPeriod, { status: 201 })
   }),
+
+  http.delete("/api/academic-periods/:id", async ({ params }) => {
+    await delay(300)
+    const index = academicPeriodsDb.findIndex(
+      (p) => String(p.id) === String(params.id)
+    )
+    if (index === -1) {
+      return HttpResponse.json(
+        { status: "error", message: "Periodo no encontrado." },
+        { status: 404 }
+      )
+    }
+    academicPeriodsDb.splice(index, 1)
+    return HttpResponse.json({ status: "ok", message: "Periodo eliminado." })
+  }),
 ]
