@@ -69,13 +69,8 @@ const fieldVariants = cva(
       },
       variant: {
         plain: "",
-        // El label se apoya sobre el borde superior y sobresale ~8px: `mt-2`
-        // reserva ese espacio para que no lo pise lo que haya arriba.
         outlined: "relative mt-2 gap-1.5 [&>[data-slot=field-label]]:w-fit",
         filled: "relative gap-1.5 [&>[data-slot=field-label]]:w-fit",
-        // `standard` flota el label por encima del input: reserva espacio
-        // arriba (`mt-3`) para no pisar el campo anterior. El margen no afecta
-        // el `top` del label (se mide desde el padding-box del Field).
         standard: "relative mt-3 gap-1.5 [&>[data-slot=field-label]]:w-fit",
       },
     },
@@ -118,20 +113,15 @@ function FieldContent({ className, ...props }: React.ComponentProps<"div">) {
     />
   )
 }
-// Label flotante FIJO: queda siempre en la posición de arriba (no baja a
-// ocupar el espacio del placeholder ni anima al enfocar). Solo cambia de color
-// al enfocar. El placeholder del input queda siempre visible.
+
 const floatingLabelVariants = cva(
   "pointer-events-none absolute z-10 w-fit origin-left text-xs font-medium normal-case tracking-normal text-foreground transition-colors group-data-[disabled=true]/field:opacity-50 group-data-[invalid=true]/field:text-destructive group-focus-within/field:text-ring",
   {
     variants: {
       variant: {
         plain: "",
-        // Sobre el borde superior de la caja (notch).
         outlined: "left-2.5 top-0 -translate-y-1/2 bg-background px-1",
-        // Dentro del relleno, arriba (el input reserva `pt-6`).
         filled: "left-3 top-2",
-        // Por encima de la línea (el Field reserva `mt-3`).
         standard: "left-0 top-0 -translate-y-full",
       },
     },
