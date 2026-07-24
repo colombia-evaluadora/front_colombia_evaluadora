@@ -1,4 +1,4 @@
-import { CalendarIcon, ClockIcon } from "@phosphor-icons/react"
+import { CalendarIcon, ClockIcon } from "@/components/ui/icons"
 import { format, parseISO, setHours, setMinutes } from "date-fns"
 import { es } from "date-fns/locale"
 

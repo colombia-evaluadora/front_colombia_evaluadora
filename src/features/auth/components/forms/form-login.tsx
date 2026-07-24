@@ -1,7 +1,12 @@
 import { useState } from "react"
 import { useForm } from "@tanstack/react-form"
 import { Link } from "@tanstack/react-router"
-import { EyeIcon, EyeSlashIcon } from "@phosphor-icons/react"
+import {
+  EnvelopeIcon,
+  EyeIcon,
+  EyeSlashIcon,
+  LockIcon,
+} from "@/components/ui/icons"
 
 import {
   Field,
@@ -10,7 +15,6 @@ import {
   FieldLabel,
 } from "@/components/ui/field"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Input } from "@/components/ui/input"
 import {
   InputGroup,
   InputGroupAddon,
@@ -56,18 +60,23 @@ export function LoginForm({ id, onSubmit }: LoginFormProps) {
               field.state.meta.isTouched && !field.state.meta.isValid
             return (
               <Field variant="outlined" data-invalid={isInvalid}>
-                <FieldLabel htmlFor={field.name}>Email</FieldLabel>
-                <Input
-                  id={field.name}
-                  name={field.name}
-                  type="email"
-                  autoComplete="username"
-                  placeholder="nombre@empresa.com"
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  aria-invalid={isInvalid}
-                />
+                <FieldLabel htmlFor={field.name}>Correo electrónico</FieldLabel>
+                <InputGroup className="rounded-md border-input has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20 has-[[data-slot][aria-invalid=true]]:border-destructive">
+                  <InputGroupAddon align="inline-start" className="ml-2">
+                    <EnvelopeIcon className="size-4 text-muted-foreground" />
+                  </InputGroupAddon>
+                  <InputGroupInput
+                    id={field.name}
+                    name={field.name}
+                    type="email"
+                    autoComplete="username"
+                    placeholder="nombre@empresa.com"
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    aria-invalid={isInvalid}
+                  />
+                </InputGroup>
                 <div className="flex justify-end">
                   <Link
                     to={paths.auth.forgotUsername.path}
@@ -92,6 +101,9 @@ export function LoginForm({ id, onSubmit }: LoginFormProps) {
               <Field variant="outlined" data-invalid={isInvalid}>
                 <FieldLabel htmlFor={field.name}>Contraseña</FieldLabel>
                 <InputGroup className="rounded-md border-input has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20 has-[[data-slot][aria-invalid=true]]:border-destructive">
+                  <InputGroupAddon align="inline-start" className="ml-2">
+                    <LockIcon className="size-4 text-muted-foreground" />
+                  </InputGroupAddon>
                   <InputGroupInput
                     id={field.name}
                     name={field.name}

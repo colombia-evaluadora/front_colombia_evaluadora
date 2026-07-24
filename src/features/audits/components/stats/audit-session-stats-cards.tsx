@@ -1,4 +1,4 @@
-import { CalendarIcon, LightningIcon, UsersIcon, type Icon } from "@phosphor-icons/react"
+import { CalendarIcon, LightningIcon, UsersIcon, type Icon } from "@/components/ui/icons"
 
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"

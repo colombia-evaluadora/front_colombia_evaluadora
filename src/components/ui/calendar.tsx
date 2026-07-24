@@ -8,7 +8,7 @@ import {
 
 import { cn } from "@/lib/utils"
 import { Button, buttonVariants } from "@/components/ui/button"
-import { CaretLeftIcon, CaretRightIcon } from "@phosphor-icons/react"
+import { CaretLeftIcon, CaretRightIcon } from "@/components/ui/icons"
 
 type CalendarView = "days" | "months" | "years"
 

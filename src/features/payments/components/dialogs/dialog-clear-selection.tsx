@@ -1,6 +1,6 @@
 import { useState } from "react"
 
-import { XIcon } from "@phosphor-icons/react"
+import { XIcon } from "@/components/ui/icons"
 
 import {
   AlertDialog,

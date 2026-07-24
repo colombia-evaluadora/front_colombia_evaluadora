@@ -1,5 +1,5 @@
 import preview from '../../../../.storybook/preview'
-import { GearIcon } from '@phosphor-icons/react'
+import { GearIcon } from '@/components/ui/icons'
 import { Button } from '../button'
 import {
   Item,

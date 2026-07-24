@@ -3,7 +3,7 @@ import {
   PencilIcon,
   PlusCircleIcon,
   TrashIcon,
-} from "@phosphor-icons/react"
+} from "@/components/ui/icons"
 
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"

@@ -1,6 +1,6 @@
 import { useState } from "react"
 
-import { ArrowCounterClockwiseIcon, SpinnerIcon } from "@phosphor-icons/react"
+import { ArrowCounterClockwiseIcon, SpinnerIcon } from "@/components/ui/icons"
 import { toast } from "sonner"
 
 import {

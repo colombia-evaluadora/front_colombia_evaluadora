@@ -1,6 +1,11 @@
 import { useState } from "react"
 import { useForm } from "@tanstack/react-form"
-import { EyeIcon, EyeSlashIcon, InfoIcon } from "@phosphor-icons/react"
+import {
+  EyeIcon,
+  EyeSlashIcon,
+  InfoIcon,
+  LockIcon,
+} from "@/components/ui/icons"
 
 import {
   Field,
@@ -57,9 +62,12 @@ export function RestorePasswordForm({ id, onSubmit }: RestorePasswordFormProps) 
             // es "Fuerte" y no solo "válida".
             const isStrong = !isInvalid && field.state.value.length > 0
             return (
-              <Field data-invalid={isInvalid}>
+              <Field variant="outlined" data-invalid={isInvalid}>
                 <FieldLabel htmlFor={field.name}>Nueva contraseña</FieldLabel>
-                <InputGroup>
+                <InputGroup className="rounded-md border-input has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20 has-[[data-slot][aria-invalid=true]]:border-destructive">
+                  <InputGroupAddon align="inline-start" className="ml-2">
+                    <LockIcon className="size-4 text-muted-foreground" />
+                  </InputGroupAddon>
                   <InputGroupInput
                     id={field.name}
                     name={field.name}
@@ -112,11 +120,14 @@ export function RestorePasswordForm({ id, onSubmit }: RestorePasswordFormProps) 
             // "válido y con contenido" ya significa que coinciden.
             const matches = !isInvalid && field.state.value.length > 0
             return (
-              <Field data-invalid={isInvalid}>
+              <Field variant="outlined" data-invalid={isInvalid}>
                 <FieldLabel htmlFor={field.name}>
                   Confirmar contraseña
                 </FieldLabel>
-                <InputGroup>
+                <InputGroup className="rounded-md border-input has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20 has-[[data-slot][aria-invalid=true]]:border-destructive">
+                  <InputGroupAddon align="inline-start" className="ml-2">
+                    <LockIcon className="size-4 text-muted-foreground" />
+                  </InputGroupAddon>
                   <InputGroupInput
                     id={field.name}
                     name={field.name}

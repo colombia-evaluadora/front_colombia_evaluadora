@@ -1,5 +1,5 @@
 import preview from '../../../../.storybook/preview'
-import { HouseIcon, GearIcon } from '@phosphor-icons/react'
+import { HouseIcon, GearIcon } from '@/components/ui/icons'
 import {
   Sidebar,
   SidebarContent,

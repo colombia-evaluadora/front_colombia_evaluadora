@@ -1,5 +1,5 @@
-import * as PhosphorIcons from "@phosphor-icons/react"
-import { QuestionIcon, type Icon } from "@phosphor-icons/react"
+import * as PhosphorIcons from "@/components/ui/icons"
+import { QuestionIcon, type Icon } from "@/components/ui/icons"
 
 const iconRegistry = PhosphorIcons as unknown as Record<string, Icon>
 

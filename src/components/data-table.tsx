@@ -7,7 +7,7 @@ import {
   CaretUpDownIcon,
   ColumnsIcon,
   EyeSlashIcon,
-} from "@phosphor-icons/react"
+} from "@/components/ui/icons"
 
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"

@@ -53,7 +53,7 @@
 :root {
   /* ---------- SUPERFICIES ------------------------ */
   --background: #FFFFFF;
-  --foreground: #090D10;   /* gris azulado oscuro */
+  --foreground: #2C3F5B;   /* gris azulado oscuro */
   --card: #FFFFFF;
   --card-foreground: var(--foreground);
   --popover: #FFFFFF;
@@ -197,7 +197,7 @@
 [data-theme='red'] {
   /* ---------- SUPERFICIES ------------------------ */
   --background: #FFFFFF;
-  --foreground: #090D10;
+  --foreground: #2C3F5B;
   --card: #FFFFFF;
   --card-foreground: var(--foreground);
   --popover: #FFFFFF;

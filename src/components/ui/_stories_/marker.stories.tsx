@@ -1,5 +1,5 @@
 import preview from '../../../../.storybook/preview'
-import { CircleIcon } from '@phosphor-icons/react'
+import { CircleIcon } from '@/components/ui/icons'
 import { Marker, MarkerContent, MarkerIcon } from '../marker'
 
 const meta = preview.meta({

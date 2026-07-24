@@ -19,7 +19,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"
-import { CaretRightIcon, QuestionIcon } from "@phosphor-icons/react"
+import { CaretRightIcon, QuestionIcon } from "@/components/ui/icons"
 
 import { defaultHelpData, type HelpSheetData } from "./help-faq-data"
 

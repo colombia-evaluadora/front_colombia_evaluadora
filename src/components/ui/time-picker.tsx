@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { ClockIcon } from "@phosphor-icons/react"
+import { ClockIcon } from "@/components/ui/icons"
 
 import { cn } from "@/lib/utils"
 import { Button, buttonVariants } from "@/components/ui/button"
