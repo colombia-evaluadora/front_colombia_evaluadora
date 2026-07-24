@@ -1,5 +1,5 @@
 import * as React from "react"
-import { ChatCircleDotsIcon } from "@phosphor-icons/react"
+import { ChatCircleDotsIcon } from "@/components/ui/icons"
 import type { UIMessage } from "@tanstack/ai-react"
 
 import { cn } from "@/lib/utils"

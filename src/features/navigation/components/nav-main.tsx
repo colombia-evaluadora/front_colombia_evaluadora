@@ -1,7 +1,7 @@
 import { useState } from "react"
 
 import { Link, useLocation } from "@tanstack/react-router"
-import { CaretRightIcon } from "@phosphor-icons/react"
+import { CaretRightIcon } from "@/components/ui/icons"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -23,7 +23,7 @@ import { cn } from "@/lib/utils"
 
 import { useNavItemsQuery } from "@/features/navigation/api/query/use-nav-items-query"
 import type { NavSubItem } from "@/features/navigation/api/types/nav-item"
-import type { Icon } from "@phosphor-icons/react"
+import type { Icon } from "@/components/ui/icons"
 
 export function NavMain() {
   const { data: items, isPending, isError, refetch } = useNavItemsQuery()

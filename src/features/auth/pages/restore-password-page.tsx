@@ -1,11 +1,11 @@
 import {
   ArrowLeftIcon,
   ClockCountdownIcon,
-  KeyIcon,
   LinkBreakIcon,
-  ShieldCheckIcon,
+  PasswordIcon,
+  ShieldIcon,
   WarningCircleIcon,
-} from "@phosphor-icons/react"
+} from "@/components/ui/icons"
 import { Link, useNavigate, useSearch } from "@tanstack/react-router"
 import { toast } from "sonner"
 
@@ -130,8 +130,7 @@ export function RestorePasswordPage() {
         <>
           <CardHeader className="text-center">
             <div className="bg-primary/10 mx-auto flex size-14 items-center justify-center rounded-full">
-              <KeyIcon
-                weight="duotone"
+              <PasswordIcon
                 className="text-primary size-7"
                 aria-hidden="true"
               />
@@ -184,11 +183,10 @@ export function RestorePasswordPage() {
               Volver a iniciar sesión
             </Button>
             <p className="text-muted-foreground inline-flex items-start text-center text-xs">
-              <ShieldCheckIcon
-                weight="duotone"
-                className="size-4 shrink-0"
-                aria-hidden="true"
-              />
+              <ShieldIcon
+                          className="size-4 shrink-0"
+                          aria-hidden="true"
+                        />
               Tu seguridad es importante. Nunca compartas tu contraseña con nadie.
             </p>
           </CardFooter>

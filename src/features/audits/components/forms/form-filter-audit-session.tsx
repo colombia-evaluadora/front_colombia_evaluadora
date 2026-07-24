@@ -1,5 +1,5 @@
 import { useForm } from "@tanstack/react-form"
-import { CheckCircleIcon, CircleDashedIcon } from "@phosphor-icons/react"
+import { CheckCircleIcon, CircleDashedIcon } from "@/components/ui/icons"
 
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"

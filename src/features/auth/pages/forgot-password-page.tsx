@@ -1,9 +1,9 @@
 import { Link, useNavigate } from "@tanstack/react-router"
 import {
   ArrowLeftIcon,
-  KeyIcon,
-  ShieldCheckIcon,
-} from "@phosphor-icons/react"
+  PasswordIcon,
+  ShieldIcon,
+} from "@/components/ui/icons"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -39,8 +39,7 @@ export function ForgotPasswordPage() {
     <>
       <CardHeader className="text-center">
         <div className="bg-primary/10 mx-auto flex size-14 items-center justify-center rounded-full">
-          <KeyIcon
-            weight="duotone"
+          <PasswordIcon
             className="text-primary size-7"
             aria-hidden="true"
           />
@@ -78,11 +77,10 @@ export function ForgotPasswordPage() {
           Volver a iniciar sesión
         </Button>
         <p className="text-muted-foreground inline-flex items-start text-center text-xs">
-          <ShieldCheckIcon
-            weight="duotone"
-            className="size-4 shrink-0"
-            aria-hidden="true"
-          />
+          <ShieldIcon
+                      className="size-4 shrink-0"
+                      aria-hidden="true"
+                    />
           Tu seguridad es importante. Nunca compartas tu contraseña con nadie.
         </p>
       </CardFooter>

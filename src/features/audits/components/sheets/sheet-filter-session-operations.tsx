@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { EraserIcon, FunnelIcon, XIcon } from "@phosphor-icons/react"
+import { EraserIcon, FunnelIcon, XIcon } from "@/components/ui/icons"
 
 import { Button } from "@/components/ui/button"
 import {

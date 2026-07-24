@@ -1,15 +1,15 @@
 import type { ReactNode } from "react"
-import type { Icon } from "@phosphor-icons/react"
+import type { Icon } from "@/components/ui/icons"
 import { Link } from "@tanstack/react-router"
 import {
   BookOpenIcon,
   EnvelopeIcon,
-  GraduationCapIcon,
   HeadsetIcon,
-  KeyIcon,
-  ShieldCheckIcon,
-  UserCircleIcon,
-} from "@phosphor-icons/react"
+  PasswordIcon,
+  PersonIcon,
+  ShieldOffIcon,
+  VideoIcon,
+} from "@/components/ui/icons"
 
 import { paths } from "@/config/paths"
 
@@ -64,7 +64,7 @@ export const defaultHelpData: HelpSheetData = {
       id: "forgot-password",
       title: "Olvidé mi contraseña",
       description: "Restablece tu contraseña de forma segura.",
-      icon: KeyIcon,
+      icon: PasswordIcon,
       body: (
         <p>
           Si olvidaste tu contraseña, selecciona{" "}
@@ -85,7 +85,7 @@ export const defaultHelpData: HelpSheetData = {
       id: "forgot-username",
       title: "No recuerdo mi correo",
       description: "Recupera tu correo con tu número de documento.",
-      icon: UserCircleIcon,
+      icon: PersonIcon,
       body: (
         <p>
           Ingresas con el correo que registraste. Si no lo recuerdas,
@@ -105,7 +105,7 @@ export const defaultHelpData: HelpSheetData = {
       id: "blocked-account",
       title: "Mi cuenta está bloqueada",
       description: "Conoce por qué ocurre y cómo solicitar el desbloqueo.",
-      icon: ShieldCheckIcon,
+      icon: ShieldOffIcon,
       body: (
         <p>
           Tu cuenta ha sido bloqueada por disposición administrativa del
@@ -152,7 +152,7 @@ export const defaultHelpData: HelpSheetData = {
         {
           title: "Video: ¿Cómo ingresar por primera vez?",
           description: "Mira el tutorial en menos de 3 minutos.",
-          icon: GraduationCapIcon,
+          icon: VideoIcon,
           to: "/",
         },
       ],

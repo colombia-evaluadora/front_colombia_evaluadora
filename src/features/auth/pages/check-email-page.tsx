@@ -5,7 +5,7 @@ import {
   ClockIcon,
   PaperPlaneTiltIcon,
   WarningCircleIcon,
-} from "@phosphor-icons/react"
+} from "@/components/ui/icons"
 
 import { Button } from "@/components/ui/button"
 import {

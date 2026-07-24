@@ -1,4 +1,4 @@
-import { SunIcon, MoonIcon } from "@phosphor-icons/react"
+import { SunIcon, MoonIcon } from "@/components/ui/icons"
 import { useTheme } from "next-themes"
 
 import { Button } from "@/components/ui/button"

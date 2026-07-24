@@ -1,5 +1,5 @@
 import preview from '../../../../.storybook/preview'
-import { ArrowRightIcon, CheckCircleIcon, SpinnerIcon, WarningCircleIcon, XCircleIcon } from '@phosphor-icons/react'
+import { ArrowRightIcon, CheckCircleIcon, SpinnerIcon, WarningCircleIcon, XCircleIcon } from '@/components/ui/icons'
 
 import { Badge, badgeVariants } from '../badge'
 

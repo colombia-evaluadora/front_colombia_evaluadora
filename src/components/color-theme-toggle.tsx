@@ -1,4 +1,4 @@
-import { PaletteIcon } from "@phosphor-icons/react"
+import { PaletteIcon } from "@/components/ui/icons"
 
 import { Button } from "@/components/ui/button"
 import {

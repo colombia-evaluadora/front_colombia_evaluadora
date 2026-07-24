@@ -1,6 +1,6 @@
 import { useEffect } from "react"
 import { useNavigate, useSearch } from "@tanstack/react-router"
-import { SignInIcon, ShieldCheckIcon } from "@phosphor-icons/react"
+import { ShieldLockIcon, ShieldIcon } from "@/components/ui/icons"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -42,8 +42,7 @@ export function LoginPage() {
     <>
       <CardHeader className="text-center">
         <div className="bg-primary/10 mx-auto flex size-14 items-center justify-center rounded-full">
-          <SignInIcon
-            weight="duotone"
+          <ShieldLockIcon
             className="text-primary size-7"
             aria-hidden="true"
           />
@@ -68,8 +67,7 @@ export function LoginPage() {
         </Button>
         <HelpFaqSheet />
         <p className="text-muted-foreground inline-flex items-start text-center text-xs">
-          <ShieldCheckIcon
-            weight="duotone"
+          <ShieldIcon
             className="size-4 shrink-0"
             aria-hidden="true"
           />

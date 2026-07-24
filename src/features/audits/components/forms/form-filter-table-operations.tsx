@@ -7,7 +7,7 @@ import {
   TrashIcon,
   PlusIcon,
   XIcon,
-} from "@phosphor-icons/react"
+} from "@/components/ui/icons"
 
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"

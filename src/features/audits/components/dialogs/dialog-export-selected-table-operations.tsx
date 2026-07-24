@@ -5,7 +5,7 @@ import {
   FilePdfIcon,
   FileXlsIcon,
   SpinnerIcon,
-} from "@phosphor-icons/react"
+} from "@/components/ui/icons"
 import { toast } from "sonner"
 
 import {
