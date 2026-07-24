@@ -53,7 +53,7 @@ export function CreatePaymentForm({ id, onSubmit }: CreatePaymentFormProps) {
             const isInvalid =
               field.state.meta.isTouched && !field.state.meta.isValid
             return (
-              <Field data-invalid={isInvalid}>
+              <Field variant="outlined" data-invalid={isInvalid}>
                 <FieldLabel htmlFor={field.name}>Email</FieldLabel>
                 <Input
                   id={field.name}
@@ -77,7 +77,7 @@ export function CreatePaymentForm({ id, onSubmit }: CreatePaymentFormProps) {
             const isInvalid =
               field.state.meta.isTouched && !field.state.meta.isValid
             return (
-              <Field data-invalid={isInvalid}>
+              <Field variant="outlined" data-invalid={isInvalid}>
                 <FieldLabel htmlFor={field.name}>Monto</FieldLabel>
                 <Input
                   id={field.name}
