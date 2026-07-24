@@ -29,8 +29,6 @@ type InputProps = React.ComponentProps<"input"> &
 
 function Input({ className, type, variant, ...props }: InputProps) {
   const fieldVariant = useFieldVariant()
-  // La variante se toma explícita del prop o, si no, de la del `Field`
-  // contenedor. Fuera de un `Field` (o con `plain`) cae a `standard`.
   const resolvedVariant =
     variant ?? (fieldVariant === "plain" ? "standard" : fieldVariant)
 

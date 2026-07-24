@@ -120,7 +120,7 @@ function FieldContent({ className, ...props }: React.ComponentProps<"div">) {
 // ocupar el espacio del placeholder ni anima al enfocar). Solo cambia de color
 // al enfocar. El placeholder del input queda siempre visible.
 const floatingLabelVariants = cva(
-  "pointer-events-none absolute z-10 w-fit origin-left text-xs font-normal normal-case tracking-normal text-muted-foreground transition-colors group-data-[disabled=true]/field:opacity-50 group-data-[invalid=true]/field:text-destructive group-focus-within/field:text-ring",
+  "pointer-events-none absolute z-10 w-fit origin-left text-xs font-medium normal-case tracking-normal text-foreground transition-colors group-data-[disabled=true]/field:opacity-50 group-data-[invalid=true]/field:text-destructive group-focus-within/field:text-ring",
   {
     variants: {
       variant: {
