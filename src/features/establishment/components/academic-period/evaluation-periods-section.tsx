@@ -27,8 +27,8 @@ interface EvaluationPeriodsSectionProps {
 
 export function EvaluationPeriodsSection({ jornada }: EvaluationPeriodsSectionProps) {
   return (
-    <Tabs defaultValue="evaluacion" className="w-full">
-      <TabsList variant="line" className="w-full justify-start overflow-x-auto">
+    <Tabs defaultValue="evaluacion">
+      <TabsList variant="line">
         {TABS.map((tab) => (
           <TabsTrigger key={tab.value} value={tab.value}>
             {tab.label}
@@ -37,7 +37,7 @@ export function EvaluationPeriodsSection({ jornada }: EvaluationPeriodsSectionPr
       </TabsList>
 
       {TABS.map(({ value, Component }) => (
-        <TabsContent key={value} value={value} className="mt-4">
+        <TabsContent key={value} value={value}>
           {value === "grados" ? <TabGrades jornada={jornada} /> : <Component />}
         </TabsContent>
       ))}

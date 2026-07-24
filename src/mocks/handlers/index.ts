@@ -8,6 +8,7 @@ import { evaluationPeriodsHandlers } from "./evaluation-periods"
 import { gradesHandlers } from "./grades"
 import { gradeGroupsHandlers } from "./grade-groups"
 import { studyPlansHandlers } from "./study-plans"
+import { teachersHandlers } from "./teachers"
 import { ratingScalesHandlers } from "./rating-scales"
 import { areaSubjectsHandlers } from "./area-subject"
 
@@ -22,6 +23,7 @@ export const handlers = [
   ...gradesHandlers,
   ...gradeGroupsHandlers,
   ...studyPlansHandlers,
+  ...teachersHandlers,
   ...areaSubjectsHandlers,
   ...ratingScalesHandlers,
 ]
