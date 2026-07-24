@@ -34,16 +34,17 @@ export function HelpFaqSheet({
         render={
           <Button
             type="button"
-            variant="ghost"
+            variant="link"
+            color="primary"
             size="sm"
-            color="secondary"
+            className="normal-case tracking-normal"
             aria-label={data.title}
           />
         }
       >
         <QuestionIcon
           weight="duotone"
-          className="text-secondary size-4.5"
+          className="text-primary size-4.5"
           aria-hidden="true"
         />
         <span>{data.title}</span>

@@ -10,6 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { Separator } from "@/components/ui/separator"
 import { paths } from "@/config/paths"
 import { useLogin } from "@/lib/auth"
 
@@ -48,7 +49,7 @@ export function LoginPage() {
           />
         </div>
         <CardTitle>Iniciar sesión</CardTitle>
-        <CardDescription>Ingresa tus credenciales para acceder.</CardDescription>
+        <CardDescription>Accede con tu cuenta institucional.</CardDescription>
       </CardHeader>
 
       <CardContent>
@@ -65,7 +66,11 @@ export function LoginPage() {
         >
           Ingresar
         </Button>
-        <HelpFaqSheet />
+        <div className="flex w-full items-center gap-3">
+          <Separator className="flex-1" />
+          <HelpFaqSheet />
+          <Separator className="flex-1" />
+        </div>
         <p className="text-muted-foreground inline-flex items-start text-center text-xs">
           <ShieldIcon
             className="size-4 shrink-0"
