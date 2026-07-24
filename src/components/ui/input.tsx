@@ -1,15 +1,49 @@
 import * as React from "react"
 import { Input as InputPrimitive } from "@base-ui/react/input"
+import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
+import { useFieldVariant } from "@/hooks/use-field-variant"
 
-function Input({ className, type, ...props }: React.ComponentProps<"input">) {
+const inputVariants = cva(
+  "w-full min-w-0 bg-transparent text-base transition-[color,border-color,background-color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+  {
+    variants: {
+      variant: {
+        standard:
+          "h-10 border border-transparent border-b-input px-0 py-1 focus-visible:border-b-ring aria-invalid:border-b-destructive dark:aria-invalid:border-b-destructive/50",
+        outlined:
+          "h-10 rounded-md border border-input px-3 py-1 hover:border-ring focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/20 aria-invalid:border-destructive aria-invalid:focus-visible:border-destructive aria-invalid:focus-visible:ring-destructive/20",
+        filled:
+          "h-14 rounded-t-md border-0 border-b border-b-input bg-muted/40 px-3 pt-6 pb-1 hover:bg-muted/55 focus-visible:border-b-ring focus-visible:bg-muted/50 aria-invalid:border-b-destructive",
+      },
+    },
+    defaultVariants: {
+      variant: "standard",
+    },
+  }
+)
+
+type InputProps = React.ComponentProps<"input"> &
+  VariantProps<typeof inputVariants>
+
+function Input({ className, type, variant, placeholder, ...props }: InputProps) {
+  const fieldVariant = useFieldVariant()
+  const resolvedVariant =
+    variant ?? (fieldVariant === "plain" ? "standard" : fieldVariant)
+  const isFloating = fieldVariant !== "plain"
+  const resolvedPlaceholder = isFloating ? (placeholder ?? " ") : placeholder
+
   return (
     <InputPrimitive
       type={type}
       data-slot="input"
+      placeholder={resolvedPlaceholder}
       className={cn(
-        "h-10 w-full min-w-0 border border-transparent border-b-input bg-transparent px-0 py-1 text-base transition-[color,border-color] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:border-b-ring disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-b-destructive md:text-sm dark:aria-invalid:border-b-destructive/50",
+        inputVariants({ variant: resolvedVariant }),
+        isFloating &&
+          placeholder != null &&
+          "placeholder:text-transparent focus:placeholder:text-muted-foreground",
         className
       )}
       {...props}
@@ -17,4 +51,4 @@ function Input({ className, type, ...props }: React.ComponentProps<"input">) {
   )
 }
 
-export { Input }
+export { Input, inputVariants }
