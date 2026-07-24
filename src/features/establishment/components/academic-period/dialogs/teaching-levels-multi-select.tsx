@@ -1,17 +1,20 @@
-import { CaretDownIcon, XIcon } from "@phosphor-icons/react"
+import { CaretDownIcon, CheckIcon, XIcon } from "@phosphor-icons/react";
 
-import { Checkbox } from "@/components/ui/checkbox"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { cn } from "@/lib/utils"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
-import type { TeachingLevel } from "../../../api/types/academic-period/rating-scales"
+import type { TeachingLevel } from "../../../api/types/academic-period/rating-scales";
 
 interface TeachingLevelsMultiSelectProps {
-  id?: string
-  levels: TeachingLevel[]
-  value: number[]
-  onChange: (ids: number[]) => void
-  invalid?: boolean
+  id?: string;
+  levels: TeachingLevel[];
+  value: number[];
+  onChange: (ids: number[]) => void;
+  invalid?: boolean;
 }
 
 export function TeachingLevelsMultiSelect({
@@ -21,14 +24,14 @@ export function TeachingLevelsMultiSelect({
   onChange,
   invalid,
 }: TeachingLevelsMultiSelectProps) {
-  const selected = levels.filter((level) => value.includes(level.id))
+  const selected = levels.filter((level) => value.includes(level.id));
 
   function toggle(levelId: number) {
     onChange(
       value.includes(levelId)
         ? value.filter((v) => v !== levelId)
-        : [...value, levelId]
-    )
+        : [...value, levelId],
+    );
   }
 
   return (
@@ -40,7 +43,7 @@ export function TeachingLevelsMultiSelect({
             type="button"
             aria-invalid={invalid}
             className={cn(
-              "border-input hover:border-ring/50 data-[popup-open]:border-ring aria-invalid:border-destructive flex min-h-11 w-full items-center justify-between gap-2 rounded-lg border bg-transparent px-3 py-1.5 text-left text-sm outline-none transition-colors"
+              "flex min-h-10 w-full items-center justify-between gap-2 rounded-none border border-transparent border-b-input bg-transparent px-0 py-2 text-left text-sm outline-none transition-[color,border-color] hover:border-b-ring/50 focus-visible:border-b-ring data-[popup-open]:border-b-ring aria-invalid:border-b-destructive",
             )}
           />
         }
@@ -52,7 +55,7 @@ export function TeachingLevelsMultiSelect({
             selected.map((level) => (
               <span
                 key={level.id}
-                className="bg-muted flex items-center gap-1 rounded px-2 py-0.5 text-xs"
+                className="bg-muted flex items-center gap-1 rounded-none px-2 py-0.5 text-xs"
               >
                 {level.nombre}
                 <span
@@ -62,8 +65,8 @@ export function TeachingLevelsMultiSelect({
                   className="text-muted-foreground hover:text-foreground cursor-pointer"
                   onPointerDown={(e) => e.stopPropagation()}
                   onClick={(e) => {
-                    e.stopPropagation()
-                    toggle(level.id)
+                    e.stopPropagation();
+                    toggle(level.id);
                   }}
                 >
                   <XIcon className="size-3" />
@@ -75,19 +78,22 @@ export function TeachingLevelsMultiSelect({
         <CaretDownIcon className="text-muted-foreground size-4 shrink-0" />
       </PopoverTrigger>
       <PopoverContent align="start" className="min-w-64 p-1">
-        {levels.map((level) => (
-          <label
-            key={level.id}
-            className="hover:bg-accent flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm"
-          >
-            <Checkbox
-              checked={value.includes(level.id)}
-              onCheckedChange={() => toggle(level.id)}
-            />
-            {level.nombre}
-          </label>
-        ))}
+        {levels.map((level) => {
+          const isSelected = value.includes(level.id);
+          return (
+            <button
+              key={level.id}
+              type="button"
+              aria-pressed={isSelected}
+              onClick={() => toggle(level.id)}
+              className="hover:bg-foreground/10 flex w-full cursor-pointer items-center justify-between gap-2 rounded-none px-2 py-1.5 text-left text-sm"
+            >
+              {level.nombre}
+              {isSelected && <CheckIcon className="size-4 shrink-0" />}
+            </button>
+          );
+        })}
       </PopoverContent>
     </Popover>
-  )
+  );
 }

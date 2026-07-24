@@ -7,12 +7,14 @@ import {
   resolveTeachingLevels,
   nextRatingScaleId,
 } from "../db/rating-scales"
+import { ratingSymbolsDb } from "../db/rating-symbols"
 import type {
   RatingScale,
   RatingScalesQueryFilters,
   RatingScalesQueryRequest,
   RatingScalesQueryResponse,
   CreateRatingScaleRequest,
+  RatingSymbol,
   TeachingLevel,
 } from "@/features/establishment/api/types/academic-period/rating-scales"
 
@@ -63,6 +65,11 @@ export const ratingScalesHandlers = [
   http.get("/api/teaching-levels", async () => {
     await delay(150)
     return HttpResponse.json<TeachingLevel[]>(teachingLevelsDb)
+  }),
+
+  http.get("/api/rating-symbols", async () => {
+    await delay(150)
+    return HttpResponse.json<RatingSymbol[]>(ratingSymbolsDb)
   }),
 
   httpQuery("/api/rating-scales/query", async ({ request }) => {
