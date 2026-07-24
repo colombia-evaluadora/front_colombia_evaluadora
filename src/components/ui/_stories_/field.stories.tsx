@@ -33,7 +33,7 @@ const meta = preview.meta({
       control: { type: 'select' },
       options: ['plain', 'outlined', 'filled', 'standard'],
       description:
-        'Estilo del campo. `plain` = label estático arriba. `outlined`/`filled`/`standard` activan el label flotante (sube al enfocar o al tener valor).',
+        'Estilo del campo. `plain` = label normal arriba. `outlined`/`filled`/`standard` colocan el label fijo en su posición (no ocupa el espacio del placeholder).',
       table: { defaultValue: { summary: 'plain' } },
     },
   },
@@ -62,13 +62,14 @@ Dos ejes **independientes** gobiernan el resultado:
 - ${BT}horizontal${BT}: label y control en fila. Para controles compactos (checkbox, switch).
 - ${BT}responsive${BT}: apila en angosto y pasa a fila cuando el ${BT}FieldGroup${BT} supera ${BT}@md${BT}.
 
-**Variante** — el estilo del campo:
-- ${BT}plain${BT}: label estático encima (comportamiento por defecto).
-- ${BT}outlined${BT}: caja con borde; el label flota sobre el borde superior.
-- ${BT}filled${BT}: fondo relleno; el label flota dentro, arriba.
-- ${BT}standard${BT}: subrayado; el label flota por encima de la línea.
+**Variante** — el estilo del campo. En las tres el label queda **fijo** (no baja
+a ocupar el espacio del placeholder):
+- ${BT}plain${BT}: label normal encima (comportamiento por defecto).
+- ${BT}outlined${BT}: caja con borde; el label fijo sobre el borde superior (notch).
+- ${BT}filled${BT}: fondo relleno; el label fijo dentro, arriba.
+- ${BT}standard${BT}: subrayado; el label fijo por encima de la línea.
 
-> El flotado se declara **una vez** en ${BT}Field${BT}: el ${BT}Input${BT} aporta el
+> La variante se declara **una vez** en ${BT}Field${BT}: el ${BT}Input${BT} aporta el
 > borde/fondo y el ${BT}FieldLabel${BT} la posición, leyendo la variante del contexto.
 
 ---
@@ -129,8 +130,8 @@ export const Default = meta.story({
 })
 
 /**
- * Las 4 variantes con el mismo campo. Los tres estilos flotantes muestran el
- * label ya arriba porque traen valor precargado.
+ * Las 4 variantes con el mismo campo. En `outlined`/`filled`/`standard` el label
+ * queda fijo arriba y el placeholder se sigue viendo dentro.
  */
 export const Variants = meta.story({
   parameters: {
@@ -152,15 +153,15 @@ export const Variants = meta.story({
       </Field>
       <Field variant="outlined">
         <FieldLabel htmlFor="v-outlined">outlined</FieldLabel>
-        <Input id="v-outlined" defaultValue="Jane Doe" />
+        <Input id="v-outlined" placeholder="Jane Doe" />
       </Field>
       <Field variant="filled">
         <FieldLabel htmlFor="v-filled">filled</FieldLabel>
-        <Input id="v-filled" defaultValue="jane@example.com" />
+        <Input id="v-filled" placeholder="jane@example.com" />
       </Field>
       <Field variant="standard">
         <FieldLabel htmlFor="v-standard">standard</FieldLabel>
-        <Input id="v-standard" defaultValue="123456789" />
+        <Input id="v-standard" placeholder="123456789" />
       </Field>
     </FieldGroup>
   ),

@@ -27,25 +27,18 @@ const inputVariants = cva(
 type InputProps = React.ComponentProps<"input"> &
   VariantProps<typeof inputVariants>
 
-function Input({ className, type, variant, placeholder, ...props }: InputProps) {
+function Input({ className, type, variant, ...props }: InputProps) {
   const fieldVariant = useFieldVariant()
+  // La variante se toma explícita del prop o, si no, de la del `Field`
+  // contenedor. Fuera de un `Field` (o con `plain`) cae a `standard`.
   const resolvedVariant =
     variant ?? (fieldVariant === "plain" ? "standard" : fieldVariant)
-  const isFloating = fieldVariant !== "plain"
-  const resolvedPlaceholder = isFloating ? (placeholder ?? " ") : placeholder
 
   return (
     <InputPrimitive
       type={type}
       data-slot="input"
-      placeholder={resolvedPlaceholder}
-      className={cn(
-        inputVariants({ variant: resolvedVariant }),
-        isFloating &&
-          placeholder != null &&
-          "placeholder:text-transparent focus:placeholder:text-muted-foreground",
-        className
-      )}
+      className={cn(inputVariants({ variant: resolvedVariant }), className)}
       {...props}
     />
   )

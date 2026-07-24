@@ -116,26 +116,21 @@ function FieldContent({ className, ...props }: React.ComponentProps<"div">) {
     />
   )
 }
+// Label flotante FIJO: queda siempre en la posición de arriba (no baja a
+// ocupar el espacio del placeholder ni anima al enfocar). Solo cambia de color
+// al enfocar. El placeholder del input queda siempre visible.
 const floatingLabelVariants = cva(
-  "pointer-events-none absolute z-10 w-fit origin-left font-normal normal-case tracking-normal text-muted-foreground transition-all duration-150 ease-out group-data-[disabled=true]/field:opacity-50 group-data-[invalid=true]/field:text-destructive",
+  "pointer-events-none absolute z-10 w-fit origin-left text-xs font-normal normal-case tracking-normal text-muted-foreground transition-colors group-data-[disabled=true]/field:opacity-50 group-data-[invalid=true]/field:text-destructive group-focus-within/field:text-ring",
   {
     variants: {
       variant: {
         plain: "",
-        outlined:
-          "left-3 top-5 -translate-y-1/2 text-base md:text-sm " +
-          "group-focus-within/field:left-2.5 group-focus-within/field:top-0 group-focus-within/field:-translate-y-1/2 group-focus-within/field:bg-background group-focus-within/field:px-1 group-focus-within/field:text-xs group-focus-within/field:text-ring " +
-          "group-has-[input:not(:placeholder-shown)]/field:left-2.5 group-has-[input:not(:placeholder-shown)]/field:top-0 group-has-[input:not(:placeholder-shown)]/field:-translate-y-1/2 group-has-[input:not(:placeholder-shown)]/field:bg-background group-has-[input:not(:placeholder-shown)]/field:px-1 group-has-[input:not(:placeholder-shown)]/field:text-xs",
-        // Reposo = centro del input relleno (h-14 → 28px).
-        filled:
-          "left-3 top-7 -translate-y-1/2 text-base md:text-sm " +
-          "group-focus-within/field:top-2 group-focus-within/field:translate-y-0 group-focus-within/field:text-xs group-focus-within/field:text-ring " +
-          "group-has-[input:not(:placeholder-shown)]/field:top-2 group-has-[input:not(:placeholder-shown)]/field:translate-y-0 group-has-[input:not(:placeholder-shown)]/field:text-xs",
-        // Reposo = centro del input (h-10 → 20px).
-        standard:
-          "left-0 top-5 -translate-y-1/2 text-base md:text-sm " +
-          "group-focus-within/field:top-0 group-focus-within/field:-translate-y-full group-focus-within/field:text-xs group-focus-within/field:text-ring " +
-          "group-has-[input:not(:placeholder-shown)]/field:top-0 group-has-[input:not(:placeholder-shown)]/field:-translate-y-full group-has-[input:not(:placeholder-shown)]/field:text-xs",
+        // Sobre el borde superior de la caja (notch).
+        outlined: "left-2.5 top-0 -translate-y-1/2 bg-background px-1",
+        // Dentro del relleno, arriba (el input reserva `pt-6`).
+        filled: "left-3 top-2",
+        // Por encima de la línea (el Field reserva `mt-3`).
+        standard: "left-0 top-0 -translate-y-full",
       },
     },
     defaultVariants: { variant: "plain" },
