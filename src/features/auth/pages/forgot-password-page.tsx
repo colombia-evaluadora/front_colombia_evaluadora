@@ -64,7 +64,7 @@ export function ForgotPasswordPage() {
           type="submit"
           color="primary"
           form={FORGOT_PASSWORD_FORM_ID}
-          disabled={forgotPasswordMutation.isPending}
+          disabled={forgotPasswordMutation.isPending }
           className="w-full"
         >
           Enviar enlace
