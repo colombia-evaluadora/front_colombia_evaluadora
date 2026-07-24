@@ -21,9 +21,15 @@ export function AuthLayout() {
           <img src={logo} alt="Colombia Evaluadora" className="h-13 w-auto" />
         </Link>
 
-        <Card className="w-full max-w-md gap-4">
+        <Card className="w-full max-w-lg gap-4">
           <Outlet />
         </Card>
+
+        <p className="text-muted text-sm mt-auto">
+          Versión 4.2.1 <span aria-hidden="true">|</span> © 2024 Colombia
+          Evaluadora ETC <span aria-hidden="true">|</span> Todos los derechos
+          reservados.
+        </p>
       </div>
     </div>
   )
