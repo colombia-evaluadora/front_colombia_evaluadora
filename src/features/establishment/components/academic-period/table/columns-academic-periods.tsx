@@ -12,6 +12,8 @@ import type {
   AcademicPeriod,
   AcademicPeriodStatus,
 } from "../../../api/types/academic-period/academic-period"
+import { DeleteAcademicPeriodDialog } from "../dialogs/dialog-delete-academic-period"
+import { EditAcademicPeriodButton } from "./edit-academic-period-button"
 
 // Las fechas llegan como "yyyy-MM-dd" (date-only). Parsearlas con
 // `new Date(...)` las interpreta como UTC medianoche y `toLocaleDateString`
@@ -102,6 +104,19 @@ export const columns: ColumnDef<AcademicPeriod>[] = [
       <DataTableColumnHeader column={column} title="Fecha finalización" />
     ),
     cell: ({ row }) => <span>{formatDate(row.original.endDate)}</span>,
+  },
+  {
+    id: "actions",
+    header: () => <span className="sr-only">Acciones</span>,
+    cell: ({ row }) => (
+      <div className="flex items-center justify-end gap-1">
+        <EditAcademicPeriodButton period={row.original} />
+        <DeleteAcademicPeriodDialog period={row.original} />
+      </div>
+    ),
+    enableSorting: false,
+    enableHiding: false,
+    size: 96,
   },
 ]
 

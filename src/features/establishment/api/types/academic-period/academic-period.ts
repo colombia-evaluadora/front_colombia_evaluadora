@@ -61,6 +61,11 @@ export type CreateAcademicPeriodRequest = Omit<
   config: Omit<AcademicPeriodConfig, "academicPeriodId">
 }
 
+export interface MutationResult {
+  status: "ok" | "error"
+  message: string
+}
+
 export type ExportFormat = "pdf" | "excel"
 
 export interface ExportResult {
