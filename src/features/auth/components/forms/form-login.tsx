@@ -77,6 +77,9 @@ export function LoginForm({ id, onSubmit }: LoginFormProps) {
                     aria-invalid={isInvalid}
                   />
                 </InputGroup>
+                {isInvalid && (
+                  <FieldError errors={field.state.meta.errors} />
+                )}
                 <div className="flex justify-end">
                   <Link
                     to={paths.auth.forgotUsername.path}
@@ -85,9 +88,6 @@ export function LoginForm({ id, onSubmit }: LoginFormProps) {
                     ¿Lo olvidaste?
                   </Link>
                 </div>
-                {isInvalid && (
-                  <FieldError errors={field.state.meta.errors} />
-                )}
               </Field>
             )
           }}
@@ -131,6 +131,10 @@ export function LoginForm({ id, onSubmit }: LoginFormProps) {
                     </InputGroupButton>
                   </InputGroupAddon>
                 </InputGroup>
+                {isInvalid && (
+                  <FieldError errors={field.state.meta.errors} />
+                )}
+                
                 <div className="flex justify-end">
                   <Link
                     to={paths.auth.forgotPassword.path}
@@ -139,9 +143,6 @@ export function LoginForm({ id, onSubmit }: LoginFormProps) {
                     ¿La olvidaste?
                   </Link>
                 </div>
-                {isInvalid && (
-                  <FieldError errors={field.state.meta.errors} />
-                )}
               </Field>
             )
           }}
