@@ -88,7 +88,7 @@ export function CreateEvaluationPeriodDialog() {
         <PlusCircleIcon weight="fill" data-icon="inline-start" />
         Agregar
       </DialogTrigger>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>Agregar periodo de evaluación</DialogTitle>
           <DialogDescription>
@@ -102,7 +102,7 @@ export function CreateEvaluationPeriodDialog() {
             e.preventDefault()
             form.handleSubmit()
           }}
-          className="grid gap-x-4 gap-y-4 sm:grid-cols-2"
+          className="grid gap-x-4 gap-y-4 sm:grid-cols-3"
         >
           <form.Field name="codigo">
             {(field) => {
@@ -231,7 +231,7 @@ export function CreateEvaluationPeriodDialog() {
 
           <form.Field name="estado">
             {(field) => (
-              <Field className="sm:col-span-2">
+              <Field className="sm:col-span-3">
                 <FieldLabel htmlFor={field.name}>Estado</FieldLabel>
                 <Select
                   value={field.state.value}

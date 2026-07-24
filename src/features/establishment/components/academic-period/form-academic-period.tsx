@@ -471,7 +471,7 @@ function BreakEditor({ onAdd }: { onAdd: (brk: Break) => void }) {
 
   return (
     <div className="flex items-center gap-2">
-      <div className="border-input flex items-center gap-2 rounded-lg border px-3 py-1.5">
+      <div className="border-input flex items-center gap-2 border px-3 py-1.5">
         <BreakTimeTrigger
           value={startTime}
           onChange={setStartTime}

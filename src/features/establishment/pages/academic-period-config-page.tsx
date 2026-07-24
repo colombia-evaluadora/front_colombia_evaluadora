@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { SpinnerIcon, XIcon } from "@phosphor-icons/react"
+import { SpinnerIcon } from "@phosphor-icons/react"
 import { Link, useNavigate } from "@tanstack/react-router"
 
 import { Button } from "@/components/ui/button"

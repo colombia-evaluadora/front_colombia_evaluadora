@@ -256,7 +256,7 @@ export function CreateRatingScaleDialog() {
             </Button>
           </div>
 
-          <div className="overflow-x-auto rounded-lg border">
+          <div className="overflow-x-auto border">
             <Table>
               <TableHeader>
                 <TableRow>
