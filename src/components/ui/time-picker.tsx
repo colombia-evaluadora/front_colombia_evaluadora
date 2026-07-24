@@ -67,7 +67,7 @@ export function TimePicker({ value, onChange, className }: TimePickerProps) {
         </span>
         <Button
           type="button"
-          variant="ghost"
+          variant="fill"
           size="icon-sm"
           onClick={() => setView((v) => (v === "text" ? "analog" : "text"))}
           aria-label={

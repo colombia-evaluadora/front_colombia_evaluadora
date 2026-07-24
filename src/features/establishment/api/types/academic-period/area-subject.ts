@@ -29,6 +29,11 @@ export type CreateAreaSubjectRequest = AreaSubject
 
 export type UpdateAreaSubjectRequest = AreaSubject
 
+export interface MutationResult {
+  status: "ok" | "error"
+  message: string
+}
+
 export type ExportFormat = "pdf" | "excel"
 
 export interface ExportResult {

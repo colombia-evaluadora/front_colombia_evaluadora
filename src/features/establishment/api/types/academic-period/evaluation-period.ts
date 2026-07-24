@@ -1,4 +1,4 @@
-export type EvaluationPeriodStatus = "Habilitado" | "Cargado" | "En curso" | "No iniciado"
+export type EvaluationPeriodStatus = "Calificable" | "NO Calificable" | "Habilitados para algunas asignaturas" | "En Recuperaciones"
 
 export interface EvaluationPeriod {
   codigo: number

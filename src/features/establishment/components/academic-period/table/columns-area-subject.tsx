@@ -6,6 +6,8 @@ import { DataTableColumnHeader } from "@/components/data-table"
 import type {
   AreaSubject,
 } from "../../../api/types/academic-period/area-subject"
+import { DeleteAreaSubjectDialog } from "../dialogs/dialog-delete-area-subject"
+import { EditAreaSubjectButton } from "./edit-area-subject-button"
 
 export const columns: ColumnDef<AreaSubject>[] = [
   {
@@ -63,6 +65,19 @@ export const columns: ColumnDef<AreaSubject>[] = [
       <DataTableColumnHeader column={column} title="Orden de reporte" />
     ),
     cell: ({ row }) => <span>{row.original.ordenReportes}</span>,
+  },
+  {
+    id: "actions",
+    header: () => <span className="sr-only">Acciones</span>,
+    cell: ({ row }) => (
+      <div className="flex items-center justify-end gap-1">
+        <EditAreaSubjectButton areaSubject={row.original} />
+        <DeleteAreaSubjectDialog areaSubject={row.original} />
+      </div>
+    ),
+    enableSorting: false,
+    enableHiding: false,
+    size: 96,
   },
 ]
 

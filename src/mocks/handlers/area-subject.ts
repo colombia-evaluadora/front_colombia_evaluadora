@@ -141,4 +141,22 @@ export const areaSubjectsHandlers = [
 
     return HttpResponse.json(body, { status: 201 })
   }),
+
+  http.delete("/api/area-subjects/:codigo", async ({ params }) => {
+    await delay(300)
+    const index = areaSubjectsDb.findIndex(
+      (row) => String(row.codigo) === String(params.codigo)
+    )
+    if (index === -1) {
+      return HttpResponse.json(
+        { status: "error", message: "Área/asignatura no encontrada." },
+        { status: 404 }
+      )
+    }
+    areaSubjectsDb.splice(index, 1)
+    return HttpResponse.json({
+      status: "ok",
+      message: "Área/asignatura eliminada.",
+    })
+  }),
 ]
