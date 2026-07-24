@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router"
 import {
   ArrowLeftIcon,
+  ArrowRightIcon,
   PasswordIcon,
   ShieldIcon,
 } from "@/components/ui/icons"
@@ -13,6 +14,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { Spinner } from "@/components/ui/spinner"
 import { paths } from "@/config/paths"
 
 import { useForgotPassword } from "../api/mutations/forgot-password"
@@ -66,6 +68,11 @@ export function ForgotPasswordPage() {
           className="w-full"
         >
           Enviar enlace
+          {forgotPasswordMutation.isPending ? (
+            <Spinner data-icon="inline-end" />
+          ) : (
+            <ArrowRightIcon data-icon="inline-end" />
+          )}
         </Button>
         <Button
           render={<Link to={paths.auth.login.path} />}
