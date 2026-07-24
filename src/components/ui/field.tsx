@@ -6,6 +6,11 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
+import {
+  FieldVariantContext,
+  isFloatingVariant,
+  useFieldVariant,
+} from "@/hooks/use-field-variant"
 
 function FieldSet({ className, ...props }: React.ComponentProps<"fieldset">) {
   return (
@@ -52,7 +57,7 @@ function FieldGroup({ className, ...props }: React.ComponentProps<"div">) {
 }
 
 const fieldVariants = cva(
-  "group/field flex w-full gap-3 data-[invalid=true]:text-destructive",
+  "group/field flex w-full gap-2 data-[invalid=true]:text-destructive",
   {
     variants: {
       orientation: {
@@ -62,9 +67,19 @@ const fieldVariants = cva(
         responsive:
           "flex-col *:w-full @md/field-group:flex-row @md/field-group:items-center @md/field-group:*:w-auto @md/field-group:has-[>[data-slot=field-content]]:items-start @md/field-group:*:data-[slot=field-label]:flex-auto [&>.sr-only]:w-auto @md/field-group:has-[>[data-slot=field-content]]:[&>[role=checkbox],[role=radio]]:mt-px",
       },
+      variant: {
+        plain: "",
+        outlined: "relative gap-1.5 [&>[data-slot=field-label]]:w-fit",
+        filled: "relative gap-1.5 [&>[data-slot=field-label]]:w-fit",
+        // `standard` flota el label por encima del input: reserva espacio
+        // arriba (`mt-3`) para no pisar el campo anterior. El margen no afecta
+        // el `top` del label (se mide desde el padding-box del Field).
+        standard: "relative mt-3 gap-1.5 [&>[data-slot=field-label]]:w-fit",
+      },
     },
     defaultVariants: {
       orientation: "vertical",
+      variant: "plain",
     },
   }
 )
@@ -72,16 +87,20 @@ const fieldVariants = cva(
 function Field({
   className,
   orientation = "vertical",
+  variant = "plain",
   ...props
 }: React.ComponentProps<"div"> & VariantProps<typeof fieldVariants>) {
   return (
-    <div
-      role="group"
-      data-slot="field"
-      data-orientation={orientation}
-      className={cn(fieldVariants({ orientation }), className)}
-      {...props}
-    />
+    <FieldVariantContext.Provider value={variant ?? "plain"}>
+      <div
+        role="group"
+        data-slot="field"
+        data-orientation={orientation}
+        data-variant={variant}
+        className={cn(fieldVariants({ orientation, variant }), className)}
+        {...props}
+      />
+    </FieldVariantContext.Provider>
   )
 }
 
@@ -97,11 +116,48 @@ function FieldContent({ className, ...props }: React.ComponentProps<"div">) {
     />
   )
 }
+const floatingLabelVariants = cva(
+  "pointer-events-none absolute z-10 w-fit origin-left font-normal normal-case tracking-normal text-muted-foreground transition-all duration-150 ease-out group-data-[disabled=true]/field:opacity-50 group-data-[invalid=true]/field:text-destructive",
+  {
+    variants: {
+      variant: {
+        plain: "",
+        outlined:
+          "left-3 top-5 -translate-y-1/2 text-base md:text-sm " +
+          "group-focus-within/field:left-2.5 group-focus-within/field:top-0 group-focus-within/field:-translate-y-1/2 group-focus-within/field:bg-background group-focus-within/field:px-1 group-focus-within/field:text-xs group-focus-within/field:text-ring " +
+          "group-has-[input:not(:placeholder-shown)]/field:left-2.5 group-has-[input:not(:placeholder-shown)]/field:top-0 group-has-[input:not(:placeholder-shown)]/field:-translate-y-1/2 group-has-[input:not(:placeholder-shown)]/field:bg-background group-has-[input:not(:placeholder-shown)]/field:px-1 group-has-[input:not(:placeholder-shown)]/field:text-xs",
+        // Reposo = centro del input relleno (h-14 → 28px).
+        filled:
+          "left-3 top-7 -translate-y-1/2 text-base md:text-sm " +
+          "group-focus-within/field:top-2 group-focus-within/field:translate-y-0 group-focus-within/field:text-xs group-focus-within/field:text-ring " +
+          "group-has-[input:not(:placeholder-shown)]/field:top-2 group-has-[input:not(:placeholder-shown)]/field:translate-y-0 group-has-[input:not(:placeholder-shown)]/field:text-xs",
+        // Reposo = centro del input (h-10 → 20px).
+        standard:
+          "left-0 top-5 -translate-y-1/2 text-base md:text-sm " +
+          "group-focus-within/field:top-0 group-focus-within/field:-translate-y-full group-focus-within/field:text-xs group-focus-within/field:text-ring " +
+          "group-has-[input:not(:placeholder-shown)]/field:top-0 group-has-[input:not(:placeholder-shown)]/field:-translate-y-full group-has-[input:not(:placeholder-shown)]/field:text-xs",
+      },
+    },
+    defaultVariants: { variant: "plain" },
+  }
+)
 
 function FieldLabel({
   className,
   ...props
 }: React.ComponentProps<typeof Label>) {
+  const variant = useFieldVariant()
+
+  if (isFloatingVariant(variant)) {
+    return (
+      <Label
+        data-slot="field-label"
+        className={cn(floatingLabelVariants({ variant }), className)}
+        {...props}
+      />
+    )
+  }
+
   return (
     <Label
       data-slot="field-label"
