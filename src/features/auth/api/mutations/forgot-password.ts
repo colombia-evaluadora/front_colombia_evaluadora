@@ -1,11 +1,14 @@
 import { useMutation } from "@tanstack/react-query"
 
+import { env } from "@/config/env"
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
 import type { ForgotPasswordResponse } from "../types/password-recovery"
 
 function forgotPassword(email: string): Promise<ForgotPasswordResponse> {
-  return api.get("/sso-admin/forgotPassword", { params: { email } })
+  return api.get("/sso-admin/forgotPassword", {
+    params: { email, app: env.NAME },
+  })
 }
 
 interface UseForgotPasswordOptions {
