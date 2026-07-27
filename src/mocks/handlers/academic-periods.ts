@@ -2,14 +2,21 @@
 
 import { http, HttpResponse, delay } from "msw"
 import { httpQuery } from "./_http-query"
-import { academicPeriodsDb, sedesLookup } from "../db/academic-periods"
+import {
+  academicPeriodConfigsDb,
+  academicPeriodsDb,
+  sedesLookup,
+} from "../db/academic-periods"
 import type {
   AcademicPeriod,
+  AcademicPeriodConfig,
+  AcademicPeriodDetail,
   AcademicPeriodsQueryRequest,
   AcademicPeriodsQueryResponse,
   CreateAcademicPeriodRequest,
   ExportFormat,
   ExportResult,
+  UpdateAcademicPeriodRequest,
 } from "@/features/establishment/api/types/academic-period/academic-period"
 
 const EXPORT_FORMAT_LABELS: Record<ExportFormat, string> = {
@@ -114,14 +121,80 @@ export const academicPeriodsHandlers = [
     const { config, ...periodData } = body
     const sede = sedesLookup.find((s) => s.id === periodData.sedeId)
 
+    const id =
+      academicPeriodsDb.reduce((max, p) => Math.max(max, p.id), 0) + 1
     const newPeriod: AcademicPeriod = {
-      id: academicPeriodsDb.length + 1,
+      id,
       sedeName: sede?.name ?? "—",
       ...periodData,
     }
     academicPeriodsDb.push(newPeriod)
+    academicPeriodConfigsDb.push({ academicPeriodId: id, ...config })
 
     return HttpResponse.json(newPeriod, { status: 201 })
+  }),
+
+  http.get("/api/academic-periods/:id", async ({ params }) => {
+    await delay(250)
+    const period = academicPeriodsDb.find(
+      (p) => String(p.id) === String(params.id)
+    )
+    if (!period) {
+      return HttpResponse.json(
+        { status: "error", message: "Periodo no encontrado." },
+        { status: 404 }
+      )
+    }
+    const config =
+      academicPeriodConfigsDb.find((c) => c.academicPeriodId === period.id) ??
+      ({
+        academicPeriodId: period.id,
+        jornadaId: 0,
+        reservationEnabled: true,
+        defaultBlocksCount: null,
+        scheduleStartTime: null,
+        scheduleEndTime: null,
+        breaks: [],
+      } satisfies AcademicPeriodConfig)
+
+    return HttpResponse.json<AcademicPeriodDetail>({ ...period, config })
+  }),
+
+  http.patch("/api/academic-periods/:id", async ({ params, request }) => {
+    await delay(400)
+    const index = academicPeriodsDb.findIndex(
+      (p) => String(p.id) === String(params.id)
+    )
+    if (index === -1) {
+      return HttpResponse.json(
+        { status: "error", message: "Periodo no encontrado." },
+        { status: 404 }
+      )
+    }
+
+    const body = (await request.json()) as UpdateAcademicPeriodRequest
+    const { config, ...periodData } = body
+    const id = academicPeriodsDb[index].id
+    const sede = sedesLookup.find((s) => s.id === periodData.sedeId)
+
+    academicPeriodsDb[index] = {
+      ...academicPeriodsDb[index],
+      ...periodData,
+      id,
+      sedeName: sede?.name ?? academicPeriodsDb[index].sedeName,
+    }
+
+    const configIndex = academicPeriodConfigsDb.findIndex(
+      (c) => c.academicPeriodId === id
+    )
+    const nextConfig: AcademicPeriodConfig = { academicPeriodId: id, ...config }
+    if (configIndex === -1) {
+      academicPeriodConfigsDb.push(nextConfig)
+    } else {
+      academicPeriodConfigsDb[configIndex] = nextConfig
+    }
+
+    return HttpResponse.json({ status: "ok", message: "Periodo actualizado." })
   }),
 
   http.delete("/api/academic-periods/:id", async ({ params }) => {

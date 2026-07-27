@@ -36,7 +36,6 @@ export interface AcademicPeriodsQueryFilters {
   sedeName?: string
   schoolYearId?: number
   status?: AcademicPeriodStatus[]
-  // Rango sobre `startDate` (yyyy-MM-dd, inclusivo).
   startFrom?: string
   startTo?: string
 }
@@ -59,6 +58,12 @@ export type CreateAcademicPeriodRequest = Omit<
   "id" | "sedeName"
 > & {
   config: Omit<AcademicPeriodConfig, "academicPeriodId">
+}
+
+export type UpdateAcademicPeriodRequest = CreateAcademicPeriodRequest
+
+export interface AcademicPeriodDetail extends AcademicPeriod {
+  config: AcademicPeriodConfig
 }
 
 export interface MutationResult {
