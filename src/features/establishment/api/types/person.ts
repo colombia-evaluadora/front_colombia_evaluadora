@@ -1,5 +1,4 @@
 import type { CatalogItem } from "./catalog"
-import type { Municipality } from "./location"
 
 export interface Person {
 
@@ -25,7 +24,7 @@ export interface Person {
 
     phone: string
 
-    address: string
+    password: string
 
-    expeditionMunicipality: Municipality
+    confirmPassword: string
 }

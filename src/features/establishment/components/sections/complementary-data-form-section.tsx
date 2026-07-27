@@ -14,15 +14,25 @@ import { GENDERS } from "@/mocks/db/catalogs/genders"
 import type { CatalogItem } from "@/features/establishment/api/types/catalog"
 import { useCatalogQuery } from "../../api/query/use-catalogs"
 import { CATALOGS } from "@/lib/catalogs"
+import type { EstablishmentDetails } from "../../api/types/establishment"
 
-const {data: calendarios = []} = useCatalogQuery<CatalogItem>(CATALOGS.CALENDARIOS)
-const {data: rangosTarifas = []} = useCatalogQuery<CatalogItem>(CATALOGS.RANGO_TARIFAS)
-const {data: idiomas = []} = useCatalogQuery<CatalogItem>(CATALOGS.IDIOMAS)
-const {data: costRegimen = []} = useCatalogQuery<CatalogItem>(CATALOGS.COST_REGIMEN)
-const {data: disabilities = []} = useCatalogQuery<CatalogItem>(CATALOGS.DISABILITIES)
-const {data: licenseStatuses = []} = useCatalogQuery<CatalogItem>(CATALOGS.LICENSE_STATUSES)
+interface ComplementaryDataFormSectionProps {
+    value: EstablishmentDetails["additionalInfo"]
+    onChange: (value: EstablishmentDetails["additionalInfo"]) => void
+    invalidFields?: string[]
+    showValidation?: boolean
+}
 
-export function ComplementaryDataFormSection() {
+export function ComplementaryDataFormSection({ value, onChange, invalidFields = [], showValidation = false }: ComplementaryDataFormSectionProps) {
+    const isInvalid = (field: string) => showValidation && invalidFields.includes(field)
+    
+    const {data: calendarios = []} = useCatalogQuery<CatalogItem>(CATALOGS.CALENDARIOS)
+    const {data: rangosTarifas = []} = useCatalogQuery<CatalogItem>(CATALOGS.RANGO_TARIFAS)
+    const {data: idiomas = []} = useCatalogQuery<CatalogItem>(CATALOGS.IDIOMAS)
+    const {data: costRegimen = []} = useCatalogQuery<CatalogItem>(CATALOGS.COST_REGIMEN)
+    const {data: disabilities = []} = useCatalogQuery<CatalogItem>(CATALOGS.DISABILITIES)
+    const {data: licenseStatuses = []} = useCatalogQuery<CatalogItem>(CATALOGS.LICENSE_STATUSES)
+
     return(
         <>
             {/* Complementary information subsection */}
@@ -30,7 +40,7 @@ export function ComplementaryDataFormSection() {
                 Información complementaria
             </h3>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <Field orientation="vertical">
+                    <Field orientation="vertical" data-invalid={isInvalid("additionalInfo.approvalResolution") ? "true" : undefined}>
                         <FieldLabel htmlFor="approval-resolution">
                             Resolución de aprobación
                         </FieldLabel>
@@ -38,15 +48,26 @@ export function ComplementaryDataFormSection() {
                         <Input
                             id="approval-resolution"
                             placeholder="Resolución No. 0123 Mayo de 2001"
+                            value={value.approvalResolution}
+                            aria-invalid={isInvalid("additionalInfo.approvalResolution")}
+                            onChange={(event) => onChange({ ...value, approvalResolution: event.target.value })}
                         />
                     </Field>
 
-                    <Field orientation="vertical">
+                    <Field orientation="vertical" data-invalid={isInvalid("additionalInfo.teachingLanguage") ? "true" : undefined}>
                         <FieldLabel htmlFor="teaching-language">
                             Idioma de enseñanza
                         </FieldLabel>
 
-                        <Select id="teaching-language">
+                        <Select
+                            id="teaching-language"
+                            aria-invalid={isInvalid("additionalInfo.teachingLanguage")}
+                            value={value.teachingLanguage.id}
+                            onValueChange={(selectedValue) => {
+                                const option = idiomas.find((item) => item.id === selectedValue)
+                                onChange({ ...value, teachingLanguage: option ?? { id: selectedValue ?? "", code: selectedValue ?? "", name: selectedValue ?? "" } })
+                            }}
+                        >
                             <SelectTrigger>
                                 <SelectValue placeholder="Seleccione" />
                             </SelectTrigger>
@@ -64,9 +85,17 @@ export function ComplementaryDataFormSection() {
                     </Field>
                 </div>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <Field orientation="vertical" className="w-full">
+                    <Field orientation="vertical" className="w-full" data-invalid={isInvalid("additionalInfo.calendar") ? "true" : undefined}>
                         <FieldLabel htmlFor="establishment-calendario">Calendario</FieldLabel>
-                        <Select id="establishment-calendario">
+                        <Select
+                            id="establishment-calendario"
+                            aria-invalid={isInvalid("additionalInfo.calendar")}
+                            value={value.calendar.id}
+                            onValueChange={(selectedValue) => {
+                                const option = calendarios.find((item) => item.id === selectedValue)
+                                onChange({ ...value, calendar: option ?? { id: selectedValue ?? "", code: selectedValue ?? "", name: selectedValue ?? "" } })
+                            }}
+                        >
                             <SelectTrigger className="w-full">
                                 <SelectValue placeholder="Seleccione" />
                             </SelectTrigger>
@@ -81,12 +110,20 @@ export function ComplementaryDataFormSection() {
                             </SelectContent>
                         </Select>
                     </Field>
-                    <Field orientation="vertical">
+                    <Field orientation="vertical" data-invalid={isInvalid("additionalInfo.costRegime") ? "true" : undefined}>
                         <FieldLabel htmlFor="cost-regime">
                             Régimen de costo
                         </FieldLabel>
 
-                        <Select id="cost-regime">
+                        <Select
+                            id="cost-regime"
+                            aria-invalid={isInvalid("additionalInfo.costRegime")}
+                            value={value.costRegime.id}
+                            onValueChange={(selectedValue) => {
+                                const option = costRegimen.find((item) => item.id === selectedValue)
+                                onChange({ ...value, costRegime: option ?? { id: selectedValue ?? "", code: selectedValue ?? "", name: selectedValue ?? "" } })
+                            }}
+                        >
                             <SelectTrigger>
                                 <SelectValue placeholder="Seleccione" />
                             </SelectTrigger>
@@ -104,9 +141,17 @@ export function ComplementaryDataFormSection() {
                     </Field>
                 </div>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <Field orientation="vertical" className="w-full">
+                    <Field orientation="vertical" className="w-full" data-invalid={isInvalid("additionalInfo.populationGender") ? "true" : undefined}>
                         <FieldLabel htmlFor="establishment-genero">Género de la población atendida</FieldLabel>
-                        <Select id="establishment-genero">
+                        <Select
+                            id="establishment-genero"
+                            aria-invalid={isInvalid("additionalInfo.populationGender")}
+                            value={value.populationGender.id}
+                            onValueChange={(selectedValue) => {
+                                const option = GENDERS.find((item) => item.id === selectedValue)
+                                onChange({ ...value, populationGender: option ?? { id: selectedValue ?? "", code: selectedValue ?? "", name: selectedValue ?? "" } })
+                            }}
+                        >
                             <SelectTrigger className="w-full">
                                 <SelectValue placeholder="Seleccione" />
                             </SelectTrigger>
@@ -122,9 +167,17 @@ export function ComplementaryDataFormSection() {
                         </Select>
                     </Field>
 
-                    <Field orientation="vertical" className="w-full">
+                    <Field orientation="vertical" className="w-full" data-invalid={isInvalid("additionalInfo.tuitionRange") ? "true" : undefined}>
                         <FieldLabel htmlFor="establishment-rango">Rango tarifas</FieldLabel>
-                        <Select id="establishment-rango">
+                        <Select
+                            id="establishment-rango"
+                            aria-invalid={isInvalid("additionalInfo.tuitionRange")}
+                            value={value.tuitionRange.id}
+                            onValueChange={(selectedValue) => {
+                                const option = rangosTarifas.find((item) => item.id === selectedValue)
+                                onChange({ ...value, tuitionRange: option ?? { id: selectedValue ?? "", code: selectedValue ?? "", name: selectedValue ?? "" } })
+                            }}
+                        >
                             <SelectTrigger className="w-full">
                                 <SelectValue placeholder="Seleccione" />
                             </SelectTrigger>
@@ -141,12 +194,20 @@ export function ComplementaryDataFormSection() {
                     </Field>
                 </div>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <Field orientation="vertical">
+                    <Field orientation="vertical" data-invalid={isInvalid("additionalInfo.disabilityType") ? "true" : undefined}>
                         <FieldLabel htmlFor="disabilities">
                             Discapacidades atendidas
                         </FieldLabel>
 
-                        <Select id="disabilities">
+                        <Select
+                            id="disabilities"
+                            aria-invalid={isInvalid("additionalInfo.disabilityType")}
+                            value={value.disabilityType.id}
+                            onValueChange={(selectedValue) => {
+                                const option = disabilities.find((item) => item.id === selectedValue)
+                                onChange({ ...value, disabilityType: option ?? { id: selectedValue ?? "", code: selectedValue ?? "", name: selectedValue ?? "" } })
+                            }}
+                        >
                             <SelectTrigger>
                                 <SelectValue placeholder="Seleccione" />
                             </SelectTrigger>
@@ -163,12 +224,20 @@ export function ComplementaryDataFormSection() {
                         </Select>
                     </Field>
 
-                    <Field orientation="vertical">
+                    <Field orientation="vertical" data-invalid={isInvalid("additionalInfo.licenseStatus") ? "true" : undefined}>
                         <FieldLabel htmlFor="license-status">
                             Licencia de funcionamiento
                         </FieldLabel>
 
-                        <Select id="license-status">
+                        <Select
+                            id="license-status"
+                            aria-invalid={isInvalid("additionalInfo.licenseStatus")}
+                            value={value.licenseStatus.id}
+                            onValueChange={(selectedValue) => {
+                                const option = licenseStatuses.find((item) => item.id === selectedValue)
+                                onChange({ ...value, licenseStatus: option ?? { id: selectedValue ?? "", code: selectedValue ?? "", name: selectedValue ?? "" } })
+                            }}
+                        >
                             <SelectTrigger>
                                 <SelectValue placeholder="Seleccione" />
                             </SelectTrigger>
@@ -188,7 +257,11 @@ export function ComplementaryDataFormSection() {
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <Field orientation="vertical" className="w-full">
                         <FieldLabel>Atención a población perteneciente a etnias</FieldLabel>
-                        <RadioGroup defaultValue="si" className="flex gap-3">
+                        <RadioGroup
+                            value={value.ethnicAttention ? "si" : "no"}
+                            onValueChange={(selectedValue) => onChange({ ...value, ethnicAttention: selectedValue === "si" })}
+                            className="flex gap-3"
+                        >
                             <label className="flex items-center gap-2">
                                 <RadioGroupItem value="si" id="etnias-si" />
                                 Sí
@@ -207,6 +280,8 @@ export function ComplementaryDataFormSection() {
                         <Input
                             id="license-date"
                             type="date"
+                            value={value.licenseDate ?? ""}
+                            onChange={(event) => onChange({ ...value, licenseDate: event.target.value || null })}
                         />
                     </Field>
                 </div>
@@ -216,7 +291,11 @@ export function ComplementaryDataFormSection() {
                             Atención a población con talentos adicionales
                         </FieldLabel>
 
-                        <RadioGroup defaultValue="no" className="flex gap-3">
+                        <RadioGroup
+                            value={value.giftedAttention ? "si" : "no"}
+                            onValueChange={(selectedValue) => onChange({ ...value, giftedAttention: selectedValue === "si" })}
+                            className="flex gap-3"
+                        >
 
                             <label className="flex items-center gap-2">
                                 <RadioGroupItem value="si" id="talentos-si" />
@@ -232,7 +311,11 @@ export function ComplementaryDataFormSection() {
                     </Field>
                     <Field orientation="vertical" className="w-full">
                         <FieldLabel>Ofrece subsidio</FieldLabel>
-                        <RadioGroup defaultValue="no" className="flex gap-3">
+                        <RadioGroup
+                            value={value.subsidy ? "si" : "no"}
+                            onValueChange={(selectedValue) => onChange({ ...value, subsidy: selectedValue === "si" })}
+                            className="flex gap-3"
+                        >
                             <label className="flex items-center gap-2">
                                 <RadioGroupItem value="si" id="subsidio-si" />
                                 Sí

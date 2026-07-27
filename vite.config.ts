@@ -33,6 +33,13 @@ export default defineConfig(({ mode }) => {
   },
   test: {
     projects: [{
+      test: {
+        name: 'node',
+        environment: 'node',
+        include: ['src/**/*.test.{ts,tsx}'],
+        exclude: ['src/**/*.stories.*', 'src/**/*.mdx'],
+      }
+    }, {
       extends: true,
       plugins: [
       storybookTest({
