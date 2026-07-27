@@ -11,7 +11,12 @@ import { useStudyPlansQuery } from "../../../api/query/use-study-plans-query"
 import { columns } from "../table/columns-study-plan"
 import { CreateStudyPlanDialog } from "../dialogs/dialog-create-study-plan"
 
-export function TabStudyPlan() {
+interface TabStudyPlanProps {
+  academicPeriodId?: number
+  gradeId?: number
+}
+
+export function TabStudyPlan({ academicPeriodId, gradeId }: TabStudyPlanProps) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [pageIndex, setPageIndex] = useState(0)
   const [pageSize, setPageSize] = useState(10)
@@ -21,6 +26,8 @@ export function TabStudyPlan() {
     sorting,
     pageIndex,
     pageSize,
+    academicPeriodId,
+    gradeId,
   })
 
   const goToPage = setPageIndex
@@ -45,7 +52,10 @@ export function TabStudyPlan() {
   return (
     <>
       <div className="mb-2 flex justify-end">
-        <CreateStudyPlanDialog />
+        <CreateStudyPlanDialog
+          academicPeriodId={academicPeriodId}
+          gradeId={gradeId}
+        />
       </div>
 
       <DataTable

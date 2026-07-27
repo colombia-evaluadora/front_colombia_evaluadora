@@ -1,6 +1,6 @@
 "use no memo"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import type { SortingState } from "@tanstack/react-table"
 import { FilePdfIcon, FileXlsIcon } from "@phosphor-icons/react"
 
@@ -10,15 +10,16 @@ import { Button } from "@/components/ui/button"
 import { useDataTable } from "@/hooks/use-data-table"
 
 import { useGradesQuery } from "../../../api/query/use-grades-query"
-import { columns } from "../table/columns-grades"
+import { createGradeColumns } from "../table/columns-grades"
 import { CreateGradeDialog } from "../dialogs/dialog-create-grade"
 import type { Jornada } from "../schedule/schedule-data"
 
 interface TabGradesProps {
   jornada: Jornada
+  academicPeriodId?: number
 }
 
-export function TabGrades({ jornada }: TabGradesProps) {
+export function TabGrades({ jornada, academicPeriodId }: TabGradesProps) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [pageIndex, setPageIndex] = useState(0)
   const [pageSize, setPageSize] = useState(10)
@@ -28,6 +29,7 @@ export function TabGrades({ jornada }: TabGradesProps) {
     sorting,
     pageIndex,
     pageSize,
+    academicPeriodId,
   })
 
   const goToPage = setPageIndex
@@ -35,6 +37,11 @@ export function TabGrades({ jornada }: TabGradesProps) {
     setPageSize(size)
     setPageIndex(0)
   }
+
+  const columns = useMemo(
+    () => createGradeColumns({ jornada, academicPeriodId }),
+    [jornada, academicPeriodId]
+  )
 
   const { table } = useDataTable({
     columns,
@@ -70,7 +77,7 @@ export function TabGrades({ jornada }: TabGradesProps) {
             <FileXlsIcon className="text-success" />
           </Button>
         </div>
-        <CreateGradeDialog jornada={jornada} />
+        <CreateGradeDialog jornada={jornada} academicPeriodId={academicPeriodId} />
       </div>
 
       <DataTable

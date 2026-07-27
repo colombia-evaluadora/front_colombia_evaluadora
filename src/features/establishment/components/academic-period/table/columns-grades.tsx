@@ -5,8 +5,20 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { DataTableColumnHeader } from "@/components/data-table"
 
 import type { Grade } from "../../../api/types/academic-period/grade"
+import type { Jornada } from "../schedule/schedule-data"
+import { CreateGradeDialog } from "../dialogs/dialog-create-grade"
+import { DeleteGradeDialog } from "../dialogs/dialog-delete-grade"
 
-export const columns: ColumnDef<Grade>[] = [
+interface GradeColumnsOptions {
+  jornada: Jornada
+  academicPeriodId?: number
+}
+
+export function createGradeColumns({
+  jornada,
+  academicPeriodId,
+}: GradeColumnsOptions): ColumnDef<Grade>[] {
+  return [
   {
     id: "select",
     header: ({ table }) => (
@@ -65,6 +77,24 @@ export const columns: ColumnDef<Grade>[] = [
       </Badge>
     ),
   },
-]
+  {
+    id: "actions",
+    header: () => <span className="sr-only">Acciones</span>,
+    cell: ({ row }) => (
+      <div className="flex items-center justify-end gap-1">
+        <CreateGradeDialog
+          grade={row.original}
+          jornada={jornada}
+          academicPeriodId={academicPeriodId}
+        />
+        <DeleteGradeDialog grade={row.original} />
+      </div>
+    ),
+    enableSorting: false,
+    enableHiding: false,
+    size: 96,
+  },
+  ]
+}
 
 export type GradeTable = Table<Grade>
