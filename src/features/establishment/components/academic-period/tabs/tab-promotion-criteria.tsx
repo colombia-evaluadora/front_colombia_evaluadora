@@ -1,9 +1,14 @@
+import { useEffect } from "react"
 import { useForm } from "@tanstack/react-form"
 import { toast } from "sonner"
 import { z } from "zod"
 
 import { Button } from "@/components/ui/button"
+import { Spinner } from "@/components/ui/spinner"
 import { Field, FieldLabel } from "@/components/ui/field"
+
+import { usePromotionCriteriaQuery } from "../../../api/query/use-promotion-criteria-query"
+import { useSavePromotionCriteria } from "../../../api/mutations/save-promotion-criteria"
 import { Input } from "@/components/ui/input"
 import {
   Select,
@@ -78,22 +83,54 @@ const EMPTY: ApprovalValues = {
 const FORM_ID = "approval-parameters-form"
 
 interface TabPromotionCriteriaProps {
-  // Oculta el botón interno cuando el contenedor (ej. diálogo del grado) ya
-  // provee su propia barra de acciones.
   hideSubmit?: boolean
+  academicPeriodId?: number
 }
 
-export function TabPromotionCriteria({ hideSubmit = false }: TabPromotionCriteriaProps) {
+export function TabPromotionCriteria({
+  hideSubmit = false,
+  academicPeriodId,
+}: TabPromotionCriteriaProps) {
+  const { data: criteria, isPending: isLoading } =
+    usePromotionCriteriaQuery(academicPeriodId)
+
+  const saveCriteria = useSavePromotionCriteria({
+    mutationConfig: {
+      onSuccess: (result) => {
+        if (result.status === "error") {
+          toast.error(result.message)
+          return
+        }
+        toast.success(result.message)
+      },
+    },
+  })
+
   const form = useForm({
     defaultValues: EMPTY,
     validators: {
       onSubmit: approvalSchema,
     },
     onSubmit: ({ value }) => {
-      console.log(value)
+      if (academicPeriodId != null) {
+        saveCriteria.mutate({ academicPeriodId, values: value })
+        return
+      }
       toast.success("Parámetros guardados.")
     },
   })
+
+  useEffect(() => {
+    if (criteria) form.reset(criteria)
+  }, [criteria, form])
+
+  if (academicPeriodId != null && isLoading) {
+    return (
+      <div className="flex justify-center py-10">
+        <Spinner />
+      </div>
+    )
+  }
 
   return (
     <form
@@ -314,8 +351,8 @@ export function TabPromotionCriteria({ hideSubmit = false }: TabPromotionCriteri
 
       {!hideSubmit && (
         <div className="mt-6 flex justify-end">
-          <Button type="submit" color="primary">
-            Guardar
+          <Button type="submit" color="primary" disabled={saveCriteria.isPending}>
+            {saveCriteria.isPending ? "Guardando..." : "Guardar"}
           </Button>
         </div>
       )}

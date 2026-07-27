@@ -11,6 +11,8 @@ import { studyPlansHandlers } from "./study-plans"
 import { teachersHandlers } from "./teachers"
 import { ratingScalesHandlers } from "./rating-scales"
 import { areaSubjectsHandlers } from "./area-subject"
+import { promotionCriteriaHandlers } from "./promotion-criteria"
+import { evaluationCriteriaHandlers } from "./evaluation-criteria"
 
 export const handlers = [
   ...authHandlers,
@@ -26,4 +28,6 @@ export const handlers = [
   ...teachersHandlers,
   ...areaSubjectsHandlers,
   ...ratingScalesHandlers,
+  ...promotionCriteriaHandlers,
+  ...evaluationCriteriaHandlers,
 ]
