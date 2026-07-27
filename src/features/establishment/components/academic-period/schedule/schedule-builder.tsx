@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { MinusIcon, XIcon } from "@phosphor-icons/react"
 import { toast } from "sonner"
 
@@ -13,6 +13,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
+import { useGradeConfigQuery } from "../../../api/query/use-grade-config-query"
+import { useUpdateGradeConfig } from "../../../api/mutations/update-grade-config"
 import {
   buildRuns,
   buildSlots,
@@ -22,8 +24,6 @@ import {
   type ScheduleSubject,
 } from "./schedule-data"
 
-// Estilos derivados del color hex de la materia (definido en área/asignatura):
-// fondo tenue, borde y texto del mismo color; el contador va en color pleno.
 function subjectStyles(hex: string) {
   return {
     container: {
@@ -95,26 +95,60 @@ function spaced(text: string): string {
 
 interface ScheduleBuilderProps {
   jornada: Jornada
-  onClose: () => void
-  hideActions?: boolean
   // Materias disponibles para el curso, derivadas del plan de estudio
   // (nombre + intensidad horaria) y con el color de área/asignatura.
   subjects: ScheduleSubject[]
   // Opciones del select Grado/Grupo, tomadas de los grupos reales del grado.
   gradeGroups: string[]
+  // Grado dueño del horario: se usa para cargar y guardar la grilla.
+  gradeId: number
 }
 
 export function ScheduleBuilder({
   jornada,
-  onClose,
-  hideActions = false,
   subjects,
   gradeGroups,
+  gradeId,
 }: ScheduleBuilderProps) {
   const [gradeGroup, setGradeGroup] = useState("")
-  const [schedule, setSchedule] = useState<Schedule>({})
+  // Una grilla por grupo/curso: { [gradeGroup]: cells }. Así cada curso tiene
+  // su propio horario y cambiar de curso cambia la grilla.
+  const [schedulesByGroup, setSchedulesByGroup] = useState<
+    Record<string, Schedule>
+  >({})
   const [draggingId, setDraggingId] = useState<string | null>(null)
   const [dragOver, setDragOver] = useState<string | null>(null)
+  const [hydrated, setHydrated] = useState(false)
+
+  const schedule = schedulesByGroup[gradeGroup] ?? {}
+
+  const { data: gradeConfig } = useGradeConfigQuery(gradeId)
+  useEffect(() => {
+    if (!hydrated && gradeConfig) {
+      if (gradeConfig.schedule?.byGroup) {
+        setSchedulesByGroup(gradeConfig.schedule.byGroup)
+      }
+      setHydrated(true)
+    }
+  }, [gradeConfig, hydrated])
+
+  useEffect(() => {
+    if (!gradeGroup && gradeGroups.length > 0) {
+      setGradeGroup(gradeGroups[0])
+    }
+  }, [gradeGroup, gradeGroups])
+
+  const updateGradeConfig = useUpdateGradeConfig({
+    mutationConfig: {
+      onSuccess: (result) => {
+        if (result.status === "error") {
+          toast.error(result.message)
+          return
+        }
+        toast.success(result.message)
+      },
+    },
+  })
 
   const subjectsById = useMemo(
     () => Object.fromEntries(subjects.map((s) => [s.id, s])),
@@ -123,7 +157,6 @@ export function ScheduleBuilder({
 
   const todayWeekday = new Date().getDay()
 
-  // Franjas y corridas derivadas de la jornada del periodo académico.
   const slots = useMemo(() => buildSlots(jornada), [jornada])
   const runs = useMemo(() => buildRuns(slots), [slots])
   const classSlotIds = useMemo(
@@ -156,23 +189,32 @@ export function ScheduleBuilder({
     .join(" · ")
 
   function setCell(dayId: string, slotId: string, subjectId: string) {
-    setSchedule((prev) => ({
-      ...prev,
-      [dayId]: { ...(prev[dayId] ?? {}), [slotId]: subjectId },
-    }))
+    if (!gradeGroup) return
+    setSchedulesByGroup((prev) => {
+      const current = prev[gradeGroup] ?? {}
+      return {
+        ...prev,
+        [gradeGroup]: {
+          ...current,
+          [dayId]: { ...(current[dayId] ?? {}), [slotId]: subjectId },
+        },
+      }
+    })
   }
 
   function clearSlots(dayId: string, slotIds: string[]) {
-    setSchedule((prev) => {
-      const day = { ...(prev[dayId] ?? {}) }
+    if (!gradeGroup) return
+    setSchedulesByGroup((prev) => {
+      const current = prev[gradeGroup] ?? {}
+      const day = { ...(current[dayId] ?? {}) }
       for (const slotId of slotIds) delete day[slotId]
-      return { ...prev, [dayId]: day }
+      return { ...prev, [gradeGroup]: { ...current, [dayId]: day } }
     })
   }
 
   function handleDrop(dayId: string, slotId: string) {
     const subject = draggingId ? subjectsById[draggingId] : undefined
-    if (draggingId && subject) {
+    if (draggingId && subject && gradeGroup) {
       const alreadyHere = schedule[dayId]?.[slotId] === draggingId
       const placed = placedCounts[draggingId] ?? 0
       // No permitir superar el cupo de horas de la materia.
@@ -185,19 +227,26 @@ export function ScheduleBuilder({
   }
 
   function handleSave() {
-    const total = Object.values(placedCounts).reduce(
-      (acc, count) => acc + count,
-      0
-    )
-    toast.success(
-      `Horario guardado para ${gradeGroup} (${total} bloque(s) asignados).`
-    )
-    onClose()
+    const byGroup: Record<string, Record<string, Record<string, string>>> = {}
+    for (const [group, groupSchedule] of Object.entries(schedulesByGroup)) {
+      const cells: Record<string, Record<string, string>> = {}
+      for (const [dayId, daySlots] of Object.entries(groupSchedule)) {
+        const clean: Record<string, string> = {}
+        for (const [slotId, subjectId] of Object.entries(daySlots)) {
+          if (subjectId) clean[slotId] = subjectId
+        }
+        if (Object.keys(clean).length) cells[dayId] = clean
+      }
+      byGroup[group] = cells
+    }
+    updateGradeConfig.mutate({
+      gradeId,
+      values: { schedule: { byGroup } },
+    })
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      {/* Grado / grupo */}
+    <div className="flex min-w-0 flex-col gap-4">
       <div className="flex flex-col gap-1.5">
         <label className="text-xs font-medium text-muted-foreground">
           Grado/Grupo
@@ -228,15 +277,11 @@ export function ScheduleBuilder({
         </Select>
       </div>
 
-      {/* Jornada heredada del periodo académico (solo lectura). */}
       <p className="text-xs text-muted-foreground">
         Jornada del periodo:{" "}
         <span className="font-medium text-foreground">{jornadaSummary}</span>
       </p>
 
-      {/* Paleta de materias arrastrables (del plan de estudio). El contador
-          muestra las horas que faltan por asignar; la materia desaparece al
-          completar su cupo. */}
       <div className="flex flex-wrap gap-2">
         {subjects.length === 0 && (
           <p className="text-xs text-muted-foreground">
@@ -288,14 +333,13 @@ export function ScheduleBuilder({
           )}
       </div>
 
-      {/* Grilla del horario */}
       {slots.length === 0 ? (
         <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
           Definí la hora de inicio, fin y el número de bloques en el periodo
           académico para armar el horario.
         </p>
       ) : (
-      <div className="overflow-x-auto border">
+      <div className="min-w-0 overflow-x-auto border">
         <table className="w-full min-w-[640px] table-fixed border-collapse">
           <thead>
             <tr className="border-b">
@@ -422,17 +466,17 @@ export function ScheduleBuilder({
       </div>
       )}
 
-      {/* Acciones */}
-      {!hideActions && (
-        <div className="flex justify-end gap-2">
-          <Button type="button" variant="outline" onClick={onClose}>
-            Cancelar
-          </Button>
-          <Button type="button" color="primary" onClick={handleSave}>
-            Guardar
-          </Button>
-        </div>
-      )}
+      <div className="flex justify-end">
+        <Button
+          type="button"
+          color="primary"
+          onClick={handleSave}
+          disabled={updateGradeConfig.isPending}
+          aria-busy={updateGradeConfig.isPending}
+        >
+          {updateGradeConfig.isPending ? "Guardando..." : "Guardar horario"}
+        </Button>
+      </div>
     </div>
   )
 }

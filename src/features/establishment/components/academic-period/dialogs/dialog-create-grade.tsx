@@ -57,8 +57,7 @@ const GRADO_SIGUIENTE_OPTIONS = [
   "Undécimo",
 ]
 
-// Normaliza el nombre del grado (sin acentos ni mayúsculas) para detectar el
-// último grado, que no tiene grado siguiente.
+
 function normalizeGrade(value: string): string {
   return value
     .trim()
@@ -72,7 +71,6 @@ const LAST_GRADE_NAMES = new Set(["undecimo", "once", "11", "11°", "11º"])
 interface CreateGradeDialogProps {
   jornada: Jornada
   academicPeriodId?: number
-  // Si se pasa un grado, el diálogo abre en modo edición.
   grade?: Grade
 }
 
@@ -84,8 +82,6 @@ export function CreateGradeDialog({
   const isEditing = grade != null
 
   const [open, setOpen] = useState(false)
-  // Id del grado: viene del grado editado, o del recién creado (paso 1). Hasta
-  // que exista, las pestañas (grupo/plan/horario) quedan deshabilitadas.
   const [gradeId, setGradeId] = useState<number | null>(grade?.id ?? null)
 
   const [teachingLevelId, setTeachingLevelId] = useState<number | null>(
@@ -134,7 +130,6 @@ export function CreateGradeDialog({
 
   const isSaving = createGrade.isPending || updateGrade.isPending
 
-  // El último grado (Undécimo) no tiene grado siguiente.
   const isLastGrade = LAST_GRADE_NAMES.has(normalizeGrade(nombre))
 
   function handleSaveGrade() {
@@ -156,8 +151,6 @@ export function CreateGradeDialog({
     }
   }
 
-  // Materias del horario = asignaturas del plan de estudio del grado (nombre +
-  // intensidad horaria como bloques), coloreadas según área/asignatura.
   const { data: planData } = useStudyPlansQuery({
     filters: {},
     sorting: [],
@@ -173,7 +166,6 @@ export function CreateGradeDialog({
     academicPeriodId,
   })
 
-  // Opciones del select Grado/Grupo del horario = grupos reales del grado.
   const { data: gradeGroupsData } = useGradeGroupsQuery({
     filters: {},
     sorting: [],
@@ -239,12 +231,11 @@ export function CreateGradeDialog({
           </>
         )}
       </DialogTrigger>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-4xl">
+      <DialogContent className="max-h-[90dvh] overflow-y-auto p-4 sm:max-w-4xl sm:p-6">
         <DialogHeader>
           <DialogTitle>{isEditing ? "Editar grado" : "Agregar grado"}</DialogTitle>
         </DialogHeader>
 
-        {/* Paso 1: encabezado del grado */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Field>
             <FieldLabel htmlFor="grade-nivel">Nivel de enseñanza*</FieldLabel>
@@ -281,7 +272,6 @@ export function CreateGradeDialog({
             />
           </Field>
 
-          {/* El último grado (Undécimo) no tiene grado siguiente. */}
           {!isLastGrade && (
             <>
               <Field>
@@ -335,6 +325,7 @@ export function CreateGradeDialog({
             type="button"
             color="primary"
             size="sm"
+            className="w-full sm:w-auto"
             onClick={handleSaveGrade}
             disabled={isSaving}
             aria-busy={isSaving}
@@ -346,14 +337,13 @@ export function CreateGradeDialog({
           </Button>
         </div>
 
-        {/* Paso 2: configuración del grado (habilitada al existir el grado) */}
         {gradeId == null ? (
           <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
             Guardá el grado para configurar sus grupos, plan de estudio y
             horario.
           </p>
         ) : (
-          <Tabs defaultValue="grupo" className="w-full">
+          <Tabs defaultValue="grupo" className="w-full min-w-0">
             <TabsList
               variant="line"
               className="w-full justify-start overflow-x-auto"
@@ -364,28 +354,30 @@ export function CreateGradeDialog({
               <TabsTrigger value="horario">Horario</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="grupo" className="mt-4">
+            <TabsContent value="grupo" className="mt-4 min-w-0">
               <TabGradeGroups gradeId={gradeId} />
             </TabsContent>
 
-            <TabsContent value="promocion" className="mt-4">
-              <TabPromotionCriteria hideSubmit />
+            <TabsContent value="promocion" className="mt-4 min-w-0">
+              <TabPromotionCriteria
+                gradeId={gradeId}
+                academicPeriodId={academicPeriodId}
+              />
             </TabsContent>
 
-            <TabsContent value="plan" className="mt-4">
+            <TabsContent value="plan" className="mt-4 min-w-0">
               <TabStudyPlan
                 academicPeriodId={academicPeriodId}
                 gradeId={gradeId}
               />
             </TabsContent>
 
-            <TabsContent value="horario" className="mt-4">
+            <TabsContent value="horario" className="mt-4 min-w-0">
               <ScheduleBuilder
                 jornada={jornada}
                 subjects={scheduleSubjects}
                 gradeGroups={gradeGroupOptions}
-                onClose={() => setOpen(false)}
-                hideActions
+                gradeId={gradeId}
               />
             </TabsContent>
           </Tabs>

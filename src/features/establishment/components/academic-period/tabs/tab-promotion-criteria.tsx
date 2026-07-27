@@ -9,6 +9,8 @@ import { Field, FieldLabel } from "@/components/ui/field"
 
 import { usePromotionCriteriaQuery } from "../../../api/query/use-promotion-criteria-query"
 import { useUpdatePromotionCriteria } from "../../../api/mutations/update-promotion-criteria"
+import { useGradeConfigQuery } from "../../../api/query/use-grade-config-query"
+import { useUpdateGradeConfig } from "../../../api/mutations/update-grade-config"
 import { useAreaSubjectQuery } from "../../../api/query/use-area-subject"
 import { SubjectsMultiSelect } from "../subjects-multi-select"
 import { Input } from "@/components/ui/input"
@@ -78,15 +80,30 @@ const FORM_ID = "approval-parameters-form"
 
 interface TabPromotionCriteriaProps {
   hideSubmit?: boolean
+  // Ámbito de los criterios: por grado (dentro del diálogo del grado) o por
+  // periodo (pestaña del periodo). Se prioriza el grado si viene.
   academicPeriodId?: number
+  gradeId?: number
 }
 
 export function TabPromotionCriteria({
   hideSubmit = false,
   academicPeriodId,
+  gradeId,
 }: TabPromotionCriteriaProps) {
-  const { data: criteria, isPending: isLoading } =
-    usePromotionCriteriaQuery(academicPeriodId)
+  const isGradeScope = gradeId != null
+
+  // Criterios por periodo (pestaña del periodo).
+  const { data: periodCriteria, isPending: periodLoading } =
+    usePromotionCriteriaQuery(isGradeScope ? undefined : academicPeriodId)
+
+  // Criterios por grado (dentro del diálogo del grado).
+  const { data: gradeConfig, isPending: gradeLoading } = useGradeConfigQuery(
+    isGradeScope ? gradeId : undefined
+  )
+
+  const criteria = isGradeScope ? gradeConfig?.promotionCriteria : periodCriteria
+  const isLoading = isGradeScope ? gradeLoading : periodLoading
 
   // Opciones de "áreas/asignaturas obligatorias" = las del periodo.
   const { data: areaData } = useAreaSubjectQuery({
@@ -98,7 +115,7 @@ export function TabPromotionCriteria({
   })
   const subjectOptions = (areaData?.rows ?? []).map((area) => area.nombreInterno)
 
-  const saveCriteria = useUpdatePromotionCriteria({
+  const savePeriodCriteria = useUpdatePromotionCriteria({
     mutationConfig: {
       onSuccess: (result) => {
         if (result.status === "error") {
@@ -110,14 +127,34 @@ export function TabPromotionCriteria({
     },
   })
 
+  const saveGradeConfig = useUpdateGradeConfig({
+    mutationConfig: {
+      onSuccess: (result) => {
+        if (result.status === "error") {
+          toast.error(result.message)
+          return
+        }
+        toast.success(result.message)
+      },
+    },
+  })
+
+  const isSaving = isGradeScope
+    ? saveGradeConfig.isPending
+    : savePeriodCriteria.isPending
+
   const form = useForm({
     defaultValues: EMPTY,
     validators: {
       onSubmit: approvalSchema,
     },
     onSubmit: ({ value }) => {
+      if (isGradeScope && gradeId != null) {
+        saveGradeConfig.mutate({ gradeId, values: { promotionCriteria: value } })
+        return
+      }
       if (academicPeriodId != null) {
-        saveCriteria.mutate({ academicPeriodId, values: value })
+        savePeriodCriteria.mutate({ academicPeriodId, values: value })
         return
       }
       toast.success("Parámetros guardados.")
@@ -128,7 +165,7 @@ export function TabPromotionCriteria({
     if (criteria) form.reset(criteria)
   }, [criteria, form])
 
-  if (academicPeriodId != null && isLoading) {
+  if ((isGradeScope || academicPeriodId != null) && isLoading) {
     return (
       <div className="flex justify-center py-10">
         <Spinner />
@@ -360,8 +397,8 @@ export function TabPromotionCriteria({
 
       {!hideSubmit && (
         <div className="mt-6 flex justify-end">
-          <Button type="submit" color="primary" disabled={saveCriteria.isPending}>
-            {saveCriteria.isPending ? "Guardando..." : "Guardar"}
+          <Button type="submit" color="primary" disabled={isSaving}>
+            {isSaving ? "Guardando..." : "Guardar"}
           </Button>
         </div>
       )}
