@@ -39,6 +39,7 @@ export function createAcademicAssignmentColumns({
             variant="ghost"
             size="icon-sm"
             aria-label={isOpen ? "Contraer" : "Expandir"}
+            aria-expanded={isOpen}
             onClick={() => onToggleExpand(row.original)}
           >
             {isOpen ? (

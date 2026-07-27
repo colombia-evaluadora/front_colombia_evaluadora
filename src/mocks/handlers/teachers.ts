@@ -55,9 +55,14 @@ export const teachersHandlers = [
     await delay(250)
 
     const body = (await request.json()) as TeachersQueryRequest
-    const { filters, sorting, pageIndex, pageSize } = body
+    const { filters, sorting, pageIndex, pageSize, academicPeriodId } = body
 
-    const filtered = applySorting(applyFilters(teachersDb, filters), sorting)
+    const scoped =
+      academicPeriodId == null
+        ? teachersDb
+        : teachersDb.filter((row) => row.academicPeriodId === academicPeriodId)
+
+    const filtered = applySorting(applyFilters(scoped, filters), sorting)
 
     const totalCount = filtered.length
     const pageCount = Math.max(1, Math.ceil(totalCount / pageSize))

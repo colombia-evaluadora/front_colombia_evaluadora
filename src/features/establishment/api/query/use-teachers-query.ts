@@ -11,6 +11,7 @@ interface UseTeachersQueryParams {
   sorting: TeachersQueryRequest["sorting"]
   pageIndex: number
   pageSize: number
+  academicPeriodId?: number
 }
 
 function fetchTeachers(

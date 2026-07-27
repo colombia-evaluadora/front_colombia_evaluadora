@@ -16,7 +16,13 @@ import {
 } from "../academic-assignments/assignments-data"
 import { AssignmentTransfer } from "../academic-assignments/assignment-transfer"
 
-export function TabAcademicAssignments() {
+interface TabAcademicAssignmentsProps {
+  academicPeriodId?: number
+}
+
+export function TabAcademicAssignments({
+  academicPeriodId,
+}: TabAcademicAssignmentsProps) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [pageIndex, setPageIndex] = useState(0)
   const [pageSize, setPageSize] = useState(10)
@@ -31,6 +37,7 @@ export function TabAcademicAssignments() {
     sorting,
     pageIndex,
     pageSize,
+    academicPeriodId,
   })
 
   const goToPage = setPageIndex
@@ -116,12 +123,14 @@ export function TabAcademicAssignments() {
           const teacherAssignments = assignments[teacher.documento]
           if (!teacherAssignments) return null
           return (
-            <AssignmentTransfer
-              available={teacherAssignments.available}
-              assigned={teacherAssignments.assigned}
-              onAssign={(ids) => assign(teacher.documento, ids)}
-              onUnassign={(ids) => unassign(teacher.documento, ids)}
-            />
+            <div className="-m-4 bg-background p-4">
+              <AssignmentTransfer
+                available={teacherAssignments.available}
+                assigned={teacherAssignments.assigned}
+                onAssign={(ids) => assign(teacher.documento, ids)}
+                onUnassign={(ids) => unassign(teacher.documento, ids)}
+              />
+            </div>
           )
         }}
       />
