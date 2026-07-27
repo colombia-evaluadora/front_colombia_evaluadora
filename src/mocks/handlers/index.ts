@@ -15,6 +15,7 @@ import { promotionCriteriaHandlers } from "./promotion-criteria"
 import { evaluationCriteriaHandlers } from "./evaluation-criteria"
 import { generalAreasHandlers } from "./general-areas"
 import { gradeConfigsHandlers } from "./grade-configs"
+import { academicAssignmentsHandlers } from "./academic-assignments"
 
 export const handlers = [
   ...authHandlers,
@@ -34,4 +35,5 @@ export const handlers = [
   ...evaluationCriteriaHandlers,
   ...generalAreasHandlers,
   ...gradeConfigsHandlers,
+  ...academicAssignmentsHandlers,
 ]

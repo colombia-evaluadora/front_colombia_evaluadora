@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
-import type { AssignmentSubject } from "./assignments-data"
+import type { AssignmentSubject } from "../../../api/types/academic-period/academic-assignment"
 
 function SearchInput({
   value,

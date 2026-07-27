@@ -1,19 +1,21 @@
 "use no memo"
 
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import type { SortingState } from "@tanstack/react-table"
+import { SpinnerIcon } from "@phosphor-icons/react"
+import { toast } from "sonner"
 
+import { Button } from "@/components/ui/button"
 import { DataTable } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
 import { useDataTable } from "@/hooks/use-data-table"
 
 import { useTeachersQuery } from "../../../api/query/use-teachers-query"
+import { useAssignmentSubjectsQuery } from "../../../api/query/use-assignment-subjects-query"
+import { useTeacherAssignmentsQuery } from "../../../api/query/use-teacher-assignments-query"
+import { useSaveTeacherAssignments } from "../../../api/mutations/save-teacher-assignments"
 import type { Teacher } from "../../../api/types/academic-period/teacher"
 import { createAcademicAssignmentColumns } from "../table/columns-academic-assignments"
-import {
-  defaultAssignments,
-  type TeacherAssignments,
-} from "../academic-assignments/assignments-data"
 import { AssignmentTransfer } from "../academic-assignments/assignment-transfer"
 
 interface TabAcademicAssignmentsProps {
@@ -28,9 +30,31 @@ export function TabAcademicAssignments({
   const [pageSize, setPageSize] = useState(10)
 
   const [expanded, setExpanded] = useState<Teacher | null>(null)
-  const [assignments, setAssignments] = useState<
-    Record<string, TeacherAssignments>
-  >({})
+  const [assignedIds, setAssignedIds] = useState<Record<string, string[]>>({})
+
+  const { data: pool = [] } = useAssignmentSubjectsQuery(academicPeriodId)
+
+  const { data: savedIds } = useTeacherAssignmentsQuery(
+    academicPeriodId,
+    expanded?.documento
+  )
+  useEffect(() => {
+    if (expanded && savedIds && assignedIds[expanded.documento] === undefined) {
+      setAssignedIds((prev) => ({ ...prev, [expanded.documento]: savedIds }))
+    }
+  }, [expanded, savedIds, assignedIds])
+
+  const saveAssignments = useSaveTeacherAssignments({
+    mutationConfig: {
+      onSuccess: (result) => {
+        if (result.status === "error") {
+          toast.error(result.message)
+          return
+        }
+        toast.success(result.message)
+      },
+    },
+  })
 
   const { data, isPending, isError, refetch } = useTeachersQuery({
     filters: {},
@@ -49,12 +73,6 @@ export function TabAcademicAssignments({
   const toggleExpand = useCallback((teacher: Teacher) => {
     setExpanded((prev) =>
       prev?.documento === teacher.documento ? null : teacher
-    )
-    // Inicializa las asignaturas del docente la primera vez que se expande.
-    setAssignments((prev) =>
-      prev[teacher.documento]
-        ? prev
-        : { ...prev, [teacher.documento]: defaultAssignments() }
     )
   }, [])
 
@@ -81,31 +99,17 @@ export function TabAcademicAssignments({
   })
 
   function assign(docId: string, ids: string[]) {
-    setAssignments((prev) => {
-      const t = prev[docId]
-      const moving = t.available.filter((s) => ids.includes(s.id))
-      return {
-        ...prev,
-        [docId]: {
-          available: t.available.filter((s) => !ids.includes(s.id)),
-          assigned: [...t.assigned, ...moving],
-        },
-      }
-    })
+    setAssignedIds((prev) => ({
+      ...prev,
+      [docId]: [...(prev[docId] ?? []), ...ids],
+    }))
   }
 
   function unassign(docId: string, ids: string[]) {
-    setAssignments((prev) => {
-      const t = prev[docId]
-      const moving = t.assigned.filter((s) => ids.includes(s.id))
-      return {
-        ...prev,
-        [docId]: {
-          assigned: t.assigned.filter((s) => !ids.includes(s.id)),
-          available: [...t.available, ...moving],
-        },
-      }
-    })
+    setAssignedIds((prev) => ({
+      ...prev,
+      [docId]: (prev[docId] ?? []).filter((id) => !ids.includes(id)),
+    }))
   }
 
   return (
@@ -120,16 +124,42 @@ export function TabAcademicAssignments({
         renderSubRow={(row) => {
           const teacher = row.original as Teacher
           if (expanded?.documento !== teacher.documento) return null
-          const teacherAssignments = assignments[teacher.documento]
-          if (!teacherAssignments) return null
+          // Disponibles/asignadas derivadas del pool según los IDs asignados.
+          const ids = new Set(assignedIds[teacher.documento] ?? [])
+          const assigned = pool.filter((s) => ids.has(s.id))
+          const available = pool.filter((s) => !ids.has(s.id))
           return (
-            <div className="-m-4 bg-background p-4">
+            <div className="-m-4 flex flex-col gap-4 bg-background p-4">
               <AssignmentTransfer
-                available={teacherAssignments.available}
-                assigned={teacherAssignments.assigned}
-                onAssign={(ids) => assign(teacher.documento, ids)}
-                onUnassign={(ids) => unassign(teacher.documento, ids)}
+                available={available}
+                assigned={assigned}
+                onAssign={(nextIds) => assign(teacher.documento, nextIds)}
+                onUnassign={(nextIds) => unassign(teacher.documento, nextIds)}
               />
+              <div className="flex justify-end">
+                <Button
+                  type="button"
+                  color="primary"
+                  size="sm"
+                  disabled={saveAssignments.isPending}
+                  aria-busy={saveAssignments.isPending}
+                  onClick={() =>
+                    saveAssignments.mutate({
+                      academicPeriodId: academicPeriodId as number,
+                      documento: teacher.documento,
+                      subjectIds: assignedIds[teacher.documento] ?? [],
+                    })
+                  }
+                >
+                  {saveAssignments.isPending && (
+                    <SpinnerIcon
+                      data-icon="inline-start"
+                      className="animate-spin"
+                    />
+                  )}
+                  Guardar asignaturas
+                </Button>
+              </div>
             </div>
           )
         }}
