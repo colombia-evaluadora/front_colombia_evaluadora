@@ -1,14 +1,28 @@
-import { ArrowLeftIcon } from "@phosphor-icons/react"
+import {
+  ArrowLeftIcon,
+  ArrowRightIcon,
+  ClockCountdownIcon,
+  LinkBreakIcon,
+  PasswordIcon,
+  ShieldIcon,
+  WarningCircleIcon,
+} from "@/components/ui/icons"
 import { Link, useNavigate, useSearch } from "@tanstack/react-router"
 import { toast } from "sonner"
 
-import icon from "@/assets/icon.svg"
-import loginBg from "@/assets/login.jpg"
-import logo from "@/assets/logo.svg"
 import { Button } from "@/components/ui/button"
+import {
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { Spinner } from "@/components/ui/spinner"
 import { paths } from "@/config/paths"
-import { useRestorePassword } from "@/lib/auth"
 
+import { useRestorePassword } from "../api/mutations/restore-password"
+import { usePasswordResetLink } from "../hooks/use-password-reset-link"
 import { RestorePasswordForm } from "../components/forms/form-restore-password"
 import type { RestorePasswordFormValues } from "../api/schema"
 
@@ -17,9 +31,14 @@ const RESTORE_PASSWORD_FORM_ID = "restore-password-form"
 export function RestorePasswordPage() {
   const navigate = useNavigate()
   const token = useSearch({
-    from: "/restore-password",
+    from: "/_auth/restore-password",
     select: (s) => s.token,
   })
+
+  // El estado del enlace se resuelve antes de mostrar el formulario, para no
+  // hacer escribir una contraseña que el submit va a rechazar igual.
+  const { isChecking, isInvalid, isExpired, remainingLabel, ttlLabel } =
+    usePasswordResetLink(token)
 
   const restorePasswordMutation = useRestorePassword({
     mutationConfig: {
@@ -36,81 +55,149 @@ export function RestorePasswordPage() {
   }
 
   return (
-    <div className="grid min-h-svh lg:grid-cols-2">
-      <div className="flex flex-col p-6 md:p-10">
-        <div className="flex items-center justify-between">
-          <Button
-            variant="ghost"
-            size="sm"
-            render={<Link to={paths.auth.login.path} />}
-            nativeButton={false}
-          >
-            <ArrowLeftIcon data-icon="inline-start" />
-            Volver
-          </Button>
-          <Link to={paths.home.getHref()}>
-            <img src={logo} alt="Colombia Evaluadora" className="h-10 w-auto" />
-          </Link>
-
-          <div className="w-30" />
-        </div>
-
-        <div className="flex flex-1 flex-col items-center justify-center">
-          <div className="w-full max-w-sm space-y-6">
-            {!token ? (
-              <div className="space-y-4 text-center">
-                <h1 className="text-2xl font-semibold">Enlace inválido</h1>
-                <p className="text-sm text-muted-foreground">
-                  Este enlace de recuperación no es válido o ya expiró.
-                  Solicita uno nuevo.
-                </p>
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  render={<Link to={paths.auth.forgotPassword.path} />}
-                  nativeButton={false}
-                >
-                  Solicitar nuevo enlace
-                </Button>
-              </div>
-            ) : (
-              <>
-                <div className="space-y-1 text-center">
-                  <h1 className="text-2xl font-semibold">
-                    Restablecer contraseña
-                  </h1>
-                  <p className="text-sm text-muted-foreground">
-                    Ingresa tu nueva contraseña.
-                  </p>
-                </div>
-
-                <RestorePasswordForm
-                  id={RESTORE_PASSWORD_FORM_ID}
-                  onSubmit={handleSubmit}
+    <>
+      {isInvalid ? (
+        <>
+          <CardHeader className="text-center">
+            <div className="relative mx-auto size-20">
+              <div className="bg-destructive/10 flex size-20 items-center justify-center rounded-full">
+                <LinkBreakIcon
+                  className="text-destructive size-9"
+                  aria-hidden="true"
                 />
+              </div>
+              <WarningCircleIcon
+                weight="fill"
+                className="text-destructive bg-card absolute right-0 bottom-0 size-7 rounded-full"
+                aria-hidden="true"
+              />
+            </div>
+            <CardTitle>Enlace inválido</CardTitle>
+            <CardDescription>
+              Este enlace de recuperación no es válido. Solicita uno nuevo
+              para restablecer tu contraseña.
+            </CardDescription>
+          </CardHeader>
+          <CardFooter>
+            <Button
+              render={<Link to={paths.auth.forgotPassword.path} />}
+              nativeButton={false}
+              color="primary"
+              className="w-full"
+            >
+              Solicitar nuevo enlace
+            </Button>
+          </CardFooter>
+        </>
+      ) : isExpired ? (
+        <>
+          <CardHeader className="text-center">
+            <div className="relative mx-auto size-20">
+              <div className="bg-destructive/10 flex size-20 items-center justify-center rounded-full">
+                <ClockCountdownIcon
+                  className="text-destructive size-9"
+                  aria-hidden="true"
+                />
+              </div>
+              <WarningCircleIcon
+                weight="fill"
+                className="text-destructive bg-card absolute right-0 bottom-0 size-7 rounded-full"
+                aria-hidden="true"
+              />
+            </div>
+            <CardTitle>El enlace expiró</CardTitle>
+            <CardDescription>
+              Por seguridad, los enlaces de recuperación vencen
+              {ttlLabel === null ? "" : ` a los ${ttlLabel}`}. Solicita uno
+              nuevo para continuar.
+            </CardDescription>
+          </CardHeader>
+          <CardFooter>
+            <Button
+              render={<Link to={paths.auth.forgotPassword.path} />}
+              nativeButton={false}
+              color="primary"
+              className="w-full"
+            >
+              Solicitar nuevo enlace
+            </Button>
+          </CardFooter>
+        </>
+      ) : isChecking ? (
+        <CardContent className="flex justify-center py-10">
+          <Spinner className="size-6" />
+        </CardContent>
+      ) : (
+        <>
+          <CardHeader className="text-center">
+            <div className="bg-primary/10 mx-auto flex size-14 items-center justify-center rounded-full">
+              <PasswordIcon
+                className="text-primary size-7"
+                aria-hidden="true"
+              />
+            </div>
+            <CardTitle>Restablecer contraseña</CardTitle>
+            <CardDescription>
+              Ingresa tu nueva contraseña.
+              {remainingLabel !== null && (
+                <>
+                  <br />
+                  Este enlace vence en{" "}
+                  <span
+                    className="font-semibold tabular-nums"
+                    // Solo el tiempo se relee; sin esto un lector de
+                    // pantalla anunciaría la frase entera cada segundo.
+                    aria-live="polite"
+                  >
+                    {remainingLabel}
+                  </span>
+                </>
+              )}
+            </CardDescription>
+          </CardHeader>
 
-                <Button
-                  type="submit"
-                  form={RESTORE_PASSWORD_FORM_ID}
-                  disabled={restorePasswordMutation.isPending}
-                  className="w-full"
-                >
-                  {restorePasswordMutation.isPending
-                    ? "Guardando..."
-                    : "Guardar contraseña"}
-                </Button>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-      <div
-        className="relative hidden overflow-hidden bg-cover bg-center lg:flex lg:items-center lg:justify-center"
-        style={{ backgroundImage: `url(${loginBg})` }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-br from-[#7e14ff]/80 to-[#47bfff]/80" />
-        <img src={icon} alt="" className="relative size-40 drop-shadow-2xl" />
-      </div>
-    </div>
+          <CardContent>
+            <RestorePasswordForm
+              id={RESTORE_PASSWORD_FORM_ID}
+              onSubmit={handleSubmit}
+            />
+          </CardContent>
+
+          <CardFooter className="flex flex-col gap-2">
+            <Button
+              type="submit"
+              color="primary"
+              form={RESTORE_PASSWORD_FORM_ID}
+              disabled={restorePasswordMutation.isPending}
+              className="w-full"
+            >
+              Guardar contraseña
+              {restorePasswordMutation.isPending ? (
+                <Spinner data-icon="inline-end" />
+              ) : (
+                <ArrowRightIcon data-icon="inline-end" />
+              )}
+            </Button>
+
+            <Button
+              render={<Link to={paths.auth.login.path} />}
+              nativeButton={false}
+              variant="link"
+              color="secondary"
+            >
+              <ArrowLeftIcon data-icon="inline-start" />
+              Volver a iniciar sesión
+            </Button>
+            <p className="text-muted-foreground inline-flex items-start text-center text-xs">
+              <ShieldIcon
+                          className="size-4 shrink-0"
+                          aria-hidden="true"
+                        />
+              Tu seguridad es importante. Nunca compartas tu contraseña con nadie.
+            </p>
+          </CardFooter>
+        </>
+      )}
+    </>
   )
 }

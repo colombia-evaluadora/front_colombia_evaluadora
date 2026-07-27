@@ -1,5 +1,5 @@
 import preview from '../../../../.storybook/preview'
-import { MagnifyingGlassIcon } from '@phosphor-icons/react'
+import { MagnifyingGlassIcon } from '@/components/ui/icons'
 import {
   InputGroup,
   InputGroupAddon,

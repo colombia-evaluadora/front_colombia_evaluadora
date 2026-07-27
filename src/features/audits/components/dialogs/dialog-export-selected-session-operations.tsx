@@ -1,6 +1,11 @@
 import { useState } from "react"
 
-import { DownloadSimpleIcon, FilePdfIcon, FileXlsIcon } from "@phosphor-icons/react"
+import {
+  DownloadSimpleIcon,
+  FilePdfIcon,
+  FileXlsIcon,
+  SpinnerIcon,
+} from "@/components/ui/icons"
 import { toast } from "sonner"
 
 import {
@@ -14,7 +19,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Spinner } from "@/components/ui/spinner"
 
 import { useExportSessionOperations } from "../../api/mutations/export-session-operations"
 import type { ExportFormat } from "../../api/types/audit"
@@ -51,6 +55,14 @@ export function ExportSelectedSessionOperationsDialog({
     exportSelected.mutate({ sessionId, ids: selectedIds, format })
   }
 
+  // Los dos botones comparten la misma mutación, así que `isPending` sola no
+  // distingue cuál se pulsó — antes salía el spinner en los dos a la vez.
+  // `variables` guarda el input en vuelo, y con eso marcamos solo el botón
+  // que disparó la exportación.
+  const pendingFormat = exportSelected.isPending
+    ? exportSelected.variables?.format
+    : undefined
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
@@ -80,9 +92,12 @@ export function ExportSelectedSessionOperationsDialog({
               type="button"
               variant="outline"
               disabled={exportSelected.isPending}
+              aria-busy={pendingFormat === "excel"}
               onClick={() => handleExport("excel")}
             >
-              {exportSelected.isPending ? <Spinner /> : (
+              {pendingFormat === "excel" ? (
+                <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+              ) : (
                 <FileXlsIcon data-icon="inline-start" />
               )}
               Excel
@@ -91,9 +106,12 @@ export function ExportSelectedSessionOperationsDialog({
               type="button"
               color="primary"
               disabled={exportSelected.isPending}
+              aria-busy={pendingFormat === "pdf"}
               onClick={() => handleExport("pdf")}
             >
-              {exportSelected.isPending ? <Spinner /> : (
+              {pendingFormat === "pdf" ? (
+                <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+              ) : (
                 <FilePdfIcon data-icon="inline-start" />
               )}
               PDF

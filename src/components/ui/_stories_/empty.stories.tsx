@@ -1,5 +1,5 @@
 import preview from '../../../../.storybook/preview'
-import { FolderOpenIcon } from '@phosphor-icons/react'
+import { FolderOpenIcon } from '@/components/ui/icons'
 import { Button } from '../button'
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '../empty'
 

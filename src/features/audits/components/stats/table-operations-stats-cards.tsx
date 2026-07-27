@@ -1,4 +1,4 @@
-import { PencilIcon, PlusCircleIcon, TrashIcon, type Icon } from "@phosphor-icons/react"
+import { PencilIcon, PlusCircleIcon, TrashIcon, type Icon } from "@/components/ui/icons"
 
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"

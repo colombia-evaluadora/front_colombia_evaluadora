@@ -3,7 +3,7 @@ import {
   PencilIcon,
   PlusCircleIcon,
   TrashIcon,
-} from "@phosphor-icons/react"
+} from "@/components/ui/icons"
 
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
@@ -137,7 +137,7 @@ export function FilterSessionOperationsForm({
       <form.Field
         name="tableSlug"
         children={(field) => (
-          <Field orientation="vertical" className="gap-2">
+          <Field orientation="vertical" variant="outlined">
             <FieldLabel htmlFor={field.name}>Tabla</FieldLabel>
             <Input
               id={field.name}

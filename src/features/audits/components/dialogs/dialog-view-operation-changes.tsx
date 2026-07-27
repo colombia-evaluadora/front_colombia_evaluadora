@@ -1,6 +1,6 @@
 import { useState } from "react"
 
-import { EyeIcon } from "@phosphor-icons/react"
+import { EyeIcon } from "@/components/ui/icons"
 
 import {
   Dialog,

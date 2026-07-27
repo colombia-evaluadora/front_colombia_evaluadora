@@ -7,7 +7,7 @@ import {
   TrashIcon,
   PlusIcon,
   XIcon,
-} from "@phosphor-icons/react"
+} from "@/components/ui/icons"
 
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -77,7 +77,7 @@ export function FilterTableOperationsForm({
       <form.Field
         name="author"
         children={(field) => (
-          <Field orientation="vertical" className="gap-2">
+          <Field orientation="vertical" variant="outlined" className="gap-2">
             <FieldLabel htmlFor={field.name}>Autor / IP</FieldLabel>
             <Input
               id={field.name}
@@ -332,7 +332,7 @@ function FieldFilterSection({ field, availableFields }: FieldFilterSectionProps)
           </Select>
         </Field>
 
-        <Field orientation="vertical" className="gap-2">
+        <Field orientation="vertical" variant="outlined" className="gap-2">
           <FieldLabel htmlFor="field-filter-value">Valor</FieldLabel>
           <Input
             id="field-filter-value"

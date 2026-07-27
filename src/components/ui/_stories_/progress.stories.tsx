@@ -22,5 +22,5 @@ export const WithLabel = meta.story({
 })
 
 export const Indeterminate = meta.story({
-  render: () => <Progress className="w-64" />,
+  render: () => <Progress value={null} className="w-64" />,
 })

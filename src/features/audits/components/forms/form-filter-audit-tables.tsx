@@ -1,5 +1,5 @@
 import { useForm } from "@tanstack/react-form"
-import { MagnifyingGlassIcon } from "@phosphor-icons/react"
+import { MagnifyingGlassIcon } from "@/components/ui/icons"
 
 import { Input } from "@/components/ui/input"
 import { Field, FieldLabel } from "@/components/ui/field"

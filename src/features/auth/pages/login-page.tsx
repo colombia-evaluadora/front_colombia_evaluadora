@@ -1,13 +1,25 @@
 import { useEffect } from "react"
-import { Link, useNavigate, useSearch } from "@tanstack/react-router"
+import { useNavigate, useSearch } from "@tanstack/react-router"
+import {
+  ArrowRightIcon,
+  ShieldLockIcon,
+  ShieldIcon,
+} from "@/components/ui/icons"
 
-import icon from "@/assets/icon.svg"
-import loginBg from "@/assets/login.jpg"
-import logo from "@/assets/logo.svg"
 import { Button } from "@/components/ui/button"
+import {
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { Separator } from "@/components/ui/separator"
+import { Spinner } from "@/components/ui/spinner"
 import { paths } from "@/config/paths"
 import { useLogin } from "@/lib/auth"
 
+import { HelpFaqSheet } from "../components/sheets/sheet-help-faq"
 import { LoginForm } from "../components/forms/form-login"
 import type { LoginFormValues } from "../api/schema"
 
@@ -15,7 +27,10 @@ const LOGIN_FORM_ID = "login-form"
 
 export function LoginPage() {
   const navigate = useNavigate()
-  const search = useSearch({ from: "/login", select: (s) => s.redirectTo })
+  const search = useSearch({
+    from: "/_auth/login",
+    select: (s) => s.redirectTo,
+  })
 
   const loginMutation = useLogin()
 
@@ -30,57 +45,50 @@ export function LoginPage() {
   }
 
   return (
-    <div className="grid min-h-svh lg:grid-cols-2">
-      <div className="flex flex-col p-6 md:p-10">
-        <div className="flex items-center justify-center">
-      
-          <Link to={paths.home.getHref()}>
-            <img src={logo} alt="Colombia Evaluadora" className="h-10 w-auto" />
-          </Link>
-
-
+    <>
+      <CardHeader className="text-center">
+        <div className="bg-primary/10 mx-auto flex size-14 items-center justify-center rounded-full">
+          <ShieldLockIcon
+            className="text-primary size-7"
+            aria-hidden="true"
+          />
         </div>
+        <CardTitle>Iniciar sesión</CardTitle>
+        <CardDescription>Accede con tu cuenta institucional.</CardDescription>
+      </CardHeader>
 
-        <div className="flex flex-1 flex-col items-center justify-center">
-          <div className="w-full max-w-sm space-y-6">
-            <div className="space-y-1 text-center">
-              <h1 className="text-2xl font-semibold">Iniciar sesión</h1>
-              <p className="text-sm text-muted-foreground">
-                Ingresa tus credenciales para acceder.
-              </p>
-            </div>
+      <CardContent>
+        <LoginForm id={LOGIN_FORM_ID} onSubmit={handleSubmit} />
+      </CardContent>
 
-            <LoginForm id={LOGIN_FORM_ID} onSubmit={handleSubmit} />
-
-            <div className="text-right text-sm">
-              <Link
-                to={paths.auth.forgotPassword.path}
-                className="text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-              >
-                ¿Olvidaste tu contraseña?
-              </Link>
-            </div>
-
-            <Button
-              type="submit"
-              color="primary"
-              form={LOGIN_FORM_ID}
-              disabled={loginMutation.isPending}
-              className="w-full"
-            >
-              {loginMutation.isPending ? "Ingresando..." : "Ingresar"}
-            </Button>
-          </div>
+      <CardFooter className="flex flex-col gap-2">
+        <Button
+          type="submit"
+          color="primary"
+          form={LOGIN_FORM_ID}
+          disabled={loginMutation.isPending}
+          className="w-full"
+        >
+          Ingresar
+          {loginMutation.isPending ? (
+            <Spinner data-icon="inline-end" />
+          ) : (
+            <ArrowRightIcon data-icon="inline-end" />
+          )}
+        </Button>
+        <div className="flex w-full items-center gap-3">
+          <Separator className="flex-1" />
+          <HelpFaqSheet />
+          <Separator className="flex-1" />
         </div>
-      </div>
-      <div
-        className="relative hidden overflow-hidden bg-cover bg-center lg:flex lg:items-center lg:justify-center"
-        style={{ backgroundImage: `url(${loginBg})` }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-br from-[#7e14ff]/80 to-[#47bfff]/80" />
-        <img src={icon} alt="" className="relative size-40 drop-shadow-2xl" />
-      </div>
-
-    </div>
+        <p className="text-muted-foreground inline-flex items-start text-center text-xs">
+          <ShieldIcon
+            className="size-4 shrink-0"
+            aria-hidden="true"
+          />
+          Tu seguridad es importante. Nunca compartas tu contraseña con nadie.
+        </p>
+      </CardFooter>
+    </>
   )
 }
