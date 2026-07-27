@@ -11,6 +11,7 @@ interface UseEvaluationPeriodsQueryParams {
   sorting: EvaluationPeriodsQueryRequest["sorting"]
   pageIndex: number
   pageSize: number
+  academicPeriodId?: number
 }
 
 function fetchEvaluationPeriods(

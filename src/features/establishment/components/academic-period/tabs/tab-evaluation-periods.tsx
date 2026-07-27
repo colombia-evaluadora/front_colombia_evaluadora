@@ -13,7 +13,13 @@ import { useEvaluationPeriodsQuery } from "../../../api/query/use-evaluation-per
 import { columns } from "../table/columns-evaluation-periods"
 import { CreateEvaluationPeriodDialog } from "../dialogs/dialog-create-evaluation-period"
 
-export function TabEvaluationPeriods() {
+interface TabEvaluationPeriodsProps {
+  academicPeriodId?: number
+}
+
+export function TabEvaluationPeriods({
+  academicPeriodId,
+}: TabEvaluationPeriodsProps) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [pageIndex, setPageIndex] = useState(0)
   const [pageSize, setPageSize] = useState(10)
@@ -23,6 +29,7 @@ export function TabEvaluationPeriods() {
     sorting,
     pageIndex,
     pageSize,
+    academicPeriodId,
   })
 
   const goToPage = setPageIndex
@@ -65,7 +72,7 @@ export function TabEvaluationPeriods() {
             <FileXlsIcon className="text-success" />
           </Button>
         </div>
-        <CreateEvaluationPeriodDialog />
+        <CreateEvaluationPeriodDialog academicPeriodId={academicPeriodId} />
       </div>
 
       <DataTable
