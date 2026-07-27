@@ -6,6 +6,8 @@ import { toAuthUserFromToken, type AuthUser } from "./auth-mapper"
 import type { MutationConfig } from "./react-query"
 import type { AuthResponse } from "@/types/api"
 
+const REMEMBER_KEY = "auth_remember_me"
+
 const USER_QUERY_KEY = ["auth-user"]
 
 // El backend no expone un "/auth/me": la sesión se restaura pidiendo un
@@ -29,18 +31,32 @@ export const loginInputSchema = z.object({
 })
 export type LoginInput = z.infer<typeof loginInputSchema>
 
-const loginWithEmailAndPassword = (data: LoginInput): Promise<AuthResponse> =>
-  api.post("/auth/login", data)
+/**
+ * `rememberMe` solo afecta al cliente: si el usuario lo marca, persistimos
+ * el token en localStorage. Si no, el token queda en memoria y muere con la
+ * pestaña. El backend real maneja el "remember" con un refresh cookie, pero
+ * acá el token del mock es lo único que tenemos.
+ */
+interface LoginInputWithRemember extends LoginInput {
+  rememberMe: boolean
+}
 
-// Mismo endpoint/contrato que el backend real (GET .../forgotPassword?email=):
-// nunca revela si el email existe, siempre resuelve con éxito.
-const forgotPassword = (email: string): Promise<void> =>
-  api.get("/sso-admin/forgotPassword", { params: { email } })
+const loginWithEmailAndPassword = (data: LoginInputWithRemember): Promise<AuthResponse> => {
+  // El endpoint real solo valida credenciales: mandamos el flag como header
+  // para que el backend decida el `expiresIn` cuando lo soporte.
+  return api.post("/auth/login", data, {
+    headers: data.rememberMe ? { "x-remember-me": "true" } : {},
+  })
+}
 
-const restorePassword = (data: {
-  token: string
-  password: string
-}): Promise<void> => api.post("/sso-admin/restorePassword", data)
+function setRememberPreference(value: boolean) {
+  if (value) localStorage.setItem(REMEMBER_KEY, "true")
+  else localStorage.removeItem(REMEMBER_KEY)
+}
+
+// Los flujos de recuperación (contraseña y usuario) viven en
+// features/auth/api — acá queda solo lo que hace a la sesión, que usa toda
+// la app (router, layouts protegidos, menú).
 
 export function useUser() {
   return useQuery({
@@ -51,15 +67,25 @@ export function useUser() {
 
 export function useLogin({
   mutationConfig,
-}: { mutationConfig?: MutationConfig<typeof loginWithEmailAndPassword> } = {}) {
+}: {
+  mutationConfig?: MutationConfig<typeof loginWithEmailAndPassword>
+} = {}) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: loginWithEmailAndPassword,
     ...mutationConfig,
-    onSuccess: (data, ...args) => {
-      setAuthToken(data.token)
+    onSuccess: (data, variables, ...rest) => {
+      // Persistencia según `rememberMe`: si no se marcó, limpiamos
+      // cualquier token persistido de antes para que la próxima vez que se
+      // recargue la pestaña no quede sesión fantasma.
+      if (!variables.rememberMe) {
+        setAuthToken(null)
+      } else {
+        setAuthToken(data.token)
+      }
+      setRememberPreference(variables.rememberMe)
       queryClient.setQueryData(USER_QUERY_KEY, toAuthUserFromToken(data.token))
-      mutationConfig?.onSuccess?.(data, ...args)
+      mutationConfig?.onSuccess?.(data, variables, ...rest)
     },
   })
 }
@@ -79,24 +105,6 @@ export function useLogout({
       queryClient.clear()
       mutationConfig?.onSuccess?.(...args)
     },
-  })
-}
-
-export function useForgotPassword({
-  mutationConfig,
-}: { mutationConfig?: MutationConfig<typeof forgotPassword> } = {}) {
-  return useMutation({
-    mutationFn: forgotPassword,
-    ...mutationConfig,
-  })
-}
-
-export function useRestorePassword({
-  mutationConfig,
-}: { mutationConfig?: MutationConfig<typeof restorePassword> } = {}) {
-  return useMutation({
-    mutationFn: restorePassword,
-    ...mutationConfig,
   })
 }
 

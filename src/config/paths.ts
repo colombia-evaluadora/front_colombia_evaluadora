@@ -14,6 +14,15 @@ export const paths = {
       path: "/forgot-password",
       getHref: () => "/forgot-password",
     },
+    forgotUsername: {
+      path: "/forgot-username",
+      getHref: () => "/forgot-username",
+    },
+    checkEmail: {
+      path: "/check-email",
+      getHref: (token?: string | null) =>
+        `/check-email${token ? `?token=${encodeURIComponent(token)}` : ""}`,
+    },
     restorePassword: {
       path: "/restore-password",
       getHref: (token?: string | null) =>
@@ -36,8 +45,7 @@ export const paths = {
     },
     auditoriaSesionOperaciones: {
       path: "auditoria-sesiones/$sessionId/operaciones",
-      getHref: (sessionId: string) =>
-        `/app/auditoria-sesiones/${sessionId}/operaciones`,
+      getHref: (sessionId: string) => `/app/auditoria-sesiones/${sessionId}/operaciones`,
     },
     auditoriaTablas: {
       path: "auditoria-tablas",

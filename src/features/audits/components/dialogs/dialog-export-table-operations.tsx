@@ -1,11 +1,6 @@
 import { useState } from "react"
 
-import {
-  DownloadSimpleIcon,
-  FilePdfIcon,
-  FileXlsIcon,
-  SpinnerIcon,
-} from "@phosphor-icons/react"
+import { DownloadSimpleIcon, FilePdfIcon, FileXlsIcon, SpinnerIcon } from "@/components/ui/icons"
 import { toast } from "sonner"
 
 import {
@@ -55,9 +50,13 @@ export function ExportTableOperationsDialog({
   // Los dos botones comparten la misma mutación, así que `isPending` sola no
   // distingue cuál se pulsó. `variables` guarda el input en vuelo — con eso
   // el spinner sale solo en el botón que disparó la exportación.
+<<<<<<< HEAD
   const pendingFormat = exportAll.isPending
     ? exportAll.variables?.format
     : undefined
+=======
+  const pendingFormat = exportAll.isPending ? exportAll.variables?.format : undefined
+>>>>>>> main
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -71,14 +70,12 @@ export function ExportTableOperationsDialog({
         <DialogHeader>
           <DialogTitle>Exportar operaciones filtradas</DialogTitle>
           <DialogDescription>
-            Elegí un formato para exportar todas las operaciones que coincidan
-            con los filtros activos.
+            Elegí un formato para exportar todas las operaciones que coincidan con los filtros
+            activos.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="sm:justify-between">
-          <DialogClose render={<Button type="button" variant="ghost" />}>
-            Cancelar
-          </DialogClose>
+          <DialogClose render={<Button type="button" variant="ghost" />}>Cancelar</DialogClose>
           <div className="flex flex-col-reverse gap-2 sm:flex-row">
             <Button
               type="button"

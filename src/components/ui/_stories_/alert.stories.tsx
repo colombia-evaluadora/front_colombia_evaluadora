@@ -1,10 +1,10 @@
-import preview from '../../../../.storybook/preview'
-import { Alert, AlertDescription, AlertTitle } from '../alert'
+import preview from "../../../../.storybook/preview"
+import { Alert, AlertDescription, AlertTitle } from "../alert"
 
 const meta = preview.meta({
-  title: 'Design System/Feedback/Alert',
+  title: "Design System/Feedback/Alert",
   component: Alert,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
 })
 
 export const Default = meta.story({
@@ -17,7 +17,7 @@ export const Default = meta.story({
 })
 
 export const Destructive = meta.story({
-  args: { variant: 'destructive' },
+  args: { variant: "destructive" },
   render: (args) => (
     <Alert {...args} className="w-96">
       <AlertTitle>Something went wrong</AlertTitle>

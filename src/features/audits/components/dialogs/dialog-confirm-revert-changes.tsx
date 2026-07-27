@@ -1,6 +1,6 @@
 import { useState } from "react"
 
-import { ArrowCounterClockwiseIcon, SpinnerIcon } from "@phosphor-icons/react"
+import { ArrowCounterClockwiseIcon, SpinnerIcon } from "@/components/ui/icons"
 import { toast } from "sonner"
 
 import {
@@ -71,24 +71,19 @@ export function DialogConfirmRevertChanges({
           />
         }
       >
-        <ArrowCounterClockwiseIcon
-          weight="bold"
-          data-icon="inline-start"
-        />
+        <ArrowCounterClockwiseIcon weight="bold" data-icon="inline-start" />
         Revertir
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>¿Revertir los cambios?</AlertDialogTitle>
           <AlertDialogDescription>
-            Se van a restaurar {fieldIndexes.length} campo(s) a su valor
-            anterior. Esta acción no se puede deshacer.
+            Se van a restaurar {fieldIndexes.length} campo(s) a su valor anterior. Esta acción no se
+            puede deshacer.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={revertChange.isPending}>
-            Cancelar
-          </AlertDialogCancel>
+          <AlertDialogCancel disabled={revertChange.isPending}>Cancelar</AlertDialogCancel>
           <AlertDialogAction
             disabled={revertChange.isPending}
             aria-busy={revertChange.isPending}

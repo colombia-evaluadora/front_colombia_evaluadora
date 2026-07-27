@@ -17,15 +17,12 @@ function fetchOperationChanges({
 }: UseOperationChangesQueryParams): Promise<OperationChangesResponse> {
   // GET: estamos leyendo un recurso específico (los cambios de una
   // operación), no ejecutando una acción.
-  return api.get(
-    `/audit-tables/${tableSlug}/operations/${operationId}/changes`,
-    { params: { showAll: showAll ?? false } }
-  )
+  return api.get(`/audit-tables/${tableSlug}/operations/${operationId}/changes`, {
+    params: { showAll: showAll ?? false },
+  })
 }
 
-export function useOperationChangesQuery(
-  params: UseOperationChangesQueryParams
-) {
+export function useOperationChangesQuery(params: UseOperationChangesQueryParams) {
   return useQuery({
     queryKey: [
       "audit-tables",

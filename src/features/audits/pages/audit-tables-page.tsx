@@ -27,8 +27,7 @@ export function AuditTablesPage() {
         </CardAction>
         <CardTitle>Auditoría por tabla</CardTitle>
         <CardDescription>
-          Elegí una tabla para ver el historial de operaciones sobre sus
-          registros.
+          Elegí una tabla para ver el historial de operaciones sobre sus registros.
         </CardDescription>
       </CardHeader>
       <CardContent>

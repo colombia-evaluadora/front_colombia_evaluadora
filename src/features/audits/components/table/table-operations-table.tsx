@@ -18,10 +18,8 @@ import { TableOperationsStatsCards } from "../stats/table-operations-stats-cards
 import { useParams } from "@tanstack/react-router"
 
 export function TableOperationsDataTable() {
-  
   const { tableSlug } = useParams({ strict: false }) as { tableSlug: string }
-  const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } =
-    useTablePagination()
+  const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
   const { filters, queryFilters, applyFilters, clearAllFilters, activeFilterCount } =
     useTableOperationsFilters()
   const { data, isPending, isError, refetch } = useTableOperationsQuery({

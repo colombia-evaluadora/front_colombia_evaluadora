@@ -1,12 +1,19 @@
-import preview from '../../../../.storybook/preview'
-import { FolderOpenIcon } from '@phosphor-icons/react'
-import { Button } from '../button'
-import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '../empty'
+import preview from "../../../../.storybook/preview"
+import { FolderOpenIcon } from "@/components/ui/icons"
+import { Button } from "../button"
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "../empty"
 
 const meta = preview.meta({
-  title: 'Design System/Feedback/Empty',
+  title: "Design System/Feedback/Empty",
   component: Empty,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
 })
 
 export const Default = meta.story({

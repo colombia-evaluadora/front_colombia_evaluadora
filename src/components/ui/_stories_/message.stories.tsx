@@ -1,10 +1,10 @@
-import preview from '../../../../.storybook/preview'
-import { Message, MessageAvatar, MessageContent } from '../message'
+import preview from "../../../../.storybook/preview"
+import { Message, MessageAvatar, MessageContent } from "../message"
 
 const meta = preview.meta({
-  title: 'Design System/Chat/Message',
+  title: "Design System/Chat/Message",
   component: Message,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
 })
 
 export const IncomingStart = meta.story({

@@ -12,27 +12,16 @@ interface UseSessionOperationsQueryParams {
 }
 
 function fetchSessionOperations(
-  params: UseSessionOperationsQueryParams
+  params: UseSessionOperationsQueryParams,
 ): Promise<SessionOperationsResponse> {
-  // QUERY (RFC 10008): el body lleva los filtros/sort/page, igual que
-  // el endpoint paginado de operaciones por tabla.
-  return api.query(
-    `/audits/sessions/${params.sessionId}/operations`,
-    params
-  )
+  // El body lleva los filtros/sort/page, igual que el endpoint paginado
+  // de operaciones por tabla.
+  return api.query(`/audits/sessions/${params.sessionId}/operations`, params)
 }
 
-export function useSessionOperationsQuery(
-  params: UseSessionOperationsQueryParams
-) {
+export function useSessionOperationsQuery(params: UseSessionOperationsQueryParams) {
   return useQuery({
-    queryKey: [
-      "audits",
-      "sessions",
-      params.sessionId,
-      "operations",
-      params,
-    ],
+    queryKey: ["audits", "sessions", params.sessionId, "operations", params],
     queryFn: () => fetchSessionOperations(params),
     placeholderData: (previous) => previous,
   })

@@ -1,39 +1,44 @@
-import preview from '../../../../.storybook/preview'
-import { ArrowRightIcon, CheckCircleIcon, SpinnerIcon, WarningCircleIcon, XCircleIcon } from '@phosphor-icons/react'
+import preview from "../../../../.storybook/preview"
+import {
+  ArrowRightIcon,
+  CheckCircleIcon,
+  SpinnerIcon,
+  WarningCircleIcon,
+  XCircleIcon,
+} from "@/components/ui/icons"
 
-import { Badge, badgeVariants } from '../badge'
+import { Badge, badgeVariants } from "../badge"
 
 // Truco para escribir backticks literales dentro de un template literal sin
 // que JS los desactive. Ver button.stories.tsx para más contexto.
-const BT = '`'
+const BT = "`"
 
 const meta = preview.meta({
-  title: 'Design System/Data Display/Badge',
+  title: "Design System/Data Display/Badge",
   component: Badge,
   // Sin `tags: ['autodocs']` — la docs page la genera `badge.mdx`.
-  args: { children: 'Badge' },
+  args: { children: "Badge" },
   argTypes: {
     variant: {
-      control: { type: 'select' },
-      options: ['fill', 'soft', 'outline'],
-      description: 'Forma del Badge (sincronizada con Figma: Solid/Soft/Outline).',
-      table: { defaultValue: { summary: 'fill' } },
+      control: { type: "select" },
+      options: ["fill", "soft", "outline"],
+      description: "Forma del Badge (sincronizada con Figma: Solid/Soft/Outline).",
+      table: { defaultValue: { summary: "fill" } },
     },
     color: {
-      control: { type: 'select' },
+      control: { type: "select" },
       options: [
-        'primary',
-        'secondary',
-        'muted',
-        'neutral',
-        'destructive',
-        'info',
-        'warning',
-        'success',
+        "primary",
+        "secondary",
+        "muted",
+        "neutral",
+        "destructive",
+        "info",
+        "warning",
+        "success",
       ],
-      description:
-        'Tono semántico (8 colores, mapeo Figma → código en `badge.tsx`).',
-      table: { defaultValue: { summary: 'primary' } },
+      description: "Tono semántico (8 colores, mapeo Figma → código en `badge.tsx`).",
+      table: { defaultValue: { summary: "primary" } },
     },
   },
   parameters: {
@@ -130,7 +135,7 @@ export const Variants = meta.story({
     docs: {
       description: {
         story:
-          'Las filas son `variant`, las columnas son `color`. Cada celda es un `<Badge>` real.',
+          "Las filas son `variant`, las columnas son `color`. Cada celda es un `<Badge>` real.",
       },
       source: {
         code: `<Badge variant="fill" color="primary">Badge</Badge>`,
@@ -138,16 +143,16 @@ export const Variants = meta.story({
     },
   },
   render: () => {
-    const variants = ['fill', 'soft', 'outline'] as const
+    const variants = ["fill", "soft", "outline"] as const
     const colors = [
-      'primary',
-      'secondary',
-      'muted',
-      'neutral',
-      'info',
-      'destructive',
-      'warning',
-      'success',
+      "primary",
+      "secondary",
+      "muted",
+      "neutral",
+      "info",
+      "destructive",
+      "warning",
+      "success",
     ] as const
     return (
       <div className="flex flex-col gap-6 p-6">
@@ -241,9 +246,9 @@ export const WithIcon = meta.story({
 export const AsLink = meta.story({
   args: {
     render: <a href="#" />,
-    children: 'Ver detalles',
-    variant: 'soft',
-    color: 'info',
+    children: "Ver detalles",
+    variant: "soft",
+    color: "info",
   },
   parameters: {
     // El ejemplo está fijo (variant=soft, color=info) — los controles no aplican.
@@ -251,7 +256,7 @@ export const AsLink = meta.story({
     docs: {
       description: {
         story:
-          '`render` viene de `@storybook/blocks/use-render`. Mantiene la accesibilidad del `<a>` con la apariencia del badge.',
+          "`render` viene de `@storybook/blocks/use-render`. Mantiene la accesibilidad del `<a>` con la apariencia del badge.",
       },
       source: {
         code: `<Badge
@@ -279,7 +284,7 @@ export const StatusBadges = meta.story({
     docs: {
       description: {
         story:
-          'Estos son los patrones que recomendamos. El color comunica la categoría semántica; el ícono refuerza el mensaje.',
+          "Estos son los patrones que recomendamos. El color comunica la categoría semántica; el ícono refuerza el mensaje.",
       },
       source: {
         code: `<Badge variant="fill" color="success">Publicado</Badge>
@@ -367,7 +372,7 @@ export const CustomColors = meta.story({
     docs: {
       description: {
         story:
-          'Pasa clases de Tailwind directamente. Úsalo con moderación — preferir agregar un color al design system si el caso es recurrente.',
+          "Pasa clases de Tailwind directamente. Úsalo con moderación — preferir agregar un color al design system si el caso es recurrente.",
       },
       source: {
         code: `<Badge className="bg-purple-600 text-white">Purple</Badge>
@@ -389,7 +394,7 @@ export const CustomColors = meta.story({
       <Badge variant="outline" className="border-purple-600 text-purple-600">
         Purple outline
       </Badge>
-      <a href="#" className={badgeVariants({ variant: 'fill', color: 'primary' })}>
+      <a href="#" className={badgeVariants({ variant: "fill", color: "primary" })}>
         badgeVariants en &lt;a&gt;
       </a>
       <Badge variant="soft" color="info">

@@ -1,16 +1,16 @@
-import preview from '../../../../.storybook/preview'
-import { TextBIcon, TextItalicIcon, TextUnderlineIcon } from '@phosphor-icons/react'
-import { ToggleGroup, ToggleGroupItem } from '../toggle-group'
+import preview from "../../../../.storybook/preview"
+import { TextBIcon, TextItalicIcon, TextUnderlineIcon } from "@/components/ui/icons"
+import { ToggleGroup, ToggleGroupItem } from "../toggle-group"
 
 const meta = preview.meta({
-  title: 'Design System/Forms/ToggleGroup',
+  title: "Design System/Forms/ToggleGroup",
   component: ToggleGroup,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
 })
 
 export const Default = meta.story({
   render: () => (
-    <ToggleGroup defaultValue={['bold']}>
+    <ToggleGroup defaultValue={["bold"]}>
       <ToggleGroupItem value="bold" aria-label="Bold">
         <TextBIcon />
       </ToggleGroupItem>
@@ -26,7 +26,7 @@ export const Default = meta.story({
 
 export const Outline = meta.story({
   render: () => (
-    <ToggleGroup variant="outline" defaultValue={['bold']}>
+    <ToggleGroup variant="outline" defaultValue={["bold"]}>
       <ToggleGroupItem value="bold" aria-label="Bold">
         <TextBIcon />
       </ToggleGroupItem>
@@ -39,7 +39,7 @@ export const Outline = meta.story({
 
 export const Vertical = meta.story({
   render: () => (
-    <ToggleGroup orientation="vertical" defaultValue={['bold']}>
+    <ToggleGroup orientation="vertical" defaultValue={["bold"]}>
       <ToggleGroupItem value="bold" aria-label="Bold">
         <TextBIcon />
       </ToggleGroupItem>

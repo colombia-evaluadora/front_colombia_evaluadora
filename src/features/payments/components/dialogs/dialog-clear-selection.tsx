@@ -1,6 +1,6 @@
 import { useState } from "react"
 
-import { XIcon } from "@phosphor-icons/react"
+import { XIcon } from "@/components/ui/icons"
 
 import {
   AlertDialog,
@@ -24,9 +24,7 @@ export function ClearSelectionDialog({ resetSelection }: ClearSelectionDialogPro
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger
-        render={<Button variant="outline" aria-label="Limpiar selección" />}
-      >
+      <AlertDialogTrigger render={<Button variant="outline" aria-label="Limpiar selección" />}>
         <XIcon />
         <span className="sr-only md:not-sr-only">Limpiar</span>
       </AlertDialogTrigger>

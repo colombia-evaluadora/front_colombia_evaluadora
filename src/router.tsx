@@ -9,13 +9,13 @@ import {
 import type { QueryClient } from "@tanstack/react-query"
 
 import { paths } from "@/config/paths"
-import { env } from "@/config/env"
 import { hasSession } from "@/lib/auth"
 import { queryClient } from "@/lib/query-client"
 import { NotFoundPage } from "@/components/layout/not-found-page"
 import { ErrorPage } from "@/components/layout/error-page"
 import { ComingSoonPage } from "@/components/layout/coming-soon-page"
 import {
+  checkEmailSearchSchema,
   loginSearchSchema,
   restorePasswordSearchSchema,
 } from "@/features/auth/api/schema"
@@ -29,45 +29,51 @@ import {
 } from "@/features/audits/api/schema"
 import { academicPeriodsSearchSchema } from "@/features/establishment/api/schema"
 
-const LandingPage = lazyRouteComponent(
+/*const LandingPage = lazyRouteComponent(
   () => import("@/features/landing/pages/landing-page"),
   "LandingPage"
-)
-const LoginPage = lazyRouteComponent(
-  () => import("@/features/auth/pages/login-page"),
-  "LoginPage"
-)
+)*/
+const LoginPage = lazyRouteComponent(() => import("@/features/auth/pages/login-page"), "LoginPage")
 const ForgotPasswordPage = lazyRouteComponent(
   () => import("@/features/auth/pages/forgot-password-page"),
-  "ForgotPasswordPage"
+  "ForgotPasswordPage",
+)
+const ForgotUsernamePage = lazyRouteComponent(
+  () => import("@/features/auth/pages/forgot-username-page"),
+  "ForgotUsernamePage",
+)
+const CheckEmailPage = lazyRouteComponent(
+  () => import("@/features/auth/pages/check-email-page"),
+  "CheckEmailPage",
 )
 const RestorePasswordPage = lazyRouteComponent(
   () => import("@/features/auth/pages/restore-password-page"),
-  "RestorePasswordPage"
+  "RestorePasswordPage",
 )
+const AuthLayout = lazyRouteComponent(() => import("@/components/layout/auth-layout"), "AuthLayout")
 const ProtectedLayout = lazyRouteComponent(
   () => import("@/components/layout/protected-layout"),
-  "ProtectedLayout"
+  "ProtectedLayout",
 )
 const PaymentsPage = lazyRouteComponent(
   () => import("@/features/payments/pages/payments-page"),
-  "PaymentsPage"
+  "PaymentsPage",
 )
 const AuditSessionPage = lazyRouteComponent(
   () => import("@/features/audits/pages/audit-session-page"),
-  "AuditSessionPage"
+  "AuditSessionPage",
 )
 const AuditTablesPage = lazyRouteComponent(
   () => import("@/features/audits/pages/audit-tables-page"),
-  "AuditTablesPage"
+  "AuditTablesPage",
 )
 const TableOperationsPage = lazyRouteComponent(
   () => import("@/features/audits/pages/table-operations-page"),
-  "TableOperationsPage"
+  "TableOperationsPage",
 )
 const SessionOperationsPage = lazyRouteComponent(
   () => import("@/features/audits/pages/session-operations-page"),
-  "SessionOperationsPage"
+  "SessionOperationsPage",
 )
 const AcademicPeriodsPage = lazyRouteComponent(
   () => import("@/features/establishment/pages/academic-periods-page"),
@@ -125,8 +131,14 @@ const homeRoute = createRoute({
   },
 })
 
-const loginRoute = createRoute({
+const authLayoutRoute = createRoute({
   getParentRoute: () => rootRoute,
+  id: "_auth",
+  component: AuthLayout,
+})
+
+const loginRoute = createRoute({
+  getParentRoute: () => authLayoutRoute,
   path: paths.auth.login.path,
   validateSearch: loginSearchSchema,
   head: () => ({
@@ -144,7 +156,7 @@ const loginRoute = createRoute({
 })
 
 const forgotPasswordRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => authLayoutRoute,
   path: paths.auth.forgotPassword.path,
   head: () => ({
     meta: [
@@ -155,8 +167,33 @@ const forgotPasswordRoute = createRoute({
   component: ForgotPasswordPage,
 })
 
+const forgotUsernameRoute = createRoute({
+  getParentRoute: () => authLayoutRoute,
+  path: paths.auth.forgotUsername.path,
+  head: () => ({
+    meta: [
+      { title: `Recuperar correo · ${APP_NAME}` },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
+  }),
+  component: ForgotUsernamePage,
+})
+
+const checkEmailRoute = createRoute({
+  getParentRoute: () => authLayoutRoute,
+  path: paths.auth.checkEmail.path,
+  validateSearch: checkEmailSearchSchema,
+  head: () => ({
+    meta: [
+      { title: `Revisa tu correo · ${APP_NAME}` },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
+  }),
+  component: CheckEmailPage,
+})
+
 const restorePasswordRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => authLayoutRoute,
   path: paths.auth.restorePassword.path,
   validateSearch: restorePasswordSearchSchema,
   head: () => ({
@@ -259,11 +296,15 @@ const configuracionRoute = createRoute({
 })
 
 const routeTree = rootRoute.addChildren([
-//  landingRoute,
+  //  landingRoute,
   homeRoute,
-  loginRoute,
-  forgotPasswordRoute,
-  restorePasswordRoute,
+  authLayoutRoute.addChildren([
+    loginRoute,
+    forgotPasswordRoute,
+    forgotUsernameRoute,
+    checkEmailRoute,
+    restorePasswordRoute,
+  ]),
   appLayoutRoute.addChildren([
     paymentsRoute,
     auditoriaSesionesRoute,

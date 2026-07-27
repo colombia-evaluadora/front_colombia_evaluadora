@@ -14,10 +14,7 @@ function fetchAudits(body: AuditsQueryRequest): Promise<AuditsQueryResponse> {
   return api.query("/audits/query", body)
 }
 
-export const auditsQueryKey = (params: UseAuditsQueryParams) => [
-  "audits",
-  params,
-]
+export const auditsQueryKey = (params: UseAuditsQueryParams) => ["audits", params]
 
 export function useAuditsQuery(params: UseAuditsQueryParams) {
   return useQuery({

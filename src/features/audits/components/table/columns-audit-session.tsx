@@ -1,6 +1,6 @@
 import type { ColumnDef, Table } from "@tanstack/react-table"
 import { Link } from "@tanstack/react-router"
-import { CheckIcon, ListMagnifyingGlassIcon } from "@phosphor-icons/react"
+import { CheckIcon, ListMagnifyingGlassIcon } from "@/components/ui/icons"
 
 import { Avatar, AvatarBadge, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -9,10 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { DataTableColumnHeader } from "@/components/data-table"
 import { paths } from "@/config/paths"
 
-import {
-  SESSION_STATUS_BADGE,
-  SESSION_STATUS_LABELS,
-} from "../../api/ui-mappings"
+import { SESSION_STATUS_BADGE, SESSION_STATUS_LABELS } from "../../api/ui-mappings"
 import type { AuditSession, SessionStatus } from "../../api/types/audit"
 
 function initials(name: string): string {
@@ -42,10 +39,7 @@ export const columns: ColumnDef<AuditSession>[] = [
         aria-label="Seleccionar página"
         className="translate-y-0.5"
         checked={table.getIsAllPageRowsSelected()}
-        indeterminate={
-          !table.getIsAllPageRowsSelected() &&
-          table.getIsSomePageRowsSelected()
-        }
+        indeterminate={!table.getIsAllPageRowsSelected() && table.getIsSomePageRowsSelected()}
         onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
       />
     ),
@@ -65,17 +59,13 @@ export const columns: ColumnDef<AuditSession>[] = [
   {
     id: "authorIp",
     accessorKey: "authorName",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Autor / IP" />
-    ),
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Autor / IP" />,
     cell: ({ row }) => {
       const session = row.original
       return (
         <div className="flex items-center gap-3">
           <Avatar>
-            {session.authorAvatarUrl && (
-              <AvatarImage src={session.authorAvatarUrl} alt="" />
-            )}
+            {session.authorAvatarUrl && <AvatarImage src={session.authorAvatarUrl} alt="" />}
             <AvatarFallback>{initials(session.authorName)}</AvatarFallback>
             {session.authorVerified && (
               <AvatarBadge>
@@ -96,9 +86,7 @@ export const columns: ColumnDef<AuditSession>[] = [
   {
     id: "startedAt",
     accessorKey: "startedAt",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Inicio" />
-    ),
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Inicio" />,
     cell: ({ row }) => {
       const startedAt = new Date(row.getValue<string>("startedAt"))
       return (
@@ -115,35 +103,23 @@ export const columns: ColumnDef<AuditSession>[] = [
   },
   {
     id: "duration",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Duración" />
-    ),
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Duración" />,
     cell: ({ row }) => <span>{formatDuration(row.original)}</span>,
   },
   {
     id: "status",
     accessorKey: "status",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Estado" />
-    ),
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Estado" />,
     cell: ({ row }) => {
       const status = row.getValue<SessionStatus>("status")
-      return (
-        <Badge {...SESSION_STATUS_BADGE[status]}>
-          {SESSION_STATUS_LABELS[status]}
-        </Badge>
-      )
+      return <Badge {...SESSION_STATUS_BADGE[status]}>{SESSION_STATUS_LABELS[status]}</Badge>
     },
   },
   {
     id: "operations",
     accessorKey: "operationsCount",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Operaciones" />
-    ),
-    cell: ({ row }) => (
-      <span className="font-medium">{row.original.operationsCount}</span>
-    ),
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Operaciones" />,
+    cell: ({ row }) => <span className="font-medium">{row.original.operationsCount}</span>,
   },
   {
     id: "actions",
@@ -153,11 +129,7 @@ export const columns: ColumnDef<AuditSession>[] = [
         variant="ghost"
         size="icon-sm"
         aria-label={`Ver operaciones de la sesión de ${row.original.authorName}`}
-        render={
-          <Link
-            to={paths.app.auditoriaSesionOperaciones.getHref(row.original.id)}
-          />
-        }
+        render={<Link to={paths.app.auditoriaSesionOperaciones.getHref(row.original.id)} />}
         nativeButton={false}
       >
         <ListMagnifyingGlassIcon weight="bold" />

@@ -1,6 +1,6 @@
-import preview from '../../../../.storybook/preview'
-import { useState } from 'react'
-import { Button } from '../button'
+import preview from "../../../../.storybook/preview"
+import { useState } from "react"
+import { Button } from "../button"
 import {
   Command,
   CommandDialog,
@@ -11,12 +11,12 @@ import {
   CommandList,
   CommandSeparator,
   CommandShortcut,
-} from '../command'
+} from "../command"
 
 const meta = preview.meta({
-  title: 'Design System/Overlays/Command',
+  title: "Design System/Overlays/Command",
   component: Command,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
 })
 
 export const Default = meta.story({

@@ -1,6 +1,6 @@
 import { useState } from "react"
 
-import { SpinnerIcon, TrashIcon } from "@phosphor-icons/react"
+import { SpinnerIcon, TrashIcon } from "@/components/ui/icons"
 import { toast } from "sonner"
 
 import {
@@ -42,13 +42,7 @@ export function DeleteAllPaymentsDialog({ filters }: DeleteAllPaymentsDialogProp
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger
-        render={
-          <Button
-            variant="fill"
-            color="destructive"
-            aria-label="Eliminar pagos filtrados"
-          />
-        }
+        render={<Button variant="fill" color="destructive" aria-label="Eliminar pagos filtrados" />}
       >
         <TrashIcon />
         <span className="sr-only md:not-sr-only">Eliminar</span>
@@ -57,8 +51,8 @@ export function DeleteAllPaymentsDialog({ filters }: DeleteAllPaymentsDialogProp
         <AlertDialogHeader>
           <AlertDialogTitle>¿Eliminar todos los pagos filtrados?</AlertDialogTitle>
           <AlertDialogDescription>
-            Esta acción eliminará permanentemente todos los pagos que
-            coincidan con los filtros activos. No se puede deshacer.
+            Esta acción eliminará permanentemente todos los pagos que coincidan con los filtros
+            activos. No se puede deshacer.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

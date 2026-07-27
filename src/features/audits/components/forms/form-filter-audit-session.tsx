@@ -1,7 +1,8 @@
 import { useForm } from "@tanstack/react-form"
-import { CheckCircleIcon, CircleDashedIcon } from "@phosphor-icons/react"
+import { CheckCircleIcon, CircleDashedIcon } from "@/components/ui/icons"
 
 import { Checkbox } from "@/components/ui/checkbox"
+import { DatePicker } from "@/components/date-picker"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import {
@@ -20,7 +21,7 @@ import {
   type AuditFiltersFormValues,
 } from "../../api/schema"
 import type { SessionStatus } from "../../api/types/audit"
-import { FieldDateTimePopover } from "./field-date-time-popover"
+import { formatDateTimeValue, parseDateTimeValue } from "@/lib/date-time-value"
 
 interface FilterAuditSessionFormProps {
   id: string
@@ -55,7 +56,7 @@ export function FilterAuditSessionForm({
       <form.Field
         name="author"
         children={(field) => (
-          <Field orientation="vertical" className="gap-2">
+          <Field orientation="vertical" variant="outlined" className="gap-2">
             <FieldLabel htmlFor={field.name}>Autor / IP</FieldLabel>
             <Input
               id={field.name}
@@ -96,9 +97,7 @@ export function FilterAuditSessionForm({
                       id="status-filter-active"
                       name={field.name}
                       checked={field.state.value.includes("active")}
-                      onCheckedChange={(checked) =>
-                        toggle("active", checked === true)
-                      }
+                      onCheckedChange={(checked) => toggle("active", checked === true)}
                     />
                     <FieldContent className="min-w-0">
                       <FieldTitle className="w-full min-w-0">
@@ -114,9 +113,7 @@ export function FilterAuditSessionForm({
                       id="status-filter-closed"
                       name={field.name}
                       checked={field.state.value.includes("closed")}
-                      onCheckedChange={(checked) =>
-                        toggle("closed", checked === true)
-                      }
+                      onCheckedChange={(checked) => toggle("closed", checked === true)}
                     />
                     <FieldContent className="min-w-0">
                       <FieldTitle className="w-full min-w-0">
@@ -134,27 +131,37 @@ export function FilterAuditSessionForm({
 
       <Separator />
 
-      {/* Dos campos independientes (no un único rango) — cada uno
-          combina Calendar + TimePicker en el mismo popover para elegir
-          fecha y hora sin tener que abrir dos controles distintos. */}
+      {/* Dos campos independientes (no un único rango) — cada uno usa el
+          modo `datetime`, que combina calendario y hora en el mismo popover
+          para no tener que abrir dos controles distintos. */}
       <form.Field
         name="startedFrom"
         children={(field) => (
-          <FieldDateTimePopover
-            label="Desde"
-            value={field.state.value}
-            onChange={field.handleChange}
-          />
+          <Field orientation="vertical" variant="outlined" className="gap-2">
+            <FieldLabel htmlFor={field.name}>Desde</FieldLabel>
+            <DatePicker
+              mode="datetime"
+              id={field.name}
+              value={parseDateTimeValue(field.state.value)}
+              onChange={(date) => field.handleChange(formatDateTimeValue(date))}
+              className="h-9"
+            />
+          </Field>
         )}
       />
       <form.Field
         name="startedTo"
         children={(field) => (
-          <FieldDateTimePopover
-            label="Hasta"
-            value={field.state.value}
-            onChange={field.handleChange}
-          />
+          <Field orientation="vertical" variant="outlined" className="gap-2">
+            <FieldLabel htmlFor={field.name}>Hasta</FieldLabel>
+            <DatePicker
+              mode="datetime"
+              id={field.name}
+              value={parseDateTimeValue(field.state.value)}
+              onChange={(date) => field.handleChange(formatDateTimeValue(date))}
+              className="h-9"
+            />
+          </Field>
         )}
       />
     </form>

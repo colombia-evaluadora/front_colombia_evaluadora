@@ -1,5 +1,5 @@
-import preview from '../../../../.storybook/preview'
-import { MagnifyingGlassIcon } from '@phosphor-icons/react'
+import preview from "../../../../.storybook/preview"
+import { MagnifyingGlassIcon } from "@/components/ui/icons"
 import {
   InputGroup,
   InputGroupAddon,
@@ -7,12 +7,12 @@ import {
   InputGroupInput,
   InputGroupText,
   InputGroupTextarea,
-} from '../input-group'
+} from "../input-group"
 
 const meta = preview.meta({
-  title: 'Design System/Forms/InputGroup',
+  title: "Design System/Forms/InputGroup",
   component: InputGroup,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
 })
 
 export const Default = meta.story({

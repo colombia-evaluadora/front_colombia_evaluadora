@@ -1,14 +1,14 @@
-import preview from '../../../../.storybook/preview'
-import { Skeleton } from '../skeleton'
+import preview from "../../../../.storybook/preview"
+import { Skeleton } from "../skeleton"
 
 const meta = preview.meta({
-  title: 'Design System/Feedback/Skeleton',
+  title: "Design System/Feedback/Skeleton",
   component: Skeleton,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
 })
 
 export const Default = meta.story({
-  args: { className: 'h-4 w-48' },
+  args: { className: "h-4 w-48" },
 })
 
 export const CardPlaceholder = meta.story({

@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { EraserIcon, FunnelIcon, XIcon } from "@phosphor-icons/react"
+import { EraserIcon, FunnelIcon, XIcon } from "@/components/ui/icons"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -54,7 +54,11 @@ export function FilterTableOperationsSheet({
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger
           render={
-            <Button variant={activeFilterCount > 0 ? "soft" : "outline"} color="secondary" />
+            <Button
+              variant={activeFilterCount > 0 ? "soft" : "outline"}
+              color="secondary"
+              className={activeFilterCount > 0 ? "rounded-r-none" : undefined}
+            />
           }
         >
           <FunnelIcon />
@@ -65,7 +69,9 @@ export function FilterTableOperationsSheet({
           <SheetHeader>
             <SheetTitle>Filtros</SheetTitle>
             <SheetDescription>
-              {activeFilterCount > 0 ? `${activeFilterCount} filtro${activeFilterCount === 1 ? "" : "s"} activo${activeFilterCount === 1 ? "" : "s"}.` : "Sin filtros activos."}
+              {activeFilterCount > 0
+                ? `${activeFilterCount} filtro${activeFilterCount === 1 ? "" : "s"} activo${activeFilterCount === 1 ? "" : "s"}.`
+                : "Sin filtros activos."}
             </SheetDescription>
           </SheetHeader>
 
@@ -86,7 +92,7 @@ export function FilterTableOperationsSheet({
               <EraserIcon data-icon="inline-start" />
               Limpiar todo
             </Button>
-            <Button type="submit" form={FILTER_TABLE_OPERATIONS_FORM_ID}  color="primary">
+            <Button type="submit" form={FILTER_TABLE_OPERATIONS_FORM_ID} color="primary">
               Aplicar
             </Button>
           </SheetFooter>
@@ -98,7 +104,7 @@ export function FilterTableOperationsSheet({
           variant="soft"
           color="secondary"
           size="icon"
-          className="border-l-0"
+          className="rounded-l-none border-l-0"
           aria-label="Limpiar filtros"
           onClick={clearAllFilters}
         >

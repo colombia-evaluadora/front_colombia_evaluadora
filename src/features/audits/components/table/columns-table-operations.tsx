@@ -1,15 +1,12 @@
 import type { ColumnDef, Table } from "@tanstack/react-table"
-import { CheckIcon } from "@phosphor-icons/react"
+import { CheckIcon } from "@/components/ui/icons"
 
 import { Avatar, AvatarBadge, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { DataTableColumnHeader } from "@/components/data-table"
 
-import {
-  OPERATION_TYPE_BADGE,
-  OPERATION_TYPE_LABELS,
-} from "../../api/ui-mappings"
+import { OPERATION_TYPE_BADGE, OPERATION_TYPE_LABELS } from "../../api/ui-mappings"
 import type { OperationType, TableOperation } from "../../api/types/audit-table"
 import { ViewOperationChangesDialog } from "../dialogs/dialog-view-operation-changes"
 
@@ -27,10 +24,7 @@ export const columns: ColumnDef<TableOperation>[] = [
         aria-label="Seleccionar página"
         className="translate-y-0.5"
         checked={table.getIsAllPageRowsSelected()}
-        indeterminate={
-          !table.getIsAllPageRowsSelected() &&
-          table.getIsSomePageRowsSelected()
-        }
+        indeterminate={!table.getIsAllPageRowsSelected() && table.getIsSomePageRowsSelected()}
         onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
       />
     ),
@@ -50,24 +44,16 @@ export const columns: ColumnDef<TableOperation>[] = [
   {
     id: "operation",
     accessorKey: "operation",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Operación" />
-    ),
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Operación" />,
     cell: ({ row }) => {
       const operation = row.getValue<OperationType>("operation")
-      return (
-        <Badge {...OPERATION_TYPE_BADGE[operation]}>
-          {OPERATION_TYPE_LABELS[operation]}
-        </Badge>
-      )
+      return <Badge {...OPERATION_TYPE_BADGE[operation]}>{OPERATION_TYPE_LABELS[operation]}</Badge>
     },
   },
   {
     id: "authorIp",
     accessorKey: "authorName",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Autor / IP" />
-    ),
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Autor / IP" />,
     cell: ({ row }) => {
       const op = row.original
       return (
@@ -94,9 +80,7 @@ export const columns: ColumnDef<TableOperation>[] = [
   {
     id: "detail",
     accessorKey: "entityName",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Detalle" />
-    ),
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Detalle" />,
     cell: ({ row }) => {
       const op = row.original
       return (
@@ -110,9 +94,7 @@ export const columns: ColumnDef<TableOperation>[] = [
   {
     id: "occurredAt",
     accessorKey: "occurredAt",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Fecha" />
-    ),
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Fecha" />,
     cell: ({ row }) => {
       const occurredAt = new Date(row.getValue<string>("occurredAt"))
       return (
@@ -130,10 +112,7 @@ export const columns: ColumnDef<TableOperation>[] = [
   {
     id: "actions",
     header: () => <span className="sr-only">Acciones</span>,
-    cell: ({ row }) => 
-    <ViewOperationChangesDialog
-      operationId={row.original.id}
-    />,
+    cell: ({ row }) => <ViewOperationChangesDialog operationId={row.original.id} />,
     enableSorting: false,
     enableHiding: false,
     size: 48,

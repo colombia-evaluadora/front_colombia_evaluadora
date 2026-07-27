@@ -1,13 +1,13 @@
-import preview from '../../../../.storybook/preview'
-import { Separator } from '../separator'
-import { ScrollArea } from '../scroll-area'
+import preview from "../../../../.storybook/preview"
+import { Separator } from "../separator"
+import { ScrollArea } from "../scroll-area"
 
 const tags = Array.from({ length: 30 }, (_, i) => `Tag ${i + 1}`)
 
 const meta = preview.meta({
-  title: 'Design System/Layout/ScrollArea',
+  title: "Design System/Layout/ScrollArea",
   component: ScrollArea,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
 })
 
 export const Default = meta.story({

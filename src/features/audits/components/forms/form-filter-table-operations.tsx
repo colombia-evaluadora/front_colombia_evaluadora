@@ -1,16 +1,11 @@
 import { useState } from "react"
 
 import { useForm } from "@tanstack/react-form"
-import {
-  PencilIcon,
-  PlusCircleIcon,
-  TrashIcon,
-  PlusIcon,
-  XIcon,
-} from "@phosphor-icons/react"
+import { PencilIcon, PlusCircleIcon, TrashIcon, PlusIcon, XIcon } from "@/components/ui/icons"
 
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
+import { DatePicker } from "@/components/date-picker"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import {
@@ -40,7 +35,7 @@ import {
   type TableOperationsFiltersFormValues,
 } from "../../api/schema"
 import type { OperationType } from "../../api/types/audit-table"
-import { FieldDateTimePopover } from "./field-date-time-popover"
+import { formatDateTimeValue, parseDateTimeValue } from "@/lib/date-time-value"
 
 interface FilterTableOperationsFormProps {
   id: string
@@ -77,7 +72,7 @@ export function FilterTableOperationsForm({
       <form.Field
         name="author"
         children={(field) => (
-          <Field orientation="vertical" className="gap-2">
+          <Field orientation="vertical" variant="outlined" className="gap-2">
             <FieldLabel htmlFor={field.name}>Autor / IP</FieldLabel>
             <Input
               id={field.name}
@@ -118,9 +113,7 @@ export function FilterTableOperationsForm({
                       id="operation-filter-insert"
                       name={field.name}
                       checked={field.state.value.includes("INSERT")}
-                      onCheckedChange={(checked) =>
-                        toggle("INSERT", checked === true)
-                      }
+                      onCheckedChange={(checked) => toggle("INSERT", checked === true)}
                     />
                     <FieldContent className="min-w-0">
                       <FieldTitle className="w-full min-w-0">
@@ -136,9 +129,7 @@ export function FilterTableOperationsForm({
                       id="operation-filter-update"
                       name={field.name}
                       checked={field.state.value.includes("UPDATE")}
-                      onCheckedChange={(checked) =>
-                        toggle("UPDATE", checked === true)
-                      }
+                      onCheckedChange={(checked) => toggle("UPDATE", checked === true)}
                     />
                     <FieldContent className="min-w-0">
                       <FieldTitle className="w-full min-w-0">
@@ -154,9 +145,7 @@ export function FilterTableOperationsForm({
                       id="operation-filter-delete"
                       name={field.name}
                       checked={field.state.value.includes("DELETE")}
-                      onCheckedChange={(checked) =>
-                        toggle("DELETE", checked === true)
-                      }
+                      onCheckedChange={(checked) => toggle("DELETE", checked === true)}
                     />
                     <FieldContent className="min-w-0">
                       <FieldTitle className="w-full min-w-0">
@@ -174,27 +163,37 @@ export function FilterTableOperationsForm({
 
       <Separator />
 
-      {/* Dos campos independientes (no un único rango) — cada uno
-          combina Calendar + TimePicker en el mismo popover para elegir
-          fecha y hora sin tener que abrir dos controles distintos. */}
+      {/* Dos campos independientes (no un único rango) — cada uno usa el
+          modo `datetime`, que combina calendario y hora en el mismo popover
+          para no tener que abrir dos controles distintos. */}
       <form.Field
         name="occurredFrom"
         children={(field) => (
-          <FieldDateTimePopover
-            label="Desde"
-            value={field.state.value}
-            onChange={field.handleChange}
-          />
+          <Field orientation="vertical" variant="outlined" className="gap-2">
+            <FieldLabel htmlFor={field.name}>Desde</FieldLabel>
+            <DatePicker
+              mode="datetime"
+              id={field.name}
+              value={parseDateTimeValue(field.state.value)}
+              onChange={(date) => field.handleChange(formatDateTimeValue(date))}
+              className="h-9"
+            />
+          </Field>
         )}
       />
       <form.Field
         name="occurredTo"
         children={(field) => (
-          <FieldDateTimePopover
-            label="Hasta"
-            value={field.state.value}
-            onChange={field.handleChange}
-          />
+          <Field orientation="vertical" variant="outlined" className="gap-2">
+            <FieldLabel htmlFor={field.name}>Hasta</FieldLabel>
+            <DatePicker
+              mode="datetime"
+              id={field.name}
+              value={parseDateTimeValue(field.state.value)}
+              onChange={(date) => field.handleChange(formatDateTimeValue(date))}
+              className="h-9"
+            />
+          </Field>
         )}
       />
 
@@ -203,9 +202,7 @@ export function FilterTableOperationsForm({
       <form.Field
         name="fieldFilters"
         mode="array"
-        children={(field) => (
-          <FieldFilterSection field={field} availableFields={availableFields} />
-        )}
+        children={(field) => <FieldFilterSection field={field} availableFields={availableFields} />}
       />
     </form>
   )
@@ -231,9 +228,7 @@ interface FieldFilterSectionProps {
  */
 function FieldFilterSection({ field, availableFields }: FieldFilterSectionProps) {
   const [composerField, setComposerField] = useState<string>("")
-  const [composerCondition, setComposerCondition] = useState<
-    FieldFilterCondition | ""
-  >("")
+  const [composerCondition, setComposerCondition] = useState<FieldFilterCondition | "">("")
   const [composerValue, setComposerValue] = useState("")
 
   const composerReady =
@@ -288,12 +283,9 @@ function FieldFilterSection({ field, availableFields }: FieldFilterSectionProps)
           </ul>
         )}
 
-        <Field orientation="vertical" className="gap-2">
+        <Field variant="outlined" className="gap-2">
           <FieldLabel htmlFor="field-filter-field">Campo</FieldLabel>
-          <Select
-            value={composerField}
-            onValueChange={(value) => setComposerField(value ?? "")}
-          >
+          <Select value={composerField} onValueChange={(value) => setComposerField(value ?? "")}>
             <SelectTrigger id="field-filter-field" size="sm" className="w-full">
               <SelectValue placeholder="Elegí un campo de la tabla" />
             </SelectTrigger>
@@ -307,7 +299,7 @@ function FieldFilterSection({ field, availableFields }: FieldFilterSectionProps)
           </Select>
         </Field>
 
-        <Field orientation="vertical" className="gap-2">
+        <Field orientation="vertical" variant="outlined" className="gap-2">
           <FieldLabel htmlFor="field-filter-condition">Condición</FieldLabel>
           <Select
             value={composerCondition}
@@ -315,11 +307,7 @@ function FieldFilterSection({ field, availableFields }: FieldFilterSectionProps)
               setComposerCondition((value ?? "") as FieldFilterCondition | "")
             }
           >
-            <SelectTrigger
-              id="field-filter-condition"
-              size="sm"
-              className="w-full"
-            >
+            <SelectTrigger id="field-filter-condition" size="sm" className="w-full">
               <SelectValue placeholder="Elegí cómo comparar" />
             </SelectTrigger>
             <SelectContent>
@@ -332,7 +320,7 @@ function FieldFilterSection({ field, availableFields }: FieldFilterSectionProps)
           </Select>
         </Field>
 
-        <Field orientation="vertical" className="gap-2">
+        <Field orientation="vertical" variant="outlined" className="gap-2">
           <FieldLabel htmlFor="field-filter-value">Valor</FieldLabel>
           <Input
             id="field-filter-value"
@@ -344,14 +332,10 @@ function FieldFilterSection({ field, availableFields }: FieldFilterSectionProps)
             className="h-9"
           />
         </Field>
-          <Button
-            type="button"
-            onClick={handleAdd}
-            disabled={!composerReady}
-          >
-            <PlusIcon data-icon="inline-start" weight="bold" />
-            Agregar
-          </Button>
+        <Button type="button" onClick={handleAdd} disabled={!composerReady}>
+          <PlusIcon data-icon="inline-start" weight="bold" />
+          Agregar
+        </Button>
       </FieldGroup>
     </FieldSet>
   )

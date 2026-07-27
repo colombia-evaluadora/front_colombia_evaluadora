@@ -1,4 +1,4 @@
-import { PaletteIcon } from "@phosphor-icons/react"
+import { PaletteIcon } from "@/components/ui/icons"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -21,12 +21,8 @@ export function ColorThemeToggle() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuGroup>
-          <DropdownMenuItem onClick={() => setPalette("default")}>
-            Default
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setPalette("red")}>
-            Red
-          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setPalette("default")}>Default</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setPalette("red")}>Red</DropdownMenuItem>
         </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>

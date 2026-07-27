@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { EraserIcon, FunnelIcon, XIcon } from "@phosphor-icons/react"
+import { EraserIcon, FunnelIcon, XIcon } from "@/components/ui/icons"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -12,10 +12,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 
-import type {
-  AuditFiltersFormInput,
-  AuditFiltersFormValues,
-} from "../../api/schema"
+import type { AuditFiltersFormInput, AuditFiltersFormValues } from "../../api/schema"
 import { FilterAuditSessionForm } from "../forms/form-filter-audit-session"
 
 const FILTER_AUDIT_SESSION_FORM_ID = "filter-audits-form"
@@ -50,7 +47,11 @@ export function FilterAuditSessionSheet({
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger
           render={
-            <Button variant={activeFilterCount > 0 ? "soft" : "outline"} color="secondary" />
+            <Button
+              variant={activeFilterCount > 0 ? "soft" : "outline"}
+              color="secondary"
+              className={activeFilterCount > 0 ? "rounded-r-none" : undefined}
+            />
           }
         >
           <FunnelIcon />
@@ -61,7 +62,9 @@ export function FilterAuditSessionSheet({
           <SheetHeader>
             <SheetTitle>Filtros</SheetTitle>
             <SheetDescription>
-              {activeFilterCount > 0 ? `${activeFilterCount} filtro${activeFilterCount === 1 ? "" : "s"} activo${activeFilterCount === 1 ? "" : "s"}.` : "Sin filtros activos."}
+              {activeFilterCount > 0
+                ? `${activeFilterCount} filtro${activeFilterCount === 1 ? "" : "s"} activo${activeFilterCount === 1 ? "" : "s"}.`
+                : "Sin filtros activos."}
             </SheetDescription>
           </SheetHeader>
 
@@ -95,7 +98,7 @@ export function FilterAuditSessionSheet({
           variant="soft"
           color="secondary"
           size="icon"
-          className="border-l-0"
+          className="rounded-l-none border-l-0"
           aria-label="Limpiar filtros"
           onClick={clearAllFilters}
         >

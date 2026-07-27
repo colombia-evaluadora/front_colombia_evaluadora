@@ -1,6 +1,6 @@
 import { useState } from "react"
 
-import { XSquareIcon } from "@phosphor-icons/react"
+import { XSquareIcon } from "@/components/ui/icons"
 
 import {
   AlertDialog,
@@ -26,11 +26,7 @@ export function ClearSelectionSessionOperationsDialog({
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger
-        render={
-          <Button variant="outline" aria-label="Deseleccionar" />
-        }
-      >
+      <AlertDialogTrigger render={<Button variant="outline" aria-label="Deseleccionar" />}>
         <XSquareIcon />
         <span className="sr-only md:not-sr-only">Deseleccionar</span>
       </AlertDialogTrigger>
