@@ -234,6 +234,12 @@ export const periodosAcademicosAgregarRoute = createRoute({
   component: AcademicPeriodConfigPage,
 })
 
+export const periodosAcademicosEditarRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.periodosAcademicosEditar.path,
+  component: AcademicPeriodConfigPage,
+})
+
 const reportesRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.reportes.path,
@@ -266,6 +272,7 @@ const routeTree = rootRoute.addChildren([
     auditoriaSesionOperacionesRoute,
     periodosAcademicosRoute,
     periodosAcademicosAgregarRoute,
+    periodosAcademicosEditarRoute,
     reportesRoute,
     usuariosRoute,
     configuracionRoute,

@@ -1,5 +1,7 @@
-import { faker } from "@faker-js/faker"
-import type { AcademicPeriod } from "@/features/establishment/api/types/academic-period/academic-period"
+import type {
+  AcademicPeriod,
+  AcademicPeriodConfig,
+} from "@/features/establishment/api/types/academic-period/academic-period"
 
 const SEDES = [
   { id: 1, name: "I.E. JORGE GARCÍA LA SALLE BICENTENARIO" },
@@ -40,5 +42,16 @@ export const academicPeriodsDb: AcademicPeriod[] = [
   createPeriod(2, 2023, { startDate: "2023-02-03", endDate: "2023-12-03" }),
   createPeriod(3, 2023, { startDate: "2023-02-01", endDate: "2023-12-06" }),
 ]
+
+export const academicPeriodConfigsDb: AcademicPeriodConfig[] =
+  academicPeriodsDb.map((period) => ({
+    academicPeriodId: period.id,
+    jornadaId: 1,
+    reservationEnabled: true,
+    defaultBlocksCount: 6,
+    scheduleStartTime: "07:00",
+    scheduleEndTime: "13:00",
+    breaks: [{ startTime: "09:30", endTime: "10:00" }],
+  }))
 
 export const sedesLookup = SEDES
