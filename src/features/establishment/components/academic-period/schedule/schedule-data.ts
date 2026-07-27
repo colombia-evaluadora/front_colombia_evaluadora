@@ -1,92 +1,17 @@
-export type SubjectColor =
-  | "primary"
-  | "success"
-  | "chart3"
-  | "chart1"
-  | "chart2"
-  | "destructive"
-  | "warning"
-  | "muted"
-  | "accent"
-  | "foreground"
-  | "chart5"
-
-export interface Subject {
+// Materia del horario del grado, derivada en runtime del plan de estudio
+// (nombre + intensidad horaria) y del color definido en área/asignatura.
+export interface ScheduleSubject {
   id: string
   name: string
-  color: SubjectColor
+  // Cantidad de bloques = intensidad horaria de la asignatura.
   blocks: number
+  // Color en formato hex (#rrggbb) tomado de área/asignatura.
+  color: string
 }
 
-export interface SubjectColorClasses {
-  container: string
-  count: string
-}
-
-export const SUBJECT_COLOR_CLASSES: Record<SubjectColor, SubjectColorClasses> = {
-  primary: {
-    container: "bg-primary-22 text-primary border-primary-stroke",
-    count: "bg-primary text-primary-foreground",
-  },
-  success: {
-    container: "bg-success-22 text-success border-success-stroke",
-    count: "bg-success text-success-foreground",
-  },
-  destructive: {
-    container: "bg-destructive-22 text-destructive border-destructive-stroke",
-    count: "bg-destructive text-destructive-foreground",
-  },
-  warning: {
-    container: "bg-warning-22 text-warning-foreground border-warning-stroke",
-    count: "bg-warning text-warning-foreground",
-  },
-  muted: {
-    container: "bg-muted text-muted-foreground border-muted-stroke",
-    count: "bg-muted-foreground text-background",
-  },
-  foreground: {
-    container: "bg-foreground-22 text-foreground border-foreground-stroke",
-    count: "bg-foreground text-background",
-  },
-  accent: {
-    container: "bg-accent/20 text-accent-foreground border-accent/40",
-    count: "bg-accent text-accent-foreground",
-  },
-  chart1: {
-    container: "bg-chart-1/15 text-chart-1 border-chart-1/35",
-    count: "bg-chart-1 text-white",
-  },
-  chart2: {
-    container: "bg-chart-2/15 text-chart-2 border-chart-2/35",
-    count: "bg-chart-2 text-white",
-  },
-  chart3: {
-    container: "bg-chart-3/15 text-chart-3 border-chart-3/35",
-    count: "bg-chart-3 text-white",
-  },
-  chart5: {
-    container: "bg-chart-5/25 text-foreground border-chart-5/50",
-    count: "bg-chart-5 text-foreground",
-  },
-}
-
-export const SUBJECTS: Subject[] = [
-  { id: "matematicas", name: "Matemáticas", color: "primary", blocks: 2 },
-  { id: "naturales", name: "Naturales", color: "success", blocks: 4 },
-  { id: "sociales", name: "Sociales", color: "chart3", blocks: 3 },
-  { id: "espanol", name: "Español", color: "chart1", blocks: 3 },
-  { id: "ingles", name: "Inglés", color: "chart2", blocks: 3 },
-  { id: "tecnologia", name: "Tecnología E Informática", color: "destructive", blocks: 2 },
-  { id: "edu-fisica", name: "Educación Física", color: "warning", blocks: 2 },
-  { id: "quimica", name: "Química", color: "muted", blocks: 2 },
-  { id: "etica", name: "Ética Y Valores", color: "accent", blocks: 1 },
-  { id: "comprension", name: "Comprensión Lectora", color: "foreground", blocks: 1 },
-  { id: "geometria", name: "Geometría", color: "chart5", blocks: 1 },
-]
-
-export const SUBJECTS_BY_ID: Record<string, Subject> = Object.fromEntries(
-  SUBJECTS.map((subject) => [subject.id, subject])
-)
+// Color de reserva cuando la asignatura del plan no tiene un área/asignatura
+// con color asignado.
+export const DEFAULT_SUBJECT_COLOR = "#64748b"
 
 export interface Day {
   id: string
@@ -251,10 +176,3 @@ export function buildRuns(slots: Slot[]): string[][] {
   if (current.length) runs.push(current)
   return runs
 }
-
-export const GRADE_GROUP_OPTIONS: string[] = [
-  "Sexto - 0601 - Mañana",
-  "Séptimo - 0701 - Mañana",
-  "Octavo - 0801 - Tarde",
-  "Noveno - 0901 - Tarde",
-]

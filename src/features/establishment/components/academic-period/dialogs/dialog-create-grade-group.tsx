@@ -57,7 +57,13 @@ const EMPTY: GradeGroupFormValues = {
 
 const FORM_ID = "grade-group-form"
 
-export function CreateGradeGroupDialog() {
+interface CreateGradeGroupDialogProps {
+  gradeId?: number
+}
+
+export function CreateGradeGroupDialog({
+  gradeId,
+}: CreateGradeGroupDialogProps) {
   const [open, setOpen] = useState(false)
 
   const createGradeGroup = useCreateGradeGroup({
@@ -74,7 +80,7 @@ export function CreateGradeGroupDialog() {
     defaultValues: EMPTY,
     validators: { onSubmit: gradeGroupFormSchema },
     onSubmit: ({ value }) => {
-      createGradeGroup.mutate(gradeGroupFormSchema.parse(value))
+      createGradeGroup.mutate({ ...gradeGroupFormSchema.parse(value), gradeId })
     },
   })
 

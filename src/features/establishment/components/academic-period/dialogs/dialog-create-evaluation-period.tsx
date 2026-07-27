@@ -32,10 +32,10 @@ import type { EvaluationPeriodStatus } from "../../../api/types/academic-period/
 import { FieldDatePopover } from "../field-date-popover"
 
 const STATUS_TUPLE = [
-  "No iniciado",
-  "En curso",
-  "Cargado",
-  "Habilitado",
+  "Calificable",
+  "NO Calificable",
+  "En Recuperaciones",
+  "Habilitados para algunas asignaturas",
 ] as const satisfies readonly EvaluationPeriodStatus[]
 
 const evaluationPeriodFormSchema = z.object({
@@ -56,12 +56,18 @@ const EMPTY: EvaluationPeriodFormValues = {
   startDate: "",
   endDate: "",
   peso: 0,
-  estado: "No iniciado",
+  estado: "En Recuperaciones",
 }
 
 const FORM_ID = "evaluation-period-form"
 
-export function CreateEvaluationPeriodDialog() {
+interface CreateEvaluationPeriodDialogProps {
+  academicPeriodId?: number
+}
+
+export function CreateEvaluationPeriodDialog({
+  academicPeriodId,
+}: CreateEvaluationPeriodDialogProps) {
   const [open, setOpen] = useState(false)
 
   const createEvaluation = useCreateEvaluationPeriod({
@@ -78,7 +84,10 @@ export function CreateEvaluationPeriodDialog() {
     defaultValues: EMPTY,
     validators: { onSubmit: evaluationPeriodFormSchema },
     onSubmit: ({ value }) => {
-      createEvaluation.mutate(evaluationPeriodFormSchema.parse(value))
+      createEvaluation.mutate({
+        ...evaluationPeriodFormSchema.parse(value),
+        academicPeriodId,
+      })
     },
   })
 

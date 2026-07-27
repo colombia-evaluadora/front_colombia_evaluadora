@@ -11,7 +11,11 @@ import { useGradeGroupsQuery } from "../../../api/query/use-grade-groups-query"
 import { columns } from "../table/columns-grade-groups"
 import { CreateGradeGroupDialog } from "../dialogs/dialog-create-grade-group"
 
-export function TabGradeGroups() {
+interface TabGradeGroupsProps {
+  gradeId?: number
+}
+
+export function TabGradeGroups({ gradeId }: TabGradeGroupsProps) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [pageIndex, setPageIndex] = useState(0)
   const [pageSize, setPageSize] = useState(10)
@@ -21,6 +25,7 @@ export function TabGradeGroups() {
     sorting,
     pageIndex,
     pageSize,
+    gradeId,
   })
 
   const goToPage = setPageIndex
@@ -45,7 +50,7 @@ export function TabGradeGroups() {
   return (
     <>
       <div className="mb-2 flex justify-end">
-        <CreateGradeGroupDialog />
+        <CreateGradeGroupDialog gradeId={gradeId} />
       </div>
 
       <DataTable

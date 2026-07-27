@@ -1,5 +1,3 @@
-import type { ComponentType } from "react"
-
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 import { TabEvaluationPeriods } from "./tabs/tab-evaluation-periods"
@@ -11,21 +9,26 @@ import { TabEvaluationCriteria } from "./tabs/tab-evaluation-criteria"
 import { TabAcademicAssignments } from "./tabs/tab-academic-assignments"
 import type { Jornada } from "./schedule/schedule-data"
 
-const TABS: { value: string; label: string; Component: ComponentType<any> }[] = [
-  { value: "evaluacion", label: "Periodos de evaluación", Component: TabEvaluationPeriods },
-  { value: "promocion", label: "Criterios de promoción", Component: TabPromotionCriteria },
-  { value: "grados", label: "Grados", Component: TabGrades },
-  { value: "escalas", label: "Escalas de valoración", Component: TabRatingScales },
-  { value: "area", label: "Área/asignatura", Component: TabAreaSubject },
-  { value: "criterios", label: "Criterios de evaluación", Component: TabEvaluationCriteria },
-  { value: "asignaciones", label: "Asignaciones académicas", Component: TabAcademicAssignments },
+const TABS: { value: string; label: string }[] = [
+  { value: "evaluacion", label: "Periodos de evaluación" },
+  { value: "promocion", label: "Criterios de promoción" },
+  { value: "grados", label: "Grados" },
+  { value: "escalas", label: "Escalas de valoración" },
+  { value: "area", label: "Área/asignatura" },
+  { value: "criterios", label: "Criterios de evaluación" },
+  { value: "asignaciones", label: "Asignaciones académicas" },
 ]
 
 interface EvaluationPeriodsSectionProps {
   jornada: Jornada
+  // Acota los datos de cada tab al periodo editado / recién creado.
+  academicPeriodId?: number
 }
 
-export function EvaluationPeriodsSection({ jornada }: EvaluationPeriodsSectionProps) {
+export function EvaluationPeriodsSection({
+  jornada,
+  academicPeriodId,
+}: EvaluationPeriodsSectionProps) {
   return (
     <Tabs defaultValue="evaluacion">
       <TabsList variant="line">
@@ -36,11 +39,27 @@ export function EvaluationPeriodsSection({ jornada }: EvaluationPeriodsSectionPr
         ))}
       </TabsList>
 
-      {TABS.map(({ value, Component }) => (
-        <TabsContent key={value} value={value}>
-          {value === "grados" ? <TabGrades jornada={jornada} /> : <Component />}
-        </TabsContent>
-      ))}
+      <TabsContent value="evaluacion">
+        <TabEvaluationPeriods academicPeriodId={academicPeriodId} />
+      </TabsContent>
+      <TabsContent value="promocion">
+        <TabPromotionCriteria academicPeriodId={academicPeriodId} />
+      </TabsContent>
+      <TabsContent value="grados">
+        <TabGrades jornada={jornada} academicPeriodId={academicPeriodId} />
+      </TabsContent>
+      <TabsContent value="escalas">
+        <TabRatingScales academicPeriodId={academicPeriodId} />
+      </TabsContent>
+      <TabsContent value="area">
+        <TabAreaSubject academicPeriodId={academicPeriodId} />
+      </TabsContent>
+      <TabsContent value="criterios">
+        <TabEvaluationCriteria academicPeriodId={academicPeriodId} />
+      </TabsContent>
+      <TabsContent value="asignaciones">
+        <TabAcademicAssignments academicPeriodId={academicPeriodId} />
+      </TabsContent>
     </Tabs>
   )
 }

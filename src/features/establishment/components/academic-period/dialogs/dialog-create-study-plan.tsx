@@ -30,16 +30,7 @@ import {
 } from "@/components/ui/select"
 
 import { useCreateStudyPlanItem } from "../../../api/mutations/create-study-plan"
-
-const ASIGNATURA_OPTIONS = [
-  "MATEMÁTICAS",
-  "CIENCIAS SOCIALES",
-  "CIENCIAS NATURALES",
-  "LENGUA CASTELLANA",
-  "INGLÉS",
-  "EDUCACIÓN FÍSICA",
-  "TECNOLOGÍA E INFORMÁTICA",
-]
+import { useAreaSubjectQuery } from "../../../api/query/use-area-subject"
 
 const FORMATO_CALIFICACION_OPTIONS = ["Numérico", "Conceptual", "Cualitativo"]
 
@@ -77,10 +68,30 @@ const EMPTY: StudyPlanFormValues = {
 
 const FORM_ID = "study-plan-form"
 
-export function CreateStudyPlanDialog() {
+interface CreateStudyPlanDialogProps {
+  academicPeriodId?: number
+  gradeId?: number
+}
+
+export function CreateStudyPlanDialog({
+  academicPeriodId,
+  gradeId,
+}: CreateStudyPlanDialogProps) {
   const [open, setOpen] = useState(false)
   // Cuando está apagado, los campos avanzados quedan deshabilitados (defaults).
   const [personalizar, setPersonalizar] = useState(false)
+
+  // Las asignaturas disponibles son las definidas en área/asignatura del periodo.
+  const { data: areaData } = useAreaSubjectQuery({
+    filters: {},
+    sorting: [],
+    pageIndex: 0,
+    pageSize: 100,
+    academicPeriodId,
+  })
+  const asignaturaOptions = (areaData?.rows ?? []).map(
+    (area) => area.nombreInterno
+  )
 
   const createStudyPlanItem = useCreateStudyPlanItem({
     mutationConfig: {
@@ -100,6 +111,8 @@ export function CreateStudyPlanDialog() {
       createStudyPlanItem.mutate({
         ...studyPlanFormSchema.parse(value),
         codigo: Date.now(),
+        academicPeriodId,
+        gradeId,
       })
     },
   })
@@ -143,11 +156,17 @@ export function CreateStudyPlanDialog() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectGroup>
-                          {ASIGNATURA_OPTIONS.map((option) => (
-                            <SelectItem key={option} value={option}>
-                              {option}
-                            </SelectItem>
-                          ))}
+                          {asignaturaOptions.length === 0 ? (
+                            <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                              No hay áreas/asignaturas en este periodo.
+                            </div>
+                          ) : (
+                            asignaturaOptions.map((option) => (
+                              <SelectItem key={option} value={option}>
+                                {option}
+                              </SelectItem>
+                            ))
+                          )}
                         </SelectGroup>
                       </SelectContent>
                     </Select>

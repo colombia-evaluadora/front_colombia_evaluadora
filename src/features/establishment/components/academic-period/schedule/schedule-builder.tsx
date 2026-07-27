@@ -18,12 +18,22 @@ import {
   buildSlots,
   DAYS,
   formatClock,
-  GRADE_GROUP_OPTIONS,
-  SUBJECTS,
-  SUBJECTS_BY_ID,
-  SUBJECT_COLOR_CLASSES,
   type Jornada,
+  type ScheduleSubject,
 } from "./schedule-data"
+
+// Estilos derivados del color hex de la materia (definido en área/asignatura):
+// fondo tenue, borde y texto del mismo color; el contador va en color pleno.
+function subjectStyles(hex: string) {
+  return {
+    container: {
+      backgroundColor: `${hex}1f`,
+      borderColor: `${hex}80`,
+      color: hex,
+    } as React.CSSProperties,
+    count: { backgroundColor: hex, color: "#fff" } as React.CSSProperties,
+  }
+}
 
 type Schedule = Record<string, Record<string, string | undefined>>
 
@@ -87,17 +97,29 @@ interface ScheduleBuilderProps {
   jornada: Jornada
   onClose: () => void
   hideActions?: boolean
+  // Materias disponibles para el curso, derivadas del plan de estudio
+  // (nombre + intensidad horaria) y con el color de área/asignatura.
+  subjects: ScheduleSubject[]
+  // Opciones del select Grado/Grupo, tomadas de los grupos reales del grado.
+  gradeGroups: string[]
 }
 
 export function ScheduleBuilder({
   jornada,
   onClose,
   hideActions = false,
+  subjects,
+  gradeGroups,
 }: ScheduleBuilderProps) {
-  const [gradeGroup, setGradeGroup] = useState(GRADE_GROUP_OPTIONS[0])
+  const [gradeGroup, setGradeGroup] = useState("")
   const [schedule, setSchedule] = useState<Schedule>({})
   const [draggingId, setDraggingId] = useState<string | null>(null)
   const [dragOver, setDragOver] = useState<string | null>(null)
+
+  const subjectsById = useMemo(
+    () => Object.fromEntries(subjects.map((s) => [s.id, s])),
+    [subjects]
+  )
 
   const todayWeekday = new Date().getDay()
 
@@ -149,7 +171,7 @@ export function ScheduleBuilder({
   }
 
   function handleDrop(dayId: string, slotId: string) {
-    const subject = draggingId ? SUBJECTS_BY_ID[draggingId] : undefined
+    const subject = draggingId ? subjectsById[draggingId] : undefined
     if (draggingId && subject) {
       const alreadyHere = schedule[dayId]?.[slotId] === draggingId
       const placed = placedCounts[draggingId] ?? 0
@@ -183,13 +205,20 @@ export function ScheduleBuilder({
         <Select
           value={gradeGroup}
           onValueChange={(value) => value && setGradeGroup(value)}
+          disabled={gradeGroups.length === 0}
         >
           <SelectTrigger className="w-full sm:w-72">
-            <SelectValue placeholder="Seleccionar" />
+            <SelectValue
+              placeholder={
+                gradeGroups.length === 0
+                  ? "Sin grupos: agregá uno en la pestaña Grupo"
+                  : "Seleccionar"
+              }
+            />
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
-              {GRADE_GROUP_OPTIONS.map((option) => (
+              {gradeGroups.map((option) => (
                 <SelectItem key={option} value={option}>
                   {option}
                 </SelectItem>
@@ -205,14 +234,21 @@ export function ScheduleBuilder({
         <span className="font-medium text-foreground">{jornadaSummary}</span>
       </p>
 
-      {/* Paleta de materias arrastrables. El contador muestra las horas que
-          faltan por asignar; la materia desaparece al completar su cupo. */}
+      {/* Paleta de materias arrastrables (del plan de estudio). El contador
+          muestra las horas que faltan por asignar; la materia desaparece al
+          completar su cupo. */}
       <div className="flex flex-wrap gap-2">
-        {SUBJECTS.map((subject) => {
+        {subjects.length === 0 && (
+          <p className="text-xs text-muted-foreground">
+            No hay asignaturas en el plan de estudio de este periodo. Agregá
+            asignaturas en la pestaña "Plan de estudio" para armar el horario.
+          </p>
+        )}
+        {subjects.map((subject) => {
           const remaining = subject.blocks - (placedCounts[subject.id] ?? 0)
           if (remaining <= 0) return null
 
-          const colors = SUBJECT_COLOR_CLASSES[subject.color]
+          const styles = subjectStyles(subject.color)
           return (
             <div
               key={subject.id}
@@ -226,31 +262,30 @@ export function ScheduleBuilder({
                 setDraggingId(null)
                 setDragOver(null)
               }}
+              style={styles.container}
               className={cn(
                 "flex cursor-grab items-center gap-2 border px-2.5 py-1 text-xs font-medium select-none active:cursor-grabbing",
-                colors.container,
                 draggingId === subject.id && "opacity-50"
               )}
             >
               <span>{subject.name}</span>
               <span
-                className={cn(
-                  "px-1.5 py-0.5 text-[10px] leading-none font-bold",
-                  colors.count
-                )}
+                style={styles.count}
+                className="px-1.5 py-0.5 text-[10px] leading-none font-bold"
               >
                 {remaining}B
               </span>
             </div>
           )
         })}
-        {SUBJECTS.every(
-          (subject) => (placedCounts[subject.id] ?? 0) >= subject.blocks
-        ) && (
-          <p className="text-xs text-muted-foreground">
-            Todas las materias fueron asignadas.
-          </p>
-        )}
+        {subjects.length > 0 &&
+          subjects.every(
+            (subject) => (placedCounts[subject.id] ?? 0) >= subject.blocks
+          ) && (
+            <p className="text-xs text-muted-foreground">
+              Todas las materias fueron asignadas.
+            </p>
+          )}
       </div>
 
       {/* Grilla del horario */}
@@ -310,7 +345,7 @@ export function ScheduleBuilder({
                     const cellKey = `${day.id}:${slot.id}`
                     const isOver = dragOver === cellKey
                     const subject = info?.subjectId
-                      ? SUBJECTS_BY_ID[info.subjectId]
+                      ? subjectsById[info.subjectId]
                       : undefined
 
                     return (
@@ -336,10 +371,8 @@ export function ScheduleBuilder({
                       >
                         {subject ? (
                           <div
-                            className={cn(
-                              "group absolute inset-1 flex items-center justify-between gap-1 border px-2 py-1.5",
-                              SUBJECT_COLOR_CLASSES[subject.color].container
-                            )}
+                            style={subjectStyles(subject.color).container}
+                            className="group absolute inset-1 flex items-center justify-between gap-1 border px-2 py-1.5"
                           >
                             <span className="text-left text-xs leading-tight font-medium">
                               {subject.name}
