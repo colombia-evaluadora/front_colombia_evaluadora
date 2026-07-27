@@ -1,9 +1,10 @@
-import { Fragment, useState } from "react"
-import { CaretDownIcon, CaretRightIcon } from "@phosphor-icons/react"
+"use no memo"
+
+import { useCallback, useMemo, useState } from "react"
+import type { SortingState } from "@tanstack/react-table"
 
 import { Badge } from "@/components/ui/badge"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Spinner } from "@/components/ui/spinner"
+import { DataTable } from "@/components/data-table"
 import {
   Table,
   TableBody,
@@ -12,162 +13,156 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { useDataTable } from "@/hooks/use-data-table"
 
 import { useRatingScalesQuery } from "../../../api/query/use-rating-scales-query"
 import { useTeachingLevelsQuery } from "../../../api/query/use-teaching-levels-query"
 import { RATING_SCALE_TYPE_BADGE } from "../../../api/ui-mappings"
-import type { RatingScale } from "../../../api/types/academic-period/rating-scales"
+import type {
+  RatingScale,
+  TeachingLevel,
+} from "../../../api/types/academic-period/rating-scales"
 import { CreateRatingScaleDialog } from "../dialogs/dialog-create-rating-scale"
 import { RatingSymbolView } from "../rating-symbol"
+import { createRatingScaleLevelColumns } from "../table/columns-rating-scales"
 
-export function TabRatingScales() {
+interface TabRatingScalesProps {
+  academicPeriodId?: number
+}
+
+export function TabRatingScales({ academicPeriodId }: TabRatingScalesProps) {
   const { data: levels = [], isPending: levelsPending } =
     useTeachingLevelsQuery()
-  // Traemos todas las escalas y agrupamos por nivel en el cliente.
-  const { data, isPending: scalesPending } = useRatingScalesQuery({
+  const {
+    data,
+    isPending: scalesPending,
+    isError,
+    refetch,
+  } = useRatingScalesQuery({
     filters: {},
     sorting: [],
     pageIndex: 0,
     pageSize: 100,
+    academicPeriodId,
   })
 
-  const [expanded, setExpanded] = useState<Set<number>>(new Set())
+  const [expandedId, setExpandedId] = useState<number | null>(null)
+  const [sorting, setSorting] = useState<SortingState>([])
 
   const scales = data?.rows ?? []
   const isPending = levelsPending || scalesPending
 
-  function toggle(levelId: number) {
-    setExpanded((prev) => {
-      const next = new Set(prev)
-      if (next.has(levelId)) next.delete(levelId)
-      else next.add(levelId)
-      return next
-    })
-  }
+  const sortedLevels = useMemo(() => {
+    if (!sorting.length) return levels
+    const [{ id, desc }] = sorting
+    const copy = [...levels].sort((a, b) =>
+      String(a[id as keyof TeachingLevel]).localeCompare(
+        String(b[id as keyof TeachingLevel])
+      )
+    )
+    return desc ? copy.reverse() : copy
+  }, [levels, sorting])
+
+  const toggleExpand = useCallback((level: TeachingLevel) => {
+    setExpandedId((prev) => (prev === level.id ? null : level.id))
+  }, [])
+
+  const columns = useMemo(
+    () =>
+      createRatingScaleLevelColumns({
+        expandedId,
+        onToggleExpand: toggleExpand,
+      }),
+    [expandedId, toggleExpand]
+  )
+
+  const { table } = useDataTable({
+    columns,
+    data: sortedLevels,
+    pageCount: 1,
+    getRowId: (level) => String(level.id),
+    pageIndex: 0,
+    pageSize: 10,
+    goToPage: () => {},
+    setPageSize: () => {},
+    sorting,
+    setSorting,
+  })
 
   function scalesForLevel(levelId: number): RatingScale[] {
     return scales.filter((scale) => scale.teachingLevelIds.includes(levelId))
   }
 
   return (
-    <>
-      <div className="mb-2 flex items-center justify-end">
-        <CreateRatingScaleDialog />
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-end">
+        <CreateRatingScaleDialog academicPeriodId={academicPeriodId} />
       </div>
 
-      <div className="overflow-x-auto rounded-lg border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-8" />
-              <TableHead className="w-8" />
-              <TableHead>Niveles de enseñanza</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isPending ? (
-              <TableRow>
-                <TableCell colSpan={3} className="py-8 text-center">
-                  <Spinner className="mx-auto" />
-                </TableCell>
-              </TableRow>
-            ) : levels.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={3}
-                  className="text-muted-foreground py-8 text-center"
-                >
-                  Sin niveles de enseñanza.
-                </TableCell>
-              </TableRow>
-            ) : (
-              levels.map((level) => {
-                const levelScales = scalesForLevel(level.id)
-                const isOpen = expanded.has(level.id)
-                return (
-                  <Fragment key={level.id}>
-                    <TableRow className="cursor-pointer" onClick={() => toggle(level.id)}>
-                      <TableCell>
-                        <button
-                          type="button"
-                          aria-label={isOpen ? "Contraer" : "Expandir"}
-                          className="text-muted-foreground flex items-center"
-                        >
-                          {isOpen ? (
-                            <CaretDownIcon className="size-4" />
-                          ) : (
-                            <CaretRightIcon className="size-4" />
-                          )}
-                        </button>
-                      </TableCell>
-                      <TableCell onClick={(e) => e.stopPropagation()}>
-                        <Checkbox color="neutral" aria-label={`Seleccionar ${level.nombre}`} />
-                      </TableCell>
-                      <TableCell className="font-semibold uppercase">
-                        {level.nombre}
-                      </TableCell>
-                    </TableRow>
-
-                    {isOpen && (
-                      <TableRow>
-                        <TableCell />
-                        <TableCell colSpan={2} className="p-0">
-                          <ScalesSubTable scales={levelScales} />
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </Fragment>
-                )
-              })
-            )}
-          </TableBody>
-        </Table>
-      </div>
-    </>
+      <DataTable
+        table={table}
+        isPending={isPending}
+        isError={isError}
+        onRetry={refetch}
+        emptyMessage="Sin niveles de enseñanza."
+        errorMessage="Ocurrió un error al cargar las escalas."
+        renderSubRow={(row) => {
+          const level = row.original as TeachingLevel
+          if (expandedId !== level.id) return null
+          return <ScalesSubTable scales={scalesForLevel(level.id)} />
+        }}
+      />
+    </div>
   )
 }
 
 function ScalesSubTable({ scales }: { scales: RatingScale[] }) {
   if (scales.length === 0) {
     return (
-      <p className="text-muted-foreground px-4 py-3 text-sm">
-        Sin escalas para este nivel.
-      </p>
+      <div className="-m-4 bg-background p-4">
+        <p className="text-muted-foreground px-1 py-2 text-sm">
+          Sin escalas para este nivel.
+        </p>
+      </div>
     )
   }
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Nombre</TableHead>
-          <TableHead>Abreviación</TableHead>
-          <TableHead>Nota máximo</TableHead>
-          <TableHead>Nota mínimo</TableHead>
-          <TableHead>Nota equivalente</TableHead>
-          <TableHead>Tipo</TableHead>
-          <TableHead>Iconografía</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {scales.map((scale) => (
-          <TableRow key={scale.codigo}>
-            <TableCell className="font-medium">{scale.nombre}</TableCell>
-            <TableCell>{scale.abreviacion}</TableCell>
-            <TableCell>{scale.notaMaxima}</TableCell>
-            <TableCell>{scale.notaMinima}</TableCell>
-            <TableCell>{scale.notaEquivalente}</TableCell>
-            <TableCell>
-              <Badge {...RATING_SCALE_TYPE_BADGE[scale.tipo]}>
-                {scale.tipo}
-              </Badge>
-            </TableCell>
-            <TableCell className="text-lg">
-              <RatingSymbolView value={scale.iconografia} />
-            </TableCell>
+    <div className="-m-4 bg-background p-4">
+      <div className="overflow-x-auto rounded-md border">
+        <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Nombre</TableHead>
+            <TableHead>Abreviación</TableHead>
+            <TableHead>Nota máximo</TableHead>
+            <TableHead>Nota mínimo</TableHead>
+            <TableHead>Nota equivalente</TableHead>
+            <TableHead>Tipo</TableHead>
+            <TableHead>Iconografía</TableHead>
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+        </TableHeader>
+        <TableBody>
+          {scales.map((scale) => (
+            <TableRow key={scale.codigo}>
+              <TableCell className="font-medium">{scale.nombre}</TableCell>
+              <TableCell>{scale.abreviacion}</TableCell>
+              <TableCell>{scale.notaMaxima}</TableCell>
+              <TableCell>{scale.notaMinima}</TableCell>
+              <TableCell>{scale.notaEquivalente}</TableCell>
+              <TableCell>
+                <Badge {...RATING_SCALE_TYPE_BADGE[scale.tipo]}>
+                  {scale.tipo}
+                </Badge>
+              </TableCell>
+              <TableCell className="text-lg">
+                <RatingSymbolView value={scale.iconografia} />
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+      </div>
+    </div>
   )
 }

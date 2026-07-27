@@ -10,6 +10,7 @@ import {
 import { ratingSymbolsDb } from "../db/rating-symbols"
 import type {
   RatingScale,
+  RatingScaleRecord,
   RatingScalesQueryFilters,
   RatingScalesQueryRequest,
   RatingScalesQueryResponse,
@@ -74,10 +75,17 @@ export const ratingScalesHandlers = [
 
   httpQuery("/api/rating-scales/query", async ({ request }) => {
     await delay(250)
-    const { filters, sorting, pageIndex, pageSize } =
+    const { filters, sorting, pageIndex, pageSize, academicPeriodId } =
       (await request.json()) as RatingScalesQueryRequest
 
-    const filtered = applySorting(applyFilters(ratingScalesDb, filters), sorting)
+    const scoped =
+      academicPeriodId == null
+        ? ratingScalesDb
+        : ratingScalesDb.filter(
+            (row) => row.academicPeriodId === academicPeriodId
+          )
+
+    const filtered = applySorting(applyFilters(scoped, filters), sorting)
     const totalCount = filtered.length
     const pageCount = Math.max(1, Math.ceil(totalCount / pageSize))
     const start = pageIndex * pageSize
@@ -94,10 +102,11 @@ export const ratingScalesHandlers = [
     await delay(400)
     const body = (await request.json()) as CreateRatingScaleRequest
 
-    const newScale: RatingScale = {
+    const newScale: RatingScaleRecord = {
       ...body,
       codigo: nextRatingScaleId(),
       teachingLevels: resolveTeachingLevels(body.teachingLevelIds),
+      academicPeriodId: body.academicPeriodId ?? 0,
     }
     ratingScalesDb.push(newScale)
 
