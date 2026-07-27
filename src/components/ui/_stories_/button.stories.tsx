@@ -1,5 +1,5 @@
 import preview from '../../../../.storybook/preview'
-import { ArrowRightIcon, PlusIcon, SpinnerIcon } from '@phosphor-icons/react'
+import { ArrowRightIcon, PlusIcon, SpinnerIcon } from '@/components/ui/icons'
 
 import { Button, buttonVariants } from '../button'
 

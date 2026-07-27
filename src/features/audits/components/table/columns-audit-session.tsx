@@ -1,6 +1,6 @@
 import type { ColumnDef, Table } from "@tanstack/react-table"
 import { Link } from "@tanstack/react-router"
-import { CheckIcon, ListMagnifyingGlassIcon } from "@phosphor-icons/react"
+import { CheckIcon, ListMagnifyingGlassIcon } from "@/components/ui/icons"
 
 import { Avatar, AvatarBadge, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"

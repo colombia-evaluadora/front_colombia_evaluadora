@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { PlusIcon } from "@phosphor-icons/react"
+import { PlusIcon } from "@/components/ui/icons"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import {

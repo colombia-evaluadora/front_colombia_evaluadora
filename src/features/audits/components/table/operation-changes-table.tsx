@@ -6,7 +6,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { ArrowCounterClockwiseIcon } from "@phosphor-icons/react"
+import { ArrowCounterClockwiseIcon } from "@/components/ui/icons"
 
 import type { OperationChange } from "../../api/types/audit-table"
 

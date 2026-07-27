@@ -1,4 +1,4 @@
-import { ChatCircleTextIcon } from "@phosphor-icons/react"
+import { ChatCircleTextIcon } from "@/components/ui/icons"
 
 import { Button } from "@/components/ui/button"
 import {

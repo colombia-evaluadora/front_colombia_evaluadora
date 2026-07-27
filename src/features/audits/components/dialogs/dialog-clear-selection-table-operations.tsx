@@ -1,6 +1,6 @@
 import { useState } from "react"
 
-import { XSquareIcon } from "@phosphor-icons/react"
+import { XSquareIcon } from "@/components/ui/icons"
 
 import {
   AlertDialog,

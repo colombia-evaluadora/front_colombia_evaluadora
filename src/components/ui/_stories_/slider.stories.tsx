@@ -8,24 +8,26 @@ const meta = preview.meta({
   tags: ['autodocs'],
 })
 
+const toArray = (value: number | readonly number[]) => (Array.isArray(value) ? [...value] : [value as number])
+
 export const Default = meta.story({
   render: () => {
     const [value, setValue] = useState([50])
-    return <Slider className="w-56" value={value} onValueChange={setValue} />
+    return <Slider className="w-56" value={value} onValueChange={(next) => setValue(toArray(next))} />
   },
 })
 
 export const Range = meta.story({
   render: () => {
     const [value, setValue] = useState([25, 75])
-    return <Slider className="w-56" value={value} onValueChange={setValue} />
+    return <Slider className="w-56" value={value} onValueChange={(next) => setValue(toArray(next))} />
   },
 })
 
 export const Vertical = meta.story({
   render: () => {
     const [value, setValue] = useState([40])
-    return <Slider orientation="vertical" className="h-40" value={value} onValueChange={setValue} />
+    return <Slider orientation="vertical" className="h-40" value={value} onValueChange={(next) => setValue(toArray(next))} />
   },
 })
 

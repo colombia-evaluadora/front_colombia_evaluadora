@@ -1,5 +1,5 @@
 import type { ColumnDef, Table } from "@tanstack/react-table"
-import { CheckIcon } from "@phosphor-icons/react"
+import { CheckIcon } from "@/components/ui/icons"
 
 import { Avatar, AvatarBadge, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"

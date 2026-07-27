@@ -1,4 +1,4 @@
-import { CaretUpDownIcon, SignOutIcon } from "@phosphor-icons/react"
+import { CaretUpDownIcon, SignOutIcon } from "@/components/ui/icons"
 import { useNavigate } from "@tanstack/react-router"
 import { toast } from "sonner"
 

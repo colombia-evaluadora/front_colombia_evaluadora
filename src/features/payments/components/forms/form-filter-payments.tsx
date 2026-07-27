@@ -5,7 +5,7 @@ import {
   CircleDashedIcon,
   CircleHalfIcon,
   XCircleIcon,
-} from "@phosphor-icons/react"
+} from "@/components/ui/icons"
 
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
@@ -61,7 +61,7 @@ export function FilterPaymentsForm({
       <form.Field
         name="email"
         children={(field) => (
-          <Field orientation="vertical" className="gap-2">
+          <Field orientation="vertical" variant="outlined" className="gap-2">
             <FieldLabel htmlFor={field.name}>Email</FieldLabel>
             <Input
               id={field.name}

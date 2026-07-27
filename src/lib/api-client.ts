@@ -14,18 +14,35 @@ declare module "axios" {
   }
 }
 
-// Persistido en localStorage solo para que la sesión mock sobreviva a un
-// reload mientras se prueba la UI. No es representativo de cómo se
-// guardaría un token contra un backend real.
-const TOKEN_STORAGE_KEY = "mock_auth_token"
-let authToken: string | null = localStorage.getItem(TOKEN_STORAGE_KEY)
+// Persistido en localStorage solo cuando el usuario marcó "Mantener sesión".
+// Si no, el token vive en memoria y muere con la pestaña — mismo efecto que
+// un refresh token que expira al cerrar el navegador.
+//
+// La clave va namespaced por modo: el token que emite MSW es un JWT sin
+// firma (`alg: none`, ver mocks/db/auth.ts) que el gateway real rechaza con
+// 401 `invalid_token`. Con una sola clave compartida, cambiar
+// ENABLE_API_MOCKING dejaba el token del modo anterior en storage y el front
+// se lo mandaba al backend equivocado.
+const TOKEN_STORAGE_KEY = env.ENABLE_API_MOCKING
+  ? "mock_auth_token"
+  : "auth_token"
+const REMEMBER_KEY = "auth_remember_me"
+let authToken: string | null = localStorage.getItem(REMEMBER_KEY)
+  ? localStorage.getItem(TOKEN_STORAGE_KEY)
+  : null
 
 export function setAuthToken(token: string | null) {
   authToken = token
-  if (token) {
-    localStorage.setItem(TOKEN_STORAGE_KEY, token)
-  } else {
+  // El token en memoria siempre se actualiza para que la pestaña actual
+  // funcione; el storage solo se toca si el usuario pidió "recordar".
+  if (token === null) {
     localStorage.removeItem(TOKEN_STORAGE_KEY)
+    localStorage.removeItem(REMEMBER_KEY)
+  } else {
+    authToken = token
+    if (localStorage.getItem(REMEMBER_KEY)) {
+      localStorage.setItem(TOKEN_STORAGE_KEY, token)
+    }
   }
 }
 
@@ -38,6 +55,8 @@ function authRequestInterceptor(config: InternalAxiosRequestConfig) {
   }
   return config
 }
+
+let isHandlingExpiredSession = false
 
 export const api = Axios.create({
   baseURL: env.API_URL,
@@ -56,13 +75,24 @@ api.interceptors.response.use(
     const isSessionCheck = error.config?.url === "/auth/refresh"
 
     if (!isSessionCheck) {
-      const message = error.response?.data?.message || error.message
-      toast.error(message)
-
       // Sin guard, un 401 en /login mismo (todavía no existe esa página)
       // reintentaría redirigir a /login en loop infinito.
       const onLoginPage = window.location.pathname === paths.auth.login.path
-      if (error.response?.status === 401 && !onLoginPage) {
+      const isExpiredSession = error.response?.status === 401 && !onLoginPage
+
+      // Una sesión caída hace fallar *todas* las queries en vuelo a la vez.
+      // Sin este latch salía un toast y un `window.location.href` por cada
+      // una. El latch no se resetea: la redirección recarga la página entera
+      // y con ella este módulo.
+      if (isExpiredSession && isHandlingExpiredSession) {
+        return Promise.reject(error)
+      }
+
+      const message = error.response?.data?.message || error.message
+      toast.error(message)
+
+      if (isExpiredSession) {
+        isHandlingExpiredSession = true
         setAuthToken(null)
         queryClient.clear()
         const redirectTo = window.location.pathname

@@ -6,6 +6,11 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
+import {
+  FieldVariantContext,
+  isFloatingVariant,
+  useFieldVariant,
+} from "@/hooks/use-field-variant"
 
 function FieldSet({ className, ...props }: React.ComponentProps<"fieldset">) {
   return (
@@ -43,7 +48,7 @@ function FieldGroup({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="field-group"
       className={cn(
-        "group/field-group @container/field-group flex w-full flex-col gap-10 data-[slot=checkbox-group]:gap-3 *:data-[slot=field-group]:gap-4",
+        "group/field-group @container/field-group flex w-full flex-col gap-5 data-[slot=checkbox-group]:gap-3 *:data-[slot=field-group]:gap-4",
         className
       )}
       {...props}
@@ -52,7 +57,7 @@ function FieldGroup({ className, ...props }: React.ComponentProps<"div">) {
 }
 
 const fieldVariants = cva(
-  "group/field flex w-full gap-3 data-[invalid=true]:text-destructive",
+  "group/field flex w-full gap-2 data-[invalid=true]:text-destructive",
   {
     variants: {
       orientation: {
@@ -62,9 +67,16 @@ const fieldVariants = cva(
         responsive:
           "flex-col *:w-full @md/field-group:flex-row @md/field-group:items-center @md/field-group:*:w-auto @md/field-group:has-[>[data-slot=field-content]]:items-start @md/field-group:*:data-[slot=field-label]:flex-auto [&>.sr-only]:w-auto @md/field-group:has-[>[data-slot=field-content]]:[&>[role=checkbox],[role=radio]]:mt-px",
       },
+      variant: {
+        plain: "",
+        outlined: "relative mt-2 gap-1.5 [&>[data-slot=field-label]]:w-fit",
+        filled: "relative gap-1.5 [&>[data-slot=field-label]]:w-fit",
+        standard: "relative mt-3 gap-1.5 [&>[data-slot=field-label]]:w-fit",
+      },
     },
     defaultVariants: {
       orientation: "vertical",
+      variant: "plain",
     },
   }
 )
@@ -72,16 +84,20 @@ const fieldVariants = cva(
 function Field({
   className,
   orientation = "vertical",
+  variant = "plain",
   ...props
 }: React.ComponentProps<"div"> & VariantProps<typeof fieldVariants>) {
   return (
-    <div
-      role="group"
-      data-slot="field"
-      data-orientation={orientation}
-      className={cn(fieldVariants({ orientation }), className)}
-      {...props}
-    />
+    <FieldVariantContext.Provider value={variant ?? "plain"}>
+      <div
+        role="group"
+        data-slot="field"
+        data-orientation={orientation}
+        data-variant={variant}
+        className={cn(fieldVariants({ orientation, variant }), className)}
+        {...props}
+      />
+    </FieldVariantContext.Provider>
   )
 }
 
@@ -98,10 +114,37 @@ function FieldContent({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
+const floatingLabelVariants = cva(
+  "pointer-events-none absolute z-10 w-fit origin-left text-xs font-medium normal-case tracking-normal text-foreground transition-colors group-data-[disabled=true]/field:opacity-50 group-data-[invalid=true]/field:text-destructive group-focus-within/field:text-ring",
+  {
+    variants: {
+      variant: {
+        plain: "",
+        outlined: "left-2.5 top-0 -translate-y-1/2 bg-background px-1",
+        filled: "left-3 top-2",
+        standard: "left-0 top-0 -translate-y-full",
+      },
+    },
+    defaultVariants: { variant: "plain" },
+  }
+)
+
 function FieldLabel({
   className,
   ...props
 }: React.ComponentProps<typeof Label>) {
+  const variant = useFieldVariant()
+
+  if (isFloatingVariant(variant)) {
+    return (
+      <Label
+        data-slot="field-label"
+        className={cn(floatingLabelVariants({ variant }), className)}
+        {...props}
+      />
+    )
+  }
+
   return (
     <Label
       data-slot="field-label"

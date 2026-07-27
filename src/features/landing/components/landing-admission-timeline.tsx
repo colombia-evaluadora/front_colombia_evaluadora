@@ -1,4 +1,4 @@
-import { GraduationCapIcon } from "@phosphor-icons/react"
+import { GraduationCapIcon } from "@/components/ui/icons"
 
 import { Button } from "@/components/ui/button"
 

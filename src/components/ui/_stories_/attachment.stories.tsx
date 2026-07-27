@@ -1,5 +1,5 @@
 import preview from '../../../../.storybook/preview'
-import { FileTextIcon, XIcon } from '@phosphor-icons/react'
+import { FileTextIcon, XIcon } from '@/components/ui/icons'
 import {
   Attachment,
   AttachmentAction,

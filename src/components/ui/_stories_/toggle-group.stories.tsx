@@ -1,5 +1,5 @@
 import preview from '../../../../.storybook/preview'
-import { TextBIcon, TextItalicIcon, TextUnderlineIcon } from '@phosphor-icons/react'
+import { TextBIcon, TextItalicIcon, TextUnderlineIcon } from '@/components/ui/icons'
 import { ToggleGroup, ToggleGroupItem } from '../toggle-group'
 
 const meta = preview.meta({

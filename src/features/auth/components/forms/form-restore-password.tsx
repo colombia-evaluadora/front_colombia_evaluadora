@@ -1,4 +1,11 @@
+import { useState } from "react"
 import { useForm } from "@tanstack/react-form"
+import {
+  EyeIcon,
+  EyeSlashIcon,
+  InfoIcon,
+  LockIcon,
+} from "@/components/ui/icons"
 
 import {
   Field,
@@ -6,7 +13,12 @@ import {
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from "@/components/ui/input-group"
 
 import {
   restorePasswordFormSchema,
@@ -19,6 +31,9 @@ interface RestorePasswordFormProps {
 }
 
 export function RestorePasswordForm({ id, onSubmit }: RestorePasswordFormProps) {
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+
   const form = useForm({
     defaultValues: {
       password: "",
@@ -43,22 +58,55 @@ export function RestorePasswordForm({ id, onSubmit }: RestorePasswordFormProps) 
           {(field) => {
             const isInvalid =
               field.state.meta.isTouched && !field.state.meta.isValid
+            // Cumple todas las reglas de `passwordRules`: por eso el mensaje
+            // es "Fuerte" y no solo "válida".
+            const isStrong = !isInvalid && field.state.value.length > 0
             return (
-              <Field data-invalid={isInvalid}>
+              <Field variant="outlined" data-invalid={isInvalid}>
                 <FieldLabel htmlFor={field.name}>Nueva contraseña</FieldLabel>
-                <Input
-                  id={field.name}
-                  name={field.name}
-                  type="password"
-                  autoComplete="new-password"
-                  minLength={6}
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  aria-invalid={isInvalid}
-                />
+                <InputGroup className="rounded-md border-input has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20 has-[[data-slot][aria-invalid=true]]:border-destructive">
+                  <InputGroupAddon align="inline-start" className="ml-2">
+                    <LockIcon className="size-4 text-muted-foreground" />
+                  </InputGroupAddon>
+                  <InputGroupInput
+                    id={field.name}
+                    name={field.name}
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="new-password"
+                    placeholder="Ingresa tu nueva contraseña"
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    aria-invalid={isInvalid}
+                    aria-describedby={`${field.name}-error`}
+                  />
+                  <InputGroupAddon align="inline-end" className="mr-2">
+                    <InputGroupButton
+                      size="icon-xs"
+                      className="text-muted-foreground hover:text-primary"
+                      onClick={() => setShowPassword((v) => !v)}
+                      aria-label={
+                        showPassword
+                          ? "Ocultar contraseña"
+                          : "Mostrar contraseña"
+                      }
+                      aria-pressed={showPassword}
+                    >
+                      {showPassword ? <EyeSlashIcon /> : <EyeIcon />}
+                    </InputGroupButton>
+                  </InputGroupAddon>
+                </InputGroup>
                 {isInvalid && (
-                  <FieldError errors={field.state.meta.errors} />
+                  <FieldError
+                    id={`${field.name}-error`}
+                    errors={field.state.meta.errors}
+                  />
+                )}
+                {isStrong && (
+                  <p className="text-success flex items-center gap-1.5 text-sm">
+                    <InfoIcon className="size-4 shrink-0" aria-hidden="true" />
+                    Fuerte
+                  </p>
                 )}
               </Field>
             )
@@ -68,24 +116,53 @@ export function RestorePasswordForm({ id, onSubmit }: RestorePasswordFormProps) 
           {(field) => {
             const isInvalid =
               field.state.meta.isTouched && !field.state.meta.isValid
+            // El `.refine` del schema apunta su error a este campo, así que
+            // "válido y con contenido" ya significa que coinciden.
+            const matches = !isInvalid && field.state.value.length > 0
             return (
-              <Field data-invalid={isInvalid}>
+              <Field variant="outlined" data-invalid={isInvalid}>
                 <FieldLabel htmlFor={field.name}>
                   Confirmar contraseña
                 </FieldLabel>
-                <Input
-                  id={field.name}
-                  name={field.name}
-                  type="password"
-                  autoComplete="new-password"
-                  minLength={6}
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  aria-invalid={isInvalid}
-                />
+                <InputGroup className="rounded-md border-input has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20 has-[[data-slot][aria-invalid=true]]:border-destructive">
+                  <InputGroupAddon align="inline-start" className="ml-2">
+                    <LockIcon className="size-4 text-muted-foreground" />
+                  </InputGroupAddon>
+                  <InputGroupInput
+                    id={field.name}
+                    name={field.name}
+                    type={showConfirmPassword ? "text" : "password"}
+                    autoComplete="new-password"
+                    placeholder="Repite tu nueva contraseña"
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    aria-invalid={isInvalid}
+                  />
+                  <InputGroupAddon align="inline-end" className="mr-2">
+                    <InputGroupButton
+                      className="text-muted-foreground hover:text-primary"
+                      size="icon-xs"
+                      onClick={() => setShowConfirmPassword((v) => !v)}
+                      aria-label={
+                        showConfirmPassword
+                          ? "Ocultar contraseña"
+                          : "Mostrar contraseña"
+                      }
+                      aria-pressed={showConfirmPassword}
+                    >
+                      {showConfirmPassword ? <EyeSlashIcon /> : <EyeIcon />}
+                    </InputGroupButton>
+                  </InputGroupAddon>
+                </InputGroup>
                 {isInvalid && (
                   <FieldError errors={field.state.meta.errors} />
+                )}
+                {matches && (
+                  <p className="text-success flex items-center gap-1.5 text-sm">
+                    <InfoIcon className="size-4 shrink-0" aria-hidden="true" />
+                    Las contraseñas coinciden
+                  </p>
                 )}
               </Field>
             )
