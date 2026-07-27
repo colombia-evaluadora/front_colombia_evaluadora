@@ -85,4 +85,22 @@ export const studyPlansHandlers = [
     studyPlansDb.push(record)
     return HttpResponse.json(record, { status: 201 })
   }),
+
+  http.delete("/api/study-plans/:codigo", async ({ params }) => {
+    await delay(300)
+    const index = studyPlansDb.findIndex(
+      (row) => String(row.codigo) === String(params.codigo)
+    )
+    if (index === -1) {
+      return HttpResponse.json(
+        { status: "error", message: "Asignatura no encontrada." },
+        { status: 404 }
+      )
+    }
+    studyPlansDb.splice(index, 1)
+    return HttpResponse.json({
+      status: "ok",
+      message: "Asignatura eliminada del plan de estudio.",
+    })
+  }),
 ]
