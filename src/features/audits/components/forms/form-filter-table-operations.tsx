@@ -306,7 +306,7 @@ function FieldFilterSection({ field, availableFields }: FieldFilterSectionProps)
           </ul>
         )}
 
-        <Field orientation="vertical" className="gap-2">
+        <Field variant="outlined" className="gap-2">
           <FieldLabel htmlFor="field-filter-field">Campo</FieldLabel>
           <Select
             value={composerField}
@@ -325,7 +325,7 @@ function FieldFilterSection({ field, availableFields }: FieldFilterSectionProps)
           </Select>
         </Field>
 
-        <Field orientation="vertical" className="gap-2">
+        <Field orientation="vertical" variant="outlined" className="gap-2">
           <FieldLabel htmlFor="field-filter-condition">Condición</FieldLabel>
           <Select
             value={composerCondition}
