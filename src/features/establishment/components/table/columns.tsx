@@ -1,10 +1,12 @@
+import { Link } from "@tanstack/react-router"
 import type { ColumnDef } from "@tanstack/react-table"
-import { PencilIcon, TrashIcon } from "@phosphor-icons/react"
 
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { PencilIcon, TrashIcon } from "@/components/ui/icons"
 import { DataTableColumnHeader } from "@/components/data-table"
+import { paths } from "@/config/paths"
 
 import { ESTABLISHMENT_STATUS_BADGE, ESTABLISHMENT_STATUS_LABELS } from "../../api/establishment-Ui-mappings"
 import type { Establishment } from "../../api/types/establishment"
@@ -94,6 +96,8 @@ export const columns: ColumnDef<Establishment>[] = [
           size="icon"
           className="size-8"
           aria-label={`Editar ${row.original.name}`}
+          render={<Link to={paths.app.establishments.edit.getHref(row.original.id)} />}
+          nativeButton={false}
         >
           <PencilIcon />
         </Button>

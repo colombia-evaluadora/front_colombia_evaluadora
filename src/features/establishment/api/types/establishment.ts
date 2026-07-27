@@ -1,6 +1,6 @@
 import type { CatalogItem } from "./catalog"
-import type { Employee } from "./employee"
 import type { Municipality } from "./location"
+import type { Person } from "./person"
 
 export type EstablishmentStatus =
   | "ACTIVE"
@@ -31,9 +31,9 @@ export interface EstablishmentDetails {
 
     additionalInfo: EstablishmentAdditionalInfo
 
-    principal: Employee | null
+    principal: Person | null
 
-    secretary: Employee | null
+    secretary: Person | null
 }
 
 export interface EstablishmentBasicInfo {
@@ -90,6 +90,8 @@ export interface EstablishmentAdditionalInfo {
     disabilityType: CatalogItem
 
     operatingLicense: boolean
+
+    licenseStatus: CatalogItem
 
     licenseDate: string | null
 

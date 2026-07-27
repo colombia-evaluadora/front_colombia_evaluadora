@@ -1,11 +1,16 @@
-import { delay, HttpResponse } from "msw"
+import { delay, http, HttpResponse } from "msw"
 
 import { httpQuery } from "./_http-query"
 
-import { establishmentsDb } from "../db/establishments"
+import {
+  establishmentsDb,
+  establishmentsRowsDb,
+  upsertEstablishmentDetails,
+} from "../db/establishments"
 
 import type {
   Establishment,
+  EstablishmentDetails,
   EstablishmentsQueryRequest,
   EstablishmentsQueryResponse,
 } from "@/features/establishment/api/types/establishment"
@@ -102,7 +107,7 @@ export const establishmentHandlers = [
       } = body
 
       const filtered = applySorting(
-        applyFilters(establishmentsDb, filters),
+        applyFilters(establishmentsRowsDb, filters),
         sorting
       )
 
@@ -127,4 +132,46 @@ export const establishmentHandlers = [
       })
     }
   ),
+
+  http.get("/api/establishments/:id", async ({ params }) => {
+    await delay(150)
+
+    const establishment = establishmentsDb.find((item) => item.id === params.id)
+
+    if (!establishment) {
+      return HttpResponse.json(
+        {
+          status: "error",
+          message: "Establecimiento no encontrado.",
+        },
+        { status: 404 }
+      )
+    }
+
+    return HttpResponse.json({
+      status: "ok",
+      establishment,
+    })
+  }),
+
+  http.post("/api/establishments", async ({ request }) => {
+    await delay(250)
+
+    const values = (await request.json()) as EstablishmentDetails
+
+    const establishment: EstablishmentDetails = {
+      ...values,
+      id: values.id || `establishment-${Date.now()}`,
+    }
+
+    const { details } = upsertEstablishmentDetails(establishment)
+
+    const isEdit = Boolean(values.id && establishmentsDb.some((item) => item.id === values.id))
+
+    return HttpResponse.json({
+      status: "ok",
+      message: isEdit ? "Establecimiento actualizado." : "Establecimiento creado.",
+      establishment: details,
+    })
+  }),
 ]

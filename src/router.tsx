@@ -271,6 +271,12 @@ export const addEstablishmentRoute = createRoute({
   component: AddEstablishmentPage,
 })
 
+export const editEstablishmentRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.establishments.edit.path,
+  component: AddEstablishmentPage,
+})
+
 export const auditoriaSesionOperacionesRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.auditoriaSesionOperaciones.path,
