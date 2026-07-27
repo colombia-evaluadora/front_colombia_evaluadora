@@ -11,13 +11,22 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 type Period = "AM" | "PM"
 type ClockMode = "hour" | "minute"
 
-interface TimePickerProps {
+interface TimePickerPanelProps {
   value?: string
   onChange?: (value: string) => void
   className?: string
 }
 
-export function TimePicker({ value, onChange, className }: TimePickerProps) {
+/**
+ * Panel de selección de hora (ingreso manual + reloj analógico). Es el
+ * equivalente de `Calendar` para la hora: el panel suelto, sin trigger. Para
+ * un campo de formulario con el aspecto de un input, usar `TimePicker`.
+ */
+export function TimePickerPanel({
+  value,
+  onChange,
+  className,
+}: TimePickerPanelProps) {
   const [view, setView] = React.useState<"text" | "analog">("text")
   const [hour, setHour] = React.useState(() => extractHour(value))
   const [minute, setMinute] = React.useState(() => extractMinute(value))
@@ -348,6 +357,13 @@ function AnalogClockView({
 }
 
 // Helpers
+
+/** `"14:05"` → `"02:05 PM"`. `undefined` cuando no hay valor. */
+export function formatTimeLabel(value?: string): string | undefined {
+  if (!value) return undefined
+  return `${pad(extractHour(value))}:${pad(extractMinute(value))} ${derivePeriod(value)}`
+}
+
 function pad(n: number): string {
   return String(n).padStart(2, "0")
 }
