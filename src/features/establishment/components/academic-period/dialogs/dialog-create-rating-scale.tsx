@@ -60,7 +60,13 @@ const EMPTY_DRAFT: Draft = {
   notaEquivalente: 0,
 };
 
-export function CreateRatingScaleDialog() {
+interface CreateRatingScaleDialogProps {
+  academicPeriodId?: number;
+}
+
+export function CreateRatingScaleDialog({
+  academicPeriodId,
+}: CreateRatingScaleDialogProps) {
   const [open, setOpen] = useState(false);
   const [continued, setContinued] = useState(false);
   const [teachingLevelIds, setTeachingLevelIds] = useState<number[]>([]);
@@ -103,6 +109,7 @@ export function CreateRatingScaleDialog() {
           codigo: 0,
           teachingLevelIds,
           teachingLevels: [],
+          academicPeriodId,
         }),
       ),
     );

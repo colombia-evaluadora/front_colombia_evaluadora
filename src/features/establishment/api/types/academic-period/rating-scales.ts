@@ -43,6 +43,11 @@ export interface RatingScalesQueryRequest {
   sorting: { id: string; desc: boolean }[]
   pageIndex: number
   pageSize: number
+  academicPeriodId?: number
+}
+
+export interface RatingScaleRecord extends RatingScale {
+  academicPeriodId: number
 }
 
 export interface RatingScalesQueryResponse {
@@ -51,7 +56,9 @@ export interface RatingScalesQueryResponse {
   totalCount: number
 }
 
-export type CreateRatingScaleRequest = RatingScale
+export type CreateRatingScaleRequest = RatingScale & {
+  academicPeriodId?: number
+}
 
 export type UpdateRatingScaleRequest = RatingScale
 

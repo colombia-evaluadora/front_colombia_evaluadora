@@ -11,6 +11,7 @@ interface UseRatingScalesQueryParams {
   sorting: RatingScalesQueryRequest["sorting"]
   pageIndex: number
   pageSize: number
+  academicPeriodId?: number
 }
 
 function fetchRatingScales(

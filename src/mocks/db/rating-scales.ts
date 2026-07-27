@@ -1,5 +1,5 @@
 import type {
-  RatingScale,
+  RatingScaleRecord,
   TeachingLevel,
 } from "@/features/establishment/api/types/academic-period/rating-scales"
 
@@ -18,8 +18,8 @@ export function resolveTeachingLevels(ids: number[]): TeachingLevel[] {
 let nextId = 1
 
 function createScale(
-  data: Omit<RatingScale, "codigo" | "teachingLevels">
-): RatingScale {
+  data: Omit<RatingScaleRecord, "codigo" | "teachingLevels">
+): RatingScaleRecord {
   return {
     codigo: nextId++,
     ...data,
@@ -27,8 +27,9 @@ function createScale(
   }
 }
 
-export const ratingScalesDb: RatingScale[] = [
+export const ratingScalesDb: RatingScaleRecord[] = [
   createScale({
+    academicPeriodId: 1,
     teachingLevelIds: [1, 2, 3],
     nombre: "Desempeño bajo",
     abreviacion: "DES. BAJO",
@@ -39,6 +40,7 @@ export const ratingScalesDb: RatingScale[] = [
     notaEquivalente: 1,
   }),
   createScale({
+    academicPeriodId: 1,
     teachingLevelIds: [1, 2, 3],
     nombre: "Desempeño básico",
     abreviacion: "DES. BÁSICO",
@@ -49,6 +51,7 @@ export const ratingScalesDb: RatingScale[] = [
     notaEquivalente: 3,
   }),
   createScale({
+    academicPeriodId: 2,
     teachingLevelIds: [3, 4],
     nombre: "Desempeño alto",
     abreviacion: "DES. ALTO",
@@ -59,6 +62,7 @@ export const ratingScalesDb: RatingScale[] = [
     notaEquivalente: 4,
   }),
   createScale({
+    academicPeriodId: 2,
     teachingLevelIds: [4, 5],
     nombre: "Desempeño superior",
     abreviacion: "DES. SUP.",
