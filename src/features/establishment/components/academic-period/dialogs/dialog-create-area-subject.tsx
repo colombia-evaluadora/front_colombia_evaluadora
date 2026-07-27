@@ -55,6 +55,7 @@ import {
 import { cn } from "@/lib/utils"
 
 import { useCreateAreaSubject } from "../../../api/mutations/create-area-subject"
+import { useGeneralAreasQuery } from "../../../api/query/use-general-areas-query"
 import { ColorPickerPopover } from "../color-picker"
 
 const areaSubjectFormSchema = z.object({
@@ -73,19 +74,6 @@ const EMPTY: AreaSubjectFormValues = {
   abreviacion: "",
   ordenReportes: 0,
 }
-
-// Catálogo provisional de áreas generales.
-const AREA_GENERAL_OPTIONS = [
-  "Filosofía",
-  "Matemáticas",
-  "Ciencias Naturales",
-  "Ciencias Sociales",
-  "Humanidades y Lengua Castellana",
-  "Idioma Extranjero",
-  "Educación Física",
-  "Educación Artística",
-  "Tecnología e Informática",
-]
 
 const INITIAL_ESPECIALIDADES = [
   "General",
@@ -120,7 +108,13 @@ const FORM_ID = "area-subject-form"
 type SortKey = Exclude<keyof SubjectDraft, "color">
 type SortState = { key: SortKey; dir: "asc" | "desc" } | null
 
-export function CreateAreaSubjectDialog() {
+interface CreateAreaSubjectDialogProps {
+  academicPeriodId?: number
+}
+
+export function CreateAreaSubjectDialog({
+  academicPeriodId,
+}: CreateAreaSubjectDialogProps) {
   const [open, setOpen] = useState(false)
   const [subjectsStarted, setSubjectsStarted] = useState(false)
   const [subjects, setSubjects] = useState<SubjectDraft[]>([])
@@ -129,7 +123,6 @@ export function CreateAreaSubjectDialog() {
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [sort, setSort] = useState<SortState>(null)
 
-  // Cicla el orden de la columna: asc → desc → sin orden.
   function toggleSort(key: SortKey) {
     setSort((prev) => {
       if (prev?.key !== key) return { key, dir: "asc" }
@@ -154,25 +147,40 @@ export function CreateAreaSubjectDialog() {
     return copy
   }, [subjects, sort])
 
-  const createAreaSubject = useCreateAreaSubject({
-    mutationConfig: {
-      onSuccess: () => {
-        toast.success("Área/asignatura creada.")
-        reset()
-        setOpen(false)
-      },
-    },
-  })
+  const createAreaSubject = useCreateAreaSubject()
+
+  const { data: generalAreas = [] } = useGeneralAreasQuery()
 
   const form = useForm({
     defaultValues: EMPTY,
     validators: { onSubmit: areaSubjectFormSchema },
-    onSubmit: ({ value }) => {
-      // El código no se pide en el formulario: lo generamos al guardar.
-      const codigo = value.codigo || Date.now()
-      createAreaSubject.mutate(
-        areaSubjectFormSchema.parse({ ...value, codigo })
-      )
+    onSubmit: async ({ value }) => {
+      const base = areaSubjectFormSchema.parse(value)
+      if (subjects.length > 0) {
+        await Promise.all(
+          subjects.map((subject, index) =>
+            createAreaSubject.mutateAsync({
+              codigo: Date.now() + index,
+              areaGeneral: base.areaGeneral,
+              nombreInterno: subject.nombreInterno || subject.asignaturaGeneral,
+              abreviacion: subject.abreviacion || subject.asignaturaGeneral,
+              ordenReportes: subject.orden,
+              color: subject.color || undefined,
+              academicPeriodId,
+            })
+          )
+        )
+        toast.success(`${subjects.length} asignatura(s) creada(s).`)
+      } else {
+        await createAreaSubject.mutateAsync({
+          ...base,
+          codigo: value.codigo || Date.now(),
+          academicPeriodId,
+        })
+        toast.success("Área creada.")
+      }
+      reset()
+      setOpen(false)
     },
   })
 
@@ -274,9 +282,9 @@ export function CreateAreaSubjectDialog() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>
-                        {AREA_GENERAL_OPTIONS.map((option) => (
-                          <SelectItem key={option} value={option}>
-                            {option}
+                        {generalAreas.map((area) => (
+                          <SelectItem key={area.id} value={area.nombre}>
+                            {area.nombre}
                           </SelectItem>
                         ))}
                       </SelectGroup>
@@ -635,8 +643,6 @@ function SortableHeader({
   )
 }
 
-// Select de especialidad con una opción para crear una nueva (nombre + botón
-// agregar) dentro del propio desplegable.
 function EspecialidadSelect({
   value,
   options,

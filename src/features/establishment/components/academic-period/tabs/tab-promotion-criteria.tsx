@@ -8,7 +8,9 @@ import { Spinner } from "@/components/ui/spinner"
 import { Field, FieldLabel } from "@/components/ui/field"
 
 import { usePromotionCriteriaQuery } from "../../../api/query/use-promotion-criteria-query"
-import { useSavePromotionCriteria } from "../../../api/mutations/save-promotion-criteria"
+import { useUpdatePromotionCriteria } from "../../../api/mutations/update-promotion-criteria"
+import { useAreaSubjectQuery } from "../../../api/query/use-area-subject"
+import { SubjectsMultiSelect } from "../subjects-multi-select"
 import { Input } from "@/components/ui/input"
 import {
   Select,
@@ -34,16 +36,6 @@ const SELECT_FIELDS = [
       "Media",
     ],
   },
-  {
-    name: "requiredSubjects",
-    label: "Áreas/Asignaturas obligatorias para la aprobación",
-    options: [
-      "Todas",
-      "Matemáticas",
-      "Lengua Castellana",
-      "Matemáticas y Lengua Castellana",
-    ],
-  },
 ] as const
 
 const approvalSchema = z.object({
@@ -59,7 +51,7 @@ const approvalSchema = z.object({
   minimumSubjectPercentage: z.number().min(0),
   maxFailedForAverage: z.number().min(0),
 
-  requiredSubjects: z.string(),
+  requiredSubjects: z.array(z.string()),
 })
 
 type ApprovalValues = z.infer<typeof approvalSchema>
@@ -77,7 +69,7 @@ const EMPTY: ApprovalValues = {
   minimumSubjectPercentage: 25,
   maxFailedForAverage: 5,
 
-  requiredSubjects: "",
+  requiredSubjects: [],
 }
 
 const FORM_ID = "approval-parameters-form"
@@ -94,7 +86,17 @@ export function TabPromotionCriteria({
   const { data: criteria, isPending: isLoading } =
     usePromotionCriteriaQuery(academicPeriodId)
 
-  const saveCriteria = useSavePromotionCriteria({
+  // Opciones de "áreas/asignaturas obligatorias" = las del periodo.
+  const { data: areaData } = useAreaSubjectQuery({
+    filters: {},
+    sorting: [],
+    pageIndex: 0,
+    pageSize: 100,
+    academicPeriodId,
+  })
+  const subjectOptions = (areaData?.rows ?? []).map((area) => area.nombreInterno)
+
+  const saveCriteria = useUpdatePromotionCriteria({
     mutationConfig: {
       onSuccess: (result) => {
         if (result.status === "error") {
@@ -327,24 +329,11 @@ export function TabPromotionCriteria({
             <FieldLabel>
               Áreas/Asignaturas obligatorias para la aprobación
             </FieldLabel>
-            <Select
+            <SubjectsMultiSelect
+              options={subjectOptions}
               value={field.state.value}
-              onValueChange={(value) => value && field.handleChange(value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Seleccionar" />
-              </SelectTrigger>
-
-              <SelectContent>
-                <SelectGroup>
-                  {SELECT_FIELDS[1].options.map((option) => (
-                    <SelectItem key={option} value={option}>
-                      {option}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
+              onChange={(values) => field.handleChange(values)}
+            />
           </Field>
         )}
       </form.Field>

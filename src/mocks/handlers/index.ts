@@ -13,6 +13,7 @@ import { ratingScalesHandlers } from "./rating-scales"
 import { areaSubjectsHandlers } from "./area-subject"
 import { promotionCriteriaHandlers } from "./promotion-criteria"
 import { evaluationCriteriaHandlers } from "./evaluation-criteria"
+import { generalAreasHandlers } from "./general-areas"
 
 export const handlers = [
   ...authHandlers,
@@ -30,4 +31,5 @@ export const handlers = [
   ...ratingScalesHandlers,
   ...promotionCriteriaHandlers,
   ...evaluationCriteriaHandlers,
+  ...generalAreasHandlers,
 ]
