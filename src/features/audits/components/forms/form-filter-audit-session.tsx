@@ -2,6 +2,7 @@ import { useForm } from "@tanstack/react-form"
 import { CheckCircleIcon, CircleDashedIcon } from "@/components/ui/icons"
 
 import { Checkbox } from "@/components/ui/checkbox"
+import { DatePicker } from "@/components/date-picker"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import {
@@ -20,7 +21,10 @@ import {
   type AuditFiltersFormValues,
 } from "../../api/schema"
 import type { SessionStatus } from "../../api/types/audit"
-import { FieldDateTimePopover } from "./field-date-time-popover"
+import {
+  formatDateTimeValue,
+  parseDateTimeValue,
+} from "@/lib/date-time-value"
 
 interface FilterAuditSessionFormProps {
   id: string
@@ -134,27 +138,41 @@ export function FilterAuditSessionForm({
 
       <Separator />
 
-      {/* Dos campos independientes (no un único rango) — cada uno
-          combina Calendar + TimePicker en el mismo popover para elegir
-          fecha y hora sin tener que abrir dos controles distintos. */}
+      {/* Dos campos independientes (no un único rango) — cada uno usa el
+          modo `datetime`, que combina calendario y hora en el mismo popover
+          para no tener que abrir dos controles distintos. */}
       <form.Field
         name="startedFrom"
         children={(field) => (
-          <FieldDateTimePopover
-            label="Desde"
-            value={field.state.value}
-            onChange={field.handleChange}
-          />
+          <Field orientation="vertical" variant="outlined" className="gap-2">
+            <FieldLabel htmlFor={field.name}>Desde</FieldLabel>
+            <DatePicker
+              mode="datetime"
+              id={field.name}
+              value={parseDateTimeValue(field.state.value)}
+              onChange={(date) =>
+                field.handleChange(formatDateTimeValue(date))
+              }
+              className="h-9"
+            />
+          </Field>
         )}
       />
       <form.Field
         name="startedTo"
         children={(field) => (
-          <FieldDateTimePopover
-            label="Hasta"
-            value={field.state.value}
-            onChange={field.handleChange}
-          />
+          <Field orientation="vertical" variant="outlined" className="gap-2">
+            <FieldLabel htmlFor={field.name}>Hasta</FieldLabel>
+            <DatePicker
+              mode="datetime"
+              id={field.name}
+              value={parseDateTimeValue(field.state.value)}
+              onChange={(date) =>
+                field.handleChange(formatDateTimeValue(date))
+              }
+              className="h-9"
+            />
+          </Field>
         )}
       />
     </form>
