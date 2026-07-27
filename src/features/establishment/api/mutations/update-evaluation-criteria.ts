@@ -23,7 +23,7 @@ interface UseUpdateEvaluationCriteriaOptions {
   mutationConfig?: MutationConfig<typeof updateEvaluationCriteria>
 }
 
-export function useupdateEvaluationCriteria({
+export function useUpdateEvaluationCriteria({
   mutationConfig,
 }: UseUpdateEvaluationCriteriaOptions = {}) {
   const queryClient = useQueryClient()

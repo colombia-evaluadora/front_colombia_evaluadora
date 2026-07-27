@@ -8,7 +8,7 @@ import { Spinner } from "@/components/ui/spinner"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 
 import { useEvaluationCriteriaQuery } from "../../../api/query/use-evaluation-criteria-query"
-import { useupdateEvaluationCriteria } from "../../../api/mutations/update-evaluation-criteria"
+import { useUpdateEvaluationCriteria } from "../../../api/mutations/update-evaluation-criteria"
 import {
   Select,
   SelectContent,
@@ -125,7 +125,7 @@ export function TabEvaluationCriteria({
   const { data: criteria, isPending: isLoading } =
     useEvaluationCriteriaQuery(academicPeriodId)
 
-  const saveCriteria = useupdateEvaluationCriteria({
+  const saveCriteria = useUpdateEvaluationCriteria({
     mutationConfig: {
       onSuccess: (result) => {
         if (result.status === "error") {
