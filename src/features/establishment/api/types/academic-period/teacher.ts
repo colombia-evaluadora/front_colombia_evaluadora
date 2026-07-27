@@ -19,6 +19,11 @@ export interface TeachersQueryRequest {
   sorting: { id: string; desc: boolean }[]
   pageIndex: number
   pageSize: number
+  academicPeriodId?: number
+}
+
+export interface TeacherRecord extends Teacher {
+  academicPeriodId: number
 }
 
 export interface TeachersQueryResponse {
