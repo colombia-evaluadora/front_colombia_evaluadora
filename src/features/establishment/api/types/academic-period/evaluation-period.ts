@@ -21,6 +21,11 @@ export interface EvaluationPeriodsQueryRequest {
   sorting: { id: string; desc: boolean }[]
   pageIndex: number
   pageSize: number
+  academicPeriodId?: number
+}
+
+export interface EvaluationPeriodRecord extends EvaluationPeriod {
+  academicPeriodId: number
 }
 
 export interface EvaluationPeriodsQueryResponse {
@@ -29,7 +34,9 @@ export interface EvaluationPeriodsQueryResponse {
   totalCount: number
 }
 
-export type CreateEvaluationPeriodRequest = EvaluationPeriod
+export type CreateEvaluationPeriodRequest = EvaluationPeriod & {
+  academicPeriodId?: number
+}
 
 export type UpdateEvaluationPeriodRequest = EvaluationPeriod
 

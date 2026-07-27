@@ -75,12 +75,16 @@ export const evaluationPeriodsHandlers = [
     await delay(250)
 
     const body = (await request.json()) as EvaluationPeriodsQueryRequest
-    const { filters, sorting, pageIndex, pageSize } = body
+    const { filters, sorting, pageIndex, pageSize, academicPeriodId } = body
 
-    const filtered = applySorting(
-      applyFilters(evaluationPeriodsDb, filters),
-      sorting
-    )
+    const scoped =
+      academicPeriodId == null
+        ? evaluationPeriodsDb
+        : evaluationPeriodsDb.filter(
+            (row) => row.academicPeriodId === academicPeriodId
+          )
+
+    const filtered = applySorting(applyFilters(scoped, filters), sorting)
 
     const totalCount = filtered.length
     const pageCount = Math.max(1, Math.ceil(totalCount / pageSize))
@@ -130,9 +134,10 @@ export const evaluationPeriodsHandlers = [
 
     const body = (await request.json()) as CreateEvaluationPeriodRequest
 
-    evaluationPeriodsDb.push(body)
+    const record = { ...body, academicPeriodId: body.academicPeriodId ?? 0 }
+    evaluationPeriodsDb.push(record)
 
-    return HttpResponse.json(body, { status: 201 })
+    return HttpResponse.json(record, { status: 201 })
   }),
 
   http.delete("/api/evaluation-periods/:codigo", async ({ params }) => {
