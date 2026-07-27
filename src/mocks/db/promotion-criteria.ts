@@ -1,0 +1,38 @@
+import type { PromotionCriteria } from "@/features/establishment/api/types/academic-period/promotion-criteria"
+
+export const DEFAULT_PROMOTION_CRITERIA: PromotionCriteria = {
+  curriculumNode: "",
+  maxFailedRecovery: 0,
+  absencePercentage: 0,
+  maxLeveledSubjects: 0,
+  applyAverageApproval: true,
+  basePercentage: 25,
+  minimumSubjectPercentage: 25,
+  maxFailedForAverage: 5,
+  requiredSubjects: [],
+}
+
+export const promotionCriteriaDb: Record<number, PromotionCriteria> = {
+  1: {
+    curriculumNode: "Primaria",
+    maxFailedRecovery: 3,
+    absencePercentage: 20,
+    maxLeveledSubjects: 2,
+    applyAverageApproval: true,
+    basePercentage: 25,
+    minimumSubjectPercentage: 25,
+    maxFailedForAverage: 5,
+    requiredSubjects: ["MATEMÁTICAS", "LENGUA CASTELLANA"],
+  },
+  2: {
+    curriculumNode: "Secundaria",
+    maxFailedRecovery: 2,
+    absencePercentage: 25,
+    maxLeveledSubjects: 1,
+    applyAverageApproval: false,
+    basePercentage: 30,
+    minimumSubjectPercentage: 30,
+    maxFailedForAverage: 3,
+    requiredSubjects: ["INFORMÁTICA"],
+  },
+}
