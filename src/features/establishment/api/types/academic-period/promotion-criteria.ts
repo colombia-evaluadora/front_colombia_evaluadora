@@ -3,6 +3,7 @@ export interface PromotionCriteria {
   maxFailedRecovery: number
   absencePercentage: number
   maxLeveledSubjects: number
+  maxFailedSubjects: number
   applyAverageApproval: boolean
   basePercentage: number
   minimumSubjectPercentage: number
