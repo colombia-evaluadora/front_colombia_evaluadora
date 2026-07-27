@@ -14,8 +14,8 @@ interface UseSessionOperationsQueryParams {
 function fetchSessionOperations(
   params: UseSessionOperationsQueryParams
 ): Promise<SessionOperationsResponse> {
-  // QUERY (RFC 10008): el body lleva los filtros/sort/page, igual que
-  // el endpoint paginado de operaciones por tabla.
+  // El body lleva los filtros/sort/page, igual que el endpoint paginado
+  // de operaciones por tabla.
   return api.query(
     `/audits/sessions/${params.sessionId}/operations`,
     params

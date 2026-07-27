@@ -33,7 +33,7 @@ export function AssistantSheet() {
           </SheetHeader>
           <ChatMessageList messages={messages} isLoading={isLoading} />
           {error && (
-            <p className="px-6 text-sm text-destructive">
+            <p className="px-6 text-sm text-red">
               No se pudo obtener respuesta.
             </p>
           )}

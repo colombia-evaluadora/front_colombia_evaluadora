@@ -57,7 +57,7 @@ function FieldGroup({ className, ...props }: React.ComponentProps<"div">) {
 }
 
 const fieldVariants = cva(
-  "group/field flex w-full gap-2 data-[invalid=true]:text-destructive",
+  "group/field flex w-full gap-2 data-[invalid=true]:text-red",
   {
     variants: {
       orientation: {
@@ -115,7 +115,7 @@ function FieldContent({ className, ...props }: React.ComponentProps<"div">) {
 }
 
 const floatingLabelVariants = cva(
-  "pointer-events-none absolute z-10 w-fit origin-left text-xs font-medium normal-case tracking-normal text-foreground transition-colors group-data-[disabled=true]/field:opacity-50 group-data-[invalid=true]/field:text-destructive group-focus-within/field:text-ring",
+  "pointer-events-none absolute z-10 w-fit origin-left text-xs font-medium normal-case tracking-normal text-foreground transition-colors group-data-[disabled=true]/field:opacity-50 group-data-[invalid=true]/field:text-red group-focus-within/field:text-ring",
   {
     variants: {
       variant: {
@@ -259,7 +259,7 @@ function FieldError({
     <div
       role="alert"
       data-slot="field-error"
-      className={cn("text-sm font-normal text-destructive", className)}
+      className={cn("text-sm font-normal text-red", className)}
       {...props}
     >
       {content}

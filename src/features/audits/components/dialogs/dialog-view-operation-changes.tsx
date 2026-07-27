@@ -110,7 +110,7 @@ export function ViewOperationChangesDialog({
         )}
 
         {isError && (
-          <div className="text-destructive px-6 py-8 text-center text-sm">
+          <div className="text-red px-6 py-8 text-center text-sm">
             Ocurrió un error al cargar los cambios.
           </div>
         )}

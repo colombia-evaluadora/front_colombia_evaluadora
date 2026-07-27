@@ -43,9 +43,9 @@ export function ForgotUsernamePage() {
       {found ? (
         <>
           <CardHeader className="text-center">
-            <div className="bg-success/10 mx-auto flex size-20 items-center justify-center rounded-full">
+            <div className="bg-green/10 mx-auto flex size-20 items-center justify-center rounded-full">
               <UserCircleIcon
-                className="text-success size-9"
+                className="text-green size-9"
                 aria-hidden="true"
               />
             </div>
@@ -56,11 +56,11 @@ export function ForgotUsernamePage() {
           </CardHeader>
 
           <CardContent>
-            <div className="bg-success/10 flex flex-col items-center gap-1 p-4 text-center">
+            <div className="bg-green/10 flex flex-col items-center gap-1 p-4 text-center">
               <p className="text-muted-foreground text-xs">
                 Ingresa al sistema con
               </p>
-              <p className="text-success text-lg font-semibold break-all">
+              <p className="text-green text-lg font-semibold break-all">
                 {found.username}
               </p>
             </div>

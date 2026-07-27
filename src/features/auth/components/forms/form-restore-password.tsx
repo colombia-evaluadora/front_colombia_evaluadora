@@ -64,7 +64,7 @@ export function RestorePasswordForm({ id, onSubmit }: RestorePasswordFormProps) 
             return (
               <Field variant="outlined" data-invalid={isInvalid}>
                 <FieldLabel htmlFor={field.name}>Nueva contraseña</FieldLabel>
-                <InputGroup className="rounded-md border-input has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20 has-[[data-slot][aria-invalid=true]]:border-destructive">
+                <InputGroup className="rounded-md border-input has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20 has-[[data-slot][aria-invalid=true]]:border-red">
                   <InputGroupAddon align="inline-start" className="ml-2">
                     <LockIcon className="size-4 text-muted-foreground" />
                   </InputGroupAddon>
@@ -103,7 +103,7 @@ export function RestorePasswordForm({ id, onSubmit }: RestorePasswordFormProps) 
                   />
                 )}
                 {isStrong && (
-                  <p className="text-success flex items-center gap-1.5 text-sm">
+                  <p className="text-green flex items-center gap-1.5 text-sm">
                     <InfoIcon className="size-4 shrink-0" aria-hidden="true" />
                     Fuerte
                   </p>
@@ -124,7 +124,7 @@ export function RestorePasswordForm({ id, onSubmit }: RestorePasswordFormProps) 
                 <FieldLabel htmlFor={field.name}>
                   Confirmar contraseña
                 </FieldLabel>
-                <InputGroup className="rounded-md border-input has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20 has-[[data-slot][aria-invalid=true]]:border-destructive">
+                <InputGroup className="rounded-md border-input has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20 has-[[data-slot][aria-invalid=true]]:border-red">
                   <InputGroupAddon align="inline-start" className="ml-2">
                     <LockIcon className="size-4 text-muted-foreground" />
                   </InputGroupAddon>
@@ -159,7 +159,7 @@ export function RestorePasswordForm({ id, onSubmit }: RestorePasswordFormProps) 
                   <FieldError errors={field.state.meta.errors} />
                 )}
                 {matches && (
-                  <p className="text-success flex items-center gap-1.5 text-sm">
+                  <p className="text-green flex items-center gap-1.5 text-sm">
                     <InfoIcon className="size-4 shrink-0" aria-hidden="true" />
                     Las contraseñas coinciden
                   </p>

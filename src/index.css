@@ -21,9 +21,6 @@
 /* Radius variables */
 :root {
   --radius: 0.875rem;
-  /* Animaciones del Accordion (data-open / data-closed). El componente las
-     referencia como `animate-accordion-up|down`, y Base UI inyecta el alto
-     con la variable `--accordion-panel-height` por panel. */
   --animate-accordion-down: accordion-down 0.2s ease-out;
   --animate-accordion-up: accordion-up 0.2s ease-out;
 }
@@ -53,7 +50,7 @@
 :root {
   /* ---------- SUPERFICIES ------------------------ */
   --background: #FFFFFF;
-  --foreground: #2C3F5B;   /* gris azulado oscuro */
+  --foreground: #2C3F5B;
   --card: #FFFFFF;
   --card-foreground: var(--foreground);
   --popover: #FFFFFF;
@@ -66,18 +63,22 @@
   --secondary-foreground: #F9FBF5;
   --accent: #99B928;
   --accent-foreground: #192400;
-
-  /* ---------- SEMÁNTICOS --------------------------- */
-  --destructive: #E40017;
-  --destructive-foreground: #FFF8F7;
-  --success: #618200;
-  --success-foreground: #F9FBF5;
-  --warning: #EAB300;
-  --warning-foreground: #352600;
-  --info: #0079B5;
-  --info-foreground: #F7FBFD;
   --muted: #D6DBE5;
   --muted-foreground: #666E7A;
+
+  /* ---------- COLORES ------------------------------ */
+  --red: #E40017;
+  --red-foreground: #FFF8F7;
+  --green: #618200;
+  --green-foreground: #F9FBF5;
+  --yellow: #EAB300;
+  --yellow-foreground: #352600;
+  --blue: #0079B5;
+  --blue-foreground: #F7FBFD;
+  --purple: #7A3EC8;
+  --purple-foreground: #FAF7FE;
+  --orange: #E2620E;
+  --orange-foreground: #FFF9F5;
 
   /* ---------- BORDES / FOCO ---------------------------------- */
   --border: #E3E7EA;
@@ -102,24 +103,28 @@
   --sidebar-ring: var(--ring);
 
   /* ---------- STROKES (alpha 30%) --------------------------- */
-  --primary-stroke: #0079B54D;
   --foreground-stroke: #090D104D;
-  --info-stroke: #0079B54D;
-  --destructive-stroke: #E400174D;
-  --warning-stroke: #EAB3004D;
-  --success-stroke: #6182004D;
-  --muted-stroke: #D6DBE54D;
+  --primary-stroke: #0079B54D;
   --secondary-stroke: #6182004D;
+  --muted-stroke: #D6DBE54D;
+  --blue-stroke: #0079B54D;
+  --red-stroke: #E400174D;
+  --yellow-stroke: #EAB3004D;
+  --green-stroke: #6182004D;
+  --purple-stroke: #7A3EC84D;
+  --orange-stroke: #E2620E4D;
 
   /* ---------- SOFT FILLS (alpha 22%) ----------------------- */
-  --primary-22: #0079B538;
   --foreground-22: #090D1038;
-  --info-22: #0079B538;
-  --destructive-22: #E4001738;
-  --warning-22: #EAB30038;
-  --success-22: #61820038;
-  --muted-22: #D6DBE538;
+  --primary-22: #0079B538;
   --secondary-22: #61820038;
+  --muted-22: #D6DBE538;
+  --blue-22: #0079B538;
+  --red-22: #E4001738;
+  --yellow-22: #EAB30038;
+  --green-22: #61820038;
+  --purple-22: #7A3EC838;
+  --orange-22: #E2620E38;
 }
 
 .dark {
@@ -138,22 +143,26 @@
   --secondary-foreground: #091000;
   --accent: #A8C64E;
   --accent-foreground: #111A00;
-
-  /* ---------- SEMÁNTICOS --------------------------- */
-  --destructive: #FF6568;
-  --destructive-foreground: #1E0304;
-  --success: #84A73C;
-  --success-foreground: #091000;
-  --warning: #F69E00;
-  --warning-foreground: #221200;
-  --info: #40A1E1;
-  --info-foreground: #000D18;
-  --muted: #424752;            /* sync Figma live */
+  --muted: #424752;
   --muted-foreground: #99A3B2;
 
+  /* ---------- COLORES ------------------------------ */
+  --red: #FF6568;
+  --red-foreground: #1E0304;
+  --green: #84A73C;
+  --green-foreground: #091000;
+  --yellow: #F69E00;
+  --yellow-foreground: #221200;
+  --blue: #40A1E1;
+  --blue-foreground: #000D18;
+  --purple: #A98BF0;
+  --purple-foreground: #150A2B;
+  --orange: #FF8A4C;
+  --orange-foreground: #2A1103;
+
   /* ---------- BORDES / FOCO ---------------------------------- */
-  --border: #FFFFFF1A;        /* blanco al 10% */
-  --input: #FFFFFF26;         /* blanco al 15% */
+  --border: #FFFFFF1A; 
+  --input: #FFFFFF26;  
   --ring: #40A1E1;
 
   /* ---------- CHARTS ----------------------------------------- */
@@ -174,24 +183,28 @@
   --sidebar-ring: var(--ring);
 
   /* ---------- STROKES (alpha 30%) --------------------------- */
-  --primary-stroke: #40A1E14D;
   --foreground-stroke: #F2F6F84D;
-  --info-stroke: #40A1E14D;
-  --destructive-stroke: #FF65684D;
-  --warning-stroke: #F69E004D;
-  --success-stroke: #84A73C4D;
-  --muted-stroke: #4247524D;
+  --primary-stroke: #40A1E14D;
   --secondary-stroke: #84A73C4D;
+  --muted-stroke: #4247524D;
+  --blue-stroke: #40A1E14D;
+  --red-stroke: #FF65684D;
+  --yellow-stroke: #F69E004D;
+  --green-stroke: #84A73C4D;
+  --purple-stroke: #A98BF04D;
+  --orange-stroke: #FF8A4C4D;
 
   /* ---------- SOFT FILLS (alpha 22%) ----------------------- */
-  --primary-22: #40A1E138;
   --foreground-22: #F2F6F838;
-  --info-22: #40A1E138;
-  --destructive-22: #FF656838;
-  --warning-22: #F69E0038;
-  --success-22: #84A73C38;
-  --muted-22: #42475238;
+  --primary-22: #40A1E138;
   --secondary-22: #84A73C38;
+  --muted-22: #42475238;
+  --blue-22: #40A1E138;
+  --red-22: #FF656838;
+  --yellow-22: #F69E0038;
+  --green-22: #84A73C38;
+  --purple-22: #A98BF038;
+  --orange-22: #FF8A4C38;
 }
 
 [data-theme='red'] {
@@ -210,18 +223,22 @@
   --secondary-foreground: #FAFAF9;
   --accent: #F19F93;
   --accent-foreground: #4C110D;
-
-  /* ---------- SEMÁNTICOS --------------------------- */
-  --destructive: #E40017;
-  --destructive-foreground: #FFF8F7;
-  --success: #618200;
-  --success-foreground: #F9FBF5;
-  --warning: #EAB300;
-  --warning-foreground: #352600;
-  --info: #0079B5;
-  --info-foreground: #F7FBFD;
-  --muted: #DBD1D1;            /* sync Figma live Red Light */
+  --muted: #DBD1D1;
   --muted-foreground: #756161;
+
+  /* ---------- COLORES ------------------------------ */
+  --red: #E40017;
+  --red-foreground: #FFF8F7;
+  --green: #618200;
+  --green-foreground: #F9FBF5;
+  --yellow: #EAB300;
+  --yellow-foreground: #352600;
+  --blue: #0079B5;
+  --blue-foreground: #F7FBFD;
+  --purple: #7A3EC8;
+  --purple-foreground: #FAF7FE;
+  --orange: #E2620E;
+  --orange-foreground: #FFF9F5;
 
   /* ---------- BORDES / FOCO ---------------------------------- */
   --border: #E3E7EA;
@@ -246,24 +263,28 @@
   --sidebar-ring: var(--ring);
 
   /* ---------- STROKES (alpha 30%) --------------------------- */
-  --primary-stroke: #D20B114D;
   --foreground-stroke: #090D104D;
-  --info-stroke: #0079B54D;
-  --destructive-stroke: #E400174D;
-  --warning-stroke: #EAB3004D;
-  --success-stroke: #6182004D;
-  --muted-stroke: #DBD1D14D;
+  --primary-stroke: #D20B114D;
   --secondary-stroke: #3333304D;
+  --muted-stroke: #DBD1D14D;
+  --blue-stroke: #0079B54D;
+  --red-stroke: #E400174D;
+  --yellow-stroke: #EAB3004D;
+  --green-stroke: #6182004D;
+  --purple-stroke: #7A3EC84D;
+  --orange-stroke: #E2620E4D;
 
   /* ---------- SOFT FILLS (alpha 22%) ----------------------- */
-  --primary-22: #D20B1138;
   --foreground-22: #090D1038;
-  --info-22: #0079B538;
-  --destructive-22: #E4001738;
-  --warning-22: #EAB30038;
-  --success-22: #61820038;
-  --muted-22: #DBD1D138;
+  --primary-22: #D20B1138;
   --secondary-22: #33333038;
+  --muted-22: #DBD1D138;
+  --blue-22: #0079B538;
+  --red-22: #E4001738;
+  --yellow-22: #EAB30038;
+  --green-22: #61820038;
+  --purple-22: #7A3EC838;
+  --orange-22: #E2620E38;
 }
 
 .dark[data-theme='red'] {
@@ -282,18 +303,22 @@
   --secondary-foreground: #121210;
   --accent: #EB8376;
   --accent-foreground: #1E0403;
-
-  /* ---------- SEMÁNTICOS --------------------------- */
-  --destructive: #FF6568;
-  --destructive-foreground: #1E0304;
-  --success: #84A73C;
-  --success-foreground: #091000;
-  --warning: #F69E00;
-  --warning-foreground: #221200;
-  --info: #40A1E1;
-  --info-foreground: #000D18;
-  --muted: #473D3D;            /* sync Figma live Red Dark */
+  --muted: #473D3D;
   --muted-foreground: #A89494;
+
+  /* ---------- COLORES ------------------------------ */
+  --red: #FF6568;
+  --red-foreground: #1E0304;
+  --green: #84A73C;
+  --green-foreground: #091000;
+  --yellow: #F69E00;
+  --yellow-foreground: #221200;
+  --blue: #40A1E1;
+  --blue-foreground: #000D18;
+  --purple: #A98BF0;
+  --purple-foreground: #150A2B;
+  --orange: #FF8A4C;
+  --orange-foreground: #2A1103;
 
   /* ---------- BORDES / FOCO ---------------------------------- */
   --border: #FFFFFF1A;
@@ -318,24 +343,28 @@
   --sidebar-ring: var(--ring);
 
   /* ---------- STROKES (alpha 30%) --------------------------- */
-  --primary-stroke: #F4514F4D;
   --foreground-stroke: #F2F6F84D;
-  --info-stroke: #40A1E14D;
-  --destructive-stroke: #FF65684D;
-  --warning-stroke: #F69E004D;
-  --success-stroke: #84A73C4D;
-  --muted-stroke: #473D3D4D;
+  --primary-stroke: #F4514F4D;
   --secondary-stroke: #AEAEAB4D;
+  --muted-stroke: #473D3D4D;
+  --blue-stroke: #40A1E14D;
+  --red-stroke: #FF65684D;
+  --yellow-stroke: #F69E004D;
+  --green-stroke: #84A73C4D;
+  --purple-stroke: #A98BF04D;
+  --orange-stroke: #FF8A4C4D;
 
   /* ---------- SOFT FILLS (alpha 22%) ----------------------- */
-  --primary-22: #F4514F38;
   --foreground-22: #F2F6F838;
-  --info-22: #40A1E138;
-  --destructive-22: #FF656838;
-  --warning-22: #F69E0038;
-  --success-22: #84A73C38;
-  --muted-22: #473D3D38;
+  --primary-22: #F4514F38;
   --secondary-22: #AEAEAB38;
+  --muted-22: #473D3D38;
+  --blue-22: #40A1E138;
+  --red-22: #FF656838;
+  --yellow-22: #F69E0038;
+  --green-22: #84A73C38;
+  --purple-22: #A98BF038;
+  --orange-22: #FF8A4C38;
 }
 
 
@@ -355,18 +384,22 @@
   --color-secondary-foreground: var(--secondary-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
-
-  /* ---------- SEMÁNTICOS --------------------------- */
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-  --color-success: var(--success);
-  --color-success-foreground: var(--success-foreground);
-  --color-warning: var(--warning);
-  --color-warning-foreground: var(--warning-foreground);
-  --color-info: var(--info);
-  --color-info-foreground: var(--info-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
+
+  /* ---------- COLORES ------------------------------ */
+  --color-red: var(--red);
+  --color-red-foreground: var(--red-foreground);
+  --color-green: var(--green);
+  --color-green-foreground: var(--green-foreground);
+  --color-yellow: var(--yellow);
+  --color-yellow-foreground: var(--yellow-foreground);
+  --color-blue: var(--blue);
+  --color-blue-foreground: var(--blue-foreground);
+  --color-purple: var(--purple);
+  --color-purple-foreground: var(--purple-foreground);
+  --color-orange: var(--orange);
+  --color-orange-foreground: var(--orange-foreground);
 
   /* ---------- BORDES / FOCO ---------------------------------- */
   --color-border: var(--border);
@@ -391,24 +424,28 @@
   --color-sidebar-ring: var(--sidebar-ring);
 
   /* ---------- STROKES (alpha 30%) --------------------------- */
-  --color-primary-stroke: var(--primary-stroke);
   --color-foreground-stroke: var(--foreground-stroke);
-  --color-info-stroke: var(--info-stroke);
-  --color-destructive-stroke: var(--destructive-stroke);
-  --color-warning-stroke: var(--warning-stroke);
-  --color-success-stroke: var(--success-stroke);
-  --color-muted-stroke: var(--muted-stroke);
+  --color-primary-stroke: var(--primary-stroke);
   --color-secondary-stroke: var(--secondary-stroke);
+  --color-muted-stroke: var(--muted-stroke);
+  --color-blue-stroke: var(--blue-stroke);
+  --color-red-stroke: var(--red-stroke);
+  --color-yellow-stroke: var(--yellow-stroke);
+  --color-green-stroke: var(--green-stroke);
+  --color-purple-stroke: var(--purple-stroke);
+  --color-orange-stroke: var(--orange-stroke);
 
   /* ---------- SOFT FILLS (alpha 22%) ----------------------- */
-  --color-primary-22: var(--primary-22);
   --color-foreground-22: var(--foreground-22);
-  --color-info-22: var(--info-22);
-  --color-destructive-22: var(--destructive-22);
-  --color-warning-22: var(--warning-22);
-  --color-success-22: var(--success-22);
-  --color-muted-22: var(--muted-22);
+  --color-primary-22: var(--primary-22);
   --color-secondary-22: var(--secondary-22);
+  --color-muted-22: var(--muted-22);
+  --color-blue-22: var(--blue-22);
+  --color-red-22: var(--red-22);
+  --color-yellow-22: var(--yellow-22);
+  --color-green-22: var(--green-22);
+  --color-purple-22: var(--purple-22);
+  --color-orange-22: var(--orange-22);
 }
 /* Base styles */
 

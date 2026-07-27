@@ -1,6 +1,5 @@
 import { http, HttpResponse, delay } from "msw"
 
-import { httpQuery } from "./_http-query"
 import {
   getSessionOperationById,
   getSessionOperationChanges,
@@ -199,7 +198,7 @@ export const auditTablesHandlers = [
     return HttpResponse.json(full)
   }),
 
-  httpQuery("/api/audit-tables/query", async ({ request }) => {
+  http.post("/api/audit-tables/query", async ({ request }) => {
     await delay(200)
     const { filters, sorting, pageIndex, pageSize } =
       (await request.json()) as AuditTablesQueryRequest
@@ -227,7 +226,7 @@ export const auditTablesHandlers = [
     })
   }),
 
-  httpQuery(
+  http.post(
     "/api/audit-tables/:slug/operations/query",
     async ({ request, params }) => {
       await delay(300)
@@ -252,7 +251,7 @@ export const auditTablesHandlers = [
     }
   ),
 
-  httpQuery(
+  http.post(
     "/api/audit-tables/:slug/operations/stats",
     async ({ request, params }) => {
       await delay(200)

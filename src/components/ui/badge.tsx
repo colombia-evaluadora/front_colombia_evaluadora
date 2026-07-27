@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils"
 // Los nombres `fill / outline` se conservan por compatibilidad con la API
 // existente; `fill` ⇄ Solid y `outline` ⇄ Outline del Figma.
 const badgeVariants = cva(
-  "group/badge inline-flex w-fit shrink-0 items-center justify-center gap-1 overflow-hidden border border-transparent px-2 py-0.5 text-[0.625rem] font-semibold tracking-widest whitespace-nowrap uppercase transition-colors focus-visible:border-ring focus-visible:ring-[3px] aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3!",
+  "group/badge inline-flex w-fit shrink-0 items-center justify-center gap-1 overflow-hidden border border-transparent px-2 py-0.5 text-[0.625rem] font-semibold tracking-widest whitespace-nowrap uppercase transition-colors focus-visible:border-ring focus-visible:ring-[3px] aria-invalid:border-red aria-invalid:ring-red/20 dark:aria-invalid:ring-red/40 [&>svg]:pointer-events-none [&>svg]:size-3!",
   {
     variants: {
       variant: {
@@ -64,25 +64,25 @@ const badgeVariants = cva(
         variant: "fill",
         color: "destructive",
         class:
-          "bg-destructive text-destructive-foreground [a]:hover:bg-destructive/80 focus-visible:ring-destructive/20",
+          "bg-red text-red-foreground [a]:hover:bg-red/80 focus-visible:ring-red/20",
       },
       {
         variant: "fill",
         color: "info",
         class:
-          "bg-info text-info-foreground [a]:hover:bg-info/80 focus-visible:ring-info/20",
+          "bg-blue text-blue-foreground [a]:hover:bg-blue/80 focus-visible:ring-blue/20",
       },
       {
         variant: "fill",
         color: "warning",
         class:
-          "bg-warning text-warning-foreground [a]:hover:bg-warning/80 focus-visible:ring-warning/20",
+          "bg-yellow text-yellow-foreground [a]:hover:bg-yellow/80 focus-visible:ring-yellow/20",
       },
       {
         variant: "fill",
         color: "success",
         class:
-          "bg-success text-success-foreground [a]:hover:bg-success/80 focus-visible:ring-success/20",
+          "bg-green text-green-foreground [a]:hover:bg-green/80 focus-visible:ring-green/20",
       },
 
       // ============ soft (Soft en Figma) ============
@@ -109,22 +109,22 @@ const badgeVariants = cva(
       {
         variant: "soft",
         color: "destructive",
-        class: "border-destructive-stroke bg-destructive-22 text-destructive [a]:hover:bg-destructive/30 focus-visible:ring-destructive/20",
+        class: "border-red-stroke bg-red-22 text-red [a]:hover:bg-red/30 focus-visible:ring-red/20",
       },
       {
         variant: "soft",
         color: "info",
-        class: "border-info-stroke bg-info-22 text-info [a]:hover:bg-info/30 focus-visible:ring-info/20",
+        class: "border-blue-stroke bg-blue-22 text-blue [a]:hover:bg-blue/30 focus-visible:ring-blue/20",
       },
       {
         variant: "soft",
         color: "warning",
-        class: "border-warning-stroke bg-warning-22 text-warning [a]:hover:bg-warning/30 focus-visible:ring-warning/20",
+        class: "border-yellow-stroke bg-yellow-22 text-yellow [a]:hover:bg-yellow/30 focus-visible:ring-yellow/20",
       },
       {
         variant: "soft",
         color: "success",
-        class: "border-success-stroke bg-success-22 text-success [a]:hover:bg-success/30 focus-visible:ring-success/20",
+        class: "border-green-stroke bg-green-22 text-green [a]:hover:bg-green/30 focus-visible:ring-green/20",
       },
 
       // ============ outline (Outline en Figma) ============
@@ -152,22 +152,22 @@ const badgeVariants = cva(
         variant: "outline",
         color: "destructive",
         class:
-          "border-destructive-stroke text-destructive [a]:hover:bg-destructive/10 focus-visible:ring-destructive/20",
+          "border-red-stroke text-red [a]:hover:bg-red/10 focus-visible:ring-red/20",
       },
       {
         variant: "outline",
         color: "info",
-        class: "border-info-stroke text-info [a]:hover:bg-info/10 focus-visible:ring-info/20",
+        class: "border-blue-stroke text-blue [a]:hover:bg-blue/10 focus-visible:ring-blue/20",
       },
       {
         variant: "outline",
         color: "warning",
-        class: "border-warning-stroke text-warning [a]:hover:bg-warning/10 focus-visible:ring-warning/20",
+        class: "border-yellow-stroke text-yellow [a]:hover:bg-yellow/10 focus-visible:ring-yellow/20",
       },
       {
         variant: "outline",
         color: "success",
-        class: "border-success-stroke text-success [a]:hover:bg-success/10 focus-visible:ring-success/20",
+        class: "border-green-stroke text-green [a]:hover:bg-green/10 focus-visible:ring-green/20",
       },
     ],
     defaultVariants: {
