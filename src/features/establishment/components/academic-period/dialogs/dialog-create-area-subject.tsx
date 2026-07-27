@@ -37,14 +37,6 @@ import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
   Table,
   TableBody,
   TableCell,
@@ -55,11 +47,13 @@ import {
 import { cn } from "@/lib/utils"
 
 import { useCreateAreaSubject } from "../../../api/mutations/create-area-subject"
-import { useGeneralAreasQuery } from "../../../api/query/use-general-areas-query"
 import { ColorPickerPopover } from "../color-picker"
+import { SelectGeneralAreaDialog } from "./dialog-select-general-area"
 
 const areaSubjectFormSchema = z.object({
-  codigo: z.number().int().positive("El código es obligatorio"),
+  // El código no se ingresa en el formulario: se autogenera con Date.now() al
+  // enviar. Por eso admite 0 (su valor por defecto) y no bloquea el submit.
+  codigo: z.number().int().nonnegative(),
   areaGeneral: z.string().min(1, "El área general es obligatoria"),
   nombreInterno: z.string().min(1, "El nombre interno es obligatorio"),
   abreviacion: z.string().min(1, "La abreviación es obligatoria"),
@@ -148,8 +142,6 @@ export function CreateAreaSubjectDialog({
   }, [subjects, sort])
 
   const createAreaSubject = useCreateAreaSubject()
-
-  const { data: generalAreas = [] } = useGeneralAreasQuery()
 
   const form = useForm({
     defaultValues: EMPTY,
@@ -273,23 +265,12 @@ export function CreateAreaSubjectDialog({
                   <FieldLabel htmlFor={field.name} className="flex-1">
                     Área general*
                   </FieldLabel>
-                  <Select
+                  <SelectGeneralAreaDialog
+                    id={field.name}
                     value={field.state.value}
-                    onValueChange={(value) => value && field.handleChange(value)}
-                  >
-                    <SelectTrigger id={field.name} aria-invalid={isInvalid}>
-                      <SelectValue placeholder="Seleccionar" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        {generalAreas.map((area) => (
-                          <SelectItem key={area.id} value={area.nombre}>
-                            {area.nombre}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
+                    onChange={(value) => field.handleChange(value)}
+                    invalid={isInvalid}
+                  />
                   {isInvalid && <FieldError errors={field.state.meta.errors} />}
                 </Field>
               )
