@@ -1,5 +1,4 @@
 import type { ReactNode } from "react"
-import type { Icon } from "@/components/ui/icons"
 import { Link } from "@tanstack/react-router"
 import {
   BookOpenIcon,
@@ -13,10 +12,11 @@ import {
 
 import { paths } from "@/config/paths"
 
+
 export interface HelpLink {
   title: string
   description: string
-  icon: Icon
+  icon: ReactNode
   to?: string
 }
 
@@ -24,7 +24,7 @@ export interface HelpFaq {
   id: string
   title: string
   description: string
-  icon: Icon
+  icon: ReactNode
   /**
    * Cuerpo del FAQ cuando se expande. `ReactNode` (no string) para poder
    * anidar `<Link>`, `<strong>`, `<br />`, etc. directo desde el data.
@@ -39,7 +39,7 @@ export interface HelpSection {
 
 export interface HelpSupport {
   title: string
-  icon: Icon
+  icon: ReactNode
   email: string
   phone: string
   hours: string
@@ -64,7 +64,7 @@ export const defaultHelpData: HelpSheetData = {
       id: "forgot-password",
       title: "Olvidé mi contraseña",
       description: "Restablece tu contraseña de forma segura.",
-      icon: PasswordIcon,
+      icon: <PasswordIcon weight="duotone" className="text-green" />,
       body: (
         <p>
           Si olvidaste tu contraseña, selecciona{" "}
@@ -85,7 +85,7 @@ export const defaultHelpData: HelpSheetData = {
       id: "forgot-username",
       title: "No recuerdo mi correo",
       description: "Recupera tu correo con tu número de documento.",
-      icon: PersonIcon,
+      icon: <PersonIcon weight="duotone" className="text-blue" />,
       body: (
         <p>
           Ingresas con el correo que registraste. Si no lo recuerdas,
@@ -105,7 +105,7 @@ export const defaultHelpData: HelpSheetData = {
       id: "blocked-account",
       title: "Mi cuenta está bloqueada",
       description: "Conoce por qué ocurre y cómo solicitar el desbloqueo.",
-      icon: ShieldOffIcon,
+      icon: <ShieldOffIcon weight="duotone" className="text-orange" />,
       body: (
         <p>
           Tu cuenta ha sido bloqueada por disposición administrativa del
@@ -121,7 +121,7 @@ export const defaultHelpData: HelpSheetData = {
       id: "no-recovery-email",
       title: "No recibí el correo de recuperación",
       description: "Revisa las posibles causas y solicita un nuevo envío.",
-      icon: EnvelopeIcon,
+      icon: <EnvelopeIcon weight="duotone" className="text-purple" />,
       body: (
         <div className="space-y-3">
           <p>Verifica la carpeta de Spam o Correo no deseado.</p>
@@ -146,13 +146,13 @@ export const defaultHelpData: HelpSheetData = {
         {
           title: "Manual de usuario",
           description: "Guía paso a paso para usar la plataforma.",
-          icon: BookOpenIcon,
+          icon: <BookOpenIcon weight="duotone" className="text-green" />,
           to: "/",
         },
         {
           title: "Video: ¿Cómo ingresar por primera vez?",
           description: "Mira el tutorial en menos de 3 minutos.",
-          icon: VideoIcon,
+          icon: <VideoIcon weight="duotone" className="text-red" />,
           to: "/",
         },
       ],
@@ -160,7 +160,7 @@ export const defaultHelpData: HelpSheetData = {
   ],
   support: {
     title: "Mesa de ayuda",
-    icon: HeadsetIcon,
+    icon: <HeadsetIcon weight="duotone" className="text-blue" />,
     email: "soporte@colombiaevaluadora.edu.co",
     phone: "+57 (601) 123 4567",
     hours: "Lunes a viernes · 8:00 a. m. a 6:00 p. m.",

@@ -24,9 +24,6 @@ export function getTableFields(slug: string): string[] {
   return TABLE_FIELDS[slug] ?? GENERIC_FIELDS
 }
 
-// `operationsToday` se completa en el handler a partir de tableOperationsDb.
-// `icon` viaja como texto (mismo formato que el menú) y se resuelve a un
-// componente React en el cliente — no se puede mandar un componente por red.
 export const auditTablesDb: Omit<AuditTable, "operationsToday">[] = [
   { slug: "tnivel_ensenanza", name: "tnivel_ensenanza", icon: "Chart-Line-Up-Icon", fields: getTableFields("tnivel_ensenanza") },
   { slug: "tdepartamento", name: "tdepartamento", icon: "Map-Trifold-Icon", fields: getTableFields("tdepartamento") },

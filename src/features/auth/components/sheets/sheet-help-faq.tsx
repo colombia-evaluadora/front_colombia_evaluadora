@@ -81,10 +81,10 @@ function HelpFaqSheetContent({ data }: { data: HelpSheetData }) {
               <AccordionItem key={faq.id} value={faq.id}>
                 <AccordionTrigger className="px-4">
                   <div className="flex flex-1 items-start gap-3">
-                    <faq.icon
-                      weight="duotone"
-                      className="text-primary mt-0.5 size-5 shrink-0"
-                    />
+                    {/* El icono trae su color; el tamaño lo pone la sección. */}
+                    <span className="mt-0.5 shrink-0 [&_svg:not([class*='size-'])]:size-5">
+                      {faq.icon}
+                    </span>
                     <div className="flex min-w-0 flex-col gap-0.5 text-left">
                       <span className="text-sm font-semibold">
                         {faq.title}
@@ -116,7 +116,7 @@ function HelpFaqSheetContent({ data }: { data: HelpSheetData }) {
                   render={item.to ? <Link to={item.to} /> : undefined}
                 >
                   <ItemMedia variant="icon">
-                    <item.icon weight="duotone" className="text-primary" />
+                    {item.icon}
                   </ItemMedia>
                   <ItemContent>
                     <ItemTitle>{item.title}</ItemTitle>
@@ -136,10 +136,7 @@ function HelpFaqSheetContent({ data }: { data: HelpSheetData }) {
           <h3 className="px-1 text-base font-semibold">Soporte</h3>
           <Item variant="outline">
             <ItemMedia variant="icon">
-              <data.support.icon
-                weight="duotone"
-                className="text-primary"
-              />
+              {data.support.icon}
             </ItemMedia>
             <ItemContent>
               <ItemTitle className="!text-sm !font-semibold normal-case !tracking-normal">
