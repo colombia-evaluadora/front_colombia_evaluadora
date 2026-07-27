@@ -7,9 +7,10 @@ import { queryClient } from "./query-client"
 
 declare module "axios" {
   export interface AxiosInstance {
-    // RFC 10008: verb "safe + idempotente con body" para queries complejas.
-    // `api.query` corre por el response interceptor que ya desenvuelve
-    // `response.data`, así que la promesa resuelve a `T` directo.
+    // Lecturas con body (filtros anidados, sorts compuestos) que no entran
+    // cómodo en query params. Va por POST; el nombre `query` marca que la
+    // intención es leer, no mutar. Corre por el response interceptor que ya
+    // desenvuelve `response.data`, así que la promesa resuelve a `T` directo.
     query<T = unknown>(url: string, data?: unknown): Promise<T>
   }
 }
@@ -104,11 +105,9 @@ api.interceptors.response.use(
   }
 )
 
-// RFC 10008 (junio 2026): el método QUERY es safe + idempotente, con body
-// (a diferencia de GET) y cacheable (a diferencia de POST). Es el verb
-// correcto para queries complejas que no entran cómodo en query params
-// (filtros anidados, sorts compuestos, etc.). Axios acepta métodos custom
-// vía `request({ method })` — no hay helper built-in. Como el response
-// interceptor ya desenvuelve `response.data`, casteamos el resultado a `T`.
+// Queries complejas que no entran cómodo en query params (filtros anidados,
+// sorts compuestos, etc.) y por eso necesitan body. Se mandan por POST, que
+// es lo que soporta el gateway. Como el response interceptor ya desenvuelve
+// `response.data`, casteamos el resultado a `T`.
 api.query = <T>(url: string, data?: unknown): Promise<T> =>
-  api.request<T>({ method: "QUERY", url, data }) as unknown as Promise<T>
+  api.request<T>({ method: "POST", url, data }) as unknown as Promise<T>

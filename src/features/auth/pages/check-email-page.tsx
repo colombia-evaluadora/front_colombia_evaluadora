@@ -45,13 +45,13 @@ export function CheckEmailPage() {
           <div
             className={cn(
               "flex size-20 items-center justify-center rounded-full",
-              isDead ? "bg-destructive/10" : "bg-success/10"
+              isDead ? "bg-red/10" : "bg-green/10"
             )}
           >
             <PaperPlaneTiltIcon
               className={cn(
                 "size-9",
-                isDead ? "text-destructive" : "text-success"
+                isDead ? "text-red" : "text-green"
               )}
               aria-hidden="true"
             />
@@ -59,13 +59,13 @@ export function CheckEmailPage() {
           {isDead ? (
             <WarningCircleIcon
               weight="fill"
-              className="text-destructive bg-card absolute right-0 bottom-0 size-7 rounded-full"
+              className="text-red bg-card absolute right-0 bottom-0 size-7 rounded-full"
               aria-hidden="true"
             />
           ) : (
             <CheckCircleIcon
               weight="fill"
-              className="text-success bg-card absolute right-0 bottom-0 size-7 rounded-full"
+              className="text-green bg-card absolute right-0 bottom-0 size-7 rounded-full"
               aria-hidden="true"
             />
           )}
@@ -83,7 +83,7 @@ export function CheckEmailPage() {
               {maskedEmail ? (
                 <>
                   <br />
-                  <span className="text-success font-semibold break-all">
+                  <span className="text-green font-semibold break-all">
                     {maskedEmail}
                   </span>
                 </>
@@ -105,16 +105,16 @@ export function CheckEmailPage() {
           </p>
 
           {remainingLabel !== null && (
-            <div className="bg-success/10 flex items-center justify-center gap-2 p-3">
+            <div className="bg-green/10 flex items-center justify-center gap-2 p-3">
               <ClockIcon
                 weight="duotone"
-                className="text-success size-5 shrink-0"
+                className="text-green size-5 shrink-0"
                 aria-hidden="true"
               />
               <p className="text-sm">
                 El enlace vence en{" "}
                 <span
-                  className="text-success font-semibold tabular-nums"
+                  className="text-green font-semibold tabular-nums"
                   aria-live="polite"
                 >
                   {remainingLabel}
@@ -129,10 +129,10 @@ export function CheckEmailPage() {
             </p>
           )}
 
-          <div className="bg-success/10 flex items-start gap-3 p-4">
+          <div className="bg-green/10 flex items-start gap-3 p-4">
             <CheckCircleIcon
               weight="fill"
-              className="text-success mt-0.5 size-5 shrink-0"
+              className="text-green mt-0.5 size-5 shrink-0"
               aria-hidden="true"
             />
             <div className="space-y-1">

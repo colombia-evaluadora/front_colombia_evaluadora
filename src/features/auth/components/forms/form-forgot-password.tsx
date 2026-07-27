@@ -48,7 +48,7 @@ export function ForgotPasswordForm({ id, onSubmit }: ForgotPasswordFormProps) {
             return (
               <Field variant="outlined" data-invalid={isInvalid}>
                 <FieldLabel htmlFor={field.name}>Correo electrónico</FieldLabel>
-                <InputGroup className="rounded-md border-input has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20 has-[[data-slot][aria-invalid=true]]:border-destructive">
+                <InputGroup className="rounded-md border-input has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20 has-[[data-slot][aria-invalid=true]]:border-red">
                   <InputGroupAddon align="inline-start" className="ml-2">
                     <EnvelopeIcon className="size-4 text-muted-foreground" />
                   </InputGroupAddon>

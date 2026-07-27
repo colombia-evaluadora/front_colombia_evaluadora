@@ -39,19 +39,19 @@ export function TableOperationsStatsCards({
       icon: PlusCircleIcon,
       value: data?.inserts,
       label: "Insert",
-      iconClassName: "bg-info/10 text-info",
+      iconClassName: "bg-blue/10 text-blue",
     },
     {
       icon: PencilIcon,
       value: data?.updates,
       label: "Update",
-      iconClassName: "bg-warning/10 text-warning",
+      iconClassName: "bg-yellow/10 text-yellow",
     },
     {
       icon: TrashIcon,
       value: data?.deletes,
       label: "Delete",
-      iconClassName: "bg-destructive/10 text-destructive",
+      iconClassName: "bg-red/10 text-red",
     },
   ]
 

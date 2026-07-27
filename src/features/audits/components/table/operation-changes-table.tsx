@@ -30,7 +30,7 @@ export function OperationChangesTable({ changes }: OperationChangesTableProps) {
         <TableRow>
           <TableHead className="w-1/4">Campo</TableHead>
           <TableHead className="w-1/4">
-            <span className="text-destructive flex items-center gap-1">
+            <span className="text-red flex items-center gap-1">
               Antes
               <ArrowCounterClockwiseIcon
                 weight="bold"

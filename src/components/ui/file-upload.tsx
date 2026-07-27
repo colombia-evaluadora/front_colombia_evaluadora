@@ -640,7 +640,7 @@ function FileUploadDropzone(props: FileUploadDropzoneProps) {
         "aria-disabled": context.disabled,
         "aria-invalid": context.invalid,
         className: cn(
-          "relative flex select-none flex-col items-center justify-center gap-3 border-2 border-dashed border-border p-6 text-center outline-none transition-colors hover:bg-muted/30 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/20 data-disabled:pointer-events-none data-disabled:opacity-50 data-dragging:border-primary data-dragging:bg-primary/5 data-invalid:border-destructive data-invalid:ring-2 data-invalid:ring-destructive/20",
+          "relative flex select-none flex-col items-center justify-center gap-3 border-2 border-dashed border-border p-6 text-center outline-none transition-colors hover:bg-muted/30 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/20 data-disabled:pointer-events-none data-disabled:opacity-50 data-dragging:border-primary data-dragging:bg-primary/5 data-invalid:border-red data-invalid:ring-2 data-invalid:ring-red/20",
           className
         ),
         onClick,

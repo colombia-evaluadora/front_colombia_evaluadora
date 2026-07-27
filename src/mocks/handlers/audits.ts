@@ -1,6 +1,5 @@
 import { http, HttpResponse, delay } from "msw"
 
-import { httpQuery } from "./_http-query"
 import { getSessionOperations } from "./_session-operations"
 
 import { auditsDb } from "../db/audits"
@@ -167,7 +166,7 @@ function applySorting(
 }
 
 export const auditsHandlers = [
-  httpQuery("/api/audits/query", async ({ request }) => {
+  http.post("/api/audits/query", async ({ request }) => {
     await delay(300)
     const body = (await request.json()) as AuditsQueryRequest
     const { filters, sorting, pageIndex, pageSize } = body
@@ -185,7 +184,7 @@ export const auditsHandlers = [
     })
   }),
 
-  httpQuery("/api/audits/stats", async ({ request }) => {
+  http.post("/api/audits/stats", async ({ request }) => {
     await delay(200)
     const { ids, filters } = (await request.json()) as AuditsStatsRequest
     const scoped = ids
@@ -240,7 +239,7 @@ export const auditsHandlers = [
   // QUERY paginada y filtrable. Las operaciones de una sesión se generan
   // on-the-fly (determinísticas por seed) y el filtrado/orden/paginación
   // se aplica en memoria antes de devolver la página.
-  httpQuery(
+  http.post(
     "/api/audits/sessions/:sessionId/operations",
     async ({ request, params }) => {
       await delay(250)

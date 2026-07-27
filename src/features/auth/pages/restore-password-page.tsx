@@ -60,15 +60,15 @@ export function RestorePasswordPage() {
         <>
           <CardHeader className="text-center">
             <div className="relative mx-auto size-20">
-              <div className="bg-destructive/10 flex size-20 items-center justify-center rounded-full">
+              <div className="bg-red/10 flex size-20 items-center justify-center rounded-full">
                 <LinkBreakIcon
-                  className="text-destructive size-9"
+                  className="text-red size-9"
                   aria-hidden="true"
                 />
               </div>
               <WarningCircleIcon
                 weight="fill"
-                className="text-destructive bg-card absolute right-0 bottom-0 size-7 rounded-full"
+                className="text-red bg-card absolute right-0 bottom-0 size-7 rounded-full"
                 aria-hidden="true"
               />
             </div>
@@ -93,15 +93,15 @@ export function RestorePasswordPage() {
         <>
           <CardHeader className="text-center">
             <div className="relative mx-auto size-20">
-              <div className="bg-destructive/10 flex size-20 items-center justify-center rounded-full">
+              <div className="bg-red/10 flex size-20 items-center justify-center rounded-full">
                 <ClockCountdownIcon
-                  className="text-destructive size-9"
+                  className="text-red size-9"
                   aria-hidden="true"
                 />
               </div>
               <WarningCircleIcon
                 weight="fill"
-                className="text-destructive bg-card absolute right-0 bottom-0 size-7 rounded-full"
+                className="text-red bg-card absolute right-0 bottom-0 size-7 rounded-full"
                 aria-hidden="true"
               />
             </div>
