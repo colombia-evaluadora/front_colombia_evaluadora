@@ -29,15 +29,13 @@ export function useTableOperationsFilters(): TableOperationsFilters {
           operations: values.operations.length ? values.operations : undefined,
           occurredFrom: values.occurredFrom || undefined,
           occurredTo: values.occurredTo || undefined,
-          fieldFilters: values.fieldFilters.length
-            ? values.fieldFilters
-            : undefined,
+          fieldFilters: values.fieldFilters.length ? values.fieldFilters : undefined,
           page: 0,
         }),
         replace: true,
       })
     },
-    [navigate]
+    [navigate],
   )
 
   const clearAllFilters = useCallback(() => {
@@ -63,13 +61,7 @@ export function useTableOperationsFilters(): TableOperationsFilters {
       occurredTo: search.occurredTo,
       fieldFilters: search.fieldFilters,
     }),
-    [
-      search.author,
-      search.operations,
-      search.occurredFrom,
-      search.occurredTo,
-      search.fieldFilters,
-    ]
+    [search.author, search.operations, search.occurredFrom, search.occurredTo, search.fieldFilters],
   )
 
   const activeFilterCount = useMemo(() => {

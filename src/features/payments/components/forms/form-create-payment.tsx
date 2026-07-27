@@ -1,12 +1,6 @@
 ﻿import { useForm } from "@tanstack/react-form"
 
-import {
-  Field,
-  FieldDescription,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field"
+import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
   Select,
@@ -50,10 +44,9 @@ export function CreatePaymentForm({ id, onSubmit }: CreatePaymentFormProps) {
       <FieldGroup>
         <form.Field name="email">
           {(field) => {
-            const isInvalid =
-              field.state.meta.isTouched && !field.state.meta.isValid
+            const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
             return (
-              <Field data-invalid={isInvalid}>
+              <Field variant="outlined" data-invalid={isInvalid}>
                 <FieldLabel htmlFor={field.name}>Email</FieldLabel>
                 <Input
                   id={field.name}
@@ -65,47 +58,37 @@ export function CreatePaymentForm({ id, onSubmit }: CreatePaymentFormProps) {
                   aria-invalid={isInvalid}
                 />
                 <FieldDescription>Ingresa un email vÃ¡lido.</FieldDescription>
-                {isInvalid && (
-                  <FieldError errors={field.state.meta.errors} />
-                )}
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             )
           }}
         </form.Field>
         <form.Field name="amount">
           {(field) => {
-            const isInvalid =
-              field.state.meta.isTouched && !field.state.meta.isValid
+            const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
             return (
-              <Field data-invalid={isInvalid}>
+              <Field variant="outlined" data-invalid={isInvalid}>
                 <FieldLabel htmlFor={field.name}>Monto</FieldLabel>
                 <Input
                   id={field.name}
                   name={field.name}
                   type="number"
                   step="0.01"
-                  value={
-                    Number.isNaN(field.state.value) ? "" : field.state.value
-                  }
+                  value={Number.isNaN(field.state.value) ? "" : field.state.value}
                   onBlur={field.handleBlur}
-                  onChange={(e) =>
-                    field.handleChange(e.target.valueAsNumber)
-                  }
+                  onChange={(e) => field.handleChange(e.target.valueAsNumber)}
                   aria-invalid={isInvalid}
                 />
-                {isInvalid && (
-                  <FieldError errors={field.state.meta.errors} />
-                )}
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             )
           }}
         </form.Field>
         <form.Field name="status">
           {(field) => {
-            const isInvalid =
-              field.state.meta.isTouched && !field.state.meta.isValid
+            const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
             return (
-              <Field data-invalid={isInvalid}>
+              <Field variant="outlined" data-invalid={isInvalid}>
                 <FieldLabel htmlFor={field.name}>Estado</FieldLabel>
                 <Select
                   name={field.name}
@@ -114,11 +97,7 @@ export function CreatePaymentForm({ id, onSubmit }: CreatePaymentFormProps) {
                     if (value !== null) field.handleChange(value)
                   }}
                 >
-                  <SelectTrigger
-                    id={field.name}
-                    onBlur={field.handleBlur}
-                    aria-invalid={isInvalid}
-                  >
+                  <SelectTrigger id={field.name} onBlur={field.handleBlur} aria-invalid={isInvalid}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -131,9 +110,7 @@ export function CreatePaymentForm({ id, onSubmit }: CreatePaymentFormProps) {
                     </SelectGroup>
                   </SelectContent>
                 </Select>
-                {isInvalid && (
-                  <FieldError errors={field.state.meta.errors} />
-                )}
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             )
           }}

@@ -1,6 +1,6 @@
 import { useState } from "react"
 
-import { EyeIcon } from "@phosphor-icons/react"
+import { EyeIcon } from "@/components/ui/icons"
 
 import {
   Dialog,
@@ -18,10 +18,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 
 import { useOperationChangesQuery } from "../../api/query/use-operation-changes-query"
-import {
-  OPERATION_TYPE_BADGE,
-  OPERATION_TYPE_LABELS,
-} from "../../api/ui-mappings"
+import { OPERATION_TYPE_BADGE, OPERATION_TYPE_LABELS } from "../../api/ui-mappings"
 import { OperationChangesTable } from "../table/operation-changes-table"
 import { DialogConfirmRevertChanges } from "./dialog-confirm-revert-changes"
 import { useParams } from "@tanstack/react-router"
@@ -64,31 +61,21 @@ export function ViewOperationChangesDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
-        render={
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label="Ver cambios de la operación"
-          />
-        }
+        render={<Button variant="ghost" size="icon-sm" aria-label="Ver cambios de la operación" />}
       >
         <EyeIcon weight="bold" />
       </DialogTrigger>
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <div className="flex flex-wrap items-center gap-2">
-            <DialogTitle>
-              {data ? data.entityName : "Detalle de cambios"}
-            </DialogTitle>
+            <DialogTitle>{data ? data.entityName : "Detalle de cambios"}</DialogTitle>
             {data && (
               <Badge {...OPERATION_TYPE_BADGE[data.operation]}>
                 {OPERATION_TYPE_LABELS[data.operation]}
               </Badge>
             )}
           </div>
-          <DialogDescription>
-            {data ? `${data.entityId}` : "Cargando…"}
-          </DialogDescription>
+          <DialogDescription>{data ? `${data.entityId}` : "Cargando…"}</DialogDescription>
           <div className="flex justify-between gap-2">
             <p className="text-muted-foreground text-sm">{summary}</p>
 
@@ -110,7 +97,7 @@ export function ViewOperationChangesDialog({
         )}
 
         {isError && (
-          <div className="text-destructive px-6 py-8 text-center text-sm">
+          <div className="text-red px-6 py-8 text-center text-sm">
             Ocurrió un error al cargar los cambios.
           </div>
         )}
@@ -128,9 +115,7 @@ export function ViewOperationChangesDialog({
         )}
 
         <DialogFooter className="sm:justify-between">
-          <DialogClose render={<Button type="button" variant="ghost" />}>
-            Cerrar
-          </DialogClose>
+          <DialogClose render={<Button type="button" variant="ghost" />}>Cerrar</DialogClose>
           <DialogConfirmRevertChanges
             tableSlug={tableSlug}
             operationId={operationId}

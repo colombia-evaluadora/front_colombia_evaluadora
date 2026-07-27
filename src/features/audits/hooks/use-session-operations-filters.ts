@@ -34,7 +34,7 @@ export function useSessionOperationsFilters(): SessionOperationsFilters {
         replace: true,
       })
     },
-    [navigate]
+    [navigate],
   )
 
   const clearAllFilters = useCallback(() => {
@@ -58,12 +58,7 @@ export function useSessionOperationsFilters(): SessionOperationsFilters {
       occurredFrom: search.occurredFrom,
       occurredTo: search.occurredTo,
     }),
-    [
-      search.operations,
-      search.tableSlug,
-      search.occurredFrom,
-      search.occurredTo,
-    ]
+    [search.operations, search.tableSlug, search.occurredFrom, search.occurredTo],
   )
 
   const activeFilterCount = useMemo(() => {
@@ -72,12 +67,7 @@ export function useSessionOperationsFilters(): SessionOperationsFilters {
     if (search.tableSlug) n += 1
     if (search.occurredFrom || search.occurredTo) n += 1
     return n
-  }, [
-    search.operations,
-    search.tableSlug,
-    search.occurredFrom,
-    search.occurredTo,
-  ])
+  }, [search.operations, search.tableSlug, search.occurredFrom, search.occurredTo])
 
   return {
     filters: {

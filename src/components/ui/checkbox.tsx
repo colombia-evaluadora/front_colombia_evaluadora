@@ -4,10 +4,10 @@ import { Checkbox as CheckboxPrimitive } from "@base-ui/react/checkbox"
 import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
-import { CheckIcon } from "@phosphor-icons/react"
+import { CheckIcon } from "@/components/ui/icons"
 
 const checkboxVariants = cva(
-  "peer relative flex size-4.5 shrink-0 items-center justify-center rounded-none border border-input bg-transparent transition-shadow outline-none group-has-disabled/field:opacity-50 after:absolute after:-inset-x-3 after:-inset-y-2 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40",
+  "peer relative flex size-4.5 shrink-0 items-center justify-center rounded-xs border-[1.5px] border-input bg-transparent transition-shadow outline-none group-has-disabled/field:opacity-50 after:absolute after:-inset-x-3 after:-inset-y-2 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-red aria-invalid:ring-2 aria-invalid:ring-red/20 dark:aria-invalid:border-red/50 dark:aria-invalid:ring-red/40",
   {
     variants: {
       color: {
@@ -20,15 +20,14 @@ const checkboxVariants = cva(
     defaultVariants: {
       color: "primary",
     },
-  }
+  },
 )
 
 function Checkbox({
   className,
   color,
   ...props
-}: Omit<CheckboxPrimitive.Root.Props, "color"> &
-  VariantProps<typeof checkboxVariants>) {
+}: Omit<CheckboxPrimitive.Root.Props, "color"> & VariantProps<typeof checkboxVariants>) {
   return (
     <CheckboxPrimitive.Root
       data-slot="checkbox"
@@ -39,8 +38,7 @@ function Checkbox({
         data-slot="checkbox-indicator"
         className="grid place-content-center text-current transition-none [&>svg]:size-3.5"
       >
-        <CheckIcon
-        />
+        <CheckIcon />
       </CheckboxPrimitive.Indicator>
     </CheckboxPrimitive.Root>
   )

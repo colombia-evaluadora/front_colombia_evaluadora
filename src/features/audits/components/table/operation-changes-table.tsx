@@ -6,7 +6,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { ArrowCounterClockwiseIcon } from "@phosphor-icons/react"
+import { ArrowCounterClockwiseIcon } from "@/components/ui/icons"
 
 import type { OperationChange } from "../../api/types/audit-table"
 
@@ -30,18 +30,13 @@ export function OperationChangesTable({ changes }: OperationChangesTableProps) {
         <TableRow>
           <TableHead className="w-1/4">Campo</TableHead>
           <TableHead className="w-1/4">
-            <span className="text-destructive flex items-center gap-1">
+            <span className="text-red flex items-center gap-1">
               Antes
-              <ArrowCounterClockwiseIcon
-                weight="bold"
-                data-icon="inline-end"
-              />
+              <ArrowCounterClockwiseIcon weight="bold" data-icon="inline-end" />
             </span>
           </TableHead>
           <TableHead className="w-1/4">
-            <span className="text-emerald-600 dark:text-emerald-400">
-              Después del cambio
-            </span>
+            <span className="text-emerald-600 dark:text-emerald-400">Después del cambio</span>
           </TableHead>
           <TableHead className="w-1/4">
             <span>Registro actual</span>
@@ -57,18 +52,12 @@ export function OperationChangesTable({ changes }: OperationChangesTableProps) {
           return (
             <TableRow key={change.fieldIndex}>
               <TableCell className="font-medium">{change.field}</TableCell>
-              <TableCell className="text-muted-foreground">
-                {change.before ?? "---"}
-              </TableCell>
+              <TableCell className="text-muted-foreground">{change.before ?? "---"}</TableCell>
               <TableCell className="text-emerald-600 dark:text-emerald-400">
                 {change.after ?? "---"}
               </TableCell>
               <TableCell
-                className={
-                  willChange
-                    ? "font-semibold text-foreground"
-                    : "text-muted-foreground"
-                }
+                className={willChange ? "font-semibold text-foreground" : "text-muted-foreground"}
               >
                 {change.current ?? "---"}
               </TableCell>

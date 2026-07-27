@@ -1,11 +1,6 @@
 import { z } from "zod"
 
-export const PAYMENT_STATUSES = [
-  "pending",
-  "processing",
-  "success",
-  "failed",
-] as const
+export const PAYMENT_STATUSES = ["pending", "processing", "success", "failed"] as const
 
 export const paymentFormSchema = z.object({
   email: z.email("Ingresa un email válido."),

@@ -1,12 +1,14 @@
 {
   "name": "front_colombia_evaluadora",
-  "private": true,
   "version": "0.0.0",
+  "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
+    "format": "oxfmt .",
+    "format:check": "oxfmt --check .",
     "preview": "vite preview",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
@@ -18,7 +20,6 @@
     "@faker-js/faker": "^10.5.0",
     "@fontsource-variable/inter": "^5.2.8",
     "@fontsource-variable/noto-sans": "^5.2.10",
-    "@phosphor-icons/react": "^2.1.10",
     "@shadcn/helpers": "^0.1.0",
     "@shadcn/react": "^0.2.1",
     "@tailwindcss/vite": "^4.3.2",
@@ -39,6 +40,7 @@
     "react": "^19.2.7",
     "react-day-picker": "^10.0.1",
     "react-dom": "^19.2.7",
+    "react-icons": "^5.7.0",
     "react-resizable-panels": "^4.12.2",
     "recharts": "3.8.0",
     "shadcn": "^4.13.0",
@@ -70,6 +72,7 @@
     "babel-plugin-react-compiler": "^1.0.0",
     "concurrently": "^10.0.3",
     "http-server": "^14.1.1",
+    "oxfmt": "^0.61.0",
     "oxlint": "^1.71.0",
     "playwright": "^1.61.1",
     "storybook": "^10.5.3",
@@ -77,12 +80,8 @@
     "typescript": "~6.0.2",
     "vite": "^8.1.1",
     "vitest": "^4.1.10",
-    "wait-on": "^9.0.10"
-  },
-  "msw": {
-    "workerDirectory": [
-      "public"
-    ]
+    "wait-on": "^9.0.10",
+    "wrangler": "^4.113.0"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
@@ -90,6 +89,11 @@
       "esbuild",
       "msw",
       "unrs-resolver"
+    ]
+  },
+  "msw": {
+    "workerDirectory": [
+      "public"
     ]
   }
 }

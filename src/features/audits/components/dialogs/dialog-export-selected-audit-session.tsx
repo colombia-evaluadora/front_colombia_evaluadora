@@ -1,11 +1,6 @@
 import { useState } from "react"
 
-import {
-  DownloadSimpleIcon,
-  FilePdfIcon,
-  FileXlsIcon,
-  SpinnerIcon,
-} from "@phosphor-icons/react"
+import { DownloadSimpleIcon, FilePdfIcon, FileXlsIcon, SpinnerIcon } from "@/components/ui/icons"
 import { toast } from "sonner"
 
 import {
@@ -56,9 +51,13 @@ export function ExportSelectedAuditSessionDialog({
   // Los dos botones comparten la misma mutación, así que `isPending` sola no
   // distingue cuál se pulsó. `variables` guarda el input en vuelo — con eso
   // el spinner sale solo en el botón que disparó la exportación.
+<<<<<<< HEAD
   const pendingFormat = exportSelected.isPending
     ? exportSelected.variables?.format
     : undefined
+=======
+  const pendingFormat = exportSelected.isPending ? exportSelected.variables?.format : undefined
+>>>>>>> main
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -79,9 +78,7 @@ export function ExportSelectedAuditSessionDialog({
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="sm:justify-between">
-          <DialogClose render={<Button type="button" variant="ghost" />}>
-            Cancelar
-          </DialogClose>
+          <DialogClose render={<Button type="button" variant="ghost" />}>Cancelar</DialogClose>
           <div className="flex flex-col-reverse gap-2 sm:flex-row">
             <Button
               type="button"

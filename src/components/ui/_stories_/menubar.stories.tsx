@@ -1,4 +1,4 @@
-import preview from '../../../../.storybook/preview'
+import preview from "../../../../.storybook/preview"
 import {
   Menubar,
   MenubarContent,
@@ -7,12 +7,12 @@ import {
   MenubarSeparator,
   MenubarShortcut,
   MenubarTrigger,
-} from '../menubar'
+} from "../menubar"
 
 const meta = preview.meta({
-  title: 'Design System/Overlays/Menubar',
+  title: "Design System/Overlays/Menubar",
   component: Menubar,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
 })
 
 export const Default = meta.story({

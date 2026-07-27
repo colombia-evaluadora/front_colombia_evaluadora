@@ -2,10 +2,7 @@ import { useCallback, useMemo } from "react"
 
 import { paymentsRoute } from "@/router"
 
-import type {
-  PaymentFiltersFormInput,
-  PaymentFiltersFormValues,
-} from "../api/schema"
+import type { PaymentFiltersFormInput, PaymentFiltersFormValues } from "../api/schema"
 import type { PaymentsQueryRequest } from "../api/types/payment"
 
 export interface PaymentsFilters {
@@ -34,7 +31,7 @@ export function usePaymentsFilters(): PaymentsFilters {
         replace: true,
       })
     },
-    [navigate]
+    [navigate],
   )
 
   const clearAllFilters = useCallback(() => {
@@ -58,7 +55,7 @@ export function usePaymentsFilters(): PaymentsFilters {
       amountMin: search.amountMin,
       amountMax: search.amountMax,
     }),
-    [search.email, search.statuses, search.amountMin, search.amountMax]
+    [search.email, search.statuses, search.amountMin, search.amountMax],
   )
 
   const activeFilterCount = useMemo(() => {

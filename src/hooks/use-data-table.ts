@@ -55,9 +55,7 @@ export function useDataTable<TData>({
     setSorting(next)
   }
 
-  const onPaginationChange = (
-    updater: Updater<{ pageIndex: number; pageSize: number }>
-  ) => {
+  const onPaginationChange = (updater: Updater<{ pageIndex: number; pageSize: number }>) => {
     const current = { pageIndex, pageSize }
     const next = typeof updater === "function" ? updater(current) : updater
     if (next.pageIndex !== current.pageIndex) goToPage(next.pageIndex)
@@ -88,7 +86,7 @@ export function useDataTable<TData>({
 
   const selectedIds = useMemo(
     () => Object.keys(rowSelection).filter((id) => rowSelection[id] === true),
-    [rowSelection]
+    [rowSelection],
   )
 
   return {

@@ -1,4 +1,4 @@
-import preview from '../../../../.storybook/preview'
+import preview from "../../../../.storybook/preview"
 import {
   MessageScroller,
   MessageScrollerButton,
@@ -6,13 +6,13 @@ import {
   MessageScrollerItem,
   MessageScrollerProvider,
   MessageScrollerViewport,
-} from '../message-scroller'
-import { Message, MessageContent } from '../message'
+} from "../message-scroller"
+import { Message, MessageContent } from "../message"
 
 const meta = preview.meta({
-  title: 'Design System/Chat/MessageScroller',
+  title: "Design System/Chat/MessageScroller",
   component: MessageScroller,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
 })
 
 export const Default = meta.story({
@@ -23,7 +23,7 @@ export const Default = meta.story({
           <MessageScrollerContent>
             {Array.from({ length: 8 }, (_, i) => (
               <MessageScrollerItem key={i}>
-                <Message align={i % 2 === 0 ? 'start' : 'end'}>
+                <Message align={i % 2 === 0 ? "start" : "end"}>
                   <MessageContent>Message number {i + 1}</MessageContent>
                 </Message>
               </MessageScrollerItem>

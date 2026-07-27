@@ -1,11 +1,11 @@
-import preview from '../../../../.storybook/preview'
-import { Button } from '../button'
-import { ButtonGroup, ButtonGroupSeparator, ButtonGroupText } from '../button-group'
+import preview from "../../../../.storybook/preview"
+import { Button } from "../button"
+import { ButtonGroup, ButtonGroupSeparator, ButtonGroupText } from "../button-group"
 
 const meta = preview.meta({
-  title: 'Design System/Forms/ButtonGroup',
+  title: "Design System/Forms/ButtonGroup",
   component: ButtonGroup,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
 })
 
 export const Default = meta.story({

@@ -4,9 +4,11 @@ import {
   consumePasswordResetToken,
   createMockAccessToken,
   createPasswordResetToken,
+  expirePasswordResetToken,
   findUserByCredentials,
-  findUserByEmail,
+  findUserByDocument,
   findUserByToken,
+  getPasswordResetTokenStatus,
   setUserPassword,
 } from "../db/auth"
 
@@ -15,6 +17,12 @@ function getBearerToken(request: Request): string | null {
   return header.startsWith("Bearer ") ? header.slice("Bearer ".length) : null
 }
 
+// Sin "recordar" el token muere al cerrar la pestaña. Con "recordar" dura
+// 30 días: tiempo suficiente para no obligar a re-loguear seguido y
+// acotado para que un token robado no sea eterno.
+const SHORT_SESSION_SECONDS = 60 * 60
+const LONG_SESSION_SECONDS = 30 * 24 * 60 * 60
+
 export const authHandlers = [
   http.post("/api/auth/login", async ({ request }) => {
     await delay(300)
@@ -22,13 +30,11 @@ export const authHandlers = [
       email: string
       password: string
     }
+    const rememberMe = request.headers.get("x-remember-me") === "true"
     const user = findUserByCredentials(email, password)
 
     if (!user) {
-      return HttpResponse.json(
-        { message: "Email o contraseña incorrectos." },
-        { status: 401 }
-      )
+      return HttpResponse.json({ message: "Email o contraseña incorrectos." }, { status: 401 })
     }
 
     // Mismo contrato que el backend real: solo token/refreshToken/expiresIn,
@@ -36,7 +42,7 @@ export const authHandlers = [
     return HttpResponse.json({
       token: createMockAccessToken(user),
       refreshToken: `mock-refresh-${user.id}`,
-      expiresIn: 3600,
+      expiresIn: rememberMe ? LONG_SESSION_SECONDS : SHORT_SESSION_SECONDS,
     })
   }),
 
@@ -51,10 +57,14 @@ export const authHandlers = [
       return HttpResponse.json({ message: "No autenticado." }, { status: 401 })
     }
 
+    // El refresh respeta la elección del login original: si la sesión era
+    // persistente, se mantiene.
+    const rememberMe = localStorage.getItem("auth_remember_me") === "true"
+
     return HttpResponse.json({
       token: createMockAccessToken(user),
       refreshToken: `mock-refresh-${user.id}`,
-      expiresIn: 3600,
+      expiresIn: rememberMe ? LONG_SESSION_SECONDS : SHORT_SESSION_SECONDS,
     })
   }),
 
@@ -64,21 +74,53 @@ export const authHandlers = [
   }),
 
   // Mismo contrato que el backend real (GET /sso-admin/forgotPassword?email=):
-  // nunca revela si el email existe, siempre resuelve 200. El link de reseteo
-  // no se puede "enviar" en un mock, así que el token queda logueado en
-  // consola para poder probar el flujo de /restore-password localmente.
+  // nunca revela si el email existe, siempre resuelve 200. Diferencia con el
+  // real: acá devolvemos el token en el body, porque en un mock no hay correo
+  // que abrir — es lo que le permite a /check-email mostrar el vencimiento
+  // real y llegar a /restore-password. El front trata el body como opcional.
   http.get("/api/sso-admin/forgotPassword", async ({ request }) => {
     await delay(300)
     const email = new URL(request.url).searchParams.get("email") ?? ""
-    const user = findUserByEmail(email)
 
-    if (user) {
-      const token = createPasswordResetToken(email)
-      console.info(
-        `[mock] Link de reseteo para ${email}: /restore-password?token=${token}`
+    // El token se emite exista o no el usuario: si no existe, el reseteo
+    // después no cambia nada, pero la respuesta no delata la diferencia.
+    const { token, expiresIn } = createPasswordResetToken(email)
+
+    console.info(`[mock] Link de reseteo para ${email}: /restore-password?token=${token}`)
+
+    return HttpResponse.json({ token, expiresIn })
+  }),
+
+  // Recuperar usuario a partir del documento: el usuario es el correo, así
+  // que pedirlo por correo no tendría sentido.
+  http.get("/api/sso-admin/forgotUsername", async ({ request }) => {
+    await delay(300)
+    const document = new URL(request.url).searchParams.get("document") ?? ""
+    const user = findUserByDocument(document)
+
+    if (!user) {
+      return HttpResponse.json(
+        { message: "No encontramos una cuenta con ese número de documento." },
+        { status: 404 },
       )
     }
 
+    return HttpResponse.json({ username: user.email })
+  }),
+
+  // Endpoint solo-mock: la pantalla de confirmación lo consulta para saber
+  // cuántos segundos le quedan al enlace y para distinguir "venció" de
+  // "no existe".
+  http.get("/api/sso-admin/resetTokenStatus", ({ request }) => {
+    const token = new URL(request.url).searchParams.get("token") ?? ""
+    return HttpResponse.json(getPasswordResetTokenStatus(token))
+  }),
+
+  // Atajo de desarrollo para probar la pantalla de "enlace expirado" sin
+  // esperar los 30 minutos.
+  http.post("/api/sso-admin/expireResetToken", async ({ request }) => {
+    const { token } = (await request.json()) as { token: string }
+    expirePasswordResetToken(token)
     return new HttpResponse(null, { status: 200 })
   }),
 
@@ -88,12 +130,18 @@ export const authHandlers = [
       token: string
       password: string
     }
-    const email = consumePasswordResetToken(token)
+    const { email, status } = consumePasswordResetToken(token)
 
     if (!email) {
       return HttpResponse.json(
-        { message: "El enlace de recuperación no es válido o ya expiró." },
-        { status: 400 }
+        {
+          code: status,
+          message:
+            status === "expired"
+              ? "El enlace de recuperación ya expiró. Solicita uno nuevo."
+              : "El enlace de recuperación no es válido.",
+        },
+        { status: 400 },
       )
     }
 

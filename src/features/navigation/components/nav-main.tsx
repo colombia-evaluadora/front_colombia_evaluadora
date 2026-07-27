@@ -1,14 +1,10 @@
 import { useState } from "react"
 
 import { Link, useLocation } from "@tanstack/react-router"
-import { CaretRightIcon } from "@phosphor-icons/react"
+import { CaretRightIcon } from "@/components/ui/icons"
 
 import { Button } from "@/components/ui/button"
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import {
   SidebarGroup,
   SidebarMenu,
@@ -23,7 +19,7 @@ import { cn } from "@/lib/utils"
 
 import { useNavItemsQuery } from "@/features/navigation/api/query/use-nav-items-query"
 import type { NavSubItem } from "@/features/navigation/api/types/nav-item"
-import type { Icon } from "@phosphor-icons/react"
+import type { Icon } from "@/components/ui/icons"
 
 export function NavMain() {
   const { data: items, isPending, isError, refetch } = useNavItemsQuery()
@@ -136,7 +132,7 @@ function NavCollapsibleItem({
              */
             className={cn(
               (isActive || hasActiveChild) &&
-                "group-data-[collapsible=icon]:bg-sidebar-accent group-data-[collapsible=icon]:font-medium group-data-[collapsible=icon]:text-sidebar-accent-foreground"
+                "group-data-[collapsible=icon]:bg-sidebar-accent group-data-[collapsible=icon]:font-medium group-data-[collapsible=icon]:text-sidebar-accent-foreground",
             )}
             render={<Link to={items[0].url} />}
           />
@@ -150,10 +146,7 @@ function NavCollapsibleItem({
         <SidebarMenuSub>
           {items.map((sub) => (
             <SidebarMenuSubItem key={sub.url}>
-              <SidebarMenuSubButton
-                isActive={pathname === sub.url}
-                render={<Link to={sub.url} />}
-              >
+              <SidebarMenuSubButton isActive={pathname === sub.url} render={<Link to={sub.url} />}>
                 <span>{sub.title}</span>
               </SidebarMenuSubButton>
             </SidebarMenuSubItem>

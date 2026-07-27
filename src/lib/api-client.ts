@@ -7,33 +7,48 @@ import { queryClient } from "./query-client"
 
 declare module "axios" {
   export interface AxiosInstance {
-    // RFC 10008: verb "safe + idempotente con body" para queries complejas.
-    // `api.query` corre por el response interceptor que ya desenvuelve
-    // `response.data`, así que la promesa resuelve a `T` directo.
+    // Lecturas con body (filtros anidados, sorts compuestos) que no entran
+    // cómodo en query params. Va por POST; el nombre `query` marca que la
+    // intención es leer, no mutar. Corre por el response interceptor que ya
+    // desenvuelve `response.data`, así que la promesa resuelve a `T` directo.
     query<T = unknown>(url: string, data?: unknown): Promise<T>
   }
 }
 
-// Persistido en localStorage solo para que la sesión sobreviva a un reload
-// mientras se prueba la UI. No es representativo de cómo se guardaría un
-// token contra un backend real.
+// Persistido en localStorage solo cuando el usuario marcó "Mantener sesión".
+// Si no, el token vive en memoria y muere con la pestaña — mismo efecto que
+// un refresh token que expira al cerrar el navegador.
 //
 // La clave va namespaced por modo: el token que emite MSW es un JWT sin
 // firma (`alg: none`, ver mocks/db/auth.ts) que el gateway real rechaza con
 // 401 `invalid_token`. Con una sola clave compartida, cambiar
 // ENABLE_API_MOCKING dejaba el token del modo anterior en storage y el front
 // se lo mandaba al backend equivocado.
+<<<<<<< HEAD
 const TOKEN_STORAGE_KEY = env.ENABLE_API_MOCKING
   ? "mock_auth_token"
   : "auth_token"
 let authToken: string | null = localStorage.getItem(TOKEN_STORAGE_KEY)
+=======
+const TOKEN_STORAGE_KEY = env.ENABLE_API_MOCKING ? "mock_auth_token" : "auth_token"
+const REMEMBER_KEY = "auth_remember_me"
+let authToken: string | null = localStorage.getItem(REMEMBER_KEY)
+  ? localStorage.getItem(TOKEN_STORAGE_KEY)
+  : null
+>>>>>>> main
 
 export function setAuthToken(token: string | null) {
   authToken = token
-  if (token) {
-    localStorage.setItem(TOKEN_STORAGE_KEY, token)
-  } else {
+  // El token en memoria siempre se actualiza para que la pestaña actual
+  // funcione; el storage solo se toca si el usuario pidió "recordar".
+  if (token === null) {
     localStorage.removeItem(TOKEN_STORAGE_KEY)
+    localStorage.removeItem(REMEMBER_KEY)
+  } else {
+    authToken = token
+    if (localStorage.getItem(REMEMBER_KEY)) {
+      localStorage.setItem(TOKEN_STORAGE_KEY, token)
+    }
   }
 }
 
@@ -92,14 +107,12 @@ api.interceptors.response.use(
     }
 
     return Promise.reject(error)
-  }
+  },
 )
 
-// RFC 10008 (junio 2026): el método QUERY es safe + idempotente, con body
-// (a diferencia de GET) y cacheable (a diferencia de POST). Es el verb
-// correcto para queries complejas que no entran cómodo en query params
-// (filtros anidados, sorts compuestos, etc.). Axios acepta métodos custom
-// vía `request({ method })` — no hay helper built-in. Como el response
-// interceptor ya desenvuelve `response.data`, casteamos el resultado a `T`.
+// Queries complejas que no entran cómodo en query params (filtros anidados,
+// sorts compuestos, etc.) y por eso necesitan body. Se mandan por POST, que
+// es lo que soporta el gateway. Como el response interceptor ya desenvuelve
+// `response.data`, casteamos el resultado a `T`.
 api.query = <T>(url: string, data?: unknown): Promise<T> =>
-  api.request<T>({ method: "QUERY", url, data }) as unknown as Promise<T>
+  api.request<T>({ method: "POST", url, data }) as unknown as Promise<T>

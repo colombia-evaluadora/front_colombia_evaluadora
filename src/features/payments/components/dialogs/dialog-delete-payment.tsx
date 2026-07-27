@@ -1,6 +1,6 @@
 import { useState } from "react"
 
-import { SpinnerIcon, TrashIcon } from "@phosphor-icons/react"
+import { SpinnerIcon, TrashIcon } from "@/components/ui/icons"
 import { toast } from "sonner"
 
 import {
@@ -42,14 +42,7 @@ export function DeletePaymentDialog({ payment }: DeletePaymentDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger
-        render={
-          <Button
-            variant="fill"
-            color="destructive"
-            size="icon"
-            className="size-8"
-          />
-        }
+        render={<Button variant="fill" color="destructive" size="icon" className="size-8" />}
       >
         <span className="sr-only">Eliminar pago</span>
         <TrashIcon />
@@ -58,8 +51,8 @@ export function DeletePaymentDialog({ payment }: DeletePaymentDialogProps) {
         <AlertDialogHeader>
           <AlertDialogTitle>¿Eliminar este pago?</AlertDialogTitle>
           <AlertDialogDescription>
-            Se eliminará permanentemente el pago de {payment.email}. Esta
-            acción no se puede deshacer.
+            Se eliminará permanentemente el pago de {payment.email}. Esta acción no se puede
+            deshacer.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

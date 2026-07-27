@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { EraserIcon, FunnelIcon } from "@phosphor-icons/react"
+import { EraserIcon, FunnelIcon } from "@/components/ui/icons"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -12,10 +12,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 
-import type {
-  PaymentFiltersFormInput,
-  PaymentFiltersFormValues,
-} from "../../api/schema"
+import type { PaymentFiltersFormInput, PaymentFiltersFormValues } from "../../api/schema"
 import { FilterPaymentsForm } from "../forms/form-filter-payments"
 
 const FILTER_PAYMENTS_FORM_ID = "filter-payments-form"
@@ -56,7 +53,9 @@ export function FilterPaymentsSheet({
         <SheetHeader>
           <SheetTitle>Filtros</SheetTitle>
           <SheetDescription>
-            {activeFilterCount > 0 ? `${activeFilterCount} filtro${activeFilterCount === 1 ? "" : "s"} activo${activeFilterCount === 1 ? "" : "s"}.` : "Sin filtros activos."}
+            {activeFilterCount > 0
+              ? `${activeFilterCount} filtro${activeFilterCount === 1 ? "" : "s"} activo${activeFilterCount === 1 ? "" : "s"}.`
+              : "Sin filtros activos."}
           </SheetDescription>
         </SheetHeader>
 
@@ -65,7 +64,7 @@ export function FilterPaymentsSheet({
           defaultValues={filters}
           onSubmit={handleSubmit}
         />
-        
+
         <SheetFooter className="flex-row items-center justify-between gap-2">
           <Button
             type="button"

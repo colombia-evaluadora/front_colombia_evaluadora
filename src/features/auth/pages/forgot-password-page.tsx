@@ -1,108 +1,83 @@
-import { useState } from "react"
-import { ArrowLeftIcon } from "@phosphor-icons/react"
-import { Link } from "@tanstack/react-router"
+import { Link, useNavigate } from "@tanstack/react-router"
+import { ArrowLeftIcon, ArrowRightIcon, PasswordIcon, ShieldIcon } from "@/components/ui/icons"
 
-import icon from "@/assets/icon.svg"
-import loginBg from "@/assets/login.jpg"
-import logo from "@/assets/logo.svg"
 import { Button } from "@/components/ui/button"
+import {
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { Spinner } from "@/components/ui/spinner"
 import { paths } from "@/config/paths"
-import { useForgotPassword } from "@/lib/auth"
 
+import { useForgotPassword } from "../api/mutations/forgot-password"
 import { ForgotPasswordForm } from "../components/forms/form-forgot-password"
 import type { ForgotPasswordFormValues } from "../api/schema"
 
 const FORGOT_PASSWORD_FORM_ID = "forgot-password-form"
 
 export function ForgotPasswordPage() {
-  const [submitted, setSubmitted] = useState(false)
+  const navigate = useNavigate()
   const forgotPasswordMutation = useForgotPassword()
 
   function handleSubmit(values: ForgotPasswordFormValues) {
     forgotPasswordMutation.mutate(values.email, {
-      // Igual que admin-ui: nunca se revela si el email existe o no, así
-      // que la confirmación se muestra sin importar éxito o error.
-      onSettled: () => setSubmitted(true),
+      onSettled: (data) =>
+        navigate({
+          to: paths.auth.checkEmail.path,
+          search: { token: data?.token },
+        }),
     })
   }
 
   return (
-    <div className="grid min-h-svh lg:grid-cols-2">
-      <div className="flex flex-col p-6 md:p-10">
-        <div className="flex items-center justify-between">
-          <Button
-            variant="ghost"
-            size="sm"
-            render={<Link to={paths.auth.login.path} />}
-            nativeButton={false}
-          >
-            <ArrowLeftIcon data-icon="inline-start" />
-            Volver
-          </Button>
-          <Link to={paths.home.getHref()}>
-            <img src={logo} alt="Colombia Evaluadora" className="h-10 w-auto" />
-          </Link>
-
-          <div className="w-30" />
+    <>
+      <CardHeader className="text-center">
+        <div className="bg-primary/10 mx-auto flex size-14 items-center justify-center rounded-full">
+          <PasswordIcon className="text-primary size-7" aria-hidden="true" />
         </div>
+        <CardTitle>¿Olvidaste tu contraseña?</CardTitle>
+        <CardDescription>
+          Ingresa tu correo electrónico y te enviaremos instrucciones para restablecer tu
+          contraseña.
+        </CardDescription>
+      </CardHeader>
 
-        <div className="flex flex-1 flex-col items-center justify-center">
-          <div className="w-full max-w-sm space-y-6">
-            {submitted ? (
-              <div className="space-y-4 text-center">
-                <h1 className="text-2xl font-semibold">Revisa tu correo</h1>
-                <p className="text-sm text-muted-foreground">
-                  Si el email está registrado, te enviamos un enlace para
-                  restablecer tu contraseña.
-                </p>
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  render={<Link to={paths.auth.login.path} />}
-                  nativeButton={false}
-                >
-                  Volver a iniciar sesión
-                </Button>
-              </div>
-            ) : (
-              <>
-                <div className="space-y-1 text-center">
-                  <h1 className="text-2xl font-semibold">
-                    ¿Olvidaste tu contraseña?
-                  </h1>
-                  <p className="text-sm text-muted-foreground">
-                    Ingresa tu email y te enviaremos un enlace para
-                    restablecerla.
-                  </p>
-                </div>
+      <CardContent>
+        <ForgotPasswordForm id={FORGOT_PASSWORD_FORM_ID} onSubmit={handleSubmit} />
+      </CardContent>
 
-                <ForgotPasswordForm
-                  id={FORGOT_PASSWORD_FORM_ID}
-                  onSubmit={handleSubmit}
-                />
-
-                <Button
-                  type="submit"
-                  form={FORGOT_PASSWORD_FORM_ID}
-                  disabled={forgotPasswordMutation.isPending}
-                  className="w-full"
-                >
-                  {forgotPasswordMutation.isPending
-                    ? "Enviando..."
-                    : "Enviar enlace"}
-                </Button>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-      <div
-        className="relative hidden overflow-hidden bg-cover bg-center lg:flex lg:items-center lg:justify-center"
-        style={{ backgroundImage: `url(${loginBg})` }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-br from-[#7e14ff]/80 to-[#47bfff]/80" />
-        <img src={icon} alt="" className="relative size-40 drop-shadow-2xl" />
-      </div>
-    </div>
+      <CardFooter className="flex flex-col gap-2">
+        <Button
+          type="submit"
+          color="primary"
+          form={FORGOT_PASSWORD_FORM_ID}
+          disabled={forgotPasswordMutation.isPending}
+          className="w-full"
+        >
+          Enviar instrucciones
+          {forgotPasswordMutation.isPending ? (
+            <Spinner data-icon="inline-end" />
+          ) : (
+            <ArrowRightIcon data-icon="inline-end" />
+          )}
+        </Button>
+        <Button
+          render={<Link to={paths.auth.login.path} />}
+          nativeButton={false}
+          variant="link"
+          color="secondary"
+        >
+          <ArrowLeftIcon data-icon="inline-start" />
+          Volver a iniciar sesión
+        </Button>
+        <p className="text-muted-foreground inline-flex items-start text-center text-xs">
+          <ShieldIcon className="size-5 shrink-0" aria-hidden="true" />
+          Tu seguridad es importante. Nunca compartas tu contraseña con nadie.
+        </p>
+      </CardFooter>
+    </>
   )
 }

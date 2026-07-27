@@ -1,5 +1,5 @@
-import preview from '../../../../.storybook/preview'
-import { Button } from '../button'
+import preview from "../../../../.storybook/preview"
+import { Button } from "../button"
 import {
   Dialog,
   DialogClose,
@@ -9,12 +9,12 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '../dialog'
+} from "../dialog"
 
 const meta = preview.meta({
-  title: 'Design System/Overlays/Dialog',
+  title: "Design System/Overlays/Dialog",
   component: Dialog,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
 })
 
 export const Default = meta.story({
@@ -44,9 +44,7 @@ export const WithoutCloseButton = meta.story({
       <DialogContent showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>No close button</DialogTitle>
-          <DialogDescription>
-            This dialog only closes via the footer action.
-          </DialogDescription>
+          <DialogDescription>This dialog only closes via the footer action.</DialogDescription>
         </DialogHeader>
         <DialogFooter showCloseButton>
           <Button>Confirm</Button>

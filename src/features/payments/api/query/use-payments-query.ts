@@ -14,10 +14,7 @@ function fetchPayments(body: PaymentsQueryRequest): Promise<PaymentsQueryRespons
   return api.query("/payments/query", body)
 }
 
-export const paymentsQueryKey = (params: UsePaymentsQueryParams) => [
-  "payments",
-  params,
-]
+export const paymentsQueryKey = (params: UsePaymentsQueryParams) => ["payments", params]
 
 export function usePaymentsQuery(params: UsePaymentsQueryParams) {
   return useQuery({

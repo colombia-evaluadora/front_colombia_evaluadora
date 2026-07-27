@@ -1,10 +1,10 @@
-import preview from '../../../../.storybook/preview'
-import { Separator } from '../separator'
+import preview from "../../../../.storybook/preview"
+import { Separator } from "../separator"
 
 const meta = preview.meta({
-  title: 'Design System/Layout/Separator',
+  title: "Design System/Layout/Separator",
   component: Separator,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
 })
 
 export const Horizontal = meta.story({

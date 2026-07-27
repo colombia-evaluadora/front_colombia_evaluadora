@@ -1,10 +1,10 @@
-import preview from '../../../../.storybook/preview'
-import { Progress, ProgressLabel, ProgressValue } from '../progress'
+import preview from "../../../../.storybook/preview"
+import { Progress, ProgressLabel, ProgressValue } from "../progress"
 
 const meta = preview.meta({
-  title: 'Design System/Feedback/Progress',
+  title: "Design System/Feedback/Progress",
   component: Progress,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
 })
 
 export const Default = meta.story({
@@ -22,5 +22,5 @@ export const WithLabel = meta.story({
 })
 
 export const Indeterminate = meta.story({
-  render: () => <Progress className="w-64" />,
+  render: () => <Progress value={null} className="w-64" />,
 })

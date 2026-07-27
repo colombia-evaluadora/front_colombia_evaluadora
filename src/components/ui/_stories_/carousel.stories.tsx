@@ -1,10 +1,16 @@
-import preview from '../../../../.storybook/preview'
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '../carousel'
+import preview from "../../../../.storybook/preview"
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "../carousel"
 
 const meta = preview.meta({
-  title: 'Design System/Data Display/Carousel',
+  title: "Design System/Data Display/Carousel",
   component: Carousel,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
 })
 
 export const Default = meta.story({

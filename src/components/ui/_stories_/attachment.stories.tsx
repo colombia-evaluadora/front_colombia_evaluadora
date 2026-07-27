@@ -1,5 +1,5 @@
-import preview from '../../../../.storybook/preview'
-import { FileTextIcon, XIcon } from '@phosphor-icons/react'
+import preview from "../../../../.storybook/preview"
+import { FileTextIcon, XIcon } from "@/components/ui/icons"
 import {
   Attachment,
   AttachmentAction,
@@ -9,12 +9,12 @@ import {
   AttachmentGroup,
   AttachmentMedia,
   AttachmentTitle,
-} from '../attachment'
+} from "../attachment"
 
 const meta = preview.meta({
-  title: 'Design System/Chat/Attachment',
+  title: "Design System/Chat/Attachment",
   component: Attachment,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
 })
 
 export const Default = meta.story({
@@ -51,7 +51,7 @@ export const Uploading = meta.story({
 })
 
 export const ErrorState = meta.story({
-  name: 'Error',
+  name: "Error",
   render: () => (
     <Attachment state="error" className="w-72">
       <AttachmentMedia>

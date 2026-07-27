@@ -1,4 +1,4 @@
-import { SunIcon, MoonIcon } from "@phosphor-icons/react"
+import { SunIcon, MoonIcon } from "@/components/ui/icons"
 import { useTheme } from "next-themes"
 
 import { Button } from "@/components/ui/button"
@@ -22,15 +22,9 @@ export function ModeToggle() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuGroup>
-          <DropdownMenuItem onClick={() => setTheme("light")}>
-            Claro
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setTheme("dark")}>
-            Oscuro
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setTheme("system")}>
-            Sistema
-          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setTheme("light")}>Claro</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setTheme("dark")}>Oscuro</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setTheme("system")}>Sistema</DropdownMenuItem>
         </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
