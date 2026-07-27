@@ -135,7 +135,7 @@ export function ForgotUsernamePage() {
             </Button>
             <p className="text-muted-foreground inline-flex items-start text-center text-xs">
               <ShieldIcon
-                          className="size-4 shrink-0"
+                          className="size-5 shrink-0"
                           aria-hidden="true"
                         />
               Tu seguridad es importante. Nunca compartas tu contraseña con nadie.

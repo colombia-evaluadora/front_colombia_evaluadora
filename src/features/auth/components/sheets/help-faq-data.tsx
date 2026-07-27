@@ -83,20 +83,20 @@ export const defaultHelpData: HelpSheetData = {
     },
     {
       id: "forgot-username",
-      title: "No recuerdo mi correo",
-      description: "Recupera tu correo con tu número de documento.",
+      title: "No recuerdo mi usuario",
+      description: "Recupera tu usuario con tu documento o correo alternativo.",
       icon: <PersonIcon weight="duotone" className="text-blue" />,
       body: (
         <p>
-          Ingresas con el correo que registraste. Si no lo recuerdas,
-          selecciona "Recuperar correo" e ingresa tu número de documento para
+          Si no recuerdas tu usuario, selecciona "Recuperar usuario" e ingresa
+          tu número de documento o el correo electrónico registrado para
           consultarlo.
           <br />
           <Link
             to={paths.auth.forgotUsername.path}
             className={supportLinkClass}
           >
-            Recuperar correo →
+            Recuperar usuario →
           </Link>
         </p>
       ),
@@ -108,12 +108,14 @@ export const defaultHelpData: HelpSheetData = {
       icon: <ShieldOffIcon weight="duotone" className="text-orange" />,
       body: (
         <p>
-          Tu cuenta ha sido bloqueada por disposición administrativa del
-          establecimiento educativo. Para gestionar el desbloqueo,
-          acércate al encargado del sistema en tu institución y presenta
-          la solicitud correspondiente. Recuerda que el acceso solo será
-          restablecido una vez validada la autorización por parte del
-          área administrativa.
+          <strong>
+            Tu cuenta ha sido bloqueada por disposición administrativa del
+            establecimiento educativo.
+          </strong>{" "}
+          Para gestionar el desbloqueo, acércate al encargado del sistema en tu
+          institución y presenta la solicitud correspondiente. Recuerda que el
+          acceso solo será restablecido una vez validada la autorización por
+          parte del área administrativa.
         </p>
       ),
     },

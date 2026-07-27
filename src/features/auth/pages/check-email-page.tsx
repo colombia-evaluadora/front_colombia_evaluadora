@@ -105,7 +105,7 @@ export function CheckEmailPage() {
           </p>
 
           {remainingLabel !== null && (
-            <div className="bg-green/10 flex items-center justify-center gap-2 p-3">
+            <div className="bg-green/10 flex items-center rounded-lg justify-center gap-2 p-3">
               <ClockIcon
                 weight="duotone"
                 className="text-green size-5 shrink-0"
@@ -129,10 +129,10 @@ export function CheckEmailPage() {
             </p>
           )}
 
-          <div className="bg-green/10 flex items-start gap-3 p-4">
+          <div className="bg-green/10 flex items-start rounded-lg gap-3 p-4">
             <CheckCircleIcon
               weight="fill"
-              className="text-green mt-0.5 size-5 shrink-0"
+              className="text-green my-auto size-6 shrink-0"
               aria-hidden="true"
             />
             <div className="space-y-1">

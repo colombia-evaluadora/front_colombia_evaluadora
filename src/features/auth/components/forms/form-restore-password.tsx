@@ -58,8 +58,6 @@ export function RestorePasswordForm({ id, onSubmit }: RestorePasswordFormProps) 
           {(field) => {
             const isInvalid =
               field.state.meta.isTouched && !field.state.meta.isValid
-            // Cumple todas las reglas de `passwordRules`: por eso el mensaje
-            // es "Fuerte" y no solo "válida".
             const isStrong = !isInvalid && field.state.value.length > 0
             return (
               <Field variant="outlined" data-invalid={isInvalid}>
@@ -103,8 +101,8 @@ export function RestorePasswordForm({ id, onSubmit }: RestorePasswordFormProps) 
                   />
                 )}
                 {isStrong && (
-                  <p className="text-green flex items-center gap-1.5 text-sm">
-                    <InfoIcon className="size-4 shrink-0" aria-hidden="true" />
+                  <p className="text-green flex items-center gap-1 text-sm">
+                    <InfoIcon className="size-5 shrink-0" aria-hidden="true" />
                     Fuerte
                   </p>
                 )}
@@ -159,8 +157,8 @@ export function RestorePasswordForm({ id, onSubmit }: RestorePasswordFormProps) 
                   <FieldError errors={field.state.meta.errors} />
                 )}
                 {matches && (
-                  <p className="text-green flex items-center gap-1.5 text-sm">
-                    <InfoIcon className="size-4 shrink-0" aria-hidden="true" />
+                  <p className="text-green flex items-center gap-1 text-sm">
+                    <InfoIcon className="size-5 shrink-0" aria-hidden="true" />
                     Las contraseñas coinciden
                   </p>
                 )}
