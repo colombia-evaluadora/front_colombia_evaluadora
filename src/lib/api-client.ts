@@ -24,9 +24,7 @@ declare module "axios" {
 // 401 `invalid_token`. Con una sola clave compartida, cambiar
 // ENABLE_API_MOCKING dejaba el token del modo anterior en storage y el front
 // se lo mandaba al backend equivocado.
-const TOKEN_STORAGE_KEY = env.ENABLE_API_MOCKING
-  ? "mock_auth_token"
-  : "auth_token"
+const TOKEN_STORAGE_KEY = env.ENABLE_API_MOCKING ? "mock_auth_token" : "auth_token"
 const REMEMBER_KEY = "auth_remember_me"
 let authToken: string | null = localStorage.getItem(REMEMBER_KEY)
   ? localStorage.getItem(TOKEN_STORAGE_KEY)
@@ -102,7 +100,7 @@ api.interceptors.response.use(
     }
 
     return Promise.reject(error)
-  }
+  },
 )
 
 // Queries complejas que no entran cómodo en query params (filtros anidados,

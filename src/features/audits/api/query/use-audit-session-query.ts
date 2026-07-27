@@ -12,10 +12,7 @@ function fetchAuditSession(sessionId: string): Promise<AuditSession> {
   return api.get(`/audits/sessions/${sessionId}`)
 }
 
-export function useAuditSessionQuery({
-  sessionId,
-  enabled,
-}: UseAuditSessionQueryParams) {
+export function useAuditSessionQuery({ sessionId, enabled }: UseAuditSessionQueryParams) {
   return useQuery({
     queryKey: ["audits", "sessions", sessionId],
     queryFn: () => fetchAuditSession(sessionId),

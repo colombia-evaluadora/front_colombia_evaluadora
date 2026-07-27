@@ -21,10 +21,7 @@ import {
   type AuditFiltersFormValues,
 } from "../../api/schema"
 import type { SessionStatus } from "../../api/types/audit"
-import {
-  formatDateTimeValue,
-  parseDateTimeValue,
-} from "@/lib/date-time-value"
+import { formatDateTimeValue, parseDateTimeValue } from "@/lib/date-time-value"
 
 interface FilterAuditSessionFormProps {
   id: string
@@ -100,9 +97,7 @@ export function FilterAuditSessionForm({
                       id="status-filter-active"
                       name={field.name}
                       checked={field.state.value.includes("active")}
-                      onCheckedChange={(checked) =>
-                        toggle("active", checked === true)
-                      }
+                      onCheckedChange={(checked) => toggle("active", checked === true)}
                     />
                     <FieldContent className="min-w-0">
                       <FieldTitle className="w-full min-w-0">
@@ -118,9 +113,7 @@ export function FilterAuditSessionForm({
                       id="status-filter-closed"
                       name={field.name}
                       checked={field.state.value.includes("closed")}
-                      onCheckedChange={(checked) =>
-                        toggle("closed", checked === true)
-                      }
+                      onCheckedChange={(checked) => toggle("closed", checked === true)}
                     />
                     <FieldContent className="min-w-0">
                       <FieldTitle className="w-full min-w-0">
@@ -150,9 +143,7 @@ export function FilterAuditSessionForm({
               mode="datetime"
               id={field.name}
               value={parseDateTimeValue(field.state.value)}
-              onChange={(date) =>
-                field.handleChange(formatDateTimeValue(date))
-              }
+              onChange={(date) => field.handleChange(formatDateTimeValue(date))}
               className="h-9"
             />
           </Field>
@@ -167,9 +158,7 @@ export function FilterAuditSessionForm({
               mode="datetime"
               id={field.name}
               value={parseDateTimeValue(field.state.value)}
-              onChange={(date) =>
-                field.handleChange(formatDateTimeValue(date))
-              }
+              onChange={(date) => field.handleChange(formatDateTimeValue(date))}
               className="h-9"
             />
           </Field>

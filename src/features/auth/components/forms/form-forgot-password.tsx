@@ -1,22 +1,10 @@
 import { useForm } from "@tanstack/react-form"
 
-import {
-  Field,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field"
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from "@/components/ui/input-group"
+import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { EnvelopeIcon } from "@/components/ui/icons"
 
-import {
-  forgotPasswordFormSchema,
-  type ForgotPasswordFormValues,
-} from "../../api/schema"
+import { forgotPasswordFormSchema, type ForgotPasswordFormValues } from "../../api/schema"
 
 interface ForgotPasswordFormProps {
   id: string
@@ -43,8 +31,7 @@ export function ForgotPasswordForm({ id, onSubmit }: ForgotPasswordFormProps) {
       <FieldGroup>
         <form.Field name="email">
           {(field) => {
-            const isInvalid =
-              field.state.meta.isTouched && !field.state.meta.isValid
+            const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
             return (
               <Field variant="outlined" data-invalid={isInvalid}>
                 <FieldLabel htmlFor={field.name}>Correo electrónico</FieldLabel>
@@ -64,9 +51,7 @@ export function ForgotPasswordForm({ id, onSubmit }: ForgotPasswordFormProps) {
                     aria-invalid={isInvalid}
                   />
                 </InputGroup>
-                {isInvalid && (
-                  <FieldError errors={field.state.meta.errors} />
-                )}
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             )
           }}

@@ -22,11 +22,7 @@ interface TimePickerPanelProps {
  * equivalente de `Calendar` para la hora: el panel suelto, sin trigger. Para
  * un campo de formulario con el aspecto de un input, usar `TimePicker`.
  */
-export function TimePickerPanel({
-  value,
-  onChange,
-  className,
-}: TimePickerPanelProps) {
+export function TimePickerPanel({ value, onChange, className }: TimePickerPanelProps) {
   const [view, setView] = React.useState<"text" | "analog">("text")
   const [hour, setHour] = React.useState(() => extractHour(value))
   const [minute, setMinute] = React.useState(() => extractMinute(value))
@@ -66,10 +62,7 @@ export function TimePickerPanel({
   }
 
   return (
-    <div
-      data-slot="time-picker"
-      className={cn("bg-background flex flex-col gap-4 p-3", className)}
-    >
+    <div data-slot="time-picker" className={cn("bg-background flex flex-col gap-4 p-3", className)}>
       <div className="flex items-center justify-between">
         <span className="text-muted-foreground text-xs font-medium uppercase tracking-wider">
           Ingresar hora
@@ -79,11 +72,7 @@ export function TimePickerPanel({
           variant="ghost"
           size="icon-sm"
           onClick={() => setView((v) => (v === "text" ? "analog" : "text"))}
-          aria-label={
-            view === "text"
-              ? "Cambiar a reloj analógico"
-              : "Cambiar a ingreso manual"
-          }
+          aria-label={view === "text" ? "Cambiar a reloj analógico" : "Cambiar a ingreso manual"}
         >
           <ClockIcon weight="bold" />
         </Button>
@@ -115,7 +104,6 @@ export function TimePickerPanel({
     </div>
   )
 }
-
 
 function PeriodToggle({
   period,
@@ -178,9 +166,7 @@ function TextInputView({
           inputMode="numeric"
           maxLength={2}
           value={hourText}
-          onChange={(e) =>
-            onHourTextChange(e.target.value.replace(/\D/g, "").slice(0, 2))
-          }
+          onChange={(e) => onHourTextChange(e.target.value.replace(/\D/g, "").slice(0, 2))}
           onBlur={onHourCommit}
           onKeyDown={(e) => {
             if (e.key === "Enter") onHourCommit()
@@ -197,9 +183,7 @@ function TextInputView({
           inputMode="numeric"
           maxLength={2}
           value={minuteText}
-          onChange={(e) =>
-            onMinuteTextChange(e.target.value.replace(/\D/g, "").slice(0, 2))
-          }
+          onChange={(e) => onMinuteTextChange(e.target.value.replace(/\D/g, "").slice(0, 2))}
           onBlur={onMinuteCommit}
           onKeyDown={(e) => {
             if (e.key === "Enter") onMinuteCommit()
@@ -234,7 +218,6 @@ function AnalogClockView({
   onSelectMinute: (minute: number) => void
   onPeriodChange: (p: Period) => void
 }) {
-
   const [mode, setMode] = React.useState<ClockMode>("hour")
 
   function handleClick(value: number) {
@@ -245,13 +228,14 @@ function AnalogClockView({
       onSelectMinute(value)
     }
   }
-  
+
   const hourAngle = hour * 30
   const minuteAngle = minute * 6
 
-  const values = mode === "hour"
-    ? [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
-    : [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55]
+  const values =
+    mode === "hour"
+      ? [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+      : [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55]
 
   return (
     <div className="flex flex-col items-center gap-3">
@@ -285,21 +269,15 @@ function AnalogClockView({
           </Button>
         </div>
 
-        <PeriodToggle
-          period={period}
-          onPeriodChange={onPeriodChange}
-          orientation="vertical"
-        />
+        <PeriodToggle period={period} onPeriodChange={onPeriodChange} orientation="vertical" />
       </div>
 
       <div className="relative aspect-square w-56 shrink-0 rounded-full border bg-background">
-
         {values.map((value, i) => {
           const angle = (i * 30 - 90) * (Math.PI / 180)
           const leftPct = 50 + 42 * Math.cos(angle)
           const topPct = 50 + 42 * Math.sin(angle)
-          const isSelected =
-            mode === "hour" ? value === hour : value === minute
+          const isSelected = mode === "hour" ? value === hour : value === minute
           return (
             <button
               /* Key por posición, no por `value`: 5 y 10 aparecen en las dos
@@ -317,7 +295,7 @@ function AnalogClockView({
                   size: "icon-sm",
                 }),
                 "absolute rounded-full text-sm normal-case tracking-normal",
-                !isSelected && "border-transparent"
+                !isSelected && "border-transparent",
               )}
               style={{
                 left: `${leftPct}%`,
@@ -343,9 +321,7 @@ function AnalogClockView({
             width: "2px",
             height: "33%",
             marginLeft: "-1px",
-            transform: `translateY(-100%) rotate(${
-              mode === "hour" ? hourAngle : minuteAngle
-            }deg)`,
+            transform: `translateY(-100%) rotate(${mode === "hour" ? hourAngle : minuteAngle}deg)`,
             transformOrigin: "bottom center",
           }}
         />

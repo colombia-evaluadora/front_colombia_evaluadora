@@ -69,7 +69,9 @@ export function FilterTableOperationsSheet({
           <SheetHeader>
             <SheetTitle>Filtros</SheetTitle>
             <SheetDescription>
-              {activeFilterCount > 0 ? `${activeFilterCount} filtro${activeFilterCount === 1 ? "" : "s"} activo${activeFilterCount === 1 ? "" : "s"}.` : "Sin filtros activos."}
+              {activeFilterCount > 0
+                ? `${activeFilterCount} filtro${activeFilterCount === 1 ? "" : "s"} activo${activeFilterCount === 1 ? "" : "s"}.`
+                : "Sin filtros activos."}
             </SheetDescription>
           </SheetHeader>
 
@@ -90,7 +92,7 @@ export function FilterTableOperationsSheet({
               <EraserIcon data-icon="inline-start" />
               Limpiar todo
             </Button>
-            <Button type="submit" form={FILTER_TABLE_OPERATIONS_FORM_ID}  color="primary">
+            <Button type="submit" form={FILTER_TABLE_OPERATIONS_FORM_ID} color="primary">
               Aplicar
             </Button>
           </SheetFooter>

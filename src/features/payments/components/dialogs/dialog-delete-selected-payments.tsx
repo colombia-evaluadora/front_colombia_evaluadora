@@ -59,16 +59,14 @@ export function DeleteSelectedPaymentsDialog({
         <span aria-hidden="true" className="md:hidden">
           ({count})
         </span>
-        <span className="sr-only md:not-sr-only">
-          Eliminar ({count})
-        </span>
+        <span className="sr-only md:not-sr-only">Eliminar ({count})</span>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>¿Eliminar los pagos seleccionados?</AlertDialogTitle>
           <AlertDialogDescription>
-            Se eliminarán permanentemente {count} pago(s) seleccionado(s).
-            Esta acción no se puede deshacer.
+            Se eliminarán permanentemente {count} pago(s) seleccionado(s). Esta acción no se puede
+            deshacer.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

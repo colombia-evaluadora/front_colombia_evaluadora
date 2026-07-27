@@ -52,14 +52,7 @@ export function UpdatePaymentSheet({ payment }: UpdatePaymentSheetProps) {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger
-        render={
-          <Button
-            variant="fill"
-            color="secondary"
-            size="icon"
-            className="size-8"
-          />
-        }
+        render={<Button variant="fill" color="secondary" size="icon" className="size-8" />}
       >
         <span className="sr-only">Editar pago</span>
         <PencilIcon />
@@ -69,22 +62,12 @@ export function UpdatePaymentSheet({ payment }: UpdatePaymentSheetProps) {
           <SheetTitle>Editar pago</SheetTitle>
           <SheetDescription>Actualiza los datos del pago.</SheetDescription>
         </SheetHeader>
-        <UpdatePaymentForm
-          id={UPDATE_PAYMENT_FORM_ID}
-          payment={payment}
-          onSubmit={handleSubmit}
-        />
+        <UpdatePaymentForm id={UPDATE_PAYMENT_FORM_ID} payment={payment} onSubmit={handleSubmit} />
         <SheetFooter className="border-t bg-background p-6">
-          <Button
-            type="submit"
-            form={UPDATE_PAYMENT_FORM_ID}
-            disabled={updateMutation.isPending}
-          >
+          <Button type="submit" form={UPDATE_PAYMENT_FORM_ID} disabled={updateMutation.isPending}>
             {updateMutation.isPending ? "Guardando..." : "Guardar"}
           </Button>
-          <SheetClose render={<Button variant="outline" type="button" />}>
-            Cancelar
-          </SheetClose>
+          <SheetClose render={<Button variant="outline" type="button" />}>Cancelar</SheetClose>
         </SheetFooter>
       </SheetContent>
     </Sheet>

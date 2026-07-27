@@ -1,19 +1,9 @@
 import { useState } from "react"
 import { useForm } from "@tanstack/react-form"
 import { Link } from "@tanstack/react-router"
-import {
-  EnvelopeIcon,
-  EyeIcon,
-  EyeSlashIcon,
-  LockIcon,
-} from "@/components/ui/icons"
+import { EnvelopeIcon, EyeIcon, EyeSlashIcon, LockIcon } from "@/components/ui/icons"
 
-import {
-  Field,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field"
+import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
   InputGroup,
@@ -56,8 +46,7 @@ export function LoginForm({ id, onSubmit }: LoginFormProps) {
       <FieldGroup>
         <form.Field name="email">
           {(field) => {
-            const isInvalid =
-              field.state.meta.isTouched && !field.state.meta.isValid
+            const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
             return (
               <Field variant="outlined" data-invalid={isInvalid}>
                 <FieldLabel htmlFor={field.name}>Correo electrónico</FieldLabel>
@@ -77,9 +66,7 @@ export function LoginForm({ id, onSubmit }: LoginFormProps) {
                     aria-invalid={isInvalid}
                   />
                 </InputGroup>
-                {isInvalid && (
-                  <FieldError errors={field.state.meta.errors} />
-                )}
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
                 <div className="flex justify-end">
                   <Link
                     to={paths.auth.forgotUsername.path}
@@ -95,8 +82,7 @@ export function LoginForm({ id, onSubmit }: LoginFormProps) {
 
         <form.Field name="password">
           {(field) => {
-            const isInvalid =
-              field.state.meta.isTouched && !field.state.meta.isValid
+            const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
             return (
               <Field variant="outlined" data-invalid={isInvalid}>
                 <FieldLabel htmlFor={field.name}>Contraseña</FieldLabel>
@@ -120,21 +106,15 @@ export function LoginForm({ id, onSubmit }: LoginFormProps) {
                       size="icon-xs"
                       onClick={() => setShowPassword((v) => !v)}
                       className="text-muted-foreground hover:text-primary"
-                      aria-label={
-                        showPassword
-                          ? "Ocultar contraseña"
-                          : "Mostrar contraseña"
-                      }
+                      aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
                       aria-pressed={showPassword}
                     >
                       {showPassword ? <EyeSlashIcon /> : <EyeIcon />}
                     </InputGroupButton>
                   </InputGroupAddon>
                 </InputGroup>
-                {isInvalid && (
-                  <FieldError errors={field.state.meta.errors} />
-                )}
-                
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
+
                 <div className="flex justify-end">
                   <Link
                     to={paths.auth.forgotPassword.path}
@@ -158,10 +138,7 @@ export function LoginForm({ id, onSubmit }: LoginFormProps) {
                 checked={field.state.value}
                 onCheckedChange={(checked) => field.handleChange(checked === true)}
               />
-              <FieldLabel
-                htmlFor={field.name}
-                className="font-normal"
-              >
+              <FieldLabel htmlFor={field.name} className="font-normal">
                 Mantener sesión iniciada
               </FieldLabel>
             </Field>

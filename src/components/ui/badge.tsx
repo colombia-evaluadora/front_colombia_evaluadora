@@ -42,7 +42,8 @@ const badgeVariants = cva(
       {
         variant: "fill",
         color: "primary",
-        class: "bg-primary text-primary-foreground [a]:hover:bg-primary/80 focus-visible:ring-ring/50",
+        class:
+          "bg-primary text-primary-foreground [a]:hover:bg-primary/80 focus-visible:ring-ring/50",
       },
       {
         variant: "fill",
@@ -58,19 +59,18 @@ const badgeVariants = cva(
       {
         variant: "fill",
         color: "neutral",
-        class: "bg-foreground text-background [a]:hover:bg-foreground/80 focus-visible:ring-ring/50",
+        class:
+          "bg-foreground text-background [a]:hover:bg-foreground/80 focus-visible:ring-ring/50",
       },
       {
         variant: "fill",
         color: "destructive",
-        class:
-          "bg-red text-red-foreground [a]:hover:bg-red/80 focus-visible:ring-red/20",
+        class: "bg-red text-red-foreground [a]:hover:bg-red/80 focus-visible:ring-red/20",
       },
       {
         variant: "fill",
         color: "info",
-        class:
-          "bg-blue text-blue-foreground [a]:hover:bg-blue/80 focus-visible:ring-blue/20",
+        class: "bg-blue text-blue-foreground [a]:hover:bg-blue/80 focus-visible:ring-blue/20",
       },
       {
         variant: "fill",
@@ -81,30 +81,33 @@ const badgeVariants = cva(
       {
         variant: "fill",
         color: "success",
-        class:
-          "bg-green text-green-foreground [a]:hover:bg-green/80 focus-visible:ring-green/20",
+        class: "bg-green text-green-foreground [a]:hover:bg-green/80 focus-visible:ring-green/20",
       },
 
       // ============ soft (Soft en Figma) ============
       {
         variant: "soft",
         color: "primary",
-        class: "border-primary-stroke bg-primary-22 text-primary [a]:hover:bg-primary/30 focus-visible:ring-primary/20",
+        class:
+          "border-primary-stroke bg-primary-22 text-primary [a]:hover:bg-primary/30 focus-visible:ring-primary/20",
       },
       {
         variant: "soft",
         color: "secondary",
-        class: "border-secondary-stroke bg-secondary-22 text-secondary [a]:hover:bg-secondary/30 focus-visible:ring-ring/30",
+        class:
+          "border-secondary-stroke bg-secondary-22 text-secondary [a]:hover:bg-secondary/30 focus-visible:ring-ring/30",
       },
       {
         variant: "soft",
         color: "muted",
-        class: "border-muted-stroke bg-muted-22 text-muted-foreground [a]:hover:bg-muted/40 focus-visible:ring-ring/30",
+        class:
+          "border-muted-stroke bg-muted-22 text-muted-foreground [a]:hover:bg-muted/40 focus-visible:ring-ring/30",
       },
       {
         variant: "soft",
         color: "neutral",
-        class: "border-foreground-stroke bg-foreground-22 text-foreground [a]:hover:bg-foreground/30 focus-visible:ring-foreground/20",
+        class:
+          "border-foreground-stroke bg-foreground-22 text-foreground [a]:hover:bg-foreground/30 focus-visible:ring-foreground/20",
       },
       {
         variant: "soft",
@@ -114,45 +117,51 @@ const badgeVariants = cva(
       {
         variant: "soft",
         color: "info",
-        class: "border-blue-stroke bg-blue-22 text-blue [a]:hover:bg-blue/30 focus-visible:ring-blue/20",
+        class:
+          "border-blue-stroke bg-blue-22 text-blue [a]:hover:bg-blue/30 focus-visible:ring-blue/20",
       },
       {
         variant: "soft",
         color: "warning",
-        class: "border-yellow-stroke bg-yellow-22 text-yellow [a]:hover:bg-yellow/30 focus-visible:ring-yellow/20",
+        class:
+          "border-yellow-stroke bg-yellow-22 text-yellow [a]:hover:bg-yellow/30 focus-visible:ring-yellow/20",
       },
       {
         variant: "soft",
         color: "success",
-        class: "border-green-stroke bg-green-22 text-green [a]:hover:bg-green/30 focus-visible:ring-green/20",
+        class:
+          "border-green-stroke bg-green-22 text-green [a]:hover:bg-green/30 focus-visible:ring-green/20",
       },
 
       // ============ outline (Outline en Figma) ============
       {
         variant: "outline",
         color: "primary",
-        class: "border-primary-stroke text-primary [a]:hover:bg-primary/10 focus-visible:ring-primary/20",
+        class:
+          "border-primary-stroke text-primary [a]:hover:bg-primary/10 focus-visible:ring-primary/20",
       },
       {
         variant: "outline",
         color: "muted",
-        class: "border-border text-muted-foreground [a]:hover:bg-muted hover:text-foreground focus-visible:ring-ring/50",
+        class:
+          "border-border text-muted-foreground [a]:hover:bg-muted hover:text-foreground focus-visible:ring-ring/50",
       },
       {
         variant: "outline",
         color: "secondary",
-        class: "border-secondary-stroke text-secondary [a]:hover:bg-secondary/10 focus-visible:ring-ring/30",
+        class:
+          "border-secondary-stroke text-secondary [a]:hover:bg-secondary/10 focus-visible:ring-ring/30",
       },
       {
         variant: "outline",
         color: "neutral",
-        class: "border-foreground-stroke text-foreground [a]:hover:bg-foreground/10 focus-visible:ring-foreground/20",
+        class:
+          "border-foreground-stroke text-foreground [a]:hover:bg-foreground/10 focus-visible:ring-foreground/20",
       },
       {
         variant: "outline",
         color: "destructive",
-        class:
-          "border-red-stroke text-red [a]:hover:bg-red/10 focus-visible:ring-red/20",
+        class: "border-red-stroke text-red [a]:hover:bg-red/10 focus-visible:ring-red/20",
       },
       {
         variant: "outline",
@@ -162,7 +171,8 @@ const badgeVariants = cva(
       {
         variant: "outline",
         color: "warning",
-        class: "border-yellow-stroke text-yellow [a]:hover:bg-yellow/10 focus-visible:ring-yellow/20",
+        class:
+          "border-yellow-stroke text-yellow [a]:hover:bg-yellow/10 focus-visible:ring-yellow/20",
       },
       {
         variant: "outline",
@@ -174,7 +184,7 @@ const badgeVariants = cva(
       variant: "fill",
       color: "primary",
     },
-  }
+  },
 )
 
 /**
@@ -205,7 +215,7 @@ function Badge({
       {
         className: cn(badgeVariants({ variant, color }), className),
       },
-      props
+      props,
     ),
     render,
     state: {

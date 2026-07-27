@@ -1,4 +1,4 @@
-import preview from '../../../../.storybook/preview'
+import preview from "../../../../.storybook/preview"
 import {
   ContextMenu,
   ContextMenuContent,
@@ -9,12 +9,12 @@ import {
   ContextMenuSubContent,
   ContextMenuSubTrigger,
   ContextMenuTrigger,
-} from '../context-menu'
+} from "../context-menu"
 
 const meta = preview.meta({
-  title: 'Design System/Overlays/ContextMenu',
+  title: "Design System/Overlays/ContextMenu",
   component: ContextMenu,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
 })
 
 export const Default = meta.story({

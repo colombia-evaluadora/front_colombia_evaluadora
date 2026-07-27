@@ -41,9 +41,7 @@ interface LoginInputWithRemember extends LoginInput {
   rememberMe: boolean
 }
 
-const loginWithEmailAndPassword = (
-  data: LoginInputWithRemember
-): Promise<AuthResponse> => {
+const loginWithEmailAndPassword = (data: LoginInputWithRemember): Promise<AuthResponse> => {
   // El endpoint real solo valida credenciales: mandamos el flag como header
   // para que el backend decida el `expiresIn` cuando lo soporte.
   return api.post("/auth/login", data, {
@@ -109,7 +107,6 @@ export function useLogout({
     },
   })
 }
-
 
 // Usado en `beforeLoad` de las rutas protegidas (TanStack Router). Es async
 // porque debe poder disparar y esperar el refresh la primera vez (recarga de

@@ -12,10 +12,7 @@ function fetchAuditTable(tableSlug: string): Promise<AuditTable> {
   return api.get(`/audit-tables/${tableSlug}`)
 }
 
-export function useAuditTableQuery({
-  tableSlug,
-  enabled,
-}: UseAuditTableQueryParams) {
+export function useAuditTableQuery({ tableSlug, enabled }: UseAuditTableQueryParams) {
   return useQuery({
     queryKey: ["audit-tables", tableSlug],
     queryFn: () => fetchAuditTable(tableSlug),

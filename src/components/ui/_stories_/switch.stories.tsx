@@ -1,12 +1,12 @@
-import preview from '../../../../.storybook/preview'
-import { useState } from 'react'
-import { Label } from '../label'
-import { Switch } from '../switch'
+import preview from "../../../../.storybook/preview"
+import { useState } from "react"
+import { Label } from "../label"
+import { Switch } from "../switch"
 
 const meta = preview.meta({
-  title: 'Design System/Forms/Switch',
+  title: "Design System/Forms/Switch",
   component: Switch,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
 })
 
 export const Default = meta.story({

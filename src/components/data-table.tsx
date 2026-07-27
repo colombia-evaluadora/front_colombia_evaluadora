@@ -56,18 +56,12 @@ export function DataTable({
       <UITable className="w-full">
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow
-              key={headerGroup.id}
-              className="bg-muted-22 hover:bg-muted-22"
-            >
+            <TableRow key={headerGroup.id} className="bg-muted-22 hover:bg-muted-22">
               {headerGroup.headers.map((header) => (
                 <TableHead key={header.id} className="text-foreground">
                   {header.isPlaceholder
                     ? null
-                    : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
+                    : flexRender(header.column.columnDef.header, header.getContext())}
                 </TableHead>
               ))}
             </TableRow>
@@ -86,10 +80,7 @@ export function DataTable({
             ))
           ) : isError ? (
             <TableRow>
-              <TableCell
-                colSpan={visibleColumns.length}
-                className="h-24 text-center"
-              >
+              <TableCell colSpan={visibleColumns.length} className="h-24 text-center">
                 {errorMessage}{" "}
                 <Button variant="link" onClick={onRetry}>
                   Reintentar
@@ -98,10 +89,7 @@ export function DataTable({
             </TableRow>
           ) : table.getRowModel().rows.length ? (
             table.getRowModel().rows.map((row) => (
-              <TableRow
-                key={row.id}
-                data-state={row.getIsSelected() && "selected"}
-              >
+              <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
                 {row.getVisibleCells().map((cell) => (
                   <TableCell key={cell.id}>
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -111,10 +99,7 @@ export function DataTable({
             ))
           ) : (
             <TableRow>
-              <TableCell
-                colSpan={visibleColumns.length}
-                className="h-24 text-center"
-              >
+              <TableCell colSpan={visibleColumns.length} className="h-24 text-center">
                 {emptyMessage}
               </TableCell>
             </TableRow>
@@ -138,12 +123,7 @@ export function DataTableViewOptions({ table }: DataTableViewOptionsProps) {
     <DropdownMenu>
       <DropdownMenuTrigger
         render={
-          <Button
-            variant="outline"
-            color="muted"
-            size="icon"
-            aria-label="Columnas visibles"
-          />
+          <Button variant="outline" color="muted" size="icon" aria-label="Columnas visibles" />
         }
       >
         <ColumnsIcon />
@@ -168,8 +148,7 @@ export function DataTableViewOptions({ table }: DataTableViewOptionsProps) {
   )
 }
 
-interface DataTableColumnHeaderProps<TData, TValue>
-  extends React.HTMLAttributes<HTMLDivElement> {
+interface DataTableColumnHeaderProps<TData, TValue> extends React.HTMLAttributes<HTMLDivElement> {
   column: Column<TData, TValue>
   title: string
 }
@@ -196,11 +175,7 @@ export function DataTableColumnHeader<TData, TValue>({
       <DropdownMenu>
         <DropdownMenuTrigger
           render={
-            <Button
-              variant="ghost"
-              size="sm"
-              className="data-[state=open]:bg-accent -ml-3 h-8"
-            />
+            <Button variant="ghost" size="sm" className="data-[state=open]:bg-accent -ml-3 h-8" />
           }
         >
           <span>{title}</span>
@@ -220,9 +195,7 @@ export function DataTableColumnHeader<TData, TValue>({
                   closeOnClick
                   checked={sorted === "asc"}
                   onCheckedChange={() =>
-                    sorted === "asc"
-                      ? column.clearSorting()
-                      : column.toggleSorting(false)
+                    sorted === "asc" ? column.clearSorting() : column.toggleSorting(false)
                   }
                 >
                   <ArrowUpIcon data-icon="inline-start" />
@@ -232,9 +205,7 @@ export function DataTableColumnHeader<TData, TValue>({
                   closeOnClick
                   checked={sorted === "desc"}
                   onCheckedChange={() =>
-                    sorted === "desc"
-                      ? column.clearSorting()
-                      : column.toggleSorting(true)
+                    sorted === "desc" ? column.clearSorting() : column.toggleSorting(true)
                   }
                 >
                   <ArrowDownIcon data-icon="inline-start" />

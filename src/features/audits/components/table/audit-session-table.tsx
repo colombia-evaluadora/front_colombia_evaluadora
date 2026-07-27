@@ -16,8 +16,7 @@ import { ClearSelectionAuditSessionDialog } from "../dialogs/dialog-clear-select
 import { AuditSessionStatsCards } from "../stats/audit-session-stats-cards"
 
 export function AuditSessionDataTable() {
-  const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } =
-    useTablePagination()
+  const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
   const { filters, queryFilters, applyFilters, clearAllFilters, activeFilterCount } =
     useAuditSessionFilters()
   const { data, isPending, isError, refetch } = useAuditsQuery({

@@ -20,15 +20,14 @@ const checkboxVariants = cva(
     defaultVariants: {
       color: "primary",
     },
-  }
+  },
 )
 
 function Checkbox({
   className,
   color,
   ...props
-}: Omit<CheckboxPrimitive.Root.Props, "color"> &
-  VariantProps<typeof checkboxVariants>) {
+}: Omit<CheckboxPrimitive.Root.Props, "color"> & VariantProps<typeof checkboxVariants>) {
   return (
     <CheckboxPrimitive.Root
       data-slot="checkbox"
@@ -39,8 +38,7 @@ function Checkbox({
         data-slot="checkbox-indicator"
         className="grid place-content-center text-current transition-none [&>svg]:size-3.5"
       >
-        <CheckIcon
-        />
+        <CheckIcon />
       </CheckboxPrimitive.Indicator>
     </CheckboxPrimitive.Root>
   )

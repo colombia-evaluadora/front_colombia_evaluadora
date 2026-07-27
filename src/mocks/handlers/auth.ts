@@ -34,10 +34,7 @@ export const authHandlers = [
     const user = findUserByCredentials(email, password)
 
     if (!user) {
-      return HttpResponse.json(
-        { message: "Email o contraseña incorrectos." },
-        { status: 401 }
-      )
+      return HttpResponse.json({ message: "Email o contraseña incorrectos." }, { status: 401 })
     }
 
     // Mismo contrato que el backend real: solo token/refreshToken/expiresIn,
@@ -89,9 +86,7 @@ export const authHandlers = [
     // después no cambia nada, pero la respuesta no delata la diferencia.
     const { token, expiresIn } = createPasswordResetToken(email)
 
-    console.info(
-      `[mock] Link de reseteo para ${email}: /restore-password?token=${token}`
-    )
+    console.info(`[mock] Link de reseteo para ${email}: /restore-password?token=${token}`)
 
     return HttpResponse.json({ token, expiresIn })
   }),
@@ -106,7 +101,7 @@ export const authHandlers = [
     if (!user) {
       return HttpResponse.json(
         { message: "No encontramos una cuenta con ese número de documento." },
-        { status: 404 }
+        { status: 404 },
       )
     }
 
@@ -146,7 +141,7 @@ export const authHandlers = [
               ? "El enlace de recuperación ya expiró. Solicita uno nuevo."
               : "El enlace de recuperación no es válido.",
         },
-        { status: 400 }
+        { status: 400 },
       )
     }
 

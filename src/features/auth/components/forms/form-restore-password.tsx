@@ -1,18 +1,8 @@
 import { useState } from "react"
 import { useForm } from "@tanstack/react-form"
-import {
-  EyeIcon,
-  EyeSlashIcon,
-  InfoIcon,
-  LockIcon,
-} from "@/components/ui/icons"
+import { EyeIcon, EyeSlashIcon, InfoIcon, LockIcon } from "@/components/ui/icons"
 
-import {
-  Field,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field"
+import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import {
   InputGroup,
   InputGroupAddon,
@@ -20,10 +10,7 @@ import {
   InputGroupInput,
 } from "@/components/ui/input-group"
 
-import {
-  restorePasswordFormSchema,
-  type RestorePasswordFormValues,
-} from "../../api/schema"
+import { restorePasswordFormSchema, type RestorePasswordFormValues } from "../../api/schema"
 
 interface RestorePasswordFormProps {
   id: string
@@ -56,8 +43,7 @@ export function RestorePasswordForm({ id, onSubmit }: RestorePasswordFormProps) 
       <FieldGroup>
         <form.Field name="password">
           {(field) => {
-            const isInvalid =
-              field.state.meta.isTouched && !field.state.meta.isValid
+            const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
             const isStrong = !isInvalid && field.state.value.length > 0
             return (
               <Field variant="outlined" data-invalid={isInvalid}>
@@ -83,11 +69,7 @@ export function RestorePasswordForm({ id, onSubmit }: RestorePasswordFormProps) 
                       size="icon-xs"
                       className="text-muted-foreground hover:text-primary"
                       onClick={() => setShowPassword((v) => !v)}
-                      aria-label={
-                        showPassword
-                          ? "Ocultar contraseña"
-                          : "Mostrar contraseña"
-                      }
+                      aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
                       aria-pressed={showPassword}
                     >
                       {showPassword ? <EyeSlashIcon /> : <EyeIcon />}
@@ -95,10 +77,7 @@ export function RestorePasswordForm({ id, onSubmit }: RestorePasswordFormProps) 
                   </InputGroupAddon>
                 </InputGroup>
                 {isInvalid && (
-                  <FieldError
-                    id={`${field.name}-error`}
-                    errors={field.state.meta.errors}
-                  />
+                  <FieldError id={`${field.name}-error`} errors={field.state.meta.errors} />
                 )}
                 {isStrong && (
                   <p className="text-green flex items-center gap-1 text-sm">
@@ -112,16 +91,13 @@ export function RestorePasswordForm({ id, onSubmit }: RestorePasswordFormProps) 
         </form.Field>
         <form.Field name="confirmPassword">
           {(field) => {
-            const isInvalid =
-              field.state.meta.isTouched && !field.state.meta.isValid
+            const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
             // El `.refine` del schema apunta su error a este campo, así que
             // "válido y con contenido" ya significa que coinciden.
             const matches = !isInvalid && field.state.value.length > 0
             return (
               <Field variant="outlined" data-invalid={isInvalid}>
-                <FieldLabel htmlFor={field.name}>
-                  Confirmar contraseña
-                </FieldLabel>
+                <FieldLabel htmlFor={field.name}>Confirmar contraseña</FieldLabel>
                 <InputGroup className="rounded-md border-input has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20 has-[[data-slot][aria-invalid=true]]:border-red">
                   <InputGroupAddon align="inline-start" className="ml-2">
                     <LockIcon className="size-4 text-muted-foreground" />
@@ -142,20 +118,14 @@ export function RestorePasswordForm({ id, onSubmit }: RestorePasswordFormProps) 
                       className="text-muted-foreground hover:text-primary"
                       size="icon-xs"
                       onClick={() => setShowConfirmPassword((v) => !v)}
-                      aria-label={
-                        showConfirmPassword
-                          ? "Ocultar contraseña"
-                          : "Mostrar contraseña"
-                      }
+                      aria-label={showConfirmPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
                       aria-pressed={showConfirmPassword}
                     >
                       {showConfirmPassword ? <EyeSlashIcon /> : <EyeIcon />}
                     </InputGroupButton>
                   </InputGroupAddon>
                 </InputGroup>
-                {isInvalid && (
-                  <FieldError errors={field.state.meta.errors} />
-                )}
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
                 {matches && (
                   <p className="text-green flex items-center gap-1 text-sm">
                     <InfoIcon className="size-5 shrink-0" aria-hidden="true" />

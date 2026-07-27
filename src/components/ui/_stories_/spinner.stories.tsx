@@ -1,11 +1,11 @@
-import preview from '../../../../.storybook/preview'
-import { Spinner } from '../spinner'
+import preview from "../../../../.storybook/preview"
+import { Spinner } from "../spinner"
 
 const meta = preview.meta({
-  title: 'Design System/Feedback/Spinner',
+  title: "Design System/Feedback/Spinner",
   component: Spinner,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
 })
 
 export const Default = meta.story({})
-export const Large = meta.story({ args: { className: 'size-8' } })
+export const Large = meta.story({ args: { className: "size-8" } })

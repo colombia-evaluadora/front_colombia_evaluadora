@@ -1,13 +1,20 @@
-import preview from '../../../../.storybook/preview'
-import { Button } from '../button'
-import { Input } from '../input'
-import { Label } from '../label'
-import { Popover, PopoverContent, PopoverDescription, PopoverHeader, PopoverTitle, PopoverTrigger } from '../popover'
+import preview from "../../../../.storybook/preview"
+import { Button } from "../button"
+import { Input } from "../input"
+import { Label } from "../label"
+import {
+  Popover,
+  PopoverContent,
+  PopoverDescription,
+  PopoverHeader,
+  PopoverTitle,
+  PopoverTrigger,
+} from "../popover"
 
 const meta = preview.meta({
-  title: 'Design System/Overlays/Popover',
+  title: "Design System/Overlays/Popover",
   component: Popover,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
 })
 
 export const Default = meta.story({

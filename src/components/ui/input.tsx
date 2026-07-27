@@ -21,7 +21,7 @@ const inputVariants = cva(
     defaultVariants: {
       variant: "standard",
     },
-  }
+  },
 )
 
 /**
@@ -58,8 +58,7 @@ function useInputVariant(variant?: InputVariant | null): InputVariant {
   return variant ?? (fieldVariant === "plain" ? "standard" : fieldVariant)
 }
 
-type InputProps = React.ComponentProps<"input"> &
-  VariantProps<typeof inputVariants>
+type InputProps = React.ComponentProps<"input"> & VariantProps<typeof inputVariants>
 
 function Input({ className, type, variant, ...props }: InputProps) {
   const resolvedVariant = useInputVariant(variant)
@@ -74,10 +73,4 @@ function Input({ className, type, variant, ...props }: InputProps) {
   )
 }
 
-export {
-  Input,
-  inputVariants,
-  inputTriggerVariants,
-  useInputVariant,
-  type InputVariant,
-}
+export { Input, inputVariants, inputTriggerVariants, useInputVariant, type InputVariant }

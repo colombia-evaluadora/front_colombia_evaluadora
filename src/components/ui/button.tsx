@@ -55,8 +55,7 @@ const buttonVariants = cva(
       {
         variant: "fill",
         color: "primary",
-        class:
-          "bg-primary text-primary-foreground hover:bg-primary/90 aria-expanded:bg-primary",
+        class: "bg-primary text-primary-foreground hover:bg-primary/90 aria-expanded:bg-primary",
       },
       {
         variant: "fill",
@@ -222,8 +221,7 @@ const buttonVariants = cva(
       {
         variant: "ghost",
         color: "neutral",
-        class:
-          "text-foreground hover:bg-foreground/10 aria-expanded:bg-foreground/10",
+        class: "text-foreground hover:bg-foreground/10 aria-expanded:bg-foreground/10",
       },
       {
         variant: "ghost",
@@ -233,8 +231,7 @@ const buttonVariants = cva(
       {
         variant: "ghost",
         color: "destructive",
-        class:
-          "text-red hover:bg-red/10 aria-expanded:bg-red/10",
+        class: "text-red hover:bg-red/10 aria-expanded:bg-red/10",
       },
       {
         variant: "ghost",
@@ -294,7 +291,7 @@ const buttonVariants = cva(
       color: "primary",
       size: "default",
     },
-  }
+  },
 )
 
 /**

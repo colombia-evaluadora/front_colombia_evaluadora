@@ -1,4 +1,4 @@
-import preview from '../../../../.storybook/preview'
+import preview from "../../../../.storybook/preview"
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -6,12 +6,12 @@ import {
   NavigationMenuLink,
   NavigationMenuList,
   NavigationMenuTrigger,
-} from '../navigation-menu'
+} from "../navigation-menu"
 
 const meta = preview.meta({
-  title: 'Design System/Navigation/NavigationMenu',
+  title: "Design System/Navigation/NavigationMenu",
   component: NavigationMenu,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
 })
 
 export const Default = meta.story({

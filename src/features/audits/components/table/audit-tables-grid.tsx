@@ -15,8 +15,7 @@ const FILTER_AUDIT_TABLES_FORM_ID = "filter-audit-tables-form"
 
 export function AuditTablesGrid() {
   const { pageIndex, pageSize, goToPage, setPageSize } = useTablePagination()
-  const { filters, queryFilters, applyFilters } =
-    useAuditTablesFilters()
+  const { filters, queryFilters, applyFilters } = useAuditTablesFilters()
   const { data, isPending, isError, refetch } = useAuditTablesQuery({
     filters: queryFilters,
     sorting: [],
@@ -81,10 +80,7 @@ export function AuditTablesGrid() {
             {rows.map((table) => {
               const Icon = getNavIcon(table.icon)
               return (
-                <Link
-                  key={table.slug}
-                  to={paths.app.auditoriaTablaDetalle.getHref(table.slug)}
-                >
+                <Link key={table.slug} to={paths.app.auditoriaTablaDetalle.getHref(table.slug)}>
                   <Card size="sm" className="h-full transition-colors hover:bg-muted/50">
                     <CardContent className="flex flex-col gap-3">
                       <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">

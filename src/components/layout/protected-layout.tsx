@@ -4,11 +4,7 @@ import { AppSidebar } from "@/features/navigation/components/app-sidebar"
 import { AssistantSheet } from "@/features/assistant/components/assistant-sheet"
 import { getInitialSidebarOpen } from "@/features/navigation/lib/sidebar-cookie"
 import { Separator } from "@/components/ui/separator"
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar"
+import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { ColorThemeToggle } from "../color-theme-toggle"
 import { ModeToggle } from "../mode-toggle"
 
@@ -21,13 +17,13 @@ export function ProtectedLayout() {
           <div className="flex gap-2">
             <SidebarTrigger />
             <Separator orientation="vertical" className="h-4  my-auto" />
-            </div>
+          </div>
 
-        <div className="flex gap-2">
-          <ModeToggle />
-          <ColorThemeToggle />
-          <AssistantSheet />
-        </div>
+          <div className="flex gap-2">
+            <ModeToggle />
+            <ColorThemeToggle />
+            <AssistantSheet />
+          </div>
         </header>
         <div className="min-w-0 flex-1 p-4">
           <Outlet />

@@ -1,5 +1,5 @@
-import preview from '../../../../.storybook/preview'
-import { Button } from '../button'
+import preview from "../../../../.storybook/preview"
+import { Button } from "../button"
 import {
   Drawer,
   DrawerClose,
@@ -9,12 +9,12 @@ import {
   DrawerHeader,
   DrawerTitle,
   DrawerTrigger,
-} from '../drawer'
+} from "../drawer"
 
 const meta = preview.meta({
-  title: 'Design System/Overlays/Drawer',
+  title: "Design System/Overlays/Drawer",
   component: Drawer,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
 })
 
 export const Default = meta.story({

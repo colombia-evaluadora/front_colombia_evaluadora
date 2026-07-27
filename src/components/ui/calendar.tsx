@@ -1,10 +1,5 @@
 import * as React from "react"
-import {
-  DayPicker,
-  getDefaultClassNames,
-  type DayButton,
-  type Locale,
-} from "react-day-picker"
+import { DayPicker, getDefaultClassNames, type DayButton, type Locale } from "react-day-picker"
 
 import { cn } from "@/lib/utils"
 import { Button, buttonVariants } from "@/components/ui/button"
@@ -46,9 +41,7 @@ function Calendar({
   ...props
 }: CalendarProps) {
   const [view, setView] = React.useState<CalendarView>("days")
-  const [displayMonth, setDisplayMonth] = React.useState<Date>(
-    () => month ?? new Date()
-  )
+  const [displayMonth, setDisplayMonth] = React.useState<Date>(() => month ?? new Date())
 
   React.useEffect(() => {
     if (month) setDisplayMonth(month)
@@ -59,39 +52,27 @@ function Calendar({
   }, [])
 
   const handlePrevMonth = React.useCallback(() => {
-    setDisplayMonth(
-      new Date(displayMonth.getFullYear(), displayMonth.getMonth() - 1, 1)
-    )
+    setDisplayMonth(new Date(displayMonth.getFullYear(), displayMonth.getMonth() - 1, 1))
   }, [displayMonth])
 
   const handleNextMonth = React.useCallback(() => {
-    setDisplayMonth(
-      new Date(displayMonth.getFullYear(), displayMonth.getMonth() + 1, 1)
-    )
+    setDisplayMonth(new Date(displayMonth.getFullYear(), displayMonth.getMonth() + 1, 1))
   }, [displayMonth])
 
   const handlePrevYear = React.useCallback(() => {
-    setDisplayMonth(
-      new Date(displayMonth.getFullYear() - 1, displayMonth.getMonth(), 1)
-    )
+    setDisplayMonth(new Date(displayMonth.getFullYear() - 1, displayMonth.getMonth(), 1))
   }, [displayMonth])
 
   const handleNextYear = React.useCallback(() => {
-    setDisplayMonth(
-      new Date(displayMonth.getFullYear() + 1, displayMonth.getMonth(), 1)
-    )
+    setDisplayMonth(new Date(displayMonth.getFullYear() + 1, displayMonth.getMonth(), 1))
   }, [displayMonth])
 
   const handlePrevDecade = React.useCallback(() => {
-    setDisplayMonth(
-      new Date(displayMonth.getFullYear() - 10, displayMonth.getMonth(), 1)
-    )
+    setDisplayMonth(new Date(displayMonth.getFullYear() - 10, displayMonth.getMonth(), 1))
   }, [displayMonth])
 
   const handleNextDecade = React.useCallback(() => {
-    setDisplayMonth(
-      new Date(displayMonth.getFullYear() + 10, displayMonth.getMonth(), 1)
-    )
+    setDisplayMonth(new Date(displayMonth.getFullYear() + 10, displayMonth.getMonth(), 1))
   }, [displayMonth])
 
   const handleSelectMonth = React.useCallback(
@@ -99,13 +80,16 @@ function Calendar({
       setDisplayMonth(new Date(displayMonth.getFullYear(), monthIndex, 1))
       setView("days")
     },
-    [displayMonth]
+    [displayMonth],
   )
 
-  const handleSelectYear = React.useCallback((year: number) => {
-    setDisplayMonth(new Date(year, displayMonth.getMonth(), 1))
-    setView("months")
-  }, [displayMonth])
+  const handleSelectYear = React.useCallback(
+    (year: number) => {
+      setDisplayMonth(new Date(year, displayMonth.getMonth(), 1))
+      setView("months")
+    },
+    [displayMonth],
+  )
 
   // Bounds del rango seleccionado — los pasamos a MonthGrid/YearGrid
   // para que visualicen el rango de la misma forma que el day view:
@@ -117,12 +101,8 @@ function Calendar({
   // (en single, from === to → se pinta sólido, sin middle).
   const { from: selectedFrom, to: selectedTo } = normalizeSelected(selected)
   const bounds = {
-    fromYearMonth: selectedFrom
-      ? `${selectedFrom.getFullYear()}-${selectedFrom.getMonth()}`
-      : null,
-    toYearMonth: selectedTo
-      ? `${selectedTo.getFullYear()}-${selectedTo.getMonth()}`
-      : null,
+    fromYearMonth: selectedFrom ? `${selectedFrom.getFullYear()}-${selectedFrom.getMonth()}` : null,
+    toYearMonth: selectedTo ? `${selectedTo.getFullYear()}-${selectedTo.getMonth()}` : null,
   }
 
   const monthName = displayMonth.toLocaleString("es", { month: "long" })
@@ -141,7 +121,7 @@ function Calendar({
         "group/calendar bg-background w-64 p-3 [--cell-radius:0] [--cell-size:--spacing(8)] in-data-[slot=card-content]:bg-transparent in-data-[slot=popover-content]:bg-transparent",
         String.raw`rtl:**:[.rdp-button\_next>svg]:rotate-180`,
         String.raw`rtl:**:[.rdp-button\_previous>svg]:rotate-180`,
-        className
+        className,
       )}
     >
       {view === "days" && (
@@ -194,7 +174,7 @@ function Calendar({
               selected={selected}
               onSelect={onSelect}
               showOutsideDays={showOutsideDays}
-              hideNavigation  // oculta el nav nativo — usamos el nuestro
+              hideNavigation // oculta el nav nativo — usamos el nuestro
               locale={locale}
               formatters={formatters}
               classNames={getDayPickerClassNames({ buttonVariant, classNames })}
@@ -331,20 +311,11 @@ function MonthGrid({
           // viendo. Sin esto, en 2026 se marcaba Ene-Jun como "in
           // range" porque "2026-0" > "2024-3" lexicográficamente — no
           // tiene sentido visualmente.
-          const fromYear = bounds.fromYearMonth
-            ? Number(bounds.fromYearMonth.split("-")[0])
-            : null
-          const fromMonth = bounds.fromYearMonth
-            ? Number(bounds.fromYearMonth.split("-")[1])
-            : null
-          const toYear = bounds.toYearMonth
-            ? Number(bounds.toYearMonth.split("-")[0])
-            : null
-          const toMonth = bounds.toYearMonth
-            ? Number(bounds.toYearMonth.split("-")[1])
-            : null
-          const isRangeStart =
-            fromYear === year && fromMonth === index
+          const fromYear = bounds.fromYearMonth ? Number(bounds.fromYearMonth.split("-")[0]) : null
+          const fromMonth = bounds.fromYearMonth ? Number(bounds.fromYearMonth.split("-")[1]) : null
+          const toYear = bounds.toYearMonth ? Number(bounds.toYearMonth.split("-")[0]) : null
+          const toMonth = bounds.toYearMonth ? Number(bounds.toYearMonth.split("-")[1]) : null
+          const isRangeStart = fromYear === year && fromMonth === index
           const isRangeEnd = toYear === year && toMonth === index
           const isInRange =
             fromYear !== null &&
@@ -361,7 +332,7 @@ function MonthGrid({
                 "hover:bg-muted w-full rounded-(--cell-radius) py-3 text-sm font-medium",
                 (isRangeStart || isRangeEnd) &&
                   "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground",
-                isInRange && !isRangeStart && !isRangeEnd && "bg-muted text-foreground"
+                isInRange && !isRangeStart && !isRangeEnd && "bg-muted text-foreground",
               )}
             >
               {label}
@@ -419,12 +390,8 @@ function YearGrid({
         {years.map((year) => {
           // Para YearGrid, el rango es por AÑO (no por año-mes).
           // Extraemos solo el año de los strings "YYYY-M".
-          const fromYear = bounds.fromYearMonth
-            ? Number(bounds.fromYearMonth.split("-")[0])
-            : null
-          const toYear = bounds.toYearMonth
-            ? Number(bounds.toYearMonth.split("-")[0])
-            : null
+          const fromYear = bounds.fromYearMonth ? Number(bounds.fromYearMonth.split("-")[0]) : null
+          const toYear = bounds.toYearMonth ? Number(bounds.toYearMonth.split("-")[0]) : null
           // Tanto el inicio como el fin van con `bg-primary`; el
           // middle va con `bg-muted` (igual que el day view).
           const isRangeStart = year === fromYear
@@ -440,7 +407,7 @@ function YearGrid({
                 "hover:bg-muted w-full rounded-(--cell-radius) py-3 text-sm font-medium",
                 (isRangeStart || isRangeEnd) &&
                   "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground",
-                isInRange && !isRangeStart && !isRangeEnd && "bg-muted text-foreground"
+                isInRange && !isRangeStart && !isRangeEnd && "bg-muted text-foreground",
               )}
             >
               {year}
@@ -473,65 +440,53 @@ function getDayPickerClassNames({
   const defaultClassNames = getDefaultClassNames()
   return {
     root: cn("w-fit", defaultClassNames.root),
-    months: cn(
-      "relative flex flex-col gap-4 md:flex-row",
-      defaultClassNames.months
-    ),
+    months: cn("relative flex flex-col gap-4 md:flex-row", defaultClassNames.months),
     month: cn("flex w-full flex-col gap-4", defaultClassNames.month),
     button_previous: cn(
       buttonVariants({ variant: buttonVariant }),
       "size-(--cell-size) p-0 select-none text-muted-foreground hover:bg-transparent hover:text-primary aria-disabled:opacity-50",
-      defaultClassNames.button_previous
+      defaultClassNames.button_previous,
     ),
     button_next: cn(
       buttonVariants({ variant: buttonVariant }),
       "size-(--cell-size) p-0 select-none text-muted-foreground hover:bg-transparent hover:text-primary aria-disabled:opacity-50",
-      defaultClassNames.button_next
+      defaultClassNames.button_next,
     ),
     month_caption: cn(
-      "!hidden",  // oculta la caption nativa — Tailwind genera este class
-      defaultClassNames.month_caption
+      "!hidden", // oculta la caption nativa — Tailwind genera este class
+      defaultClassNames.month_caption,
     ),
     month_grid: cn("w-full border-collapse", defaultClassNames.month_grid),
     weekdays: cn("flex", defaultClassNames.weekdays),
     weekday: cn(
       "flex-1 rounded-(--cell-radius) text-xs font-normal text-muted-foreground select-none",
-      defaultClassNames.weekday
+      defaultClassNames.weekday,
     ),
     week: cn("mt-2 flex w-full", defaultClassNames.week),
-    week_number_header: cn(
-      "w-(--cell-size) select-none",
-      defaultClassNames.week_number_header
-    ),
-    week_number: cn(
-      "text-xs text-muted-foreground select-none",
-      defaultClassNames.week_number
-    ),
+    week_number_header: cn("w-(--cell-size) select-none", defaultClassNames.week_number_header),
+    week_number: cn("text-xs text-muted-foreground select-none", defaultClassNames.week_number),
     day: cn(
       "group/day relative aspect-square h-full w-full rounded-(--cell-radius) p-0 text-center select-none [&:last-child[data-selected=true]_button]:rounded-r-(--cell-radius)",
-      defaultClassNames.day
+      defaultClassNames.day,
     ),
     range_start: cn(
       "relative isolate z-0 rounded-l-(--cell-radius) bg-muted after:absolute after:inset-y-0 after:right-0 after:w-4 after:bg-muted",
-      defaultClassNames.range_start
+      defaultClassNames.range_start,
     ),
     range_middle: cn("rounded-none", defaultClassNames.range_middle),
     range_end: cn(
       "relative isolate z-0 rounded-r-(--cell-radius) bg-muted after:absolute after:inset-y-0 after:left-0 after:w-4 after:bg-muted",
-      defaultClassNames.range_end
+      defaultClassNames.range_end,
     ),
     today: cn(
       "rounded-(--cell-radius) bg-muted text-foreground data-[selected=true]:rounded-none",
-      defaultClassNames.today
+      defaultClassNames.today,
     ),
     outside: cn(
       "text-muted-foreground aria-selected:text-muted-foreground",
-      defaultClassNames.outside
+      defaultClassNames.outside,
     ),
-    disabled: cn(
-      "text-muted-foreground opacity-50",
-      defaultClassNames.disabled
-    ),
+    disabled: cn("text-muted-foreground opacity-50", defaultClassNames.disabled),
     hidden: cn("invisible", defaultClassNames.hidden),
     ...classNames,
   }
@@ -570,7 +525,7 @@ function CalendarDayButton({
       className={cn(
         "relative isolate z-10 flex aspect-square size-auto w-full min-w-(--cell-size) flex-col gap-1 border-0 leading-none font-normal group-data-[focused=true]/day:relative group-data-[focused=true]/day:z-10 group-data-[focused=true]/day:border-ring group-data-[focused=true]/day:ring-[3px] group-data-[focused=true]/day:ring-ring/50 data-[range-end=true]:rounded-(--cell-radius) data-[range-end=true]:rounded-r-(--cell-radius) data-[range-end=true]:bg-primary data-[range-end=true]:text-primary-foreground data-[range-middle=true]:rounded-none data-[range-middle=true]:bg-muted data-[range-middle=true]:text-foreground data-[range-start=true]:rounded-(--cell-radius) data-[range-start=true]:rounded-l-(--cell-radius) data-[range-start=true]:bg-primary data-[range-start=true]:text-primary-foreground data-[selected-single=true]:bg-primary data-[selected-single=true]:text-primary-foreground dark:hover:text-foreground [&>span]:text-xs [&>span]:opacity-70",
         defaultClassNames.day,
-        className
+        className,
       )}
       {...props}
     />

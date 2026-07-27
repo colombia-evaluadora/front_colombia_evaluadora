@@ -1,12 +1,12 @@
-import preview from '../../../../.storybook/preview'
-import { useState } from 'react'
-import { Checkbox } from '../checkbox'
-import { Label } from '../label'
+import preview from "../../../../.storybook/preview"
+import { useState } from "react"
+import { Checkbox } from "../checkbox"
+import { Label } from "../label"
 
 const meta = preview.meta({
-  title: 'Design System/Forms/Checkbox',
+  title: "Design System/Forms/Checkbox",
   component: Checkbox,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
 })
 
 export const Default = meta.story({
@@ -14,7 +14,11 @@ export const Default = meta.story({
     const [checked, setChecked] = useState(false)
     return (
       <div className="flex items-center gap-2">
-        <Checkbox id="checkbox-default" checked={checked} onCheckedChange={(v) => setChecked(v === true)} />
+        <Checkbox
+          id="checkbox-default"
+          checked={checked}
+          onCheckedChange={(v) => setChecked(v === true)}
+        />
         <Label htmlFor="checkbox-default">Accept terms and conditions</Label>
       </div>
     )
@@ -26,7 +30,11 @@ export const CheckedByDefault = meta.story({
     const [checked, setChecked] = useState(true)
     return (
       <div className="flex items-center gap-2">
-        <Checkbox id="checkbox-checked" checked={checked} onCheckedChange={(v) => setChecked(v === true)} />
+        <Checkbox
+          id="checkbox-checked"
+          checked={checked}
+          onCheckedChange={(v) => setChecked(v === true)}
+        />
         <Label htmlFor="checkbox-checked">Subscribe to newsletter</Label>
       </div>
     )

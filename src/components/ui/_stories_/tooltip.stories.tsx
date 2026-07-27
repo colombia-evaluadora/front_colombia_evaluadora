@@ -1,11 +1,11 @@
-import preview from '../../../../.storybook/preview'
-import { Button } from '../button'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../tooltip'
+import preview from "../../../../.storybook/preview"
+import { Button } from "../button"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../tooltip"
 
 const meta = preview.meta({
-  title: 'Design System/Overlays/Tooltip',
+  title: "Design System/Overlays/Tooltip",
   component: Tooltip,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
 })
 
 export const Default = meta.story({

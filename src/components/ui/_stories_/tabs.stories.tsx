@@ -1,10 +1,10 @@
-import preview from '../../../../.storybook/preview'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../tabs'
+import preview from "../../../../.storybook/preview"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../tabs"
 
 const meta = preview.meta({
-  title: 'Design System/Navigation/Tabs',
+  title: "Design System/Navigation/Tabs",
   component: Tabs,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
 })
 
 export const Default = meta.story({

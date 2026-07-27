@@ -1,6 +1,7 @@
 import { chromium } from "playwright"
 
-const shotDir = "C:/Users/ADMINI~1/AppData/Local/Temp/claude/c--Users-Administrador-Desktop-front-colombia-evaluadora/d777186a-ffca-46e1-bced-f82277d3769b/scratchpad"
+const shotDir =
+  "C:/Users/ADMINI~1/AppData/Local/Temp/claude/c--Users-Administrador-Desktop-front-colombia-evaluadora/d777186a-ffca-46e1-bced-f82277d3769b/scratchpad"
 
 const browser = await chromium.launch()
 const context = await browser.newContext({ viewport: { width: 1280, height: 800 } })

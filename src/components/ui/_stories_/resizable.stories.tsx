@@ -1,10 +1,10 @@
-import preview from '../../../../.storybook/preview'
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '../resizable'
+import preview from "../../../../.storybook/preview"
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "../resizable"
 
 const meta = preview.meta({
-  title: 'Design System/Layout/Resizable',
+  title: "Design System/Layout/Resizable",
   component: ResizablePanelGroup,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
 })
 
 export const Horizontal = meta.story({

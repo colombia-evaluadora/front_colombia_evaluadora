@@ -1,19 +1,17 @@
-import preview from '../../../../.storybook/preview'
-import { useState } from 'react'
-import { TimePickerPanel } from '../time-picker'
+import preview from "../../../../.storybook/preview"
+import { useState } from "react"
+import { TimePickerPanel } from "../time-picker"
 
 const meta = preview.meta({
-  title: 'Design System/Forms/TimePickerPanel',
+  title: "Design System/Forms/TimePickerPanel",
   component: TimePickerPanel,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
 })
 
 export const Default = meta.story({
   render: () => {
     const [value, setValue] = useState<string | undefined>("09:30")
-    return (
-      <TimePickerPanel value={value} onChange={setValue} className="rounded-md border" />
-    )
+    return <TimePickerPanel value={value} onChange={setValue} className="rounded-md border" />
   },
 })
 
