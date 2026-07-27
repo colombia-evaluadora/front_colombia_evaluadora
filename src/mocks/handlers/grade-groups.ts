@@ -89,4 +89,21 @@ export const gradeGroupsHandlers = [
     gradeGroupsDb.push(record)
     return HttpResponse.json(record, { status: 201 })
   }),
+
+  http.delete("/api/grade-groups/:codigo", async ({ params }) => {
+    await delay(300)
+    const codigo = decodeURIComponent(String(params.codigo))
+    const index = gradeGroupsDb.findIndex((row) => row.codigo === codigo)
+    if (index === -1) {
+      return HttpResponse.json(
+        { status: "error", message: "Grupo no encontrado." },
+        { status: 404 }
+      )
+    }
+    gradeGroupsDb.splice(index, 1)
+    return HttpResponse.json({
+      status: "ok",
+      message: "Grupo eliminado.",
+    })
+  }),
 ]

@@ -4,6 +4,8 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { DataTableColumnHeader } from "@/components/data-table"
 
 import type { GradeGroup } from "../../../api/types/academic-period/grade-group"
+import { DeleteGradeGroupDialog } from "../dialogs/dialog-delete-grade-group"
+import { EditGradeGroupButton } from "./edit-grade-group-button"
 
 export const columns: ColumnDef<GradeGroup>[] = [
   {
@@ -69,6 +71,19 @@ export const columns: ColumnDef<GradeGroup>[] = [
       <DataTableColumnHeader column={column} title="Plan de estudio" />
     ),
     cell: ({ row }) => <span>{row.original.planEstudio}</span>,
+  },
+  {
+    id: "actions",
+    header: () => <span className="sr-only">Acciones</span>,
+    cell: ({ row }) => (
+      <div className="flex items-center justify-end gap-1">
+        <EditGradeGroupButton gradeGroup={row.original} />
+        <DeleteGradeGroupDialog gradeGroup={row.original} />
+      </div>
+    ),
+    enableSorting: false,
+    enableHiding: false,
+    size: 96,
   },
 ]
 
