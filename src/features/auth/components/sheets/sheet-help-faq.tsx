@@ -50,15 +50,10 @@ export function HelpFaqSheet({
         <span>{data.title}</span>
       </SheetTrigger>
 
-      <SheetContent
-        side="right"
-        className="flex w-full flex-col gap-0 sm:max-w-sm"
-      >
-        <SheetHeader className="flex-row items-start justify-between gap-2">
-          <div className="space-y-1.5">
+      <SheetContent>
+        <SheetHeader>
             <SheetTitle>{data.title}</SheetTitle>
             <SheetDescription>{data.description}</SheetDescription>
-          </div>
         </SheetHeader>
 
         <HelpFaqSheetContent data={data} />
@@ -70,19 +65,17 @@ export function HelpFaqSheet({
 
 function HelpFaqSheetContent({ data }: { data: HelpSheetData }) {
   return (
-    <div className="flex-1 overflow-y-auto px-4">
-      <div className="space-y-6 pb-6">
+      <div className="space-y-6 px-6 pb-6 flex-1 overflow-y-auto">
         <section className="space-y-4">
           <h3 className="px-1 text-base font-semibold">
             ¿No puedes iniciar sesión?
           </h3>
-          <Accordion className="border">
+          <Accordion className="border rounded-lg">
             {data.faqs.map((faq) => (
               <AccordionItem key={faq.id} value={faq.id}>
                 <AccordionTrigger className="px-4">
-                  <div className="flex flex-1 items-start gap-3">
-                    {/* El icono trae su color; el tamaño lo pone la sección. */}
-                    <span className="mt-0.5 shrink-0 [&_svg:not([class*='size-'])]:size-5">
+                  <div className="flex flex-1 items-center gap-3">
+                    <span className="shrink-0 [&_svg:not([class*='size-'])]:size-6">
                       {faq.icon}
                     </span>
                     <div className="flex min-w-0 flex-col gap-0.5 text-left">
@@ -115,7 +108,7 @@ function HelpFaqSheetContent({ data }: { data: HelpSheetData }) {
                   variant="outline"
                   render={item.to ? <Link to={item.to} /> : undefined}
                 >
-                  <ItemMedia variant="icon">
+                  <ItemMedia variant="icon" className="group-has-data-[slot=item-description]/item:translate-y-0 group-has-data-[slot=item-description]/item:self-center [&_svg:not([class*='size-'])]:size-6">
                     {item.icon}
                   </ItemMedia>
                   <ItemContent>
@@ -135,7 +128,7 @@ function HelpFaqSheetContent({ data }: { data: HelpSheetData }) {
         <section className="space-y-4">
           <h3 className="px-1 text-base font-semibold">Soporte</h3>
           <Item variant="outline">
-            <ItemMedia variant="icon">
+            <ItemMedia variant="icon" className="group-has-data-[slot=item-description]/item:translate-y-0 group-has-data-[slot=item-description]/item:self-center [&_svg:not([class*='size-'])]:size-6">
               {data.support.icon}
             </ItemMedia>
             <ItemContent>
@@ -154,8 +147,6 @@ function HelpFaqSheetContent({ data }: { data: HelpSheetData }) {
                 <p>
                   <a
                     className="hover:text-foreground underline underline-offset-3"
-                    // `tel:` no admite espacios ni paréntesis: el número se
-                    // muestra formateado pero se marca en crudo.
                     href={`tel:${data.support.phone.replace(/[^+\d]/g, "")}`}
                   >
                     {data.support.phone}
@@ -167,6 +158,5 @@ function HelpFaqSheetContent({ data }: { data: HelpSheetData }) {
           </Item>
         </section>
       </div>
-    </div>
   )
 }
