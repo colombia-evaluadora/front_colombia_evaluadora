@@ -57,17 +57,6 @@ const GRADO_SIGUIENTE_OPTIONS = [
   "Undécimo",
 ]
 
-
-function normalizeGrade(value: string): string {
-  return value
-    .trim()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-}
-
-const LAST_GRADE_NAMES = new Set(["undecimo", "once", "11", "11°", "11º"])
-
 interface CreateGradeDialogProps {
   jornada: Jornada
   academicPeriodId?: number
@@ -129,8 +118,7 @@ export function CreateGradeDialog({
   })
 
   const isSaving = createGrade.isPending || updateGrade.isPending
-
-  const isLastGrade = LAST_GRADE_NAMES.has(normalizeGrade(nombre))
+  const hasNextGrade = tieneGradoSiguiente === "si"
 
   function handleSaveGrade() {
     if (!nombre.trim() || teachingLevelId == null) {
@@ -141,8 +129,8 @@ export function CreateGradeDialog({
       nombre,
       grado: nombre,
       teachingLevelId,
-      gradoSiguiente: isLastGrade ? undefined : gradoSiguiente || undefined,
-      tieneGradoSiguiente: isLastGrade ? false : tieneGradoSiguiente === "si",
+      tieneGradoSiguiente: hasNextGrade,
+      gradoSiguiente: hasNextGrade ? gradoSiguiente || undefined : undefined,
     }
     if (gradeId == null) {
       createGrade.mutate({ ...payload, academicPeriodId })
@@ -271,8 +259,27 @@ export function CreateGradeDialog({
               onChange={(e) => setNombre(e.target.value)}
             />
           </Field>
+          <Field>
+            <FieldLabel>Tiene grado siguiente</FieldLabel>
+            <RadioGroup
+              className="flex gap-6 pt-2"
+              value={tieneGradoSiguiente}
+              onValueChange={(value) =>
+                value && setTieneGradoSiguiente(value)
+              }
+            >
+              <label className="flex items-center gap-2">
+                <RadioGroupItem value="si" />
+                Sí
+              </label>
+              <label className="flex items-center gap-2">
+                <RadioGroupItem value="no" />
+                No
+              </label>
+            </RadioGroup>
+          </Field>
 
-          {!isLastGrade && (
+          {hasNextGrade && (
             <>
               <Field>
                 <FieldLabel htmlFor="grade-siguiente">
@@ -295,26 +302,6 @@ export function CreateGradeDialog({
                     </SelectGroup>
                   </SelectContent>
                 </Select>
-              </Field>
-
-              <Field>
-                <FieldLabel>Tiene grado siguiente</FieldLabel>
-                <RadioGroup
-                  className="flex gap-6 pt-2"
-                  value={tieneGradoSiguiente}
-                  onValueChange={(value) =>
-                    value && setTieneGradoSiguiente(value)
-                  }
-                >
-                  <label className="flex items-center gap-2">
-                    <RadioGroupItem value="si" />
-                    Sí
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <RadioGroupItem value="no" />
-                    No
-                  </label>
-                </RadioGroup>
               </Field>
             </>
           )}
