@@ -3,6 +3,7 @@
 import { http, HttpResponse, delay } from "msw"
 import { httpQuery } from "./_http-query"
 import { areaSubjectsDb } from "../db/area-subject"
+import { studyPlansDb } from "../db/study-plans"
 
 import type {
   AreaSubject,
@@ -158,7 +159,17 @@ export const areaSubjectsHandlers = [
         { status: 404 }
       )
     }
-    areaSubjectsDb.splice(index, 1)
+    const [removed] = areaSubjectsDb.splice(index, 1)
+
+    // Cascada simple: quitar también las entradas del plan de estudio que
+    // referencian esta asignatura (se enlazan por nombre). En un back real
+    // esto lo haría el propio backend.
+    for (let i = studyPlansDb.length - 1; i >= 0; i--) {
+      if (studyPlansDb[i].asignatura === removed.nombreInterno) {
+        studyPlansDb.splice(i, 1)
+      }
+    }
+
     return HttpResponse.json({
       status: "ok",
       message: "Área/asignatura eliminada.",

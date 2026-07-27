@@ -31,7 +31,8 @@ export function EvaluationPeriodsSection({
 }: EvaluationPeriodsSectionProps) {
   return (
     <Tabs defaultValue="evaluacion">
-      <TabsList variant="line">
+      {/* Scrollable en móvil: las tabs se desplazan en vez de desbordar. */}
+      <TabsList variant="line" className="w-full justify-start overflow-x-auto">
         {TABS.map((tab) => (
           <TabsTrigger key={tab.value} value={tab.value}>
             {tab.label}
