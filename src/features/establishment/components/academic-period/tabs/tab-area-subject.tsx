@@ -13,7 +13,11 @@ import { columns } from "../table/columns-area-subject"
 import { CreateAreaSubjectDialog } from "../dialogs/dialog-create-area-subject"
 import { useAreaSubjectQuery } from "@/features/establishment/api/query/use-area-subject"
 
-export function TabAreaSubject() {
+interface TabAreaSubjectProps {
+  academicPeriodId?: number
+}
+
+export function TabAreaSubject({ academicPeriodId }: TabAreaSubjectProps) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [pageIndex, setPageIndex] = useState(0)
   const [pageSize, setPageSize] = useState(10)
@@ -23,6 +27,7 @@ export function TabAreaSubject() {
     sorting,
     pageIndex,
     pageSize,
+    academicPeriodId,
   })
 
   const goToPage = setPageIndex
@@ -65,7 +70,7 @@ export function TabAreaSubject() {
             <FileXlsIcon className="text-success" />
           </Button>
         </div>
-        <CreateAreaSubjectDialog />
+        <CreateAreaSubjectDialog academicPeriodId={academicPeriodId} />
       </div>
 
       <DataTable

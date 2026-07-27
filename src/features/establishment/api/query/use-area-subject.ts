@@ -11,6 +11,7 @@ interface UseAreaSubjectQueryParams {
   sorting: AreaSubjectsQueryRequest["sorting"]
   pageIndex: number
   pageSize: number
+  academicPeriodId?: number
 }
 
 function fetchAreaSubject(

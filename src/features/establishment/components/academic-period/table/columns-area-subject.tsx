@@ -45,7 +45,16 @@ export const columns: ColumnDef<AreaSubject>[] = [
       <DataTableColumnHeader column={column} title="Nombre de area" />
     ),
     cell: ({ row }) => (
-      <span className="font-medium">{row.original.nombreInterno}</span>
+      <span className="flex items-center gap-2 font-medium">
+        {row.original.color && (
+          <span
+            className="inline-block size-3 shrink-0 rounded-full ring-1 ring-foreground/10"
+            style={{ backgroundColor: row.original.color }}
+            aria-hidden
+          />
+        )}
+        {row.original.nombreInterno}
+      </span>
     ),
   },
   {

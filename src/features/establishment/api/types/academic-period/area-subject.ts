@@ -4,6 +4,7 @@ export interface AreaSubject {
   nombreInterno: string
   abreviacion: string
   ordenReportes: number
+  color?: string
 }
 
 export interface AreaSubjectsQueryFilters {
@@ -17,6 +18,11 @@ export interface AreaSubjectsQueryRequest {
   sorting: { id: string; desc: boolean }[]
   pageIndex: number
   pageSize: number
+  academicPeriodId?: number
+}
+
+export interface AreaSubjectRecord extends AreaSubject {
+  academicPeriodId: number
 }
 
 export interface AreaSubjectsQueryResponse {
@@ -25,7 +31,9 @@ export interface AreaSubjectsQueryResponse {
   totalCount: number
 }
 
-export type CreateAreaSubjectRequest = AreaSubject
+export type CreateAreaSubjectRequest = AreaSubject & {
+  academicPeriodId?: number
+}
 
 export type UpdateAreaSubjectRequest = AreaSubject
 

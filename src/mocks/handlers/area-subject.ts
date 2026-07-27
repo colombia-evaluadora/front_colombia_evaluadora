@@ -54,8 +54,8 @@ function applyFilters(
   })
 }
 
-function sortValue(row: AreaSubject, id: string) {
-  return row[id as keyof AreaSubject]
+function sortValue(row: AreaSubject, id: string): string | number {
+  return row[id as keyof AreaSubject] ?? ""
 }
 
 function applySorting(
@@ -82,12 +82,16 @@ export const areaSubjectsHandlers = [
     await delay(250)
 
     const body = (await request.json()) as AreaSubjectsQueryRequest
-    const { filters, sorting, pageIndex, pageSize } = body
+    const { filters, sorting, pageIndex, pageSize, academicPeriodId } = body
 
-    const filtered = applySorting(
-      applyFilters(areaSubjectsDb, filters),
-      sorting
-    )
+    const scoped =
+      academicPeriodId == null
+        ? areaSubjectsDb
+        : areaSubjectsDb.filter(
+            (row) => row.academicPeriodId === academicPeriodId
+          )
+
+    const filtered = applySorting(applyFilters(scoped, filters), sorting)
 
     const totalCount = filtered.length
     const pageCount = Math.max(1, Math.ceil(totalCount / pageSize))
@@ -137,9 +141,10 @@ export const areaSubjectsHandlers = [
 
     const body = (await request.json()) as CreateAreaSubjectRequest
 
-    areaSubjectsDb.push(body)
+    const record = { ...body, academicPeriodId: body.academicPeriodId ?? 0 }
+    areaSubjectsDb.push(record)
 
-    return HttpResponse.json(body, { status: 201 })
+    return HttpResponse.json(record, { status: 201 })
   }),
 
   http.delete("/api/area-subjects/:codigo", async ({ params }) => {
