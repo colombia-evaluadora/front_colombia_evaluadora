@@ -1,14 +1,17 @@
 import * as React from "react"
 import { format, setHours, setMinutes } from "date-fns"
 import { es } from "date-fns/locale"
-import { cva, type VariantProps } from "class-variance-authority"
+import type { VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
-import { useFieldVariant } from "@/hooks/use-field-variant"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import { CalendarIcon, ClockIcon } from "@/components/ui/icons"
-import { inputVariants } from "@/components/ui/input"
+import {
+  inputTriggerVariants,
+  inputVariants,
+  useInputVariant,
+} from "@/components/ui/input"
 import {
   Popover,
   PopoverContent,
@@ -16,30 +19,6 @@ import {
 } from "@/components/ui/popover"
 import { Separator } from "@/components/ui/separator"
 import { TimePickerPanel, formatTimeLabel } from "@/components/ui/time-picker"
-
-/**
- * Capa que se compone encima de `inputVariants`: aporta el layout del trigger
- * (que es un `button`, no un `input`) y el estado abierto. Es el equivalente
- * del `focus-visible` del input — como el foco vive en el popup mientras el
- * panel está desplegado, el borde tiene que reaccionar a `data-popup-open`
- * para que el campo no se "apague".
- */
-const pickerTriggerVariants = cva(
-  "flex cursor-pointer items-center gap-2 text-left",
-  {
-    variants: {
-      variant: {
-        standard: "data-[popup-open]:border-b-ring",
-        outlined:
-          "data-[popup-open]:border-ring data-[popup-open]:ring-2 data-[popup-open]:ring-ring/20",
-        filled: "data-[popup-open]:border-b-ring data-[popup-open]:bg-muted/50",
-      },
-    },
-    defaultVariants: {
-      variant: "standard",
-    },
-  }
-)
 
 type PickerBaseProps = VariantProps<typeof inputVariants> & {
   /** Texto cuando no hay valor; ocupa el lugar del `placeholder` del input. */
@@ -112,9 +91,7 @@ function DatePicker(props: DatePickerProps) {
 
   const [open, setOpen] = React.useState(false)
 
-  const fieldVariant = useFieldVariant()
-  const resolvedVariant =
-    variant ?? (fieldVariant === "plain" ? "standard" : fieldVariant)
+  const resolvedVariant = useInputVariant(variant)
 
   // En `time` el valor es un string y no hay fecha; en el resto la hora se
   // deriva de la fecha para alimentar el panel de reloj.
@@ -177,7 +154,8 @@ function DatePicker(props: DatePickerProps) {
             aria-describedby={ariaDescribedby}
             className={cn(
               inputVariants({ variant: resolvedVariant }),
-              pickerTriggerVariants({ variant: resolvedVariant }),
+              inputTriggerVariants({ variant: resolvedVariant }),
+              "flex items-center gap-2 text-left",
               !displayValue && "text-muted-foreground",
               className
             )}
@@ -238,4 +216,4 @@ function DatePicker(props: DatePickerProps) {
   )
 }
 
-export { DatePicker, pickerTriggerVariants }
+export { DatePicker }
