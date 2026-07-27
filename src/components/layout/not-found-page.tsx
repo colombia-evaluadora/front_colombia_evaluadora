@@ -9,9 +9,7 @@ export function NotFoundPage() {
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-3 p-10 text-center">
       <h1 className="text-2xl font-semibold">Página no encontrada</h1>
-      <p className="text-muted-foreground">
-        La URL a la que intentaste acceder no existe.
-      </p>
+      <p className="text-muted-foreground">La URL a la que intentaste acceder no existe.</p>
       <Button
         render={<Link to={isAuthenticated ? "/app" : "/"} />}
         nativeButton={false}

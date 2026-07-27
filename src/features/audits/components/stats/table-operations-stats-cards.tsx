@@ -31,7 +31,7 @@ export function TableOperationsStatsCards({
   // Igual que exportar: con selección se calcula sobre lo seleccionado, sin
   // selección se calcula sobre lo que coincide con los filtros activos.
   const { data } = useTableOperationsStatsQuery(
-    hasSelection ? { tableSlug, ids: selectedIds } : { tableSlug, filters }
+    hasSelection ? { tableSlug, ids: selectedIds } : { tableSlug, filters },
   )
 
   const tiles: StatTile[] = [
@@ -63,7 +63,7 @@ export function TableOperationsStatsCards({
             <span
               className={cn(
                 "flex size-10 shrink-0 items-center justify-center rounded-full",
-                tile.iconClassName
+                tile.iconClassName,
               )}
             >
               <tile.icon weight="fill" className="size-5" />

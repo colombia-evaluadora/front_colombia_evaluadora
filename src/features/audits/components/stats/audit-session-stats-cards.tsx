@@ -28,9 +28,7 @@ export function AuditSessionStatsCards({
 }: AuditSessionStatsCardsProps) {
   // Igual que exportar: con selección se calcula sobre lo seleccionado, sin
   // selección se calcula sobre lo que coincide con los filtros activos.
-  const { data } = useAuditsStatsQuery(
-    hasSelection ? { ids: selectedIds } : { filters }
-  )
+  const { data } = useAuditsStatsQuery(hasSelection ? { ids: selectedIds } : { filters })
 
   const tiles: StatTile[] = [
     {
@@ -61,7 +59,7 @@ export function AuditSessionStatsCards({
             <span
               className={cn(
                 "flex size-10 shrink-0 items-center justify-center rounded-full",
-                tile.iconClassName
+                tile.iconClassName,
               )}
             >
               <tile.icon weight="fill" className="size-5" />

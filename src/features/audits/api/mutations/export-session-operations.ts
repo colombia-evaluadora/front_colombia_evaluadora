@@ -16,10 +16,7 @@ function exportSessionOperations({
   sessionId,
   ...body
 }: ExportSessionOperationsInput): Promise<ExportResult> {
-  return api.post(
-    `/audits/sessions/${sessionId}/operations/export`,
-    body
-  )
+  return api.post(`/audits/sessions/${sessionId}/operations/export`, body)
 }
 
 interface UseExportSessionOperationsOptions {

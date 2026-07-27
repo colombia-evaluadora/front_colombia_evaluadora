@@ -1,13 +1,7 @@
 import { useState } from "react"
 
 import { useForm } from "@tanstack/react-form"
-import {
-  PencilIcon,
-  PlusCircleIcon,
-  TrashIcon,
-  PlusIcon,
-  XIcon,
-} from "@/components/ui/icons"
+import { PencilIcon, PlusCircleIcon, TrashIcon, PlusIcon, XIcon } from "@/components/ui/icons"
 
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -41,10 +35,7 @@ import {
   type TableOperationsFiltersFormValues,
 } from "../../api/schema"
 import type { OperationType } from "../../api/types/audit-table"
-import {
-  formatDateTimeValue,
-  parseDateTimeValue,
-} from "@/lib/date-time-value"
+import { formatDateTimeValue, parseDateTimeValue } from "@/lib/date-time-value"
 
 interface FilterTableOperationsFormProps {
   id: string
@@ -122,9 +113,7 @@ export function FilterTableOperationsForm({
                       id="operation-filter-insert"
                       name={field.name}
                       checked={field.state.value.includes("INSERT")}
-                      onCheckedChange={(checked) =>
-                        toggle("INSERT", checked === true)
-                      }
+                      onCheckedChange={(checked) => toggle("INSERT", checked === true)}
                     />
                     <FieldContent className="min-w-0">
                       <FieldTitle className="w-full min-w-0">
@@ -140,9 +129,7 @@ export function FilterTableOperationsForm({
                       id="operation-filter-update"
                       name={field.name}
                       checked={field.state.value.includes("UPDATE")}
-                      onCheckedChange={(checked) =>
-                        toggle("UPDATE", checked === true)
-                      }
+                      onCheckedChange={(checked) => toggle("UPDATE", checked === true)}
                     />
                     <FieldContent className="min-w-0">
                       <FieldTitle className="w-full min-w-0">
@@ -158,9 +145,7 @@ export function FilterTableOperationsForm({
                       id="operation-filter-delete"
                       name={field.name}
                       checked={field.state.value.includes("DELETE")}
-                      onCheckedChange={(checked) =>
-                        toggle("DELETE", checked === true)
-                      }
+                      onCheckedChange={(checked) => toggle("DELETE", checked === true)}
                     />
                     <FieldContent className="min-w-0">
                       <FieldTitle className="w-full min-w-0">
@@ -190,9 +175,7 @@ export function FilterTableOperationsForm({
               mode="datetime"
               id={field.name}
               value={parseDateTimeValue(field.state.value)}
-              onChange={(date) =>
-                field.handleChange(formatDateTimeValue(date))
-              }
+              onChange={(date) => field.handleChange(formatDateTimeValue(date))}
               className="h-9"
             />
           </Field>
@@ -207,9 +190,7 @@ export function FilterTableOperationsForm({
               mode="datetime"
               id={field.name}
               value={parseDateTimeValue(field.state.value)}
-              onChange={(date) =>
-                field.handleChange(formatDateTimeValue(date))
-              }
+              onChange={(date) => field.handleChange(formatDateTimeValue(date))}
               className="h-9"
             />
           </Field>
@@ -221,9 +202,7 @@ export function FilterTableOperationsForm({
       <form.Field
         name="fieldFilters"
         mode="array"
-        children={(field) => (
-          <FieldFilterSection field={field} availableFields={availableFields} />
-        )}
+        children={(field) => <FieldFilterSection field={field} availableFields={availableFields} />}
       />
     </form>
   )
@@ -249,9 +228,7 @@ interface FieldFilterSectionProps {
  */
 function FieldFilterSection({ field, availableFields }: FieldFilterSectionProps) {
   const [composerField, setComposerField] = useState<string>("")
-  const [composerCondition, setComposerCondition] = useState<
-    FieldFilterCondition | ""
-  >("")
+  const [composerCondition, setComposerCondition] = useState<FieldFilterCondition | "">("")
   const [composerValue, setComposerValue] = useState("")
 
   const composerReady =
@@ -308,10 +285,7 @@ function FieldFilterSection({ field, availableFields }: FieldFilterSectionProps)
 
         <Field variant="outlined" className="gap-2">
           <FieldLabel htmlFor="field-filter-field">Campo</FieldLabel>
-          <Select
-            value={composerField}
-            onValueChange={(value) => setComposerField(value ?? "")}
-          >
+          <Select value={composerField} onValueChange={(value) => setComposerField(value ?? "")}>
             <SelectTrigger id="field-filter-field" size="sm" className="w-full">
               <SelectValue placeholder="Elegí un campo de la tabla" />
             </SelectTrigger>
@@ -333,11 +307,7 @@ function FieldFilterSection({ field, availableFields }: FieldFilterSectionProps)
               setComposerCondition((value ?? "") as FieldFilterCondition | "")
             }
           >
-            <SelectTrigger
-              id="field-filter-condition"
-              size="sm"
-              className="w-full"
-            >
+            <SelectTrigger id="field-filter-condition" size="sm" className="w-full">
               <SelectValue placeholder="Elegí cómo comparar" />
             </SelectTrigger>
             <SelectContent>
@@ -362,14 +332,10 @@ function FieldFilterSection({ field, availableFields }: FieldFilterSectionProps)
             className="h-9"
           />
         </Field>
-          <Button
-            type="button"
-            onClick={handleAdd}
-            disabled={!composerReady}
-          >
-            <PlusIcon data-icon="inline-start" weight="bold" />
-            Agregar
-          </Button>
+        <Button type="button" onClick={handleAdd} disabled={!composerReady}>
+          <PlusIcon data-icon="inline-start" weight="bold" />
+          Agregar
+        </Button>
       </FieldGroup>
     </FieldSet>
   )

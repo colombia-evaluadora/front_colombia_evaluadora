@@ -1,9 +1,5 @@
 import { useForm } from "@tanstack/react-form"
-import {
-  PencilIcon,
-  PlusCircleIcon,
-  TrashIcon,
-} from "@/components/ui/icons"
+import { PencilIcon, PlusCircleIcon, TrashIcon } from "@/components/ui/icons"
 
 import { Checkbox } from "@/components/ui/checkbox"
 import { DatePicker } from "@/components/date-picker"
@@ -25,10 +21,7 @@ import {
   type SessionOperationsFiltersFormValues,
 } from "../../api/schema"
 import type { OperationType } from "../../api/types/audit-table"
-import {
-  formatDateTimeValue,
-  parseDateTimeValue,
-} from "@/lib/date-time-value"
+import { formatDateTimeValue, parseDateTimeValue } from "@/lib/date-time-value"
 
 interface FilterSessionOperationsFormProps {
   id: string
@@ -82,9 +75,7 @@ export function FilterSessionOperationsForm({
                       id="session-operation-filter-insert"
                       name={field.name}
                       checked={field.state.value.includes("INSERT")}
-                      onCheckedChange={(checked) =>
-                        toggle("INSERT", checked === true)
-                      }
+                      onCheckedChange={(checked) => toggle("INSERT", checked === true)}
                     />
                     <FieldContent className="min-w-0">
                       <FieldTitle className="w-full min-w-0">
@@ -100,9 +91,7 @@ export function FilterSessionOperationsForm({
                       id="session-operation-filter-update"
                       name={field.name}
                       checked={field.state.value.includes("UPDATE")}
-                      onCheckedChange={(checked) =>
-                        toggle("UPDATE", checked === true)
-                      }
+                      onCheckedChange={(checked) => toggle("UPDATE", checked === true)}
                     />
                     <FieldContent className="min-w-0">
                       <FieldTitle className="w-full min-w-0">
@@ -118,9 +107,7 @@ export function FilterSessionOperationsForm({
                       id="session-operation-filter-delete"
                       name={field.name}
                       checked={field.state.value.includes("DELETE")}
-                      onCheckedChange={(checked) =>
-                        toggle("DELETE", checked === true)
-                      }
+                      onCheckedChange={(checked) => toggle("DELETE", checked === true)}
                     />
                     <FieldContent className="min-w-0">
                       <FieldTitle className="w-full min-w-0">
@@ -172,9 +159,7 @@ export function FilterSessionOperationsForm({
               mode="datetime"
               id={field.name}
               value={parseDateTimeValue(field.state.value)}
-              onChange={(date) =>
-                field.handleChange(formatDateTimeValue(date))
-              }
+              onChange={(date) => field.handleChange(formatDateTimeValue(date))}
               className="h-9"
             />
           </Field>
@@ -189,9 +174,7 @@ export function FilterSessionOperationsForm({
               mode="datetime"
               id={field.name}
               value={parseDateTimeValue(field.state.value)}
-              onChange={(date) =>
-                field.handleChange(formatDateTimeValue(date))
-              }
+              onChange={(date) => field.handleChange(formatDateTimeValue(date))}
               className="h-9"
             />
           </Field>

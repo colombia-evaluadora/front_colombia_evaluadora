@@ -56,12 +56,11 @@ function pickOccurredAt(): Date {
 function generateFieldValue(
   field: string,
   entityName: string,
-  operation: OperationType
+  operation: OperationType,
 ): string | null {
   if (operation === "DELETE") return null
   if (field === "Nombre") return entityName
-  if (field === "Código")
-    return `INS-${faker.number.int({ min: 1000, max: 9999 })}`
+  if (field === "Código") return `INS-${faker.number.int({ min: 1000, max: 9999 })}`
   return faker.lorem.words({ min: 1, max: 3 })
 }
 
@@ -69,27 +68,20 @@ function generateFieldValue(
 // DELETE es clave: aunque el registro ya no exista, el valor que tenía
 // sigue siendo parte del audit trail y debe mostrarse en el dialog. No
 // depende del estado "actual" del registro.
-function generatePreviousFieldValue(
-  field: string,
-  entityName: string
-): string {
+function generatePreviousFieldValue(field: string, entityName: string): string {
   if (field === "Nombre") return entityName
-  if (field === "Código")
-    return `INS-${faker.number.int({ min: 1000, max: 9999 })}`
+  if (field === "Código") return `INS-${faker.number.int({ min: 1000, max: 9999 })}`
   return faker.lorem.words({ min: 1, max: 3 })
 }
 
 function createEntityFields(
   tableSlug: string,
   operation: OperationType,
-  entityName: string
+  entityName: string,
 ): Record<string, string | null> {
   const fields = getTableFields(tableSlug)
   return Object.fromEntries(
-    fields.map((field) => [
-      field,
-      generateFieldValue(field, entityName, operation),
-    ])
+    fields.map((field) => [field, generateFieldValue(field, entityName, operation)]),
   )
 }
 
@@ -102,9 +94,7 @@ function createOperation(tableSlug: string): TableOperation {
     id: faker.string.uuid(),
     operation,
     authorName: faker.person.fullName(),
-    authorAvatarUrl: faker.datatype.boolean(0.7)
-      ? faker.image.avatarGitHub()
-      : null,
+    authorAvatarUrl: faker.datatype.boolean(0.7) ? faker.image.avatarGitHub() : null,
     authorVerified: faker.datatype.boolean(0.8),
     ip: faker.internet.ipv4(),
     entityName,
@@ -120,7 +110,7 @@ function createChanges(
   tableSlug: string,
   operation: OperationType,
   entityName: string,
-  entityFields: Record<string, string | null>
+  entityFields: Record<string, string | null>,
 ): OperationChange[] {
   const fields = getTableFields(tableSlug)
 
@@ -157,12 +147,8 @@ function createChanges(
     // distinto. Para que el diff tenga sentido, `after` debe diferir de
     // `before` (de lo contrario no hay revert posible). Si el generador
     // nos dio el mismo valor, forzamos un cambio.
-    const baseBefore =
-      generateFieldValue(field, entityName, operation) ?? "—"
-    const before =
-      baseBefore === entityValue
-        ? `${baseBefore} (anterior)`
-        : baseBefore
+    const baseBefore = generateFieldValue(field, entityName, operation) ?? "—"
+    const before = baseBefore === entityValue ? `${baseBefore} (anterior)` : baseBefore
 
     // Simulamos que ~30% de las veces una operación posterior cambió el
     // campo: el "Registro actual" difiere de "Después del cambio".
@@ -183,16 +169,14 @@ faker.seed(20260716)
 
 // Agrupadas por tabla: el shape público `TableOperation` no lleva el slug
 // (no aplica una vez ya filtrada por tabla), así que el mock la guarda aparte.
-export const tableOperationsDb: Record<string, TableOperation[]> =
-  Object.fromEntries(
-    auditTablesDb.map((table) => [
-      table.slug,
-      Array.from(
-        { length: faker.number.int({ min: 40, max: 90 }) },
-        () => createOperation(table.slug)
-      ),
-    ])
-  )
+export const tableOperationsDb: Record<string, TableOperation[]> = Object.fromEntries(
+  auditTablesDb.map((table) => [
+    table.slug,
+    Array.from({ length: faker.number.int({ min: 40, max: 90 }) }, () =>
+      createOperation(table.slug),
+    ),
+  ]),
+)
 
 // Diff por operación: almacenado separado del `TableOperation` público porque
 // el listado paginado no necesita cargar el detalle hasta que se abre el
@@ -206,13 +190,8 @@ export const tableOperationChangesDb: Record<
     Object.fromEntries(
       (tableOperationsDb[table.slug] ?? []).map((op) => [
         op.id,
-        createChanges(
-          table.slug,
-          op.operation,
-          op.entityName,
-          op.entityFields
-        ),
-      ])
+        createChanges(table.slug, op.operation, op.entityName, op.entityFields),
+      ]),
     ),
-  ])
+  ]),
 )

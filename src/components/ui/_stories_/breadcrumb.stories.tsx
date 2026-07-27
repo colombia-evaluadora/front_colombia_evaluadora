@@ -1,4 +1,4 @@
-import preview from '../../../../.storybook/preview'
+import preview from "../../../../.storybook/preview"
 import {
   Breadcrumb,
   BreadcrumbEllipsis,
@@ -7,12 +7,12 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from '../breadcrumb'
+} from "../breadcrumb"
 
 const meta = preview.meta({
-  title: 'Design System/Navigation/Breadcrumb',
+  title: "Design System/Navigation/Breadcrumb",
   component: Breadcrumb,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
 })
 
 export const Default = meta.story({

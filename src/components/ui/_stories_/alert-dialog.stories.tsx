@@ -1,5 +1,5 @@
-import preview from '../../../../.storybook/preview'
-import { Button } from '../button'
+import preview from "../../../../.storybook/preview"
+import { Button } from "../button"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -10,12 +10,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '../alert-dialog'
+} from "../alert-dialog"
 
 const meta = preview.meta({
-  title: 'Design System/Overlays/AlertDialog',
+  title: "Design System/Overlays/AlertDialog",
   component: AlertDialog,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
 })
 
 export const Default = meta.story({
@@ -45,7 +45,9 @@ export const SmallSize = meta.story({
       <AlertDialogContent size="sm">
         <AlertDialogHeader>
           <AlertDialogTitle>Sign out?</AlertDialogTitle>
-          <AlertDialogDescription>You will need to sign in again to continue.</AlertDialogDescription>
+          <AlertDialogDescription>
+            You will need to sign in again to continue.
+          </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>

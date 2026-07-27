@@ -1,10 +1,17 @@
-import preview from '../../../../.storybook/preview'
-import { Avatar, AvatarBadge, AvatarFallback, AvatarGroup, AvatarGroupCount, AvatarImage } from '../avatar'
+import preview from "../../../../.storybook/preview"
+import {
+  Avatar,
+  AvatarBadge,
+  AvatarFallback,
+  AvatarGroup,
+  AvatarGroupCount,
+  AvatarImage,
+} from "../avatar"
 
 const meta = preview.meta({
-  title: 'Design System/Data Display/Avatar',
+  title: "Design System/Data Display/Avatar",
   component: Avatar,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
 })
 
 export const Default = meta.story({

@@ -49,9 +49,7 @@ function isToday(iso: string): boolean {
 // valor ya traía su propia "T".
 function toComparableIso(value: string, boundary: "start" | "end"): string {
   const hasTime = value.includes("T")
-  const iso = hasTime
-    ? value
-    : `${value}T${boundary === "start" ? "00:00:00.000" : "23:59:59.999"}`
+  const iso = hasTime ? value : `${value}T${boundary === "start" ? "00:00:00.000" : "23:59:59.999"}`
   return new Date(iso).toISOString()
 }
 
@@ -72,32 +70,22 @@ function matchesFieldFilter(row: TableOperation, filter: FieldFilter): boolean {
 
 function applyFilters(
   rows: TableOperation[],
-  filters: TableOperationsQueryFilters
+  filters: TableOperationsQueryFilters,
 ): TableOperation[] {
   return rows.filter((row) => {
     if (filters.author) {
       const needle = filters.author.toLowerCase()
       const matches =
-        row.authorName.toLowerCase().includes(needle) ||
-        row.ip.toLowerCase().includes(needle)
+        row.authorName.toLowerCase().includes(needle) || row.ip.toLowerCase().includes(needle)
       if (!matches) return false
     }
-    if (
-      filters.operations?.length &&
-      !filters.operations.includes(row.operation)
-    ) {
+    if (filters.operations?.length && !filters.operations.includes(row.operation)) {
       return false
     }
-    if (
-      filters.occurredFrom &&
-      row.occurredAt < toComparableIso(filters.occurredFrom, "start")
-    ) {
+    if (filters.occurredFrom && row.occurredAt < toComparableIso(filters.occurredFrom, "start")) {
       return false
     }
-    if (
-      filters.occurredTo &&
-      row.occurredAt > toComparableIso(filters.occurredTo, "end")
-    ) {
+    if (filters.occurredTo && row.occurredAt > toComparableIso(filters.occurredTo, "end")) {
       return false
     }
     if (
@@ -118,7 +106,7 @@ function sortValue(row: TableOperation, id: string) {
 
 function applySorting(
   rows: TableOperation[],
-  sorting: TableOperationsQueryRequest["sorting"]
+  sorting: TableOperationsQueryRequest["sorting"],
 ): TableOperation[] {
   if (!sorting.length) return rows
   const [{ id, desc }] = sorting
@@ -135,7 +123,7 @@ function applySorting(
 
 function applyAuditTablesSorting(
   rows: AuditTable[],
-  sorting: AuditTablesQueryRequest["sorting"]
+  sorting: AuditTablesQueryRequest["sorting"],
 ): AuditTable[] {
   if (!sorting.length) return rows
   const [{ id, desc }] = sorting
@@ -150,7 +138,7 @@ function applyAuditTablesSorting(
 
 function applyAuditTablesFilters(
   rows: AuditTable[],
-  filters: AuditTablesQueryFilters
+  filters: AuditTablesQueryFilters,
 ): AuditTable[] {
   if (!filters.name) return rows
   const needle = filters.name.toLowerCase()
@@ -191,9 +179,7 @@ export const auditTablesHandlers = [
     }
     const full: AuditTable = {
       ...table,
-      operationsToday: getTableRows(slug).filter((row) =>
-        isToday(row.occurredAt)
-      ).length,
+      operationsToday: getTableRows(slug).filter((row) => isToday(row.occurredAt)).length,
     }
     return HttpResponse.json(full)
   }),
@@ -205,15 +191,10 @@ export const auditTablesHandlers = [
 
     const tables: AuditTable[] = auditTablesDb.map((table) => ({
       ...table,
-      operationsToday: getTableRows(table.slug).filter((row) =>
-        isToday(row.occurredAt)
-      ).length,
+      operationsToday: getTableRows(table.slug).filter((row) => isToday(row.occurredAt)).length,
     }))
 
-    const filtered = applyAuditTablesSorting(
-      applyAuditTablesFilters(tables, filters),
-      sorting
-    )
+    const filtered = applyAuditTablesSorting(applyAuditTablesFilters(tables, filters), sorting)
     const totalCount = filtered.length
     const pageCount = Math.max(1, Math.ceil(totalCount / pageSize))
     const start = pageIndex * pageSize
@@ -226,79 +207,64 @@ export const auditTablesHandlers = [
     })
   }),
 
-  http.post(
-    "/api/audit-tables/:slug/operations/query",
-    async ({ request, params }) => {
-      await delay(300)
-      const body = (await request.json()) as TableOperationsQueryRequest
-      const { filters, sorting, pageIndex, pageSize } = body
-      const slug = params.slug as string
+  http.post("/api/audit-tables/:slug/operations/query", async ({ request, params }) => {
+    await delay(300)
+    const body = (await request.json()) as TableOperationsQueryRequest
+    const { filters, sorting, pageIndex, pageSize } = body
+    const slug = params.slug as string
 
-      const filtered = applySorting(
-        applyFilters(getTableRows(slug), filters),
-        sorting
-      )
-      const totalCount = filtered.length
-      const pageCount = Math.max(1, Math.ceil(totalCount / pageSize))
-      const start = pageIndex * pageSize
-      const rows = filtered.slice(start, start + pageSize)
+    const filtered = applySorting(applyFilters(getTableRows(slug), filters), sorting)
+    const totalCount = filtered.length
+    const pageCount = Math.max(1, Math.ceil(totalCount / pageSize))
+    const start = pageIndex * pageSize
+    const rows = filtered.slice(start, start + pageSize)
 
-      return HttpResponse.json<TableOperationsQueryResponse>({
-        rows,
-        pageCount,
-        totalCount,
-      })
+    return HttpResponse.json<TableOperationsQueryResponse>({
+      rows,
+      pageCount,
+      totalCount,
+    })
+  }),
+
+  http.post("/api/audit-tables/:slug/operations/stats", async ({ request, params }) => {
+    await delay(200)
+    const { ids, filters } = (await request.json()) as TableOperationsStatsRequest
+    const slug = params.slug as string
+    const rows = getTableRows(slug)
+    const scoped = ids
+      ? rows.filter((row) => ids.includes(row.id))
+      : applyFilters(rows, filters ?? {})
+
+    return HttpResponse.json<TableOperationsStats>(computeStats(scoped))
+  }),
+
+  http.post("/api/audit-tables/:slug/operations/export", async ({ request }) => {
+    await delay(600)
+    const { ids, format } = (await request.json()) as {
+      ids: string[]
+      format: ExportFormat
     }
-  ),
 
-  http.post(
-    "/api/audit-tables/:slug/operations/stats",
-    async ({ request, params }) => {
-      await delay(200)
-      const { ids, filters } = (await request.json()) as TableOperationsStatsRequest
-      const slug = params.slug as string
-      const rows = getTableRows(slug)
-      const scoped = ids
-        ? rows.filter((row) => ids.includes(row.id))
-        : applyFilters(rows, filters ?? {})
+    return HttpResponse.json<ExportResult>({
+      status: "ok",
+      message: `${ids.length} operación(es) exportada(s) a ${EXPORT_FORMAT_LABELS[format]}.`,
+    })
+  }),
 
-      return HttpResponse.json<TableOperationsStats>(computeStats(scoped))
+  http.post("/api/audit-tables/:slug/operations/export-all", async ({ request, params }) => {
+    await delay(600)
+    const { filters, format } = (await request.json()) as {
+      filters: TableOperationsQueryFilters
+      format: ExportFormat
     }
-  ),
+    const slug = params.slug as string
+    const count = applyFilters(getTableRows(slug), filters).length
 
-  http.post(
-    "/api/audit-tables/:slug/operations/export",
-    async ({ request }) => {
-      await delay(600)
-      const { ids, format } = (await request.json()) as {
-        ids: string[]
-        format: ExportFormat
-      }
-
-      return HttpResponse.json<ExportResult>({
-        status: "ok",
-        message: `${ids.length} operación(es) exportada(s) a ${EXPORT_FORMAT_LABELS[format]}.`,
-      })
-    }
-  ),
-
-  http.post(
-    "/api/audit-tables/:slug/operations/export-all",
-    async ({ request, params }) => {
-      await delay(600)
-      const { filters, format } = (await request.json()) as {
-        filters: TableOperationsQueryFilters
-        format: ExportFormat
-      }
-      const slug = params.slug as string
-      const count = applyFilters(getTableRows(slug), filters).length
-
-      return HttpResponse.json<ExportResult>({
-        status: "ok",
-        message: `${count} operación(es) exportada(s) a ${EXPORT_FORMAT_LABELS[format]}.`,
-      })
-    }
-  ),
+    return HttpResponse.json<ExportResult>({
+      status: "ok",
+      message: `${count} operación(es) exportada(s) a ${EXPORT_FORMAT_LABELS[format]}.`,
+    })
+  }),
 
   http.get(
     "/api/audit-tables/:slug/operations/:operationId/changes",
@@ -312,18 +278,11 @@ export const auditTablesHandlers = [
       // ser una operación generada on-the-fly para una sesión
       // (`{sessionId}-op-{index}`) — la regeneramos para mostrar sus
       // cambios.
-      const tableOp = getTableRows(slug).find(
-        (row) => row.id === operationId
-      )
-      const sessionOp = !tableOp
-        ? findSessionOperation(operationId)
-        : null
+      const tableOp = getTableRows(slug).find((row) => row.id === operationId)
+      const sessionOp = !tableOp ? findSessionOperation(operationId) : null
 
       if (!tableOp && !sessionOp) {
-        return HttpResponse.json(
-          { message: "Operación no encontrada." },
-          { status: 404 }
-        )
+        return HttpResponse.json({ message: "Operación no encontrada." }, { status: 404 })
       }
 
       const allChanges = tableOp
@@ -338,9 +297,7 @@ export const auditTablesHandlers = [
       const changes = showAll
         ? allChanges
         : allChanges.filter((change) => change.before !== change.after)
-      const changedFields = allChanges.filter(
-        (change) => change.before !== change.after
-      ).length
+      const changedFields = allChanges.filter((change) => change.before !== change.after).length
 
       const operation = tableOp ?? sessionOp!
 
@@ -353,7 +310,7 @@ export const auditTablesHandlers = [
         changedFields,
         changes,
       })
-    }
+    },
   ),
 
   http.post(
@@ -365,12 +322,8 @@ export const auditTablesHandlers = [
       const { changes } = (await request.json()) as RevertOperationChangeInput
 
       // Misma lógica que en /changes: primero tabla, después sesión.
-      const tableOp = getTableRows(slug).find(
-        (row) => row.id === operationId
-      )
-      const sessionOp = !tableOp
-        ? findSessionOperation(operationId)
-        : null
+      const tableOp = getTableRows(slug).find((row) => row.id === operationId)
+      const sessionOp = !tableOp ? findSessionOperation(operationId) : null
 
       if (!tableOp && !sessionOp) {
         return HttpResponse.json<RevertOperationChangeResponse>(
@@ -379,7 +332,7 @@ export const auditTablesHandlers = [
             message: "Operación no encontrada.",
             revertedFields: 0,
           },
-          { status: 404 }
+          { status: 404 },
         )
       }
 
@@ -391,12 +344,9 @@ export const auditTablesHandlers = [
       let fieldIndexes: number[]
 
       if (tableOp) {
-        allChanges =
-          tableOperationChangesDb[slug]?.[operationId] ?? []
+        allChanges = tableOperationChangesDb[slug]?.[operationId] ?? []
         entityName = tableOp.entityName
-        const validIndexes = new Set(
-          allChanges.map((change) => change.fieldIndex)
-        )
+        const validIndexes = new Set(allChanges.map((change) => change.fieldIndex))
         fieldIndexes = changes
           .filter((change) => validIndexes.has(change.fieldIndex))
           .map((change) => change.fieldIndex)
@@ -408,9 +358,7 @@ export const auditTablesHandlers = [
           })
         }
         fieldIndexes.forEach((fieldIndex) => {
-          const target = allChanges.find(
-            (change) => change.fieldIndex === fieldIndex
-          )
+          const target = allChanges.find((change) => change.fieldIndex === fieldIndex)
           if (!target) return
           const reverted = target.before
           target.after = reverted
@@ -418,9 +366,7 @@ export const auditTablesHandlers = [
         })
       } else {
         // sessionOp no es null acá (validado arriba)
-        const session = auditsDb.find((row) =>
-          row.id.startsWith(operationId.split("-op-")[0])
-        )
+        const session = auditsDb.find((row) => row.id.startsWith(operationId.split("-op-")[0]))
         // Necesitamos la sesión para delegar al helper — si no la
         // encontramos caemos al 404.
         if (!session) {
@@ -431,9 +377,7 @@ export const auditTablesHandlers = [
           })
         }
         const validIndexes = new Set(
-          getSessionOperationChanges(sessionOp!).map(
-            (change) => change.fieldIndex
-          )
+          getSessionOperationChanges(sessionOp!).map((change) => change.fieldIndex),
         )
         fieldIndexes = changes
           .filter((change) => validIndexes.has(change.fieldIndex))
@@ -454,6 +398,6 @@ export const auditTablesHandlers = [
         message: `Se revirtieron ${fieldIndexes.length} campo(s) de "${entityName}".`,
         revertedFields: fieldIndexes.length,
       })
-    }
+    },
   ),
 ]

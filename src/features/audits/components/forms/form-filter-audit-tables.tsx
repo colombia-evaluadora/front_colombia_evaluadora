@@ -18,11 +18,7 @@ interface FilterAuditTablesFormProps {
   onSubmit: (values: AuditTablesFiltersFormValues) => void
 }
 
-export function FilterAuditTablesForm({
-  id,
-  defaultValues,
-  onSubmit,
-}: FilterAuditTablesFormProps) {
+export function FilterAuditTablesForm({ id, defaultValues, onSubmit }: FilterAuditTablesFormProps) {
   const form = useForm({
     defaultValues,
     validators: {

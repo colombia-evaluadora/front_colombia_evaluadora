@@ -1,5 +1,5 @@
-import preview from '../../../../.storybook/preview'
-import { Checkbox } from '../checkbox'
+import preview from "../../../../.storybook/preview"
+import { Checkbox } from "../checkbox"
 import {
   Field,
   FieldContent,
@@ -10,31 +10,31 @@ import {
   FieldLegend,
   FieldSeparator,
   FieldSet,
-} from '../field'
-import { Input } from '../input'
-import { Switch } from '../switch'
+} from "../field"
+import { Input } from "../input"
+import { Switch } from "../switch"
 
 // Backtick literal dentro de un template literal (ver badge.stories.tsx).
-const BT = '`'
+const BT = "`"
 
 const meta = preview.meta({
-  title: 'Design System/Forms/Field',
+  title: "Design System/Forms/Field",
   component: Field,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
   argTypes: {
     orientation: {
-      control: { type: 'select' },
-      options: ['vertical', 'horizontal', 'responsive'],
+      control: { type: "select" },
+      options: ["vertical", "horizontal", "responsive"],
       description:
-        'Cómo se distribuyen label y control: apilados, en fila, o apilados que pasan a fila cuando el `FieldGroup` supera `@md`.',
-      table: { defaultValue: { summary: 'vertical' } },
+        "Cómo se distribuyen label y control: apilados, en fila, o apilados que pasan a fila cuando el `FieldGroup` supera `@md`.",
+      table: { defaultValue: { summary: "vertical" } },
     },
     variant: {
-      control: { type: 'select' },
-      options: ['plain', 'outlined', 'filled', 'standard'],
+      control: { type: "select" },
+      options: ["plain", "outlined", "filled", "standard"],
       description:
-        'Estilo del campo. `plain` = label normal arriba. `outlined`/`filled`/`standard` colocan el label fijo en su posición (no ocupa el espacio del placeholder).',
-      table: { defaultValue: { summary: 'plain' } },
+        "Estilo del campo. `plain` = label normal arriba. `outlined`/`filled`/`standard` colocan el label fijo en su posición (no ocupa el espacio del placeholder).",
+      table: { defaultValue: { summary: "plain" } },
     },
   },
   parameters: {
@@ -117,7 +117,7 @@ export default meta
  * `variant`. Cambialos para recorrer todas las combinaciones.
  */
 export const Default = meta.story({
-  args: { orientation: 'vertical', variant: 'outlined' },
+  args: { orientation: "vertical", variant: "outlined" },
   render: (args) => (
     <FieldGroup className="w-80">
       <Field {...args}>
@@ -229,8 +229,8 @@ export const Composition = meta.story({
  * `data-invalid` en el `Field` y `aria-invalid` en el input.
  */
 export const DescriptionAndError = meta.story({
-  args: { variant: 'plain' },
-  parameters: { controls: { include: ['variant'] } },
+  args: { variant: "plain" },
+  parameters: { controls: { include: ["variant"] } },
   render: ({ variant }) => (
     <FieldGroup className="w-80">
       <Field variant={variant}>
@@ -241,7 +241,7 @@ export const DescriptionAndError = meta.story({
       <Field variant={variant} data-invalid="true">
         <FieldLabel htmlFor="d-pass">Contraseña</FieldLabel>
         <Input id="d-pass" type="password" aria-invalid />
-        <FieldError errors={[{ message: 'La contraseña es obligatoria.' }]} />
+        <FieldError errors={[{ message: "La contraseña es obligatoria." }]} />
       </Field>
     </FieldGroup>
   ),

@@ -37,8 +37,7 @@ export function RestorePasswordPage() {
 
   // El estado del enlace se resuelve antes de mostrar el formulario, para no
   // hacer escribir una contraseña que el submit va a rechazar igual.
-  const { isChecking, isInvalid, isExpired, remainingLabel, ttlLabel } =
-    usePasswordResetLink(token)
+  const { isChecking, isInvalid, isExpired, remainingLabel, ttlLabel } = usePasswordResetLink(token)
 
   const restorePasswordMutation = useRestorePassword({
     mutationConfig: {
@@ -61,10 +60,7 @@ export function RestorePasswordPage() {
           <CardHeader className="text-center">
             <div className="relative mx-auto size-20">
               <div className="bg-red/10 flex size-20 items-center justify-center rounded-full">
-                <LinkBreakIcon
-                  className="text-red size-9"
-                  aria-hidden="true"
-                />
+                <LinkBreakIcon className="text-red size-9" aria-hidden="true" />
               </div>
               <WarningCircleIcon
                 weight="fill"
@@ -74,8 +70,8 @@ export function RestorePasswordPage() {
             </div>
             <CardTitle>Enlace inválido</CardTitle>
             <CardDescription>
-              Este enlace de recuperación no es válido. Solicita uno nuevo
-              para restablecer tu contraseña.
+              Este enlace de recuperación no es válido. Solicita uno nuevo para restablecer tu
+              contraseña.
             </CardDescription>
           </CardHeader>
           <CardFooter>
@@ -94,10 +90,7 @@ export function RestorePasswordPage() {
           <CardHeader className="text-center">
             <div className="relative mx-auto size-20">
               <div className="bg-red/10 flex size-20 items-center justify-center rounded-full">
-                <ClockCountdownIcon
-                  className="text-red size-9"
-                  aria-hidden="true"
-                />
+                <ClockCountdownIcon className="text-red size-9" aria-hidden="true" />
               </div>
               <WarningCircleIcon
                 weight="fill"
@@ -108,8 +101,7 @@ export function RestorePasswordPage() {
             <CardTitle>El enlace expiró</CardTitle>
             <CardDescription>
               Por seguridad, los enlaces de recuperación vencen
-              {ttlLabel === null ? "" : ` a los ${ttlLabel}`}. Solicita uno
-              nuevo para continuar.
+              {ttlLabel === null ? "" : ` a los ${ttlLabel}`}. Solicita uno nuevo para continuar.
             </CardDescription>
           </CardHeader>
           <CardFooter>
@@ -131,15 +123,12 @@ export function RestorePasswordPage() {
         <>
           <CardHeader className="text-center">
             <div className="bg-primary/10 mx-auto flex size-14 items-center justify-center rounded-full">
-              <PasswordIcon
-                className="text-primary size-7"
-                aria-hidden="true"
-              />
+              <PasswordIcon className="text-primary size-7" aria-hidden="true" />
             </div>
             <CardTitle>Crea tu nueva contraseña</CardTitle>
             <CardDescription>
-              Por tu seguridad, elige una contraseña fácil de recordar para ti,
-              pero difícil de descubrir para otros.
+              Por tu seguridad, elige una contraseña fácil de recordar para ti, pero difícil de
+              descubrir para otros.
               {remainingLabel !== null && (
                 <>
                   <br />
@@ -158,10 +147,7 @@ export function RestorePasswordPage() {
           </CardHeader>
 
           <CardContent>
-            <RestorePasswordForm
-              id={RESTORE_PASSWORD_FORM_ID}
-              onSubmit={handleSubmit}
-            />
+            <RestorePasswordForm id={RESTORE_PASSWORD_FORM_ID} onSubmit={handleSubmit} />
           </CardContent>
 
           <CardFooter className="flex flex-col gap-2">
@@ -190,10 +176,7 @@ export function RestorePasswordPage() {
               Volver a iniciar sesión
             </Button>
             <p className="text-muted-foreground inline-flex items-start text-center text-xs">
-              <ShieldIcon
-                          className="size-5 shrink-0"
-                          aria-hidden="true"
-                        />
+              <ShieldIcon className="size-5 shrink-0" aria-hidden="true" />
               Tu seguridad es importante. Nunca compartas tu contraseña con nadie.
             </p>
           </CardFooter>

@@ -1,12 +1,12 @@
-import preview from '../../../../.storybook/preview'
-import { useState } from 'react'
-import { Button } from '../button'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../collapsible'
+import preview from "../../../../.storybook/preview"
+import { useState } from "react"
+import { Button } from "../button"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../collapsible"
 
 const meta = preview.meta({
-  title: 'Design System/Layout/Collapsible',
+  title: "Design System/Layout/Collapsible",
   component: Collapsible,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
 })
 
 export const Default = meta.story({
@@ -17,7 +17,7 @@ export const Default = meta.story({
         <div className="flex items-center justify-between">
           <span className="text-sm font-semibold">@peduarte starred 3 repositories</span>
           <CollapsibleTrigger render={<Button variant="ghost" size="icon-sm" />}>
-            {open ? '−' : '+'}
+            {open ? "−" : "+"}
           </CollapsibleTrigger>
         </div>
         <div className="rounded-none border px-4 py-2 text-sm">@radix-ui/primitives</div>

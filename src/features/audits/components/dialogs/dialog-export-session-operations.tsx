@@ -1,11 +1,6 @@
 import { useState } from "react"
 
-import {
-  DownloadSimpleIcon,
-  FilePdfIcon,
-  FileXlsIcon,
-  SpinnerIcon,
-} from "@/components/ui/icons"
+import { DownloadSimpleIcon, FilePdfIcon, FileXlsIcon, SpinnerIcon } from "@/components/ui/icons"
 import { toast } from "sonner"
 
 import {
@@ -27,9 +22,7 @@ interface ExportSessionOperationsDialogProps {
   sessionId: string
 }
 
-export function ExportSessionOperationsDialog({
-  sessionId,
-}: ExportSessionOperationsDialogProps) {
+export function ExportSessionOperationsDialog({ sessionId }: ExportSessionOperationsDialogProps) {
   const [open, setOpen] = useState(false)
 
   const exportAll = useExportSessionOperations({
@@ -54,9 +47,7 @@ export function ExportSessionOperationsDialog({
   // Los dos botones comparten la misma mutación, así que `isPending` sola no
   // distingue cuál se pulsó. `variables` guarda el input en vuelo — con eso
   // el spinner sale solo en el botón que disparó la exportación.
-  const pendingFormat = exportAll.isPending
-    ? exportAll.variables?.format
-    : undefined
+  const pendingFormat = exportAll.isPending ? exportAll.variables?.format : undefined
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -74,9 +65,7 @@ export function ExportSessionOperationsDialog({
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="sm:justify-between">
-          <DialogClose render={<Button type="button" variant="ghost" />}>
-            Cancelar
-          </DialogClose>
+          <DialogClose render={<Button type="button" variant="ghost" />}>Cancelar</DialogClose>
           <div className="flex flex-col-reverse gap-2 sm:flex-row">
             <Button
               type="button"

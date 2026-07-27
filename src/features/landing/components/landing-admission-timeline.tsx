@@ -47,22 +47,14 @@ function TimelineCard({ step, isFirst, isLast }: TimelineCardProps) {
       >
         <div
           className={`flex flex-1 items-start justify-center px-3 py-4 text-center text-xs leading-snug ${
-            isCurrent
-              ? "font-semibold text-gray-900"
-              : isPast
-                ? "text-gray-400"
-                : "text-gray-700"
+            isCurrent ? "font-semibold text-gray-900" : isPast ? "text-gray-400" : "text-gray-700"
           }`}
         >
           {step.label}
         </div>
         <div
           className={`flex flex-1 items-end justify-center bg-gray-100 px-3 pb-3 text-center text-xs leading-relaxed whitespace-pre-line ${
-            isCurrent
-              ? "font-semibold text-gray-900"
-              : isPast
-                ? "text-gray-500"
-                : "text-gray-600"
+            isCurrent ? "font-semibold text-gray-900" : isPast ? "text-gray-500" : "text-gray-600"
           }`}
         >
           {step.date}

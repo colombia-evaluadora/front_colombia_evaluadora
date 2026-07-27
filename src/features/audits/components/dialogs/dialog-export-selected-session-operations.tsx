@@ -1,11 +1,6 @@
 import { useState } from "react"
 
-import {
-  DownloadSimpleIcon,
-  FilePdfIcon,
-  FileXlsIcon,
-  SpinnerIcon,
-} from "@/components/ui/icons"
+import { DownloadSimpleIcon, FilePdfIcon, FileXlsIcon, SpinnerIcon } from "@/components/ui/icons"
 import { toast } from "sonner"
 
 import {
@@ -59,16 +54,12 @@ export function ExportSelectedSessionOperationsDialog({
   // distingue cuál se pulsó — antes salía el spinner en los dos a la vez.
   // `variables` guarda el input en vuelo, y con eso marcamos solo el botón
   // que disparó la exportación.
-  const pendingFormat = exportSelected.isPending
-    ? exportSelected.variables?.format
-    : undefined
+  const pendingFormat = exportSelected.isPending ? exportSelected.variables?.format : undefined
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
-        render={
-          <Button color="primary" aria-label={`Exportar ${count} seleccionadas`} />
-        }
+        render={<Button color="primary" aria-label={`Exportar ${count} seleccionadas`} />}
       >
         <DownloadSimpleIcon data-icon="inline-start" />
         <span aria-hidden="true" className="md:hidden">
@@ -84,9 +75,7 @@ export function ExportSelectedSessionOperationsDialog({
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="sm:justify-between">
-          <DialogClose render={<Button type="button" variant="ghost" />}>
-            Cancelar
-          </DialogClose>
+          <DialogClose render={<Button type="button" variant="ghost" />}>Cancelar</DialogClose>
           <div className="flex flex-col-reverse gap-2 sm:flex-row">
             <Button
               type="button"

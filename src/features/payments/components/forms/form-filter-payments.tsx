@@ -34,11 +34,7 @@ interface FilterPaymentsFormProps {
   onSubmit: (values: PaymentFiltersFormValues) => void
 }
 
-export function FilterPaymentsForm({
-  id,
-  defaultValues,
-  onSubmit,
-}: FilterPaymentsFormProps) {
+export function FilterPaymentsForm({ id, defaultValues, onSubmit }: FilterPaymentsFormProps) {
   const form = useForm({
     defaultValues,
     validators: {
@@ -103,9 +99,7 @@ export function FilterPaymentsForm({
                       id="status-filter-pending"
                       name={field.name}
                       checked={field.state.value.includes("pending")}
-                      onCheckedChange={(checked) =>
-                        toggle("pending", checked === true)
-                      }
+                      onCheckedChange={(checked) => toggle("pending", checked === true)}
                     />
                     <FieldContent className="min-w-0">
                       <FieldTitle className="w-full min-w-0">
@@ -115,18 +109,13 @@ export function FilterPaymentsForm({
                     </FieldContent>
                   </Field>
                 </FieldLabel>
-                <FieldLabel
-                  htmlFor="status-filter-processing"
-                  className="min-w-0"
-                >
+                <FieldLabel htmlFor="status-filter-processing" className="min-w-0">
                   <Field orientation="horizontal">
                     <Checkbox
                       id="status-filter-processing"
                       name={field.name}
                       checked={field.state.value.includes("processing")}
-                      onCheckedChange={(checked) =>
-                        toggle("processing", checked === true)
-                      }
+                      onCheckedChange={(checked) => toggle("processing", checked === true)}
                     />
                     <FieldContent className="min-w-0">
                       <FieldTitle className="w-full min-w-0">
@@ -142,9 +131,7 @@ export function FilterPaymentsForm({
                       id="status-filter-success"
                       name={field.name}
                       checked={field.state.value.includes("success")}
-                      onCheckedChange={(checked) =>
-                        toggle("success", checked === true)
-                      }
+                      onCheckedChange={(checked) => toggle("success", checked === true)}
                     />
                     <FieldContent className="min-w-0">
                       <FieldTitle className="w-full min-w-0">
@@ -160,9 +147,7 @@ export function FilterPaymentsForm({
                       id="status-filter-failed"
                       name={field.name}
                       checked={field.state.value.includes("failed")}
-                      onCheckedChange={(checked) =>
-                        toggle("failed", checked === true)
-                      }
+                      onCheckedChange={(checked) => toggle("failed", checked === true)}
                     />
                     <FieldContent className="min-w-0">
                       <FieldTitle className="w-full min-w-0">
@@ -183,14 +168,9 @@ export function FilterPaymentsForm({
       <form.Field
         name="amountMin"
         children={(field) => {
-          const isInvalid =
-            field.state.meta.isTouched && !field.state.meta.isValid
+          const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
           return (
-            <Field
-              orientation="vertical"
-              className="gap-2"
-              data-invalid={isInvalid}
-            >
+            <Field orientation="vertical" className="gap-2" data-invalid={isInvalid}>
               <FieldLabel>
                 <CurrencyDollarIcon />
                 Monto (USD)
@@ -208,13 +188,14 @@ export function FilterPaymentsForm({
                   onChange={(e) => field.handleChange(e.target.value)}
                   aria-invalid={isInvalid}
                 />
-                <span aria-hidden className="text-muted-foreground">—</span>
+                <span aria-hidden className="text-muted-foreground">
+                  —
+                </span>
                 <form.Field
                   name="amountMax"
                   children={(maxField) => {
                     const isMaxInvalid =
-                      maxField.state.meta.isTouched &&
-                      !maxField.state.meta.isValid
+                      maxField.state.meta.isTouched && !maxField.state.meta.isValid
                     return (
                       <Input
                         type="number"

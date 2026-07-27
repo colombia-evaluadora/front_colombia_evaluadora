@@ -1,17 +1,17 @@
-import preview from '../../../../.storybook/preview'
-import { useState } from 'react'
-import { Label } from '../label'
-import { RadioGroup, RadioGroupItem } from '../radio-group'
+import preview from "../../../../.storybook/preview"
+import { useState } from "react"
+import { Label } from "../label"
+import { RadioGroup, RadioGroupItem } from "../radio-group"
 
 const meta = preview.meta({
-  title: 'Design System/Forms/RadioGroup',
+  title: "Design System/Forms/RadioGroup",
   component: RadioGroup,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
 })
 
 export const Default = meta.story({
   render: () => {
-    const [value, setValue] = useState('comfortable')
+    const [value, setValue] = useState("comfortable")
     return (
       <RadioGroup value={value} onValueChange={(v) => setValue(v as string)}>
         <div className="flex items-center gap-2">

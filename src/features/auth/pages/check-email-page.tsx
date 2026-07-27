@@ -27,14 +27,8 @@ export function CheckEmailPage() {
     from: "/_auth/check-email",
     select: (s) => s.token,
   })
-  const {
-    isExpired,
-    isInvalid,
-    maskedEmail,
-    issuedAtLabel,
-    remainingLabel,
-    ttlLabel,
-  } = usePasswordResetLink(token)
+  const { isExpired, isInvalid, maskedEmail, issuedAtLabel, remainingLabel, ttlLabel } =
+    usePasswordResetLink(token)
 
   const isDead = isExpired || (isInvalid && !!token)
 
@@ -45,14 +39,11 @@ export function CheckEmailPage() {
           <div
             className={cn(
               "flex size-20 items-center justify-center rounded-full",
-              isDead ? "bg-red/10" : "bg-green/10"
+              isDead ? "bg-red/10" : "bg-green/10",
             )}
           >
             <PaperPlaneTiltIcon
-              className={cn(
-                "size-9",
-                isDead ? "text-red" : "text-green"
-              )}
+              className={cn("size-9", isDead ? "text-red" : "text-green")}
               aria-hidden="true"
             />
           </div>
@@ -83,9 +74,7 @@ export function CheckEmailPage() {
               {maskedEmail ? (
                 <>
                   <br />
-                  <span className="text-green font-semibold break-all">
-                    {maskedEmail}
-                  </span>
+                  <span className="text-green font-semibold break-all">{maskedEmail}</span>
                 </>
               ) : (
                 " tu dirección registrada"
@@ -113,10 +102,7 @@ export function CheckEmailPage() {
               />
               <p className="text-sm">
                 El enlace vence en{" "}
-                <span
-                  className="text-green font-semibold tabular-nums"
-                  aria-live="polite"
-                >
+                <span className="text-green font-semibold tabular-nums" aria-live="polite">
                   {remainingLabel}
                 </span>
               </p>
@@ -138,8 +124,7 @@ export function CheckEmailPage() {
             <div className="space-y-1">
               <p className="text-sm font-semibold">Revisa tu bandeja de entrada</p>
               <p className="text-muted-foreground text-sm">
-                Si no encuentras el correo, revisa tu carpeta de spam o correo
-                no deseado.
+                Si no encuentras el correo, revisa tu carpeta de spam o correo no deseado.
               </p>
             </div>
           </div>

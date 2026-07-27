@@ -19,16 +19,14 @@ interface ClearSelectionTableOperationsDialogProps {
   resetSelection: () => void
 }
 
-export function ClearSelectionTableOperationsDialog({ resetSelection }: ClearSelectionTableOperationsDialogProps) {
+export function ClearSelectionTableOperationsDialog({
+  resetSelection,
+}: ClearSelectionTableOperationsDialogProps) {
   const [open, setOpen] = useState(false)
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger
-        render={
-          <Button variant="outline" aria-label="Deseleccionar" />
-        }
-      >
+      <AlertDialogTrigger render={<Button variant="outline" aria-label="Deseleccionar" />}>
         <XSquareIcon />
         <span className="sr-only md:not-sr-only">Deseleccionar</span>
       </AlertDialogTrigger>

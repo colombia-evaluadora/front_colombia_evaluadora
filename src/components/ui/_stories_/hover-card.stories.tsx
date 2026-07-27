@@ -1,11 +1,11 @@
-import preview from '../../../../.storybook/preview'
-import { Button } from '../button'
-import { HoverCard, HoverCardContent, HoverCardTrigger } from '../hover-card'
+import preview from "../../../../.storybook/preview"
+import { Button } from "../button"
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "../hover-card"
 
 const meta = preview.meta({
-  title: 'Design System/Overlays/HoverCard',
+  title: "Design System/Overlays/HoverCard",
   component: HoverCard,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
 })
 
 export const Default = meta.story({

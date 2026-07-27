@@ -1,10 +1,10 @@
-import preview from '../../../../.storybook/preview'
-import { Progress, ProgressLabel, ProgressValue } from '../progress'
+import preview from "../../../../.storybook/preview"
+import { Progress, ProgressLabel, ProgressValue } from "../progress"
 
 const meta = preview.meta({
-  title: 'Design System/Feedback/Progress',
+  title: "Design System/Feedback/Progress",
   component: Progress,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
 })
 
 export const Default = meta.story({

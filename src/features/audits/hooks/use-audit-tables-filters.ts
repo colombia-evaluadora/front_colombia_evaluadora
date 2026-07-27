@@ -2,10 +2,7 @@ import { useCallback, useMemo } from "react"
 
 import { auditoriaTablasRoute } from "@/router"
 
-import type {
-  AuditTablesFiltersFormInput,
-  AuditTablesFiltersFormValues,
-} from "../api/schema"
+import type { AuditTablesFiltersFormInput, AuditTablesFiltersFormValues } from "../api/schema"
 import type { AuditTablesQueryRequest } from "../api/types/audit-table"
 
 export interface AuditTablesFilters {
@@ -31,7 +28,7 @@ export function useAuditTablesFilters(): AuditTablesFilters {
         replace: true,
       })
     },
-    [navigate]
+    [navigate],
   )
 
   const clearAllFilters = useCallback(() => {
@@ -49,13 +46,10 @@ export function useAuditTablesFilters(): AuditTablesFilters {
     () => ({
       name: search.name,
     }),
-    [search.name]
+    [search.name],
   )
 
-  const activeFilterCount = useMemo(
-    () => (search.name ? 1 : 0),
-    [search.name]
-  )
+  const activeFilterCount = useMemo(() => (search.name ? 1 : 0), [search.name])
 
   return {
     filters: {

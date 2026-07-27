@@ -40,20 +40,15 @@ function formatIssuedAt(issuedAt: number): string {
  * servidor, cuenta regresiva en el cliente y los textos ya formateados. Las
  * pantallas solo eligen qué card mostrar con los booleanos que devuelve.
  */
-export function usePasswordResetLink(
-  token: string | undefined
-): PasswordResetLink {
+export function usePasswordResetLink(token: string | undefined): PasswordResetLink {
   const { data, isPending } = useResetTokenStatusQuery(token)
 
   // El contador solo corre si el enlace llegó vivo; si ya venía vencido no
   // hay nada que descontar.
-  const countdown = useCountdown(
-    data?.status === "valid" ? data.expiresIn : undefined
-  )
+  const countdown = useCountdown(data?.status === "valid" ? data.expiresIn : undefined)
 
   const isInvalid = !token || data?.status === "invalid"
-  const isExpired =
-    !isInvalid && (data?.status === "expired" || countdown.hasElapsed)
+  const isExpired = !isInvalid && (data?.status === "expired" || countdown.hasElapsed)
 
   return {
     isChecking: !isInvalid && isPending,
@@ -61,8 +56,7 @@ export function usePasswordResetLink(
     isExpired,
     isUsable: !isInvalid && !isExpired && data?.status === "valid",
     maskedEmail: data?.maskedEmail ?? null,
-    issuedAtLabel:
-      data?.issuedAt === undefined ? null : formatIssuedAt(data.issuedAt),
+    issuedAtLabel: data?.issuedAt === undefined ? null : formatIssuedAt(data.issuedAt),
     remainingLabel: countdown.label,
     ttlLabel: data?.ttlSeconds === undefined ? null : formatTtl(data.ttlSeconds),
   }

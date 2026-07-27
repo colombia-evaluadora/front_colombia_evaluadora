@@ -27,8 +27,7 @@ const initialState: ColorThemeProviderState = {
   setMode: () => null,
 }
 
-const ColorThemeProviderContext =
-  createContext<ColorThemeProviderState>(initialState)
+const ColorThemeProviderContext = createContext<ColorThemeProviderState>(initialState)
 
 function ColorThemeProvider({
   children,
@@ -40,7 +39,7 @@ function ColorThemeProvider({
   storageKey?: string
 }) {
   const [palette, setPaletteState] = useState<ColorTheme>(
-    () => (localStorage.getItem(storageKey) as ColorTheme) || defaultColorTheme
+    () => (localStorage.getItem(storageKey) as ColorTheme) || defaultColorTheme,
   )
 
   const { resolvedTheme } = useTheme()
@@ -97,11 +96,7 @@ type ThemeProviderProps = {
   storageKey?: string
 }
 
-export function ThemeProvider({
-  children,
-  defaultColorTheme,
-  storageKey,
-}: ThemeProviderProps) {
+export function ThemeProvider({ children, defaultColorTheme, storageKey }: ThemeProviderProps) {
   return (
     <NextThemesProvider
       attribute="class"
@@ -110,10 +105,7 @@ export function ThemeProvider({
       enableSystem
       disableTransitionOnChange
     >
-      <ColorThemeProvider
-        defaultColorTheme={defaultColorTheme}
-        storageKey={storageKey}
-      >
+      <ColorThemeProvider defaultColorTheme={defaultColorTheme} storageKey={storageKey}>
         {children}
       </ColorThemeProvider>
     </NextThemesProvider>

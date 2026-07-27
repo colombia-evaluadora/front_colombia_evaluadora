@@ -25,19 +25,14 @@ function revertOperationChange({
     operationId,
     changes: fieldIndexes.map((fieldIndex) => ({ fieldIndex })),
   }
-  return api.post(
-    `/audit-tables/${tableSlug}/operations/${operationId}/changes/revert`,
-    body
-  )
+  return api.post(`/audit-tables/${tableSlug}/operations/${operationId}/changes/revert`, body)
 }
 
 interface UseRevertOperationChangeOptions {
   mutationConfig?: MutationConfig<typeof revertOperationChange>
 }
 
-export function useRevertOperationChange({
-  mutationConfig,
-}: UseRevertOperationChangeOptions = {}) {
+export function useRevertOperationChange({ mutationConfig }: UseRevertOperationChangeOptions = {}) {
   const queryClient = useQueryClient()
 
   return useMutation({
