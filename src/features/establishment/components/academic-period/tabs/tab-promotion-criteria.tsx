@@ -44,6 +44,7 @@ const approvalSchema = z.object({
   maxFailedRecovery: z.number().min(0),
   absencePercentage: z.number().min(0),
   maxLeveledSubjects: z.number().min(0),
+  maxFailedSubjects: z.number().min(0),
 
   applyAverageApproval: z.boolean(),
 
@@ -62,6 +63,7 @@ const EMPTY: ApprovalValues = {
   maxFailedRecovery: 0,
   absencePercentage: 0,
   maxLeveledSubjects: 0,
+  maxFailedSubjects: 0,
 
   applyAverageApproval: true,
 
@@ -216,6 +218,24 @@ export function TabPromotionCriteria({
             <Field>
               <FieldLabel className="flex-1">
                 Máximo de Áreas/Asignaturas niveladas para ser promovido*
+              </FieldLabel>
+
+              <Input
+                type="number"
+                value={field.state.value}
+                onChange={(e) =>
+                  field.handleChange(Number(e.target.value))
+                }
+              />
+            </Field>
+          )}
+        </form.Field>
+
+        <form.Field name="maxFailedSubjects">
+          {(field) => (
+            <Field>
+              <FieldLabel className="flex-1">
+                Máximo de áreas/asignaturas reprobadas para ser promovido
               </FieldLabel>
 
               <Input
