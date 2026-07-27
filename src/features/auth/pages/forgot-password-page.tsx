@@ -48,7 +48,8 @@ export function ForgotPasswordPage() {
         </div>
         <CardTitle>¿Olvidaste tu contraseña?</CardTitle>
         <CardDescription>
-          Ingresa tu email y te enviaremos un enlace para restablecerla.
+          Ingresa tu correo electrónico y te enviaremos instrucciones para
+          restablecer tu contraseña.
         </CardDescription>
       </CardHeader>
 
@@ -67,7 +68,7 @@ export function ForgotPasswordPage() {
           disabled={forgotPasswordMutation.isPending }
           className="w-full"
         >
-          Enviar enlace
+          Enviar instrucciones
           {forgotPasswordMutation.isPending ? (
             <Spinner data-icon="inline-end" />
           ) : (
@@ -85,7 +86,7 @@ export function ForgotPasswordPage() {
         </Button>
         <p className="text-muted-foreground inline-flex items-start text-center text-xs">
           <ShieldIcon
-                      className="size-4 shrink-0"
+                      className="size-5 shrink-0"
                       aria-hidden="true"
                     />
           Tu seguridad es importante. Nunca compartas tu contraseña con nadie.

@@ -136,9 +136,10 @@ export function RestorePasswordPage() {
                 aria-hidden="true"
               />
             </div>
-            <CardTitle>Restablecer contraseña</CardTitle>
+            <CardTitle>Crea tu nueva contraseña</CardTitle>
             <CardDescription>
-              Ingresa tu nueva contraseña.
+              Por tu seguridad, elige una contraseña fácil de recordar para ti,
+              pero difícil de descubrir para otros.
               {remainingLabel !== null && (
                 <>
                   <br />
@@ -171,7 +172,7 @@ export function RestorePasswordPage() {
               disabled={restorePasswordMutation.isPending}
               className="w-full"
             >
-              Guardar contraseña
+              Actualizar contraseña
               {restorePasswordMutation.isPending ? (
                 <Spinner data-icon="inline-end" />
               ) : (
@@ -190,7 +191,7 @@ export function RestorePasswordPage() {
             </Button>
             <p className="text-muted-foreground inline-flex items-start text-center text-xs">
               <ShieldIcon
-                          className="size-4 shrink-0"
+                          className="size-5 shrink-0"
                           aria-hidden="true"
                         />
               Tu seguridad es importante. Nunca compartas tu contraseña con nadie.
