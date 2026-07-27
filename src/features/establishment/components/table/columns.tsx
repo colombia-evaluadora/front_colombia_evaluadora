@@ -1,7 +1,9 @@
 import type { ColumnDef } from "@tanstack/react-table"
+import { PencilIcon, TrashIcon } from "@phosphor-icons/react"
 
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { DataTableColumnHeader } from "@/components/data-table"
 
 import { ESTABLISHMENT_STATUS_BADGE, ESTABLISHMENT_STATUS_LABELS } from "../../api/establishment-Ui-mappings"
@@ -79,5 +81,36 @@ export const columns: ColumnDef<Establishment>[] = [
         </Badge>
       )
     },
+  },
+  {
+    id: "actions",
+    header: () => <span className="sr-only">Acciones</span>,
+    cell: ({ row }) => (
+      <div className="flex items-center justify-end gap-1">
+        <Button
+          type="button"
+          variant="fill"
+          color="secondary"
+          size="icon"
+          className="size-8"
+          aria-label={`Editar ${row.original.name}`}
+        >
+          <PencilIcon />
+        </Button>
+        <Button
+          type="button"
+          variant="fill"
+          color="destructive"
+          size="icon"
+          className="size-8"
+          aria-label={`Eliminar ${row.original.name}`}
+        >
+          <TrashIcon />
+        </Button>
+      </div>
+    ),
+    enableSorting: false,
+    enableHiding: false,
+    size: 96,
   },
 ]
