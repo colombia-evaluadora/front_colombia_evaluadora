@@ -1,9 +1,14 @@
+import { useEffect } from "react"
 import { useForm } from "@tanstack/react-form"
 import { toast } from "sonner"
 import { z } from "zod"
 
 import { Button } from "@/components/ui/button"
+import { Spinner } from "@/components/ui/spinner"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
+
+import { useEvaluationCriteriaQuery } from "../../../api/query/use-evaluation-criteria-query"
+import { useupdateEvaluationCriteria } from "../../../api/mutations/update-evaluation-criteria"
 import {
   Select,
   SelectContent,
@@ -110,16 +115,52 @@ const EMPTY: EvaluationCriteriaValues = {
 
 const FORM_ID = "evaluation-criteria-form"
 
-export function TabEvaluationCriteria() {
+interface TabEvaluationCriteriaProps {
+  academicPeriodId?: number
+}
+
+export function TabEvaluationCriteria({
+  academicPeriodId,
+}: TabEvaluationCriteriaProps) {
+  const { data: criteria, isPending: isLoading } =
+    useEvaluationCriteriaQuery(academicPeriodId)
+
+  const saveCriteria = useupdateEvaluationCriteria({
+    mutationConfig: {
+      onSuccess: (result) => {
+        if (result.status === "error") {
+          toast.error(result.message)
+          return
+        }
+        toast.success(result.message)
+      },
+    },
+  })
+
   const form = useForm({
     defaultValues: EMPTY,
     validators: { onSubmit: evaluationCriteriaSchema },
     onSubmit: ({ value }) => {
-      // TODO: conectar con el endpoint de criterios de evaluación.
-      console.log("EvaluationCriteria", value)
+      if (academicPeriodId != null) {
+        saveCriteria.mutate({ academicPeriodId, values: value })
+        return
+      }
       toast.success("Criterios de evaluación guardados.")
     },
   })
+
+  // Al cargar los criterios del periodo, prellenamos el formulario con ellos.
+  useEffect(() => {
+    if (criteria) form.reset(criteria)
+  }, [criteria, form])
+
+  if (academicPeriodId != null && isLoading) {
+    return (
+      <div className="flex justify-center py-10">
+        <Spinner />
+      </div>
+    )
+  }
 
   return (
     <form
@@ -169,8 +210,8 @@ export function TabEvaluationCriteria() {
       </div>
 
       <div className="mt-6 flex justify-end">
-        <Button type="submit" color="primary">
-          Guardar
+        <Button type="submit" color="primary" disabled={saveCriteria.isPending}>
+          {saveCriteria.isPending ? "Guardando..." : "Guardar"}
         </Button>
       </div>
     </form>
