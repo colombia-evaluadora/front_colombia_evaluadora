@@ -1,3 +1,7 @@
+import type { CatalogItem } from "./catalog"
+import type { Employee } from "./employee"
+import type { Municipality } from "./location"
+
 export type EstablishmentStatus =
   | "ACTIVE"
   | "SUSPENDED"
@@ -14,6 +18,86 @@ export interface Establishment {
   department: string
   municipality: string
   status: EstablishmentStatus
+}
+
+export interface EstablishmentDetails {
+    id: string
+
+    basicInfo: EstablishmentBasicInfo
+
+    address: EstablishmentAddress
+
+    contact: EstablishmentContact
+
+    additionalInfo: EstablishmentAdditionalInfo
+
+    principal: Employee | null
+
+    secretary: Employee | null
+}
+
+export interface EstablishmentBasicInfo {
+
+    name: string
+
+    dane: string
+
+    nit: string
+
+    ownershipType: CatalogItem
+}
+
+export interface EstablishmentAddress {
+
+    municipality: Municipality
+
+    zone: CatalogItem
+
+    district: CatalogItem
+
+    commune: CatalogItem
+
+    locality: CatalogItem
+
+    address: string
+}
+
+export interface EstablishmentContact {
+
+    email: string
+
+    website: string
+
+    phone: string
+
+    fax?: string
+}
+
+export interface EstablishmentAdditionalInfo {
+
+    approvalResolution: string
+
+    teachingLanguage: CatalogItem
+
+    calendar: CatalogItem
+
+    costRegime: CatalogItem
+
+    populationGender: CatalogItem
+
+    tuitionRange: CatalogItem
+
+    disabilityType: CatalogItem
+
+    operatingLicense: boolean
+
+    licenseDate: string | null
+
+    ethnicAttention: boolean
+
+    giftedAttention: boolean
+
+    subsidy: boolean
 }
 
 export interface EstablishmentsQueryFilters {

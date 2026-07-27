@@ -1,0 +1,16 @@
+export const CATALOGS = {
+  DOCUMENT_TYPES: "document-types",
+  EMPLOYEE_ROLES: "employee-roles",
+  GENDERS: "genders",
+  MUNICIPALITIES: "municipalities",
+  EDUCATION_LEVELS: "education-levels",
+  WORK_SCHEDULES: "work-schedules",
+  CALENDARIOS: "calendarios",
+  COST_REGIMEN: "cost-regimen",
+  RANGO_TARIFAS: "rango-tarifas",
+  IDIOMAS: "idiomas",
+  LEGAL_TYPES: "legal-types",
+  ZONES: "zones",
+  DISABILITIES: "disabilities",
+  LICENSE_STATUSES: "license-statuses",
+} as const

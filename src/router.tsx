@@ -74,6 +74,11 @@ const EstablishmentsPage = lazyRouteComponent(
   "EstablishmentsPage"
 )
 
+const AddEstablishmentPage = lazyRouteComponent(
+  () => import("@/features/establishment/pages/add-establishment-page"),
+  "AddEstablishmentPage"
+)
+
 interface RouterContext {
   queryClient: QueryClient
 }
@@ -217,6 +222,12 @@ export const establishmentsRoute = createRoute({
   component: EstablishmentsPage,
 })
 
+export const addEstablishmentRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.establishments.add.path,
+  component: AddEstablishmentPage,
+})
+
 export const auditoriaSesionOperacionesRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.auditoriaSesionOperaciones.path,
@@ -255,6 +266,7 @@ const routeTree = rootRoute.addChildren([
     auditoriaTablaDetalleRoute,
     auditoriaSesionOperacionesRoute,
     establishmentsRoute,
+    addEstablishmentRoute,
     reportesRoute,
     usuariosRoute,
     configuracionRoute,

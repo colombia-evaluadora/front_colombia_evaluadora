@@ -7,6 +7,8 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Link } from "@tanstack/react-router"
+import { paths } from "@/config/paths"
 
 import { EstablishmentsDataTable } from "../components/table/establishments-table"
 
@@ -15,7 +17,13 @@ export function EstablishmentsPage() {
     <Card>
       <CardHeader>
         <CardAction>
-          <Button variant="fill" color="primary" size="sm" onClick={() => void 0}>
+          <Button
+            render={<Link to={paths.app.establishments.add.getHref()} />}
+            variant="fill"
+            color="primary"
+            size="sm"
+            nativeButton={false}
+          >
             Agregar
           </Button>
         </CardAction>

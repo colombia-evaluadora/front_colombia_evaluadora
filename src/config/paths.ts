@@ -58,6 +58,11 @@ export const paths = {
           getHref: () => "/app/establecimiento-educativo/general",
       },
 
+        add: {
+          path: "establecimiento-educativo/agregar",
+          getHref: () => "/app/establecimiento-educativo/agregar",
+        },
+
       campuses: {
           path: "establecimiento-educativo/sedes",
           getHref: () => "/app/establecimiento-educativo/sedes",
