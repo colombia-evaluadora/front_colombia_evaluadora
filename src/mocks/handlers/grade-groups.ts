@@ -61,9 +61,14 @@ export const gradeGroupsHandlers = [
     await delay(250)
 
     const body = (await request.json()) as GradeGroupsQueryRequest
-    const { filters, sorting, pageIndex, pageSize } = body
+    const { filters, sorting, pageIndex, pageSize, gradeId } = body
 
-    const filtered = applySorting(applyFilters(gradeGroupsDb, filters), sorting)
+    const scoped =
+      gradeId == null
+        ? gradeGroupsDb
+        : gradeGroupsDb.filter((row) => row.gradeId === gradeId)
+
+    const filtered = applySorting(applyFilters(scoped, filters), sorting)
 
     const totalCount = filtered.length
     const pageCount = Math.max(1, Math.ceil(totalCount / pageSize))
@@ -80,7 +85,8 @@ export const gradeGroupsHandlers = [
   http.post("/api/grade-groups", async ({ request }) => {
     await delay(400)
     const body = (await request.json()) as CreateGradeGroupRequest
-    gradeGroupsDb.push(body)
-    return HttpResponse.json(body, { status: 201 })
+    const record = { ...body, gradeId: body.gradeId ?? 0 }
+    gradeGroupsDb.push(record)
+    return HttpResponse.json(record, { status: 201 })
   }),
 ]

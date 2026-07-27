@@ -11,6 +11,8 @@ interface UseStudyPlansQueryParams {
   sorting: StudyPlanQueryRequest["sorting"]
   pageIndex: number
   pageSize: number
+  academicPeriodId?: number
+  gradeId?: number
 }
 
 function fetchStudyPlans(

@@ -4,6 +4,8 @@ export interface Grade {
   grado: string
   teachingLevelId: number
   teachingLevelName: string
+  gradoSiguiente?: string
+  tieneGradoSiguiente?: boolean
 }
 
 export interface GradesQueryFilters {
@@ -17,10 +19,28 @@ export interface GradesQueryRequest {
   sorting: { id: string; desc: boolean }[]
   pageIndex: number
   pageSize: number
+  academicPeriodId?: number
+}
+
+export interface GradeRecord extends Grade {
+  academicPeriodId: number
 }
 
 export interface GradesQueryResponse {
   rows: Grade[]
   pageCount: number
   totalCount: number
+}
+
+export type CreateGradeRequest = Omit<Grade, "id" | "teachingLevelName"> & {
+  academicPeriodId?: number
+}
+
+export type UpdateGradeRequest = Partial<
+  Omit<Grade, "id" | "teachingLevelName">
+>
+
+export interface MutationResult {
+  status: "ok" | "error"
+  message: string
 }

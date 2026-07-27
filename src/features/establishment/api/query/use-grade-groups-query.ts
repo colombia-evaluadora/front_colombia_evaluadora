@@ -11,6 +11,7 @@ interface UseGradeGroupsQueryParams {
   sorting: GradeGroupsQueryRequest["sorting"]
   pageIndex: number
   pageSize: number
+  gradeId?: number
 }
 
 function fetchGradeGroups(

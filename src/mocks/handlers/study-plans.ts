@@ -50,9 +50,17 @@ export const studyPlansHandlers = [
     await delay(250)
 
     const body = (await request.json()) as StudyPlanQueryRequest
-    const { filters, sorting, pageIndex, pageSize } = body
+    const { filters, sorting, pageIndex, pageSize, academicPeriodId, gradeId } =
+      body
 
-    const filtered = applySorting(applyFilters(studyPlansDb, filters), sorting)
+    const scoped = studyPlansDb.filter((row) => {
+      if (gradeId != null) return row.gradeId === gradeId
+      if (academicPeriodId != null)
+        return row.academicPeriodId === academicPeriodId
+      return true
+    })
+
+    const filtered = applySorting(applyFilters(scoped, filters), sorting)
 
     const totalCount = filtered.length
     const pageCount = Math.max(1, Math.ceil(totalCount / pageSize))
@@ -69,7 +77,12 @@ export const studyPlansHandlers = [
   http.post("/api/study-plans", async ({ request }) => {
     await delay(400)
     const body = (await request.json()) as CreateStudyPlanItemRequest
-    studyPlansDb.push(body)
-    return HttpResponse.json(body, { status: 201 })
+    const record = {
+      ...body,
+      academicPeriodId: body.academicPeriodId ?? 0,
+      gradeId: body.gradeId ?? 0,
+    }
+    studyPlansDb.push(record)
+    return HttpResponse.json(record, { status: 201 })
   }),
 ]

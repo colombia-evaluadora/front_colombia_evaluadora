@@ -2,12 +2,9 @@ export interface StudyPlanItem {
   codigo: number
   asignatura: string
   intensidadHoraria: number
-  // Influencia del área, en porcentaje (0-100).
   influenciaArea: number
   numeroCreditos: number
-  // Influye en el desempeño académico (S/N).
   influyeDesempeno: boolean
-  // Campos personalizados (opcionales) del plan de estudio.
   matriculaObligatoria?: boolean
   aprobacionObligatoria?: boolean
   formatoCalificacion?: string
@@ -23,6 +20,8 @@ export interface StudyPlanQueryRequest {
   sorting: { id: string; desc: boolean }[]
   pageIndex: number
   pageSize: number
+  academicPeriodId?: number
+  gradeId?: number
 }
 
 export interface StudyPlanQueryResponse {
@@ -31,4 +30,12 @@ export interface StudyPlanQueryResponse {
   totalCount: number
 }
 
-export type CreateStudyPlanItemRequest = StudyPlanItem
+export interface StudyPlanRecord extends StudyPlanItem {
+  academicPeriodId: number
+  gradeId: number
+}
+
+export type CreateStudyPlanItemRequest = StudyPlanItem & {
+  academicPeriodId?: number
+  gradeId?: number
+}
