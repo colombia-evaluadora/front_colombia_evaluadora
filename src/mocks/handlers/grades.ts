@@ -1,11 +1,14 @@
-import { HttpResponse, delay } from "msw"
+import { http, HttpResponse, delay } from "msw"
 import { httpQuery } from "./_http-query"
-import { gradesDb } from "../db/grades"
+import { gradesDb, gradeLevelName } from "../db/grades"
 
 import type {
+  CreateGradeRequest,
   Grade,
+  GradeRecord,
   GradesQueryRequest,
   GradesQueryResponse,
+  UpdateGradeRequest,
 } from "@/features/establishment/api/types/academic-period/grade"
 
 function applyFilters(
@@ -38,8 +41,10 @@ function applyFilters(
   })
 }
 
-function sortValue(row: Grade, id: string) {
-  return row[id as keyof Grade]
+function sortValue(row: Grade, id: string): string | number {
+  const value = row[id as keyof Grade]
+  if (typeof value === "boolean") return value ? 1 : 0
+  return value ?? ""
 }
 
 function applySorting(
@@ -66,9 +71,14 @@ export const gradesHandlers = [
     await delay(250)
 
     const body = (await request.json()) as GradesQueryRequest
-    const { filters, sorting, pageIndex, pageSize } = body
+    const { filters, sorting, pageIndex, pageSize, academicPeriodId } = body
 
-    const filtered = applySorting(applyFilters(gradesDb, filters), sorting)
+    const scoped =
+      academicPeriodId == null
+        ? gradesDb
+        : gradesDb.filter((row) => row.academicPeriodId === academicPeriodId)
+
+    const filtered = applySorting(applyFilters(scoped, filters), sorting)
 
     const totalCount = filtered.length
     const pageCount = Math.max(1, Math.ceil(totalCount / pageSize))
@@ -81,5 +91,55 @@ export const gradesHandlers = [
       pageCount,
       totalCount,
     })
+  }),
+
+  http.post("/api/grades", async ({ request }) => {
+    await delay(400)
+    const body = (await request.json()) as CreateGradeRequest
+    const { academicPeriodId, ...gradeData } = body
+
+    const id = gradesDb.reduce((max, g) => Math.max(max, g.id), 0) + 1
+    const newGrade: GradeRecord = {
+      id,
+      ...gradeData,
+      grado: gradeData.grado || gradeData.nombre,
+      teachingLevelName: gradeLevelName(gradeData.teachingLevelId),
+      academicPeriodId: academicPeriodId ?? 0,
+    }
+    gradesDb.push(newGrade)
+
+    return HttpResponse.json(newGrade, { status: 201 })
+  }),
+
+  http.patch("/api/grades/:id", async ({ params, request }) => {
+    await delay(400)
+    const index = gradesDb.findIndex((g) => String(g.id) === String(params.id))
+    if (index === -1) {
+      return HttpResponse.json(
+        { status: "error", message: "Grado no encontrado." },
+        { status: 404 }
+      )
+    }
+    const patch = (await request.json()) as UpdateGradeRequest
+    const merged: GradeRecord = { ...gradesDb[index], ...patch }
+    if (patch.teachingLevelId != null) {
+      merged.teachingLevelName = gradeLevelName(patch.teachingLevelId)
+    }
+    gradesDb[index] = merged
+
+    return HttpResponse.json({ status: "ok", message: "Grado actualizado." })
+  }),
+
+  http.delete("/api/grades/:id", async ({ params }) => {
+    await delay(300)
+    const index = gradesDb.findIndex((g) => String(g.id) === String(params.id))
+    if (index === -1) {
+      return HttpResponse.json(
+        { status: "error", message: "Grado no encontrado." },
+        { status: 404 }
+      )
+    }
+    gradesDb.splice(index, 1)
+    return HttpResponse.json({ status: "ok", message: "Grado eliminado." })
   }),
 ]

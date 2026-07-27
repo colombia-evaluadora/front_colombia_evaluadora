@@ -19,6 +19,7 @@ export interface GradeGroupsQueryRequest {
   sorting: { id: string; desc: boolean }[]
   pageIndex: number
   pageSize: number
+  gradeId?: number
 }
 
 export interface GradeGroupsQueryResponse {
@@ -27,4 +28,10 @@ export interface GradeGroupsQueryResponse {
   totalCount: number
 }
 
-export type CreateGradeGroupRequest = GradeGroup
+export interface GradeGroupRecord extends GradeGroup {
+  gradeId: number
+}
+
+export type CreateGradeGroupRequest = GradeGroup & {
+  gradeId?: number
+}

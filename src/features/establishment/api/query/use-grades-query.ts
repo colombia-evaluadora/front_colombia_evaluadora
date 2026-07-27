@@ -11,6 +11,7 @@ interface UseGradesQueryParams {
   sorting: GradesQueryRequest["sorting"]
   pageIndex: number
   pageSize: number
+  academicPeriodId?: number
 }
 
 function fetchGrades(body: GradesQueryRequest): Promise<GradesQueryResponse> {
