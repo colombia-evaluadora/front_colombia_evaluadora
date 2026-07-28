@@ -52,9 +52,9 @@ export function TabEvaluationPeriods({
 
   return (
     <>
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <ExportEvaluationPeriodsDialog filters={{}} />
+      <div className="mb-2 flex items-center justify-end gap-2">
         <CreateEvaluationPeriodDialog academicPeriodId={academicPeriodId} />
+        <ExportEvaluationPeriodsDialog filters={{}} />
       </div>
 
       <DataTable

@@ -1,10 +1,11 @@
-import { CaretDownIcon, CheckIcon, XIcon } from "@/components/ui/icons"
+import { CaretDownIcon, XIcon } from "@/components/ui/icons"
 
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import {
   inputTriggerVariants,
   inputVariants,
@@ -21,8 +22,8 @@ interface SubjectsMultiSelectProps {
   emptyMessage?: string
 }
 
-// Select de varias materias (chips + popover con checks). Reutilizable para
-// cualquier lista de strings; las opciones vienen de área/asignatura.
+// Select de varias materias: chips en el trigger + un dropdown con checkboxes
+// al estilo de "Columnas visibles" (DataTableViewOptions).
 export function SubjectsMultiSelect({
   id,
   options,
@@ -42,8 +43,8 @@ export function SubjectsMultiSelect({
   }
 
   return (
-    <Popover>
-      <PopoverTrigger
+    <DropdownMenu>
+      <DropdownMenuTrigger
         render={
           <button
             id={id}
@@ -51,7 +52,7 @@ export function SubjectsMultiSelect({
             className={cn(
               inputVariants({ variant: resolvedVariant }),
               inputTriggerVariants({ variant: resolvedVariant }),
-              "flex h-auto min-h-10 items-center justify-between gap-2 text-left",
+              "flex h-auto min-h-10 items-center justify-between gap-2 text-left"
             )}
           />
         }
@@ -84,30 +85,25 @@ export function SubjectsMultiSelect({
           )}
         </div>
         <CaretDownIcon className="text-muted-foreground size-4 shrink-0" />
-      </PopoverTrigger>
-      <PopoverContent align="start" className="min-w-64 p-1">
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="min-w-64">
         {options.length === 0 ? (
           <p className="text-muted-foreground px-2 py-1.5 text-sm">
             {emptyMessage}
           </p>
         ) : (
-          options.map((option) => {
-            const isSelected = value.includes(option)
-            return (
-              <button
-                key={option}
-                type="button"
-                aria-pressed={isSelected}
-                onClick={() => toggle(option)}
-                className="hover:bg-foreground/10 flex w-full cursor-pointer items-center justify-between gap-2 px-2 py-1.5 text-left text-sm"
-              >
-                {option}
-                {isSelected && <CheckIcon className="size-4 shrink-0" />}
-              </button>
-            )
-          })
+          options.map((option) => (
+            <DropdownMenuCheckboxItem
+              key={option}
+              checked={value.includes(option)}
+              onCheckedChange={() => toggle(option)}
+              className="capitalize"
+            >
+              {option}
+            </DropdownMenuCheckboxItem>
+          ))
         )}
-      </PopoverContent>
-    </Popover>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }

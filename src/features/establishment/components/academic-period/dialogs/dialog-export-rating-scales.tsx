@@ -57,10 +57,15 @@ export function ExportRatingScalesDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
-        render={<Button color="primary" aria-label="Exportar escalas de valoración" />}
+        render={
+          <Button
+            color="primary"
+            size="icon-sm"
+            aria-label="Exportar escalas de valoración"
+          />
+        }
       >
-        <DownloadSimpleIcon data-icon="inline-start" />
-        <span className="sr-only md:not-sr-only">Exportar</span>
+        <DownloadSimpleIcon />
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>

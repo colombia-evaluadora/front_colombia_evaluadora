@@ -80,8 +80,8 @@ export function TabAreaSubject({ academicPeriodId }: TabAreaSubjectProps) {
         </InputGroup>
 
         <div className="flex gap-2">
-          <ExportAreaSubjectsDialog filters={queryFilters} />
           <CreateAreaSubjectDialog academicPeriodId={academicPeriodId} />
+          <ExportAreaSubjectsDialog filters={queryFilters} />
         </div>
       </div>
 

@@ -54,9 +54,12 @@ export function ExportGradesDialog({ filters }: ExportGradesDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button color="primary" aria-label="Exportar grados" />}>
-        <DownloadSimpleIcon data-icon="inline-start" />
-        <span className="sr-only md:not-sr-only">Exportar</span>
+      <DialogTrigger
+        render={
+          <Button color="primary" size="icon-sm" aria-label="Exportar grados" />
+        }
+      >
+        <DownloadSimpleIcon />
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
