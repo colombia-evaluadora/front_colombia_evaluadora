@@ -7,7 +7,7 @@ import type {
   AreaSubject,
 } from "../../../api/types/academic-period/area-subject"
 import { DeleteAreaSubjectDialog } from "../dialogs/dialog-delete-area-subject"
-import { EditAreaSubjectButton } from "./edit-area-subject-button"
+import { EditAreaSubjectDialog } from "../dialogs/dialog-edit-area-subject"
 
 export const columns: ColumnDef<AreaSubject>[] = [
   {
@@ -80,7 +80,7 @@ export const columns: ColumnDef<AreaSubject>[] = [
     header: () => <span className="sr-only">Acciones</span>,
     cell: ({ row }) => (
       <div className="flex items-center justify-end gap-1">
-        <EditAreaSubjectButton areaSubject={row.original} />
+        <EditAreaSubjectDialog areaSubject={row.original} />
         <DeleteAreaSubjectDialog areaSubject={row.original} />
       </div>
     ),
