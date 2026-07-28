@@ -202,3 +202,16 @@ export function upsertEstablishmentDetails(details: EstablishmentDetails) {
 
   return { details, row }
 }
+
+export function deleteEstablishmentDetails(id: string){
+  const existingIndex = establishmentsDb.findIndex((item) => item.id === id)
+  const rowIndex = establishmentsRowsDb.findIndex((item) => item.id === id)
+  
+  if (existingIndex >= 0) {
+    establishmentsDb.splice(existingIndex, 1)
+  }
+
+  if (rowIndex >= 0) {
+    establishmentsRowsDb.splice(rowIndex, 1)
+  }
+}

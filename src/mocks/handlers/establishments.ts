@@ -5,6 +5,7 @@ import { httpQuery } from "./_http-query"
 import {
   establishmentsDb,
   establishmentsRowsDb,
+  deleteEstablishmentDetails,
   upsertEstablishmentDetails,
 } from "../db/establishments"
 
@@ -92,7 +93,7 @@ function applySorting(
 
 export const establishmentHandlers = [
   httpQuery(
-    "/api/establishments/query",
+    "*/api/establishments/query",
     async ({ request }) => {
       await delay(250)
 
@@ -133,7 +134,7 @@ export const establishmentHandlers = [
     }
   ),
 
-  http.get("/api/establishments/:id", async ({ params }) => {
+  http.get("*/api/establishments/:id", async ({ params }) => {
     await delay(150)
 
     const establishment = establishmentsDb.find((item) => item.id === params.id)
@@ -154,7 +155,7 @@ export const establishmentHandlers = [
     })
   }),
 
-  http.post("/api/establishments", async ({ request }) => {
+  http.post("*/api/establishments", async ({ request }) => {
     await delay(250)
 
     const values = (await request.json()) as EstablishmentDetails
@@ -174,4 +175,28 @@ export const establishmentHandlers = [
       establishment: details,
     })
   }),
+
+  http.delete("*/api/establishments/:id", async ({ params }) => {
+    await delay(250)
+
+    const establishment = establishmentsDb.find((item) => item.id === params.id)
+
+    if (!establishment) {
+      return HttpResponse.json(
+        {
+          status: "error",
+          message: "Establecimiento no encontrado.",
+        },
+        { status: 404 }
+      )
+    }
+
+    deleteEstablishmentDetails(establishment.id)
+
+    return HttpResponse.json({
+      status: "ok",
+      message: "Establecimiento eliminado.",
+    })
+  }),
+
 ]

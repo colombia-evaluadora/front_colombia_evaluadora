@@ -4,12 +4,13 @@ import type { ColumnDef } from "@tanstack/react-table"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { PencilIcon, TrashIcon } from "@/components/ui/icons"
+import { PencilIcon } from "@/components/ui/icons"
 import { DataTableColumnHeader } from "@/components/data-table"
 import { paths } from "@/config/paths"
 
 import { ESTABLISHMENT_STATUS_BADGE, ESTABLISHMENT_STATUS_LABELS } from "../../api/establishment-Ui-mappings"
 import type { Establishment } from "../../api/types/establishment"
+import { DeleteEstablishmentDialog } from "../dialogs/dialog-delete-establishment"
 
 export const columns: ColumnDef<Establishment>[] = [
   {
@@ -101,16 +102,7 @@ export const columns: ColumnDef<Establishment>[] = [
         >
           <PencilIcon />
         </Button>
-        <Button
-          type="button"
-          variant="fill"
-          color="destructive"
-          size="icon"
-          className="size-8"
-          aria-label={`Eliminar ${row.original.name}`}
-        >
-          <TrashIcon />
-        </Button>
+        <DeleteEstablishmentDialog establishment={row.original} />
       </div>
     ),
     enableSorting: false,
