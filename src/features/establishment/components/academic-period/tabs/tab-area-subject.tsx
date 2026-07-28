@@ -2,15 +2,10 @@
 
 import { useMemo, useState } from "react"
 import type { SortingState } from "@tanstack/react-table"
-import { MagnifyingGlassIcon } from "@/components/ui/icons"
-
 import { DataTable } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from "@/components/ui/input-group"
+import { Field, FieldLabel } from "@/components/ui/field"
+import { Input } from "@/components/ui/input"
 import { useDataTable } from "@/hooks/use-data-table"
 
 import { columns } from "../table/columns-area-subject"
@@ -63,21 +58,25 @@ export function TabAreaSubject({ academicPeriodId }: TabAreaSubjectProps) {
   return (
     <>
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <InputGroup className="w-full rounded-md border-input has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20 sm:w-72">
-          <InputGroupAddon align="inline-start" className="ml-2">
-            <MagnifyingGlassIcon className="size-4 text-muted-foreground" />
-          </InputGroupAddon>
-          <InputGroupInput
-            type="search"
+        <Field
+          orientation="vertical"
+          variant="outlined"
+          className="w-full gap-2 sm:w-72"
+        >
+          <FieldLabel htmlFor="area-subject-search">Buscar</FieldLabel>
+          <Input
+            id="area-subject-search"
+            name="search"
+            type="text"
+            autoComplete="off"
             placeholder="Buscar por nombre"
-            aria-label="Buscar área/asignatura por nombre"
             value={search}
             onChange={(e) => {
               setSearch(e.target.value)
               setPageIndex(0)
             }}
           />
-        </InputGroup>
+        </Field>
 
         <div className="flex gap-2">
           <CreateAreaSubjectDialog academicPeriodId={academicPeriodId} />

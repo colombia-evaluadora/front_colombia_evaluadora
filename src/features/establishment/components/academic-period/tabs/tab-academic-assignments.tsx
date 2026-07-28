@@ -2,15 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import type { SortingState } from "@tanstack/react-table"
-import { MagnifyingGlassIcon, SpinnerIcon } from "@/components/ui/icons"
+import { SpinnerIcon } from "@/components/ui/icons"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from "@/components/ui/input-group"
+import { Field, FieldLabel } from "@/components/ui/field"
+import { Input } from "@/components/ui/input"
 import { Pagination } from "@/components/pagination"
 import { useDataTable } from "@/hooks/use-data-table"
 
@@ -130,21 +127,25 @@ export function TabAcademicAssignments({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <InputGroup className="w-full rounded-md border-input has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20 sm:w-72">
-          <InputGroupAddon align="inline-start" className="ml-2">
-            <MagnifyingGlassIcon className="size-4 text-muted-foreground" />
-          </InputGroupAddon>
-          <InputGroupInput
-            type="search"
+        <Field
+          orientation="vertical"
+          variant="outlined"
+          className="w-full gap-2 sm:w-72"
+        >
+          <FieldLabel htmlFor="academic-assignments-search">Buscar</FieldLabel>
+          <Input
+            id="academic-assignments-search"
+            name="search"
+            type="text"
+            autoComplete="off"
             placeholder="Buscar por nombre"
-            aria-label="Buscar docente por nombre"
             value={search}
             onChange={(e) => {
               setSearch(e.target.value)
               setPageIndex(0)
             }}
           />
-        </InputGroup>
+        </Field>
 
         <ExportAcademicAssignmentsDialog filters={queryFilters} />
       </div>
