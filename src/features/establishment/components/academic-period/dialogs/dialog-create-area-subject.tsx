@@ -10,7 +10,7 @@ import {
   PlusIcon,
   SpinnerIcon,
   TrashIcon,
-} from "@phosphor-icons/react"
+} from "@/components/ui/icons"
 import { toast } from "sonner"
 import { z } from "zod"
 

@@ -1,6 +1,6 @@
 import { useState } from "react"
 
-import { SpinnerIcon, TrashIcon } from "@phosphor-icons/react"
+import { SpinnerIcon, TrashIcon } from "@/components/ui/icons"
 import { toast } from "sonner"
 
 import {

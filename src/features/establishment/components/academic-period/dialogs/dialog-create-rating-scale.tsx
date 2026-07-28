@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { PlusCircleIcon, SpinnerIcon, TrashIcon } from "@phosphor-icons/react";
+import { PlusCircleIcon, SpinnerIcon, TrashIcon } from "@/components/ui/icons";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";

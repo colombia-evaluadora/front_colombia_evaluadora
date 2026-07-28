@@ -1,4 +1,4 @@
-import { PencilIcon } from "@phosphor-icons/react"
+import { PencilIcon } from "@/components/ui/icons"
 import { Link } from "@tanstack/react-router"
 
 import { Button } from "@/components/ui/button"

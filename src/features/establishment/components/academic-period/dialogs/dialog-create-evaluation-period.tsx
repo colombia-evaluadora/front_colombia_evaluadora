@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { useForm } from "@tanstack/react-form"
-import { PlusCircleIcon, SpinnerIcon } from "@phosphor-icons/react"
+import { PlusCircleIcon, SpinnerIcon } from "@/components/ui/icons"
 import { toast } from "sonner"
 import { z } from "zod"
 
@@ -29,7 +29,8 @@ import {
 import { useCreateEvaluationPeriod } from "../../../api/mutations/create-evaluation-period"
 import { EVALUATION_PERIOD_STATUSES } from "../../../api/ui-mappings"
 import type { EvaluationPeriodStatus } from "../../../api/types/academic-period/evaluation-period"
-import { FieldDatePopover } from "../field-date-popover"
+import { DatePicker } from "@/components/date-picker"
+import { formatDateValue, parseDateValue } from "@/lib/date-value"
 
 const STATUS_TUPLE = [
   "Calificable",
@@ -207,11 +208,12 @@ export function CreateEvaluationPeriodDialog({
               return (
                 <Field data-invalid={isInvalid}>
                   <FieldLabel htmlFor={field.name}>Fecha inicio</FieldLabel>
-                  <FieldDatePopover
+                  <DatePicker
+                    mode="date"
                     id={field.name}
-                    value={field.state.value}
-                    onChange={field.handleChange}
-                    invalid={isInvalid}
+                    value={parseDateValue(field.state.value)}
+                    onChange={(date) => field.handleChange(formatDateValue(date))}
+                    aria-invalid={isInvalid}
                   />
                   {isInvalid && <FieldError errors={field.state.meta.errors} />}
                 </Field>
@@ -226,11 +228,12 @@ export function CreateEvaluationPeriodDialog({
               return (
                 <Field data-invalid={isInvalid}>
                   <FieldLabel htmlFor={field.name}>Fecha fin</FieldLabel>
-                  <FieldDatePopover
+                  <DatePicker
+                    mode="date"
                     id={field.name}
-                    value={field.state.value}
-                    onChange={field.handleChange}
-                    invalid={isInvalid}
+                    value={parseDateValue(field.state.value)}
+                    onChange={(date) => field.handleChange(formatDateValue(date))}
+                    aria-invalid={isInvalid}
                   />
                   {isInvalid && <FieldError errors={field.state.meta.errors} />}
                 </Field>

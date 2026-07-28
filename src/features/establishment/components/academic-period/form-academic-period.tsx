@@ -1,13 +1,13 @@
 import { useState } from "react"
 import { useForm } from "@tanstack/react-form"
-import { CaretDownIcon, PlusIcon, TrashIcon } from "@phosphor-icons/react"
+import { CaretDownIcon, PlusIcon, TrashIcon } from "@/components/ui/icons"
 
 import { Button } from "@/components/ui/button"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Switch } from "@/components/ui/switch"
-import { TimePicker } from "@/components/ui/time-picker"
+import { TimePickerPanel } from "@/components/ui/time-picker"
 import { cn } from "@/lib/utils"
 import {
   Select,
@@ -30,8 +30,8 @@ import {
   SEDE_OPTIONS,
 } from "../../api/ui-mappings"
 import type { AcademicPeriodStatus } from "../../api/types/academic-period/academic-period"
-import { FieldDatePopover } from "./field-date-popover"
-import { FieldTimePopover } from "./field-time-popover"
+import { DatePicker } from "@/components/date-picker"
+import { formatDateValue, parseDateValue } from "@/lib/date-value"
 
 interface AcademicPeriodFormProps {
   id: string
@@ -108,11 +108,12 @@ export function AcademicPeriodForm({
                 <FieldLabel htmlFor={field.name}>
                   Inicio del período académico*
                 </FieldLabel>
-                <FieldDatePopover
+                <DatePicker
+                  mode="date"
                   id={field.name}
-                  value={field.state.value}
-                  onChange={field.handleChange}
-                  invalid={isInvalid}
+                  value={parseDateValue(field.state.value)}
+                  onChange={(date) => field.handleChange(formatDateValue(date))}
+                  aria-invalid={isInvalid}
                 />
                 {isInvalid && <FieldError errors={field.state.meta.errors} />}
               </Field>
@@ -129,11 +130,12 @@ export function AcademicPeriodForm({
                 <FieldLabel htmlFor={field.name}>
                   Fin del período académico*
                 </FieldLabel>
-                <FieldDatePopover
+                <DatePicker
+                  mode="date"
                   id={field.name}
-                  value={field.state.value}
-                  onChange={field.handleChange}
-                  invalid={isInvalid}
+                  value={parseDateValue(field.state.value)}
+                  onChange={(date) => field.handleChange(formatDateValue(date))}
+                  aria-invalid={isInvalid}
                 />
                 {isInvalid && <FieldError errors={field.state.meta.errors} />}
               </Field>
@@ -150,11 +152,12 @@ export function AcademicPeriodForm({
                 <FieldLabel htmlFor={field.name}>
                   Fecha límite de matrícula*
                 </FieldLabel>
-                <FieldDatePopover
+                <DatePicker
+                  mode="date"
                   id={field.name}
-                  value={field.state.value}
-                  onChange={field.handleChange}
-                  invalid={isInvalid}
+                  value={parseDateValue(field.state.value)}
+                  onChange={(date) => field.handleChange(formatDateValue(date))}
+                  aria-invalid={isInvalid}
                 />
                 {isInvalid && <FieldError errors={field.state.meta.errors} />}
               </Field>
@@ -313,7 +316,8 @@ export function AcademicPeriodForm({
           {(field) => (
             <Field>
               <FieldLabel htmlFor={field.name}>Hora inicio</FieldLabel>
-              <FieldTimePopover
+              <DatePicker
+                mode="time"
                 id={field.name}
                 value={field.state.value}
                 onChange={field.handleChange}
@@ -327,7 +331,8 @@ export function AcademicPeriodForm({
           {(field) => (
             <Field>
               <FieldLabel htmlFor={field.name}>Hora final</FieldLabel>
-              <FieldTimePopover
+              <DatePicker
+                mode="time"
                 id={field.name}
                 value={field.state.value}
                 onChange={field.handleChange}
@@ -527,7 +532,7 @@ function BreakTimeTrigger({
         {value ? formatTime12(value) : placeholder}
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
-        <TimePicker value={value || undefined} onChange={onChange} />
+        <TimePickerPanel value={value || undefined} onChange={onChange} />
       </PopoverContent>
     </Popover>
   )

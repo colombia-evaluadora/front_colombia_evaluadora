@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
-import { MinusIcon, XIcon } from "@phosphor-icons/react"
+import { MinusIcon, XIcon } from "@/components/ui/icons"
 import { toast } from "sonner"
 
 import { cn } from "@/lib/utils"

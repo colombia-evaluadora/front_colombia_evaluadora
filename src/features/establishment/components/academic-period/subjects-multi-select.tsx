@@ -1,4 +1,4 @@
-import { CaretDownIcon, CheckIcon, XIcon } from "@phosphor-icons/react"
+import { CaretDownIcon, CheckIcon, XIcon } from "@/components/ui/icons"
 
 import {
   Popover,

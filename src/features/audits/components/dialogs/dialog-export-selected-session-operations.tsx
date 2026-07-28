@@ -54,13 +54,7 @@ export function ExportSelectedSessionOperationsDialog({
   // distingue cuál se pulsó — antes salía el spinner en los dos a la vez.
   // `variables` guarda el input en vuelo, y con eso marcamos solo el botón
   // que disparó la exportación.
-<<<<<<< HEAD
-  const pendingFormat = exportSelected.isPending
-    ? exportSelected.variables?.format
-    : undefined
-=======
   const pendingFormat = exportSelected.isPending ? exportSelected.variables?.format : undefined
->>>>>>> main
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

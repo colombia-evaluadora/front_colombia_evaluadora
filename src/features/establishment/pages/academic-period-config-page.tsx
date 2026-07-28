@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { CaretDownIcon, SpinnerIcon } from "@phosphor-icons/react"
+import { CaretDownIcon, SpinnerIcon } from "@/components/ui/icons"
 import { Link, useNavigate, useParams } from "@tanstack/react-router"
 import { toast } from "sonner"
 

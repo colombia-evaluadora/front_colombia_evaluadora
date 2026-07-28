@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CaretDownIcon } from "@phosphor-icons/react";
+import { CaretDownIcon } from "@/components/ui/icons";
 
 import {
   Popover,

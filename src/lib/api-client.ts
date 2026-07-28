@@ -24,18 +24,11 @@ declare module "axios" {
 // 401 `invalid_token`. Con una sola clave compartida, cambiar
 // ENABLE_API_MOCKING dejaba el token del modo anterior en storage y el front
 // se lo mandaba al backend equivocado.
-<<<<<<< HEAD
-const TOKEN_STORAGE_KEY = env.ENABLE_API_MOCKING
-  ? "mock_auth_token"
-  : "auth_token"
-let authToken: string | null = localStorage.getItem(TOKEN_STORAGE_KEY)
-=======
 const TOKEN_STORAGE_KEY = env.ENABLE_API_MOCKING ? "mock_auth_token" : "auth_token"
 const REMEMBER_KEY = "auth_remember_me"
 let authToken: string | null = localStorage.getItem(REMEMBER_KEY)
   ? localStorage.getItem(TOKEN_STORAGE_KEY)
   : null
->>>>>>> main
 
 export function setAuthToken(token: string | null) {
   authToken = token

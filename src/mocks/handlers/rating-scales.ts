@@ -1,6 +1,5 @@
 import { http, HttpResponse, delay } from "msw"
 
-import { httpQuery } from "./_http-query"
 import {
   ratingScalesDb,
   teachingLevelsDb,
@@ -73,7 +72,7 @@ export const ratingScalesHandlers = [
     return HttpResponse.json<RatingSymbol[]>(ratingSymbolsDb)
   }),
 
-  httpQuery("/api/rating-scales/query", async ({ request }) => {
+  http.post("/api/rating-scales/query", async ({ request }) => {
     await delay(250)
     const { filters, sorting, pageIndex, pageSize, academicPeriodId } =
       (await request.json()) as RatingScalesQueryRequest

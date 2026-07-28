@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { useForm } from "@tanstack/react-form"
-import { PlusCircleIcon, SpinnerIcon } from "@phosphor-icons/react"
+import { PlusCircleIcon, SpinnerIcon } from "@/components/ui/icons"
 import { toast } from "sonner"
 import { z } from "zod"
 

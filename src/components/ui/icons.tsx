@@ -70,6 +70,7 @@ import {
   MdOutlineSmartDisplay,
   MdSupportAgent,
   MdTableChart,
+  MdOutlineInbox,
   MdTimelapse,
   MdUnfoldMore,
   MdVerifiedUser,
@@ -171,6 +172,7 @@ export const TextBIcon = makeIcon(MdFormatBold)
 export const TextItalicIcon = makeIcon(MdFormatItalic)
 export const TextUnderlineIcon = makeIcon(MdFormatUnderlined)
 export const TrashIcon = makeIcon(MdDelete)
+export const TrayIcon = makeIcon(MdOutlineInbox)
 export const VideoIcon = makeIcon(MdOutlineSmartDisplay)
 export const PersonIcon = makeIcon(MdPersonOutline)
 export const UserCircleIcon = makeIcon(MdAccountCircle)
