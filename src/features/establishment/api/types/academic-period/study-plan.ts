@@ -40,6 +40,8 @@ export type CreateStudyPlanItemRequest = StudyPlanItem & {
   gradeId?: number
 }
 
+export type UpdateStudyPlanItemRequest = StudyPlanItem
+
 export interface MutationResult {
   status: "ok" | "error"
   message: string

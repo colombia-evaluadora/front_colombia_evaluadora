@@ -6,6 +6,7 @@ import type {
   StudyPlanQueryRequest,
   StudyPlanQueryResponse,
   CreateStudyPlanItemRequest,
+  UpdateStudyPlanItemRequest,
 } from "@/features/establishment/api/types/academic-period/study-plan"
 
 function applyFilters(
@@ -83,6 +84,25 @@ export const studyPlansHandlers = [
     }
     studyPlansDb.push(record)
     return HttpResponse.json(record, { status: 201 })
+  }),
+
+  http.patch("/api/study-plans/:codigo", async ({ request, params }) => {
+    await delay(400)
+    const body = (await request.json()) as UpdateStudyPlanItemRequest
+    const index = studyPlansDb.findIndex(
+      (row) => String(row.codigo) === String(params.codigo)
+    )
+    if (index === -1) {
+      return HttpResponse.json(
+        { status: "error", message: "Asignatura no encontrada." },
+        { status: 404 }
+      )
+    }
+    studyPlansDb[index] = { ...studyPlansDb[index], ...body }
+    return HttpResponse.json({
+      status: "ok",
+      message: "Asignatura del plan de estudio actualizada.",
+    })
   }),
 
   http.delete("/api/study-plans/:codigo", async ({ params }) => {
