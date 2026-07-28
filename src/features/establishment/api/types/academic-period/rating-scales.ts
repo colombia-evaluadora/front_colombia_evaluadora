@@ -17,6 +17,7 @@ export interface RatingSymbol {
 export interface TeachingLevel {
   id: number
   nombre: string
+  grados?: string[]
 }
 
 export interface RatingScale {
@@ -61,6 +62,11 @@ export type CreateRatingScaleRequest = RatingScale & {
 }
 
 export type UpdateRatingScaleRequest = RatingScale
+
+export interface MutationResult {
+  status: "ok" | "error"
+  message: string
+}
 
 export type ExportFormat = "pdf" | "excel"
 
