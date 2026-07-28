@@ -44,3 +44,16 @@ export interface MutationResult {
   status: "ok" | "error"
   message: string
 }
+
+export type ExportFormat = "pdf" | "excel"
+
+export interface ExportResult {
+  status: "ok" | "error"
+  message: string
+}
+
+export interface GradesExportRequest {
+  ids?: number[]
+  filters?: GradesQueryFilters
+  format: ExportFormat
+}

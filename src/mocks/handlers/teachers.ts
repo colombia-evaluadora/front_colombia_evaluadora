@@ -2,10 +2,17 @@ import { http, HttpResponse, delay } from "msw"
 import { teachersDb } from "../db/teachers"
 
 import type {
+  ExportFormat,
+  ExportResult,
   Teacher,
   TeachersQueryRequest,
   TeachersQueryResponse,
 } from "@/features/establishment/api/types/academic-period/teacher"
+
+const EXPORT_FORMAT_LABELS: Record<ExportFormat, string> = {
+  pdf: "PDF",
+  excel: "Excel",
+}
 
 function applyFilters(
   rows: Teacher[],
@@ -72,6 +79,19 @@ export const teachersHandlers = [
       rows,
       pageCount,
       totalCount,
+    })
+  }),
+
+  http.post("/api/teachers/export-all", async ({ request }) => {
+    await delay(600)
+    const { filters, format } = (await request.json()) as {
+      filters: TeachersQueryRequest["filters"]
+      format: ExportFormat
+    }
+    const count = applyFilters(teachersDb, filters).length
+    return HttpResponse.json<ExportResult>({
+      status: "ok",
+      message: `${count} docente(s) exportado(s) a ${EXPORT_FORMAT_LABELS[format]}.`,
     })
   }),
 ]

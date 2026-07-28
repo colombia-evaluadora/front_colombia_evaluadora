@@ -6,6 +6,7 @@ import type {
   GradeGroupsQueryRequest,
   GradeGroupsQueryResponse,
   CreateGradeGroupRequest,
+  UpdateGradeGroupRequest,
 } from "@/features/establishment/api/types/academic-period/grade-group"
 
 function applyFilters(
@@ -87,6 +88,24 @@ export const gradeGroupsHandlers = [
     const record = { ...body, gradeId: body.gradeId ?? 0 }
     gradeGroupsDb.push(record)
     return HttpResponse.json(record, { status: 201 })
+  }),
+
+  http.patch("/api/grade-groups/:codigo", async ({ request, params }) => {
+    await delay(400)
+    const codigo = decodeURIComponent(String(params.codigo))
+    const body = (await request.json()) as UpdateGradeGroupRequest
+    const index = gradeGroupsDb.findIndex((row) => row.codigo === codigo)
+    if (index === -1) {
+      return HttpResponse.json(
+        { status: "error", message: "Grupo no encontrado." },
+        { status: 404 }
+      )
+    }
+    gradeGroupsDb[index] = { ...gradeGroupsDb[index], ...body }
+    return HttpResponse.json({
+      status: "ok",
+      message: "Grupo actualizado.",
+    })
   }),
 
   http.delete("/api/grade-groups/:codigo", async ({ params }) => {

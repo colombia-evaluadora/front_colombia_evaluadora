@@ -36,6 +36,8 @@ export type CreateGradeGroupRequest = GradeGroup & {
   gradeId?: number
 }
 
+export type UpdateGradeGroupRequest = GradeGroup
+
 export interface MutationResult {
   status: "ok" | "error"
   message: string
