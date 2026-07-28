@@ -4,12 +4,21 @@ import {
   DEFAULT_EVALUATION_CRITERIA,
   evaluationCriteriaDb,
 } from "../db/evaluation-criteria"
+import { evaluationCriteriaOptionsDb } from "../db/evaluation-criteria-options"
 import type {
   EvaluationCriteria,
+  EvaluationCriteriaOptions,
   MutationResult,
 } from "@/features/establishment/api/types/academic-period/evaluation-criteria"
 
 export const evaluationCriteriaHandlers = [
+  http.get("/api/evaluation-criteria/options", async () => {
+    await delay(150)
+    return HttpResponse.json<EvaluationCriteriaOptions>(
+      evaluationCriteriaOptionsDb
+    )
+  }),
+
   http.get("/api/evaluation-criteria/:academicPeriodId", async ({ params }) => {
     await delay(200)
     const id = Number(params.academicPeriodId)

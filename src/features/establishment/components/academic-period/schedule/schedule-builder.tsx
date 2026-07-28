@@ -19,7 +19,6 @@ import {
   buildRuns,
   buildSlots,
   DAYS,
-  formatClock,
   type Jornada,
   type ScheduleSubject,
 } from "./schedule-data"
