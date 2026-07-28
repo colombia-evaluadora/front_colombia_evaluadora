@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { useForm } from "@tanstack/react-form"
-import { PlusCircleIcon, SpinnerIcon } from "@/components/ui/icons"
+import { PencilIcon, PlusCircleIcon, SpinnerIcon } from "@/components/ui/icons"
 import { toast } from "sonner"
 import { z } from "zod"
 
@@ -27,8 +27,12 @@ import {
 } from "@/components/ui/select"
 
 import { useCreateEvaluationPeriod } from "../../../api/mutations/create-evaluation-period"
+import { useUpdateEvaluationPeriod } from "../../../api/mutations/update-evaluation-period"
 import { EVALUATION_PERIOD_STATUSES } from "../../../api/ui-mappings"
-import type { EvaluationPeriodStatus } from "../../../api/types/academic-period/evaluation-period"
+import type {
+  EvaluationPeriod,
+  EvaluationPeriodStatus,
+} from "../../../api/types/academic-period/evaluation-period"
 import { DatePicker } from "@/components/date-picker"
 import { formatDateValue, parseDateValue } from "@/lib/date-value"
 
@@ -64,12 +68,27 @@ const FORM_ID = "evaluation-period-form"
 
 interface CreateEvaluationPeriodDialogProps {
   academicPeriodId?: number
+  period?: EvaluationPeriod
 }
 
 export function CreateEvaluationPeriodDialog({
   academicPeriodId,
+  period,
 }: CreateEvaluationPeriodDialogProps) {
+  const isEditing = period != null
   const [open, setOpen] = useState(false)
+
+  const defaultValues: EvaluationPeriodFormValues = period
+    ? {
+        codigo: period.codigo,
+        nombre: period.nombre,
+        abreviacion: period.abreviacion,
+        startDate: period.startDate,
+        endDate: period.endDate,
+        peso: period.peso,
+        estado: period.estado,
+      }
+    : EMPTY
 
   const createEvaluation = useCreateEvaluationPeriod({
     mutationConfig: {
@@ -81,26 +100,64 @@ export function CreateEvaluationPeriodDialog({
     },
   })
 
+  const updateEvaluation = useUpdateEvaluationPeriod({
+    mutationConfig: {
+      onSuccess: (result) => {
+        if (result.status === "error") {
+          toast.error(result.message)
+          return
+        }
+        toast.success(result.message)
+        setOpen(false)
+      },
+    },
+  })
+
+  const isSaving = createEvaluation.isPending || updateEvaluation.isPending
+
   const form = useForm({
-    defaultValues: EMPTY,
+    defaultValues,
     validators: { onSubmit: evaluationPeriodFormSchema },
     onSubmit: ({ value }) => {
-      createEvaluation.mutate({
-        ...evaluationPeriodFormSchema.parse(value),
-        academicPeriodId,
-      })
+      const values = evaluationPeriodFormSchema.parse(value)
+      if (isEditing) {
+        updateEvaluation.mutate({ codigo: period.codigo, values })
+      } else {
+        createEvaluation.mutate({ ...values, academicPeriodId })
+      }
     },
   })
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button color="primary" size="sm" />}>
-        <PlusCircleIcon weight="fill" data-icon="inline-start" />
-        Agregar
+      <DialogTrigger
+        render={
+          isEditing ? (
+            <Button variant="fill" color="secondary" size="icon" className="size-8" />
+          ) : (
+            <Button color="primary" size="sm" />
+          )
+        }
+      >
+        {isEditing ? (
+          <>
+            <span className="sr-only">Editar periodo de evaluación</span>
+            <PencilIcon />
+          </>
+        ) : (
+          <>
+            <PlusCircleIcon weight="fill" data-icon="inline-start" />
+            Agregar
+          </>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-3xl">
         <DialogHeader>
-          <DialogTitle>Agregar periodo de evaluación</DialogTitle>
+          <DialogTitle>
+            {isEditing
+              ? "Editar periodo de evaluación"
+              : "Agregar periodo de evaluación"}
+          </DialogTitle>
           <DialogDescription>
             Completá los datos del periodo de evaluación.
           </DialogDescription>
@@ -277,13 +334,13 @@ export function CreateEvaluationPeriodDialog({
             type="submit"
             color="primary"
             form={FORM_ID}
-            disabled={createEvaluation.isPending}
-            aria-busy={createEvaluation.isPending}
+            disabled={isSaving}
+            aria-busy={isSaving}
           >
-            {createEvaluation.isPending && (
+            {isSaving && (
               <SpinnerIcon data-icon="inline-start" className="animate-spin" />
             )}
-            Agregar
+            {isEditing ? "Guardar" : "Agregar"}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -2,14 +2,20 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import type { SortingState } from "@tanstack/react-table"
-import { SpinnerIcon } from "@/components/ui/icons"
+import { MagnifyingGlassIcon, SpinnerIcon } from "@/components/ui/icons"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "@/components/ui/input-group"
 import { Pagination } from "@/components/pagination"
 import { useDataTable } from "@/hooks/use-data-table"
 
 import { ExpandableDataTable } from "../table/expandable-data-table"
+import { ExportAcademicAssignmentsDialog } from "../dialogs/dialog-export-academic-assignments"
 
 import { useTeachersQuery } from "../../../api/query/use-teachers-query"
 import { useAssignmentSubjectsQuery } from "../../../api/query/use-assignment-subjects-query"
@@ -29,6 +35,14 @@ export function TabAcademicAssignments({
   const [sorting, setSorting] = useState<SortingState>([])
   const [pageIndex, setPageIndex] = useState(0)
   const [pageSize, setPageSize] = useState(10)
+  const [search, setSearch] = useState("")
+
+  // Búsqueda por nombre del docente. Los mismos filtros alimentan la
+  // exportación, para que "exportar" respete la búsqueda activa.
+  const queryFilters = useMemo(
+    () => ({ nombre: search.trim() || undefined }),
+    [search]
+  )
 
   const [expanded, setExpanded] = useState<Teacher | null>(null)
   const [assignedIds, setAssignedIds] = useState<Record<string, string[]>>({})
@@ -58,7 +72,7 @@ export function TabAcademicAssignments({
   })
 
   const { data, isPending, isError, refetch } = useTeachersQuery({
-    filters: {},
+    filters: queryFilters,
     sorting,
     pageIndex,
     pageSize,
@@ -115,6 +129,26 @@ export function TabAcademicAssignments({
 
   return (
     <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <InputGroup className="w-full rounded-md border-input has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20 sm:w-72">
+          <InputGroupAddon align="inline-start" className="ml-2">
+            <MagnifyingGlassIcon className="size-4 text-muted-foreground" />
+          </InputGroupAddon>
+          <InputGroupInput
+            type="search"
+            placeholder="Buscar por nombre"
+            aria-label="Buscar docente por nombre"
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value)
+              setPageIndex(0)
+            }}
+          />
+        </InputGroup>
+
+        <ExportAcademicAssignmentsDialog filters={queryFilters} />
+      </div>
+
       <ExpandableDataTable
         table={table}
         isPending={isPending}

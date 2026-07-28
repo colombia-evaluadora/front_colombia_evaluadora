@@ -1,6 +1,6 @@
 "use no memo"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import type { SortingState } from "@tanstack/react-table"
 
 import { DataTable } from "@/components/data-table"
@@ -8,7 +8,7 @@ import { Pagination } from "@/components/pagination"
 import { useDataTable } from "@/hooks/use-data-table"
 
 import { useStudyPlansQuery } from "../../../api/query/use-study-plans-query"
-import { columns } from "../table/columns-study-plan"
+import { createStudyPlanColumns } from "../table/columns-study-plan"
 import { CreateStudyPlanDialog } from "../dialogs/dialog-create-study-plan"
 
 interface TabStudyPlanProps {
@@ -35,6 +35,11 @@ export function TabStudyPlan({ academicPeriodId, gradeId }: TabStudyPlanProps) {
     setPageSize(size)
     setPageIndex(0)
   }
+
+  const columns = useMemo(
+    () => createStudyPlanColumns({ academicPeriodId, gradeId }),
+    [academicPeriodId, gradeId]
+  )
 
   const { table } = useDataTable({
     columns,
