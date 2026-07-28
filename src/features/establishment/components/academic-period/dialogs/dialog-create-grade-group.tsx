@@ -1,6 +1,6 @@
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { useForm } from "@tanstack/react-form"
-import { PlusCircleIcon, SpinnerIcon } from "@/components/ui/icons"
+import { PencilIcon, PlusCircleIcon, SpinnerIcon } from "@/components/ui/icons"
 import { toast } from "sonner"
 import { z } from "zod"
 
@@ -15,6 +15,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@/components/ui/combobox"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
@@ -27,7 +35,10 @@ import {
 } from "@/components/ui/select"
 
 import { useCreateGradeGroup } from "../../../api/mutations/create-grade-group"
+import { useUpdateGradeGroup } from "../../../api/mutations/update-grade-group"
+import { useTeachersQuery } from "../../../api/query/use-teachers-query"
 import { JORNADA_OPTIONS } from "../../../api/ui-mappings"
+import type { GradeGroup } from "../../../api/types/academic-period/grade-group"
 
 const METODOLOGIA_OPTIONS = [
   "Tradicional",
@@ -59,12 +70,40 @@ const FORM_ID = "grade-group-form"
 
 interface CreateGradeGroupDialogProps {
   gradeId?: number
+  academicPeriodId?: number
+  gradeGroup?: GradeGroup
 }
 
 export function CreateGradeGroupDialog({
   gradeId,
+  academicPeriodId,
+  gradeGroup,
 }: CreateGradeGroupDialogProps) {
+  const isEditing = gradeGroup != null
   const [open, setOpen] = useState(false)
+
+  const { data: teachersData } = useTeachersQuery({
+    filters: {},
+    sorting: [],
+    pageIndex: 0,
+    pageSize: 1000,
+    academicPeriodId,
+  })
+  const teacherNames = useMemo(
+    () => (teachersData?.rows ?? []).map((t) => `${t.nombre} ${t.apellido}`),
+    [teachersData]
+  )
+
+  const defaultValues: GradeGroupFormValues = gradeGroup
+    ? {
+        codigo: gradeGroup.codigo,
+        jornada: gradeGroup.jornada,
+        director: gradeGroup.director,
+        planEstudio: gradeGroup.planEstudio,
+        metodologia: gradeGroup.metodologia ?? "",
+        cupo: gradeGroup.cupo ?? 0,
+      }
+    : EMPTY
 
   const createGradeGroup = useCreateGradeGroup({
     mutationConfig: {
@@ -76,23 +115,66 @@ export function CreateGradeGroupDialog({
     },
   })
 
+  const updateGradeGroup = useUpdateGradeGroup({
+    mutationConfig: {
+      onSuccess: (result) => {
+        if (result.status === "error") {
+          toast.error(result.message)
+          return
+        }
+        toast.success(result.message)
+        setOpen(false)
+      },
+    },
+  })
+
+  const isSaving = createGradeGroup.isPending || updateGradeGroup.isPending
+
   const form = useForm({
-    defaultValues: EMPTY,
+    defaultValues,
     validators: { onSubmit: gradeGroupFormSchema },
     onSubmit: ({ value }) => {
-      createGradeGroup.mutate({ ...gradeGroupFormSchema.parse(value), gradeId })
+      const values = gradeGroupFormSchema.parse(value)
+      if (isEditing) {
+        updateGradeGroup.mutate({ codigo: gradeGroup.codigo, values })
+      } else {
+        createGradeGroup.mutate({ ...values, gradeId })
+      }
     },
   })
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button color="primary" size="sm" />}>
-        <PlusCircleIcon weight="fill" data-icon="inline-start" />
-        Agregar
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next)
+        if (!next) form.reset()
+      }}
+    >
+      <DialogTrigger
+        render={
+          isEditing ? (
+            <Button variant="fill" color="secondary" size="icon" className="size-8" />
+          ) : (
+            <Button color="primary" size="sm" />
+          )
+        }
+      >
+        {isEditing ? (
+          <>
+            <span className="sr-only">Editar grupo</span>
+            <PencilIcon />
+          </>
+        ) : (
+          <>
+            <PlusCircleIcon weight="fill" data-icon="inline-start" />
+            Agregar
+          </>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-3xl" showCloseButton={false}>
         <DialogHeader>
-          <DialogTitle>Agregar grupo</DialogTitle>
+          <DialogTitle>{isEditing ? "Editar grupo" : "Agregar grupo"}</DialogTitle>
           <DialogDescription>Completá los datos del grupo.</DialogDescription>
         </DialogHeader>
 
@@ -159,12 +241,28 @@ export function CreateGradeGroupDialog({
             {(field) => (
               <Field variant="outlined">
                 <FieldLabel htmlFor={field.name}>Director de grupo</FieldLabel>
-                <Input
-                  id={field.name}
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                />
+                <Combobox
+                  items={teacherNames}
+                  value={field.state.value || null}
+                  onValueChange={(value) => field.handleChange((value as string) ?? "")}
+                >
+                  <ComboboxInput
+                    id={field.name}
+                    placeholder="Buscar profesor"
+                    showClear
+                    className="rounded-md border-input has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20"
+                  />
+                  <ComboboxContent>
+                    <ComboboxEmpty>Sin profesores.</ComboboxEmpty>
+                    <ComboboxList>
+                      {(item: string) => (
+                        <ComboboxItem key={item} value={item}>
+                          {item}
+                        </ComboboxItem>
+                      )}
+                    </ComboboxList>
+                  </ComboboxContent>
+                </Combobox>
               </Field>
             )}
           </form.Field>
@@ -233,7 +331,6 @@ export function CreateGradeGroupDialog({
         </form>
 
         <DialogFooter>
-          {/* Guardar solo aparece cuando el formulario tiene todos los datos. */}
           <form.Subscribe
             selector={(state) =>
               gradeGroupFormSchema.safeParse(state.values).success
@@ -245,10 +342,10 @@ export function CreateGradeGroupDialog({
                   type="submit"
                   color="primary"
                   form={FORM_ID}
-                  disabled={createGradeGroup.isPending}
-                  aria-busy={createGradeGroup.isPending}
+                  disabled={isSaving}
+                  aria-busy={isSaving}
                 >
-                  {createGradeGroup.isPending && (
+                  {isSaving && (
                     <SpinnerIcon
                       data-icon="inline-start"
                       className="animate-spin"

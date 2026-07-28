@@ -3,12 +3,19 @@ import { gradesDb, gradeLevelName } from "../db/grades"
 
 import type {
   CreateGradeRequest,
+  ExportFormat,
+  ExportResult,
   Grade,
   GradeRecord,
   GradesQueryRequest,
   GradesQueryResponse,
   UpdateGradeRequest,
 } from "@/features/establishment/api/types/academic-period/grade"
+
+const EXPORT_FORMAT_LABELS: Record<ExportFormat, string> = {
+  pdf: "PDF",
+  excel: "Excel",
+}
 
 function applyFilters(
   rows: Grade[],
@@ -89,6 +96,19 @@ export const gradesHandlers = [
       rows,
       pageCount,
       totalCount,
+    })
+  }),
+
+  http.post("/api/grades/export-all", async ({ request }) => {
+    await delay(600)
+    const { filters, format } = (await request.json()) as {
+      filters: GradesQueryRequest["filters"]
+      format: ExportFormat
+    }
+    const count = applyFilters(gradesDb, filters).length
+    return HttpResponse.json<ExportResult>({
+      status: "ok",
+      message: `${count} grado(s) exportado(s) a ${EXPORT_FORMAT_LABELS[format]}.`,
     })
   }),
 

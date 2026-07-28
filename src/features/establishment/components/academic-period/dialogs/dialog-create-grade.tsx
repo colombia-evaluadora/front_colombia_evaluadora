@@ -42,21 +42,6 @@ import {
   type ScheduleSubject,
 } from "../schedule/schedule-data"
 
-const GRADO_SIGUIENTE_OPTIONS = [
-  "Transición",
-  "Primero",
-  "Segundo",
-  "Tercero",
-  "Cuarto",
-  "Quinto",
-  "Sexto",
-  "Séptimo",
-  "Octavo",
-  "Noveno",
-  "Décimo",
-  "Undécimo",
-]
-
 interface CreateGradeDialogProps {
   jornada: Jornada
   academicPeriodId?: number
@@ -93,6 +78,20 @@ export function CreateGradeDialog({
   }
 
   const { data: teachingLevels = [] } = useTeachingLevelsQuery()
+
+  // Grados disponibles según el nivel de enseñanza elegido. La lista del
+  // "grado siguiente" cambia con el nivel; el nombre queda libre.
+  const gradoOptions =
+    teachingLevels.find((l) => l.id === teachingLevelId)?.grados ?? []
+
+  function handleChangeTeachingLevel(value: string) {
+    if (!value) return
+    const nextId = Number(value)
+    setTeachingLevelId(nextId)
+    // Si el "grado siguiente" elegido no pertenece al nuevo nivel, se limpia.
+    const grados = teachingLevels.find((l) => l.id === nextId)?.grados ?? []
+    if (!grados.includes(gradoSiguiente)) setGradoSiguiente("")
+  }
 
   const createGrade = useCreateGrade({
     mutationConfig: {
@@ -229,7 +228,7 @@ export function CreateGradeDialog({
             <FieldLabel htmlFor="grade-nivel">Nivel de enseñanza*</FieldLabel>
             <Select
               value={teachingLevelId != null ? String(teachingLevelId) : ""}
-              onValueChange={(value) => value && setTeachingLevelId(Number(value))}
+              onValueChange={handleChangeTeachingLevel}
             >
               <SelectTrigger id="grade-nivel">
                 <SelectValue placeholder="Seleccionar">
@@ -286,19 +285,30 @@ export function CreateGradeDialog({
                   Grado siguiente
                 </FieldLabel>
                 <Select
-                  value={gradoSiguiente}
+                  value={gradoSiguiente || undefined}
                   onValueChange={(value) => value && setGradoSiguiente(value)}
                 >
-                  <SelectTrigger id="grade-siguiente">
+                  <SelectTrigger
+                    id="grade-siguiente"
+                    disabled={teachingLevelId == null}
+                  >
                     <SelectValue placeholder="Seleccionar" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
-                      {GRADO_SIGUIENTE_OPTIONS.map((option) => (
-                        <SelectItem key={option} value={option}>
-                          {option}
-                        </SelectItem>
-                      ))}
+                      {gradoOptions.length === 0 ? (
+                        <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                          {teachingLevelId == null
+                            ? "Seleccioná primero un nivel de enseñanza."
+                            : "Este nivel no tiene grados cargados."}
+                        </div>
+                      ) : (
+                        gradoOptions.map((option) => (
+                          <SelectItem key={option} value={option}>
+                            {option}
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectGroup>
                   </SelectContent>
                 </Select>
@@ -342,7 +352,7 @@ export function CreateGradeDialog({
             </TabsList>
 
             <TabsContent value="grupo" className="mt-4 min-w-0">
-              <TabGradeGroups gradeId={gradeId} />
+              <TabGradeGroups gradeId={gradeId} academicPeriodId={academicPeriodId} />
             </TabsContent>
 
             <TabsContent value="promocion" className="mt-4 min-w-0">

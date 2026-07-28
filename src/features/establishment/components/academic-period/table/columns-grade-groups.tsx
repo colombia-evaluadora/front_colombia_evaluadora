@@ -5,9 +5,16 @@ import { DataTableColumnHeader } from "@/components/data-table"
 
 import type { GradeGroup } from "../../../api/types/academic-period/grade-group"
 import { DeleteGradeGroupDialog } from "../dialogs/dialog-delete-grade-group"
-import { EditGradeGroupButton } from "./edit-grade-group-button"
+import { CreateGradeGroupDialog } from "../dialogs/dialog-create-grade-group"
 
-export const columns: ColumnDef<GradeGroup>[] = [
+interface CreateGradeGroupColumnsOptions {
+  academicPeriodId?: number
+}
+
+export function createGradeGroupColumns({
+  academicPeriodId,
+}: CreateGradeGroupColumnsOptions = {}): ColumnDef<GradeGroup>[] {
+  return [
   {
     id: "select",
     header: ({ table }) => (
@@ -77,14 +84,18 @@ export const columns: ColumnDef<GradeGroup>[] = [
     header: () => <span className="sr-only">Acciones</span>,
     cell: ({ row }) => (
       <div className="flex items-center justify-end gap-1">
-        <EditGradeGroupButton gradeGroup={row.original} />
+        <CreateGradeGroupDialog
+          gradeGroup={row.original}
+          academicPeriodId={academicPeriodId}
+        />
         <DeleteGradeGroupDialog gradeGroup={row.original} />
       </div>
     ),
     enableSorting: false,
     enableHiding: false,
     size: 96,
-  },
-]
+    },
+  ]
+}
 
 export type GradeGroupTable = Table<GradeGroup>

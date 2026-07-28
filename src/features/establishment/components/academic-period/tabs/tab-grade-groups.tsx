@@ -1,6 +1,6 @@
 "use no memo"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import type { SortingState } from "@tanstack/react-table"
 
 import { DataTable } from "@/components/data-table"
@@ -8,17 +8,23 @@ import { Pagination } from "@/components/pagination"
 import { useDataTable } from "@/hooks/use-data-table"
 
 import { useGradeGroupsQuery } from "../../../api/query/use-grade-groups-query"
-import { columns } from "../table/columns-grade-groups"
+import { createGradeGroupColumns } from "../table/columns-grade-groups"
 import { CreateGradeGroupDialog } from "../dialogs/dialog-create-grade-group"
 
 interface TabGradeGroupsProps {
   gradeId?: number
+  academicPeriodId?: number
 }
 
-export function TabGradeGroups({ gradeId }: TabGradeGroupsProps) {
+export function TabGradeGroups({ gradeId, academicPeriodId }: TabGradeGroupsProps) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [pageIndex, setPageIndex] = useState(0)
   const [pageSize, setPageSize] = useState(10)
+
+  const columns = useMemo(
+    () => createGradeGroupColumns({ academicPeriodId }),
+    [academicPeriodId]
+  )
 
   const { data, isPending, isError, refetch } = useGradeGroupsQuery({
     filters: {},
@@ -50,7 +56,10 @@ export function TabGradeGroups({ gradeId }: TabGradeGroupsProps) {
   return (
     <>
       <div className="mb-2 flex justify-end">
-        <CreateGradeGroupDialog gradeId={gradeId} />
+        <CreateGradeGroupDialog
+          gradeId={gradeId}
+          academicPeriodId={academicPeriodId}
+        />
       </div>
 
       <DataTable
