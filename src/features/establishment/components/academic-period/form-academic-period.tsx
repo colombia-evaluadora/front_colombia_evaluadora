@@ -65,6 +65,8 @@ const STATUS_OPTIONS = Object.keys(
   ACADEMIC_PERIOD_STATUS_LABELS
 ) as AcademicPeriodStatus[]
 
+const NO_PREVIOUS_PERIOD = "none"
+
 export function AcademicPeriodForm({
   id,
   defaultValues,
@@ -86,7 +88,6 @@ export function AcademicPeriodForm({
     },
   })
 
-  // Periodos existentes para el select "Periodo académico anterior".
   const { data: periodsData } = useAcademicPeriodsQuery({
     filters: {},
     sorting: [],
@@ -218,41 +219,66 @@ export function AcademicPeriodForm({
           }}
         </form.Field>
 
-        <form.Field name="previousPeriodId">
-          {(field) => (
-            <Field variant="outlined">
-              <FieldLabel htmlFor={field.name}>
-                Periodo académico anterior
-              </FieldLabel>
-              <Select
-                value={field.state.value ? String(field.state.value) : ""}
-                onValueChange={(value) =>
-                  field.handleChange(value ? Number(value) : null)
-                }
-              >
-                <SelectTrigger id={field.name}>
-                  <SelectValue placeholder="Seleccione un período">
-                    {(value) => {
-                      const p = previousPeriodOptions.find(
-                        (o) => String(o.id) === value
-                      )
-                      return p ? `${p.name} — ${p.sedeName}` : "Seleccione un período"
-                    }}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    {previousPeriodOptions.map((period) => (
-                      <SelectItem key={period.id} value={String(period.id)}>
-                        {period.name} — {period.sedeName}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </Field>
-          )}
-        </form.Field>
+        {/* Periodo anterior: se consulta por la sede seleccionada e incluye
+            siempre la opción "No tiene" (equivale a null). */}
+        <form.Subscribe selector={(state) => state.values.sedeId}>
+          {(sedeId) => {
+            const optionsForSede = previousPeriodOptions.filter(
+              (p) => p.sedeId === sedeId
+            )
+            return (
+              <form.Field name="previousPeriodId">
+                {(field) => (
+                  <Field variant="outlined">
+                    <FieldLabel htmlFor={field.name}>
+                      Periodo académico anterior
+                    </FieldLabel>
+                    <Select
+                      value={
+                        field.state.value
+                          ? String(field.state.value)
+                          : NO_PREVIOUS_PERIOD
+                      }
+                      onValueChange={(value) =>
+                        field.handleChange(
+                          value && value !== NO_PREVIOUS_PERIOD
+                            ? Number(value)
+                            : null
+                        )
+                      }
+                    >
+                      <SelectTrigger id={field.name}>
+                        <SelectValue placeholder="No tiene">
+                          {(value) => {
+                            const p = optionsForSede.find(
+                              (o) => String(o.id) === value
+                            )
+                            return p ? `${p.name} — ${p.sedeName}` : "No tiene"
+                          }}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectItem value={NO_PREVIOUS_PERIOD}>
+                            No tiene
+                          </SelectItem>
+                          {optionsForSede.map((period) => (
+                            <SelectItem
+                              key={period.id}
+                              value={String(period.id)}
+                            >
+                              {period.name} — {period.sedeName}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  </Field>
+                )}
+              </form.Field>
+            )
+          }}
+        </form.Subscribe>
 
         <form.Field name="status">
           {(field) => (
@@ -328,60 +354,84 @@ export function AcademicPeriodForm({
         </form.Field>
 
         <form.Field name="scheduleStartTime">
-          {(field) => (
-            <Field variant="outlined">
-              <FieldLabel htmlFor={field.name}>Hora inicio</FieldLabel>
-              <DatePicker
-                mode="time"
-                id={field.name}
-                value={field.state.value}
-                onChange={field.handleChange}
-                placeholder="Seleccione una hora"
-              />
-            </Field>
-          )}
+          {(field) => {
+            const isInvalid =
+              field.state.meta.isTouched && !field.state.meta.isValid
+            return (
+              <Field variant="outlined" data-invalid={isInvalid}>
+                <FieldLabel htmlFor={field.name}>Hora inicio*</FieldLabel>
+                <DatePicker
+                  mode="time"
+                  id={field.name}
+                  value={field.state.value}
+                  onChange={(value) => {
+                    field.handleChange(value)
+                    field.handleBlur()
+                  }}
+                  placeholder="Seleccione una hora"
+                  aria-invalid={isInvalid}
+                />
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
+              </Field>
+            )
+          }}
         </form.Field>
 
         <form.Field name="scheduleEndTime">
-          {(field) => (
-            <Field variant="outlined">
-              <FieldLabel htmlFor={field.name}>Hora final</FieldLabel>
-              <DatePicker
-                mode="time"
-                id={field.name}
-                value={field.state.value}
-                onChange={field.handleChange}
-                placeholder="Seleccione una hora"
-              />
-            </Field>
-          )}
+          {(field) => {
+            const isInvalid =
+              field.state.meta.isTouched && !field.state.meta.isValid
+            return (
+              <Field variant="outlined" data-invalid={isInvalid}>
+                <FieldLabel htmlFor={field.name}>Hora final*</FieldLabel>
+                <DatePicker
+                  mode="time"
+                  id={field.name}
+                  value={field.state.value}
+                  onChange={(value) => {
+                    field.handleChange(value)
+                    field.handleBlur()
+                  }}
+                  placeholder="Seleccione una hora"
+                  aria-invalid={isInvalid}
+                />
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
+              </Field>
+            )
+          }}
         </form.Field>
 
         {/* Fila 4: bloques, descansos, reserva */}
         <form.Field name="defaultBlocksCount">
-          {(field) => (
-            <Field variant="outlined">
-              <FieldLabel htmlFor={field.name}>
-                Número de bloques de la jornada
-              </FieldLabel>
-              <Input
-                id={field.name}
-                name={field.name}
-                type="number"
-                min={0}
-                placeholder="Ingrese la cantidad"
-                value={field.state.value ?? ""}
-                onBlur={field.handleBlur}
-                onChange={(e) =>
-                  field.handleChange(
-                    Number.isNaN(e.target.valueAsNumber)
-                      ? null
-                      : e.target.valueAsNumber
-                  )
-                }
-              />
-            </Field>
-          )}
+          {(field) => {
+            const isInvalid =
+              field.state.meta.isTouched && !field.state.meta.isValid
+            return (
+              <Field variant="outlined" data-invalid={isInvalid}>
+                <FieldLabel htmlFor={field.name}>
+                  Número de bloques de la jornada*
+                </FieldLabel>
+                <Input
+                  id={field.name}
+                  name={field.name}
+                  type="number"
+                  min={1}
+                  placeholder="Ingrese la cantidad"
+                  value={field.state.value ?? ""}
+                  onBlur={field.handleBlur}
+                  aria-invalid={isInvalid}
+                  onChange={(e) =>
+                    field.handleChange(
+                      Number.isNaN(e.target.valueAsNumber)
+                        ? null
+                        : e.target.valueAsNumber
+                    )
+                  }
+                />
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
+              </Field>
+            )
+          }}
         </form.Field>
 
         <form.Field name="breaks" mode="array">
@@ -399,16 +449,20 @@ export function AcademicPeriodForm({
 
         <form.Field name="reservationEnabled">
           {(field) => (
-            <Field orientation="horizontal" className="items-center justify-between">
-              <FieldLabel htmlFor={field.name}>
-                Habilitar reserva de cupos
-              </FieldLabel>
+            <label
+              htmlFor={field.name}
+              className={cn(
+                inputVariants({ variant: "outlined" }),
+                "mt-2 flex cursor-pointer items-center justify-between gap-2"
+              )}
+            >
+              <span className="text-sm">Habilitar reserva de cupos</span>
               <Switch
                 id={field.name}
                 checked={field.state.value}
                 onCheckedChange={(checked) => field.handleChange(checked)}
               />
-            </Field>
+            </label>
           )}
         </form.Field>
       </div>
@@ -416,7 +470,6 @@ export function AcademicPeriodForm({
   )
 }
 
-// Formatea "HH:mm" (24h) a "h:mmam/pm" (ej. "05:00" → "5:00am").
 function formatTime12(value: string): string {
   if (!value) return ""
   const [h, m] = value.split(":").map(Number)
@@ -501,7 +554,7 @@ function BreakEditor({ onAdd }: { onAdd: (brk: Break) => void }) {
           onChange={setStartTime}
           placeholder="Hora inicio"
         />
-        <span className="text-muted-foreground shrink-0">→</span>
+        <span className="text-muted-foreground shrink-0 text-xs">→</span>
         <BreakTimeTrigger
           value={endTime}
           onChange={setEndTime}
