@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from "react"
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useState } from "react"
 import { MinusIcon, XIcon } from "@/components/ui/icons"
 import { toast } from "sonner"
 
 import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
+import { Field, FieldLabel } from "@/components/ui/field"
 import {
   Select,
   SelectContent,
@@ -100,16 +100,20 @@ interface ScheduleBuilderProps {
   subjects: ScheduleSubject[]
   // Opciones del select Grado/Grupo, tomadas de los grupos reales del grado.
   gradeGroups: string[]
-  // Grado dueño del horario: se usa para cargar y guardar la grilla.
+  // Grado dueño del horario: se usa para cargar la grilla.
   gradeId: number
 }
 
-export function ScheduleBuilder({
-  jornada,
-  subjects,
-  gradeGroups,
-  gradeId,
-}: ScheduleBuilderProps) {
+// Guardado imperativo: el diálogo del grado lo dispara desde su botón único
+// "Guardar cambios".
+export interface ScheduleBuilderHandle {
+  save: (gradeId: number) => Promise<void>
+}
+
+export const ScheduleBuilder = forwardRef<
+  ScheduleBuilderHandle,
+  ScheduleBuilderProps
+>(function ScheduleBuilder({ jornada, subjects, gradeGroups, gradeId }, ref) {
   const [gradeGroup, setGradeGroup] = useState("")
   // Una grilla por grupo/curso: { [gradeGroup]: cells }. Así cada curso tiene
   // su propio horario y cambiar de curso cambia la grilla.
@@ -138,14 +142,14 @@ export function ScheduleBuilder({
     }
   }, [gradeGroup, gradeGroups])
 
+  // El toast de éxito lo da el diálogo del grado (guardado unificado); acá
+  // solo reportamos errores.
   const updateGradeConfig = useUpdateGradeConfig({
     mutationConfig: {
       onSuccess: (result) => {
         if (result.status === "error") {
           toast.error(result.message)
-          return
         }
-        toast.success(result.message)
       },
     },
   })
@@ -177,16 +181,6 @@ export function ScheduleBuilder({
     }
     return counts
   }, [schedule, classSlotIds])
-
-  const jornadaSummary = [
-    jornada.startTime && jornada.endTime
-      ? `${formatClock(jornada.startTime)}–${formatClock(jornada.endTime)}`
-      : null,
-    `${slots.filter((s) => s.kind === "class").length} bloques`,
-    `${jornada.breaks.length} descanso(s)`,
-  ]
-    .filter(Boolean)
-    .join(" · ")
 
   function setCell(dayId: string, slotId: string, subjectId: string) {
     if (!gradeGroup) return
@@ -226,37 +220,48 @@ export function ScheduleBuilder({
     setDraggingId(null)
   }
 
-  function handleSave() {
-    const byGroup: Record<string, Record<string, Record<string, string>>> = {}
-    for (const [group, groupSchedule] of Object.entries(schedulesByGroup)) {
-      const cells: Record<string, Record<string, string>> = {}
-      for (const [dayId, daySlots] of Object.entries(groupSchedule)) {
-        const clean: Record<string, string> = {}
-        for (const [slotId, subjectId] of Object.entries(daySlots)) {
-          if (subjectId) clean[slotId] = subjectId
+  useImperativeHandle(
+    ref,
+    () => ({
+      save: async (id: number) => {
+        const byGroup: Record<
+          string,
+          Record<string, Record<string, string>>
+        > = {}
+        for (const [group, groupSchedule] of Object.entries(schedulesByGroup)) {
+          const cells: Record<string, Record<string, string>> = {}
+          for (const [dayId, daySlots] of Object.entries(groupSchedule)) {
+            const clean: Record<string, string> = {}
+            for (const [slotId, subjectId] of Object.entries(daySlots)) {
+              if (subjectId) clean[slotId] = subjectId
+            }
+            if (Object.keys(clean).length) cells[dayId] = clean
+          }
+          byGroup[group] = cells
         }
-        if (Object.keys(clean).length) cells[dayId] = clean
-      }
-      byGroup[group] = cells
-    }
-    updateGradeConfig.mutate({
-      gradeId,
-      values: { schedule: { byGroup } },
-    })
-  }
+        await updateGradeConfig.mutateAsync({
+          gradeId: id,
+          values: { schedule: { byGroup } },
+        })
+      },
+    }),
+    [schedulesByGroup, updateGradeConfig]
+  )
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
-      <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-medium text-muted-foreground">
-          Grado/Grupo
-        </label>
+      <Field
+        orientation="vertical"
+        variant="outlined"
+        className="w-full gap-2 sm:w-72"
+      >
+        <FieldLabel htmlFor="schedule-grade-group">Grado/Grupo</FieldLabel>
         <Select
           value={gradeGroup}
           onValueChange={(value) => value && setGradeGroup(value)}
           disabled={gradeGroups.length === 0}
         >
-          <SelectTrigger className="w-full sm:w-72">
+          <SelectTrigger id="schedule-grade-group" className="w-full">
             <SelectValue
               placeholder={
                 gradeGroups.length === 0
@@ -275,12 +280,7 @@ export function ScheduleBuilder({
             </SelectGroup>
           </SelectContent>
         </Select>
-      </div>
-
-      <p className="text-xs text-muted-foreground">
-        Jornada del periodo:{" "}
-        <span className="font-medium text-foreground">{jornadaSummary}</span>
-      </p>
+      </Field>
 
       <div className="flex flex-wrap gap-2">
         {subjects.length === 0 && (
@@ -393,9 +393,6 @@ export function ScheduleBuilder({
                       : undefined
 
                     return (
-                      // `relative` + hijo `absolute inset-1`: así el bloque llena
-                      // toda la altura de la celda fusionada (rowSpan), en vez de
-                      // quedarse a 44px y dejar el resto en blanco.
                       <td
                         key={day.id}
                         rowSpan={info?.rowSpan ?? 1}
@@ -465,18 +462,6 @@ export function ScheduleBuilder({
         </table>
       </div>
       )}
-
-      <div className="flex justify-end">
-        <Button
-          type="button"
-          color="primary"
-          onClick={handleSave}
-          disabled={updateGradeConfig.isPending}
-          aria-busy={updateGradeConfig.isPending}
-        >
-          {updateGradeConfig.isPending ? "Guardando..." : "Guardar horario"}
-        </Button>
-      </div>
     </div>
   )
-}
+})
