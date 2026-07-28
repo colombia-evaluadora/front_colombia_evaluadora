@@ -3,6 +3,7 @@ export interface EvaluationCriteria {
   gradingFormat: string
   gradingScale: string
   periodCalculationElements: string
+  subjectGradeCriteria: string
   finalGradeCriteria: string
   areaGradeCriteria: string
   studentWithoutGradesPerformance: string
@@ -10,6 +11,11 @@ export interface EvaluationCriteria {
   roundingMode: string
   initialGrade: string
 }
+
+export type EvaluationCriteriaOptions = Record<
+  keyof EvaluationCriteria,
+  string[]
+>
 
 export interface MutationResult {
   status: "ok" | "error"

@@ -8,6 +8,7 @@ import { Spinner } from "@/components/ui/spinner"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 
 import { useEvaluationCriteriaQuery } from "../../../api/query/use-evaluation-criteria-query"
+import { useEvaluationCriteriaOptionsQuery } from "../../../api/query/use-evaluation-criteria-options-query"
 import { useUpdateEvaluationCriteria } from "../../../api/mutations/update-evaluation-criteria"
 import {
   Select,
@@ -20,71 +21,45 @@ import {
 
 const FIELDS = [
   {
-    name: "gradingFormat",
-    label: "Formato de calificación para la asignatura*",
-    options: ["Numérico", "Cualitativo", "Mixto"],
-  },
-  {
     name: "gradingScale",
     label: "Escala de valoración*",
-    options: [
-      "Escala nacional (1.0 - 5.0)",
-      "Escala (0 - 100)",
-      "Cualitativa (Bajo/Básico/Alto/Superior)",
-    ],
+  },
+  {
+    name: "gradingFormat",
+    label: "Formato de calificación para la asignatura*",
+  },
+  {
+    name: "studentWithoutGradesPerformance",
+    label: "Desempeño cuando un estudiante no tiene calificaciones*",
+  },
+  {
+    name: "initialGrade",
+    label: "Nota inicial para las calificaciones*",
+  },
+  {
+    name: "maxRecoveryGrade",
+    label: "Nota máxima para las recuperaciones y nivelaciones*",
+  },
+  {
+    name: "roundingMode",
+    label: "Modo en que la aplicación debe redondear los dígitos*",
   },
   {
     name: "periodCalculationElements",
     label: "Elementos para calcular la nota definitiva del período*",
-    options: [
-      "Solo actividades",
-      "Actividades + examen",
-      "Ponderado por competencias",
-    ],
+  },
+  {
+    name: "subjectGradeCriteria",
+    label: "Criterio para calcular la nota de la asignatura*",
+  },
+  {
+    name: "areaGradeCriteria",
+    label: "Criterio para calcular la nota del área*",
   },
   {
     name: "finalGradeCriteria",
     label:
       "Criterio para calcular la nota final entre los períodos de evaluación*",
-    options: [
-      "Promedio de los períodos",
-      "Promedio ponderado por peso",
-      "Último período",
-    ],
-  },
-  {
-    name: "areaGradeCriteria",
-    label: "Criterio para calcular la nota del área*",
-    options: [
-      "Promedio de asignaturas",
-      "Promedio ponderado",
-      "Asignatura de mayor intensidad",
-    ],
-  },
-  {
-    name: "studentWithoutGradesPerformance",
-    label: "Desempeño cuando un estudiante no tiene calificaciones*",
-    options: ["Bajo", "No evaluado", "Pendiente"],
-  },
-  {
-    name: "maxRecoveryGrade",
-    label: "Nota máxima para las recuperaciones y nivelaciones*",
-    options: ["3.0", "3.5", "4.0", "5.0"],
-  },
-  {
-    name: "roundingMode",
-    label: "Modo en que la aplicación debe redondear los dígitos*",
-    options: [
-      "Redondear al más cercano",
-      "Redondear hacia arriba",
-      "Redondear hacia abajo",
-      "Truncar",
-    ],
-  },
-  {
-    name: "initialGrade",
-    label: "Nota inicial para las calificaciones*",
-    options: ["0.0", "1.0"],
   },
 ] as const
 
@@ -92,6 +67,7 @@ const evaluationCriteriaSchema = z.object({
   gradingFormat: z.string().min(1, "Requerido"),
   gradingScale: z.string().min(1, "Requerido"),
   periodCalculationElements: z.string().min(1, "Requerido"),
+  subjectGradeCriteria: z.string().min(1, "Requerido"),
   finalGradeCriteria: z.string().min(1, "Requerido"),
   areaGradeCriteria: z.string().min(1, "Requerido"),
   studentWithoutGradesPerformance: z.string().min(1, "Requerido"),
@@ -105,6 +81,7 @@ const EMPTY: EvaluationCriteriaValues = {
   gradingFormat: "",
   gradingScale: "",
   periodCalculationElements: "",
+  subjectGradeCriteria: "",
   finalGradeCriteria: "",
   areaGradeCriteria: "",
   studentWithoutGradesPerformance: "",
@@ -124,6 +101,9 @@ export function TabEvaluationCriteria({
 }: TabEvaluationCriteriaProps) {
   const { data: criteria, isPending: isLoading } =
     useEvaluationCriteriaQuery(academicPeriodId)
+
+  const { data: options, isPending: isLoadingOptions } =
+    useEvaluationCriteriaOptionsQuery()
 
   const saveCriteria = useUpdateEvaluationCriteria({
     mutationConfig: {
@@ -154,7 +134,7 @@ export function TabEvaluationCriteria({
     if (criteria) form.reset(criteria)
   }, [criteria, form])
 
-  if (academicPeriodId != null && isLoading) {
+  if ((academicPeriodId != null && isLoading) || isLoadingOptions) {
     return (
       <div className="flex justify-center py-10">
         <Spinner />
@@ -193,7 +173,7 @@ export function TabEvaluationCriteria({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>
-                        {cfg.options.map((option) => (
+                        {(options?.[cfg.name] ?? []).map((option) => (
                           <SelectItem key={option} value={option}>
                             {option}
                           </SelectItem>
