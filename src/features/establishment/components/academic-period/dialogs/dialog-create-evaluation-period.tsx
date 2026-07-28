@@ -182,6 +182,7 @@ export function CreateEvaluationPeriodDialog({
                     id={field.name}
                     type="number"
                     min={1}
+                    placeholder="ej. 1"
                     value={Number.isNaN(field.state.value) ? "" : field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.valueAsNumber)}
@@ -202,6 +203,7 @@ export function CreateEvaluationPeriodDialog({
                   <FieldLabel htmlFor={field.name}>Nombre</FieldLabel>
                   <Input
                     id={field.name}
+                    placeholder="ej. Primer periodo"
                     value={field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value)}

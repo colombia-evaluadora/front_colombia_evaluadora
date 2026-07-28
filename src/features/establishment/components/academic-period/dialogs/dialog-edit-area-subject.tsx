@@ -169,6 +169,7 @@ export function EditAreaSubjectDialog({ areaSubject }: EditAreaSubjectDialogProp
                   <FieldLabel htmlFor={field.name}>Abreviación*</FieldLabel>
                   <Input
                     id={field.name}
+                    placeholder="ej. MAT"
                     value={field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value)}
@@ -190,6 +191,7 @@ export function EditAreaSubjectDialog({ areaSubject }: EditAreaSubjectDialogProp
                     id={field.name}
                     type="number"
                     min={0}
+                    placeholder="ej. 1"
                     value={Number.isNaN(field.state.value) ? "" : field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.valueAsNumber)}

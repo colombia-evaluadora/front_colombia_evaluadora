@@ -223,6 +223,7 @@ export function TabPromotionCriteria({
 
               <Input
                 type="number"
+                placeholder="Ingrese un valor"
                 value={field.state.value}
                 onChange={(e) =>
                   field.handleChange(Number(e.target.value))
@@ -241,6 +242,7 @@ export function TabPromotionCriteria({
 
               <Input
                 type="number"
+                placeholder="Ingrese un valor"
                 value={field.state.value}
                 onChange={(e) =>
                   field.handleChange(Number(e.target.value))
@@ -259,6 +261,7 @@ export function TabPromotionCriteria({
 
               <Input
                 type="number"
+                placeholder="Ingrese un valor"
                 value={field.state.value}
                 onChange={(e) =>
                   field.handleChange(Number(e.target.value))
@@ -277,6 +280,7 @@ export function TabPromotionCriteria({
 
               <Input
                 type="number"
+                placeholder="Ingrese un valor"
                 value={field.state.value}
                 onChange={(e) =>
                   field.handleChange(Number(e.target.value))
@@ -329,6 +333,7 @@ export function TabPromotionCriteria({
 
               <Input
                 type="number"
+                placeholder="Ingrese un valor"
                 value={field.state.value}
                 onChange={(e) =>
                   field.handleChange(Number(e.target.value))
@@ -347,6 +352,7 @@ export function TabPromotionCriteria({
 
               <Input
                 type="number"
+                placeholder="Ingrese un valor"
                 value={field.state.value}
                 onChange={(e) =>
                   field.handleChange(Number(e.target.value))
@@ -365,6 +371,7 @@ export function TabPromotionCriteria({
 
               <Input
                 type="number"
+                placeholder="Ingrese un valor"
                 value={field.state.value}
                 onChange={(e) =>
                   field.handleChange(Number(e.target.value))

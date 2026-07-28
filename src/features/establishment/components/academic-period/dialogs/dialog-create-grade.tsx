@@ -234,7 +234,7 @@ export function CreateGradeDialog({
                 <SelectValue placeholder="Seleccionar">
                   {(value) =>
                     teachingLevels.find((l) => String(l.id) === value)?.nombre ??
-                    ""
+                    "Seleccionar"
                   }
                 </SelectValue>
               </SelectTrigger>
@@ -254,6 +254,7 @@ export function CreateGradeDialog({
             <FieldLabel htmlFor="grade-nombre">Nombre*</FieldLabel>
             <Input
               id="grade-nombre"
+              placeholder="ej. Sexto A"
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
             />

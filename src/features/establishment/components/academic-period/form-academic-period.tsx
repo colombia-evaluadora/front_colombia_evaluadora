@@ -188,7 +188,7 @@ export function AcademicPeriodForm({
                     <SelectValue placeholder="Seleccionar">
                       {(value) =>
                         SEDE_OPTIONS.find((s) => String(s.id) === value)?.name ??
-                        ""
+                        "Seleccionar"
                       }
                     </SelectValue>
                   </SelectTrigger>
@@ -226,7 +226,7 @@ export function AcademicPeriodForm({
                       const p = previousPeriodOptions.find(
                         (o) => String(o.id) === value
                       )
-                      return p ? `${p.name} — ${p.sedeName}` : ""
+                      return p ? `${p.name} — ${p.sedeName}` : "Seleccione un período"
                     }}
                   </SelectValue>
                 </SelectTrigger>
@@ -261,7 +261,7 @@ export function AcademicPeriodForm({
                         ? ACADEMIC_PERIOD_STATUS_LABELS[
                             value as AcademicPeriodStatus
                           ]
-                        : ""
+                        : "Seleccionar"
                     }
                   </SelectValue>
                 </SelectTrigger>
@@ -297,7 +297,7 @@ export function AcademicPeriodForm({
                     <SelectValue placeholder="Seleccionar">
                       {(value) =>
                         JORNADA_OPTIONS.find((j) => String(j.id) === value)
-                          ?.name ?? ""
+                          ?.name ?? "Seleccionar"
                       }
                     </SelectValue>
                   </SelectTrigger>

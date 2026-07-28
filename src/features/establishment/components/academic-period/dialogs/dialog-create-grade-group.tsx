@@ -276,6 +276,7 @@ export function CreateGradeGroupDialog({
                   <FieldLabel htmlFor={field.name}>Plan de estudio</FieldLabel>
                   <Input
                     id={field.name}
+                    placeholder="ej. Plan A"
                     value={field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value)}

@@ -228,6 +228,7 @@ export function CreateRatingScaleDialog({
                     id="rs-max"
                     type="number"
                     step="0.1"
+                    placeholder="ej. 5"
                     value={draft.notaMaxima}
                     onChange={(e) =>
                       setDraft((d) => ({
@@ -243,6 +244,7 @@ export function CreateRatingScaleDialog({
                     id="rs-min"
                     type="number"
                     step="0.1"
+                    placeholder="ej. 1"
                     value={draft.notaMinima}
                     onChange={(e) =>
                       setDraft((d) => ({
@@ -258,6 +260,7 @@ export function CreateRatingScaleDialog({
                     id="rs-eq"
                     type="number"
                     step="0.1"
+                    placeholder="ej. 3"
                     value={draft.notaEquivalente}
                     onChange={(e) =>
                       setDraft((d) => ({
