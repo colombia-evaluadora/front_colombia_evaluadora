@@ -167,11 +167,39 @@ export const establishmentHandlers = [
 
     const { details } = upsertEstablishmentDetails(establishment)
 
-    const isEdit = Boolean(values.id && establishmentsDb.some((item) => item.id === values.id))
+    return HttpResponse.json({
+      status: "ok",
+      message: "Establecimiento creado.",
+      establishment: details,
+    })
+  }),
+
+  http.put("*/api/establishments/:id", async ({ params, request }) => {
+    await delay(250)
+
+    const existing = establishmentsDb.find((item) => item.id === params.id)
+
+    if (!existing) {
+      return HttpResponse.json(
+        {
+          status: "error",
+          message: "Establecimiento no encontrado.",
+        },
+        { status: 404 }
+      )
+    }
+
+    const values = (await request.json()) as EstablishmentDetails
+    const establishment: EstablishmentDetails = {
+      ...values,
+      id: params.id,
+    }
+
+    const { details } = upsertEstablishmentDetails(establishment)
 
     return HttpResponse.json({
       status: "ok",
-      message: isEdit ? "Establecimiento actualizado." : "Establecimiento creado.",
+      message: "Establecimiento actualizado.",
       establishment: details,
     })
   }),

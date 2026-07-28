@@ -73,8 +73,8 @@ export const paths = {
         },
 
         edit: {
-          path: "establecimiento-educativo/agregar/$establishmentId",
-          getHref: (establishmentId: string) => `/app/establecimiento-educativo/agregar/${establishmentId}`,
+          path: "establecimiento-educativo/editar/$establishmentId",
+          getHref: (establishmentId: string) => `/app/establecimiento-educativo/editar/${establishmentId}`,
         },
 
       campuses: {
@@ -87,8 +87,8 @@ export const paths = {
           },
 
           edit: {
-            path: "establecimiento-educativo/sedes/agregar/$campusId",
-            getHref: (campusId: string) => `/app/establecimiento-educativo/sedes/agregar/${campusId}`,
+            path: "establecimiento-educativo/sedes/editar/$campusId",
+            getHref: (campusId: string) => `/app/establecimiento-educativo/sedes/editar/${campusId}`,
           },
       },
 

@@ -15,6 +15,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { paths } from "@/config/paths"
 import { EstablishmentDetailsForm } from "@/features/establishment/components/forms/form-establishment-details"
 import { useCreateEstablishment } from "../api/mutations/use-create-establishment"
+import { useUpdateEstablishment } from "../api/mutations/use-update-establishment"
 import type { EstablishmentDetails } from "../api/types/establishment"
 import { establishmentsDb } from "@/mocks/db/establishments"
 import type { CatalogItem } from "../api/types/catalog"
@@ -93,8 +94,8 @@ function createInitialEstablishmentValues(): EstablishmentDetails {
 export function AddEstablishmentPage() {
   const navigate = useNavigate()
   const location = useLocation()
-  const establishmentId = location.pathname.includes("/agregar/")
-    ? location.pathname.split("/agregar/").at(1) ?? null
+  const establishmentId = location.pathname.includes("/editar/")
+    ? location.pathname.split("/editar/").at(1) ?? null
     : null
   const isEditMode = establishmentId !== null
   const [formValues, setFormValues] = useState<EstablishmentDetails>(createInitialEstablishmentValues)
@@ -137,6 +138,22 @@ export function AddEstablishmentPage() {
     },
   })
 
+  const updateMutation = useUpdateEstablishment({
+    mutationConfig: {
+      onSuccess: (result) => {
+        if (result.status === "error") {
+          toast.error(result.message)
+          return
+        }
+        toast.success(result.message)
+        navigate({ to: paths.app.establishments.general.getHref() })
+      },
+      onError: (error) => {
+        toast.error(error.message || "No se pudo actualizar el establecimiento.")
+      },
+    },
+  })
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setHasSubmitted(true)
@@ -150,16 +167,26 @@ export function AddEstablishmentPage() {
       return
     }
 
+    if (isEditMode && establishmentId) {
+      await updateMutation.mutateAsync({
+        establishmentId,
+        values: formValues,
+      })
+      return
+    }
+
     await createMutation.mutateAsync(formValues)
   }
+
+  const isPending = createMutation.isPending || updateMutation.isPending
 
   return (
     <Card>
       <CardHeader>
         <CardAction>
           <div className="flex gap-2">
-            <Button type="submit" form="create-establishment-form" variant="fill" color="primary" size="sm" disabled={createMutation.isPending}>
-              {createMutation.isPending ? "Guardando..." : isEditMode ? "Guardar cambios" : "Guardar"}
+            <Button type="submit" form="create-establishment-form" variant="fill" color="primary" size="sm" disabled={isPending}>
+              {isPending ? "Guardando..." : isEditMode ? "Guardar cambios" : "Guardar"}
             </Button>
             <Button render={<Link to={paths.app.establishments.general.getHref()} />} variant="ghost" color="neutral" size="sm" nativeButton={false}>
               Cancelar
