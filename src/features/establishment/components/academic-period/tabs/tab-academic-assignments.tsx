@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import type { SortingState } from "@tanstack/react-table"
-import { SpinnerIcon } from "@phosphor-icons/react"
+import { SpinnerIcon } from "@/components/ui/icons"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"

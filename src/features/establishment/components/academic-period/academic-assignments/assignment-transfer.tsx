@@ -4,7 +4,7 @@ import {
   ArrowRightIcon,
   MagnifyingGlassIcon,
   TrayIcon,
-} from "@phosphor-icons/react"
+} from "@/components/ui/icons"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"

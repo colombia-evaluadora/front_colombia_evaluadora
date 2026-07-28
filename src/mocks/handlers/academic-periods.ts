@@ -1,7 +1,6 @@
 // src/features/academic-periods/api/mocks/academic-periods.handlers.ts
 
 import { http, HttpResponse, delay } from "msw"
-import { httpQuery } from "./_http-query"
 import {
   academicPeriodConfigsDb,
   academicPeriodsDb,
@@ -72,7 +71,7 @@ function applySorting(
 }
 
 export const academicPeriodsHandlers = [
-  httpQuery("/api/academic-periods/query", async ({ request }) => {
+  http.post("/api/academic-periods/query", async ({ request }) => {
     await delay(250)
     const body = (await request.json()) as AcademicPeriodsQueryRequest
     const { filters, sorting, pageIndex, pageSize } = body

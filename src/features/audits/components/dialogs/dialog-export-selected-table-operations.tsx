@@ -53,13 +53,7 @@ export function ExportSelectedTableOperationsDialog({
   // Los dos botones comparten la misma mutación, así que `isPending` sola no
   // distingue cuál se pulsó. `variables` guarda el input en vuelo — con eso
   // el spinner sale solo en el botón que disparó la exportación.
-<<<<<<< HEAD
-  const pendingFormat = exportSelected.isPending
-    ? exportSelected.variables?.format
-    : undefined
-=======
   const pendingFormat = exportSelected.isPending ? exportSelected.variables?.format : undefined
->>>>>>> main
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

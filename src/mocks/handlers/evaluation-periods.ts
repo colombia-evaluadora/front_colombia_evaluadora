@@ -1,7 +1,6 @@
 // src/features/evaluation-periods/api/mocks/evaluation-periods.handlers.ts
 
 import { http, HttpResponse, delay } from "msw"
-import { httpQuery } from "./_http-query"
 import { evaluationPeriodsDb } from "../db/evaluation-periods"
 
 import type {
@@ -71,7 +70,7 @@ function applySorting(
 }
 
 export const evaluationPeriodsHandlers = [
-  httpQuery("/api/evaluation-periods/query", async ({ request }) => {
+  http.post("/api/evaluation-periods/query", async ({ request }) => {
     await delay(250)
 
     const body = (await request.json()) as EvaluationPeriodsQueryRequest

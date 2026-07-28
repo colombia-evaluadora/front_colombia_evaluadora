@@ -1,7 +1,6 @@
 // src/features/area-subjects/api/mocks/area-subjects.handlers.ts
 
 import { http, HttpResponse, delay } from "msw"
-import { httpQuery } from "./_http-query"
 import { areaSubjectsDb } from "../db/area-subject"
 import { studyPlansDb } from "../db/study-plans"
 
@@ -79,7 +78,7 @@ function applySorting(
 }
 
 export const areaSubjectsHandlers = [
-  httpQuery("/api/area-subjects/query", async ({ request }) => {
+  http.post("/api/area-subjects/query", async ({ request }) => {
     await delay(250)
 
     const body = (await request.json()) as AreaSubjectsQueryRequest

@@ -19,7 +19,8 @@ import {
 } from "../../../api/schema"
 import { ACADEMIC_PERIOD_STATUS_LABELS } from "../../../api/ui-mappings"
 import type { AcademicPeriodStatus } from "../../../api/types/academic-period/academic-period"
-import { FieldDatePopover } from "../field-date-popover"
+import { DatePicker } from "@/components/date-picker"
+import { formatDateValue, parseDateValue } from "@/lib/date-value"
 
 // Sentinela para la opción "Todos" (Base UI Select no admite value vacío).
 const ALL = "__all__"
@@ -157,10 +158,11 @@ export function FilterAcademicPeriodsForm({
         {(field) => (
           <Field orientation="vertical" className="gap-2">
             <FieldLabel htmlFor={field.name}>Inicio desde</FieldLabel>
-            <FieldDatePopover
+            <DatePicker
+              mode="date"
               id={field.name}
-              value={field.state.value}
-              onChange={field.handleChange}
+              value={parseDateValue(field.state.value)}
+              onChange={(date) => field.handleChange(formatDateValue(date))}
             />
           </Field>
         )}
@@ -170,10 +172,11 @@ export function FilterAcademicPeriodsForm({
         {(field) => (
           <Field orientation="vertical" className="gap-2">
             <FieldLabel htmlFor={field.name}>Inicio hasta</FieldLabel>
-            <FieldDatePopover
+            <DatePicker
+              mode="date"
               id={field.name}
-              value={field.state.value}
-              onChange={field.handleChange}
+              value={parseDateValue(field.state.value)}
+              onChange={(date) => field.handleChange(formatDateValue(date))}
             />
           </Field>
         )}

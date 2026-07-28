@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react"
 import type { SortingState } from "@tanstack/react-table"
-import { FilePdfIcon, FileXlsIcon } from "@phosphor-icons/react"
+import { FilePdfIcon, FileXlsIcon } from "@/components/ui/icons"
 
 import { DataTable } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"

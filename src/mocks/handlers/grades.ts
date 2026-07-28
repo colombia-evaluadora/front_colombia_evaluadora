@@ -1,5 +1,4 @@
 import { http, HttpResponse, delay } from "msw"
-import { httpQuery } from "./_http-query"
 import { gradesDb, gradeLevelName } from "../db/grades"
 
 import type {
@@ -67,7 +66,7 @@ function applySorting(
 }
 
 export const gradesHandlers = [
-  httpQuery("/api/grades/query", async ({ request }) => {
+  http.post("/api/grades/query", async ({ request }) => {
     await delay(250)
 
     const body = (await request.json()) as GradesQueryRequest

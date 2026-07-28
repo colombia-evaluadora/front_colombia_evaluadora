@@ -1,5 +1,5 @@
 import type { ColumnDef, Table } from "@tanstack/react-table"
-import { CaretDownIcon, CaretRightIcon } from "@phosphor-icons/react"
+import { CaretDownIcon, CaretRightIcon } from "@/components/ui/icons"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
