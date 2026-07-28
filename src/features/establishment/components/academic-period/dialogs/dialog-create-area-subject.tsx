@@ -261,7 +261,7 @@ export function CreateAreaSubjectDialog({
               const isInvalid =
                 field.state.meta.isTouched && !field.state.meta.isValid
               return (
-                <Field data-invalid={isInvalid} className="w-auto min-w-[11rem] flex-1">
+                <Field variant="outlined" data-invalid={isInvalid} className="w-auto min-w-[11rem] flex-1">
                   <FieldLabel htmlFor={field.name} className="flex-1">
                     Área general*
                   </FieldLabel>
@@ -282,7 +282,7 @@ export function CreateAreaSubjectDialog({
               const isInvalid =
                 field.state.meta.isTouched && !field.state.meta.isValid
               return (
-                <Field data-invalid={isInvalid} className="w-auto min-w-[11rem] flex-1">
+                <Field variant="outlined" data-invalid={isInvalid} className="w-auto min-w-[11rem] flex-1">
                   <FieldLabel htmlFor={field.name} className="flex-1">
                     Nombre interno del área*
                   </FieldLabel>
@@ -304,7 +304,7 @@ export function CreateAreaSubjectDialog({
               const isInvalid =
                 field.state.meta.isTouched && !field.state.meta.isValid
               return (
-                <Field data-invalid={isInvalid} className="w-auto min-w-[11rem] flex-1">
+                <Field variant="outlined" data-invalid={isInvalid} className="w-auto min-w-[11rem] flex-1">
                   <FieldLabel htmlFor={field.name} className="flex-1">
                     Abreviación*
                   </FieldLabel>
@@ -326,7 +326,7 @@ export function CreateAreaSubjectDialog({
               const isInvalid =
                 field.state.meta.isTouched && !field.state.meta.isValid
               return (
-                <Field data-invalid={isInvalid} className="w-auto min-w-[11rem] flex-1">
+                <Field variant="outlined" data-invalid={isInvalid} className="w-auto min-w-[11rem] flex-1">
                   <FieldLabel htmlFor={field.name} className="flex-1">
                     Orden en los reportes*
                   </FieldLabel>

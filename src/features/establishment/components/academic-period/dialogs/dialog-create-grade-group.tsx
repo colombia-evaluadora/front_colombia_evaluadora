@@ -109,7 +109,7 @@ export function CreateGradeGroupDialog({
               const isInvalid =
                 field.state.meta.isTouched && !field.state.meta.isValid
               return (
-                <Field data-invalid={isInvalid}>
+                <Field variant="outlined" data-invalid={isInvalid}>
                   <FieldLabel htmlFor={field.name}>Grupo</FieldLabel>
                   <Input
                     id={field.name}
@@ -130,7 +130,7 @@ export function CreateGradeGroupDialog({
               const isInvalid =
                 field.state.meta.isTouched && !field.state.meta.isValid
               return (
-                <Field data-invalid={isInvalid}>
+                <Field variant="outlined" data-invalid={isInvalid}>
                   <FieldLabel htmlFor={field.name}>Jornada</FieldLabel>
                   <Select
                     value={field.state.value}
@@ -157,7 +157,7 @@ export function CreateGradeGroupDialog({
 
           <form.Field name="director">
             {(field) => (
-              <Field>
+              <Field variant="outlined">
                 <FieldLabel htmlFor={field.name}>Director de grupo</FieldLabel>
                 <Input
                   id={field.name}
@@ -174,7 +174,7 @@ export function CreateGradeGroupDialog({
               const isInvalid =
                 field.state.meta.isTouched && !field.state.meta.isValid
               return (
-                <Field data-invalid={isInvalid}>
+                <Field variant="outlined" data-invalid={isInvalid}>
                   <FieldLabel htmlFor={field.name}>Plan de estudio</FieldLabel>
                   <Input
                     id={field.name}
@@ -191,7 +191,7 @@ export function CreateGradeGroupDialog({
 
           <form.Field name="metodologia">
             {(field) => (
-              <Field>
+              <Field variant="outlined">
                 <FieldLabel htmlFor={field.name}>Metodología</FieldLabel>
                 <Select
                   value={field.state.value}
@@ -216,7 +216,7 @@ export function CreateGradeGroupDialog({
 
           <form.Field name="cupo">
             {(field) => (
-              <Field>
+              <Field variant="outlined">
                 <FieldLabel htmlFor={field.name}>Cupo</FieldLabel>
                 <Input
                   id={field.name}

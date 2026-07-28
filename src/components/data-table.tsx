@@ -1,7 +1,6 @@
 "use no memo"
 
-import { Fragment, type ReactNode } from "react"
-import { flexRender, type Column, type Row, type Table } from "@tanstack/react-table"
+import { flexRender, type Column, type Table } from "@tanstack/react-table"
 import {
   ArrowDownIcon,
   ArrowUpIcon,
@@ -39,10 +38,6 @@ interface DataTableProps {
   onRetry: () => void
   emptyMessage?: string
   errorMessage?: string
-  // Opcional: contenido expandible por fila. Si devuelve algo distinto de
-  // `null`/`undefined`, se renderiza como una fila extra a todo el ancho debajo
-  // de la fila. Las tablas que no lo pasan no cambian su comportamiento.
-  renderSubRow?: (row: Row<any>) => ReactNode
 }
 
 export function DataTable({
@@ -52,7 +47,6 @@ export function DataTable({
   onRetry,
   emptyMessage = "Sin resultados.",
   errorMessage = "Ocurrió un error al cargar los datos.",
-  renderSubRow,
 }: DataTableProps) {
   const visibleColumns = table.getAllColumns().filter((c) => c.getIsVisible())
   const skeletonRowCount = table.getState().pagination.pageSize

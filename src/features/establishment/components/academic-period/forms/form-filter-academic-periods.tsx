@@ -66,7 +66,7 @@ export function FilterAcademicPeriodsForm({
     >
       <form.Field name="sedeName">
         {(field) => (
-          <Field orientation="vertical" className="gap-2">
+          <Field orientation="vertical" variant="outlined" className="gap-2">
             <FieldLabel htmlFor={field.name}>Sede</FieldLabel>
             <Input
               id={field.name}
@@ -86,7 +86,7 @@ export function FilterAcademicPeriodsForm({
 
       <form.Field name="schoolYearId">
         {(field) => (
-          <Field orientation="vertical" className="gap-2">
+          <Field orientation="vertical" variant="outlined" className="gap-2">
             <FieldLabel htmlFor={field.name}>Año lectivo</FieldLabel>
             <Select
               value={field.state.value || ALL}
@@ -118,7 +118,7 @@ export function FilterAcademicPeriodsForm({
 
       <form.Field name="status">
         {(field) => (
-          <Field orientation="vertical" className="gap-2">
+          <Field orientation="vertical" variant="outlined" className="gap-2">
             <FieldLabel htmlFor={field.name}>Estado</FieldLabel>
             <Select
               value={field.state.value || ALL}
@@ -156,7 +156,7 @@ export function FilterAcademicPeriodsForm({
 
       <form.Field name="startFrom">
         {(field) => (
-          <Field orientation="vertical" className="gap-2">
+          <Field orientation="vertical" variant="outlined" className="gap-2">
             <FieldLabel htmlFor={field.name}>Inicio desde</FieldLabel>
             <DatePicker
               mode="date"
@@ -170,7 +170,7 @@ export function FilterAcademicPeriodsForm({
 
       <form.Field name="startTo">
         {(field) => (
-          <Field orientation="vertical" className="gap-2">
+          <Field orientation="vertical" variant="outlined" className="gap-2">
             <FieldLabel htmlFor={field.name}>Inicio hasta</FieldLabel>
             <DatePicker
               mode="date"

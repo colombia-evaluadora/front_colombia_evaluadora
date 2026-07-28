@@ -225,7 +225,7 @@ export function CreateGradeDialog({
         </DialogHeader>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Field>
+          <Field variant="outlined">
             <FieldLabel htmlFor="grade-nivel">Nivel de enseñanza*</FieldLabel>
             <Select
               value={teachingLevelId != null ? String(teachingLevelId) : ""}
@@ -251,7 +251,7 @@ export function CreateGradeDialog({
             </Select>
           </Field>
 
-          <Field>
+          <Field variant="outlined">
             <FieldLabel htmlFor="grade-nombre">Nombre*</FieldLabel>
             <Input
               id="grade-nombre"
@@ -259,10 +259,10 @@ export function CreateGradeDialog({
               onChange={(e) => setNombre(e.target.value)}
             />
           </Field>
-          <Field>
+          <Field variant="outlined">
             <FieldLabel>Tiene grado siguiente</FieldLabel>
             <RadioGroup
-              className="flex gap-6 pt-2"
+              className="flex min-h-10 items-center gap-6 rounded-md border border-input px-3"
               value={tieneGradoSiguiente}
               onValueChange={(value) =>
                 value && setTieneGradoSiguiente(value)
@@ -281,7 +281,7 @@ export function CreateGradeDialog({
 
           {hasNextGrade && (
             <>
-              <Field>
+              <Field variant="outlined">
                 <FieldLabel htmlFor="grade-siguiente">
                   Grado siguiente
                 </FieldLabel>

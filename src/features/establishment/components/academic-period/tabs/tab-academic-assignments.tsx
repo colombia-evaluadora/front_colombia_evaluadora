@@ -6,9 +6,10 @@ import { SpinnerIcon } from "@/components/ui/icons"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
-import { DataTable } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
 import { useDataTable } from "@/hooks/use-data-table"
+
+import { ExpandableDataTable } from "../table/expandable-data-table"
 
 import { useTeachersQuery } from "../../../api/query/use-teachers-query"
 import { useAssignmentSubjectsQuery } from "../../../api/query/use-assignment-subjects-query"
@@ -114,7 +115,7 @@ export function TabAcademicAssignments({
 
   return (
     <div className="flex flex-col gap-4">
-      <DataTable
+      <ExpandableDataTable
         table={table}
         isPending={isPending}
         isError={isError}

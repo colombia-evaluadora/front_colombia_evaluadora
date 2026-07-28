@@ -5,6 +5,11 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import {
+  inputTriggerVariants,
+  inputVariants,
+  useInputVariant,
+} from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 
 interface SubjectsMultiSelectProps {
@@ -26,6 +31,8 @@ export function SubjectsMultiSelect({
   placeholder = "Seleccionar",
   emptyMessage = "No hay áreas/asignaturas en este periodo.",
 }: SubjectsMultiSelectProps) {
+  const resolvedVariant = useInputVariant()
+
   function toggle(option: string) {
     onChange(
       value.includes(option)
@@ -42,7 +49,9 @@ export function SubjectsMultiSelect({
             id={id}
             type="button"
             className={cn(
-              "flex min-h-10 w-full items-center justify-between gap-2 border border-transparent border-b-input bg-transparent px-0 py-2 text-left text-sm outline-none transition-[color,border-color] hover:border-b-ring/50 focus-visible:border-b-ring data-[popup-open]:border-b-ring"
+              inputVariants({ variant: resolvedVariant }),
+              inputTriggerVariants({ variant: resolvedVariant }),
+              "flex h-auto min-h-10 items-center justify-between gap-2 text-left",
             )}
           />
         }

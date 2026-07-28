@@ -4,7 +4,7 @@ import { useCallback, useMemo, useState } from "react"
 import type { SortingState } from "@tanstack/react-table"
 
 import { Badge } from "@/components/ui/badge"
-import { DataTable } from "@/components/data-table"
+import { ExpandableDataTable } from "../table/expandable-data-table"
 import {
   Table,
   TableBody,
@@ -99,7 +99,7 @@ export function TabRatingScales({ academicPeriodId }: TabRatingScalesProps) {
         <CreateRatingScaleDialog academicPeriodId={academicPeriodId} />
       </div>
 
-      <DataTable
+      <ExpandableDataTable
         table={table}
         isPending={isPending}
         isError={isError}

@@ -119,7 +119,7 @@ export function CreateEvaluationPeriodDialog({
               const isInvalid =
                 field.state.meta.isTouched && !field.state.meta.isValid
               return (
-                <Field data-invalid={isInvalid}>
+                <Field variant="outlined" data-invalid={isInvalid}>
                   <FieldLabel htmlFor={field.name}>Código</FieldLabel>
                   <Input
                     id={field.name}
@@ -141,7 +141,7 @@ export function CreateEvaluationPeriodDialog({
               const isInvalid =
                 field.state.meta.isTouched && !field.state.meta.isValid
               return (
-                <Field data-invalid={isInvalid}>
+                <Field variant="outlined" data-invalid={isInvalid}>
                   <FieldLabel htmlFor={field.name}>Nombre</FieldLabel>
                   <Input
                     id={field.name}
@@ -161,7 +161,7 @@ export function CreateEvaluationPeriodDialog({
               const isInvalid =
                 field.state.meta.isTouched && !field.state.meta.isValid
               return (
-                <Field data-invalid={isInvalid}>
+                <Field variant="outlined" data-invalid={isInvalid}>
                   <FieldLabel htmlFor={field.name}>Abreviación</FieldLabel>
                   <Input
                     id={field.name}
@@ -182,7 +182,7 @@ export function CreateEvaluationPeriodDialog({
               const isInvalid =
                 field.state.meta.isTouched && !field.state.meta.isValid
               return (
-                <Field data-invalid={isInvalid}>
+                <Field variant="outlined" data-invalid={isInvalid}>
                   <FieldLabel htmlFor={field.name}>Peso porcentual</FieldLabel>
                   <Input
                     id={field.name}
@@ -206,7 +206,7 @@ export function CreateEvaluationPeriodDialog({
               const isInvalid =
                 field.state.meta.isTouched && !field.state.meta.isValid
               return (
-                <Field data-invalid={isInvalid}>
+                <Field variant="outlined" data-invalid={isInvalid}>
                   <FieldLabel htmlFor={field.name}>Fecha inicio</FieldLabel>
                   <DatePicker
                     mode="date"
@@ -226,7 +226,7 @@ export function CreateEvaluationPeriodDialog({
               const isInvalid =
                 field.state.meta.isTouched && !field.state.meta.isValid
               return (
-                <Field data-invalid={isInvalid}>
+                <Field variant="outlined" data-invalid={isInvalid}>
                   <FieldLabel htmlFor={field.name}>Fecha fin</FieldLabel>
                   <DatePicker
                     mode="date"
@@ -243,7 +243,7 @@ export function CreateEvaluationPeriodDialog({
 
           <form.Field name="estado">
             {(field) => (
-              <Field className="sm:col-span-3">
+              <Field variant="outlined" className="sm:col-span-3">
                 <FieldLabel htmlFor={field.name}>Estado</FieldLabel>
                 <Select
                   value={field.state.value}

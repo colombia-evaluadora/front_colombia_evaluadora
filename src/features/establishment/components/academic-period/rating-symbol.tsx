@@ -6,6 +6,11 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  inputTriggerVariants,
+  inputVariants,
+  useInputVariant,
+} from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import type {
   RatingSymbol,
@@ -81,6 +86,7 @@ export function RatingSymbolSelect({
 }) {
   const [open, setOpen] = useState(false);
   const selected = symbols.find((symbol) => symbol.valor === value);
+  const resolvedVariant = useInputVariant();
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -91,7 +97,9 @@ export function RatingSymbolSelect({
             type="button"
             aria-invalid={invalid}
             className={cn(
-              "flex h-10 w-full items-center justify-between gap-1.5 rounded-none border border-transparent border-b-input bg-transparent px-0 py-2 text-left text-sm outline-none transition-[color,border-color] hover:border-b-ring/50 focus-visible:border-b-ring data-[popup-open]:border-b-ring aria-invalid:border-b-destructive",
+              inputVariants({ variant: resolvedVariant }),
+              inputTriggerVariants({ variant: resolvedVariant }),
+              "flex items-center justify-between gap-1.5 text-left",
             )}
           />
         }

@@ -16,7 +16,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
+import {
+  Input,
+  inputTriggerVariants,
+  inputVariants,
+  useInputVariant,
+} from "@/components/ui/input"
 import {
   Pagination as UIPagination,
   PaginationContent,
@@ -61,6 +66,8 @@ export function SelectGeneralAreaDialog({
   const [search, setSearch] = useState("")
   const [pageIndex, setPageIndex] = useState(0)
 
+  const resolvedVariant = useInputVariant()
+
   const { data: areas = [] } = useGeneralAreasQuery()
 
   // Búsqueda por nombre (client-side: el catálogo se trae completo).
@@ -104,7 +111,9 @@ export function SelectGeneralAreaDialog({
             id={id}
             aria-invalid={invalid}
             className={cn(
-              "flex h-9 w-full items-center justify-between gap-1.5 rounded-none border border-transparent border-b-input bg-transparent px-0 py-1 text-left text-sm outline-none transition-[color,border-color] hover:border-b-ring/50 aria-invalid:border-b-destructive",
+              inputVariants({ variant: resolvedVariant }),
+              inputTriggerVariants({ variant: resolvedVariant }),
+              "flex items-center justify-between gap-1.5 text-left",
               value ? "text-foreground" : "text-muted-foreground"
             )}
           />

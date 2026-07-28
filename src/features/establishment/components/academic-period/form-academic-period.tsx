@@ -4,7 +4,12 @@ import { CaretDownIcon, PlusIcon, TrashIcon } from "@/components/ui/icons"
 
 import { Button } from "@/components/ui/button"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
+import {
+  Input,
+  inputTriggerVariants,
+  inputVariants,
+  useInputVariant,
+} from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Switch } from "@/components/ui/switch"
 import { TimePickerPanel } from "@/components/ui/time-picker"
@@ -104,7 +109,7 @@ export function AcademicPeriodForm({
             const isInvalid =
               field.state.meta.isTouched && !field.state.meta.isValid
             return (
-              <Field data-invalid={isInvalid}>
+              <Field variant="outlined" data-invalid={isInvalid}>
                 <FieldLabel htmlFor={field.name}>
                   Inicio del período académico*
                 </FieldLabel>
@@ -126,7 +131,7 @@ export function AcademicPeriodForm({
             const isInvalid =
               field.state.meta.isTouched && !field.state.meta.isValid
             return (
-              <Field data-invalid={isInvalid}>
+              <Field variant="outlined" data-invalid={isInvalid}>
                 <FieldLabel htmlFor={field.name}>
                   Fin del período académico*
                 </FieldLabel>
@@ -148,7 +153,7 @@ export function AcademicPeriodForm({
             const isInvalid =
               field.state.meta.isTouched && !field.state.meta.isValid
             return (
-              <Field data-invalid={isInvalid}>
+              <Field variant="outlined" data-invalid={isInvalid}>
                 <FieldLabel htmlFor={field.name}>
                   Fecha límite de matrícula*
                 </FieldLabel>
@@ -171,7 +176,7 @@ export function AcademicPeriodForm({
             const isInvalid =
               field.state.meta.isTouched && !field.state.meta.isValid
             return (
-              <Field data-invalid={isInvalid}>
+              <Field variant="outlined" data-invalid={isInvalid}>
                 <FieldLabel htmlFor={field.name}>Sede*</FieldLabel>
                 <Select
                   value={field.state.value ? String(field.state.value) : ""}
@@ -205,7 +210,7 @@ export function AcademicPeriodForm({
 
         <form.Field name="previousPeriodId">
           {(field) => (
-            <Field>
+            <Field variant="outlined">
               <FieldLabel htmlFor={field.name}>
                 Periodo académico anterior
               </FieldLabel>
@@ -241,7 +246,7 @@ export function AcademicPeriodForm({
 
         <form.Field name="status">
           {(field) => (
-            <Field>
+            <Field variant="outlined">
               <FieldLabel htmlFor={field.name}>Estado*</FieldLabel>
               <Select
                 value={field.state.value}
@@ -280,7 +285,7 @@ export function AcademicPeriodForm({
             const isInvalid =
               field.state.meta.isTouched && !field.state.meta.isValid
             return (
-              <Field data-invalid={isInvalid}>
+              <Field variant="outlined" data-invalid={isInvalid}>
                 <FieldLabel htmlFor={field.name}>Jornada*</FieldLabel>
                 <Select
                   value={field.state.value ? String(field.state.value) : ""}
@@ -314,7 +319,7 @@ export function AcademicPeriodForm({
 
         <form.Field name="scheduleStartTime">
           {(field) => (
-            <Field>
+            <Field variant="outlined">
               <FieldLabel htmlFor={field.name}>Hora inicio</FieldLabel>
               <DatePicker
                 mode="time"
@@ -329,7 +334,7 @@ export function AcademicPeriodForm({
 
         <form.Field name="scheduleEndTime">
           {(field) => (
-            <Field>
+            <Field variant="outlined">
               <FieldLabel htmlFor={field.name}>Hora final</FieldLabel>
               <DatePicker
                 mode="time"
@@ -345,7 +350,7 @@ export function AcademicPeriodForm({
         {/* Fila 4: bloques, descansos, reserva */}
         <form.Field name="defaultBlocksCount">
           {(field) => (
-            <Field>
+            <Field variant="outlined">
               <FieldLabel htmlFor={field.name}>
                 Número de bloques de la jornada
               </FieldLabel>
@@ -371,7 +376,7 @@ export function AcademicPeriodForm({
 
         <form.Field name="breaks" mode="array">
           {(field) => (
-            <Field>
+            <Field variant="outlined">
               <FieldLabel>Cantidad y horarios de descanso</FieldLabel>
               <BreaksField
                 value={field.state.value}
@@ -419,6 +424,8 @@ function BreaksField({
   onAdd: (brk: Break) => void
   onRemove: (index: number) => void
 }) {
+  const resolvedVariant = useInputVariant()
+
   return (
     <Popover>
       <PopoverTrigger
@@ -426,7 +433,9 @@ function BreaksField({
           <button
             type="button"
             className={cn(
-              "flex h-10 w-full items-center justify-between gap-1.5 border border-transparent border-b-input bg-transparent px-0 py-2 text-left text-sm outline-none transition-[color,border-color] hover:border-b-ring/50 focus-visible:border-b-ring data-[popup-open]:border-b-ring",
+              inputVariants({ variant: resolvedVariant }),
+              inputTriggerVariants({ variant: resolvedVariant }),
+              "flex items-center justify-between gap-1.5 text-left",
               value.length === 0 && "text-muted-foreground"
             )}
           />
