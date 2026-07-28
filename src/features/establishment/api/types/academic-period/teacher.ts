@@ -31,3 +31,15 @@ export interface TeachersQueryResponse {
   pageCount: number
   totalCount: number
 }
+
+export type ExportFormat = "pdf" | "excel"
+
+export interface ExportResult {
+  status: "ok" | "error"
+  message: string
+}
+
+export interface TeachersExportRequest {
+  filters?: TeachersQueryFilters
+  format: ExportFormat
+}
