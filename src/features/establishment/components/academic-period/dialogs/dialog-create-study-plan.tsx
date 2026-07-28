@@ -145,7 +145,7 @@ export function CreateStudyPlanDialog({
                 const isInvalid =
                   field.state.meta.isTouched && !field.state.meta.isValid
                 return (
-                  <Field data-invalid={isInvalid}>
+                  <Field variant="outlined" data-invalid={isInvalid}>
                     <FieldLabel htmlFor={field.name}>Asignaturas*</FieldLabel>
                     <Select
                       value={field.state.value}
@@ -178,7 +178,7 @@ export function CreateStudyPlanDialog({
 
             <form.Field name="intensidadHoraria">
               {(field) => (
-                <Field>
+                <Field variant="outlined">
                   <FieldLabel htmlFor={field.name}>Intensidad horaria*</FieldLabel>
                   <Input
                     id={field.name}
@@ -195,7 +195,7 @@ export function CreateStudyPlanDialog({
 
             <form.Field name="influenciaArea">
               {(field) => (
-                <Field>
+                <Field variant="outlined">
                   <FieldLabel htmlFor={field.name}>Influencia área*</FieldLabel>
                   <Input
                     id={field.name}
@@ -213,7 +213,7 @@ export function CreateStudyPlanDialog({
 
             <form.Field name="numeroCreditos">
               {(field) => (
-                <Field>
+                <Field variant="outlined">
                   <FieldLabel htmlFor={field.name}>Número de créditos *</FieldLabel>
                   <Input
                     id={field.name}
@@ -313,7 +313,7 @@ export function CreateStudyPlanDialog({
 
             <form.Field name="formatoCalificacion">
               {(field) => (
-                <Field>
+                <Field variant="outlined">
                   <FieldLabel htmlFor={field.name}>
                     Formato de calificación
                   </FieldLabel>
@@ -341,7 +341,7 @@ export function CreateStudyPlanDialog({
 
             <form.Field name="criterioNota">
               {(field) => (
-                <Field>
+                <Field variant="outlined">
                   <FieldLabel htmlFor={field.name}>
                     Criterio para calcular la nota de la asignatura
                   </FieldLabel>

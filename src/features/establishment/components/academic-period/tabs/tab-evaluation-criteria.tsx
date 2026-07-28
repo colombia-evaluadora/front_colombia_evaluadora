@@ -177,7 +177,7 @@ export function TabEvaluationCriteria({
               const isInvalid =
                 field.state.meta.isTouched && !field.state.meta.isValid
               return (
-                <Field data-invalid={isInvalid}>
+                <Field variant="outlined" data-invalid={isInvalid}>
                   <FieldLabel htmlFor={field.name} className="flex-1">
                     {cfg.label}
                   </FieldLabel>

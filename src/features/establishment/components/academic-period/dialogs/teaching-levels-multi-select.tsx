@@ -5,6 +5,11 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  inputTriggerVariants,
+  inputVariants,
+  useInputVariant,
+} from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 import type { TeachingLevel } from "../../../api/types/academic-period/rating-scales";
@@ -25,6 +30,7 @@ export function TeachingLevelsMultiSelect({
   invalid,
 }: TeachingLevelsMultiSelectProps) {
   const selected = levels.filter((level) => value.includes(level.id));
+  const resolvedVariant = useInputVariant();
 
   function toggle(levelId: number) {
     onChange(
@@ -43,7 +49,9 @@ export function TeachingLevelsMultiSelect({
             type="button"
             aria-invalid={invalid}
             className={cn(
-              "flex min-h-10 w-full items-center justify-between gap-2 rounded-none border border-transparent border-b-input bg-transparent px-0 py-2 text-left text-sm outline-none transition-[color,border-color] hover:border-b-ring/50 focus-visible:border-b-ring data-[popup-open]:border-b-ring aria-invalid:border-b-destructive",
+              inputVariants({ variant: resolvedVariant }),
+              inputTriggerVariants({ variant: resolvedVariant }),
+              "flex h-auto min-h-10 items-center justify-between gap-2 text-left",
             )}
           />
         }

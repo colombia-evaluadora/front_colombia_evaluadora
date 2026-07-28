@@ -65,6 +65,8 @@ function applySorting(
     const av = sortValue(a, id)
     const bv = sortValue(b, id)
     if (av === bv) return 0
+    if (av == null) return -1
+    if (bv == null) return 1
     return av > bv ? 1 : -1
   })
   return desc ? sorted.reverse() : sorted

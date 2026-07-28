@@ -140,7 +140,7 @@ export function CreateRatingScaleDialog({
         </DialogHeader>
 
         <div className="flex flex-col gap-4">
-          <Field>
+          <Field variant="outlined">
             <FieldLabel htmlFor="rating-scale-levels">
               Niveles de enseñanza
             </FieldLabel>
@@ -155,7 +155,7 @@ export function CreateRatingScaleDialog({
           {continued && (
             <>
               <div className="grid gap-x-4 gap-y-4 sm:grid-cols-2">
-                <Field>
+                <Field variant="outlined">
                   <FieldLabel htmlFor="rs-nombre">Nombre*</FieldLabel>
                   <Input
                     id="rs-nombre"
@@ -167,7 +167,7 @@ export function CreateRatingScaleDialog({
                   />
                 </Field>
 
-                <Field>
+                <Field variant="outlined">
                   <FieldLabel htmlFor="rs-tipo">Tipo de valoración*</FieldLabel>
                   <Select
                     value={draft.tipo}
@@ -196,7 +196,7 @@ export function CreateRatingScaleDialog({
               </div>
 
               <div className="grid gap-x-4 gap-y-4 sm:grid-cols-2">
-                <Field>
+                <Field variant="outlined">
                   <FieldLabel htmlFor="rs-abrev">Abreviación*</FieldLabel>
                   <Input
                     id="rs-abrev"
@@ -208,7 +208,7 @@ export function CreateRatingScaleDialog({
                   />
                 </Field>
 
-                <Field>
+                <Field variant="outlined">
                   <FieldLabel htmlFor="rs-icono">Iconografía*</FieldLabel>
                   <RatingSymbolSelect
                     id="rs-icono"
@@ -222,7 +222,7 @@ export function CreateRatingScaleDialog({
               </div>
 
               <div className="grid gap-x-4 gap-y-4 sm:grid-cols-3">
-                <Field>
+                <Field variant="outlined">
                   <FieldLabel htmlFor="rs-max">Nota máximo*</FieldLabel>
                   <Input
                     id="rs-max"
@@ -237,7 +237,7 @@ export function CreateRatingScaleDialog({
                     }
                   />
                 </Field>
-                <Field>
+                <Field variant="outlined">
                   <FieldLabel htmlFor="rs-min">Nota mínimo*</FieldLabel>
                   <Input
                     id="rs-min"
@@ -252,7 +252,7 @@ export function CreateRatingScaleDialog({
                     }
                   />
                 </Field>
-                <Field>
+                <Field variant="outlined">
                   <FieldLabel htmlFor="rs-eq">Nota equivalente*</FieldLabel>
                   <Input
                     id="rs-eq"

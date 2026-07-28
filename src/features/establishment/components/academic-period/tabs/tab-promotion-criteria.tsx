@@ -189,7 +189,7 @@ export function TabPromotionCriteria({
 
         <form.Field name="curriculumNode">
           {(field) => (
-            <Field>
+            <Field variant="outlined">
               <FieldLabel className="flex-1">Nodo curricular*</FieldLabel>
 
               <Select
@@ -216,7 +216,7 @@ export function TabPromotionCriteria({
 
         <form.Field name="maxFailedRecovery">
           {(field) => (
-            <Field>
+            <Field variant="outlined">
               <FieldLabel className="flex-1">
                 Cantidad máxima reprobadas para nivelar*
               </FieldLabel>
@@ -234,7 +234,7 @@ export function TabPromotionCriteria({
 
         <form.Field name="absencePercentage">
           {(field) => (
-            <Field>
+            <Field variant="outlined">
               <FieldLabel className="flex-1">
                 Porcentaje mínimo de inasistencia para reprobar una asignatura*
               </FieldLabel>
@@ -252,7 +252,7 @@ export function TabPromotionCriteria({
 
         <form.Field name="maxLeveledSubjects">
           {(field) => (
-            <Field>
+            <Field variant="outlined">
               <FieldLabel className="flex-1">
                 Máximo de Áreas/Asignaturas niveladas para ser promovido*
               </FieldLabel>
@@ -270,7 +270,7 @@ export function TabPromotionCriteria({
 
         <form.Field name="maxFailedSubjects">
           {(field) => (
-            <Field>
+            <Field variant="outlined">
               <FieldLabel className="flex-1">
                 Máximo de áreas/asignaturas reprobadas para ser promovido
               </FieldLabel>
@@ -324,7 +324,7 @@ export function TabPromotionCriteria({
 
         <form.Field name="basePercentage">
           {(field) => (
-            <Field>
+            <Field variant="outlined">
               <FieldLabel className="flex-1">Porcentaje base*</FieldLabel>
 
               <Input
@@ -340,7 +340,7 @@ export function TabPromotionCriteria({
 
         <form.Field name="minimumSubjectPercentage">
           {(field) => (
-            <Field>
+            <Field variant="outlined">
               <FieldLabel className="flex-1">
                 Porcentaje mínimo de Área/Asignatura*
               </FieldLabel>
@@ -358,7 +358,7 @@ export function TabPromotionCriteria({
 
         <form.Field name="maxFailedForAverage">
           {(field) => (
-            <Field>
+            <Field variant="outlined">
               <FieldLabel className="flex-1">
                 Cantidad máxima de asignaturas reprobadas para considerar la aprobación por promedio*
               </FieldLabel>
@@ -382,7 +382,7 @@ export function TabPromotionCriteria({
 
       <form.Field name="requiredSubjects">
         {(field) => (
-          <Field className="max-w-xl">
+          <Field variant="outlined" className="max-w-xl">
             <FieldLabel>
               Áreas/Asignaturas obligatorias para la aprobación
             </FieldLabel>
