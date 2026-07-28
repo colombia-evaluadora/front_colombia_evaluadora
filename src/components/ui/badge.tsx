@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils"
 // Los nombres `fill / outline` se conservan por compatibilidad con la API
 // existente; `fill` ⇄ Solid y `outline` ⇄ Outline del Figma.
 const badgeVariants = cva(
-  "group/badge inline-flex w-fit shrink-0 items-center justify-center gap-1 overflow-hidden border border-transparent px-2 py-0.5 text-[0.625rem] font-semibold tracking-widest whitespace-nowrap uppercase transition-colors focus-visible:border-ring focus-visible:ring-[3px] aria-invalid:border-red aria-invalid:ring-red/20 dark:aria-invalid:ring-red/40 [&>svg]:pointer-events-none [&>svg]:size-3!",
+  "group/badge inline-flex w-fit shrink-0 items-center justify-center gap-1 overflow-hidden rounded-xs border border-transparent px-2 py-0.5 text-[0.625rem] font-semibold tracking-widest whitespace-nowrap uppercase transition-colors focus-visible:border-ring focus-visible:ring-[3px] aria-invalid:border-red aria-invalid:ring-red/20 dark:aria-invalid:ring-red/40 [&>svg]:pointer-events-none [&>svg]:size-3!",
   {
     variants: {
       variant: {
