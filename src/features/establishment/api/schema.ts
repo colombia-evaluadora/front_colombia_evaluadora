@@ -9,13 +9,22 @@ export const academicPeriodFormSchema = z
     endDate: z.string().min(1, "La fecha de finalización es obligatoria"),
     enrollmentDeadline: z.string().min(1, "La fecha límite de matrícula es obligatoria"),
     sedeId: z.number().int().positive("La sede es obligatoria"),
+    // Derivado: el periodo anterior se resuelve por sede, no lo captura el
+    // usuario. Puede ser null cuando la sede no tiene periodos previos.
     previousPeriodId: z.number().int().positive().nullable(),
     status: z.enum(ACADEMIC_PERIOD_STATUSES),
     jornadaId: z.number().int().positive("La jornada es obligatoria"),
     reservationEnabled: z.boolean(),
-    defaultBlocksCount: z.number().int().nonnegative().nullable(),
-    scheduleStartTime: z.string(),
-    scheduleEndTime: z.string(),
+    defaultBlocksCount: z
+      .number()
+      .int()
+      .positive("El número de bloques es obligatorio")
+      .nullable()
+      .refine((v): v is number => v !== null, {
+        message: "El número de bloques es obligatorio",
+      }),
+    scheduleStartTime: z.string().min(1, "La hora de inicio es obligatoria"),
+    scheduleEndTime: z.string().min(1, "La hora final es obligatoria"),
     breaks: z.array(
       z.object({
         startTime: z.string().min(1),

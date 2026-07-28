@@ -73,8 +73,6 @@ export function AcademicPeriodConfigPage() {
   const [saved, setSaved] = useState(false)
   const [createdPeriodId, setCreatedPeriodId] = useState<number | null>(null)
   const [jornada, setJornada] = useState<Jornada>(DEFAULT_JORNADA)
-  // Primera parte (configuración del periodo) colapsable para dar más espacio
-  // a la segunda parte (periodos de evaluación, grados, asignación, etc.).
   const [configOpen, setConfigOpen] = useState(true)
 
   const {
@@ -122,99 +120,114 @@ export function AcademicPeriodConfigPage() {
   const isSaving = isEditing ? updatePeriod.isPending : createPeriod.isPending
   const academicPeriodId = isEditing ? numericPeriodId : createdPeriodId ?? undefined
 
+  const showSecondForm = saved || (isEditing && !!detail)
+
+  const header = (
+    <CardHeader className="border-b">
+      <CardAction className="flex gap-2">
+        <Button
+          type="submit"
+          size="sm"
+          color="primary"
+          form={FORM_ID}
+          disabled={isSaving || (isEditing && isLoadingDetail)}
+          aria-busy={isSaving}
+        >
+          {isSaving && (
+            <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+          )}
+          Guardar
+        </Button>
+        <Button
+          size="sm"
+          render={<Link to={paths.app.periodosAcademicos.getHref()} />}
+          nativeButton={false}
+        >
+          Cerrar
+        </Button>
+      </CardAction>
+      <CardTitle>
+        {isEditing ? "Editar periodo académico" : "Agregar periodo académico"}
+      </CardTitle>
+    </CardHeader>
+  )
+
+  const configBody = (
+    <Collapsible
+      open={configOpen}
+      onOpenChange={setConfigOpen}
+      className="flex flex-col gap-4"
+    >
+      <CollapsibleTrigger
+        render={
+          <button
+            type="button"
+            className="flex w-full items-center justify-between gap-2 text-left"
+          />
+        }
+      >
+        <span className="flex flex-col gap-0.5">
+          <span className="font-heading text-sm font-semibold tracking-wider uppercase">
+            Configuración del periodo
+          </span>
+        </span>
+        <CaretDownIcon
+          className={cn(
+            "size-5 shrink-0 text-muted-foreground transition-transform",
+            configOpen && "rotate-180"
+          )}
+        />
+      </CollapsibleTrigger>
+      <CollapsibleContent keepMounted>
+        {isEditing && isLoadingDetail ? (
+          <div className="flex items-center justify-center py-10 text-muted-foreground">
+            <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+            Cargando periodo…
+          </div>
+        ) : isEditing && isDetailError ? (
+          <p className="py-10 text-center text-destructive">
+            Ocurrió un error al cargar el periodo académico.
+          </p>
+        ) : (
+          <AcademicPeriodForm
+            id={FORM_ID}
+            defaultValues={detail ? toFormValues(detail) : undefined}
+            onSubmit={handleSubmit}
+          />
+        )}
+      </CollapsibleContent>
+    </Collapsible>
+  )
+
+  if (!showSecondForm) {
+    return (
+      <div className="flex flex-col gap-6">
+        <Card>
+          {header}
+          <CardContent>{configBody}</CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col gap-6">
-      {/* Cuadro 1: configuración del periodo (colapsable). */}
       <Card>
-        <CardHeader className="border-b">
-          <CardAction className="flex gap-2">
-            <Button
-              type="submit"
-              size="sm"
-              color="primary"
-              form={FORM_ID}
-              disabled={isSaving || (isEditing && isLoadingDetail)}
-              aria-busy={isSaving}
-            >
-              {isSaving && (
-                <SpinnerIcon data-icon="inline-start" className="animate-spin" />
-              )}
-              Guardar
-            </Button>
-            <Button
-              size="sm"
-              render={<Link to={paths.app.periodosAcademicos.getHref()} />}
-              nativeButton={false}
-            >
-              Cerrar
-            </Button>
-          </CardAction>
-          <CardTitle>
-            {isEditing ? "Editar periodo académico" : "Agregar periodo académico"}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Collapsible
-            open={configOpen}
-            onOpenChange={setConfigOpen}
-            className="flex flex-col gap-4"
-          >
-            <CollapsibleTrigger
-              render={
-                <button
-                  type="button"
-                  className="flex w-full items-center justify-between gap-2 text-left"
-                />
-              }
-            >
-              <span className="flex flex-col gap-0.5">
-                <span className="font-heading text-sm font-semibold tracking-wider uppercase">
-                  Configuración del periodo
-                </span>
-              </span>
-              <CaretDownIcon
-                className={cn(
-                  "size-5 shrink-0 text-muted-foreground transition-transform",
-                  configOpen && "rotate-180"
-                )}
+        {header}
+        <CardContent className="flex flex-col gap-6">
+          <Card>
+            <CardContent>{configBody}</CardContent>
+          </Card>
+          <Card>
+            <CardContent>
+              <EvaluationPeriodsSection
+                academicPeriodId={academicPeriodId}
+                jornada={saved || !detail ? jornada : toJornada(detail)}
               />
-            </CollapsibleTrigger>
-            <CollapsibleContent keepMounted>
-              {isEditing && isLoadingDetail ? (
-                <div className="flex items-center justify-center py-10 text-muted-foreground">
-                  <SpinnerIcon
-                    data-icon="inline-start"
-                    className="animate-spin"
-                  />
-                  Cargando periodo…
-                </div>
-              ) : isEditing && isDetailError ? (
-                <p className="py-10 text-center text-destructive">
-                  Ocurrió un error al cargar el periodo académico.
-                </p>
-              ) : (
-                <AcademicPeriodForm
-                  id={FORM_ID}
-                  defaultValues={detail ? toFormValues(detail) : undefined}
-                  onSubmit={handleSubmit}
-                />
-              )}
-            </CollapsibleContent>
-          </Collapsible>
+            </CardContent>
+          </Card>
         </CardContent>
       </Card>
-
-      {/* Cuadro 2: periodos de evaluación y configuración del grado. */}
-      {(saved || (isEditing && !!detail)) && (
-        <Card>
-          <CardContent>
-            <EvaluationPeriodsSection
-              academicPeriodId={academicPeriodId}
-              jornada={saved || !detail ? jornada : toJornada(detail)}
-            />
-          </CardContent>
-        </Card>
-      )}
     </div>
   )
 }
