@@ -2,7 +2,12 @@ import { delay, http, HttpResponse } from "msw"
 
 import { httpQuery } from "./_http-query"
 
-import { campusesDb, campusesRowsDb } from "../db/campuses"
+import {
+  campusesDb,
+  campusesRowsDb,
+  deleteCampusDetails,
+  upsertCampusDetails,
+} from "../db/campuses"
 
 import type {
   Campus,
@@ -97,6 +102,77 @@ export const campusHandlers = [
     return HttpResponse.json({
       status: "ok",
       campus,
+    })
+  }),
+
+  http.post("*/api/establishments/campuses", async ({ request }) => {
+    await delay(250)
+
+    const values = (await request.json()) as Campus
+    const campus: Campus = {
+      ...values,
+      id: values.id || `campus-${Date.now()}`,
+    }
+
+    const savedCampus = upsertCampusDetails(campus)
+
+    return HttpResponse.json({
+      status: "ok",
+      message: "Sede creada.",
+      campus: savedCampus,
+    })
+  }),
+
+  http.put("*/api/establishments/campuses/:id", async ({ params, request }) => {
+    await delay(250)
+
+    const existing = campusesDb.find((item) => item.id === params.id)
+
+    if (!existing) {
+      return HttpResponse.json(
+        {
+          status: "error",
+          message: "Sede no encontrada.",
+        },
+        { status: 404 }
+      )
+    }
+
+    const values = (await request.json()) as Campus
+    const campus: Campus = {
+      ...values,
+      id: params.id,
+    }
+
+    const savedCampus = upsertCampusDetails(campus)
+
+    return HttpResponse.json({
+      status: "ok",
+      message: "Sede actualizada.",
+      campus: savedCampus,
+    })
+  }),
+
+  http.delete("*/api/establishments/campuses/:id", async ({ params }) => {
+    await delay(250)
+
+    const campus = campusesDb.find((item) => item.id === params.id)
+
+    if (!campus) {
+      return HttpResponse.json(
+        {
+          status: "error",
+          message: "Sede no encontrada.",
+        },
+        { status: 404 }
+      )
+    }
+
+    deleteCampusDetails(campus.id)
+
+    return HttpResponse.json({
+      status: "ok",
+      message: "Sede eliminada.",
     })
   }),
 ]

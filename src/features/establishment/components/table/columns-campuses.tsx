@@ -1,11 +1,14 @@
 import type { ColumnDef } from "@tanstack/react-table"
+import { Link } from "@tanstack/react-router"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { PencilIcon, TrashIcon } from "@/components/ui/icons"
+import { PencilIcon } from "@/components/ui/icons"
 import { DataTableColumnHeader } from "@/components/data-table"
+import { paths } from "@/config/paths"
 
 import type { Campus } from "../../api/types/campus"
+import { DeleteCampusDialog } from "../dialogs/dialog-delete-campus"
 
 export const columns: ColumnDef<Campus>[] = [
   {
@@ -54,7 +57,7 @@ export const columns: ColumnDef<Campus>[] = [
   {
     id: "actions",
     header: () => <span className="sr-only">Acciones</span>,
-    cell: () => (
+    cell: ({ row }) => (
       <div className="flex items-center justify-end gap-1">
         <Button
           type="button"
@@ -63,19 +66,12 @@ export const columns: ColumnDef<Campus>[] = [
           size="icon"
           className="size-8"
           aria-label="Editar sede"
+          render={<Link to={paths.app.establishments.campuses.edit.getHref(row.original.id)} />}
+          nativeButton={false}
         >
           <PencilIcon />
         </Button>
-        <Button
-          type="button"
-          variant="fill"
-          color="destructive"
-          size="icon"
-          className="size-8"
-          aria-label="Eliminar sede"
-        >
-          <TrashIcon />
-        </Button>
+        <DeleteCampusDialog campus={row.original} />
       </div>
     ),
     enableSorting: false,

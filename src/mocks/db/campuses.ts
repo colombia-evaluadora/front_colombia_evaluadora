@@ -96,3 +96,35 @@ export const campusesDb: Campus[] = Array.from({ length: 300 }, (_, index) =>
 )
 
 export const campusesRowsDb: Campus[] = [...campusesDb]
+
+export function upsertCampusDetails(campus: Campus) {
+  const detailsIndex = campusesDb.findIndex((item) => item.id === campus.id)
+  const rowIndex = campusesRowsDb.findIndex((item) => item.id === campus.id)
+
+  if (detailsIndex >= 0) {
+    campusesDb[detailsIndex] = campus
+  } else {
+    campusesDb.unshift(campus)
+  }
+
+  if (rowIndex >= 0) {
+    campusesRowsDb[rowIndex] = campus
+  } else {
+    campusesRowsDb.unshift(campus)
+  }
+
+  return campus
+}
+
+export function deleteCampusDetails(id: string) {
+  const detailsIndex = campusesDb.findIndex((item) => item.id === id)
+  const rowIndex = campusesRowsDb.findIndex((item) => item.id === id)
+
+  if (detailsIndex >= 0) {
+    campusesDb.splice(detailsIndex, 1)
+  }
+
+  if (rowIndex >= 0) {
+    campusesRowsDb.splice(rowIndex, 1)
+  }
+}
