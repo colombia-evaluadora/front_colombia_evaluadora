@@ -15,7 +15,7 @@ interface UseCampusesQueryParams {
 }
 
 function fetchCampuses(body: CampusesQueryRequest): Promise<CampusesQueryResponse> {
-  return api.query("/establishments/campuses/query", body)
+  return api.query("/campuses/query", body)
 }
 
 export const campusesQueryKey = (params: UseCampusesQueryParams) => [
