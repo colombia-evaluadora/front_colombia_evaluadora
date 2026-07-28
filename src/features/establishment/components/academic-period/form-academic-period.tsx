@@ -78,6 +78,7 @@ export function AcademicPeriodForm({
   const form = useForm({
     defaultValues: initialValues,
     validators: {
+      onChange: academicPeriodFormSchema,
       onSubmit: academicPeriodFormSchema,
     },
     onSubmit: ({ value }) => {
@@ -117,7 +118,10 @@ export function AcademicPeriodForm({
                   mode="date"
                   id={field.name}
                   value={parseDateValue(field.state.value)}
-                  onChange={(date) => field.handleChange(formatDateValue(date))}
+                  onChange={(date) => {
+                    field.handleChange(formatDateValue(date))
+                    field.handleBlur()
+                  }}
                   aria-invalid={isInvalid}
                 />
                 {isInvalid && <FieldError errors={field.state.meta.errors} />}
@@ -139,7 +143,10 @@ export function AcademicPeriodForm({
                   mode="date"
                   id={field.name}
                   value={parseDateValue(field.state.value)}
-                  onChange={(date) => field.handleChange(formatDateValue(date))}
+                  onChange={(date) => {
+                    field.handleChange(formatDateValue(date))
+                    field.handleBlur()
+                  }}
                   aria-invalid={isInvalid}
                 />
                 {isInvalid && <FieldError errors={field.state.meta.errors} />}
@@ -161,7 +168,10 @@ export function AcademicPeriodForm({
                   mode="date"
                   id={field.name}
                   value={parseDateValue(field.state.value)}
-                  onChange={(date) => field.handleChange(formatDateValue(date))}
+                  onChange={(date) => {
+                    field.handleChange(formatDateValue(date))
+                    field.handleBlur()
+                  }}
                   aria-invalid={isInvalid}
                 />
                 {isInvalid && <FieldError errors={field.state.meta.errors} />}

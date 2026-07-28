@@ -28,6 +28,7 @@ import {
 
 import { useCreateEvaluationPeriod } from "../../../api/mutations/create-evaluation-period"
 import { useUpdateEvaluationPeriod } from "../../../api/mutations/update-evaluation-period"
+import { useEvaluationPeriodsQuery } from "../../../api/query/use-evaluation-periods-query"
 import { EVALUATION_PERIOD_STATUSES } from "../../../api/ui-mappings"
 import type {
   EvaluationPeriod,
@@ -43,15 +44,24 @@ const STATUS_TUPLE = [
   "Habilitados para algunas asignaturas",
 ] as const satisfies readonly EvaluationPeriodStatus[]
 
-const evaluationPeriodFormSchema = z.object({
-  codigo: z.number().int().positive("El código es obligatorio"),
-  nombre: z.string().min(1, "El nombre es obligatorio"),
-  abreviacion: z.string().min(1, "La abreviación es obligatoria"),
-  startDate: z.string().min(1, "La fecha de inicio es obligatoria"),
-  endDate: z.string().min(1, "La fecha de fin es obligatoria"),
-  peso: z.number().min(0).max(100),
-  estado: z.enum(STATUS_TUPLE),
-})
+const evaluationPeriodFormSchema = z
+  .object({
+    codigo: z.number().int().positive("El código es obligatorio"),
+    nombre: z.string().min(1, "El nombre es obligatorio"),
+    abreviacion: z.string().min(1, "La abreviación es obligatoria"),
+    startDate: z.string().min(1, "La fecha de inicio es obligatoria"),
+    endDate: z.string().min(1, "La fecha de fin es obligatoria"),
+    peso: z.number().min(0).max(100),
+    estado: z.enum(STATUS_TUPLE),
+  })
+  .refine(
+    (data) =>
+      !data.startDate || !data.endDate || data.startDate < data.endDate,
+    {
+      message: "La fecha de inicio es posterior o igual a la fecha de finalización",
+      path: ["startDate"],
+    }
+  )
 type EvaluationPeriodFormValues = z.infer<typeof evaluationPeriodFormSchema>
 
 const EMPTY: EvaluationPeriodFormValues = {
@@ -77,6 +87,26 @@ export function CreateEvaluationPeriodDialog({
 }: CreateEvaluationPeriodDialogProps) {
   const isEditing = period != null
   const [open, setOpen] = useState(false)
+
+  const { data: periodsData } = useEvaluationPeriodsQuery({
+    filters: {},
+    sorting: [],
+    pageIndex: 0,
+    pageSize: 100,
+    academicPeriodId,
+  })
+  const otherPeriods = (periodsData?.rows ?? []).filter(
+    (p) => period == null || p.codigo !== period.codigo
+  )
+  const pesoUsado = otherPeriods.reduce((sum, p) => sum + (p.peso ?? 0), 0)
+  const pesoDisponible = Math.max(0, 100 - pesoUsado)
+
+  function hasOverlap(start: string, end: string): boolean {
+    if (!start || !end) return false
+    return otherPeriods.some(
+      (p) => start <= p.endDate && p.startDate <= end
+    )
+  }
 
   const defaultValues: EvaluationPeriodFormValues = period
     ? {
@@ -117,9 +147,24 @@ export function CreateEvaluationPeriodDialog({
 
   const form = useForm({
     defaultValues,
-    validators: { onSubmit: evaluationPeriodFormSchema },
+    validators: {
+      onChange: evaluationPeriodFormSchema,
+      onSubmit: evaluationPeriodFormSchema,
+    },
     onSubmit: ({ value }) => {
       const values = evaluationPeriodFormSchema.parse(value)
+      if (hasOverlap(values.startDate, values.endDate)) {
+        toast.error(
+          "El período coincide con otro período de evaluación existente. Revisá las fechas."
+        )
+        return
+      }
+      if (values.peso > pesoDisponible) {
+        toast.error(
+          `El peso porcentual supera el 100 %. Disponible: ${pesoDisponible} %.`
+        )
+        return
+      }
       if (isEditing) {
         updateEvaluation.mutate({ codigo: period.codigo, values })
       } else {
@@ -236,7 +281,17 @@ export function CreateEvaluationPeriodDialog({
             }}
           </form.Field>
 
-          <form.Field name="peso">
+          <form.Field
+            name="peso"
+            validators={{
+              onChange: ({ value }) =>
+                value > pesoDisponible
+                  ? {
+                      message: `El peso supera el 100 %. Disponible: ${pesoDisponible} %.`,
+                    }
+                  : undefined,
+            }}
+          >
             {(field) => {
               const isInvalid =
                 field.state.meta.isTouched && !field.state.meta.isValid
@@ -271,7 +326,10 @@ export function CreateEvaluationPeriodDialog({
                     mode="date"
                     id={field.name}
                     value={parseDateValue(field.state.value)}
-                    onChange={(date) => field.handleChange(formatDateValue(date))}
+                    onChange={(date) => {
+                      field.handleChange(formatDateValue(date))
+                      field.handleBlur()
+                    }}
                     aria-invalid={isInvalid}
                   />
                   {isInvalid && <FieldError errors={field.state.meta.errors} />}
@@ -291,7 +349,10 @@ export function CreateEvaluationPeriodDialog({
                     mode="date"
                     id={field.name}
                     value={parseDateValue(field.state.value)}
-                    onChange={(date) => field.handleChange(formatDateValue(date))}
+                    onChange={(date) => {
+                      field.handleChange(formatDateValue(date))
+                      field.handleBlur()
+                    }}
                     aria-invalid={isInvalid}
                   />
                   {isInvalid && <FieldError errors={field.state.meta.errors} />}
@@ -301,30 +362,39 @@ export function CreateEvaluationPeriodDialog({
           </form.Field>
 
           <form.Field name="estado">
-            {(field) => (
-              <Field variant="outlined" className="sm:col-span-3">
-                <FieldLabel htmlFor={field.name}>Estado</FieldLabel>
-                <Select
-                  value={field.state.value}
-                  onValueChange={(value) =>
-                    value && field.handleChange(value as EvaluationPeriodStatus)
-                  }
+            {(field) => {
+              const isInvalid =
+                field.state.meta.isTouched && !field.state.meta.isValid
+              return (
+                <Field
+                  variant="outlined"
+                  data-invalid={isInvalid}
+                  className="sm:col-span-3"
                 >
-                  <SelectTrigger id={field.name}>
-                    <SelectValue placeholder="Seleccionar" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      {EVALUATION_PERIOD_STATUSES.map((option) => (
-                        <SelectItem key={option} value={option}>
-                          {option}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              </Field>
-            )}
+                  <FieldLabel htmlFor={field.name}>Estado</FieldLabel>
+                  <Select
+                    value={field.state.value}
+                    onValueChange={(value) =>
+                      value && field.handleChange(value as EvaluationPeriodStatus)
+                    }
+                  >
+                    <SelectTrigger id={field.name} aria-invalid={isInvalid}>
+                      <SelectValue placeholder="Seleccionar" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        {EVALUATION_PERIOD_STATUSES.map((option) => (
+                          <SelectItem key={option} value={option}>
+                            {option}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                </Field>
+              )
+            }}
           </form.Field>
         </form>
 
