@@ -18,7 +18,7 @@ it("removes a campus through the mock DELETE handler", async () => {
   const initialDetailsCount = campusesDb.length
   const initialRowsCount = campusesRowsDb.length
 
-  const response = await fetch(`http://localhost/api/campuses/${existing.id}`, {
+  const response = await fetch(`http://localhost/api/establishments/campuses/${existing.id}`, {
     method: "DELETE",
   })
 

@@ -9,5 +9,12 @@ export interface CreateCampusResult {
 }
 
 export function createCampus(values: Campus): Promise<CreateCampusResult> {
-  return api.post("/campuses", values)
+  return api.post("/establishments/campuses", values)
+}
+
+export function updateCampus(
+  campusId: string,
+  values: Campus
+): Promise<CreateCampusResult> {
+  return api.put(`/establishments/campuses/${campusId}`, values)
 }

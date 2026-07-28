@@ -9,7 +9,7 @@ export interface DeleteCampusResult {
 }
 
 function deleteCampus(id: string): Promise<DeleteCampusResult> {
-  return api.delete(`/campuses/${id}`)
+  return api.delete(`/establishments/campuses/${id}`)
 }
 
 interface UseDeleteCampusOptions {

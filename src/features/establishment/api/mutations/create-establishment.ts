@@ -10,3 +10,10 @@ export interface CreateEstablishmentResult {
 export function createEstablishment(values: EstablishmentDetails): Promise<CreateEstablishmentResult> {
   return api.post("/establishments", values)
 }
+
+export function updateEstablishment(
+  establishmentId: string,
+  values: EstablishmentDetails
+): Promise<CreateEstablishmentResult> {
+  return api.put(`/establishments/${establishmentId}`, values)
+}

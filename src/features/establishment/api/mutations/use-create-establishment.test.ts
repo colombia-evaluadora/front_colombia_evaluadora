@@ -135,3 +135,33 @@ it("loads an existing establishment from the mock store when editing", async () 
   expect(payload.establishment.id).toBe(existing.id)
   expect(payload.establishment.basicInfo.name).toBe(existing.basicInfo.name)
 })
+
+it("updates an existing establishment through the mock PUT handler", async () => {
+  const existing = establishmentsDb[0]
+
+  expect(existing).toBeDefined()
+
+  const nextName = `${existing.basicInfo.name} EDITADO`
+
+  const response = await fetch(`http://localhost/api/establishments/${existing.id}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      ...existing,
+      basicInfo: {
+        ...existing.basicInfo,
+        name: nextName,
+      },
+    }),
+  })
+
+  expect(response.status).toBe(200)
+
+  const payload = await response.json()
+
+  expect(payload.status).toBe("ok")
+  expect(payload.message).toBe("Establecimiento actualizado.")
+  expect(establishmentsDb.find((item) => item.id === existing.id)?.basicInfo.name).toBe(nextName)
+})

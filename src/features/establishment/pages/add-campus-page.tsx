@@ -15,6 +15,7 @@ import { CATALOGS } from "@/lib/catalogs"
 
 import { CampusDetailsForm } from "../components/forms/form-campus-details"
 import { useCreateCampus } from "../api/mutations/use-create-campus"
+import { useUpdateCampus } from "../api/mutations/use-update-campus"
 import { useCampusQuery } from "../api/query/use-campus-query"
 import { useCatalogQuery } from "../api/query/use-catalogs"
 import type { CatalogItem } from "../api/types/catalog"
@@ -60,11 +61,11 @@ export function AddCampusPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const campusId = useMemo(() => {
-    if (!location.pathname.includes("/sedes/agregar/")) {
+    if (!location.pathname.includes("/sedes/editar/")) {
       return null
     }
 
-    return location.pathname.split("/sedes/agregar/").at(1) ?? null
+    return location.pathname.split("/sedes/editar/").at(1) ?? null
   }, [location.pathname])
 
   const isEditMode = campusId !== null
@@ -105,6 +106,23 @@ export function AddCampusPage() {
     },
   })
 
+  const updateMutation = useUpdateCampus({
+    mutationConfig: {
+      onSuccess: (result) => {
+        if (result.status === "error") {
+          toast.error(result.message)
+          return
+        }
+
+        toast.success(result.message)
+        navigate({ to: paths.app.establishments.campuses.getHref() })
+      },
+      onError: (error) => {
+        toast.error(error.message || "No fue posible actualizar la sede.")
+      },
+    },
+  })
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
@@ -116,8 +134,18 @@ export function AddCampusPage() {
       return
     }
 
+    if (isEditMode && campusId) {
+      await updateMutation.mutateAsync({
+        campusId,
+        values: formValues,
+      })
+      return
+    }
+
     await createMutation.mutateAsync(formValues)
   }
+
+  const isPending = createMutation.isPending || updateMutation.isPending
 
   return (
     <Card>
@@ -152,7 +180,7 @@ export function AddCampusPage() {
           variant="fill"
           color="neutral"
           nativeButton={false}
-          disabled={createMutation.isPending}
+          disabled={isPending}
         >
           Cancelar
         </Button>
@@ -161,9 +189,9 @@ export function AddCampusPage() {
           form="campus-form"
           variant="fill"
           color="primary"
-          disabled={createMutation.isPending}
+          disabled={isPending}
         >
-          {createMutation.isPending ? "Guardando..." : "Guardar"}
+          {isPending ? "Guardando..." : isEditMode ? "Guardar cambios" : "Guardar"}
         </Button>
       </CardFooter>
     </Card>

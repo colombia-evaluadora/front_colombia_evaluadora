@@ -10,7 +10,7 @@ interface CampusQueryResult {
 }
 
 function fetchCampus(id: string): Promise<CampusQueryResult> {
-  return api.get(`/campuses/${id}`)
+  return api.get(`/establishments/campuses/${id}`)
 }
 
 export function useCampusQuery(id: string | null, enabled = true) {

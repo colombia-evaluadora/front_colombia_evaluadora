@@ -11,7 +11,7 @@ afterEach(() => server.resetHandlers())
 afterAll(() => server.close())
 
 it("returns paginated campus rows through the mock query handler", async () => {
-  const response = await fetch("http://localhost/api/campuses/query", {
+  const response = await fetch("http://localhost/api/establishments/campuses/query", {
     method: "QUERY",
     headers: {
       "Content-Type": "application/json",
