@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useMemo, useRef, useState } from "react"
 import { PencilIcon, PlusCircleIcon, SpinnerIcon } from "@/components/ui/icons"
 import { toast } from "sonner"
 
@@ -33,9 +33,15 @@ import { useGradeGroupsQuery } from "../../../api/query/use-grade-groups-query"
 import { useTeachingLevelsQuery } from "../../../api/query/use-teaching-levels-query"
 import type { Grade } from "../../../api/types/academic-period/grade"
 import { TabGradeGroups } from "../tabs/tab-grade-groups"
-import { TabPromotionCriteria } from "../tabs/tab-promotion-criteria"
+import {
+  TabPromotionCriteria,
+  type PromotionCriteriaHandle,
+} from "../tabs/tab-promotion-criteria"
 import { TabStudyPlan } from "../tabs/tab-study-plan"
-import { ScheduleBuilder } from "../schedule/schedule-builder"
+import {
+  ScheduleBuilder,
+  type ScheduleBuilderHandle,
+} from "../schedule/schedule-builder"
 import {
   DEFAULT_SUBJECT_COLOR,
   type Jornada,
@@ -78,48 +84,28 @@ export function CreateGradeDialog({
   }
 
   const { data: teachingLevels = [] } = useTeachingLevelsQuery()
-
-  // Grados disponibles según el nivel de enseñanza elegido. La lista del
-  // "grado siguiente" cambia con el nivel; el nombre queda libre.
   const gradoOptions =
     teachingLevels.find((l) => l.id === teachingLevelId)?.grados ?? []
 
-  function handleChangeTeachingLevel(value: string) {
+  function handleChangeTeachingLevel(value: string | null) {
     if (!value) return
     const nextId = Number(value)
     setTeachingLevelId(nextId)
-    // Si el "grado siguiente" elegido no pertenece al nuevo nivel, se limpia.
     const grados = teachingLevels.find((l) => l.id === nextId)?.grados ?? []
     if (!grados.includes(gradoSiguiente)) setGradoSiguiente("")
   }
 
-  const createGrade = useCreateGrade({
-    mutationConfig: {
-      onSuccess: (created) => {
-        setGradeId(created.id)
-        toast.success(
-          "Grado creado. Ahora podés configurar grupos, plan de estudio y horario."
-        )
-      },
-    },
-  })
+  const createGrade = useCreateGrade()
+  const updateGrade = useUpdateGrade()
 
-  const updateGrade = useUpdateGrade({
-    mutationConfig: {
-      onSuccess: (result) => {
-        if (result.status === "error") {
-          toast.error(result.message)
-          return
-        }
-        toast.success(result.message)
-      },
-    },
-  })
-
-  const isSaving = createGrade.isPending || updateGrade.isPending
   const hasNextGrade = tieneGradoSiguiente === "si"
 
-  function handleSaveGrade() {
+  const promotionRef = useRef<PromotionCriteriaHandle>(null)
+  const scheduleRef = useRef<ScheduleBuilderHandle>(null)
+
+  const [saving, setSaving] = useState(false)
+
+  async function handleSaveGrade() {
     if (!nombre.trim() || teachingLevelId == null) {
       toast.error("Completá el nivel de enseñanza y el nombre del grado.")
       return
@@ -131,10 +117,34 @@ export function CreateGradeDialog({
       tieneGradoSiguiente: hasNextGrade,
       gradoSiguiente: hasNextGrade ? gradoSiguiente || undefined : undefined,
     }
-    if (gradeId == null) {
-      createGrade.mutate({ ...payload, academicPeriodId })
-    } else {
-      updateGrade.mutate({ id: gradeId, values: payload })
+    setSaving(true)
+    try {
+      if (gradeId == null) {
+        const created = await createGrade.mutateAsync({
+          ...payload,
+          academicPeriodId,
+        })
+        setGradeId(created.id)
+        toast.success(
+          "Grado creado. Ahora podés configurar grupos, plan de estudio y horario."
+        )
+      } else {
+        const result = await updateGrade.mutateAsync({
+          id: gradeId,
+          values: payload,
+        })
+        if (result.status === "error") {
+          toast.error(result.message)
+          return
+        }
+        await promotionRef.current?.save(gradeId)
+        await scheduleRef.current?.save(gradeId)
+        toast.success("Cambios guardados.")
+      }
+    } catch {
+      toast.error("Ocurrió un error al guardar el grado.")
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -318,23 +328,6 @@ export function CreateGradeDialog({
           )}
         </div>
 
-        <div className="flex justify-end">
-          <Button
-            type="button"
-            color="primary"
-            size="sm"
-            className="w-full sm:w-auto"
-            onClick={handleSaveGrade}
-            disabled={isSaving}
-            aria-busy={isSaving}
-          >
-            {isSaving && (
-              <SpinnerIcon data-icon="inline-start" className="animate-spin" />
-            )}
-            {gradeId == null ? "Crear grado" : "Guardar cambios"}
-          </Button>
-        </div>
-
         {gradeId == null ? (
           <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
             Guardá el grado para configurar sus grupos, plan de estudio y
@@ -356,8 +349,12 @@ export function CreateGradeDialog({
               <TabGradeGroups gradeId={gradeId} academicPeriodId={academicPeriodId} />
             </TabsContent>
 
-            <TabsContent value="promocion" className="mt-4 min-w-0">
+            {/* keepMounted: la tab de formulario sigue montada aunque no esté
+                activa, para que su ref de guardado y su estado persistan. */}
+            <TabsContent value="promocion" keepMounted className="mt-4 min-w-0">
               <TabPromotionCriteria
+                ref={promotionRef}
+                hideSubmit
                 gradeId={gradeId}
                 academicPeriodId={academicPeriodId}
               />
@@ -370,8 +367,9 @@ export function CreateGradeDialog({
               />
             </TabsContent>
 
-            <TabsContent value="horario" className="mt-4 min-w-0">
+            <TabsContent value="horario" keepMounted className="mt-4 min-w-0">
               <ScheduleBuilder
+                ref={scheduleRef}
                 jornada={jornada}
                 subjects={scheduleSubjects}
                 gradeGroups={gradeGroupOptions}
@@ -382,6 +380,18 @@ export function CreateGradeDialog({
         )}
 
         <DialogFooter>
+          <Button
+            type="button"
+            color="primary"
+            onClick={handleSaveGrade}
+            disabled={saving}
+            aria-busy={saving}
+          >
+            {saving && (
+              <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+            )}
+            {gradeId == null ? "Crear grado" : "Guardar cambios"}
+          </Button>
           <DialogClose render={<Button type="button" variant="outline" />}>
             Cerrar
           </DialogClose>

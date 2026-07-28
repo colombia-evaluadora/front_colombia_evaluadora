@@ -13,6 +13,8 @@ import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
+  DialogOverlay,
+  DialogPortal,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
@@ -193,6 +195,14 @@ export function CreateStudyPlanDialog({
           </>
         )}
       </DialogTrigger>
+      {/* Backdrop forzado: base-ui no renderiza el de un diálogo anidado, así
+          que lo agregamos con forceRender para que aparezca el difuminado. */}
+      <DialogPortal>
+        <DialogOverlay
+          forceRender
+          className="bg-black/30 supports-backdrop-filter:backdrop-blur-md"
+        />
+      </DialogPortal>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>

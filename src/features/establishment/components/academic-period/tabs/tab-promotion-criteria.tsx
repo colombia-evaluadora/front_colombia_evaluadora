@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+import { forwardRef, useEffect, useImperativeHandle } from "react"
 import { useForm } from "@tanstack/react-form"
 import { toast } from "sonner"
 import { z } from "zod"
@@ -86,11 +86,19 @@ interface TabPromotionCriteriaProps {
   gradeId?: number
 }
 
-export function TabPromotionCriteria({
-  hideSubmit = false,
-  academicPeriodId,
-  gradeId,
-}: TabPromotionCriteriaProps) {
+// Guardado imperativo para el diálogo del grado: guarda los criterios contra
+// el id de grado que le pasan.
+export interface PromotionCriteriaHandle {
+  save: (gradeId: number) => Promise<void>
+}
+
+export const TabPromotionCriteria = forwardRef<
+  PromotionCriteriaHandle,
+  TabPromotionCriteriaProps
+>(function TabPromotionCriteria(
+  { hideSubmit = false, academicPeriodId, gradeId },
+  ref
+) {
   const isGradeScope = gradeId != null
 
   // Criterios por periodo (pestaña del periodo).
@@ -134,7 +142,9 @@ export function TabPromotionCriteria({
           toast.error(result.message)
           return
         }
-        toast.success(result.message)
+        // En el diálogo del grado (hideSubmit) el toast lo da el guardado
+        // unificado; acá solo cuando tiene su propio botón.
+        if (!hideSubmit) toast.success(result.message)
       },
     },
   })
@@ -164,6 +174,19 @@ export function TabPromotionCriteria({
   useEffect(() => {
     if (criteria) form.reset(criteria)
   }, [criteria, form])
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      save: async (id: number) => {
+        await saveGradeConfig.mutateAsync({
+          gradeId: id,
+          values: { promotionCriteria: form.state.values },
+        })
+      },
+    }),
+    [saveGradeConfig, form]
+  )
 
   if ((isGradeScope || academicPeriodId != null) && isLoading) {
     return (
@@ -411,4 +434,4 @@ export function TabPromotionCriteria({
       )}
     </form>
   )
-}
+})

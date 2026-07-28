@@ -12,6 +12,8 @@ import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
+  DialogOverlay,
+  DialogPortal,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
@@ -172,6 +174,14 @@ export function CreateGradeGroupDialog({
           </>
         )}
       </DialogTrigger>
+      {/* Backdrop forzado: base-ui no renderiza el de un diálogo anidado, así
+          que lo agregamos con forceRender para que aparezca el difuminado. */}
+      <DialogPortal>
+        <DialogOverlay
+          forceRender
+          className="bg-black/30 supports-backdrop-filter:backdrop-blur-md"
+        />
+      </DialogPortal>
       <DialogContent className="sm:max-w-3xl" showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>{isEditing ? "Editar grupo" : "Agregar grupo"}</DialogTitle>
