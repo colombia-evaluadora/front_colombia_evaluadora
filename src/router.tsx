@@ -320,6 +320,7 @@ const routeTree = rootRoute.addChildren([
     auditoriaSesionOperacionesRoute,
     establishmentsRoute,
     addEstablishmentRoute,
+    editEstablishmentRoute,
     reportesRoute,
     usuariosRoute,
     configuracionRoute,
