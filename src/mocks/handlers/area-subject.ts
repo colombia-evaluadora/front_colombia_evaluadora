@@ -9,6 +9,7 @@ import type {
   AreaSubjectsQueryRequest,
   AreaSubjectsQueryResponse,
   CreateAreaSubjectRequest,
+  UpdateAreaSubjectRequest,
   ExportFormat,
   ExportResult,
 } from "@/features/establishment/api/types/academic-period/area-subject"
@@ -145,6 +146,25 @@ export const areaSubjectsHandlers = [
     areaSubjectsDb.push(record)
 
     return HttpResponse.json(record, { status: 201 })
+  }),
+
+  http.patch("/api/area-subjects/:codigo", async ({ request, params }) => {
+    await delay(400)
+    const body = (await request.json()) as UpdateAreaSubjectRequest
+    const index = areaSubjectsDb.findIndex(
+      (row) => String(row.codigo) === String(params.codigo)
+    )
+    if (index === -1) {
+      return HttpResponse.json(
+        { status: "error", message: "Área/asignatura no encontrada." },
+        { status: 404 }
+      )
+    }
+    areaSubjectsDb[index] = { ...areaSubjectsDb[index], ...body }
+    return HttpResponse.json({
+      status: "ok",
+      message: "Área/asignatura actualizada.",
+    })
   }),
 
   http.delete("/api/area-subjects/:codigo", async ({ params }) => {

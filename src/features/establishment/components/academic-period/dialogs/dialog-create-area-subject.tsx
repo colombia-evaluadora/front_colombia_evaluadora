@@ -1,11 +1,6 @@
 import { useMemo, useState } from "react"
 import { useForm } from "@tanstack/react-form"
 import {
-  ArrowDownIcon,
-  ArrowUpIcon,
-  CaretDownIcon,
-  CaretUpDownIcon,
-  CheckIcon,
   PlusCircleIcon,
   PlusIcon,
   SpinnerIcon,
@@ -35,7 +30,14 @@ import {
 } from "@/components/ui/dialog"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import {
   Table,
   TableBody,
@@ -44,15 +46,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { cn } from "@/lib/utils"
 
 import { useCreateAreaSubject } from "../../../api/mutations/create-area-subject"
+import { useGeneralAreasQuery } from "../../../api/query/use-general-areas-query"
 import { ColorPickerPopover } from "../color-picker"
+import { EspecialidadSelect } from "../especialidad-select"
+import { SortableHeader } from "../sortable-header"
 import { SelectGeneralAreaDialog } from "./dialog-select-general-area"
 
 const areaSubjectFormSchema = z.object({
-  // El código no se ingresa en el formulario: se autogenera con Date.now() al
-  // enviar. Por eso admite 0 (su valor por defecto) y no bloquea el submit.
   codigo: z.number().int().nonnegative(),
   areaGeneral: z.string().min(1, "El área general es obligatoria"),
   nombreInterno: z.string().min(1, "El nombre interno es obligatorio"),
@@ -143,6 +145,12 @@ export function CreateAreaSubjectDialog({
 
   const createAreaSubject = useCreateAreaSubject()
 
+  // Asignaturas dependientes del área general elegida en el encabezado.
+  const { data: generalAreas = [] } = useGeneralAreasQuery()
+  function asignaturasFor(areaName: string): string[] {
+    return generalAreas.find((a) => a.nombre === areaName)?.asignaturas ?? []
+  }
+
   const form = useForm({
     defaultValues: EMPTY,
     validators: { onSubmit: areaSubjectFormSchema },
@@ -187,9 +195,13 @@ export function CreateAreaSubjectDialog({
 
   function startSubject(useAreaInfo: boolean) {
     const area = form.state.values
+    const seededOrden =
+      useAreaInfo && !Number.isNaN(area.ordenReportes) && area.ordenReportes > 0
+        ? area.ordenReportes
+        : subjects.length + 1
     setDraft({
-      orden: subjects.length + 1,
-      asignaturaGeneral: useAreaInfo ? area.areaGeneral : "",
+      orden: seededOrden,
+      asignaturaGeneral: "",
       nombreInterno: useAreaInfo ? area.nombreInterno : "",
       abreviacion: useAreaInfo ? area.abreviacion : "",
       color: "",
@@ -347,9 +359,6 @@ export function CreateAreaSubjectDialog({
             }}
           </form.Field>
 
-          {/* El botón aparece recién cuando el área está completa, en la
-              columna de "Orden en los reportes". Al abrirlo ya expande el
-              modal y muestra la tabla de fondo mientras pregunta. */}
           <form.Subscribe
             selector={(state) => ({
               areaGeneral: state.values.areaGeneral,
@@ -478,14 +487,38 @@ export function CreateAreaSubjectDialog({
                     />
                   </TableCell>
                   <TableCell>
-                    <Input
-                      aria-label="Asignatura general"
-                      placeholder="Agregar"
-                      value={draft.asignaturaGeneral}
-                      onChange={(e) =>
-                        patchDraft({ asignaturaGeneral: e.target.value })
-                      }
-                    />
+                    <form.Subscribe selector={(s) => s.values.areaGeneral}>
+                      {(areaName) => {
+                        const options = asignaturasFor(areaName)
+                        return (
+                          <Select
+                            value={draft.asignaturaGeneral || undefined}
+                            onValueChange={(value) =>
+                              value && patchDraft({ asignaturaGeneral: value })
+                            }
+                          >
+                            <SelectTrigger aria-label="Asignatura" className="min-w-40">
+                              <SelectValue placeholder="Seleccionar" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectGroup>
+                                {options.length === 0 ? (
+                                  <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                                    El área general no tiene asignaturas cargadas.
+                                  </div>
+                                ) : (
+                                  options.map((asignatura) => (
+                                    <SelectItem key={asignatura} value={asignatura}>
+                                      {asignatura}
+                                    </SelectItem>
+                                  ))
+                                )}
+                              </SelectGroup>
+                            </SelectContent>
+                          </Select>
+                        )
+                      }}
+                    </form.Subscribe>
                   </TableCell>
                   <TableCell>
                     <Input
@@ -539,8 +572,6 @@ export function CreateAreaSubjectDialog({
         )}
 
         <DialogFooter className="sm:justify-end">
-          {/* Guardar aparece recién cuando se empezó a agregar asignaturas;
-              Cancelar queda a la derecha, al lado de Guardar. */}
           {subjectsStarted && (
             <Button
               type="submit"
@@ -585,128 +616,5 @@ export function CreateAreaSubjectDialog({
         </AlertDialogContent>
       </AlertDialog>
     </Dialog>
-  )
-}
-
-// Header de columna clicable que cicla el orden (asc → desc → sin orden) con
-// los mismos íconos que la tabla de periodos de evaluación.
-function SortableHeader({
-  title,
-  sortKey,
-  sort,
-  onToggle,
-}: {
-  title: string
-  sortKey: SortKey
-  sort: SortState
-  onToggle: (key: SortKey) => void
-}) {
-  const active = sort?.key === sortKey
-  return (
-    <Button
-      type="button"
-      variant="ghost"
-      size="sm"
-      className="-ml-3 h-8"
-      onClick={() => onToggle(sortKey)}
-    >
-      <span>{title}</span>
-      {active ? (
-        sort?.dir === "desc" ? (
-          <ArrowDownIcon data-icon="inline-end" />
-        ) : (
-          <ArrowUpIcon data-icon="inline-end" />
-        )
-      ) : (
-        <CaretUpDownIcon data-icon="inline-end" />
-      )}
-    </Button>
-  )
-}
-
-function EspecialidadSelect({
-  value,
-  options,
-  onChange,
-  onAddOption,
-}: {
-  value: string
-  options: string[]
-  onChange: (value: string) => void
-  onAddOption: (value: string) => void
-}) {
-  const [open, setOpen] = useState(false)
-  const [nuevo, setNuevo] = useState("")
-
-  function agregar() {
-    const nombre = nuevo.trim()
-    if (!nombre) return
-    onAddOption(nombre)
-    onChange(nombre)
-    setNuevo("")
-    setOpen(false)
-  }
-
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger
-        render={
-          <button
-            type="button"
-            className={cn(
-              "flex h-9 w-full items-center justify-between gap-1.5 rounded-none border border-transparent border-b-input bg-transparent px-0 py-1 text-left text-sm outline-none transition-[color,border-color] hover:border-b-ring/50 data-[popup-open]:border-b-ring",
-              value ? "text-foreground" : "text-muted-foreground"
-            )}
-          />
-        }
-      >
-        <span className="flex-1 truncate">{value || "Seleccionar"}</span>
-        <CaretDownIcon className="size-3.5 shrink-0 text-muted-foreground" />
-      </PopoverTrigger>
-      <PopoverContent align="start" className="w-56 p-1">
-        <div className="flex flex-col">
-          {options.map((option) => (
-            <button
-              key={option}
-              type="button"
-              onClick={() => {
-                onChange(option)
-                setOpen(false)
-              }}
-              className="hover:bg-foreground/10 flex items-center justify-between gap-2 rounded-none px-2 py-1.5 text-left text-sm"
-            >
-              {option}
-              {option === value && <CheckIcon className="size-4 shrink-0" />}
-            </button>
-          ))}
-
-          {/* Agregar especialidad nueva */}
-          <div className="mt-1 flex items-center gap-1 border-t pt-2">
-            <Input
-              value={nuevo}
-              onChange={(e) => setNuevo(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault()
-                  agregar()
-                }
-              }}
-              placeholder="Nueva especialidad"
-              className="h-8"
-            />
-            <Button
-              type="button"
-              color="primary"
-              size="icon-sm"
-              aria-label="Agregar especialidad"
-              disabled={!nuevo.trim()}
-              onClick={agregar}
-            >
-              <PlusIcon weight="bold" />
-            </Button>
-          </div>
-        </div>
-      </PopoverContent>
-    </Popover>
   )
 }

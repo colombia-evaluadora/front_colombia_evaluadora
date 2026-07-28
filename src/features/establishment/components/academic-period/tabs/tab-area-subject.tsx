@@ -1,16 +1,21 @@
 "use no memo"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import type { SortingState } from "@tanstack/react-table"
-import { FilePdfIcon, FileXlsIcon } from "@/components/ui/icons"
+import { MagnifyingGlassIcon } from "@/components/ui/icons"
 
 import { DataTable } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
-import { Button } from "@/components/ui/button"
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "@/components/ui/input-group"
 import { useDataTable } from "@/hooks/use-data-table"
 
 import { columns } from "../table/columns-area-subject"
 import { CreateAreaSubjectDialog } from "../dialogs/dialog-create-area-subject"
+import { ExportAreaSubjectsDialog } from "../dialogs/dialog-export-area-subjects"
 import { useAreaSubjectQuery } from "@/features/establishment/api/query/use-area-subject"
 
 interface TabAreaSubjectProps {
@@ -21,9 +26,15 @@ export function TabAreaSubject({ academicPeriodId }: TabAreaSubjectProps) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [pageIndex, setPageIndex] = useState(0)
   const [pageSize, setPageSize] = useState(10)
+  const [search, setSearch] = useState("")
+
+  const queryFilters = useMemo(
+    () => ({ nombreInterno: search.trim() || undefined }),
+    [search]
+  )
 
   const { data, isPending, isError, refetch } = useAreaSubjectQuery({
-    filters: {},
+    filters: queryFilters,
     sorting,
     pageIndex,
     pageSize,
@@ -51,26 +62,27 @@ export function TabAreaSubject({ academicPeriodId }: TabAreaSubjectProps) {
 
   return (
     <>
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label="Exportar a PDF"
-            disabled
-          >
-            <FilePdfIcon className="text-destructive" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label="Exportar a Excel"
-            disabled
-          >
-            <FileXlsIcon className="text-success" />
-          </Button>
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <InputGroup className="w-full rounded-md border-input has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20 sm:w-72">
+          <InputGroupAddon align="inline-start" className="ml-2">
+            <MagnifyingGlassIcon className="size-4 text-muted-foreground" />
+          </InputGroupAddon>
+          <InputGroupInput
+            type="search"
+            placeholder="Buscar por nombre"
+            aria-label="Buscar área/asignatura por nombre"
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value)
+              setPageIndex(0)
+            }}
+          />
+        </InputGroup>
+
+        <div className="flex gap-2">
+          <ExportAreaSubjectsDialog filters={queryFilters} />
+          <CreateAreaSubjectDialog academicPeriodId={academicPeriodId} />
         </div>
-        <CreateAreaSubjectDialog academicPeriodId={academicPeriodId} />
       </div>
 
       <DataTable
