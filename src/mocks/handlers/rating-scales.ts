@@ -14,9 +14,17 @@ import type {
   RatingScalesQueryRequest,
   RatingScalesQueryResponse,
   CreateRatingScaleRequest,
+  UpdateRatingScaleRequest,
+  ExportFormat,
+  ExportResult,
   RatingSymbol,
   TeachingLevel,
 } from "@/features/establishment/api/types/academic-period/rating-scales"
+
+const EXPORT_FORMAT_LABELS: Record<ExportFormat, string> = {
+  pdf: "PDF",
+  excel: "Excel",
+}
 
 function applyFilters(
   rows: RatingScale[],
@@ -97,6 +105,19 @@ export const ratingScalesHandlers = [
     })
   }),
 
+  http.post("/api/rating-scales/export-all", async ({ request }) => {
+    await delay(600)
+    const { filters, format } = (await request.json()) as {
+      filters: RatingScalesQueryRequest["filters"]
+      format: ExportFormat
+    }
+    const count = applyFilters(ratingScalesDb, filters).length
+    return HttpResponse.json<ExportResult>({
+      status: "ok",
+      message: `${count} escala(s) de valoración exportada(s) a ${EXPORT_FORMAT_LABELS[format]}.`,
+    })
+  }),
+
   http.post("/api/rating-scales", async ({ request }) => {
     await delay(400)
     const body = (await request.json()) as CreateRatingScaleRequest
@@ -110,5 +131,48 @@ export const ratingScalesHandlers = [
     ratingScalesDb.push(newScale)
 
     return HttpResponse.json(newScale, { status: 201 })
+  }),
+
+  http.patch("/api/rating-scales/:codigo", async ({ request, params }) => {
+    await delay(400)
+    const body = (await request.json()) as UpdateRatingScaleRequest
+    const index = ratingScalesDb.findIndex(
+      (scale) => String(scale.codigo) === String(params.codigo)
+    )
+    if (index === -1) {
+      return HttpResponse.json(
+        { status: "error", message: "Escala de valoración no encontrada." },
+        { status: 404 }
+      )
+    }
+    const merged = { ...ratingScalesDb[index], ...body }
+    // Si cambian los niveles de enseñanza, re-resolvemos los objetos completos
+    // para mantener `teachingLevels` en sync con `teachingLevelIds`.
+    ratingScalesDb[index] = {
+      ...merged,
+      teachingLevels: resolveTeachingLevels(merged.teachingLevelIds),
+    }
+    return HttpResponse.json({
+      status: "ok",
+      message: "Escala de valoración actualizada.",
+    })
+  }),
+
+  http.delete("/api/rating-scales/:codigo", async ({ params }) => {
+    await delay(300)
+    const index = ratingScalesDb.findIndex(
+      (scale) => String(scale.codigo) === String(params.codigo)
+    )
+    if (index === -1) {
+      return HttpResponse.json(
+        { status: "error", message: "Escala de valoración no encontrada." },
+        { status: 404 }
+      )
+    }
+    ratingScalesDb.splice(index, 1)
+    return HttpResponse.json({
+      status: "ok",
+      message: "Escala de valoración eliminada.",
+    })
   }),
 ]
