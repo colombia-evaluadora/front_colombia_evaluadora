@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { useForm } from "@tanstack/react-form"
-import { PlusCircleIcon, SpinnerIcon } from "@/components/ui/icons"
+import { PencilIcon, PlusCircleIcon, SpinnerIcon } from "@/components/ui/icons"
 import { toast } from "sonner"
 import { z } from "zod"
 
@@ -30,7 +30,9 @@ import {
 } from "@/components/ui/select"
 
 import { useCreateStudyPlanItem } from "../../../api/mutations/create-study-plan"
+import { useUpdateStudyPlanItem } from "../../../api/mutations/update-study-plan"
 import { useAreaSubjectQuery } from "../../../api/query/use-area-subject"
+import type { StudyPlanItem } from "../../../api/types/academic-period/study-plan"
 
 const FORMATO_CALIFICACION_OPTIONS = ["Numérico", "Conceptual", "Cualitativo"]
 
@@ -71,15 +73,34 @@ const FORM_ID = "study-plan-form"
 interface CreateStudyPlanDialogProps {
   academicPeriodId?: number
   gradeId?: number
+  item?: StudyPlanItem
 }
 
 export function CreateStudyPlanDialog({
   academicPeriodId,
   gradeId,
+  item,
 }: CreateStudyPlanDialogProps) {
+  const isEditing = item != null
+
   const [open, setOpen] = useState(false)
   // Cuando está apagado, los campos avanzados quedan deshabilitados (defaults).
-  const [personalizar, setPersonalizar] = useState(false)
+  // Al editar arranca habilitado para poder ver/ajustar los campos avanzados.
+  const [personalizar, setPersonalizar] = useState(isEditing)
+
+  const defaultValues: StudyPlanFormValues = item
+    ? {
+        asignatura: item.asignatura,
+        intensidadHoraria: item.intensidadHoraria,
+        influenciaArea: item.influenciaArea,
+        numeroCreditos: item.numeroCreditos,
+        influyeDesempeno: item.influyeDesempeno,
+        matriculaObligatoria: item.matriculaObligatoria ?? false,
+        aprobacionObligatoria: item.aprobacionObligatoria ?? false,
+        formatoCalificacion: item.formatoCalificacion ?? "",
+        criterioNota: item.criterioNota ?? "",
+      }
+    : EMPTY
 
   // Las asignaturas disponibles son las definidas en área/asignatura del periodo.
   const { data: areaData } = useAreaSubjectQuery({
@@ -104,28 +125,79 @@ export function CreateStudyPlanDialog({
     },
   })
 
+  const updateStudyPlanItem = useUpdateStudyPlanItem({
+    mutationConfig: {
+      onSuccess: (result) => {
+        if (result.status === "error") {
+          toast.error(result.message)
+          return
+        }
+        toast.success(result.message)
+        setOpen(false)
+      },
+    },
+  })
+
+  const isSaving = createStudyPlanItem.isPending || updateStudyPlanItem.isPending
+
   const form = useForm({
-    defaultValues: EMPTY,
+    defaultValues,
     validators: { onSubmit: studyPlanFormSchema },
     onSubmit: ({ value }) => {
-      createStudyPlanItem.mutate({
-        ...studyPlanFormSchema.parse(value),
-        codigo: Date.now(),
-        academicPeriodId,
-        gradeId,
-      })
+      const values = studyPlanFormSchema.parse(value)
+      if (isEditing) {
+        updateStudyPlanItem.mutate({
+          codigo: item.codigo,
+          values: { ...values, codigo: item.codigo },
+        })
+      } else {
+        createStudyPlanItem.mutate({
+          ...values,
+          codigo: Date.now(),
+          academicPeriodId,
+          gradeId,
+        })
+      }
     },
   })
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button color="primary" size="sm" />}>
-        <PlusCircleIcon weight="fill" data-icon="inline-start" />
-        Agregar
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next)
+        if (!next) {
+          form.reset()
+          setPersonalizar(isEditing)
+        }
+      }}
+    >
+      <DialogTrigger
+        render={
+          isEditing ? (
+            <Button variant="fill" color="secondary" size="icon" className="size-8" />
+          ) : (
+            <Button color="primary" size="sm" />
+          )
+        }
+      >
+        {isEditing ? (
+          <>
+            <span className="sr-only">Editar plan de estudio</span>
+            <PencilIcon />
+          </>
+        ) : (
+          <>
+            <PlusCircleIcon weight="fill" data-icon="inline-start" />
+            Agregar
+          </>
+        )}
       </DialogTrigger>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
         <DialogHeader>
-          <DialogTitle>Agregar plan de estudio</DialogTitle>
+          <DialogTitle>
+            {isEditing ? "Editar plan de estudio" : "Agregar plan de estudio"}
+          </DialogTitle>
           <DialogDescription>
             Completá los datos de la asignatura del plan de estudio.
           </DialogDescription>
@@ -377,13 +449,13 @@ export function CreateStudyPlanDialog({
             type="submit"
             color="primary"
             form={FORM_ID}
-            disabled={createStudyPlanItem.isPending}
-            aria-busy={createStudyPlanItem.isPending}
+            disabled={isSaving}
+            aria-busy={isSaving}
           >
-            {createStudyPlanItem.isPending && (
+            {isSaving && (
               <SpinnerIcon data-icon="inline-start" className="animate-spin" />
             )}
-            Agregar
+            {isEditing ? "Guardar" : "Agregar"}
           </Button>
         </DialogFooter>
       </DialogContent>

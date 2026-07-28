@@ -5,9 +5,18 @@ import { DataTableColumnHeader } from "@/components/data-table"
 
 import type { StudyPlanItem } from "../../../api/types/academic-period/study-plan"
 import { DeleteStudyPlanDialog } from "../dialogs/dialog-delete-study-plan"
-import { EditStudyPlanButton } from "./edit-study-plan-button"
+import { CreateStudyPlanDialog } from "../dialogs/dialog-create-study-plan"
 
-export const columns: ColumnDef<StudyPlanItem>[] = [
+interface CreateStudyPlanColumnsOptions {
+  academicPeriodId?: number
+  gradeId?: number
+}
+
+export function createStudyPlanColumns({
+  academicPeriodId,
+  gradeId,
+}: CreateStudyPlanColumnsOptions = {}): ColumnDef<StudyPlanItem>[] {
+  return [
   {
     id: "select",
     header: ({ table }) => (
@@ -98,14 +107,19 @@ export const columns: ColumnDef<StudyPlanItem>[] = [
     header: () => <span className="sr-only">Acciones</span>,
     cell: ({ row }) => (
       <div className="flex items-center justify-end gap-1">
-        <EditStudyPlanButton item={row.original} />
+        <CreateStudyPlanDialog
+          item={row.original}
+          academicPeriodId={academicPeriodId}
+          gradeId={gradeId}
+        />
         <DeleteStudyPlanDialog item={row.original} />
       </div>
     ),
     enableSorting: false,
     enableHiding: false,
     size: 96,
-  },
-]
+    },
+  ]
+}
 
 export type StudyPlanTable = Table<StudyPlanItem>
