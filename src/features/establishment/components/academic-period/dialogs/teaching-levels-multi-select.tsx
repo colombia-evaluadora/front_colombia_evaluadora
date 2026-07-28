@@ -1,10 +1,11 @@
-import { CaretDownIcon, CheckIcon, XIcon } from "@/components/ui/icons";
+import { CaretDownIcon, XIcon } from "@/components/ui/icons";
 
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   inputTriggerVariants,
   inputVariants,
@@ -22,6 +23,8 @@ interface TeachingLevelsMultiSelectProps {
   invalid?: boolean;
 }
 
+// Chips en el trigger + dropdown con checkboxes al estilo de "Columnas
+// visibles" (DataTableViewOptions).
 export function TeachingLevelsMultiSelect({
   id,
   levels,
@@ -41,8 +44,8 @@ export function TeachingLevelsMultiSelect({
   }
 
   return (
-    <Popover>
-      <PopoverTrigger
+    <DropdownMenu>
+      <DropdownMenuTrigger
         render={
           <button
             id={id}
@@ -84,24 +87,19 @@ export function TeachingLevelsMultiSelect({
           )}
         </div>
         <CaretDownIcon className="text-muted-foreground size-4 shrink-0" />
-      </PopoverTrigger>
-      <PopoverContent align="start" className="min-w-64 p-1">
-        {levels.map((level) => {
-          const isSelected = value.includes(level.id);
-          return (
-            <button
-              key={level.id}
-              type="button"
-              aria-pressed={isSelected}
-              onClick={() => toggle(level.id)}
-              className="hover:bg-foreground/10 flex w-full cursor-pointer items-center justify-between gap-2 rounded-none px-2 py-1.5 text-left text-sm"
-            >
-              {level.nombre}
-              {isSelected && <CheckIcon className="size-4 shrink-0" />}
-            </button>
-          );
-        })}
-      </PopoverContent>
-    </Popover>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="min-w-64">
+        {levels.map((level) => (
+          <DropdownMenuCheckboxItem
+            key={level.id}
+            checked={value.includes(level.id)}
+            onCheckedChange={() => toggle(level.id)}
+            className="capitalize"
+          >
+            {level.nombre}
+          </DropdownMenuCheckboxItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

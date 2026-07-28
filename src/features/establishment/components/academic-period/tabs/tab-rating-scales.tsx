@@ -112,9 +112,9 @@ export function TabRatingScales({ academicPeriodId }: TabRatingScalesProps) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-2">
-        <ExportRatingScalesDialog filters={{}} />
+      <div className="flex items-center justify-end gap-2">
         <CreateRatingScaleDialog academicPeriodId={academicPeriodId} />
+        <ExportRatingScalesDialog filters={{}} />
       </div>
 
       <ExpandableDataTable

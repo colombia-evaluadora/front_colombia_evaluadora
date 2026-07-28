@@ -57,9 +57,9 @@ export function TabGrades({ jornada, academicPeriodId }: TabGradesProps) {
 
   return (
     <>
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <ExportGradesDialog filters={{}} />
+      <div className="mb-2 flex items-center justify-end gap-2">
         <CreateGradeDialog jornada={jornada} academicPeriodId={academicPeriodId} />
+        <ExportGradesDialog filters={{}} />
       </div>
 
       <DataTable
