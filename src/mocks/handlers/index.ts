@@ -4,6 +4,7 @@ import { authHandlers } from "./auth"
 import { auditsHandlers } from "./audits"
 import { auditTablesHandlers } from "./audit-tables"
 import { establishmentHandlers } from "./establishments"
+import { campusHandlers } from "./campuses"
 import { catalogHandlers } from "./catalog"
 
 export const handlers = [
@@ -13,5 +14,6 @@ export const handlers = [
   ...auditsHandlers,
   ...auditTablesHandlers,
   ...establishmentHandlers,
+  ...campusHandlers,
   ...catalogHandlers
 ]

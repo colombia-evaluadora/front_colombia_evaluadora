@@ -28,6 +28,7 @@ import {
   tableOperationsSearchSchema,
 } from "@/features/audits/api/schema"
 import { establishmentsSearchSchema } from "@/features/establishment/api/establishment-schema"
+import { campusesSearchSchema } from "@/features/establishment/api/campus-schema"
 
 /*const LandingPage = lazyRouteComponent(
   () => import("@/features/landing/pages/landing-page"),
@@ -84,6 +85,11 @@ const SessionOperationsPage = lazyRouteComponent(
 const EstablishmentsPage = lazyRouteComponent(
   () => import("@/features/establishment/pages/establishments-page"),
   "EstablishmentsPage"
+)
+
+const CampusesPage = lazyRouteComponent(
+  () => import("@/features/establishment/pages/campuses-page"),
+  "CampusesPage"
 )
 
 const AddEstablishmentPage = lazyRouteComponent(
@@ -265,6 +271,13 @@ export const establishmentsRoute = createRoute({
   component: EstablishmentsPage,
 })
 
+export const campusesRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.establishments.campuses.path,
+  validateSearch: campusesSearchSchema,
+  component: CampusesPage,
+})
+
 export const addEstablishmentRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.establishments.add.path,
@@ -319,6 +332,7 @@ const routeTree = rootRoute.addChildren([
     auditoriaTablaDetalleRoute,
     auditoriaSesionOperacionesRoute,
     establishmentsRoute,
+    campusesRoute,
     addEstablishmentRoute,
     editEstablishmentRoute,
     reportesRoute,
