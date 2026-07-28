@@ -39,6 +39,22 @@ export const paths = {
       path: "/",
       getHref: () => "/app",
     },
+    coberturaReservaCupo: {
+      path: "cobertura/reserva-de-cupo",
+      getHref: () => "/app/cobertura/reserva-de-cupo",
+    },
+    coberturaPreMatricula: {
+      path: "cobertura/pre-matricula",
+      getHref: () => "/app/cobertura/pre-matricula",
+    },
+    coberturaInscritos: {
+      path: "cobertura/inscritos",
+      getHref: () => "/app/cobertura/inscritos",
+    },
+    coberturaMatricula: {
+      path: "cobertura/matricula",
+      getHref: () => "/app/cobertura/matricula",
+    },
     auditoriaSesiones: {
       path: "auditoria-sesiones",
       getHref: () => "/app/auditoria-sesiones",

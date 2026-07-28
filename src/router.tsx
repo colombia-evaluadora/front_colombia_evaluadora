@@ -21,6 +21,7 @@ import {
 } from "@/features/auth/api/schema"
 import { paymentsSearchSchema } from "@/features/payments/api/schema"
 import { PaymentsErrorPage } from "@/features/payments/pages/payments-error-page"
+import { reservationsSearchSchema } from "@/features/coverage/api/schema"
 import {
   auditsSearchSchema,
   auditTablesSearchSchema,
@@ -69,6 +70,10 @@ const AuditTablesPage = lazyRouteComponent(
 const TableOperationsPage = lazyRouteComponent(
   () => import("@/features/audits/pages/table-operations-page"),
   "TableOperationsPage",
+)
+const ReservationsPage = lazyRouteComponent(
+  () => import("@/features/coverage/pages/reservations-page"),
+  "ReservationsPage",
 )
 const SessionOperationsPage = lazyRouteComponent(
   () => import("@/features/audits/pages/session-operations-page"),
@@ -221,6 +226,31 @@ export const paymentsRoute = createRoute({
   component: PaymentsPage,
 })
 
+export const coberturaReservaCupoRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.coberturaReservaCupo.path,
+  validateSearch: reservationsSearchSchema,
+  component: ReservationsPage,
+})
+
+const coberturaPreMatriculaRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.coberturaPreMatricula.path,
+  component: () => <ComingSoonPage title="Pre-Matrícula" />,
+})
+
+const coberturaInscritosRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.coberturaInscritos.path,
+  component: () => <ComingSoonPage title="Inscritos" />,
+})
+
+const coberturaMatriculaRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.coberturaMatricula.path,
+  component: () => <ComingSoonPage title="Matrícula" />,
+})
+
 export const auditoriaSesionesRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.auditoriaSesiones.path,
@@ -279,6 +309,10 @@ const routeTree = rootRoute.addChildren([
   ]),
   appLayoutRoute.addChildren([
     paymentsRoute,
+    coberturaReservaCupoRoute,
+    coberturaPreMatriculaRoute,
+    coberturaInscritosRoute,
+    coberturaMatriculaRoute,
     auditoriaSesionesRoute,
     auditoriaTablasRoute,
     auditoriaTablaDetalleRoute,
