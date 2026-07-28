@@ -2,16 +2,15 @@
 
 import { useState } from "react"
 import type { SortingState } from "@tanstack/react-table"
-import { FilePdfIcon, FileXlsIcon } from "@/components/ui/icons"
 
 import { DataTable } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
-import { Button } from "@/components/ui/button"
 import { useDataTable } from "@/hooks/use-data-table"
 
 import { useEvaluationPeriodsQuery } from "../../../api/query/use-evaluation-periods-query"
 import { columns } from "../table/columns-evaluation-periods"
 import { CreateEvaluationPeriodDialog } from "../dialogs/dialog-create-evaluation-period"
+import { ExportEvaluationPeriodsDialog } from "../dialogs/dialog-export-evaluation-periods"
 
 interface TabEvaluationPeriodsProps {
   academicPeriodId?: number
@@ -54,24 +53,7 @@ export function TabEvaluationPeriods({
   return (
     <>
       <div className="mb-2 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label="Exportar a PDF"
-            disabled
-          >
-            <FilePdfIcon className="text-destructive" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label="Exportar a Excel"
-            disabled
-          >
-            <FileXlsIcon className="text-success" />
-          </Button>
-        </div>
+        <ExportEvaluationPeriodsDialog filters={{}} />
         <CreateEvaluationPeriodDialog academicPeriodId={academicPeriodId} />
       </div>
 

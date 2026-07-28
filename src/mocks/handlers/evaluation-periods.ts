@@ -8,6 +8,7 @@ import type {
   EvaluationPeriodsQueryRequest,
   EvaluationPeriodsQueryResponse,
   CreateEvaluationPeriodRequest,
+  UpdateEvaluationPeriodRequest,
   ExportFormat,
   ExportResult,
 } from "@/features/establishment/api/types/academic-period/evaluation-period"
@@ -137,6 +138,25 @@ export const evaluationPeriodsHandlers = [
     evaluationPeriodsDb.push(record)
 
     return HttpResponse.json(record, { status: 201 })
+  }),
+
+  http.patch("/api/evaluation-periods/:codigo", async ({ request, params }) => {
+    await delay(400)
+    const body = (await request.json()) as UpdateEvaluationPeriodRequest
+    const index = evaluationPeriodsDb.findIndex(
+      (p) => String(p.codigo) === String(params.codigo)
+    )
+    if (index === -1) {
+      return HttpResponse.json(
+        { status: "error", message: "Periodo de evaluación no encontrado." },
+        { status: 404 }
+      )
+    }
+    evaluationPeriodsDb[index] = { ...evaluationPeriodsDb[index], ...body }
+    return HttpResponse.json({
+      status: "ok",
+      message: "Periodo de evaluación actualizado.",
+    })
   }),
 
   http.delete("/api/evaluation-periods/:codigo", async ({ params }) => {
