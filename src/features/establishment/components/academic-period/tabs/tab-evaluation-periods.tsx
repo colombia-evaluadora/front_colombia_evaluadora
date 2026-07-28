@@ -1,6 +1,6 @@
 "use no memo"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import type { SortingState } from "@tanstack/react-table"
 
 import { DataTable } from "@/components/data-table"
@@ -8,7 +8,7 @@ import { Pagination } from "@/components/pagination"
 import { useDataTable } from "@/hooks/use-data-table"
 
 import { useEvaluationPeriodsQuery } from "../../../api/query/use-evaluation-periods-query"
-import { columns } from "../table/columns-evaluation-periods"
+import { createEvaluationPeriodColumns } from "../table/columns-evaluation-periods"
 import { CreateEvaluationPeriodDialog } from "../dialogs/dialog-create-evaluation-period"
 import { ExportEvaluationPeriodsDialog } from "../dialogs/dialog-export-evaluation-periods"
 
@@ -36,6 +36,11 @@ export function TabEvaluationPeriods({
     setPageSize(size)
     setPageIndex(0)
   }
+
+  const columns = useMemo(
+    () => createEvaluationPeriodColumns({ academicPeriodId }),
+    [academicPeriodId]
+  )
 
   const { table } = useDataTable({
     columns,

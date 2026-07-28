@@ -3,25 +3,34 @@ import { z } from "zod"
 export const ACADEMIC_PERIOD_STATUSES = ["ACTIVO", "INACTIVO"] as const
 
 
-export const academicPeriodFormSchema = z.object({
-  startDate: z.string().min(1, "La fecha de inicio es obligatoria"),
-  endDate: z.string().min(1, "La fecha de finalización es obligatoria"),
-  enrollmentDeadline: z.string().min(1, "La fecha límite de matrícula es obligatoria"),
-  sedeId: z.number().int().positive("La sede es obligatoria"),
-  previousPeriodId: z.number().int().positive().nullable(),
-  status: z.enum(ACADEMIC_PERIOD_STATUSES),
-  jornadaId: z.number().int().positive("La jornada es obligatoria"),
-  reservationEnabled: z.boolean(),
-  defaultBlocksCount: z.number().int().nonnegative().nullable(),
-  scheduleStartTime: z.string(),
-  scheduleEndTime: z.string(),
-  breaks: z.array(
-    z.object({
-      startTime: z.string().min(1),
-      endTime: z.string().min(1),
-    })
-  ),
-})
+export const academicPeriodFormSchema = z
+  .object({
+    startDate: z.string().min(1, "La fecha de inicio es obligatoria"),
+    endDate: z.string().min(1, "La fecha de finalización es obligatoria"),
+    enrollmentDeadline: z.string().min(1, "La fecha límite de matrícula es obligatoria"),
+    sedeId: z.number().int().positive("La sede es obligatoria"),
+    previousPeriodId: z.number().int().positive().nullable(),
+    status: z.enum(ACADEMIC_PERIOD_STATUSES),
+    jornadaId: z.number().int().positive("La jornada es obligatoria"),
+    reservationEnabled: z.boolean(),
+    defaultBlocksCount: z.number().int().nonnegative().nullable(),
+    scheduleStartTime: z.string(),
+    scheduleEndTime: z.string(),
+    breaks: z.array(
+      z.object({
+        startTime: z.string().min(1),
+        endTime: z.string().min(1),
+      })
+    ),
+  })
+  .refine(
+    (data) =>
+      !data.startDate || !data.endDate || data.startDate < data.endDate,
+    {
+      message: "La fecha de inicio es posterior o igual a la fecha de finalización",
+      path: ["startDate"],
+    }
+  )
 export type AcademicPeriodFormInput = z.input<typeof academicPeriodFormSchema>
 export type AcademicPeriodFormValues = z.infer<typeof academicPeriodFormSchema>
 

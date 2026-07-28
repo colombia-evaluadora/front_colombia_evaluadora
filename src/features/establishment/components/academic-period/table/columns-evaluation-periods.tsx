@@ -18,7 +18,14 @@ function formatDate(value: string): string {
   return `${day}/${month}/${year}`
 }
 
-export const columns: ColumnDef<EvaluationPeriod>[] = [
+interface CreateEvaluationPeriodColumnsOptions {
+  academicPeriodId?: number
+}
+
+export function createEvaluationPeriodColumns({
+  academicPeriodId,
+}: CreateEvaluationPeriodColumnsOptions = {}): ColumnDef<EvaluationPeriod>[] {
+  return [
   {
     id: "select",
     header: ({ table }) => (
@@ -117,14 +124,18 @@ export const columns: ColumnDef<EvaluationPeriod>[] = [
     header: () => <span className="sr-only">Acciones</span>,
     cell: ({ row }) => (
       <div className="flex items-center justify-end gap-1">
-        <CreateEvaluationPeriodDialog period={row.original} />
+        <CreateEvaluationPeriodDialog
+          period={row.original}
+          academicPeriodId={academicPeriodId}
+        />
         <DeleteEvaluationPeriodDialog period={row.original} />
       </div>
     ),
     enableSorting: false,
     enableHiding: false,
     size: 96,
-  },
-]
+    },
+  ]
+}
 
 export type EvaluationPeriodTable = Table<EvaluationPeriod>
