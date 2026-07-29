@@ -21,12 +21,8 @@ export function ColorThemeToggle() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuGroup>
-          <DropdownMenuItem onClick={() => setPalette("default")}>
-            Default
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setPalette("red")}>
-            Red
-          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setPalette("default")}>Default</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setPalette("red")}>Red</DropdownMenuItem>
         </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>

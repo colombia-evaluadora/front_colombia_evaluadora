@@ -1,10 +1,10 @@
-import preview from '../../../../.storybook/preview'
-import { AspectRatio } from '../aspect-ratio'
+import preview from "../../../../.storybook/preview"
+import { AspectRatio } from "../aspect-ratio"
 
 const meta = preview.meta({
-  title: 'Design System/Layout/AspectRatio',
+  title: "Design System/Layout/AspectRatio",
   component: AspectRatio,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
 })
 
 export const Widescreen = meta.story({

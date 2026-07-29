@@ -12,10 +12,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 
-import type {
-  AuditFiltersFormInput,
-  AuditFiltersFormValues,
-} from "../../api/schema"
+import type { AuditFiltersFormInput, AuditFiltersFormValues } from "../../api/schema"
 import { FilterAuditSessionForm } from "../forms/form-filter-audit-session"
 
 const FILTER_AUDIT_SESSION_FORM_ID = "filter-audits-form"
@@ -65,7 +62,9 @@ export function FilterAuditSessionSheet({
           <SheetHeader>
             <SheetTitle>Filtros</SheetTitle>
             <SheetDescription>
-              {activeFilterCount > 0 ? `${activeFilterCount} filtro${activeFilterCount === 1 ? "" : "s"} activo${activeFilterCount === 1 ? "" : "s"}.` : "Sin filtros activos."}
+              {activeFilterCount > 0
+                ? `${activeFilterCount} filtro${activeFilterCount === 1 ? "" : "s"} activo${activeFilterCount === 1 ? "" : "s"}.`
+                : "Sin filtros activos."}
             </SheetDescription>
           </SheetHeader>
 

@@ -6,7 +6,7 @@ const createEnv = () => {
     ENABLE_API_MOCKING: z
       .string()
       .refine((s) => s === "active" || s === "inactive", {
-        message: "ENABLE_API_MOCKING must be either 'active' or 'inactive'"
+        message: "ENABLE_API_MOCKING must be either 'active' or 'inactive'",
       })
       .transform((s) => s === "active")
       .optional()
@@ -24,7 +24,7 @@ const createEnv = () => {
       }
       return acc
     },
-    {}
+    {},
   )
 
   const parsedEnv = EnvSchema.safeParse(envVars)
@@ -36,7 +36,7 @@ The following variables are missing or invalid:
 ${Object.entries(parsedEnv.error.flatten().fieldErrors)
   .map(([k, v]) => `- ${k}: ${v}`)
   .join("\n")}
-`
+`,
     )
   }
 

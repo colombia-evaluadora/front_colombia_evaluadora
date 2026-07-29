@@ -1,5 +1,5 @@
-import preview from '../../../../.storybook/preview'
-import { Button } from '../button'
+import preview from "../../../../.storybook/preview"
+import { Button } from "../button"
 import {
   Card,
   CardAction,
@@ -8,12 +8,12 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '../card'
+} from "../card"
 
 const meta = preview.meta({
-  title: 'Design System/Layout/Card',
+  title: "Design System/Layout/Card",
   component: Card,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
 })
 
 export const Default = meta.story({

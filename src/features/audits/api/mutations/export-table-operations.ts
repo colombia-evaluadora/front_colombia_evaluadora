@@ -22,9 +22,7 @@ interface UseExportTableOperationsOptions {
   mutationConfig?: MutationConfig<typeof exportTableOperations>
 }
 
-export function useExportTableOperations({
-  mutationConfig,
-}: UseExportTableOperationsOptions = {}) {
+export function useExportTableOperations({ mutationConfig }: UseExportTableOperationsOptions = {}) {
   return useMutation({
     mutationFn: exportTableOperations,
     ...mutationConfig,

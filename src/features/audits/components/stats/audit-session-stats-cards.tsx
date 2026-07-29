@@ -28,28 +28,26 @@ export function AuditSessionStatsCards({
 }: AuditSessionStatsCardsProps) {
   // Igual que exportar: con selección se calcula sobre lo seleccionado, sin
   // selección se calcula sobre lo que coincide con los filtros activos.
-  const { data } = useAuditsStatsQuery(
-    hasSelection ? { ids: selectedIds } : { filters }
-  )
+  const { data } = useAuditsStatsQuery(hasSelection ? { ids: selectedIds } : { filters })
 
   const tiles: StatTile[] = [
     {
       icon: CalendarIcon,
       value: data?.sessionsToday,
       label: "Sesiones",
-      iconClassName: "bg-info/10 text-info",
+      iconClassName: "bg-blue/10 text-blue",
     },
     {
       icon: UsersIcon,
       value: data?.activeSessions,
       label: "Sesiones activas",
-      iconClassName: "bg-success/10 text-success",
+      iconClassName: "bg-green/10 text-green",
     },
     {
       icon: LightningIcon,
       value: data?.operationsToday,
       label: "Operaciones",
-      iconClassName: "bg-warning/10 text-warning",
+      iconClassName: "bg-yellow/10 text-yellow",
     },
   ]
 
@@ -61,7 +59,7 @@ export function AuditSessionStatsCards({
             <span
               className={cn(
                 "flex size-10 shrink-0 items-center justify-center rounded-full",
-                tile.iconClassName
+                tile.iconClassName,
               )}
             >
               <tile.icon weight="fill" className="size-5" />

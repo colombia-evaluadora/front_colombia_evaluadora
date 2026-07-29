@@ -1,10 +1,6 @@
 import { useRef } from "react"
 import { useForm } from "@tanstack/react-form"
-import {
-  ArrowUpIcon,
-  PaperclipIcon,
-  PlusIcon,
-} from "@/components/ui/icons"
+import { ArrowUpIcon, PaperclipIcon, PlusIcon } from "@/components/ui/icons"
 
 import {
   DropdownMenu,
@@ -76,12 +72,19 @@ export function ChatComposer({ onSend, disabled }: ChatComposerProps) {
         </form.Field>
         <InputGroupAddon align="block-end" className="pt-1">
           <DropdownMenu>
-            <DropdownMenuTrigger render={<InputGroupButton aria-label="Add files" type="button" size="icon-sm" variant="outline"><PlusIcon /></InputGroupButton>} />
-            <DropdownMenuContent
-              align="start"
-              side="top"
-              className="w-44"
-            >
+            <DropdownMenuTrigger
+              render={
+                <InputGroupButton
+                  aria-label="Add files"
+                  type="button"
+                  size="icon-sm"
+                  variant="outline"
+                >
+                  <PlusIcon />
+                </InputGroupButton>
+              }
+            />
+            <DropdownMenuContent align="start" side="top" className="w-44">
               <DropdownMenuItem>
                 <PaperclipIcon />
                 Add Photos & Files
@@ -89,12 +92,7 @@ export function ChatComposer({ onSend, disabled }: ChatComposerProps) {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <InputGroupButton
-            type="submit"
-            variant="fill"
-            size="icon-sm"
-            className="ml-auto"
-          >
+          <InputGroupButton type="submit" variant="fill" size="icon-sm" className="ml-auto">
             <ArrowUpIcon />
             <span className="sr-only">Send</span>
           </InputGroupButton>

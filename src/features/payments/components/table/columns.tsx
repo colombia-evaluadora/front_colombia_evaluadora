@@ -3,10 +3,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { DeletePaymentDialog } from "../dialogs/dialog-delete-payment"
 import { DataTableColumnHeader } from "@/components/data-table"
 import { UpdatePaymentSheet } from "../sheets/sheet-update-payment"
-import {
-  PAYMENT_STATUS_BADGE,
-  PAYMENT_STATUS_LABELS,
-} from "../../api/ui-mappings"
+import { PAYMENT_STATUS_BADGE, PAYMENT_STATUS_LABELS } from "../../api/ui-mappings"
 import type { Payment, PaymentStatus } from "../../api/types/payment"
 import { Badge } from "@/components/ui/badge"
 
@@ -19,13 +16,8 @@ export const columns: ColumnDef<Payment>[] = [
         aria-label="Seleccionar página"
         className="translate-y-0.5"
         checked={table.getIsAllPageRowsSelected()}
-        indeterminate={
-          !table.getIsAllPageRowsSelected() &&
-          table.getIsSomePageRowsSelected()
-        }
-        onCheckedChange={(value) =>
-          table.toggleAllPageRowsSelected(!!value)
-        }
+        indeterminate={!table.getIsAllPageRowsSelected() && table.getIsSomePageRowsSelected()}
+        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
       />
     ),
     cell: ({ row }) => (
@@ -44,34 +36,22 @@ export const columns: ColumnDef<Payment>[] = [
   {
     accessorKey: "email",
     id: "email",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Email" />
-    ),
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Email" />,
   },
   {
     accessorKey: "status",
     id: "status",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Estado" />
-    ),
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Estado" />,
     cell: ({ row }) => {
       const status = row.getValue<PaymentStatus>("status")
-      return (
-        <Badge {...PAYMENT_STATUS_BADGE[status]}>
-          {PAYMENT_STATUS_LABELS[status]}
-        </Badge>
-      )
+      return <Badge {...PAYMENT_STATUS_BADGE[status]}>{PAYMENT_STATUS_LABELS[status]}</Badge>
     },
   },
   {
     accessorKey: "amount",
     id: "amount",
     header: ({ column }) => (
-      <DataTableColumnHeader
-        column={column}
-        title="Monto"
-        className="justify-end"
-      />
+      <DataTableColumnHeader column={column} title="Monto" className="justify-end" />
     ),
     cell: ({ row }) => {
       const amount = row.getValue<number>("amount")
@@ -85,9 +65,7 @@ export const columns: ColumnDef<Payment>[] = [
   {
     accessorKey: "createdAt",
     id: "createdAt",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Creado" />
-    ),
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Creado" />,
     cell: ({ row }) => (
       <div>{new Date(row.getValue<string>("createdAt")).toLocaleDateString()}</div>
     ),

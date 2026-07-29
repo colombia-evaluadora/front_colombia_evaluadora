@@ -33,13 +33,13 @@ const bubbleVariants = cva(
         ghost:
           "border-none *:data-[slot=bubble-content]:rounded-none *:data-[slot=bubble-content]:bg-transparent *:data-[slot=bubble-content]:p-0 [&>[data-slot=bubble-content]:is(button,a):hover]:bg-muted [&>[data-slot=bubble-content]:is(button,a):hover]:text-foreground dark:[&>[data-slot=bubble-content]:is(button,a):hover]:bg-muted/50",
         destructive:
-          "*:data-[slot=bubble-content]:bg-destructive/10 *:data-[slot=bubble-content]:text-destructive dark:*:data-[slot=bubble-content]:bg-destructive/20 [&>[data-slot=bubble-content]:is(button,a):hover]:bg-destructive/20 dark:[&>[data-slot=bubble-content]:is(button,a):hover]:bg-destructive/30",
+          "*:data-[slot=bubble-content]:bg-red/10 *:data-[slot=bubble-content]:text-red dark:*:data-[slot=bubble-content]:bg-red/20 [&>[data-slot=bubble-content]:is(button,a):hover]:bg-red/20 dark:[&>[data-slot=bubble-content]:is(button,a):hover]:bg-red/30",
       },
     },
     defaultVariants: {
       variant: "default",
     },
-  }
+  },
 )
 
 function Bubble({
@@ -62,21 +62,17 @@ function Bubble({
   )
 }
 
-function BubbleContent({
-  className,
-  render,
-  ...props
-}: useRender.ComponentProps<"div">) {
+function BubbleContent({ className, render, ...props }: useRender.ComponentProps<"div">) {
   return useRender({
     defaultTagName: "div",
     props: mergeProps<"div">(
       {
         className: cn(
           "w-fit max-w-full min-w-0 overflow-hidden rounded-none border border-transparent px-4 py-3 text-sm leading-relaxed wrap-break-word group-data-[align=end]/bubble:self-end [button]:text-left [button,a]:transition-colors [button,a]:outline-none [button,a]:focus-visible:border-ring [button,a]:focus-visible:ring-2 [button,a]:focus-visible:ring-ring/30",
-          className
+          className,
         ),
       },
-      props
+      props,
     ),
     render,
     state: {
@@ -102,7 +98,7 @@ const bubbleReactionsVariants = cva(
       side: "bottom",
       align: "end",
     },
-  }
+  },
 )
 
 function BubbleReactions({

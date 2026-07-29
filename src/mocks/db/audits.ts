@@ -15,14 +15,9 @@ function pickStartedAt(): Date {
 }
 
 function createAuditSession(): AuditSession {
-  const status: SessionStatus = faker.number.int({ min: 0, max: 100 }) < 25
-    ? "active"
-    : "closed"
+  const status: SessionStatus = faker.number.int({ min: 0, max: 100 }) < 25 ? "active" : "closed"
   const startedAt = pickStartedAt()
-  const endedAt =
-    status === "closed"
-      ? faker.date.soon({ days: 1, refDate: startedAt })
-      : null
+  const endedAt = status === "closed" ? faker.date.soon({ days: 1, refDate: startedAt }) : null
 
   // El avatar y la verificación están correlacionados: si está verificado
   // tiene foto de perfil + chulito (badge), si no, solo las iniciales.
@@ -33,9 +28,7 @@ function createAuditSession(): AuditSession {
   return {
     id: faker.string.uuid(),
     authorName: faker.person.fullName(),
-    authorAvatarUrl: authorVerified
-      ? faker.image.avatarGitHub()
-      : null,
+    authorAvatarUrl: authorVerified ? faker.image.avatarGitHub() : null,
     authorVerified,
     ip: faker.internet.ipv4(),
     startedAt: startedAt.toISOString(),
@@ -47,7 +40,4 @@ function createAuditSession(): AuditSession {
 
 faker.seed(20260715)
 
-export const auditsDb: AuditSession[] = Array.from(
-  { length: 600 },
-  createAuditSession
-)
+export const auditsDb: AuditSession[] = Array.from({ length: 600 }, createAuditSession)

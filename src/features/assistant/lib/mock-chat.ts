@@ -3,7 +3,7 @@ import { createChat } from "@shadcn/helpers/tanstack-ai"
 export const assistantChat = createChat().assistant(
   "¡Hola! Soy el asistente de Colombia Evaluadora. Esta es una demo: " +
     "puedo responder con mensajes de ejemplo mientras conectamos un " +
-    "modelo real."
+    "modelo real.",
 )
 
 export const assistantConnection = assistantChat.transport({

@@ -1,5 +1,5 @@
-import preview from '../../../../.storybook/preview'
-import { HouseIcon, GearIcon } from '@/components/ui/icons'
+import preview from "../../../../.storybook/preview"
+import { HouseIcon, GearIcon } from "@/components/ui/icons"
 import {
   Sidebar,
   SidebarContent,
@@ -13,12 +13,12 @@ import {
   SidebarMenuItem,
   SidebarProvider,
   SidebarTrigger,
-} from '../sidebar'
+} from "../sidebar"
 
 const meta = preview.meta({
-  title: 'Design System/Navigation/Sidebar',
+  title: "Design System/Navigation/Sidebar",
   component: Sidebar,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
 })
 
 export const Default = meta.story({

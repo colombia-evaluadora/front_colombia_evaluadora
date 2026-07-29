@@ -1,4 +1,4 @@
-import preview from '../../../../.storybook/preview'
+import preview from "../../../../.storybook/preview"
 import {
   Pagination,
   PaginationContent,
@@ -7,12 +7,12 @@ import {
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
-} from '../pagination'
+} from "../pagination"
 
 const meta = preview.meta({
-  title: 'Design System/Navigation/Pagination',
+  title: "Design System/Navigation/Pagination",
   component: Pagination,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
 })
 
 export const Default = meta.story({

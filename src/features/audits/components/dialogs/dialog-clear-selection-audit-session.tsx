@@ -19,16 +19,14 @@ interface ClearSelectionAuditSessionDialogProps {
   resetSelection: () => void
 }
 
-export function ClearSelectionAuditSessionDialog({ resetSelection }: ClearSelectionAuditSessionDialogProps) {
+export function ClearSelectionAuditSessionDialog({
+  resetSelection,
+}: ClearSelectionAuditSessionDialogProps) {
   const [open, setOpen] = useState(false)
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger
-        render={
-          <Button variant="outline" aria-label="Deseleccionar" />
-        }
-      >
+      <AlertDialogTrigger render={<Button variant="outline" aria-label="Deseleccionar" />}>
         <XSquareIcon />
         <span className="sr-only md:not-sr-only">Deseleccionar</span>
       </AlertDialogTrigger>

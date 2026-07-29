@@ -1,6 +1,6 @@
-import preview from '../../../../.storybook/preview'
-import { useState } from 'react'
-import { Button } from '../button'
+import preview from "../../../../.storybook/preview"
+import { useState } from "react"
+import { Button } from "../button"
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -16,12 +16,12 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
-} from '../dropdown-menu'
+} from "../dropdown-menu"
 
 const meta = preview.meta({
-  title: 'Design System/Overlays/DropdownMenu',
+  title: "Design System/Overlays/DropdownMenu",
   component: DropdownMenu,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
 })
 
 export const Default = meta.story({
@@ -65,10 +65,12 @@ export const WithSubmenu = meta.story({
 export const WithCheckboxAndRadioItems = meta.story({
   render: () => {
     const [showStatusBar, setShowStatusBar] = useState(true)
-    const [position, setPosition] = useState('bottom')
+    const [position, setPosition] = useState("bottom")
     return (
       <DropdownMenu>
-        <DropdownMenuTrigger render={<Button variant="outline" />}>View options</DropdownMenuTrigger>
+        <DropdownMenuTrigger render={<Button variant="outline" />}>
+          View options
+        </DropdownMenuTrigger>
         <DropdownMenuContent>
           <DropdownMenuCheckboxItem checked={showStatusBar} onCheckedChange={setShowStatusBar}>
             Status bar

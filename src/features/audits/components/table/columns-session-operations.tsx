@@ -3,10 +3,7 @@ import type { ColumnDef, Table } from "@tanstack/react-table"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 
-import {
-  OPERATION_TYPE_BADGE,
-  OPERATION_TYPE_LABELS,
-} from "../../api/ui-mappings"
+import { OPERATION_TYPE_BADGE, OPERATION_TYPE_LABELS } from "../../api/ui-mappings"
 import type { OperationType } from "../../api/types/audit-table"
 import type { SessionOperation } from "../../api/types/audit"
 import { ViewOperationChangesDialog } from "../dialogs/dialog-view-operation-changes"
@@ -20,10 +17,7 @@ export const columns: ColumnDef<SessionOperation>[] = [
         aria-label="Seleccionar página"
         className="translate-y-0.5"
         checked={table.getIsAllPageRowsSelected()}
-        indeterminate={
-          !table.getIsAllPageRowsSelected() &&
-          table.getIsSomePageRowsSelected()
-        }
+        indeterminate={!table.getIsAllPageRowsSelected() && table.getIsSomePageRowsSelected()}
         onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
       />
     ),
@@ -59,11 +53,7 @@ export const columns: ColumnDef<SessionOperation>[] = [
     header: () => <span className="text-xs font-medium">Operación</span>,
     cell: ({ row }) => {
       const operation = row.getValue<OperationType>("operation")
-      return (
-        <Badge {...OPERATION_TYPE_BADGE[operation]}>
-          {OPERATION_TYPE_LABELS[operation]}
-        </Badge>
-      )
+      return <Badge {...OPERATION_TYPE_BADGE[operation]}>{OPERATION_TYPE_LABELS[operation]}</Badge>
     },
   },
   {
@@ -102,11 +92,10 @@ export const columns: ColumnDef<SessionOperation>[] = [
     id: "actions",
     header: () => <span className="sr-only">Acciones</span>,
     cell: ({ row }) => (
-      
-    <ViewOperationChangesDialog
-      tableSlug={row.original.tableSlug}
-      operationId={row.original.id}
-    />
+      <ViewOperationChangesDialog
+        tableSlug={row.original.tableSlug}
+        operationId={row.original.id}
+      />
     ),
     enableSorting: false,
     enableHiding: false,

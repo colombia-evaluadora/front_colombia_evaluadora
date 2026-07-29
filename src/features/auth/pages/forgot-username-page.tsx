@@ -43,26 +43,17 @@ export function ForgotUsernamePage() {
       {found ? (
         <>
           <CardHeader className="text-center">
-            <div className="bg-success/10 mx-auto flex size-20 items-center justify-center rounded-full">
-              <UserCircleIcon
-                className="text-success size-9"
-                aria-hidden="true"
-              />
+            <div className="bg-green/10 mx-auto flex size-20 items-center justify-center rounded-full">
+              <UserCircleIcon className="text-green size-9" aria-hidden="true" />
             </div>
             <CardTitle className="text-xl">Este es tu correo</CardTitle>
-            <CardDescription>
-              Encontramos la cuenta asociada a ese documento.
-            </CardDescription>
+            <CardDescription>Encontramos la cuenta asociada a ese documento.</CardDescription>
           </CardHeader>
 
           <CardContent>
-            <div className="bg-success/10 flex flex-col items-center gap-1 p-4 text-center">
-              <p className="text-muted-foreground text-xs">
-                Ingresa al sistema con
-              </p>
-              <p className="text-success text-lg font-semibold break-all">
-                {found.username}
-              </p>
+            <div className="bg-green/10 flex flex-col items-center gap-1 p-4 text-center">
+              <p className="text-muted-foreground text-xs">Ingresa al sistema con</p>
+              <p className="text-green text-lg font-semibold break-all">{found.username}</p>
             </div>
           </CardContent>
 
@@ -97,16 +88,12 @@ export function ForgotUsernamePage() {
             </div>
             <CardTitle>¿No recuerdas tu correo?</CardTitle>
             <CardDescription>
-              Ingresa tu número de documento y te decimos con qué correo
-              entras.
+              Ingresa tu número de documento y te decimos con qué correo entras.
             </CardDescription>
           </CardHeader>
 
           <CardContent>
-            <ForgotUsernameForm
-              id={FORGOT_USERNAME_FORM_ID}
-              onSubmit={handleSubmit}
-            />
+            <ForgotUsernameForm id={FORGOT_USERNAME_FORM_ID} onSubmit={handleSubmit} />
           </CardContent>
 
           <CardFooter className="flex flex-col gap-2">
@@ -134,10 +121,7 @@ export function ForgotUsernamePage() {
               Volver a iniciar sesión
             </Button>
             <p className="text-muted-foreground inline-flex items-start text-center text-xs">
-              <ShieldIcon
-                          className="size-4 shrink-0"
-                          aria-hidden="true"
-                        />
+              <ShieldIcon className="size-5 shrink-0" aria-hidden="true" />
               Tu seguridad es importante. Nunca compartas tu contraseña con nadie.
             </p>
           </CardFooter>

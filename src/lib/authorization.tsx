@@ -29,7 +29,7 @@ export function useAuthorization() {
       }
       return true
     },
-    [user.data]
+    [user.data],
   )
 
   return { checkAccess, role: user.data.role }
@@ -38,10 +38,7 @@ export function useAuthorization() {
 type AuthorizationProps = {
   forbiddenFallback?: React.ReactNode
   children: React.ReactNode
-} & (
-  | { allowedRoles: Role[]; policyCheck?: never }
-  | { allowedRoles?: never; policyCheck: boolean }
-)
+} & ({ allowedRoles: Role[]; policyCheck?: never } | { allowedRoles?: never; policyCheck: boolean })
 
 export function Authorization({
   policyCheck,

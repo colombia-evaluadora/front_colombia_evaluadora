@@ -31,18 +31,10 @@ export const OPERATION_TYPES = ["INSERT", "UPDATE", "DELETE"] as const
 // así que el schema lo valida como string. La UI del sheet recibe la
 // lista disponible por tabla y la muestra en el Select.
 
-export const FIELD_FILTER_CONDITIONS = [
-  "contains",
-  "equals",
-  "startsWith",
-] as const
-export type FieldFilterCondition =
-  (typeof FIELD_FILTER_CONDITIONS)[number]
+export const FIELD_FILTER_CONDITIONS = ["contains", "equals", "startsWith"] as const
+export type FieldFilterCondition = (typeof FIELD_FILTER_CONDITIONS)[number]
 
-export const FIELD_FILTER_CONDITION_LABELS: Record<
-  FieldFilterCondition,
-  string
-> = {
+export const FIELD_FILTER_CONDITION_LABELS: Record<FieldFilterCondition, string> = {
   contains: "Contiene",
   equals: "Es igual a",
   startsWith: "Empieza con",
@@ -62,12 +54,8 @@ export const tableOperationsFiltersFormSchema = z.object({
   occurredTo: z.string(),
   fieldFilters: z.array(fieldFilterSchema),
 })
-export type TableOperationsFiltersFormInput = z.input<
-  typeof tableOperationsFiltersFormSchema
->
-export type TableOperationsFiltersFormValues = z.infer<
-  typeof tableOperationsFiltersFormSchema
->
+export type TableOperationsFiltersFormInput = z.input<typeof tableOperationsFiltersFormSchema>
+export type TableOperationsFiltersFormValues = z.infer<typeof tableOperationsFiltersFormSchema>
 
 export const tableOperationsSearchSchema = z.object({
   page: z.coerce.number().int().nonnegative().catch(0).default(0),
@@ -89,12 +77,8 @@ export type TableOperationsSearch = z.infer<typeof tableOperationsSearchSchema>
 export const auditTablesFiltersFormSchema = z.object({
   name: z.string(),
 })
-export type AuditTablesFiltersFormInput = z.input<
-  typeof auditTablesFiltersFormSchema
->
-export type AuditTablesFiltersFormValues = z.infer<
-  typeof auditTablesFiltersFormSchema
->
+export type AuditTablesFiltersFormInput = z.input<typeof auditTablesFiltersFormSchema>
+export type AuditTablesFiltersFormValues = z.infer<typeof auditTablesFiltersFormSchema>
 
 export const auditTablesSearchSchema = z.object({
   page: z.coerce.number().int().nonnegative().catch(0).default(0),
@@ -116,12 +100,8 @@ export const sessionOperationsFiltersFormSchema = z.object({
   occurredFrom: z.string(),
   occurredTo: z.string(),
 })
-export type SessionOperationsFiltersFormInput = z.input<
-  typeof sessionOperationsFiltersFormSchema
->
-export type SessionOperationsFiltersFormValues = z.infer<
-  typeof sessionOperationsFiltersFormSchema
->
+export type SessionOperationsFiltersFormInput = z.input<typeof sessionOperationsFiltersFormSchema>
+export type SessionOperationsFiltersFormValues = z.infer<typeof sessionOperationsFiltersFormSchema>
 
 export const sessionOperationsSearchSchema = z.object({
   page: z.coerce.number().int().nonnegative().catch(0).default(0),

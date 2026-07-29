@@ -15,7 +15,7 @@ interface UseTableOperationsQueryParams {
 }
 
 function fetchTableOperations(
-  params: UseTableOperationsQueryParams
+  params: UseTableOperationsQueryParams,
 ): Promise<TableOperationsQueryResponse> {
   const { tableSlug, ...body } = params
   return api.query(`/audit-tables/${tableSlug}/operations/query`, body)

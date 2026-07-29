@@ -2,10 +2,7 @@ import { useCallback, useMemo } from "react"
 
 import { auditoriaSesionesRoute } from "@/router"
 
-import type {
-  AuditFiltersFormInput,
-  AuditFiltersFormValues,
-} from "../api/schema"
+import type { AuditFiltersFormInput, AuditFiltersFormValues } from "../api/schema"
 import type { AuditsQueryRequest } from "../api/types/audit"
 
 export interface AuditSessionFilters {
@@ -34,7 +31,7 @@ export function useAuditSessionFilters(): AuditSessionFilters {
         replace: true,
       })
     },
-    [navigate]
+    [navigate],
   )
 
   const clearAllFilters = useCallback(() => {
@@ -58,7 +55,7 @@ export function useAuditSessionFilters(): AuditSessionFilters {
       startedFrom: search.startedFrom,
       startedTo: search.startedTo,
     }),
-    [search.author, search.statuses, search.startedFrom, search.startedTo]
+    [search.author, search.statuses, search.startedFrom, search.startedTo],
   )
 
   const activeFilterCount = useMemo(() => {

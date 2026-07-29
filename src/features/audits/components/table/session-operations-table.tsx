@@ -18,8 +18,7 @@ interface SessionOperationsDataTableProps {
 }
 
 export function SessionOperationsDataTable({ sessionId }: SessionOperationsDataTableProps) {
-  const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } =
-    useTablePagination()
+  const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
   const { filters, queryFilters, applyFilters, clearAllFilters, activeFilterCount } =
     useSessionOperationsFilters()
 

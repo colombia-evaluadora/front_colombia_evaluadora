@@ -8,16 +8,14 @@ import {
   Stories,
   Subtitle,
   Title,
-} from '@storybook/addon-docs/blocks'
+} from "@storybook/addon-docs/blocks"
 
-import * as ButtonStories from './button.stories'
+import * as ButtonStories from "./button.stories"
 
 <Meta of={ButtonStories} />
 
 <Title>Button</Title>
-<Subtitle>
-  Disparador de acciones — 5 variants × 8 colors sincronizados con Figma
-</Subtitle>
+<Subtitle>Disparador de acciones — 5 variants × 8 colors sincronizados con Figma</Subtitle>
 
 ---
 
@@ -28,7 +26,7 @@ operación (submit, confirmación, navegación interna, toggle, etc.).
 
 Combina **`variant`** (forma) con **`color`** (tono semántico) para dar
 **5 × 8 = 40 combinaciones** sincronizadas con Figma
-*"Design Tokens — Tailwind Sync"*.
+_"Design Tokens — Tailwind Sync"_.
 
 Construido sobre `@base-ui/react/button`.
 
@@ -134,12 +132,14 @@ columna, etc.) usá el componente dedicado **`ButtonGroup`**, no un
 `Design System / Forms / ButtonGroup`.
 
 ```tsx
-import { Button, ButtonGroup, ButtonGroupSeparator } from '@/components/ui'
+import { Button, ButtonGroup, ButtonGroupSeparator } from "@/components/ui"
 
-<ButtonGroup>
+;<ButtonGroup>
   <Button variant="outline">Cancelar</Button>
   <Button variant="outline">Guardar borrador</Button>
-  <Button variant="fill" color="primary">Publicar</Button>
+  <Button variant="fill" color="primary">
+    Publicar
+  </Button>
 </ButtonGroup>
 ```
 

@@ -43,10 +43,7 @@ function formatBytes(bytes: number) {
   if (bytes === 0) return "0 B"
 
   const sizes = ["B", "KB", "MB", "GB", "TB"]
-  const index = Math.min(
-    Math.floor(Math.log(bytes) / Math.log(1024)),
-    sizes.length - 1
-  )
+  const index = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), sizes.length - 1)
 
   return `${(bytes / 1024 ** index).toFixed(index === 0 ? 0 : 1)} ${sizes[index]}`
 }
@@ -96,9 +93,7 @@ interface FileUploadContextValue {
   openFileDialog: () => void
 }
 
-const FileUploadContext = React.createContext<FileUploadContextValue | null>(
-  null
-)
+const FileUploadContext = React.createContext<FileUploadContextValue | null>(null)
 
 function useFileUploadContext(consumerName: string) {
   const context = React.useContext(FileUploadContext)
@@ -110,11 +105,10 @@ function useFileUploadContext(consumerName: string) {
   return context
 }
 
-interface FileUploadProps
-  extends Omit<
-    React.ComponentProps<"div"> & useRender.ComponentProps<"div">,
-    "defaultValue" | "onChange"
-  > {
+interface FileUploadProps extends Omit<
+  React.ComponentProps<"div"> & useRender.ComponentProps<"div">,
+  "defaultValue" | "onChange"
+> {
   value?: File[]
   defaultValue?: File[]
   onValueChange?: (files: File[]) => void
@@ -128,7 +122,7 @@ interface FileUploadProps
       onProgress: (file: File, progress: number) => void
       onSuccess: (file: File) => void
       onError: (file: File, error: Error) => void
-    }
+    },
   ) => Promise<void> | void
   accept?: string
   maxFiles?: number
@@ -187,7 +181,7 @@ function FileUpload(props: FileUploadProps) {
   const invalidTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
   const [internalInvalid, setInternalInvalid] = React.useState(false)
   const [fileStates, setFileStates] = React.useState<FileUploadFileState[]>(() =>
-    createInitialFileStates(value ?? defaultValue)
+    createInitialFileStates(value ?? defaultValue),
   )
 
   const isInvalid = invalid || internalInvalid
@@ -197,19 +191,18 @@ function FileUpload(props: FileUploadProps) {
 
     setFileStates((currentStates) => {
       const statesByKey = new Map(
-        currentStates.map((fileState) => [
-          createFileKey(fileState.file),
-          fileState,
-        ])
+        currentStates.map((fileState) => [createFileKey(fileState.file), fileState]),
       )
 
       return value.map((file) => {
         const currentState = statesByKey.get(createFileKey(file))
-        return currentState ? { ...currentState, file } : {
-          file,
-          progress: 0,
-          status: "idle" as const,
-        }
+        return currentState
+          ? { ...currentState, file }
+          : {
+              file,
+              progress: 0,
+              status: "idle" as const,
+            }
       })
     })
   }, [value])
@@ -239,18 +232,15 @@ function FileUpload(props: FileUploadProps) {
   }, [])
 
   const updateFileState = React.useCallback(
-    (
-      file: File,
-      update: (fileState: FileUploadFileState) => FileUploadFileState
-    ) => {
+    (file: File, update: (fileState: FileUploadFileState) => FileUploadFileState) => {
       const key = createFileKey(file)
       setFileStates((currentStates) =>
         currentStates.map((fileState) =>
-          createFileKey(fileState.file) === key ? update(fileState) : fileState
-        )
+          createFileKey(fileState.file) === key ? update(fileState) : fileState,
+        ),
       )
     },
-    []
+    [],
   )
 
   const uploadFiles = React.useCallback(
@@ -292,10 +282,7 @@ function FileUpload(props: FileUploadProps) {
           },
         })
       } catch (error) {
-        const message =
-          error instanceof Error
-            ? error.message
-            : "No se pudo cargar el archivo"
+        const message = error instanceof Error ? error.message : "No se pudo cargar el archivo"
 
         for (const file of files) {
           updateFileState(file, (fileState) => ({
@@ -306,7 +293,7 @@ function FileUpload(props: FileUploadProps) {
         }
       }
     },
-    [onUpload, updateFileState]
+    [onUpload, updateFileState],
   )
 
   const addFiles = React.useCallback(
@@ -314,9 +301,7 @@ function FileUpload(props: FileUploadProps) {
       if (disabled || incomingFiles.length === 0) return
 
       const baseStates = multiple ? fileStates : []
-      const knownKeys = new Set(
-        baseStates.map((fileState) => createFileKey(fileState.file))
-      )
+      const knownKeys = new Set(baseStates.map((fileState) => createFileKey(fileState.file)))
       const acceptedFiles: File[] = []
       const maximum = multiple ? maxFiles : 1
       let rejectedAny = false
@@ -335,11 +320,7 @@ function FileUpload(props: FileUploadProps) {
           rejectionMessage = "El archivo supera el tamaño máximo permitido"
         }
 
-        if (
-          !rejectionMessage &&
-          maximum &&
-          baseStates.length + acceptedFiles.length >= maximum
-        ) {
+        if (!rejectionMessage && maximum && baseStates.length + acceptedFiles.length >= maximum) {
           rejectionMessage = `Solo puedes seleccionar hasta ${maximum} ${maximum === 1 ? "archivo" : "archivos"}`
         }
 
@@ -389,7 +370,7 @@ function FileUpload(props: FileUploadProps) {
       onUpload,
       onValueChange,
       uploadFiles,
-    ]
+    ],
   )
 
   const removeFile = React.useCallback(
@@ -397,13 +378,11 @@ function FileUpload(props: FileUploadProps) {
       const key = createFileKey(file)
       revokeFileUrl(file)
 
-      const nextStates = fileStates.filter(
-        (fileState) => createFileKey(fileState.file) !== key
-      )
+      const nextStates = fileStates.filter((fileState) => createFileKey(fileState.file) !== key)
       setFileStates(nextStates)
       onValueChange?.(nextStates.map((fileState) => fileState.file))
     },
-    [fileStates, onValueChange, revokeFileUrl]
+    [fileStates, onValueChange, revokeFileUrl],
   )
 
   const clearFiles = React.useCallback(() => {
@@ -424,7 +403,7 @@ function FileUpload(props: FileUploadProps) {
       addFiles(Array.from(event.target.files ?? []))
       event.target.value = ""
     },
-    [addFiles]
+    [addFiles],
   )
 
   const contextValue = React.useMemo<FileUploadContextValue>(
@@ -457,7 +436,7 @@ function FileUpload(props: FileUploadProps) {
       listId,
       openFileDialog,
       removeFile,
-    ]
+    ],
   )
 
   const element = useRender({
@@ -491,7 +470,7 @@ function FileUpload(props: FileUploadProps) {
           </>
         ),
       },
-      rootProps
+      rootProps,
     ),
     render,
     state: {
@@ -501,16 +480,11 @@ function FileUpload(props: FileUploadProps) {
     },
   })
 
-  return (
-    <FileUploadContext.Provider value={contextValue}>
-      {element}
-    </FileUploadContext.Provider>
-  )
+  return <FileUploadContext.Provider value={contextValue}>{element}</FileUploadContext.Provider>
 }
 
 interface FileUploadDropzoneProps
-  extends React.ComponentProps<"div">,
-    useRender.ComponentProps<"div"> {}
+  extends React.ComponentProps<"div">, useRender.ComponentProps<"div"> {}
 
 function FileUploadDropzone(props: FileUploadDropzoneProps) {
   const {
@@ -535,12 +509,11 @@ function FileUploadDropzone(props: FileUploadDropzoneProps) {
 
       const target = event.target
       const isFromTrigger =
-        target instanceof HTMLElement &&
-        target.closest('[data-slot="file-upload-trigger"]')
+        target instanceof HTMLElement && target.closest('[data-slot="file-upload-trigger"]')
 
       if (!isFromTrigger) context.openFileDialog()
     },
-    [context, onClickProp]
+    [context, onClickProp],
   )
 
   const onDragOver = React.useCallback(
@@ -551,7 +524,7 @@ function FileUploadDropzone(props: FileUploadDropzoneProps) {
       event.dataTransfer.dropEffect = "copy"
       setDragging(true)
     },
-    [context.disabled, onDragOverProp]
+    [context.disabled, onDragOverProp],
   )
 
   const onDragEnter = React.useCallback(
@@ -561,7 +534,7 @@ function FileUploadDropzone(props: FileUploadDropzoneProps) {
       event.preventDefault()
       setDragging(true)
     },
-    [context.disabled, onDragEnterProp]
+    [context.disabled, onDragEnterProp],
   )
 
   const onDragLeave = React.useCallback(
@@ -570,16 +543,13 @@ function FileUploadDropzone(props: FileUploadDropzoneProps) {
       if (event.defaultPrevented) return
 
       const relatedTarget = event.relatedTarget
-      if (
-        relatedTarget instanceof Node &&
-        event.currentTarget.contains(relatedTarget)
-      ) {
+      if (relatedTarget instanceof Node && event.currentTarget.contains(relatedTarget)) {
         return
       }
 
       setDragging(false)
     },
-    [onDragLeaveProp]
+    [onDragLeaveProp],
   )
 
   const onDrop = React.useCallback(
@@ -590,7 +560,7 @@ function FileUploadDropzone(props: FileUploadDropzoneProps) {
       setDragging(false)
       context.addFiles(Array.from(event.dataTransfer.files))
     },
-    [context, onDropProp]
+    [context, onDropProp],
   )
 
   const onPaste = React.useCallback(
@@ -607,7 +577,7 @@ function FileUploadDropzone(props: FileUploadDropzoneProps) {
       event.preventDefault()
       context.addFiles(files)
     },
-    [context, onPasteProp]
+    [context, onPasteProp],
   )
 
   const onKeyDown = React.useCallback(
@@ -624,7 +594,7 @@ function FileUploadDropzone(props: FileUploadDropzoneProps) {
       event.preventDefault()
       context.openFileDialog()
     },
-    [context, onKeyDownProp]
+    [context, onKeyDownProp],
   )
 
   return useRender({
@@ -640,8 +610,8 @@ function FileUploadDropzone(props: FileUploadDropzoneProps) {
         "aria-disabled": context.disabled,
         "aria-invalid": context.invalid,
         className: cn(
-          "relative flex select-none flex-col items-center justify-center gap-3 border-2 border-dashed border-border p-6 text-center outline-none transition-colors hover:bg-muted/30 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/20 data-disabled:pointer-events-none data-disabled:opacity-50 data-dragging:border-primary data-dragging:bg-primary/5 data-invalid:border-destructive data-invalid:ring-2 data-invalid:ring-destructive/20",
-          className
+          "relative flex select-none flex-col items-center justify-center gap-3 border-2 border-dashed border-border p-6 text-center outline-none transition-colors hover:bg-muted/30 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/20 data-disabled:pointer-events-none data-disabled:opacity-50 data-dragging:border-primary data-dragging:bg-primary/5 data-invalid:border-red data-invalid:ring-2 data-invalid:ring-red/20",
+          className,
         ),
         onClick,
         onDragEnter,
@@ -651,7 +621,7 @@ function FileUploadDropzone(props: FileUploadDropzoneProps) {
         onKeyDown,
         onPaste,
       },
-      dropzoneProps
+      dropzoneProps,
     ),
     render,
     state: {
@@ -664,8 +634,7 @@ function FileUploadDropzone(props: FileUploadDropzoneProps) {
 }
 
 interface FileUploadTriggerProps
-  extends React.ComponentProps<"button">,
-    useRender.ComponentProps<"button"> {}
+  extends React.ComponentProps<"button">, useRender.ComponentProps<"button"> {}
 
 function FileUploadTrigger(props: FileUploadTriggerProps) {
   const { render, onClick: onClickProp, ...triggerProps } = props
@@ -676,7 +645,7 @@ function FileUploadTrigger(props: FileUploadTriggerProps) {
       onClickProp?.(event)
       if (!event.defaultPrevented) context.openFileDialog()
     },
-    [context, onClickProp]
+    [context, onClickProp],
   )
 
   return useRender({
@@ -688,7 +657,7 @@ function FileUploadTrigger(props: FileUploadTriggerProps) {
         disabled: context.disabled,
         onClick,
       },
-      triggerProps
+      triggerProps,
     ),
     render,
     state: {
@@ -698,21 +667,13 @@ function FileUploadTrigger(props: FileUploadTriggerProps) {
   })
 }
 
-interface FileUploadListProps
-  extends React.ComponentProps<"div">,
-    useRender.ComponentProps<"div"> {
+interface FileUploadListProps extends React.ComponentProps<"div">, useRender.ComponentProps<"div"> {
   orientation?: "horizontal" | "vertical"
   forceMount?: boolean
 }
 
 function FileUploadList(props: FileUploadListProps) {
-  const {
-    className,
-    orientation = "vertical",
-    render,
-    forceMount = false,
-    ...listProps
-  } = props
+  const { className, orientation = "vertical", render, forceMount = false, ...listProps } = props
   const context = useFileUploadContext(LIST_NAME)
   const shouldRender = forceMount || context.fileStates.length > 0
 
@@ -725,12 +686,11 @@ function FileUploadList(props: FileUploadListProps) {
         dir: context.dir,
         className: cn(
           "flex flex-col gap-2",
-          orientation === "horizontal" &&
-            "flex-row overflow-x-auto overscroll-x-contain py-1",
-          className
+          orientation === "horizontal" && "flex-row overflow-x-auto overscroll-x-contain py-1",
+          className,
         ),
       },
-      listProps
+      listProps,
     ),
     render,
     state: {
@@ -753,8 +713,7 @@ interface FileUploadItemContextValue {
   messageId: string
 }
 
-const FileUploadItemContext =
-  React.createContext<FileUploadItemContextValue | null>(null)
+const FileUploadItemContext = React.createContext<FileUploadItemContextValue | null>(null)
 
 function useFileUploadItemContext(consumerName: string) {
   const context = React.useContext(FileUploadItemContext)
@@ -777,17 +736,13 @@ function FileUploadItem(props: FileUploadItemProps) {
   const statusId = `${id}-status`
   const messageId = `${id}-message`
   const key = createFileKey(value)
-  const fileIndex = context.fileStates.findIndex(
-    (state) => createFileKey(state.file) === key
-  )
+  const fileIndex = context.fileStates.findIndex((state) => createFileKey(state.file) === key)
   const fileState = context.fileStates[fileIndex]
 
   if (!fileState) return null
 
   const state =
-    fileState.status === "idle" || fileState.status === "success"
-      ? "done"
-      : fileState.status
+    fileState.status === "idle" || fileState.status === "success" ? "done" : fileState.status
   const statusText = fileState.error
     ? `Error: ${fileState.error}`
     : fileState.status === "uploading"
@@ -814,9 +769,7 @@ function FileUploadItem(props: FileUploadItemProps) {
         aria-setsize={context.fileStates.length}
         aria-posinset={fileIndex + 1}
         aria-labelledby={nameId}
-        aria-describedby={
-          `${sizeId} ${statusId}${fileState.error ? ` ${messageId}` : ""}`
-        }
+        aria-describedby={`${sizeId} ${statusId}${fileState.error ? ` ${messageId}` : ""}`}
         className={cn("w-full", className)}
         {...itemProps}
       >
@@ -829,13 +782,12 @@ function FileUploadItem(props: FileUploadItemProps) {
   )
 }
 
-interface FileUploadItemPreviewProps
-  extends Omit<React.ComponentProps<typeof AttachmentMedia>, "children"> {
+interface FileUploadItemPreviewProps extends Omit<
+  React.ComponentProps<typeof AttachmentMedia>,
+  "children"
+> {
   children?: React.ReactNode
-  previewRender?: (
-    file: File,
-    fallback: () => React.ReactNode
-  ) => React.ReactNode
+  previewRender?: (file: File, fallback: () => React.ReactNode) => React.ReactNode
 }
 
 function getFileIcon(file: File) {
@@ -873,9 +825,7 @@ function FileUploadItemPreview(props: FileUploadItemPreviewProps) {
     return <img src={url} alt="" className="size-full object-cover" />
   }, [context.urlCache, file, isImage])
 
-  const content = previewRender
-    ? previewRender(file, getDefaultPreview)
-    : getDefaultPreview()
+  const content = previewRender ? previewRender(file, getDefaultPreview) : getDefaultPreview()
 
   return (
     <AttachmentMedia
@@ -890,8 +840,7 @@ function FileUploadItemPreview(props: FileUploadItemPreviewProps) {
   )
 }
 
-interface FileUploadItemMetadataProps
-  extends React.ComponentProps<typeof AttachmentContent> {
+interface FileUploadItemMetadataProps extends React.ComponentProps<typeof AttachmentContent> {
   size?: "default" | "sm"
 }
 
@@ -943,17 +892,10 @@ interface FileUploadItemProgressProps extends React.ComponentProps<"div"> {
 }
 
 function FileUploadItemProgress(props: FileUploadItemProgressProps) {
-  const {
-    variant = "linear",
-    size = 40,
-    forceMount = false,
-    className,
-    ...progressProps
-  } = props
+  const { variant = "linear", size = 40, forceMount = false, className, ...progressProps } = props
   const itemContext = useFileUploadItemContext(ITEM_PROGRESS_NAME)
   const progress = itemContext.fileState.progress
-  const shouldRender =
-    forceMount || itemContext.fileState.status === "uploading"
+  const shouldRender = forceMount || itemContext.fileState.status === "uploading"
 
   if (!shouldRender) return null
 
@@ -982,7 +924,7 @@ function FileUploadItemProgress(props: FileUploadItemProgressProps) {
         aria-labelledby={itemContext.nameId}
         className={cn(
           "pointer-events-none absolute inset-0 bg-primary/10 transition-[clip-path] duration-300 ease-linear",
-          className
+          className,
         )}
         style={{ clipPath: `inset(${100 - progress}% 0 0 0)` }}
         {...progressProps}
@@ -1004,10 +946,7 @@ function FileUploadItemProgress(props: FileUploadItemProgressProps) {
       aria-valuenow={progress}
       aria-valuetext={`${progress}%`}
       aria-labelledby={itemContext.nameId}
-      className={cn(
-        "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2",
-        className
-      )}
+      className={cn("absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2", className)}
       {...progressProps}
     >
       <svg
@@ -1041,24 +980,21 @@ function FileUploadItemProgress(props: FileUploadItemProgressProps) {
   )
 }
 
-interface FileUploadItemDeleteProps
-  extends React.ComponentProps<typeof AttachmentAction> {}
+interface FileUploadItemDeleteProps extends React.ComponentProps<typeof AttachmentAction> {}
 
 function FileUploadItemDelete(props: FileUploadItemDeleteProps) {
   const { onClick: onClickProp, disabled, children, ...deleteProps } = props
   const context = useFileUploadContext(ITEM_DELETE_NAME)
   const itemContext = useFileUploadItemContext(ITEM_DELETE_NAME)
 
-  const onClick = React.useCallback<
-    NonNullable<FileUploadItemDeleteProps["onClick"]>
-  >(
+  const onClick = React.useCallback<NonNullable<FileUploadItemDeleteProps["onClick"]>>(
     (event) => {
       onClickProp?.(event)
       if (!event.defaultPrevented) {
         context.removeFile(itemContext.fileState.file)
       }
     },
-    [context, itemContext.fileState.file, onClickProp]
+    [context, itemContext.fileState.file, onClickProp],
   )
 
   return (
@@ -1079,19 +1015,12 @@ function FileUploadItemDelete(props: FileUploadItemDeleteProps) {
 }
 
 interface FileUploadClearProps
-  extends React.ComponentProps<"button">,
-    useRender.ComponentProps<"button"> {
+  extends React.ComponentProps<"button">, useRender.ComponentProps<"button"> {
   forceMount?: boolean
 }
 
 function FileUploadClear(props: FileUploadClearProps) {
-  const {
-    render,
-    forceMount = false,
-    disabled,
-    onClick: onClickProp,
-    ...clearProps
-  } = props
+  const { render, forceMount = false, disabled, onClick: onClickProp, ...clearProps } = props
   const context = useFileUploadContext(CLEAR_NAME)
   const isDisabled = disabled || context.disabled
   const shouldRender = forceMount || context.fileStates.length > 0
@@ -1101,7 +1030,7 @@ function FileUploadClear(props: FileUploadClearProps) {
       onClickProp?.(event)
       if (!event.defaultPrevented) context.clearFiles()
     },
-    [context, onClickProp]
+    [context, onClickProp],
   )
 
   const element = useRender({
@@ -1113,7 +1042,7 @@ function FileUploadClear(props: FileUploadClearProps) {
         "aria-controls": context.listId,
         onClick,
       },
-      clearProps
+      clearProps,
     ),
     render,
     state: {
@@ -1138,7 +1067,7 @@ function useFileUpload() {
       remove: context.removeFile,
       clear: context.clearFiles,
     }),
-    [context]
+    [context],
   )
 }
 

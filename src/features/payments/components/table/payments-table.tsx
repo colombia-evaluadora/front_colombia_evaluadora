@@ -16,8 +16,7 @@ import { DeleteSelectedPaymentsDialog } from "../dialogs/dialog-delete-selected-
 import { ClearSelectionDialog } from "../dialogs/dialog-clear-selection"
 
 export function PaymentsDataTable() {
-  const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } =
-    useTablePagination()
+  const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
   const { filters, queryFilters, applyFilters, clearAllFilters, activeFilterCount } =
     usePaymentsFilters()
   const { data, isPending, isError, refetch } = usePaymentsQuery({

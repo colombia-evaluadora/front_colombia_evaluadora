@@ -1,8 +1,6 @@
 import { http, HttpResponse, delay } from "msw"
 import { faker } from "@faker-js/faker"
 
-import { httpQuery } from "./_http-query"
-
 import { paymentsDb } from "../db/payments"
 import type {
   Payment,
@@ -11,15 +9,9 @@ import type {
 } from "@/features/payments/api/types/payment"
 import type { PaymentFormValues } from "@/features/payments/api/schema"
 
-function applyFilters(
-  rows: Payment[],
-  filters: PaymentsQueryRequest["filters"]
-): Payment[] {
+function applyFilters(rows: Payment[], filters: PaymentsQueryRequest["filters"]): Payment[] {
   return rows.filter((row) => {
-    if (
-      filters.email &&
-      !row.email.toLowerCase().includes(filters.email.toLowerCase())
-    ) {
+    if (filters.email && !row.email.toLowerCase().includes(filters.email.toLowerCase())) {
       return false
     }
     if (filters.status?.length && !filters.status.includes(row.status)) {
@@ -35,10 +27,7 @@ function applyFilters(
   })
 }
 
-function applySorting(
-  rows: Payment[],
-  sorting: PaymentsQueryRequest["sorting"]
-): Payment[] {
+function applySorting(rows: Payment[], sorting: PaymentsQueryRequest["sorting"]): Payment[] {
   if (!sorting.length) return rows
   const [{ id, desc }] = sorting
   const sorted = [...rows].sort((a, b) => {
@@ -51,7 +40,7 @@ function applySorting(
 }
 
 export const paymentsHandlers = [
-  httpQuery("/api/payments/query", async ({ request }) => {
+  http.post("/api/payments/query", async ({ request }) => {
     await delay(300)
     const body = (await request.json()) as PaymentsQueryRequest
     const { filters, sorting, pageIndex, pageSize } = body
@@ -88,10 +77,7 @@ export const paymentsHandlers = [
     const values = (await request.json()) as PaymentFormValues
     const index = paymentsDb.findIndex((p) => p.id === params.id)
     if (index === -1) {
-      return HttpResponse.json(
-        { status: "error", message: "Pago no encontrado." },
-        { status: 404 }
-      )
+      return HttpResponse.json({ status: "error", message: "Pago no encontrado." }, { status: 404 })
     }
     paymentsDb[index] = { ...paymentsDb[index], ...values }
     return HttpResponse.json({ status: "ok", message: "Pago actualizado." })
@@ -101,10 +87,7 @@ export const paymentsHandlers = [
     await delay(300)
     const index = paymentsDb.findIndex((p) => p.id === params.id)
     if (index === -1) {
-      return HttpResponse.json(
-        { status: "error", message: "Pago no encontrado." },
-        { status: 404 }
-      )
+      return HttpResponse.json({ status: "error", message: "Pago no encontrado." }, { status: 404 })
     }
     paymentsDb.splice(index, 1)
     return HttpResponse.json({ status: "ok", message: "Pago eliminado." })

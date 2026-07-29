@@ -17,9 +17,7 @@ interface UseRestorePasswordOptions {
   mutationConfig?: MutationConfig<typeof restorePassword>
 }
 
-export function useRestorePassword({
-  mutationConfig,
-}: UseRestorePasswordOptions = {}) {
+export function useRestorePassword({ mutationConfig }: UseRestorePasswordOptions = {}) {
   const queryClient = useQueryClient()
 
   return useMutation({

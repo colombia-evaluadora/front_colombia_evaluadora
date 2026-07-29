@@ -30,7 +30,7 @@ export function useTablePagination(): DataTableFilters {
         replace: true,
       })
     },
-    [navigate]
+    [navigate],
   )
 
   const setPageSize = useCallback(
@@ -44,7 +44,7 @@ export function useTablePagination(): DataTableFilters {
         replace: true,
       })
     },
-    [navigate]
+    [navigate],
   )
 
   const setSorting = useCallback(
@@ -60,7 +60,7 @@ export function useTablePagination(): DataTableFilters {
         replace: true,
       })
     },
-    [navigate]
+    [navigate],
   )
 
   return {

@@ -1,47 +1,45 @@
-import preview from '../../../../.storybook/preview'
-import { ArrowRightIcon, PlusIcon, SpinnerIcon } from '@/components/ui/icons'
+import preview from "../../../../.storybook/preview"
+import { ArrowRightIcon, PlusIcon, SpinnerIcon } from "@/components/ui/icons"
 
-import { Button, buttonVariants } from '../button'
+import { Button, buttonVariants } from "../button"
 
 // Truco para escribir backticks literales dentro de un template literal sin
 // que JS los desactive. Sin esto, `\`variant\`` en el source se procesa como
 // `\` + `` ` `` en el string final, y CommonMark desactiva el code-span.
-const BT = '`'
+const BT = "`"
 
 const meta = preview.meta({
-  title: 'Design System/Forms/Button',
+  title: "Design System/Forms/Button",
   component: Button,
   // Sin `tags: ['autodocs']` — la docs page la genera `button.mdx`.
-  args: { children: 'Button' },
+  args: { children: "Button" },
   argTypes: {
     variant: {
-      control: { type: 'select' },
-      options: ['fill', 'soft', 'outline', 'ghost', 'link'],
-      description:
-        'Forma del botón (sincronizada con Figma: Solid/Soft/Outline/Ghost/Link).',
-      table: { defaultValue: { summary: 'fill' } },
+      control: { type: "select" },
+      options: ["fill", "soft", "outline", "ghost", "link"],
+      description: "Forma del botón (sincronizada con Figma: Solid/Soft/Outline/Ghost/Link).",
+      table: { defaultValue: { summary: "fill" } },
     },
     color: {
-      control: { type: 'select' },
+      control: { type: "select" },
       options: [
-        'primary',
-        'secondary',
-        'muted',
-        'neutral',
-        'destructive',
-        'info',
-        'warning',
-        'success',
+        "primary",
+        "secondary",
+        "muted",
+        "neutral",
+        "destructive",
+        "info",
+        "warning",
+        "success",
       ],
-      description:
-        'Tono semántico (8 colores, mapeo Figma → código en `button.tsx`).',
-      table: { defaultValue: { summary: 'primary' } },
+      description: "Tono semántico (8 colores, mapeo Figma → código en `button.tsx`).",
+      table: { defaultValue: { summary: "primary" } },
     },
     size: {
-      control: { type: 'select' },
-      options: ['default', 'xs', 'sm', 'lg', 'icon', 'icon-xs', 'icon-sm', 'icon-lg'],
-      description: 'Tamaño del botón.',
-      table: { defaultValue: { summary: 'default' } },
+      control: { type: "select" },
+      options: ["default", "xs", "sm", "lg", "icon", "icon-xs", "icon-sm", "icon-lg"],
+      description: "Tamaño del botón.",
+      table: { defaultValue: { summary: "default" } },
     },
   },
   parameters: {
@@ -141,7 +139,7 @@ export const Variants = meta.story({
     docs: {
       description: {
         story:
-          'Las filas son `variant`, las columnas son `color`. Cada celda es un `<Button>` real renderizado con esa combinación.',
+          "Las filas son `variant`, las columnas son `color`. Cada celda es un `<Button>` real renderizado con esa combinación.",
       },
       source: {
         code: `<Button variant="fill" color="primary">Button</Button>`,
@@ -149,16 +147,16 @@ export const Variants = meta.story({
     },
   },
   render: () => {
-    const variants = ['fill', 'soft', 'outline', 'ghost', 'link'] as const
+    const variants = ["fill", "soft", "outline", "ghost", "link"] as const
     const colors = [
-      'primary',
-      'secondary',
-      'muted',
-      'neutral',
-      'info',
-      'destructive',
-      'warning',
-      'success',
+      "primary",
+      "secondary",
+      "muted",
+      "neutral",
+      "info",
+      "destructive",
+      "warning",
+      "success",
     ] as const
     return (
       <div className="flex flex-col gap-6 p-6">
@@ -190,7 +188,7 @@ export const Sizes = meta.story({
     // El `render` ya enumera los 8 tamaños (4 con texto + 4 icon-only).
     // Mantenemos `variant` y `color` como controles para que el usuario
     // pueda ver cómo se ve un size concreto en otros colores.
-    controls: { exclude: ['size'] },
+    controls: { exclude: ["size"] },
     docs: {
       description: {
         story:
@@ -292,11 +290,11 @@ export const WithIcon = meta.story({
  * `index.css`) y se reduce la opacidad al 50%.
  */
 export const Disabled = meta.story({
-  args: { disabled: true, children: 'Disabled' },
+  args: { disabled: true, children: "Disabled" },
   parameters: {
     docs: {
       description: {
-        story: 'Aplica `disabled` directamente — no requiere variant/color extra.',
+        story: "Aplica `disabled` directamente — no requiere variant/color extra.",
       },
       source: {
         code: `<Button disabled>Disabled</Button>`,
@@ -316,7 +314,7 @@ export const AsLink = meta.story({
     // de @base-ui asume `<button>` por default y avisa en consola si no.
     render: <a href="#" />,
     nativeButton: false,
-    children: 'Ver detalles',
+    children: "Ver detalles",
   },
   parameters: {
     // Esta story demuestra el patrón `render` — los controles de variant/color
@@ -325,7 +323,7 @@ export const AsLink = meta.story({
     docs: {
       description: {
         story:
-          '`render` viene de `@base-ui/react/use-render` — el botón se monta como `<a>` pero mantiene su semántica accesible. Recordá pasar `nativeButton={false}`.',
+          "`render` viene de `@base-ui/react/use-render` — el botón se monta como `<a>` pero mantiene su semántica accesible. Recordá pasar `nativeButton={false}`.",
       },
       source: {
         code: `<Button render={<a href="/docs" />} nativeButton={false}>
@@ -378,7 +376,7 @@ export const CustomColors = meta.story({
     docs: {
       description: {
         story:
-          '`buttonVariants` también está exportado — úsalo para extender componentes que no son `<Button>` (por ej. un `<a>` estilizado).',
+          "`buttonVariants` también está exportado — úsalo para extender componentes que no son `<Button>` (por ej. un `<a>` estilizado).",
       },
       source: {
         code: `<Button className="bg-purple-600 text-white hover:bg-purple-700">
@@ -393,16 +391,14 @@ export const CustomColors = meta.story({
   },
   render: () => (
     <div className="flex flex-wrap items-center gap-2 p-6">
-      <Button className="bg-purple-600 text-white hover:bg-purple-700">
-        Purple
-      </Button>
+      <Button className="bg-purple-600 text-white hover:bg-purple-700">Purple</Button>
       <Button className="bg-pink-600 text-white hover:bg-pink-700">Pink</Button>
       <a
         href="#"
         className={buttonVariants({
-          variant: 'fill',
-          color: 'primary',
-          size: 'default',
+          variant: "fill",
+          color: "primary",
+          size: "default",
         })}
       >
         buttonVariants en &lt;a&gt;

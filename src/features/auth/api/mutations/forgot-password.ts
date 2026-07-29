@@ -15,9 +15,7 @@ interface UseForgotPasswordOptions {
   mutationConfig?: MutationConfig<typeof forgotPassword>
 }
 
-export function useForgotPassword({
-  mutationConfig,
-}: UseForgotPasswordOptions = {}) {
+export function useForgotPassword({ mutationConfig }: UseForgotPasswordOptions = {}) {
   return useMutation({
     mutationFn: forgotPassword,
     ...mutationConfig,

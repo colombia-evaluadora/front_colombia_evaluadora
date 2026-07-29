@@ -16,13 +16,13 @@ import {
   MdBackspace,
   MdBadge,
   MdBolt,
+  MdBarChart,
   MdCalendarMonth,
   MdCancel,
   MdCancelPresentation,
   MdChat,
   MdChatBubbleOutline,
   MdCheck,
-  MdCheckCircle,
   MdCircle,
   MdClose,
   MdContrast,
@@ -79,6 +79,7 @@ import {
   MdVisibility,
   MdVisibilityOff,
   MdWarningAmber,
+  MdCheckCircleOutline,
 } from "react-icons/md"
 
 /**
@@ -109,6 +110,7 @@ export const ArrowRightIcon = makeIcon(MdArrowForward)
 export const ArrowUpIcon = makeIcon(MdArrowUpward)
 export const BookOpenIcon = makeIcon(MdOutlineChromeReaderMode)
 export const CalendarIcon = makeIcon(MdCalendarMonth)
+export const ChartBarIcon = makeIcon(MdBarChart)
 export const CaretDownIcon = makeIcon(MdKeyboardArrowDown)
 export const CaretLeftIcon = makeIcon(MdKeyboardArrowLeft)
 export const CaretRightIcon = makeIcon(MdKeyboardArrowRight)
@@ -116,7 +118,7 @@ export const CaretUpDownIcon = makeIcon(MdUnfoldMore)
 export const CaretUpIcon = makeIcon(MdKeyboardArrowUp)
 export const ChatCircleDotsIcon = makeIcon(MdChatBubbleOutline)
 export const ChatCircleTextIcon = makeIcon(MdChat)
-export const CheckCircleIcon = makeIcon(MdCheckCircle)
+export const CheckCircleIcon = makeIcon(MdCheckCircleOutline)
 export const CheckIcon = makeIcon(MdCheck)
 export const CircleDashedIcon = makeIcon(MdRadioButtonUnchecked)
 export const CircleHalfIcon = makeIcon(MdContrast)

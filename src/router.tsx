@@ -21,6 +21,7 @@ import {
 } from "@/features/auth/api/schema"
 import { paymentsSearchSchema } from "@/features/payments/api/schema"
 import { PaymentsErrorPage } from "@/features/payments/pages/payments-error-page"
+import { reservationsSearchSchema } from "@/features/coverage/api/schema"
 import {
   auditsSearchSchema,
   auditTablesSearchSchema,
@@ -34,53 +35,51 @@ import { campusesSearchSchema } from "@/features/establishment/api/campus-schema
   () => import("@/features/landing/pages/landing-page"),
   "LandingPage"
 )*/
-const LoginPage = lazyRouteComponent(
-  () => import("@/features/auth/pages/login-page"),
-  "LoginPage"
-)
+const LoginPage = lazyRouteComponent(() => import("@/features/auth/pages/login-page"), "LoginPage")
 const ForgotPasswordPage = lazyRouteComponent(
   () => import("@/features/auth/pages/forgot-password-page"),
-  "ForgotPasswordPage"
+  "ForgotPasswordPage",
 )
 const ForgotUsernamePage = lazyRouteComponent(
   () => import("@/features/auth/pages/forgot-username-page"),
-  "ForgotUsernamePage"
+  "ForgotUsernamePage",
 )
 const CheckEmailPage = lazyRouteComponent(
   () => import("@/features/auth/pages/check-email-page"),
-  "CheckEmailPage"
+  "CheckEmailPage",
 )
 const RestorePasswordPage = lazyRouteComponent(
   () => import("@/features/auth/pages/restore-password-page"),
-  "RestorePasswordPage"
+  "RestorePasswordPage",
 )
-const AuthLayout = lazyRouteComponent(
-  () => import("@/components/layout/auth-layout"),
-  "AuthLayout"
-)
+const AuthLayout = lazyRouteComponent(() => import("@/components/layout/auth-layout"), "AuthLayout")
 const ProtectedLayout = lazyRouteComponent(
   () => import("@/components/layout/protected-layout"),
-  "ProtectedLayout"
+  "ProtectedLayout",
 )
 const PaymentsPage = lazyRouteComponent(
   () => import("@/features/payments/pages/payments-page"),
-  "PaymentsPage"
+  "PaymentsPage",
 )
 const AuditSessionPage = lazyRouteComponent(
   () => import("@/features/audits/pages/audit-session-page"),
-  "AuditSessionPage"
+  "AuditSessionPage",
 )
 const AuditTablesPage = lazyRouteComponent(
   () => import("@/features/audits/pages/audit-tables-page"),
-  "AuditTablesPage"
+  "AuditTablesPage",
 )
 const TableOperationsPage = lazyRouteComponent(
   () => import("@/features/audits/pages/table-operations-page"),
-  "TableOperationsPage"
+  "TableOperationsPage",
+)
+const ReservationsPage = lazyRouteComponent(
+  () => import("@/features/coverage/pages/reservations-page"),
+  "ReservationsPage",
 )
 const SessionOperationsPage = lazyRouteComponent(
   () => import("@/features/audits/pages/session-operations-page"),
-  "SessionOperationsPage"
+  "SessionOperationsPage",
 )
 const EstablishmentsPage = lazyRouteComponent(
   () => import("@/features/establishment/pages/establishments-page"),
@@ -248,6 +247,31 @@ export const paymentsRoute = createRoute({
   component: PaymentsPage,
 })
 
+export const coberturaReservaCupoRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.coberturaReservaCupo.path,
+  validateSearch: reservationsSearchSchema,
+  component: ReservationsPage,
+})
+
+const coberturaPreMatriculaRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.coberturaPreMatricula.path,
+  component: () => <ComingSoonPage title="Pre-Matrícula" />,
+})
+
+const coberturaInscritosRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.coberturaInscritos.path,
+  component: () => <ComingSoonPage title="Inscritos" />,
+})
+
+const coberturaMatriculaRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.coberturaMatricula.path,
+  component: () => <ComingSoonPage title="Matrícula" />,
+})
+
 export const auditoriaSesionesRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.auditoriaSesiones.path,
@@ -333,7 +357,7 @@ const configuracionRoute = createRoute({
 })
 
 const routeTree = rootRoute.addChildren([
-//  landingRoute,
+  //  landingRoute,
   homeRoute,
   authLayoutRoute.addChildren([
     loginRoute,
@@ -344,6 +368,10 @@ const routeTree = rootRoute.addChildren([
   ]),
   appLayoutRoute.addChildren([
     paymentsRoute,
+    coberturaReservaCupoRoute,
+    coberturaPreMatriculaRoute,
+    coberturaInscritosRoute,
+    coberturaMatriculaRoute,
     auditoriaSesionesRoute,
     auditoriaTablasRoute,
     auditoriaTablaDetalleRoute,

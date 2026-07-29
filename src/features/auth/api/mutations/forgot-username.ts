@@ -12,9 +12,7 @@ interface UseForgotUsernameOptions {
   mutationConfig?: MutationConfig<typeof forgotUsername>
 }
 
-export function useForgotUsername({
-  mutationConfig,
-}: UseForgotUsernameOptions = {}) {
+export function useForgotUsername({ mutationConfig }: UseForgotUsernameOptions = {}) {
   return useMutation({
     mutationFn: forgotUsername,
     ...mutationConfig,

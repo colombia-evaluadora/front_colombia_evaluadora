@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils"
 //   - 5 variantes: Solid (fill) · Soft · Outline · Ghost · Link
 //   - 4 sizes: sm · md · lg · icon (en Figma); aquí conservamos también xs/icon-xs/icon-sm/icon-lg
 const buttonVariants = cva(
-  "group/button inline-flex shrink-0 cursor-pointer items-center justify-center rounded-md border border-transparent bg-clip-padding text-xs font-semibold tracking-widest whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
+  "group/button inline-flex shrink-0 cursor-pointer items-center justify-center rounded-md border border-transparent bg-clip-padding text-xs font-semibold tracking-widest whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-red aria-invalid:ring-2 aria-invalid:ring-red/20 dark:aria-invalid:border-red/50 dark:aria-invalid:ring-red/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
   {
     variants: {
       variant: {
@@ -55,8 +55,7 @@ const buttonVariants = cva(
       {
         variant: "fill",
         color: "primary",
-        class:
-          "bg-primary text-primary-foreground hover:bg-primary/90 aria-expanded:bg-primary",
+        class: "bg-primary text-primary-foreground hover:bg-primary/90 aria-expanded:bg-primary",
       },
       {
         variant: "fill",
@@ -79,25 +78,25 @@ const buttonVariants = cva(
         variant: "fill",
         color: "info",
         class:
-          "bg-info text-info-foreground hover:bg-info/90 aria-expanded:bg-info focus-visible:border-info/40 focus-visible:ring-info/20",
+          "bg-blue text-blue-foreground hover:bg-blue/90 aria-expanded:bg-blue focus-visible:border-blue/40 focus-visible:ring-blue/20",
       },
       {
         variant: "fill",
         color: "destructive",
         class:
-          "bg-destructive text-destructive-foreground hover:bg-destructive/90 aria-expanded:bg-destructive focus-visible:border-destructive/40 focus-visible:ring-destructive/20",
+          "bg-red text-red-foreground hover:bg-red/90 aria-expanded:bg-red focus-visible:border-red/40 focus-visible:ring-red/20",
       },
       {
         variant: "fill",
         color: "warning",
         class:
-          "bg-warning text-warning-foreground hover:bg-warning/90 aria-expanded:bg-warning focus-visible:border-warning/40 focus-visible:ring-warning/20",
+          "bg-yellow text-yellow-foreground hover:bg-yellow/90 aria-expanded:bg-yellow focus-visible:border-yellow/40 focus-visible:ring-yellow/20",
       },
       {
         variant: "fill",
         color: "success",
         class:
-          "bg-success text-success-foreground hover:bg-success/90 aria-expanded:bg-success focus-visible:border-success/40 focus-visible:ring-success/20",
+          "bg-green text-green-foreground hover:bg-green/90 aria-expanded:bg-green focus-visible:border-green/40 focus-visible:ring-green/20",
       },
 
       // ============ soft (Soft en Figma) ============
@@ -131,25 +130,25 @@ const buttonVariants = cva(
         variant: "soft",
         color: "info",
         class:
-          "border-info-stroke bg-info-22 text-info hover:bg-info/20 aria-expanded:bg-info/20 focus-visible:border-info/40 focus-visible:ring-info/20",
+          "border-blue-stroke bg-blue-22 text-blue hover:bg-blue/20 aria-expanded:bg-blue/20 focus-visible:border-blue/40 focus-visible:ring-blue/20",
       },
       {
         variant: "soft",
         color: "destructive",
         class:
-          "border-destructive-stroke bg-destructive-22 text-destructive hover:bg-destructive/20 aria-expanded:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20",
+          "border-red-stroke bg-red-22 text-red hover:bg-red/20 aria-expanded:bg-red/20 focus-visible:border-red/40 focus-visible:ring-red/20",
       },
       {
         variant: "soft",
         color: "warning",
         class:
-          "border-warning-stroke bg-warning-22 text-warning hover:bg-warning/20 aria-expanded:bg-warning/20 focus-visible:border-warning/40 focus-visible:ring-warning/20",
+          "border-yellow-stroke bg-yellow-22 text-yellow hover:bg-yellow/20 aria-expanded:bg-yellow/20 focus-visible:border-yellow/40 focus-visible:ring-yellow/20",
       },
       {
         variant: "soft",
         color: "success",
         class:
-          "border-success-stroke bg-success-22 text-success hover:bg-success/20 aria-expanded:bg-success/20 focus-visible:border-success/40 focus-visible:ring-success/20",
+          "border-green-stroke bg-green-22 text-green hover:bg-green/20 aria-expanded:bg-green/20 focus-visible:border-green/40 focus-visible:ring-green/20",
       },
 
       // ============ outline (Outline en Figma) ============
@@ -181,25 +180,25 @@ const buttonVariants = cva(
         variant: "outline",
         color: "info",
         class:
-          "border-info-stroke text-info hover:bg-info/10 aria-expanded:text-info focus-visible:ring-info/20",
+          "border-blue-stroke text-blue hover:bg-blue/10 aria-expanded:text-blue focus-visible:ring-blue/20",
       },
       {
         variant: "outline",
         color: "destructive",
         class:
-          "border-destructive-stroke text-destructive hover:bg-destructive/10 aria-expanded:text-destructive focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40",
+          "border-red-stroke text-red hover:bg-red/10 aria-expanded:text-red focus-visible:ring-red/20 dark:focus-visible:ring-red/40",
       },
       {
         variant: "outline",
         color: "warning",
         class:
-          "border-warning-stroke text-warning hover:bg-warning/10 aria-expanded:text-warning focus-visible:ring-warning/20",
+          "border-yellow-stroke text-yellow hover:bg-yellow/10 aria-expanded:text-yellow focus-visible:ring-yellow/20",
       },
       {
         variant: "outline",
         color: "success",
         class:
-          "border-success-stroke text-success hover:bg-success/10 aria-expanded:text-success focus-visible:ring-success/20",
+          "border-green-stroke text-green hover:bg-green/10 aria-expanded:text-green focus-visible:ring-green/20",
       },
 
       // ============ ghost (Ghost en Figma) ============
@@ -222,29 +221,27 @@ const buttonVariants = cva(
       {
         variant: "ghost",
         color: "neutral",
-        class:
-          "text-foreground hover:bg-foreground/10 aria-expanded:bg-foreground/10",
+        class: "text-foreground hover:bg-foreground/10 aria-expanded:bg-foreground/10",
       },
       {
         variant: "ghost",
         color: "info",
-        class: "text-info hover:bg-info/10 aria-expanded:bg-info/10",
+        class: "text-blue hover:bg-blue/10 aria-expanded:bg-blue/10",
       },
       {
         variant: "ghost",
         color: "destructive",
-        class:
-          "text-destructive hover:bg-destructive/10 aria-expanded:bg-destructive/10",
+        class: "text-red hover:bg-red/10 aria-expanded:bg-red/10",
       },
       {
         variant: "ghost",
         color: "warning",
-        class: "text-warning hover:bg-warning/10 aria-expanded:bg-warning/10",
+        class: "text-yellow hover:bg-yellow/10 aria-expanded:bg-yellow/10",
       },
       {
         variant: "ghost",
         color: "success",
-        class: "text-success hover:bg-success/10 aria-expanded:bg-success/10",
+        class: "text-green hover:bg-green/10 aria-expanded:bg-green/10",
       },
 
       // ============ link (Link en Figma) ============
@@ -271,22 +268,22 @@ const buttonVariants = cva(
       {
         variant: "link",
         color: "info",
-        class: "text-info",
+        class: "text-blue",
       },
       {
         variant: "link",
         color: "destructive",
-        class: "text-destructive",
+        class: "text-red",
       },
       {
         variant: "link",
         color: "warning",
-        class: "text-warning",
+        class: "text-yellow",
       },
       {
         variant: "link",
         color: "success",
-        class: "text-success",
+        class: "text-green",
       },
     ],
     defaultVariants: {
@@ -294,7 +291,7 @@ const buttonVariants = cva(
       color: "primary",
       size: "default",
     },
-  }
+  },
 )
 
 /**
