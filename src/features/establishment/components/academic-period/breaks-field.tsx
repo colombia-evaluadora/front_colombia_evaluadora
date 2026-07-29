@@ -60,6 +60,7 @@ export function BreaksField({
             <ul className="flex flex-col">
               {value.map((brk, index) => (
                 <li
+                  key={`${brk.startTime}-${brk.endTime}-${index}`}
                   className="flex items-center justify-between gap-4 border-t py-1 text-sm first:border-t-0"
                 >
                   <span>

@@ -18,6 +18,12 @@ import {
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+  InputGroupText,
+} from "@/components/ui/input-group"
+import {
   Select,
   SelectContent,
   SelectGroup,
@@ -71,7 +77,7 @@ const EMPTY: EvaluationPeriodFormValues = {
   startDate: "",
   endDate: "",
   peso: 0,
-  estado: "En Recuperaciones",
+  estado: "NO Calificable",
 }
 
 const FORM_ID = "evaluation-period-form"
@@ -310,18 +316,26 @@ export function CreateEvaluationPeriodDialog({
                 field.state.meta.isTouched && !field.state.meta.isValid
               return (
                 <Field variant="outlined" data-invalid={isInvalid}>
-                  <FieldLabel htmlFor={field.name}>Peso porcentual</FieldLabel>
-                  <Input
-                    id={field.name}
-                    type="number"
-                    min={0}
-                    max={100}
-                    placeholder="ej. 25"
-                    value={Number.isNaN(field.state.value) ? "" : field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.valueAsNumber)}
-                    aria-invalid={isInvalid}
-                  />
+                  <FieldLabel htmlFor={field.name}>Peso porcentual (%)</FieldLabel>
+                  {/* El sufijo "%" hace explícita la unidad del valor, que de
+                      otro modo se lee como un número suelto. */}
+                  <InputGroup className="h-10 rounded-md border border-input px-3 hover:border-ring has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20 has-[[data-slot][aria-invalid=true]]:border-red">
+                    <InputGroupInput
+                      id={field.name}
+                      type="number"
+                      min={0}
+                      max={100}
+                      placeholder="ej. 25"
+                      className="px-0"
+                      value={Number.isNaN(field.state.value) ? "" : field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.valueAsNumber)}
+                      aria-invalid={isInvalid}
+                    />
+                    <InputGroupAddon align="inline-end">
+                      <InputGroupText>%</InputGroupText>
+                    </InputGroupAddon>
+                  </InputGroup>
                   {isInvalid && <FieldError errors={field.state.meta.errors} />}
                 </Field>
               )

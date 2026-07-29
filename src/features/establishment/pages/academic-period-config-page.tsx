@@ -86,6 +86,9 @@ export function AcademicPeriodConfigPage() {
       onSuccess: (created) => {
         setCreatedPeriodId(created.id)
         setSaved(true)
+        toast.success(
+          "Periodo académico creado. Ahora podés configurar el resto."
+        )
       },
     },
   })
@@ -98,10 +101,14 @@ export function AcademicPeriodConfigPage() {
           return
         }
         toast.success(result.message)
-        navigate({ to: paths.app.periodosAcademicos.getHref() })
+        if (isEditing) {
+          navigate({ to: paths.app.periodosAcademicos.getHref() })
+        }
       },
     },
   })
+
+  const academicPeriodId = isEditing ? numericPeriodId : createdPeriodId ?? undefined
 
   function handleSubmit(values: AcademicPeriodFormValues) {
     setJornada({
@@ -110,15 +117,14 @@ export function AcademicPeriodConfigPage() {
       blocksCount: values.defaultBlocksCount,
       breaks: values.breaks,
     })
-    if (isEditing && numericPeriodId != null) {
-      updatePeriod.mutate({ id: numericPeriodId, values })
+    if (academicPeriodId != null) {
+      updatePeriod.mutate({ id: academicPeriodId, values })
     } else {
       createPeriod.mutate(values)
     }
   }
 
-  const isSaving = isEditing ? updatePeriod.isPending : createPeriod.isPending
-  const academicPeriodId = isEditing ? numericPeriodId : createdPeriodId ?? undefined
+  const isSaving = createPeriod.isPending || updatePeriod.isPending
 
   const showSecondForm = saved || (isEditing && !!detail)
 
