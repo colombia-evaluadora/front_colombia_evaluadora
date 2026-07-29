@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/icons"
 
 import { paths } from "@/config/paths"
+import { Button } from "@/components/ui/button"
 
 export interface HelpLink {
   title: string
@@ -52,10 +53,6 @@ export interface HelpSheetData {
   sections: HelpSection[]
   support: HelpSupport
 }
-
-const supportLinkClass =
-  "text-primary mt-3 inline-flex items-center gap-1 font-medium underline underline-offset-3 hover:text-primary/80"
-
 export const defaultHelpData: HelpSheetData = {
   title: "¿Necesitas ayuda?",
   description: "Estamos aquí para ayudarte.",
@@ -71,9 +68,9 @@ export const defaultHelpData: HelpSheetData = {
           Si olvidaste tu contraseña, selecciona <strong>"Recuperar contraseña"</strong>, ingresa tu
           correo institucional y sigue las instrucciones que recibirás para crear una nueva.
           <br />
-          <Link to={paths.auth.forgotPassword.path} className={supportLinkClass}>
+          <Button variant="link" render={<Link to={paths.auth.forgotPassword.path} />}>
             Ir a recuperar contraseña →
-          </Link>
+          </Button>
         </p>
       ),
     },
@@ -87,9 +84,9 @@ export const defaultHelpData: HelpSheetData = {
           Si no recuerdas tu usuario, selecciona "Recuperar usuario" e ingresa tu número de
           documento o el correo electrónico registrado para consultarlo.
           <br />
-          <Link to={paths.auth.forgotUsername.path} className={supportLinkClass}>
+          <Button variant="link" render={<Link to={paths.auth.forgotUsername.path} />}>
             Recuperar usuario →
-          </Link>
+          </Button>
         </p>
       ),
     },
