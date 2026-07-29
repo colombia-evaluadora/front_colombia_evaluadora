@@ -7,7 +7,6 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
-import { Button } from "@/components/ui/button"
 import {
   Item,
   ItemActions,
@@ -35,6 +34,9 @@ import {
   type HelpSheetData,
   type HelpSupport,
 } from "./help-faq-data"
+
+import { Button } from "@/components/ui/button"
+
 
 export function HelpFaqSheet({ data = defaultHelpData }: { data?: HelpSheetData }) {
   return (
@@ -129,19 +131,19 @@ function HelpLinkSection({ section }: { section: HelpSection }) {
 }
 
 function HelpSupportSection({ support }: { support: HelpSupport }) {
+  const emailLink = `mailto:${support.email}`
+  const phoneLink = `tel:${support.phone}`
   return (
     <HelpBlock title="Soporte">
       <Item variant="outline" className="rounded-lg">
         <ItemMedia variant="icon-lg">{support.icon}</ItemMedia>
         <ItemContent>
           <ItemTitle>{support.title}</ItemTitle>
-          <ItemDescription>
-            <a href={`mailto:${support.email}`}>{support.email}</a>
+          <ItemDescription className="flex flex-col space-y-1">
+            <Link to={emailLink}>{support.email}</Link>
+            <Link to={phoneLink}>{support.phone}</Link>
+            <p>{support.hours}</p>
           </ItemDescription>
-          <ItemDescription>
-            <a href={`tel:${support.phone.replace(/[^+\d]/g, "")}`}>{support.phone}</a>
-          </ItemDescription>
-          <ItemDescription>{support.hours}</ItemDescription>
         </ItemContent>
       </Item>
     </HelpBlock>

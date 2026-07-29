@@ -148,7 +148,7 @@ export const defaultHelpData: HelpSheetData = {
     title: "Mesa de ayuda",
     icon: <HeadsetIcon weight="duotone" className="text-blue" />,
     email: "soporte@colombiaevaluadora.edu.co",
-    phone: "+57 (601) 123 4567",
+    phone: "+57(601)1234567",
     hours: "Lunes a viernes · 8:00 a. m. a 6:00 p. m.",
   },
 }
