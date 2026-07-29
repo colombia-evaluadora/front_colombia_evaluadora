@@ -30,8 +30,9 @@ import { useDataTable } from "@/hooks/use-data-table"
 import { useRatingScalesQuery } from "../../../api/query/use-rating-scales-query"
 import { useRatingSymbolsQuery } from "../../../api/query/use-rating-symbols-query"
 import { useTeachingLevelsQuery } from "../../../api/query/use-teaching-levels-query"
+import { useRatingScaleTypesQuery } from "../../../api/query/use-rating-scale-types-query"
 import { useUpdateRatingScale } from "../../../api/mutations/update-rating-scale"
-import { RATING_SCALE_TYPE_BADGE, RATING_SCALE_TYPES } from "../../../api/ui-mappings"
+import { RATING_SCALE_TYPE_BADGE } from "../../../api/ui-mappings"
 import type {
   RatingScale,
   RatingScaleType,
@@ -159,6 +160,7 @@ function toDraft(scale: RatingScale): EditableScale {
 
 function ScalesSubTable({ scales }: { scales: RatingScale[] }) {
   const { data: symbols = [] } = useRatingSymbolsQuery()
+  const { data: tipoOptions = [] } = useRatingScaleTypesQuery()
   const [editingCodigo, setEditingCodigo] = useState<number | null>(null)
   const [draft, setDraft] = useState<EditableScale | null>(null)
 
@@ -290,7 +292,7 @@ function ScalesSubTable({ scales }: { scales: RatingScale[] }) {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectGroup>
-                            {RATING_SCALE_TYPES.map((tipo) => (
+                            {tipoOptions.map((tipo) => (
                               <SelectItem key={tipo} value={tipo}>
                                 {tipo}
                               </SelectItem>

@@ -39,21 +39,16 @@ import {
 import { useCreateGradeGroup } from "../../../api/mutations/create-grade-group"
 import { useUpdateGradeGroup } from "../../../api/mutations/update-grade-group"
 import { useTeachersQuery } from "../../../api/query/use-teachers-query"
+import { useMetodologiasQuery } from "../../../api/query/use-metodologias-query"
+import { useAcademicPeriodQuery } from "../../../api/query/use-academic-period-query"
 import { JORNADA_OPTIONS } from "../../../api/ui-mappings"
 import type { GradeGroup } from "../../../api/types/academic-period/grade-group"
 
-const METODOLOGIA_OPTIONS = [
-  "Tradicional",
-  "Escuela Nueva",
-  "Aceleración del Aprendizaje",
-  "Postprimaria",
-]
-
+// La jornada no se edita acá: la define el periodo académico. Por eso queda
+// fuera del schema del formulario y se inyecta al guardar.
 const gradeGroupFormSchema = z.object({
   codigo: z.string().min(1, "El grupo es obligatorio"),
-  jornada: z.string().min(1, "La jornada es obligatoria"),
   director: z.string(),
-  planEstudio: z.string().min(1, "El plan de estudio es obligatorio"),
   metodologia: z.string(),
   cupo: z.number().min(0),
 })
@@ -61,9 +56,7 @@ type GradeGroupFormValues = z.infer<typeof gradeGroupFormSchema>
 
 const EMPTY: GradeGroupFormValues = {
   codigo: "",
-  jornada: "",
   director: "",
-  planEstudio: "",
   metodologia: "",
   cupo: 0,
 }
@@ -96,12 +89,20 @@ export function CreateGradeGroupDialog({
     [teachersData]
   )
 
+  const { data: metodologiaOptions = [] } = useMetodologiasQuery()
+
+  // La jornada es la del periodo académico: se muestra sólo como lectura.
+  const { data: academicPeriod } = useAcademicPeriodQuery(academicPeriodId)
+  const jornadaName =
+    JORNADA_OPTIONS.find((j) => j.id === academicPeriod?.config.jornadaId)
+      ?.name ??
+    gradeGroup?.jornada ??
+    ""
+
   const defaultValues: GradeGroupFormValues = gradeGroup
     ? {
         codigo: gradeGroup.codigo,
-        jornada: gradeGroup.jornada,
         director: gradeGroup.director,
-        planEstudio: gradeGroup.planEstudio,
         metodologia: gradeGroup.metodologia ?? "",
         cupo: gradeGroup.cupo ?? 0,
       }
@@ -136,7 +137,7 @@ export function CreateGradeGroupDialog({
     defaultValues,
     validators: { onSubmit: gradeGroupFormSchema },
     onSubmit: ({ value }) => {
-      const values = gradeGroupFormSchema.parse(value)
+      const values = { ...gradeGroupFormSchema.parse(value), jornada: jornadaName }
       if (isEditing) {
         updateGradeGroup.mutate({ codigo: gradeGroup.codigo, values })
       } else {
@@ -217,35 +218,16 @@ export function CreateGradeGroupDialog({
             }}
           </form.Field>
 
-          <form.Field name="jornada">
-            {(field) => {
-              const isInvalid =
-                field.state.meta.isTouched && !field.state.meta.isValid
-              return (
-                <Field variant="outlined" data-invalid={isInvalid}>
-                  <FieldLabel htmlFor={field.name}>Jornada</FieldLabel>
-                  <Select
-                    value={field.state.value}
-                    onValueChange={(value) => value && field.handleChange(value)}
-                  >
-                    <SelectTrigger id={field.name} aria-invalid={isInvalid}>
-                      <SelectValue placeholder="Seleccionar" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        {JORNADA_OPTIONS.map((jornada) => (
-                          <SelectItem key={jornada.id} value={jornada.name}>
-                            {jornada.name}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                </Field>
-              )
-            }}
-          </form.Field>
+          <Field variant="outlined">
+            <FieldLabel htmlFor="grade-group-jornada">Jornada</FieldLabel>
+            <Input
+              id="grade-group-jornada"
+              readOnly
+              disabled
+              placeholder="Definida en el periodo académico"
+              value={jornadaName}
+            />
+          </Field>
 
           <form.Field name="director">
             {(field) => (
@@ -277,27 +259,6 @@ export function CreateGradeGroupDialog({
             )}
           </form.Field>
 
-          <form.Field name="planEstudio">
-            {(field) => {
-              const isInvalid =
-                field.state.meta.isTouched && !field.state.meta.isValid
-              return (
-                <Field variant="outlined" data-invalid={isInvalid}>
-                  <FieldLabel htmlFor={field.name}>Plan de estudio</FieldLabel>
-                  <Input
-                    id={field.name}
-                    placeholder="ej. Plan A"
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    aria-invalid={isInvalid}
-                  />
-                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                </Field>
-              )
-            }}
-          </form.Field>
-
           <form.Field name="metodologia">
             {(field) => (
               <Field variant="outlined">
@@ -311,7 +272,7 @@ export function CreateGradeGroupDialog({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
-                      {METODOLOGIA_OPTIONS.map((option) => (
+                      {metodologiaOptions.map((option) => (
                         <SelectItem key={option} value={option}>
                           {option}
                         </SelectItem>

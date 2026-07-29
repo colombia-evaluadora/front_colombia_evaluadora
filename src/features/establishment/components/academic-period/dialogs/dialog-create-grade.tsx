@@ -84,15 +84,18 @@ export function CreateGradeDialog({
   }
 
   const { data: teachingLevels = [] } = useTeachingLevelsQuery()
-  const gradoOptions =
-    teachingLevels.find((l) => l.id === teachingLevelId)?.grados ?? []
+
+  // El catálogo de grados no está acotado al nivel de enseñanza: tanto el
+  // nombre como el grado siguiente se eligen entre todos los grados
+  // disponibles.
+  const gradoOptions = useMemo(
+    () => [...new Set(teachingLevels.flatMap((level) => level.grados))],
+    [teachingLevels]
+  )
 
   function handleChangeTeachingLevel(value: string | null) {
     if (!value) return
-    const nextId = Number(value)
-    setTeachingLevelId(nextId)
-    const grados = teachingLevels.find((l) => l.id === nextId)?.grados ?? []
-    if (!grados.includes(gradoSiguiente)) setGradoSiguiente("")
+    setTeachingLevelId(Number(value))
   }
 
   const createGrade = useCreateGrade()
@@ -173,7 +176,7 @@ export function CreateGradeDialog({
   const gradeGroupOptions = useMemo(
     () =>
       (gradeGroupsData?.rows ?? []).map((g) =>
-        [g.planEstudio, g.codigo, g.jornada].filter(Boolean).join(" - ")
+        [g.codigo, g.jornada].filter(Boolean).join(" - ")
       ),
     [gradeGroupsData]
   )
@@ -262,12 +265,40 @@ export function CreateGradeDialog({
 
           <Field variant="outlined">
             <FieldLabel htmlFor="grade-nombre">Nombre*</FieldLabel>
-            <Input
-              id="grade-nombre"
-              placeholder="ej. Sexto A"
-              value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
-            />
+            {/* Al crear se elige de un catálogo cerrado de grados; una vez
+                creado el grado el nombre queda editable como texto libre. */}
+            {gradeId == null ? (
+              <Select
+                value={nombre || undefined}
+                onValueChange={(value) => value && setNombre(value)}
+              >
+                <SelectTrigger id="grade-nombre">
+                  <SelectValue placeholder="Seleccionar" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    {gradoOptions.length === 0 ? (
+                      <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                        No hay grados cargados.
+                      </div>
+                    ) : (
+                      gradoOptions.map((option) => (
+                        <SelectItem key={option} value={option}>
+                          {option}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            ) : (
+              <Input
+                id="grade-nombre"
+                placeholder="ej. Sexto A"
+                value={nombre}
+                onChange={(e) => setNombre(e.target.value)}
+              />
+            )}
           </Field>
           <Field variant="outlined">
             <FieldLabel>Tiene grado siguiente</FieldLabel>
@@ -299,19 +330,14 @@ export function CreateGradeDialog({
                   value={gradoSiguiente || undefined}
                   onValueChange={(value) => value && setGradoSiguiente(value)}
                 >
-                  <SelectTrigger
-                    id="grade-siguiente"
-                    disabled={teachingLevelId == null}
-                  >
+                  <SelectTrigger id="grade-siguiente">
                     <SelectValue placeholder="Seleccionar" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
                       {gradoOptions.length === 0 ? (
                         <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                          {teachingLevelId == null
-                            ? "Seleccioná primero un nivel de enseñanza."
-                            : "Este nivel no tiene grados cargados."}
+                          No hay grados cargados.
                         </div>
                       ) : (
                         gradoOptions.map((option) => (

@@ -1,8 +1,17 @@
-import { useState } from "react";
-import { PlusCircleIcon, SpinnerIcon, TrashIcon } from "@/components/ui/icons";
-import { toast } from "sonner";
+import { useState } from "react"
+import { useForm } from "@tanstack/react-form"
+import {
+  CheckIcon,
+  PencilIcon,
+  PlusCircleIcon,
+  SpinnerIcon,
+  TrashIcon,
+  XIcon,
+} from "@/components/ui/icons"
+import { toast } from "sonner"
+import { z } from "zod"
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogClose,
@@ -12,9 +21,9 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { Field, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
+} from "@/components/ui/dialog"
+import { Field, FieldError, FieldLabel } from "@/components/ui/field"
+import { Input } from "@/components/ui/input"
 import {
   Select,
   SelectContent,
@@ -22,7 +31,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/components/ui/select"
 import {
   Table,
   TableBody,
@@ -30,107 +39,164 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@/components/ui/table"
 
-import { useCreateRatingScale } from "../../../api/mutations/create-rating-scale";
-import { useRatingSymbolsQuery } from "../../../api/query/use-rating-symbols-query";
-import { useTeachingLevelsQuery } from "../../../api/query/use-teaching-levels-query";
-import { RATING_SCALE_TYPES } from "../../../api/ui-mappings";
-import type { RatingScaleType } from "../../../api/types/academic-period/rating-scales";
-import { RatingSymbolSelect, RatingSymbolView } from "../rating-symbol";
-import { TeachingLevelsMultiSelect } from "./teaching-levels-multi-select";
+import { useCreateRatingScale } from "../../../api/mutations/create-rating-scale"
+import { useRatingSymbolsQuery } from "../../../api/query/use-rating-symbols-query"
+import { useTeachingLevelsQuery } from "../../../api/query/use-teaching-levels-query"
+import { useRatingScaleTypesQuery } from "../../../api/query/use-rating-scale-types-query"
+import type { RatingScaleType } from "../../../api/types/academic-period/rating-scales"
+import { RatingSymbolSelect, RatingSymbolView } from "../rating-symbol"
+import { TeachingLevelsMultiSelect } from "./teaching-levels-multi-select"
 
-type Draft = {
-  nombre: string;
-  abreviacion: string;
-  tipo: RatingScaleType;
-  iconografia: string;
-  notaMaxima: number;
-  notaMinima: number;
-  notaEquivalente: number;
-};
+const ratingScaleDraftSchema = z
+  .object({
+    nombre: z.string().min(1, "El nombre es obligatorio"),
+    abreviacion: z.string().min(1, "La abreviación es obligatoria"),
+    tipo: z.string().min(1, "El tipo de valoración es obligatorio"),
+    iconografia: z.string().min(1, "La iconografía es obligatoria"),
+    notaMaxima: z.number().min(0, "Debe ser 0 o más"),
+    notaMinima: z.number().min(0, "Debe ser 0 o más"),
+    notaEquivalente: z.number().min(0, "Debe ser 0 o más"),
+  })
+  .refine((d) => d.notaMinima <= d.notaMaxima, {
+    message: "La nota mínima no puede superar la máxima",
+    path: ["notaMinima"],
+  })
+type RatingScaleDraftValues = z.infer<typeof ratingScaleDraftSchema>
 
-const EMPTY_DRAFT: Draft = {
+const EMPTY_DRAFT: RatingScaleDraftValues = {
   nombre: "",
   abreviacion: "",
-  tipo: "Fortaleza",
+  tipo: "",
   iconografia: "",
   notaMaxima: 0,
   notaMinima: 0,
   notaEquivalente: 0,
-};
+}
+
+const DRAFT_FORM_ID = "rating-scale-draft-form"
 
 interface CreateRatingScaleDialogProps {
-  academicPeriodId?: number;
+  academicPeriodId?: number
 }
 
 export function CreateRatingScaleDialog({
   academicPeriodId,
 }: CreateRatingScaleDialogProps) {
-  const [open, setOpen] = useState(false);
-  const [continued, setContinued] = useState(false);
-  const [teachingLevelIds, setTeachingLevelIds] = useState<number[]>([]);
-  const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT);
-  const [drafts, setDrafts] = useState<Draft[]>([]);
+  const [open, setOpen] = useState(false)
+  const [continued, setContinued] = useState(false)
+  const [teachingLevelIds, setTeachingLevelIds] = useState<number[]>([])
+  const [drafts, setDrafts] = useState<RatingScaleDraftValues[]>([])
+  // Edición inline en la tabla (misma UX que la subtabla de niveles).
+  const [editingIndex, setEditingIndex] = useState<number | null>(null)
+  const [editRow, setEditRow] = useState<RatingScaleDraftValues | null>(null)
 
-  const { data: levels = [] } = useTeachingLevelsQuery();
-  const { data: symbols = [] } = useRatingSymbolsQuery();
-  const createScale = useCreateRatingScale();
+  const { data: levels = [] } = useTeachingLevelsQuery()
+  const { data: symbols = [] } = useRatingSymbolsQuery()
+  const { data: tipoOptions = [] } = useRatingScaleTypesQuery()
+  const createScale = useCreateRatingScale()
+
+  // Form del alta (solo para agregar a la lista), con validación estilo login.
+  const form = useForm({
+    defaultValues: EMPTY_DRAFT,
+    validators: {
+      onChange: ratingScaleDraftSchema,
+      onSubmit: ratingScaleDraftSchema,
+    },
+    onSubmit: ({ value, formApi }) => {
+      const values = ratingScaleDraftSchema.parse(value)
+      setDrafts((prev) => [...prev, values])
+      formApi.reset()
+    },
+  })
 
   function reset() {
-    setContinued(false);
-    setTeachingLevelIds([]);
-    setDraft(EMPTY_DRAFT);
-    setDrafts([]);
+    setContinued(false)
+    setTeachingLevelIds([])
+    setDrafts([])
+    setEditingIndex(null)
+    setEditRow(null)
+    form.reset()
   }
 
-  function addDraft() {
-    if (!draft.nombre || !draft.abreviacion || !draft.iconografia) {
-      toast.error("Completá nombre, abreviación e iconografía.");
-      return;
+  function startEdit(index: number) {
+    setEditingIndex(index)
+    setEditRow(drafts[index])
+  }
+
+  function cancelEdit() {
+    setEditingIndex(null)
+    setEditRow(null)
+  }
+
+  function patchEditRow(patch: Partial<RatingScaleDraftValues>) {
+    setEditRow((prev) => (prev ? { ...prev, ...patch } : prev))
+  }
+
+  function saveEditRow() {
+    if (editingIndex == null || !editRow) return
+    const parsed = ratingScaleDraftSchema.safeParse(editRow)
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0]?.message ?? "Revisá los datos.")
+      return
     }
-    setDrafts((prev) => [...prev, draft]);
-    setDraft(EMPTY_DRAFT);
+    setDrafts((prev) =>
+      prev.map((d, i) => (i === editingIndex ? parsed.data : d))
+    )
+    cancelEdit()
+  }
+
+  function removeDraft(index: number) {
+    setDrafts((prev) => prev.filter((_, i) => i !== index))
+    if (editingIndex === index) cancelEdit()
   }
 
   async function handleSave() {
     if (teachingLevelIds.length === 0) {
-      toast.error("Seleccioná al menos un nivel de enseñanza.");
-      return;
+      toast.error("Seleccioná al menos un nivel de enseñanza.")
+      return
     }
     if (drafts.length === 0) {
-      toast.error("Agregá al menos una escala a la lista.");
-      return;
+      toast.error("Agregá al menos una escala a la lista.")
+      return
     }
     await Promise.all(
       drafts.map((d) =>
         createScale.mutateAsync({
           ...d,
+          tipo: d.tipo as RatingScaleType,
           codigo: 0,
           teachingLevelIds,
           teachingLevels: [],
           academicPeriodId,
-        }),
-      ),
-    );
-    toast.success(`${drafts.length} escala(s) guardada(s).`);
-    reset();
-    setOpen(false);
+        })
+      )
+    )
+    toast.success(`${drafts.length} escala(s) guardada(s).`)
+    reset()
+    setOpen(false)
   }
 
   return (
     <Dialog
       open={open}
       onOpenChange={(next) => {
-        setOpen(next);
-        if (!next) reset();
+        setOpen(next)
+        if (!next) reset()
       }}
     >
       <DialogTrigger render={<Button color="primary" size="sm" />}>
         <PlusCircleIcon weight="fill" data-icon="inline-start" />
         Agregar
       </DialogTrigger>
-      <DialogContent className={continued ? "sm:max-w-4xl" : "sm:max-w-md"}>
+      <DialogContent
+        className={
+          continued
+            ? "max-h-[90dvh] overflow-y-auto sm:max-w-4xl"
+            : "sm:max-w-md"
+        }
+      >
         <DialogHeader>
           <DialogTitle>Agregar escalas de valoración</DialogTitle>
           <DialogDescription>
@@ -139,7 +205,7 @@ export function CreateRatingScaleDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-col gap-4">
+        <div className="flex min-w-0 flex-col gap-4">
           <Field variant="outlined">
             <FieldLabel htmlFor="rating-scale-levels">
               Niveles de enseñanza
@@ -153,137 +219,227 @@ export function CreateRatingScaleDialog({
           </Field>
 
           {continued && (
-            <>
+            <form
+              id={DRAFT_FORM_ID}
+              onSubmit={(e) => {
+                e.preventDefault()
+                form.handleSubmit()
+              }}
+              className="flex flex-col gap-4"
+            >
               <div className="grid gap-x-4 gap-y-4 sm:grid-cols-2">
-                <Field variant="outlined">
-                  <FieldLabel htmlFor="rs-nombre">Nombre*</FieldLabel>
-                  <Input
-                    id="rs-nombre"
-                    placeholder="Agregar nombre"
-                    value={draft.nombre}
-                    onChange={(e) =>
-                      setDraft((d) => ({ ...d, nombre: e.target.value }))
-                    }
-                  />
-                </Field>
+                <form.Field name="nombre">
+                  {(field) => {
+                    const isInvalid =
+                      field.state.meta.isTouched && !field.state.meta.isValid
+                    return (
+                      <Field variant="outlined" data-invalid={isInvalid}>
+                        <FieldLabel htmlFor={field.name}>Nombre*</FieldLabel>
+                        <Input
+                          id={field.name}
+                          placeholder="Agregar nombre"
+                          value={field.state.value}
+                          onBlur={field.handleBlur}
+                          onChange={(e) => field.handleChange(e.target.value)}
+                          aria-invalid={isInvalid}
+                        />
+                        {isInvalid && (
+                          <FieldError errors={field.state.meta.errors} />
+                        )}
+                      </Field>
+                    )
+                  }}
+                </form.Field>
 
-                <Field variant="outlined">
-                  <FieldLabel htmlFor="rs-tipo">Tipo de valoración*</FieldLabel>
-                  <Select
-                    value={draft.tipo}
-                    onValueChange={(value) =>
-                      value &&
-                      setDraft((d) => ({
-                        ...d,
-                        tipo: value as RatingScaleType,
-                      }))
-                    }
-                  >
-                    <SelectTrigger id="rs-tipo">
-                      <SelectValue placeholder="Agregar valoración" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        {RATING_SCALE_TYPES.map((tipo) => (
-                          <SelectItem key={tipo} value={tipo}>
-                            {tipo}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                </Field>
+                <form.Field name="tipo">
+                  {(field) => {
+                    const isInvalid =
+                      field.state.meta.isTouched && !field.state.meta.isValid
+                    return (
+                      <Field variant="outlined" data-invalid={isInvalid}>
+                        <FieldLabel htmlFor={field.name}>
+                          Tipo de valoración*
+                        </FieldLabel>
+                        <Select
+                          value={field.state.value}
+                          onValueChange={(value) => {
+                            if (value) field.handleChange(value)
+                            field.handleBlur()
+                          }}
+                        >
+                          <SelectTrigger id={field.name} aria-invalid={isInvalid}>
+                            <SelectValue placeholder="Agregar valoración" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectGroup>
+                              {tipoOptions.map((tipo) => (
+                                <SelectItem key={tipo} value={tipo}>
+                                  {tipo}
+                                </SelectItem>
+                              ))}
+                            </SelectGroup>
+                          </SelectContent>
+                        </Select>
+                        {isInvalid && (
+                          <FieldError errors={field.state.meta.errors} />
+                        )}
+                      </Field>
+                    )
+                  }}
+                </form.Field>
               </div>
 
               <div className="grid gap-x-4 gap-y-4 sm:grid-cols-2">
-                <Field variant="outlined">
-                  <FieldLabel htmlFor="rs-abrev">Abreviación*</FieldLabel>
-                  <Input
-                    id="rs-abrev"
-                    placeholder="Agregar abreviación"
-                    value={draft.abreviacion}
-                    onChange={(e) =>
-                      setDraft((d) => ({ ...d, abreviacion: e.target.value }))
-                    }
-                  />
-                </Field>
+                <form.Field name="abreviacion">
+                  {(field) => {
+                    const isInvalid =
+                      field.state.meta.isTouched && !field.state.meta.isValid
+                    return (
+                      <Field variant="outlined" data-invalid={isInvalid}>
+                        <FieldLabel htmlFor={field.name}>Abreviación*</FieldLabel>
+                        <Input
+                          id={field.name}
+                          placeholder="Agregar abreviación"
+                          value={field.state.value}
+                          onBlur={field.handleBlur}
+                          onChange={(e) => field.handleChange(e.target.value)}
+                          aria-invalid={isInvalid}
+                        />
+                        {isInvalid && (
+                          <FieldError errors={field.state.meta.errors} />
+                        )}
+                      </Field>
+                    )
+                  }}
+                </form.Field>
 
-                <Field variant="outlined">
-                  <FieldLabel htmlFor="rs-icono">Iconografía*</FieldLabel>
-                  <RatingSymbolSelect
-                    id="rs-icono"
-                    symbols={symbols}
-                    value={draft.iconografia}
-                    onChange={(valor) =>
-                      setDraft((d) => ({ ...d, iconografia: valor }))
-                    }
-                  />
-                </Field>
+                <form.Field name="iconografia">
+                  {(field) => {
+                    const isInvalid =
+                      field.state.meta.isTouched && !field.state.meta.isValid
+                    return (
+                      <Field variant="outlined" data-invalid={isInvalid}>
+                        <FieldLabel htmlFor={field.name}>Iconografía*</FieldLabel>
+                        <RatingSymbolSelect
+                          id={field.name}
+                          symbols={symbols}
+                          value={field.state.value}
+                          onChange={(valor) => {
+                            field.handleChange(valor)
+                            field.handleBlur()
+                          }}
+                        />
+                        {isInvalid && (
+                          <FieldError errors={field.state.meta.errors} />
+                        )}
+                      </Field>
+                    )
+                  }}
+                </form.Field>
               </div>
 
               <div className="grid gap-x-4 gap-y-4 sm:grid-cols-3">
-                <Field variant="outlined">
-                  <FieldLabel htmlFor="rs-max">Nota máximo*</FieldLabel>
-                  <Input
-                    id="rs-max"
-                    type="number"
-                    step="0.1"
-                    placeholder="ej. 5"
-                    value={draft.notaMaxima}
-                    onChange={(e) =>
-                      setDraft((d) => ({
-                        ...d,
-                        notaMaxima: e.target.valueAsNumber || 0,
-                      }))
-                    }
-                  />
-                </Field>
-                <Field variant="outlined">
-                  <FieldLabel htmlFor="rs-min">Nota mínimo*</FieldLabel>
-                  <Input
-                    id="rs-min"
-                    type="number"
-                    step="0.1"
-                    placeholder="ej. 1"
-                    value={draft.notaMinima}
-                    onChange={(e) =>
-                      setDraft((d) => ({
-                        ...d,
-                        notaMinima: e.target.valueAsNumber || 0,
-                      }))
-                    }
-                  />
-                </Field>
-                <Field variant="outlined">
-                  <FieldLabel htmlFor="rs-eq">Nota equivalente*</FieldLabel>
-                  <Input
-                    id="rs-eq"
-                    type="number"
-                    step="0.1"
-                    placeholder="ej. 3"
-                    value={draft.notaEquivalente}
-                    onChange={(e) =>
-                      setDraft((d) => ({
-                        ...d,
-                        notaEquivalente: e.target.valueAsNumber || 0,
-                      }))
-                    }
-                  />
-                </Field>
+                <form.Field name="notaMaxima">
+                  {(field) => {
+                    const isInvalid =
+                      field.state.meta.isTouched && !field.state.meta.isValid
+                    return (
+                      <Field variant="outlined" data-invalid={isInvalid}>
+                        <FieldLabel htmlFor={field.name}>Nota máximo*</FieldLabel>
+                        <Input
+                          id={field.name}
+                          type="number"
+                          step="0.1"
+                          placeholder="ej. 5"
+                          value={field.state.value}
+                          onBlur={field.handleBlur}
+                          onChange={(e) =>
+                            field.handleChange(
+                              Number.isNaN(e.target.valueAsNumber)
+                                ? 0
+                                : e.target.valueAsNumber
+                            )
+                          }
+                          aria-invalid={isInvalid}
+                        />
+                        {isInvalid && (
+                          <FieldError errors={field.state.meta.errors} />
+                        )}
+                      </Field>
+                    )
+                  }}
+                </form.Field>
+                <form.Field name="notaMinima">
+                  {(field) => {
+                    const isInvalid =
+                      field.state.meta.isTouched && !field.state.meta.isValid
+                    return (
+                      <Field variant="outlined" data-invalid={isInvalid}>
+                        <FieldLabel htmlFor={field.name}>Nota mínimo*</FieldLabel>
+                        <Input
+                          id={field.name}
+                          type="number"
+                          step="0.1"
+                          placeholder="ej. 1"
+                          value={field.state.value}
+                          onBlur={field.handleBlur}
+                          onChange={(e) =>
+                            field.handleChange(
+                              Number.isNaN(e.target.valueAsNumber)
+                                ? 0
+                                : e.target.valueAsNumber
+                            )
+                          }
+                          aria-invalid={isInvalid}
+                        />
+                        {isInvalid && (
+                          <FieldError errors={field.state.meta.errors} />
+                        )}
+                      </Field>
+                    )
+                  }}
+                </form.Field>
+                <form.Field name="notaEquivalente">
+                  {(field) => {
+                    const isInvalid =
+                      field.state.meta.isTouched && !field.state.meta.isValid
+                    return (
+                      <Field variant="outlined" data-invalid={isInvalid}>
+                        <FieldLabel htmlFor={field.name}>
+                          Nota equivalente*
+                        </FieldLabel>
+                        <Input
+                          id={field.name}
+                          type="number"
+                          step="0.1"
+                          placeholder="ej. 3"
+                          value={field.state.value}
+                          onBlur={field.handleBlur}
+                          onChange={(e) =>
+                            field.handleChange(
+                              Number.isNaN(e.target.valueAsNumber)
+                                ? 0
+                                : e.target.valueAsNumber
+                            )
+                          }
+                          aria-invalid={isInvalid}
+                        />
+                        {isInvalid && (
+                          <FieldError errors={field.state.meta.errors} />
+                        )}
+                      </Field>
+                    )
+                  }}
+                </form.Field>
               </div>
 
               <div className="flex justify-end">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={addDraft}
-                >
+                <Button type="submit" variant="outline" size="sm">
                   <PlusCircleIcon data-icon="inline-start" />
                   Agregar a la lista
                 </Button>
               </div>
-            </>
+            </form>
           )}
 
           {drafts.length > 0 && (
@@ -298,38 +454,193 @@ export function CreateRatingScaleDialog({
                     <TableHead>Nota equivalente</TableHead>
                     <TableHead>Tipo</TableHead>
                     <TableHead>Iconografía</TableHead>
-                    <TableHead />
+                    <TableHead className="text-right">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {drafts.map((d, index) => (
-                    <TableRow key={index}>
-                      <TableCell className="font-medium">{d.nombre}</TableCell>
-                      <TableCell>{d.abreviacion}</TableCell>
-                      <TableCell>{d.notaMaxima}</TableCell>
-                      <TableCell>{d.notaMinima}</TableCell>
-                      <TableCell>{d.notaEquivalente}</TableCell>
-                      <TableCell>{d.tipo}</TableCell>
-                      <TableCell className="text-lg">
-                        <RatingSymbolView value={d.iconografia} />
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon-sm"
-                          aria-label={`Quitar ${d.nombre}`}
-                          onClick={() =>
-                            setDrafts((prev) =>
-                              prev.filter((_, i) => i !== index),
-                            )
-                          }
-                        >
-                          <TrashIcon />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {drafts.map((d, index) => {
+                    const isEditing = editingIndex === index
+
+                    if (isEditing && editRow) {
+                      return (
+                        <TableRow key={index}>
+                          <TableCell>
+                            <Input
+                              aria-label="Nombre"
+                              value={editRow.nombre}
+                              onChange={(e) =>
+                                patchEditRow({ nombre: e.target.value })
+                              }
+                              className="min-w-32"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              aria-label="Abreviación"
+                              value={editRow.abreviacion}
+                              onChange={(e) =>
+                                patchEditRow({ abreviacion: e.target.value })
+                              }
+                              className="min-w-24"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              aria-label="Nota máximo"
+                              type="number"
+                              step="0.1"
+                              value={
+                                Number.isNaN(editRow.notaMaxima)
+                                  ? ""
+                                  : editRow.notaMaxima
+                              }
+                              onChange={(e) =>
+                                patchEditRow({
+                                  notaMaxima: e.target.valueAsNumber,
+                                })
+                              }
+                              className="w-20"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              aria-label="Nota mínimo"
+                              type="number"
+                              step="0.1"
+                              value={
+                                Number.isNaN(editRow.notaMinima)
+                                  ? ""
+                                  : editRow.notaMinima
+                              }
+                              onChange={(e) =>
+                                patchEditRow({
+                                  notaMinima: e.target.valueAsNumber,
+                                })
+                              }
+                              className="w-20"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              aria-label="Nota equivalente"
+                              type="number"
+                              step="0.1"
+                              value={
+                                Number.isNaN(editRow.notaEquivalente)
+                                  ? ""
+                                  : editRow.notaEquivalente
+                              }
+                              onChange={(e) =>
+                                patchEditRow({
+                                  notaEquivalente: e.target.valueAsNumber,
+                                })
+                              }
+                              className="w-20"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Select
+                              value={editRow.tipo}
+                              onValueChange={(value) =>
+                                value && patchEditRow({ tipo: value })
+                              }
+                            >
+                              <SelectTrigger
+                                aria-label="Tipo"
+                                className="min-w-32"
+                              >
+                                <SelectValue placeholder="Seleccionar" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectGroup>
+                                  {tipoOptions.map((tipo) => (
+                                    <SelectItem key={tipo} value={tipo}>
+                                      {tipo}
+                                    </SelectItem>
+                                  ))}
+                                </SelectGroup>
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                          <TableCell>
+                            <RatingSymbolSelect
+                              symbols={symbols}
+                              value={editRow.iconografia}
+                              onChange={(valor) =>
+                                patchEditRow({ iconografia: valor })
+                              }
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center justify-end gap-1">
+                              <Button
+                                type="button"
+                                color="primary"
+                                size="icon"
+                                className="size-8"
+                                aria-label="Guardar cambios"
+                                onClick={saveEditRow}
+                              >
+                                <CheckIcon />
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                className="size-8"
+                                aria-label="Cancelar edición"
+                                onClick={cancelEdit}
+                              >
+                                <XIcon />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    }
+
+                    return (
+                      <TableRow key={index}>
+                        <TableCell className="font-medium">{d.nombre}</TableCell>
+                        <TableCell>{d.abreviacion}</TableCell>
+                        <TableCell>{d.notaMaxima}</TableCell>
+                        <TableCell>{d.notaMinima}</TableCell>
+                        <TableCell>{d.notaEquivalente}</TableCell>
+                        <TableCell>{d.tipo}</TableCell>
+                        <TableCell className="text-lg">
+                          <RatingSymbolView value={d.iconografia} />
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center justify-end gap-1">
+                            <Button
+                              type="button"
+                              variant="fill"
+                              color="secondary"
+                              size="icon"
+                              className="size-8"
+                              aria-label={`Editar ${d.nombre}`}
+                              disabled={editingIndex !== null}
+                              onClick={() => startEdit(index)}
+                            >
+                              <PencilIcon />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="fill"
+                              color="destructive"
+                              size="icon"
+                              className="size-8"
+                              aria-label={`Quitar ${d.nombre}`}
+                              disabled={editingIndex !== null}
+                              onClick={() => removeDraft(index)}
+                            >
+                              <TrashIcon />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
                 </TableBody>
               </Table>
             </div>
@@ -345,7 +656,7 @@ export function CreateRatingScaleDialog({
               type="button"
               color="primary"
               onClick={handleSave}
-              disabled={createScale.isPending}
+              disabled={createScale.isPending || drafts.length === 0}
               aria-busy={createScale.isPending}
             >
               {createScale.isPending && (
@@ -367,5 +678,5 @@ export function CreateRatingScaleDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  );
+  )
 }

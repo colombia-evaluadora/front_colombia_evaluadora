@@ -72,14 +72,6 @@ export function createGradeGroupColumns({
     ),
   },
   {
-    id: "planEstudio",
-    accessorKey: "planEstudio",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Plan de estudio" />
-    ),
-    cell: ({ row }) => <span>{row.original.planEstudio}</span>,
-  },
-  {
     id: "actions",
     header: () => <span className="sr-only">Acciones</span>,
     cell: ({ row }) => (
