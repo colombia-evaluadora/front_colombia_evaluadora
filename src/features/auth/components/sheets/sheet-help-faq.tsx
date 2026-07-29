@@ -70,8 +70,6 @@ export function HelpFaqSheet({ data = defaultHelpData }: { data?: HelpSheetData 
             <HelpLinkSection key={section.title} section={section} />
           ))}
 
-          <Separator />
-
           <HelpSupportSection support={data.support} />
         </div>
       </SheetContent>
