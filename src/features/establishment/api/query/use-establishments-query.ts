@@ -15,9 +15,9 @@ interface UseEstablishmentsQueryParams {
 }
 
 function fetchEstablishments(
-    body: EstablishmentsQueryRequest
+        params: EstablishmentsQueryRequest
 ): Promise<EstablishmentsQueryResponse> {
-    return api.query("/establishments/query", body)
+        return api.query("/establishments/query", params)
 }
 
 export const establishmentsQueryKey = (

@@ -30,6 +30,7 @@ import {
 } from "@/features/audits/api/schema"
 import { establishmentsSearchSchema } from "@/features/establishment/api/establishment-schema"
 import { campusesSearchSchema } from "@/features/establishment/api/campus-schema"
+import { employeesSearchSchema } from "@/features/establishment/api/employee-schema"
 
 /*const LandingPage = lazyRouteComponent(
   () => import("@/features/landing/pages/landing-page"),
@@ -89,6 +90,11 @@ const EstablishmentsPage = lazyRouteComponent(
 const CampusesPage = lazyRouteComponent(
   () => import("@/features/establishment/pages/campuses-page"),
   "CampusesPage"
+)
+
+const EmployeesPage = lazyRouteComponent(
+  () => import("@/features/establishment/pages/employees-page"),
+  "EmployeesPage"
 )
 
 const AddEstablishmentPage = lazyRouteComponent(
@@ -307,6 +313,13 @@ export const campusesRoute = createRoute({
   component: CampusesPage,
 })
 
+export const employeesRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.establishments.officials.path,
+  validateSearch: employeesSearchSchema,
+  component: EmployeesPage,
+})
+
 export const addEstablishmentRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.establishments.add.path,
@@ -378,6 +391,7 @@ const routeTree = rootRoute.addChildren([
     auditoriaSesionOperacionesRoute,
     establishmentsRoute,
     campusesRoute,
+    employeesRoute,
     addEstablishmentRoute,
     editEstablishmentRoute,
     addCampusRoute,
