@@ -11,11 +11,11 @@ import type { Jornada } from "./schedule/schedule-data"
 
 const TABS: { value: string; label: string }[] = [
   { value: "evaluacion", label: "Periodos de evaluación" },
-  { value: "promocion", label: "Criterios de promoción" },
-  { value: "grados", label: "Grados" },
-  { value: "escalas", label: "Escalas de valoración" },
   { value: "area", label: "Área/asignatura" },
+  { value: "promocion", label: "Criterios de promoción" },
+  { value: "escalas", label: "Escalas de valoración" },
   { value: "criterios", label: "Criterios de evaluación" },
+  { value: "grados", label: "Grados" },
   { value: "asignaciones", label: "Asignaciones académicas" },
 ]
 
@@ -43,20 +43,20 @@ export function EvaluationPeriodsSection({
       <TabsContent value="evaluacion">
         <TabEvaluationPeriods academicPeriodId={academicPeriodId} />
       </TabsContent>
+      <TabsContent value="area">
+        <TabAreaSubject academicPeriodId={academicPeriodId} />
+      </TabsContent>
       <TabsContent value="promocion">
         <TabPromotionCriteria academicPeriodId={academicPeriodId} />
-      </TabsContent>
-      <TabsContent value="grados">
-        <TabGrades jornada={jornada} academicPeriodId={academicPeriodId} />
       </TabsContent>
       <TabsContent value="escalas">
         <TabRatingScales academicPeriodId={academicPeriodId} />
       </TabsContent>
-      <TabsContent value="area">
-        <TabAreaSubject academicPeriodId={academicPeriodId} />
-      </TabsContent>
       <TabsContent value="criterios">
         <TabEvaluationCriteria academicPeriodId={academicPeriodId} />
+      </TabsContent>
+      <TabsContent value="grados">
+        <TabGrades jornada={jornada} academicPeriodId={academicPeriodId} />
       </TabsContent>
       <TabsContent value="asignaciones">
         <TabAcademicAssignments academicPeriodId={academicPeriodId} />

@@ -38,7 +38,9 @@ export type CreateEvaluationPeriodRequest = EvaluationPeriod & {
   academicPeriodId?: number
 }
 
-export type UpdateEvaluationPeriodRequest = EvaluationPeriod
+export type UpdateEvaluationPeriodRequest = EvaluationPeriod & {
+  academicPeriodId?: number
+}
 
 export interface MutationResult {
   status: "ok" | "error"

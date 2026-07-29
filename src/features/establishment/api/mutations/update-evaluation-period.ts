@@ -8,15 +8,20 @@ import type {
 } from "../types/academic-period/evaluation-period"
 
 interface UpdateEvaluationPeriodInput {
+  academicPeriodId?: number
   codigo: number
   values: UpdateEvaluationPeriodRequest
 }
 
 function updateEvaluationPeriod({
+  academicPeriodId,
   codigo,
   values,
 }: UpdateEvaluationPeriodInput): Promise<MutationResult> {
-  return api.patch(`/evaluation-periods/${codigo}`, values)
+  return api.patch(`/evaluation-periods/${codigo}`, {
+    ...values,
+    academicPeriodId,
+  })
 }
 
 interface UseUpdateEvaluationPeriodOptions {

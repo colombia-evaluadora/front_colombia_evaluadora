@@ -4,8 +4,18 @@ import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
 import type { MutationResult } from "../types/academic-period/evaluation-period"
 
-function deleteEvaluationPeriod(codigo: number): Promise<MutationResult> {
-  return api.delete(`/evaluation-periods/${codigo}`)
+interface DeleteEvaluationPeriodInput {
+  academicPeriodId?: number
+  codigo: number
+}
+
+function deleteEvaluationPeriod({
+  academicPeriodId,
+  codigo,
+}: DeleteEvaluationPeriodInput): Promise<MutationResult> {
+  const query =
+    academicPeriodId != null ? `?academicPeriodId=${academicPeriodId}` : ""
+  return api.delete(`/evaluation-periods/${codigo}${query}`)
 }
 
 interface UseDeleteEvaluationPeriodOptions {

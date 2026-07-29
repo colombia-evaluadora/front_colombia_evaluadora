@@ -15,7 +15,7 @@ export const DEFAULT_PROMOTION_CRITERIA: PromotionCriteria = {
 
 export const promotionCriteriaDb: Record<number, PromotionCriteria> = {
   1: {
-    curriculumNode: "Primaria",
+    curriculumNode: "AS",
     maxFailedRecovery: 3,
     absencePercentage: 20,
     maxLeveledSubjects: 2,
@@ -27,7 +27,7 @@ export const promotionCriteriaDb: Record<number, PromotionCriteria> = {
     requiredSubjects: ["MATEMÁTICAS", "LENGUA CASTELLANA"],
   },
   2: {
-    curriculumNode: "Secundaria",
+    curriculumNode: "AR",
     maxFailedRecovery: 2,
     absencePercentage: 25,
     maxLeveledSubjects: 1,

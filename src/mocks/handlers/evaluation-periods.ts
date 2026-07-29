@@ -143,8 +143,13 @@ export const evaluationPeriodsHandlers = [
   http.patch("/api/evaluation-periods/:codigo", async ({ request, params }) => {
     await delay(400)
     const body = (await request.json()) as UpdateEvaluationPeriodRequest
+    // El código no es único globalmente: se desambigua por academicPeriodId
+    // para no editar el registro homónimo de otro periodo académico.
     const index = evaluationPeriodsDb.findIndex(
-      (p) => String(p.codigo) === String(params.codigo)
+      (p) =>
+        String(p.codigo) === String(params.codigo) &&
+        (body.academicPeriodId == null ||
+          p.academicPeriodId === body.academicPeriodId)
     )
     if (index === -1) {
       return HttpResponse.json(
@@ -159,10 +164,16 @@ export const evaluationPeriodsHandlers = [
     })
   }),
 
-  http.delete("/api/evaluation-periods/:codigo", async ({ params }) => {
+  http.delete("/api/evaluation-periods/:codigo", async ({ params, request }) => {
     await delay(300)
+    const url = new URL(request.url)
+    const academicPeriodId = url.searchParams.get("academicPeriodId")
+    // Mismo motivo que el PATCH: el código se desambigua por academicPeriodId.
     const index = evaluationPeriodsDb.findIndex(
-      (p) => String(p.codigo) === String(params.codigo)
+      (p) =>
+        String(p.codigo) === String(params.codigo) &&
+        (academicPeriodId == null ||
+          p.academicPeriodId === Number(academicPeriodId))
     )
     if (index === -1) {
       return HttpResponse.json(

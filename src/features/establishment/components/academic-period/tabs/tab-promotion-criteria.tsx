@@ -32,10 +32,8 @@ const SELECT_FIELDS = [
     name: "curriculumNode",
     label: "Nodo curricular*",
     options: [
-      "Preescolar",
-      "Primaria",
-      "Secundaria",
-      "Media",
+      "AS",
+      "AR",
     ],
   },
 ] as const
