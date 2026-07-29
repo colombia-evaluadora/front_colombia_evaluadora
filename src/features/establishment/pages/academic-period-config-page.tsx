@@ -198,34 +198,31 @@ export function AcademicPeriodConfigPage() {
       </CollapsibleContent>
     </Collapsible>
   )
-
-  if (!showSecondForm) {
-    return (
-      <div className="flex flex-col gap-6">
-        <Card>
-          {header}
-          <CardContent>{configBody}</CardContent>
-        </Card>
-      </div>
-    )
-  }
-
   return (
     <div className="flex flex-col gap-6">
       <Card>
         {header}
         <CardContent className="flex flex-col gap-6">
-          <Card>
-            <CardContent>{configBody}</CardContent>
-          </Card>
-          <Card>
-            <CardContent>
-              <EvaluationPeriodsSection
-                academicPeriodId={academicPeriodId}
-                jornada={saved || !detail ? jornada : toJornada(detail)}
-              />
+          <Card
+            className={cn(
+              !showSecondForm &&
+                "gap-0 rounded-none bg-transparent py-0 shadow-none ring-0"
+            )}
+          >
+            <CardContent className={cn(!showSecondForm && "px-0")}>
+              {configBody}
             </CardContent>
           </Card>
+          {showSecondForm && (
+            <Card>
+              <CardContent>
+                <EvaluationPeriodsSection
+                  academicPeriodId={academicPeriodId}
+                  jornada={saved || !detail ? jornada : toJornada(detail)}
+                />
+              </CardContent>
+            </Card>
+          )}
         </CardContent>
       </Card>
     </div>

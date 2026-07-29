@@ -203,7 +203,7 @@ export function EditAreaSubjectDialog({ areaSubject }: EditAreaSubjectDialogProp
             }}
           </form.Field>
 
-          <Field>
+          <Field variant="outlined">
             <FieldLabel>Color</FieldLabel>
             <ColorPickerPopover value={color} onChange={setColor} />
           </Field>

@@ -2,7 +2,12 @@
 
 import { useState } from "react"
 
-import { Input } from "@/components/ui/input"
+import {
+  Input,
+  inputTriggerVariants,
+  inputVariants,
+  useInputVariant,
+} from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 
@@ -218,10 +223,12 @@ interface ColorPickerPopoverProps {
   onChange: (hex: string) => void
 }
 
-// Trigger tipo campo (subrayado) que muestra el color elegido y abre el
-// picker en un popover.
+// Trigger con forma de campo que muestra el color elegido y abre el picker en
+// un popover. Hereda la variante del `Field` contenedor (outlined/standard),
+// para seguir el mismo patrón visual que Select/Input/DatePicker.
 export function ColorPickerPopover({ value, onChange }: ColorPickerPopoverProps) {
   const [open, setOpen] = useState(false)
+  const resolvedVariant = useInputVariant()
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -230,7 +237,12 @@ export function ColorPickerPopover({ value, onChange }: ColorPickerPopoverProps)
           <button
             type="button"
             aria-label="Color"
-            className="flex h-9 w-full items-center gap-2 rounded-none border border-transparent border-b-input bg-transparent px-0 text-left text-sm outline-none transition-[color,border-color] hover:border-b-ring/50 data-[popup-open]:border-b-ring"
+            className={cn(
+              inputVariants({ variant: resolvedVariant }),
+              inputTriggerVariants({ variant: resolvedVariant }),
+              "flex items-center gap-2 text-left",
+              !value && "text-muted-foreground"
+            )}
           />
         }
       >

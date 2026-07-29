@@ -59,8 +59,7 @@ export function ExportAreaSubjectsDialog({
       <DialogTrigger
         render={
           <Button
-            color="primary"
-            size="icon-sm"
+            variant="outline" color="muted" size="icon"
             aria-label="Exportar áreas/asignaturas filtradas"
           />
         }

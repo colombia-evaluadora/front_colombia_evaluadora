@@ -1,5 +1,6 @@
 import { http, HttpResponse, delay } from "msw"
 import { teachersDb } from "../db/teachers"
+import { academicPeriodsDb } from "../db/academic-periods"
 
 import type {
   ExportFormat,
@@ -63,10 +64,20 @@ export const teachersHandlers = [
     const body = (await request.json()) as TeachersQueryRequest
     const { filters, sorting, pageIndex, pageSize, academicPeriodId } = body
 
+    // Los docentes se agrupan por sede: resolvemos la sede del periodo pedido
+    // y devolvemos sus docentes. Así un periodo nuevo de una sede con docentes
+    // ya los muestra. Sin periodo (null) devolvemos todos.
+    const period =
+      academicPeriodId == null
+        ? undefined
+        : academicPeriodsDb.find((p) => p.id === academicPeriodId)
+
     const scoped =
       academicPeriodId == null
         ? teachersDb
-        : teachersDb.filter((row) => row.academicPeriodId === academicPeriodId)
+        : period
+          ? teachersDb.filter((row) => row.sedeId === period.sedeId)
+          : []
 
     const filtered = applySorting(applyFilters(scoped, filters), sorting)
 

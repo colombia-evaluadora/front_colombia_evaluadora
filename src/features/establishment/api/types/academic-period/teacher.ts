@@ -22,8 +22,10 @@ export interface TeachersQueryRequest {
   academicPeriodId?: number
 }
 
+// Los docentes pertenecen a una sede (no a un periodo): cualquier periodo de
+// esa sede debe poder verlos, incluido uno recién creado.
 export interface TeacherRecord extends Teacher {
-  academicPeriodId: number
+  sedeId: number
 }
 
 export interface TeachersQueryResponse {
