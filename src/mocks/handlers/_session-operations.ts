@@ -1,14 +1,8 @@
 import { faker } from "@faker-js/faker"
 
 import { auditTablesDb, getTableFields } from "../db/audit-tables"
-import type {
-  SessionOperation,
-  AuditSession,
-} from "@/features/audits/api/types/audit"
-import type {
-  OperationChange,
-  OperationType,
-} from "@/features/audits/api/types/audit-table"
+import type { SessionOperation, AuditSession } from "@/features/audits/api/types/audit"
+import type { OperationChange, OperationType } from "@/features/audits/api/types/audit-table"
 
 // Caché de operaciones por sesión. La generación es determinística
 // (faker con el mismo seed produce los mismos valores), pero queremos
@@ -31,14 +25,10 @@ function getCachedSessionOperations(session: AuditSession): SessionOperation[] {
   return generated
 }
 
-function generateSessionOperationsFresh(
-  session: AuditSession
-): SessionOperation[] {
+function generateSessionOperationsFresh(session: AuditSession): SessionOperation[] {
   if (session.operationsCount === 0) return []
   const startedMs = new Date(session.startedAt).getTime()
-  const endedMs = session.endedAt
-    ? new Date(session.endedAt).getTime()
-    : Date.now()
+  const endedMs = session.endedAt ? new Date(session.endedAt).getTime() : Date.now()
   const range = Math.max(1, endedMs - startedMs)
 
   return Array.from({ length: session.operationsCount }, (_, index) => {
@@ -49,9 +39,7 @@ function generateSessionOperationsFresh(
       { value: "DELETE", weight: 15 },
     ])
     const entityName = faker.lorem.words({ min: 1, max: 3 })
-    const occurredAt = new Date(
-      startedMs + (range * (index + 1)) / (session.operationsCount + 1)
-    )
+    const occurredAt = new Date(startedMs + (range * (index + 1)) / (session.operationsCount + 1))
     return {
       id: `${session.id}-op-${index}`,
       tableSlug: table.slug,
@@ -69,9 +57,7 @@ function generateSessionOperationsFresh(
  * El listado del sheet y el dialog de "Ver cambios" usan esto para
  * garantizar que vean los mismos datos.
  */
-export function getSessionOperations(
-  session: AuditSession
-): SessionOperation[] {
+export function getSessionOperations(session: AuditSession): SessionOperation[] {
   return getCachedSessionOperations(session)
 }
 
@@ -81,11 +67,9 @@ export function getSessionOperations(
  */
 export function getSessionOperationById(
   session: AuditSession,
-  operationId: string
+  operationId: string,
 ): SessionOperation | null {
-  return getCachedSessionOperations(session).find(
-    (op) => op.id === operationId
-  ) ?? null
+  return getCachedSessionOperations(session).find((op) => op.id === operationId) ?? null
 }
 
 /**
@@ -95,13 +79,10 @@ export function getSessionOperationById(
  * generator del listing (las entidades de sesión no tienen `entityFields`
  * persistido).
  */
-export function getSessionOperationChanges(
-  operation: SessionOperation
-): OperationChange[] {
+export function getSessionOperationChanges(operation: SessionOperation): OperationChange[] {
   const fields = getTableFields(operation.tableSlug)
   const entityName =
-    (operation as SessionOperation & { _entityName?: string })._entityName ??
-    operation.entityName
+    (operation as SessionOperation & { _entityName?: string })._entityName ?? operation.entityName
 
   return fields.map((field, index) => {
     // Para las operaciones de sesión, generamos un set mínimo y
@@ -111,7 +92,7 @@ export function getSessionOperationChanges(
       field === "Nombre"
         ? entityName
         : field === "Código"
-          ? `INS-${hashStringToInt(`${operation.id}-${field}`) % 9000 + 1000}`
+          ? `INS-${(hashStringToInt(`${operation.id}-${field}`) % 9000) + 1000}`
           : faker.lorem.words({ min: 1, max: 2 })
 
     if (operation.operation === "INSERT") {
@@ -154,7 +135,7 @@ export function getSessionOperationChanges(
 export function applySessionOperationRevert(
   session: AuditSession,
   operationId: string,
-  fieldIndexes: number[]
+  fieldIndexes: number[],
 ): OperationChange[] | null {
   const operation = getSessionOperationById(session, operationId)
   if (!operation) return null
@@ -162,10 +143,7 @@ export function applySessionOperationRevert(
   const changes = getSessionOperationChanges(operation)
   const validIndexes = new Set(changes.map((c) => c.fieldIndex))
   const reverted: OperationChange[] = changes.map((change) => {
-    if (
-      fieldIndexes.includes(change.fieldIndex) &&
-      validIndexes.has(change.fieldIndex)
-    ) {
+    if (fieldIndexes.includes(change.fieldIndex) && validIndexes.has(change.fieldIndex)) {
       if (change.before === null) {
         return { ...change, after: null }
       }

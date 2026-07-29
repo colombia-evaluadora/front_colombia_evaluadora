@@ -32,8 +32,7 @@ export function useCountdown(expiresIn: number | undefined): Countdown {
     }
 
     const deadline = Date.now() + expiresIn * 1000
-    const tick = () =>
-      setSeconds(Math.max(0, Math.ceil((deadline - Date.now()) / 1000)))
+    const tick = () => setSeconds(Math.max(0, Math.ceil((deadline - Date.now()) / 1000)))
 
     tick()
     const id = setInterval(tick, 1000)

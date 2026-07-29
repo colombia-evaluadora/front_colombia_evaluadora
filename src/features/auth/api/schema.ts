@@ -7,10 +7,7 @@ import { loginInputSchema } from "@/lib/auth"
 // servidor. La política completa vive en `passwordRules`, que solo aplica
 // donde se *crea* una contraseña.
 export const loginFormSchema = loginInputSchema.extend({
-  password: z
-    .string()
-    .min(1, "Requerido")
-    .min(8, "Debe tener al menos 8 caracteres."),
+  password: z.string().min(1, "Requerido").min(8, "Debe tener al menos 8 caracteres."),
   // Sin marcar: la sesión dura lo que indique el backend (unos minutos).
   // Marcada: el backend devuelve un token de larga duración — la sesión
   // sobrevive a cerrar y reabrir el navegador.
@@ -100,16 +97,19 @@ export type CheckEmailSearch = z.infer<typeof checkEmailSearchSchema>
 
 export const restorePasswordFormSchema = z
   .object({
-    password: z.string().min(1, "Requerido").superRefine((value, ctx) => {
-      for (const rule of passwordRules) {
-        if (!rule.test(value)) {
-          ctx.addIssue({
-            code: "custom",
-            message: rule.message,
-          })
+    password: z
+      .string()
+      .min(1, "Requerido")
+      .superRefine((value, ctx) => {
+        for (const rule of passwordRules) {
+          if (!rule.test(value)) {
+            ctx.addIssue({
+              code: "custom",
+              message: rule.message,
+            })
+          }
         }
-      }
-    }),
+      }),
     confirmPassword: z.string().min(1, "Requerido"),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -117,12 +117,9 @@ export const restorePasswordFormSchema = z
     path: ["confirmPassword"],
   })
 
-export type RestorePasswordFormValues = z.infer<
-  typeof restorePasswordFormSchema
->
+export type RestorePasswordFormValues = z.infer<typeof restorePasswordFormSchema>
 
 export const restorePasswordSearchSchema = z.object({
   token: z.string().optional(),
 })
 export type RestorePasswordSearch = z.infer<typeof restorePasswordSearchSchema>
-

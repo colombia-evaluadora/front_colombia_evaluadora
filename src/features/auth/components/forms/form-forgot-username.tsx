@@ -1,17 +1,9 @@
 import { useForm } from "@tanstack/react-form"
 
-import {
-  Field,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field"
+import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 
-import {
-  forgotUsernameFormSchema,
-  type ForgotUsernameFormValues,
-} from "../../api/schema"
+import { forgotUsernameFormSchema, type ForgotUsernameFormValues } from "../../api/schema"
 
 interface ForgotUsernameFormProps {
   id: string
@@ -38,13 +30,10 @@ export function ForgotUsernameForm({ id, onSubmit }: ForgotUsernameFormProps) {
       <FieldGroup>
         <form.Field name="document">
           {(field) => {
-            const isInvalid =
-              field.state.meta.isTouched && !field.state.meta.isValid
+            const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
             return (
               <Field variant="outlined" data-invalid={isInvalid}>
-                <FieldLabel htmlFor={field.name}>
-                  Número de documento
-                </FieldLabel>
+                <FieldLabel htmlFor={field.name}>Número de documento</FieldLabel>
                 <Input
                   id={field.name}
                   name={field.name}

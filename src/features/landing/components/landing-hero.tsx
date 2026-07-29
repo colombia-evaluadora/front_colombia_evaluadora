@@ -1,12 +1,6 @@
 import icon from "@/assets/icon.svg"
 
-const SIDEBAR_ITEMS = [
-  "PLANEACIÓN",
-  "SALA VIRTUAL",
-  "ASISTENCIAS",
-  "EVALUACIÓN",
-  "CONVIVENCIA",
-]
+const SIDEBAR_ITEMS = ["PLANEACIÓN", "SALA VIRTUAL", "ASISTENCIAS", "EVALUACIÓN", "CONVIVENCIA"]
 
 const BAR_HEIGHTS = [30, 60, 45, 80, 55, 70, 40]
 
@@ -51,9 +45,7 @@ export function LandingHero() {
                       </span>
                       <div className="flex items-center gap-1">
                         <img src={icon} alt="" className="h-4" />
-                        <span className="text-[8px] text-gray-600">
-                          IE SOLEDAD ACOSTA
-                        </span>
+                        <span className="text-[8px] text-gray-600">IE SOLEDAD ACOSTA</span>
                       </div>
                     </div>
 

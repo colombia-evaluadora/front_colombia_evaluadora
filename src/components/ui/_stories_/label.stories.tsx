@@ -1,15 +1,15 @@
-import preview from '../../../../.storybook/preview'
-import { Input } from '../input'
-import { Label } from '../label'
+import preview from "../../../../.storybook/preview"
+import { Input } from "../input"
+import { Label } from "../label"
 
 const meta = preview.meta({
-  title: 'Design System/Forms/Label',
+  title: "Design System/Forms/Label",
   component: Label,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
 })
 
 export const Default = meta.story({
-  args: { children: 'Email address' },
+  args: { children: "Email address" },
 })
 
 export const WithInput = meta.story({

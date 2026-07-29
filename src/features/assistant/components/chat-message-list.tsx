@@ -4,13 +4,7 @@ import type { UIMessage } from "@tanstack/ai-react"
 
 import { cn } from "@/lib/utils"
 import { Bubble, BubbleContent } from "@/components/ui/bubble"
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty"
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
 import { Message, MessageContent } from "@/components/ui/message"
 import {
   MessageScroller,
@@ -56,9 +50,7 @@ export function ChatMessageList({ messages, isLoading }: ChatMessageListProps) {
             <ChatCircleDotsIcon />
           </EmptyMedia>
           <EmptyTitle>Asistente</EmptyTitle>
-          <EmptyDescription>
-            Escribe un mensaje para comenzar la conversación.
-          </EmptyDescription>
+          <EmptyDescription>Escribe un mensaje para comenzar la conversación.</EmptyDescription>
         </EmptyHeader>
       </Empty>
     )
@@ -67,10 +59,7 @@ export function ChatMessageList({ messages, isLoading }: ChatMessageListProps) {
   return (
     <MessageScroller>
       <MessageScrollerViewport>
-        <MessageScrollerContent
-          aria-busy={isLoading}
-          className="px-6 py-3 flex flex-col gap-4"
-        >
+        <MessageScrollerContent aria-busy={isLoading} className="px-6 py-3 flex flex-col gap-4">
           {messages.map((message) => {
             const isUser = message.role === "user"
             const isNew = !seenIds.current!.has(message.id)
@@ -83,21 +72,14 @@ export function ChatMessageList({ messages, isLoading }: ChatMessageListProps) {
                 scrollAnchor={isUser}
                 className={cn(
                   isNew &&
-                    "animate-in fade-in slide-in-from-bottom-2 duration-300 motion-reduce:animate-none"
+                    "animate-in fade-in slide-in-from-bottom-2 duration-300 motion-reduce:animate-none",
                 )}
               >
                 <Message align={isUser ? "end" : "start"}>
                   <MessageContent>
-                    <Bubble
-                      align={isUser ? "end" : "start"}
-                      variant={isUser ? "default" : "muted"}
-                    >
+                    <Bubble align={isUser ? "end" : "start"} variant={isUser ? "default" : "muted"}>
                       <BubbleContent>
-                        {!isUser && isNew ? (
-                          <StreamingText text={text} />
-                        ) : (
-                          text
-                        )}
+                        {!isUser && isNew ? <StreamingText text={text} /> : text}
                       </BubbleContent>
                     </Bubble>
                   </MessageContent>

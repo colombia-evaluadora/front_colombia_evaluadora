@@ -48,22 +48,14 @@ export function CreatePaymentSheet() {
       <SheetContent side="right" showCloseButton={false}>
         <SheetHeader className="p-6 pb-2">
           <SheetTitle>Nuevo pago</SheetTitle>
-          <SheetDescription>
-            Completa los datos para crear un nuevo pago.
-          </SheetDescription>
+          <SheetDescription>Completa los datos para crear un nuevo pago.</SheetDescription>
         </SheetHeader>
         <CreatePaymentForm id={CREATE_PAYMENT_FORM_ID} onSubmit={handleSubmit} />
         <SheetFooter className="border-t bg-background p-6">
-          <Button
-            type="submit"
-            form={CREATE_PAYMENT_FORM_ID}
-            disabled={createMutation.isPending}
-          >
+          <Button type="submit" form={CREATE_PAYMENT_FORM_ID} disabled={createMutation.isPending}>
             {createMutation.isPending ? "Guardando..." : "Guardar"}
           </Button>
-          <SheetClose render={<Button variant="outline" type="button" />}>
-            Cancelar
-          </SheetClose>
+          <SheetClose render={<Button variant="outline" type="button" />}>Cancelar</SheetClose>
         </SheetFooter>
       </SheetContent>
     </Sheet>

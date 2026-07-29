@@ -1,11 +1,11 @@
-import preview from '../../../../.storybook/preview'
-import { CircleIcon } from '@/components/ui/icons'
-import { Marker, MarkerContent, MarkerIcon } from '../marker'
+import preview from "../../../../.storybook/preview"
+import { CircleIcon } from "@/components/ui/icons"
+import { Marker, MarkerContent, MarkerIcon } from "../marker"
 
 const meta = preview.meta({
-  title: 'Design System/Data Display/Marker',
+  title: "Design System/Data Display/Marker",
   component: Marker,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
 })
 
 export const Default = meta.story({

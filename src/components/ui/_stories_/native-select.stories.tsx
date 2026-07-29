@@ -1,10 +1,10 @@
-import preview from '../../../../.storybook/preview'
-import { NativeSelect, NativeSelectOptGroup, NativeSelectOption } from '../native-select'
+import preview from "../../../../.storybook/preview"
+import { NativeSelect, NativeSelectOptGroup, NativeSelectOption } from "../native-select"
 
 const meta = preview.meta({
-  title: 'Design System/Forms/NativeSelect',
+  title: "Design System/Forms/NativeSelect",
   component: NativeSelect,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
 })
 
 export const Default = meta.story({

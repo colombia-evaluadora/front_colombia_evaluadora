@@ -1,12 +1,14 @@
 {
   "name": "front_colombia_evaluadora",
-  "private": true,
   "version": "0.0.0",
+  "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
+    "format": "oxfmt .",
+    "format:check": "oxfmt --check .",
     "preview": "vite preview",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
@@ -70,6 +72,7 @@
     "babel-plugin-react-compiler": "^1.0.0",
     "concurrently": "^10.0.3",
     "http-server": "^14.1.1",
+    "oxfmt": "^0.61.0",
     "oxlint": "^1.71.0",
     "playwright": "^1.61.1",
     "storybook": "^10.5.3",
@@ -80,17 +83,17 @@
     "wait-on": "^9.0.10",
     "wrangler": "^4.113.0"
   },
-  "msw": {
-    "workerDirectory": [
-      "public"
-    ]
-  },
   "pnpm": {
     "onlyBuiltDependencies": [
       "@swc/core",
       "esbuild",
       "msw",
       "unrs-resolver"
+    ]
+  },
+  "msw": {
+    "workerDirectory": [
+      "public"
     ]
   }
 }

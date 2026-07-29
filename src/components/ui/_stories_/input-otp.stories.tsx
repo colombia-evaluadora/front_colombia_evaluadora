@@ -1,16 +1,16 @@
-import preview from '../../../../.storybook/preview'
-import { useState } from 'react'
-import { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot } from '../input-otp'
+import preview from "../../../../.storybook/preview"
+import { useState } from "react"
+import { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot } from "../input-otp"
 
 const meta = preview.meta({
-  title: 'Design System/Forms/InputOTP',
+  title: "Design System/Forms/InputOTP",
   component: InputOTP,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
 })
 
 export const Default = meta.story({
   render: () => {
-    const [value, setValue] = useState('')
+    const [value, setValue] = useState("")
     return (
       <InputOTP maxLength={6} value={value} onChange={setValue}>
         <InputOTPGroup>

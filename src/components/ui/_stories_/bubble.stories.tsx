@@ -1,10 +1,10 @@
-import preview from '../../../../.storybook/preview'
-import { Bubble, BubbleContent, BubbleGroup, BubbleReactions } from '../bubble'
+import preview from "../../../../.storybook/preview"
+import { Bubble, BubbleContent, BubbleGroup, BubbleReactions } from "../bubble"
 
 const meta = preview.meta({
-  title: 'Design System/Chat/Bubble',
+  title: "Design System/Chat/Bubble",
   component: Bubble,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
 })
 
 export const Default = meta.story({

@@ -1,12 +1,7 @@
 import { ArrowLeftIcon, CheckIcon } from "@/components/ui/icons"
 import { Link, useParams } from "@tanstack/react-router"
 
-import {
-  Avatar,
-  AvatarBadge,
-  AvatarFallback,
-  AvatarImage,
-} from "@/components/ui/avatar"
+import { Avatar, AvatarBadge, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -21,10 +16,7 @@ import { Spinner } from "@/components/ui/spinner"
 import { paths } from "@/config/paths"
 
 import { useAuditSessionQuery } from "../api/query/use-audit-session-query"
-import {
-  SESSION_STATUS_BADGE,
-  SESSION_STATUS_LABELS,
-} from "../api/ui-mappings"
+import { SESSION_STATUS_BADGE, SESSION_STATUS_LABELS } from "../api/ui-mappings"
 import { SessionOperationsDataTable } from "../components/table/session-operations-table"
 
 export function SessionOperationsPage() {
@@ -75,9 +67,7 @@ export function SessionOperationsPage() {
           <>
             <div className="flex flex-wrap items-center gap-2">
               <Avatar>
-                {session.authorAvatarUrl && (
-                  <AvatarImage src={session.authorAvatarUrl} alt="" />
-                )}
+                {session.authorAvatarUrl && <AvatarImage src={session.authorAvatarUrl} alt="" />}
                 <AvatarFallback>{initials}</AvatarFallback>
                 {session.authorVerified && (
                   <AvatarBadge>

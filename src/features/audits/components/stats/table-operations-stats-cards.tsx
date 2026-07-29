@@ -31,7 +31,7 @@ export function TableOperationsStatsCards({
   // Igual que exportar: con selección se calcula sobre lo seleccionado, sin
   // selección se calcula sobre lo que coincide con los filtros activos.
   const { data } = useTableOperationsStatsQuery(
-    hasSelection ? { tableSlug, ids: selectedIds } : { tableSlug, filters }
+    hasSelection ? { tableSlug, ids: selectedIds } : { tableSlug, filters },
   )
 
   const tiles: StatTile[] = [
@@ -39,19 +39,19 @@ export function TableOperationsStatsCards({
       icon: PlusCircleIcon,
       value: data?.inserts,
       label: "Insert",
-      iconClassName: "bg-info/10 text-info",
+      iconClassName: "bg-blue/10 text-blue",
     },
     {
       icon: PencilIcon,
       value: data?.updates,
       label: "Update",
-      iconClassName: "bg-warning/10 text-warning",
+      iconClassName: "bg-yellow/10 text-yellow",
     },
     {
       icon: TrashIcon,
       value: data?.deletes,
       label: "Delete",
-      iconClassName: "bg-destructive/10 text-destructive",
+      iconClassName: "bg-red/10 text-red",
     },
   ]
 
@@ -63,7 +63,7 @@ export function TableOperationsStatsCards({
             <span
               className={cn(
                 "flex size-10 shrink-0 items-center justify-center rounded-full",
-                tile.iconClassName
+                tile.iconClassName,
               )}
             >
               <tile.icon weight="fill" className="size-5" />

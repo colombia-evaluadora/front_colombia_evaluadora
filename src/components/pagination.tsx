@@ -57,19 +57,14 @@ export function Pagination({
 
   return (
     <div className="flex items-center justify-between gap-2 px-2 py-4">
-      <p className="shrink-0 text-sm text-muted-foreground">
-        {totalCount} registro(s)
-      </p>
+      <p className="shrink-0 text-sm text-muted-foreground">{totalCount} registro(s)</p>
 
       <div className="flex min-w-0 items-center justify-end gap-2 sm:gap-6">
         <Field orientation="horizontal" className="hidden w-fit lg:flex">
           <FieldLabel htmlFor="rows-per-page" className="text-sm">
             Filas
           </FieldLabel>
-          <Select
-            value={`${pageSize}`}
-            onValueChange={(value) => onPageSizeChange(Number(value))}
-          >
+          <Select value={`${pageSize}`} onValueChange={(value) => onPageSizeChange(Number(value))}>
             <SelectTrigger id="rows-per-page" className="w-20">
               <SelectValue />
             </SelectTrigger>
@@ -124,7 +119,7 @@ export function Pagination({
                     {item}
                   </PaginationLink>
                 </PaginationItem>
-              )
+              ),
             )}
 
             <PaginationItem>

@@ -1,6 +1,6 @@
-import preview from '../../../../.storybook/preview'
-import { GearIcon } from '@/components/ui/icons'
-import { Button } from '../button'
+import preview from "../../../../.storybook/preview"
+import { GearIcon } from "@/components/ui/icons"
+import { Button } from "../button"
 import {
   Item,
   ItemActions,
@@ -10,12 +10,12 @@ import {
   ItemMedia,
   ItemSeparator,
   ItemTitle,
-} from '../item'
+} from "../item"
 
 const meta = preview.meta({
-  title: 'Design System/Layout/Item',
+  title: "Design System/Layout/Item",
   component: Item,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
 })
 
 export const Default = meta.story({
@@ -38,7 +38,7 @@ export const Default = meta.story({
 })
 
 export const Outline = meta.story({
-  args: { variant: 'outline' },
+  args: { variant: "outline" },
   render: (args) => (
     <Item {...args} className="w-96">
       <ItemContent>
@@ -50,7 +50,7 @@ export const Outline = meta.story({
 })
 
 export const Small = meta.story({
-  args: { size: 'sm' },
+  args: { size: "sm" },
   render: (args) => (
     <Item {...args} className="w-96">
       <ItemContent>

@@ -9,9 +9,7 @@ interface ExportSelectedAuditsInput {
   format: ExportFormat
 }
 
-function exportSelectedAudits(
-  input: ExportSelectedAuditsInput
-): Promise<ExportResult> {
+function exportSelectedAudits(input: ExportSelectedAuditsInput): Promise<ExportResult> {
   return api.post("/audits/export", input)
 }
 
@@ -19,9 +17,7 @@ interface UseExportSelectedAuditsOptions {
   mutationConfig?: MutationConfig<typeof exportSelectedAudits>
 }
 
-export function useExportSelectedAudits({
-  mutationConfig,
-}: UseExportSelectedAuditsOptions = {}) {
+export function useExportSelectedAudits({ mutationConfig }: UseExportSelectedAuditsOptions = {}) {
   return useMutation({
     mutationFn: exportSelectedAudits,
     ...mutationConfig,

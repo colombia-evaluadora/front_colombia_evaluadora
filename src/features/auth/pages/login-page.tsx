@@ -1,10 +1,6 @@
 import { useEffect } from "react"
 import { useNavigate, useSearch } from "@tanstack/react-router"
-import {
-  ArrowRightIcon,
-  ShieldLockIcon,
-  ShieldIcon,
-} from "@/components/ui/icons"
+import { ArrowRightIcon, ShieldLockIcon, ShieldIcon } from "@/components/ui/icons"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -48,10 +44,7 @@ export function LoginPage() {
     <>
       <CardHeader className="text-center">
         <div className="bg-primary/10 mx-auto flex size-14 items-center justify-center rounded-full">
-          <ShieldLockIcon
-            className="text-primary size-7"
-            aria-hidden="true"
-          />
+          <ShieldLockIcon className="text-primary size-7" aria-hidden="true" />
         </div>
         <CardTitle>Iniciar sesión</CardTitle>
         <CardDescription>Accede con tu cuenta institucional.</CardDescription>
@@ -82,10 +75,7 @@ export function LoginPage() {
           <Separator className="flex-1" />
         </div>
         <p className="text-muted-foreground inline-flex items-start text-center text-xs">
-          <ShieldIcon
-            className="size-4 shrink-0"
-            aria-hidden="true"
-          />
+          <ShieldIcon className="size-5 shrink-0" aria-hidden="true" />
           Tu seguridad es importante. Nunca compartas tu contraseña con nadie.
         </p>
       </CardFooter>

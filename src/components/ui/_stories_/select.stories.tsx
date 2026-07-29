@@ -1,5 +1,5 @@
-import preview from '../../../../.storybook/preview'
-import { useState } from 'react'
+import preview from "../../../../.storybook/preview"
+import { useState } from "react"
 import {
   Select,
   SelectContent,
@@ -9,12 +9,12 @@ import {
   SelectSeparator,
   SelectTrigger,
   SelectValue,
-} from '../select'
+} from "../select"
 
 const meta = preview.meta({
-  title: 'Design System/Forms/Select',
+  title: "Design System/Forms/Select",
   component: Select,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
 })
 
 export const Default = meta.story({

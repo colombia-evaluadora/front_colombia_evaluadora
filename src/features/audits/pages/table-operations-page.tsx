@@ -14,7 +14,6 @@ import { paths } from "@/config/paths"
 import { TableOperationsDataTable } from "../components/table/table-operations-table"
 
 export function TableOperationsPage() {
-
   return (
     <Card>
       <CardHeader>
@@ -31,8 +30,7 @@ export function TableOperationsPage() {
         </CardAction>
         <CardTitle>Detalle</CardTitle>
         <CardDescription>
-          Historial de operaciones (insert/update/delete) sobre los registros
-          de esta tabla.
+          Historial de operaciones (insert/update/delete) sobre los registros de esta tabla.
         </CardDescription>
       </CardHeader>
       <CardContent>

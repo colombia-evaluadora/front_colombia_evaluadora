@@ -1,4 +1,4 @@
-import preview from '../../../../.storybook/preview'
+import preview from "../../../../.storybook/preview"
 import {
   Table,
   TableBody,
@@ -7,18 +7,18 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '../table'
+} from "../table"
 
 const invoices = [
-  { invoice: 'INV001', status: 'Paid', method: 'Credit Card', amount: '$250.00' },
-  { invoice: 'INV002', status: 'Pending', method: 'PayPal', amount: '$150.00' },
-  { invoice: 'INV003', status: 'Unpaid', method: 'Bank Transfer', amount: '$350.00' },
+  { invoice: "INV001", status: "Paid", method: "Credit Card", amount: "$250.00" },
+  { invoice: "INV002", status: "Pending", method: "PayPal", amount: "$150.00" },
+  { invoice: "INV003", status: "Unpaid", method: "Bank Transfer", amount: "$350.00" },
 ]
 
 const meta = preview.meta({
-  title: 'Design System/Data Display/Table',
+  title: "Design System/Data Display/Table",
   component: Table,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
 })
 
 export const Default = meta.story({

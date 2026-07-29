@@ -4,13 +4,7 @@ import { z } from "zod"
 
 import preview from "../../../../.storybook/preview"
 import { Button } from "@/components/ui/button"
-import {
-  Field,
-  FieldDescription,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field"
+import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import {
   FileUpload,
   FileUploadClear,
@@ -55,7 +49,7 @@ function createImageFile() {
   return createFile(
     "comprobante.svg",
     "image/svg+xml",
-    '<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160"><rect width="160" height="160" fill="#e7e5e4"/><circle cx="80" cy="64" r="28" fill="#78716c"/><path d="M32 138c8-28 28-42 48-42s40 14 48 42" fill="#78716c"/></svg>'
+    '<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160"><rect width="160" height="160" fill="#e7e5e4"/><circle cx="80" cy="64" r="28" fill="#78716c"/><path d="M32 138c8-28 28-42 48-42s40 14 48 42" fill="#78716c"/></svg>',
   )
 }
 
@@ -130,13 +124,7 @@ export const MultipleFiles = meta.story({
 })
 
 export const ImagePreview = meta.story({
-  render: () => (
-    <FileUploadExample
-      multiple
-      accept="image/*"
-      defaultValue={[createImageFile()]}
-    />
-  ),
+  render: () => <FileUploadExample multiple accept="image/*" defaultValue={[createImageFile()]} />,
 })
 
 export const AcceptedFileTypes = meta.story({
@@ -181,7 +169,7 @@ export const MaximumSizeAndCount = meta.story({
 
 async function simulateUpload(
   files: File[],
-  options: Parameters<NonNullable<FileUploadProps["onUpload"]>>[1]
+  options: Parameters<NonNullable<FileUploadProps["onUpload"]>>[1],
 ) {
   for (let progress = 20; progress <= 100; progress += 20) {
     await new Promise((resolve) => window.setTimeout(resolve, 180))
@@ -233,13 +221,7 @@ function FieldIntegrationExample() {
     <FieldGroup className="max-w-xl">
       <Field data-invalid={invalid ? "true" : undefined}>
         <FieldLabel>Documentos obligatorios</FieldLabel>
-        <FileUpload
-          value={files}
-          onValueChange={setFiles}
-          multiple
-          required
-          invalid={invalid}
-        >
+        <FileUpload value={files} onValueChange={setFiles} multiple required invalid={invalid}>
           <UploadContent compact />
         </FileUpload>
         {invalid ? (
@@ -280,8 +262,7 @@ function TanStackFormExample() {
       <FieldGroup>
         <form.Field name="documents">
           {(field) => {
-            const isInvalid =
-              field.state.meta.isTouched && !field.state.meta.isValid
+            const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
 
             return (
               <Field data-invalid={isInvalid ? "true" : undefined}>

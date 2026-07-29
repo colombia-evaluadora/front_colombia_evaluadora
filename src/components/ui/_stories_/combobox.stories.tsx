@@ -1,5 +1,5 @@
-import preview from '../../../../.storybook/preview'
-import { useState } from 'react'
+import preview from "../../../../.storybook/preview"
+import { useState } from "react"
 import {
   Combobox,
   ComboboxContent,
@@ -7,14 +7,14 @@ import {
   ComboboxInput,
   ComboboxItem,
   ComboboxList,
-} from '../combobox'
+} from "../combobox"
 
-const fruits = ['Apple', 'Banana', 'Blueberry', 'Grapes', 'Pineapple']
+const fruits = ["Apple", "Banana", "Blueberry", "Grapes", "Pineapple"]
 
 const meta = preview.meta({
-  title: 'Design System/Forms/Combobox',
+  title: "Design System/Forms/Combobox",
   component: Combobox,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
 })
 
 export const Default = meta.story({
@@ -40,7 +40,7 @@ export const Default = meta.story({
 
 export const WithClearButton = meta.story({
   render: () => {
-    const [value, setValue] = useState<string | null>('Banana')
+    const [value, setValue] = useState<string | null>("Banana")
     return (
       <Combobox items={fruits} value={value} onValueChange={(v) => setValue(v as string)}>
         <ComboboxInput placeholder="Search fruit…" showClear />

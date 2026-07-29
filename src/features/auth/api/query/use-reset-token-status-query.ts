@@ -3,9 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api-client"
 import type { ResetTokenStatusResponse } from "../types/password-recovery"
 
-function fetchResetTokenStatus(
-  token: string
-): Promise<ResetTokenStatusResponse> {
+function fetchResetTokenStatus(token: string): Promise<ResetTokenStatusResponse> {
   return api.get("/sso-admin/resetTokenStatus", { params: { token } })
 }
 

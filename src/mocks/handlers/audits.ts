@@ -1,6 +1,5 @@
 import { http, HttpResponse, delay } from "msw"
 
-import { httpQuery } from "./_http-query"
 import { getSessionOperations } from "./_session-operations"
 
 import { auditsDb } from "../db/audits"
@@ -31,37 +30,28 @@ const EXPORT_FORMAT_LABELS: Record<ExportFormat, string> = {
 // `new Date(...).toISOString()` normaliza los dos casos sin ese bug.
 function toComparableIso(value: string, boundary: "start" | "end"): string {
   const hasTime = value.includes("T")
-  const iso = hasTime
-    ? value
-    : `${value}T${boundary === "start" ? "00:00:00.000" : "23:59:59.999"}`
+  const iso = hasTime ? value : `${value}T${boundary === "start" ? "00:00:00.000" : "23:59:59.999"}`
   return new Date(iso).toISOString()
 }
 
 function applyFilters(
   rows: AuditSession[],
-  filters: AuditsQueryRequest["filters"]
+  filters: AuditsQueryRequest["filters"],
 ): AuditSession[] {
   return rows.filter((row) => {
     if (filters.author) {
       const needle = filters.author.toLowerCase()
       const matches =
-        row.authorName.toLowerCase().includes(needle) ||
-        row.ip.toLowerCase().includes(needle)
+        row.authorName.toLowerCase().includes(needle) || row.ip.toLowerCase().includes(needle)
       if (!matches) return false
     }
     if (filters.status?.length && !filters.status.includes(row.status)) {
       return false
     }
-    if (
-      filters.startedFrom &&
-      row.startedAt < toComparableIso(filters.startedFrom, "start")
-    ) {
+    if (filters.startedFrom && row.startedAt < toComparableIso(filters.startedFrom, "start")) {
       return false
     }
-    if (
-      filters.startedTo &&
-      row.startedAt > toComparableIso(filters.startedTo, "end")
-    ) {
+    if (filters.startedTo && row.startedAt > toComparableIso(filters.startedTo, "end")) {
       return false
     }
     return true
@@ -100,26 +90,17 @@ function sortValue(row: AuditSession, id: string) {
 
 function applySessionOperationFilters(
   rows: SessionOperation[],
-  filters: SessionOperationsFilters
+  filters: SessionOperationsFilters,
 ): SessionOperation[] {
   return rows.filter((row) => {
     if (filters.tableSlug && row.tableSlug !== filters.tableSlug) return false
-    if (
-      filters.operations?.length &&
-      !filters.operations.includes(row.operation)
-    ) {
+    if (filters.operations?.length && !filters.operations.includes(row.operation)) {
       return false
     }
-    if (
-      filters.occurredFrom &&
-      row.occurredAt < toComparableIso(filters.occurredFrom, "start")
-    ) {
+    if (filters.occurredFrom && row.occurredAt < toComparableIso(filters.occurredFrom, "start")) {
       return false
     }
-    if (
-      filters.occurredTo &&
-      row.occurredAt > toComparableIso(filters.occurredTo, "end")
-    ) {
+    if (filters.occurredTo && row.occurredAt > toComparableIso(filters.occurredTo, "end")) {
       return false
     }
     return true
@@ -132,7 +113,7 @@ function sessionOperationSortValue(row: SessionOperation, id: string): string {
 
 function applySortingSessionOps(
   rows: SessionOperation[],
-  sorting: SessionOperationsQueryRequest["sorting"]
+  sorting: SessionOperationsQueryRequest["sorting"],
 ): SessionOperation[] {
   if (!sorting.length) return rows
   const [{ id, desc }] = sorting
@@ -151,7 +132,7 @@ function applySortingSessionOps(
 
 function applySorting(
   rows: AuditSession[],
-  sorting: AuditsQueryRequest["sorting"]
+  sorting: AuditsQueryRequest["sorting"],
 ): AuditSession[] {
   if (!sorting.length) return rows
   const [{ id, desc }] = sorting
@@ -167,7 +148,7 @@ function applySorting(
 }
 
 export const auditsHandlers = [
-  httpQuery("/api/audits/query", async ({ request }) => {
+  http.post("/api/audits/query", async ({ request }) => {
     await delay(300)
     const body = (await request.json()) as AuditsQueryRequest
     const { filters, sorting, pageIndex, pageSize } = body
@@ -185,7 +166,7 @@ export const auditsHandlers = [
     })
   }),
 
-  httpQuery("/api/audits/stats", async ({ request }) => {
+  http.post("/api/audits/stats", async ({ request }) => {
     await delay(200)
     const { ids, filters } = (await request.json()) as AuditsStatsRequest
     const scoped = ids
@@ -229,10 +210,7 @@ export const auditsHandlers = [
     const sessionId = params.sessionId as string
     const session = auditsDb.find((row) => row.id === sessionId)
     if (!session) {
-      return HttpResponse.json(
-        { message: "Sesión no encontrada." },
-        { status: 404 }
-      )
+      return HttpResponse.json({ message: "Sesión no encontrada." }, { status: 404 })
     }
     return HttpResponse.json<AuditSession>(session)
   }),
@@ -240,63 +218,51 @@ export const auditsHandlers = [
   // QUERY paginada y filtrable. Las operaciones de una sesión se generan
   // on-the-fly (determinísticas por seed) y el filtrado/orden/paginación
   // se aplica en memoria antes de devolver la página.
-  httpQuery(
-    "/api/audits/sessions/:sessionId/operations",
-    async ({ request, params }) => {
-      await delay(250)
-      const sessionId = params.sessionId as string
-      const session = auditsDb.find((row) => row.id === sessionId)
-      if (!session) {
-        return HttpResponse.json(
-          { message: "Sesión no encontrada." },
-          { status: 404 }
-        )
-      }
-
-      const body = (await request.json()) as SessionOperationsQueryRequest
-      const { filters, sorting, pageIndex, pageSize } = body
-
-      const all = getSessionOperations(session)
-      const filtered = applySortingSessionOps(
-        applySessionOperationFilters(all, filters),
-        sorting
-      )
-      const totalCount = filtered.length
-      const pageCount = Math.max(1, Math.ceil(totalCount / pageSize))
-      const start = pageIndex * pageSize
-      const rows = filtered.slice(start, start + pageSize)
-
-      return HttpResponse.json<SessionOperationsResponse>({
-        rows,
-        pageCount,
-        totalCount,
-      })
+  http.post("/api/audits/sessions/:sessionId/operations", async ({ request, params }) => {
+    await delay(250)
+    const sessionId = params.sessionId as string
+    const session = auditsDb.find((row) => row.id === sessionId)
+    if (!session) {
+      return HttpResponse.json({ message: "Sesión no encontrada." }, { status: 404 })
     }
-  ),
+
+    const body = (await request.json()) as SessionOperationsQueryRequest
+    const { filters, sorting, pageIndex, pageSize } = body
+
+    const all = getSessionOperations(session)
+    const filtered = applySortingSessionOps(applySessionOperationFilters(all, filters), sorting)
+    const totalCount = filtered.length
+    const pageCount = Math.max(1, Math.ceil(totalCount / pageSize))
+    const start = pageIndex * pageSize
+    const rows = filtered.slice(start, start + pageSize)
+
+    return HttpResponse.json<SessionOperationsResponse>({
+      rows,
+      pageCount,
+      totalCount,
+    })
+  }),
 
   // Exporta un subset de operaciones o todas las de la sesión (cuando
   // `ids` viene vacío).
-  http.post(
-    "/api/audits/sessions/:sessionId/operations/export",
-    async ({ request, params }) => {
-      await delay(600)
-      const sessionId = params.sessionId as string
-      const session = auditsDb.find((row) => row.id === sessionId)
-      const total = session?.operationsCount ?? 0
+  http.post("/api/audits/sessions/:sessionId/operations/export", async ({ request, params }) => {
+    await delay(600)
+    const sessionId = params.sessionId as string
+    const session = auditsDb.find((row) => row.id === sessionId)
+    const total = session?.operationsCount ?? 0
 
-      const { ids, format } = (await request.json()) as {
-        ids: string[]
-        format: ExportFormat
-      }
-
-      // Sin `ids` ⇒ exportamos todas las operaciones de la sesión
-      // (es lo que dispara el botón "Exportar todo" del top bar).
-      const count = ids.length > 0 ? ids.length : total
-
-      return HttpResponse.json<ExportResult>({
-        status: "ok",
-        message: `${count} operación(es) exportada(s) a ${EXPORT_FORMAT_LABELS[format]}.`,
-      })
+    const { ids, format } = (await request.json()) as {
+      ids: string[]
+      format: ExportFormat
     }
-  ),
+
+    // Sin `ids` ⇒ exportamos todas las operaciones de la sesión
+    // (es lo que dispara el botón "Exportar todo" del top bar).
+    const count = ids.length > 0 ? ids.length : total
+
+    return HttpResponse.json<ExportResult>({
+      status: "ok",
+      message: `${count} operación(es) exportada(s) a ${EXPORT_FORMAT_LABELS[format]}.`,
+    })
+  }),
 ]

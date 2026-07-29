@@ -17,9 +17,7 @@ interface UseExportAuditsOptions {
   mutationConfig?: MutationConfig<typeof exportAudits>
 }
 
-export function useExportAudits({
-  mutationConfig,
-}: UseExportAuditsOptions = {}) {
+export function useExportAudits({ mutationConfig }: UseExportAuditsOptions = {}) {
   return useMutation({
     mutationFn: exportAudits,
     ...mutationConfig,
