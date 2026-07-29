@@ -63,7 +63,7 @@ function HelpFaqSheetContent({ data }: { data: HelpSheetData }) {
   return (
     <div className="space-y-6 px-6 pb-6 flex-1 overflow-y-auto">
       <section className="space-y-4">
-        <h3 className="px-1 text-base font-semibold">¿No puedes iniciar sesión?</h3>
+        <h3 className="text-base">¿No puedes iniciar sesión?</h3>
         <Accordion className="border rounded-lg">
           {data.faqs.map((faq) => (
             <AccordionItem key={faq.id} value={faq.id}>
@@ -72,7 +72,7 @@ function HelpFaqSheetContent({ data }: { data: HelpSheetData }) {
                   <span className="shrink-0 [&_svg:not([class*='size-'])]:size-6">{faq.icon}</span>
                   <div className="flex min-w-0 flex-col gap-0.5 text-left">
                     <span className="text-sm font-semibold">{faq.title}</span>
-                    <span className="text-muted-foreground text-xs font-normal leading-snug">
+                    <span className="text-muted-foreground text-sm font-normal leading-relaxed">
                       {faq.description}
                     </span>
                   </div>
@@ -90,12 +90,15 @@ function HelpFaqSheetContent({ data }: { data: HelpSheetData }) {
 
       {data.sections.map((section) => (
         <section key={section.title} className="space-y-4">
-          <h3 className="px-1 text-base font-semibold">{section.title}</h3>
-          <ItemGroup>
-            {section.items.map((item) => (
+          <h3 className="text-base">{section.title}</h3>
+          <ItemGroup className="gap-0">
+            {section.items.map((item, index) => (
               <Item
                 key={item.title}
                 variant="outline"
+                className={`rounded-none ${index === 0 ? "rounded-t-lg" : ""} ${
+                  index === section.items.length - 1 ? "rounded-b-lg" : ""
+                }`}
                 render={item.to ? <Link to={item.to} /> : undefined}
               >
                 <ItemMedia
@@ -120,7 +123,7 @@ function HelpFaqSheetContent({ data }: { data: HelpSheetData }) {
       <Separator />
       <section className="space-y-4">
         <h3 className="px-1 text-base font-semibold">Soporte</h3>
-        <Item variant="outline">
+        <Item variant="outline" className="rounded-lg">
           <ItemMedia
             variant="icon"
             className="group-has-data-[slot=item-description]/item:translate-y-0 group-has-data-[slot=item-description]/item:self-center [&_svg:not([class*='size-'])]:size-6"
