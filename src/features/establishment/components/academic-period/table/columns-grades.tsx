@@ -72,9 +72,9 @@ export function createGradeColumns({
       <DataTableColumnHeader column={column} title="Nivel de enseñanza" />
     ),
     cell: ({ row }) => (
-      <Badge variant="fill" color="muted">
+      <span className="font-medium">
         {row.original.teachingLevelName}
-      </Badge>
+      </span>
     ),
   },
   {

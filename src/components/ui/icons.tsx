@@ -16,7 +16,6 @@ import {
   MdBackspace,
   MdBadge,
   MdBolt,
-  MdBarChart,
   MdCalendarMonth,
   MdCancel,
   MdCancelPresentation,
@@ -111,7 +110,6 @@ export const ArrowRightIcon = makeIcon(MdArrowForward)
 export const ArrowUpIcon = makeIcon(MdArrowUpward)
 export const BookOpenIcon = makeIcon(MdOutlineChromeReaderMode)
 export const CalendarIcon = makeIcon(MdCalendarMonth)
-export const ChartBarIcon = makeIcon(MdBarChart)
 export const CaretDownIcon = makeIcon(MdKeyboardArrowDown)
 export const CaretLeftIcon = makeIcon(MdKeyboardArrowLeft)
 export const CaretRightIcon = makeIcon(MdKeyboardArrowRight)
