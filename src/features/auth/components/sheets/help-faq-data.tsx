@@ -69,7 +69,7 @@ export const defaultHelpData: HelpSheetData = {
           correo institucional y sigue las instrucciones que recibirás para crear una nueva.
           <br />
           <Button variant="link" render={<Link to={paths.auth.forgotPassword.path} />}>
-            Ir a recuperar contraseña →
+            Ir a recuperar contraseña
           </Button>
         </p>
       ),
@@ -85,7 +85,7 @@ export const defaultHelpData: HelpSheetData = {
           documento o el correo electrónico registrado para consultarlo.
           <br />
           <Button variant="link" render={<Link to={paths.auth.forgotUsername.path} />}>
-            Recuperar usuario →
+            Recuperar usuario
           </Button>
         </p>
       ),
