@@ -4,6 +4,7 @@ import {
   deleteEmployeeDetails,
   employeesDb,
   employeesRowsDb,
+  upsertEmployeeDetails,
 } from "../db/employees"
 
 import type {
@@ -12,6 +13,7 @@ import type {
   EmployeesQueryRequest,
   EmployeesQueryResponse,
 } from "@/features/establishment/api/types/employee"
+import type { Person } from "@/features/establishment/api/types/person"
 
 function asArray(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string" && item.length > 0) : []
@@ -81,10 +83,6 @@ function applyFilters(rows: typeof employeesRowsDb, filters: EmployeesQueryReque
   })
 }
 
-function sortValue(row: Employee, id: string) {
-  return row[id as keyof Employee]
-}
-
 function applySorting(rows: typeof employeesRowsDb, sorting: EmployeesQueryRequest["sorting"]): typeof employeesRowsDb {
   if (!sorting.length) {
     return rows
@@ -104,7 +102,7 @@ function applySorting(rows: typeof employeesRowsDb, sorting: EmployeesQueryReque
               ? a.workSchedule.name
               : id === "status"
                 ? a.status
-                : sortValue(a as unknown as Employee, id)
+                : ""
     const bv =
       id === "documentNumber"
         ? b.documentNumber
@@ -116,7 +114,7 @@ function applySorting(rows: typeof employeesRowsDb, sorting: EmployeesQueryReque
               ? b.workSchedule.name
               : id === "status"
                 ? b.status
-                : sortValue(b as unknown as Employee, id)
+                : ""
 
     if (av === bv) {
       return 0
@@ -146,6 +144,103 @@ export const employeeHandlers = [
       rows,
       pageCount,
       totalCount,
+    })
+  }),
+
+  http.post("*/api/establishments/employees/person", async ({ request }) => {
+    await delay(250)
+
+    const values = (await request.json()) as Person
+    const person: Person = {
+      ...values,
+      id: values.id || crypto.randomUUID(),
+    }
+
+    return HttpResponse.json({
+      status: "ok",
+      message: "Usuario guardado.",
+      person,
+    })
+  }),
+
+  http.get("*/api/establishments/employees/:id", async ({ params }) => {
+    await delay(150)
+
+    const employee = employeesDb.find((item) => item.id === params.id)
+
+    if (!employee) {
+      return HttpResponse.json(
+        {
+          status: "error",
+          message: "Funcionario no encontrado.",
+        },
+        { status: 404 }
+      )
+    }
+
+    return HttpResponse.json({
+      status: "ok",
+      employee,
+    })
+  }),
+
+  http.post("*/api/establishments/employees", async ({ request }) => {
+    await delay(250)
+
+    const values = (await request.json()) as Employee
+    const employee: Employee = {
+      ...values,
+      id: values.id || `employee-${Date.now()}`,
+    }
+
+    const savedEmployee = upsertEmployeeDetails(employee)
+
+    return HttpResponse.json({
+      status: "ok",
+      message: "Funcionario creado.",
+      employee: savedEmployee,
+    })
+  }),
+
+  http.put("*/api/establishments/employees/:id", async ({ params, request }) => {
+    await delay(250)
+
+    const employeeId = Array.isArray(params.id) ? params.id[0] : params.id
+
+    if (!employeeId) {
+      return HttpResponse.json(
+        {
+          status: "error",
+          message: "Identificador de funcionario inválido.",
+        },
+        { status: 400 }
+      )
+    }
+
+    const existing = employeesDb.find((item) => item.id === employeeId)
+
+    if (!existing) {
+      return HttpResponse.json(
+        {
+          status: "error",
+          message: "Funcionario no encontrado.",
+        },
+        { status: 404 }
+      )
+    }
+
+    const values = (await request.json()) as Employee
+    const employee: Employee = {
+      ...values,
+      id: employeeId,
+    }
+
+    const savedEmployee = upsertEmployeeDetails(employee)
+
+    return HttpResponse.json({
+      status: "ok",
+      message: "Funcionario actualizado.",
+      employee: savedEmployee,
     })
   }),
 
