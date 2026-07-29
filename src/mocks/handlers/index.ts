@@ -5,6 +5,7 @@ import { auditsHandlers } from "./audits"
 import { auditTablesHandlers } from "./audit-tables"
 import { establishmentHandlers } from "./establishments"
 import { campusHandlers } from "./campuses"
+import { employeeHandlers } from "./employees"
 import { catalogHandlers } from "./catalog"
 import { reservationsHandlers } from "./reservations"
 
@@ -17,5 +18,6 @@ export const handlers = [
   ...reservationsHandlers,
   ...establishmentHandlers,
   ...campusHandlers,
+  ...employeeHandlers,
   ...catalogHandlers
 ]

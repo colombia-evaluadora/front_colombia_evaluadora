@@ -10,20 +10,20 @@ beforeAll(() => server.listen())
 afterEach(() => server.resetHandlers())
 afterAll(() => server.close())
 
-it("returns paginated campus rows through the mock query handler", async () => {
+it("returns paginated campus rows through the mock POST query handler", async () => {
   const response = await fetch("http://localhost/api/establishments/campuses/query", {
-    method: "QUERY",
+    method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
+      pageIndex: 0,
+      pageSize: 10,
       filters: {
         search: campusesDb[0].name.slice(0, 8),
         zones: [campusesDb[0].zone.code],
       },
       sorting: [],
-      pageIndex: 0,
-      pageSize: 10,
     }),
   })
 

@@ -1,7 +1,5 @@
 import { delay, http, HttpResponse } from "msw"
 
-import { httpQuery } from "./_http-query"
-
 import {
   campusesDb,
   campusesRowsDb,
@@ -14,6 +12,40 @@ import type {
   CampusesQueryRequest,
   CampusesQueryResponse,
 } from "@/features/establishment/api/types/campus"
+
+function asArray(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string" && item.length > 0) : []
+}
+
+function parseCampusesRequest(body: Partial<CampusesQueryRequest> | null): CampusesQueryRequest {
+  const pageIndex = Number(body?.pageIndex ?? 0)
+  const pageSize = Number(body?.pageSize ?? 10)
+
+  return {
+    filters: {
+      search: typeof body?.filters?.search === "string" ? body.filters.search : undefined,
+      zones: asArray(body?.filters?.zones),
+    },
+    sorting: Array.isArray(body?.sorting)
+      ? body.sorting
+          .filter((sort) => typeof sort?.id === "string" && sort.id.length > 0)
+          .map((sort) => ({
+            id: sort.id,
+            desc: Boolean(sort.desc),
+          }))
+      : [],
+    pageIndex: Number.isNaN(pageIndex) ? 0 : pageIndex,
+    pageSize: Number.isNaN(pageSize) ? 10 : pageSize,
+  }
+}
+
+async function readCampusesRequestBody(request: Request) {
+  try {
+    return (await request.json()) as Partial<CampusesQueryRequest>
+  } catch {
+    return null
+  }
+}
 
 function applyFilters(rows: Campus[], filters: CampusesQueryRequest["filters"]): Campus[] {
   return rows.filter((row) => {
@@ -65,17 +97,18 @@ function applySorting(
 }
 
 export const campusHandlers = [
-  httpQuery("*/api/establishments/campuses/query", async ({ request }) => {
+  http.post("*/api/establishments/campuses/query", async ({ request }) => {
     await delay(250)
 
-    const body = (await request.json()) as CampusesQueryRequest
-    const { filters, sorting, pageIndex, pageSize } = body
+    const body = await readCampusesRequestBody(request)
+    const { filters, sorting, pageIndex, pageSize } = parseCampusesRequest(body)
 
     const filtered = applySorting(applyFilters(campusesRowsDb, filters), sorting)
     const totalCount = filtered.length
-    const pageCount = Math.max(1, Math.ceil(totalCount / pageSize))
-    const start = pageIndex * pageSize
-    const rows = filtered.slice(start, start + pageSize)
+    const safePageSize = pageSize > 0 ? pageSize : 10
+    const pageCount = Math.max(1, Math.ceil(totalCount / safePageSize))
+    const start = pageIndex * safePageSize
+    const rows = filtered.slice(start, start + safePageSize)
 
     return HttpResponse.json<CampusesQueryResponse>({
       rows,
@@ -126,7 +159,19 @@ export const campusHandlers = [
   http.put("*/api/establishments/campuses/:id", async ({ params, request }) => {
     await delay(250)
 
-    const existing = campusesDb.find((item) => item.id === params.id)
+    const campusId = Array.isArray(params.id) ? params.id[0] : params.id
+
+    if (!campusId) {
+      return HttpResponse.json(
+        {
+          status: "error",
+          message: "Identificador de sede inválido.",
+        },
+        { status: 400 }
+      )
+    }
+
+    const existing = campusesDb.find((item) => item.id === campusId)
 
     if (!existing) {
       return HttpResponse.json(
@@ -141,7 +186,7 @@ export const campusHandlers = [
     const values = (await request.json()) as Campus
     const campus: Campus = {
       ...values,
-      id: params.id,
+      id: campusId,
     }
 
     const savedCampus = upsertCampusDetails(campus)

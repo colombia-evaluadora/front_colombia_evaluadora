@@ -21,4 +21,9 @@ export const EMPLOYEE_ROLES: CatalogItem[] = [
     code: "ADMIN",
     name: "Administrativo",
   },
+  {
+    id: "coordinator",
+    code: "COORDINATOR",
+    name: "Coordinador",
+  }
 ]
