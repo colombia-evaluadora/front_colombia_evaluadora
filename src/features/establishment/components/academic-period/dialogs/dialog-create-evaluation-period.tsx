@@ -177,8 +177,17 @@ export function CreateEvaluationPeriodDialog({
     },
   })
 
+  // Al abrir el diálogo, se descartan las ediciones no guardadas: el form
+  // parte siempre de los datos reales (los del periodo al editar, o vacío al
+  // crear). Sin esto, como el componente sigue montado, las ediciones sin
+  // guardar reaparecían al reabrir.
+  function handleOpenChange(next: boolean) {
+    if (next) form.reset(defaultValues)
+    setOpen(next)
+  }
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger
         render={
           isEditing ? (
