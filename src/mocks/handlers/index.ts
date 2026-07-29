@@ -16,6 +16,8 @@ import { evaluationCriteriaHandlers } from "./evaluation-criteria"
 import { generalAreasHandlers } from "./general-areas"
 import { gradeConfigsHandlers } from "./grade-configs"
 import { academicAssignmentsHandlers } from "./academic-assignments"
+import { metodologiasHandlers } from "./metodologias"
+import { ratingScaleTypesHandlers } from "./rating-scale-types"
 import { reservationsHandlers } from "./reservations"
 
 export const handlers = [
@@ -37,5 +39,7 @@ export const handlers = [
   ...generalAreasHandlers,
   ...gradeConfigsHandlers,
   ...academicAssignmentsHandlers,
+  ...metodologiasHandlers,
+  ...ratingScaleTypesHandlers,
   ...reservationsHandlers,
 ]

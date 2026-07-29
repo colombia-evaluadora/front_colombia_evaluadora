@@ -158,8 +158,6 @@ export const ScheduleBuilder = forwardRef<
     [subjects]
   )
 
-  const todayWeekday = new Date().getDay()
-
   const slots = useMemo(() => buildSlots(jornada), [jornada])
   const runs = useMemo(() => buildRuns(slots), [slots])
   const classSlotIds = useMemo(
@@ -346,12 +344,7 @@ export const ScheduleBuilder = forwardRef<
               {DAYS.map((day) => (
                 <th
                   key={day.id}
-                  className={cn(
-                    "border-r p-2 text-center text-xs font-semibold tracking-wider last:border-r-0",
-                    day.weekday === todayWeekday
-                      ? "text-primary"
-                      : "text-foreground"
-                  )}
+                  className="border-r p-2 text-center text-xs font-semibold tracking-wider text-foreground last:border-r-0"
                 >
                   {day.label}
                 </th>

@@ -208,13 +208,14 @@ const PromotionCriteriaForm = forwardRef<
     validators: {
       onSubmit: approvalSchema,
     },
-    onSubmit: ({ value }) => {
+    onSubmit: async ({ value, formApi }) => {
       if (isGradeScope && gradeId != null) {
         saveGradeConfig.mutate({ gradeId, values: { promotionCriteria: value } })
         return
       }
       if (academicPeriodId != null) {
-        savePeriodCriteria.mutate({ academicPeriodId, values: value })
+        await savePeriodCriteria.mutateAsync({ academicPeriodId, values: value })
+        formApi.reset(value)
         return
       }
       toast.success("Parámetros guardados.")
@@ -225,6 +226,7 @@ const PromotionCriteriaForm = forwardRef<
     ref,
     () => ({
       save: async (id: number) => {
+        if (!form.state.isDirty) return
         await saveGradeConfig.mutateAsync({
           gradeId: id,
           values: { promotionCriteria: form.state.values },
@@ -242,9 +244,25 @@ const PromotionCriteriaForm = forwardRef<
         form.handleSubmit()
       }}
     >
-      <h3 className="mb-4 text-lg font-semibold">
-        Parámetros de aprobación
-      </h3>
+      <div className="mb-4 flex items-center justify-between gap-4">
+        <h3 className="text-lg font-semibold">Parámetros de aprobación</h3>
+        {!hideSubmit && (
+          <form.Subscribe selector={(state) => state.isDirty}>
+            {(isDirty) =>
+              isDirty ? (
+                <Button
+                  type="submit"
+                  color="primary"
+                  size="sm"
+                  disabled={isSaving}
+                >
+                  {isSaving ? "Guardando..." : "Guardar"}
+                </Button>
+              ) : null
+            }
+          </form.Subscribe>
+        )}
+      </div>
 
       <div className="grid gap-4 md:grid-cols-2">
 
@@ -463,13 +481,6 @@ const PromotionCriteriaForm = forwardRef<
         )}
       </form.Field>
 
-      {!hideSubmit && (
-        <div className="mt-6 flex justify-end">
-          <Button type="submit" color="primary" disabled={isSaving}>
-            {isSaving ? "Guardando..." : "Guardar"}
-          </Button>
-        </div>
-      )}
     </form>
   )
 })

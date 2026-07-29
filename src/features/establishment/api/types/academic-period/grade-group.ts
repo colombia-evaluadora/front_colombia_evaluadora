@@ -2,7 +2,6 @@ export interface GradeGroup {
   codigo: string
   jornada: string
   director: string
-  planEstudio: string
   metodologia?: string
   cupo?: number
 }
@@ -11,7 +10,6 @@ export interface GradeGroupsQueryFilters {
   codigo?: string
   jornada?: string
   director?: string
-  planEstudio?: string
 }
 
 export interface GradeGroupsQueryRequest {

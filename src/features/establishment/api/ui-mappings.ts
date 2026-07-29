@@ -35,8 +35,6 @@ export const EVALUATION_PERIOD_STATUS_BADGE: Record<
   "NO Calificable": { variant: "fill", color: "success" },
 }
 
-export const RATING_SCALE_TYPES: RatingScaleType[] = ["Fortaleza", "Debilidad"]
-
 export const RATING_SCALE_TYPE_BADGE: Record<RatingScaleType, BadgeProps> = {
   Fortaleza: { variant: "fill", color: "success" },
   Debilidad: { variant: "fill", color: "destructive" },

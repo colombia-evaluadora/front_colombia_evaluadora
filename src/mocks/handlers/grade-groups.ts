@@ -32,12 +32,6 @@ function applyFilters(
     ) {
       return false
     }
-    if (
-      filters.planEstudio &&
-      !row.planEstudio.toLowerCase().includes(filters.planEstudio.toLowerCase())
-    ) {
-      return false
-    }
     return true
   })
 }
