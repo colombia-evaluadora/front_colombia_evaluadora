@@ -1,13 +1,10 @@
 import { faker } from "@faker-js/faker"
 
 import type { CatalogItem } from "@/features/establishment/api/types/catalog"
-import type { Campus } from "@/features/establishment/api/types/campus"
 import type {
   Employee,
   EmployeeListItem,
-  EmployeeStatus,
 } from "@/features/establishment/api/types/employee"
-import type { Permission } from "@/features/establishment/api/types/permission"
 import type { Person } from "@/features/establishment/api/types/person"
 import { campusesDb } from "./campuses"
 import { DOCUMENT_TYPES } from "./catalogs/document-types"
@@ -47,16 +44,6 @@ function createPerson(): Person {
     phone: faker.phone.number({ style: "international" }),
     password: faker.internet.password({ length: 12 }),
     confirmPassword: faker.internet.password({ length: 12 }),
-  }
-}
-
-function createPermission(order: number, campusesPool: Campus[]): Permission {
-  return {
-    order,
-    role: createCatalogItem(EMPLOYEE_ROLES),
-    campus: faker.helpers.arrayElement(campusesPool),
-    workSchedule: createCatalogItem(WORK_SCHEDULES),
-    status: faker.number.int({ min: 1, max: 100 }) <= 90 ? "ACTIVE" : "SUSPENDED",
   }
 }
 

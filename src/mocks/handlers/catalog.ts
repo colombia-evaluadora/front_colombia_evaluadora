@@ -6,6 +6,11 @@ import { GENDERS } from "../db/catalogs/genders"
 import { MUNICIPALITIES } from "../db/catalogs/municipalities"
 import { EDUCATION_LEVELS } from "../db/catalogs/education-levels"
 import { WORK_SCHEDULES } from "../db/catalogs/work-schedules"
+import { EMPLOYEE_CLASSES } from "../db/catalogs/employee-classes"
+import { EMPLOYEE_GRADES } from "../db/catalogs/employee-grades"
+import { FUNDING_SOURCES } from "../db/catalogs/funding-sources"
+import { FUNCTIONAL_POSITIONS } from "../db/catalogs/functional-positions"
+import { EMPLOYMENT_TYPES } from "../db/catalogs/employment-types"
 import {
   CALENDARS,
   COST_REGIMEN,
@@ -40,6 +45,26 @@ export const catalogHandlers = [
 
   http.get(`/api/catalogs/${CATALOGS.WORK_SCHEDULES}`, () => {
     return HttpResponse.json(WORK_SCHEDULES)
+  }),
+
+  http.get(`/api/catalogs/${CATALOGS.EMPLOYEE_CLASSES}`, () => {
+    return HttpResponse.json(EMPLOYEE_CLASSES)
+  }),
+
+  http.get(`/api/catalogs/${CATALOGS.EMPLOYEE_GRADES}`, () => {
+    return HttpResponse.json(EMPLOYEE_GRADES)
+  }),
+
+  http.get(`/api/catalogs/${CATALOGS.FUNDING_SOURCES}`, () => {
+    return HttpResponse.json(FUNDING_SOURCES)
+  }),
+
+  http.get(`/api/catalogs/${CATALOGS.FUNCTIONAL_POSITIONS}`, () => {
+    return HttpResponse.json(FUNCTIONAL_POSITIONS)
+  }),
+
+  http.get(`/api/catalogs/${CATALOGS.EMPLOYMENT_TYPES}`, () => {
+    return HttpResponse.json(EMPLOYMENT_TYPES)
   }),
 
   http.get(`/api/catalogs/${CATALOGS.CALENDARIOS}`, () => {

@@ -117,6 +117,14 @@ export const campusHandlers = [
     })
   }),
 
+  http.get("*/api/establishments/campuses/options", async () => {
+    await delay(150)
+
+    return HttpResponse.json({
+      rows: campusesDb,
+    })
+  }),
+
   http.get("*/api/establishments/campuses/:id", async ({ params }) => {
     await delay(150)
 

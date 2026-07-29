@@ -2,18 +2,24 @@ import type { ColumnDef } from "@tanstack/react-table"
 
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { PencilIcon, TrashIcon } from "@/components/ui/icons"
+import { PencilIcon } from "@/components/ui/icons"
 import { DataTableColumnHeader } from "@/components/data-table"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { EMPLOYEE_STATUS_BADGE, EMPLOYEE_STATUS_LABELS } from "../../api/employee-ui-mappings"
 import type { EmployeeListItem } from "../../api/types/employee"
+import { DeleteEmployeeDialog } from "../dialogs/dialog-delete-employee"
+
+interface EmployeeColumnsOptions {
+  onEdit: (employeeId: string) => void
+}
 
 function formatCampusNames(campuses: string[]) {
   return campuses.join(" · ")
 }
 
-export const columns: ColumnDef<EmployeeListItem>[] = [
+export function createEmployeeColumns({ onEdit }: EmployeeColumnsOptions): ColumnDef<EmployeeListItem>[] {
+  return [
   {
     accessorKey: "documentNumber",
     id: "documentNumber",
@@ -82,7 +88,7 @@ export const columns: ColumnDef<EmployeeListItem>[] = [
   {
     id: "actions",
     header: () => <span className="sr-only">Acciones</span>,
-    cell: () => (
+    cell: ({ row }) => (
       <div className="flex items-center justify-end gap-1">
         <Button
           type="button"
@@ -91,21 +97,11 @@ export const columns: ColumnDef<EmployeeListItem>[] = [
           size="icon"
           className="size-8"
           aria-label="Editar funcionario"
-          onClick={() => void 0}
+          onClick={() => onEdit(row.original.id)}
         >
           <PencilIcon />
         </Button>
-        <Button
-          type="button"
-          variant="fill"
-          color="destructive"
-          size="icon"
-          className="size-8"
-          aria-label="Borrar funcionario"
-          onClick={() => void 0}
-        >
-          <TrashIcon />
-        </Button>
+        <DeleteEmployeeDialog employee={row.original} />
       </div>
     ),
     enableSorting: false,
@@ -113,3 +109,4 @@ export const columns: ColumnDef<EmployeeListItem>[] = [
     size: 96,
   },
 ]
+}

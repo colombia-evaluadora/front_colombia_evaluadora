@@ -1,5 +1,7 @@
 "use no memo"
 
+import { useMemo } from "react"
+
 import { DataTable } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
 import { Button } from "@/components/ui/button"
@@ -21,9 +23,13 @@ import { useCatalogQuery } from "../../api/query/use-catalogs"
 import { useEmployeesFilters } from "../../hooks/use-employees-filters"
 import type { CatalogItem } from "../../api/types/catalog"
 import { useEmployeesQuery } from "../../api/query/use-employees-query"
-import { columns } from "./columns-employees"
+import { createEmployeeColumns } from "./columns-employees"
 
-export function EmployeesDataTable() {
+interface EmployeesDataTableProps {
+  onEditEmployee: (employeeId: string) => void
+}
+
+export function EmployeesDataTable({ onEditEmployee }: EmployeesDataTableProps) {
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } =
     useTablePagination()
 
@@ -38,6 +44,8 @@ export function EmployeesDataTable() {
     pageIndex,
     pageSize,
   })
+
+  const columns = useMemo(() => createEmployeeColumns({ onEdit: onEditEmployee }), [onEditEmployee])
 
   const { table } = useDataTable({
     columns,
@@ -56,7 +64,7 @@ export function EmployeesDataTable() {
     <>
       <div className="mb-6 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <div className="grid w-full gap-4 xl:grid-cols-2 2xl:grid-cols-[minmax(18rem,1fr)_repeat(3,minmax(11rem,14rem))]">
-          <Field orientation="horizontal" className="w-full max-w-full">
+          <Field orientation="vertical" className="w-full max-w-full">
             <FieldLabel htmlFor="employee-search">Buscar</FieldLabel>
             <Input
               id="employee-search"
@@ -71,7 +79,7 @@ export function EmployeesDataTable() {
             />
           </Field>
 
-          <Field orientation="horizontal" className="w-full max-w-full">
+          <Field orientation="vertical" className="w-full max-w-full">
             <FieldLabel htmlFor="employee-role">Rol</FieldLabel>
             <Select
               value={filters.roles[0] ?? ""}
@@ -98,7 +106,7 @@ export function EmployeesDataTable() {
             </Select>
           </Field>
 
-          <Field orientation="horizontal" className="w-full max-w-full">
+          <Field orientation="vertical" className="w-full max-w-full">
             <FieldLabel htmlFor="employee-schedule">Jornada</FieldLabel>
             <Select
               value={filters.workSchedules[0] ?? ""}
@@ -125,7 +133,7 @@ export function EmployeesDataTable() {
             </Select>
           </Field>
 
-          <Field orientation="horizontal" className="w-full max-w-full">
+          <Field orientation="vertical" className="w-full max-w-full">
             <FieldLabel htmlFor="employee-status">Estado</FieldLabel>
             <Select
               value={filters.statuses[0] ?? ""}
