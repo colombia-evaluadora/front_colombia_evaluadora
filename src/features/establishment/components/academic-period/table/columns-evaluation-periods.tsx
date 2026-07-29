@@ -128,7 +128,10 @@ export function createEvaluationPeriodColumns({
           period={row.original}
           academicPeriodId={academicPeriodId}
         />
-        <DeleteEvaluationPeriodDialog period={row.original} />
+        <DeleteEvaluationPeriodDialog
+          period={row.original}
+          academicPeriodId={academicPeriodId}
+        />
       </div>
     ),
     enableSorting: false,

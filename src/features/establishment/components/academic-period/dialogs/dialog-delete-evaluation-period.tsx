@@ -21,10 +21,12 @@ import type { EvaluationPeriod } from "../../../api/types/academic-period/evalua
 
 interface DeleteEvaluationPeriodDialogProps {
   period: EvaluationPeriod
+  academicPeriodId?: number
 }
 
 export function DeleteEvaluationPeriodDialog({
   period,
+  academicPeriodId,
 }: DeleteEvaluationPeriodDialogProps) {
   const [open, setOpen] = useState(false)
 
@@ -71,7 +73,12 @@ export function DeleteEvaluationPeriodDialog({
           <AlertDialogAction
             disabled={deleteMutation.isPending}
             aria-busy={deleteMutation.isPending}
-            onClick={() => deleteMutation.mutate(period.codigo)}
+            onClick={() =>
+              deleteMutation.mutate({
+                academicPeriodId,
+                codigo: period.codigo,
+              })
+            }
           >
             {deleteMutation.isPending ? (
               <SpinnerIcon data-icon="inline-start" className="animate-spin" />

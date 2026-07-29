@@ -166,7 +166,11 @@ export function CreateEvaluationPeriodDialog({
         return
       }
       if (isEditing) {
-        updateEvaluation.mutate({ codigo: period.codigo, values })
+        updateEvaluation.mutate({
+          academicPeriodId,
+          codigo: period.codigo,
+          values,
+        })
       } else {
         createEvaluation.mutate({ ...values, academicPeriodId })
       }
