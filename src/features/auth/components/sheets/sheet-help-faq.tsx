@@ -1,3 +1,6 @@
+import type { ReactNode } from "react"
+import { Link } from "@tanstack/react-router"
+
 import {
   Accordion,
   AccordionContent,
@@ -5,7 +8,6 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 import { Button } from "@/components/ui/button"
-import { Link } from "@tanstack/react-router"
 import {
   Item,
   ItemActions,
@@ -26,7 +28,13 @@ import {
 } from "@/components/ui/sheet"
 import { CaretRightIcon, QuestionIcon } from "@/components/ui/icons"
 
-import { defaultHelpData, type HelpSheetData } from "./help-faq-data"
+import {
+  defaultHelpData,
+  type HelpFaq,
+  type HelpSection,
+  type HelpSheetData,
+  type HelpSupport,
+} from "./help-faq-data"
 
 export function HelpFaqSheet({ data = defaultHelpData }: { data?: HelpSheetData }) {
   return (
@@ -38,12 +46,12 @@ export function HelpFaqSheet({ data = defaultHelpData }: { data?: HelpSheetData 
             variant="link"
             color="primary"
             size="sm"
-            className="normal-case tracking-normal"
+            className="tracking-normal normal-case"
             aria-label={data.title}
           />
         }
       >
-        <QuestionIcon weight="duotone" className="text-primary size-4.5" aria-hidden="true" />
+        <QuestionIcon weight="duotone" className="size-4.5 text-primary" aria-hidden="true" />
         <span>{data.title}</span>
       </SheetTrigger>
 
@@ -53,109 +61,89 @@ export function HelpFaqSheet({ data = defaultHelpData }: { data?: HelpSheetData 
           <SheetDescription>{data.description}</SheetDescription>
         </SheetHeader>
 
-        <HelpFaqSheetContent data={data} />
+        <div className="flex-1 space-y-6 overflow-y-auto px-6 pb-6">
+          <HelpFaqSection title={data.faqsTitle} faqs={data.faqs} />
+
+          {data.sections.map((section) => (
+            <HelpLinkSection key={section.title} section={section} />
+          ))}
+
+          <Separator />
+
+          <HelpSupportSection support={data.support} />
+        </div>
       </SheetContent>
     </Sheet>
   )
 }
 
-function HelpFaqSheetContent({ data }: { data: HelpSheetData }) {
+function HelpBlock({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className="space-y-6 px-6 pb-6 flex-1 overflow-y-auto">
-      <section className="space-y-4">
-        <h3 className="text-base">¿No puedes iniciar sesión?</h3>
-        <Accordion className="border rounded-lg">
-          {data.faqs.map((faq) => (
-            <AccordionItem key={faq.id} value={faq.id}>
-              <AccordionTrigger className="px-4">
-                <div className="flex flex-1 items-center gap-3">
-                  <span className="shrink-0 [&_svg:not([class*='size-'])]:size-6">{faq.icon}</span>
-                  <div className="flex min-w-0 flex-col gap-0.5 text-left">
-                    <span className="text-sm font-semibold">{faq.title}</span>
-                    <span className="text-muted-foreground text-sm font-normal leading-relaxed">
-                      {faq.description}
-                    </span>
-                  </div>
-                </div>
-              </AccordionTrigger>
-              <AccordionContent>
-                <div className="text-muted-foreground px-4 pb-4 text-sm leading-relaxed">
-                  {faq.body}
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          ))}
-        </Accordion>
-      </section>
+    <section className="space-y-4">
+      <h3 className="text-base font-semibold">{title}</h3>
+      {children}
+    </section>
+  )
+}
 
-      {data.sections.map((section) => (
-        <section key={section.title} className="space-y-4">
-          <h3 className="text-base">{section.title}</h3>
-          <ItemGroup className="gap-0">
-            {section.items.map((item, index) => (
-              <Item
-                key={item.title}
-                variant="outline"
-                className={`rounded-none ${index === 0 ? "rounded-t-lg" : ""} ${
-                  index === section.items.length - 1 ? "rounded-b-lg" : ""
-                }`}
-                render={item.to ? <Link to={item.to} /> : undefined}
-              >
-                <ItemMedia
-                  variant="icon"
-                  className="group-has-data-[slot=item-description]/item:translate-y-0 group-has-data-[slot=item-description]/item:self-center [&_svg:not([class*='size-'])]:size-6"
-                >
-                  {item.icon}
-                </ItemMedia>
-                <ItemContent>
-                  <ItemTitle>{item.title}</ItemTitle>
-                  <ItemDescription>{item.description}</ItemDescription>
-                </ItemContent>
-                <ItemActions>
-                  <CaretRightIcon className="text-muted-foreground size-4" />
-                </ItemActions>
-              </Item>
-            ))}
-          </ItemGroup>
-        </section>
-      ))}
+function HelpFaqSection({ title, faqs }: { title: string; faqs: HelpFaq[] }) {
+  return (
+    <HelpBlock title={title}>
+      <Accordion className="rounded-lg border">
+        {faqs.map((faq) => (
+          <AccordionItem key={faq.id} value={faq.id}>
+            <AccordionTrigger className="items-center gap-3 px-4">
+              <ItemMedia variant="icon-lg">{faq.icon}</ItemMedia>
+              <ItemContent>
+                <ItemTitle>{faq.title}</ItemTitle>
+                <ItemDescription>{faq.description}</ItemDescription>
+              </ItemContent>
+            </AccordionTrigger>
+            <AccordionContent className="px-4 text-muted-foreground">{faq.body}</AccordionContent>
+          </AccordionItem>
+        ))}
+      </Accordion>
+    </HelpBlock>
+  )
+}
 
-      <Separator />
-      <section className="space-y-4">
-        <h3 className="px-1 text-base font-semibold">Soporte</h3>
-        <Item variant="outline" className="rounded-lg">
-          <ItemMedia
-            variant="icon"
-            className="group-has-data-[slot=item-description]/item:translate-y-0 group-has-data-[slot=item-description]/item:self-center [&_svg:not([class*='size-'])]:size-6"
-          >
-            {data.support.icon}
-          </ItemMedia>
-          <ItemContent>
-            <ItemTitle className="!text-sm !font-semibold normal-case !tracking-normal">
-              {data.support.title}
-            </ItemTitle>
-            <div className="text-muted-foreground space-y-1 text-sm leading-relaxed">
-              <p>
-                <a
-                  className="hover:text-foreground underline underline-offset-3"
-                  href={`mailto:${data.support.email}`}
-                >
-                  {data.support.email}
-                </a>
-              </p>
-              <p>
-                <a
-                  className="hover:text-foreground underline underline-offset-3"
-                  href={`tel:${data.support.phone.replace(/[^+\d]/g, "")}`}
-                >
-                  {data.support.phone}
-                </a>
-              </p>
-              <p>{data.support.hours}</p>
-            </div>
-          </ItemContent>
-        </Item>
-      </section>
-    </div>
+function HelpLinkSection({ section }: { section: HelpSection }) {
+  return (
+    <HelpBlock title={section.title}>
+      <ItemGroup variant="list">
+        {section.items.map((item) => (
+          <Item key={item.title} render={<Link to={item.to} />}>
+            <ItemMedia variant="icon-lg">{item.icon}</ItemMedia>
+            <ItemContent>
+              <ItemTitle>{item.title}</ItemTitle>
+              <ItemDescription>{item.description}</ItemDescription>
+            </ItemContent>
+            <ItemActions>
+              <CaretRightIcon className="size-4 text-muted-foreground" />
+            </ItemActions>
+          </Item>
+        ))}
+      </ItemGroup>
+    </HelpBlock>
+  )
+}
+
+function HelpSupportSection({ support }: { support: HelpSupport }) {
+  return (
+    <HelpBlock title="Soporte">
+      <Item variant="outline" className="rounded-lg">
+        <ItemMedia variant="icon-lg">{support.icon}</ItemMedia>
+        <ItemContent>
+          <ItemTitle>{support.title}</ItemTitle>
+          <ItemDescription>
+            <a href={`mailto:${support.email}`}>{support.email}</a>
+          </ItemDescription>
+          <ItemDescription>
+            <a href={`tel:${support.phone.replace(/[^+\d]/g, "")}`}>{support.phone}</a>
+          </ItemDescription>
+          <ItemDescription>{support.hours}</ItemDescription>
+        </ItemContent>
+      </Item>
+    </HelpBlock>
   )
 }

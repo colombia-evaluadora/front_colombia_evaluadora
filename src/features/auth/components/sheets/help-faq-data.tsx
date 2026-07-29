@@ -16,7 +16,7 @@ export interface HelpLink {
   title: string
   description: string
   icon: ReactNode
-  to?: string
+  to: string
 }
 
 export interface HelpFaq {
@@ -47,6 +47,7 @@ export interface HelpSupport {
 export interface HelpSheetData {
   title: string
   description: string
+  faqsTitle: string
   faqs: HelpFaq[]
   sections: HelpSection[]
   support: HelpSupport
@@ -58,6 +59,7 @@ const supportLinkClass =
 export const defaultHelpData: HelpSheetData = {
   title: "¿Necesitas ayuda?",
   description: "Estamos aquí para ayudarte.",
+  faqsTitle: "¿No puedes iniciar sesión?",
   faqs: [
     {
       id: "forgot-password",
