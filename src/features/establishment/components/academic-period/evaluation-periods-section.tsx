@@ -13,8 +13,8 @@ const TABS: { value: string; label: string }[] = [
   { value: "evaluacion", label: "Periodos de evaluación" },
   { value: "area", label: "Área/asignatura" },
   { value: "promocion", label: "Criterios de promoción" },
-  { value: "escalas", label: "Escalas de valoración" },
   { value: "criterios", label: "Criterios de evaluación" },
+  { value: "escalas", label: "Escalas de valoración" },
   { value: "grados", label: "Grados" },
   { value: "asignaciones", label: "Asignaciones académicas" },
 ]

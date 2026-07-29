@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle } from "react"
+import { forwardRef, useImperativeHandle } from "react"
 import { useForm } from "@tanstack/react-form"
 import { toast } from "sonner"
 import { z } from "zod"
@@ -90,6 +90,11 @@ export interface PromotionCriteriaHandle {
   save: (gradeId: number) => Promise<void>
 }
 
+// Carga los datos y solo monta el formulario cuando ya están disponibles, de
+// modo que el form se inicialice directamente con ellos. Inicializar con un
+// valor vacío y "resetear" en un efecto cuando llegan los datos era frágil:
+// en la primera apertura los datos llegaban tras el montaje y el formulario
+// quedaba vacío hasta reabrirlo (con la caché ya poblada).
 export const TabPromotionCriteria = forwardRef<
   PromotionCriteriaHandle,
   TabPromotionCriteriaProps
@@ -99,17 +104,25 @@ export const TabPromotionCriteria = forwardRef<
 ) {
   const isGradeScope = gradeId != null
 
-  // Criterios por periodo (pestaña del periodo).
+  // Criterios del periodo. Se cargan en ambos ámbitos: en la pestaña son los
+  // criterios que se editan; en el diálogo del grado son la base que hereda el
+  // grado cuando aún no tiene criterios propios.
   const { data: periodCriteria, isPending: periodLoading } =
-    usePromotionCriteriaQuery(isGradeScope ? undefined : academicPeriodId)
+    usePromotionCriteriaQuery(academicPeriodId)
 
   // Criterios por grado (dentro del diálogo del grado).
   const { data: gradeConfig, isPending: gradeLoading } = useGradeConfigQuery(
     isGradeScope ? gradeId : undefined
   )
 
-  const criteria = isGradeScope ? gradeConfig?.promotionCriteria : periodCriteria
-  const isLoading = isGradeScope ? gradeLoading : periodLoading
+  // El grado hereda los criterios del periodo mientras no tenga los suyos
+  // propios; si el grado ya fue personalizado, se respetan sus valores.
+  const criteria = isGradeScope
+    ? (gradeConfig?.promotionCriteria ?? periodCriteria)
+    : periodCriteria
+  const isLoading = isGradeScope
+    ? gradeLoading || (academicPeriodId != null && periodLoading)
+    : periodLoading
 
   // Opciones de "áreas/asignaturas obligatorias" = las del periodo.
   const { data: areaData } = useAreaSubjectQuery({
@@ -120,6 +133,45 @@ export const TabPromotionCriteria = forwardRef<
     academicPeriodId,
   })
   const subjectOptions = (areaData?.rows ?? []).map((area) => area.nombreInterno)
+
+  if ((isGradeScope || academicPeriodId != null) && isLoading) {
+    return (
+      <div className="flex justify-center py-10">
+        <Spinner />
+      </div>
+    )
+  }
+
+  return (
+    <PromotionCriteriaForm
+      // Reinicia el formulario al cambiar de entidad (grado/periodo).
+      key={isGradeScope ? `grade-${gradeId}` : `period-${academicPeriodId ?? "new"}`}
+      ref={ref}
+      hideSubmit={hideSubmit}
+      academicPeriodId={academicPeriodId}
+      gradeId={gradeId}
+      initialValues={criteria ?? EMPTY}
+      subjectOptions={subjectOptions}
+    />
+  )
+})
+
+interface PromotionCriteriaFormProps {
+  hideSubmit: boolean
+  academicPeriodId?: number
+  gradeId?: number
+  initialValues: ApprovalValues
+  subjectOptions: string[]
+}
+
+const PromotionCriteriaForm = forwardRef<
+  PromotionCriteriaHandle,
+  PromotionCriteriaFormProps
+>(function PromotionCriteriaForm(
+  { hideSubmit, academicPeriodId, gradeId, initialValues, subjectOptions },
+  ref
+) {
+  const isGradeScope = gradeId != null
 
   const savePeriodCriteria = useUpdatePromotionCriteria({
     mutationConfig: {
@@ -152,7 +204,7 @@ export const TabPromotionCriteria = forwardRef<
     : savePeriodCriteria.isPending
 
   const form = useForm({
-    defaultValues: EMPTY,
+    defaultValues: initialValues,
     validators: {
       onSubmit: approvalSchema,
     },
@@ -169,10 +221,6 @@ export const TabPromotionCriteria = forwardRef<
     },
   })
 
-  useEffect(() => {
-    if (criteria) form.reset(criteria)
-  }, [criteria, form])
-
   useImperativeHandle(
     ref,
     () => ({
@@ -185,14 +233,6 @@ export const TabPromotionCriteria = forwardRef<
     }),
     [saveGradeConfig, form]
   )
-
-  if ((isGradeScope || academicPeriodId != null) && isLoading) {
-    return (
-      <div className="flex justify-center py-10">
-        <Spinner />
-      </div>
-    )
-  }
 
   return (
     <form
