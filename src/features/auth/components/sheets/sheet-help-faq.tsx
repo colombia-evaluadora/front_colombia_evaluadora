@@ -1,4 +1,4 @@
-import type { ReactNode } from "react"
+﻿import type { ReactNode } from "react"
 import { Link } from "@tanstack/react-router"
 
 import {
@@ -16,7 +16,6 @@ import {
   ItemMedia,
   ItemTitle,
 } from "@/components/ui/item"
-import { Separator } from "@/components/ui/separator"
 import {
   Sheet,
   SheetContent,

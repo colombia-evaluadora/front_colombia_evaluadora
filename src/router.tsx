@@ -9,6 +9,7 @@ import {
 import type { QueryClient } from "@tanstack/react-query"
 
 import { paths } from "@/config/paths"
+import { humanizeSlug } from "@/config/breadcrumbs"
 import { hasSession } from "@/lib/auth"
 import { queryClient } from "@/lib/query-client"
 import { NotFoundPage } from "@/components/layout/not-found-page"
@@ -218,11 +219,24 @@ const appLayoutRoute = createRoute({
   component: ProtectedLayout,
 })
 
+// Agrupadores sin página propia: enlazan a su primer hijo, igual que el grupo
+// colapsable del sidebar (ver nav-main.tsx). Así toda miga es un `<a href>`
+// navegable y la cadena del BreadcrumbList queda completa para Google.
+const COBERTURA_CRUMB = {
+  label: "Cobertura",
+  to: paths.app.coberturaReservaCupo.getHref(),
+}
+const AUDITORIA_CRUMB = {
+  label: "Auditoría",
+  to: paths.app.auditoriaSesiones.getHref(),
+}
+
 export const paymentsRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.payments.path,
   validateSearch: paymentsSearchSchema,
   errorComponent: PaymentsErrorPage,
+  staticData: { breadcrumb: [{ label: "Pagos" }] },
   component: PaymentsPage,
 })
 
@@ -230,24 +244,28 @@ export const coberturaReservaCupoRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.coberturaReservaCupo.path,
   validateSearch: reservationsSearchSchema,
+  staticData: { breadcrumb: [COBERTURA_CRUMB, { label: "Reserva de cupo" }] },
   component: ReservationsPage,
 })
 
 const coberturaPreMatriculaRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.coberturaPreMatricula.path,
+  staticData: { breadcrumb: [COBERTURA_CRUMB, { label: "Pre-Matrícula" }] },
   component: () => <ComingSoonPage title="Pre-Matrícula" />,
 })
 
 const coberturaInscritosRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.coberturaInscritos.path,
+  staticData: { breadcrumb: [COBERTURA_CRUMB, { label: "Inscritos" }] },
   component: () => <ComingSoonPage title="Inscritos" />,
 })
 
 const coberturaMatriculaRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.coberturaMatricula.path,
+  staticData: { breadcrumb: [COBERTURA_CRUMB, { label: "Matrícula" }] },
   component: () => <ComingSoonPage title="Matrícula" />,
 })
 
@@ -255,6 +273,7 @@ export const auditoriaSesionesRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.auditoriaSesiones.path,
   validateSearch: auditsSearchSchema,
+  staticData: { breadcrumb: [AUDITORIA_CRUMB, { label: "Sesiones" }] },
   component: AuditSessionPage,
 })
 
@@ -262,6 +281,7 @@ export const auditoriaTablasRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.auditoriaTablas.path,
   validateSearch: auditTablesSearchSchema,
+  staticData: { breadcrumb: [AUDITORIA_CRUMB, { label: "Tablas" }] },
   component: AuditTablesPage,
 })
 
@@ -269,6 +289,13 @@ export const auditoriaTablaDetalleRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.auditoriaTablaDetalle.path,
   validateSearch: tableOperationsSearchSchema,
+  staticData: {
+    breadcrumb: (params) => [
+      AUDITORIA_CRUMB,
+      { label: "Tablas", to: paths.app.auditoriaTablas.getHref() },
+      { label: humanizeSlug(params.tableSlug) },
+    ],
+  },
   component: TableOperationsPage,
 })
 
@@ -276,24 +303,35 @@ export const auditoriaSesionOperacionesRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.auditoriaSesionOperaciones.path,
   validateSearch: sessionOperationsSearchSchema,
+  // El `sessionId` es un identificador opaco: no se muestra como miga.
+  staticData: {
+    breadcrumb: [
+      AUDITORIA_CRUMB,
+      { label: "Sesiones", to: paths.app.auditoriaSesiones.getHref() },
+      { label: "Operaciones" },
+    ],
+  },
   component: SessionOperationsPage,
 })
 
 const reportesRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.reportes.path,
+  staticData: { breadcrumb: [{ label: "Reportes" }] },
   component: () => <ComingSoonPage title="Reportes" />,
 })
 
 const usuariosRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.usuarios.path,
+  staticData: { breadcrumb: [{ label: "Usuarios" }] },
   component: () => <ComingSoonPage title="Usuarios" />,
 })
 
 const configuracionRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.configuracion.path,
+  staticData: { breadcrumb: [{ label: "Configuración" }] },
   component: () => <ComingSoonPage title="Configuración" />,
 })
 
