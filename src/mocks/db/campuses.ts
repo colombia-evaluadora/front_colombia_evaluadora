@@ -128,3 +128,19 @@ export function deleteCampusDetails(id: string) {
     campusesRowsDb.splice(rowIndex, 1)
   }
 }
+
+export function deleteManyCampusDetails(ids: string[]) {
+  const idSet = new Set(ids)
+
+  for (let index = campusesDb.length - 1; index >= 0; index -= 1) {
+    if (idSet.has(campusesDb[index].id)) {
+      campusesDb.splice(index, 1)
+    }
+  }
+
+  for (let index = campusesRowsDb.length - 1; index >= 0; index -= 1) {
+    if (idSet.has(campusesRowsDb[index].id)) {
+      campusesRowsDb.splice(index, 1)
+    }
+  }
+}

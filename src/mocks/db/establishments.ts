@@ -206,12 +206,28 @@ export function upsertEstablishmentDetails(details: EstablishmentDetails) {
 export function deleteEstablishmentDetails(id: string){
   const existingIndex = establishmentsDb.findIndex((item) => item.id === id)
   const rowIndex = establishmentsRowsDb.findIndex((item) => item.id === id)
-  
+
   if (existingIndex >= 0) {
     establishmentsDb.splice(existingIndex, 1)
   }
 
   if (rowIndex >= 0) {
     establishmentsRowsDb.splice(rowIndex, 1)
+  }
+}
+
+export function deleteManyEstablishmentDetails(ids: string[]) {
+  const idSet = new Set(ids)
+
+  for (let index = establishmentsDb.length - 1; index >= 0; index -= 1) {
+    if (idSet.has(establishmentsDb[index].id)) {
+      establishmentsDb.splice(index, 1)
+    }
+  }
+
+  for (let index = establishmentsRowsDb.length - 1; index >= 0; index -= 1) {
+    if (idSet.has(establishmentsRowsDb[index].id)) {
+      establishmentsRowsDb.splice(index, 1)
+    }
   }
 }

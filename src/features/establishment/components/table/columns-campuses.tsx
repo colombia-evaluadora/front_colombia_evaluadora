@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import { PencilIcon } from "@/components/ui/icons"
 import { DataTableColumnHeader } from "@/components/data-table"
 import { paths } from "@/config/paths"
@@ -11,6 +12,34 @@ import type { Campus } from "../../api/types/campus"
 import { DeleteCampusDialog } from "../dialogs/dialog-delete-campus"
 
 export const columns: ColumnDef<Campus>[] = [
+  {
+    id: "select",
+    header: ({ table }) => (
+      <Checkbox
+        color="neutral"
+        aria-label="Seleccionar página"
+        className="translate-y-0.5"
+        checked={table.getIsAllPageRowsSelected()}
+        indeterminate={
+          !table.getIsAllPageRowsSelected() &&
+          table.getIsSomePageRowsSelected()
+        }
+        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+      />
+    ),
+    cell: ({ row }) => (
+      <Checkbox
+        color="neutral"
+        aria-label={`Seleccionar ${row.original.name}`}
+        className="translate-y-0.5"
+        checked={row.getIsSelected()}
+        onCheckedChange={(value) => row.toggleSelected(!!value)}
+      />
+    ),
+    enableSorting: false,
+    enableHiding: false,
+    size: 32,
+  },
   {
     accessorKey: "name",
     id: "name",

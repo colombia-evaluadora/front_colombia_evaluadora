@@ -1,6 +1,7 @@
 "use no memo"
 
 import { useMemo } from "react"
+import { toast } from "sonner"
 
 import { DataTable } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
@@ -22,8 +23,11 @@ import { CATALOGS } from "@/lib/catalogs"
 import { useCatalogQuery } from "../../api/query/use-catalogs"
 import { useEmployeesFilters } from "../../hooks/use-employees-filters"
 import type { CatalogItem } from "../../api/types/catalog"
+import type { EmployeeListItem } from "../../api/types/employee"
 import { useEmployeesQuery } from "../../api/query/use-employees-query"
+import { useBulkDeleteEmployees } from "../../api/mutations/use-bulk-delete-employees"
 import { createEmployeeColumns } from "./columns-employees"
+import { BulkDeleteFab } from "../bulk-delete-fab"
 
 interface EmployeesDataTableProps {
   onEditEmployee: (employeeId: string) => void
@@ -47,7 +51,7 @@ export function EmployeesDataTable({ onEditEmployee }: EmployeesDataTableProps) 
 
   const columns = useMemo(() => createEmployeeColumns({ onEdit: onEditEmployee }), [onEditEmployee])
 
-  const { table } = useDataTable({
+  const { table, selectedIds, hasSelection, resetSelection } = useDataTable({
     columns,
     data: data?.rows ?? [],
     pageCount: data?.pageCount ?? -1,
@@ -58,6 +62,28 @@ export function EmployeesDataTable({ onEditEmployee }: EmployeesDataTableProps) 
     setPageSize,
     sorting,
     setSorting,
+  })
+
+  const rows = data?.rows ?? []
+  const selectedItems = useMemo(
+    () => rows.filter((row) => selectedIds.includes(row.id)),
+    [rows, selectedIds],
+  )
+
+  const bulkDelete = useBulkDeleteEmployees({
+    mutationConfig: {
+      onSuccess: (result) => {
+        if (result.status === "error") {
+          toast.error(result.message)
+          return
+        }
+        toast.success(result.message)
+        resetSelection()
+      },
+      onError: (error) => {
+        toast.error(error.message)
+      },
+    },
   })
 
   return (
@@ -184,6 +210,25 @@ export function EmployeesDataTable({ onEditEmployee }: EmployeesDataTableProps) 
           totalCount={data.totalCount}
           pageSize={pageSize}
           onPageSizeChange={setPageSize}
+        />
+      )}
+
+      {hasSelection && (
+        <BulkDeleteFab<EmployeeListItem>
+          selectedIds={selectedIds}
+          selectedItems={selectedItems}
+          getItemId={(item) => item.id}
+          getItemLabel={(item) => item.name}
+          title="¿Está seguro de que desea eliminar los funcionarios seleccionados?"
+          description={(count, sample) => {
+            const list = sample.join(", ")
+            const suffix = count > sample.length ? ` y ${count - sample.length} más` : ""
+            return `Se eliminarán permanentemente ${list}${suffix} (${count} en total). Esta acción no se puede deshacer.`
+          }}
+          onConfirm={async (ids) => {
+            await bulkDelete.mutateAsync(ids)
+          }}
+          onClearSelection={resetSelection}
         />
       )}
     </>

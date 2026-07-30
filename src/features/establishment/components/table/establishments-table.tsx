@@ -1,5 +1,8 @@
 "use no memo"
 
+import { useMemo } from "react"
+import { toast } from "sonner"
+
 import { DataTable } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
 import { Button } from "@/components/ui/button"
@@ -18,7 +21,10 @@ import { useTablePagination } from "@/hooks/use-table-pagination"
 
 import { useEstablishmentsFilters } from "../../hooks/use-establishments-filters"
 import { useEstablishmentsQuery } from "../../api/query/use-establishments-query"
+import { useBulkDeleteEstablishments } from "../../api/mutations/use-bulk-delete-establishments"
+import type { Establishment } from "../../api/types/establishment"
 import { columns } from "./columns"
+import { BulkDeleteFab } from "../bulk-delete-fab"
 
 export function EstablishmentsDataTable() {
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } =
@@ -37,7 +43,7 @@ export function EstablishmentsDataTable() {
     pageSize,
   })
 
-  const { table } = useDataTable({
+  const { table, selectedIds, hasSelection, resetSelection } = useDataTable({
     columns,
     data: data?.rows ?? [],
     pageCount: data?.pageCount ?? -1,
@@ -48,6 +54,28 @@ export function EstablishmentsDataTable() {
     setPageSize,
     sorting,
     setSorting,
+  })
+
+  const rows = data?.rows ?? []
+  const selectedItems = useMemo(
+    () => rows.filter((row) => selectedIds.includes(row.id)),
+    [rows, selectedIds],
+  )
+
+  const bulkDelete = useBulkDeleteEstablishments({
+    mutationConfig: {
+      onSuccess: (result) => {
+        if (result.status === "error") {
+          toast.error(result.message)
+          return
+        }
+        toast.success(result.message)
+        resetSelection()
+      },
+      onError: (error) => {
+        toast.error(error.message)
+      },
+    },
   })
 
   return (
@@ -126,6 +154,25 @@ export function EstablishmentsDataTable() {
           totalCount={data.totalCount}
           pageSize={pageSize}
           onPageSizeChange={setPageSize}
+        />
+      )}
+
+      {hasSelection && (
+        <BulkDeleteFab<Establishment>
+          selectedIds={selectedIds}
+          selectedItems={selectedItems}
+          getItemId={(item) => item.id}
+          getItemLabel={(item) => item.name}
+          title="¿Está seguro de que desea eliminar los establecimientos educativos seleccionados?"
+          description={(count, sample) => {
+            const list = sample.join(", ")
+            const suffix = count > sample.length ? ` y ${count - sample.length} más` : ""
+            return `Se eliminarán permanentemente ${list}${suffix} (${count} en total). Esta acción no se puede deshacer.`
+          }}
+          onConfirm={async (ids) => {
+            await bulkDelete.mutateAsync(ids)
+          }}
+          onClearSelection={resetSelection}
         />
       )}
     </>

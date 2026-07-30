@@ -141,3 +141,19 @@ export function deleteEmployeeDetails(id: string) {
     employeesRowsDb.splice(rowIndex, 1)
   }
 }
+
+export function deleteManyEmployeeDetails(ids: string[]) {
+  const idSet = new Set(ids)
+
+  for (let index = employeesDb.length - 1; index >= 0; index -= 1) {
+    if (idSet.has(employeesDb[index].id)) {
+      employeesDb.splice(index, 1)
+    }
+  }
+
+  for (let index = employeesRowsDb.length - 1; index >= 0; index -= 1) {
+    if (idSet.has(employeesRowsDb[index].id)) {
+      employeesRowsDb.splice(index, 1)
+    }
+  }
+}
