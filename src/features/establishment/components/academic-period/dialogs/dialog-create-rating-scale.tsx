@@ -162,18 +162,21 @@ export function CreateRatingScaleDialog({
       return
     }
     await Promise.all(
-      drafts.map((d) =>
-        createScale.mutateAsync({
-          ...d,
-          tipo: d.tipo as RatingScaleType,
-          codigo: 0,
-          teachingLevelIds,
-          teachingLevels: [],
-          academicPeriodId,
-        })
+      teachingLevelIds.flatMap((levelId) =>
+        drafts.map((d) =>
+          createScale.mutateAsync({
+            ...d,
+            tipo: d.tipo as RatingScaleType,
+            codigo: 0,
+            teachingLevelIds: [levelId],
+            teachingLevels: [],
+            academicPeriodId,
+          })
+        )
       )
     )
-    toast.success(`${drafts.length} escala(s) guardada(s).`)
+    const total = drafts.length * teachingLevelIds.length
+    toast.success(`${total} escala(s) guardada(s).`)
     reset()
     setOpen(false)
   }
