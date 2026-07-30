@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { CaretDownIcon, PlusIcon, TrashIcon } from "@/components/ui/icons"
+import { CaretDownIcon, PlusIcon, TrashIcon, XIcon } from "@/components/ui/icons"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -19,6 +19,71 @@ function formatTime12(value: string): string {
   const period = h < 12 ? "am" : "pm"
   const h12 = h % 12 === 0 ? 12 : h % 12
   return `${h12}:${String(m).padStart(2, "0")}${period}`
+}
+
+// Inicio del chip: "Ha" / "Hp" — solo la hora + letra del período.
+// Ej.: 5:00am → "5a".
+function formatBreakStartLabel(value: string): string {
+  if (!value) return ""
+  const [h] = value.split(":").map(Number)
+  const period = h < 12 ? "a" : "p"
+  const h12 = h % 12 === 0 ? 12 : h % 12
+  return `${h12}${period}`
+}
+
+// Fin del chip: "H:3a" / "H:3p" — hora + marcador "3" + letra del período.
+// El "3" es fijo (no se calcula del minuto) para mantener el formato
+// compacto que pide la UI.
+function formatBreakEndLabel(value: string): string {
+  if (!value) return ""
+  const [h] = value.split(":").map(Number)
+  const period = h < 12 ? "a" : "p"
+  const h12 = h % 12 === 0 ? 12 : h % 12
+  return `${h12}:3${period}`
+}
+
+// Render del trigger: hasta 2 chips con "Ha → H:3a" + × para borrar.
+// Si hay más de 2, agrega un chip "+1" al final.
+function BreakChips({
+  value,
+  onRemove,
+}: {
+  value: Break[]
+  onRemove: (index: number) => void
+}) {
+  const visible = value.slice(0, 2)
+  const extra = value.length - visible.length
+
+  return (
+    <span className="flex min-w-0 flex-1 flex-wrap items-center gap-1">
+      {visible.map((brk, index) => (
+        <span
+          key={`${brk.startTime}-${brk.endTime}-${index}`}
+          className="bg-muted text-muted-foreground inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs"
+        >
+          <span className="font-medium">
+            {formatBreakStartLabel(brk.startTime)} → {formatBreakEndLabel(brk.endTime)}
+          </span>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation()
+              onRemove(index)
+            }}
+            aria-label={`Quitar descanso ${index + 1}`}
+            className="hover:text-foreground -mr-1 inline-flex items-center"
+          >
+            <XIcon className="size-3" />
+          </button>
+        </span>
+      ))}
+      {extra > 0 && (
+        <span className="bg-muted text-muted-foreground inline-flex items-center rounded-full px-2 py-0.5 text-xs">
+          +1
+        </span>
+      )}
+    </span>
+  )
 }
 
 export function BreaksField({
@@ -47,9 +112,11 @@ export function BreaksField({
           />
         }
       >
-        <span className="truncate">
-          {value.length > 0 ? `${value.length} descanso(s)` : "Agregar"}
-        </span>
+        {value.length === 0 ? (
+          <span>Agregar</span>
+        ) : (
+          <BreakChips value={value} onRemove={onRemove} />
+        )}
         <CaretDownIcon className="text-muted-foreground size-4 shrink-0" />
       </PopoverTrigger>
       <PopoverContent align="start" className="w-auto min-w-72">
