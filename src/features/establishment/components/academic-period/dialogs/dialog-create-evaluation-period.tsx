@@ -35,20 +35,13 @@ import {
 import { useCreateEvaluationPeriod } from "../../../api/mutations/create-evaluation-period"
 import { useUpdateEvaluationPeriod } from "../../../api/mutations/update-evaluation-period"
 import { useEvaluationPeriodsQuery } from "../../../api/query/use-evaluation-periods-query"
-import { EVALUATION_PERIOD_STATUSES } from "../../../api/ui-mappings"
+import { useEvaluationPeriodStatusesQuery } from "../../../api/query/use-evaluation-period-statuses-query"
 import type {
   EvaluationPeriod,
   EvaluationPeriodStatus,
 } from "../../../api/types/academic-period/evaluation-period"
 import { DatePicker } from "@/components/date-picker"
 import { formatDateValue, parseDateValue } from "@/lib/date-value"
-
-const STATUS_TUPLE = [
-  "Calificable",
-  "NO Calificable",
-  "En Recuperaciones",
-  "Habilitados para algunas asignaturas",
-] as const satisfies readonly EvaluationPeriodStatus[]
 
 const evaluationPeriodFormSchema = z
   .object({
@@ -58,7 +51,7 @@ const evaluationPeriodFormSchema = z
     startDate: z.string().min(1, "La fecha de inicio es obligatoria"),
     endDate: z.string().min(1, "La fecha de fin es obligatoria"),
     peso: z.number().min(0).max(100),
-    estado: z.enum(STATUS_TUPLE),
+    estado: z.string().min(1, "El estado es obligatorio"),
   })
   .refine(
     (data) =>
@@ -106,6 +99,8 @@ export function CreateEvaluationPeriodDialog({
   )
   const pesoUsado = otherPeriods.reduce((sum, p) => sum + (p.peso ?? 0), 0)
   const pesoDisponible = Math.max(0, 100 - pesoUsado)
+
+  const { data: statusOptions = [] } = useEvaluationPeriodStatusesQuery()
 
   function hasOverlap(start: string, end: string): boolean {
     if (!start || !end) return false
@@ -171,22 +166,19 @@ export function CreateEvaluationPeriodDialog({
         )
         return
       }
+      const payload = { ...values, estado: values.estado as EvaluationPeriodStatus }
       if (isEditing) {
         updateEvaluation.mutate({
           academicPeriodId,
           codigo: period.codigo,
-          values,
+          values: payload,
         })
       } else {
-        createEvaluation.mutate({ ...values, academicPeriodId })
+        createEvaluation.mutate({ ...payload, academicPeriodId })
       }
     },
   })
 
-  // Al abrir el diálogo, se descartan las ediciones no guardadas: el form
-  // parte siempre de los datos reales (los del periodo al editar, o vacío al
-  // crear). Sin esto, como el componente sigue montado, las ediciones sin
-  // guardar reaparecían al reabrir.
   function handleOpenChange(next: boolean) {
     if (next) form.reset(defaultValues)
     setOpen(next)
@@ -410,7 +402,7 @@ export function CreateEvaluationPeriodDialog({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>
-                        {EVALUATION_PERIOD_STATUSES.map((option) => (
+                        {statusOptions.map((option) => (
                           <SelectItem key={option} value={option}>
                             {option}
                           </SelectItem>

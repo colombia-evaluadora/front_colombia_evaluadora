@@ -85,9 +85,6 @@ export function CreateGradeDialog({
 
   const { data: teachingLevels = [] } = useTeachingLevelsQuery()
 
-  // El catálogo de grados no está acotado al nivel de enseñanza: tanto el
-  // nombre como el grado siguiente se eligen entre todos los grados
-  // disponibles.
   const gradoOptions = useMemo(
     () => [...new Set(teachingLevels.flatMap((level) => level.grados))],
     [teachingLevels]
@@ -265,8 +262,6 @@ export function CreateGradeDialog({
 
           <Field variant="outlined">
             <FieldLabel htmlFor="grade-nombre">Nombre*</FieldLabel>
-            {/* Al crear se elige de un catálogo cerrado de grados; una vez
-                creado el grado el nombre queda editable como texto libre. */}
             {gradeId == null ? (
               <Select
                 value={nombre || undefined}
@@ -375,8 +370,6 @@ export function CreateGradeDialog({
               <TabGradeGroups gradeId={gradeId} academicPeriodId={academicPeriodId} />
             </TabsContent>
 
-            {/* keepMounted: la tab de formulario sigue montada aunque no esté
-                activa, para que su ref de guardado y su estado persistan. */}
             <TabsContent value="promocion" keepMounted className="mt-4 min-w-0">
               <TabPromotionCriteria
                 ref={promotionRef}
