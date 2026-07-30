@@ -1,5 +1,5 @@
 import type { AreaSubject } from "../../../api/types/academic-period/area-subject"
-import { AreaSubjectFormDialog } from "./area-subject-form-dialog"
+import { AreaSubjectFormDialog } from "./dialog-area-subject-form"
 
 interface EditAreaSubjectDialogProps {
   areaSubject: AreaSubject
