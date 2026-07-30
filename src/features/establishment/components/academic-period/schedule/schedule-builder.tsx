@@ -94,17 +94,11 @@ function spaced(text: string): string {
 
 interface ScheduleBuilderProps {
   jornada: Jornada
-  // Materias disponibles para el curso, derivadas del plan de estudio
-  // (nombre + intensidad horaria) y con el color de área/asignatura.
   subjects: ScheduleSubject[]
-  // Opciones del select Grado/Grupo, tomadas de los grupos reales del grado.
   gradeGroups: string[]
-  // Grado dueño del horario: se usa para cargar la grilla.
   gradeId: number
 }
 
-// Guardado imperativo: el diálogo del grado lo dispara desde su botón único
-// "Guardar cambios".
 export interface ScheduleBuilderHandle {
   save: (gradeId: number) => Promise<void>
 }
@@ -114,8 +108,6 @@ export const ScheduleBuilder = forwardRef<
   ScheduleBuilderProps
 >(function ScheduleBuilder({ jornada, subjects, gradeGroups, gradeId }, ref) {
   const [gradeGroup, setGradeGroup] = useState("")
-  // Una grilla por grupo/curso: { [gradeGroup]: cells }. Así cada curso tiene
-  // su propio horario y cambiar de curso cambia la grilla.
   const [schedulesByGroup, setSchedulesByGroup] = useState<
     Record<string, Schedule>
   >({})
@@ -135,14 +127,6 @@ export const ScheduleBuilder = forwardRef<
     }
   }, [gradeConfig, hydrated])
 
-  useEffect(() => {
-    if (!gradeGroup && gradeGroups.length > 0) {
-      setGradeGroup(gradeGroups[0])
-    }
-  }, [gradeGroup, gradeGroups])
-
-  // El toast de éxito lo da el diálogo del grado (guardado unificado); acá
-  // solo reportamos errores.
   const updateGradeConfig = useUpdateGradeConfig({
     mutationConfig: {
       onSuccess: (result) => {
@@ -208,7 +192,6 @@ export const ScheduleBuilder = forwardRef<
     if (draggingId && subject && gradeGroup) {
       const alreadyHere = schedule[dayId]?.[slotId] === draggingId
       const placed = placedCounts[draggingId] ?? 0
-      // No permitir superar el cupo de horas de la materia.
       if (alreadyHere || placed < subject.blocks) {
         setCell(dayId, slotId, draggingId)
       }

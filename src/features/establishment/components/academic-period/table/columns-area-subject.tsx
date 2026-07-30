@@ -3,9 +3,7 @@ import type { ColumnDef, Table } from "@tanstack/react-table"
 import { Checkbox } from "@/components/ui/checkbox"
 import { DataTableColumnHeader } from "@/components/data-table"
 
-import type {
-  AreaSubject,
-} from "../../../api/types/academic-period/area-subject"
+import type { AreaSubject } from "../../../api/types/academic-period/area-subject"
 import { DeleteAreaSubjectDialog } from "../dialogs/dialog-delete-area-subject"
 import { EditAreaSubjectDialog } from "../dialogs/dialog-edit-area-subject"
 
@@ -39,37 +37,38 @@ export const columns: ColumnDef<AreaSubject>[] = [
     size: 32,
   },
   {
-    id: "codigo",
-    accessorKey: "Nombre de area",
+    id: "numero",
+    header: () => <span className="text-muted-foreground">#</span>,
+    cell: ({ row }) => (
+      <span className="text-muted-foreground">{row.index + 1}</span>
+    ),
+    enableSorting: false,
+    enableHiding: false,
+    size: 40,
+  },
+  {
+    id: "nombreInterno",
+    accessorKey: "nombreInterno",
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Nombre de area" />
+      <DataTableColumnHeader column={column} title="Nombre del área" />
     ),
     cell: ({ row }) => (
-      <span className="flex items-center gap-2 font-medium">
-        {row.original.color && (
-          <span
-            className="inline-block size-3 shrink-0 rounded-full ring-1 ring-foreground/10"
-            style={{ backgroundColor: row.original.color }}
-            aria-hidden
-          />
-        )}
-        {row.original.nombreInterno}
-      </span>
+      <span className="font-medium">{row.original.nombreInterno}</span>
     ),
   },
   {
-    id: "nombre",
-    accessorKey: "nombre",
+    id: "abreviacion",
+    accessorKey: "abreviacion",
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Abreviacion" />
+      <DataTableColumnHeader column={column} title="Abreviación" />
     ),
     cell: ({ row }) => (
       <span className="font-semibold">{row.original.abreviacion}</span>
     ),
   },
   {
-    id: "abreviacion",
-    accessorKey: "abreviacion",
+    id: "ordenReportes",
+    accessorKey: "ordenReportes",
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Orden de reporte" />
     ),

@@ -56,7 +56,10 @@ function applyFilters(
 }
 
 function sortValue(row: AreaSubject, id: string): string | number {
-  return row[id as keyof AreaSubject] ?? ""
+  const value = row[id as keyof AreaSubject]
+  // `subjects` es un arreglo y no es ordenable; los demás campos son escalares.
+  if (typeof value === "string" || typeof value === "number") return value
+  return ""
 }
 
 function applySorting(
@@ -180,11 +183,12 @@ export const areaSubjectsHandlers = [
     }
     const [removed] = areaSubjectsDb.splice(index, 1)
 
-    // Cascada simple: quitar también las entradas del plan de estudio que
-    // referencian esta asignatura (se enlazan por nombre). En un back real
-    // esto lo haría el propio backend.
+    const removedNames = new Set<string>([
+      removed.nombreInterno,
+      ...removed.subjects.map((subject) => subject.nombreInterno),
+    ])
     for (let i = studyPlansDb.length - 1; i >= 0; i--) {
-      if (studyPlansDb[i].asignatura === removed.nombreInterno) {
+      if (removedNames.has(studyPlansDb[i].asignatura)) {
         studyPlansDb.splice(i, 1)
       }
     }

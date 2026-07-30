@@ -223,9 +223,6 @@ interface ColorPickerPopoverProps {
   onChange: (hex: string) => void
 }
 
-// Trigger con forma de campo que muestra el color elegido y abre el picker en
-// un popover. Hereda la variante del `Field` contenedor (outlined/standard),
-// para seguir el mismo patrón visual que Select/Input/DatePicker.
 export function ColorPickerPopover({ value, onChange }: ColorPickerPopoverProps) {
   const [open, setOpen] = useState(false)
   const resolvedVariant = useInputVariant()
@@ -241,6 +238,7 @@ export function ColorPickerPopover({ value, onChange }: ColorPickerPopoverProps)
               inputVariants({ variant: resolvedVariant }),
               inputTriggerVariants({ variant: resolvedVariant }),
               "flex items-center gap-2 text-left",
+              resolvedVariant === "outlined" && "bg-background",
               !value && "text-muted-foreground"
             )}
           />

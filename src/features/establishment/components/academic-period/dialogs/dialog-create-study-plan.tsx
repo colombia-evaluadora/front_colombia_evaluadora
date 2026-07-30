@@ -112,8 +112,12 @@ export function CreateStudyPlanDialog({
     pageSize: 100,
     academicPeriodId,
   })
-  const asignaturaOptions = (areaData?.rows ?? []).map(
-    (area) => area.nombreInterno
+  const asignaturaOptions = Array.from(
+    new Set(
+      (areaData?.rows ?? []).flatMap((area) =>
+        area.subjects.map((subject) => subject.nombreInterno).filter(Boolean)
+      )
+    )
   )
 
   const formatoOptions = criteriaOptions?.gradingFormat ?? []
@@ -244,7 +248,7 @@ export function CreateStudyPlanDialog({
                         <SelectGroup>
                           {asignaturaOptions.length === 0 ? (
                             <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                              No hay áreas/asignaturas en este periodo.
+                              No hay asignaturas en este periodo.
                             </div>
                           ) : (
                             asignaturaOptions.map((option) => (

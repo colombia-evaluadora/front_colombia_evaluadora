@@ -2,7 +2,12 @@ import { useState } from "react"
 
 import { CaretDownIcon, CheckIcon, PlusIcon } from "@/components/ui/icons"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import {
+  Input,
+  inputTriggerVariants,
+  inputVariants,
+  useInputVariant,
+} from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 
@@ -21,6 +26,7 @@ export function EspecialidadSelect({
 }: EspecialidadSelectProps) {
   const [open, setOpen] = useState(false)
   const [nuevo, setNuevo] = useState("")
+  const resolvedVariant = useInputVariant()
 
   function agregar() {
     const nombre = nuevo.trim()
@@ -38,7 +44,10 @@ export function EspecialidadSelect({
           <button
             type="button"
             className={cn(
-              "flex h-9 w-full items-center justify-between gap-1.5 rounded-none border border-transparent border-b-input bg-transparent px-0 py-1 text-left text-sm outline-none transition-[color,border-color] hover:border-b-ring/50 data-[popup-open]:border-b-ring",
+              inputVariants({ variant: resolvedVariant }),
+              inputTriggerVariants({ variant: resolvedVariant }),
+              "flex items-center justify-between gap-1.5 text-left",
+              resolvedVariant === "outlined" && "bg-background",
               value ? "text-foreground" : "text-muted-foreground"
             )}
           />

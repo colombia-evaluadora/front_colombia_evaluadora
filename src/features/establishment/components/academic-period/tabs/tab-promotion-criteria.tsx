@@ -106,7 +106,13 @@ export const TabPromotionCriteria = forwardRef<
     pageSize: 100,
     academicPeriodId,
   })
-  const subjectOptions = (areaData?.rows ?? []).map((area) => area.nombreInterno)
+  const subjectOptions = Array.from(
+    new Set(
+      (areaData?.rows ?? []).flatMap((area) =>
+        area.subjects.map((subject) => subject.nombreInterno).filter(Boolean)
+      )
+    )
+  )
 
   const { data: curriculumNodes = [], isPending: isLoadingCurriculumNodes } =
     useCurriculumNodesQuery()

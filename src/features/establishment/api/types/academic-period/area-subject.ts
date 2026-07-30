@@ -1,10 +1,20 @@
+export interface AreaSubjectItem {
+  asignaturaGeneral: string
+  nombreInterno: string
+  abreviacion: string
+  ordenReportes: number
+  color?: string
+  especialidad?: string
+}
+
+
 export interface AreaSubject {
   codigo: number
   areaGeneral: string
   nombreInterno: string
   abreviacion: string
   ordenReportes: number
-  color?: string
+  subjects: AreaSubjectItem[]
 }
 
 export interface AreaSubjectsQueryFilters {
