@@ -181,9 +181,11 @@ export function CreateGradeDialog({
   const scheduleSubjects = useMemo<ScheduleSubject[]>(() => {
     const colorByName = new Map<string, string>()
     for (const area of areaData?.rows ?? []) {
-      if (!area.color) continue
-      colorByName.set(area.nombreInterno.toLowerCase(), area.color)
-      colorByName.set(area.abreviacion.toLowerCase(), area.color)
+      for (const subject of area.subjects) {
+        if (!subject.color) continue
+        colorByName.set(subject.nombreInterno.toLowerCase(), subject.color)
+        colorByName.set(subject.abreviacion.toLowerCase(), subject.color)
+      }
     }
     return (planData?.rows ?? []).map((item) => ({
       id: String(item.codigo),

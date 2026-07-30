@@ -20,6 +20,7 @@ import { metodologiasHandlers } from "./metodologias"
 import { ratingScaleTypesHandlers } from "./rating-scale-types"
 import { curriculumNodesHandlers } from "./curriculum-nodes"
 import { evaluationPeriodStatusesHandlers } from "./evaluation-period-statuses"
+import { especialidadesHandlers } from "./especialidades"
 import { reservationsHandlers } from "./reservations"
 
 export const handlers = [
@@ -45,5 +46,6 @@ export const handlers = [
   ...ratingScaleTypesHandlers,
   ...curriculumNodesHandlers,
   ...evaluationPeriodStatusesHandlers,
+  ...especialidadesHandlers,
   ...reservationsHandlers,
 ]

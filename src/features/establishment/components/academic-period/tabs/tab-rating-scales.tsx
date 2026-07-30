@@ -8,6 +8,7 @@ import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { FieldVariantContext } from "@/hooks/use-field-variant"
 import {
   Select,
   SelectContent,
@@ -218,7 +219,10 @@ function ScalesSubTable({ scales }: { scales: RatingScale[] }) {
 
   return (
     <div className="-m-4 bg-background p-4">
-      <div className="overflow-x-auto rounded-md border">
+      <div className="overflow-x-auto rounded-md border [&_[data-slot=input]]:bg-background [&_[data-slot=select-trigger]]:bg-background">
+        {/* Los controles de la fila en edición usan la variante `outlined`:
+            cada input queda recuadrado y se distingue del hover de la fila. */}
+        <FieldVariantContext.Provider value="outlined">
         <Table>
           <TableHeader>
             <TableRow>
@@ -387,6 +391,7 @@ function ScalesSubTable({ scales }: { scales: RatingScale[] }) {
             })}
           </TableBody>
         </Table>
+        </FieldVariantContext.Provider>
       </div>
     </div>
   )

@@ -114,6 +114,7 @@ export function SelectGeneralAreaDialog({
               inputVariants({ variant: resolvedVariant }),
               inputTriggerVariants({ variant: resolvedVariant }),
               "flex items-center justify-between gap-1.5 text-left",
+              resolvedVariant === "outlined" && "bg-background",
               value ? "text-foreground" : "text-muted-foreground"
             )}
           />

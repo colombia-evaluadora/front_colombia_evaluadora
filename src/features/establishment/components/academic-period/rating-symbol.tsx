@@ -100,6 +100,7 @@ export function RatingSymbolSelect({
               inputVariants({ variant: resolvedVariant }),
               inputTriggerVariants({ variant: resolvedVariant }),
               "flex items-center justify-between gap-1.5 text-left",
+              resolvedVariant === "outlined" && "bg-background",
             )}
           />
         }
