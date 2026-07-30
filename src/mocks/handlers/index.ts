@@ -18,6 +18,8 @@ import { gradeConfigsHandlers } from "./grade-configs"
 import { academicAssignmentsHandlers } from "./academic-assignments"
 import { metodologiasHandlers } from "./metodologias"
 import { ratingScaleTypesHandlers } from "./rating-scale-types"
+import { curriculumNodesHandlers } from "./curriculum-nodes"
+import { evaluationPeriodStatusesHandlers } from "./evaluation-period-statuses"
 import { reservationsHandlers } from "./reservations"
 
 export const handlers = [
@@ -41,5 +43,7 @@ export const handlers = [
   ...academicAssignmentsHandlers,
   ...metodologiasHandlers,
   ...ratingScaleTypesHandlers,
+  ...curriculumNodesHandlers,
+  ...evaluationPeriodStatusesHandlers,
   ...reservationsHandlers,
 ]

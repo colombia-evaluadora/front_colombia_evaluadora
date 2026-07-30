@@ -12,6 +12,7 @@ import { useUpdatePromotionCriteria } from "../../../api/mutations/update-promot
 import { useGradeConfigQuery } from "../../../api/query/use-grade-config-query"
 import { useUpdateGradeConfig } from "../../../api/mutations/update-grade-config"
 import { useAreaSubjectQuery } from "../../../api/query/use-area-subject"
+import { useCurriculumNodesQuery } from "../../../api/query/use-curriculum-nodes-query"
 import { SubjectsMultiSelect } from "../subjects-multi-select"
 import { Input } from "@/components/ui/input"
 import {
@@ -26,17 +27,6 @@ import {
   RadioGroup,
   RadioGroupItem,
 } from "@/components/ui/radio-group"
-
-const SELECT_FIELDS = [
-  {
-    name: "curriculumNode",
-    label: "Nodo curricular*",
-    options: [
-      "AS",
-      "AR",
-    ],
-  },
-] as const
 
 const approvalSchema = z.object({
   curriculumNode: z.string().min(1, "Requerido"),
@@ -78,23 +68,14 @@ const FORM_ID = "approval-parameters-form"
 
 interface TabPromotionCriteriaProps {
   hideSubmit?: boolean
-  // Ámbito de los criterios: por grado (dentro del diálogo del grado) o por
-  // periodo (pestaña del periodo). Se prioriza el grado si viene.
   academicPeriodId?: number
   gradeId?: number
 }
 
-// Guardado imperativo para el diálogo del grado: guarda los criterios contra
-// el id de grado que le pasan.
 export interface PromotionCriteriaHandle {
   save: (gradeId: number) => Promise<void>
 }
 
-// Carga los datos y solo monta el formulario cuando ya están disponibles, de
-// modo que el form se inicialice directamente con ellos. Inicializar con un
-// valor vacío y "resetear" en un efecto cuando llegan los datos era frágil:
-// en la primera apertura los datos llegaban tras el montaje y el formulario
-// quedaba vacío hasta reabrirlo (con la caché ya poblada).
 export const TabPromotionCriteria = forwardRef<
   PromotionCriteriaHandle,
   TabPromotionCriteriaProps
@@ -104,19 +85,13 @@ export const TabPromotionCriteria = forwardRef<
 ) {
   const isGradeScope = gradeId != null
 
-  // Criterios del periodo. Se cargan en ambos ámbitos: en la pestaña son los
-  // criterios que se editan; en el diálogo del grado son la base que hereda el
-  // grado cuando aún no tiene criterios propios.
   const { data: periodCriteria, isPending: periodLoading } =
     usePromotionCriteriaQuery(academicPeriodId)
 
-  // Criterios por grado (dentro del diálogo del grado).
   const { data: gradeConfig, isPending: gradeLoading } = useGradeConfigQuery(
     isGradeScope ? gradeId : undefined
   )
 
-  // El grado hereda los criterios del periodo mientras no tenga los suyos
-  // propios; si el grado ya fue personalizado, se respetan sus valores.
   const criteria = isGradeScope
     ? (gradeConfig?.promotionCriteria ?? periodCriteria)
     : periodCriteria
@@ -124,7 +99,6 @@ export const TabPromotionCriteria = forwardRef<
     ? gradeLoading || (academicPeriodId != null && periodLoading)
     : periodLoading
 
-  // Opciones de "áreas/asignaturas obligatorias" = las del periodo.
   const { data: areaData } = useAreaSubjectQuery({
     filters: {},
     sorting: [],
@@ -134,7 +108,13 @@ export const TabPromotionCriteria = forwardRef<
   })
   const subjectOptions = (areaData?.rows ?? []).map((area) => area.nombreInterno)
 
-  if ((isGradeScope || academicPeriodId != null) && isLoading) {
+  const { data: curriculumNodes = [], isPending: isLoadingCurriculumNodes } =
+    useCurriculumNodesQuery()
+
+  if (
+    ((isGradeScope || academicPeriodId != null) && isLoading) ||
+    isLoadingCurriculumNodes
+  ) {
     return (
       <div className="flex justify-center py-10">
         <Spinner />
@@ -144,7 +124,6 @@ export const TabPromotionCriteria = forwardRef<
 
   return (
     <PromotionCriteriaForm
-      // Reinicia el formulario al cambiar de entidad (grado/periodo).
       key={isGradeScope ? `grade-${gradeId}` : `period-${academicPeriodId ?? "new"}`}
       ref={ref}
       hideSubmit={hideSubmit}
@@ -152,6 +131,7 @@ export const TabPromotionCriteria = forwardRef<
       gradeId={gradeId}
       initialValues={criteria ?? EMPTY}
       subjectOptions={subjectOptions}
+      curriculumNodes={curriculumNodes}
     />
   )
 })
@@ -162,13 +142,14 @@ interface PromotionCriteriaFormProps {
   gradeId?: number
   initialValues: ApprovalValues
   subjectOptions: string[]
+  curriculumNodes: string[]
 }
 
 const PromotionCriteriaForm = forwardRef<
   PromotionCriteriaHandle,
   PromotionCriteriaFormProps
 >(function PromotionCriteriaForm(
-  { hideSubmit, academicPeriodId, gradeId, initialValues, subjectOptions },
+  { hideSubmit, academicPeriodId, gradeId, initialValues, subjectOptions, curriculumNodes },
   ref
 ) {
   const isGradeScope = gradeId != null
@@ -192,8 +173,6 @@ const PromotionCriteriaForm = forwardRef<
           toast.error(result.message)
           return
         }
-        // En el diálogo del grado (hideSubmit) el toast lo da el guardado
-        // unificado; acá solo cuando tiene su propio botón.
         if (!hideSubmit) toast.success(result.message)
       },
     },
@@ -281,7 +260,7 @@ const PromotionCriteriaForm = forwardRef<
 
                 <SelectContent>
                   <SelectGroup>
-                    {SELECT_FIELDS[0].options.map((option) => (
+                    {curriculumNodes.map((option) => (
                       <SelectItem key={option} value={option}>
                         {option}
                       </SelectItem>

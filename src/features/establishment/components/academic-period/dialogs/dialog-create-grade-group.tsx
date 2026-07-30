@@ -12,8 +12,6 @@ import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogOverlay,
-  DialogPortal,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
@@ -44,8 +42,6 @@ import { useAcademicPeriodQuery } from "../../../api/query/use-academic-period-q
 import { JORNADA_OPTIONS } from "../../../api/ui-mappings"
 import type { GradeGroup } from "../../../api/types/academic-period/grade-group"
 
-// La jornada no se edita acá: la define el periodo académico. Por eso queda
-// fuera del schema del formulario y se inyecta al guardar.
 const gradeGroupFormSchema = z.object({
   codigo: z.string().min(1, "El grupo es obligatorio"),
   director: z.string(),
@@ -91,7 +87,6 @@ export function CreateGradeGroupDialog({
 
   const { data: metodologiaOptions = [] } = useMetodologiasQuery()
 
-  // La jornada es la del periodo académico: se muestra sólo como lectura.
   const { data: academicPeriod } = useAcademicPeriodQuery(academicPeriodId)
   const jornadaName =
     JORNADA_OPTIONS.find((j) => j.id === academicPeriod?.config.jornadaId)
@@ -175,14 +170,6 @@ export function CreateGradeGroupDialog({
           </>
         )}
       </DialogTrigger>
-      {/* Backdrop forzado: base-ui no renderiza el de un diálogo anidado, así
-          que lo agregamos con forceRender para que aparezca el difuminado. */}
-      <DialogPortal>
-        <DialogOverlay
-          forceRender
-          className="bg-black/30 supports-backdrop-filter:backdrop-blur-md"
-        />
-      </DialogPortal>
       <DialogContent className="sm:max-w-3xl" showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>{isEditing ? "Editar grupo" : "Agregar grupo"}</DialogTitle>
