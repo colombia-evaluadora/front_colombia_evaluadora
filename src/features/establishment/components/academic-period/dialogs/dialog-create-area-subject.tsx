@@ -1,4 +1,4 @@
-import { AreaSubjectFormDialog } from "./area-subject-form-dialog"
+import { AreaSubjectFormDialog } from "./dialog-area-subject-form"
 
 interface CreateAreaSubjectDialogProps {
   academicPeriodId?: number

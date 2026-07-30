@@ -31,7 +31,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { FieldVariantContext } from "@/hooks/use-field-variant"
 import {
@@ -50,9 +49,14 @@ import type {
   AreaSubject,
   AreaSubjectItem,
 } from "../../../api/types/academic-period/area-subject"
-import { ColorPickerPopover } from "../color-picker"
-import { EspecialidadSelect } from "../especialidad-select"
+import { AreaField } from "../area-field"
 import { SortableHeader } from "../sortable-header"
+import {
+  SubjectRowFields,
+  emptyDraft,
+  itemToDraft,
+  type SubjectDraft,
+} from "../subject-row-fields"
 import { SelectGeneralAreaDialog } from "./dialog-select-general-area"
 
 const areaFormSchema = z.object({
@@ -62,37 +66,6 @@ const areaFormSchema = z.object({
   ordenReportes: z.number().int().nonnegative(),
 })
 type AreaFormValues = z.infer<typeof areaFormSchema>
-
-type SubjectDraft = {
-  asignaturaGeneral: string
-  nombreInterno: string
-  abreviacion: string
-  ordenReportes: number
-  color: string
-  especialidad: string
-}
-
-function emptyDraft(): SubjectDraft {
-  return {
-    asignaturaGeneral: "",
-    nombreInterno: "",
-    abreviacion: "",
-    ordenReportes: 1,
-    color: "",
-    especialidad: "",
-  }
-}
-
-function itemToDraft(item: AreaSubjectItem): SubjectDraft {
-  return {
-    asignaturaGeneral: item.asignaturaGeneral,
-    nombreInterno: item.nombreInterno,
-    abreviacion: item.abreviacion,
-    ordenReportes: item.ordenReportes,
-    color: item.color ?? "",
-    especialidad: item.especialidad ?? "",
-  }
-}
 
 const FORM_ID = "area-subject-form"
 
@@ -194,7 +167,6 @@ export function AreaSubjectFormDialog({
   function handleOpenChange(next: boolean) {
     setOpen(next)
     if (next) {
-      // Al abrir, (re)sembramos el estado desde el área (edición) o limpio (alta).
       form.reset()
       setSubjects(areaSubject?.subjects.map(itemToDraft) ?? [])
       setSubjectsStarted(isEdit)
@@ -239,7 +211,6 @@ export function AreaSubjectFormDialog({
             asignaturaGeneral: area.areaGeneral,
             nombreInterno: area.nombreInterno,
             abreviacion: area.abreviacion,
-            // El orden de la asignatura es independiente del orden del área.
             ordenReportes: 1,
             color: "",
             especialidad: "",
@@ -255,8 +226,6 @@ export function AreaSubjectFormDialog({
   }
 
   function commitDraft() {
-    // La identidad de la asignatura es su área general del catálogo; exigimos
-    // al menos eso (o un nombre interno) para no meter filas vacías.
     if (!draft.asignaturaGeneral.trim() && !draft.nombreInterno.trim()) {
       toast.error("Elegí una asignatura general o completá el nombre interno.")
       return
@@ -267,8 +236,6 @@ export function AreaSubjectFormDialog({
 
   function removeSubject(index: number) {
     setSubjects((prev) => prev.filter((_, i) => i !== index))
-    // Si estaba en edición esa (u otra) fila, cancelamos para no dejar índices
-    // colgados.
     cancelEditSubject()
   }
 
@@ -347,18 +314,9 @@ export function AreaSubjectFormDialog({
           className="flex flex-wrap items-end gap-4"
         >
           <form.Field name="areaGeneral">
-            {(field) => {
-              const isInvalid =
-                field.state.meta.isTouched && !field.state.meta.isValid
-              return (
-                <Field
-                  variant="outlined"
-                  data-invalid={isInvalid}
-                  className="w-auto min-w-[11rem] flex-1"
-                >
-                  <FieldLabel htmlFor={field.name} className="flex-1">
-                    Área general*
-                  </FieldLabel>
+            {(field) => (
+              <AreaField field={field} label="Área general*">
+                {(isInvalid) => (
                   <SelectGeneralAreaDialog
                     id={field.name}
                     value={field.state.value}
@@ -370,25 +328,15 @@ export function AreaSubjectFormDialog({
                     }}
                     invalid={isInvalid}
                   />
-                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                </Field>
-              )
-            }}
+                )}
+              </AreaField>
+            )}
           </form.Field>
 
           <form.Field name="nombreInterno">
-            {(field) => {
-              const isInvalid =
-                field.state.meta.isTouched && !field.state.meta.isValid
-              return (
-                <Field
-                  variant="outlined"
-                  data-invalid={isInvalid}
-                  className="w-auto min-w-[11rem] flex-1"
-                >
-                  <FieldLabel htmlFor={field.name} className="flex-1">
-                    Nombre interno del área*
-                  </FieldLabel>
+            {(field) => (
+              <AreaField field={field} label="Nombre interno del área*">
+                {(isInvalid) => (
                   <Input
                     id={field.name}
                     placeholder="ej. Matemáticas"
@@ -397,25 +345,15 @@ export function AreaSubjectFormDialog({
                     onChange={(e) => field.handleChange(e.target.value)}
                     aria-invalid={isInvalid}
                   />
-                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                </Field>
-              )
-            }}
+                )}
+              </AreaField>
+            )}
           </form.Field>
 
           <form.Field name="abreviacion">
-            {(field) => {
-              const isInvalid =
-                field.state.meta.isTouched && !field.state.meta.isValid
-              return (
-                <Field
-                  variant="outlined"
-                  data-invalid={isInvalid}
-                  className="w-auto min-w-[11rem] flex-1"
-                >
-                  <FieldLabel htmlFor={field.name} className="flex-1">
-                    Abreviación*
-                  </FieldLabel>
+            {(field) => (
+              <AreaField field={field} label="Abreviación*">
+                {(isInvalid) => (
                   <Input
                     id={field.name}
                     placeholder="ej. MAT"
@@ -424,25 +362,15 @@ export function AreaSubjectFormDialog({
                     onChange={(e) => field.handleChange(e.target.value)}
                     aria-invalid={isInvalid}
                   />
-                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                </Field>
-              )
-            }}
+                )}
+              </AreaField>
+            )}
           </form.Field>
 
           <form.Field name="ordenReportes">
-            {(field) => {
-              const isInvalid =
-                field.state.meta.isTouched && !field.state.meta.isValid
-              return (
-                <Field
-                  variant="outlined"
-                  data-invalid={isInvalid}
-                  className="w-auto min-w-[11rem] flex-1"
-                >
-                  <FieldLabel htmlFor={field.name} className="flex-1">
-                    Orden en los reportes*
-                  </FieldLabel>
+            {(field) => (
+              <AreaField field={field} label="Orden en los reportes*">
+                {(isInvalid) => (
                   <Input
                     id={field.name}
                     type="number"
@@ -455,10 +383,9 @@ export function AreaSubjectFormDialog({
                     onChange={(e) => field.handleChange(e.target.valueAsNumber)}
                     aria-invalid={isInvalid}
                   />
-                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                </Field>
-              )
-            }}
+                )}
+              </AreaField>
+            )}
           </form.Field>
 
           <form.Subscribe
@@ -553,66 +480,12 @@ export function AreaSubjectFormDialog({
                   if (isEditing && editDraft) {
                     return (
                       <TableRow key={realIndex}>
-                        <TableCell>
-                          <Input
-                            aria-label="Orden en los reportes"
-                            type="number"
-                            min={0}
-                            className="w-20"
-                            value={
-                              Number.isNaN(editDraft.ordenReportes)
-                                ? ""
-                                : editDraft.ordenReportes
-                            }
-                            onChange={(e) =>
-                              patchEditDraft({
-                                ordenReportes: e.target.valueAsNumber,
-                              })
-                            }
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <SelectGeneralAreaDialog
-                            value={editDraft.asignaturaGeneral}
-                            onChange={(value) =>
-                              patchEditDraft({ asignaturaGeneral: value })
-                            }
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            aria-label="Nombre interno"
-                            value={editDraft.nombreInterno}
-                            onChange={(e) =>
-                              patchEditDraft({ nombreInterno: e.target.value })
-                            }
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            aria-label="Abreviación"
-                            value={editDraft.abreviacion}
-                            onChange={(e) =>
-                              patchEditDraft({ abreviacion: e.target.value })
-                            }
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <ColorPickerPopover
-                            value={editDraft.color}
-                            onChange={(hex) => patchEditDraft({ color: hex })}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <EspecialidadSelect
-                            value={editDraft.especialidad}
-                            options={especialidades}
-                            onChange={(value) =>
-                              patchEditDraft({ especialidad: value })
-                            }
-                            onAddOption={addEspecialidad}
-                          />
-                        </TableCell>
+                        <SubjectRowFields
+                          draft={editDraft}
+                          onPatch={patchEditDraft}
+                          especialidades={especialidades}
+                          onAddEspecialidad={addEspecialidad}
+                        />
                         <TableCell>
                           <div className="flex items-center justify-end gap-1">
                             <Button
@@ -692,65 +565,12 @@ export function AreaSubjectFormDialog({
 
                 {/* Fila de carga para agregar otra asignatura general. */}
                 <TableRow>
-                  <TableCell>
-                    <Input
-                      aria-label="Orden en los reportes"
-                      type="number"
-                      min={0}
-                      placeholder="0"
-                      className="w-20"
-                      value={
-                        Number.isNaN(draft.ordenReportes)
-                          ? ""
-                          : draft.ordenReportes
-                      }
-                      onChange={(e) =>
-                        patchDraft({ ordenReportes: e.target.valueAsNumber })
-                      }
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <SelectGeneralAreaDialog
-                      value={draft.asignaturaGeneral}
-                      onChange={(value) =>
-                        patchDraft({ asignaturaGeneral: value })
-                      }
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Input
-                      aria-label="Nombre interno"
-                      placeholder="Agregar"
-                      value={draft.nombreInterno}
-                      onChange={(e) =>
-                        patchDraft({ nombreInterno: e.target.value })
-                      }
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Input
-                      aria-label="Abreviación"
-                      placeholder="Agregar"
-                      value={draft.abreviacion}
-                      onChange={(e) =>
-                        patchDraft({ abreviacion: e.target.value })
-                      }
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <ColorPickerPopover
-                      value={draft.color}
-                      onChange={(hex) => patchDraft({ color: hex })}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <EspecialidadSelect
-                      value={draft.especialidad}
-                      options={especialidades}
-                      onChange={(value) => patchDraft({ especialidad: value })}
-                      onAddOption={addEspecialidad}
-                    />
-                  </TableCell>
+                  <SubjectRowFields
+                    draft={draft}
+                    onPatch={patchDraft}
+                    especialidades={especialidades}
+                    onAddEspecialidad={addEspecialidad}
+                  />
                   <TableCell>
                     <Button
                       type="button"
