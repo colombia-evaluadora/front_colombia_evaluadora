@@ -4,14 +4,14 @@ import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useColorTheme } from "@/components/theme-provider"
 
 export function ColorThemeToggle() {
-  const { setPalette } = useColorTheme()
+  const { palette, setPalette } = useColorTheme()
 
   return (
     <DropdownMenu>
@@ -20,10 +20,14 @@ export function ColorThemeToggle() {
         <span className="sr-only">Cambiar paleta de color</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuGroup>
-          <DropdownMenuItem onClick={() => setPalette("default")}>Default</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setPalette("red")}>Red</DropdownMenuItem>
-        </DropdownMenuGroup>
+        <DropdownMenuRadioGroup value={palette} onValueChange={setPalette}>
+          <DropdownMenuRadioItem value="default" closeOnClick>
+            Default
+          </DropdownMenuRadioItem>
+          <DropdownMenuRadioItem value="red" closeOnClick>
+            Red
+          </DropdownMenuRadioItem>
+        </DropdownMenuRadioGroup>
       </DropdownMenuContent>
     </DropdownMenu>
   )
