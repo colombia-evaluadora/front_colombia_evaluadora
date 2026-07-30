@@ -4,6 +4,7 @@ import {
   campusesDb,
   campusesRowsDb,
   deleteCampusDetails,
+  deleteManyCampusDetails,
   upsertCampusDetails,
 } from "../db/campuses"
 
@@ -206,10 +207,61 @@ export const campusHandlers = [
     })
   }),
 
+  http.delete("*/api/establishments/campuses/bulk-delete", async ({ request }) => {
+    await delay(250)
+
+    let ids: unknown
+    try {
+      ids = await request.json()
+    } catch {
+      return HttpResponse.json(
+        {
+          status: "error",
+          message: "Cuerpo inválido. Se esperaba una lista de identificadores.",
+        },
+        { status: 400 },
+      )
+    }
+
+    if (!Array.isArray(ids) || ids.some((id) => typeof id !== "string")) {
+      return HttpResponse.json(
+        {
+          status: "error",
+          message: "Se esperaba una lista de identificadores (strings).",
+        },
+        { status: 400 },
+      )
+    }
+
+    const uniqueIds = Array.from(new Set(ids.filter((id) => id.length > 0)))
+    deleteManyCampusDetails(uniqueIds)
+
+    return HttpResponse.json({
+      status: "ok",
+      message: `${uniqueIds.length} sede(s) eliminada(s).`,
+      deletedCount: uniqueIds.length,
+    })
+  }),
+
   http.delete("*/api/establishments/campuses/:id", async ({ params }) => {
     await delay(250)
 
-    const campus = campusesDb.find((item) => item.id === params.id)
+    const id = Array.isArray(params.id) ? params.id[0] : params.id
+
+    // Guard defensivo: la ruta `bulk-delete` está registrada antes para
+    // que MSW no la confunda con `:id`, pero si el orden cambia seguimos
+    // devolviendo 404 sin dejar pasar `id === "bulk-delete"`.
+    if (!id || id === "bulk-delete") {
+      return HttpResponse.json(
+        {
+          status: "error",
+          message: "Sede no encontrada.",
+        },
+        { status: 404 }
+      )
+    }
+
+    const campus = campusesDb.find((item) => item.id === id)
 
     if (!campus) {
       return HttpResponse.json(
@@ -228,4 +280,5 @@ export const campusHandlers = [
       message: "Sede eliminada.",
     })
   }),
+
 ]

@@ -4,6 +4,7 @@ import {
   establishmentsDb,
   establishmentsRowsDb,
   deleteEstablishmentDetails,
+  deleteManyEstablishmentDetails,
   upsertEstablishmentDetails,
 } from "../db/establishments"
 
@@ -236,10 +237,61 @@ export const establishmentHandlers = [
     })
   }),
 
+  http.delete("*/api/establishments/bulk-delete", async ({ request }) => {
+    await delay(250)
+
+    let ids: unknown
+    try {
+      ids = await request.json()
+    } catch {
+      return HttpResponse.json(
+        {
+          status: "error",
+          message: "Cuerpo inválido. Se esperaba una lista de identificadores.",
+        },
+        { status: 400 },
+      )
+    }
+
+    if (!Array.isArray(ids) || ids.some((id) => typeof id !== "string")) {
+      return HttpResponse.json(
+        {
+          status: "error",
+          message: "Se esperaba una lista de identificadores (strings).",
+        },
+        { status: 400 },
+      )
+    }
+
+    const uniqueIds = Array.from(new Set(ids.filter((id) => id.length > 0)))
+    deleteManyEstablishmentDetails(uniqueIds)
+
+    return HttpResponse.json({
+      status: "ok",
+      message: `${uniqueIds.length} establecimiento(s) eliminado(s).`,
+      deletedCount: uniqueIds.length,
+    })
+  }),
+
   http.delete("*/api/establishments/:id", async ({ params }) => {
     await delay(250)
 
-    const establishment = establishmentsDb.find((item) => item.id === params.id)
+    const id = Array.isArray(params.id) ? params.id[0] : params.id
+
+    // La ruta `/establishments/bulk-delete` está registrada antes para que
+    // MSW no la confunda con `:id`, pero dejamos este guard por si el orden
+    // cambia en el futuro.
+    if (!id || id === "bulk-delete") {
+      return HttpResponse.json(
+        {
+          status: "error",
+          message: "Establecimiento no encontrado.",
+        },
+        { status: 404 }
+      )
+    }
+
+    const establishment = establishmentsDb.find((item) => item.id === id)
 
     if (!establishment) {
       return HttpResponse.json(

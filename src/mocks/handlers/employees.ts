@@ -2,6 +2,7 @@ import { delay, http, HttpResponse } from "msw"
 
 import {
   deleteEmployeeDetails,
+  deleteManyEmployeeDetails,
   employeesDb,
   employeesRowsDb,
   upsertEmployeeDetails,
@@ -244,22 +245,58 @@ export const employeeHandlers = [
     })
   }),
 
-  http.delete("*/api/establishments/employees/:id", async ({ params }) => {
+  http.delete("*/api/establishments/employees/bulk-delete", async ({ request }) => {
     await delay(250)
 
-    const employeeId = Array.isArray(params.id) ? params.id[0] : params.id
-
-    if (!employeeId) {
+    let ids: unknown
+    try {
+      ids = await request.json()
+    } catch {
       return HttpResponse.json(
         {
           status: "error",
-          message: "Identificador de funcionario inválido.",
+          message: "Cuerpo inválido. Se esperaba una lista de identificadores.",
         },
-        { status: 400 }
+        { status: 400 },
       )
     }
 
-    const employee = employeesDb.find((item) => item.id === employeeId)
+    if (!Array.isArray(ids) || ids.some((id) => typeof id !== "string")) {
+      return HttpResponse.json(
+        {
+          status: "error",
+          message: "Se esperaba una lista de identificadores (strings).",
+        },
+        { status: 400 },
+      )
+    }
+
+    const uniqueIds = Array.from(new Set(ids.filter((id) => id.length > 0)))
+    deleteManyEmployeeDetails(uniqueIds)
+
+    return HttpResponse.json({
+      status: "ok",
+      message: `${uniqueIds.length} funcionario(s) eliminado(s).`,
+      deletedCount: uniqueIds.length,
+    })
+  }),
+
+  http.delete("*/api/establishments/employees/:id", async ({ params }) => {
+    await delay(250)
+
+    const id = Array.isArray(params.id) ? params.id[0] : params.id
+
+    if (!id || id === "bulk-delete") {
+      return HttpResponse.json(
+        {
+          status: "error",
+          message: "Funcionario no encontrado.",
+        },
+        { status: 404 }
+      )
+    }
+
+    const employee = employeesDb.find((item) => item.id === id)
 
     if (!employee) {
       return HttpResponse.json(
@@ -278,4 +315,5 @@ export const employeeHandlers = [
       message: "Funcionario eliminado.",
     })
   }),
+
 ]
