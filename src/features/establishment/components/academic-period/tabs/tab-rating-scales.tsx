@@ -40,6 +40,7 @@ import type {
 } from "../../../api/types/academic-period/rating-scales"
 import { CreateRatingScaleDialog } from "../dialogs/dialog-create-rating-scale"
 import { DeleteRatingScaleDialog } from "../dialogs/dialog-delete-rating-scale"
+import { DeleteSelectedRatingScalesDialog } from "../dialogs/dialog-delete-selected-rating-scales"
 import { ExportRatingScalesDialog } from "../dialogs/dialog-export-rating-scales"
 import { RatingSymbolSelect, RatingSymbolView } from "../rating-symbol"
 import { createRatingScaleLevelColumns } from "../table/columns-rating-scales"
@@ -104,7 +105,7 @@ export function TabRatingScales({ academicPeriodId }: TabRatingScalesProps) {
     [expandedId, toggleExpand]
   )
 
-  const { table } = useDataTable({
+  const { table, selectedIds, hasSelection, resetSelection } = useDataTable({
     columns,
     data: sortedLevels,
     pageCount: 1,
@@ -117,6 +118,17 @@ export function TabRatingScales({ academicPeriodId }: TabRatingScalesProps) {
     setSorting,
   })
 
+  const selectedScaleCodigos = useMemo(() => {
+    const selected = new Set(selectedIds)
+    const codigos = new Set<number>()
+    for (const scale of scales) {
+      if (scale.teachingLevelIds.some((id) => selected.has(String(id)))) {
+        codigos.add(scale.codigo)
+      }
+    }
+    return Array.from(codigos)
+  }, [selectedIds, scales])
+
   function scalesForLevel(levelId: number): RatingScale[] {
     return scales.filter((scale) => scale.teachingLevelIds.includes(levelId))
   }
@@ -124,6 +136,13 @@ export function TabRatingScales({ academicPeriodId }: TabRatingScalesProps) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-end gap-2">
+        {hasSelection && (
+          <DeleteSelectedRatingScalesDialog
+            levelCount={selectedIds.length}
+            scaleCodigos={selectedScaleCodigos}
+            resetSelection={resetSelection}
+          />
+        )}
         <CreateRatingScaleDialog academicPeriodId={academicPeriodId} />
         <ExportRatingScalesDialog filters={{}} />
       </div>
