@@ -34,16 +34,9 @@ import {
 import { useCreateStudyPlanItem } from "../../../api/mutations/create-study-plan"
 import { useUpdateStudyPlanItem } from "../../../api/mutations/update-study-plan"
 import { useAreaSubjectQuery } from "../../../api/query/use-area-subject"
+import { useEvaluationCriteriaQuery } from "../../../api/query/use-evaluation-criteria-query"
+import { useEvaluationCriteriaOptionsQuery } from "../../../api/query/use-evaluation-criteria-options-query"
 import type { StudyPlanItem } from "../../../api/types/academic-period/study-plan"
-
-const FORMATO_CALIFICACION_OPTIONS = ["Numérico", "Conceptual", "Cualitativo"]
-
-const CRITERIO_NOTA_OPTIONS = [
-  "Promedio",
-  "Promedio ponderado",
-  "Última nota",
-  "Sumatoria",
-]
 
 const studyPlanFormSchema = z.object({
   asignatura: z.string().min(1, "La asignatura es obligatoria"),
@@ -86,9 +79,16 @@ export function CreateStudyPlanDialog({
   const isEditing = item != null
 
   const [open, setOpen] = useState(false)
-  // Cuando está apagado, los campos avanzados quedan deshabilitados (defaults).
-  // Al editar arranca habilitado para poder ver/ajustar los campos avanzados.
-  const [personalizar, setPersonalizar] = useState(isEditing)
+  const tienePersonalizacion =
+    item != null &&
+    (item.formatoCalificacion != null || item.criterioNota != null)
+  const [personalizar, setPersonalizar] = useState(tienePersonalizacion)
+
+  const { data: criteria } = useEvaluationCriteriaQuery(academicPeriodId)
+  const { data: criteriaOptions } = useEvaluationCriteriaOptionsQuery()
+
+  const formatoHeredado = criteria?.gradingFormat ?? ""
+  const criterioHeredado = criteria?.subjectGradeCriteria ?? ""
 
   const defaultValues: StudyPlanFormValues = item
     ? {
@@ -99,12 +99,12 @@ export function CreateStudyPlanDialog({
         influyeDesempeno: item.influyeDesempeno,
         matriculaObligatoria: item.matriculaObligatoria ?? false,
         aprobacionObligatoria: item.aprobacionObligatoria ?? false,
-        formatoCalificacion: item.formatoCalificacion ?? "",
-        criterioNota: item.criterioNota ?? "",
+        formatoCalificacion:
+          item.formatoCalificacion ?? formatoHeredado,
+        criterioNota: item.criterioNota ?? criterioHeredado,
       }
     : EMPTY
 
-  // Las asignaturas disponibles son las definidas en área/asignatura del periodo.
   const { data: areaData } = useAreaSubjectQuery({
     filters: {},
     sorting: [],
@@ -115,6 +115,9 @@ export function CreateStudyPlanDialog({
   const asignaturaOptions = (areaData?.rows ?? []).map(
     (area) => area.nombreInterno
   )
+
+  const formatoOptions = criteriaOptions?.gradingFormat ?? []
+  const criterioOptions = criteriaOptions?.subjectGradeCriteria ?? []
 
   const createStudyPlanItem = useCreateStudyPlanItem({
     mutationConfig: {
@@ -147,14 +150,17 @@ export function CreateStudyPlanDialog({
     validators: { onSubmit: studyPlanFormSchema },
     onSubmit: ({ value }) => {
       const values = studyPlanFormSchema.parse(value)
+      const payload: StudyPlanFormValues = personalizar
+        ? values
+        : { ...values, formatoCalificacion: "", criterioNota: "" }
       if (isEditing) {
         updateStudyPlanItem.mutate({
           codigo: item.codigo,
-          values: { ...values, codigo: item.codigo },
+          values: { ...payload, codigo: item.codigo },
         })
       } else {
         createStudyPlanItem.mutate({
-          ...values,
+          ...payload,
           codigo: Date.now(),
           academicPeriodId,
           gradeId,
@@ -170,7 +176,7 @@ export function CreateStudyPlanDialog({
         setOpen(next)
         if (!next) {
           form.reset()
-          setPersonalizar(isEditing)
+          setPersonalizar(tienePersonalizacion)
         }
       }}
     >
@@ -195,8 +201,6 @@ export function CreateStudyPlanDialog({
           </>
         )}
       </DialogTrigger>
-      {/* Backdrop forzado: base-ui no renderiza el de un diálogo anidado, así
-          que lo agregamos con forceRender para que aparezca el difuminado. */}
       <DialogPortal>
         <DialogOverlay
           forceRender
@@ -400,7 +404,7 @@ export function CreateStudyPlanDialog({
                     Formato de calificación
                   </FieldLabel>
                   <Select
-                    value={field.state.value}
+                    value={personalizar ? field.state.value : formatoHeredado}
                     disabled={!personalizar}
                     onValueChange={(value) => value && field.handleChange(value)}
                   >
@@ -409,7 +413,7 @@ export function CreateStudyPlanDialog({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>
-                        {FORMATO_CALIFICACION_OPTIONS.map((option) => (
+                        {formatoOptions.map((option) => (
                           <SelectItem key={option} value={option}>
                             {option}
                           </SelectItem>
@@ -428,7 +432,7 @@ export function CreateStudyPlanDialog({
                     Criterio para calcular la nota de la asignatura
                   </FieldLabel>
                   <Select
-                    value={field.state.value}
+                    value={personalizar ? field.state.value : criterioHeredado}
                     disabled={!personalizar}
                     onValueChange={(value) => value && field.handleChange(value)}
                   >
@@ -437,7 +441,7 @@ export function CreateStudyPlanDialog({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>
-                        {CRITERIO_NOTA_OPTIONS.map((option) => (
+                        {criterioOptions.map((option) => (
                           <SelectItem key={option} value={option}>
                             {option}
                           </SelectItem>

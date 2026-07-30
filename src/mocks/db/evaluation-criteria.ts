@@ -1,22 +1,23 @@
 import type { EvaluationCriteria } from "@/features/establishment/api/types/academic-period/evaluation-criteria"
 
+// Criterios por defecto que se le devuelven al cliente cuando todavía no
+// guardó nada propio. La escala de valoración queda en blanco a propósito:
+// depende de las rating scales creadas y se elige manualmente.
 export const DEFAULT_EVALUATION_CRITERIA: EvaluationCriteria = {
-  gradingFormat: "",
-  gradingScale: "",
-  periodCalculationElements: "",
-  subjectGradeCriteria: "",
-  finalGradeCriteria: "",
-  areaGradeCriteria: "",
-  studentWithoutGradesPerformance: "",
-  maxRecoveryGrade: "",
-  roundingMode: "",
-  initialGrade: "",
+  gradingFormat: "0 - 100",
+  periodCalculationElements: "Actividades + examen",
+  subjectGradeCriteria: "Promedio ponderado",
+  finalGradeCriteria: "Promedio ponderado por peso",
+  areaGradeCriteria: "Promedio de asignaturas",
+  studentWithoutGradesPerformance: "No evaluado",
+  maxRecoveryGrade: "3.0",
+  roundingMode: "Redondear al más cercano",
+  initialGrade: "1.0",
 }
 
 export const evaluationCriteriaDb: Record<number, EvaluationCriteria> = {
   1: {
-    gradingFormat: "Numérico",
-    gradingScale: "Escala nacional (1.0 - 5.0)",
+    gradingFormat: "0 - 100",
     periodCalculationElements: "Actividades + examen",
     subjectGradeCriteria: "Promedio ponderado",
     finalGradeCriteria: "Promedio ponderado por peso",
@@ -27,8 +28,7 @@ export const evaluationCriteriaDb: Record<number, EvaluationCriteria> = {
     initialGrade: "1.0",
   },
   2: {
-    gradingFormat: "Cualitativo",
-    gradingScale: "Cualitativa (Bajo/Básico/Alto/Superior)",
+    gradingFormat: "0 - 10",
     periodCalculationElements: "Ponderado por competencias",
     subjectGradeCriteria: "Promedio",
     finalGradeCriteria: "Promedio de los períodos",

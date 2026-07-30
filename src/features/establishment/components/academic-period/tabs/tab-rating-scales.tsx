@@ -29,7 +29,6 @@ import { useDataTable } from "@/hooks/use-data-table"
 
 import { useRatingScalesQuery } from "../../../api/query/use-rating-scales-query"
 import { useRatingSymbolsQuery } from "../../../api/query/use-rating-symbols-query"
-import { useTeachingLevelsQuery } from "../../../api/query/use-teaching-levels-query"
 import { useRatingScaleTypesQuery } from "../../../api/query/use-rating-scale-types-query"
 import { useUpdateRatingScale } from "../../../api/mutations/update-rating-scale"
 import { RATING_SCALE_TYPE_BADGE } from "../../../api/ui-mappings"
@@ -49,8 +48,6 @@ interface TabRatingScalesProps {
 }
 
 export function TabRatingScales({ academicPeriodId }: TabRatingScalesProps) {
-  const { data: levels = [], isPending: levelsPending } =
-    useTeachingLevelsQuery()
   const {
     data,
     isPending: scalesPending,
@@ -68,7 +65,19 @@ export function TabRatingScales({ academicPeriodId }: TabRatingScalesProps) {
   const [sorting, setSorting] = useState<SortingState>([])
 
   const scales = data?.rows ?? []
-  const isPending = levelsPending || scalesPending
+
+  // La tabla se arma a partir de las escalas existentes: un nivel aparece
+  // recién cuando se le agrega al menos una escala. Si no hay escalas, no
+  // hay filas (la tabla arranca vacía).
+  const levels = useMemo(() => {
+    const map = new Map<number, TeachingLevel>()
+    for (const scale of scales) {
+      for (const lvl of scale.teachingLevels) {
+        map.set(lvl.id, lvl)
+      }
+    }
+    return Array.from(map.values())
+  }, [scales])
 
   const sortedLevels = useMemo(() => {
     if (!sorting.length) return levels
@@ -120,10 +129,10 @@ export function TabRatingScales({ academicPeriodId }: TabRatingScalesProps) {
 
       <ExpandableDataTable
         table={table}
-        isPending={isPending}
+        isPending={scalesPending}
         isError={isError}
         onRetry={refetch}
-        emptyMessage="Sin niveles de enseñanza."
+        emptyMessage="Aún no se agregaron escalas de valoración."
         errorMessage="Ocurrió un error al cargar las escalas."
         renderSubRow={(row) => {
           const level = row.original as TeachingLevel

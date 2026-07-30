@@ -1,7 +1,9 @@
 // Criterios de evaluación de un periodo académico.
 export interface EvaluationCriteria {
   gradingFormat: string
-  gradingScale: string
+  // Opcional: la escala de valoración se elige entre los niveles de enseñanza
+  // que tengan escalas creadas; si todavía no se creó ninguna, queda en blanco.
+  gradingScale?: string
   periodCalculationElements: string
   subjectGradeCriteria: string
   finalGradeCriteria: string
@@ -13,7 +15,7 @@ export interface EvaluationCriteria {
 }
 
 export type EvaluationCriteriaOptions = Record<
-  keyof EvaluationCriteria,
+  Exclude<keyof EvaluationCriteria, "gradingScale">,
   string[]
 >
 

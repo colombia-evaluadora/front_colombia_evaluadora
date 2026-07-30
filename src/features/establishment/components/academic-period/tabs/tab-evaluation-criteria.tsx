@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+import { useEffect, useMemo } from "react"
 import { useForm } from "@tanstack/react-form"
 import { toast } from "sonner"
 import { z } from "zod"
@@ -9,6 +9,7 @@ import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 
 import { useEvaluationCriteriaQuery } from "../../../api/query/use-evaluation-criteria-query"
 import { useEvaluationCriteriaOptionsQuery } from "../../../api/query/use-evaluation-criteria-options-query"
+import { useRatingScalesQuery } from "../../../api/query/use-rating-scales-query"
 import { useUpdateEvaluationCriteria } from "../../../api/mutations/update-evaluation-criteria"
 import {
   Select,
@@ -22,7 +23,7 @@ import {
 const FIELDS = [
   {
     name: "gradingScale",
-    label: "Escala de valoración*",
+    label: "Escala de valoración",
   },
   {
     name: "gradingFormat",
@@ -65,7 +66,9 @@ const FIELDS = [
 
 const evaluationCriteriaSchema = z.object({
   gradingFormat: z.string().min(1, "Requerido"),
-  gradingScale: z.string().min(1, "Requerido"),
+  // La escala de valoración es opcional: si no se creó ninguna escala para
+  // ningún nivel de enseñanza, el select queda en blanco.
+  gradingScale: z.string().optional(),
   periodCalculationElements: z.string().min(1, "Requerido"),
   subjectGradeCriteria: z.string().min(1, "Requerido"),
   finalGradeCriteria: z.string().min(1, "Requerido"),
@@ -78,16 +81,16 @@ const evaluationCriteriaSchema = z.object({
 type EvaluationCriteriaValues = z.infer<typeof evaluationCriteriaSchema>
 
 const EMPTY: EvaluationCriteriaValues = {
-  gradingFormat: "",
+  gradingFormat: "0 - 100",
   gradingScale: "",
-  periodCalculationElements: "",
-  subjectGradeCriteria: "",
-  finalGradeCriteria: "",
-  areaGradeCriteria: "",
-  studentWithoutGradesPerformance: "",
-  maxRecoveryGrade: "",
-  roundingMode: "",
-  initialGrade: "",
+  periodCalculationElements: "Actividades + examen",
+  subjectGradeCriteria: "Promedio ponderado",
+  finalGradeCriteria: "Promedio ponderado por peso",
+  areaGradeCriteria: "Promedio de asignaturas",
+  studentWithoutGradesPerformance: "No evaluado",
+  maxRecoveryGrade: "3.0",
+  roundingMode: "Redondear al más cercano",
+  initialGrade: "1.0",
 }
 
 const FORM_ID = "evaluation-criteria-form"
@@ -104,6 +107,28 @@ export function TabEvaluationCriteria({
 
   const { data: options, isPending: isLoadingOptions } =
     useEvaluationCriteriaOptionsQuery()
+
+  const { data: ratingScalesData, isPending: isLoadingRatingScales } =
+    useRatingScalesQuery({
+      filters: {},
+      sorting: [],
+      pageIndex: 0,
+      pageSize: 100,
+      academicPeriodId,
+    })
+
+  // La escala de valoración se elige entre los niveles de enseñanza que
+  // tengan al menos una escala creada. Si todavía no se creó ninguna, la
+  // lista queda vacía y el select se muestra en blanco.
+  const gradingScaleOptions = useMemo(() => {
+    const map = new Map<number, string>()
+    for (const scale of ratingScalesData?.rows ?? []) {
+      for (const lvl of scale.teachingLevels) {
+        map.set(lvl.id, lvl.nombre)
+      }
+    }
+    return Array.from(map.values())
+  }, [ratingScalesData])
 
   const saveCriteria = useUpdateEvaluationCriteria({
     mutationConfig: {
@@ -134,7 +159,11 @@ export function TabEvaluationCriteria({
     if (criteria) form.reset(criteria)
   }, [criteria, form])
 
-  if ((academicPeriodId != null && isLoading) || isLoadingOptions) {
+  if (
+    (academicPeriodId != null && isLoading) ||
+    isLoadingOptions ||
+    isLoadingRatingScales
+  ) {
     return (
       <div className="flex justify-center py-10">
         <Spinner />
@@ -156,6 +185,10 @@ export function TabEvaluationCriteria({
             {(field) => {
               const isInvalid =
                 field.state.meta.isTouched && !field.state.meta.isValid
+              const fieldOptions =
+                cfg.name === "gradingScale"
+                  ? gradingScaleOptions
+                  : (options?.[cfg.name] ?? [])
               return (
                 <Field variant="outlined" data-invalid={isInvalid}>
                   <FieldLabel htmlFor={field.name} className="flex-1">
@@ -173,7 +206,7 @@ export function TabEvaluationCriteria({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>
-                        {(options?.[cfg.name] ?? []).map((option) => (
+                        {fieldOptions.map((option) => (
                           <SelectItem key={option} value={option}>
                             {option}
                           </SelectItem>
