@@ -59,6 +59,7 @@ export const columns: ColumnDef<AuditSession>[] = [
   {
     id: "authorIp",
     accessorKey: "authorName",
+    meta: { label: "Autor / IP" },
     header: ({ column }) => <DataTableColumnHeader column={column} title="Autor / IP" />,
     cell: ({ row }) => {
       const session = row.original
@@ -86,6 +87,7 @@ export const columns: ColumnDef<AuditSession>[] = [
   {
     id: "startedAt",
     accessorKey: "startedAt",
+    meta: { label: "Inicio" },
     header: ({ column }) => <DataTableColumnHeader column={column} title="Inicio" />,
     cell: ({ row }) => {
       const startedAt = new Date(row.getValue<string>("startedAt"))
@@ -103,12 +105,14 @@ export const columns: ColumnDef<AuditSession>[] = [
   },
   {
     id: "duration",
+    meta: { label: "Duración" },
     header: ({ column }) => <DataTableColumnHeader column={column} title="Duración" />,
     cell: ({ row }) => <span>{formatDuration(row.original)}</span>,
   },
   {
     id: "status",
     accessorKey: "status",
+    meta: { label: "Estado" },
     header: ({ column }) => <DataTableColumnHeader column={column} title="Estado" />,
     cell: ({ row }) => {
       const status = row.getValue<SessionStatus>("status")
@@ -118,6 +122,7 @@ export const columns: ColumnDef<AuditSession>[] = [
   {
     id: "operations",
     accessorKey: "operationsCount",
+    meta: { label: "Operaciones" },
     header: ({ column }) => <DataTableColumnHeader column={column} title="Operaciones" />,
     cell: ({ row }) => <span className="font-medium">{row.original.operationsCount}</span>,
   },

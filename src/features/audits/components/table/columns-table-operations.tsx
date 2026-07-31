@@ -44,6 +44,7 @@ export const columns: ColumnDef<TableOperation>[] = [
   {
     id: "operation",
     accessorKey: "operation",
+    meta: { label: "Operación" },
     header: ({ column }) => <DataTableColumnHeader column={column} title="Operación" />,
     cell: ({ row }) => {
       const operation = row.getValue<OperationType>("operation")
@@ -53,6 +54,7 @@ export const columns: ColumnDef<TableOperation>[] = [
   {
     id: "authorIp",
     accessorKey: "authorName",
+    meta: { label: "Autor / IP" },
     header: ({ column }) => <DataTableColumnHeader column={column} title="Autor / IP" />,
     cell: ({ row }) => {
       const op = row.original
@@ -80,6 +82,7 @@ export const columns: ColumnDef<TableOperation>[] = [
   {
     id: "detail",
     accessorKey: "entityName",
+    meta: { label: "Detalle" },
     header: ({ column }) => <DataTableColumnHeader column={column} title="Detalle" />,
     cell: ({ row }) => {
       const op = row.original
@@ -94,6 +97,7 @@ export const columns: ColumnDef<TableOperation>[] = [
   {
     id: "occurredAt",
     accessorKey: "occurredAt",
+    meta: { label: "Fecha" },
     header: ({ column }) => <DataTableColumnHeader column={column} title="Fecha" />,
     cell: ({ row }) => {
       const occurredAt = new Date(row.getValue<string>("occurredAt"))

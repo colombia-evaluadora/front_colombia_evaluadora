@@ -36,11 +36,13 @@ export const columns: ColumnDef<Payment>[] = [
   {
     accessorKey: "email",
     id: "email",
+    meta: { label: "Email" },
     header: ({ column }) => <DataTableColumnHeader column={column} title="Email" />,
   },
   {
     accessorKey: "status",
     id: "status",
+    meta: { label: "Estado" },
     header: ({ column }) => <DataTableColumnHeader column={column} title="Estado" />,
     cell: ({ row }) => {
       const status = row.getValue<PaymentStatus>("status")
@@ -50,6 +52,7 @@ export const columns: ColumnDef<Payment>[] = [
   {
     accessorKey: "amount",
     id: "amount",
+    meta: { label: "Monto" },
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Monto" className="justify-end" />
     ),
@@ -65,6 +68,7 @@ export const columns: ColumnDef<Payment>[] = [
   {
     accessorKey: "createdAt",
     id: "createdAt",
+    meta: { label: "Creado" },
     header: ({ column }) => <DataTableColumnHeader column={column} title="Creado" />,
     cell: ({ row }) => (
       <div>{new Date(row.getValue<string>("createdAt")).toLocaleDateString()}</div>
