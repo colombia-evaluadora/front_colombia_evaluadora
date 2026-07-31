@@ -198,6 +198,21 @@ export const academicPeriodsHandlers = [
     return HttpResponse.json({ status: "ok", message: "Periodo actualizado." })
   }),
 
+  http.post("/api/academic-periods/bulk-delete", async ({ request }) => {
+    await delay(300)
+    const { ids } = (await request.json()) as { ids: number[] }
+    const set = new Set(ids)
+    const before = academicPeriodsDb.length
+    for (let i = academicPeriodsDb.length - 1; i >= 0; i--) {
+      if (set.has(academicPeriodsDb[i].id)) academicPeriodsDb.splice(i, 1)
+    }
+    return HttpResponse.json({
+      status: "ok",
+      message: "Periodos eliminados.",
+      deleted: before - academicPeriodsDb.length,
+    })
+  }),
+
   http.delete("/api/academic-periods/:id", async ({ params }) => {
     await delay(300)
     const index = academicPeriodsDb.findIndex(

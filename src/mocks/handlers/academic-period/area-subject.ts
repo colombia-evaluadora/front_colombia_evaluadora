@@ -199,6 +199,33 @@ export const areaSubjectsHandlers = [
     })
   }),
 
+  http.post("/api/area-subjects/bulk-delete", async ({ request }) => {
+    await delay(300)
+    const { ids } = (await request.json()) as { ids: number[] }
+    const set = new Set(ids)
+    const removedNames = new Set<string>()
+    for (let i = areaSubjectsDb.length - 1; i >= 0; i--) {
+      if (set.has(areaSubjectsDb[i].codigo)) {
+        const [removed] = areaSubjectsDb.splice(i, 1)
+        removedNames.add(removed.nombreInterno)
+        removed.subjects.forEach((subject) =>
+          removedNames.add(subject.nombreInterno)
+        )
+      }
+    }
+    // Misma cascada que el borrado individual: quitar los planes de estudio que
+    // referencian el área o alguna de sus asignaturas.
+    for (let i = studyPlansDb.length - 1; i >= 0; i--) {
+      if (removedNames.has(studyPlansDb[i].asignatura)) {
+        studyPlansDb.splice(i, 1)
+      }
+    }
+    return HttpResponse.json({
+      status: "ok",
+      message: "Áreas/asignaturas eliminadas.",
+    })
+  }),
+
   http.delete("/api/area-subjects/:codigo", async ({ params }) => {
     await delay(300)
     const index = areaSubjectsDb.findIndex(

@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 
-import { useDeleteAreaSubject } from "../../../api/mutations/area-subjects/delete-area-subject"
+import { useDeleteAreaSubjectsBulk } from "../../../api/mutations/area-subjects/delete-area-subjects-bulk"
 
 interface DeleteSelectedAreaSubjectsDialogProps {
   selectedIds: string[]
@@ -29,30 +29,20 @@ export function DeleteSelectedAreaSubjectsDialog({
 }: DeleteSelectedAreaSubjectsDialogProps) {
   const [open, setOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
-  const deleteMutation = useDeleteAreaSubject()
+  const bulkDelete = useDeleteAreaSubjectsBulk()
   const count = selectedIds.length
 
   async function handleDelete() {
     setSubmitting(true)
-    // Borrado en lote reusando el delete por área. Envolvemos cada uno para
-    // que un fallo puntual no corte a los demás.
     const codigos = selectedIds.map((id) => Number(id)).filter(Number.isFinite)
-    const results = await Promise.all(
-      codigos.map((codigo) =>
-        deleteMutation
-          .mutateAsync(codigo)
-          .catch(() => ({ status: "error" as const, message: "" }))
-      )
-    )
+    // Una sola request atómica.
+    const result = await bulkDelete
+      .mutateAsync(codigos)
+      .catch(() => ({ status: "error" as const, message: "" }))
     setSubmitting(false)
 
-    const failed = results.filter((result) => result.status === "error").length
-    if (failed > 0) {
-      toast.error(
-        failed === codigos.length
-          ? "No se pudieron eliminar las áreas seleccionadas."
-          : `No se pudieron eliminar ${failed} de ${codigos.length} área(s).`
-      )
+    if (result.status === "error") {
+      toast.error("No se pudieron eliminar las áreas seleccionadas.")
     } else {
       toast.success(`${codigos.length} área(s) eliminada(s).`)
     }

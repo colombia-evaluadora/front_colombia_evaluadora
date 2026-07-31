@@ -42,7 +42,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 
-import { useCreateRatingScale } from "../../../api/mutations/rating-scales/create-rating-scale"
+import { useCreateRatingScalesBulk } from "../../../api/mutations/rating-scales/create-rating-scales-bulk"
 import { useEvaluationCriteriaQuery } from "../../../api/query/evaluation-criteria/use-evaluation-criteria-query"
 import { useRatingSymbolsQuery } from "../../../api/query/rating-scales/use-rating-symbols-query"
 import { useTeachingLevelsQuery } from "../../../api/query/use-teaching-levels-query"
@@ -98,7 +98,7 @@ export function CreateRatingScaleDialog({
   const { data: symbols = [] } = useRatingSymbolsQuery()
   const { data: tipoOptions = [] } = useRatingScaleTypesQuery()
   const { data: criteria } = useEvaluationCriteriaQuery(academicPeriodId)
-  const createScale = useCreateRatingScale()
+  const createScalesBulk = useCreateRatingScalesBulk()
 
   const range = useMemo(
     () => parseGradingRange(criteria?.gradingFormat),
@@ -169,20 +169,13 @@ export function CreateRatingScaleDialog({
       toast.error("Agregá al menos una escala a la lista.")
       return
     }
-    await Promise.all(
-      teachingLevelIds.flatMap((levelId) =>
-        drafts.map((d) =>
-          createScale.mutateAsync({
-            ...d,
-            tipo: d.tipo as RatingScaleType,
-            codigo: 0,
-            teachingLevelIds: [levelId],
-            teachingLevels: [],
-            academicPeriodId,
-          })
-        )
-      )
-    )
+    // El backend expande por nivel (una escala por cada nivel × escala) y
+    // asigna los códigos; el front manda una sola request.
+    await createScalesBulk.mutateAsync({
+      teachingLevelIds,
+      scales: drafts.map((d) => ({ ...d, tipo: d.tipo as RatingScaleType })),
+      academicPeriodId,
+    })
     const total = drafts.length * teachingLevelIds.length
     toast.success(`${total} escala(s) guardada(s).`)
     reset()
@@ -684,10 +677,10 @@ export function CreateRatingScaleDialog({
               type="button"
               color="primary"
               onClick={handleSave}
-              disabled={createScale.isPending || drafts.length === 0}
-              aria-busy={createScale.isPending}
+              disabled={createScalesBulk.isPending || drafts.length === 0}
+              aria-busy={createScalesBulk.isPending}
             >
-              {createScale.isPending && (
+              {createScalesBulk.isPending && (
                 <SpinnerIcon data-icon="inline-start" className="animate-spin" />
               )}
               Guardar

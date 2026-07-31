@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 
-import { useDeleteRatingScale } from "../../../api/mutations/rating-scales/delete-rating-scale"
+import { useDeleteRatingScalesBulk } from "../../../api/mutations/rating-scales/delete-rating-scales-bulk"
 
 interface DeleteSelectedRatingScalesDialogProps {
   levelCount: number
@@ -31,25 +31,19 @@ export function DeleteSelectedRatingScalesDialog({
 }: DeleteSelectedRatingScalesDialogProps) {
   const [open, setOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
-  const deleteMutation = useDeleteRatingScale()
+  const bulkDelete = useDeleteRatingScalesBulk()
   const count = scaleCodigos.length
 
   async function handleDelete() {
     setSubmitting(true)
-    // Borrado en lote reusando el delete por escala. Envolvemos cada uno para
-    // que un fallo puntual no corte a los demás.
-    const results = await Promise.all(
-      scaleCodigos.map((codigo) =>
-        deleteMutation
-          .mutateAsync(codigo)
-          .catch(() => ({ status: "error" as const, message: "" }))
-      )
-    )
+    // Una sola request atómica: el backend borra todas las escalas por código.
+    const result = await bulkDelete
+      .mutateAsync(scaleCodigos)
+      .catch(() => ({ status: "error" as const, message: "" }))
     setSubmitting(false)
 
-    const failed = results.filter((result) => result.status === "error").length
-    if (failed > 0) {
-      toast.error(`No se pudieron eliminar ${failed} escala(s).`)
+    if (result.status === "error") {
+      toast.error("No se pudieron eliminar las escalas.")
     } else {
       toast.success(`${count} escala(s) de valoración eliminada(s).`)
     }

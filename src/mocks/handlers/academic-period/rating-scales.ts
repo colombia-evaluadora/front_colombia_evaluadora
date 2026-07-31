@@ -14,6 +14,7 @@ import type {
   RatingScalesQueryRequest,
   RatingScalesQueryResponse,
   CreateRatingScaleRequest,
+  BulkCreateRatingScalesRequest,
   UpdateRatingScaleRequest,
   ExportFormat,
   ExportResult,
@@ -131,6 +132,43 @@ export const ratingScalesHandlers = [
     ratingScalesDb.push(newScale)
 
     return HttpResponse.json(newScale, { status: 201 })
+  }),
+
+  // Alta en lote: el backend expande por nivel y asigna los códigos.
+  http.post("/api/rating-scales/bulk", async ({ request }) => {
+    await delay(400)
+    const { teachingLevelIds, scales, academicPeriodId } =
+      (await request.json()) as BulkCreateRatingScalesRequest
+    const created: RatingScaleRecord[] = teachingLevelIds.flatMap((levelId) =>
+      scales.map((scale) => {
+        const record: RatingScaleRecord = {
+          ...scale,
+          codigo: nextRatingScaleId(),
+          teachingLevelIds: [levelId],
+          teachingLevels: resolveTeachingLevels([levelId]),
+          academicPeriodId: academicPeriodId ?? 0,
+        }
+        ratingScalesDb.push(record)
+        return record
+      })
+    )
+    return HttpResponse.json<RatingScaleRecord[]>(created, { status: 201 })
+  }),
+
+  // Borrado en lote por códigos (atómico, una sola request).
+  http.post("/api/rating-scales/bulk-delete", async ({ request }) => {
+    await delay(300)
+    const { ids } = (await request.json()) as { ids: number[] }
+    const set = new Set(ids)
+    const before = ratingScalesDb.length
+    for (let i = ratingScalesDb.length - 1; i >= 0; i--) {
+      if (set.has(ratingScalesDb[i].codigo)) ratingScalesDb.splice(i, 1)
+    }
+    return HttpResponse.json({
+      status: "ok",
+      message: "Escalas eliminadas.",
+      deleted: before - ratingScalesDb.length,
+    })
   }),
 
   http.patch("/api/rating-scales/:codigo", async ({ request, params }) => {
