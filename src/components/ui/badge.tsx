@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils"
 // Los nombres `fill / outline` se conservan por compatibilidad con la API
 // existente; `fill` ⇄ Solid y `outline` ⇄ Outline del Figma.
 const badgeVariants = cva(
-  "group/badge inline-flex w-fit shrink-0 items-center justify-center gap-1 overflow-hidden rounded-xs border border-transparent px-2 py-0.5 text-[0.625rem] font-semibold tracking-widest whitespace-nowrap uppercase transition-colors focus-visible:border-ring focus-visible:ring-[3px] aria-invalid:border-red aria-invalid:ring-red/20 dark:aria-invalid:ring-red/40 [&>svg]:pointer-events-none [&>svg]:size-3!",
+  "group/badge inline-flex w-fit shrink-0 items-center justify-center gap-1 overflow-hidden rounded-xs border border-transparent px-2 py-0.5 text-[0.625rem] font-semibold tracking-widest whitespace-nowrap uppercase transition-colors has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 focus-visible:border-ring focus-visible:ring-[3px] aria-invalid:border-red aria-invalid:ring-red/20 dark:aria-invalid:ring-red/40 [&>svg]:pointer-events-none [&>svg]:size-3!",
   {
     variants: {
       variant: {
@@ -197,10 +197,14 @@ const badgeVariants = cva(
  * Construido sobre `@base-ui/react/use-render` — soporta `render` para
  * montar como `<a>`, `<button>`, etc. preservando accesibilidad.
  *
+ * Los íconos van como hijos con `data-icon="inline-start" | "inline-end"`, igual
+ * que en Button: el atributo compensa el padding de ese lado.
+ *
  * @example
  *   <Badge variant="soft" color="success">Activo</Badge>
  *   <Badge variant="outline" color="warning">Pendiente</Badge>
  *   <Badge render={<a href="?status=draft" />}>Borrador</Badge>
+ *   <Badge color="info"><ClockIcon data-icon="inline-start" />En revisión</Badge>
  */
 function Badge({
   className,
