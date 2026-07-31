@@ -12,7 +12,7 @@ export interface TeacherAssignments {
 
 export interface SaveTeacherAssignmentsRequest {
   academicPeriodId: number
-  documento: string
+  documentNumber: string
   subjectIds: string[]
 }
 

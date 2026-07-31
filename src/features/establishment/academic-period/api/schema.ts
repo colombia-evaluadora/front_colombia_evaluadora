@@ -8,7 +8,9 @@ export const academicPeriodFormSchema = z
     startDate: z.string().min(1, "La fecha de inicio es obligatoria"),
     endDate: z.string().min(1, "La fecha de finalización es obligatoria"),
     enrollmentDeadline: z.string().min(1, "La fecha límite de matrícula es obligatoria"),
-    sedeId: z.number().int().positive("La sede es obligatoria"),
+    // El backend de establecimientos devuelve `Campus.id` como string; el form
+    // lo recibe como string y lo mantiene así hasta el submit.
+    sedeId: z.string().min(1, "La sede es obligatoria"),
     // Derivado: el periodo anterior se resuelve por sede, no lo captura el
     // usuario. Puede ser null cuando la sede no tiene periodos previos.
     previousPeriodId: z.number().int().positive().nullable(),

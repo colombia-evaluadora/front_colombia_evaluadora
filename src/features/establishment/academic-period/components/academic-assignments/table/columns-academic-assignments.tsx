@@ -5,25 +5,54 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { DataTableColumnHeader } from "@/components/data-table"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
-import type { Teacher } from "../../../api/types/teacher"
-import { TEACHER_STATUS_BADGE } from "../../../api/ui-mappings"
+import {
+  EMPLOYEE_STATUS_BADGE,
+  EMPLOYEE_STATUS_LABELS,
+} from "@/features/establishment/api/employee-ui-mappings"
+import type { EmployeeListItem } from "@/features/establishment/api/types/employee"
+import type { PermissionStatus } from "@/features/establishment/api/types/permission"
 
 interface CreateColumnsOptions {
-  expandedDoc: string | null
-  onToggleExpand: (teacher: Teacher) => void
+  expandedId: string | null
+  onToggleExpand: (employee: EmployeeListItem) => void
+}
+
+/**
+ * Une las etiquetas legibles de los estados del funcionario con comas.
+ * Vacío cuando el funcionario aún no tiene permisos asociados. Replica
+ * el patrón del módulo de establecimiento para mantener la misma UX.
+ */
+function formatStatusLabels(statuses: EmployeeListItem["statuses"]) {
+  if (statuses.length === 0) {
+    return "—"
+  }
+  return statuses.map((status) => EMPLOYEE_STATUS_LABELS[status]).join(", ")
+}
+
+/**
+ * Color del badge cuando hay varios estados mezclados: si alguno es
+ * `SUSPENDED` mostramos destructive; si todos son `ACTIVE`, success.
+ */
+function pickStatusColor(
+  statuses: EmployeeListItem["statuses"]
+): "success" | "destructive" {
+  return statuses.includes("SUSPENDED" satisfies PermissionStatus)
+    ? "destructive"
+    : "success"
 }
 
 export function createAcademicAssignmentColumns({
-  expandedDoc,
+  expandedId,
   onToggleExpand,
-}: CreateColumnsOptions): ColumnDef<Teacher>[] {
+}: CreateColumnsOptions): ColumnDef<EmployeeListItem>[] {
   return [
     {
       id: "expand",
       header: () => <span className="sr-only">Expandir</span>,
       cell: ({ row }) => {
-        const isOpen = expandedDoc === row.original.documento
+        const isOpen = expandedId === row.original.id
         return (
           <Button
             variant="ghost"
@@ -62,7 +91,7 @@ export function createAcademicAssignmentColumns({
       cell: ({ row }) => (
         <Checkbox
           color="neutral"
-          aria-label={`Seleccionar ${row.original.apellido}`}
+          aria-label={`Seleccionar ${row.original.name}`}
           className="translate-y-0.5"
           checked={row.getIsSelected()}
           onCheckedChange={(value) => row.toggleSelected(!!value)}
@@ -73,48 +102,71 @@ export function createAcademicAssignmentColumns({
       size: 32,
     },
     {
-      id: "documento",
-      accessorKey: "documento",
+      id: "documentNumber",
+      accessorKey: "documentNumber",
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Documento" />
       ),
       cell: ({ row }) => (
-        <span className="font-medium">{row.original.documento}</span>
+        <span className="tabular-nums">{row.original.documentNumber}</span>
       ),
     },
     {
-      id: "apellido",
-      accessorKey: "apellido",
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Apellido" />
-      ),
-      cell: ({ row }) => (
-        <span className="font-semibold">{row.original.apellido}</span>
-      ),
-    },
-    {
-      id: "nombre",
-      accessorKey: "nombre",
+      id: "name",
+      accessorKey: "name",
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Nombre" />
       ),
       cell: ({ row }) => (
-        <span className="font-semibold">{row.original.nombre}</span>
+        <div className="max-w-md truncate font-medium">
+          {row.original.name}
+        </div>
       ),
     },
     {
-      id: "estado",
-      accessorKey: "estado",
+      id: "status",
+      accessorKey: "status",
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Estado" />
       ),
-      cell: ({ row }) => (
-        <Badge {...TEACHER_STATUS_BADGE[row.original.estado]}>
-          {row.original.estado}
-        </Badge>
-      ),
+      cell: ({ row }) => {
+        const statuses = row.original.statuses
+        const fullText = formatStatusLabels(statuses)
+
+        if (statuses.length === 0) {
+          return (
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Badge variant="outline" color="neutral" className="font-normal">
+                    {fullText}
+                  </Badge>
+                }
+              />
+              <TooltipContent>Sin permisos asignados</TooltipContent>
+            </Tooltip>
+          )
+        }
+
+        return (
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Badge
+                  {...EMPLOYEE_STATUS_BADGE[statuses[0]]}
+                  color={pickStatusColor(statuses)}
+                  className="max-w-[14rem] truncate font-normal"
+                >
+                  {fullText}
+                </Badge>
+              }
+            />
+            <TooltipContent>{fullText}</TooltipContent>
+          </Tooltip>
+        )
+      },
     },
   ]
 }
 
-export type AcademicAssignmentTable = Table<Teacher>
+export type AcademicAssignmentTable = Table<EmployeeListItem>

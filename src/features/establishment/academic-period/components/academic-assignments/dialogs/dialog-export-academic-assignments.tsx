@@ -20,14 +20,12 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 
-import { useExportAcademicAssignments } from "../../../api/mutations/academic-assignments/export-academic-assignments"
-import type {
-  ExportFormat,
-  TeachersQueryFilters,
-} from "../../../api/types/teacher"
+import { useExportEmployees } from "@/features/establishment/api/mutations/export-employees"
+import type { EmployeesQueryFilters } from "@/features/establishment/api/types/employee"
+import type { ExportFormat } from "@/features/establishment/api/types/export"
 
 interface ExportAcademicAssignmentsDialogProps {
-  filters: TeachersQueryFilters
+  filters: EmployeesQueryFilters
 }
 
 export function ExportAcademicAssignmentsDialog({
@@ -35,7 +33,7 @@ export function ExportAcademicAssignmentsDialog({
 }: ExportAcademicAssignmentsDialogProps) {
   const [open, setOpen] = useState(false)
 
-  const exportAll = useExportAcademicAssignments({
+  const exportAll = useExportEmployees({
     mutationConfig: {
       onSuccess: (result) => {
         if (result.status === "error") {

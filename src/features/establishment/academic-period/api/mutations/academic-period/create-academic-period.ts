@@ -17,6 +17,8 @@ export function toCreateAcademicPeriodRequest(
     : new Date().getFullYear()
 
   return {
+    // `sedeId` ahora es string en todo el módulo académico, alineado con
+    // `Campus.id` del módulo de establecimientos.
     sedeId: values.sedeId,
     previousPeriodId: values.previousPeriodId,
     schoolYearId,

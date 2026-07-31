@@ -2,7 +2,9 @@ export type AcademicPeriodStatus = "ACTIVO" | "INACTIVO"
 
 export interface AcademicPeriod {
   id: number
-  sedeId: number
+  // String para coincidir con `Campus.id` del módulo de establecimientos;
+  // antes era number pero los ids de sede ahora son strings (UUIDs/slugs).
+  sedeId: string
   sedeName: string
   previousPeriodId: number | null
   schoolYearId: number

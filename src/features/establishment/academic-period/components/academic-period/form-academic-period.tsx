@@ -15,8 +15,9 @@ import {
 
 import { BreaksField } from "./breaks-field"
 
+import { useCampusesOptionsQuery } from "@/features/establishment/api/query/use-campuses-options-query"
+
 import { useAcademicPeriodsQuery } from "../../api/query/academic-period/use-academic-periods-query"
-import { useSedesQuery } from "../../api/query/use-sedes-query"
 import { useJornadasQuery } from "../../api/query/use-jornadas-query"
 import {
   academicPeriodFormSchema,
@@ -38,7 +39,7 @@ const EMPTY_VALUES: AcademicPeriodFormInput = {
   startDate: "",
   endDate: "",
   enrollmentDeadline: "",
-  sedeId: 0,
+  sedeId: "",
   previousPeriodId: null,
   status: "ACTIVO",
   jornadaId: 0,
@@ -65,7 +66,7 @@ export function AcademicPeriodForm({
     ...defaultValues,
   } satisfies AcademicPeriodFormInput
 
-  const { data: sedes = [] } = useSedesQuery()
+  const { data: campuses = [] } = useCampusesOptionsQuery()
   const { data: jornadas = [] } = useJornadasQuery()
 
   const form = useForm({
@@ -181,24 +182,22 @@ export function AcademicPeriodForm({
               <Field variant="outlined" data-invalid={isInvalid}>
                 <FieldLabel htmlFor={field.name}>Sede*</FieldLabel>
                 <Select
-                  value={field.state.value ? String(field.state.value) : ""}
-                  onValueChange={(value) =>
-                    value && field.handleChange(Number(value))
-                  }
+                  value={field.state.value || ""}
+                  onValueChange={(value) => value && field.handleChange(value)}
                 >
                   <SelectTrigger id={field.name} aria-invalid={isInvalid}>
                     <SelectValue placeholder="Seleccionar">
                       {(value) =>
-                        sedes.find((s) => String(s.id) === value)?.name ??
+                        campuses.find((c) => c.id === value)?.name ??
                         "Seleccionar"
                       }
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
-                      {sedes.map((sede) => (
-                        <SelectItem key={sede.id} value={String(sede.id)}>
-                          {sede.name}
+                      {campuses.map((campus) => (
+                        <SelectItem key={campus.id} value={campus.id}>
+                          {campus.name}
                         </SelectItem>
                       ))}
                     </SelectGroup>
@@ -211,7 +210,9 @@ export function AcademicPeriodForm({
         </form.Field>
 
         {/* Periodo anterior: se consulta por la sede seleccionada e incluye
-            siempre la opción "No tiene" (equivale a null). */}
+            siempre la opción "No tiene" (equivale a null). El form maneja
+            `sedeId` como string, igual que `AcademicPeriod.sedeId` y
+            `Campus.id`. */}
         <form.Subscribe selector={(state) => state.values.sedeId}>
           {(sedeId) => {
             const optionsForSede = previousPeriodOptions.filter(
