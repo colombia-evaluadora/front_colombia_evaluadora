@@ -302,6 +302,9 @@ function FieldFilterSection({ field, availableFields }: FieldFilterSectionProps)
         <Field orientation="vertical" variant="outlined" className="gap-2">
           <FieldLabel htmlFor="field-filter-condition">Condición</FieldLabel>
           <Select
+            // `items` le da al trigger el label del valor seleccionado; sin
+            // esto SelectValue imprime la clave cruda ("startsWith").
+            items={FIELD_FILTER_CONDITION_LABELS}
             value={composerCondition}
             onValueChange={(value) =>
               setComposerCondition((value ?? "") as FieldFilterCondition | "")
