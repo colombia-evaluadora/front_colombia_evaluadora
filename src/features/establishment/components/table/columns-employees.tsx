@@ -9,6 +9,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 
 import { EMPLOYEE_STATUS_BADGE, EMPLOYEE_STATUS_LABELS } from "../../api/employee-ui-mappings"
 import type { EmployeeListItem } from "../../api/types/employee"
+import type { PermissionStatus } from "../../api/types/permission"
 import { DeleteEmployeeDialog } from "../dialogs/dialog-delete-employee"
 
 interface EmployeeColumnsOptions {
@@ -17,6 +18,38 @@ interface EmployeeColumnsOptions {
 
 function formatCampusNames(campuses: string[]) {
   return campuses.join(" · ")
+}
+
+/**
+ * Une los nombres de los roles del funcionario con comas. Se usa para
+ * mostrar el contenido resumido dentro del badge de la columna "Rol".
+ */
+function formatRoleNames(roles: EmployeeListItem["roles"]) {
+  return roles.map((role) => role.name).join(", ")
+}
+
+/**
+ * Une las etiquetas legibles de los estados del funcionario con comas.
+ * Vacío cuando el funcionario aún no tiene permisos asociados.
+ */
+function formatStatusLabels(statuses: EmployeeListItem["statuses"]) {
+  if (statuses.length === 0) {
+    return "—"
+  }
+
+  return statuses.map((status) => EMPLOYEE_STATUS_LABELS[status]).join(", ")
+}
+
+/**
+ * Color del badge de "Estado" cuando la lista trae varios estados
+ * mezclados. Si hay al menos un permiso `SUSPENDED`, mostramos el color
+ * "destructive" como señal de riesgo; si todos están `ACTIVE`, dejamos
+ * el verde.
+ */
+function pickStatusColor(statuses: EmployeeListItem["statuses"]): "success" | "destructive" {
+  return statuses.includes("SUSPENDED" satisfies PermissionStatus)
+    ? "destructive"
+    : "success"
 }
 
 export function createEmployeeColumns({ onEdit }: EmployeeColumnsOptions): ColumnDef<EmployeeListItem>[] {
@@ -65,11 +98,26 @@ export function createEmployeeColumns({ onEdit }: EmployeeColumnsOptions): Colum
     accessorKey: "role",
     id: "role",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Rol" />,
-    cell: ({ row }) => (
-      <Badge variant="soft" color="secondary">
-        {row.original.role.name}
-      </Badge>
-    ),
+    cell: ({ row }) => {
+      const fullText = formatRoleNames(row.original.roles)
+
+      return (
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Badge
+                variant="soft"
+                color="secondary"
+                className="max-w-[16rem] truncate font-normal"
+              >
+                {fullText}
+              </Badge>
+            }
+          />
+          <TooltipContent>{fullText}</TooltipContent>
+        </Tooltip>
+      )
+    },
   },
   {
     accessorKey: "campuses",
@@ -109,9 +157,40 @@ export function createEmployeeColumns({ onEdit }: EmployeeColumnsOptions): Colum
     id: "status",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Estado" />,
     cell: ({ row }) => {
-      const status = row.original.status
+      const statuses = row.original.statuses
+      const fullText = formatStatusLabels(statuses)
 
-      return <Badge {...EMPLOYEE_STATUS_BADGE[status]}>{EMPLOYEE_STATUS_LABELS[status]}</Badge>
+      if (statuses.length === 0) {
+        return (
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Badge variant="outline" color="neutral" className="font-normal">
+                  {fullText}
+                </Badge>
+              }
+            />
+            <TooltipContent>Sin permisos asignados</TooltipContent>
+          </Tooltip>
+        )
+      }
+
+      return (
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Badge
+                {...EMPLOYEE_STATUS_BADGE[statuses[0]]}
+                color={pickStatusColor(statuses)}
+                className="max-w-[14rem] truncate font-normal"
+              >
+                {fullText}
+              </Badge>
+            }
+          />
+          <TooltipContent>{fullText}</TooltipContent>
+        </Tooltip>
+      )
     },
   },
   {

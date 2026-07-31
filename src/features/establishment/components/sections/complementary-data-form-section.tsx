@@ -255,7 +255,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                     </Field>
                 </div>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <Field orientation="vertical" variant="outlined" className="w-full">
+                    <Field orientation="vertical" className="w-full">
                         <FieldLabel>Atención a población perteneciente a etnias</FieldLabel>
                         <RadioGroup
                             value={value.ethnicAttention ? "si" : "no"}
@@ -286,7 +286,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                     </Field>
                 </div>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <Field orientation="vertical" variant="outlined" className="w-full">
+                    <Field orientation="vertical" className="w-full">
                         <FieldLabel>
                             Atención a población con talentos adicionales
                         </FieldLabel>
@@ -309,7 +309,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
 
                         </RadioGroup>
                     </Field>
-                    <Field orientation="vertical" variant="outlined" className="w-full">
+                    <Field orientation="vertical" className="w-full">
                         <FieldLabel>Ofrece subsidio</FieldLabel>
                         <RadioGroup
                             value={value.subsidy ? "si" : "no"}

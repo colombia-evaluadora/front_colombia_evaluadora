@@ -18,6 +18,12 @@ import {
 } from "@/components/ui/select"
 import { useDataTable } from "@/hooks/use-data-table"
 import { useTablePagination } from "@/hooks/use-table-pagination"
+import { DownloadSimpleIcon } from "@/components/ui/icons"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 import { useEstablishmentsFilters } from "../../hooks/use-establishments-filters"
 import { useEstablishmentsQuery } from "../../api/query/use-establishments-query"
@@ -124,14 +130,22 @@ export function EstablishmentsDataTable() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            color="muted"
-            size="sm"
-            onClick={() => void 0}
-          >
-            Exportar
-          </Button>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  variant="outline"
+                  color="muted"
+                  size="icon-sm"
+                  onClick={() => void 0}
+                  aria-label="Exportar"
+                >
+                  <DownloadSimpleIcon />
+                </Button>
+              }
+            />
+            <TooltipContent>Exportar</TooltipContent>
+          </Tooltip>
         </div>
       </div>
 
