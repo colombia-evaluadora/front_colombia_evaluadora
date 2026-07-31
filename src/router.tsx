@@ -28,7 +28,7 @@ import {
   sessionOperationsSearchSchema,
   tableOperationsSearchSchema,
 } from "@/features/audits/api/schema"
-import { academicPeriodsSearchSchema } from "@/features/establishment/api/schema"
+import { academicPeriodsSearchSchema } from "@/features/establishment/academic-period/api/schema"
 
 /*const LandingPage = lazyRouteComponent(
   () => import("@/features/landing/pages/landing-page"),
@@ -81,11 +81,11 @@ const SessionOperationsPage = lazyRouteComponent(
   "SessionOperationsPage",
 )
 const AcademicPeriodsPage = lazyRouteComponent(
-  () => import("@/features/establishment/pages/academic-periods-page"),
+  () => import("@/features/establishment/academic-period/pages/academic-periods-page"),
   "AcademicPeriodsPage"
 )
 const AcademicPeriodConfigPage = lazyRouteComponent(
-  () => import("@/features/establishment/pages/academic-period-config-page"),
+  () => import("@/features/establishment/academic-period/pages/academic-period-config-page"),
   "AcademicPeriodConfigPage"
 )
 
