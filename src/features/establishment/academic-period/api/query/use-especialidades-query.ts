@@ -2,18 +2,20 @@ import { useQuery } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
 
-function fetchEspecialidades(): Promise<string[]> {
-  return api.get("/especialidades")
+function fetchEspecialidades(academicPeriodId?: number): Promise<string[]> {
+  const qs =
+    academicPeriodId != null ? `?academicPeriodId=${academicPeriodId}` : ""
+  return api.get(`/especialidades${qs}`)
 }
 
-export const especialidadesQueryKey = () => ["especialidades"]
+export const especialidadesQueryKey = (academicPeriodId?: number) => [
+  "especialidades",
+  academicPeriodId,
+]
 
-// Catálogo estable de especialidades; se cachea indefinidamente como las
-// demás listas de referencia.
-export function useEspecialidadesQuery() {
+export function useEspecialidadesQuery(academicPeriodId?: number) {
   return useQuery({
-    queryKey: especialidadesQueryKey(),
-    queryFn: fetchEspecialidades,
-    staleTime: Infinity,
+    queryKey: especialidadesQueryKey(academicPeriodId),
+    queryFn: () => fetchEspecialidades(academicPeriodId),
   })
 }
