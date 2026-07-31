@@ -31,6 +31,7 @@ import { useDataTable } from "@/hooks/use-data-table"
 import { useRatingScalesQuery } from "../../../api/query/use-rating-scales-query"
 import { useRatingSymbolsQuery } from "../../../api/query/use-rating-symbols-query"
 import { useRatingScaleTypesQuery } from "../../../api/query/use-rating-scale-types-query"
+import { useEvaluationCriteriaQuery } from "../../../api/query/use-evaluation-criteria-query"
 import { useUpdateRatingScale } from "../../../api/mutations/update-rating-scale"
 import { RATING_SCALE_TYPE_BADGE } from "../../../api/ui-mappings"
 import type {
@@ -44,6 +45,11 @@ import { DeleteSelectedRatingScalesDialog } from "../dialogs/dialog-delete-selec
 import { ExportRatingScalesDialog } from "../dialogs/dialog-export-rating-scales"
 import { RatingSymbolSelect, RatingSymbolView } from "../rating-symbol"
 import { createRatingScaleLevelColumns } from "../table/columns-rating-scales"
+import {
+  makeRatingScaleGradesSchema,
+  parseGradingRange,
+  type GradingRange,
+} from "../grading-range"
 
 interface TabRatingScalesProps {
   academicPeriodId?: number
@@ -62,6 +68,12 @@ export function TabRatingScales({ academicPeriodId }: TabRatingScalesProps) {
     pageSize: 100,
     academicPeriodId,
   })
+
+  const { data: criteria } = useEvaluationCriteriaQuery(academicPeriodId)
+  const range = useMemo(
+    () => parseGradingRange(criteria?.gradingFormat),
+    [criteria]
+  )
 
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const [sorting, setSorting] = useState<SortingState>([])
@@ -157,7 +169,9 @@ export function TabRatingScales({ academicPeriodId }: TabRatingScalesProps) {
         renderSubRow={(row) => {
           const level = row.original as TeachingLevel
           if (expandedId !== level.id) return null
-          return <ScalesSubTable scales={scalesForLevel(level.id)} />
+          return (
+            <ScalesSubTable scales={scalesForLevel(level.id)} range={range} />
+          )
         }}
       />
     </div>
@@ -187,7 +201,13 @@ function toDraft(scale: RatingScale): EditableScale {
   }
 }
 
-function ScalesSubTable({ scales }: { scales: RatingScale[] }) {
+function ScalesSubTable({
+  scales,
+  range,
+}: {
+  scales: RatingScale[]
+  range: GradingRange
+}) {
   const { data: symbols = [] } = useRatingSymbolsQuery()
   const { data: tipoOptions = [] } = useRatingScaleTypesQuery()
   const [editingCodigo, setEditingCodigo] = useState<number | null>(null)
@@ -223,7 +243,21 @@ function ScalesSubTable({ scales }: { scales: RatingScale[] }) {
 
   function saveEdit(scale: RatingScale) {
     if (!draft) return
-    updateMutation.mutate({ codigo: scale.codigo, values: { ...scale, ...draft } })
+    // Mismas reglas que el alta: las notas deben caer dentro del rango del
+    // periodo (y mínima ≤ máxima).
+    const parsed = makeRatingScaleGradesSchema(range).safeParse(draft)
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0]?.message ?? "Revisá los datos.")
+      return
+    }
+    updateMutation.mutate({
+      codigo: scale.codigo,
+      values: {
+        ...scale,
+        ...parsed.data,
+        tipo: parsed.data.tipo as RatingScaleType,
+      },
+    })
   }
 
   if (scales.length === 0) {
@@ -283,6 +317,8 @@ function ScalesSubTable({ scales }: { scales: RatingScale[] }) {
                         aria-label="Nota máximo"
                         type="number"
                         step="0.1"
+                        min={range.min}
+                        max={range.max}
                         value={Number.isNaN(draft.notaMaxima) ? "" : draft.notaMaxima}
                         onChange={(e) => patchDraft({ notaMaxima: e.target.valueAsNumber })}
                         className="w-20"
@@ -293,6 +329,8 @@ function ScalesSubTable({ scales }: { scales: RatingScale[] }) {
                         aria-label="Nota mínimo"
                         type="number"
                         step="0.1"
+                        min={range.min}
+                        max={range.max}
                         value={Number.isNaN(draft.notaMinima) ? "" : draft.notaMinima}
                         onChange={(e) => patchDraft({ notaMinima: e.target.valueAsNumber })}
                         className="w-20"
@@ -303,6 +341,8 @@ function ScalesSubTable({ scales }: { scales: RatingScale[] }) {
                         aria-label="Nota equivalente"
                         type="number"
                         step="0.1"
+                        min={range.min}
+                        max={range.max}
                         value={
                           Number.isNaN(draft.notaEquivalente) ? "" : draft.notaEquivalente
                         }

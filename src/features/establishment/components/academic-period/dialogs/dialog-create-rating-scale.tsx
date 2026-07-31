@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useMemo, useRef, useState } from "react"
 import { useForm } from "@tanstack/react-form"
 import {
   CheckIcon,
@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/dialog"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { FieldVariantContext } from "@/hooks/use-field-variant"
 import {
   Select,
   SelectContent,
@@ -42,37 +43,33 @@ import {
 } from "@/components/ui/table"
 
 import { useCreateRatingScale } from "../../../api/mutations/create-rating-scale"
+import { useEvaluationCriteriaQuery } from "../../../api/query/use-evaluation-criteria-query"
 import { useRatingSymbolsQuery } from "../../../api/query/use-rating-symbols-query"
 import { useTeachingLevelsQuery } from "../../../api/query/use-teaching-levels-query"
 import { useRatingScaleTypesQuery } from "../../../api/query/use-rating-scale-types-query"
 import type { RatingScaleType } from "../../../api/types/academic-period/rating-scales"
 import { RatingSymbolSelect, RatingSymbolView } from "../rating-symbol"
+import {
+  makeRatingScaleGradesSchema,
+  parseGradingRange,
+  type GradingRange,
+} from "../grading-range"
 import { TeachingLevelsMultiSelect } from "./teaching-levels-multi-select"
 
-const ratingScaleDraftSchema = z
-  .object({
-    nombre: z.string().min(1, "El nombre es obligatorio"),
-    abreviacion: z.string().min(1, "La abreviación es obligatoria"),
-    tipo: z.string().min(1, "El tipo de valoración es obligatorio"),
-    iconografia: z.string().min(1, "La iconografía es obligatoria"),
-    notaMaxima: z.number().min(0, "Debe ser 0 o más"),
-    notaMinima: z.number().min(0, "Debe ser 0 o más"),
-    notaEquivalente: z.number().min(0, "Debe ser 0 o más"),
-  })
-  .refine((d) => d.notaMinima <= d.notaMaxima, {
-    message: "La nota mínima no puede superar la máxima",
-    path: ["notaMinima"],
-  })
-type RatingScaleDraftValues = z.infer<typeof ratingScaleDraftSchema>
+type RatingScaleDraftValues = z.infer<
+  ReturnType<typeof makeRatingScaleGradesSchema>
+>
 
-const EMPTY_DRAFT: RatingScaleDraftValues = {
-  nombre: "",
-  abreviacion: "",
-  tipo: "",
-  iconografia: "",
-  notaMaxima: 0,
-  notaMinima: 0,
-  notaEquivalente: 0,
+function makeEmptyDraft(range: GradingRange): RatingScaleDraftValues {
+  return {
+    nombre: "",
+    abreviacion: "",
+    tipo: "",
+    iconografia: "",
+    notaMaxima: range.max,
+    notaMinima: range.min,
+    notaEquivalente: range.min,
+  }
 }
 
 const DRAFT_FORM_ID = "rating-scale-draft-form"
@@ -88,26 +85,41 @@ export function CreateRatingScaleDialog({
   const [continued, setContinued] = useState(false)
   const [teachingLevelIds, setTeachingLevelIds] = useState<number[]>([])
   const [drafts, setDrafts] = useState<RatingScaleDraftValues[]>([])
-  // Edición inline en la tabla (misma UX que la subtabla de niveles).
   const [editingIndex, setEditingIndex] = useState<number | null>(null)
   const [editRow, setEditRow] = useState<RatingScaleDraftValues | null>(null)
 
   const { data: levels = [] } = useTeachingLevelsQuery()
   const { data: symbols = [] } = useRatingSymbolsQuery()
   const { data: tipoOptions = [] } = useRatingScaleTypesQuery()
+  const { data: criteria } = useEvaluationCriteriaQuery(academicPeriodId)
   const createScale = useCreateRatingScale()
 
-  // Form del alta (solo para agregar a la lista), con validación estilo login.
+  const range = useMemo(
+    () => parseGradingRange(criteria?.gradingFormat),
+    [criteria]
+  )
+  const rangeRef = useRef(range)
+  rangeRef.current = range
+  const draftSchema = useMemo(
+    () => makeRatingScaleGradesSchema(range),
+    [range]
+  )
+
   const form = useForm({
-    defaultValues: EMPTY_DRAFT,
+    defaultValues: makeEmptyDraft(range),
     validators: {
-      onChange: ratingScaleDraftSchema,
-      onSubmit: ratingScaleDraftSchema,
+      onChange: draftSchema,
+      onSubmit: draftSchema,
     },
     onSubmit: ({ value, formApi }) => {
-      const values = ratingScaleDraftSchema.parse(value)
-      setDrafts((prev) => [...prev, values])
-      formApi.reset()
+      const r = rangeRef.current
+      const parsed = makeRatingScaleGradesSchema(r).safeParse(value)
+      if (!parsed.success) {
+        toast.error(parsed.error.issues[0]?.message ?? "Revisá los datos.")
+        return
+      }
+      setDrafts((prev) => [...prev, parsed.data])
+      formApi.reset(makeEmptyDraft(r))
     },
   })
 
@@ -117,7 +129,7 @@ export function CreateRatingScaleDialog({
     setDrafts([])
     setEditingIndex(null)
     setEditRow(null)
-    form.reset()
+    form.reset(makeEmptyDraft(rangeRef.current))
   }
 
   function startEdit(index: number) {
@@ -136,7 +148,8 @@ export function CreateRatingScaleDialog({
 
   function saveEditRow() {
     if (editingIndex == null || !editRow) return
-    const parsed = ratingScaleDraftSchema.safeParse(editRow)
+    const r = rangeRef.current
+    const parsed = makeRatingScaleGradesSchema(r).safeParse(editRow)
     if (!parsed.success) {
       toast.error(parsed.error.issues[0]?.message ?? "Revisá los datos.")
       return
@@ -186,7 +199,8 @@ export function CreateRatingScaleDialog({
       open={open}
       onOpenChange={(next) => {
         setOpen(next)
-        if (!next) reset()
+        if (next) form.reset(makeEmptyDraft(rangeRef.current))
+        else reset()
       }}
     >
       <DialogTrigger render={<Button color="primary" size="sm" />}>
@@ -353,15 +367,17 @@ export function CreateRatingScaleDialog({
                           id={field.name}
                           type="number"
                           step="0.1"
+                          min={range.min}
+                          max={range.max}
                           placeholder="ej. 5"
-                          value={field.state.value}
+                          value={
+                            Number.isNaN(field.state.value)
+                              ? ""
+                              : field.state.value
+                          }
                           onBlur={field.handleBlur}
                           onChange={(e) =>
-                            field.handleChange(
-                              Number.isNaN(e.target.valueAsNumber)
-                                ? 0
-                                : e.target.valueAsNumber
-                            )
+                            field.handleChange(e.target.valueAsNumber)
                           }
                           aria-invalid={isInvalid}
                         />
@@ -383,15 +399,17 @@ export function CreateRatingScaleDialog({
                           id={field.name}
                           type="number"
                           step="0.1"
+                          min={range.min}
+                          max={range.max}
                           placeholder="ej. 1"
-                          value={field.state.value}
+                          value={
+                            Number.isNaN(field.state.value)
+                              ? ""
+                              : field.state.value
+                          }
                           onBlur={field.handleBlur}
                           onChange={(e) =>
-                            field.handleChange(
-                              Number.isNaN(e.target.valueAsNumber)
-                                ? 0
-                                : e.target.valueAsNumber
-                            )
+                            field.handleChange(e.target.valueAsNumber)
                           }
                           aria-invalid={isInvalid}
                         />
@@ -415,15 +433,17 @@ export function CreateRatingScaleDialog({
                           id={field.name}
                           type="number"
                           step="0.1"
+                          min={range.min}
+                          max={range.max}
                           placeholder="ej. 3"
-                          value={field.state.value}
+                          value={
+                            Number.isNaN(field.state.value)
+                              ? ""
+                              : field.state.value
+                          }
                           onBlur={field.handleBlur}
                           onChange={(e) =>
-                            field.handleChange(
-                              Number.isNaN(e.target.valueAsNumber)
-                                ? 0
-                                : e.target.valueAsNumber
-                            )
+                            field.handleChange(e.target.valueAsNumber)
                           }
                           aria-invalid={isInvalid}
                         />
@@ -446,7 +466,10 @@ export function CreateRatingScaleDialog({
           )}
 
           {drafts.length > 0 && (
-            <div className="overflow-x-auto border">
+            <div className="overflow-x-auto border [&_[data-slot=input]]:bg-background [&_[data-slot=select-trigger]]:bg-background">
+              {/* Inputs recuadrados (variante outlined) con fondo sólido, igual
+                  que la tabla de edición de escalas del tab. */}
+              <FieldVariantContext.Provider value="outlined">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -492,6 +515,8 @@ export function CreateRatingScaleDialog({
                               aria-label="Nota máximo"
                               type="number"
                               step="0.1"
+                              min={range.min}
+                              max={range.max}
                               value={
                                 Number.isNaN(editRow.notaMaxima)
                                   ? ""
@@ -510,6 +535,8 @@ export function CreateRatingScaleDialog({
                               aria-label="Nota mínimo"
                               type="number"
                               step="0.1"
+                              min={range.min}
+                              max={range.max}
                               value={
                                 Number.isNaN(editRow.notaMinima)
                                   ? ""
@@ -528,6 +555,8 @@ export function CreateRatingScaleDialog({
                               aria-label="Nota equivalente"
                               type="number"
                               step="0.1"
+                              min={range.min}
+                              max={range.max}
                               value={
                                 Number.isNaN(editRow.notaEquivalente)
                                   ? ""
@@ -646,6 +675,7 @@ export function CreateRatingScaleDialog({
                   })}
                 </TableBody>
               </Table>
+              </FieldVariantContext.Provider>
             </div>
           )}
         </div>
