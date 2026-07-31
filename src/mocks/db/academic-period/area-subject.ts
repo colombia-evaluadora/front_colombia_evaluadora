@@ -109,3 +109,8 @@ export const areaSubjectsDb: AreaSubjectRecord[] = [
     subjects: [],
   }),
 ]
+
+// El backend asigna el código al crear; el front no debe generarlo.
+export function nextAreaSubjectId(): number {
+  return areaSubjectsDb.reduce((max, row) => Math.max(max, row.codigo), 0) + 1
+}

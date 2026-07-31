@@ -41,7 +41,7 @@ export interface AreaSubjectsQueryResponse {
   totalCount: number
 }
 
-export type CreateAreaSubjectRequest = AreaSubject & {
+export type CreateAreaSubjectRequest = Omit<AreaSubject, "codigo"> & {
   academicPeriodId?: number
 }
 

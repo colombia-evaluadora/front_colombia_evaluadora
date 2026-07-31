@@ -32,6 +32,7 @@ export function useUpdateAreaSubject({
     ...mutationConfig,
     onSuccess: (...args) => {
       queryClient.invalidateQueries({ queryKey: ["area-subjects"] })
+      queryClient.invalidateQueries({ queryKey: ["subjects"] })
       mutationConfig?.onSuccess?.(...args)
     },
   })
