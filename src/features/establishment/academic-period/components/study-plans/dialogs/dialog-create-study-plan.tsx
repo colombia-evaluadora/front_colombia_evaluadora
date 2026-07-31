@@ -32,7 +32,7 @@ import {
 
 import { useCreateStudyPlanItem } from "../../../api/mutations/study-plans/create-study-plan"
 import { useUpdateStudyPlanItem } from "../../../api/mutations/study-plans/update-study-plan"
-import { useAreaSubjectQuery } from "../../../api/query/area-subjects/use-area-subject"
+import { useSubjectsQuery } from "../../../api/query/area-subjects/use-subjects-query"
 import { useEvaluationCriteriaQuery } from "../../../api/query/evaluation-criteria/use-evaluation-criteria-query"
 import { useEvaluationCriteriaOptionsQuery } from "../../../api/query/evaluation-criteria/use-evaluation-criteria-options-query"
 import type { StudyPlanItem } from "../../../api/types/study-plan"
@@ -95,20 +95,7 @@ export function CreateStudyPlanDialog({
       }
     : EMPTY
 
-  const { data: areaData } = useAreaSubjectQuery({
-    filters: {},
-    sorting: [],
-    pageIndex: 0,
-    pageSize: 100,
-    academicPeriodId,
-  })
-  const asignaturaOptions = Array.from(
-    new Set(
-      (areaData?.rows ?? []).flatMap((area) =>
-        area.subjects.map((subject) => subject.nombreInterno).filter(Boolean)
-      )
-    )
-  )
+  const { data: asignaturaOptions = [] } = useSubjectsQuery(academicPeriodId)
 
   const formatoOptions = criteriaOptions?.gradingFormat ?? []
   const criterioOptions = criteriaOptions?.subjectGradeCriteria ?? []
@@ -155,7 +142,6 @@ export function CreateStudyPlanDialog({
       } else {
         createStudyPlanItem.mutate({
           ...payload,
-          codigo: Date.now(),
           academicPeriodId,
           gradeId,
         })

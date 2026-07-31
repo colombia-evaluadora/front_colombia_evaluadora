@@ -11,7 +11,7 @@ import { usePromotionCriteriaQuery } from "../../../api/query/promotion-criteria
 import { useUpdatePromotionCriteria } from "../../../api/mutations/promotion-criteria/update-promotion-criteria"
 import { useGradeConfigQuery } from "../../../api/query/use-grade-config-query"
 import { useUpdateGradeConfig } from "../../../api/mutations/update-grade-config"
-import { useAreaSubjectQuery } from "../../../api/query/area-subjects/use-area-subject"
+import { useSubjectsQuery } from "../../../api/query/area-subjects/use-subjects-query"
 import { useCurriculumNodesQuery } from "../../../api/query/use-curriculum-nodes-query"
 import { SubjectsMultiSelect } from "../subjects-multi-select"
 import {
@@ -84,20 +84,7 @@ export const TabPromotionCriteria = forwardRef<
     ? gradeLoading || (academicPeriodId != null && periodLoading)
     : periodLoading
 
-  const { data: areaData } = useAreaSubjectQuery({
-    filters: {},
-    sorting: [],
-    pageIndex: 0,
-    pageSize: 100,
-    academicPeriodId,
-  })
-  const subjectOptions = Array.from(
-    new Set(
-      (areaData?.rows ?? []).flatMap((area) =>
-        area.subjects.map((subject) => subject.nombreInterno).filter(Boolean)
-      )
-    )
-  )
+  const { data: subjectOptions = [] } = useSubjectsQuery(academicPeriodId)
 
   const { data: curriculumNodes = [], isPending: isLoadingCurriculumNodes } =
     useCurriculumNodesQuery()

@@ -147,7 +147,6 @@ export function AreaSubjectFormDialog({
         toast.success(result.message)
       } else {
         await createAreaSubject.mutateAsync({
-          codigo: Date.now(),
           areaGeneral: base.areaGeneral,
           nombreInterno: base.nombreInterno,
           abreviacion: base.abreviacion,

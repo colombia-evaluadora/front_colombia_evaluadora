@@ -54,3 +54,8 @@ export const studyPlansDb: StudyPlanRecord[] = [
     influyeDesempeno: false,
   },
 ]
+
+// El backend asigna el código al crear; el front no debe generarlo.
+export function nextStudyPlanId(): number {
+  return studyPlansDb.reduce((max, row) => Math.max(max, row.codigo), 0) + 1
+}

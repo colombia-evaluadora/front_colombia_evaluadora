@@ -1,5 +1,8 @@
 import { http, HttpResponse, delay } from "msw"
-import { studyPlansDb } from "../../db/academic-period/study-plans"
+import {
+  studyPlansDb,
+  nextStudyPlanId,
+} from "../../db/academic-period/study-plans"
 
 import type {
   StudyPlanItem,
@@ -77,8 +80,10 @@ export const studyPlansHandlers = [
   http.post("/api/study-plans", async ({ request }) => {
     await delay(400)
     const body = (await request.json()) as CreateStudyPlanItemRequest
+    // El código lo asigna el backend, no el front.
     const record = {
       ...body,
+      codigo: nextStudyPlanId(),
       academicPeriodId: body.academicPeriodId ?? 0,
       gradeId: body.gradeId ?? 0,
     }

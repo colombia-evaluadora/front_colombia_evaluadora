@@ -1,7 +1,10 @@
 // src/features/area-subjects/api/mocks/area-subjects.handlers.ts
 
 import { http, HttpResponse, delay } from "msw"
-import { areaSubjectsDb } from "../../db/academic-period/area-subject"
+import {
+  areaSubjectsDb,
+  nextAreaSubjectId,
+} from "../../db/academic-period/area-subject"
 import { studyPlansDb } from "../../db/academic-period/study-plans"
 
 import type {
@@ -82,6 +85,27 @@ function applySorting(
 }
 
 export const areaSubjectsHandlers = [
+  // Asignaturas del periodo: el backend agrega/expone la lista para que el
+  // front no la derive aplanando las áreas en el cliente.
+  http.get("/api/subjects", async ({ request }) => {
+    await delay(150)
+    const url = new URL(request.url)
+    const periodParam = url.searchParams.get("academicPeriodId")
+    const periodId = periodParam ? Number(periodParam) : null
+    const scoped =
+      periodId == null
+        ? areaSubjectsDb
+        : areaSubjectsDb.filter((row) => row.academicPeriodId === periodId)
+    const names = Array.from(
+      new Set(
+        scoped
+          .flatMap((area) => area.subjects.map((s) => s.nombreInterno))
+          .filter(Boolean)
+      )
+    )
+    return HttpResponse.json<string[]>(names)
+  }),
+
   http.post("/api/area-subjects/query", async ({ request }) => {
     await delay(250)
 
@@ -145,7 +169,12 @@ export const areaSubjectsHandlers = [
 
     const body = (await request.json()) as CreateAreaSubjectRequest
 
-    const record = { ...body, academicPeriodId: body.academicPeriodId ?? 0 }
+    // El código lo asigna el backend, no el front.
+    const record = {
+      ...body,
+      codigo: nextAreaSubjectId(),
+      academicPeriodId: body.academicPeriodId ?? 0,
+    }
     areaSubjectsDb.push(record)
 
     return HttpResponse.json(record, { status: 201 })

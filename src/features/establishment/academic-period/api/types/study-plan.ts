@@ -35,7 +35,7 @@ export interface StudyPlanRecord extends StudyPlanItem {
   gradeId: number
 }
 
-export type CreateStudyPlanItemRequest = StudyPlanItem & {
+export type CreateStudyPlanItemRequest = Omit<StudyPlanItem, "codigo"> & {
   academicPeriodId?: number
   gradeId?: number
 }
