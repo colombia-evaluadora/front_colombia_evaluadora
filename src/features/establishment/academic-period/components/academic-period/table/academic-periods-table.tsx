@@ -11,6 +11,7 @@ import { useAcademicPeriodFilters } from "../../../hooks/use-academic-period-fil
 import { columns } from "./columns-academic-periods"
 import { ExportAcademicPeriodsDialog } from "../dialogs/dialog-export-academic-periods"
 import { ExportSelectedAcademicPeriodsDialog } from "../dialogs/dialog-export-selected-academic-periods"
+import { DeleteSelectedAcademicPeriodsDialog } from "../dialogs/dialog-delete-selected-academic-periods"
 import { ClearSelectionAcademicPeriodsDialog } from "../dialogs/dialog-clear-selection-academic-periods"
 import { FilterAcademicPeriodsSheet } from "../sheets/sheet-filter-academic-periods"
 
@@ -55,6 +56,10 @@ export function AcademicPeriodsDataTable() {
           {hasSelection ? (
             <>
               <ClearSelectionAcademicPeriodsDialog resetSelection={resetSelection} />
+              <DeleteSelectedAcademicPeriodsDialog
+                selectedIds={selectedIds}
+                resetSelection={resetSelection}
+              />
               <ExportSelectedAcademicPeriodsDialog
                 selectedIds={selectedIds}
                 resetSelection={resetSelection}
