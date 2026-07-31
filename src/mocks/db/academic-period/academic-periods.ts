@@ -3,14 +3,10 @@ import type {
   AcademicPeriodConfig,
 } from "@/features/establishment/academic-period/api/types/academic-period"
 
-// Mínimo: las 3 sedes del colegio con sus docentes (los `sedeId` de
-// `teachersDb` referencian estos ids). Periodos académicos y configs
-// arrancan vacíos y se crean desde 0.
-export const sedesLookup = [
-  { id: 1, name: "I.E. JORGE GARCÍA LA SALLE BICENTENARIO" },
-  { id: 2, name: "I.E. NUESTRA SEÑORA DE FÁTIMA" },
-  { id: 3, name: "I.E. CLEMENTE MANUEL ZABALA" },
-]
+// Las sedes del modulo de periodo académico ahora son las mismas que
+// `campusesDb` (modulo de establecimientos). Los periodos académicos y sus
+// configs arrancan vacíos y se crean desde 0.
+export { campusesDb as sedesLookup } from "../campuses"
 
 export const academicPeriodsDb: AcademicPeriod[] = []
 

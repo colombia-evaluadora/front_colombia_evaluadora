@@ -8,7 +8,6 @@ import { evaluationPeriodsHandlers } from "./academic-period/evaluation-periods"
 import { gradesHandlers } from "./academic-period/grades"
 import { gradeGroupsHandlers } from "./academic-period/grade-groups"
 import { studyPlansHandlers } from "./academic-period/study-plans"
-import { teachersHandlers } from "./academic-period/teachers"
 import { ratingScalesHandlers } from "./academic-period/rating-scales"
 import { areaSubjectsHandlers } from "./academic-period/area-subject"
 import { promotionCriteriaHandlers } from "./academic-period/promotion-criteria"
@@ -21,7 +20,6 @@ import { ratingScaleTypesHandlers } from "./academic-period/rating-scale-types"
 import { curriculumNodesHandlers } from "./academic-period/curriculum-nodes"
 import { evaluationPeriodStatusesHandlers } from "./academic-period/evaluation-period-statuses"
 import { especialidadesHandlers } from "./academic-period/especialidades"
-import { sedesHandlers } from "./academic-period/sedes"
 import { jornadasHandlers } from "./academic-period/jornadas"
 import { establishmentHandlers } from "./establishments"
 import { campusHandlers } from "./campuses"
@@ -40,7 +38,6 @@ export const handlers = [
   ...gradesHandlers,
   ...gradeGroupsHandlers,
   ...studyPlansHandlers,
-  ...teachersHandlers,
   ...areaSubjectsHandlers,
   ...ratingScalesHandlers,
   ...promotionCriteriaHandlers,
@@ -53,7 +50,6 @@ export const handlers = [
   ...curriculumNodesHandlers,
   ...evaluationPeriodStatusesHandlers,
   ...especialidadesHandlers,
-  ...sedesHandlers,
   ...jornadasHandlers,
   ...reservationsHandlers,
   ...establishmentHandlers,

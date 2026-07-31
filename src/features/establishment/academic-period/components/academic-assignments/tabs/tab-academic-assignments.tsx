@@ -14,11 +14,13 @@ import { useDataTable } from "@/hooks/use-data-table"
 import { ExpandableDataTable } from "../../common/expandable-data-table"
 import { ExportAcademicAssignmentsDialog } from "../dialogs/dialog-export-academic-assignments"
 
-import { useTeachersQuery } from "../../../api/query/academic-assignments/use-teachers-query"
+import { useEmployeesQuery } from "@/features/establishment/api/query/use-employees-query"
+import type { EmployeeListItem } from "@/features/establishment/api/types/employee"
+
 import { useAssignmentSubjectsQuery } from "../../../api/query/academic-assignments/use-assignment-subjects-query"
 import { useTeacherAssignmentsQuery } from "../../../api/query/academic-assignments/use-teacher-assignments-query"
+import { useAcademicPeriodQuery } from "../../../api/query/academic-period/use-academic-period-query"
 import { useSaveTeacherAssignments } from "../../../api/mutations/academic-assignments/save-teacher-assignments"
-import type { Teacher } from "../../../api/types/teacher"
 import { createAcademicAssignmentColumns } from "../table/columns-academic-assignments"
 import { AssignmentTransfer } from "../assignment-transfer"
 
@@ -34,25 +36,38 @@ export function TabAcademicAssignments({
   const [pageSize, setPageSize] = useState(10)
   const [search, setSearch] = useState("")
 
-  // Búsqueda por nombre del docente. Los mismos filtros alimentan la
-  // exportación, para que "exportar" respete la búsqueda activa.
+  // Búsqueda por nombre / documento del docente. El endpoint de empleados
+  // ya hace match por documento, nombre o sede; lo compartimos con la
+  // exportación para que "exportar" respete la búsqueda activa.
+  // `campusId` se agrega al filtro para acotar el listado a los funcionarios
+  // con permiso en la sede del periodo académico (resuelto abajo).
+  const { data: academicPeriod } = useAcademicPeriodQuery(academicPeriodId)
+  const campusId = academicPeriod?.sedeId
+
   const queryFilters = useMemo(
-    () => ({ nombre: search.trim() || undefined }),
-    [search]
+    () => ({
+      search: search.trim() || undefined,
+      campusId,
+    }),
+    [search, campusId]
   )
 
-  const [expanded, setExpanded] = useState<Teacher | null>(null)
+  const [expanded, setExpanded] = useState<EmployeeListItem | null>(null)
   const [assignedIds, setAssignedIds] = useState<Record<string, string[]>>({})
 
   const { data: pool = [] } = useAssignmentSubjectsQuery(academicPeriodId)
 
   const { data: savedIds } = useTeacherAssignmentsQuery(
     academicPeriodId,
-    expanded?.documento
+    expanded?.documentNumber
   )
   useEffect(() => {
-    if (expanded && savedIds && assignedIds[expanded.documento] === undefined) {
-      setAssignedIds((prev) => ({ ...prev, [expanded.documento]: savedIds }))
+    if (
+      expanded &&
+      savedIds &&
+      assignedIds[expanded.id] === undefined
+    ) {
+      setAssignedIds((prev) => ({ ...prev, [expanded.id]: savedIds }))
     }
   }, [expanded, savedIds, assignedIds])
 
@@ -68,12 +83,11 @@ export function TabAcademicAssignments({
     },
   })
 
-  const { data, isPending, isError, refetch } = useTeachersQuery({
+  const { data, isPending, isError, refetch } = useEmployeesQuery({
     filters: queryFilters,
     sorting,
     pageIndex,
     pageSize,
-    academicPeriodId,
   })
 
   const goToPage = setPageIndex
@@ -82,24 +96,24 @@ export function TabAcademicAssignments({
     setPageIndex(0)
   }
 
-  const toggleExpand = useCallback((teacher: Teacher) => {
+  const toggleExpand = useCallback((employee: EmployeeListItem) => {
     setExpanded((prev) => {
-      const isClosing = prev?.documento === teacher.documento
+      const isClosing = prev?.id === employee.id
       if (isClosing) {
         setAssignedIds((current) => {
-          const { [teacher.documento]: _drop, ...rest } = current
+          const { [employee.id]: _drop, ...rest } = current
           return rest
         })
         return null
       }
-      return teacher
+      return employee
     })
   }, [])
 
   const columns = useMemo(
     () =>
       createAcademicAssignmentColumns({
-        expandedDoc: expanded?.documento ?? null,
+        expandedId: expanded?.id ?? null,
         onToggleExpand: toggleExpand,
       }),
     [expanded, toggleExpand]
@@ -109,7 +123,7 @@ export function TabAcademicAssignments({
     columns,
     data: data?.rows ?? [],
     pageCount: data?.pageCount ?? -1,
-    getRowId: (row) => row.documento,
+    getRowId: (row) => row.id,
     pageIndex,
     pageSize,
     goToPage,
@@ -118,17 +132,17 @@ export function TabAcademicAssignments({
     setSorting,
   })
 
-  function assign(docId: string, ids: string[]) {
+  function assign(employeeId: string, ids: string[]) {
     setAssignedIds((prev) => ({
       ...prev,
-      [docId]: [...(prev[docId] ?? []), ...ids],
+      [employeeId]: [...(prev[employeeId] ?? []), ...ids],
     }))
   }
 
-  function unassign(docId: string, ids: string[]) {
+  function unassign(employeeId: string, ids: string[]) {
     setAssignedIds((prev) => ({
       ...prev,
-      [docId]: (prev[docId] ?? []).filter((id) => !ids.includes(id)),
+      [employeeId]: (prev[employeeId] ?? []).filter((id) => !ids.includes(id)),
     }))
   }
 
@@ -166,10 +180,10 @@ export function TabAcademicAssignments({
         emptyMessage="Sin docentes."
         errorMessage="Ocurrió un error al cargar los docentes."
         renderSubRow={(row) => {
-          const teacher = row.original as Teacher
-          if (expanded?.documento !== teacher.documento) return null
+          const employee = row.original as EmployeeListItem
+          if (expanded?.id !== employee.id) return null
           // Disponibles/asignadas derivadas del pool según los IDs asignados.
-          const ids = new Set(assignedIds[teacher.documento] ?? [])
+          const ids = new Set(assignedIds[employee.id] ?? [])
           const assigned = pool.filter((s) => ids.has(s.id))
           const available = pool.filter((s) => !ids.has(s.id))
           return (
@@ -177,8 +191,8 @@ export function TabAcademicAssignments({
               <AssignmentTransfer
                 available={available}
                 assigned={assigned}
-                onAssign={(nextIds) => assign(teacher.documento, nextIds)}
-                onUnassign={(nextIds) => unassign(teacher.documento, nextIds)}
+                onAssign={(nextIds) => assign(employee.id, nextIds)}
+                onUnassign={(nextIds) => unassign(employee.id, nextIds)}
               />
               <div className="flex justify-end">
                 <Button
@@ -190,8 +204,8 @@ export function TabAcademicAssignments({
                   onClick={() =>
                     saveAssignments.mutate({
                       academicPeriodId: academicPeriodId as number,
-                      documento: teacher.documento,
-                      subjectIds: assignedIds[teacher.documento] ?? [],
+                      documentNumber: employee.documentNumber,
+                      subjectIds: assignedIds[employee.id] ?? [],
                     })
                   }
                 >

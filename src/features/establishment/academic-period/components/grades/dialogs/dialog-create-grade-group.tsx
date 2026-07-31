@@ -33,9 +33,10 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
+import { useEmployeesQuery } from "@/features/establishment/api/query/use-employees-query"
+
 import { useCreateGradeGroup } from "../../../api/mutations/grades/create-grade-group"
 import { useUpdateGradeGroup } from "../../../api/mutations/grades/update-grade-group"
-import { useTeachersQuery } from "../../../api/query/academic-assignments/use-teachers-query"
 import { useMetodologiasQuery } from "../../../api/query/use-metodologias-query"
 import { useAcademicPeriodQuery } from "../../../api/query/academic-period/use-academic-period-query"
 import { useJornadasQuery } from "../../../api/query/use-jornadas-query"
@@ -68,26 +69,26 @@ export function CreateGradeGroupDialog({
   const isEditing = gradeGroup != null
   const [open, setOpen] = useState(false)
 
-  const { data: teachersData } = useTeachersQuery({
-    filters: {},
-    sorting: [],
-    pageIndex: 0,
-    pageSize: 1000,
-    academicPeriodId,
-  })
-  const teacherNames = useMemo(
-    () => (teachersData?.rows ?? []).map((t) => `${t.nombre} ${t.apellido}`),
-    [teachersData]
-  )
-
-  const { data: metodologiaOptions = [] } = useMetodologiasQuery()
-
   const { data: academicPeriod } = useAcademicPeriodQuery(academicPeriodId)
+  const { data: metodologiaOptions = [] } = useMetodologiasQuery()
   const { data: jornadas = [] } = useJornadasQuery()
   const jornadaName =
     jornadas.find((j) => j.id === academicPeriod?.config.jornadaId)?.name ??
     gradeGroup?.jornada ??
     ""
+
+  // Listado acotado a la sede del periodo (y con un `pageSize` alto para
+  // alimentar el combobox del director de grupo).
+  const { data: employeesData } = useEmployeesQuery({
+    filters: { campusId: academicPeriod?.sedeId },
+    sorting: [],
+    pageIndex: 0,
+    pageSize: 1000,
+  })
+  const teacherNames = useMemo(
+    () => (employeesData?.rows ?? []).map((e) => e.name),
+    [employeesData]
+  )
 
   const defaultValues: GradeGroupFormValues = gradeGroup
     ? {

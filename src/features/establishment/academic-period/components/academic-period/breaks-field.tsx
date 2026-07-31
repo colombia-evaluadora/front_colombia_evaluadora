@@ -30,6 +30,14 @@ function formatBreakTimeCompact(value: string): string {
 }
 
 
+function getSortedBreakIndices(breaks: Break[]): number[] {
+  return breaks
+    .map((_, index) => index)
+    .sort((a, b) => breaks[a].startTime.localeCompare(breaks[b].startTime))
+}
+
+const MAX_VISIBLE_CHIPS = 3
+
 function BreakChips({
   value,
   onRemove,
@@ -37,35 +45,39 @@ function BreakChips({
   value: Break[]
   onRemove: (index: number) => void
 }) {
-  const visible = value.slice(0, 2)
-  const extra = value.length - visible.length
+  const sortedIndices = getSortedBreakIndices(value)
+  const visibleIndices = sortedIndices.slice(0, MAX_VISIBLE_CHIPS)
+  const extra = sortedIndices.length - visibleIndices.length
 
   return (
     <span className="flex min-w-0 flex-1 flex-wrap items-center gap-1">
-      {visible.map((brk, index) => (
-        <span
-          key={`${brk.startTime}-${brk.endTime}-${index}`}
-          className="bg-muted text-muted-foreground inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs"
-        >
-          <span className="font-medium">
-            {formatBreakTimeCompact(brk.startTime)} → {formatBreakTimeCompact(brk.endTime)}
-          </span>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation()
-              onRemove(index)
-            }}
-            aria-label={`Quitar descanso ${index + 1}`}
-            className="hover:text-foreground -mr-1 inline-flex items-center"
+      {visibleIndices.map((originalIndex) => {
+        const brk = value[originalIndex]
+        return (
+          <span
+            key={`${brk.startTime}-${brk.endTime}-${originalIndex}`}
+            className="bg-muted text-muted-foreground inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs"
           >
-            <XIcon className="size-3" />
-          </button>
-        </span>
-      ))}
+            <span className="font-medium">
+              {formatBreakTimeCompact(brk.startTime)} → {formatBreakTimeCompact(brk.endTime)}
+            </span>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation()
+                onRemove(originalIndex)
+              }}
+              aria-label={`Quitar descanso ${originalIndex + 1}`}
+              className="hover:text-foreground -mr-1 inline-flex items-center"
+            >
+              <XIcon className="size-3" />
+            </button>
+          </span>
+        )
+      })}
       {extra > 0 && (
         <span className="bg-muted text-muted-foreground inline-flex items-center rounded-full px-2 py-0.5 text-xs">
-          +1
+          +{extra}
         </span>
       )}
     </span>
@@ -111,25 +123,28 @@ export function BreaksField({
 
           {value.length > 0 && (
             <ul className="flex flex-col">
-              {value.map((brk, index) => (
-                <li
-                  key={`${brk.startTime}-${brk.endTime}-${index}`}
-                  className="flex items-center justify-between gap-4 border-t py-1 text-sm first:border-t-0"
-                >
-                  <span>
-                    {formatTime12(brk.startTime)} → {formatTime12(brk.endTime)}
-                  </span>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label={`Quitar descanso ${index + 1}`}
-                    onClick={() => onRemove(index)}
+              {getSortedBreakIndices(value).map((originalIndex) => {
+                const brk = value[originalIndex]
+                return (
+                  <li
+                    key={`${brk.startTime}-${brk.endTime}-${originalIndex}`}
+                    className="flex items-center justify-between gap-4 border-t py-1 text-sm first:border-t-0"
                   >
-                    <TrashIcon />
-                  </Button>
-                </li>
-              ))}
+                    <span>
+                      {formatTime12(brk.startTime)} → {formatTime12(brk.endTime)}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label={`Quitar descanso ${originalIndex + 1}`}
+                      onClick={() => onRemove(originalIndex)}
+                    >
+                      <TrashIcon />
+                    </Button>
+                  </li>
+                )
+              })}
             </ul>
           )}
         </div>
