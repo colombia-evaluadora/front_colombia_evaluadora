@@ -166,11 +166,10 @@ export function CampusesDataTable() {
           selectedItems={selectedItems}
           getItemId={(item) => item.id}
           getItemLabel={(item) => item.name}
-          title="¿Está seguro de que desea eliminar las sedes educativas seleccionadas?"
-          description={(count, sample) => {
+          buildTitle={(count, sample) => {
             const list = sample.join(", ")
             const suffix = count > sample.length ? ` y ${count - sample.length} más` : ""
-            return `Se eliminarán permanentemente ${list}${suffix} (${count} en total). Esta acción no se puede deshacer.`
+            return `¿Está seguro de que desea eliminar permanentemente las sedes educativas ${list}${suffix} (${count} en total)? Esta acción no se puede deshacer.`
           }}
           onConfirm={async (ids) => {
             await bulkDelete.mutateAsync(ids)

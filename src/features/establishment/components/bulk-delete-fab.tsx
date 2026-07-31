@@ -1,7 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { TrashIcon, XIcon } from "@/components/ui/icons"
+import { XIcon } from "@/components/ui/icons"
 
 import { DialogBulkDelete } from "./dialogs/dialog-bulk-delete"
 
@@ -10,8 +10,7 @@ interface BulkDeleteFabProps<T> {
   selectedItems: T[]
   getItemId: (item: T) => string
   getItemLabel: (item: T) => string
-  title: string
-  description: (count: number, sample: string[]) => string
+  buildTitle: (count: number, sample: string[]) => string
   onConfirm: (ids: string[]) => Promise<unknown>
   onClearSelection: () => void
   confirmLabel?: string
@@ -26,8 +25,7 @@ export function BulkDeleteFab<T>({
   selectedItems,
   getItemId,
   getItemLabel,
-  title,
-  description,
+  buildTitle,
   onConfirm,
   onClearSelection,
   confirmLabel = "Eliminar selección",
@@ -63,8 +61,7 @@ export function BulkDeleteFab<T>({
           items={selectedItems}
           getItemId={getItemId}
           getItemLabel={getItemLabel}
-          title={title}
-          description={description}
+          buildTitle={buildTitle}
           onConfirm={onConfirm}
           triggerLabel={confirmLabel}
         />

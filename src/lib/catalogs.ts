@@ -2,6 +2,7 @@ export const CATALOGS = {
   DOCUMENT_TYPES: "document-types",
   EMPLOYEE_ROLES: "employee-roles",
   GENDERS: "genders",
+  POPULATION_GENDERS: "population-genders",
   MUNICIPALITIES: "municipalities",
   EDUCATION_LEVELS: "education-levels",
   WORK_SCHEDULES: "work-schedules",
@@ -18,4 +19,5 @@ export const CATALOGS = {
   ZONES: "zones",
   DISABILITIES: "disabilities",
   LICENSE_STATUSES: "license-statuses",
+  ENTITY_STATUSES: "entity-statuses",
 } as const

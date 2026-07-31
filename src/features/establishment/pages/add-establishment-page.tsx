@@ -298,8 +298,8 @@ export function AddEstablishmentPage() {
           </div>
         ) : null}
         <form id="create-establishment-form" onSubmit={handleSubmit}>
-          <Accordion multiple defaultValue={["datos-establecimiento", "datos-rector-secretaria"]} keepMounted>
-            <AccordionItem value="datos-establecimiento">
+          <Accordion multiple defaultValue={["datos-establecimiento", "datos-rector-secretaria"]} keepMounted className="space-y-3">
+            <AccordionItem value="datos-establecimiento" className="rounded-md border border-border not-last:border-b border">
               <AccordionTrigger>Datos de establecimiento</AccordionTrigger>
               <AccordionContent>
                 <div className="py-4">
@@ -313,7 +313,7 @@ export function AddEstablishmentPage() {
               </AccordionContent>
             </AccordionItem>
 
-            <AccordionItem value="datos-rector-secretaria">
+            <AccordionItem value="datos-rector-secretaria" className="rounded-md border border-border not-last:border-b border">
               <AccordionTrigger>Datos de rector y secretaria</AccordionTrigger>
               <AccordionContent>
                 <div className="py-4 ">
@@ -329,18 +329,20 @@ export function AddEstablishmentPage() {
                       setConfirmPasswords((current) => ({ ...current, principal: value }))
                     }
                   />
-                  <UserDetailsForm
-                    role="SECRETARY"
-                    fieldPrefix="secretary"
-                    value={formValues.secretary}
-                    onChange={(secretary) => setFormValues((current) => ({ ...current, secretary }))}
-                    invalidFields={invalidFields}
-                    showValidation={hasSubmitted}
-                    confirmPassword={confirmPasswords["secretary"] ?? ""}
-                    onConfirmPasswordChange={(value) =>
-                      setConfirmPasswords((current) => ({ ...current, secretary: value }))
-                    }
-                  />
+                  <div className="mt-8">
+                    <UserDetailsForm
+                      role="SECRETARY"
+                      fieldPrefix="secretary"
+                      value={formValues.secretary}
+                      onChange={(secretary) => setFormValues((current) => ({ ...current, secretary }))}
+                      invalidFields={invalidFields}
+                      showValidation={hasSubmitted}
+                      confirmPassword={confirmPasswords["secretary"] ?? ""}
+                      onConfirmPasswordChange={(value) =>
+                        setConfirmPasswords((current) => ({ ...current, secretary: value }))
+                      }
+                    />
+                  </div>
                 </div>
               </AccordionContent>
             </AccordionItem>

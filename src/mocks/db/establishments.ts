@@ -164,7 +164,7 @@ export function createEstablishmentRow(details: EstablishmentDetails): Establish
   }
 }
 
-const establishmentRecords = Array.from({ length: 350 }, () => {
+const establishmentRecords = Array.from({ length: 3 }, () => {
   const details = createEstablishmentDetails()
 
   return {

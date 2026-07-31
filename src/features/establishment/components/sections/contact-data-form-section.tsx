@@ -1,5 +1,6 @@
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { FormSectionHeading } from "@/components/form-section-heading";
 import type { EstablishmentDetails } from "../../api/types/establishment"
 
 interface ContactDataFormSectionProps {
@@ -13,9 +14,9 @@ export function ContactDataFormSection({ value, onChange, invalidFields = [], sh
     const isInvalid = (field: string) => showValidation && invalidFields.includes(field)
     return(
         <>
-            <h3 className="text-base font-semibold">
+            <FormSectionHeading>
                 Datos de contacto
-            </h3>
+            </FormSectionHeading>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid("contact.email") ? "true" : undefined}>
                     <FieldLabel htmlFor="establishment-email">Correo electrónico</FieldLabel>

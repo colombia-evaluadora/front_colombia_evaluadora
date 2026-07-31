@@ -42,6 +42,7 @@ export function EmployeesDataTable({ onEditEmployee }: EmployeesDataTableProps) 
 
   const { data: roles = [] } = useCatalogQuery<CatalogItem>(CATALOGS.EMPLOYEE_ROLES)
   const { data: workSchedules = [] } = useCatalogQuery<CatalogItem>(CATALOGS.WORK_SCHEDULES)
+  const { data: entityStatuses = [] } = useCatalogQuery<CatalogItem>(CATALOGS.ENTITY_STATUSES)
 
   const { data, isPending, isError, refetch } = useEmployeesQuery({
     filters: queryFilters,
@@ -177,8 +178,11 @@ export function EmployeesDataTable({ onEditEmployee }: EmployeesDataTableProps) 
               <SelectContent>
                 <SelectGroup>
                   <SelectItem value="">Todos</SelectItem>
-                  <SelectItem value="ACTIVE">Activo</SelectItem>
-                  <SelectItem value="SUSPENDED">Suspendido</SelectItem>
+                  {entityStatuses.map((status: CatalogItem) => (
+                    <SelectItem key={status.id} value={status.id}>
+                      {status.name}
+                    </SelectItem>
+                  ))}
                 </SelectGroup>
               </SelectContent>
             </Select>
@@ -225,11 +229,10 @@ export function EmployeesDataTable({ onEditEmployee }: EmployeesDataTableProps) 
           selectedItems={selectedItems}
           getItemId={(item) => item.id}
           getItemLabel={(item) => item.name}
-          title="¿Está seguro de que desea eliminar los funcionarios seleccionados?"
-          description={(count, sample) => {
+          buildTitle={(count, sample) => {
             const list = sample.join(", ")
             const suffix = count > sample.length ? ` y ${count - sample.length} más` : ""
-            return `Se eliminarán permanentemente ${list}${suffix} (${count} en total). Esta acción no se puede deshacer.`
+            return `¿Está seguro de que desea eliminar permanentemente a los funcionarios ${list}${suffix} (${count} en total)? Esta acción no se puede deshacer.`
           }}
           onConfirm={async (ids) => {
             await bulkDelete.mutateAsync(ids)

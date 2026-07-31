@@ -91,7 +91,7 @@ function createCampus(index: number): Campus {
   }
 }
 
-export const campusesDb: Campus[] = Array.from({ length: 300 }, (_, index) =>
+export const campusesDb: Campus[] = Array.from({ length: 9 }, (_, index) =>
   createCampus(index + 1)
 )
 

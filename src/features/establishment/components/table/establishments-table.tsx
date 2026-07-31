@@ -21,6 +21,9 @@ import { useTablePagination } from "@/hooks/use-table-pagination"
 import { useEstablishmentsFilters } from "../../hooks/use-establishments-filters"
 import { useEstablishmentsQuery } from "../../api/query/use-establishments-query"
 import { useBulkDeleteEstablishments } from "../../api/mutations/use-bulk-delete-establishments"
+import { useCatalogQuery } from "../../api/query/use-catalogs"
+import type { CatalogItem } from "../../api/types/catalog"
+import { CATALOGS } from "@/lib/catalogs"
 import type { Establishment } from "../../api/types/establishment"
 import { columns } from "./columns"
 import { BulkDeleteFab } from "../bulk-delete-fab"
@@ -36,6 +39,24 @@ export function EstablishmentsDataTable() {
     queryFilters,
     applyFilters,
   } = useEstablishmentsFilters()
+
+  const { data: entityStatuses = [] } = useCatalogQuery<CatalogItem>(CATALOGS.ENTITY_STATUSES)
+  /**
+   * El catálogo de estados es compartido entre features y viene con etiqueta
+   * neutra ("Activo"). En esta tabla los establecimientos se filtran con
+   * femenino ("Activa"), así que ajustamos solo el `name` al renderizar sin
+   * tocar el `id` (que sigue siendo "ACTIVE" para que las queries al backend
+   * y los `data.status === "ACTIVE"` del dominio sigan funcionando tal cual).
+   */
+  const establishmentStatuses = useMemo(
+    () =>
+      entityStatuses.map((status) =>
+        status.id === "ACTIVE"
+          ? { ...status, name: "Activa" }
+          : status,
+      ),
+    [entityStatuses],
+  )
 
   const { data, isPending, isError, refetch } = useEstablishmentsQuery({
     filters: queryFilters,
@@ -116,8 +137,11 @@ export function EstablishmentsDataTable() {
               <SelectContent>
                 <SelectGroup>
                   <SelectItem value="">Todos</SelectItem>
-                  <SelectItem value="ACTIVE">Activa</SelectItem>
-                  <SelectItem value="SUSPENDED">Suspendido</SelectItem>
+                  {establishmentStatuses.map((status: CatalogItem) => (
+                    <SelectItem key={status.id} value={status.id}>
+                      {status.name}
+                    </SelectItem>
+                  ))}
                 </SelectGroup>
               </SelectContent>
             </Select>
@@ -164,11 +188,10 @@ export function EstablishmentsDataTable() {
           selectedItems={selectedItems}
           getItemId={(item) => item.id}
           getItemLabel={(item) => item.name}
-          title="¿Está seguro de que desea eliminar los establecimientos educativos seleccionados?"
-          description={(count, sample) => {
+          buildTitle={(count, sample) => {
             const list = sample.join(", ")
             const suffix = count > sample.length ? ` y ${count - sample.length} más` : ""
-            return `Se eliminarán permanentemente ${list}${suffix} (${count} en total). Esta acción no se puede deshacer.`
+            return `¿Está seguro de que desea eliminar permanentemente los establecimientos educativos ${list}${suffix} (${count} en total)? Esta acción no se puede deshacer.`
           }}
           onConfirm={async (ids) => {
             await bulkDelete.mutateAsync(ids)

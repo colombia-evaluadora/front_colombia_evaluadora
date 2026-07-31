@@ -8,7 +8,6 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
-  AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
@@ -62,11 +61,8 @@ export function DeleteEmployeeDialog({ employee }: DeleteEmployeeDialogProps) {
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>
-            ¿Está seguro de que desea eliminar el funcionario seleccionado?
+            ¿Está seguro de que desea eliminar permanentemente al funcionario {employee.name}? Esta acción no se puede deshacer.
           </AlertDialogTitle>
-          <AlertDialogDescription>
-            Se eliminará permanentemente {employee.name}. Esta acción no se puede deshacer.
-          </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogAction

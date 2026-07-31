@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react"
+import { format } from "date-fns"
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
+import { DatePicker } from "@/components/date-picker"
+import { FormSectionHeading } from "@/components/form-section-heading"
 import {
   FileUpload,
   FileUploadDropzone,
@@ -25,6 +28,7 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import { CATALOGS } from "@/lib/catalogs"
+import { DATE_VALUE_FORMAT, parseDateValue } from "@/lib/date-time-value"
 import type { CatalogItem } from "../../api/types/catalog"
 import { useCatalogQuery } from "../../api/query/use-catalogs"
 import type { Person } from "../../api/types/person"
@@ -120,9 +124,9 @@ export function UserDetailsForm({
     return (
         <div className="grid grid-cols-1 gap-6">
 
-            <h3 className="text-base font-semibold">
+            <FormSectionHeading>
                 {roleName}
-            </h3>
+            </FormSectionHeading>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 {/* Foto */}
                 <div className="row-span-2">
@@ -291,12 +295,12 @@ export function UserDetailsForm({
                     <FieldLabel htmlFor="birth-date">
                         Fecha de nacimiento
                     </FieldLabel>
-                    <Input
+                    <DatePicker
                         id="birth-date"
-                        type="date"
-                        value={person.birthDate}
+                        mode="date"
+                        value={parseDateValue(person.birthDate)}
                         aria-invalid={isInvalid(`${fieldPrefix}.birthDate`)}
-                        onChange={(event) => emitChange({ birthDate: event.target.value })}
+                        onChange={(date) => emitChange({ birthDate: date ? format(date, DATE_VALUE_FORMAT) : "" })}
                     />
                 </Field>
                 <Field orientation="vertical" variant="outlined" data-invalid={isInvalid(`${fieldPrefix}.gender`) ? "true" : undefined}>
