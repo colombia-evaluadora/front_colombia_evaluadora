@@ -5,7 +5,6 @@ import { toast } from "sonner"
 
 import { DataTable } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
-import { Button } from "@/components/ui/button"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
@@ -19,12 +18,6 @@ import {
 import { useDataTable } from "@/hooks/use-data-table"
 import { useTablePagination } from "@/hooks/use-table-pagination"
 import { CATALOGS } from "@/lib/catalogs"
-import { DownloadSimpleIcon } from "@/components/ui/icons"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
 
 import { useCatalogQuery } from "../../api/query/use-catalogs"
 import { useEmployeesFilters } from "../../hooks/use-employees-filters"
@@ -34,6 +27,8 @@ import { useEmployeesQuery } from "../../api/query/use-employees-query"
 import { useBulkDeleteEmployees } from "../../api/mutations/use-bulk-delete-employees"
 import { createEmployeeColumns } from "./columns-employees"
 import { BulkDeleteFab } from "../bulk-delete-fab"
+import { ExportEmployeesDialog } from "../dialogs/dialog-export-employees"
+import { ExportSelectedEmployeesDialog } from "../dialogs/dialog-export-selected-employees"
 
 interface EmployeesDataTableProps {
   onEditEmployee: (employeeId: string) => void
@@ -191,22 +186,14 @@ export function EmployeesDataTable({ onEditEmployee }: EmployeesDataTableProps) 
         </div>
 
         <div className="flex items-center gap-2">
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <Button
-                  variant="outline"
-                  color="muted"
-                  size="icon-sm"
-                  onClick={() => void 0}
-                  aria-label="Exportar"
-                >
-                  <DownloadSimpleIcon />
-                </Button>
-              }
+          {hasSelection ? (
+            <ExportSelectedEmployeesDialog
+              selectedIds={selectedIds}
+              resetSelection={resetSelection}
             />
-            <TooltipContent>Exportar</TooltipContent>
-          </Tooltip>
+          ) : (
+            <ExportEmployeesDialog filters={queryFilters} />
+          )}
         </div>
       </div>
 

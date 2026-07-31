@@ -5,7 +5,6 @@ import { toast } from "sonner"
 
 import { DataTable } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
-import { Button } from "@/components/ui/button"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
@@ -18,12 +17,6 @@ import {
 } from "@/components/ui/select"
 import { useDataTable } from "@/hooks/use-data-table"
 import { useTablePagination } from "@/hooks/use-table-pagination"
-import { DownloadSimpleIcon } from "@/components/ui/icons"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
 
 import { useEstablishmentsFilters } from "../../hooks/use-establishments-filters"
 import { useEstablishmentsQuery } from "../../api/query/use-establishments-query"
@@ -31,6 +24,8 @@ import { useBulkDeleteEstablishments } from "../../api/mutations/use-bulk-delete
 import type { Establishment } from "../../api/types/establishment"
 import { columns } from "./columns"
 import { BulkDeleteFab } from "../bulk-delete-fab"
+import { ExportEstablishmentsDialog } from "../dialogs/dialog-export-establishments"
+import { ExportSelectedEstablishmentsDialog } from "../dialogs/dialog-export-selected-establishments"
 
 export function EstablishmentsDataTable() {
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } =
@@ -130,22 +125,14 @@ export function EstablishmentsDataTable() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <Button
-                  variant="outline"
-                  color="muted"
-                  size="icon-sm"
-                  onClick={() => void 0}
-                  aria-label="Exportar"
-                >
-                  <DownloadSimpleIcon />
-                </Button>
-              }
+          {hasSelection ? (
+            <ExportSelectedEstablishmentsDialog
+              selectedIds={selectedIds}
+              resetSelection={resetSelection}
             />
-            <TooltipContent>Exportar</TooltipContent>
-          </Tooltip>
+          ) : (
+            <ExportEstablishmentsDialog filters={queryFilters} />
+          )}
         </div>
       </div>
 

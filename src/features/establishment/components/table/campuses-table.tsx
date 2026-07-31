@@ -5,7 +5,6 @@ import { toast } from "sonner"
 
 import { DataTable } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
-import { Button } from "@/components/ui/button"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
@@ -18,12 +17,6 @@ import {
 } from "@/components/ui/select"
 import { useDataTable } from "@/hooks/use-data-table"
 import { useTablePagination } from "@/hooks/use-table-pagination"
-import { DownloadSimpleIcon } from "@/components/ui/icons"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
 
 import { useCampusesFilters } from "../../hooks/use-campuses-filters"
 import { useCampusesQuery } from "../../api/query/use-campuses-query"
@@ -34,6 +27,8 @@ import type { CatalogItem } from "../../api/types/catalog"
 import type { Campus } from "../../api/types/campus"
 import { CATALOGS } from "@/lib/catalogs"
 import { BulkDeleteFab } from "../bulk-delete-fab"
+import { ExportCampusesDialog } from "../dialogs/dialog-export-campuses"
+import { ExportSelectedCampusesDialog } from "../dialogs/dialog-export-selected-campuses"
 
 export function CampusesDataTable() {
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } =
@@ -132,22 +127,14 @@ export function CampusesDataTable() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <Button
-                  variant="outline"
-                  color="muted"
-                  size="icon-sm"
-                  onClick={() => void 0}
-                  aria-label="Exportar"
-                >
-                  <DownloadSimpleIcon />
-                </Button>
-              }
+          {hasSelection ? (
+            <ExportSelectedCampusesDialog
+              selectedIds={selectedIds}
+              resetSelection={resetSelection}
             />
-            <TooltipContent>Exportar</TooltipContent>
-          </Tooltip>
+          ) : (
+            <ExportCampusesDialog filters={queryFilters} />
+          )}
         </div>
       </div>
 
