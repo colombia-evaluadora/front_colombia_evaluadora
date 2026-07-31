@@ -10,6 +10,7 @@ import { useDataTable } from "@/hooks/use-data-table"
 
 import { columns } from "../table/columns-area-subject"
 import { CreateAreaSubjectDialog } from "../dialogs/dialog-create-area-subject"
+import { DeleteSelectedAreaSubjectsDialog } from "../dialogs/dialog-delete-selected-area-subjects"
 import { ExportAreaSubjectsDialog } from "../dialogs/dialog-export-area-subjects"
 import { useAreaSubjectQuery } from "@/features/establishment/academic-period/api/query/area-subjects/use-area-subject"
 
@@ -42,7 +43,7 @@ export function TabAreaSubject({ academicPeriodId }: TabAreaSubjectProps) {
     setPageIndex(0)
   }
 
-  const { table } = useDataTable({
+  const { table, selectedIds, hasSelection, resetSelection } = useDataTable({
     columns,
     data: data?.rows ?? [],
     pageCount: data?.pageCount ?? -1,
@@ -79,6 +80,12 @@ export function TabAreaSubject({ academicPeriodId }: TabAreaSubjectProps) {
         </Field>
 
         <div className="flex gap-2">
+          {hasSelection && (
+            <DeleteSelectedAreaSubjectsDialog
+              selectedIds={selectedIds}
+              resetSelection={resetSelection}
+            />
+          )}
           <CreateAreaSubjectDialog academicPeriodId={academicPeriodId} />
           <ExportAreaSubjectsDialog filters={queryFilters} />
         </div>
