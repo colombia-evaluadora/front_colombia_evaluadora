@@ -1,10 +1,18 @@
+import { useState } from "react"
+
 import {
-    Attachment,
-    AttachmentMedia,
-    AttachmentActions,
-    AttachmentAction,
-} from "@/components/ui/attachment"
+    FileUpload,
+    FileUploadDropzone,
+    FileUploadItem,
+    FileUploadItemDelete,
+    FileUploadItemMetadata,
+    FileUploadItemPreview,
+    FileUploadList,
+    FileUploadTrigger,
+} from "@/components/ui/file-upload"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
+import { ShieldIcon } from "@/components/ui/icons"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
@@ -31,6 +39,11 @@ export function IdentificationDataFormSection({ value, onChange, invalidFields =
     const isInvalid = (field: string) => showValidation && invalidFields.includes(field)
     const { data: legalTypes = []} = useCatalogQuery<CatalogItem>(CATALOGS.LEGAL_TYPES)
 
+    // Escudo del establecimiento: estado puramente UI, análogo a la foto
+    // de la persona. No se persiste todavía en el modelo `basicInfo`, así
+    // que solo mantenemos el archivo vivo mientras la sección está montada.
+    const [shield, setShield] = useState<File | null>(null)
+
     return (
         <>
             <h3 className="text-base font-semibold">
@@ -38,18 +51,41 @@ export function IdentificationDataFormSection({ value, onChange, invalidFields =
             </h3>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 <div className="row-span-2">
-                    <Attachment orientation="vertical" size="sm" className="w-28">
-                        <AttachmentMedia variant="image">
-                            <div className="flex h-full w-full items-center justify-center bg-muted">
-                                <Avatar>
-                                    <AvatarFallback>Foto</AvatarFallback>
+                    <FileUpload
+                        value={shield ? [shield] : []}
+                        onValueChange={(files) => setShield(files[0] ?? null)}
+                        accept="image/*"
+                        maxFiles={1}
+                        className="w-full"
+                    >
+                        {shield ? (
+                            <FileUploadList orientation="vertical">
+                                <FileUploadItem value={shield} orientation="horizontal" size="sm" className="w-full">
+                                    <FileUploadItemPreview className="size-16 shrink-0" />
+                                    <FileUploadItemMetadata size="sm" />
+                                    <FileUploadItemDelete
+                                        aria-label="Eliminar escudo"
+                                        onClick={(event) => event.stopPropagation()}
+                                    />
+                                </FileUploadItem>
+                            </FileUploadList>
+                        ) : (
+                            <FileUploadDropzone className="h-32 w-full p-2">
+                                <Avatar className="size-12">
+                                    <AvatarFallback>
+                                        <ShieldIcon />
+                                    </AvatarFallback>
                                 </Avatar>
-                            </div>
-                        </AttachmentMedia>
-                        <AttachmentActions>
-                            <AttachmentAction aria-label="Subir foto" />
-                        </AttachmentActions>
-                    </Attachment>
+                                <FileUploadTrigger
+                                    render={
+                                        <Button variant="outline" color="muted" size="xs">
+                                            Subir escudo
+                                        </Button>
+                                    }
+                                />
+                            </FileUploadDropzone>
+                        )}
+                    </FileUpload>
                 </div>
                 <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid("basicInfo.name") ? "true" : undefined}>
                     <FieldLabel htmlFor="establishment-name">Nombre del establecimiento*</FieldLabel>

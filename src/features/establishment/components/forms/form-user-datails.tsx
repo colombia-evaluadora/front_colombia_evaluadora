@@ -1,7 +1,18 @@
 import { useEffect, useState } from "react"
 
-import { Attachment, AttachmentMedia, AttachmentActions, AttachmentAction } from "@/components/ui/attachment"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
+import {
+  FileUpload,
+  FileUploadDropzone,
+  FileUploadItem,
+  FileUploadItemDelete,
+  FileUploadItemMetadata,
+  FileUploadItemPreview,
+  FileUploadList,
+  FileUploadTrigger,
+} from "@/components/ui/file-upload"
+import { UserCircleIcon } from "@/components/ui/icons"
 import { EMPLOYEE_ROLES } from "@/mocks/db/catalogs/employee-roles"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
@@ -74,6 +85,11 @@ export function UserDetailsForm({
     const [internalConfirmPassword, setInternalConfirmPassword] = useState("")
     const confirmPassword = isConfirmControlled ? confirmPasswordProp : internalConfirmPassword
 
+    // Foto del usuario: estado puramente UI. Hoy no se persiste en el
+    // modelo `Person`, así que solo mantenemos el archivo vivo mientras
+    // el diálogo está montado.
+    const [photo, setPhoto] = useState<File | null>(null)
+
     // Al cargar un registro existente, sincroniza la confirmación con la
     // contraseña persistida solo si el usuario aún no la ha tocado.
     useEffect(() => {
@@ -110,23 +126,47 @@ export function UserDetailsForm({
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 {/* Foto */}
                 <div className="row-span-2">
-                    <Attachment
-                        orientation="vertical"
-                        size="sm"
-                        className="w-28"
+                    <FileUpload
+                        value={photo ? [photo] : []}
+                        onValueChange={(files) => setPhoto(files[0] ?? null)}
+                        accept="image/*"
+                        maxFiles={1}
+                        className="w-40"
                     >
-                        <AttachmentMedia variant="image">
-                            <div className="flex h-full w-full items-center justify-center bg-muted">
-                                <Avatar>
-                                    <AvatarFallback>Foto</AvatarFallback>
+                        {photo ? (
+                            <FileUploadList orientation="vertical">
+                                <FileUploadItem value={photo} orientation="vertical" size="sm" className="w-40">
+                                    <FileUploadItemPreview className="aspect-square w-full" />
+                                    <FileUploadItemMetadata size="sm" />
+                                    <FileUploadItemDelete
+                                        aria-label="Eliminar foto"
+                                        onClick={(event) => {
+                                            // El handler interno ya borra el
+                                            // archivo, pero dejamos el prevent
+                                            // default para que no se propague
+                                            // al row de la tabla.
+                                            event.stopPropagation()
+                                        }}
+                                    />
+                                </FileUploadItem>
+                            </FileUploadList>
+                        ) : (
+                            <FileUploadDropzone className="aspect-square w-40 p-2">
+                                <Avatar className="size-12">
+                                    <AvatarFallback>
+                                        <UserCircleIcon />
+                                    </AvatarFallback>
                                 </Avatar>
-                            </div>
-                        </AttachmentMedia>
-
-                        <AttachmentActions>
-                            <AttachmentAction aria-label="Subir foto" />
-                        </AttachmentActions>
-                    </Attachment>
+                                <FileUploadTrigger
+                                    render={
+                                        <Button variant="outline" color="muted" size="xs">
+                                            Subir foto
+                                        </Button>
+                                    }
+                                />
+                            </FileUploadDropzone>
+                        )}
+                    </FileUpload>
                 </div>
                 {/* Formulario */}
 

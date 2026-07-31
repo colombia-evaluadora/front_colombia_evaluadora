@@ -58,18 +58,23 @@ function applyFilters(rows: typeof employeesRowsDb, filters: EmployeesQueryReque
     if (filters.search) {
       const needle = filters.search.toLowerCase()
       const campusText = row.campuses.join(" ").toLowerCase()
+      const roleText = row.roles.map((role) => role.name).join(" ").toLowerCase()
 
       const matches =
         row.documentNumber.toLowerCase().includes(needle) ||
         row.name.toLowerCase().includes(needle) ||
-        campusText.includes(needle)
+        campusText.includes(needle) ||
+        roleText.includes(needle)
 
       if (!matches) {
         return false
       }
     }
 
-    if (filters.roles?.length && !filters.roles.includes(row.role.code)) {
+    if (
+      filters.roles?.length &&
+      !row.roles.some((role) => filters.roles!.includes(role.code))
+    ) {
       return false
     }
 
@@ -77,7 +82,10 @@ function applyFilters(rows: typeof employeesRowsDb, filters: EmployeesQueryReque
       return false
     }
 
-    if (filters.statuses?.length && !filters.statuses.includes(row.status)) {
+    if (
+      filters.statuses?.length &&
+      !row.statuses.some((status) => filters.statuses!.includes(status))
+    ) {
       return false
     }
 
@@ -99,11 +107,11 @@ function applySorting(rows: typeof employeesRowsDb, sorting: EmployeesQueryReque
         : id === "name"
           ? a.name
           : id === "role"
-            ? a.role.name
+            ? a.roles[0]?.name ?? ""
             : id === "workSchedule"
               ? a.workSchedule.name
               : id === "status"
-                ? a.status
+                ? a.statuses[0] ?? ""
                 : ""
     const bv =
       id === "documentNumber"
@@ -111,11 +119,11 @@ function applySorting(rows: typeof employeesRowsDb, sorting: EmployeesQueryReque
         : id === "name"
           ? b.name
           : id === "role"
-            ? b.role.name
+            ? b.roles[0]?.name ?? ""
             : id === "workSchedule"
               ? b.workSchedule.name
               : id === "status"
-                ? b.status
+                ? b.statuses[0] ?? ""
                 : ""
 
     if (av === bv) {

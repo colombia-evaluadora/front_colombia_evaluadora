@@ -19,6 +19,12 @@ import {
 import { useDataTable } from "@/hooks/use-data-table"
 import { useTablePagination } from "@/hooks/use-table-pagination"
 import { CATALOGS } from "@/lib/catalogs"
+import { DownloadSimpleIcon } from "@/components/ui/icons"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 import { useCatalogQuery } from "../../api/query/use-catalogs"
 import { useEmployeesFilters } from "../../hooks/use-employees-filters"
@@ -185,9 +191,22 @@ export function EmployeesDataTable({ onEditEmployee }: EmployeesDataTableProps) 
         </div>
 
         <div className="flex items-center gap-2">
-          <Button variant="outline" color="muted" size="sm" onClick={() => void 0}>
-            Exportar
-          </Button>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  variant="outline"
+                  color="muted"
+                  size="icon-sm"
+                  onClick={() => void 0}
+                  aria-label="Exportar"
+                >
+                  <DownloadSimpleIcon />
+                </Button>
+              }
+            />
+            <TooltipContent>Exportar</TooltipContent>
+          </Tooltip>
         </div>
       </div>
 
