@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { CaretDownIcon, SpinnerIcon } from "@/components/ui/icons"
-import { Link, useNavigate, useParams } from "@tanstack/react-router"
+import { Link, useParams } from "@tanstack/react-router"
 import { toast } from "sonner"
 
 import { cn } from "@/lib/utils"
@@ -65,7 +65,6 @@ function toJornada(detail: AcademicPeriodDetail): Jornada {
 }
 
 export function AcademicPeriodConfigPage() {
-  const navigate = useNavigate()
   const { periodId } = useParams({ strict: false }) as { periodId?: string }
   const isEditing = periodId != null
   const numericPeriodId = periodId ? Number(periodId) : undefined
@@ -101,9 +100,6 @@ export function AcademicPeriodConfigPage() {
           return
         }
         toast.success(result.message)
-        if (isEditing) {
-          navigate({ to: paths.app.periodosAcademicos.getHref() })
-        }
       },
     },
   })
