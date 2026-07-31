@@ -21,6 +21,8 @@ import { ratingScaleTypesHandlers } from "./academic-period/rating-scale-types"
 import { curriculumNodesHandlers } from "./academic-period/curriculum-nodes"
 import { evaluationPeriodStatusesHandlers } from "./academic-period/evaluation-period-statuses"
 import { especialidadesHandlers } from "./academic-period/especialidades"
+import { sedesHandlers } from "./academic-period/sedes"
+import { jornadasHandlers } from "./academic-period/jornadas"
 import { reservationsHandlers } from "./reservations"
 
 export const handlers = [
@@ -47,5 +49,7 @@ export const handlers = [
   ...curriculumNodesHandlers,
   ...evaluationPeriodStatusesHandlers,
   ...especialidadesHandlers,
+  ...sedesHandlers,
+  ...jornadasHandlers,
   ...reservationsHandlers,
 ]

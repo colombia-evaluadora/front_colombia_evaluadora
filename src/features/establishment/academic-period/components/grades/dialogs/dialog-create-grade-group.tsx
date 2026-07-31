@@ -38,7 +38,7 @@ import { useUpdateGradeGroup } from "../../../api/mutations/grades/update-grade-
 import { useTeachersQuery } from "../../../api/query/academic-assignments/use-teachers-query"
 import { useMetodologiasQuery } from "../../../api/query/use-metodologias-query"
 import { useAcademicPeriodQuery } from "../../../api/query/academic-period/use-academic-period-query"
-import { JORNADA_OPTIONS } from "../../../api/ui-mappings"
+import { useJornadasQuery } from "../../../api/query/use-jornadas-query"
 import type { GradeGroup } from "../../../api/types/grade-group"
 import {
   gradeGroupFormSchema,
@@ -83,9 +83,9 @@ export function CreateGradeGroupDialog({
   const { data: metodologiaOptions = [] } = useMetodologiasQuery()
 
   const { data: academicPeriod } = useAcademicPeriodQuery(academicPeriodId)
+  const { data: jornadas = [] } = useJornadasQuery()
   const jornadaName =
-    JORNADA_OPTIONS.find((j) => j.id === academicPeriod?.config.jornadaId)
-      ?.name ??
+    jornadas.find((j) => j.id === academicPeriod?.config.jornadaId)?.name ??
     gradeGroup?.jornada ??
     ""
 
