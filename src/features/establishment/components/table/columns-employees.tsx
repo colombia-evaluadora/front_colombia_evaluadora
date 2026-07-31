@@ -7,9 +7,8 @@ import { PencilIcon } from "@/components/ui/icons"
 import { DataTableColumnHeader } from "@/components/data-table"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
-import { EMPLOYEE_STATUS_BADGE, EMPLOYEE_STATUS_LABELS } from "../../api/employee-ui-mappings"
+import { EMPLOYEE_STATUS_LABELS } from "../../api/employee-ui-mappings"
 import type { EmployeeListItem } from "../../api/types/employee"
-import type { PermissionStatus } from "../../api/types/permission"
 import { DeleteEmployeeDialog } from "../dialogs/dialog-delete-employee"
 
 interface EmployeeColumnsOptions {
@@ -29,27 +28,16 @@ function formatRoleNames(roles: EmployeeListItem["roles"]) {
 }
 
 /**
- * Une las etiquetas legibles de los estados del funcionario con comas.
- * Vacío cuando el funcionario aún no tiene permisos asociados.
+ * Render plano de los estados del funcionario. Sin Badge ni color: cuando
+ * el funcionario mezcla permisos `ACTIVE` y `SUSPENDED`, un Badge verde/
+ * rojo resultaba contradictorio con el texto concatenado (p. ej. "Activo,
+ * Suspendido" en rojo). Texto neutro evita esa incoherencia.
  */
-function formatStatusLabels(statuses: EmployeeListItem["statuses"]) {
+function renderStatusCell(statuses: EmployeeListItem["statuses"]) {
   if (statuses.length === 0) {
     return "—"
   }
-
   return statuses.map((status) => EMPLOYEE_STATUS_LABELS[status]).join(", ")
-}
-
-/**
- * Color del badge de "Estado" cuando la lista trae varios estados
- * mezclados. Si hay al menos un permiso `SUSPENDED`, mostramos el color
- * "destructive" como señal de riesgo; si todos están `ACTIVE`, dejamos
- * el verde.
- */
-function pickStatusColor(statuses: EmployeeListItem["statuses"]): "success" | "destructive" {
-  return statuses.includes("SUSPENDED" satisfies PermissionStatus)
-    ? "destructive"
-    : "success"
 }
 
 export function createEmployeeColumns({ onEdit }: EmployeeColumnsOptions): ColumnDef<EmployeeListItem>[] {
@@ -156,42 +144,11 @@ export function createEmployeeColumns({ onEdit }: EmployeeColumnsOptions): Colum
     accessorKey: "status",
     id: "status",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Estado" />,
-    cell: ({ row }) => {
-      const statuses = row.original.statuses
-      const fullText = formatStatusLabels(statuses)
-
-      if (statuses.length === 0) {
-        return (
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <Badge variant="outline" color="neutral" className="font-normal">
-                  {fullText}
-                </Badge>
-              }
-            />
-            <TooltipContent>Sin permisos asignados</TooltipContent>
-          </Tooltip>
-        )
-      }
-
-      return (
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <Badge
-                {...EMPLOYEE_STATUS_BADGE[statuses[0]]}
-                color={pickStatusColor(statuses)}
-                className="max-w-[14rem] truncate font-normal"
-              >
-                {fullText}
-              </Badge>
-            }
-          />
-          <TooltipContent>{fullText}</TooltipContent>
-        </Tooltip>
-      )
-    },
+    cell: ({ row }) => (
+      <span className="text-sm text-foreground">
+        {renderStatusCell(row.original.statuses)}
+      </span>
+    ),
   },
   {
     id: "actions",
