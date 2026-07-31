@@ -32,7 +32,7 @@ export function DomicilioDataFormSection({ value, onChange, invalidFields = [], 
                 Domicilio
             </h3>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                <Field orientation="vertical" className="w-full" data-invalid={isInvalid("address.municipality") ? "true" : undefined}>
+                <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid("address.municipality") ? "true" : undefined}>
                     <FieldLabel htmlFor="establishment-municipio">Municipio*</FieldLabel>
                     <Select
                         value={value.municipality.id}
@@ -69,7 +69,7 @@ export function DomicilioDataFormSection({ value, onChange, invalidFields = [], 
                     </Select>
                 </Field>
 
-                <Field orientation="vertical" className="w-full">
+                <Field orientation="vertical" variant="outlined" className="w-full">
                     <FieldLabel htmlFor="establishment-zone">Zona</FieldLabel>
                     <Select
                         value={value.zone.id}
@@ -100,7 +100,7 @@ export function DomicilioDataFormSection({ value, onChange, invalidFields = [], 
                     </Select>
                 </Field>
 
-                <Field orientation="vertical" className="w-full">
+                <Field orientation="vertical" variant="outlined" className="w-full">
                     <FieldLabel htmlFor="establishment-barrio">Barrio</FieldLabel>
                     <Input
                         id="establishment-barrio"
@@ -112,7 +112,7 @@ export function DomicilioDataFormSection({ value, onChange, invalidFields = [], 
             </div>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                <Field orientation="vertical" className="w-full">
+                <Field orientation="vertical" variant="outlined" className="w-full">
                     <FieldLabel htmlFor="establishment-address">Dirección</FieldLabel>
                     <Input
                         id="establishment-address"
@@ -122,7 +122,7 @@ export function DomicilioDataFormSection({ value, onChange, invalidFields = [], 
                     />
                 </Field>
 
-                <Field orientation="vertical" className="w-full">
+                <Field orientation="vertical" variant="outlined" className="w-full">
                     <FieldLabel htmlFor="establishment-comuna">Comuna</FieldLabel>
                     <Input
                         id="establishment-comuna"
@@ -132,7 +132,7 @@ export function DomicilioDataFormSection({ value, onChange, invalidFields = [], 
                     />
                 </Field>
 
-                <Field orientation="vertical" className="w-full">
+                <Field orientation="vertical" variant="outlined" className="w-full">
                     <FieldLabel htmlFor="establishment-localidad">Localidad</FieldLabel>
                     <Input
                         id="establishment-localidad"

@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react"
+
 import { Attachment, AttachmentMedia, AttachmentActions, AttachmentAction } from "@/components/ui/attachment"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { EMPLOYEE_ROLES } from "@/mocks/db/catalogs/employee-roles"
@@ -25,6 +27,14 @@ interface UserFormProps {
     onChange: (person: Person | null) => void
     invalidFields?: string[]
     showValidation?: boolean
+    /**
+     * Estado UI para la confirmación de contraseña. Vive fuera de la entidad
+     * `Person` porque es un dato de formulario, no un atributo de negocio.
+     * Si se provee, el form se vuelve controlado en ese campo; si no, lo
+     * maneja internamente.
+     */
+    confirmPassword?: string
+    onConfirmPasswordChange?: (value: string) => void
 }
 
 function createEmptyPerson(): Person {
@@ -39,11 +49,19 @@ function createEmptyPerson(): Person {
         email: "",
         phone: "",
         password: "",
-        confirmPassword: "",
     }
 }
 
-export function UserDetailsForm({ role, fieldPrefix = "principal", value, onChange, invalidFields = [], showValidation = false }: UserFormProps) {
+export function UserDetailsForm({
+    role,
+    fieldPrefix = "principal",
+    value,
+    onChange,
+    invalidFields = [],
+    showValidation = false,
+    confirmPassword: confirmPasswordProp,
+    onConfirmPasswordChange,
+}: UserFormProps) {
     const roleName =
         EMPLOYEE_ROLES.find((item) => item.code === role)?.name ??
         "Agregar usuario"
@@ -51,7 +69,32 @@ export function UserDetailsForm({ role, fieldPrefix = "principal", value, onChan
     const {data: documentTypes = []} = useCatalogQuery<CatalogItem>(CATALOGS.DOCUMENT_TYPES)
     const {data: genders = []} = useCatalogQuery<CatalogItem>(CATALOGS.GENDERS)
     const person = value ?? createEmptyPerson()
-    const passwordsMatch = person.password === person.confirmPassword
+
+    const isConfirmControlled = confirmPasswordProp !== undefined
+    const [internalConfirmPassword, setInternalConfirmPassword] = useState("")
+    const confirmPassword = isConfirmControlled ? confirmPasswordProp : internalConfirmPassword
+
+    // Al cargar un registro existente, sincroniza la confirmación con la
+    // contraseña persistida solo si el usuario aún no la ha tocado.
+    useEffect(() => {
+        if (isConfirmControlled) {
+            return
+        }
+
+        if (internalConfirmPassword === "" && person.password !== "") {
+            setInternalConfirmPassword(person.password)
+        }
+    }, [isConfirmControlled, internalConfirmPassword, person.password])
+
+    const setConfirmPassword = (next: string) => {
+        if (isConfirmControlled) {
+            onConfirmPasswordChange?.(next)
+            return
+        }
+        setInternalConfirmPassword(next)
+    }
+
+    const passwordsMatch = person.password === confirmPassword
     const isInvalid = (field: string) => showValidation && invalidFields.includes(field)
 
     const emitChange = (patch: Partial<Person>) => {
@@ -87,9 +130,9 @@ export function UserDetailsForm({ role, fieldPrefix = "principal", value, onChan
                 </div>
                 {/* Formulario */}
 
-                <Field orientation="vertical">
+                <Field orientation="vertical" variant="outlined">
                     <FieldLabel htmlFor="document-type">
-                        Tipo de documento
+                        Tipo de documento*
                     </FieldLabel>
 
                     <Select
@@ -116,8 +159,8 @@ export function UserDetailsForm({ role, fieldPrefix = "principal", value, onChan
                     </Select>
                 </Field>
 
-                <Field orientation="vertical" className="w-full">
-                    <FieldLabel htmlFor="document-number">Número de documento</FieldLabel>
+                <Field orientation="vertical" variant="outlined" className="w-full">
+                    <FieldLabel htmlFor="document-number">Número de documento*</FieldLabel>
                     <Input
                         id="document-number"
                         placeholder="925557829"
@@ -127,8 +170,8 @@ export function UserDetailsForm({ role, fieldPrefix = "principal", value, onChan
                     />
                 </Field>
 
-                <Field orientation="vertical" className="w-full">
-                    <FieldLabel htmlFor="user-name">Primer Nombre</FieldLabel>
+                <Field orientation="vertical" variant="outlined" className="w-full">
+                    <FieldLabel htmlFor="user-name">Primer Nombre*</FieldLabel>
                     <Input
                         id="user-name"
                         placeholder="Fernney"
@@ -138,13 +181,18 @@ export function UserDetailsForm({ role, fieldPrefix = "principal", value, onChan
                     />
                 </Field>
 
-                <Field orientation="vertical" className="w-full">
+                <Field orientation="vertical" variant="outlined" className="w-full">
                     <FieldLabel htmlFor="user-second-name">Segundo Nombre</FieldLabel>
-                    <Input id="user-second-name" placeholder="Antonio" />
+                    <Input
+                        id="user-second-name"
+                        placeholder="Antonio"
+                        value={person.middleName ?? ""}
+                        onChange={(event) => emitChange({ middleName: event.target.value })}
+                    />
                 </Field>
 
-                <Field orientation="vertical" className="w-full">
-                    <FieldLabel htmlFor="user-last-name">Primer Apellido</FieldLabel>
+                <Field orientation="vertical" variant="outlined" className="w-full">
+                    <FieldLabel htmlFor="user-last-name">Primer Apellido*</FieldLabel>
                     <Input
                         id="user-last-name"
                         placeholder="Jaramillo"
@@ -154,13 +202,18 @@ export function UserDetailsForm({ role, fieldPrefix = "principal", value, onChan
                     />
                 </Field>
 
-                <Field orientation="vertical" className="w-full">
+                <Field orientation="vertical" variant="outlined" className="w-full">
                     <FieldLabel htmlFor="user-second-last-name">Segundo Apellido</FieldLabel>
-                    <Input id="user-second-last-name" placeholder="Gomez" />
+                    <Input
+                        id="user-second-last-name"
+                        placeholder="Gomez"
+                        value={person.secondLastName ?? ""}
+                        onChange={(event) => emitChange({ secondLastName: event.target.value })}
+                    />
                 </Field>
             </div>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                <Field orientation="vertical" className="w-full" data-invalid={isInvalid(`${fieldPrefix}.email`) ? "true" : undefined}>
+                <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid(`${fieldPrefix}.email`) ? "true" : undefined}>
                     <FieldLabel htmlFor="user-email">Correo Electrónico</FieldLabel>
                     <Input
                         id="user-email"
@@ -170,7 +223,7 @@ export function UserDetailsForm({ role, fieldPrefix = "principal", value, onChan
                         onChange={(event) => emitChange({ email: event.target.value })}
                     />
                 </Field>
-                <Field orientation="vertical" className="w-full" data-invalid={isInvalid(`${fieldPrefix}.password`) ? "true" : undefined}>
+                <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid(`${fieldPrefix}.password`) ? "true" : undefined}>
                     <FieldLabel htmlFor="user-password">Contraseña</FieldLabel>
                     <Input
                         id="user-password"
@@ -181,20 +234,20 @@ export function UserDetailsForm({ role, fieldPrefix = "principal", value, onChan
                         onChange={(event) => emitChange({ password: event.target.value })}
                     />
                 </Field>
-                <Field orientation="vertical" className="w-full" data-invalid={isInvalid(`${fieldPrefix}.confirmPassword`) ? "true" : undefined}>
+                <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid(`${fieldPrefix}.confirmPassword`) ? "true" : undefined}>
                     <FieldLabel htmlFor="user-confirm-password">Confirmar Contraseña</FieldLabel>
                     <Input
                         id="user-confirm-password"
                         placeholder="••••••••"
                         type="password"
-                        value={person.confirmPassword}
+                        value={confirmPassword}
                         aria-invalid={isInvalid(`${fieldPrefix}.confirmPassword`)}
-                        onChange={(event) => emitChange({ confirmPassword: event.target.value })}
+                        onChange={(event) => setConfirmPassword(event.target.value)}
                     />
                 </Field>
             </div>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                <Field orientation="vertical" data-invalid={isInvalid(`${fieldPrefix}.birthDate`) ? "true" : undefined}>
+                <Field orientation="vertical" variant="outlined" data-invalid={isInvalid(`${fieldPrefix}.birthDate`) ? "true" : undefined}>
                     <FieldLabel htmlFor="birth-date">
                         Fecha de nacimiento
                     </FieldLabel>
@@ -206,7 +259,7 @@ export function UserDetailsForm({ role, fieldPrefix = "principal", value, onChan
                         onChange={(event) => emitChange({ birthDate: event.target.value })}
                     />
                 </Field>
-                <Field orientation="vertical" data-invalid={isInvalid(`${fieldPrefix}.gender`) ? "true" : undefined}>
+                <Field orientation="vertical" variant="outlined" data-invalid={isInvalid(`${fieldPrefix}.gender`) ? "true" : undefined}>
                     <FieldLabel htmlFor="gender-user">
                         Género
                     </FieldLabel>
@@ -233,7 +286,7 @@ export function UserDetailsForm({ role, fieldPrefix = "principal", value, onChan
                         </SelectContent>
                     </Select>
                 </Field>
-                <Field orientation="vertical" className="w-full" data-invalid={isInvalid(`${fieldPrefix}.phone`) ? "true" : undefined}>
+                <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid(`${fieldPrefix}.phone`) ? "true" : undefined}>
                     <FieldLabel htmlFor="user-phone">Teléfono</FieldLabel>
                     <Input
                         id="user-phone"
@@ -245,7 +298,7 @@ export function UserDetailsForm({ role, fieldPrefix = "principal", value, onChan
                     />
                 </Field>
             </div>
-            {!passwordsMatch && person.password.length > 0 && person.confirmPassword.length > 0 ? (
+            {!passwordsMatch && person.password.length > 0 && confirmPassword.length > 0 ? (
                 <p className="text-sm text-destructive">Las contraseñas no coinciden.</p>
             ) : null}
         </div>

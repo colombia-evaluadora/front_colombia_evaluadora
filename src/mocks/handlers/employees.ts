@@ -7,6 +7,7 @@ import {
   employeesRowsDb,
   upsertEmployeeDetails,
 } from "../db/employees"
+import { upsertPerson } from "../db/persons"
 
 import type {
   Employee,
@@ -152,10 +153,7 @@ export const employeeHandlers = [
     await delay(250)
 
     const values = (await request.json()) as Person
-    const person: Person = {
-      ...values,
-      id: values.id || crypto.randomUUID(),
-    }
+    const person = upsertPerson(values)
 
     return HttpResponse.json({
       status: "ok",

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useState } from "react"
 import { toast } from "sonner"
 
 import { Badge } from "@/components/ui/badge"
@@ -83,7 +83,6 @@ function createEmptyPerson(): Person {
     email: "",
     phone: "",
     password: "",
-    confirmPassword: "",
   }
 }
 
@@ -100,7 +99,7 @@ function createInitialAdditionalInfo(): EmployeeAdditionalInfoValue {
   }
 }
 
-function isPersonComplete(person: Person | null) {
+function isPersonMinComplete(person: Person | null) {
   if (!person) {
     return false
   }
@@ -109,27 +108,7 @@ function isPersonComplete(person: Person | null) {
     person.documentType.id &&
       person.identification.trim() &&
       person.firstName.trim() &&
-      person.lastName.trim() &&
-      person.email.trim() &&
-      person.password.trim() &&
-      person.confirmPassword.trim() &&
-      person.birthDate.trim() &&
-      person.gender.id &&
-      person.phone.trim() &&
-      person.password === person.confirmPassword
-  )
-}
-
-function isAdditionalInfoComplete(value: EmployeeAdditionalInfoValue) {
-  return Boolean(
-    value.employeeClass.id &&
-      value.educationLevel.id &&
-      value.grade.id &&
-      value.highestEducationLevel.id &&
-      value.fundingSource.id &&
-      value.functionalPosition.id &&
-      value.employmentType.id &&
-      value.address.trim()
+      person.lastName.trim()
   )
 }
 
@@ -150,19 +129,33 @@ function buildEmployeeStatus(permissions: Permission[]): EmployeeStatus {
 
 export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageEmployeeDialogProps) {
   const isEditMode = Boolean(employeeId)
+  /**
+   * id del empleado recién creado en esta sesión. Mientras está vacío no
+   * se han hecho llamadas a POST/PUT /employees; cuando se llena, el diálogo
+   * habilita los botones opcionales (permisos / información complementaria)
+   * y `handleMainSave` pasa a usar PUT /employees/:id.
+   */
+  const [createdEmployeeId, setCreatedEmployeeId] = useState<string | null>(null)
 
   const [person, setPerson] = useState<Person | null>(createEmptyPerson())
   const [permissions, setPermissions] = useState<Permission[]>([])
   const [additionalInfo, setAdditionalInfo] = useState<EmployeeAdditionalInfoValue>(
     createInitialAdditionalInfo
   )
-  const [personSaved, setPersonSaved] = useState(false)
-  const [permissionsSaved, setPermissionsSaved] = useState(false)
-  const [additionalInfoSaved, setAdditionalInfoSaved] = useState(false)
 
   const [permissionsDialogOpen, setPermissionsDialogOpen] = useState(false)
   const [additionalInfoDialogOpen, setAdditionalInfoDialogOpen] = useState(false)
   const [permissionDraft, setPermissionDraft] = useState<PermissionDraft>(createPermissionDraft)
+  // Estado UI: vive fuera de `Person` porque no es parte del modelo de negocio.
+  const [confirmPassword, setConfirmPassword] = useState("")
+
+  /**
+   * id efectivo del empleado: el de la URL en edición, o el recién creado
+   * durante esta sesión del diálogo. Mientras sea null, significa que la
+   * persona todavía no está enlazada a un empleado.
+   */
+  const activeEmployeeId = isEditMode ? (employeeId ?? null) : createdEmployeeId
+  const canOpenOptionalSections = Boolean(activeEmployeeId)
 
   const employeeQuery = useEmployeeQuery(employeeId ?? null, open && isEditMode)
   const { data: roles = [] } = useCatalogQuery<CatalogItem>(CATALOGS.EMPLOYEE_ROLES)
@@ -178,10 +171,9 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
       setPerson(createEmptyPerson())
       setPermissions([])
       setAdditionalInfo(createInitialAdditionalInfo())
-      setPersonSaved(false)
-      setPermissionsSaved(false)
-      setAdditionalInfoSaved(false)
       setPermissionDraft(createPermissionDraft())
+      setConfirmPassword("")
+      setCreatedEmployeeId(null)
       return
     }
 
@@ -190,10 +182,8 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
       setPerson(employee.person)
       setPermissions(employee.permissions)
       setAdditionalInfo(createAdditionalInfoFromEmployee(employee))
-      setPersonSaved(true)
-      setPermissionsSaved(true)
-      setAdditionalInfoSaved(true)
       setPermissionDraft(createPermissionDraft())
+      setConfirmPassword(employee.person.password)
     }
   }, [employeeQuery.data, isEditMode, open])
 
@@ -207,15 +197,6 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
 
   const createEmployeeMutation = useCreateEmployee({
     mutationConfig: {
-      onSuccess: (result) => {
-        if (result.status === "error") {
-          toast.error(result.message)
-          return
-        }
-
-        toast.success(result.message)
-        onOpenChange(false)
-      },
       onError: (error) => {
         toast.error(error.message || "No fue posible crear el funcionario.")
       },
@@ -244,47 +225,45 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
     createEmployeeMutation.isPending ||
     updateEmployeeMutation.isPending
 
-  const canOpenPermissions = isEditMode || personSaved
-  const canOpenAdditionalInfo = isEditMode || permissionsSaved
-
-  const additionalInfoReady = useMemo(
-    () => isAdditionalInfoComplete(additionalInfo),
-    [additionalInfo]
-  )
-
   async function handleMainSave() {
-    if (!personSaved) {
-      if (!isPersonComplete(person)) {
-        toast.error("Completa los datos del usuario antes de continuar.")
+    const draft = person as Person | null
+
+    if (!draft) {
+      toast.error("No hay datos del usuario para guardar.")
+      return
+    }
+
+    // 1) Garantizar que la persona exista en personsDb (POST /person)
+    let persistedPerson = draft
+
+    if (!persistedPerson.id) {
+      if (!isPersonMinComplete(persistedPerson)) {
+        toast.error(
+          "Completa los datos mínimos del usuario (tipo de documento, número, primer nombre y primer apellido)."
+        )
         return
       }
 
-      const result = await createPersonMutation.mutateAsync(person as Person)
+      const result = await createPersonMutation.mutateAsync(persistedPerson)
 
       if (result.status === "error") {
         toast.error(result.message)
         return
       }
 
+      persistedPerson = result.person
       setPerson(result.person)
-      setPersonSaved(true)
-      toast.success("Usuario guardado. Ahora puedes asignar permisos.")
-      return
     }
 
-    if (permissions.length === 0) {
-      toast.error("Debes asignar al menos un permiso antes de guardar el funcionario.")
-      return
-    }
-
-    if (!additionalInfoReady || !additionalInfoSaved) {
-      toast.error("Debes completar la información complementaria antes de guardar.")
-      return
-    }
-
+    // 2) Garantizar que el empleado exista en employeesDb vinculado a la
+    // persona. Si todavía no hay un id de empleado (primer guardado en
+    // creación o nuevo ingreso durante esta sesión), llamamos POST
+    // /employees con catálogos vacíos si el usuario no entró ni permisos
+    // ni información complementaria. A partir de ese momento los botones
+    // opcionales quedan disponibles sin cerrar el diálogo.
     const payload: Employee = {
-      id: employeeId ?? `employee-${Date.now()}`,
-      person: person as Person,
+      id: activeEmployeeId ?? `employee-${Date.now()}`,
+      person: persistedPerson,
       employeeClass: additionalInfo.employeeClass,
       educationLevel: additionalInfo.educationLevel,
       grade: additionalInfo.grade,
@@ -297,15 +276,31 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
       status: buildEmployeeStatus(permissions),
     }
 
-    if (isEditMode && employeeId) {
-      await updateEmployeeMutation.mutateAsync({
-        employeeId,
-        values: payload,
-      })
+    if (!activeEmployeeId) {
+      const result = await createEmployeeMutation.mutateAsync(payload)
+
+      if (result.status === "error") {
+        toast.error(result.message)
+        return
+      }
+
+      // Fijamos el id del empleado recién creado para que las próximas
+      // invocaciones a handleMainSave pasen por PUT, y habilitamos los
+      // botones opcionales sin cerrar el diálogo.
+      setCreatedEmployeeId(result.employee.id)
+      toast.success(
+        permissions.length === 0
+          ? "Usuario guardado. Puedes asignar permisos e información complementaria."
+          : "Funcionario guardado."
+      )
       return
     }
 
-    await createEmployeeMutation.mutateAsync(payload)
+    // Empleado ya enlazado: editamos con PUT.
+    await updateEmployeeMutation.mutateAsync({
+      employeeId: activeEmployeeId,
+      values: payload,
+    })
   }
 
   function findCampusById(campusId: string): Campus | undefined {
@@ -347,26 +342,14 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
     )
   }
 
-  function savePermissions() {
-    if (permissions.length === 0) {
-      toast.error("Agrega al menos un permiso para continuar.")
-      return
-    }
-
-    setPermissionsSaved(true)
+  function closePermissionsDialog() {
     setPermissionsDialogOpen(false)
-    toast.success("Permisos guardados.")
+    toast.info("Permisos agregados al borrador. Pulsa Guardar para persistir el funcionario.")
   }
 
-  function saveAdditionalInfo() {
-    if (!isAdditionalInfoComplete(additionalInfo)) {
-      toast.error("Completa la información complementaria antes de guardar.")
-      return
-    }
-
-    setAdditionalInfoSaved(true)
+  function closeAdditionalInfoDialog() {
     setAdditionalInfoDialogOpen(false)
-    toast.success("Información complementaria guardada.")
+    toast.info("Información complementaria agregada al borrador. Pulsa Guardar para persistir el funcionario.")
   }
 
   const mainTitle = isEditMode ? "Editar usuario" : "Agregar usuario"
@@ -385,11 +368,13 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
           <UserDetailsForm
             value={person}
             onChange={setPerson}
+            confirmPassword={confirmPassword}
+            onConfirmPasswordChange={setConfirmPassword}
           />
 
           <DialogFooter className="flex-row flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-2">
-              {canOpenPermissions && (
+              {canOpenOptionalSections && (
                 <Button
                   variant="fill"
                   color="info"
@@ -401,7 +386,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
                 </Button>
               )}
 
-              {canOpenAdditionalInfo && (
+              {canOpenOptionalSections && (
                 <Button
                   variant="fill"
                   color="info"
@@ -424,11 +409,9 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
               >
                 {isSavingMain
                   ? "Guardando..."
-                  : !personSaved
-                    ? "Guardar"
-                    : isEditMode
-                      ? "Guardar cambios"
-                      : "Guardar"}
+                  : isEditMode
+                    ? "Guardar cambios"
+                    : "Guardar"}
               </Button>
               <Button
                 variant="fill"
@@ -454,12 +437,12 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
           </DialogHeader>
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <Field orientation="vertical">
+            <Field orientation="vertical" variant="outlined">
               <FieldLabel htmlFor="permission-order">Orden*</FieldLabel>
               <Input id="permission-order" value={String(permissions.length + 1)} readOnly />
             </Field>
 
-            <Field orientation="vertical">
+            <Field orientation="vertical" variant="outlined">
               <FieldLabel htmlFor="permission-role">Rol*</FieldLabel>
               <Select
                 id="permission-role"
@@ -483,7 +466,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
               </Select>
             </Field>
 
-            <Field orientation="vertical">
+            <Field orientation="vertical" variant="outlined">
               <FieldLabel htmlFor="permission-campus">Sede educativa*</FieldLabel>
               <Select
                 id="permission-campus"
@@ -507,7 +490,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
               </Select>
             </Field>
 
-            <Field orientation="vertical">
+            <Field orientation="vertical" variant="outlined">
               <FieldLabel htmlFor="permission-schedule">Jornada*</FieldLabel>
               <Select
                 id="permission-schedule"
@@ -531,7 +514,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
               </Select>
             </Field>
 
-            <Field orientation="vertical">
+            <Field orientation="vertical" variant="outlined">
               <FieldLabel htmlFor="permission-status">Estado*</FieldLabel>
               <Select
                 id="permission-status"
@@ -618,8 +601,8 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
           </div>
 
           <DialogFooter className="justify-end sm:justify-end">
-            <Button variant="fill" color="primary" size="sm" onClick={savePermissions}>
-              Guardar
+            <Button variant="fill" color="primary" size="sm" onClick={closePermissionsDialog}>
+              Aceptar
             </Button>
             <Button
               variant="fill"
@@ -648,8 +631,8 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
           />
 
           <DialogFooter className="justify-end sm:justify-end">
-            <Button variant="fill" color="primary" size="sm" onClick={saveAdditionalInfo}>
-              Guardar
+            <Button variant="fill" color="primary" size="sm" onClick={closeAdditionalInfoDialog}>
+              Aceptar
             </Button>
             <Button
               variant="fill"

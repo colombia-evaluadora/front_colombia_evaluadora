@@ -25,6 +25,4 @@ export interface Person {
     phone: string
 
     password: string
-
-    confirmPassword: string
 }
