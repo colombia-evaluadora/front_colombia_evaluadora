@@ -6,18 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { DataTableColumnHeader } from "@/components/data-table"
 
-import type {
-  Teacher,
-  TeacherStatus,
-} from "../../../api/types/teacher"
-
-const STATUS_BADGE: Record<
-  TeacherStatus,
-  { variant: "soft"; color: "success" | "muted" }
-> = {
-  ACTIVO: { variant: "soft", color: "success" },
-  INACTIVO: { variant: "soft", color: "muted" },
-}
+import type { Teacher } from "../../../api/types/teacher"
+import { TEACHER_STATUS_BADGE } from "../../../api/ui-mappings"
 
 interface CreateColumnsOptions {
   expandedDoc: string | null
@@ -119,7 +109,9 @@ export function createAcademicAssignmentColumns({
         <DataTableColumnHeader column={column} title="Estado" />
       ),
       cell: ({ row }) => (
-        <Badge {...STATUS_BADGE[row.original.estado]}>{row.original.estado}</Badge>
+        <Badge {...TEACHER_STATUS_BADGE[row.original.estado]}>
+          {row.original.estado}
+        </Badge>
       ),
     },
   ]

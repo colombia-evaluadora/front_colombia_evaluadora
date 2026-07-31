@@ -1,4 +1,5 @@
-import { forwardRef, useImperativeHandle } from "react"
+import { forwardRef, useEffect, useImperativeHandle } from "react"
+import type { AnyFieldApi } from "@tanstack/react-form"
 import { useForm } from "@tanstack/react-form"
 import { toast } from "sonner"
 
@@ -437,19 +438,41 @@ const PromotionCriteriaForm = forwardRef<
 
       <form.Field name="requiredSubjects">
         {(field) => (
-          <Field variant="outlined" className="max-w-xl">
-            <FieldLabel>
-              Áreas/Asignaturas obligatorias para la aprobación
-            </FieldLabel>
-            <SubjectsMultiSelect
-              options={subjectOptions}
-              value={field.state.value}
-              onChange={(values) => field.handleChange(values)}
-            />
-          </Field>
+          <RequiredSubjectsField field={field} subjectOptions={subjectOptions} />
         )}
       </form.Field>
 
     </form>
   )
 })
+
+interface RequiredSubjectsFieldProps {
+  field: AnyFieldApi
+  subjectOptions: string[]
+}
+
+function RequiredSubjectsField({
+  field,
+  subjectOptions,
+}: RequiredSubjectsFieldProps) {
+  useEffect(() => {
+    const current = field.state.value as string[]
+    const valid = current.filter((v) => subjectOptions.includes(v))
+    if (valid.length !== current.length) {
+      field.handleChange(valid)
+    }
+  }, [subjectOptions, field])
+
+  return (
+    <Field variant="outlined" className="max-w-xl">
+      <FieldLabel>
+        Áreas/Asignaturas obligatorias para la aprobación
+      </FieldLabel>
+      <SubjectsMultiSelect
+        options={subjectOptions}
+        value={field.state.value}
+        onChange={(values) => field.handleChange(values)}
+      />
+    </Field>
+  )
+}

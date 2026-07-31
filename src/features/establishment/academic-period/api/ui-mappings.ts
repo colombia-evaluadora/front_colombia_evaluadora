@@ -1,6 +1,7 @@
 import type { AcademicPeriodStatus } from "./types/academic-period"
 import type { EvaluationPeriodStatus } from "./types/evaluation-period"
 import type { RatingScaleType } from "./types/rating-scales"
+import type { TeacherStatus } from "./types/teacher"
 
 type BadgeColor = "primary" | "secondary" | "destructive" | "info" | "warning" | "success"
 interface BadgeProps {
@@ -38,6 +39,14 @@ export const EVALUATION_PERIOD_STATUS_BADGE: Record<
 export const RATING_SCALE_TYPE_BADGE: Record<RatingScaleType, BadgeProps> = {
   Fortaleza: { variant: "fill", color: "success" },
   Debilidad: { variant: "fill", color: "destructive" },
+}
+
+export const TEACHER_STATUS_BADGE: Record<
+  TeacherStatus,
+  { variant: "soft"; color: "success" | "muted" }
+> = {
+  ACTIVO: { variant: "soft", color: "success" },
+  INACTIVO: { variant: "soft", color: "muted" },
 }
 
 export const SEDE_OPTIONS: { id: number; name: string }[] = [
