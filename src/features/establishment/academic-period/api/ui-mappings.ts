@@ -48,15 +48,3 @@ export const TEACHER_STATUS_BADGE: Record<
   ACTIVO: { variant: "soft", color: "success" },
   INACTIVO: { variant: "soft", color: "muted" },
 }
-
-export const SEDE_OPTIONS: { id: number; name: string }[] = [
-  { id: 1, name: "I.E. JORGE GARCÍA LA SALLE BICENTENARIO" },
-  { id: 2, name: "I.E. NUESTRA SEÑORA DE FÁTIMA" },
-  { id: 3, name: "I.E. CLEMENTE MANUEL ZABALA" },
-]
-
-export const JORNADA_OPTIONS: { id: number; name: string }[] = [
-  { id: 1, name: "Mañana" },
-  { id: 2, name: "Tarde" },
-  { id: 3, name: "Noche" },
-]

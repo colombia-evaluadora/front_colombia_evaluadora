@@ -16,16 +16,14 @@ import {
 import { BreaksField } from "./breaks-field"
 
 import { useAcademicPeriodsQuery } from "../../api/query/academic-period/use-academic-periods-query"
+import { useSedesQuery } from "../../api/query/use-sedes-query"
+import { useJornadasQuery } from "../../api/query/use-jornadas-query"
 import {
   academicPeriodFormSchema,
   type AcademicPeriodFormInput,
   type AcademicPeriodFormValues,
 } from "../../api/schema"
-import {
-  ACADEMIC_PERIOD_STATUS_LABELS,
-  JORNADA_OPTIONS,
-  SEDE_OPTIONS,
-} from "../../api/ui-mappings"
+import { ACADEMIC_PERIOD_STATUS_LABELS } from "../../api/ui-mappings"
 import type { AcademicPeriodStatus } from "../../api/types/academic-period"
 import { DatePicker } from "@/components/date-picker"
 import { formatDateValue, parseDateValue } from "@/lib/date-value"
@@ -66,6 +64,9 @@ export function AcademicPeriodForm({
     ...EMPTY_VALUES,
     ...defaultValues,
   } satisfies AcademicPeriodFormInput
+
+  const { data: sedes = [] } = useSedesQuery()
+  const { data: jornadas = [] } = useJornadasQuery()
 
   const form = useForm({
     defaultValues: initialValues,
@@ -188,14 +189,14 @@ export function AcademicPeriodForm({
                   <SelectTrigger id={field.name} aria-invalid={isInvalid}>
                     <SelectValue placeholder="Seleccionar">
                       {(value) =>
-                        SEDE_OPTIONS.find((s) => String(s.id) === value)?.name ??
+                        sedes.find((s) => String(s.id) === value)?.name ??
                         "Seleccionar"
                       }
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
-                      {SEDE_OPTIONS.map((sede) => (
+                      {sedes.map((sede) => (
                         <SelectItem key={sede.id} value={String(sede.id)}>
                           {sede.name}
                         </SelectItem>
@@ -322,14 +323,14 @@ export function AcademicPeriodForm({
                   <SelectTrigger id={field.name} aria-invalid={isInvalid}>
                     <SelectValue placeholder="Seleccionar">
                       {(value) =>
-                        JORNADA_OPTIONS.find((j) => String(j.id) === value)
+                        jornadas.find((j) => String(j.id) === value)
                           ?.name ?? "Seleccionar"
                       }
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
-                      {JORNADA_OPTIONS.map((jornada) => (
+                      {jornadas.map((jornada) => (
                         <SelectItem key={jornada.id} value={String(jornada.id)}>
                           {jornada.name}
                         </SelectItem>
