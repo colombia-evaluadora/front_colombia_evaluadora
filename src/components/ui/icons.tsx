@@ -3,20 +3,27 @@ import type { IconBaseProps, IconType } from "react-icons"
 import { GoShieldLock } from "react-icons/go"
 import {
   MdAccessTime,
+  MdAccountBalance,
   MdAccountCircle,
   MdAdd,
   MdAddCircleOutline,
+  MdApartment,
   MdArrowBack,
   MdArrowDownward,
   MdArrowForward,
   MdArrowUpward,
+  MdAssignment,
+  MdAssignmentTurnedIn,
   MdAttachFile,
   MdAttachMoney,
   MdAutorenew,
   MdBackspace,
   MdBadge,
   MdBolt,
+  MdBarChart,
+  MdBubbleChart,
   MdCalendarMonth,
+  MdCalendarToday,
   MdCancel,
   MdCancelPresentation,
   MdChat,
@@ -24,12 +31,18 @@ import {
   MdCheck,
   MdCircle,
   MdClose,
+  MdContacts,
   MdContrast,
+  MdCoPresent,
+  MdCreditCard,
   MdDarkMode,
   MdDelete,
   MdDescription,
   MdDownload,
   MdEdit,
+  MdEmojiEvents,
+  MdEvent,
+  MdExplore,
   MdOutlineChromeReaderMode,
   MdOutlineEmail,
   MdErrorOutline,
@@ -37,10 +50,14 @@ import {
   MdFolderOpen,
   MdFormatBold,
   MdFormatItalic,
+  MdFormatListNumbered,
   MdFormatUnderlined,
+  MdGavel,
   MdGroup,
+  MdGroups,
   MdHelpOutline,
   MdHome,
+  MdHomeWork,
   MdInfoOutline,
   MdKey,
   MdKeyboardArrowDown,
@@ -53,12 +70,20 @@ import {
   MdLogin,
   MdLogout,
   MdManageSearch,
+  MdMap,
+  MdMenuBook,
+  MdMilitaryTech,
   MdMoreHoriz,
   MdOutlinePassword,
   MdOutlineShield,
   MdPalette,
+  MdPark,
+  MdPeople,
   MdPictureAsPdf,
   MdPersonOutline,
+  MdPlace,
+  MdPsychology,
+  MdPublic,
   MdRadioButtonUnchecked,
   MdRefresh,
   MdRemove,
@@ -72,6 +97,8 @@ import {
   MdTableChart,
   MdOutlineInbox,
   MdTimelapse,
+  MdTransgender,
+  MdTrendingUp,
   MdUnfoldMore,
   MdVerifiedUser,
   MdViewColumn,
@@ -103,13 +130,23 @@ function makeIcon(Base: IconType): Icon {
   }
 }
 
+export const AddressBookIcon = makeIcon(MdContacts)
 export const ArrowCounterClockwiseIcon = makeIcon(MdRefresh)
 export const ArrowDownIcon = makeIcon(MdArrowDownward)
 export const ArrowLeftIcon = makeIcon(MdArrowBack)
 export const ArrowRightIcon = makeIcon(MdArrowForward)
 export const ArrowUpIcon = makeIcon(MdArrowUpward)
+export const BankIcon = makeIcon(MdAccountBalance)
+export const BookIcon = makeIcon(MdMenuBook)
 export const BookOpenIcon = makeIcon(MdOutlineChromeReaderMode)
+export const BrainIcon = makeIcon(MdPsychology)
+export const BuildingsIcon = makeIcon(MdApartment)
+export const CalendarBlankIcon = makeIcon(MdCalendarToday)
+export const CalendarDotsIcon = makeIcon(MdEvent)
 export const CalendarIcon = makeIcon(MdCalendarMonth)
+export const ChalkboardTeacherIcon = makeIcon(MdCoPresent)
+export const ChartBarIcon = makeIcon(MdBarChart)
+export const ChartLineUpIcon = makeIcon(MdTrendingUp)
 export const CaretDownIcon = makeIcon(MdKeyboardArrowDown)
 export const CaretLeftIcon = makeIcon(MdKeyboardArrowLeft)
 export const CaretRightIcon = makeIcon(MdKeyboardArrowRight)
@@ -122,9 +159,14 @@ export const CheckIcon = makeIcon(MdCheck)
 export const CircleDashedIcon = makeIcon(MdRadioButtonUnchecked)
 export const CircleHalfIcon = makeIcon(MdContrast)
 export const CircleIcon = makeIcon(MdCircle)
+export const CirclesThreeIcon = makeIcon(MdBubbleChart)
+export const ClipboardCheckIcon = makeIcon(MdAssignmentTurnedIn)
+export const ClipboardTextIcon = makeIcon(MdAssignment)
 export const ClockCountdownIcon = makeIcon(MdTimelapse)
 export const ClockIcon = makeIcon(MdAccessTime)
 export const ColumnsIcon = makeIcon(MdViewColumn)
+export const CompassIcon = makeIcon(MdExplore)
+export const CreditCardIcon = makeIcon(MdCreditCard)
 export const CurrencyDollarIcon = makeIcon(MdAttachMoney)
 export const DotsThreeIcon = makeIcon(MdMoreHoriz)
 export const DownloadSimpleIcon = makeIcon(MdDownload)
@@ -137,10 +179,14 @@ export const FileTextIcon = makeIcon(MdDescription)
 export const FileXlsIcon = makeIcon(MdTableChart)
 export const FolderOpenIcon = makeIcon(MdFolderOpen)
 export const FunnelIcon = makeIcon(MdFilterAlt)
+export const GavelIcon = makeIcon(MdGavel)
 export const GearIcon = makeIcon(MdSettings)
+export const GenderIntersexIcon = makeIcon(MdTransgender)
+export const GlobeIcon = makeIcon(MdPublic)
 export const GraduationCapIcon = makeIcon(MdSchool)
 export const HeadsetIcon = makeIcon(MdSupportAgent)
 export const HouseIcon = makeIcon(MdHome)
+export const HouseLineIcon = makeIcon(MdHomeWork)
 export const IdentificationCardIcon = makeIcon(MdBadge)
 export const InfoIcon = makeIcon(MdInfoOutline)
 export const KeyIcon = makeIcon(MdKey)
@@ -148,9 +194,14 @@ export const LightningIcon = makeIcon(MdBolt)
 export const LockIcon = makeIcon(MdLockOutline)
 export const LinkBreakIcon = makeIcon(MdLinkOff)
 export const ListMagnifyingGlassIcon = makeIcon(MdManageSearch)
+export const ListNumbersIcon = makeIcon(MdFormatListNumbered)
 export const MagnifyingGlassIcon = makeIcon(MdSearch)
+export const MapPinIcon = makeIcon(MdPlace)
+export const MapTrifoldIcon = makeIcon(MdMap)
+export const MedalIcon = makeIcon(MdMilitaryTech)
 export const MinusIcon = makeIcon(MdRemove)
 export const MoonIcon = makeIcon(MdDarkMode)
+export const NotebookIcon = makeIcon(MdMenuBook)
 export const PaletteIcon = makeIcon(MdPalette)
 export const PasswordIcon = makeIcon(MdOutlinePassword)
 export const PaperPlaneTiltIcon = makeIcon(MdOutlineSend)
@@ -172,11 +223,15 @@ export const TextBIcon = makeIcon(MdFormatBold)
 export const TextItalicIcon = makeIcon(MdFormatItalic)
 export const TextUnderlineIcon = makeIcon(MdFormatUnderlined)
 export const TrashIcon = makeIcon(MdDelete)
-export const TrayIcon = makeIcon(MdOutlineInbox)
+export const TreeIcon = makeIcon(MdPark)
+export const TrophyIcon = makeIcon(MdEmojiEvents)
 export const VideoIcon = makeIcon(MdOutlineSmartDisplay)
 export const PersonIcon = makeIcon(MdPersonOutline)
 export const UserCircleIcon = makeIcon(MdAccountCircle)
+export const UserIcon = makeIcon(MdPersonOutline)
 export const UsersIcon = makeIcon(MdGroup)
+export const UsersFourIcon = makeIcon(MdPeople)
+export const UsersThreeIcon = makeIcon(MdGroups)
 export const WarningCircleIcon = makeIcon(MdErrorOutline)
 export const WarningIcon = makeIcon(MdWarningAmber)
 export const XCircleIcon = makeIcon(MdCancel)

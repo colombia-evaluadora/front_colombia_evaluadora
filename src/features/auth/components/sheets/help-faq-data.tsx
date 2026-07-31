@@ -11,12 +11,13 @@ import {
 } from "@/components/ui/icons"
 
 import { paths } from "@/config/paths"
+import { Button } from "@/components/ui/button"
 
 export interface HelpLink {
   title: string
   description: string
   icon: ReactNode
-  to?: string
+  to: string
 }
 
 export interface HelpFaq {
@@ -47,17 +48,15 @@ export interface HelpSupport {
 export interface HelpSheetData {
   title: string
   description: string
+  faqsTitle: string
   faqs: HelpFaq[]
   sections: HelpSection[]
   support: HelpSupport
 }
-
-const supportLinkClass =
-  "text-primary mt-3 inline-flex items-center gap-1 font-medium underline underline-offset-3 hover:text-primary/80"
-
 export const defaultHelpData: HelpSheetData = {
   title: "¿Necesitas ayuda?",
   description: "Estamos aquí para ayudarte.",
+  faqsTitle: "¿No puedes iniciar sesión?",
   faqs: [
     {
       id: "forgot-password",
@@ -69,9 +68,9 @@ export const defaultHelpData: HelpSheetData = {
           Si olvidaste tu contraseña, selecciona <strong>"Recuperar contraseña"</strong>, ingresa tu
           correo institucional y sigue las instrucciones que recibirás para crear una nueva.
           <br />
-          <Link to={paths.auth.forgotPassword.path} className={supportLinkClass}>
-            Ir a recuperar contraseña →
-          </Link>
+          <Button variant="link" render={<Link to={paths.auth.forgotPassword.path} />}>
+            Ir a recuperar contraseña
+          </Button>
         </p>
       ),
     },
@@ -85,9 +84,9 @@ export const defaultHelpData: HelpSheetData = {
           Si no recuerdas tu usuario, selecciona "Recuperar usuario" e ingresa tu número de
           documento o el correo electrónico registrado para consultarlo.
           <br />
-          <Link to={paths.auth.forgotUsername.path} className={supportLinkClass}>
-            Recuperar usuario →
-          </Link>
+          <Button variant="link" render={<Link to={paths.auth.forgotUsername.path} />}>
+            Recuperar usuario
+          </Button>
         </p>
       ),
     },
@@ -149,7 +148,7 @@ export const defaultHelpData: HelpSheetData = {
     title: "Mesa de ayuda",
     icon: <HeadsetIcon weight="duotone" className="text-blue" />,
     email: "soporte@colombiaevaluadora.edu.co",
-    phone: "+57 (601) 123 4567",
+    phone: "+57(601)1234567",
     hours: "Lunes a viernes · 8:00 a. m. a 6:00 p. m.",
   },
 }
