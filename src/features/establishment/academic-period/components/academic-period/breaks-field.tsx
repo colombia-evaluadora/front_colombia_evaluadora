@@ -21,29 +21,15 @@ function formatTime12(value: string): string {
   return `${h12}:${String(m).padStart(2, "0")}${period}`
 }
 
-// Inicio del chip: "Ha" / "Hp" — solo la hora + letra del período.
-// Ej.: 5:00am → "5a".
-function formatBreakStartLabel(value: string): string {
+function formatBreakTimeCompact(value: string): string {
   if (!value) return ""
-  const [h] = value.split(":").map(Number)
+  const [h, m] = value.split(":").map(Number)
   const period = h < 12 ? "a" : "p"
   const h12 = h % 12 === 0 ? 12 : h % 12
-  return `${h12}${period}`
+  return `${h12}:${String(m).padStart(2, "0")}${period}`
 }
 
-// Fin del chip: "H:3a" / "H:3p" — hora + marcador "3" + letra del período.
-// El "3" es fijo (no se calcula del minuto) para mantener el formato
-// compacto que pide la UI.
-function formatBreakEndLabel(value: string): string {
-  if (!value) return ""
-  const [h] = value.split(":").map(Number)
-  const period = h < 12 ? "a" : "p"
-  const h12 = h % 12 === 0 ? 12 : h % 12
-  return `${h12}:3${period}`
-}
 
-// Render del trigger: hasta 2 chips con "Ha → H:3a" + × para borrar.
-// Si hay más de 2, agrega un chip "+1" al final.
 function BreakChips({
   value,
   onRemove,
@@ -62,7 +48,7 @@ function BreakChips({
           className="bg-muted text-muted-foreground inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs"
         >
           <span className="font-medium">
-            {formatBreakStartLabel(brk.startTime)} → {formatBreakEndLabel(brk.endTime)}
+            {formatBreakTimeCompact(brk.startTime)} → {formatBreakTimeCompact(brk.endTime)}
           </span>
           <button
             type="button"

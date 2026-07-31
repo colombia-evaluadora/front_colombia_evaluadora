@@ -111,12 +111,20 @@ export type StudyPlanFormValues = z.infer<typeof studyPlanFormSchema>
 // Periodos de evaluación
 export const evaluationPeriodFormSchema = z
   .object({
-    codigo: z.number().int().positive("El código es obligatorio"),
+    codigo: z
+      .number()
+      .int()
+      .min(1, "El código debe ser mayor a 0"),
     nombre: z.string().min(1, "El nombre es obligatorio"),
     abreviacion: z.string().min(1, "La abreviación es obligatoria"),
     startDate: z.string().min(1, "La fecha de inicio es obligatoria"),
     endDate: z.string().min(1, "La fecha de fin es obligatoria"),
-    peso: z.number().min(0).max(100),
+    peso: z
+      .number({
+        error: "El peso porcentual es obligatorio.",
+      })
+      .min(0)
+      .max(100),
     estado: z.string().min(1, "El estado es obligatorio"),
   })
   .refine(
@@ -150,16 +158,18 @@ export type EvaluationCriteriaValues = z.infer<typeof evaluationCriteriaSchema>
 export const promotionApprovalSchema = z.object({
   curriculumNode: z.string().min(1, "Requerido"),
 
-  maxFailedRecovery: z.number().min(0),
-  absencePercentage: z.number().min(0),
-  maxLeveledSubjects: z.number().min(0),
-  maxFailedSubjects: z.number().min(0),
+  maxFailedRecovery: z.number().min(0, "El valor debe ser mayor o igual a 0"),
+  absencePercentage: z.number().min(0, "El valor debe ser mayor o igual a 0"),
+  maxLeveledSubjects: z.number().min(0, "El valor debe ser mayor o igual a 0"),
+  maxFailedSubjects: z.number().min(0, "El valor debe ser mayor o igual a 0"),
 
   applyAverageApproval: z.boolean(),
 
-  basePercentage: z.number().min(0),
-  minimumSubjectPercentage: z.number().min(0),
-  maxFailedForAverage: z.number().min(0),
+  basePercentage: z.number().min(0, "El valor debe ser mayor o igual a 0"),
+  minimumSubjectPercentage: z
+    .number()
+    .min(0, "El valor debe ser mayor o igual a 0"),
+  maxFailedForAverage: z.number().min(0, "El valor debe ser mayor o igual a 0"),
 
   requiredSubjects: z.array(z.string()),
 })

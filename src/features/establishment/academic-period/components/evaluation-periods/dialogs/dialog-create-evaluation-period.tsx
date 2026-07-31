@@ -217,7 +217,7 @@ export function CreateEvaluationPeriodDialog({
                 field.state.meta.isTouched && !field.state.meta.isValid
               return (
                 <Field variant="outlined" data-invalid={isInvalid}>
-                  <FieldLabel htmlFor={field.name}>Código</FieldLabel>
+                  <FieldLabel htmlFor={field.name}>Código*</FieldLabel>
                   <Input
                     id={field.name}
                     type="number"
@@ -240,7 +240,7 @@ export function CreateEvaluationPeriodDialog({
                 field.state.meta.isTouched && !field.state.meta.isValid
               return (
                 <Field variant="outlined" data-invalid={isInvalid}>
-                  <FieldLabel htmlFor={field.name}>Nombre</FieldLabel>
+                  <FieldLabel htmlFor={field.name}>Nombre*</FieldLabel>
                   <Input
                     id={field.name}
                     placeholder="ej. Primer periodo"
@@ -261,7 +261,7 @@ export function CreateEvaluationPeriodDialog({
                 field.state.meta.isTouched && !field.state.meta.isValid
               return (
                 <Field variant="outlined" data-invalid={isInvalid}>
-                  <FieldLabel htmlFor={field.name}>Abreviación</FieldLabel>
+                  <FieldLabel htmlFor={field.name}>Abreviación*</FieldLabel>
                   <Input
                     id={field.name}
                     placeholder="ej. PE1"
@@ -292,7 +292,7 @@ export function CreateEvaluationPeriodDialog({
                 field.state.meta.isTouched && !field.state.meta.isValid
               return (
                 <Field variant="outlined" data-invalid={isInvalid}>
-                  <FieldLabel htmlFor={field.name}>Peso porcentual (%)</FieldLabel>
+                  <FieldLabel htmlFor={field.name}>Peso porcentual (%)*</FieldLabel>
                   {/* El sufijo "%" hace explícita la unidad del valor, que de
                       otro modo se lee como un número suelto. */}
                   <InputGroup className="h-10 rounded-md border border-input px-3 hover:border-ring has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20 has-[[data-slot][aria-invalid=true]]:border-red">
@@ -324,7 +324,7 @@ export function CreateEvaluationPeriodDialog({
                 field.state.meta.isTouched && !field.state.meta.isValid
               return (
                 <Field variant="outlined" data-invalid={isInvalid}>
-                  <FieldLabel htmlFor={field.name}>Fecha inicio</FieldLabel>
+                  <FieldLabel htmlFor={field.name}>Fecha inicio*</FieldLabel>
                   <DatePicker
                     mode="date"
                     id={field.name}
@@ -347,7 +347,7 @@ export function CreateEvaluationPeriodDialog({
                 field.state.meta.isTouched && !field.state.meta.isValid
               return (
                 <Field variant="outlined" data-invalid={isInvalid}>
-                  <FieldLabel htmlFor={field.name}>Fecha fin</FieldLabel>
+                  <FieldLabel htmlFor={field.name}>Fecha fin*</FieldLabel>
                   <DatePicker
                     mode="date"
                     id={field.name}
@@ -374,7 +374,7 @@ export function CreateEvaluationPeriodDialog({
                   data-invalid={isInvalid}
                   className="sm:col-span-3"
                 >
-                  <FieldLabel htmlFor={field.name}>Estado</FieldLabel>
+                  <FieldLabel htmlFor={field.name}>Estado*</FieldLabel>
                   <Select
                     value={field.state.value}
                     onValueChange={(value) =>
@@ -405,18 +405,32 @@ export function CreateEvaluationPeriodDialog({
           <DialogClose render={<Button type="button" variant="ghost" />}>
             Cancelar
           </DialogClose>
-          <Button
-            type="submit"
-            color="primary"
-            form={FORM_ID}
-            disabled={isSaving}
-            aria-busy={isSaving}
-          >
-            {isSaving && (
-              <SpinnerIcon data-icon="inline-start" className="animate-spin" />
-            )}
-            {isEditing ? "Guardar" : "Agregar"}
-          </Button>
+          <form.Subscribe selector={(state) => state.values}>
+            {(values) => {
+              const allRequiredFilled =
+                Number(values.codigo) > 0 &&
+                values.nombre.trim().length > 0 &&
+                values.abreviacion.trim().length > 0 &&
+                values.startDate.length > 0 &&
+                values.endDate.length > 0 &&
+                !Number.isNaN(values.peso) &&
+                values.estado.length > 0
+              return (
+                <Button
+                  type="submit"
+                  color="primary"
+                  form={FORM_ID}
+                  disabled={isSaving || !allRequiredFilled}
+                  aria-busy={isSaving}
+                >
+                  {isSaving && (
+                    <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+                  )}
+                  {isEditing ? "Guardar" : "Agregar"}
+                </Button>
+              )
+            }}
+          </form.Subscribe>
         </DialogFooter>
       </DialogContent>
     </Dialog>
