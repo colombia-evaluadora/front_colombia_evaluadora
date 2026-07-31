@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 
-import { useDeleteAcademicPeriod } from "../../../api/mutations/academic-period/delete-academic-period"
+import { useDeleteAcademicPeriodsBulk } from "../../../api/mutations/academic-period/delete-academic-periods-bulk"
 
 interface DeleteSelectedAcademicPeriodsDialogProps {
   selectedIds: string[]
@@ -29,30 +29,20 @@ export function DeleteSelectedAcademicPeriodsDialog({
 }: DeleteSelectedAcademicPeriodsDialogProps) {
   const [open, setOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
-  const deleteMutation = useDeleteAcademicPeriod()
+  const bulkDelete = useDeleteAcademicPeriodsBulk()
   const count = selectedIds.length
 
   async function handleDelete() {
     setSubmitting(true)
-    // Borrado en lote reusando el delete por periodo. Envolvemos cada uno
-    // para que un fallo puntual no corte a los demás.
     const ids = selectedIds.map((id) => Number(id)).filter(Number.isFinite)
-    const results = await Promise.all(
-      ids.map((id) =>
-        deleteMutation
-          .mutateAsync(id)
-          .catch(() => ({ status: "error" as const, message: "" }))
-      )
-    )
+    // Una sola request atómica.
+    const result = await bulkDelete
+      .mutateAsync(ids)
+      .catch(() => ({ status: "error" as const, message: "" }))
     setSubmitting(false)
 
-    const failed = results.filter((result) => result.status === "error").length
-    if (failed > 0) {
-      toast.error(
-        failed === ids.length
-          ? "No se pudieron eliminar los periodos seleccionados."
-          : `No se pudieron eliminar ${failed} de ${ids.length} periodo(s).`
-      )
+    if (result.status === "error") {
+      toast.error("No se pudieron eliminar los periodos seleccionados.")
     } else {
       toast.success(`${ids.length} periodo(s) eliminado(s).`)
     }
