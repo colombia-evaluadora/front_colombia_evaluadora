@@ -83,7 +83,7 @@ export function CampusesDataTable() {
     <>
       <div className="mb-6 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <div className="grid w-full gap-4 md:grid-cols-[minmax(18rem,1fr)_minmax(12rem,16rem)]">
-          <Field orientation="horizontal" className="w-full max-w-full">
+          <Field orientation="horizontal" variant="outlined" className="w-full max-w-full">
             <FieldLabel htmlFor="campus-search">Buscar</FieldLabel>
             <Input
               id="campus-search"
@@ -97,7 +97,7 @@ export function CampusesDataTable() {
               placeholder="Buscar por sede o código DANE"
             />
           </Field>
-          <Field orientation="horizontal" className="w-full max-w-full">
+          <Field orientation="horizontal" variant="outlined" className="w-full max-w-full">
             <FieldLabel htmlFor="campus-zone">Zona</FieldLabel>
             <Select
               value={filters.zones[0] ?? ""}

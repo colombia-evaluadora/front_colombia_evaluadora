@@ -65,7 +65,7 @@ export function EmployeeAdditionalInfoForm({ value, onChange }: EmployeeAddition
 
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-      <Field orientation="vertical">
+      <Field orientation="vertical" variant="outlined">
         <FieldLabel htmlFor="employee-class">Clase de funcionario</FieldLabel>
         <Select
           id="employee-class"
@@ -96,7 +96,7 @@ export function EmployeeAdditionalInfoForm({ value, onChange }: EmployeeAddition
         </Select>
       </Field>
 
-      <Field orientation="vertical">
+      <Field orientation="vertical" variant="outlined">
         <FieldLabel htmlFor="education-level">Nivel educativo de enseñanza</FieldLabel>
         <Select
           id="education-level"
@@ -127,7 +127,7 @@ export function EmployeeAdditionalInfoForm({ value, onChange }: EmployeeAddition
         </Select>
       </Field>
 
-      <Field orientation="vertical">
+      <Field orientation="vertical" variant="outlined">
         <FieldLabel htmlFor="employee-grade">Grado escalafón</FieldLabel>
         <Select
           id="employee-grade"
@@ -158,7 +158,7 @@ export function EmployeeAdditionalInfoForm({ value, onChange }: EmployeeAddition
         </Select>
       </Field>
 
-      <Field orientation="vertical">
+      <Field orientation="vertical" variant="outlined">
         <FieldLabel htmlFor="highest-education-level">Ultimo nivel educativo aprobado</FieldLabel>
         <Select
           id="highest-education-level"
@@ -189,7 +189,7 @@ export function EmployeeAdditionalInfoForm({ value, onChange }: EmployeeAddition
         </Select>
       </Field>
 
-      <Field orientation="vertical">
+      <Field orientation="vertical" variant="outlined">
         <FieldLabel htmlFor="funding-source">Fuente de recursos</FieldLabel>
         <Select
           id="funding-source"
@@ -220,7 +220,7 @@ export function EmployeeAdditionalInfoForm({ value, onChange }: EmployeeAddition
         </Select>
       </Field>
 
-      <Field orientation="vertical">
+      <Field orientation="vertical" variant="outlined">
         <FieldLabel htmlFor="functional-position">Cargo funcional</FieldLabel>
         <Select
           id="functional-position"
@@ -251,7 +251,7 @@ export function EmployeeAdditionalInfoForm({ value, onChange }: EmployeeAddition
         </Select>
       </Field>
 
-      <Field orientation="vertical">
+      <Field orientation="vertical" variant="outlined">
         <FieldLabel htmlFor="employment-type">Tipo de vinculación</FieldLabel>
         <Select
           id="employment-type"
@@ -282,7 +282,7 @@ export function EmployeeAdditionalInfoForm({ value, onChange }: EmployeeAddition
         </Select>
       </Field>
 
-      <Field orientation="vertical" className="md:col-span-2">
+      <Field orientation="vertical" variant="outlined" className="md:col-span-2">
         <FieldLabel htmlFor="employee-address">Dirección</FieldLabel>
         <Input
           id="employee-address"

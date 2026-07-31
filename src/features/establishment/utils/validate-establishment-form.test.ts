@@ -18,13 +18,31 @@ function createPerson(overrides: Partial<Person> = {}): Person {
     email: "person@example.com",
     phone: "3000000000",
     password: "12345678",
-    confirmPassword: "12345678",
     ...overrides,
   }
 }
 
-function createEstablishmentValues(overrides: Partial<EstablishmentDetails> = {}): EstablishmentDetails {
+/**
+ * Persona vacía: representa el caso "no se asignó rector/secretaria".
+ * Como los 4 mínimos están vacíos, NO debe disparar errores de validación.
+ */
+function createEmptyPerson(): Person {
   return {
+    id: "",
+    documentType: { id: "", code: "", name: "" },
+    identification: "",
+    firstName: "",
+    lastName: "",
+    birthDate: "",
+    gender: { id: "", code: "", name: "" },
+    email: "",
+    phone: "",
+    password: "",
+  }
+}
+
+function createEstablishmentValues(overrides: Partial<EstablishmentDetails> = {}): EstablishmentDetails {
+  const defaults: EstablishmentDetails = {
     id: "establishment-1",
     basicInfo: {
       name: "I.E. Prueba",
@@ -40,61 +58,101 @@ function createEstablishmentValues(overrides: Partial<EstablishmentDetails> = {}
         department: { id: "11", code: "11", name: "Bogotá" },
       },
       zone: { id: "urbana", code: "URBANA", name: "Urbana" },
-      district: { id: "district-1", code: "01", name: "Distrito 1" },
+      district: { id: "", code: "", name: "" },
       commune: { id: "", code: "", name: "" },
-      locality: { id: "locality-1", code: "01", name: "Localidad 1" },
-      address: "Calle 123",
+      locality: { id: "", code: "", name: "" },
+      address: "",
     },
     contact: {
-      email: "test@example.com",
+      email: "",
       website: "",
-      phone: "3000000000",
-      fax: "3000000001",
+      phone: "",
+      fax: "",
     },
     additionalInfo: {
-      approvalResolution: "RES-001",
-      teachingLanguage: { id: "es", code: "ES", name: "Español" },
-      calendar: { id: "a", code: "A", name: "Calendario A" },
-      costRegime: { id: "libertad-vigilada", code: "LIBERTAD_VIGILADA", name: "Libertad Vigilada" },
-      populationGender: { id: "m", code: "M", name: "Masculino" },
-      tuitionRange: { id: "menor-06", code: "<0.6", name: "Menor de 0.6 SMLV" },
-      disabilityType: { id: "na", code: "NA", name: "No aplica" },
-      operatingLicense: true,
-      licenseStatus: { id: "vigente", code: "VIGENTE", name: "Vigente" },
+      approvalResolution: "",
+      teachingLanguage: { id: "", code: "", name: "" },
+      calendar: { id: "", code: "", name: "" },
+      costRegime: { id: "", code: "", name: "" },
+      populationGender: { id: "", code: "", name: "" },
+      tuitionRange: { id: "", code: "", name: "" },
+      disabilityType: { id: "", code: "", name: "" },
+      operatingLicense: false,
+      licenseStatus: { id: "", code: "", name: "" },
       licenseDate: null,
       ethnicAttention: false,
       giftedAttention: false,
       subsidy: false,
     },
-    principal: createPerson(),
-    secretary: createPerson({
-      id: "secretary-1",
-      firstName: "María",
-      lastName: "Gómez",
-      email: "secretary@example.com",
-      phone: "3000000001",
-      gender: { id: "f", code: "F", name: "Femenino" },
-    }),
+    principal: createEmptyPerson(),
+    secretary: createEmptyPerson(),
+  }
+
+  return {
+    ...defaults,
     ...overrides,
+    basicInfo: { ...defaults.basicInfo, ...overrides.basicInfo },
+    address: { ...defaults.address, ...overrides.address },
+    contact: { ...defaults.contact, ...overrides.contact },
+    additionalInfo: { ...defaults.additionalInfo, ...overrides.additionalInfo },
   }
 }
 
+const defaultConfirmPasswords = {
+  principal: "",
+  secretary: "",
+}
+
 describe("validateEstablishmentForm", () => {
-  it("allows blank second names, blank commune and blank website while rejecting other empty required fields", () => {
+  it("acepta un establecimiento vacío cuando rector y secretaria no fueron asignados", () => {
+    const values = createEstablishmentValues()
+
+    const { errors } = validateEstablishmentForm(values, defaultConfirmPasswords)
+
+    expect(errors).toEqual([])
+  })
+
+  it("rechaza cuando falta el nombre del establecimiento", () => {
     const values = createEstablishmentValues({
       basicInfo: {
-        ...createEstablishmentValues().basicInfo,
         name: "",
+        dane: "12345678",
+        nit: "900123456",
+        ownershipType: { id: "oficial", code: "OFFICIAL", name: "Oficial" },
       },
-      address: {
-        ...createEstablishmentValues().address,
-        commune: { id: "", code: "", name: "" },
-      },
-      contact: {
-        ...createEstablishmentValues().contact,
-        website: "",
-      },
+    })
+
+    const { errors } = validateEstablishmentForm(values, defaultConfirmPasswords)
+
+    expect(errors).toContain("Nombre del establecimiento")
+  })
+
+  it("rechaza cuando rector/secretaria tienen información parcial (faltan mínimos)", () => {
+    const values = createEstablishmentValues({
       principal: createPerson({
+        identification: "", // falta el número de documento
+      }),
+      secretary: createPerson({
+        id: "secretary-1",
+        firstName: "María",
+        lastName: "Gómez",
+      }),
+    })
+
+    const { errors, invalidFields } = validateEstablishmentForm(values, defaultConfirmPasswords)
+
+    expect(errors).toContain("Rector: número de documento")
+    expect(invalidFields).toContain("principal.identification")
+  })
+
+  it("acepta rector y secretaria con sólo los 4 mínimos completos", () => {
+    const values = createEstablishmentValues({
+      principal: createPerson({
+        birthDate: "",
+        email: "",
+        phone: "",
+        password: "",
+        gender: { id: "", code: "", name: "" },
         middleName: "",
         secondLastName: "",
       }),
@@ -102,33 +160,61 @@ describe("validateEstablishmentForm", () => {
         id: "secretary-1",
         firstName: "María",
         lastName: "Gómez",
-        email: "secretary@example.com",
-        phone: "3000000001",
-        gender: { id: "f", code: "F", name: "Femenino" },
+        birthDate: "",
+        email: "",
+        phone: "",
+        password: "",
+        gender: { id: "", code: "", name: "" },
         middleName: "",
         secondLastName: "",
       }),
     })
 
-    const { errors } = validateEstablishmentForm(values)
+    const { errors, invalidFields } = validateEstablishmentForm(
+      values,
+      { principal: "", secretary: "" }
+    )
 
-    expect(errors).toContain("Nombre del establecimiento")
-    expect(errors).not.toContain("Segundo nombre")
-    expect(errors).not.toContain("Segundo apellido")
-    expect(errors).not.toContain("Comuna")
-    expect(errors).not.toContain("Página web")
+    expect(errors).toEqual([])
+    expect(invalidFields).toEqual([])
   })
 
-  it("rejects mismatched passwords", () => {
+  it("rechaza contraseñas no coincidentes sólo si alguna fue escrita", () => {
     const values = createEstablishmentValues({
       principal: createPerson({
         password: "12345678",
-        confirmPassword: "87654321",
       }),
     })
 
-    const { errors } = validateEstablishmentForm(values)
+    const { errors } = validateEstablishmentForm(values, {
+      principal: "87654321",
+      secretary: "",
+    })
 
-    expect(errors).toContain("Confirmación de contraseña")
+    expect(errors).toContain("Rector: las contraseñas no coinciden")
+  })
+
+  it("no exige contraseñas si ninguno de los dos campos está lleno", () => {
+    const values = createEstablishmentValues({
+      principal: createPerson({ password: "" }),
+      secretary: createEmptyPerson(),
+    })
+
+    const { errors } = validateEstablishmentForm(values, {
+      principal: "",
+      secretary: "",
+    })
+
+    expect(errors).not.toContain("contraseña")
+  })
+
+  it("permite campos opcionales del establecimiento vacíos (contacto, complementaria)", () => {
+    const values = createEstablishmentValues()
+
+    const { errors } = validateEstablishmentForm(values, defaultConfirmPasswords)
+
+    expect(errors).not.toContain("Correo electrónico")
+    expect(errors).not.toContain("Teléfono")
+    expect(errors).not.toContain("Resolución de aprobación")
   })
 })

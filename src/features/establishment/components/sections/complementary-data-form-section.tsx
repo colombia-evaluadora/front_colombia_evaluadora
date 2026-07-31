@@ -40,7 +40,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                 Información complementaria
             </h3>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <Field orientation="vertical" data-invalid={isInvalid("additionalInfo.approvalResolution") ? "true" : undefined}>
+                    <Field orientation="vertical" variant="outlined" data-invalid={isInvalid("additionalInfo.approvalResolution") ? "true" : undefined}>
                         <FieldLabel htmlFor="approval-resolution">
                             Resolución de aprobación
                         </FieldLabel>
@@ -54,7 +54,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                         />
                     </Field>
 
-                    <Field orientation="vertical" data-invalid={isInvalid("additionalInfo.teachingLanguage") ? "true" : undefined}>
+                    <Field orientation="vertical" variant="outlined" data-invalid={isInvalid("additionalInfo.teachingLanguage") ? "true" : undefined}>
                         <FieldLabel htmlFor="teaching-language">
                             Idioma de enseñanza
                         </FieldLabel>
@@ -85,7 +85,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                     </Field>
                 </div>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <Field orientation="vertical" className="w-full" data-invalid={isInvalid("additionalInfo.calendar") ? "true" : undefined}>
+                    <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid("additionalInfo.calendar") ? "true" : undefined}>
                         <FieldLabel htmlFor="establishment-calendario">Calendario</FieldLabel>
                         <Select
                             id="establishment-calendario"
@@ -110,7 +110,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                             </SelectContent>
                         </Select>
                     </Field>
-                    <Field orientation="vertical" data-invalid={isInvalid("additionalInfo.costRegime") ? "true" : undefined}>
+                    <Field orientation="vertical" variant="outlined" data-invalid={isInvalid("additionalInfo.costRegime") ? "true" : undefined}>
                         <FieldLabel htmlFor="cost-regime">
                             Régimen de costo
                         </FieldLabel>
@@ -141,7 +141,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                     </Field>
                 </div>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <Field orientation="vertical" className="w-full" data-invalid={isInvalid("additionalInfo.populationGender") ? "true" : undefined}>
+                    <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid("additionalInfo.populationGender") ? "true" : undefined}>
                         <FieldLabel htmlFor="establishment-genero">Género de la población atendida</FieldLabel>
                         <Select
                             id="establishment-genero"
@@ -167,7 +167,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                         </Select>
                     </Field>
 
-                    <Field orientation="vertical" className="w-full" data-invalid={isInvalid("additionalInfo.tuitionRange") ? "true" : undefined}>
+                    <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid("additionalInfo.tuitionRange") ? "true" : undefined}>
                         <FieldLabel htmlFor="establishment-rango">Rango tarifas</FieldLabel>
                         <Select
                             id="establishment-rango"
@@ -194,7 +194,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                     </Field>
                 </div>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <Field orientation="vertical" data-invalid={isInvalid("additionalInfo.disabilityType") ? "true" : undefined}>
+                    <Field orientation="vertical" variant="outlined" data-invalid={isInvalid("additionalInfo.disabilityType") ? "true" : undefined}>
                         <FieldLabel htmlFor="disabilities">
                             Discapacidades atendidas
                         </FieldLabel>
@@ -224,7 +224,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                         </Select>
                     </Field>
 
-                    <Field orientation="vertical" data-invalid={isInvalid("additionalInfo.licenseStatus") ? "true" : undefined}>
+                    <Field orientation="vertical" variant="outlined" data-invalid={isInvalid("additionalInfo.licenseStatus") ? "true" : undefined}>
                         <FieldLabel htmlFor="license-status">
                             Licencia de funcionamiento
                         </FieldLabel>
@@ -255,7 +255,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                     </Field>
                 </div>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <Field orientation="vertical" className="w-full">
+                    <Field orientation="vertical" variant="outlined" className="w-full">
                         <FieldLabel>Atención a población perteneciente a etnias</FieldLabel>
                         <RadioGroup
                             value={value.ethnicAttention ? "si" : "no"}
@@ -272,7 +272,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                             </label>
                         </RadioGroup>
                     </Field>
-                    <Field orientation="vertical">
+                    <Field orientation="vertical" variant="outlined">
                         <FieldLabel htmlFor="license-date">
                             Fecha licencia
                         </FieldLabel>
@@ -286,7 +286,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                     </Field>
                 </div>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <Field orientation="vertical" className="w-full">
+                    <Field orientation="vertical" variant="outlined" className="w-full">
                         <FieldLabel>
                             Atención a población con talentos adicionales
                         </FieldLabel>
@@ -309,7 +309,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
 
                         </RadioGroup>
                     </Field>
-                    <Field orientation="vertical" className="w-full">
+                    <Field orientation="vertical" variant="outlined" className="w-full">
                         <FieldLabel>Ofrece subsidio</FieldLabel>
                         <RadioGroup
                             value={value.subsidy ? "si" : "no"}

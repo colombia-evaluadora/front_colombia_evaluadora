@@ -14,6 +14,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 
 import { paths } from "@/config/paths"
 import { EstablishmentDetailsForm } from "@/features/establishment/components/forms/form-establishment-details"
+import { useCreateEmployeePerson } from "../api/mutations/use-create-employee-person"
 import { useCreateEstablishment } from "../api/mutations/use-create-establishment"
 import { useUpdateEstablishment } from "../api/mutations/use-update-establishment"
 import type { EstablishmentDetails } from "../api/types/establishment"
@@ -39,7 +40,6 @@ function createEmptyPerson(): Person {
     email: "",
     phone: "",
     password: "",
-    confirmPassword: "",
   }
 }
 
@@ -102,6 +102,11 @@ export function AddEstablishmentPage() {
   const [validationErrors, setValidationErrors] = useState<string[]>([])
   const [invalidFields, setInvalidFields] = useState<string[]>([])
   const [hasSubmitted, setHasSubmitted] = useState(false)
+  // Confirmaciones de contraseña: estado de UI, no parte del modelo de negocio.
+  const [confirmPasswords, setConfirmPasswords] = useState<Record<string, string>>({
+    principal: "",
+    secretary: "",
+  })
 
   useEffect(() => {
     if (!isEditMode) {
@@ -109,6 +114,7 @@ export function AddEstablishmentPage() {
       setValidationErrors([])
       setInvalidFields([])
       setHasSubmitted(false)
+      setConfirmPasswords({ principal: "", secretary: "" })
       return
     }
 
@@ -119,6 +125,10 @@ export function AddEstablishmentPage() {
       setValidationErrors([])
       setInvalidFields([])
       setHasSubmitted(false)
+      setConfirmPasswords({
+        principal: existing.principal?.password ?? "",
+        secretary: existing.secretary?.password ?? "",
+      })
     }
   }, [establishmentId, isEditMode])
 
@@ -154,11 +164,58 @@ export function AddEstablishmentPage() {
     },
   })
 
+  const createPersonMutation = useCreateEmployeePerson()
+
+  /**
+   * Devuelve true si la persona ya trae al menos un dato capturado (la
+   * consideramos "presente" y por tanto debe persistirse).
+   */
+  function personHasAnyData(person: Person | null, confirmPassword: string): boolean {
+    if (!person) {
+      return false
+    }
+
+    return Boolean(
+      person.documentType?.id ||
+        person.identification.trim() ||
+        person.firstName.trim() ||
+        person.lastName.trim() ||
+        person.middleName?.trim() ||
+        person.secondLastName?.trim() ||
+        person.birthDate.trim() ||
+        person.gender?.id ||
+        person.email.trim() ||
+        person.phone.trim() ||
+        person.password.trim() ||
+        confirmPassword.trim()
+    )
+  }
+
+  async function persistPersonIfAny(
+    person: Person | null,
+    label: string,
+    confirmPassword: string
+  ): Promise<Person | null> {
+    if (!person || !personHasAnyData(person, confirmPassword)) {
+      return null
+    }
+
+    const result = await createPersonMutation.mutateAsync(person)
+
+    if (result.status === "error") {
+      toast.error(result.message || `No fue posible guardar el ${label}.`)
+      throw new Error(`person_persist_failed:${label}`)
+    }
+
+    toast.success(`${label} guardado.`)
+    return result.person
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setHasSubmitted(true)
 
-    const validation = validateEstablishmentForm(formValues)
+    const validation = validateEstablishmentForm(formValues, confirmPasswords)
     setValidationErrors(validation.errors)
     setInvalidFields(validation.invalidFields)
 
@@ -167,15 +224,48 @@ export function AddEstablishmentPage() {
       return
     }
 
+    // Persistimos rector/secretaria antes del establecimiento para que
+    // los `Person` queden con `id` en `personsDb`.
+    let nextPrincipal = formValues.principal
+    let nextSecretary = formValues.secretary
+
+    try {
+      const persistedPrincipal = await persistPersonIfAny(
+        nextPrincipal,
+        "Rector",
+        confirmPasswords["principal"] ?? ""
+      )
+      if (persistedPrincipal) {
+        nextPrincipal = persistedPrincipal
+      }
+
+      const persistedSecretary = await persistPersonIfAny(
+        nextSecretary,
+        "Secretaria",
+        confirmPasswords["secretary"] ?? ""
+      )
+      if (persistedSecretary) {
+        nextSecretary = persistedSecretary
+      }
+    } catch {
+      return
+    }
+
+    const nextValues: EstablishmentDetails = {
+      ...formValues,
+      principal: nextPrincipal,
+      secretary: nextSecretary,
+    }
+
     if (isEditMode && establishmentId) {
       await updateMutation.mutateAsync({
         establishmentId,
-        values: formValues,
+        values: nextValues,
       })
       return
     }
 
-    await createMutation.mutateAsync(formValues)
+    await createMutation.mutateAsync(nextValues)
   }
 
   const isPending = createMutation.isPending || updateMutation.isPending
@@ -234,6 +324,10 @@ export function AddEstablishmentPage() {
                     onChange={(principal) => setFormValues((current) => ({ ...current, principal }))}
                     invalidFields={invalidFields}
                     showValidation={hasSubmitted}
+                    confirmPassword={confirmPasswords["principal"] ?? ""}
+                    onConfirmPasswordChange={(value) =>
+                      setConfirmPasswords((current) => ({ ...current, principal: value }))
+                    }
                   />
                   <UserDetailsForm
                     role="SECRETARY"
@@ -242,6 +336,10 @@ export function AddEstablishmentPage() {
                     onChange={(secretary) => setFormValues((current) => ({ ...current, secretary }))}
                     invalidFields={invalidFields}
                     showValidation={hasSubmitted}
+                    confirmPassword={confirmPasswords["secretary"] ?? ""}
+                    onConfirmPasswordChange={(value) =>
+                      setConfirmPasswords((current) => ({ ...current, secretary: value }))
+                    }
                   />
                 </div>
               </AccordionContent>

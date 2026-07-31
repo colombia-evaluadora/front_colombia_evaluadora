@@ -43,7 +43,6 @@ function createPerson(): Person {
     email: faker.internet.email({ firstName, lastName }),
     phone: faker.phone.number({ style: "international" }),
     password: faker.internet.password({ length: 12 }),
-    confirmPassword: faker.internet.password({ length: 12 }),
   }
 }
 

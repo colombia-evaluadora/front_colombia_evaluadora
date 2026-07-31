@@ -90,7 +90,7 @@ export function EmployeesDataTable({ onEditEmployee }: EmployeesDataTableProps) 
     <>
       <div className="mb-6 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <div className="grid w-full gap-4 xl:grid-cols-2 2xl:grid-cols-[minmax(18rem,1fr)_repeat(3,minmax(11rem,14rem))]">
-          <Field orientation="vertical" className="w-full max-w-full">
+          <Field orientation="vertical" variant="outlined" className="w-full max-w-full">
             <FieldLabel htmlFor="employee-search">Buscar</FieldLabel>
             <Input
               id="employee-search"
@@ -105,7 +105,7 @@ export function EmployeesDataTable({ onEditEmployee }: EmployeesDataTableProps) 
             />
           </Field>
 
-          <Field orientation="vertical" className="w-full max-w-full">
+          <Field orientation="vertical" variant="outlined" className="w-full max-w-full">
             <FieldLabel htmlFor="employee-role">Rol</FieldLabel>
             <Select
               value={filters.roles[0] ?? ""}
@@ -132,7 +132,7 @@ export function EmployeesDataTable({ onEditEmployee }: EmployeesDataTableProps) 
             </Select>
           </Field>
 
-          <Field orientation="vertical" className="w-full max-w-full">
+          <Field orientation="vertical" variant="outlined" className="w-full max-w-full">
             <FieldLabel htmlFor="employee-schedule">Jornada</FieldLabel>
             <Select
               value={filters.workSchedules[0] ?? ""}
@@ -159,7 +159,7 @@ export function EmployeesDataTable({ onEditEmployee }: EmployeesDataTableProps) 
             </Select>
           </Field>
 
-          <Field orientation="vertical" className="w-full max-w-full">
+          <Field orientation="vertical" variant="outlined" className="w-full max-w-full">
             <FieldLabel htmlFor="employee-status">Estado</FieldLabel>
             <Select
               value={filters.statuses[0] ?? ""}

@@ -51,7 +51,7 @@ export function IdentificationDataFormSection({ value, onChange, invalidFields =
                         </AttachmentActions>
                     </Attachment>
                 </div>
-                <Field orientation="vertical" className="w-full" data-invalid={isInvalid("basicInfo.name") ? "true" : undefined}>
+                <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid("basicInfo.name") ? "true" : undefined}>
                     <FieldLabel htmlFor="establishment-name">Nombre del establecimiento*</FieldLabel>
                     <Input
                         id="establishment-name"
@@ -62,7 +62,7 @@ export function IdentificationDataFormSection({ value, onChange, invalidFields =
                     />
                 </Field>
 
-                <Field orientation="vertical" className="w-full" data-invalid={isInvalid("basicInfo.dane") ? "true" : undefined}>
+                <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid("basicInfo.dane") ? "true" : undefined}>
                     <FieldLabel htmlFor="establishment-dane">Código DANE*</FieldLabel>
                     <Input
                         id="establishment-dane"
@@ -73,7 +73,7 @@ export function IdentificationDataFormSection({ value, onChange, invalidFields =
                     />
                 </Field>
 
-                <Field orientation="vertical" className="w-full" data-invalid={isInvalid("basicInfo.nit") ? "true" : undefined}>
+                <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid("basicInfo.nit") ? "true" : undefined}>
                     <FieldLabel htmlFor="establishment-nit">Nit*</FieldLabel>
                     <Input
                         id="establishment-nit"
@@ -83,7 +83,7 @@ export function IdentificationDataFormSection({ value, onChange, invalidFields =
                         onChange={(event) => onChange({ ...value, nit: event.target.value })}
                     />
                 </Field>
-                <Field orientation="vertical" data-invalid={isInvalid("basicInfo.ownershipType") ? "true" : undefined}>
+                <Field orientation="vertical" variant="outlined" data-invalid={isInvalid("basicInfo.ownershipType") ? "true" : undefined}>
                     <FieldLabel htmlFor="establishment-legal-type">
                         Propiedad jurídica*
                     </FieldLabel>

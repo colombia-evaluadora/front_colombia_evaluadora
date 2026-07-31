@@ -17,7 +17,7 @@ export function ContactDataFormSection({ value, onChange, invalidFields = [], sh
                 Datos de contacto
             </h3>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                <Field orientation="vertical" className="w-full" data-invalid={isInvalid("contact.email") ? "true" : undefined}>
+                <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid("contact.email") ? "true" : undefined}>
                     <FieldLabel htmlFor="establishment-email">Correo electrónico</FieldLabel>
                     <Input
                         id="establishment-email"
@@ -28,7 +28,7 @@ export function ContactDataFormSection({ value, onChange, invalidFields = [], sh
                     />
                 </Field>
 
-                <Field orientation="vertical" className="w-full">
+                <Field orientation="vertical" variant="outlined" className="w-full">
                     <FieldLabel htmlFor="establishment-website">Página web</FieldLabel>
                     <Input
                         id="establishment-website"
@@ -38,7 +38,7 @@ export function ContactDataFormSection({ value, onChange, invalidFields = [], sh
                     />
                 </Field>
 
-                <Field orientation="vertical" className="w-full" data-invalid={isInvalid("contact.phone") ? "true" : undefined}>
+                <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid("contact.phone") ? "true" : undefined}>
                     <FieldLabel htmlFor="establishment-phone">Teléfono</FieldLabel>
                     <Input
                         id="establishment-phone"
@@ -48,7 +48,7 @@ export function ContactDataFormSection({ value, onChange, invalidFields = [], sh
                         onChange={(event) => onChange({ ...value, phone: event.target.value })}
                     />
                 </Field>
-                <Field orientation="vertical" className="w-full">
+                <Field orientation="vertical" variant="outlined" className="w-full">
                     <FieldLabel htmlFor="establishment-fax">fax</FieldLabel>
                     <Input
                         id="establishment-fax"

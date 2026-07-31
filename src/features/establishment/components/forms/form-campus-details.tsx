@@ -21,7 +21,7 @@ interface CampusDetailsFormProps {
 export function CampusDetailsForm({ value, zones, onChange }: CampusDetailsFormProps) {
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-      <Field orientation="vertical" className="w-full">
+      <Field orientation="vertical" variant="outlined" className="w-full">
         <FieldLabel htmlFor="campus-name">Nombre de la sede *</FieldLabel>
         <Input
           id="campus-name"
@@ -31,7 +31,7 @@ export function CampusDetailsForm({ value, zones, onChange }: CampusDetailsFormP
         />
       </Field>
 
-      <Field orientation="vertical" className="w-full">
+      <Field orientation="vertical" variant="outlined" className="w-full">
         <FieldLabel htmlFor="campus-dane">Código DANE antiguo de la sede *</FieldLabel>
         <Input
           id="campus-dane"
@@ -41,7 +41,7 @@ export function CampusDetailsForm({ value, zones, onChange }: CampusDetailsFormP
         />
       </Field>
 
-      <Field orientation="vertical" className="w-full">
+      <Field orientation="vertical" variant="outlined" className="w-full">
         <FieldLabel htmlFor="campus-zone">Zona *</FieldLabel>
         <Select
           value={value.zone.id}
@@ -68,7 +68,7 @@ export function CampusDetailsForm({ value, zones, onChange }: CampusDetailsFormP
         </Select>
       </Field>
 
-      <Field orientation="vertical" className="w-full">
+      <Field orientation="vertical" variant="outlined" className="w-full">
         <FieldLabel htmlFor="campus-neighborhood">Barrio</FieldLabel>
         <Input
           id="campus-neighborhood"
@@ -78,7 +78,7 @@ export function CampusDetailsForm({ value, zones, onChange }: CampusDetailsFormP
         />
       </Field>
 
-      <Field orientation="vertical" className="w-full">
+      <Field orientation="vertical" variant="outlined" className="w-full">
         <FieldLabel htmlFor="campus-commune">Comuna</FieldLabel>
         <Input
           id="campus-commune"
@@ -88,7 +88,7 @@ export function CampusDetailsForm({ value, zones, onChange }: CampusDetailsFormP
         />
       </Field>
 
-      <Field orientation="vertical" className="w-full">
+      <Field orientation="vertical" variant="outlined" className="w-full">
         <FieldLabel htmlFor="campus-address">Dirección de la sede</FieldLabel>
         <Input
           id="campus-address"
@@ -98,7 +98,7 @@ export function CampusDetailsForm({ value, zones, onChange }: CampusDetailsFormP
         />
       </Field>
 
-      <Field orientation="vertical" className="w-full">
+      <Field orientation="vertical" variant="outlined" className="w-full">
         <FieldLabel htmlFor="campus-phone">Teléfono de la sede</FieldLabel>
         <Input
           id="campus-phone"
@@ -108,7 +108,7 @@ export function CampusDetailsForm({ value, zones, onChange }: CampusDetailsFormP
         />
       </Field>
 
-      <Field orientation="vertical" className="w-full">
+      <Field orientation="vertical" variant="outlined" className="w-full">
         <FieldLabel htmlFor="campus-approval-resolution">Resolución de aprobación</FieldLabel>
         <Input
           id="campus-approval-resolution"
