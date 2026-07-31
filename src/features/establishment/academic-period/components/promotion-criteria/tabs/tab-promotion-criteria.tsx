@@ -55,6 +55,7 @@ interface TabPromotionCriteriaProps {
   hideSubmit?: boolean
   academicPeriodId?: number
   gradeId?: number
+  headingLevel?: 1 | 2 | 3 | 4 | 5 | 6
 }
 
 export interface PromotionCriteriaHandle {
@@ -65,7 +66,7 @@ export const TabPromotionCriteria = forwardRef<
   PromotionCriteriaHandle,
   TabPromotionCriteriaProps
 >(function TabPromotionCriteria(
-  { hideSubmit = false, academicPeriodId, gradeId },
+  { hideSubmit = false, academicPeriodId, gradeId, headingLevel = 3 },
   ref
 ) {
   const isGradeScope = gradeId != null
@@ -107,6 +108,7 @@ export const TabPromotionCriteria = forwardRef<
       hideSubmit={hideSubmit}
       academicPeriodId={academicPeriodId}
       gradeId={gradeId}
+      headingLevel={headingLevel}
       initialValues={criteria ?? EMPTY}
       subjectOptions={subjectOptions}
       curriculumNodes={curriculumNodes}
@@ -118,6 +120,7 @@ interface PromotionCriteriaFormProps {
   hideSubmit: boolean
   academicPeriodId?: number
   gradeId?: number
+  headingLevel: 1 | 2 | 3 | 4 | 5 | 6
   initialValues: PromotionApprovalValues
   subjectOptions: string[]
   curriculumNodes: string[]
@@ -127,9 +130,18 @@ const PromotionCriteriaForm = forwardRef<
   PromotionCriteriaHandle,
   PromotionCriteriaFormProps
 >(function PromotionCriteriaForm(
-  { hideSubmit, academicPeriodId, gradeId, initialValues, subjectOptions, curriculumNodes },
+  {
+    hideSubmit,
+    academicPeriodId,
+    gradeId,
+    headingLevel,
+    initialValues,
+    subjectOptions,
+    curriculumNodes,
+  },
   ref
 ) {
+  const HeadingTag = `h${headingLevel}` as const
   const isGradeScope = gradeId != null
 
   const savePeriodCriteria = useUpdatePromotionCriteria({
@@ -202,7 +214,9 @@ const PromotionCriteriaForm = forwardRef<
       }}
     >
       <div className="mb-4 flex items-center justify-between gap-4">
-        <h3 className="text-lg font-semibold">Parámetros de aprobación</h3>
+        <HeadingTag className="text-lg font-semibold">
+          Parámetros de aprobación
+        </HeadingTag>
         {!hideSubmit && (
           <form.Subscribe selector={(state) => state.isDirty}>
             {(isDirty) =>
@@ -332,9 +346,9 @@ const PromotionCriteriaForm = forwardRef<
 
       </div>
 
-      <h3 className="mt-8 mb-4 text-lg font-semibold">
+      <HeadingTag className="mt-8 mb-4 text-lg font-semibold">
         Aprobación por promedio
-      </h3>
+      </HeadingTag>
 
       <div className="grid gap-4 md:grid-cols-2">
 
@@ -426,9 +440,9 @@ const PromotionCriteriaForm = forwardRef<
 
       </div>
 
-      <h3 className="mt-8 mb-4 text-lg font-semibold">
+      <HeadingTag className="mt-8 mb-4 text-lg font-semibold">
         Áreas/Asignaturas obligatorias para aprobación
-      </h3>
+      </HeadingTag>
 
       <form.Field name="requiredSubjects">
         {(field) => (

@@ -60,6 +60,7 @@ interface AssignmentTransferProps {
   assigned: AssignmentSubject[]
   onAssign: (ids: string[]) => void
   onUnassign: (ids: string[]) => void
+  headingLevel?: 1 | 2 | 3 | 4 | 5 | 6
 }
 
 export function AssignmentTransfer({
@@ -67,9 +68,12 @@ export function AssignmentTransfer({
   assigned,
   onAssign,
   onUnassign,
+  headingLevel = 4,
 }: AssignmentTransferProps) {
   const [availSearch, setAvailSearch] = useState("")
   const [curSearch, setCurSearch] = useState("")
+
+  const HeadingTag = `h${headingLevel}` as const
 
   const filteredAvailable = available.filter((s) => matches(s, availSearch))
   const filteredAssigned = assigned.filter((s) => matches(s, curSearch))
@@ -79,7 +83,9 @@ export function AssignmentTransfer({
       {/* Disponibles */}
       <div className="flex flex-col gap-3">
         <div className="flex min-h-9 items-center justify-between gap-2">
-          <h4 className="text-sm font-semibold">Asignatura(s) disponible(s)</h4>
+          <HeadingTag className="text-sm font-semibold">
+            Asignatura(s) disponible(s)
+          </HeadingTag>
           {available.length > 0 && (
             <Button
               type="button"
@@ -140,7 +146,9 @@ export function AssignmentTransfer({
       {/* Actuales */}
       <div className="flex flex-col gap-3">
         <div className="flex min-h-9 items-center justify-between gap-2">
-          <h4 className="text-sm font-semibold">Asignaturas actuales</h4>
+          <HeadingTag className="text-sm font-semibold">
+            Asignaturas actuales
+          </HeadingTag>
           {assigned.length > 0 && (
             <Button
               type="button"
