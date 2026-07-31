@@ -23,6 +23,10 @@ import { evaluationPeriodStatusesHandlers } from "./academic-period/evaluation-p
 import { especialidadesHandlers } from "./academic-period/especialidades"
 import { sedesHandlers } from "./academic-period/sedes"
 import { jornadasHandlers } from "./academic-period/jornadas"
+import { establishmentHandlers } from "./establishments"
+import { campusHandlers } from "./campuses"
+import { employeeHandlers } from "./employees"
+import { catalogHandlers } from "./catalog"
 import { reservationsHandlers } from "./reservations"
 
 export const handlers = [
@@ -52,4 +56,8 @@ export const handlers = [
   ...sedesHandlers,
   ...jornadasHandlers,
   ...reservationsHandlers,
+  ...establishmentHandlers,
+  ...campusHandlers,
+  ...employeeHandlers,
+  ...catalogHandlers
 ]

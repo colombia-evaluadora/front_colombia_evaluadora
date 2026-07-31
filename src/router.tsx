@@ -30,6 +30,9 @@ import {
   tableOperationsSearchSchema,
 } from "@/features/audits/api/schema"
 import { academicPeriodsSearchSchema } from "@/features/establishment/academic-period/api/schema"
+import { establishmentsSearchSchema } from "@/features/establishment/api/establishment-schema"
+import { campusesSearchSchema } from "@/features/establishment/api/campus-schema"
+import { employeesSearchSchema } from "@/features/establishment/api/employee-schema"
 
 /*const LandingPage = lazyRouteComponent(
   () => import("@/features/landing/pages/landing-page"),
@@ -88,6 +91,30 @@ const AcademicPeriodsPage = lazyRouteComponent(
 const AcademicPeriodConfigPage = lazyRouteComponent(
   () => import("@/features/establishment/academic-period/pages/academic-period-config-page"),
   "AcademicPeriodConfigPage"
+)
+const EstablishmentsPage = lazyRouteComponent(
+  () => import("@/features/establishment/pages/establishments-page"),
+  "EstablishmentsPage"
+)
+
+const CampusesPage = lazyRouteComponent(
+  () => import("@/features/establishment/pages/campuses-page"),
+  "CampusesPage"
+)
+
+const EmployeesPage = lazyRouteComponent(
+  () => import("@/features/establishment/pages/employees-page"),
+  "EmployeesPage"
+)
+
+const AddEstablishmentPage = lazyRouteComponent(
+  () => import("@/features/establishment/pages/add-establishment-page"),
+  "AddEstablishmentPage"
+)
+
+const AddCampusPage = lazyRouteComponent(
+  () => import("@/features/establishment/pages/add-campus-page"),
+  "AddCampusPage"
 )
 
 interface RouterContext {
@@ -308,6 +335,51 @@ export const auditoriaTablaDetalleRoute = createRoute({
   component: TableOperationsPage,
 })
 
+export const establishmentsRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.establishments.general.path,
+  validateSearch: establishmentsSearchSchema,
+  component: EstablishmentsPage,
+})
+
+export const campusesRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.establishments.campuses.path,
+  validateSearch: campusesSearchSchema,
+  component: CampusesPage,
+})
+
+export const employeesRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.establishments.officials.path,
+  validateSearch: employeesSearchSchema,
+  component: EmployeesPage,
+})
+
+export const addEstablishmentRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.establishments.add.path,
+  component: AddEstablishmentPage,
+})
+
+export const editEstablishmentRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.establishments.edit.path,
+  component: AddEstablishmentPage,
+})
+
+export const addCampusRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.establishments.campuses.add.path,
+  component: AddCampusPage,
+})
+
+export const editCampusRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.establishments.campuses.edit.path,
+  component: AddCampusPage,
+})
+
 export const auditoriaSesionOperacionesRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.auditoriaSesionOperaciones.path,
@@ -386,6 +458,13 @@ const routeTree = rootRoute.addChildren([
     periodosAcademicosRoute,
     periodosAcademicosAgregarRoute,
     periodosAcademicosEditarRoute,
+    establishmentsRoute,
+    campusesRoute,
+    employeesRoute,
+    addEstablishmentRoute,
+    editEstablishmentRoute,
+    addCampusRoute,
+    editCampusRoute,
     reportesRoute,
     usuariosRoute,
     configuracionRoute,
