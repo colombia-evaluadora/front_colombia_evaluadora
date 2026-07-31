@@ -110,7 +110,7 @@ const floatingLabelVariants = cva(
     variants: {
       variant: {
         plain: "",
-        outlined: "left-2.5 top-0 -translate-y-1/2 bg-background px-1",
+        outlined: "left-2.5 top-0 -translate-y-1/2 bg-background rounded-xs px-1",
         filled: "left-3 top-2",
         standard: "left-0 top-0 -translate-y-full",
       },
