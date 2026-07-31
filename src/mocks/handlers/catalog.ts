@@ -21,6 +21,8 @@ import {
   DISABILITIES,
   LICENSE_STATUSES,
 } from "../db/catalogs/establishment"
+import { POPULATION_GENDERS } from "../db/catalogs/population-genders"
+import { ENTITY_STATUSES } from "../db/catalogs/entity-statuses"
 
 export const catalogHandlers = [
   http.get(`/api/catalogs/${CATALOGS.DOCUMENT_TYPES}`, () => {
@@ -33,6 +35,10 @@ export const catalogHandlers = [
 
   http.get(`/api/catalogs/${CATALOGS.GENDERS}`, () => {
     return HttpResponse.json(GENDERS)
+  }),
+
+  http.get(`/api/catalogs/${CATALOGS.POPULATION_GENDERS}`, () => {
+    return HttpResponse.json(POPULATION_GENDERS)
   }),
 
   http.get(`/api/catalogs/${CATALOGS.MUNICIPALITIES}`, () => {
@@ -97,5 +103,9 @@ export const catalogHandlers = [
 
   http.get(`/api/catalogs/${CATALOGS.LICENSE_STATUSES}`, () => {
     return HttpResponse.json(LICENSE_STATUSES)
+  }),
+
+  http.get(`/api/catalogs/${CATALOGS.ENTITY_STATUSES}`, () => {
+    return HttpResponse.json(ENTITY_STATUSES)
   }),
 ]

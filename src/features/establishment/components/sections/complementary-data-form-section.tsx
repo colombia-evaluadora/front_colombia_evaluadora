@@ -1,5 +1,7 @@
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { FormSectionHeading } from "@/components/form-section-heading"
+import { DatePicker } from "@/components/date-picker"
 import {
     Select,
     SelectContent,
@@ -10,10 +12,10 @@ import {
 } from "@/components/ui/select"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
-import { GENDERS } from "@/mocks/db/catalogs/genders"
 import type { CatalogItem } from "@/features/establishment/api/types/catalog"
 import { useCatalogQuery } from "../../api/query/use-catalogs"
 import { CATALOGS } from "@/lib/catalogs"
+import { formatDateValue, parseDateValue } from "@/lib/date-time-value"
 import type { EstablishmentDetails } from "../../api/types/establishment"
 
 interface ComplementaryDataFormSectionProps {
@@ -32,13 +34,14 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
     const {data: costRegimen = []} = useCatalogQuery<CatalogItem>(CATALOGS.COST_REGIMEN)
     const {data: disabilities = []} = useCatalogQuery<CatalogItem>(CATALOGS.DISABILITIES)
     const {data: licenseStatuses = []} = useCatalogQuery<CatalogItem>(CATALOGS.LICENSE_STATUSES)
+    const {data: populationGenders = []} = useCatalogQuery<CatalogItem>(CATALOGS.POPULATION_GENDERS)
 
     return(
         <>
             {/* Complementary information subsection */}
-            <h3 className="text-base font-semibold">
+            <FormSectionHeading>
                 Información complementaria
-            </h3>
+            </FormSectionHeading>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <Field orientation="vertical" variant="outlined" data-invalid={isInvalid("additionalInfo.approvalResolution") ? "true" : undefined}>
                         <FieldLabel htmlFor="approval-resolution">
@@ -148,7 +151,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                             aria-invalid={isInvalid("additionalInfo.populationGender")}
                             value={value.populationGender.id}
                             onValueChange={(selectedValue) => {
-                                const option = GENDERS.find((item) => item.id === selectedValue)
+                                const option = populationGenders.find((item) => item.id === selectedValue)
                                 onChange({ ...value, populationGender: option ?? { id: selectedValue ?? "", code: selectedValue ?? "", name: selectedValue ?? "" } })
                             }}
                         >
@@ -157,7 +160,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectGroup>
-                                    {GENDERS.map((g: CatalogItem) => (
+                                    {populationGenders.map((g: CatalogItem) => (
                                         <SelectItem key={g.id} value={g.id}>
                                             {g.name}
                                         </SelectItem>
@@ -277,11 +280,11 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                             Fecha licencia
                         </FieldLabel>
 
-                        <Input
+                        <DatePicker
                             id="license-date"
-                            type="date"
-                            value={value.licenseDate ?? ""}
-                            onChange={(event) => onChange({ ...value, licenseDate: event.target.value || null })}
+                            mode="date"
+                            value={parseDateValue(value.licenseDate)}
+                            onChange={(date) => onChange({ ...value, licenseDate: formatDateValue(date) })}
                         />
                     </Field>
                 </div>

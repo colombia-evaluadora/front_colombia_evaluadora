@@ -1,5 +1,6 @@
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { FormSectionHeading } from "@/components/form-section-heading"
 import {
     Select,
     SelectContent,
@@ -28,9 +29,9 @@ export function DomicilioDataFormSection({ value, onChange, invalidFields = [], 
 
     return (
         <>
-            <h3 className="text-base font-semibold">
+            <FormSectionHeading>
                 Domicilio
-            </h3>
+            </FormSectionHeading>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid("address.municipality") ? "true" : undefined}>
                     <FieldLabel htmlFor="establishment-municipio">Municipio*</FieldLabel>

@@ -8,7 +8,6 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
-  AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
@@ -73,11 +72,8 @@ export function DeleteEstablishmentDialog({
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>
-            ¿Está seguro de que desea eliminar el establecimiento educativo seleccionado?
+            ¿Está seguro de que desea eliminar permanentemente el establecimiento educativo {establishment.name}? Esta acción no se puede deshacer.
           </AlertDialogTitle>
-          <AlertDialogDescription>
-            Se eliminará permanentemente {establishment.name}. Esta acción no se puede deshacer.
-          </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogAction

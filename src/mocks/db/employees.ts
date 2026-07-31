@@ -122,7 +122,7 @@ export function createEmployeeRow(employee: Employee): EmployeeListItem {
   }
 }
 
-const employeeRecords = Array.from({ length: 200 }, (_, index) => {
+const employeeRecords = Array.from({ length: 20 }, (_, index) => {
   const employee = createEmployee(index + 1)
 
   return {

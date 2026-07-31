@@ -160,6 +160,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
   const employeeQuery = useEmployeeQuery(employeeId ?? null, open && isEditMode)
   const { data: roles = [] } = useCatalogQuery<CatalogItem>(CATALOGS.EMPLOYEE_ROLES)
   const { data: workSchedules = [] } = useCatalogQuery<CatalogItem>(CATALOGS.WORK_SCHEDULES)
+  const { data: entityStatuses = [] } = useCatalogQuery<CatalogItem>(CATALOGS.ENTITY_STATUSES)
   const { data: campuses = [] } = useCampusesOptionsQuery()
 
   useEffect(() => {
@@ -531,8 +532,11 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    <SelectItem value="ACTIVE">Activo</SelectItem>
-                    <SelectItem value="SUSPENDED">Suspendido</SelectItem>
+                    {entityStatuses.map((status: CatalogItem) => (
+                      <SelectItem key={status.id} value={status.id}>
+                        {status.name}
+                      </SelectItem>
+                    ))}
                   </SelectGroup>
                 </SelectContent>
               </Select>

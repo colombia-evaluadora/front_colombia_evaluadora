@@ -7,7 +7,6 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
-  AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
@@ -23,11 +22,11 @@ interface DialogBulkDeleteProps<T> {
   getItemId: (item: T) => string
   getItemLabel: (item: T) => string
 
-  // Wording reutilizable: cada submódulo aporta su título / descripción /
-  // unidad ("establecimientos", "sedes", "funcionarios") para no duplicar
-  // el diálogo en cada uno. Se reusan los `AlertDialog` y `Button` del UI.
-  title: string
-  description: (count: number, sample: string[]) => string
+  // Wording reutilizable: cada submódulo aporta una función que arma el
+  // título completo (incluye los nombres de los registros a borrar y la
+  // advertencia de "no se puede deshacer"). Se reusan los `AlertDialog` y
+  // `Button` del UI.
+  buildTitle: (count: number, sample: string[]) => string
 
   // Disparado al confirmar. Devuelve una promesa; mientras esté pendiente
   // el botón de acción muestra un spinner (igual que los diálogos unitarios).
@@ -42,8 +41,7 @@ export function DialogBulkDelete<T>({
   items,
   getItemId,
   getItemLabel,
-  title,
-  description,
+  buildTitle,
   onConfirm,
   triggerLabel,
 }: DialogBulkDeleteProps<T>) {
@@ -90,10 +88,7 @@ export function DialogBulkDelete<T>({
       ) : null}
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>{title}</AlertDialogTitle>
-          <AlertDialogDescription>
-            {description(count, sample)}
-          </AlertDialogDescription>
+          <AlertDialogTitle>{buildTitle(count, sample)}</AlertDialogTitle>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogAction

@@ -8,7 +8,6 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
-  AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
@@ -71,11 +70,8 @@ export function DeleteCampusDialog({ campus }: DeleteCampusDialogProps) {
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>
-            ¿Está seguro de que desea eliminar la sede educativa seleccionada?
+            ¿Está seguro de que desea eliminar permanentemente la sede educativa {campus.name}? Esta acción no se puede deshacer.
           </AlertDialogTitle>
-          <AlertDialogDescription>
-            Se eliminará permanentemente {campus.name}. Esta acción no se puede deshacer.
-          </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogAction

@@ -13,6 +13,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { ShieldIcon } from "@/components/ui/icons"
+import { FormSectionHeading } from "@/components/form-section-heading"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
@@ -46,9 +47,9 @@ export function IdentificationDataFormSection({ value, onChange, invalidFields =
 
     return (
         <>
-            <h3 className="text-base font-semibold">
+            <FormSectionHeading>
                 Datos de identificación
-            </h3>
+            </FormSectionHeading>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 <div className="row-span-2">
                     <FileUpload

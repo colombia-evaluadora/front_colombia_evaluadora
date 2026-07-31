@@ -49,7 +49,11 @@ export function CampusDetailsForm({ value, zones, onChange }: CampusDetailsFormP
             const option = zones.find((item) => item.id === selectedValue)
             onChange({
               ...value,
-              zone: option ?? { id: selectedValue, code: selectedValue, name: selectedValue },
+              zone: option ?? {
+                id: selectedValue ?? "",
+                code: selectedValue ?? "",
+                name: selectedValue ?? "",
+              },
             })
           }}
         >
