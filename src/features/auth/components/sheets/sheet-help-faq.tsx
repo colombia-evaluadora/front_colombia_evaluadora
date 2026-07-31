@@ -91,14 +91,14 @@ function HelpFaqSection({ title, faqs }: { title: string; faqs: HelpFaq[] }) {
       <Accordion className="rounded-lg border">
         {faqs.map((faq) => (
           <AccordionItem key={faq.id} value={faq.id}>
-            <AccordionTrigger className="items-center gap-3 px-4">
+            <AccordionTrigger>
               <ItemMedia variant="icon-lg">{faq.icon}</ItemMedia>
               <ItemContent>
                 <ItemTitle>{faq.title}</ItemTitle>
                 <ItemDescription>{faq.description}</ItemDescription>
               </ItemContent>
             </AccordionTrigger>
-            <AccordionContent className="px-4 text-muted-foreground">{faq.body}</AccordionContent>
+            <AccordionContent>{faq.body}</AccordionContent>
           </AccordionItem>
         ))}
       </Accordion>
