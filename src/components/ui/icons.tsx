@@ -95,7 +95,6 @@ import {
   MdOutlineSmartDisplay,
   MdSupportAgent,
   MdTableChart,
-  MdOutlineInbox,
   MdTimelapse,
   MdTransgender,
   MdTrendingUp,

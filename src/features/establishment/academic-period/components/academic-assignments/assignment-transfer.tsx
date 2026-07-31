@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { ArrowLeftIcon, ArrowRightIcon, TrayIcon } from "@/components/ui/icons"
+import { ArrowLeftIcon, ArrowRightIcon, FolderOpenIcon } from "@/components/ui/icons"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -37,7 +37,7 @@ function SearchInput({
 function EmptyState() {
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-2 text-center text-muted-foreground">
-      <TrayIcon className="size-8" weight="light" />
+      <FolderOpenIcon className="size-8" weight="light" />
       <span className="text-sm">Sin datos</span>
     </div>
   )
