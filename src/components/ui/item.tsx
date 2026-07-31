@@ -6,15 +6,31 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 import { Separator } from "@/components/ui/separator"
 
-function ItemGroup({ className, ...props }: React.ComponentProps<"div">) {
+const itemGroupVariants = cva("group/item-group flex w-full flex-col", {
+  variants: {
+    variant: {
+      default: "gap-4 has-data-[size=sm]:gap-2.5 has-data-[size=xs]:gap-2",
+      // Lista unida: un borde exterior, separadores internos y esquinas
+      // redondeadas solo en el primer/último item. El consumidor no calcula
+      // índices ni pisa `rounded-*` item por item.
+      list: "gap-0 overflow-hidden rounded-lg border [&>[data-slot=item]]:rounded-none [&>[data-slot=item]]:border-transparent [&>[data-slot=item]:not(:last-child)]:border-b-border",
+    },
+  },
+  defaultVariants: {
+    variant: "default",
+  },
+})
+
+function ItemGroup({
+  className,
+  variant = "default",
+  ...props
+}: React.ComponentProps<"div"> & VariantProps<typeof itemGroupVariants>) {
   return (
     <div
       role="list"
       data-slot="item-group"
-      className={cn(
-        "group/item-group flex w-full flex-col gap-4 has-data-[size=sm]:gap-2.5 has-data-[size=xs]:gap-2",
-        className,
-      )}
+      className={cn(itemGroupVariants({ variant, className }))}
       {...props}
     />
   )
@@ -84,6 +100,10 @@ const itemMediaVariants = cva(
       variant: {
         default: "bg-transparent",
         icon: "[&_svg:not([class*='size-'])]:size-4",
+        // Ícono grande y centrado vertical incluso con descripción presente
+        // (`icon` se alinea arriba para listas densas).
+        "icon-lg":
+          "self-center group-has-data-[slot=item-description]/item:translate-y-0 group-has-data-[slot=item-description]/item:self-center [&_svg:not([class*='size-'])]:size-6",
         image:
           "size-10 overflow-hidden rounded-none group-data-[size=sm]/item:size-8 group-data-[size=xs]/item:size-6 group-data-[size=xs]/item:rounded-none [&_img]:size-full [&_img]:object-cover",
       },
@@ -127,7 +147,7 @@ function ItemTitle({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="item-title"
       className={cn(
-        "line-clamp-1 flex w-fit items-center gap-2 text-xs leading-snug font-semibold uppercase underline-offset-4",
+        "line-clamp-1 flex w-fit items-center gap-2 text-sm font-semibold underline-offset-4",
         className,
       )}
       {...props}
