@@ -22,8 +22,7 @@ export function useDeleteAreaSubject({
     onSuccess: (...args) => {
       queryClient.invalidateQueries({ queryKey: ["area-subjects"] })
       queryClient.invalidateQueries({ queryKey: ["subjects"] })
-      // El back borra en cascada las asignaturas del plan de estudio; refrescamos
-      // esa query para que la tabla del plan también se actualice.
+      queryClient.invalidateQueries({ queryKey: ["especialidades"] })
       queryClient.invalidateQueries({ queryKey: ["study-plans"] })
       mutationConfig?.onSuccess?.(...args)
     },

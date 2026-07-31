@@ -90,8 +90,6 @@ export function AreaSubjectFormDialog({
     () => areaSubject?.subjects.map(itemToDraft) ?? []
   )
   const [draft, setDraft] = useState<SubjectDraft>(emptyDraft())
-  // Edición inline de una asignatura ya agregada (estilo rating-scale): la fila
-  // pasa a inputs con guardar/cancelar.
   const {
     editingKey: editingIndex,
     draft: editDraft,
@@ -99,7 +97,8 @@ export function AreaSubjectFormDialog({
     patchDraft: patchEditDraft,
     cancelEdit: cancelEditSubject,
   } = useRowEdit<SubjectDraft>()
-  const { data: backendEspecialidades = [] } = useEspecialidadesQuery()
+  const { data: backendEspecialidades = [] } =
+    useEspecialidadesQuery(academicPeriodId)
   const [especialidades, setEspecialidades] = useState<string[]>(
     backendEspecialidades
   )

@@ -24,6 +24,7 @@ export function useCreateAreaSubject({
     onSuccess: (...args) => {
       queryClient.invalidateQueries({ queryKey: ["area-subjects"] })
       queryClient.invalidateQueries({ queryKey: ["subjects"] })
+      queryClient.invalidateQueries({ queryKey: ["especialidades"] })
       mutationConfig?.onSuccess?.(...args)
     },
   })
