@@ -83,9 +83,17 @@ export function TabAcademicAssignments({
   }
 
   const toggleExpand = useCallback((teacher: Teacher) => {
-    setExpanded((prev) =>
-      prev?.documento === teacher.documento ? null : teacher
-    )
+    setExpanded((prev) => {
+      const isClosing = prev?.documento === teacher.documento
+      if (isClosing) {
+        setAssignedIds((current) => {
+          const { [teacher.documento]: _drop, ...rest } = current
+          return rest
+        })
+        return null
+      }
+      return teacher
+    })
   }, [])
 
   const columns = useMemo(

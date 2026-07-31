@@ -263,54 +263,63 @@ export const ScheduleBuilder = forwardRef<
       </Field>
 
       <div className="flex flex-wrap gap-2">
-        {subjects.length === 0 && (
+        {!gradeGroup ? (
           <p className="text-xs text-muted-foreground">
-            No hay asignaturas en el plan de estudio de este periodo. Agregá
-            asignaturas en la pestaña "Plan de estudio" para armar el horario.
+            Seleccioná un grado/grupo para ver las asignaturas disponibles.
           </p>
-        )}
-        {subjects.map((subject) => {
-          const remaining = subject.blocks - (placedCounts[subject.id] ?? 0)
-          if (remaining <= 0) return null
+        ) : (
+          <>
+            {subjects.length === 0 && (
+              <p className="text-xs text-muted-foreground">
+                No hay asignaturas en el plan de estudio de este periodo. Agregá
+                asignaturas en la pestaña "Plan de estudio" para armar el
+                horario.
+              </p>
+            )}
+            {subjects.map((subject) => {
+              const remaining = subject.blocks - (placedCounts[subject.id] ?? 0)
+              if (remaining <= 0) return null
 
-          const styles = subjectStyles(subject.color)
-          return (
-            <div
-              key={subject.id}
-              draggable
-              onDragStart={(e) => {
-                e.dataTransfer.setData("text/subject", subject.id)
-                e.dataTransfer.effectAllowed = "copy"
-                setDraggingId(subject.id)
-              }}
-              onDragEnd={() => {
-                setDraggingId(null)
-                setDragOver(null)
-              }}
-              style={styles.container}
-              className={cn(
-                "flex cursor-grab items-center gap-2 border px-2.5 py-1 text-xs font-medium select-none active:cursor-grabbing",
-                draggingId === subject.id && "opacity-50"
+              const styles = subjectStyles(subject.color)
+              return (
+                <div
+                  key={subject.id}
+                  draggable
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData("text/subject", subject.id)
+                    e.dataTransfer.effectAllowed = "copy"
+                    setDraggingId(subject.id)
+                  }}
+                  onDragEnd={() => {
+                    setDraggingId(null)
+                    setDragOver(null)
+                  }}
+                  style={styles.container}
+                  className={cn(
+                    "flex cursor-grab items-center gap-2 border px-2.5 py-1 text-xs font-medium select-none active:cursor-grabbing",
+                    draggingId === subject.id && "opacity-50"
+                  )}
+                >
+                  <span>{subject.name}</span>
+                  <span
+                    style={styles.count}
+                    className="px-1.5 py-0.5 text-[10px] leading-none font-bold"
+                  >
+                    {remaining}B
+                  </span>
+                </div>
+              )
+            })}
+            {subjects.length > 0 &&
+              subjects.every(
+                (subject) => (placedCounts[subject.id] ?? 0) >= subject.blocks
+              ) && (
+                <p className="text-xs text-muted-foreground">
+                  Todas las materias fueron asignadas.
+                </p>
               )}
-            >
-              <span>{subject.name}</span>
-              <span
-                style={styles.count}
-                className="px-1.5 py-0.5 text-[10px] leading-none font-bold"
-              >
-                {remaining}B
-              </span>
-            </div>
-          )
-        })}
-        {subjects.length > 0 &&
-          subjects.every(
-            (subject) => (placedCounts[subject.id] ?? 0) >= subject.blocks
-          ) && (
-            <p className="text-xs text-muted-foreground">
-              Todas las materias fueron asignadas.
-            </p>
-          )}
+          </>
+        )}
       </div>
 
       {slots.length === 0 ? (

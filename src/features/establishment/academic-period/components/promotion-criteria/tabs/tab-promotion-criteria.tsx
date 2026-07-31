@@ -259,6 +259,7 @@ const PromotionCriteriaForm = forwardRef<
 
               <Input
                 type="number"
+                min={0}
                 placeholder="Ingrese un valor"
                 value={field.state.value}
                 onChange={(e) =>
@@ -278,6 +279,7 @@ const PromotionCriteriaForm = forwardRef<
 
               <Input
                 type="number"
+                min={0}
                 placeholder="Ingrese un valor"
                 value={field.state.value}
                 onChange={(e) =>
@@ -297,6 +299,7 @@ const PromotionCriteriaForm = forwardRef<
 
               <Input
                 type="number"
+                min={0}
                 placeholder="Ingrese un valor"
                 value={field.state.value}
                 onChange={(e) =>
@@ -316,6 +319,7 @@ const PromotionCriteriaForm = forwardRef<
 
               <Input
                 type="number"
+                min={0}
                 placeholder="Ingrese un valor"
                 value={field.state.value}
                 onChange={(e) =>
@@ -369,6 +373,7 @@ const PromotionCriteriaForm = forwardRef<
 
               <Input
                 type="number"
+                min={0}
                 placeholder="Ingrese un valor"
                 value={field.state.value}
                 onChange={(e) =>
@@ -388,6 +393,7 @@ const PromotionCriteriaForm = forwardRef<
 
               <Input
                 type="number"
+                min={0}
                 placeholder="Ingrese un valor"
                 value={field.state.value}
                 onChange={(e) =>
@@ -407,6 +413,7 @@ const PromotionCriteriaForm = forwardRef<
 
               <Input
                 type="number"
+                min={0}
                 placeholder="Ingrese un valor"
                 value={field.state.value}
                 onChange={(e) =>

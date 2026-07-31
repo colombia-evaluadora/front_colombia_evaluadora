@@ -164,7 +164,7 @@ export const navigationMenu: RouteResponseDto[] = [
     roleIds: [1, 2],
   },
   {
-    "id": 12,
+    "id": 17,
     "name": "Establecimiento Educativo",
     "icon": "School-Icon",
     "path": "/app/establecimiento-educativo",
@@ -180,7 +180,7 @@ export const navigationMenu: RouteResponseDto[] = [
     "path": "/app/establecimiento-educativo/general",
     "menuOrder": 0,
     "type": "ITEM",
-    "idParent": 12,
+    "idParent": 17,
     "roleIds": [1, 2]
   },
   {
@@ -190,7 +190,7 @@ export const navigationMenu: RouteResponseDto[] = [
     "path": "/app/establecimiento-educativo/sedes",
     "menuOrder": 1,
     "type": "ITEM",
-    "idParent": 12,
+    "idParent": 17,
     "roleIds": [1, 2]
   },
   {
@@ -200,7 +200,7 @@ export const navigationMenu: RouteResponseDto[] = [
     "path": "/app/establecimiento-educativo/funcionarios",
     "menuOrder": 2,
     "type": "ITEM",
-    "idParent": 12,
+    "idParent": 17,
     "roleIds": [1, 2]
   },
   {
@@ -210,7 +210,7 @@ export const navigationMenu: RouteResponseDto[] = [
     "path": "/app/establecimiento-educativo/periodos",
     "menuOrder": 3,
     "type": "ITEM",
-    "idParent": 12,
+    "idParent": 17,
     "roleIds": [1, 2]
   }
 ]

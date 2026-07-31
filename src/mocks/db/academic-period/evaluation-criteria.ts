@@ -15,27 +15,4 @@ export const DEFAULT_EVALUATION_CRITERIA: EvaluationCriteria = {
   initialGrade: "1.0",
 }
 
-export const evaluationCriteriaDb: Record<number, EvaluationCriteria> = {
-  1: {
-    gradingFormat: "0 - 100",
-    periodCalculationElements: "Actividades + examen",
-    subjectGradeCriteria: "Promedio ponderado",
-    finalGradeCriteria: "Promedio ponderado por peso",
-    areaGradeCriteria: "Promedio de asignaturas",
-    studentWithoutGradesPerformance: "No evaluado",
-    maxRecoveryGrade: "3.0",
-    roundingMode: "Redondear al más cercano",
-    initialGrade: "1.0",
-  },
-  2: {
-    gradingFormat: "0 - 10",
-    periodCalculationElements: "Ponderado por competencias",
-    subjectGradeCriteria: "Promedio",
-    finalGradeCriteria: "Promedio de los períodos",
-    areaGradeCriteria: "Promedio ponderado",
-    studentWithoutGradesPerformance: "Pendiente",
-    maxRecoveryGrade: "3.5",
-    roundingMode: "Truncar",
-    initialGrade: "0.0",
-  },
-}
+export const evaluationCriteriaDb: Record<number, EvaluationCriteria> = {}

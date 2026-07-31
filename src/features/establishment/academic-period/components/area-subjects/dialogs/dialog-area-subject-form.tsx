@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useMemo, useRef, useState } from "react"
 import { useForm } from "@tanstack/react-form"
 import {
   CheckIcon,
@@ -103,7 +103,14 @@ export function AreaSubjectFormDialog({
     backendEspecialidades
   )
   const [confirmOpen, setConfirmOpen] = useState(false)
+  const [successOpen, setSuccessOpen] = useState(false)
   const [sort, setSort] = useState<SortState>(null)
+
+  // Se vuelve `true` la primera vez que el usuario edita el campo
+  // "nombreInterno" a mano. Mientras siga en `false`, el campo se autorrellena
+  // cada vez que cambia "areaGeneral"; en cuanto el usuario lo toca, dejamos
+  // de pisar su valor.
+  const nombreInternoEditedRef = useRef(false)
 
   const areaDefaults: AreaSubjectFormValues = {
     areaGeneral: areaSubject?.areaGeneral ?? "",
@@ -121,6 +128,7 @@ export function AreaSubjectFormDialog({
     validators: { onSubmit: areaSubjectFormSchema },
     onSubmit: async ({ value }) => {
       const base = areaSubjectFormSchema.parse(value)
+
       const payloadSubjects: AreaSubjectItem[] = subjects.map((subject) => ({
         asignaturaGeneral: subject.asignaturaGeneral,
         nombreInterno: subject.nombreInterno || subject.asignaturaGeneral,
@@ -139,42 +147,61 @@ export function AreaSubjectFormDialog({
             subjects: payloadSubjects,
           },
         })
+
         if (result.status === "error") {
           toast.error(result.message)
           return
         }
+
         toast.success(result.message)
-      } else {
-        await createAreaSubject.mutateAsync({
-          areaGeneral: base.areaGeneral,
-          nombreInterno: base.nombreInterno,
-          abreviacion: base.abreviacion,
-          ordenReportes: base.ordenReportes,
-          subjects: payloadSubjects,
-          academicPeriodId,
-        })
-        toast.success(
-          payloadSubjects.length > 0
-            ? `Área creada con ${payloadSubjects.length} asignatura(s) general(es).`
-            : "Área creada."
-        )
+        setOpen(false)
+        return
       }
-      setOpen(false)
-    },
+
+      await createAreaSubject.mutateAsync({
+        areaGeneral: base.areaGeneral,
+        nombreInterno: base.nombreInterno,
+        abreviacion: base.abreviacion,
+        ordenReportes: base.ordenReportes,
+        subjects: payloadSubjects,
+        academicPeriodId,
+      })
+
+      setSuccessOpen(true)
+
+
+      setSuccessOpen(true)
+    }
   })
 
   function handleOpenChange(next: boolean) {
     setOpen(next)
-    if (next) {
+
+    if (!next) return
+
+    if (isEdit) {
       form.reset()
       setSubjects(areaSubject?.subjects.map(itemToDraft) ?? [])
-      setSubjectsStarted(isEdit)
-      setDraft(emptyDraft())
-      cancelEditSubject()
-      setEspecialidades(backendEspecialidades)
-      setConfirmOpen(false)
-      setSort(null)
+      setSubjectsStarted(true)
+      nombreInternoEditedRef.current = false
+    } else {
+      resetCreateForm()
     }
+  }
+
+  function resetCreateForm() {
+    form.reset()
+
+    setSubjects([])
+    setSubjectsStarted(false)
+    setDraft(emptyDraft())
+
+    cancelEditSubject()
+
+    setEspecialidades(backendEspecialidades)
+    setConfirmOpen(false)
+    setSort(null)
+    nombreInternoEditedRef.current = false
   }
 
   function toggleSort(key: SortKey) {
@@ -206,13 +233,13 @@ export function AreaSubjectFormDialog({
     setDraft(
       useAreaInfo
         ? {
-            asignaturaGeneral: area.areaGeneral,
-            nombreInterno: area.nombreInterno,
-            abreviacion: area.abreviacion,
-            ordenReportes: 1,
-            color: "",
-            especialidad: "",
-          }
+          asignaturaGeneral: area.areaGeneral,
+          nombreInterno: area.nombreInterno,
+          abreviacion: area.abreviacion,
+          ordenReportes: 1,
+          color: "",
+          especialidad: "",
+        }
         : emptyDraft()
     )
     setSubjectsStarted(true)
@@ -261,341 +288,345 @@ export function AreaSubjectFormDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      {isEdit ? (
-        <DialogTrigger
-          render={
-            <Button
-              variant="fill"
-              color="secondary"
-              size="icon"
-              className="size-8"
-            />
-          }
-        >
-          <span className="sr-only">Editar área</span>
-          <PencilIcon />
-        </DialogTrigger>
-      ) : (
-        <DialogTrigger render={<Button color="primary" size="sm" />}>
-          <PlusCircleIcon weight="fill" data-icon="inline-start" />
-          Agregar
-        </DialogTrigger>
-      )}
-
-      <DialogContent
-        className={subjectsStarted ? "sm:max-w-7xl" : "sm:max-w-5xl"}
-      >
-        <DialogHeader>
-          <DialogTitle>{isEdit ? "Editar área" : "Agregar área"}</DialogTitle>
-          <DialogDescription>
-            Completá los datos del área y asigná sus asignaturas generales.
-          </DialogDescription>
-        </DialogHeader>
-
-        <form
-          id={FORM_ID}
-          onSubmit={(e) => {
-            e.preventDefault()
-            form.handleSubmit()
-          }}
-          className="flex flex-wrap items-end gap-4"
-        >
-          <form.Field name="areaGeneral">
-            {(field) => (
-              <AreaField field={field} label="Área general*">
-                {(isInvalid) => (
-                  <SelectGeneralAreaDialog
-                    id={field.name}
-                    value={field.state.value}
-                    onChange={(value) => {
-                      field.handleChange(value)
-                      if (!form.state.values.nombreInterno) {
-                        form.setFieldValue("nombreInterno", value)
-                      }
-                    }}
-                    invalid={isInvalid}
-                  />
-                )}
-              </AreaField>
-            )}
-          </form.Field>
-
-          <form.Field name="nombreInterno">
-            {(field) => (
-              <AreaField field={field} label="Nombre interno del área*">
-                {(isInvalid) => (
-                  <Input
-                    id={field.name}
-                    placeholder="ej. Matemáticas"
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    aria-invalid={isInvalid}
-                  />
-                )}
-              </AreaField>
-            )}
-          </form.Field>
-
-          <form.Field name="abreviacion">
-            {(field) => (
-              <AreaField field={field} label="Abreviación*">
-                {(isInvalid) => (
-                  <Input
-                    id={field.name}
-                    placeholder="ej. MAT"
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    aria-invalid={isInvalid}
-                  />
-                )}
-              </AreaField>
-            )}
-          </form.Field>
-
-          <form.Field name="ordenReportes">
-            {(field) => (
-              <AreaField field={field} label="Orden en los reportes*">
-                {(isInvalid) => (
-                  <Input
-                    id={field.name}
-                    type="number"
-                    min={0}
-                    placeholder="ej. 1"
-                    value={
-                      Number.isNaN(field.state.value) ? "" : field.state.value
-                    }
-                    onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.valueAsNumber)}
-                    aria-invalid={isInvalid}
-                  />
-                )}
-              </AreaField>
-            )}
-          </form.Field>
-
-          <form.Subscribe
-            selector={(state) => ({
-              areaGeneral: state.values.areaGeneral,
-              nombreInterno: state.values.nombreInterno,
-              abreviacion: state.values.abreviacion,
-            })}
-          >
-            {({ areaGeneral, nombreInterno, abreviacion }) =>
-              !subjectsStarted && areaGeneral && nombreInterno && abreviacion ? (
-                <div className="flex items-end">
-                  <Button
-                    type="button"
-                    color="primary"
-                    size="sm"
-                    onClick={() => {
-                      setSubjectsStarted(true)
-                      setConfirmOpen(true)
-                    }}
-                  >
-                    <PlusCircleIcon weight="fill" data-icon="inline-start" />
-                    Añadir asignatura
-                  </Button>
-                </div>
-              ) : null
+    <>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
+        {isEdit ? (
+          <DialogTrigger
+            render={
+              <Button
+                variant="fill"
+                color="secondary"
+                size="icon"
+                className="size-8"
+              />
             }
-          </form.Subscribe>
-        </form>
+          >
+            <span className="sr-only">Editar área</span>
+            <PencilIcon />
+          </DialogTrigger>
+        ) : (
+          <DialogTrigger render={<Button color="primary" size="sm" />}>
+            <PlusCircleIcon weight="fill" data-icon="inline-start" />
+            Agregar
+          </DialogTrigger>
+        )}
 
-        {subjectsStarted && (
-          <div className="overflow-x-auto border [&_[data-slot=input]]:bg-background [&_[data-slot=select-trigger]]:bg-background">
-            {/* Los controles de la tabla usan la variante `outlined`: cada
-                input queda recuadrado y se distingue del color de hover de la
-                fila. */}
-            <FieldVariantContext.Provider value="outlined">
-              <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>
-                    <SortableHeader
-                      title="Orden"
-                      sortKey="ordenReportes"
-                      sort={sort}
-                      onToggle={toggleSort}
-                    />
-                  </TableHead>
-                  <TableHead>
-                    <SortableHeader
-                      title="Asignatura general"
-                      sortKey="asignaturaGeneral"
-                      sort={sort}
-                      onToggle={toggleSort}
-                    />
-                  </TableHead>
-                  <TableHead>
-                    <SortableHeader
-                      title="Nombre interno"
-                      sortKey="nombreInterno"
-                      sort={sort}
-                      onToggle={toggleSort}
-                    />
-                  </TableHead>
-                  <TableHead>
-                    <SortableHeader
-                      title="Abreviación"
-                      sortKey="abreviacion"
-                      sort={sort}
-                      onToggle={toggleSort}
-                    />
-                  </TableHead>
-                  <TableHead>Color</TableHead>
-                  <TableHead>
-                    <SortableHeader
-                      title="Especialidad"
-                      sortKey="especialidad"
-                      sort={sort}
-                      onToggle={toggleSort}
-                    />
-                  </TableHead>
-                  <TableHead />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {/* Asignaturas generales ya agregadas. */}
-                {sortedSubjects.map((subject, index) => {
-                  // Editamos contra el índice real del arreglo (no el ordenado).
-                  const realIndex = subjects.indexOf(subject)
-                  const isEditing =
-                    editingIndex === realIndex && editDraft !== null
+        <DialogContent
+          className={subjectsStarted ? "sm:max-w-7xl" : "sm:max-w-5xl"}
+        >
+          <DialogHeader>
+            <DialogTitle>{isEdit ? "Editar área" : "Agregar área"}</DialogTitle>
+            <DialogDescription>
+              Completá los datos del área y asigná sus asignaturas generales.
+            </DialogDescription>
+          </DialogHeader>
 
-                  if (isEditing && editDraft) {
-                    return (
-                      <TableRow key={realIndex}>
-                        <SubjectRowFields
-                          draft={editDraft}
-                          onPatch={patchEditDraft}
-                          especialidades={especialidades}
-                          onAddEspecialidad={addEspecialidad}
-                        />
-                        <TableCell>
-                          <div className="flex items-center justify-end gap-1">
-                            <Button
-                              type="button"
-                              color="primary"
-                              size="icon"
-                              className="size-8"
-                              aria-label="Guardar cambios"
-                              onClick={saveEditSubject}
-                            >
-                              <CheckIcon />
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="icon"
-                              className="size-8"
-                              aria-label="Cancelar edición"
-                              onClick={cancelEditSubject}
-                            >
-                              <XIcon />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    )
-                  }
+          <form
+            id={FORM_ID}
+            onSubmit={(e) => {
+              e.preventDefault()
+              form.handleSubmit()
+            }}
+            className="flex flex-wrap items-end gap-4"
+          >
+            <form.Field name="areaGeneral">
+              {(field) => (
+                <AreaField field={field} label="Área general*">
+                  {(isInvalid) => (
+                    <SelectGeneralAreaDialog
+                      id={field.name}
+                      value={field.state.value}
+                      onChange={(value) => {
+                        field.handleChange(value)
+                        if (!nombreInternoEditedRef.current) {
+                          form.setFieldValue("nombreInterno", value)
+                        }
+                      }}
+                      invalid={isInvalid}
+                    />
+                  )}
+                </AreaField>
+              )}
+            </form.Field>
 
-                  return (
-                    <TableRow key={realIndex}>
-                      <TableCell>{subject.ordenReportes}</TableCell>
-                      <TableCell>{subject.asignaturaGeneral || "—"}</TableCell>
-                      <TableCell>{subject.nombreInterno || "—"}</TableCell>
-                      <TableCell>{subject.abreviacion || "—"}</TableCell>
-                      <TableCell>
-                        {subject.color ? (
-                          <span
-                            className="inline-block size-4 rounded-full ring-1 ring-foreground/10"
-                            style={{ backgroundColor: subject.color }}
-                          />
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </TableCell>
-                      <TableCell>{subject.especialidad || "—"}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center justify-end gap-1">
-                          <Button
-                            type="button"
-                            variant="fill"
-                            color="secondary"
-                            size="icon"
-                            className="size-8"
-                            aria-label={`Editar asignatura ${index + 1}`}
-                            disabled={editingIndex !== null}
-                            onClick={() => startEditSubject(realIndex)}
-                          >
-                            <PencilIcon />
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="fill"
-                            color="destructive"
-                            size="icon"
-                            className="size-8"
-                            aria-label={`Quitar asignatura ${index + 1}`}
-                            disabled={editingIndex !== null}
-                            onClick={() => removeSubject(realIndex)}
-                          >
-                            <TrashIcon />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
+            <form.Field name="nombreInterno">
+              {(field) => (
+                <AreaField field={field} label="Nombre interno del área*">
+                  {(isInvalid) => (
+                    <Input
+                      id={field.name}
+                      placeholder="ej. Matemáticas"
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => {
+                        nombreInternoEditedRef.current = true
+                        field.handleChange(e.target.value)
+                      }}
+                      aria-invalid={isInvalid}
+                    />
+                  )}
+                </AreaField>
+              )}
+            </form.Field>
 
-                {/* Fila de carga para agregar otra asignatura general. */}
-                <TableRow>
-                  <SubjectRowFields
-                    draft={draft}
-                    onPatch={patchDraft}
-                    especialidades={especialidades}
-                    onAddEspecialidad={addEspecialidad}
-                  />
-                  <TableCell>
+            <form.Field name="abreviacion">
+              {(field) => (
+                <AreaField field={field} label="Abreviación*">
+                  {(isInvalid) => (
+                    <Input
+                      id={field.name}
+                      placeholder="ej. MAT"
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      aria-invalid={isInvalid}
+                    />
+                  )}
+                </AreaField>
+              )}
+            </form.Field>
+
+            <form.Field name="ordenReportes">
+              {(field) => (
+                <AreaField field={field} label="Orden en los reportes*">
+                  {(isInvalid) => (
+                    <Input
+                      id={field.name}
+                      type="number"
+                      min={0}
+                      placeholder="ej. 1"
+                      value={
+                        Number.isNaN(field.state.value) ? "" : field.state.value
+                      }
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.valueAsNumber)}
+                      aria-invalid={isInvalid}
+                    />
+                  )}
+                </AreaField>
+              )}
+            </form.Field>
+
+            <form.Subscribe
+              selector={(state) => ({
+                areaGeneral: state.values.areaGeneral,
+                nombreInterno: state.values.nombreInterno,
+                abreviacion: state.values.abreviacion,
+              })}
+            >
+              {({ areaGeneral, nombreInterno, abreviacion }) =>
+                !subjectsStarted && areaGeneral && nombreInterno && abreviacion ? (
+                  <div className="flex items-end">
                     <Button
                       type="button"
                       color="primary"
-                      size="icon-sm"
-                      aria-label="Agregar asignatura a la lista"
-                      onClick={commitDraft}
+                      size="sm"
+                      onClick={() => {
+                        setSubjectsStarted(true)
+                        setConfirmOpen(true)
+                      }}
                     >
-                      <PlusIcon weight="bold" />
+                      <PlusCircleIcon weight="fill" data-icon="inline-start" />
+                      Añadir asignatura
                     </Button>
-                  </TableCell>
-                </TableRow>
-              </TableBody>
-              </Table>
-            </FieldVariantContext.Provider>
-          </div>
-        )}
+                  </div>
+                ) : null
+              }
+            </form.Subscribe>
+          </form>
 
-        <DialogFooter className="sm:justify-end">
-          <Button
-            type="submit"
-            color="primary"
-            form={FORM_ID}
-            disabled={isPending}
-            aria-busy={isPending}
-          >
-            {isPending && (
-              <SpinnerIcon data-icon="inline-start" className="animate-spin" />
-            )}
-            Guardar
-          </Button>
-          <DialogClose render={<Button type="button" variant="ghost" />}>
-            Cancelar
-          </DialogClose>
-        </DialogFooter>
-      </DialogContent>
+          {subjectsStarted && (
+            <div className="overflow-x-auto border [&_[data-slot=input]]:bg-background [&_[data-slot=select-trigger]]:bg-background">
+              {/* Los controles de la tabla usan la variante `outlined`: cada
+                input queda recuadrado y se distingue del color de hover de la
+                fila. */}
+              <FieldVariantContext.Provider value="outlined">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>
+                        <SortableHeader
+                          title="Orden"
+                          sortKey="ordenReportes"
+                          sort={sort}
+                          onToggle={toggleSort}
+                        />
+                      </TableHead>
+                      <TableHead>
+                        <SortableHeader
+                          title="Asignatura general"
+                          sortKey="asignaturaGeneral"
+                          sort={sort}
+                          onToggle={toggleSort}
+                        />
+                      </TableHead>
+                      <TableHead>
+                        <SortableHeader
+                          title="Nombre interno"
+                          sortKey="nombreInterno"
+                          sort={sort}
+                          onToggle={toggleSort}
+                        />
+                      </TableHead>
+                      <TableHead>
+                        <SortableHeader
+                          title="Abreviación"
+                          sortKey="abreviacion"
+                          sort={sort}
+                          onToggle={toggleSort}
+                        />
+                      </TableHead>
+                      <TableHead>Color</TableHead>
+                      <TableHead>
+                        <SortableHeader
+                          title="Especialidad"
+                          sortKey="especialidad"
+                          sort={sort}
+                          onToggle={toggleSort}
+                        />
+                      </TableHead>
+                      <TableHead />
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {/* Asignaturas generales ya agregadas. */}
+                    {sortedSubjects.map((subject, index) => {
+                      // Editamos contra el índice real del arreglo (no el ordenado).
+                      const realIndex = subjects.indexOf(subject)
+                      const isEditing =
+                        editingIndex === realIndex && editDraft !== null
 
+                      if (isEditing && editDraft) {
+                        return (
+                          <TableRow key={realIndex}>
+                            <SubjectRowFields
+                              draft={editDraft}
+                              onPatch={patchEditDraft}
+                              especialidades={especialidades}
+                              onAddEspecialidad={addEspecialidad}
+                            />
+                            <TableCell>
+                              <div className="flex items-center justify-end gap-1">
+                                <Button
+                                  type="button"
+                                  color="primary"
+                                  size="icon"
+                                  className="size-8"
+                                  aria-label="Guardar cambios"
+                                  onClick={saveEditSubject}
+                                >
+                                  <CheckIcon />
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="icon"
+                                  className="size-8"
+                                  aria-label="Cancelar edición"
+                                  onClick={cancelEditSubject}
+                                >
+                                  <XIcon />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )
+                      }
+
+                      return (
+                        <TableRow key={realIndex}>
+                          <TableCell>{subject.ordenReportes}</TableCell>
+                          <TableCell>{subject.asignaturaGeneral || "—"}</TableCell>
+                          <TableCell>{subject.nombreInterno || "—"}</TableCell>
+                          <TableCell>{subject.abreviacion || "—"}</TableCell>
+                          <TableCell>
+                            {subject.color ? (
+                              <span
+                                className="inline-block size-4 rounded-full ring-1 ring-foreground/10"
+                                style={{ backgroundColor: subject.color }}
+                              />
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell>{subject.especialidad || "—"}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center justify-end gap-1">
+                              <Button
+                                type="button"
+                                variant="fill"
+                                color="secondary"
+                                size="icon"
+                                className="size-8"
+                                aria-label={`Editar asignatura ${index + 1}`}
+                                disabled={editingIndex !== null}
+                                onClick={() => startEditSubject(realIndex)}
+                              >
+                                <PencilIcon />
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="fill"
+                                color="destructive"
+                                size="icon"
+                                className="size-8"
+                                aria-label={`Quitar asignatura ${index + 1}`}
+                                disabled={editingIndex !== null}
+                                onClick={() => removeSubject(realIndex)}
+                              >
+                                <TrashIcon />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
+
+                    {/* Fila de carga para agregar otra asignatura general. */}
+                    <TableRow>
+                      <SubjectRowFields
+                        draft={draft}
+                        onPatch={patchDraft}
+                        especialidades={especialidades}
+                        onAddEspecialidad={addEspecialidad}
+                      />
+                      <TableCell>
+                        <Button
+                          type="button"
+                          color="primary"
+                          size="icon-sm"
+                          aria-label="Agregar asignatura a la lista"
+                          onClick={commitDraft}
+                        >
+                          <PlusIcon weight="bold" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </FieldVariantContext.Provider>
+            </div>
+          )}
+
+          <DialogFooter className="sm:justify-end">
+            <Button
+              type="submit"
+              color="primary"
+              form={FORM_ID}
+              disabled={isPending}
+              aria-busy={isPending}
+            >
+              {isPending && (
+                <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+              )}
+              Guardar
+            </Button>
+            <DialogClose render={<Button type="button" variant="ghost" />}>
+              Cancelar
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       {/* Prompt: precargar los datos del área o rellenar a mano. */}
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent>
@@ -619,6 +650,37 @@ export function AreaSubjectFormDialog({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </Dialog>
+      <AlertDialog open={successOpen} onOpenChange={setSuccessOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              El área y sus asignaturas fueron guardadas exitosamente.
+            </AlertDialogTitle>
+          </AlertDialogHeader>
+
+          <AlertDialogFooter>
+            <AlertDialogAction
+              variant="outline"
+              color="neutral"
+              onClick={() => {
+                setSuccessOpen(false)
+                setOpen(false)
+              }}
+            >
+              Regresar al listado
+            </AlertDialogAction>
+
+            <AlertDialogAction
+              onClick={() => {
+                setSuccessOpen(false)
+                resetCreateForm()
+              }}
+            >
+              Continuar agregando
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   )
 }
