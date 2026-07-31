@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { CaretDownIcon, SpinnerIcon } from "@/components/ui/icons"
+import { SpinnerIcon } from "@/components/ui/icons"
 import { Link, useParams } from "@tanstack/react-router"
 import { toast } from "sonner"
 
@@ -13,10 +13,11 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible"
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"
 import { paths } from "@/config/paths"
 
 import { useCreateAcademicPeriod } from "../api/mutations/academic-period/create-academic-period"
@@ -155,50 +156,36 @@ export function AcademicPeriodConfigPage() {
   )
 
   const configBody = (
-    <Collapsible
-      open={configOpen}
-      onOpenChange={setConfigOpen}
-      className="flex flex-col gap-4"
+    <Accordion
+      value={configOpen ? ["config"] : []}
+      onValueChange={(value) => setConfigOpen(value.includes("config"))}
     >
-      <CollapsibleTrigger
-        render={
-          <button
-            type="button"
-            className="flex w-full items-center justify-between gap-2 text-left"
-          />
-        }
-      >
-        <span className="flex flex-col gap-0.5">
+      <AccordionItem value="config" className="rounded-md border border-border">
+        <AccordionTrigger className="px-4 py-3">
           <span className="font-heading text-sm font-semibold tracking-wider uppercase">
             Configuración del periodo
           </span>
-        </span>
-        <CaretDownIcon
-          className={cn(
-            "size-5 shrink-0 text-muted-foreground transition-transform",
-            configOpen && "rotate-180"
+        </AccordionTrigger>
+        <AccordionContent className="px-4 pb-4">
+          {isEditing && isLoadingDetail ? (
+            <div className="flex items-center justify-center py-10 text-muted-foreground">
+              <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+              Cargando periodo…
+            </div>
+          ) : isEditing && isDetailError ? (
+            <p className="py-10 text-center text-destructive">
+              Ocurrió un error al cargar el periodo académico.
+            </p>
+          ) : (
+            <AcademicPeriodForm
+              id={FORM_ID}
+              defaultValues={detail ? toFormValues(detail) : undefined}
+              onSubmit={handleSubmit}
+            />
           )}
-        />
-      </CollapsibleTrigger>
-      <CollapsibleContent keepMounted>
-        {isEditing && isLoadingDetail ? (
-          <div className="flex items-center justify-center py-10 text-muted-foreground">
-            <SpinnerIcon data-icon="inline-start" className="animate-spin" />
-            Cargando periodo…
-          </div>
-        ) : isEditing && isDetailError ? (
-          <p className="py-10 text-center text-destructive">
-            Ocurrió un error al cargar el periodo académico.
-          </p>
-        ) : (
-          <AcademicPeriodForm
-            id={FORM_ID}
-            defaultValues={detail ? toFormValues(detail) : undefined}
-            onSubmit={handleSubmit}
-          />
-        )}
-      </CollapsibleContent>
-    </Collapsible>
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
   )
   return (
     <div className="flex flex-col gap-6">
