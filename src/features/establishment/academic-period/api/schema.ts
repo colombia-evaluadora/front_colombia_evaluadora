@@ -163,7 +163,6 @@ export const promotionApprovalSchema = z.object({
   maxFailedRecovery: z.number().min(0, "El valor debe ser mayor o igual a 0"),
   absencePercentage: z.number().min(0, "El valor debe ser mayor o igual a 0"),
   maxLeveledSubjects: z.number().min(0, "El valor debe ser mayor o igual a 0"),
-  maxFailedSubjects: z.number().min(0, "El valor debe ser mayor o igual a 0"),
 
   applyAverageApproval: z.boolean(),
 

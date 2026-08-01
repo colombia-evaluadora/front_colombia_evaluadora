@@ -305,7 +305,7 @@ export const ScheduleBuilder = forwardRef<
                     style={styles.count}
                     className="px-1.5 py-0.5 text-[10px] leading-none font-bold"
                   >
-                    {remaining}B
+                    {remaining}H
                   </span>
                 </div>
               )

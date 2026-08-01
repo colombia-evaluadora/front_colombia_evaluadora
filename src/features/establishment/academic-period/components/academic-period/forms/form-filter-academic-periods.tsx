@@ -18,21 +18,29 @@ import {
   type AcademicPeriodsFiltersFormValues,
 } from "../../../api/schema"
 import { ACADEMIC_PERIOD_STATUS_LABELS } from "../../../api/ui-mappings"
-import type { AcademicPeriodStatus } from "../../../api/types/academic-period"
 import { DatePicker } from "@/components/date-picker"
 import { formatDateValue, parseDateValue } from "@/lib/date-value"
 
-// Sentinela para la opción "Todos" (Base UI Select no admite value vacío).
-const ALL = "__all__"
+// `items` mapea el `value` del `SelectItem` al label que renderiza
+// `SelectValue` automáticamente (sin necesidad de función child). El key
+// vacío representa la opción "Todos" — el `value` se persiste como "" en
+// el form y se filtra en el backend.
+const ALL_VALUE = ""
 
 const YEAR_OPTIONS = Array.from(
   { length: new Date().getFullYear() - 2020 + 1 },
   (_, i) => new Date().getFullYear() - i
 )
 
-const STATUS_OPTIONS = Object.keys(
-  ACADEMIC_PERIOD_STATUS_LABELS
-) as AcademicPeriodStatus[]
+const yearItems: Record<string, React.ReactNode> = {
+  [ALL_VALUE]: "Todos",
+  ...Object.fromEntries(YEAR_OPTIONS.map((year) => [String(year), year])),
+}
+
+const statusItems: Record<string, React.ReactNode> = {
+  [ALL_VALUE]: "Todos",
+  ...ACADEMIC_PERIOD_STATUS_LABELS,
+}
 
 interface FilterAcademicPeriodsFormProps {
   id: string
@@ -77,6 +85,7 @@ export function FilterAcademicPeriodsForm({
               value={field.state.value}
               onBlur={field.handleBlur}
               onChange={(event) => field.handleChange(event.target.value)}
+              className="h-9"
             />
           </Field>
         )}
@@ -89,19 +98,16 @@ export function FilterAcademicPeriodsForm({
           <Field orientation="vertical" variant="outlined" className="gap-2">
             <FieldLabel htmlFor={field.name}>Año lectivo</FieldLabel>
             <Select
-              value={field.state.value || ALL}
-              onValueChange={(value) =>
-                field.handleChange(value === ALL ? "" : (value ?? ""))
-              }
+              items={yearItems}
+              value={field.state.value}
+              onValueChange={(value) => field.handleChange(value ?? "")}
             >
-              <SelectTrigger id={field.name}>
-                <SelectValue>
-                  {(value) => (value && value !== ALL ? String(value) : "Todos")}
-                </SelectValue>
+              <SelectTrigger id={field.name} size="sm">
+                <SelectValue placeholder="Todos" />
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
-                  <SelectItem value={ALL}>Todos</SelectItem>
+                  <SelectItem value={ALL_VALUE}>Todos</SelectItem>
                   {YEAR_OPTIONS.map((year) => (
                     <SelectItem key={year} value={String(year)}>
                       {year}
@@ -121,28 +127,19 @@ export function FilterAcademicPeriodsForm({
           <Field orientation="vertical" variant="outlined" className="gap-2">
             <FieldLabel htmlFor={field.name}>Estado</FieldLabel>
             <Select
-              value={field.state.value || ALL}
-              onValueChange={(value) =>
-                field.handleChange(value === ALL ? "" : (value ?? ""))
-              }
+              items={statusItems}
+              value={field.state.value}
+              onValueChange={(value) => field.handleChange(value ?? "")}
             >
-              <SelectTrigger id={field.name}>
-                <SelectValue>
-                  {(value) =>
-                    value && value !== ALL
-                      ? ACADEMIC_PERIOD_STATUS_LABELS[
-                          value as AcademicPeriodStatus
-                        ]
-                      : "Todos"
-                  }
-                </SelectValue>
+              <SelectTrigger id={field.name} size="sm">
+                <SelectValue placeholder="Todos" />
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
-                  <SelectItem value={ALL}>Todos</SelectItem>
-                  {STATUS_OPTIONS.map((option) => (
-                    <SelectItem key={option} value={option}>
-                      {ACADEMIC_PERIOD_STATUS_LABELS[option]}
+                  <SelectItem value={ALL_VALUE}>Todos</SelectItem>
+                  {Object.entries(ACADEMIC_PERIOD_STATUS_LABELS).map(([key, label]) => (
+                    <SelectItem key={key} value={key}>
+                      {label}
                     </SelectItem>
                   ))}
                 </SelectGroup>
@@ -163,6 +160,7 @@ export function FilterAcademicPeriodsForm({
               id={field.name}
               value={parseDateValue(field.state.value)}
               onChange={(date) => field.handleChange(formatDateValue(date))}
+              className="h-9"
             />
           </Field>
         )}
@@ -177,6 +175,7 @@ export function FilterAcademicPeriodsForm({
               id={field.name}
               value={parseDateValue(field.state.value)}
               onChange={(date) => field.handleChange(formatDateValue(date))}
+              className="h-9"
             />
           </Field>
         )}

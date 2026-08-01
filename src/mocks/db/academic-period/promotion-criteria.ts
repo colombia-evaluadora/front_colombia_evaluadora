@@ -5,7 +5,6 @@ export const DEFAULT_PROMOTION_CRITERIA: PromotionCriteria = {
   maxFailedRecovery: 0,
   absencePercentage: 0,
   maxLeveledSubjects: 0,
-  maxFailedSubjects: 0,
   applyAverageApproval: true,
   basePercentage: 25,
   minimumSubjectPercentage: 25,
