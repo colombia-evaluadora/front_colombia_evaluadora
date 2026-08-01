@@ -38,7 +38,6 @@ const EMPTY: PromotionApprovalValues = {
   maxFailedRecovery: 0,
   absencePercentage: 0,
   maxLeveledSubjects: 0,
-  maxFailedSubjects: 0,
 
   applyAverageApproval: true,
 
@@ -50,6 +49,11 @@ const EMPTY: PromotionApprovalValues = {
 }
 
 const FORM_ID = "approval-parameters-form"
+
+const CURRICULUM_NODE_LABELS: Record<string, string> = {
+  AR: "Área",
+  AS: "Asignatura",
+}
 
 interface TabPromotionCriteriaProps {
   hideSubmit?: boolean
@@ -243,10 +247,11 @@ const PromotionCriteriaForm = forwardRef<
               <FieldLabel className="flex-1">Nodo curricular*</FieldLabel>
 
               <Select
+                items={CURRICULUM_NODE_LABELS}
                 value={field.state.value}
                 onValueChange={(value) => value && field.handleChange(value)}
               >
-                <SelectTrigger>
+                <SelectTrigger size="sm">
                   <SelectValue placeholder="Seleccionar" />
                 </SelectTrigger>
 
@@ -254,7 +259,7 @@ const PromotionCriteriaForm = forwardRef<
                   <SelectGroup>
                     {curriculumNodes.map((option) => (
                       <SelectItem key={option} value={option}>
-                        {option}
+                        {CURRICULUM_NODE_LABELS[option] ?? option}
                       </SelectItem>
                     ))}
                   </SelectGroup>
@@ -279,6 +284,7 @@ const PromotionCriteriaForm = forwardRef<
                 onChange={(e) =>
                   field.handleChange(Number(e.target.value))
                 }
+                className="h-9"
               />
             </Field>
           )}
@@ -299,6 +305,7 @@ const PromotionCriteriaForm = forwardRef<
                 onChange={(e) =>
                   field.handleChange(Number(e.target.value))
                 }
+                className="h-9"
               />
             </Field>
           )}
@@ -319,26 +326,7 @@ const PromotionCriteriaForm = forwardRef<
                 onChange={(e) =>
                   field.handleChange(Number(e.target.value))
                 }
-              />
-            </Field>
-          )}
-        </form.Field>
-
-        <form.Field name="maxFailedSubjects">
-          {(field) => (
-            <Field variant="outlined">
-              <FieldLabel className="flex-1">
-                Máximo de áreas/asignaturas reprobadas para ser promovido
-              </FieldLabel>
-
-              <Input
-                type="number"
-                min={0}
-                placeholder="Ingrese un valor"
-                value={field.state.value}
-                onChange={(e) =>
-                  field.handleChange(Number(e.target.value))
-                }
+                className="h-9"
               />
             </Field>
           )}
@@ -393,6 +381,7 @@ const PromotionCriteriaForm = forwardRef<
                 onChange={(e) =>
                   field.handleChange(Number(e.target.value))
                 }
+                className="h-9"
               />
             </Field>
           )}
@@ -413,6 +402,7 @@ const PromotionCriteriaForm = forwardRef<
                 onChange={(e) =>
                   field.handleChange(Number(e.target.value))
                 }
+                className="h-9"
               />
             </Field>
           )}
@@ -433,6 +423,7 @@ const PromotionCriteriaForm = forwardRef<
                 onChange={(e) =>
                   field.handleChange(Number(e.target.value))
                 }
+                className="h-9"
               />
             </Field>
           )}

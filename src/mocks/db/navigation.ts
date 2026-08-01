@@ -3,16 +3,16 @@ import type { RouteResponseDto } from "@/features/navigation/api/types/nav-item"
 // Misma forma que devuelve el backend real (GET /sso-admin/myMenu?app=):
 // lista plana, jerarquía vía `idParent`.
 export const navigationMenu: RouteResponseDto[] = [
-  {
-    id: 1,
-    name: "Pagos",
-    icon: "Credit-Card-Icon",
-    path: "/app",
-    menuOrder: 0,
-    type: "ITEM",
-    idParent: null,
-    roleIds: [1, 2],
-  },
+  // {
+  //   id: 1,
+  //   name: "Pagos",
+  //   icon: "Credit-Card-Icon",
+  //   path: "/app",
+  //   menuOrder: 0,
+  //   type: "ITEM",
+  //   idParent: null,
+  //   roleIds: [1, 2],
+  // },
   {
     id: 12,
     name: "Cobertura educativa",
@@ -153,16 +153,16 @@ export const navigationMenu: RouteResponseDto[] = [
     idParent: 5,
     roleIds: [1],
   },
-  {
-    id: 8,
-    name: "Configuración",
-    icon: "Gear-Icon",
-    path: "/app/configuracion",
-    menuOrder: 5,
-    type: "ITEM",
-    idParent: null,
-    roleIds: [1, 2],
-  },
+  // {
+  //   id: 8,
+  //   name: "Configuración",
+  //   icon: "Gear-Icon",
+  //   path: "/app/configuracion",
+  //   menuOrder: 5,
+  //   type: "ITEM",
+  //   idParent: null,
+  //   roleIds: [1, 2],
+  // },
   {
     "id": 17,
     "name": "Establecimiento Educativo",
