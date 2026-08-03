@@ -49,6 +49,10 @@ import {
   type ScheduleSubject,
 } from "../../schedule/schedule-data"
 
+// La card sobre la que se apoyan las pestañas tipo carpeta. Sin borde superior:
+// esa línea la dibuja el borde inferior de las pestañas, y la activa la borra.
+const PANEL = "min-w-0 rounded-b-lg border border-t-0 bg-background p-4"
+
 interface CreateGradeDialogProps {
   jornada: Jornada
   academicPeriodId?: number
@@ -369,21 +373,18 @@ export function CreateGradeDialog({
           </p>
         ) : (
           <Tabs defaultValue="grupo" className="w-full min-w-0">
-            <TabsList
-              variant="line"
-              className="w-full justify-start overflow-x-auto"
-            >
+            <TabsList variant="folder">
               <TabsTrigger value="grupo">Grupo</TabsTrigger>
               <TabsTrigger value="promocion">Criterios de promoción</TabsTrigger>
               <TabsTrigger value="plan">Plan de estudio</TabsTrigger>
               <TabsTrigger value="horario">Horario</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="grupo" className="mt-4 min-w-0">
+            <TabsContent value="grupo" className={PANEL}>
               <TabGradeGroups gradeId={gradeId} academicPeriodId={academicPeriodId} />
             </TabsContent>
 
-            <TabsContent value="promocion" keepMounted className="mt-4 min-w-0">
+            <TabsContent value="promocion" keepMounted className={PANEL}>
               <TabPromotionCriteria
                 ref={promotionRef}
                 hideSubmit
@@ -392,14 +393,14 @@ export function CreateGradeDialog({
               />
             </TabsContent>
 
-            <TabsContent value="plan" className="mt-4 min-w-0">
+            <TabsContent value="plan" className={PANEL}>
               <TabStudyPlan
                 academicPeriodId={academicPeriodId}
                 gradeId={gradeId}
               />
             </TabsContent>
 
-            <TabsContent value="horario" keepMounted className="mt-4 min-w-0">
+            <TabsContent value="horario" keepMounted className={PANEL}>
               <ScheduleBuilder
                 ref={scheduleRef}
                 jornada={jornada}

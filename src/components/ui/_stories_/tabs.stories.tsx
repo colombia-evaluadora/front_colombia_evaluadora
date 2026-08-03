@@ -33,6 +33,31 @@ export const LineVariant = meta.story({
   ),
 })
 
+export const FolderVariant = meta.story({
+  render: () => (
+    <Tabs defaultValue="periods" className="w-full max-w-3xl">
+      <TabsList variant="folder">
+        <TabsTrigger value="periods">Periodos de evaluación</TabsTrigger>
+        <TabsTrigger value="promotion">Criterios de promoción</TabsTrigger>
+        <TabsTrigger value="grades">Grados</TabsTrigger>
+        <TabsTrigger value="scales">Escalas de valoración</TabsTrigger>
+      </TabsList>
+      <TabsContent value="periods" className="rounded-lg border p-6">
+        Periodos de evaluación
+      </TabsContent>
+      <TabsContent value="promotion" className="rounded-lg border p-6">
+        Criterios de promoción
+      </TabsContent>
+      <TabsContent value="grades" className="rounded-lg border p-6">
+        Grados
+      </TabsContent>
+      <TabsContent value="scales" className="rounded-lg border p-6">
+        Escalas de valoración
+      </TabsContent>
+    </Tabs>
+  ),
+})
+
 export const Vertical = meta.story({
   render: () => (
     <Tabs defaultValue="account" orientation="vertical" className="w-96">
