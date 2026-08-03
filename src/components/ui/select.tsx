@@ -28,7 +28,10 @@ function SelectValue({ className, ...props }: SelectPrimitive.Value.Props) {
   return (
     <SelectPrimitive.Value
       data-slot="select-value"
-      className={cn("flex flex-1 text-left", className)}
+      // block (no flex): el text-overflow no aplica al contenido anónimo de un
+      // flex container, así que con display:flex el "…" nunca se dibuja. min-w-0
+      // es lo que deja al item encogerse por debajo del ancho de su contenido.
+      className={cn("block min-w-0 flex-1 truncate text-left", className)}
       {...props}
     />
   )
@@ -53,7 +56,10 @@ function SelectTrigger({
       className={cn(
         inputVariants({ variant: resolvedVariant }),
         inputTriggerVariants({ variant: resolvedVariant }),
-        "flex items-center justify-between gap-1.5 whitespace-nowrap data-placeholder:text-muted-foreground data-[size=sm]:h-9 *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-1.5 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
+        // El recorte del valor lo resuelve SelectValue con block+truncate; acá no
+        // se le impone display, porque el flex anulaba ese text-overflow y dejaba
+        // al line-clamp inerte, que era lo que hacía desbordar al valor largo.
+        "flex items-center justify-between gap-1.5 whitespace-nowrap data-placeholder:text-muted-foreground data-[size=sm]:h-9 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
         className,
       )}
       {...props}
@@ -126,12 +132,19 @@ function SelectItem({ className, children, ...props }: SelectPrimitive.Item.Prop
     <SelectPrimitive.Item
       data-slot="select-item"
       className={cn(
-        "group/select-item relative flex w-full cursor-pointer items-center gap-2.5 rounded-none py-2 pr-8 pl-3 text-sm transition-colors outline-hidden select-none data-highlighted:bg-secondary-22 data-highlighted:text-foreground not-data-[variant=destructive]:data-highlighted:**:text-foreground data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
+        "group/select-item relative flex w-full cursor-pointer items-center gap-2.5 rounded-none py-2 pr-8 pl-3 text-sm transition-colors outline-hidden select-none data-highlighted:bg-secondary-22 data-highlighted:text-foreground not-data-[variant=destructive]:data-highlighted:**:text-foreground data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
         className,
       )}
       {...props}
     >
-      <SelectPrimitive.ItemText className="flex flex-1 shrink-0 gap-2 whitespace-nowrap">
+      {/*
+        block + min-w-0 en vez de flex: el text-overflow no aplica al contenido
+        anónimo de un flex container, así que con display:flex la opción larga se
+        cortaba a mitad de letra en lugar de terminar en "…". Tampoco shrink-0,
+        que impedía que el texto se encogiera al ancho del popup. El pr-8 del item
+        reserva el lugar del check, así que el "…" nunca se le encima.
+      */}
+      <SelectPrimitive.ItemText className="block min-w-0 flex-1 truncate">
         {children}
       </SelectPrimitive.ItemText>
       <SelectPrimitive.ItemIndicator
