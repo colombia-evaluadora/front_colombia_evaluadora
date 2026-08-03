@@ -1,7 +1,6 @@
 import { useState } from "react"
 
 import { SpinnerIcon, TrashIcon } from "@/components/ui/icons"
-import { toast } from "sonner"
 
 import {
   AlertDialog,
@@ -17,6 +16,7 @@ import { Button } from "@/components/ui/button"
 
 import { useDeleteEmployee } from "../../api/mutations/use-delete-employee"
 import type { EmployeeListItem } from "../../api/types/employee"
+import { useNotify } from "../common/notice-context"
 
 interface DeleteEmployeeDialogProps {
   employee: EmployeeListItem
@@ -24,20 +24,21 @@ interface DeleteEmployeeDialogProps {
 
 export function DeleteEmployeeDialog({ employee }: DeleteEmployeeDialogProps) {
   const [open, setOpen] = useState(false)
+  const { notify } = useNotify()
 
   const deleteMutation = useDeleteEmployee({
     mutationConfig: {
       onSuccess: (result) => {
         if (result.status === "error") {
-          toast.error(result.message)
+          notify(result.message, { variant: "error" })
           return
         }
 
-        toast.success(result.message)
+        notify(result.message)
         setOpen(false)
       },
       onError: (error) => {
-        toast.error(error.message)
+        notify(error.message, { variant: "error" })
       },
     },
   })

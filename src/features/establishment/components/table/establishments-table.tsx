@@ -1,20 +1,9 @@
 "use no memo"
 
 import { useMemo } from "react"
-import { toast } from "sonner"
 
-import { DataTable } from "@/components/data-table"
+import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
-import { Field, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { useDataTable } from "@/hooks/use-data-table"
 import { useTablePagination } from "@/hooks/use-table-pagination"
 
@@ -26,11 +15,15 @@ import type { CatalogItem } from "../../api/types/catalog"
 import { CATALOGS } from "@/lib/catalogs"
 import type { Establishment } from "../../api/types/establishment"
 import { columns } from "./columns"
-import { BulkDeleteFab } from "../bulk-delete-fab"
+import { DialogBulkDelete } from "../dialogs/dialog-bulk-delete"
+import { ClearSelectionDialog } from "../dialogs/dialog-clear-selection"
 import { ExportEstablishmentsDialog } from "../dialogs/dialog-export-establishments"
 import { ExportSelectedEstablishmentsDialog } from "../dialogs/dialog-export-selected-establishments"
+import { SearchEstablishments } from "../search/search-establishments"
+import { useNotify, NoticeOutlet } from "../common/notice-context"
 
 export function EstablishmentsDataTable() {
+  const { notify } = useNotify()
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } =
     useTablePagination()
 
@@ -38,6 +31,8 @@ export function EstablishmentsDataTable() {
     filters,
     queryFilters,
     applyFilters,
+    clearAllFilters,
+    activeFilterCount,
   } = useEstablishmentsFilters()
 
   const { data: entityStatuses = [] } = useCatalogQuery<CatalogItem>(CATALOGS.ENTITY_STATUSES)
@@ -88,77 +83,60 @@ export function EstablishmentsDataTable() {
     mutationConfig: {
       onSuccess: (result) => {
         if (result.status === "error") {
-          toast.error(result.message)
+          notify(result.message, { variant: "error" })
           return
         }
-        toast.success(result.message)
+        notify(result.message)
         resetSelection()
       },
       onError: (error) => {
-        toast.error(error.message)
+        notify(error.message, { variant: "error" })
       },
     },
   })
 
   return (
     <>
-      <div className="mb-6 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-        <div className="grid w-full gap-4 md:grid-cols-[minmax(18rem,1fr)_minmax(12rem,16rem)]">
-          <Field orientation="horizontal" variant="outlined" className="w-full max-w-full">
-            <FieldLabel htmlFor="establishment-search">Buscar</FieldLabel>
-            <Input
-              id="establishment-search"
-              value={filters.search}
-              onChange={(event) =>
-                applyFilters({
-                  ...filters,
-                  search: event.target.value,
-                })
-              }
-              placeholder="Buscar por establecimiento, municipio o código DANE"
-            />
-          </Field>
-          <Field orientation="horizontal" variant="outlined" className="w-full max-w-full">
-            <FieldLabel htmlFor="establishment-status">Estado</FieldLabel>
-            <Select
-              value={filters.statuses[0] ?? ""}
-              onValueChange={(value) =>
-                applyFilters({
-                  ...filters,
-                  statuses: value
-                    ? ([value as "ACTIVE" | "SUSPENDED"] as const)
-                    : [],
-                })
-              }
-            >
-              <SelectTrigger id="establishment-status" className="w-full">
-                <SelectValue placeholder="Todos" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectItem value="">Todos</SelectItem>
-                  {establishmentStatuses.map((status: CatalogItem) => (
-                    <SelectItem key={status.id} value={status.id}>
-                      {status.name}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </Field>
-        </div>
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+        <SearchEstablishments
+          filters={filters}
+          applyFilters={applyFilters}
+          clearAllFilters={clearAllFilters}
+          activeFilterCount={activeFilterCount}
+          statuses={establishmentStatuses}
+        />
 
         <div className="flex items-center gap-2">
           {hasSelection ? (
-            <ExportSelectedEstablishmentsDialog
-              selectedIds={selectedIds}
-              resetSelection={resetSelection}
-            />
+            <>
+              <ClearSelectionDialog resetSelection={resetSelection} />
+              <DialogBulkDelete<Establishment>
+                items={selectedItems}
+                getItemId={(item) => item.id}
+                getItemLabel={(item) => item.name}
+                buildTitle={(count, sample) => {
+                  const list = sample.join(", ")
+                  const suffix = count > sample.length ? ` y ${count - sample.length} más` : ""
+                  return `¿Está seguro de que desea eliminar permanentemente los establecimientos educativos ${list}${suffix} (${count} en total)? Esta acción no se puede deshacer.`
+                }}
+                onConfirm={async (ids) => {
+                  await bulkDelete.mutateAsync(ids)
+                }}
+                triggerLabel={`Eliminar (${selectedIds.length})`}
+              />
+              <ExportSelectedEstablishmentsDialog
+                selectedIds={selectedIds}
+                resetSelection={resetSelection}
+              />
+            </>
           ) : (
             <ExportEstablishmentsDialog filters={queryFilters} />
           )}
+          <DataTableViewOptions table={table} />
         </div>
       </div>
+
+      <NoticeOutlet className="mb-3" />
 
       <DataTable
         table={table}
@@ -179,24 +157,6 @@ export function EstablishmentsDataTable() {
           totalCount={data.totalCount}
           pageSize={pageSize}
           onPageSizeChange={setPageSize}
-        />
-      )}
-
-      {hasSelection && (
-        <BulkDeleteFab<Establishment>
-          selectedIds={selectedIds}
-          selectedItems={selectedItems}
-          getItemId={(item) => item.id}
-          getItemLabel={(item) => item.name}
-          buildTitle={(count, sample) => {
-            const list = sample.join(", ")
-            const suffix = count > sample.length ? ` y ${count - sample.length} más` : ""
-            return `¿Está seguro de que desea eliminar permanentemente los establecimientos educativos ${list}${suffix} (${count} en total)? Esta acción no se puede deshacer.`
-          }}
-          onConfirm={async (ids) => {
-            await bulkDelete.mutateAsync(ids)
-          }}
-          onClearSelection={resetSelection}
         />
       )}
     </>

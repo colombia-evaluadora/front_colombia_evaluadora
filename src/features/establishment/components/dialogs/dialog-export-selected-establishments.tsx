@@ -1,7 +1,6 @@
 import { useState } from "react"
 
 import { DownloadSimpleIcon, FilePdfIcon, FileXlsIcon, SpinnerIcon } from "@/components/ui/icons"
-import { toast } from "sonner"
 
 import {
     Dialog,
@@ -17,6 +16,7 @@ import { Button } from "@/components/ui/button"
 
 import { useExportSelectedEstablishments } from "../../api/mutations/export-selected-establishments"
 import type { ExportFormat } from "../../api/types/export"
+import { useNotify } from "../common/notice-context"
 
 interface ExportSelectedEstablishmentsDialogProps {
     selectedIds: string[]
@@ -29,15 +29,16 @@ export function ExportSelectedEstablishmentsDialog({
 }: ExportSelectedEstablishmentsDialogProps) {
     const [open, setOpen] = useState(false)
     const count = selectedIds.length
+    const { notify } = useNotify()
 
     const exportSelected = useExportSelectedEstablishments({
         mutationConfig: {
             onSuccess: (result) => {
                 if (result.status === "error") {
-                    toast.error(result.message)
+                    notify(result.message, { variant: "error" })
                     return
                 }
-                toast.success(result.message)
+                notify(result.message)
                 setOpen(false)
                 resetSelection()
             },

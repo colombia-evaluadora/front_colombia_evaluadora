@@ -7,6 +7,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { PlusIcon } from "@/components/ui/icons"
 import { Link } from "@tanstack/react-router"
 import { paths } from "@/config/paths"
 
@@ -24,6 +25,7 @@ export function EstablishmentsPage() {
             size="sm"
             nativeButton={false}
           >
+            <PlusIcon data-icon="inline-start" />
             Agregar
           </Button>
         </CardAction>

@@ -1,20 +1,9 @@
 "use no memo"
 
 import { useMemo } from "react"
-import { toast } from "sonner"
 
-import { DataTable } from "@/components/data-table"
+import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
-import { Field, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { useDataTable } from "@/hooks/use-data-table"
 import { useTablePagination } from "@/hooks/use-table-pagination"
 
@@ -26,15 +15,20 @@ import { useCatalogQuery } from "../../api/query/use-catalogs"
 import type { CatalogItem } from "../../api/types/catalog"
 import type { Campus } from "../../api/types/campus"
 import { CATALOGS } from "@/lib/catalogs"
-import { BulkDeleteFab } from "../bulk-delete-fab"
+import { DialogBulkDelete } from "../dialogs/dialog-bulk-delete"
+import { ClearSelectionDialog } from "../dialogs/dialog-clear-selection"
 import { ExportCampusesDialog } from "../dialogs/dialog-export-campuses"
 import { ExportSelectedCampusesDialog } from "../dialogs/dialog-export-selected-campuses"
+import { SearchCampuses } from "../search/search-campuses"
+import { useNotify, NoticeOutlet } from "../common/notice-context"
 
 export function CampusesDataTable() {
+  const { notify } = useNotify()
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } =
     useTablePagination()
 
-  const { filters, queryFilters, applyFilters } = useCampusesFilters()
+  const { filters, queryFilters, applyFilters, clearAllFilters, activeFilterCount } =
+    useCampusesFilters()
 
   const { data: zones = [] } = useCatalogQuery<CatalogItem>(CATALOGS.ZONES)
 
@@ -68,75 +62,60 @@ export function CampusesDataTable() {
     mutationConfig: {
       onSuccess: (result) => {
         if (result.status === "error") {
-          toast.error(result.message)
+          notify(result.message, { variant: "error" })
           return
         }
-        toast.success(result.message)
+        notify(result.message)
         resetSelection()
       },
       onError: (error) => {
-        toast.error(error.message)
+        notify(error.message, { variant: "error" })
       },
     },
   })
 
   return (
     <>
-      <div className="mb-6 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-        <div className="grid w-full gap-4 md:grid-cols-[minmax(18rem,1fr)_minmax(12rem,16rem)]">
-          <Field orientation="horizontal" variant="outlined" className="w-full max-w-full">
-            <FieldLabel htmlFor="campus-search">Buscar</FieldLabel>
-            <Input
-              id="campus-search"
-              value={filters.search}
-              onChange={(event) =>
-                applyFilters({
-                  ...filters,
-                  search: event.target.value,
-                })
-              }
-              placeholder="Buscar por sede o código DANE"
-            />
-          </Field>
-          <Field orientation="horizontal" variant="outlined" className="w-full max-w-full">
-            <FieldLabel htmlFor="campus-zone">Zona</FieldLabel>
-            <Select
-              value={filters.zones[0] ?? ""}
-              onValueChange={(value) =>
-                applyFilters({
-                  ...filters,
-                  zones: value ? [value] : [],
-                })
-              }
-            >
-              <SelectTrigger id="campus-zone" className="w-full">
-                <SelectValue placeholder="Todas" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectItem value="">Todas</SelectItem>
-                  {zones.map((zone) => (
-                    <SelectItem key={zone.id} value={zone.code}>
-                      {zone.name}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </Field>
-        </div>
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+        <SearchCampuses
+          filters={filters}
+          applyFilters={applyFilters}
+          clearAllFilters={clearAllFilters}
+          activeFilterCount={activeFilterCount}
+          zones={zones}
+        />
 
         <div className="flex items-center gap-2">
           {hasSelection ? (
-            <ExportSelectedCampusesDialog
-              selectedIds={selectedIds}
-              resetSelection={resetSelection}
-            />
+            <>
+              <ClearSelectionDialog resetSelection={resetSelection} />
+              <DialogBulkDelete<Campus>
+                items={selectedItems}
+                getItemId={(item) => item.id}
+                getItemLabel={(item) => item.name}
+                buildTitle={(count, sample) => {
+                  const list = sample.join(", ")
+                  const suffix = count > sample.length ? ` y ${count - sample.length} más` : ""
+                  return `¿Está seguro de que desea eliminar permanentemente las sedes educativas ${list}${suffix} (${count} en total)? Esta acción no se puede deshacer.`
+                }}
+                onConfirm={async (ids) => {
+                  await bulkDelete.mutateAsync(ids)
+                }}
+                triggerLabel={`Eliminar (${selectedIds.length})`}
+              />
+              <ExportSelectedCampusesDialog
+                selectedIds={selectedIds}
+                resetSelection={resetSelection}
+              />
+            </>
           ) : (
             <ExportCampusesDialog filters={queryFilters} />
           )}
+          <DataTableViewOptions table={table} />
         </div>
       </div>
+
+      <NoticeOutlet className="mb-3" />
 
       <DataTable
         table={table}
@@ -157,24 +136,6 @@ export function CampusesDataTable() {
           totalCount={data.totalCount}
           pageSize={pageSize}
           onPageSizeChange={setPageSize}
-        />
-      )}
-
-      {hasSelection && (
-        <BulkDeleteFab<Campus>
-          selectedIds={selectedIds}
-          selectedItems={selectedItems}
-          getItemId={(item) => item.id}
-          getItemLabel={(item) => item.name}
-          buildTitle={(count, sample) => {
-            const list = sample.join(", ")
-            const suffix = count > sample.length ? ` y ${count - sample.length} más` : ""
-            return `¿Está seguro de que desea eliminar permanentemente las sedes educativas ${list}${suffix} (${count} en total)? Esta acción no se puede deshacer.`
-          }}
-          onConfirm={async (ids) => {
-            await bulkDelete.mutateAsync(ids)
-          }}
-          onClearSelection={resetSelection}
         />
       )}
     </>

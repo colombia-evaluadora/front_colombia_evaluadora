@@ -4,7 +4,6 @@ import { FormSectionHeading } from "@/components/form-section-heading"
 import {
     Select,
     SelectContent,
-    SelectGroup,
     SelectItem,
     SelectTrigger,
     SelectValue,
@@ -26,6 +25,11 @@ export function DomicilioDataFormSection({ value, onChange, invalidFields = [], 
     const isInvalid = (field: string) => showValidation && invalidFields.includes(field)
     const { data: municipalities = [] } = useCatalogQuery<Municipality>(CATALOGS.MUNICIPALITIES)
     const { data: zones = [] } = useCatalogQuery<CatalogItem>(CATALOGS.ZONES)
+    const municipalityItems = municipalities.map((municipality) => ({
+        value: municipality.id,
+        label: `${municipality.id} - ${municipality.name}`,
+    }))
+    const zoneItems = zones.map((zone) => ({ value: zone.id, label: zone.name }))
 
     return (
         <>
@@ -50,22 +54,18 @@ export function DomicilioDataFormSection({ value, onChange, invalidFields = [], 
                                 },
                             })
                         }}
+                        items={municipalityItems}
                     >
                         <SelectTrigger>
                             <SelectValue placeholder="Seleccione municipio" />
                         </SelectTrigger>
 
                         <SelectContent>
-                            <SelectGroup>
-                                {municipalities.map((municipality) => (
-                                    <SelectItem
-                                        key={municipality.id}
-                                        value={municipality.id}
-                                    >
-                                        {municipality.id} - {municipality.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectGroup>
+                            {municipalityItems.map((item) => (
+                                <SelectItem key={item.value} value={item.value}>
+                                    {item.label}
+                                </SelectItem>
+                            ))}
                         </SelectContent>
                     </Select>
                 </Field>
@@ -81,22 +81,18 @@ export function DomicilioDataFormSection({ value, onChange, invalidFields = [], 
                                 zone: option ?? { id: selectedValue ?? "", code: selectedValue ?? "", name: selectedValue ?? "" },
                             })
                         }}
+items={zoneItems}
                     >
                         <SelectTrigger>
                             <SelectValue placeholder="Urbana" />
                         </SelectTrigger>
 
                         <SelectContent>
-                            <SelectGroup>
-                                {zones.map((zone) => (
-                                    <SelectItem
-                                        key={zone.id}
-                                        value={zone.id}
-                                    >
-                                        {zone.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectGroup>
+                            {zoneItems.map((item) => (
+                                <SelectItem key={item.value} value={item.value}>
+                                    {item.label}
+                                </SelectItem>
+                            ))}
                         </SelectContent>
                     </Select>
                 </Field>

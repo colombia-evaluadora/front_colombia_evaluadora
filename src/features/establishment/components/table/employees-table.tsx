@@ -1,20 +1,9 @@
 "use no memo"
 
 import { useMemo } from "react"
-import { toast } from "sonner"
 
-import { DataTable } from "@/components/data-table"
+import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
-import { Field, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { useDataTable } from "@/hooks/use-data-table"
 import { useTablePagination } from "@/hooks/use-table-pagination"
 import { CATALOGS } from "@/lib/catalogs"
@@ -26,19 +15,24 @@ import type { EmployeeListItem } from "../../api/types/employee"
 import { useEmployeesQuery } from "../../api/query/use-employees-query"
 import { useBulkDeleteEmployees } from "../../api/mutations/use-bulk-delete-employees"
 import { createEmployeeColumns } from "./columns-employees"
-import { BulkDeleteFab } from "../bulk-delete-fab"
+import { DialogBulkDelete } from "../dialogs/dialog-bulk-delete"
+import { ClearSelectionDialog } from "../dialogs/dialog-clear-selection"
 import { ExportEmployeesDialog } from "../dialogs/dialog-export-employees"
 import { ExportSelectedEmployeesDialog } from "../dialogs/dialog-export-selected-employees"
+import { SearchEmployees } from "../search/search-employees"
+import { useNotify, NoticeOutlet } from "../common/notice-context"
 
 interface EmployeesDataTableProps {
   onEditEmployee: (employeeId: string) => void
 }
 
 export function EmployeesDataTable({ onEditEmployee }: EmployeesDataTableProps) {
+  const { notify } = useNotify()
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } =
     useTablePagination()
 
-  const { filters, queryFilters, applyFilters } = useEmployeesFilters()
+  const { filters, queryFilters, applyFilters, clearAllFilters, activeFilterCount } =
+    useEmployeesFilters()
 
   const { data: roles = [] } = useCatalogQuery<CatalogItem>(CATALOGS.EMPLOYEE_ROLES)
   const { data: workSchedules = [] } = useCatalogQuery<CatalogItem>(CATALOGS.WORK_SCHEDULES)
@@ -76,130 +70,62 @@ export function EmployeesDataTable({ onEditEmployee }: EmployeesDataTableProps) 
     mutationConfig: {
       onSuccess: (result) => {
         if (result.status === "error") {
-          toast.error(result.message)
+          notify(result.message, { variant: "error" })
           return
         }
-        toast.success(result.message)
+        notify(result.message)
         resetSelection()
       },
       onError: (error) => {
-        toast.error(error.message)
+        notify(error.message, { variant: "error" })
       },
     },
   })
 
   return (
     <>
-      <div className="mb-6 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-        <div className="grid w-full gap-4 xl:grid-cols-2 2xl:grid-cols-[minmax(18rem,1fr)_repeat(3,minmax(11rem,14rem))]">
-          <Field orientation="vertical" variant="outlined" className="w-full max-w-full">
-            <FieldLabel htmlFor="employee-search">Buscar</FieldLabel>
-            <Input
-              id="employee-search"
-              value={filters.search}
-              onChange={(event) =>
-                applyFilters({
-                  ...filters,
-                  search: event.target.value,
-                })
-              }
-              placeholder="Buscar por documento, nombre o sede"
-            />
-          </Field>
-
-          <Field orientation="vertical" variant="outlined" className="w-full max-w-full">
-            <FieldLabel htmlFor="employee-role">Rol</FieldLabel>
-            <Select
-              value={filters.roles[0] ?? ""}
-              onValueChange={(value) =>
-                applyFilters({
-                  ...filters,
-                  roles: value ? [value] : [],
-                })
-              }
-            >
-              <SelectTrigger id="employee-role" className="w-full">
-                <SelectValue placeholder="Todos" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectItem value="">Todos</SelectItem>
-                  {roles.map((role) => (
-                    <SelectItem key={role.id} value={role.code}>
-                      {role.name}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </Field>
-
-          <Field orientation="vertical" variant="outlined" className="w-full max-w-full">
-            <FieldLabel htmlFor="employee-schedule">Jornada</FieldLabel>
-            <Select
-              value={filters.workSchedules[0] ?? ""}
-              onValueChange={(value) =>
-                applyFilters({
-                  ...filters,
-                  workSchedules: value ? [value] : [],
-                })
-              }
-            >
-              <SelectTrigger id="employee-schedule" className="w-full">
-                <SelectValue placeholder="Todas" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectItem value="">Todas</SelectItem>
-                  {workSchedules.map((schedule) => (
-                    <SelectItem key={schedule.id} value={schedule.code}>
-                      {schedule.name}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </Field>
-
-          <Field orientation="vertical" variant="outlined" className="w-full max-w-full">
-            <FieldLabel htmlFor="employee-status">Estado</FieldLabel>
-            <Select
-              value={filters.statuses[0] ?? ""}
-              onValueChange={(value) =>
-                applyFilters({
-                  ...filters,
-                  statuses: value ? [value as "ACTIVE" | "SUSPENDED"] : [],
-                })
-              }
-            >
-              <SelectTrigger id="employee-status" className="w-full">
-                <SelectValue placeholder="Todos" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectItem value="">Todos</SelectItem>
-                  {entityStatuses.map((status: CatalogItem) => (
-                    <SelectItem key={status.id} value={status.id}>
-                      {status.name}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </Field>
-        </div>
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+        <SearchEmployees
+          filters={filters}
+          applyFilters={applyFilters}
+          clearAllFilters={clearAllFilters}
+          activeFilterCount={activeFilterCount}
+          roles={roles}
+          workSchedules={workSchedules}
+          statuses={entityStatuses}
+        />
 
         <div className="flex items-center gap-2">
           {hasSelection ? (
-            <ExportSelectedEmployeesDialog
-              selectedIds={selectedIds}
-              resetSelection={resetSelection}
-            />
+            <>
+              <ClearSelectionDialog resetSelection={resetSelection} />
+              <DialogBulkDelete<EmployeeListItem>
+                items={selectedItems}
+                getItemId={(item) => item.id}
+                getItemLabel={(item) => item.name}
+                buildTitle={(count, sample) => {
+                  const list = sample.join(", ")
+                  const suffix = count > sample.length ? ` y ${count - sample.length} más` : ""
+                  return `¿Está seguro de que desea eliminar permanentemente a los funcionarios ${list}${suffix} (${count} en total)? Esta acción no se puede deshacer.`
+                }}
+                onConfirm={async (ids) => {
+                  await bulkDelete.mutateAsync(ids)
+                }}
+                triggerLabel={`Eliminar (${selectedIds.length})`}
+              />
+              <ExportSelectedEmployeesDialog
+                selectedIds={selectedIds}
+                resetSelection={resetSelection}
+              />
+            </>
           ) : (
             <ExportEmployeesDialog filters={queryFilters} />
           )}
+          <DataTableViewOptions table={table} />
         </div>
       </div>
+
+      <NoticeOutlet className="mb-3" />
 
       <DataTable
         table={table}
@@ -220,24 +146,6 @@ export function EmployeesDataTable({ onEditEmployee }: EmployeesDataTableProps) 
           totalCount={data.totalCount}
           pageSize={pageSize}
           onPageSizeChange={setPageSize}
-        />
-      )}
-
-      {hasSelection && (
-        <BulkDeleteFab<EmployeeListItem>
-          selectedIds={selectedIds}
-          selectedItems={selectedItems}
-          getItemId={(item) => item.id}
-          getItemLabel={(item) => item.name}
-          buildTitle={(count, sample) => {
-            const list = sample.join(", ")
-            const suffix = count > sample.length ? ` y ${count - sample.length} más` : ""
-            return `¿Está seguro de que desea eliminar permanentemente a los funcionarios ${list}${suffix} (${count} en total)? Esta acción no se puede deshacer.`
-          }}
-          onConfirm={async (ids) => {
-            await bulkDelete.mutateAsync(ids)
-          }}
-          onClearSelection={resetSelection}
         />
       )}
     </>

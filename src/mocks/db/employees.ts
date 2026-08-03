@@ -77,8 +77,8 @@ export function createEmployeeRow(employee: Employee): EmployeeListItem {
   /**
    * Roles del funcionario, agregados desde sus permisos y deduplicados por
    * `code` preservando el orden. Si no hay permisos todavía (caso del primer
-   * Guardar del flujo de creación), caemos a un placeholder con `code`
-   * vacío para no romper el render de la tabla.
+   * Guardar del flujo de creación), la lista queda vacía y la celda muestra
+   * "—", igual que la columna de estado.
    */
   const rolesByCode = new Map<string, CatalogItem>()
   for (const permission of employee.permissions) {
@@ -86,10 +86,7 @@ export function createEmployeeRow(employee: Employee): EmployeeListItem {
       rolesByCode.set(permission.role.code, permission.role)
     }
   }
-  const roles: CatalogItem[] =
-    rolesByCode.size > 0
-      ? Array.from(rolesByCode.values())
-      : [createCatalogItem(EMPLOYEE_ROLES)]
+  const roles: CatalogItem[] = Array.from(rolesByCode.values())
 
   /**
    * Estados del funcionario, agregados desde sus permisos y deduplicados
@@ -117,7 +114,7 @@ export function createEmployeeRow(employee: Employee): EmployeeListItem {
     name,
     roles,
     campuses: campusNames,
-    workSchedule: primaryPermission?.workSchedule ?? createCatalogItem(WORK_SCHEDULES),
+    workSchedule: primaryPermission?.workSchedule,
     statuses,
   }
 }

@@ -19,7 +19,6 @@ import { Input } from "@/components/ui/input"
 import {
     Select,
     SelectContent,
-    SelectGroup,
     SelectItem,
     SelectTrigger,
     SelectValue,
@@ -39,6 +38,7 @@ interface IdentificationDataFormSectionProps {
 export function IdentificationDataFormSection({ value, onChange, invalidFields = [], showValidation = false }: IdentificationDataFormSectionProps) {
     const isInvalid = (field: string) => showValidation && invalidFields.includes(field)
     const { data: legalTypes = []} = useCatalogQuery<CatalogItem>(CATALOGS.LEGAL_TYPES)
+    const legalTypeItems = legalTypes.map(item => ({ value: item.id, label: item.name }))
 
     // Escudo del establecimiento: estado puramente UI, análogo a la foto
     // de la persona. No se persiste todavía en el modelo `basicInfo`, así
@@ -135,19 +135,18 @@ export function IdentificationDataFormSection({ value, onChange, invalidFields =
                                 ownershipType: option ?? { id: selectedValue ?? "", code: selectedValue ?? "", name: selectedValue ?? "" },
                             })
                         }}
+                        items={legalTypeItems}
                     >
                         <SelectTrigger aria-invalid={isInvalid("basicInfo.ownershipType")}>
                             <SelectValue placeholder="Seleccione" />
                         </SelectTrigger>
 
                         <SelectContent>
-                            <SelectGroup>
-                                {legalTypes?.map(item => (
-                                    <SelectItem key={item.id} value={item.id}>
-                                        {item.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectGroup>
+                            {legalTypeItems.map((item) => (
+                                <SelectItem key={item.value} value={item.value}>
+                                    {item.label}
+                                </SelectItem>
+                            ))}
                         </SelectContent>
                     </Select>
                 </Field>

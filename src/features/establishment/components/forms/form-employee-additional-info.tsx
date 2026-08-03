@@ -3,7 +3,6 @@ import { Input } from "@/components/ui/input"
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -59,6 +58,13 @@ export function EmployeeAdditionalInfoForm({ value, onChange }: EmployeeAddition
   const { data: functionalPositions = [] } = useCatalogQuery<CatalogItem>(CATALOGS.FUNCTIONAL_POSITIONS)
   const { data: employmentTypes = [] } = useCatalogQuery<CatalogItem>(CATALOGS.EMPLOYMENT_TYPES)
 
+  const employeeClassItems = employeeClasses.map((item) => ({ value: item.id, label: item.name }))
+  const educationLevelItems = educationLevels.map((item) => ({ value: item.id, label: item.name }))
+  const gradeItems = grades.map((item) => ({ value: item.id, label: item.name }))
+  const fundingSourceItems = fundingSources.map((item) => ({ value: item.id, label: item.name }))
+  const functionalPositionItems = functionalPositions.map((item) => ({ value: item.id, label: item.name }))
+  const employmentTypeItems = employmentTypes.map((item) => ({ value: item.id, label: item.name }))
+
   const patch = (partial: Partial<EmployeeAdditionalInfoValue>) => {
     onChange({ ...value, ...partial })
   }
@@ -80,18 +86,17 @@ export function EmployeeAdditionalInfoForm({ value, onChange }: EmployeeAddition
               }),
             })
           }}
+          items={employeeClassItems}
         >
           <SelectTrigger>
             <SelectValue placeholder="Seleccionar clase" />
           </SelectTrigger>
           <SelectContent>
-            <SelectGroup>
-              {employeeClasses.map((item) => (
-                <SelectItem key={item.id} value={item.id}>
-                  {item.name}
-                </SelectItem>
-              ))}
-            </SelectGroup>
+            {employeeClassItems.map((item) => (
+              <SelectItem key={item.value} value={item.value}>
+                {item.label}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </Field>
@@ -111,18 +116,17 @@ export function EmployeeAdditionalInfoForm({ value, onChange }: EmployeeAddition
               }),
             })
           }}
+          items={educationLevelItems}
         >
           <SelectTrigger>
             <SelectValue placeholder="Seleccionar nivel" />
           </SelectTrigger>
           <SelectContent>
-            <SelectGroup>
-              {educationLevels.map((item) => (
-                <SelectItem key={item.id} value={item.id}>
-                  {item.name}
-                </SelectItem>
-              ))}
-            </SelectGroup>
+            {educationLevelItems.map((item) => (
+              <SelectItem key={item.value} value={item.value}>
+                {item.label}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </Field>
@@ -142,18 +146,17 @@ export function EmployeeAdditionalInfoForm({ value, onChange }: EmployeeAddition
               }),
             })
           }}
+          items={gradeItems}
         >
           <SelectTrigger>
             <SelectValue placeholder="Seleccionar grado" />
           </SelectTrigger>
           <SelectContent>
-            <SelectGroup>
-              {grades.map((item) => (
-                <SelectItem key={item.id} value={item.id}>
-                  {item.name}
-                </SelectItem>
-              ))}
-            </SelectGroup>
+            {gradeItems.map((item) => (
+              <SelectItem key={item.value} value={item.value}>
+                {item.label}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </Field>
@@ -173,18 +176,17 @@ export function EmployeeAdditionalInfoForm({ value, onChange }: EmployeeAddition
               }),
             })
           }}
+          items={educationLevelItems}
         >
           <SelectTrigger>
             <SelectValue placeholder="Seleccionar nivel" />
           </SelectTrigger>
           <SelectContent>
-            <SelectGroup>
-              {educationLevels.map((item) => (
-                <SelectItem key={item.id} value={item.id}>
-                  {item.name}
-                </SelectItem>
-              ))}
-            </SelectGroup>
+            {educationLevelItems.map((item) => (
+              <SelectItem key={item.value} value={item.value}>
+                {item.label}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </Field>
@@ -204,18 +206,17 @@ export function EmployeeAdditionalInfoForm({ value, onChange }: EmployeeAddition
               }),
             })
           }}
+          items={fundingSourceItems}
         >
           <SelectTrigger>
             <SelectValue placeholder="Seleccionar fuente" />
           </SelectTrigger>
           <SelectContent>
-            <SelectGroup>
-              {fundingSources.map((item) => (
-                <SelectItem key={item.id} value={item.id}>
-                  {item.name}
-                </SelectItem>
-              ))}
-            </SelectGroup>
+            {fundingSourceItems.map((item) => (
+              <SelectItem key={item.value} value={item.value}>
+                {item.label}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </Field>
@@ -235,18 +236,17 @@ export function EmployeeAdditionalInfoForm({ value, onChange }: EmployeeAddition
               }),
             })
           }}
+          items={functionalPositionItems}
         >
           <SelectTrigger>
             <SelectValue placeholder="Seleccionar cargo" />
           </SelectTrigger>
           <SelectContent>
-            <SelectGroup>
-              {functionalPositions.map((item) => (
-                <SelectItem key={item.id} value={item.id}>
-                  {item.name}
-                </SelectItem>
-              ))}
-            </SelectGroup>
+            {functionalPositionItems.map((item) => (
+              <SelectItem key={item.value} value={item.value}>
+                {item.label}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </Field>
@@ -266,18 +266,17 @@ export function EmployeeAdditionalInfoForm({ value, onChange }: EmployeeAddition
               }),
             })
           }}
+          items={employmentTypeItems}
         >
           <SelectTrigger>
             <SelectValue placeholder="Seleccionar vinculación" />
           </SelectTrigger>
           <SelectContent>
-            <SelectGroup>
-              {employmentTypes.map((item) => (
-                <SelectItem key={item.id} value={item.id}>
-                  {item.name}
-                </SelectItem>
-              ))}
-            </SelectGroup>
+            {employmentTypeItems.map((item) => (
+              <SelectItem key={item.value} value={item.value}>
+                {item.label}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </Field>

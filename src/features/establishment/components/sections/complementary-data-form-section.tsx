@@ -5,7 +5,6 @@ import { DatePicker } from "@/components/date-picker"
 import {
     Select,
     SelectContent,
-    SelectGroup,
     SelectItem,
     SelectTrigger,
     SelectValue,
@@ -35,6 +34,14 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
     const {data: disabilities = []} = useCatalogQuery<CatalogItem>(CATALOGS.DISABILITIES)
     const {data: licenseStatuses = []} = useCatalogQuery<CatalogItem>(CATALOGS.LICENSE_STATUSES)
     const {data: populationGenders = []} = useCatalogQuery<CatalogItem>(CATALOGS.POPULATION_GENDERS)
+
+    const idiomaItems = idiomas.map((item: CatalogItem) => ({ value: item.id, label: item.name }))
+    const calendarioItems = calendarios.map((c: CatalogItem) => ({ value: c.id, label: c.name }))
+    const costRegimenItems = costRegimen.map((item: CatalogItem) => ({ value: item.id, label: item.name }))
+    const populationGenderItems = populationGenders.map((g: CatalogItem) => ({ value: g.id, label: g.name }))
+    const rangoTarifaItems = rangosTarifas.map((r: CatalogItem) => ({ value: r.id, label: r.name }))
+    const disabilityItems = disabilities.map((item: CatalogItem) => ({ value: item.id, label: item.name }))
+    const licenseStatusItems = licenseStatuses.map((item: CatalogItem) => ({ value: item.id, label: item.name }))
 
     return(
         <>
@@ -70,19 +77,18 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                                 const option = idiomas.find((item) => item.id === selectedValue)
                                 onChange({ ...value, teachingLanguage: option ?? { id: selectedValue ?? "", code: selectedValue ?? "", name: selectedValue ?? "" } })
                             }}
+                            items={idiomaItems}
                         >
                             <SelectTrigger>
                                 <SelectValue placeholder="Seleccione" />
                             </SelectTrigger>
 
                             <SelectContent>
-                                <SelectGroup>
-                                    {idiomas.map((item: CatalogItem) => (
-                                        <SelectItem key={item.id} value={item.id}>
-                                            {item.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectGroup>
+                                {idiomaItems.map((item) => (
+                                    <SelectItem key={item.value} value={item.value}>
+                                        {item.label}
+                                    </SelectItem>
+                                ))}
                             </SelectContent>
                         </Select>
                     </Field>
@@ -98,18 +104,17 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                                 const option = calendarios.find((item) => item.id === selectedValue)
                                 onChange({ ...value, calendar: option ?? { id: selectedValue ?? "", code: selectedValue ?? "", name: selectedValue ?? "" } })
                             }}
+                            items={calendarioItems}
                         >
                             <SelectTrigger className="w-full">
                                 <SelectValue placeholder="Seleccione" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectGroup>
-                                    {calendarios.map((c: CatalogItem) => (
-                                        <SelectItem key={c.id} value={c.id}>
-                                            {c.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectGroup>
+                                {calendarioItems.map((item) => (
+                                    <SelectItem key={item.value} value={item.value}>
+                                        {item.label}
+                                    </SelectItem>
+                                ))}
                             </SelectContent>
                         </Select>
                     </Field>
@@ -126,19 +131,18 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                                 const option = costRegimen.find((item) => item.id === selectedValue)
                                 onChange({ ...value, costRegime: option ?? { id: selectedValue ?? "", code: selectedValue ?? "", name: selectedValue ?? "" } })
                             }}
+                            items={costRegimenItems}
                         >
                             <SelectTrigger>
                                 <SelectValue placeholder="Seleccione" />
                             </SelectTrigger>
 
                             <SelectContent>
-                                <SelectGroup>
-                                    {costRegimen.map((item: CatalogItem) => (
-                                        <SelectItem key={item.id} value={item.id}>
-                                            {item.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectGroup>
+                                {costRegimenItems.map((item) => (
+                                    <SelectItem key={item.value} value={item.value}>
+                                        {item.label}
+                                    </SelectItem>
+                                ))}
                             </SelectContent>
                         </Select>
                     </Field>
@@ -154,18 +158,17 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                                 const option = populationGenders.find((item) => item.id === selectedValue)
                                 onChange({ ...value, populationGender: option ?? { id: selectedValue ?? "", code: selectedValue ?? "", name: selectedValue ?? "" } })
                             }}
+                            items={populationGenderItems}
                         >
                             <SelectTrigger className="w-full">
                                 <SelectValue placeholder="Seleccione" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectGroup>
-                                    {populationGenders.map((g: CatalogItem) => (
-                                        <SelectItem key={g.id} value={g.id}>
-                                            {g.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectGroup>
+                                {populationGenderItems.map((item) => (
+                                    <SelectItem key={item.value} value={item.value}>
+                                        {item.label}
+                                    </SelectItem>
+                                ))}
                             </SelectContent>
                         </Select>
                     </Field>
@@ -180,18 +183,17 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                                 const option = rangosTarifas.find((item) => item.id === selectedValue)
                                 onChange({ ...value, tuitionRange: option ?? { id: selectedValue ?? "", code: selectedValue ?? "", name: selectedValue ?? "" } })
                             }}
+                            items={rangoTarifaItems}
                         >
                             <SelectTrigger className="w-full">
                                 <SelectValue placeholder="Seleccione" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectGroup>
-                                    {rangosTarifas.map((r: CatalogItem) => (
-                                        <SelectItem key={r.id} value={r.id}>
-                                            {r.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectGroup>
+                                {rangoTarifaItems.map((item) => (
+                                    <SelectItem key={item.value} value={item.value}>
+                                        {item.label}
+                                    </SelectItem>
+                                ))}
                             </SelectContent>
                         </Select>
                     </Field>
@@ -210,19 +212,18 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                                 const option = disabilities.find((item) => item.id === selectedValue)
                                 onChange({ ...value, disabilityType: option ?? { id: selectedValue ?? "", code: selectedValue ?? "", name: selectedValue ?? "" } })
                             }}
+                            items={disabilityItems}
                         >
                             <SelectTrigger>
                                 <SelectValue placeholder="Seleccione" />
                             </SelectTrigger>
 
                             <SelectContent>
-                                <SelectGroup>
-                                    {disabilities.map((item: CatalogItem) => (
-                                        <SelectItem key={item.id} value={item.id}>
-                                            {item.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectGroup>
+                                {disabilityItems.map((item) => (
+                                    <SelectItem key={item.value} value={item.value}>
+                                        {item.label}
+                                    </SelectItem>
+                                ))}
                             </SelectContent>
                         </Select>
                     </Field>
@@ -240,19 +241,18 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                                 const option = licenseStatuses.find((item) => item.id === selectedValue)
                                 onChange({ ...value, licenseStatus: option ?? { id: selectedValue ?? "", code: selectedValue ?? "", name: selectedValue ?? "" } })
                             }}
+                            items={licenseStatusItems}
                         >
                             <SelectTrigger>
                                 <SelectValue placeholder="Seleccione" />
                             </SelectTrigger>
 
                             <SelectContent>
-                                <SelectGroup>
-                                    {licenseStatuses.map((item: CatalogItem) => (
-                                        <SelectItem key={item.id} value={item.id}>
-                                            {item.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectGroup>
+                                {licenseStatusItems.map((item) => (
+                                    <SelectItem key={item.value} value={item.value}>
+                                        {item.label}
+                                    </SelectItem>
+                                ))}
                             </SelectContent>
                         </Select>
                     </Field>
