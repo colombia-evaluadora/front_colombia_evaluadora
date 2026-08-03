@@ -1,7 +1,6 @@
 import { useState } from "react"
 
 import { DownloadSimpleIcon, FilePdfIcon, FileXlsIcon, SpinnerIcon } from "@/components/ui/icons"
-import { toast } from "sonner"
 
 import {
     Dialog,
@@ -18,6 +17,7 @@ import { Button } from "@/components/ui/button"
 import { useExportCampuses } from "../../api/mutations/export-campuses"
 import type { CampusesQueryRequest } from "../../api/types/campus"
 import type { ExportFormat } from "../../api/types/export"
+import { useNotify } from "../common/notice-context"
 
 interface ExportCampusesDialogProps {
     filters: CampusesQueryRequest["filters"]
@@ -25,15 +25,16 @@ interface ExportCampusesDialogProps {
 
 export function ExportCampusesDialog({ filters }: ExportCampusesDialogProps) {
     const [open, setOpen] = useState(false)
+    const { notify } = useNotify()
 
     const exportAll = useExportCampuses({
         mutationConfig: {
             onSuccess: (result) => {
                 if (result.status === "error") {
-                    toast.error(result.message)
+                    notify(result.message, { variant: "error" })
                     return
                 }
-                toast.success(result.message)
+                notify(result.message)
                 setOpen(false)
             },
         },

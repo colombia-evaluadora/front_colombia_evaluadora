@@ -38,10 +38,10 @@ export function EmployeesPage() {
               Agregar
             </Button>
           </CardAction>
-        <CardTitle>Funcionarios</CardTitle>
-        <CardDescription>
-          Lista de funcionarios con búsqueda, filtros por rol, jornada y estado, y paginación.
-        </CardDescription>
+          <CardTitle>Funcionarios</CardTitle>
+          <CardDescription>
+            Lista de funcionarios con búsqueda, filtros por rol, jornada y estado, y paginación.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <EmployeesDataTable onEditEmployee={openEditDialog} />

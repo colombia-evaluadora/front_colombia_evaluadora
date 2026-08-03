@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react"
-import { toast } from "sonner"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -16,7 +15,6 @@ import { PlusIcon, TrashIcon } from "@/components/ui/icons"
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -51,6 +49,7 @@ import {
   type EmployeeAdditionalInfoValue,
 } from "../forms/form-employee-additional-info"
 import { UserDetailsForm } from "../forms/form-user-datails"
+import { NoticeOutlet, useNotify } from "../common/notice-context"
 
 interface ManageEmployeeDialogProps {
   open: boolean
@@ -59,6 +58,7 @@ interface ManageEmployeeDialogProps {
 }
 
 interface PermissionDraft {
+  order: string
   roleCode: string
   campusId: string
   workScheduleCode: string
@@ -112,8 +112,9 @@ function isPersonMinComplete(person: Person | null) {
   )
 }
 
-function createPermissionDraft(): PermissionDraft {
+function createPermissionDraft(nextOrder = 1): PermissionDraft {
   return {
+    order: String(nextOrder),
     roleCode: "",
     campusId: "",
     workScheduleCode: "",
@@ -127,7 +128,12 @@ function buildEmployeeStatus(permissions: Permission[]): EmployeeStatus {
     : "SUSPENDED"
 }
 
+// Comparte el `NoticeProvider` del padre (la tabla) para que el aviso de
+// guardado exitoso siga visible en la vista general tras cerrar el diálogo,
+// igual que ocurre con el borrado. Solo los mensajes de los sub-diálogos de
+// permisos/información complementaria se ven mientras el diálogo sigue abierto.
 export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageEmployeeDialogProps) {
+  const { notify } = useNotify()
   const isEditMode = Boolean(employeeId)
   /**
    * id del empleado recién creado en esta sesión. Mientras está vacío no
@@ -163,6 +169,11 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
   const { data: entityStatuses = [] } = useCatalogQuery<CatalogItem>(CATALOGS.ENTITY_STATUSES)
   const { data: campuses = [] } = useCampusesOptionsQuery()
 
+  const roleItems = roles.map((role) => ({ value: role.code, label: role.name }))
+  const campusItems = campuses.map((campus) => ({ value: campus.id, label: campus.name }))
+  const workScheduleItems = workSchedules.map((schedule) => ({ value: schedule.code, label: schedule.name }))
+  const permissionStatusItems = entityStatuses.map((status: CatalogItem) => ({ value: status.id, label: status.name }))
+
   useEffect(() => {
     if (!open) {
       return
@@ -183,7 +194,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
       setPerson(employee.person)
       setPermissions(employee.permissions)
       setAdditionalInfo(createAdditionalInfoFromEmployee(employee))
-      setPermissionDraft(createPermissionDraft())
+      setPermissionDraft(createPermissionDraft(employee.permissions.length + 1))
       setConfirmPassword(employee.person.password)
     }
   }, [employeeQuery.data, isEditMode, open])
@@ -191,7 +202,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
   const createPersonMutation = useCreateEmployeePerson({
     mutationConfig: {
       onError: (error) => {
-        toast.error(error.message || "No fue posible guardar el usuario.")
+        notify(error.message || "No fue posible guardar el usuario.", { variant: "error" })
       },
     },
   })
@@ -199,7 +210,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
   const createEmployeeMutation = useCreateEmployee({
     mutationConfig: {
       onError: (error) => {
-        toast.error(error.message || "No fue posible crear el funcionario.")
+        notify(error.message || "No fue posible crear el funcionario.", { variant: "error" })
       },
     },
   })
@@ -208,15 +219,18 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
     mutationConfig: {
       onSuccess: (result) => {
         if (result.status === "error") {
-          toast.error(result.message)
+          notify(result.message, { variant: "error" })
           return
         }
 
-        toast.success(result.message)
+        // En modo creación este guardado final también pasa por PUT (una vez
+        // ya existe `activeEmployeeId`), así que el mensaje del backend diría
+        // "actualizado" aunque el funcionario se esté creando por primera vez.
+        notify(isEditMode ? result.message : "Funcionario creado.")
         onOpenChange(false)
       },
       onError: (error) => {
-        toast.error(error.message || "No fue posible actualizar el funcionario.")
+        notify(error.message || "No fue posible actualizar el funcionario.", { variant: "error" })
       },
     },
   })
@@ -230,7 +244,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
     const draft = person as Person | null
 
     if (!draft) {
-      toast.error("No hay datos del usuario para guardar.")
+      notify("No hay datos del usuario para guardar.", { variant: "error" })
       return
     }
 
@@ -239,8 +253,9 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
 
     if (!persistedPerson.id) {
       if (!isPersonMinComplete(persistedPerson)) {
-        toast.error(
-          "Completa los datos mínimos del usuario (tipo de documento, número, primer nombre y primer apellido)."
+        notify(
+          "Completa los datos mínimos del usuario (tipo de documento, número, primer nombre y primer apellido).",
+          { variant: "error" }
         )
         return
       }
@@ -248,7 +263,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
       const result = await createPersonMutation.mutateAsync(persistedPerson)
 
       if (result.status === "error") {
-        toast.error(result.message)
+        notify(result.message, { variant: "error" })
         return
       }
 
@@ -281,7 +296,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
       const result = await createEmployeeMutation.mutateAsync(payload)
 
       if (result.status === "error") {
-        toast.error(result.message)
+        notify(result.message, { variant: "error" })
         return
       }
 
@@ -289,7 +304,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
       // invocaciones a handleMainSave pasen por PUT, y habilitamos los
       // botones opcionales sin cerrar el diálogo.
       setCreatedEmployeeId(result.employee.id)
-      toast.success(
+      notify(
         permissions.length === 0
           ? "Usuario guardado. Puedes asignar permisos e información complementaria."
           : "Funcionario guardado."
@@ -309,8 +324,18 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
   }
 
   function addPermission() {
-    if (!permissionDraft.roleCode || !permissionDraft.campusId || !permissionDraft.workScheduleCode || !permissionDraft.status) {
-      toast.error("Completa los campos obligatorios del permiso.")
+    const parsedOrder = Number(permissionDraft.order)
+
+    if (
+      !permissionDraft.order.trim() ||
+      !Number.isInteger(parsedOrder) ||
+      parsedOrder <= 0 ||
+      !permissionDraft.roleCode ||
+      !permissionDraft.campusId ||
+      !permissionDraft.workScheduleCode ||
+      !permissionDraft.status
+    ) {
+      notify("Completa los campos obligatorios del permiso.", { variant: "error" })
       return
     }
 
@@ -319,12 +344,12 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
     const workSchedule = workSchedules.find((item) => item.code === permissionDraft.workScheduleCode)
 
     if (!role || !campus || !workSchedule) {
-      toast.error("No fue posible resolver los datos del permiso seleccionado.")
+      notify("No fue posible resolver los datos del permiso seleccionado.", { variant: "error" })
       return
     }
 
     const nextPermission: Permission = {
-      order: permissions.length + 1,
+      order: parsedOrder,
       role,
       campus,
       workSchedule,
@@ -332,7 +357,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
     }
 
     setPermissions((current) => [...current, nextPermission])
-    setPermissionDraft(createPermissionDraft())
+    setPermissionDraft(createPermissionDraft(permissions.length + 2))
   }
 
   function removePermission(order: number) {
@@ -345,12 +370,12 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
 
   function closePermissionsDialog() {
     setPermissionsDialogOpen(false)
-    toast.info("Permisos agregados al borrador. Pulsa Guardar para persistir el funcionario.")
+    notify("Permisos agregados al borrador. Pulsa Guardar para persistir el funcionario.", { variant: "info" })
   }
 
   function closeAdditionalInfoDialog() {
     setAdditionalInfoDialogOpen(false)
-    toast.info("Información complementaria agregada al borrador. Pulsa Guardar para persistir el funcionario.")
+    notify("Información complementaria agregada al borrador. Pulsa Guardar para persistir el funcionario.", { variant: "info" })
   }
 
   const mainTitle = isEditMode ? "Editar usuario" : "Agregar usuario"
@@ -365,6 +390,8 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
           <DialogHeader>
             <DialogTitle>{mainTitle}</DialogTitle>
           </DialogHeader>
+
+          <NoticeOutlet className="mb-2" />
 
           <UserDetailsForm
             value={person}
@@ -437,10 +464,20 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
             <DialogTitle>Asignar permisos</DialogTitle>
           </DialogHeader>
 
+          <NoticeOutlet className="mb-2" />
+
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <Field orientation="vertical" variant="outlined">
               <FieldLabel htmlFor="permission-order">Orden*</FieldLabel>
-              <Input id="permission-order" value={String(permissions.length + 1)} readOnly />
+              <Input
+                id="permission-order"
+                type="number"
+                min={1}
+                value={permissionDraft.order}
+                onChange={(event) =>
+                  setPermissionDraft((prev) => ({ ...prev, order: event.target.value }))
+                }
+              />
             </Field>
 
             <Field orientation="vertical" variant="outlined">
@@ -451,18 +488,17 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
                 onValueChange={(value) =>
                   setPermissionDraft((prev) => ({ ...prev, roleCode: value ?? "" }))
                 }
+                items={roleItems}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Seleccionar rol" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectGroup>
-                    {roles.map((role) => (
-                      <SelectItem key={role.id} value={role.code}>
-                        {role.name}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
+                  {roleItems.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </Field>
@@ -475,18 +511,17 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
                 onValueChange={(value) =>
                   setPermissionDraft((prev) => ({ ...prev, campusId: value ?? "" }))
                 }
+                items={campusItems}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Seleccionar sede educativa" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectGroup>
-                    {campuses.map((campus) => (
-                      <SelectItem key={campus.id} value={campus.id}>
-                        {campus.name}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
+                  {campusItems.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </Field>
@@ -499,18 +534,17 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
                 onValueChange={(value) =>
                   setPermissionDraft((prev) => ({ ...prev, workScheduleCode: value ?? "" }))
                 }
+                items={workScheduleItems}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Seleccionar jornada" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectGroup>
-                    {workSchedules.map((schedule) => (
-                      <SelectItem key={schedule.id} value={schedule.code}>
-                        {schedule.name}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
+                  {workScheduleItems.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </Field>
@@ -526,18 +560,17 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
                     status: (value ?? "") as PermissionStatus | "",
                   }))
                 }
+                items={permissionStatusItems}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Seleccionar estado" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectGroup>
-                    {entityStatuses.map((status: CatalogItem) => (
-                      <SelectItem key={status.id} value={status.id}>
-                        {status.name}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
+                  {permissionStatusItems.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </Field>
@@ -628,6 +661,8 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
           <DialogHeader>
             <DialogTitle>Información complementaria</DialogTitle>
           </DialogHeader>
+
+          <NoticeOutlet className="mb-2" />
 
           <EmployeeAdditionalInfoForm
             value={additionalInfo}

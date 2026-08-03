@@ -3,7 +3,6 @@ import { Input } from "@/components/ui/input"
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -19,6 +18,8 @@ interface CampusDetailsFormProps {
 }
 
 export function CampusDetailsForm({ value, zones, onChange }: CampusDetailsFormProps) {
+  const zoneItems = zones.map((zone) => ({ value: zone.id, label: zone.name }))
+
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
       <Field orientation="vertical" variant="outlined" className="w-full">
@@ -56,18 +57,17 @@ export function CampusDetailsForm({ value, zones, onChange }: CampusDetailsFormP
               },
             })
           }}
+          items={zoneItems}
         >
           <SelectTrigger id="campus-zone">
             <SelectValue placeholder="Seleccione zona" />
           </SelectTrigger>
           <SelectContent>
-            <SelectGroup>
-              {zones.map((zone) => (
-                <SelectItem key={zone.id} value={zone.id}>
-                  {zone.name}
-                </SelectItem>
-              ))}
-            </SelectGroup>
+            {zoneItems.map((item) => (
+              <SelectItem key={item.value} value={item.value}>
+                {item.label}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </Field>

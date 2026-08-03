@@ -95,7 +95,10 @@ function applyFilters(rows: typeof employeesRowsDb, filters: EmployeesQueryReque
       return false
     }
 
-    if (filters.workSchedules?.length && !filters.workSchedules.includes(row.workSchedule.code)) {
+    if (
+      filters.workSchedules?.length &&
+      (!row.workSchedule || !filters.workSchedules.includes(row.workSchedule.code))
+    ) {
       return false
     }
 
@@ -126,7 +129,7 @@ function applySorting(rows: typeof employeesRowsDb, sorting: EmployeesQueryReque
           : id === "role"
             ? a.roles[0]?.name ?? ""
             : id === "workSchedule"
-              ? a.workSchedule.name
+              ? a.workSchedule?.name ?? ""
               : id === "status"
                 ? a.statuses[0] ?? ""
                 : ""
@@ -138,7 +141,7 @@ function applySorting(rows: typeof employeesRowsDb, sorting: EmployeesQueryReque
           : id === "role"
             ? b.roles[0]?.name ?? ""
             : id === "workSchedule"
-              ? b.workSchedule.name
+              ? b.workSchedule?.name ?? ""
               : id === "status"
                 ? b.statuses[0] ?? ""
                 : ""

@@ -1,6 +1,5 @@
 import { Link, useLocation, useNavigate } from "@tanstack/react-router"
 import { useEffect, useMemo, useState, type FormEvent } from "react"
-import { toast } from "sonner"
 
 import {
   Card,
@@ -20,6 +19,7 @@ import { useCampusQuery } from "../api/query/use-campus-query"
 import { useCatalogQuery } from "../api/query/use-catalogs"
 import type { CatalogItem } from "../api/types/catalog"
 import type { Campus } from "../api/types/campus"
+import { NoticeOutlet, useNotify } from "../components/common/notice-context"
 
 function createEmptyCatalogItem(): CatalogItem {
   return { id: "", code: "", name: "" }
@@ -60,6 +60,7 @@ function validateCampus(values: Campus): string[] {
 export function AddCampusPage() {
   const navigate = useNavigate()
   const location = useLocation()
+  const { notify } = useNotify()
   const campusId = useMemo(() => {
     if (!location.pathname.includes("/sedes/editar/")) {
       return null
@@ -93,15 +94,15 @@ export function AddCampusPage() {
     mutationConfig: {
       onSuccess: (result) => {
         if (result.status === "error") {
-          toast.error(result.message)
+          notify(result.message, { variant: "error" })
           return
         }
 
-        toast.success(result.message)
+        notify(result.message)
         navigate({ to: paths.app.establishments.campuses.getHref() })
       },
       onError: (error) => {
-        toast.error(error.message || "No fue posible guardar la sede.")
+        notify(error.message || "No fue posible guardar la sede.", { variant: "error" })
       },
     },
   })
@@ -110,15 +111,15 @@ export function AddCampusPage() {
     mutationConfig: {
       onSuccess: (result) => {
         if (result.status === "error") {
-          toast.error(result.message)
+          notify(result.message, { variant: "error" })
           return
         }
 
-        toast.success(result.message)
+        notify(result.message)
         navigate({ to: paths.app.establishments.campuses.getHref() })
       },
       onError: (error) => {
-        toast.error(error.message || "No fue posible actualizar la sede.")
+        notify(error.message || "No fue posible actualizar la sede.", { variant: "error" })
       },
     },
   })
@@ -130,7 +131,7 @@ export function AddCampusPage() {
     setValidationErrors(errors)
 
     if (errors.length > 0) {
-      toast.error("Completa los campos obligatorios antes de guardar.")
+      notify("Completa los campos obligatorios antes de guardar.", { variant: "error" })
       return
     }
 
@@ -154,6 +155,7 @@ export function AddCampusPage() {
       </CardHeader>
 
       <CardContent>
+        <NoticeOutlet className="mb-4" />
         {validationErrors.length > 0 ? (
           <div className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
             <p className="font-medium">Completa los campos obligatorios:</p>

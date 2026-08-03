@@ -22,7 +22,6 @@ import { Input } from "@/components/ui/input"
 import {
     Select,
     SelectContent,
-    SelectGroup,
     SelectItem,
     SelectTrigger,
     SelectValue,
@@ -83,6 +82,8 @@ export function UserDetailsForm({
 
     const {data: documentTypes = []} = useCatalogQuery<CatalogItem>(CATALOGS.DOCUMENT_TYPES)
     const {data: genders = []} = useCatalogQuery<CatalogItem>(CATALOGS.GENDERS)
+    const documentTypeItems = documentTypes.map(item => ({ value: item.id, label: item.name }))
+    const genderItems = genders.map(item => ({ value: item.id, label: item.name }))
     const person = value ?? createEmptyPerson()
 
     const isConfirmControlled = confirmPasswordProp !== undefined
@@ -187,18 +188,17 @@ export function UserDetailsForm({
                             const option = documentTypes.find((item) => item.id === selectedValue)
                             emitChange({ documentType: option ?? { id: selectedValue ?? "", code: selectedValue ?? "", name: selectedValue ?? "" } })
                         }}
+                        items={documentTypeItems}
                     >
                         <SelectTrigger>
                             <SelectValue placeholder="CC cedula de ciudadanía" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectGroup>
-                                {documentTypes.map(item => (
-                                    <SelectItem key={item.id} value={item.id}>
-                                        {item.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectGroup>
+                            {documentTypeItems.map((item) => (
+                                <SelectItem key={item.value} value={item.value}>
+                                    {item.label}
+                                </SelectItem>
+                            ))}
                         </SelectContent>
                     </Select>
                 </Field>
@@ -315,18 +315,17 @@ export function UserDetailsForm({
                             const option = genders.find((item) => item.id === selectedValue)
                             emitChange({ gender: option ?? { id: selectedValue ?? "", code: selectedValue ?? "", name: selectedValue ?? "" } })
                         }}
+                        items={genderItems}
                     >
                         <SelectTrigger>
                             <SelectValue placeholder="Masculino" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectGroup>
-                                {genders.map(item => (
-                                    <SelectItem key={item.id} value={item.id}>
-                                        {item.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectGroup>
+                            {genderItems.map((item) => (
+                                <SelectItem key={item.value} value={item.value}>
+                                    {item.label}
+                                </SelectItem>
+                            ))}
                         </SelectContent>
                     </Select>
                 </Field>

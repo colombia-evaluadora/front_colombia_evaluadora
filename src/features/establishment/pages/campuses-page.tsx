@@ -7,6 +7,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { PlusIcon } from "@/components/ui/icons"
 import { Link } from "@tanstack/react-router"
 import { paths } from "@/config/paths"
 import { CampusesDataTable } from "../components/table/campuses-table"
@@ -23,6 +24,7 @@ export function CampusesPage() {
             render={<Link to={paths.app.establishments.campuses.add.getHref()} />}
             nativeButton={false}
           >
+            <PlusIcon data-icon="inline-start" />
             Agregar
           </Button>
         </CardAction>
