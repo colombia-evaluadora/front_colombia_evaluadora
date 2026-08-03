@@ -159,6 +159,7 @@ function AcademicPeriodConfigPageContent() {
         </Button>
         <Button
           size="sm"
+          variant="outline"
           render={<Link to={paths.app.periodosAcademicos.getHref()} />}
           nativeButton={false}
         >

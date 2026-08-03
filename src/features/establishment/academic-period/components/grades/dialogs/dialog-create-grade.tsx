@@ -60,11 +60,14 @@ export function CreateGradeDialog({
   academicPeriodId,
   grade,
 }: CreateGradeDialogProps) {
-  const isEditing = grade != null
-
   const { notify } = useNotify()
   const [open, setOpen] = useState(false)
   const [gradeId, setGradeId] = useState<number | null>(grade?.id ?? null)
+
+  // Una vez creado el grado (o si venimos editando uno existente) el diálogo
+  // pasa a modo edición: cambia el título y las acciones. Igual que en periodo
+  // académico, "agregar" se transforma en "editar" al persistir.
+  const isEditing = gradeId != null
 
   const [teachingLevelId, setTeachingLevelId] = useState<number | null>(
     grade?.teachingLevelId ?? null
