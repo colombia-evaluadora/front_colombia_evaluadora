@@ -16,7 +16,6 @@ import { PlusIcon, TrashIcon } from "@/components/ui/icons"
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -162,6 +161,11 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
   const { data: workSchedules = [] } = useCatalogQuery<CatalogItem>(CATALOGS.WORK_SCHEDULES)
   const { data: entityStatuses = [] } = useCatalogQuery<CatalogItem>(CATALOGS.ENTITY_STATUSES)
   const { data: campuses = [] } = useCampusesOptionsQuery()
+
+  const roleItems = roles.map((role) => ({ value: role.code, label: role.name }))
+  const campusItems = campuses.map((campus) => ({ value: campus.id, label: campus.name }))
+  const workScheduleItems = workSchedules.map((schedule) => ({ value: schedule.code, label: schedule.name }))
+  const permissionStatusItems = entityStatuses.map((status: CatalogItem) => ({ value: status.id, label: status.name }))
 
   useEffect(() => {
     if (!open) {
@@ -451,18 +455,17 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
                 onValueChange={(value) =>
                   setPermissionDraft((prev) => ({ ...prev, roleCode: value ?? "" }))
                 }
+                items={roleItems}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Seleccionar rol" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectGroup>
-                    {roles.map((role) => (
-                      <SelectItem key={role.id} value={role.code}>
-                        {role.name}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
+                  {roleItems.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </Field>
@@ -475,18 +478,17 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
                 onValueChange={(value) =>
                   setPermissionDraft((prev) => ({ ...prev, campusId: value ?? "" }))
                 }
+                items={campusItems}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Seleccionar sede educativa" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectGroup>
-                    {campuses.map((campus) => (
-                      <SelectItem key={campus.id} value={campus.id}>
-                        {campus.name}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
+                  {campusItems.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </Field>
@@ -499,18 +501,17 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
                 onValueChange={(value) =>
                   setPermissionDraft((prev) => ({ ...prev, workScheduleCode: value ?? "" }))
                 }
+                items={workScheduleItems}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Seleccionar jornada" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectGroup>
-                    {workSchedules.map((schedule) => (
-                      <SelectItem key={schedule.id} value={schedule.code}>
-                        {schedule.name}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
+                  {workScheduleItems.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </Field>
@@ -526,18 +527,17 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
                     status: (value ?? "") as PermissionStatus | "",
                   }))
                 }
+                items={permissionStatusItems}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Seleccionar estado" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectGroup>
-                    {entityStatuses.map((status: CatalogItem) => (
-                      <SelectItem key={status.id} value={status.id}>
-                        {status.name}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
+                  {permissionStatusItems.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </Field>

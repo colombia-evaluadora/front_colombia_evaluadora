@@ -10,7 +10,6 @@ import { Input } from "@/components/ui/input"
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -88,6 +87,25 @@ export function EmployeesDataTable({ onEditEmployee }: EmployeesDataTableProps) 
     },
   })
 
+  const roleItems = [
+    { value: "", label: "Todos" },
+    ...roles.map((role) => ({ value: role.code, label: role.name })),
+  ]
+  const scheduleItems = [
+    { value: "", label: "Todas" },
+    ...workSchedules.map((schedule) => ({
+      value: schedule.code,
+      label: schedule.name,
+    })),
+  ]
+  const employeeStatusItems = [
+    { value: "", label: "Todos" },
+    ...entityStatuses.map((status: CatalogItem) => ({
+      value: status.id,
+      label: status.name,
+    })),
+  ]
+
   return (
     <>
       <div className="mb-6 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
@@ -117,19 +135,17 @@ export function EmployeesDataTable({ onEditEmployee }: EmployeesDataTableProps) 
                   roles: value ? [value] : [],
                 })
               }
+              items={roleItems}
             >
               <SelectTrigger id="employee-role" className="w-full">
                 <SelectValue placeholder="Todos" />
               </SelectTrigger>
               <SelectContent>
-                <SelectGroup>
-                  <SelectItem value="">Todos</SelectItem>
-                  {roles.map((role) => (
-                    <SelectItem key={role.id} value={role.code}>
-                      {role.name}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
+                {roleItems.map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </Field>
@@ -144,19 +160,17 @@ export function EmployeesDataTable({ onEditEmployee }: EmployeesDataTableProps) 
                   workSchedules: value ? [value] : [],
                 })
               }
+              items={scheduleItems}
             >
               <SelectTrigger id="employee-schedule" className="w-full">
                 <SelectValue placeholder="Todas" />
               </SelectTrigger>
               <SelectContent>
-                <SelectGroup>
-                  <SelectItem value="">Todas</SelectItem>
-                  {workSchedules.map((schedule) => (
-                    <SelectItem key={schedule.id} value={schedule.code}>
-                      {schedule.name}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
+                {scheduleItems.map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </Field>
@@ -171,19 +185,17 @@ export function EmployeesDataTable({ onEditEmployee }: EmployeesDataTableProps) 
                   statuses: value ? [value as "ACTIVE" | "SUSPENDED"] : [],
                 })
               }
+              items={employeeStatusItems}
             >
               <SelectTrigger id="employee-status" className="w-full">
                 <SelectValue placeholder="Todos" />
               </SelectTrigger>
               <SelectContent>
-                <SelectGroup>
-                  <SelectItem value="">Todos</SelectItem>
-                  {entityStatuses.map((status: CatalogItem) => (
-                    <SelectItem key={status.id} value={status.id}>
-                      {status.name}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
+                {employeeStatusItems.map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </Field>
