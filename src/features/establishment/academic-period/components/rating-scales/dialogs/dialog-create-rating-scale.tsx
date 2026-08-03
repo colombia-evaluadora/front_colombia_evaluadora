@@ -56,6 +56,11 @@ import {
   type GradingRange,
 } from "../grading-range"
 import { TeachingLevelsMultiSelect } from "../teaching-levels-multi-select"
+import {
+  ScaleSortableHeader,
+  compareByScaleKey,
+  type ScaleSort,
+} from "../table/scale-sort-header"
 import { useRowEdit } from "../../../hooks/use-row-edit"
 
 type RatingScaleDraftValues = z.infer<
@@ -88,6 +93,7 @@ export function CreateRatingScaleDialog({
   const [continued, setContinued] = useState(false)
   const [teachingLevelIds, setTeachingLevelIds] = useState<number[]>([])
   const [drafts, setDrafts] = useState<RatingScaleDraftValues[]>([])
+  const [sort, setSort] = useState<ScaleSort>(null)
   const {
     editingKey: editingIndex,
     draft: editRow,
@@ -165,6 +171,16 @@ export function CreateRatingScaleDialog({
     setDrafts((prev) => prev.filter((_, i) => i !== index))
     if (editingIndex === index) cancelEdit()
   }
+
+  const orderedDrafts = useMemo(() => {
+    const withIndex = drafts.map((draft, index) => ({ draft, index }))
+    if (!sort) return withIndex
+    const { key, dir } = sort
+    const copy = [...withIndex].sort((a, b) =>
+      compareByScaleKey(a.draft[key], b.draft[key])
+    )
+    return dir === "desc" ? copy.reverse() : copy
+  }, [drafts, sort])
 
   async function handleSave() {
     if (teachingLevelIds.length === 0) {
@@ -283,9 +299,9 @@ export function CreateRatingScaleDialog({
                           </SelectTrigger>
                           <SelectContent>
                             <SelectGroup>
-                              {tipoOptions.map((tipo) => (
-                                <SelectItem key={tipo} value={tipo}>
-                                  {tipo}
+                              {tipoOptions.map((option) => (
+                                <SelectItem key={option.key} value={option.key}>
+                                  {option.label}
                                 </SelectItem>
                               ))}
                             </SelectGroup>
@@ -349,8 +365,18 @@ export function CreateRatingScaleDialog({
                 </form.Field>
               </div>
 
-              <div className="grid gap-x-4 gap-y-4 sm:grid-cols-3">
-                <form.Field name="notaMaxima">
+              <form.Subscribe
+                selector={(state) => draftSchema.safeParse(state.values).success}
+              >
+                {(canSubmit) => (
+                  <div
+                    className={
+                      canSubmit
+                        ? "grid gap-x-4 gap-y-4 sm:grid-cols-4"
+                        : "grid gap-x-4 gap-y-4 sm:grid-cols-3"
+                    }
+                  >
+                    <form.Field name="notaMaxima">
                   {(field) => {
                     const isInvalid =
                       field.state.meta.isTouched && !field.state.meta.isValid
@@ -447,15 +473,24 @@ export function CreateRatingScaleDialog({
                       </Field>
                     )
                   }}
-                </form.Field>
-              </div>
+                    </form.Field>
 
-              <div className="flex justify-end">
-                <Button type="submit" variant="outline" size="sm">
-                  <PlusCircleIcon data-icon="inline-start" />
-                  Agregar a la lista
-                </Button>
-              </div>
+                    {canSubmit && (
+                      <div className="flex items-end sm:h-full">
+                        <Button
+                          type="submit"
+                          variant="outline"
+                          size="sm"
+                          className="w-full"
+                        >
+                          <PlusCircleIcon data-icon="inline-start" />
+                          Agregar a la lista
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </form.Subscribe>
             </form>
           )}
 
@@ -465,18 +500,60 @@ export function CreateRatingScaleDialog({
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Nombre</TableHead>
-                    <TableHead>Abreviación</TableHead>
-                    <TableHead>Nota máximo</TableHead>
-                    <TableHead>Nota mínimo</TableHead>
-                    <TableHead>Nota equivalente</TableHead>
-                    <TableHead>Tipo</TableHead>
+                    <TableHead>
+                      <ScaleSortableHeader
+                        title="Nombre"
+                        sortKey="nombre"
+                        sort={sort}
+                        onSortChange={setSort}
+                      />
+                    </TableHead>
+                    <TableHead>
+                      <ScaleSortableHeader
+                        title="Abreviación"
+                        sortKey="abreviacion"
+                        sort={sort}
+                        onSortChange={setSort}
+                      />
+                    </TableHead>
+                    <TableHead>
+                      <ScaleSortableHeader
+                        title="Nota máximo"
+                        sortKey="notaMaxima"
+                        sort={sort}
+                        onSortChange={setSort}
+                      />
+                    </TableHead>
+                    <TableHead>
+                      <ScaleSortableHeader
+                        title="Nota mínimo"
+                        sortKey="notaMinima"
+                        sort={sort}
+                        onSortChange={setSort}
+                      />
+                    </TableHead>
+                    <TableHead>
+                      <ScaleSortableHeader
+                        title="Nota equivalente"
+                        sortKey="notaEquivalente"
+                        sort={sort}
+                        onSortChange={setSort}
+                      />
+                    </TableHead>
+                    <TableHead>
+                      <ScaleSortableHeader
+                        title="Tipo"
+                        sortKey="tipo"
+                        sort={sort}
+                        onSortChange={setSort}
+                      />
+                    </TableHead>
                     <TableHead>Iconografía</TableHead>
                     <TableHead className="text-right">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {drafts.map((d, index) => {
+                  {orderedDrafts.map(({ draft: d, index }) => {
                     const isEditing = editingIndex === index
 
                     if (isEditing && editRow) {
@@ -577,9 +654,9 @@ export function CreateRatingScaleDialog({
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectGroup>
-                                  {tipoOptions.map((tipo) => (
-                                    <SelectItem key={tipo} value={tipo}>
-                                      {tipo}
+                                  {tipoOptions.map((option) => (
+                                    <SelectItem key={option.key} value={option.key}>
+                                      {option.label}
                                     </SelectItem>
                                   ))}
                                 </SelectGroup>

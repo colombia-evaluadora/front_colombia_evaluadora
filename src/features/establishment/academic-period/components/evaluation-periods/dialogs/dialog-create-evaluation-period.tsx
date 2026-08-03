@@ -390,8 +390,8 @@ export function CreateEvaluationPeriodDialog({
                     <SelectContent>
                       <SelectGroup>
                         {statusOptions.map((option) => (
-                          <SelectItem key={option} value={option}>
-                            {option}
+                          <SelectItem key={option.key} value={option.key}>
+                            {option.label}
                           </SelectItem>
                         ))}
                       </SelectGroup>

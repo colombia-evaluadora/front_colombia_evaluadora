@@ -21,9 +21,9 @@ export interface Notice {
 export type NoticeVariant = "info" | "success" | "error"
 
 const VARIANT_CLASSES: Record<NoticeVariant, string> = {
-  info: "border-blue-stroke bg-blue-22 text-blue",
-  success: "border-green-stroke bg-green-22 text-green",
-  error: "border-red-stroke bg-red-22 text-red",
+  info: "border-blue-stroke bg-blue-22 text-foreground",
+  success: "border-green-stroke bg-green-22 text-foreground",
+  error: "border-red-stroke bg-red-22 text-foreground",
 }
 
 const VARIANT_ICON: Record<NoticeVariant, typeof InfoIcon> = {
@@ -76,7 +76,7 @@ export function NoticeBanner({
     <div
       role="status"
       className={cn(
-        "flex items-center gap-3 rounded-md border px-4 py-3 text-sm font-medium",
+        "flex items-center gap-3 rounded-md border px-4 py-1 text-sm font-medium",
         VARIANT_CLASSES[variant],
         className,
       )}

@@ -8,11 +8,9 @@ interface BadgeProps {
   color: BadgeColor
 }
 
-export const ACADEMIC_PERIOD_STATUS_LABELS: Record<AcademicPeriodStatus, string> = {
-  ACTIVO: "Activo",
-  INACTIVO: "Inactivo",
-}
-
+// Las etiquetas de estado ahora las entrega el backend (`{ key, label }`, vía
+// `useAcademicPeriodStatusesQuery`). Acá solo queda el color del badge, que el
+// back no envía.
 export const ACADEMIC_PERIOD_STATUS_BADGE: Record<AcademicPeriodStatus, BadgeProps> = {
   ACTIVO: { variant: "fill", color: "success" },
   INACTIVO: { variant: "fill", color: "secondary" },

@@ -4,21 +4,21 @@ import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { DataTableColumnHeader } from "@/components/data-table"
 
-import {
-  ACADEMIC_PERIOD_STATUS_BADGE,
-  ACADEMIC_PERIOD_STATUS_LABELS,
-} from "../../../api/ui-mappings"
+import { ACADEMIC_PERIOD_STATUS_BADGE } from "../../../api/ui-mappings"
 import type {
   AcademicPeriod,
   AcademicPeriodStatus,
 } from "../../../api/types/academic-period"
+import { useAcademicPeriodStatusesQuery } from "../../../api/query/academic-period/use-academic-period-statuses-query"
 import { DeleteAcademicPeriodDialog } from "../dialogs/dialog-delete-academic-period"
 import { EditAcademicPeriodButton } from "./edit-academic-period-button"
 
-// Las fechas llegan como "yyyy-MM-dd" (date-only). Parsearlas con
-// `new Date(...)` las interpreta como UTC medianoche y `toLocaleDateString`
-// puede correr un día según la zona horaria, así que las formateamos a
-// mano a "dd/MM/yyyy".
+function StatusCell({ status }: { status: AcademicPeriodStatus }) {
+  const { data: statusOptions = [] } = useAcademicPeriodStatusesQuery()
+  const label = statusOptions.find((o) => o.key === status)?.label ?? status
+  return <Badge {...ACADEMIC_PERIOD_STATUS_BADGE[status]}>{label}</Badge>
+}
+
 function formatDate(value: string): string {
   const [year, month, day] = value.slice(0, 10).split("-")
   if (!year || !month || !day) return value
@@ -80,14 +80,9 @@ export const columns: ColumnDef<AcademicPeriod>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Estado" />
     ),
-    cell: ({ row }) => {
-      const status = row.getValue<AcademicPeriodStatus>("status")
-      return (
-        <Badge {...ACADEMIC_PERIOD_STATUS_BADGE[status]}>
-          {ACADEMIC_PERIOD_STATUS_LABELS[status]}
-        </Badge>
-      )
-    },
+    cell: ({ row }) => (
+      <StatusCell status={row.getValue<AcademicPeriodStatus>("status")} />
+    ),
   },
   {
     id: "startDate",

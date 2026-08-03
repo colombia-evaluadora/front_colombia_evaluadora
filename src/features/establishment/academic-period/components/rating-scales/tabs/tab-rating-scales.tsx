@@ -46,6 +46,11 @@ import { ExportRatingScalesDialog } from "../dialogs/dialog-export-rating-scales
 import { RatingSymbolSelect, RatingSymbolView } from "../rating-symbol"
 import { createRatingScaleLevelColumns } from "../table/columns-rating-scales"
 import {
+  ScaleSortableHeader,
+  sortByScaleKey,
+  type ScaleSort,
+} from "../table/scale-sort-header"
+import {
   makeRatingScaleGradesSchema,
   parseGradingRange,
   type GradingRange,
@@ -167,6 +172,9 @@ export function TabRatingScales({ academicPeriodId }: TabRatingScalesProps) {
         isPending={scalesPending}
         isError={isError}
         onRetry={refetch}
+        cellClassName="px-1"
+        growColumnId="nombre"
+        growColumnClassName="pl-6"
         emptyMessage="Aún no se agregaron escalas de valoración."
         errorMessage="Ocurrió un error al cargar las escalas."
         renderSubRow={(row) => {
@@ -214,6 +222,12 @@ function ScalesSubTable({
   const { notify } = useNotify()
   const { data: symbols = [] } = useRatingSymbolsQuery()
   const { data: tipoOptions = [] } = useRatingScaleTypesQuery()
+  const [sort, setSort] = useState<ScaleSort>(null)
+
+  const sortedScales = useMemo(
+    () => sortByScaleKey(scales, sort),
+    [scales, sort]
+  )
   const {
     editingKey: editingCodigo,
     draft,
@@ -279,18 +293,60 @@ function ScalesSubTable({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Nombre</TableHead>
-              <TableHead>Abreviación</TableHead>
-              <TableHead>Nota máximo</TableHead>
-              <TableHead>Nota mínimo</TableHead>
-              <TableHead>Nota equivalente</TableHead>
-              <TableHead>Tipo</TableHead>
+              <TableHead>
+                <ScaleSortableHeader
+                  title="Nombre"
+                  sortKey="nombre"
+                  sort={sort}
+                  onSortChange={setSort}
+                />
+              </TableHead>
+              <TableHead>
+                <ScaleSortableHeader
+                  title="Abreviación"
+                  sortKey="abreviacion"
+                  sort={sort}
+                  onSortChange={setSort}
+                />
+              </TableHead>
+              <TableHead>
+                <ScaleSortableHeader
+                  title="Nota máximo"
+                  sortKey="notaMaxima"
+                  sort={sort}
+                  onSortChange={setSort}
+                />
+              </TableHead>
+              <TableHead>
+                <ScaleSortableHeader
+                  title="Nota mínimo"
+                  sortKey="notaMinima"
+                  sort={sort}
+                  onSortChange={setSort}
+                />
+              </TableHead>
+              <TableHead>
+                <ScaleSortableHeader
+                  title="Nota equivalente"
+                  sortKey="notaEquivalente"
+                  sort={sort}
+                  onSortChange={setSort}
+                />
+              </TableHead>
+              <TableHead>
+                <ScaleSortableHeader
+                  title="Tipo"
+                  sortKey="tipo"
+                  sort={sort}
+                  onSortChange={setSort}
+                />
+              </TableHead>
               <TableHead>Iconografía</TableHead>
               <TableHead className="text-right">Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {scales.map((scale) => {
+            {sortedScales.map((scale) => {
               const isEditing = editingCodigo === scale.codigo
 
               if (isEditing && draft) {
@@ -364,9 +420,9 @@ function ScalesSubTable({
                         </SelectTrigger>
                         <SelectContent>
                           <SelectGroup>
-                            {tipoOptions.map((tipo) => (
-                              <SelectItem key={tipo} value={tipo}>
-                                {tipo}
+                            {tipoOptions.map((option) => (
+                              <SelectItem key={option.key} value={option.key}>
+                                {option.label}
                               </SelectItem>
                             ))}
                           </SelectGroup>

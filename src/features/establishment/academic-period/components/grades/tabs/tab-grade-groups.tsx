@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react"
 import type { SortingState } from "@tanstack/react-table"
 
-import { DataTable } from "@/components/data-table"
+import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
 import { useDataTable } from "@/hooks/use-data-table"
 
@@ -55,11 +55,12 @@ export function TabGradeGroups({ gradeId, academicPeriodId }: TabGradeGroupsProp
 
   return (
     <>
-      <div className="mb-2 flex justify-end">
+      <div className="mb-2 flex justify-end gap-2">
         <CreateGradeGroupDialog
           gradeId={gradeId}
           academicPeriodId={academicPeriodId}
         />
+        <DataTableViewOptions table={table} />
       </div>
 
       <DataTable

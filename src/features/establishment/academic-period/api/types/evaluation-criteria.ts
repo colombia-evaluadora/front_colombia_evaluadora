@@ -14,9 +14,16 @@ export interface EvaluationCriteria {
   initialGrade: string
 }
 
+// Opción de un select de criterios: `key` es el valor que se guarda/manda,
+// `label` el texto visible. Tal como lo entrega el backend.
+export interface CriteriaOption {
+  key: string
+  label: string
+}
+
 export type EvaluationCriteriaOptions = Record<
   Exclude<keyof EvaluationCriteria, "gradingScale">,
-  string[]
+  CriteriaOption[]
 >
 
 export interface MutationResult {

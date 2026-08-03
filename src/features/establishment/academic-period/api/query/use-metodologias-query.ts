@@ -1,8 +1,9 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
+import type { MetodologiaOption } from "../types/metodologia"
 
-function fetchMetodologias(): Promise<string[]> {
+function fetchMetodologias(): Promise<MetodologiaOption[]> {
   return api.get("/metodologias")
 }
 

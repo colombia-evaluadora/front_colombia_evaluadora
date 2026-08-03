@@ -409,8 +409,8 @@ export function CreateStudyPlanDialog({
                     <SelectContent>
                       <SelectGroup>
                         {formatoOptions.map((option) => (
-                          <SelectItem key={option} value={option}>
-                            {option}
+                          <SelectItem key={option.key} value={option.key}>
+                            {option.label}
                           </SelectItem>
                         ))}
                       </SelectGroup>
@@ -437,8 +437,8 @@ export function CreateStudyPlanDialog({
                     <SelectContent>
                       <SelectGroup>
                         {criterioOptions.map((option) => (
-                          <SelectItem key={option} value={option}>
-                            {option}
+                          <SelectItem key={option.key} value={option.key}>
+                            {option.label}
                           </SelectItem>
                         ))}
                       </SelectGroup>

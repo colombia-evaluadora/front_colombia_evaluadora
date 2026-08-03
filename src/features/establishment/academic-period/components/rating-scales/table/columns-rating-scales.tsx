@@ -1,6 +1,7 @@
 import type { ColumnDef, Table } from "@tanstack/react-table"
 import { CaretDownIcon, CaretRightIcon } from "@/components/ui/icons"
 
+import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { DataTableColumnHeader } from "@/components/data-table"
 
@@ -22,19 +23,19 @@ export function createRatingScaleLevelColumns({
       cell: ({ row }) => {
         const isOpen = expandedId === row.original.id
         return (
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="icon-sm"
             aria-label={isOpen ? "Contraer" : "Expandir"}
             aria-expanded={isOpen}
             onClick={() => onToggleExpand(row.original)}
-            className="flex items-center text-muted-foreground"
           >
             {isOpen ? (
-              <CaretDownIcon className="size-4" />
+              <CaretDownIcon weight="bold" />
             ) : (
-              <CaretRightIcon className="size-4" />
+              <CaretRightIcon weight="bold" />
             )}
-          </button>
+          </Button>
         )
       },
       enableSorting: false,
