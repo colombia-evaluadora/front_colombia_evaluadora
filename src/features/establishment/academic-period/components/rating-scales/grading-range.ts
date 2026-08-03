@@ -44,4 +44,11 @@ export function makeRatingScaleGradesSchema({ min, max }: GradingRange) {
       message: "La nota mínima no puede superar la máxima",
       path: ["notaMinima"],
     })
+    .refine(
+      (d) => d.notaEquivalente >= d.notaMinima && d.notaEquivalente <= d.notaMaxima,
+      {
+        message: "La nota equivalente debe estar entre la nota mínima y la máxima",
+        path: ["notaEquivalente"],
+      }
+    )
 }
