@@ -119,7 +119,12 @@ export function SearchAcademicAssignments({
                     }
                   >
                     <SelectTrigger id="academic-assignments-status" size="sm">
-                      <SelectValue placeholder="Todos" />
+                      <SelectValue placeholder="Todos">
+                        {(value) =>
+                          EMPLOYEE_STATUS_LABELS[value as EmployeeStatus] ??
+                          "Todos"
+                        }
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>
