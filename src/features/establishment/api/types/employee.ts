@@ -39,7 +39,8 @@ export interface EmployeeListItem {
    */
   roles: CatalogItem[]
   campuses: string[]
-  workSchedule: CatalogItem
+  /** Ausente cuando el funcionario todavía no tiene permisos asignados. */
+  workSchedule?: CatalogItem
   /**
    * Estados agregados desde los permisos del funcionario. Análogo a
    * `roles`: se preserva el orden de aparición, sin duplicados.
