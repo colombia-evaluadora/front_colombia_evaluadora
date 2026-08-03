@@ -132,6 +132,14 @@ export function RatingSymbolSelect({
   );
 }
 
+// Tamaño de la grilla por categoría. Las caritas vienen ordenadas por
+// (escala emocional, color) así que cada fila natural del grid coincide con
+// un color; las letras son una sola fila.
+const CATEGORY_GRID_COLS: Record<RatingSymbolCategory, string> = {
+  carita: "grid-cols-8",
+  valoracion: "grid-cols-7",
+};
+
 export function RatingSymbolPicker({
   symbols,
   value,
@@ -146,7 +154,7 @@ export function RatingSymbolPicker({
   return (
     <div className={cn("flex flex-col gap-3", className)}>
       {CATEGORY_ORDER.map((categoria) => {
-        const items = symbols.filter((s) => s.categoria === categoria);
+        const items = symbols.filter((s) => s.categoria === categoria)
         if (items.length === 0) return null;
 
         return (
@@ -154,9 +162,12 @@ export function RatingSymbolPicker({
             <span className="text-muted-foreground text-xs font-medium">
               {CATEGORY_LABELS[categoria]}
             </span>
-            <div className="flex flex-wrap gap-2">
+            {/* Grilla plana: el orden del catálogo (por color para caritas,
+                por letra para valoraciones) hace que las filas se "armen"
+                solas sin subtítulos. */}
+            <div className={cn("grid gap-2", CATEGORY_GRID_COLS[categoria])}>
               {items.map((symbol) => {
-                const selected = symbol.valor === value;
+                const selected = symbol.valor === value
                 return (
                   <button
                     key={symbol.id}
@@ -176,12 +187,12 @@ export function RatingSymbolPicker({
                       label={symbol.label}
                     />
                   </button>
-                );
+                )
               })}
             </div>
           </div>
-        );
+        )
       })}
     </div>
-  );
+  )
 }
