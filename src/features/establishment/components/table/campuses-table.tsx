@@ -10,7 +10,6 @@ import { Input } from "@/components/ui/input"
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -80,6 +79,11 @@ export function CampusesDataTable() {
     },
   })
 
+  const zoneItems = [
+    { value: "", label: "Todas" },
+    ...zones.map((zone) => ({ value: zone.code, label: zone.name })),
+  ]
+
   return (
     <>
       <div className="mb-6 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
@@ -108,19 +112,17 @@ export function CampusesDataTable() {
                   zones: value ? [value] : [],
                 })
               }
+              items={zoneItems}
             >
               <SelectTrigger id="campus-zone" className="w-full">
                 <SelectValue placeholder="Todas" />
               </SelectTrigger>
               <SelectContent>
-                <SelectGroup>
-                  <SelectItem value="">Todas</SelectItem>
-                  {zones.map((zone) => (
-                    <SelectItem key={zone.id} value={zone.code}>
-                      {zone.name}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
+                {zoneItems.map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </Field>

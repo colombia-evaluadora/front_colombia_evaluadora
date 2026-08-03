@@ -10,7 +10,6 @@ import { Input } from "@/components/ui/input"
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -57,6 +56,14 @@ export function EstablishmentsDataTable() {
       ),
     [entityStatuses],
   )
+
+  const statusItems = [
+    { value: "", label: "Todos" },
+    ...establishmentStatuses.map((status: CatalogItem) => ({
+      value: status.id,
+      label: status.name,
+    })),
+  ]
 
   const { data, isPending, isError, refetch } = useEstablishmentsQuery({
     filters: queryFilters,
@@ -130,19 +137,17 @@ export function EstablishmentsDataTable() {
                     : [],
                 })
               }
+              items={statusItems}
             >
               <SelectTrigger id="establishment-status" className="w-full">
                 <SelectValue placeholder="Todos" />
               </SelectTrigger>
               <SelectContent>
-                <SelectGroup>
-                  <SelectItem value="">Todos</SelectItem>
-                  {establishmentStatuses.map((status: CatalogItem) => (
-                    <SelectItem key={status.id} value={status.id}>
-                      {status.name}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
+                {statusItems.map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </Field>
