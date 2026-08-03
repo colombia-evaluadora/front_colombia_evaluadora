@@ -54,8 +54,8 @@ const CARITA_COLOR_ORDER = [
   "verde",
   "azul",
   "naranja",
-  "rojo",
   "dorado",
+  "rojo",
 ]
 
 // Orden fijo de las letras: A, I, S, D, E, B, Bj. Es la convención del
@@ -113,7 +113,7 @@ caritaSymbols.sort((a, b) => {
   const bn = b.id.match(/^carita-(\d{2})-/)![1]
   return (
     colorRank(CARITA_COLOR_ORDER, a.color) -
-      colorRank(CARITA_COLOR_ORDER, b.color) ||
+    colorRank(CARITA_COLOR_ORDER, b.color) ||
     an.localeCompare(bn)
   )
 })
