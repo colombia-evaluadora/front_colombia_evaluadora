@@ -58,6 +58,7 @@ interface ManageEmployeeDialogProps {
 }
 
 interface PermissionDraft {
+  order: string
   roleCode: string
   campusId: string
   workScheduleCode: string
@@ -111,8 +112,9 @@ function isPersonMinComplete(person: Person | null) {
   )
 }
 
-function createPermissionDraft(): PermissionDraft {
+function createPermissionDraft(nextOrder = 1): PermissionDraft {
   return {
+    order: String(nextOrder),
     roleCode: "",
     campusId: "",
     workScheduleCode: "",
@@ -192,7 +194,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
       setPerson(employee.person)
       setPermissions(employee.permissions)
       setAdditionalInfo(createAdditionalInfoFromEmployee(employee))
-      setPermissionDraft(createPermissionDraft())
+      setPermissionDraft(createPermissionDraft(employee.permissions.length + 1))
       setConfirmPassword(employee.person.password)
     }
   }, [employeeQuery.data, isEditMode, open])
@@ -322,7 +324,17 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
   }
 
   function addPermission() {
-    if (!permissionDraft.roleCode || !permissionDraft.campusId || !permissionDraft.workScheduleCode || !permissionDraft.status) {
+    const parsedOrder = Number(permissionDraft.order)
+
+    if (
+      !permissionDraft.order.trim() ||
+      !Number.isInteger(parsedOrder) ||
+      parsedOrder <= 0 ||
+      !permissionDraft.roleCode ||
+      !permissionDraft.campusId ||
+      !permissionDraft.workScheduleCode ||
+      !permissionDraft.status
+    ) {
       notify("Completa los campos obligatorios del permiso.", { variant: "error" })
       return
     }
@@ -337,7 +349,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
     }
 
     const nextPermission: Permission = {
-      order: permissions.length + 1,
+      order: parsedOrder,
       role,
       campus,
       workSchedule,
@@ -345,7 +357,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
     }
 
     setPermissions((current) => [...current, nextPermission])
-    setPermissionDraft(createPermissionDraft())
+    setPermissionDraft(createPermissionDraft(permissions.length + 2))
   }
 
   function removePermission(order: number) {
@@ -457,7 +469,15 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <Field orientation="vertical" variant="outlined">
               <FieldLabel htmlFor="permission-order">Orden*</FieldLabel>
-              <Input id="permission-order" value={String(permissions.length + 1)} readOnly />
+              <Input
+                id="permission-order"
+                type="number"
+                min={1}
+                value={permissionDraft.order}
+                onChange={(event) =>
+                  setPermissionDraft((prev) => ({ ...prev, order: event.target.value }))
+                }
+              />
             </Field>
 
             <Field orientation="vertical" variant="outlined">

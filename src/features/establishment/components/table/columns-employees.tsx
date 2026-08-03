@@ -87,6 +87,10 @@ export function createEmployeeColumns({ onEdit }: EmployeeColumnsOptions): Colum
     id: "role",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Rol" />,
     cell: ({ row }) => {
+      if (row.original.roles.length === 0) {
+        return <span className="text-sm text-foreground">—</span>
+      }
+
       const fullText = formatRoleNames(row.original.roles)
 
       return (
@@ -134,11 +138,19 @@ export function createEmployeeColumns({ onEdit }: EmployeeColumnsOptions): Colum
     accessorKey: "workSchedule",
     id: "workSchedule",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Jornada" />,
-    cell: ({ row }) => (
-      <Badge variant="outline" color="neutral">
-        {row.original.workSchedule.name}
-      </Badge>
-    ),
+    cell: ({ row }) => {
+      const workSchedule = row.original.workSchedule
+
+      if (!workSchedule) {
+        return <span className="text-sm text-foreground">—</span>
+      }
+
+      return (
+        <Badge variant="outline" color="neutral">
+          {workSchedule.name}
+        </Badge>
+      )
+    },
   },
   {
     accessorKey: "status",
