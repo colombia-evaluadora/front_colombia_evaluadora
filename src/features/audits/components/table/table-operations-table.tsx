@@ -10,7 +10,7 @@ import { useTablePagination } from "@/hooks/use-table-pagination"
 import { useTableOperationsFilters } from "../../hooks/use-table-operations-filters"
 
 import { columns } from "./columns-table-operations"
-import { FilterTableOperationsSheet } from "../sheets/sheet-filter-table-operations"
+import { SearchTableOperations } from "../search/search-table-operations"
 import { ExportSelectedTableOperationsDialog } from "../dialogs/dialog-export-selected-table-operations"
 import { ExportTableOperationsDialog } from "../dialogs/dialog-export-table-operations"
 import { ClearSelectionTableOperationsDialog } from "../dialogs/dialog-clear-selection-table-operations"
@@ -53,16 +53,15 @@ export function TableOperationsDataTable() {
         hasSelection={hasSelection}
         filters={queryFilters}
       />
-      <div className="mb-2 flex flex-wrap items-center justify-between gap-x-2 gap-y-2">
-        <div className="flex gap-2">
-          <FilterTableOperationsSheet
-            activeFilterCount={activeFilterCount}
-            filters={filters}
-            applyFilters={applyFilters}
-            clearAllFilters={clearAllFilters}
-            availableFields={availableFields}
-          />
-        </div>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <SearchTableOperations
+          activeFilterCount={activeFilterCount}
+          filters={filters}
+          applyFilters={applyFilters}
+          clearAllFilters={clearAllFilters}
+          availableFields={availableFields}
+        />
+
         <div className="flex gap-2">
           {hasSelection ? (
             <>

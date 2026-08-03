@@ -28,10 +28,15 @@ export const academicPeriodFormSchema = z
     scheduleStartTime: z.string().min(1, "La hora de inicio es obligatoria"),
     scheduleEndTime: z.string().min(1, "La hora final es obligatoria"),
     breaks: z.array(
-      z.object({
-        startTime: z.string().min(1),
-        endTime: z.string().min(1),
-      })
+      z
+        .object({
+          startTime: z.string().min(1),
+          endTime: z.string().min(1),
+        })
+        .refine((b) => !b.startTime || !b.endTime || b.startTime < b.endTime, {
+          message: "La hora de inicio del descanso es posterior o igual a la hora final",
+          path: ["startTime"],
+        })
     ),
   })
   .refine(
@@ -40,6 +45,64 @@ export const academicPeriodFormSchema = z
     {
       message: "La fecha de inicio es posterior o igual a la fecha de finalización",
       path: ["startDate"],
+    }
+  )
+  .refine(
+    (data) =>
+      !data.startDate ||
+      !data.enrollmentDeadline ||
+      data.enrollmentDeadline >= data.startDate,
+    {
+      message: "La fecha límite de matrícula debe ser posterior o igual a la fecha de inicio",
+      path: ["enrollmentDeadline"],
+    }
+  )
+  .refine(
+    (data) =>
+      !data.endDate ||
+      !data.enrollmentDeadline ||
+      data.enrollmentDeadline <= data.endDate,
+    {
+      message: "La fecha límite de matrícula debe ser anterior o igual a la fecha de fin",
+      path: ["enrollmentDeadline"],
+    }
+  )
+  .refine(
+    (data) =>
+      !data.scheduleStartTime ||
+      !data.scheduleEndTime ||
+      data.scheduleStartTime < data.scheduleEndTime,
+    {
+      message: "La hora de inicio es posterior o igual a la hora final",
+      path: ["scheduleStartTime"],
+    }
+  )
+  .refine(
+    (data) =>
+      data.breaks.every(
+        (b) =>
+          !b.startTime ||
+          !data.scheduleStartTime ||
+          b.startTime >= data.scheduleStartTime,
+      ),
+    {
+      message:
+        "La hora de inicio del descanso debe ser posterior o igual a la hora de inicio de la jornada",
+      path: ["breaks"],
+    }
+  )
+  .refine(
+    (data) =>
+      data.breaks.every(
+        (b) =>
+          !b.endTime ||
+          !data.scheduleEndTime ||
+          b.endTime <= data.scheduleEndTime,
+      ),
+    {
+      message:
+        "La hora final del descanso debe ser anterior o igual a la hora final de la jornada",
+      path: ["breaks"],
     }
   )
 export type AcademicPeriodFormInput = z.input<typeof academicPeriodFormSchema>

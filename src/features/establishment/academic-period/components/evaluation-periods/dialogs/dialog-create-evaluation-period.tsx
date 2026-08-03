@@ -35,6 +35,7 @@ import { useCreateEvaluationPeriod } from "../../../api/mutations/evaluation-per
 import { useUpdateEvaluationPeriod } from "../../../api/mutations/evaluation-periods/update-evaluation-period"
 import { useEvaluationPeriodsQuery } from "../../../api/query/evaluation-periods/use-evaluation-periods-query"
 import { useEvaluationPeriodStatusesQuery } from "../../../api/query/evaluation-periods/use-evaluation-period-statuses-query"
+import { useAcademicPeriodQuery } from "../../../api/query/academic-period/use-academic-period-query"
 import type {
   EvaluationPeriod,
   EvaluationPeriodStatus,
@@ -86,6 +87,12 @@ export function CreateEvaluationPeriodDialog({
   const pesoDisponible = Math.max(0, 100 - pesoUsado)
 
   const { data: statusOptions = [] } = useEvaluationPeriodStatusesQuery()
+
+  // Fechas del periodo académico: se usan para limitar (no solo avisar)
+  // el rango del periodo de evaluación que se está creando/editando.
+  const { data: academicPeriod } = useAcademicPeriodQuery(academicPeriodId)
+  const academicPeriodStart = academicPeriod?.startDate ?? ""
+  const academicPeriodEnd = academicPeriod?.endDate ?? ""
 
   function hasOverlap(start: string, end: string): boolean {
     if (!start || !end) return false
@@ -321,30 +328,95 @@ export function CreateEvaluationPeriodDialog({
             }}
           </form.Field>
 
-          <form.Field name="startDate">
+          <form.Field
+            name="startDate"
+            validators={{
+              onChange: ({ value }) => {
+                if (!value) return undefined
+                if (
+                  academicPeriodStart &&
+                  value < academicPeriodStart
+                ) {
+                  return {
+                    message:
+                      "La fecha de inicio no puede ser anterior a la fecha de inicio del período académico.",
+                  }
+                }
+                if (academicPeriodEnd && value > academicPeriodEnd) {
+                  return {
+                    message:
+                      "La fecha de inicio no puede ser posterior a la fecha de fin del período académico.",
+                  }
+                }
+                return undefined
+              },
+            }}
+          >
             {(field) => {
               const isInvalid =
                 field.state.meta.isTouched && !field.state.meta.isValid
               return (
-                <Field variant="outlined" data-invalid={isInvalid}>
-                  <FieldLabel htmlFor={field.name}>Fecha inicio*</FieldLabel>
-                  <DatePicker
-                    mode="date"
-                    id={field.name}
-                    value={parseDateValue(field.state.value)}
-                    onChange={(date) => {
-                      field.handleChange(formatDateValue(date))
-                      field.handleBlur()
-                    }}
-                    aria-invalid={isInvalid}
-                  />
-                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                </Field>
+                <form.Subscribe
+                  selector={(state) => state.values.endDate}
+                >
+                  {(endDate) => {
+                    const outOfRange =
+                      !!field.state.value &&
+                      !!endDate &&
+                      field.state.value >= endDate
+                    return (
+                      <Field variant="outlined" data-invalid={isInvalid}>
+                        <FieldLabel htmlFor={field.name}>Fecha inicio*</FieldLabel>
+                        <DatePicker
+                          mode="date"
+                          id={field.name}
+                          value={parseDateValue(field.state.value)}
+                          onChange={(date) => {
+                            field.handleChange(formatDateValue(date))
+                            field.handleBlur()
+                          }}
+                          aria-invalid={isInvalid}
+                        />
+                        {isInvalid ? (
+                          <FieldError errors={field.state.meta.errors} />
+                        ) : outOfRange ? (
+                          <p
+                            role="alert"
+                            className="text-muted-foreground text-xs"
+                          >
+                            La fecha de inicio debe ser anterior a la fecha de
+                            fin del período de evaluación.
+                          </p>
+                        ) : null}
+                      </Field>
+                    )
+                  }}
+                </form.Subscribe>
               )
             }}
           </form.Field>
 
-          <form.Field name="endDate">
+          <form.Field
+            name="endDate"
+            validators={{
+              onChange: ({ value }) => {
+                if (!value) return undefined
+                if (academicPeriodStart && value < academicPeriodStart) {
+                  return {
+                    message:
+                      "La fecha de fin no puede ser anterior a la fecha de inicio del período académico.",
+                  }
+                }
+                if (academicPeriodEnd && value > academicPeriodEnd) {
+                  return {
+                    message:
+                      "La fecha de fin no puede ser posterior a la fecha de fin del período académico.",
+                  }
+                }
+                return undefined
+              },
+            }}
+          >
             {(field) => {
               const isInvalid =
                 field.state.meta.isTouched && !field.state.meta.isValid
@@ -418,12 +490,24 @@ export function CreateEvaluationPeriodDialog({
                 values.endDate.length > 0 &&
                 !Number.isNaN(values.peso) &&
                 values.estado.length > 0
+              // Las fechas deben caer dentro del rango del periodo académico
+              // (cuando este existe). Si no, se deshabilita el submit además
+              // del FieldError que muestra el form al tocar el campo.
+              const datesWithinAcademicPeriod =
+                (!academicPeriodStart || values.startDate >= academicPeriodStart) &&
+                (!academicPeriodEnd || values.startDate <= academicPeriodEnd) &&
+                (!academicPeriodStart || values.endDate >= academicPeriodStart) &&
+                (!academicPeriodEnd || values.endDate <= academicPeriodEnd)
               return (
                 <Button
                   type="submit"
                   color="primary"
                   form={FORM_ID}
-                  disabled={isSaving || !allRequiredFilled}
+                  disabled={
+                    isSaving ||
+                    !allRequiredFilled ||
+                    !datesWithinAcademicPeriod
+                  }
                   aria-busy={isSaving}
                 >
                   {isSaving && (

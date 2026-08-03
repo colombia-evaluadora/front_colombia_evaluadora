@@ -28,12 +28,16 @@ interface FilterSessionOperationsFormProps {
   id: string
   defaultValues: SessionOperationsFiltersFormInput
   onSubmit: (values: SessionOperationsFiltersFormValues) => void
+  // El input de tabla vive en el buscador del InputGroup; cuando `hideTableSlug`
+  // es `true` se omite del form del popover y se conserva como "search".
+  hideTableSlug?: boolean
 }
 
 export function FilterSessionOperationsForm({
   id,
   defaultValues,
   onSubmit,
+  hideTableSlug = false,
 }: FilterSessionOperationsFormProps) {
   const form = useForm({
     defaultValues,
@@ -120,27 +124,31 @@ export function FilterSessionOperationsForm({
 
       <Separator />
 
-      <form.Field
-        name="tableSlug"
-        children={(field) => (
-          <Field orientation="vertical" variant="outlined">
-            <FieldLabel htmlFor={field.name}>Tabla</FieldLabel>
-            <Input
-              id={field.name}
-              name={field.name}
-              type="text"
-              autoComplete="off"
-              placeholder="ej. tnivel_ensenanza"
-              value={field.state.value}
-              onBlur={field.handleBlur}
-              onChange={(event) => field.handleChange(event.target.value)}
-              className="h-9"
-            />
-          </Field>
-        )}
-      />
+      {!hideTableSlug && (
+        <>
+          <form.Field
+            name="tableSlug"
+            children={(field) => (
+              <Field orientation="vertical" variant="outlined">
+                <FieldLabel htmlFor={field.name}>Tabla</FieldLabel>
+                <Input
+                  id={field.name}
+                  name={field.name}
+                  type="text"
+                  autoComplete="off"
+                  placeholder="ej. tnivel_ensenanza"
+                  value={field.state.value}
+                  onBlur={field.handleBlur}
+                  onChange={(event) => field.handleChange(event.target.value)}
+                  className="h-9"
+                />
+              </Field>
+            )}
+          />
 
-      <Separator />
+          <Separator />
+        </>
+      )}
 
       {/* Dos campos independientes (no un único rango) — cada uno usa el
           modo `datetime`, que combina calendario y hora en el mismo popover

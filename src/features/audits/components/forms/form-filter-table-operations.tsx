@@ -49,7 +49,10 @@ interface FilterTableOperationsFormProps {
   id: string
   defaultValues: TableOperationsFiltersFormInput
   onSubmit: (values: TableOperationsFiltersFormValues) => void
+  // El input de autor vive en el buscador del InputGroup; cuando `hideAuthor`
+  // es `true` se omite del form del popover y se conserva como "search".
   availableFields: string[]
+  hideAuthor?: boolean
 }
 
 export function FilterTableOperationsForm({
@@ -57,6 +60,7 @@ export function FilterTableOperationsForm({
   defaultValues,
   onSubmit,
   availableFields,
+  hideAuthor = false,
 }: FilterTableOperationsFormProps) {
   const form = useForm({
     defaultValues,
@@ -90,27 +94,31 @@ export function FilterTableOperationsForm({
       }}
       className="flex flex-1 flex-col gap-4 overflow-y-auto px-4"
     >
-      <form.Field
-        name="author"
-        children={(field) => (
-          <Field orientation="vertical" variant="outlined" className="gap-2">
-            <FieldLabel htmlFor={field.name}>Autor / IP</FieldLabel>
-            <Input
-              id={field.name}
-              name={field.name}
-              type="text"
-              autoComplete="off"
-              placeholder="ej. Juan Pérez o 190.2.45.12"
-              value={field.state.value}
-              onBlur={field.handleBlur}
-              onChange={(event) => field.handleChange(event.target.value)}
-              className="h-9"
-            />
-          </Field>
-        )}
-      />
+      {!hideAuthor && (
+        <>
+          <form.Field
+            name="author"
+            children={(field) => (
+              <Field orientation="vertical" variant="outlined" className="gap-2">
+                <FieldLabel htmlFor={field.name}>Autor / IP</FieldLabel>
+                <Input
+                  id={field.name}
+                  name={field.name}
+                  type="text"
+                  autoComplete="off"
+                  placeholder="ej. Juan Pérez o 190.2.45.12"
+                  value={field.state.value}
+                  onBlur={field.handleBlur}
+                  onChange={(event) => field.handleChange(event.target.value)}
+                  className="h-9"
+                />
+              </Field>
+            )}
+          />
 
-      <Separator />
+          <Separator />
+        </>
+      )}
 
       <form.Field
         name="operations"

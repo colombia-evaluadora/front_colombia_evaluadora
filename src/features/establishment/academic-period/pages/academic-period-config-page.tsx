@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { SpinnerIcon } from "@/components/ui/icons"
-import { Link, useParams } from "@tanstack/react-router"
+import { Link, useNavigate, useParams } from "@tanstack/react-router"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -78,6 +78,7 @@ export function AcademicPeriodConfigPage() {
 
 function AcademicPeriodConfigPageContent() {
   const { notify } = useNotify()
+  const navigate = useNavigate()
   const { periodId } = useParams({ strict: false }) as { periodId?: string }
   const isEditing = periodId != null
   const numericPeriodId = periodId ? Number(periodId) : undefined
@@ -99,6 +100,11 @@ function AcademicPeriodConfigPageContent() {
         setCreatedPeriodId(created.id)
         setSaved(true)
         notify("Periodo académico creado. Ahora podés configurar el resto.")
+        // Tras crear, pasamos a la ruta de edición del nuevo periodo para que
+        // la URL refleje el estado real (editable, recargable, compartible).
+        navigate({
+          to: paths.app.periodosAcademicosEditar.getHref(created.id),
+        })
       },
     },
   })
@@ -176,7 +182,7 @@ function AcademicPeriodConfigPageContent() {
             Configuración del periodo
           </span>
         </AccordionTrigger>
-        <AccordionContent className="px-4 pb-4">
+        <AccordionContent keepMounted className="px-4 pb-4">
           {isEditing && isLoadingDetail ? (
             <div className="flex items-center justify-center py-10 text-muted-foreground">
               <SpinnerIcon data-icon="inline-start" className="animate-spin" />
