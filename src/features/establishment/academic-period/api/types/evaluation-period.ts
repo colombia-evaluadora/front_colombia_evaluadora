@@ -1,0 +1,68 @@
+export type EvaluationPeriodStatus = "Calificable" | "NO Calificable" | "Habilitados para algunas asignaturas" | "En Recuperaciones"
+
+// Opción de estado tal como la entrega el backend: `key` es el valor que se
+// guarda/manda, `label` el texto visible en el select.
+export interface EvaluationPeriodStatusOption {
+  key: EvaluationPeriodStatus
+  label: string
+}
+
+export interface EvaluationPeriod {
+  codigo: number
+  nombre: string
+  abreviacion: string
+  startDate: string
+  endDate: string
+  peso: number
+  estado: EvaluationPeriodStatus
+}
+
+export interface EvaluationPeriodsQueryFilters {
+  nombre?: string
+  abreviacion?: string
+  estado?: EvaluationPeriodStatus[]
+}
+
+export interface EvaluationPeriodsQueryRequest {
+  filters: EvaluationPeriodsQueryFilters
+  sorting: { id: string; desc: boolean }[]
+  pageIndex: number
+  pageSize: number
+  academicPeriodId?: number
+}
+
+export interface EvaluationPeriodRecord extends EvaluationPeriod {
+  academicPeriodId: number
+}
+
+export interface EvaluationPeriodsQueryResponse {
+  rows: EvaluationPeriod[]
+  pageCount: number
+  totalCount: number
+}
+
+export type CreateEvaluationPeriodRequest = EvaluationPeriod & {
+  academicPeriodId?: number
+}
+
+export type UpdateEvaluationPeriodRequest = EvaluationPeriod & {
+  academicPeriodId?: number
+}
+
+export interface MutationResult {
+  status: "ok" | "error"
+  message: string
+}
+
+export type ExportFormat = "pdf" | "excel"
+
+export interface ExportResult {
+  status: "ok" | "error"
+  message: string
+}
+
+export interface EvaluationPeriodsExportRequest {
+  ids?: number[]
+  filters?: EvaluationPeriodsQueryFilters
+  format: ExportFormat
+}

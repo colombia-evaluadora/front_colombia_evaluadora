@@ -16,13 +16,21 @@ import { Spinner } from "@/components/ui/spinner"
 import { paths } from "@/config/paths"
 
 import { useAuditSessionQuery } from "../api/query/use-audit-session-query"
-import { SESSION_STATUS_BADGE, SESSION_STATUS_LABELS } from "../api/ui-mappings"
+import { useAuditSessionStatusesQuery } from "../api/query/use-audit-session-statuses-query"
+import { SESSION_STATUS_BADGE } from "../api/ui-mappings"
 import { SessionOperationsDataTable } from "../components/table/session-operations-table"
 
 export function SessionOperationsPage() {
   const { sessionId } = useParams({ strict: false }) as { sessionId: string }
 
   const { data: session, isPending, isError } = useAuditSessionQuery({ sessionId })
+
+  // El label del estado lo entrega el backend (`{ key, label }`). Si la
+  // query todavía no llegó, caemos al `key` como fallback.
+  const { data: statusOptions = [] } = useAuditSessionStatusesQuery()
+  const statusLabel = session
+    ? (statusOptions.find((o) => o.key === session.status)?.label ?? session.status)
+    : null
 
   const initials = session
     ? session.authorName
@@ -79,9 +87,7 @@ export function SessionOperationsPage() {
               <Badge variant="fill" color="muted">
                 {session.ip}
               </Badge>
-              <Badge {...SESSION_STATUS_BADGE[session.status]}>
-                {SESSION_STATUS_LABELS[session.status]}
-              </Badge>
+              <Badge {...SESSION_STATUS_BADGE[session.status]}>{statusLabel}</Badge>
             </div>
             <CardDescription>
               {started?.toLocaleString("es", {
