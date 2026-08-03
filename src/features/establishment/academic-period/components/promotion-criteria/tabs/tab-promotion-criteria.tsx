@@ -221,7 +221,7 @@ const PromotionCriteriaForm = forwardRef<
         form.handleSubmit()
       }}
     >
-      <NoticeOutlet className="mb-4" />
+      {!hideSubmit && <NoticeOutlet className="mb-4" />}
       <div className="mb-4 flex items-center justify-between gap-4">
         <HeadingTag className="text-lg font-semibold">
           Parámetros de aprobación
