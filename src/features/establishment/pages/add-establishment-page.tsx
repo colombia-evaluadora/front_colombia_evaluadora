@@ -1,6 +1,5 @@
 import { Link, useLocation, useNavigate } from "@tanstack/react-router"
 import { useEffect, useState, type FormEvent } from "react"
-import { toast } from "sonner"
 
 import {
   Card,
@@ -23,6 +22,7 @@ import type { CatalogItem } from "../api/types/catalog"
 import type { Person } from "../api/types/person"
 import { UserDetailsForm } from "../components/forms/form-user-datails"
 import { validateEstablishmentForm } from "../utils/validate-establishment-form"
+import { NoticeOutlet, useNotify } from "../components/common/notice-context"
 
 function createEmptyCatalogItem(): CatalogItem {
   return { id: "", code: "", name: "" }
@@ -94,6 +94,7 @@ function createInitialEstablishmentValues(): EstablishmentDetails {
 export function AddEstablishmentPage() {
   const navigate = useNavigate()
   const location = useLocation()
+  const { notify } = useNotify()
   const establishmentId = location.pathname.includes("/editar/")
     ? location.pathname.split("/editar/").at(1) ?? null
     : null
@@ -136,14 +137,14 @@ export function AddEstablishmentPage() {
     mutationConfig: {
       onSuccess: (result) => {
         if (result.status === "error") {
-          toast.error(result.message)
+          notify(result.message, { variant: "error" })
           return
         }
-        toast.success(result.message)
+        notify(result.message)
         navigate({ to: paths.app.establishments.general.getHref() })
       },
       onError: (error) => {
-        toast.error(error.message || "No se pudo crear el establecimiento.")
+        notify(error.message || "No se pudo crear el establecimiento.", { variant: "error" })
       },
     },
   })
@@ -152,14 +153,14 @@ export function AddEstablishmentPage() {
     mutationConfig: {
       onSuccess: (result) => {
         if (result.status === "error") {
-          toast.error(result.message)
+          notify(result.message, { variant: "error" })
           return
         }
-        toast.success(result.message)
+        notify(result.message)
         navigate({ to: paths.app.establishments.general.getHref() })
       },
       onError: (error) => {
-        toast.error(error.message || "No se pudo actualizar el establecimiento.")
+        notify(error.message || "No se pudo actualizar el establecimiento.", { variant: "error" })
       },
     },
   })
@@ -203,11 +204,11 @@ export function AddEstablishmentPage() {
     const result = await createPersonMutation.mutateAsync(person)
 
     if (result.status === "error") {
-      toast.error(result.message || `No fue posible guardar el ${label}.`)
+      notify(result.message || `No fue posible guardar el ${label}.`, { variant: "error" })
       throw new Error(`person_persist_failed:${label}`)
     }
 
-    toast.success(`${label} guardado.`)
+    notify(`${label} guardado.`)
     return result.person
   }
 
@@ -220,7 +221,7 @@ export function AddEstablishmentPage() {
     setInvalidFields(validation.invalidFields)
 
     if (validation.errors.length > 0) {
-      toast.error("Completa los campos obligatorios antes de guardar.")
+      notify("Completa los campos obligatorios antes de guardar.", { variant: "error" })
       return
     }
 
@@ -287,6 +288,7 @@ export function AddEstablishmentPage() {
       </CardHeader>
 
       <CardContent>
+        <NoticeOutlet className="mb-4" />
         {validationErrors.length > 0 ? (
           <div className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
             <p className="font-medium">Completa los campos obligatorios:</p>

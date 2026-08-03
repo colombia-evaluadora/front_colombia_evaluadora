@@ -32,6 +32,7 @@ import {
 import { establishmentsSearchSchema } from "@/features/establishment/api/establishment-schema"
 import { campusesSearchSchema } from "@/features/establishment/api/campus-schema"
 import { employeesSearchSchema } from "@/features/establishment/api/employee-schema"
+import { NoticeProvider } from "@/features/establishment/components/common/notice-context"
 
 /*const LandingPage = lazyRouteComponent(
   () => import("@/features/landing/pages/landing-page"),
@@ -326,47 +327,61 @@ export const auditoriaTablaDetalleRoute = createRoute({
   component: TableOperationsPage,
 })
 
-export const establishmentsRoute = createRoute({
+// Ruta sin path propio: agrupa establecimientos/sedes/funcionarios bajo un
+// único `NoticeProvider` para que un aviso disparado en un formulario de
+// alta/edición siga visible al navegar de vuelta al listado (a diferencia de
+// un provider por página, que se desmonta antes de que el usuario lo vea).
+const establishmentLayoutRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
+  id: "_establishment",
+  component: () => (
+    <NoticeProvider>
+      <Outlet />
+    </NoticeProvider>
+  ),
+})
+
+export const establishmentsRoute = createRoute({
+  getParentRoute: () => establishmentLayoutRoute,
   path: paths.app.establishments.general.path,
   validateSearch: establishmentsSearchSchema,
   component: EstablishmentsPage,
 })
 
 export const campusesRoute = createRoute({
-  getParentRoute: () => appLayoutRoute,
+  getParentRoute: () => establishmentLayoutRoute,
   path: paths.app.establishments.campuses.path,
   validateSearch: campusesSearchSchema,
   component: CampusesPage,
 })
 
 export const employeesRoute = createRoute({
-  getParentRoute: () => appLayoutRoute,
+  getParentRoute: () => establishmentLayoutRoute,
   path: paths.app.establishments.officials.path,
   validateSearch: employeesSearchSchema,
   component: EmployeesPage,
 })
 
 export const addEstablishmentRoute = createRoute({
-  getParentRoute: () => appLayoutRoute,
+  getParentRoute: () => establishmentLayoutRoute,
   path: paths.app.establishments.add.path,
   component: AddEstablishmentPage,
 })
 
 export const editEstablishmentRoute = createRoute({
-  getParentRoute: () => appLayoutRoute,
+  getParentRoute: () => establishmentLayoutRoute,
   path: paths.app.establishments.edit.path,
   component: AddEstablishmentPage,
 })
 
 export const addCampusRoute = createRoute({
-  getParentRoute: () => appLayoutRoute,
+  getParentRoute: () => establishmentLayoutRoute,
   path: paths.app.establishments.campuses.add.path,
   component: AddCampusPage,
 })
 
 export const editCampusRoute = createRoute({
-  getParentRoute: () => appLayoutRoute,
+  getParentRoute: () => establishmentLayoutRoute,
   path: paths.app.establishments.campuses.edit.path,
   component: AddCampusPage,
 })
@@ -427,13 +442,15 @@ const routeTree = rootRoute.addChildren([
     auditoriaTablasRoute,
     auditoriaTablaDetalleRoute,
     auditoriaSesionOperacionesRoute,
-    establishmentsRoute,
-    campusesRoute,
-    employeesRoute,
-    addEstablishmentRoute,
-    editEstablishmentRoute,
-    addCampusRoute,
-    editCampusRoute,
+    establishmentLayoutRoute.addChildren([
+      establishmentsRoute,
+      campusesRoute,
+      employeesRoute,
+      addEstablishmentRoute,
+      editEstablishmentRoute,
+      addCampusRoute,
+      editCampusRoute,
+    ]),
     reportesRoute,
     usuariosRoute,
     configuracionRoute,
