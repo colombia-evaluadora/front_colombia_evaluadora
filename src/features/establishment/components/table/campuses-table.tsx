@@ -5,15 +5,6 @@ import { toast } from "sonner"
 
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
-import { Field, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { useDataTable } from "@/hooks/use-data-table"
 import { useTablePagination } from "@/hooks/use-table-pagination"
 
@@ -29,12 +20,14 @@ import { DialogBulkDelete } from "../dialogs/dialog-bulk-delete"
 import { ClearSelectionDialog } from "../dialogs/dialog-clear-selection"
 import { ExportCampusesDialog } from "../dialogs/dialog-export-campuses"
 import { ExportSelectedCampusesDialog } from "../dialogs/dialog-export-selected-campuses"
+import { SearchCampuses } from "../search/search-campuses"
 
 export function CampusesDataTable() {
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } =
     useTablePagination()
 
-  const { filters, queryFilters, applyFilters } = useCampusesFilters()
+  const { filters, queryFilters, applyFilters, clearAllFilters, activeFilterCount } =
+    useCampusesFilters()
 
   const { data: zones = [] } = useCatalogQuery<CatalogItem>(CATALOGS.ZONES)
 
@@ -80,54 +73,16 @@ export function CampusesDataTable() {
     },
   })
 
-  const zoneItems = [
-    { value: "", label: "Todas" },
-    ...zones.map((zone) => ({ value: zone.code, label: zone.name })),
-  ]
-
   return (
     <>
-      <div className="mb-6 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-        <div className="grid w-full gap-4 md:grid-cols-[minmax(18rem,1fr)_minmax(12rem,16rem)]">
-          <Field orientation="horizontal" variant="outlined" className="w-full max-w-full">
-            <FieldLabel htmlFor="campus-search">Buscar</FieldLabel>
-            <Input
-              id="campus-search"
-              value={filters.search}
-              onChange={(event) =>
-                applyFilters({
-                  ...filters,
-                  search: event.target.value,
-                })
-              }
-              placeholder="Buscar por sede o código DANE"
-            />
-          </Field>
-          <Field orientation="horizontal" variant="outlined" className="w-full max-w-full">
-            <FieldLabel htmlFor="campus-zone">Zona</FieldLabel>
-            <Select
-              value={filters.zones[0] ?? ""}
-              onValueChange={(value) =>
-                applyFilters({
-                  ...filters,
-                  zones: value ? [value] : [],
-                })
-              }
-              items={zoneItems}
-            >
-              <SelectTrigger id="campus-zone" className="w-full">
-                <SelectValue placeholder="Todas" />
-              </SelectTrigger>
-              <SelectContent>
-                {zoneItems.map((item) => (
-                  <SelectItem key={item.value} value={item.value}>
-                    {item.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Field>
-        </div>
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+        <SearchCampuses
+          filters={filters}
+          applyFilters={applyFilters}
+          clearAllFilters={clearAllFilters}
+          activeFilterCount={activeFilterCount}
+          zones={zones}
+        />
 
         <div className="flex items-center gap-2">
           {hasSelection ? (

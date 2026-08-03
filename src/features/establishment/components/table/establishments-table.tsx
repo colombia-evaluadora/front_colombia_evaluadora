@@ -5,15 +5,6 @@ import { toast } from "sonner"
 
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
-import { Field, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { useDataTable } from "@/hooks/use-data-table"
 import { useTablePagination } from "@/hooks/use-table-pagination"
 
@@ -29,6 +20,7 @@ import { DialogBulkDelete } from "../dialogs/dialog-bulk-delete"
 import { ClearSelectionDialog } from "../dialogs/dialog-clear-selection"
 import { ExportEstablishmentsDialog } from "../dialogs/dialog-export-establishments"
 import { ExportSelectedEstablishmentsDialog } from "../dialogs/dialog-export-selected-establishments"
+import { SearchEstablishments } from "../search/search-establishments"
 
 export function EstablishmentsDataTable() {
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } =
@@ -38,6 +30,8 @@ export function EstablishmentsDataTable() {
     filters,
     queryFilters,
     applyFilters,
+    clearAllFilters,
+    activeFilterCount,
   } = useEstablishmentsFilters()
 
   const { data: entityStatuses = [] } = useCatalogQuery<CatalogItem>(CATALOGS.ENTITY_STATUSES)
@@ -57,14 +51,6 @@ export function EstablishmentsDataTable() {
       ),
     [entityStatuses],
   )
-
-  const statusItems = [
-    { value: "", label: "Todos" },
-    ...establishmentStatuses.map((status: CatalogItem) => ({
-      value: status.id,
-      label: status.name,
-    })),
-  ]
 
   const { data, isPending, isError, refetch } = useEstablishmentsQuery({
     filters: queryFilters,
@@ -110,49 +96,14 @@ export function EstablishmentsDataTable() {
 
   return (
     <>
-      <div className="mb-6 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-        <div className="grid w-full gap-4 md:grid-cols-[minmax(18rem,1fr)_minmax(12rem,16rem)]">
-          <Field orientation="horizontal" variant="outlined" className="w-full max-w-full">
-            <FieldLabel htmlFor="establishment-search">Buscar</FieldLabel>
-            <Input
-              id="establishment-search"
-              value={filters.search}
-              onChange={(event) =>
-                applyFilters({
-                  ...filters,
-                  search: event.target.value,
-                })
-              }
-              placeholder="Buscar por establecimiento, municipio o código DANE"
-            />
-          </Field>
-          <Field orientation="horizontal" variant="outlined" className="w-full max-w-full">
-            <FieldLabel htmlFor="establishment-status">Estado</FieldLabel>
-            <Select
-              value={filters.statuses[0] ?? ""}
-              onValueChange={(value) =>
-                applyFilters({
-                  ...filters,
-                  statuses: value
-                    ? ([value as "ACTIVE" | "SUSPENDED"] as const)
-                    : [],
-                })
-              }
-              items={statusItems}
-            >
-              <SelectTrigger id="establishment-status" className="w-full">
-                <SelectValue placeholder="Todos" />
-              </SelectTrigger>
-              <SelectContent>
-                {statusItems.map((item) => (
-                  <SelectItem key={item.value} value={item.value}>
-                    {item.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Field>
-        </div>
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+        <SearchEstablishments
+          filters={filters}
+          applyFilters={applyFilters}
+          clearAllFilters={clearAllFilters}
+          activeFilterCount={activeFilterCount}
+          statuses={establishmentStatuses}
+        />
 
         <div className="flex items-center gap-2">
           {hasSelection ? (
