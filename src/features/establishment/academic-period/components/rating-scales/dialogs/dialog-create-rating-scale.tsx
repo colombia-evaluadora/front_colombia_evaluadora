@@ -8,8 +8,9 @@ import {
   TrashIcon,
   XIcon,
 } from "@/components/ui/icons"
-import { toast } from "sonner"
 import { z } from "zod"
+
+import { useNotify, NoticeOutlet } from "../../common/notice-context"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -82,6 +83,7 @@ interface CreateRatingScaleDialogProps {
 export function CreateRatingScaleDialog({
   academicPeriodId,
 }: CreateRatingScaleDialogProps) {
+  const { notify } = useNotify()
   const [open, setOpen] = useState(false)
   const [continued, setContinued] = useState(false)
   const [teachingLevelIds, setTeachingLevelIds] = useState<number[]>([])
@@ -121,7 +123,9 @@ export function CreateRatingScaleDialog({
       const r = rangeRef.current
       const parsed = makeRatingScaleGradesSchema(r).safeParse(value)
       if (!parsed.success) {
-        toast.error(parsed.error.issues[0]?.message ?? "Revisá los datos.")
+        notify(parsed.error.issues[0]?.message ?? "Revisá los datos.", {
+          variant: "error",
+        })
         return
       }
       setDrafts((prev) => [...prev, parsed.data])
@@ -146,7 +150,9 @@ export function CreateRatingScaleDialog({
     const r = rangeRef.current
     const parsed = makeRatingScaleGradesSchema(r).safeParse(editRow)
     if (!parsed.success) {
-      toast.error(parsed.error.issues[0]?.message ?? "Revisá los datos.")
+      notify(parsed.error.issues[0]?.message ?? "Revisá los datos.", {
+        variant: "error",
+      })
       return
     }
     setDrafts((prev) =>
@@ -162,22 +168,20 @@ export function CreateRatingScaleDialog({
 
   async function handleSave() {
     if (teachingLevelIds.length === 0) {
-      toast.error("Seleccioná al menos un nivel de enseñanza.")
+      notify("Seleccioná al menos un nivel de enseñanza.", { variant: "error" })
       return
     }
     if (drafts.length === 0) {
-      toast.error("Agregá al menos una escala a la lista.")
+      notify("Agregá al menos una escala a la lista.", { variant: "error" })
       return
     }
-    // El backend expande por nivel (una escala por cada nivel × escala) y
-    // asigna los códigos; el front manda una sola request.
     await createScalesBulk.mutateAsync({
       teachingLevelIds,
       scales: drafts.map((d) => ({ ...d, tipo: d.tipo as RatingScaleType })),
       academicPeriodId,
     })
     const total = drafts.length * teachingLevelIds.length
-    toast.success(`${total} escala(s) guardada(s).`)
+    notify(`${total} escala(s) guardada(s).`)
     reset()
     setOpen(false)
   }
@@ -209,6 +213,8 @@ export function CreateRatingScaleDialog({
             lista.
           </DialogDescription>
         </DialogHeader>
+
+        <NoticeOutlet />
 
         <div className="flex min-w-0 flex-col gap-4">
           <Field variant="outlined">
@@ -455,8 +461,6 @@ export function CreateRatingScaleDialog({
 
           {drafts.length > 0 && (
             <div className="overflow-x-auto border [&_[data-slot=input]]:bg-background [&_[data-slot=select-trigger]]:bg-background">
-              {/* Inputs recuadrados (variante outlined) con fondo sólido, igual
-                  que la tabla de edición de escalas del tab. */}
               <FieldVariantContext.Provider value="outlined">
               <Table>
                 <TableHeader>

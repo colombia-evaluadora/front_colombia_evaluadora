@@ -3,19 +3,21 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 import type { SortingState } from "@tanstack/react-table"
 import { SpinnerIcon } from "@/components/ui/icons"
-import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
-import { Field, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
 import { Pagination } from "@/components/pagination"
 import { useDataTable } from "@/hooks/use-data-table"
 
+import { useNotify, NoticeOutlet } from "../../common/notice-context"
+import { SearchAcademicAssignments } from "../search-academic-assignments"
 import { ExpandableDataTable } from "../../common/expandable-data-table"
 import { ExportAcademicAssignmentsDialog } from "../dialogs/dialog-export-academic-assignments"
 
 import { useEmployeesQuery } from "@/features/establishment/api/query/use-employees-query"
-import type { EmployeeListItem } from "@/features/establishment/api/types/employee"
+import type {
+  EmployeeListItem,
+  EmployeeStatus,
+} from "@/features/establishment/api/types/employee"
 
 import { useAssignmentSubjectsQuery } from "../../../api/query/academic-assignments/use-assignment-subjects-query"
 import { useTeacherAssignmentsQuery } from "../../../api/query/academic-assignments/use-teacher-assignments-query"
@@ -35,21 +37,19 @@ export function TabAcademicAssignments({
   const [pageIndex, setPageIndex] = useState(0)
   const [pageSize, setPageSize] = useState(10)
   const [search, setSearch] = useState("")
+  const [status, setStatus] = useState<EmployeeStatus | "">("")
+  const { notify } = useNotify()
 
-  // Búsqueda por nombre / documento del docente. El endpoint de empleados
-  // ya hace match por documento, nombre o sede; lo compartimos con la
-  // exportación para que "exportar" respete la búsqueda activa.
-  // `campusId` se agrega al filtro para acotar el listado a los funcionarios
-  // con permiso en la sede del periodo académico (resuelto abajo).
   const { data: academicPeriod } = useAcademicPeriodQuery(academicPeriodId)
   const campusId = academicPeriod?.sedeId
 
   const queryFilters = useMemo(
     () => ({
       search: search.trim() || undefined,
+      statuses: status ? [status] : undefined,
       campusId,
     }),
-    [search, campusId]
+    [search, status, campusId]
   )
 
   const [expanded, setExpanded] = useState<EmployeeListItem | null>(null)
@@ -75,10 +75,10 @@ export function TabAcademicAssignments({
     mutationConfig: {
       onSuccess: (result) => {
         if (result.status === "error") {
-          toast.error(result.message)
+          notify(result.message, { variant: "error" })
           return
         }
-        toast.success(result.message)
+        notify(result.message)
       },
     },
   })
@@ -149,28 +149,23 @@ export function TabAcademicAssignments({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <Field
-          orientation="vertical"
-          variant="outlined"
-          className="w-full gap-2 sm:w-72"
-        >
-          <FieldLabel htmlFor="academic-assignments-search">Buscar</FieldLabel>
-          <Input
-            id="academic-assignments-search"
-            name="search"
-            type="text"
-            autoComplete="off"
-            placeholder="Buscar por nombre"
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value)
-              setPageIndex(0)
-            }}
-          />
-        </Field>
+        <SearchAcademicAssignments
+          search={search}
+          onSearchChange={(value) => {
+            setSearch(value)
+            setPageIndex(0)
+          }}
+          status={status}
+          onStatusChange={(value) => {
+            setStatus(value)
+            setPageIndex(0)
+          }}
+        />
 
         <ExportAcademicAssignmentsDialog filters={queryFilters} />
       </div>
+
+      <NoticeOutlet />
 
       <ExpandableDataTable
         table={table}

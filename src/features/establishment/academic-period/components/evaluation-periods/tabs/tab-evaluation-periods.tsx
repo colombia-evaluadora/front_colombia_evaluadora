@@ -11,6 +11,7 @@ import { useEvaluationPeriodsQuery } from "../../../api/query/evaluation-periods
 import { createEvaluationPeriodColumns } from "../table/columns-evaluation-periods"
 import { CreateEvaluationPeriodDialog } from "../dialogs/dialog-create-evaluation-period"
 import { ExportEvaluationPeriodsDialog } from "../dialogs/dialog-export-evaluation-periods"
+import { NoticeOutlet } from "../../common/notice-context"
 
 interface TabEvaluationPeriodsProps {
   academicPeriodId?: number
@@ -61,6 +62,8 @@ export function TabEvaluationPeriods({
         <CreateEvaluationPeriodDialog academicPeriodId={academicPeriodId} />
         <ExportEvaluationPeriodsDialog filters={{}} />
       </div>
+
+      <NoticeOutlet className="mb-2" />
 
       <DataTable
         table={table}

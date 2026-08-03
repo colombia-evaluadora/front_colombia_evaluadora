@@ -1,8 +1,8 @@
 import { useState } from "react"
 
 import { SpinnerIcon, TrashIcon } from "@/components/ui/icons"
-import { toast } from "sonner"
 
+import { useNotify } from "../../common/notice-context"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,6 +32,7 @@ export function DeleteSelectedRatingScalesDialog({
   const [open, setOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const bulkDelete = useDeleteRatingScalesBulk()
+  const { notify } = useNotify()
   const count = scaleCodigos.length
 
   async function handleDelete() {
@@ -43,9 +44,9 @@ export function DeleteSelectedRatingScalesDialog({
     setSubmitting(false)
 
     if (result.status === "error") {
-      toast.error("No se pudieron eliminar las escalas.")
+      notify("No se pudieron eliminar las escalas.", { variant: "error" })
     } else {
-      toast.success(`${count} escala(s) de valoración eliminada(s).`)
+      notify(`${count} escala(s) de valoración eliminada(s).`)
     }
     setOpen(false)
     resetSelection()

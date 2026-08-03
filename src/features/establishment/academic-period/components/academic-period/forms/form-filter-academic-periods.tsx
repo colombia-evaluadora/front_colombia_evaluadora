@@ -46,12 +46,14 @@ interface FilterAcademicPeriodsFormProps {
   id: string
   defaultValues: AcademicPeriodsFiltersFormInput
   onSubmit: (values: AcademicPeriodsFiltersFormValues) => void
+  hideSede?: boolean
 }
 
 export function FilterAcademicPeriodsForm({
   id,
   defaultValues,
   onSubmit,
+  hideSede = false,
 }: FilterAcademicPeriodsFormProps) {
   const form = useForm({
     defaultValues,
@@ -72,26 +74,30 @@ export function FilterAcademicPeriodsForm({
       }}
       className="flex flex-1 flex-col gap-4 overflow-y-auto px-4"
     >
-      <form.Field name="sedeName">
-        {(field) => (
-          <Field orientation="vertical" variant="outlined" className="gap-2">
-            <FieldLabel htmlFor={field.name}>Sede</FieldLabel>
-            <Input
-              id={field.name}
-              name={field.name}
-              type="text"
-              autoComplete="off"
-              placeholder="ej. I.E. San José"
-              value={field.state.value}
-              onBlur={field.handleBlur}
-              onChange={(event) => field.handleChange(event.target.value)}
-              className="h-9"
-            />
-          </Field>
-        )}
-      </form.Field>
+      {!hideSede && (
+        <>
+          <form.Field name="sedeName">
+            {(field) => (
+              <Field orientation="vertical" variant="outlined" className="gap-2">
+                <FieldLabel htmlFor={field.name}>Sede</FieldLabel>
+                <Input
+                  id={field.name}
+                  name={field.name}
+                  type="text"
+                  autoComplete="off"
+                  placeholder="ej. I.E. San José"
+                  value={field.state.value}
+                  onBlur={field.handleBlur}
+                  onChange={(event) => field.handleChange(event.target.value)}
+                  className="h-9"
+                />
+              </Field>
+            )}
+          </form.Field>
 
-      <Separator />
+          <Separator />
+        </>
+      )}
 
       <form.Field name="schoolYearId">
         {(field) => (

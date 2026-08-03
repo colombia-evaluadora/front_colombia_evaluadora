@@ -11,6 +11,7 @@ import { useGradesQuery } from "../../../api/query/grades/use-grades-query"
 import { createGradeColumns } from "../table/columns-grades"
 import { CreateGradeDialog } from "../dialogs/dialog-create-grade"
 import { ExportGradesDialog } from "../dialogs/dialog-export-grades"
+import { NoticeOutlet } from "../../common/notice-context"
 import type { Jornada } from "../../schedule/schedule-data"
 
 interface TabGradesProps {
@@ -61,6 +62,8 @@ export function TabGrades({ jornada, academicPeriodId }: TabGradesProps) {
         <CreateGradeDialog jornada={jornada} academicPeriodId={academicPeriodId} />
         <ExportGradesDialog filters={{}} />
       </div>
+
+      <NoticeOutlet className="mb-2" />
 
       <DataTable
         table={table}

@@ -13,7 +13,8 @@ import { ExportAcademicPeriodsDialog } from "../dialogs/dialog-export-academic-p
 import { ExportSelectedAcademicPeriodsDialog } from "../dialogs/dialog-export-selected-academic-periods"
 import { DeleteSelectedAcademicPeriodsDialog } from "../dialogs/dialog-delete-selected-academic-periods"
 import { ClearSelectionAcademicPeriodsDialog } from "../dialogs/dialog-clear-selection-academic-periods"
-import { FilterAcademicPeriodsSheet } from "../sheets/sheet-filter-academic-periods"
+import { SearchAcademicPeriods } from "../search/search-academic-periods"
+import { NoticeOutlet } from "../../common/notice-context"
 
 export function AcademicPeriodsDataTable() {
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } =
@@ -45,7 +46,7 @@ export function AcademicPeriodsDataTable() {
   return (
     <>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <FilterAcademicPeriodsSheet
+        <SearchAcademicPeriods
           activeFilterCount={activeFilterCount}
           filters={filters}
           applyFilters={applyFilters}
@@ -71,6 +72,8 @@ export function AcademicPeriodsDataTable() {
           <DataTableViewOptions table={table} />
         </div>
       </div>
+
+      <NoticeOutlet className="mb-3" />
 
       <DataTable
         table={table}

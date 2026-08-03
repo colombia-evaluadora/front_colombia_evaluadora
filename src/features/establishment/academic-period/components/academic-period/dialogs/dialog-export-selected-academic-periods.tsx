@@ -6,7 +6,7 @@ import {
   FileXlsIcon,
   SpinnerIcon,
 } from "@/components/ui/icons"
-import { toast } from "sonner"
+import { useNotify } from "../../common/notice-context"
 
 import {
   Dialog,
@@ -33,16 +33,17 @@ export function ExportSelectedAcademicPeriodsDialog({
   resetSelection,
 }: ExportSelectedAcademicPeriodsDialogProps) {
   const [open, setOpen] = useState(false)
+  const { notify } = useNotify()
   const count = selectedIds.length
 
   const exportSelected = useExportSelectedAcademicPeriods({
     mutationConfig: {
       onSuccess: (result) => {
         if (result.status === "error") {
-          toast.error(result.message)
+          notify(result.message, { variant: "error" })
           return
         }
-        toast.success(result.message)
+        notify(result.message)
         setOpen(false)
         resetSelection()
       },
@@ -53,9 +54,6 @@ export function ExportSelectedAcademicPeriodsDialog({
     exportSelected.mutate({ ids: selectedIds, format })
   }
 
-  // Los dos botones comparten la misma mutación, así que `isPending` sola no
-  // distingue cuál se pulsó. `variables` guarda el input en vuelo — con eso
-  // el spinner sale solo en el botón que disparó la exportación.
   const pendingFormat = exportSelected.isPending
     ? exportSelected.variables?.format
     : undefined

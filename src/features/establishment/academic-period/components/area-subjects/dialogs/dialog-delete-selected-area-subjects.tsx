@@ -1,8 +1,8 @@
 import { useState } from "react"
 
 import { SpinnerIcon, TrashIcon } from "@/components/ui/icons"
-import { toast } from "sonner"
 
+import { useNotify } from "../../common/notice-context"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,6 +30,7 @@ export function DeleteSelectedAreaSubjectsDialog({
   const [open, setOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const bulkDelete = useDeleteAreaSubjectsBulk()
+  const { notify } = useNotify()
   const count = selectedIds.length
 
   async function handleDelete() {
@@ -42,9 +43,11 @@ export function DeleteSelectedAreaSubjectsDialog({
     setSubmitting(false)
 
     if (result.status === "error") {
-      toast.error("No se pudieron eliminar las áreas seleccionadas.")
+      notify("No se pudieron eliminar las áreas seleccionadas.", {
+        variant: "error",
+      })
     } else {
-      toast.success(`${codigos.length} área(s) eliminada(s).`)
+      notify(`Se eliminaron ${codigos.length} área(s) correctamente.`)
     }
     setOpen(false)
     resetSelection()

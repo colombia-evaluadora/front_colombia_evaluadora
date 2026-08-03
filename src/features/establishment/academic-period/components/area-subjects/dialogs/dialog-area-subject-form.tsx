@@ -9,7 +9,7 @@ import {
   TrashIcon,
   XIcon,
 } from "@/components/ui/icons"
-import { toast } from "sonner"
+import { useNotify, NoticeOutlet } from "../../common/notice-context"
 
 import {
   AlertDialog,
@@ -51,6 +51,10 @@ import type {
 import { AreaField } from "../area-field"
 import { SortableHeader } from "../sortable-header"
 import {
+  SubjectNoticeBanner,
+  type SubjectNotice,
+} from "../subject-notice"
+import {
   SubjectRowFields,
   emptyDraft,
   itemToDraft,
@@ -84,6 +88,7 @@ export function AreaSubjectFormDialog({
 }: AreaSubjectFormDialogProps) {
   const isEdit = areaSubject != null
 
+  const { notify } = useNotify()
   const [open, setOpen] = useState(false)
   const [subjectsStarted, setSubjectsStarted] = useState(isEdit)
   const [subjects, setSubjects] = useState<SubjectDraft[]>(
@@ -106,10 +111,14 @@ export function AreaSubjectFormDialog({
   const [successOpen, setSuccessOpen] = useState(false)
   const [sort, setSort] = useState<SortState>(null)
 
-  // Se vuelve `true` la primera vez que el usuario edita el campo
-  // "nombreInterno" a mano. Mientras siga en `false`, el campo se autorrellena
-  // cada vez que cambia "areaGeneral"; en cuanto el usuario lo toca, dejamos
-  // de pisar su valor.
+  const [notice, setNotice] = useState<SubjectNotice | null>(null)
+  const noticeIdRef = useRef(0)
+
+  function showNotice(message: string) {
+    noticeIdRef.current += 1
+    setNotice({ id: noticeIdRef.current, message })
+  }
+
   const nombreInternoEditedRef = useRef(false)
 
   const areaDefaults: AreaSubjectFormValues = {
@@ -149,12 +158,12 @@ export function AreaSubjectFormDialog({
         })
 
         if (result.status === "error") {
-          toast.error(result.message)
+          notify(result.message, { variant: "error" })
           return
         }
 
-        toast.success(result.message)
         setOpen(false)
+        notify("El área/asignatura se actualizó correctamente.")
         return
       }
 
@@ -183,6 +192,7 @@ export function AreaSubjectFormDialog({
       form.reset()
       setSubjects(areaSubject?.subjects.map(itemToDraft) ?? [])
       setSubjectsStarted(true)
+      setNotice(null)
       nombreInternoEditedRef.current = false
     } else {
       resetCreateForm()
@@ -201,6 +211,7 @@ export function AreaSubjectFormDialog({
     setEspecialidades(backendEspecialidades)
     setConfirmOpen(false)
     setSort(null)
+    setNotice(null)
     nombreInternoEditedRef.current = false
   }
 
@@ -252,16 +263,18 @@ export function AreaSubjectFormDialog({
 
   function commitDraft() {
     if (!draft.asignaturaGeneral.trim() && !draft.nombreInterno.trim()) {
-      toast.error("Elegí una asignatura general o completá el nombre interno.")
+      notify("Elegí una asignatura general o completá el nombre interno.", { variant: "error" })
       return
     }
     setSubjects((prev) => [...prev, draft])
     setDraft(emptyDraft())
+    showNotice("Asignatura agregada exitosamente.")
   }
 
   function removeSubject(index: number) {
     setSubjects((prev) => prev.filter((_, i) => i !== index))
     cancelEditSubject()
+    showNotice("Asignatura eliminada exitosamente.")
   }
 
   function startEditSubject(index: number) {
@@ -271,7 +284,7 @@ export function AreaSubjectFormDialog({
   function saveEditSubject() {
     if (editingIndex === null || !editDraft) return
     if (!editDraft.asignaturaGeneral.trim() && !editDraft.nombreInterno.trim()) {
-      toast.error("Elegí una asignatura general o completá el nombre interno.")
+      notify("Elegí una asignatura general o completá el nombre interno.", { variant: "error" })
       return
     }
     const next = editDraft
@@ -320,6 +333,8 @@ export function AreaSubjectFormDialog({
               Completá los datos del área y asigná sus asignaturas generales.
             </DialogDescription>
           </DialogHeader>
+
+          <NoticeOutlet />
 
           <form
             id={FORM_ID}
@@ -435,11 +450,14 @@ export function AreaSubjectFormDialog({
             </form.Subscribe>
           </form>
 
+          <SubjectNoticeBanner
+            key={notice?.id}
+            notice={notice}
+            onClose={() => setNotice(null)}
+          />
+
           {subjectsStarted && (
             <div className="overflow-x-auto border [&_[data-slot=input]]:bg-background [&_[data-slot=select-trigger]]:bg-background">
-              {/* Los controles de la tabla usan la variante `outlined`: cada
-                input queda recuadrado y se distingue del color de hover de la
-                fila. */}
               <FieldVariantContext.Provider value="outlined">
                 <Table>
                   <TableHeader>

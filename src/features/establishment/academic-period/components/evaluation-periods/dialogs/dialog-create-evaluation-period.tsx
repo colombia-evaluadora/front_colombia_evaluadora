@@ -1,8 +1,8 @@
 import { useState } from "react"
 import { useForm } from "@tanstack/react-form"
 import { PencilIcon, PlusCircleIcon, SpinnerIcon } from "@/components/ui/icons"
-import { toast } from "sonner"
 
+import { useNotify } from "../../common/notice-context"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -70,6 +70,7 @@ export function CreateEvaluationPeriodDialog({
 }: CreateEvaluationPeriodDialogProps) {
   const isEditing = period != null
   const [open, setOpen] = useState(false)
+  const { notify } = useNotify()
 
   const { data: periodsData } = useEvaluationPeriodsQuery({
     filters: {},
@@ -108,9 +109,9 @@ export function CreateEvaluationPeriodDialog({
   const createEvaluation = useCreateEvaluationPeriod({
     mutationConfig: {
       onSuccess: () => {
-        toast.success("Periodo de evaluación creado.")
         form.reset()
         setOpen(false)
+        notify("El periodo de evaluación se agregó correctamente.")
       },
     },
   })
@@ -119,11 +120,11 @@ export function CreateEvaluationPeriodDialog({
     mutationConfig: {
       onSuccess: (result) => {
         if (result.status === "error") {
-          toast.error(result.message)
+          notify(result.message, { variant: "error" })
           return
         }
-        toast.success(result.message)
         setOpen(false)
+        notify("El periodo de evaluación se actualizó correctamente.")
       },
     },
   })
@@ -139,14 +140,16 @@ export function CreateEvaluationPeriodDialog({
     onSubmit: ({ value }) => {
       const values = evaluationPeriodFormSchema.parse(value)
       if (hasOverlap(values.startDate, values.endDate)) {
-        toast.error(
-          "El período coincide con otro período de evaluación existente. Revisá las fechas."
+        notify(
+          "El período coincide con otro período de evaluación existente. Revisá las fechas.",
+          { variant: "error" }
         )
         return
       }
       if (values.peso > pesoDisponible) {
-        toast.error(
-          `El peso porcentual supera el 100 %. Disponible: ${pesoDisponible} %.`
+        notify(
+          `El peso porcentual supera el 100 %. Disponible: ${pesoDisponible} %.`,
+          { variant: "error" }
         )
         return
       }

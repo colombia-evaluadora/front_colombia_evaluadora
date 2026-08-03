@@ -3,8 +3,8 @@
 import { useCallback, useMemo, useState } from "react"
 import type { SortingState } from "@tanstack/react-table"
 import { CheckIcon, PencilIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
-import { toast } from "sonner"
 
+import { useNotify, NoticeOutlet } from "../../common/notice-context"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -160,6 +160,8 @@ export function TabRatingScales({ academicPeriodId }: TabRatingScalesProps) {
         <ExportRatingScalesDialog filters={{}} />
       </div>
 
+      <NoticeOutlet />
+
       <ExpandableDataTable
         table={table}
         isPending={scalesPending}
@@ -209,6 +211,7 @@ function ScalesSubTable({
   scales: RatingScale[]
   range: GradingRange
 }) {
+  const { notify } = useNotify()
   const { data: symbols = [] } = useRatingSymbolsQuery()
   const { data: tipoOptions = [] } = useRatingScaleTypesQuery()
   const {
@@ -223,10 +226,10 @@ function ScalesSubTable({
     mutationConfig: {
       onSuccess: (result) => {
         if (result.status === "error") {
-          toast.error(result.message)
+          notify(result.message, { variant: "error" })
           return
         }
-        toast.success(result.message)
+        notify(result.message)
         cancelEdit()
       },
     },
@@ -242,7 +245,9 @@ function ScalesSubTable({
     // periodo (y mínima ≤ máxima).
     const parsed = makeRatingScaleGradesSchema(range).safeParse(draft)
     if (!parsed.success) {
-      toast.error(parsed.error.issues[0]?.message ?? "Revisá los datos.")
+      notify(parsed.error.issues[0]?.message ?? "Revisá los datos.", {
+        variant: "error",
+      })
       return
     }
     updateMutation.mutate({

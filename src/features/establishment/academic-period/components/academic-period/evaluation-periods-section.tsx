@@ -1,5 +1,6 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
+import { NoticeProvider } from "../common/notice-context"
 import { TabEvaluationPeriods } from "../evaluation-periods/tabs/tab-evaluation-periods"
 import { TabPromotionCriteria } from "../promotion-criteria/tabs/tab-promotion-criteria"
 import { TabGrades } from "../grades/tabs/tab-grades"
@@ -39,27 +40,40 @@ export function EvaluationPeriodsSection({
           </TabsTrigger>
         ))}
       </TabsList>
-
       <TabsContent value="evaluacion">
-        <TabEvaluationPeriods academicPeriodId={academicPeriodId} />
+        <NoticeProvider>
+          <TabEvaluationPeriods academicPeriodId={academicPeriodId} />
+        </NoticeProvider>
       </TabsContent>
       <TabsContent value="area">
-        <TabAreaSubject academicPeriodId={academicPeriodId} />
+        <NoticeProvider>
+          <TabAreaSubject academicPeriodId={academicPeriodId} />
+        </NoticeProvider>
       </TabsContent>
       <TabsContent value="promocion">
-        <TabPromotionCriteria academicPeriodId={academicPeriodId} />
+        <NoticeProvider>
+          <TabPromotionCriteria academicPeriodId={academicPeriodId} />
+        </NoticeProvider>
       </TabsContent>
       <TabsContent value="escalas">
-        <TabRatingScales academicPeriodId={academicPeriodId} />
+        <NoticeProvider>
+          <TabRatingScales academicPeriodId={academicPeriodId} />
+        </NoticeProvider>
       </TabsContent>
       <TabsContent value="criterios">
-        <TabEvaluationCriteria academicPeriodId={academicPeriodId} />
+        <NoticeProvider>
+          <TabEvaluationCriteria academicPeriodId={academicPeriodId} />
+        </NoticeProvider>
       </TabsContent>
       <TabsContent value="grados">
-        <TabGrades jornada={jornada} academicPeriodId={academicPeriodId} />
+        <NoticeProvider>
+          <TabGrades jornada={jornada} academicPeriodId={academicPeriodId} />
+        </NoticeProvider>
       </TabsContent>
       <TabsContent value="asignaciones">
-        <TabAcademicAssignments academicPeriodId={academicPeriodId} />
+        <NoticeProvider>
+          <TabAcademicAssignments academicPeriodId={academicPeriodId} />
+        </NoticeProvider>
       </TabsContent>
     </Tabs>
   )

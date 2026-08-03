@@ -1,8 +1,8 @@
 import { forwardRef, useEffect, useImperativeHandle } from "react"
 import type { AnyFieldApi } from "@tanstack/react-form"
 import { useForm } from "@tanstack/react-form"
-import { toast } from "sonner"
 
+import { useNotify, NoticeOutlet } from "../../common/notice-context"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 import { Field, FieldLabel } from "@/components/ui/field"
@@ -147,15 +147,16 @@ const PromotionCriteriaForm = forwardRef<
 ) {
   const HeadingTag = `h${headingLevel}` as const
   const isGradeScope = gradeId != null
+  const { notify } = useNotify()
 
   const savePeriodCriteria = useUpdatePromotionCriteria({
     mutationConfig: {
       onSuccess: (result) => {
         if (result.status === "error") {
-          toast.error(result.message)
+          notify(result.message, { variant: "error" })
           return
         }
-        toast.success(result.message)
+        notify(result.message)
       },
     },
   })
@@ -164,10 +165,10 @@ const PromotionCriteriaForm = forwardRef<
     mutationConfig: {
       onSuccess: (result) => {
         if (result.status === "error") {
-          toast.error(result.message)
+          notify(result.message, { variant: "error" })
           return
         }
-        if (!hideSubmit) toast.success(result.message)
+        if (!hideSubmit) notify(result.message)
       },
     },
   })
@@ -191,7 +192,7 @@ const PromotionCriteriaForm = forwardRef<
         formApi.reset(value)
         return
       }
-      toast.success("Parámetros guardados.")
+      notify("Parámetros guardados.")
     },
   })
 
@@ -217,6 +218,7 @@ const PromotionCriteriaForm = forwardRef<
         form.handleSubmit()
       }}
     >
+      <NoticeOutlet className="mb-4" />
       <div className="mb-4 flex items-center justify-between gap-4">
         <HeadingTag className="text-lg font-semibold">
           Parámetros de aprobación
