@@ -9,8 +9,7 @@ export interface RatingScaleTypeOption {
 
 export type RatingSymbolCategory = "carita" | "valoracion"
 
-// "emoji" ahora; cuando lleguen las imágenes reales será "imagen" y `valor`
-// pasará a ser la URL de la imagen en vez del carácter emoji.
+// "emoji" o "imagen": si es imagen, `valor` es la URL en vez del carácter.
 export type RatingSymbolKind = "emoji" | "imagen"
 
 export interface RatingSymbol {
@@ -19,6 +18,10 @@ export interface RatingSymbol {
   kind: RatingSymbolKind
   valor: string
   label: string
+  // Color del símbolo (p. ej. las caritas vienen en varios colores). Se usa
+  // para agrupar el picker por color. Opcional: los símbolos sin color se
+  // muestran en un único grupo.
+  color?: string
 }
 
 export interface TeachingLevel {
