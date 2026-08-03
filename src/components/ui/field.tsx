@@ -110,7 +110,12 @@ const floatingLabelVariants = cva(
     variants: {
       variant: {
         plain: "",
-        outlined: "left-2.5 top-0 -translate-y-1/2 bg-background rounded-xs px-1",
+        // El desplazamiento se mide contra la última línea (0.5rem = media línea
+        // de text-xs), no contra la altura total: así cada línea extra crece hacia
+        // arriba y la de abajo sigue centrada en el borde. Con -translate-y-1/2 un
+        // label de dos líneas caía por debajo del borde y tapaba el control.
+        outlined:
+          "left-2.5 top-0 -translate-y-[calc(100%-0.5rem)] bg-background rounded-xs px-1",
         filled: "left-3 top-2",
         standard: "left-0 top-0 -translate-y-full",
       },
