@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from "react"
 import { useForm } from "@tanstack/react-form"
-import { toast } from "sonner"
 
+import { useNotify, NoticeOutlet } from "../../common/notice-context"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
@@ -90,6 +90,7 @@ interface TabEvaluationCriteriaProps {
 export function TabEvaluationCriteria({
   academicPeriodId,
 }: TabEvaluationCriteriaProps) {
+  const { notify } = useNotify()
   const { data: criteria, isPending: isLoading } =
     useEvaluationCriteriaQuery(academicPeriodId)
 
@@ -122,10 +123,10 @@ export function TabEvaluationCriteria({
     mutationConfig: {
       onSuccess: (result) => {
         if (result.status === "error") {
-          toast.error(result.message)
+          notify(result.message, { variant: "error" })
           return
         }
-        toast.success(result.message)
+        notify(result.message)
       },
     },
   })
@@ -138,7 +139,7 @@ export function TabEvaluationCriteria({
         saveCriteria.mutate({ academicPeriodId, values: value })
         return
       }
-      toast.success("Criterios de evaluación guardados.")
+      notify("Criterios de evaluación guardados.")
     },
   })
 
@@ -160,7 +161,9 @@ export function TabEvaluationCriteria({
   }
 
   return (
-    <form
+    <>
+      <NoticeOutlet className="mb-4" />
+      <form
       id={FORM_ID}
       onSubmit={(e) => {
         e.preventDefault()
@@ -216,5 +219,6 @@ export function TabEvaluationCriteria({
         </Button>
       </div>
     </form>
+    </>
   )
 }

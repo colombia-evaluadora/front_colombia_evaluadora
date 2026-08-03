@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from "react"
 import { PencilIcon, PlusCircleIcon, SpinnerIcon } from "@/components/ui/icons"
-import { toast } from "sonner"
+
+import { useNotify, NoticeOutlet } from "../../common/notice-context"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -61,6 +62,7 @@ export function CreateGradeDialog({
 }: CreateGradeDialogProps) {
   const isEditing = grade != null
 
+  const { notify } = useNotify()
   const [open, setOpen] = useState(false)
   const [gradeId, setGradeId] = useState<number | null>(grade?.id ?? null)
 
@@ -107,7 +109,9 @@ export function CreateGradeDialog({
 
   async function handleSaveGrade() {
     if (!nombre.trim() || teachingLevelId == null) {
-      toast.error("Completá el nivel de enseñanza y el nombre del grado.")
+      notify("Completá el nivel de enseñanza y el nombre del grado.", {
+        variant: "error",
+      })
       return
     }
     const payload = {
@@ -125,7 +129,7 @@ export function CreateGradeDialog({
           academicPeriodId,
         })
         setGradeId(created.id)
-        toast.success(
+        notify(
           "Grado creado. Ahora podés configurar grupos, plan de estudio y horario."
         )
       } else {
@@ -134,15 +138,15 @@ export function CreateGradeDialog({
           values: payload,
         })
         if (result.status === "error") {
-          toast.error(result.message)
+          notify(result.message, { variant: "error" })
           return
         }
         await promotionRef.current?.save(gradeId)
         await scheduleRef.current?.save(gradeId)
-        toast.success("Cambios guardados.")
+        notify("Cambios guardados.")
       }
     } catch {
-      toast.error("Ocurrió un error al guardar el grado.")
+      notify("Ocurrió un error al guardar el grado.", { variant: "error" })
     } finally {
       setSaving(false)
     }
@@ -234,6 +238,8 @@ export function CreateGradeDialog({
         <DialogHeader>
           <DialogTitle>{isEditing ? "Editar grado" : "Agregar grado"}</DialogTitle>
         </DialogHeader>
+
+        <NoticeOutlet />
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Field variant="outlined">

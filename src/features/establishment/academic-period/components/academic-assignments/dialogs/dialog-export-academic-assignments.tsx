@@ -6,7 +6,7 @@ import {
   FileXlsIcon,
   SpinnerIcon,
 } from "@/components/ui/icons"
-import { toast } from "sonner"
+import { useNotify } from "../../common/notice-context"
 
 import {
   Dialog,
@@ -32,15 +32,16 @@ export function ExportAcademicAssignmentsDialog({
   filters,
 }: ExportAcademicAssignmentsDialogProps) {
   const [open, setOpen] = useState(false)
+  const { notify } = useNotify()
 
   const exportAll = useExportEmployees({
     mutationConfig: {
       onSuccess: (result) => {
         if (result.status === "error") {
-          toast.error(result.message)
+          notify(result.message, { variant: "error" })
           return
         }
-        toast.success(result.message)
+        notify(result.message)
         setOpen(false)
       },
     },

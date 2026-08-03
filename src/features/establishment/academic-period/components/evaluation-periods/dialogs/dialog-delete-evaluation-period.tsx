@@ -1,8 +1,8 @@
 import { useState } from "react"
 
 import { SpinnerIcon, TrashIcon } from "@/components/ui/icons"
-import { toast } from "sonner"
 
+import { useNotify } from "../../common/notice-context"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,16 +29,17 @@ export function DeleteEvaluationPeriodDialog({
   academicPeriodId,
 }: DeleteEvaluationPeriodDialogProps) {
   const [open, setOpen] = useState(false)
+  const { notify } = useNotify()
 
   const deleteMutation = useDeleteEvaluationPeriod({
     mutationConfig: {
       onSuccess: (result) => {
         if (result.status === "error") {
-          toast.error(result.message)
+          notify(result.message, { variant: "error" })
           return
         }
-        toast.success(result.message)
         setOpen(false)
+        notify("El periodo de evaluación se eliminó correctamente.")
       },
     },
   })

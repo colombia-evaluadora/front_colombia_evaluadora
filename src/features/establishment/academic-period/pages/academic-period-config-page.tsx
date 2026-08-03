@@ -1,9 +1,7 @@
 import { useState } from "react"
 import { SpinnerIcon } from "@/components/ui/icons"
 import { Link, useParams } from "@tanstack/react-router"
-import { toast } from "sonner"
 
-import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -30,6 +28,11 @@ import type {
 import type { AcademicPeriodDetail } from "../api/types/academic-period"
 import { AcademicPeriodForm } from "../components/academic-period/form-academic-period"
 import { EvaluationPeriodsSection } from "../components/academic-period/evaluation-periods-section"
+import {
+  NoticeOutlet,
+  NoticeProvider,
+  useNotify,
+} from "../components/common/notice-context"
 import {
   DEFAULT_JORNADA,
   type Jornada,
@@ -66,6 +69,15 @@ function toJornada(detail: AcademicPeriodDetail): Jornada {
 }
 
 export function AcademicPeriodConfigPage() {
+  return (
+    <NoticeProvider>
+      <AcademicPeriodConfigPageContent />
+    </NoticeProvider>
+  )
+}
+
+function AcademicPeriodConfigPageContent() {
+  const { notify } = useNotify()
   const { periodId } = useParams({ strict: false }) as { periodId?: string }
   const isEditing = periodId != null
   const numericPeriodId = periodId ? Number(periodId) : undefined
@@ -86,9 +98,7 @@ export function AcademicPeriodConfigPage() {
       onSuccess: (created) => {
         setCreatedPeriodId(created.id)
         setSaved(true)
-        toast.success(
-          "Periodo académico creado. Ahora podés configurar el resto."
-        )
+        notify("Periodo académico creado. Ahora podés configurar el resto.")
       },
     },
   })
@@ -97,10 +107,10 @@ export function AcademicPeriodConfigPage() {
     mutationConfig: {
       onSuccess: (result) => {
         if (result.status === "error") {
-          toast.error(result.message)
+          notify(result.message, { variant: "error" })
           return
         }
-        toast.success(result.message)
+        notify(result.message)
       },
     },
   })
@@ -192,16 +202,8 @@ export function AcademicPeriodConfigPage() {
       <Card>
         {header}
         <CardContent className="flex flex-col gap-6">
-          <Card
-            className={cn(
-              !showSecondForm &&
-                "gap-0 rounded-none bg-transparent py-0 shadow-none ring-0"
-            )}
-          >
-            <CardContent className={cn(!showSecondForm && "px-0")}>
-              {configBody}
-            </CardContent>
-          </Card>
+          <NoticeOutlet />
+          {configBody}
           {showSecondForm && (
             <Card>
               <CardContent>

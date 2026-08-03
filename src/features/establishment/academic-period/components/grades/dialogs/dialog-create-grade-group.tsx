@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react"
 import { useForm } from "@tanstack/react-form"
 import { PencilIcon, PlusCircleIcon, SpinnerIcon } from "@/components/ui/icons"
-import { toast } from "sonner"
+
+import { useNotify, NoticeOutlet } from "../../common/notice-context"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -11,6 +12,8 @@ import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
+  DialogOverlay,
+  DialogPortal,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
@@ -68,6 +71,7 @@ export function CreateGradeGroupDialog({
 }: CreateGradeGroupDialogProps) {
   const isEditing = gradeGroup != null
   const [open, setOpen] = useState(false)
+  const { notify } = useNotify()
 
   const { data: academicPeriod } = useAcademicPeriodQuery(academicPeriodId)
   const { data: metodologiaOptions = [] } = useMetodologiasQuery()
@@ -77,8 +81,6 @@ export function CreateGradeGroupDialog({
     gradeGroup?.jornada ??
     ""
 
-  // Listado acotado a la sede del periodo (y con un `pageSize` alto para
-  // alimentar el combobox del director de grupo).
   const { data: employeesData } = useEmployeesQuery({
     filters: { campusId: academicPeriod?.sedeId },
     sorting: [],
@@ -102,7 +104,7 @@ export function CreateGradeGroupDialog({
   const createGradeGroup = useCreateGradeGroup({
     mutationConfig: {
       onSuccess: () => {
-        toast.success("Grupo creado.")
+        notify("Grupo creado.")
         form.reset()
         setOpen(false)
       },
@@ -113,10 +115,10 @@ export function CreateGradeGroupDialog({
     mutationConfig: {
       onSuccess: (result) => {
         if (result.status === "error") {
-          toast.error(result.message)
+          notify(result.message, { variant: "error" })
           return
         }
-        toast.success(result.message)
+        notify(result.message)
         setOpen(false)
       },
     },
@@ -166,11 +168,19 @@ export function CreateGradeGroupDialog({
           </>
         )}
       </DialogTrigger>
+      <DialogPortal>
+        <DialogOverlay
+          forceRender
+          className="bg-transparent backdrop-blur-none supports-backdrop-filter:backdrop-blur-none"
+        />
+      </DialogPortal>
       <DialogContent className="sm:max-w-3xl" showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>{isEditing ? "Editar grupo" : "Agregar grupo"}</DialogTitle>
           <DialogDescription>Completá los datos del grupo.</DialogDescription>
         </DialogHeader>
+
+        <NoticeOutlet />
 
         <form
           id={FORM_ID}

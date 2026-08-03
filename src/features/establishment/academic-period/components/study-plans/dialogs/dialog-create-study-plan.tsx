@@ -1,8 +1,8 @@
 import { useState } from "react"
 import { useForm } from "@tanstack/react-form"
 import { PencilIcon, PlusCircleIcon, SpinnerIcon } from "@/components/ui/icons"
-import { toast } from "sonner"
 
+import { useNotify, NoticeOutlet } from "../../common/notice-context"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
@@ -74,6 +74,7 @@ export function CreateStudyPlanDialog({
 }: CreateStudyPlanDialogProps) {
   const isEditing = item != null
 
+  const { notify } = useNotify()
   const [open, setOpen] = useState(false)
   const tienePersonalizacion =
     item != null &&
@@ -109,7 +110,7 @@ export function CreateStudyPlanDialog({
   const createStudyPlanItem = useCreateStudyPlanItem({
     mutationConfig: {
       onSuccess: () => {
-        toast.success("Asignatura agregada al plan de estudio.")
+        notify("Asignatura agregada al plan de estudio.")
         form.reset()
         setPersonalizar(false)
         setOpen(false)
@@ -121,10 +122,10 @@ export function CreateStudyPlanDialog({
     mutationConfig: {
       onSuccess: (result) => {
         if (result.status === "error") {
-          toast.error(result.message)
+          notify(result.message, { variant: "error" })
           return
         }
-        toast.success(result.message)
+        notify(result.message)
         setOpen(false)
       },
     },
@@ -202,6 +203,8 @@ export function CreateStudyPlanDialog({
             Completá los datos de la asignatura del plan de estudio.
           </DialogDescription>
         </DialogHeader>
+
+        <NoticeOutlet />
 
         <form
           id={FORM_ID}

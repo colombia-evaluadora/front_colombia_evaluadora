@@ -1,7 +1,7 @@
 import { useState } from "react"
 
 import { SpinnerIcon, TrashIcon } from "@/components/ui/icons"
-import { toast } from "sonner"
+import { useNotify } from "../../common/notice-context"
 
 import {
   AlertDialog,
@@ -25,15 +25,16 @@ interface DeleteRatingScaleDialogProps {
 
 export function DeleteRatingScaleDialog({ scale }: DeleteRatingScaleDialogProps) {
   const [open, setOpen] = useState(false)
+  const { notify } = useNotify()
 
   const deleteMutation = useDeleteRatingScale({
     mutationConfig: {
       onSuccess: (result) => {
         if (result.status === "error") {
-          toast.error(result.message)
+          notify(result.message, { variant: "error" })
           return
         }
-        toast.success(result.message)
+        notify(result.message)
         setOpen(false)
       },
     },

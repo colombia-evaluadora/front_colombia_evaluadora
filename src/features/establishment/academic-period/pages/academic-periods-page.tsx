@@ -12,10 +12,12 @@ import {
 import { paths } from "@/config/paths"
 
 import { AcademicPeriodsDataTable } from "../components/academic-period/table/academic-periods-table"
+import { NoticeProvider } from "../components/common/notice-context"
 
 export function AcademicPeriodsPage() {
   return (
-    <Card>
+    <NoticeProvider>
+      <Card>
       <CardHeader>
         <CardAction>
           <Button
@@ -35,6 +37,7 @@ export function AcademicPeriodsPage() {
       <CardContent>
         <AcademicPeriodsDataTable />
       </CardContent>
-    </Card>
+      </Card>
+    </NoticeProvider>
   )
 }

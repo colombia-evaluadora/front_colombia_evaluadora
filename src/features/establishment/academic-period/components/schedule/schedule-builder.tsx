@@ -1,7 +1,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useState } from "react"
 import { MinusIcon, XIcon } from "@/components/ui/icons"
-import { toast } from "sonner"
 
+import { useNotify } from "../common/notice-context"
 import { cn } from "@/lib/utils"
 import { Field, FieldLabel } from "@/components/ui/field"
 import {
@@ -107,6 +107,7 @@ export const ScheduleBuilder = forwardRef<
   ScheduleBuilderHandle,
   ScheduleBuilderProps
 >(function ScheduleBuilder({ jornada, subjects, gradeGroups, gradeId }, ref) {
+  const { notify } = useNotify()
   const [gradeGroup, setGradeGroup] = useState("")
   const [schedulesByGroup, setSchedulesByGroup] = useState<
     Record<string, Schedule>
@@ -131,7 +132,7 @@ export const ScheduleBuilder = forwardRef<
     mutationConfig: {
       onSuccess: (result) => {
         if (result.status === "error") {
-          toast.error(result.message)
+          notify(result.message, { variant: "error" })
         }
       },
     },
