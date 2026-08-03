@@ -1,5 +1,12 @@
 export type SessionStatus = "active" | "closed"
 
+// Opción de estado de sesión tal como la entrega el backend: `key` es el
+// valor que se guarda/manda, `label` el texto visible en el select / badge.
+export interface SessionStatusOption {
+  key: SessionStatus
+  label: string
+}
+
 export interface AuditSession {
   id: string
   authorName: string

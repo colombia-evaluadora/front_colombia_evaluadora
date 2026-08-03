@@ -71,6 +71,65 @@ export const paths = {
       path: "auditoria-tablas/$tableSlug",
       getHref: (tableSlug: string) => `/app/auditoria-tablas/${tableSlug}`,
     },
+    periodosAcademicos: {
+      path: "establecimiento-educativo/periodos",
+      getHref: () => "/app/establecimiento-educativo/periodos",
+    },
+    periodosAcademicosAgregar: {
+      path: "establecimiento-educativo/periodos/agregar",
+      getHref: () => "/app/establecimiento-educativo/periodos/agregar",
+    },
+    periodosAcademicosEditar: {
+      path: "establecimiento-educativo/periodos/$periodId/editar",
+      getHref: (periodId: number | string) =>
+        `/app/establecimiento-educativo/periodos/${periodId}/editar`,
+    },
+    establishments: {
+      root: {
+          path: "establecimiento-educativo",
+          getHref: () => "/app/establecimiento-educativo",
+      },
+
+      general: {
+          path: "establecimiento-educativo/general",
+          getHref: () => "/app/establecimiento-educativo/general",
+      },
+
+        add: {
+          path: "establecimiento-educativo/agregar",
+          getHref: () => "/app/establecimiento-educativo/agregar",
+        },
+
+        edit: {
+          path: "establecimiento-educativo/editar/$establishmentId",
+          getHref: (establishmentId: string) => `/app/establecimiento-educativo/editar/${establishmentId}`,
+        },
+
+      campuses: {
+          path: "establecimiento-educativo/sedes",
+          getHref: () => "/app/establecimiento-educativo/sedes",
+
+          add: {
+            path: "establecimiento-educativo/sedes/agregar",
+            getHref: () => "/app/establecimiento-educativo/sedes/agregar",
+          },
+
+          edit: {
+            path: "establecimiento-educativo/sedes/editar/$campusId",
+            getHref: (campusId: string) => `/app/establecimiento-educativo/sedes/editar/${campusId}`,
+          },
+      },
+
+      officials: {
+          path: "establecimiento-educativo/funcionarios",
+          getHref: () => "/app/establecimiento-educativo/funcionarios",
+      },
+
+      academicPeriods: {
+          path: "establecimiento-educativo/periodos",
+          getHref: () => "/app/establecimiento-educativo/periodos",
+      },
+  },
     reportes: {
       path: "reportes",
       getHref: () => "/app/reportes",

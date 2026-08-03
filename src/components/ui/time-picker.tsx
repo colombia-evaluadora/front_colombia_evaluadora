@@ -69,7 +69,7 @@ export function TimePickerPanel({ value, onChange, className }: TimePickerPanelP
         </span>
         <Button
           type="button"
-          variant="ghost"
+          variant="fill"
           size="icon-sm"
           onClick={() => setView((v) => (v === "text" ? "analog" : "text"))}
           aria-label={view === "text" ? "Cambiar a reloj analógico" : "Cambiar a ingreso manual"}

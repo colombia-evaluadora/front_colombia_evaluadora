@@ -1,0 +1,354 @@
+import { Link, useLocation, useNavigate } from "@tanstack/react-router"
+import { useEffect, useState, type FormEvent } from "react"
+import { toast } from "sonner"
+
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+
+import { paths } from "@/config/paths"
+import { EstablishmentDetailsForm } from "@/features/establishment/components/forms/form-establishment-details"
+import { useCreateEmployeePerson } from "../api/mutations/use-create-employee-person"
+import { useCreateEstablishment } from "../api/mutations/use-create-establishment"
+import { useUpdateEstablishment } from "../api/mutations/use-update-establishment"
+import type { EstablishmentDetails } from "../api/types/establishment"
+import { establishmentsDb } from "@/mocks/db/establishments"
+import type { CatalogItem } from "../api/types/catalog"
+import type { Person } from "../api/types/person"
+import { UserDetailsForm } from "../components/forms/form-user-datails"
+import { validateEstablishmentForm } from "../utils/validate-establishment-form"
+
+function createEmptyCatalogItem(): CatalogItem {
+  return { id: "", code: "", name: "" }
+}
+
+function createEmptyPerson(): Person {
+  return {
+    id: "",
+    documentType: createEmptyCatalogItem(),
+    identification: "",
+    firstName: "",
+    lastName: "",
+    birthDate: "",
+    gender: createEmptyCatalogItem(),
+    email: "",
+    phone: "",
+    password: "",
+  }
+}
+
+function createInitialEstablishmentValues(): EstablishmentDetails {
+  return {
+    id: crypto.randomUUID(),
+    basicInfo: {
+      name: "",
+      dane: "",
+      nit: "",
+      ownershipType: createEmptyCatalogItem(),
+    },
+    address: {
+      municipality: {
+        id: "",
+        code: "",
+        name: "",
+        department: { id: "", code: "", name: "" },
+      },
+      zone: createEmptyCatalogItem(),
+      district: createEmptyCatalogItem(),
+      commune: createEmptyCatalogItem(),
+      locality: createEmptyCatalogItem(),
+      address: "",
+    },
+    contact: {
+      email: "",
+      website: "",
+      phone: "",
+      fax: "",
+    },
+    additionalInfo: {
+      approvalResolution: "",
+      teachingLanguage: createEmptyCatalogItem(),
+      calendar: createEmptyCatalogItem(),
+      costRegime: createEmptyCatalogItem(),
+      populationGender: createEmptyCatalogItem(),
+      tuitionRange: createEmptyCatalogItem(),
+      disabilityType: createEmptyCatalogItem(),
+      operatingLicense: false,
+      licenseStatus: createEmptyCatalogItem(),
+      licenseDate: null,
+      ethnicAttention: false,
+      giftedAttention: false,
+      subsidy: false,
+    },
+    principal: createEmptyPerson(),
+    secretary: createEmptyPerson(),
+  }
+}
+
+export function AddEstablishmentPage() {
+  const navigate = useNavigate()
+  const location = useLocation()
+  const establishmentId = location.pathname.includes("/editar/")
+    ? location.pathname.split("/editar/").at(1) ?? null
+    : null
+  const isEditMode = establishmentId !== null
+  const [formValues, setFormValues] = useState<EstablishmentDetails>(createInitialEstablishmentValues)
+  const [validationErrors, setValidationErrors] = useState<string[]>([])
+  const [invalidFields, setInvalidFields] = useState<string[]>([])
+  const [hasSubmitted, setHasSubmitted] = useState(false)
+  // Confirmaciones de contraseña: estado de UI, no parte del modelo de negocio.
+  const [confirmPasswords, setConfirmPasswords] = useState<Record<string, string>>({
+    principal: "",
+    secretary: "",
+  })
+
+  useEffect(() => {
+    if (!isEditMode) {
+      setFormValues(createInitialEstablishmentValues())
+      setValidationErrors([])
+      setInvalidFields([])
+      setHasSubmitted(false)
+      setConfirmPasswords({ principal: "", secretary: "" })
+      return
+    }
+
+    const existing = establishmentsDb.find((item) => item.id === establishmentId)
+
+    if (existing) {
+      setFormValues(existing)
+      setValidationErrors([])
+      setInvalidFields([])
+      setHasSubmitted(false)
+      setConfirmPasswords({
+        principal: existing.principal?.password ?? "",
+        secretary: existing.secretary?.password ?? "",
+      })
+    }
+  }, [establishmentId, isEditMode])
+
+  const createMutation = useCreateEstablishment({
+    mutationConfig: {
+      onSuccess: (result) => {
+        if (result.status === "error") {
+          toast.error(result.message)
+          return
+        }
+        toast.success(result.message)
+        navigate({ to: paths.app.establishments.general.getHref() })
+      },
+      onError: (error) => {
+        toast.error(error.message || "No se pudo crear el establecimiento.")
+      },
+    },
+  })
+
+  const updateMutation = useUpdateEstablishment({
+    mutationConfig: {
+      onSuccess: (result) => {
+        if (result.status === "error") {
+          toast.error(result.message)
+          return
+        }
+        toast.success(result.message)
+        navigate({ to: paths.app.establishments.general.getHref() })
+      },
+      onError: (error) => {
+        toast.error(error.message || "No se pudo actualizar el establecimiento.")
+      },
+    },
+  })
+
+  const createPersonMutation = useCreateEmployeePerson()
+
+  /**
+   * Devuelve true si la persona ya trae al menos un dato capturado (la
+   * consideramos "presente" y por tanto debe persistirse).
+   */
+  function personHasAnyData(person: Person | null, confirmPassword: string): boolean {
+    if (!person) {
+      return false
+    }
+
+    return Boolean(
+      person.documentType?.id ||
+        person.identification.trim() ||
+        person.firstName.trim() ||
+        person.lastName.trim() ||
+        person.middleName?.trim() ||
+        person.secondLastName?.trim() ||
+        person.birthDate.trim() ||
+        person.gender?.id ||
+        person.email.trim() ||
+        person.phone.trim() ||
+        person.password.trim() ||
+        confirmPassword.trim()
+    )
+  }
+
+  async function persistPersonIfAny(
+    person: Person | null,
+    label: string,
+    confirmPassword: string
+  ): Promise<Person | null> {
+    if (!person || !personHasAnyData(person, confirmPassword)) {
+      return null
+    }
+
+    const result = await createPersonMutation.mutateAsync(person)
+
+    if (result.status === "error") {
+      toast.error(result.message || `No fue posible guardar el ${label}.`)
+      throw new Error(`person_persist_failed:${label}`)
+    }
+
+    toast.success(`${label} guardado.`)
+    return result.person
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setHasSubmitted(true)
+
+    const validation = validateEstablishmentForm(formValues, confirmPasswords)
+    setValidationErrors(validation.errors)
+    setInvalidFields(validation.invalidFields)
+
+    if (validation.errors.length > 0) {
+      toast.error("Completa los campos obligatorios antes de guardar.")
+      return
+    }
+
+    // Persistimos rector/secretaria antes del establecimiento para que
+    // los `Person` queden con `id` en `personsDb`.
+    let nextPrincipal = formValues.principal
+    let nextSecretary = formValues.secretary
+
+    try {
+      const persistedPrincipal = await persistPersonIfAny(
+        nextPrincipal,
+        "Rector",
+        confirmPasswords["principal"] ?? ""
+      )
+      if (persistedPrincipal) {
+        nextPrincipal = persistedPrincipal
+      }
+
+      const persistedSecretary = await persistPersonIfAny(
+        nextSecretary,
+        "Secretaria",
+        confirmPasswords["secretary"] ?? ""
+      )
+      if (persistedSecretary) {
+        nextSecretary = persistedSecretary
+      }
+    } catch {
+      return
+    }
+
+    const nextValues: EstablishmentDetails = {
+      ...formValues,
+      principal: nextPrincipal,
+      secretary: nextSecretary,
+    }
+
+    if (isEditMode && establishmentId) {
+      await updateMutation.mutateAsync({
+        establishmentId,
+        values: nextValues,
+      })
+      return
+    }
+
+    await createMutation.mutateAsync(nextValues)
+  }
+
+  const isPending = createMutation.isPending || updateMutation.isPending
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardAction>
+          <div className="flex gap-2">
+            <Button type="submit" form="create-establishment-form" variant="fill" color="primary" size="sm" disabled={isPending}>
+              {isPending ? "Guardando..." : isEditMode ? "Guardar cambios" : "Guardar"}
+            </Button>
+            <Button render={<Link to={paths.app.establishments.general.getHref()} />} variant="ghost" color="neutral" size="sm" nativeButton={false}>
+              Cancelar
+            </Button>
+          </div>
+        </CardAction>
+        <CardTitle>{isEditMode ? "Editar establecimiento educativo" : "Agregar establecimiento educativo"}</CardTitle>
+      </CardHeader>
+
+      <CardContent>
+        {validationErrors.length > 0 ? (
+          <div className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+            <p className="font-medium">Completa los campos obligatorios:</p>
+            <ul className="mt-2 list-disc pl-5">
+              {validationErrors.map((error) => (
+                <li key={error}>{error}</li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+        <form id="create-establishment-form" onSubmit={handleSubmit}>
+          <Accordion multiple defaultValue={["datos-establecimiento", "datos-rector-secretaria"]} keepMounted className="space-y-3">
+            <AccordionItem value="datos-establecimiento" className="rounded-md border border-border not-last:border-b border">
+              <AccordionTrigger>Datos de establecimiento</AccordionTrigger>
+              <AccordionContent>
+                <div className="py-4">
+                  <EstablishmentDetailsForm
+                    value={formValues}
+                    onChange={setFormValues}
+                    invalidFields={invalidFields}
+                    showValidation={hasSubmitted}
+                  />
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="datos-rector-secretaria" className="rounded-md border border-border not-last:border-b border">
+              <AccordionTrigger>Datos de rector y secretaria</AccordionTrigger>
+              <AccordionContent>
+                <div className="py-4 ">
+                  <UserDetailsForm
+                    role="RECTOR"
+                    fieldPrefix="principal"
+                    value={formValues.principal}
+                    onChange={(principal) => setFormValues((current) => ({ ...current, principal }))}
+                    invalidFields={invalidFields}
+                    showValidation={hasSubmitted}
+                    confirmPassword={confirmPasswords["principal"] ?? ""}
+                    onConfirmPasswordChange={(value) =>
+                      setConfirmPasswords((current) => ({ ...current, principal: value }))
+                    }
+                  />
+                  <div className="mt-8">
+                    <UserDetailsForm
+                      role="SECRETARY"
+                      fieldPrefix="secretary"
+                      value={formValues.secretary}
+                      onChange={(secretary) => setFormValues((current) => ({ ...current, secretary }))}
+                      invalidFields={invalidFields}
+                      showValidation={hasSubmitted}
+                      confirmPassword={confirmPasswords["secretary"] ?? ""}
+                      onConfirmPasswordChange={(value) =>
+                        setConfirmPasswords((current) => ({ ...current, secretary: value }))
+                      }
+                    />
+                  </div>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        </form>
+      </CardContent>
+    </Card>
+  )
+}
