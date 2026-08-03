@@ -3,7 +3,7 @@
 import { useMemo } from "react"
 import { toast } from "sonner"
 
-import { DataTable } from "@/components/data-table"
+import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
@@ -25,7 +25,8 @@ import type { EmployeeListItem } from "../../api/types/employee"
 import { useEmployeesQuery } from "../../api/query/use-employees-query"
 import { useBulkDeleteEmployees } from "../../api/mutations/use-bulk-delete-employees"
 import { createEmployeeColumns } from "./columns-employees"
-import { BulkDeleteFab } from "../bulk-delete-fab"
+import { DialogBulkDelete } from "../dialogs/dialog-bulk-delete"
+import { ClearSelectionDialog } from "../dialogs/dialog-clear-selection"
 import { ExportEmployeesDialog } from "../dialogs/dialog-export-employees"
 import { ExportSelectedEmployeesDialog } from "../dialogs/dialog-export-selected-employees"
 
@@ -203,13 +204,31 @@ export function EmployeesDataTable({ onEditEmployee }: EmployeesDataTableProps) 
 
         <div className="flex items-center gap-2">
           {hasSelection ? (
-            <ExportSelectedEmployeesDialog
-              selectedIds={selectedIds}
-              resetSelection={resetSelection}
-            />
+            <>
+              <ClearSelectionDialog resetSelection={resetSelection} />
+              <DialogBulkDelete<EmployeeListItem>
+                items={selectedItems}
+                getItemId={(item) => item.id}
+                getItemLabel={(item) => item.name}
+                buildTitle={(count, sample) => {
+                  const list = sample.join(", ")
+                  const suffix = count > sample.length ? ` y ${count - sample.length} más` : ""
+                  return `¿Está seguro de que desea eliminar permanentemente a los funcionarios ${list}${suffix} (${count} en total)? Esta acción no se puede deshacer.`
+                }}
+                onConfirm={async (ids) => {
+                  await bulkDelete.mutateAsync(ids)
+                }}
+                triggerLabel={`Eliminar (${selectedIds.length})`}
+              />
+              <ExportSelectedEmployeesDialog
+                selectedIds={selectedIds}
+                resetSelection={resetSelection}
+              />
+            </>
           ) : (
             <ExportEmployeesDialog filters={queryFilters} />
           )}
+          <DataTableViewOptions table={table} />
         </div>
       </div>
 
@@ -232,24 +251,6 @@ export function EmployeesDataTable({ onEditEmployee }: EmployeesDataTableProps) 
           totalCount={data.totalCount}
           pageSize={pageSize}
           onPageSizeChange={setPageSize}
-        />
-      )}
-
-      {hasSelection && (
-        <BulkDeleteFab<EmployeeListItem>
-          selectedIds={selectedIds}
-          selectedItems={selectedItems}
-          getItemId={(item) => item.id}
-          getItemLabel={(item) => item.name}
-          buildTitle={(count, sample) => {
-            const list = sample.join(", ")
-            const suffix = count > sample.length ? ` y ${count - sample.length} más` : ""
-            return `¿Está seguro de que desea eliminar permanentemente a los funcionarios ${list}${suffix} (${count} en total)? Esta acción no se puede deshacer.`
-          }}
-          onConfirm={async (ids) => {
-            await bulkDelete.mutateAsync(ids)
-          }}
-          onClearSelection={resetSelection}
         />
       )}
     </>
