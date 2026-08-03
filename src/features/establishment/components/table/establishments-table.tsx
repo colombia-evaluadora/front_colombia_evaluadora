@@ -3,7 +3,7 @@
 import { useMemo } from "react"
 import { toast } from "sonner"
 
-import { DataTable } from "@/components/data-table"
+import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
@@ -25,7 +25,8 @@ import type { CatalogItem } from "../../api/types/catalog"
 import { CATALOGS } from "@/lib/catalogs"
 import type { Establishment } from "../../api/types/establishment"
 import { columns } from "./columns"
-import { BulkDeleteFab } from "../bulk-delete-fab"
+import { DialogBulkDelete } from "../dialogs/dialog-bulk-delete"
+import { ClearSelectionDialog } from "../dialogs/dialog-clear-selection"
 import { ExportEstablishmentsDialog } from "../dialogs/dialog-export-establishments"
 import { ExportSelectedEstablishmentsDialog } from "../dialogs/dialog-export-selected-establishments"
 
@@ -155,13 +156,31 @@ export function EstablishmentsDataTable() {
 
         <div className="flex items-center gap-2">
           {hasSelection ? (
-            <ExportSelectedEstablishmentsDialog
-              selectedIds={selectedIds}
-              resetSelection={resetSelection}
-            />
+            <>
+              <ClearSelectionDialog resetSelection={resetSelection} />
+              <DialogBulkDelete<Establishment>
+                items={selectedItems}
+                getItemId={(item) => item.id}
+                getItemLabel={(item) => item.name}
+                buildTitle={(count, sample) => {
+                  const list = sample.join(", ")
+                  const suffix = count > sample.length ? ` y ${count - sample.length} más` : ""
+                  return `¿Está seguro de que desea eliminar permanentemente los establecimientos educativos ${list}${suffix} (${count} en total)? Esta acción no se puede deshacer.`
+                }}
+                onConfirm={async (ids) => {
+                  await bulkDelete.mutateAsync(ids)
+                }}
+                triggerLabel={`Eliminar (${selectedIds.length})`}
+              />
+              <ExportSelectedEstablishmentsDialog
+                selectedIds={selectedIds}
+                resetSelection={resetSelection}
+              />
+            </>
           ) : (
             <ExportEstablishmentsDialog filters={queryFilters} />
           )}
+          <DataTableViewOptions table={table} />
         </div>
       </div>
 
@@ -184,24 +203,6 @@ export function EstablishmentsDataTable() {
           totalCount={data.totalCount}
           pageSize={pageSize}
           onPageSizeChange={setPageSize}
-        />
-      )}
-
-      {hasSelection && (
-        <BulkDeleteFab<Establishment>
-          selectedIds={selectedIds}
-          selectedItems={selectedItems}
-          getItemId={(item) => item.id}
-          getItemLabel={(item) => item.name}
-          buildTitle={(count, sample) => {
-            const list = sample.join(", ")
-            const suffix = count > sample.length ? ` y ${count - sample.length} más` : ""
-            return `¿Está seguro de que desea eliminar permanentemente los establecimientos educativos ${list}${suffix} (${count} en total)? Esta acción no se puede deshacer.`
-          }}
-          onConfirm={async (ids) => {
-            await bulkDelete.mutateAsync(ids)
-          }}
-          onClearSelection={resetSelection}
         />
       )}
     </>
