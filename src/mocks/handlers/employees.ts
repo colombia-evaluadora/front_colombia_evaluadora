@@ -31,6 +31,10 @@ function parseEmployeesRequest(body: Partial<EmployeesQueryRequest> | null): Emp
       roles: asArray(body?.filters?.roles),
       workSchedules: asArray(body?.filters?.workSchedules),
       statuses: asArray(body?.filters?.statuses) as EmployeeStatus[],
+      campusId:
+        typeof body?.filters?.campusId === "string" && body.filters.campusId.length > 0
+          ? body.filters.campusId
+          : undefined,
     },
     sorting: Array.isArray(body?.sorting)
       ? body.sorting
@@ -55,6 +59,19 @@ async function readEmployeesRequestBody(request: Request) {
 
 function applyFilters(rows: typeof employeesRowsDb, filters: EmployeesQueryRequest["filters"]): typeof employeesRowsDb {
   return rows.filter((row) => {
+    // El filtro por sede exige match contra el id real del campus asociado
+    // a algún permiso del funcionario. `EmployeeListItem.campuses` sólo
+    // guarda nombres, así que el match se hace contra `employeesDb`.
+    if (filters.campusId) {
+      const employee = employeesDb.find((item) => item.id === row.id)
+      const hasCampus = employee?.permissions.some(
+        (permission) => permission.campus.id === filters.campusId
+      )
+      if (!hasCampus) {
+        return false
+      }
+    }
+
     if (filters.search) {
       const needle = filters.search.toLowerCase()
       const campusText = row.campuses.join(" ").toLowerCase()

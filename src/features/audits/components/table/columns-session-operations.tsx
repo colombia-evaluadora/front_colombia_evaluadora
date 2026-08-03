@@ -3,10 +3,20 @@ import type { ColumnDef, Table } from "@tanstack/react-table"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 
-import { OPERATION_TYPE_BADGE, OPERATION_TYPE_LABELS } from "../../api/ui-mappings"
+import { OPERATION_TYPE_BADGE } from "../../api/ui-mappings"
+import { useAuditOperationTypesQuery } from "../../api/query/use-audit-operation-types-query"
 import type { OperationType } from "../../api/types/audit-table"
 import type { SessionOperation } from "../../api/types/audit"
 import { ViewOperationChangesDialog } from "../dialogs/dialog-view-operation-changes"
+
+// El label del tipo de operación lo entrega el backend (`{ key, label }`).
+// Si la query todavía no llegó, caemos al `key` como fallback para no
+// bloquear el render.
+function OperationBadgeCell({ operation }: { operation: OperationType }) {
+  const { data: operationOptions = [] } = useAuditOperationTypesQuery()
+  const label = operationOptions.find((o) => o.key === operation)?.label ?? operation
+  return <Badge {...OPERATION_TYPE_BADGE[operation]}>{label}</Badge>
+}
 
 export const columns: ColumnDef<SessionOperation>[] = [
   {
@@ -40,6 +50,7 @@ export const columns: ColumnDef<SessionOperation>[] = [
     // que sí aporta info es en qué TABLA se hicieron.
     id: "tableSlug",
     accessorKey: "tableSlug",
+    meta: { label: "Tabla" },
     header: () => <span className="text-xs font-medium">Tabla</span>,
     cell: ({ row }) => (
       <Badge variant="fill" color="muted">
@@ -50,15 +61,17 @@ export const columns: ColumnDef<SessionOperation>[] = [
   {
     id: "operation",
     accessorKey: "operation",
+    meta: { label: "Operación" },
     header: () => <span className="text-xs font-medium">Operación</span>,
     cell: ({ row }) => {
       const operation = row.getValue<OperationType>("operation")
-      return <Badge {...OPERATION_TYPE_BADGE[operation]}>{OPERATION_TYPE_LABELS[operation]}</Badge>
+      return <OperationBadgeCell operation={operation} />
     },
   },
   {
     id: "detail",
     accessorKey: "entityName",
+    meta: { label: "Detalle" },
     header: () => <span className="text-xs font-medium">Detalle</span>,
     cell: ({ row }) => {
       const op = row.original
@@ -73,6 +86,7 @@ export const columns: ColumnDef<SessionOperation>[] = [
   {
     id: "occurredAt",
     accessorKey: "occurredAt",
+    meta: { label: "Fecha" },
     header: () => <span className="text-xs font-medium">Fecha</span>,
     cell: ({ row }) => {
       const occurredAt = new Date(row.getValue<string>("occurredAt"))

@@ -1,6 +1,6 @@
 "use no memo"
 
-import { flexRender, type Column, type Table } from "@tanstack/react-table"
+import { flexRender, type Column, type RowData, type Table } from "@tanstack/react-table"
 import {
   ArrowDownIcon,
   ArrowUpIcon,
@@ -30,6 +30,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
+
+declare module "@tanstack/react-table" {
+  // El `header` de cada columna es JSX, así que no sirve como etiqueta
+  // legible fuera de la tabla (menú de columnas visibles, exports, etc.).
+  // `meta.label` guarda ese texto en español una sola vez.
+  interface ColumnMeta<TData extends RowData, TValue> {
+    label?: string
+  }
+}
 
 interface DataTableProps {
   table: Table<any>
@@ -137,9 +146,8 @@ export function DataTableViewOptions({ table }: DataTableViewOptionsProps) {
               key={column.id}
               checked={column.getIsVisible()}
               onCheckedChange={(value) => column.toggleVisibility(!!value)}
-              className="capitalize"
             >
-              {column.columnDef.id ?? column.id}
+              {column.columnDef.meta?.label ?? column.id}
             </DropdownMenuCheckboxItem>
           ))}
         </DropdownMenuGroup>

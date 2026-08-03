@@ -3,16 +3,16 @@ import type { RouteResponseDto } from "@/features/navigation/api/types/nav-item"
 // Misma forma que devuelve el backend real (GET /sso-admin/myMenu?app=):
 // lista plana, jerarquía vía `idParent`.
 export const navigationMenu: RouteResponseDto[] = [
-  {
-    id: 1,
-    name: "Pagos",
-    icon: "Credit-Card-Icon",
-    path: "/app",
-    menuOrder: 0,
-    type: "ITEM",
-    idParent: null,
-    roleIds: [1, 2],
-  },
+  // {
+  //   id: 1,
+  //   name: "Pagos",
+  //   icon: "Credit-Card-Icon",
+  //   path: "/app",
+  //   menuOrder: 0,
+  //   type: "ITEM",
+  //   idParent: null,
+  //   roleIds: [1, 2],
+  // },
   {
     id: 12,
     name: "Cobertura educativa",
@@ -94,36 +94,6 @@ export const navigationMenu: RouteResponseDto[] = [
     roleIds: [1, 2],
   },
   {
-    id: 2,
-    name: "Reportes",
-    icon: "Chart-Bar-Icon",
-    path: "/app/reportes",
-    menuOrder: 3,
-    type: "GROUP",
-    idParent: null,
-    roleIds: [1, 2],
-  },
-  {
-    id: 3,
-    name: "Ingresos",
-    icon: "",
-    path: "/app/reportes/ingresos",
-    menuOrder: 0,
-    type: "ITEM",
-    idParent: 2,
-    roleIds: [1, 2],
-  },
-  {
-    id: 4,
-    name: "Reembolsos",
-    icon: "",
-    path: "/app/reportes/reembolsos",
-    menuOrder: 1,
-    type: "ITEM",
-    idParent: 2,
-    roleIds: [1, 2],
-  },
-  {
     id: 5,
     name: "Usuarios",
     icon: "Users-Icon",
@@ -153,20 +123,20 @@ export const navigationMenu: RouteResponseDto[] = [
     idParent: 5,
     roleIds: [1],
   },
+  // {
+  //   id: 8,
+  //   name: "Configuración",
+  //   icon: "Gear-Icon",
+  //   path: "/app/configuracion",
+  //   menuOrder: 5,
+  //   type: "ITEM",
+  //   idParent: null,
+  //   roleIds: [1, 2],
+  // },
   {
-    id: 8,
-    name: "Configuración",
-    icon: "Gear-Icon",
-    path: "/app/configuracion",
-    menuOrder: 5,
-    type: "ITEM",
-    idParent: null,
-    roleIds: [1, 2],
-  },
-  {
-    "id": 12,
+    "id": 17,
     "name": "Establecimiento Educativo",
-    "icon": "School-Icon",
+    "icon": "Graduation-Cap-Icon",
     "path": "/app/establecimiento-educativo",
     "menuOrder": 2,
     "type": "GROUP",
@@ -180,7 +150,7 @@ export const navigationMenu: RouteResponseDto[] = [
     "path": "/app/establecimiento-educativo/general",
     "menuOrder": 0,
     "type": "ITEM",
-    "idParent": 12,
+    "idParent": 17,
     "roleIds": [1, 2]
   },
   {
@@ -190,7 +160,7 @@ export const navigationMenu: RouteResponseDto[] = [
     "path": "/app/establecimiento-educativo/sedes",
     "menuOrder": 1,
     "type": "ITEM",
-    "idParent": 12,
+    "idParent": 17,
     "roleIds": [1, 2]
   },
   {
@@ -200,7 +170,7 @@ export const navigationMenu: RouteResponseDto[] = [
     "path": "/app/establecimiento-educativo/funcionarios",
     "menuOrder": 2,
     "type": "ITEM",
-    "idParent": 12,
+    "idParent": 17,
     "roleIds": [1, 2]
   },
   {
@@ -210,7 +180,7 @@ export const navigationMenu: RouteResponseDto[] = [
     "path": "/app/establecimiento-educativo/periodos",
     "menuOrder": 3,
     "type": "ITEM",
-    "idParent": 12,
+    "idParent": 17,
     "roleIds": [1, 2]
   }
 ]

@@ -29,6 +29,7 @@ import {
   sessionOperationsSearchSchema,
   tableOperationsSearchSchema,
 } from "@/features/audits/api/schema"
+import { academicPeriodsSearchSchema } from "@/features/establishment/academic-period/api/schema"
 import { establishmentsSearchSchema } from "@/features/establishment/api/establishment-schema"
 import { campusesSearchSchema } from "@/features/establishment/api/campus-schema"
 import { employeesSearchSchema } from "@/features/establishment/api/employee-schema"
@@ -83,6 +84,14 @@ const ReservationsPage = lazyRouteComponent(
 const SessionOperationsPage = lazyRouteComponent(
   () => import("@/features/audits/pages/session-operations-page"),
   "SessionOperationsPage",
+)
+const AcademicPeriodsPage = lazyRouteComponent(
+  () => import("@/features/establishment/academic-period/pages/academic-periods-page"),
+  "AcademicPeriodsPage"
+)
+const AcademicPeriodConfigPage = lazyRouteComponent(
+  () => import("@/features/establishment/academic-period/pages/academic-period-config-page"),
+  "AcademicPeriodConfigPage"
 )
 const EstablishmentsPage = lazyRouteComponent(
   () => import("@/features/establishment/pages/establishments-page"),
@@ -401,6 +410,25 @@ export const auditoriaSesionOperacionesRoute = createRoute({
   component: SessionOperationsPage,
 })
 
+export const periodosAcademicosRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.periodosAcademicos.path,
+  validateSearch: academicPeriodsSearchSchema,
+  component: AcademicPeriodsPage,
+})
+
+export const periodosAcademicosAgregarRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.periodosAcademicosAgregar.path,
+  component: AcademicPeriodConfigPage,
+})
+
+export const periodosAcademicosEditarRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.periodosAcademicosEditar.path,
+  component: AcademicPeriodConfigPage,
+})
+
 const reportesRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.reportes.path,
@@ -442,6 +470,9 @@ const routeTree = rootRoute.addChildren([
     auditoriaTablasRoute,
     auditoriaTablaDetalleRoute,
     auditoriaSesionOperacionesRoute,
+    periodosAcademicosRoute,
+    periodosAcademicosAgregarRoute,
+    periodosAcademicosEditarRoute,
     establishmentLayoutRoute.addChildren([
       establishmentsRoute,
       campusesRoute,

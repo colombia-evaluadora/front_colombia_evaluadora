@@ -7,20 +7,13 @@ interface BadgeProps {
   color: BadgeColor
 }
 
-export const SESSION_STATUS_LABELS: Record<SessionStatus, string> = {
-  active: "Activo",
-  closed: "Cerrada",
-}
-
+// Las etiquetas de estado y tipo de operación ahora las entrega el backend
+// (`{ key, label }`, vía `useAuditSessionStatusesQuery` y
+// `useAuditOperationTypesQuery`). Acá solo queda el color del badge, que
+// el back no envía.
 export const SESSION_STATUS_BADGE: Record<SessionStatus, BadgeProps> = {
   active: { variant: "fill", color: "success" },
   closed: { variant: "fill", color: "secondary" },
-}
-
-export const OPERATION_TYPE_LABELS: Record<OperationType, string> = {
-  INSERT: "Insert",
-  UPDATE: "Update",
-  DELETE: "Delete",
 }
 
 export const OPERATION_TYPE_BADGE: Record<OperationType, BadgeProps> = {
