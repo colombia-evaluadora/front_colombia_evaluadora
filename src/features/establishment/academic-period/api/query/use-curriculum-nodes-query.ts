@@ -1,8 +1,9 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
+import type { CurriculumNodeOption } from "../types/curriculum-node"
 
-function fetchCurriculumNodes(): Promise<string[]> {
+function fetchCurriculumNodes(): Promise<CurriculumNodeOption[]> {
   return api.get("/curriculum-nodes")
 }
 

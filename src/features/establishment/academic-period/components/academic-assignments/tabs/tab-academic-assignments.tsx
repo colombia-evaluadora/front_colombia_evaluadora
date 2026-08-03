@@ -5,6 +5,7 @@ import type { SortingState } from "@tanstack/react-table"
 import { SpinnerIcon } from "@/components/ui/icons"
 
 import { Button } from "@/components/ui/button"
+import { DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
 import { useDataTable } from "@/hooks/use-data-table"
 
@@ -162,7 +163,10 @@ export function TabAcademicAssignments({
           }}
         />
 
-        <ExportAcademicAssignmentsDialog filters={queryFilters} />
+        <div className="flex gap-2">
+          <ExportAcademicAssignmentsDialog filters={queryFilters} />
+          <DataTableViewOptions table={table} />
+        </div>
       </div>
 
       <NoticeOutlet />

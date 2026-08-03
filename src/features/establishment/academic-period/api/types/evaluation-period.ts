@@ -1,5 +1,12 @@
 export type EvaluationPeriodStatus = "Calificable" | "NO Calificable" | "Habilitados para algunas asignaturas" | "En Recuperaciones"
 
+// Opción de estado tal como la entrega el backend: `key` es el valor que se
+// guarda/manda, `label` el texto visible en el select.
+export interface EvaluationPeriodStatusOption {
+  key: EvaluationPeriodStatus
+  label: string
+}
+
 export interface EvaluationPeriod {
   codigo: number
   nombre: string

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react"
 import type { SortingState } from "@tanstack/react-table"
-import { DataTable } from "@/components/data-table"
+import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
 import { useDataTable } from "@/hooks/use-data-table"
 
@@ -78,6 +78,7 @@ export function TabAreaSubject({ academicPeriodId }: TabAreaSubjectProps) {
           )}
           <CreateAreaSubjectDialog academicPeriodId={academicPeriodId} />
           <ExportAreaSubjectsDialog filters={queryFilters} />
+          <DataTableViewOptions table={table} />
         </div>
       </div>
 

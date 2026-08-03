@@ -104,8 +104,11 @@ export function AreaSubjectFormDialog({
   } = useRowEdit<SubjectDraft>()
   const { data: backendEspecialidades = [] } =
     useEspecialidadesQuery(academicPeriodId)
+  // El catálogo llega como `{ key, label }`; acá la lista es de nombres libres
+  // (el `especialidad` del subject es un string), así que tomamos el `label`.
+  const backendEspecialidadNames = backendEspecialidades.map((o) => o.label)
   const [especialidades, setEspecialidades] = useState<string[]>(
-    backendEspecialidades
+    backendEspecialidadNames
   )
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [successOpen, setSuccessOpen] = useState(false)
@@ -208,7 +211,7 @@ export function AreaSubjectFormDialog({
 
     cancelEditSubject()
 
-    setEspecialidades(backendEspecialidades)
+    setEspecialidades(backendEspecialidadNames)
     setConfirmOpen(false)
     setSort(null)
     setNotice(null)

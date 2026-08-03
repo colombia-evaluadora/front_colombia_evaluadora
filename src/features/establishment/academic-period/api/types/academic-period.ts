@@ -1,5 +1,12 @@
 export type AcademicPeriodStatus = "ACTIVO" | "INACTIVO"
 
+// Opción de estado tal como la entrega el backend: `key` es el valor que se
+// guarda/manda, `label` el texto visible en el select.
+export interface AcademicPeriodStatusOption {
+  key: AcademicPeriodStatus
+  label: string
+}
+
 export interface AcademicPeriod {
   id: number
   // String para coincidir con `Campus.id` del módulo de establecimientos;

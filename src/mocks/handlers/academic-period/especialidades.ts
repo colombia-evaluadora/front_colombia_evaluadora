@@ -2,6 +2,7 @@ import { http, HttpResponse, delay } from "msw"
 
 import { especialidadesDb } from "../../db/academic-period/especialidades"
 import { areaSubjectsDb } from "../../db/academic-period/area-subject"
+import type { EspecialidadOption } from "@/features/establishment/academic-period/api/types/especialidad"
 
 export const especialidadesHandlers = [
   http.get("/api/especialidades", async ({ request }) => {
@@ -18,7 +19,12 @@ export const especialidadesHandlers = [
         .map((subject) => subject.especialidad)
         .filter((esp): esp is string => Boolean(esp))
     )
-    const especialidades = Array.from(new Set([...especialidadesDb, ...enUso]))
-    return HttpResponse.json<string[]>(especialidades)
+    // Fusiona el catálogo con las especialidades ya en uso, dedup por `key`.
+    const merged = new Map<string, EspecialidadOption>()
+    for (const option of especialidadesDb) merged.set(option.key, option)
+    for (const name of enUso) {
+      if (!merged.has(name)) merged.set(name, { key: name, label: name })
+    }
+    return HttpResponse.json<EspecialidadOption[]>(Array.from(merged.values()))
   }),
 ]

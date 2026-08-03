@@ -18,13 +18,13 @@ import { BreaksField } from "./breaks-field"
 import { useCampusesOptionsQuery } from "@/features/establishment/api/query/use-campuses-options-query"
 
 import { useAcademicPeriodsQuery } from "../../api/query/academic-period/use-academic-periods-query"
+import { useAcademicPeriodStatusesQuery } from "../../api/query/academic-period/use-academic-period-statuses-query"
 import { useJornadasQuery } from "../../api/query/use-jornadas-query"
 import {
   academicPeriodFormSchema,
   type AcademicPeriodFormInput,
   type AcademicPeriodFormValues,
 } from "../../api/schema"
-import { ACADEMIC_PERIOD_STATUS_LABELS } from "../../api/ui-mappings"
 import type { AcademicPeriodStatus } from "../../api/types/academic-period"
 import { DatePicker } from "@/components/date-picker"
 import { formatDateValue, parseDateValue } from "@/lib/date-value"
@@ -50,10 +50,6 @@ const EMPTY_VALUES: AcademicPeriodFormInput = {
   breaks: [],
 }
 
-const STATUS_OPTIONS = Object.keys(
-  ACADEMIC_PERIOD_STATUS_LABELS
-) as AcademicPeriodStatus[]
-
 const NO_PREVIOUS_PERIOD = "none"
 
 export function AcademicPeriodForm({
@@ -68,6 +64,7 @@ export function AcademicPeriodForm({
 
   const { data: campuses = [] } = useCampusesOptionsQuery()
   const { data: jornadas = [] } = useJornadasQuery()
+  const { data: statusOptions = [] } = useAcademicPeriodStatusesQuery()
 
   const form = useForm({
     defaultValues: initialValues,
@@ -285,19 +282,16 @@ export function AcademicPeriodForm({
                 <SelectTrigger id={field.name}>
                   <SelectValue placeholder="Seleccionar">
                     {(value) =>
-                      value
-                        ? ACADEMIC_PERIOD_STATUS_LABELS[
-                            value as AcademicPeriodStatus
-                          ]
-                        : "Seleccionar"
+                      statusOptions.find((option) => option.key === value)
+                        ?.label ?? "Seleccionar"
                     }
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    {STATUS_OPTIONS.map((option) => (
-                      <SelectItem key={option} value={option}>
-                        {ACADEMIC_PERIOD_STATUS_LABELS[option]}
+                    {statusOptions.map((option) => (
+                      <SelectItem key={option.key} value={option.key}>
+                        {option.label}
                       </SelectItem>
                     ))}
                   </SelectGroup>

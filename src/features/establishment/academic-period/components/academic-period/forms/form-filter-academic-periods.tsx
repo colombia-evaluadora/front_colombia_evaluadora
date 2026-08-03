@@ -1,3 +1,4 @@
+import { useMemo } from "react"
 import { useForm } from "@tanstack/react-form"
 
 import { Field, FieldLabel } from "@/components/ui/field"
@@ -17,14 +18,10 @@ import {
   type AcademicPeriodsFiltersFormInput,
   type AcademicPeriodsFiltersFormValues,
 } from "../../../api/schema"
-import { ACADEMIC_PERIOD_STATUS_LABELS } from "../../../api/ui-mappings"
+import { useAcademicPeriodStatusesQuery } from "../../../api/query/academic-period/use-academic-period-statuses-query"
 import { DatePicker } from "@/components/date-picker"
 import { formatDateValue, parseDateValue } from "@/lib/date-value"
 
-// `items` mapea el `value` del `SelectItem` al label que renderiza
-// `SelectValue` automáticamente (sin necesidad de función child). El key
-// vacío representa la opción "Todos" — el `value` se persiste como "" en
-// el form y se filtra en el backend.
 const ALL_VALUE = ""
 
 const YEAR_OPTIONS = Array.from(
@@ -35,11 +32,6 @@ const YEAR_OPTIONS = Array.from(
 const yearItems: Record<string, React.ReactNode> = {
   [ALL_VALUE]: "Todos",
   ...Object.fromEntries(YEAR_OPTIONS.map((year) => [String(year), year])),
-}
-
-const statusItems: Record<string, React.ReactNode> = {
-  [ALL_VALUE]: "Todos",
-  ...ACADEMIC_PERIOD_STATUS_LABELS,
 }
 
 interface FilterAcademicPeriodsFormProps {
@@ -64,6 +56,16 @@ export function FilterAcademicPeriodsForm({
       onSubmit(academicPeriodsFiltersFormSchema.parse(value))
     },
   })
+
+  const { data: statusOptions = [] } = useAcademicPeriodStatusesQuery()
+
+  const statusItems = useMemo<Record<string, React.ReactNode>>(
+    () => ({
+      [ALL_VALUE]: "Todos",
+      ...Object.fromEntries(statusOptions.map((o) => [o.key, o.label])),
+    }),
+    [statusOptions]
+  )
 
   return (
     <form
@@ -143,9 +145,9 @@ export function FilterAcademicPeriodsForm({
               <SelectContent>
                 <SelectGroup>
                   <SelectItem value={ALL_VALUE}>Todos</SelectItem>
-                  {Object.entries(ACADEMIC_PERIOD_STATUS_LABELS).map(([key, label]) => (
-                    <SelectItem key={key} value={key}>
-                      {label}
+                  {statusOptions.map((option) => (
+                    <SelectItem key={option.key} value={option.key}>
+                      {option.label}
                     </SelectItem>
                   ))}
                 </SelectGroup>

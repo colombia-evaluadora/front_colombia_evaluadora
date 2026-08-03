@@ -109,6 +109,8 @@ export function TabEvaluationCriteria({
   // La escala de valoración se elige entre los niveles de enseñanza que
   // tengan al menos una escala creada. Si todavía no se creó ninguna, la
   // lista queda vacía y el select se muestra en blanco.
+  // Misma forma `{ key, label }` que las opciones del backend, para que el
+  // render del select sea uniforme. El valor guardado es el nombre del nivel.
   const gradingScaleOptions = useMemo(() => {
     const map = new Map<number, string>()
     for (const scale of ratingScalesData?.rows ?? []) {
@@ -116,7 +118,10 @@ export function TabEvaluationCriteria({
         map.set(lvl.id, lvl.nombre)
       }
     }
-    return Array.from(map.values())
+    return Array.from(map.values()).map((nombre) => ({
+      key: nombre,
+      label: nombre,
+    }))
   }, [ratingScalesData])
 
   const saveCriteria = useUpdateEvaluationCriteria({
@@ -198,8 +203,8 @@ export function TabEvaluationCriteria({
                     <SelectContent>
                       <SelectGroup>
                         {fieldOptions.map((option) => (
-                          <SelectItem key={option} value={option}>
-                            {option}
+                          <SelectItem key={option.key} value={option.key}>
+                            {option.label}
                           </SelectItem>
                         ))}
                       </SelectGroup>

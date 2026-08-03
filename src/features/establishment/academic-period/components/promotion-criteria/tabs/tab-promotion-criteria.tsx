@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle } from "react"
+import { forwardRef, useEffect, useImperativeHandle, useMemo } from "react"
 import type { AnyFieldApi } from "@tanstack/react-form"
 import { useForm } from "@tanstack/react-form"
 
@@ -13,6 +13,7 @@ import { useGradeConfigQuery } from "../../../api/query/use-grade-config-query"
 import { useUpdateGradeConfig } from "../../../api/mutations/update-grade-config"
 import { useSubjectsQuery } from "../../../api/query/area-subjects/use-subjects-query"
 import { useCurriculumNodesQuery } from "../../../api/query/use-curriculum-nodes-query"
+import type { CurriculumNodeOption } from "../../../api/types/curriculum-node"
 import { SubjectsMultiSelect } from "../subjects-multi-select"
 import {
   promotionApprovalSchema,
@@ -49,11 +50,6 @@ const EMPTY: PromotionApprovalValues = {
 }
 
 const FORM_ID = "approval-parameters-form"
-
-const CURRICULUM_NODE_LABELS: Record<string, string> = {
-  AR: "Área",
-  AS: "Asignatura",
-}
 
 interface TabPromotionCriteriaProps {
   hideSubmit?: boolean
@@ -127,7 +123,7 @@ interface PromotionCriteriaFormProps {
   headingLevel: 1 | 2 | 3 | 4 | 5 | 6
   initialValues: PromotionApprovalValues
   subjectOptions: string[]
-  curriculumNodes: string[]
+  curriculumNodes: CurriculumNodeOption[]
 }
 
 const PromotionCriteriaForm = forwardRef<
@@ -148,6 +144,13 @@ const PromotionCriteriaForm = forwardRef<
   const HeadingTag = `h${headingLevel}` as const
   const isGradeScope = gradeId != null
   const { notify } = useNotify()
+
+  // `items` mapea cada `value` al label que `SelectValue` renderiza solo. Se
+  // arma desde las opciones del back (`key` → `label`).
+  const curriculumNodeItems = useMemo<Record<string, string>>(
+    () => Object.fromEntries(curriculumNodes.map((o) => [o.key, o.label])),
+    [curriculumNodes]
+  )
 
   const savePeriodCriteria = useUpdatePromotionCriteria({
     mutationConfig: {
@@ -249,7 +252,7 @@ const PromotionCriteriaForm = forwardRef<
               <FieldLabel className="flex-1">Nodo curricular*</FieldLabel>
 
               <Select
-                items={CURRICULUM_NODE_LABELS}
+                items={curriculumNodeItems}
                 value={field.state.value}
                 onValueChange={(value) => value && field.handleChange(value)}
               >
@@ -260,8 +263,8 @@ const PromotionCriteriaForm = forwardRef<
                 <SelectContent>
                   <SelectGroup>
                     {curriculumNodes.map((option) => (
-                      <SelectItem key={option} value={option}>
-                        {CURRICULUM_NODE_LABELS[option] ?? option}
+                      <SelectItem key={option.key} value={option.key}>
+                        {option.label}
                       </SelectItem>
                     ))}
                   </SelectGroup>

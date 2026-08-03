@@ -1,5 +1,12 @@
 export type RatingScaleType = "Fortaleza" | "Debilidad"
 
+// Opción de tipo de valoración tal como la entrega el backend: `key` es el
+// valor que se guarda/manda, `label` el texto visible en el select.
+export interface RatingScaleTypeOption {
+  key: RatingScaleType
+  label: string
+}
+
 export type RatingSymbolCategory = "carita" | "valoracion"
 
 // "emoji" ahora; cuando lleguen las imágenes reales será "imagen" y `valor`

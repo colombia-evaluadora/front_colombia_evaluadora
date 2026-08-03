@@ -266,8 +266,8 @@ export function CreateGradeGroupDialog({
                   <SelectContent>
                     <SelectGroup>
                       {metodologiaOptions.map((option) => (
-                        <SelectItem key={option} value={option}>
-                          {option}
+                        <SelectItem key={option.key} value={option.key}>
+                          {option.label}
                         </SelectItem>
                       ))}
                     </SelectGroup>

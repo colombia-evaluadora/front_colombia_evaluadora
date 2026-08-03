@@ -25,8 +25,7 @@ import type {
   AcademicPeriodsFiltersFormInput,
   AcademicPeriodsFiltersFormValues,
 } from "../../../api/schema"
-import type { AcademicPeriodStatus } from "../../../api/types/academic-period"
-import { ACADEMIC_PERIOD_STATUS_LABELS } from "../../../api/ui-mappings"
+import { useAcademicPeriodStatusesQuery } from "../../../api/query/academic-period/use-academic-period-statuses-query"
 import { FilterAcademicPeriodsForm } from "../forms/form-filter-academic-periods"
 
 const FILTER_ACADEMIC_PERIODS_FORM_ID = "filter-academic-periods-form"
@@ -49,6 +48,8 @@ export function SearchAcademicPeriods({
 }: SearchAcademicPeriodsProps) {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState(filters.sedeName)
+
+  const { data: statusOptions = [] } = useAcademicPeriodStatusesQuery()
 
   // `filters` viene de la URL. Los filtros avanzados (año, estado, fechas) se
   // cuentan aparte del buscador de sede para el badge del botón.
@@ -107,7 +108,7 @@ export function SearchAcademicPeriods({
     activeChips.push({
       key: "status",
       label: `Estado: ${
-        ACADEMIC_PERIOD_STATUS_LABELS[filters.status as AcademicPeriodStatus] ??
+        statusOptions.find((o) => o.key === filters.status)?.label ??
         filters.status
       }`,
     })

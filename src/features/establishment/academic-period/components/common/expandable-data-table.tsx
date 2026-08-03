@@ -14,6 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { cn } from "@/lib/utils"
 
 interface ExpandableDataTableProps {
   table: Table<any>
@@ -22,19 +23,18 @@ interface ExpandableDataTableProps {
   onRetry: () => void
   emptyMessage?: string
   errorMessage?: string
-  // Contenido expandible por fila. Si devuelve algo distinto de `null`/
-  // `undefined`, se pinta como una fila extra a todo el ancho debajo de la
-  // fila. Vive acá (en `features/`) y no en el `DataTable` compartido para no
-  // tocar `src/components`; el `DataTable` de `components/` no soporta sub-filas.
   renderSubRow?: (row: Row<any>) => ReactNode
+  cellClassName?: string
+  // Id de la columna que absorbe el espacio sobrante (width: 100%). Sirve para
+  // empaquetar a la izquierda las columnas angostas (expandir, seleccionar) en
+  // tablas con pocas columnas, donde el ancho `w-full` se reparte y agranda la
+  // separación entre celdas.
+  growColumnId?: string
+  // Clases extra para la columna `growColumnId` (encabezado y celda). Se aplican
+  // a nivel de th/td, no al contenido, para no romper la alineación del texto.
+  growColumnClassName?: string
 }
 
-/**
- * Variante local del `DataTable` compartido que añade filas expandibles. Se
- * usa en las tabs que despliegan detalle por fila (escalas de valoración,
- * asignaciones académicas). Replica el mismo layout/estado (skeleton, error,
- * vacío) que `@/components/data-table` para verse idéntico.
- */
 export function ExpandableDataTable({
   table,
   isPending,
@@ -43,6 +43,9 @@ export function ExpandableDataTable({
   emptyMessage = "Sin resultados.",
   errorMessage = "Ocurrió un error al cargar los datos.",
   renderSubRow,
+  cellClassName,
+  growColumnId,
+  growColumnClassName,
 }: ExpandableDataTableProps) {
   const visibleColumns = table.getAllColumns().filter((c) => c.getIsVisible())
   const skeletonRowCount = table.getState().pagination.pageSize
@@ -54,7 +57,19 @@ export function ExpandableDataTable({
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id} className="bg-muted-22 hover:bg-muted-22">
               {headerGroup.headers.map((header) => (
-                <TableHead key={header.id} className="text-foreground">
+                <TableHead
+                  key={header.id}
+                  className={cn(
+                    "text-foreground",
+                    cellClassName,
+                    header.column.id === growColumnId && growColumnClassName
+                  )}
+                  style={
+                    header.column.id === growColumnId
+                      ? { width: "100%" }
+                      : undefined
+                  }
+                >
                   {header.isPlaceholder
                     ? null
                     : flexRender(header.column.columnDef.header, header.getContext())}
@@ -90,7 +105,18 @@ export function ExpandableDataTable({
                 <Fragment key={row.id}>
                   <TableRow data-state={row.getIsSelected() && "selected"}>
                     {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
+                      <TableCell
+                        key={cell.id}
+                        className={cn(
+                          cellClassName,
+                          cell.column.id === growColumnId && growColumnClassName
+                        )}
+                        style={
+                          cell.column.id === growColumnId
+                            ? { width: "100%" }
+                            : undefined
+                        }
+                      >
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </TableCell>
                     ))}
