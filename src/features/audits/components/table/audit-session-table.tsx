@@ -9,7 +9,7 @@ import { useTablePagination } from "@/hooks/use-table-pagination"
 import { useAuditSessionFilters } from "../../hooks/use-audit-session-filters"
 
 import { columns } from "./columns-audit-session"
-import { FilterAuditSessionSheet } from "../sheets/sheet-filter-audit-session"
+import { SearchAuditSession } from "../search/search-audit-session"
 import { ExportSelectedAuditSessionDialog } from "../dialogs/dialog-export-selected-audit-session"
 import { ExportAuditSessionDialog } from "../dialogs/dialog-export-audit-session"
 import { ClearSelectionAuditSessionDialog } from "../dialogs/dialog-clear-selection-audit-session"
@@ -46,15 +46,14 @@ export function AuditSessionDataTable() {
         hasSelection={hasSelection}
         filters={queryFilters}
       />
-      <div className="mb-2 flex flex-wrap items-center justify-between gap-x-2 gap-y-2">
-        <div className="flex gap-2">
-          <FilterAuditSessionSheet
-            activeFilterCount={activeFilterCount}
-            filters={filters}
-            applyFilters={applyFilters}
-            clearAllFilters={clearAllFilters}
-          />
-        </div>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <SearchAuditSession
+          activeFilterCount={activeFilterCount}
+          filters={filters}
+          applyFilters={applyFilters}
+          clearAllFilters={clearAllFilters}
+        />
+
         <div className="flex gap-2">
           {hasSelection ? (
             <>

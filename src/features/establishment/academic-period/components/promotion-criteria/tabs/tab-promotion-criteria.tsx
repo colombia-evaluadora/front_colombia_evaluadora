@@ -222,27 +222,9 @@ const PromotionCriteriaForm = forwardRef<
       }}
     >
       {!hideSubmit && <NoticeOutlet className="mb-4" />}
-      <div className="mb-4 flex items-center justify-between gap-4">
-        <HeadingTag className="text-lg font-semibold">
-          Parámetros de aprobación
-        </HeadingTag>
-        {!hideSubmit && (
-          <form.Subscribe selector={(state) => state.isDirty}>
-            {(isDirty) =>
-              isDirty ? (
-                <Button
-                  type="submit"
-                  color="primary"
-                  size="sm"
-                  disabled={isSaving}
-                >
-                  {isSaving ? "Guardando..." : "Guardar"}
-                </Button>
-              ) : null
-            }
-          </form.Subscribe>
-        )}
-      </div>
+      <HeadingTag className="mb-4 text-lg font-semibold">
+        Parámetros de aprobación
+      </HeadingTag>
 
       <div className="grid gap-4 md:grid-cols-2">
 
@@ -446,6 +428,24 @@ const PromotionCriteriaForm = forwardRef<
         )}
       </form.Field>
 
+      {!hideSubmit && (
+        <div className="mt-8 flex justify-end">
+          <form.Subscribe selector={(state) => state.isDirty}>
+            {(isDirty) =>
+              isDirty ? (
+                <Button
+                  type="submit"
+                  color="primary"
+                  size="sm"
+                  disabled={isSaving}
+                >
+                  {isSaving ? "Guardando..." : "Guardar"}
+                </Button>
+              ) : null
+            }
+          </form.Subscribe>
+        </div>
+      )}
     </form>
   )
 })
