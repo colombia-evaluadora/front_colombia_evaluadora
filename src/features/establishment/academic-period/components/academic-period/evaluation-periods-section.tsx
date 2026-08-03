@@ -20,6 +20,10 @@ const TABS: { value: string; label: string }[] = [
   { value: "asignaciones", label: "Asignaciones académicas" },
 ]
 
+// La card sobre la que se apoyan las pestañas tipo carpeta. Sin borde superior:
+// esa línea la dibuja el borde inferior de las pestañas, y la activa la borra.
+const PANEL = "rounded-b-lg border border-t-0 bg-background p-4"
+
 interface EvaluationPeriodsSectionProps {
   jornada: Jornada
   // Acota los datos de cada tab al periodo editado / recién creado.
@@ -32,45 +36,45 @@ export function EvaluationPeriodsSection({
 }: EvaluationPeriodsSectionProps) {
   return (
     <Tabs defaultValue="evaluacion">
-      {/* Scrollable en móvil: las tabs se desplazan en vez de desbordar. */}
-      <TabsList variant="line" className="w-full justify-start overflow-x-auto">
+      {/* Sin scroll: las tabs se solapan y se encogen para entrar en una fila. */}
+      <TabsList variant="folder">
         {TABS.map((tab) => (
           <TabsTrigger key={tab.value} value={tab.value}>
             {tab.label}
           </TabsTrigger>
         ))}
       </TabsList>
-      <TabsContent value="evaluacion">
+      <TabsContent value="evaluacion" className={PANEL}>
         <NoticeProvider>
           <TabEvaluationPeriods academicPeriodId={academicPeriodId} />
         </NoticeProvider>
       </TabsContent>
-      <TabsContent value="area">
+      <TabsContent value="area" className={PANEL}>
         <NoticeProvider>
           <TabAreaSubject academicPeriodId={academicPeriodId} />
         </NoticeProvider>
       </TabsContent>
-      <TabsContent value="promocion">
+      <TabsContent value="promocion" className={PANEL}>
         <NoticeProvider>
           <TabPromotionCriteria academicPeriodId={academicPeriodId} />
         </NoticeProvider>
       </TabsContent>
-      <TabsContent value="escalas">
+      <TabsContent value="escalas" className={PANEL}>
         <NoticeProvider>
           <TabRatingScales academicPeriodId={academicPeriodId} />
         </NoticeProvider>
       </TabsContent>
-      <TabsContent value="criterios">
+      <TabsContent value="criterios" className={PANEL}>
         <NoticeProvider>
           <TabEvaluationCriteria academicPeriodId={academicPeriodId} />
         </NoticeProvider>
       </TabsContent>
-      <TabsContent value="grados">
+      <TabsContent value="grados" className={PANEL}>
         <NoticeProvider>
           <TabGrades jornada={jornada} academicPeriodId={academicPeriodId} />
         </NoticeProvider>
       </TabsContent>
-      <TabsContent value="asignaciones">
+      <TabsContent value="asignaciones" className={PANEL}>
         <NoticeProvider>
           <TabAcademicAssignments academicPeriodId={academicPeriodId} />
         </NoticeProvider>
