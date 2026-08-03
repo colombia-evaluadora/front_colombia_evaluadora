@@ -1,7 +1,6 @@
 "use no memo"
 
 import { useMemo } from "react"
-import { toast } from "sonner"
 
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
@@ -21,12 +20,14 @@ import { ClearSelectionDialog } from "../dialogs/dialog-clear-selection"
 import { ExportEmployeesDialog } from "../dialogs/dialog-export-employees"
 import { ExportSelectedEmployeesDialog } from "../dialogs/dialog-export-selected-employees"
 import { SearchEmployees } from "../search/search-employees"
+import { useNotify, NoticeOutlet } from "../common/notice-context"
 
 interface EmployeesDataTableProps {
   onEditEmployee: (employeeId: string) => void
 }
 
 export function EmployeesDataTable({ onEditEmployee }: EmployeesDataTableProps) {
+  const { notify } = useNotify()
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } =
     useTablePagination()
 
@@ -69,14 +70,14 @@ export function EmployeesDataTable({ onEditEmployee }: EmployeesDataTableProps) 
     mutationConfig: {
       onSuccess: (result) => {
         if (result.status === "error") {
-          toast.error(result.message)
+          notify(result.message, { variant: "error" })
           return
         }
-        toast.success(result.message)
+        notify(result.message)
         resetSelection()
       },
       onError: (error) => {
-        toast.error(error.message)
+        notify(error.message, { variant: "error" })
       },
     },
   })
@@ -123,6 +124,8 @@ export function EmployeesDataTable({ onEditEmployee }: EmployeesDataTableProps) 
           <DataTableViewOptions table={table} />
         </div>
       </div>
+
+      <NoticeOutlet className="mb-3" />
 
       <DataTable
         table={table}

@@ -1,7 +1,6 @@
 "use no memo"
 
 import { useMemo } from "react"
-import { toast } from "sonner"
 
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
@@ -21,8 +20,10 @@ import { ClearSelectionDialog } from "../dialogs/dialog-clear-selection"
 import { ExportCampusesDialog } from "../dialogs/dialog-export-campuses"
 import { ExportSelectedCampusesDialog } from "../dialogs/dialog-export-selected-campuses"
 import { SearchCampuses } from "../search/search-campuses"
+import { useNotify, NoticeOutlet } from "../common/notice-context"
 
 export function CampusesDataTable() {
+  const { notify } = useNotify()
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } =
     useTablePagination()
 
@@ -61,14 +62,14 @@ export function CampusesDataTable() {
     mutationConfig: {
       onSuccess: (result) => {
         if (result.status === "error") {
-          toast.error(result.message)
+          notify(result.message, { variant: "error" })
           return
         }
-        toast.success(result.message)
+        notify(result.message)
         resetSelection()
       },
       onError: (error) => {
-        toast.error(error.message)
+        notify(error.message, { variant: "error" })
       },
     },
   })
@@ -113,6 +114,8 @@ export function CampusesDataTable() {
           <DataTableViewOptions table={table} />
         </div>
       </div>
+
+      <NoticeOutlet className="mb-3" />
 
       <DataTable
         table={table}

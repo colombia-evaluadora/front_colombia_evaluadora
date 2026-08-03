@@ -1,7 +1,6 @@
 import { useState } from "react"
 
 import { DownloadSimpleIcon, FilePdfIcon, FileXlsIcon, SpinnerIcon } from "@/components/ui/icons"
-import { toast } from "sonner"
 
 import {
     Dialog,
@@ -18,6 +17,7 @@ import { Button } from "@/components/ui/button"
 import { useExportEstablishments } from "../../api/mutations/export-establishments"
 import type { EstablishmentsQueryRequest } from "../../api/types/establishment"
 import type { ExportFormat } from "../../api/types/export"
+import { useNotify } from "../common/notice-context"
 
 interface ExportEstablishmentsDialogProps {
     filters: EstablishmentsQueryRequest["filters"]
@@ -25,15 +25,16 @@ interface ExportEstablishmentsDialogProps {
 
 export function ExportEstablishmentsDialog({ filters }: ExportEstablishmentsDialogProps) {
     const [open, setOpen] = useState(false)
+    const { notify } = useNotify()
 
     const exportAll = useExportEstablishments({
         mutationConfig: {
             onSuccess: (result) => {
                 if (result.status === "error") {
-                    toast.error(result.message)
+                    notify(result.message, { variant: "error" })
                     return
                 }
-                toast.success(result.message)
+                notify(result.message)
                 setOpen(false)
             },
         },

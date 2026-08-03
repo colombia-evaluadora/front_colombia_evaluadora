@@ -1,7 +1,6 @@
 import { useState } from "react"
 
 import { SpinnerIcon, TrashIcon } from "@/components/ui/icons"
-import { toast } from "sonner"
 
 import {
   AlertDialog,
@@ -18,6 +17,7 @@ import { establishmentsRoute } from "@/router"
 
 import { useDeleteEstablishment } from "../../api/mutations/delete-establishment"
 import type { Establishment } from "../../api/types/establishment"
+import { useNotify } from "../common/notice-context"
 
 interface DeleteEstablishmentDialogProps {
   establishment: Establishment
@@ -28,16 +28,17 @@ export function DeleteEstablishmentDialog({
 }: DeleteEstablishmentDialogProps) {
   const [open, setOpen] = useState(false)
   const navigate = establishmentsRoute.useNavigate()
+  const { notify } = useNotify()
 
   const deleteMutation = useDeleteEstablishment({
     mutationConfig: {
       onSuccess: (result) => {
         if (result.status === "error") {
-          toast.error(result.message)
+          notify(result.message, { variant: "error" })
           return
         }
 
-        toast.success(result.message)
+        notify(result.message)
         setOpen(false)
         navigate({
           search: (prev) => ({
@@ -48,7 +49,7 @@ export function DeleteEstablishmentDialog({
         })
       },
       onError: (error) => {
-        toast.error(error.message)
+        notify(error.message, { variant: "error" })
       },
     },
   })

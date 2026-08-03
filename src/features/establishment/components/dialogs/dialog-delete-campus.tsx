@@ -1,7 +1,6 @@
 import { useState } from "react"
 
 import { SpinnerIcon, TrashIcon } from "@/components/ui/icons"
-import { toast } from "sonner"
 
 import {
   AlertDialog,
@@ -18,6 +17,7 @@ import { campusesRoute } from "@/router"
 
 import { useDeleteCampus } from "../../api/mutations/delete-campus"
 import type { Campus } from "../../api/types/campus"
+import { useNotify } from "../common/notice-context"
 
 interface DeleteCampusDialogProps {
   campus: Campus
@@ -26,16 +26,17 @@ interface DeleteCampusDialogProps {
 export function DeleteCampusDialog({ campus }: DeleteCampusDialogProps) {
   const [open, setOpen] = useState(false)
   const navigate = campusesRoute.useNavigate()
+  const { notify } = useNotify()
 
   const deleteMutation = useDeleteCampus({
     mutationConfig: {
       onSuccess: (result) => {
         if (result.status === "error") {
-          toast.error(result.message)
+          notify(result.message, { variant: "error" })
           return
         }
 
-        toast.success(result.message)
+        notify(result.message)
         setOpen(false)
         navigate({
           search: (prev) => ({
@@ -46,7 +47,7 @@ export function DeleteCampusDialog({ campus }: DeleteCampusDialogProps) {
         })
       },
       onError: (error) => {
-        toast.error(error.message)
+        notify(error.message, { variant: "error" })
       },
     },
   })
