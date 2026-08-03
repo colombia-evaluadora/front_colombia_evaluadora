@@ -18,7 +18,8 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 
 import { useOperationChangesQuery } from "../../api/query/use-operation-changes-query"
-import { OPERATION_TYPE_BADGE, OPERATION_TYPE_LABELS } from "../../api/ui-mappings"
+import { useAuditOperationTypesQuery } from "../../api/query/use-audit-operation-types-query"
+import { OPERATION_TYPE_BADGE } from "../../api/ui-mappings"
 import { OperationChangesTable } from "../table/operation-changes-table"
 import { DialogConfirmRevertChanges } from "./dialog-confirm-revert-changes"
 import { useParams } from "@tanstack/react-router"
@@ -48,6 +49,14 @@ export function ViewOperationChangesDialog({
     enabled: open,
   })
 
+  // El label del tipo de operación lo entrega el backend (`{ key, label }`).
+  // Si la query todavía no llegó, caemos al `key` como fallback.
+  const { data: operationOptions = [] } = useAuditOperationTypesQuery()
+  const operationLabel =
+    data != null
+      ? (operationOptions.find((o) => o.key === data.operation)?.label ?? data.operation)
+      : null
+
   const revertibleIndexes = data
     ? data.changes
         .filter((change) => change.before !== change.after)
@@ -70,9 +79,7 @@ export function ViewOperationChangesDialog({
           <div className="flex flex-wrap items-center gap-2">
             <DialogTitle>{data ? data.entityName : "Detalle de cambios"}</DialogTitle>
             {data && (
-              <Badge {...OPERATION_TYPE_BADGE[data.operation]}>
-                {OPERATION_TYPE_LABELS[data.operation]}
-              </Badge>
+              <Badge {...OPERATION_TYPE_BADGE[data.operation]}>{operationLabel}</Badge>
             )}
           </div>
           <DialogDescription>{data ? `${data.entityId}` : "Cargando…"}</DialogDescription>

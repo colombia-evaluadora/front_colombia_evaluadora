@@ -239,7 +239,9 @@ export function CreateGradeDialog({
           <DialogTitle>{isEditing ? "Editar grado" : "Agregar grado"}</DialogTitle>
         </DialogHeader>
 
-        <NoticeOutlet />
+        <div className="sticky top-0 z-10 bg-popover pb-2 empty:hidden">
+          <NoticeOutlet />
+        </div>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Field variant="outlined">

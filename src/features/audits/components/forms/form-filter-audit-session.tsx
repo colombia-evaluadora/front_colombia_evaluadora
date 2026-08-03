@@ -1,5 +1,5 @@
 import { useForm } from "@tanstack/react-form"
-import { CheckCircleIcon, CircleDashedIcon } from "@/components/ui/icons"
+import { CircleDashedIcon, CheckCircleIcon, SpinnerIcon } from "@/components/ui/icons"
 
 import { Checkbox } from "@/components/ui/checkbox"
 import { DatePicker } from "@/components/date-picker"
@@ -21,6 +21,7 @@ import {
   type AuditFiltersFormValues,
 } from "../../api/schema"
 import type { SessionStatus } from "../../api/types/audit"
+import { useAuditSessionStatusesQuery } from "../../api/query/use-audit-session-statuses-query"
 import { formatDateTimeValue, parseDateTimeValue } from "@/lib/date-time-value"
 
 interface FilterAuditSessionFormProps {
@@ -43,6 +44,10 @@ export function FilterAuditSessionForm({
       onSubmit(auditFiltersFormSchema.parse(value))
     },
   })
+
+  // Las opciones de estado las entrega el backend como `{ key, label }`.
+  const { data: statusOptions = [], isPending: isLoadingStatuses } =
+    useAuditSessionStatusesQuery()
 
   return (
     <form
@@ -90,40 +95,40 @@ export function FilterAuditSessionForm({
           return (
             <FieldSet>
               <FieldLegend variant="label">Estado</FieldLegend>
-              <FieldGroup className="grid grid-cols-2 gap-3">
-                <FieldLabel htmlFor="status-filter-active" className="min-w-0">
-                  <Field orientation="horizontal">
-                    <Checkbox
-                      id="status-filter-active"
-                      name={field.name}
-                      checked={field.state.value.includes("active")}
-                      onCheckedChange={(checked) => toggle("active", checked === true)}
-                    />
-                    <FieldContent className="min-w-0">
-                      <FieldTitle className="w-full min-w-0">
-                        <CircleDashedIcon className="size-4 shrink-0 text-muted-foreground" />
-                        <span className="truncate">Activo</span>
-                      </FieldTitle>
-                    </FieldContent>
-                  </Field>
-                </FieldLabel>
-                <FieldLabel htmlFor="status-filter-closed" className="min-w-0">
-                  <Field orientation="horizontal">
-                    <Checkbox
-                      id="status-filter-closed"
-                      name={field.name}
-                      checked={field.state.value.includes("closed")}
-                      onCheckedChange={(checked) => toggle("closed", checked === true)}
-                    />
-                    <FieldContent className="min-w-0">
-                      <FieldTitle className="w-full min-w-0">
-                        <CheckCircleIcon className="size-4 shrink-0 text-muted-foreground" />
-                        <span className="truncate">Cerrada</span>
-                      </FieldTitle>
-                    </FieldContent>
-                  </Field>
-                </FieldLabel>
-              </FieldGroup>
+              {isLoadingStatuses ? (
+                <div className="text-muted-foreground flex items-center gap-2 text-xs">
+                  <SpinnerIcon className="size-3 animate-spin" />
+                  Cargando estados…
+                </div>
+              ) : (
+                <FieldGroup className="grid grid-cols-2 gap-3">
+                  {statusOptions.map((option) => {
+                    const id = `status-filter-${option.key}`
+                    return (
+                      <FieldLabel key={option.key} htmlFor={id} className="min-w-0">
+                        <Field orientation="horizontal">
+                          <Checkbox
+                            id={id}
+                            name={field.name}
+                            checked={field.state.value.includes(option.key)}
+                            onCheckedChange={(checked) => toggle(option.key, checked === true)}
+                          />
+                          <FieldContent className="min-w-0">
+                            <FieldTitle className="w-full min-w-0">
+                              {option.key === "active" ? (
+                                <CircleDashedIcon className="size-4 shrink-0 text-muted-foreground" />
+                              ) : (
+                                <CheckCircleIcon className="size-4 shrink-0 text-muted-foreground" />
+                              )}
+                              <span className="truncate">{option.label}</span>
+                            </FieldTitle>
+                          </FieldContent>
+                        </Field>
+                      </FieldLabel>
+                    )
+                  })}
+                </FieldGroup>
+              )}
             </FieldSet>
           )
         }}

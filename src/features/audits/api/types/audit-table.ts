@@ -32,6 +32,13 @@ export interface AuditTablesQueryResponse {
 
 export type OperationType = "INSERT" | "UPDATE" | "DELETE"
 
+// Opción de tipo de operación tal como la entrega el backend: `key` es el
+// valor que se guarda/manda, `label` el texto visible en el select / badge.
+export interface OperationTypeOption {
+  key: OperationType
+  label: string
+}
+
 export interface TableOperation {
   id: string
   operation: OperationType

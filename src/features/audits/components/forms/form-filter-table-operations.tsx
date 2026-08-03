@@ -1,7 +1,14 @@
 import { useState } from "react"
 
 import { useForm } from "@tanstack/react-form"
-import { PencilIcon, PlusCircleIcon, TrashIcon, PlusIcon, XIcon } from "@/components/ui/icons"
+import {
+  PencilIcon,
+  PlusCircleIcon,
+  TrashIcon,
+  PlusIcon,
+  XIcon,
+  SpinnerIcon,
+} from "@/components/ui/icons"
 
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -35,6 +42,7 @@ import {
   type TableOperationsFiltersFormValues,
 } from "../../api/schema"
 import type { OperationType } from "../../api/types/audit-table"
+import { useAuditOperationTypesQuery } from "../../api/query/use-audit-operation-types-query"
 import { formatDateTimeValue, parseDateTimeValue } from "@/lib/date-time-value"
 
 interface FilterTableOperationsFormProps {
@@ -59,6 +67,19 @@ export function FilterTableOperationsForm({
       onSubmit(tableOperationsFiltersFormSchema.parse(value))
     },
   })
+
+  // Las opciones de tipo de operación las entrega el backend como
+  // `{ key, label }`.
+  const { data: operationOptions = [], isPending: isLoadingOperations } =
+    useAuditOperationTypesQuery()
+
+  // Ícono estable por tipo de operación — la lista viene del back, así que
+  // resolvemos el ícono contra el `key` (no contra el label).
+  function iconFor(operation: OperationType) {
+    if (operation === "INSERT") return PlusCircleIcon
+    if (operation === "UPDATE") return PencilIcon
+    return TrashIcon
+  }
 
   return (
     <form
@@ -106,56 +127,37 @@ export function FilterTableOperationsForm({
           return (
             <FieldSet>
               <FieldLegend variant="label">Operación</FieldLegend>
-              <FieldGroup className="grid grid-cols-2 gap-3">
-                <FieldLabel htmlFor="operation-filter-insert" className="min-w-0">
-                  <Field orientation="horizontal">
-                    <Checkbox
-                      id="operation-filter-insert"
-                      name={field.name}
-                      checked={field.state.value.includes("INSERT")}
-                      onCheckedChange={(checked) => toggle("INSERT", checked === true)}
-                    />
-                    <FieldContent className="min-w-0">
-                      <FieldTitle className="w-full min-w-0">
-                        <PlusCircleIcon className="size-4 shrink-0 text-muted-foreground" />
-                        <span className="truncate">Insert</span>
-                      </FieldTitle>
-                    </FieldContent>
-                  </Field>
-                </FieldLabel>
-                <FieldLabel htmlFor="operation-filter-update" className="min-w-0">
-                  <Field orientation="horizontal">
-                    <Checkbox
-                      id="operation-filter-update"
-                      name={field.name}
-                      checked={field.state.value.includes("UPDATE")}
-                      onCheckedChange={(checked) => toggle("UPDATE", checked === true)}
-                    />
-                    <FieldContent className="min-w-0">
-                      <FieldTitle className="w-full min-w-0">
-                        <PencilIcon className="size-4 shrink-0 text-muted-foreground" />
-                        <span className="truncate">Update</span>
-                      </FieldTitle>
-                    </FieldContent>
-                  </Field>
-                </FieldLabel>
-                <FieldLabel htmlFor="operation-filter-delete" className="min-w-0">
-                  <Field orientation="horizontal">
-                    <Checkbox
-                      id="operation-filter-delete"
-                      name={field.name}
-                      checked={field.state.value.includes("DELETE")}
-                      onCheckedChange={(checked) => toggle("DELETE", checked === true)}
-                    />
-                    <FieldContent className="min-w-0">
-                      <FieldTitle className="w-full min-w-0">
-                        <TrashIcon className="size-4 shrink-0 text-muted-foreground" />
-                        <span className="truncate">Delete</span>
-                      </FieldTitle>
-                    </FieldContent>
-                  </Field>
-                </FieldLabel>
-              </FieldGroup>
+              {isLoadingOperations ? (
+                <div className="text-muted-foreground flex items-center gap-2 text-xs">
+                  <SpinnerIcon className="size-3 animate-spin" />
+                  Cargando tipos de operación…
+                </div>
+              ) : (
+                <FieldGroup className="grid grid-cols-2 gap-3">
+                  {operationOptions.map((option) => {
+                    const id = `operation-filter-${option.key.toLowerCase()}`
+                    const Icon = iconFor(option.key)
+                    return (
+                      <FieldLabel key={option.key} htmlFor={id} className="min-w-0">
+                        <Field orientation="horizontal">
+                          <Checkbox
+                            id={id}
+                            name={field.name}
+                            checked={field.state.value.includes(option.key)}
+                            onCheckedChange={(checked) => toggle(option.key, checked === true)}
+                          />
+                          <FieldContent className="min-w-0">
+                            <FieldTitle className="w-full min-w-0">
+                              <Icon className="size-4 shrink-0 text-muted-foreground" />
+                              <span className="truncate">{option.label}</span>
+                            </FieldTitle>
+                          </FieldContent>
+                        </Field>
+                      </FieldLabel>
+                    )
+                  })}
+                </FieldGroup>
+              )}
             </FieldSet>
           )
         }}

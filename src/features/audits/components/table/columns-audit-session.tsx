@@ -9,7 +9,8 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { DataTableColumnHeader } from "@/components/data-table"
 import { paths } from "@/config/paths"
 
-import { SESSION_STATUS_BADGE, SESSION_STATUS_LABELS } from "../../api/ui-mappings"
+import { SESSION_STATUS_BADGE } from "../../api/ui-mappings"
+import { useAuditSessionStatusesQuery } from "../../api/query/use-audit-session-statuses-query"
 import type { AuditSession, SessionStatus } from "../../api/types/audit"
 
 function initials(name: string): string {
@@ -28,6 +29,14 @@ function formatDuration(session: AuditSession): string {
 
   if (hours === 0) return `${minutes}m`
   return `${hours}h ${minutes}m`
+}
+
+// El label del estado lo entrega el backend (`{ key, label }`). Si la query
+// todavía no llegó, caemos al `key` como fallback para no bloquear el render.
+function StatusBadgeCell({ status }: { status: SessionStatus }) {
+  const { data: statusOptions = [] } = useAuditSessionStatusesQuery()
+  const label = statusOptions.find((o) => o.key === status)?.label ?? status
+  return <Badge {...SESSION_STATUS_BADGE[status]}>{label}</Badge>
 }
 
 export const columns: ColumnDef<AuditSession>[] = [
@@ -116,7 +125,7 @@ export const columns: ColumnDef<AuditSession>[] = [
     header: ({ column }) => <DataTableColumnHeader column={column} title="Estado" />,
     cell: ({ row }) => {
       const status = row.getValue<SessionStatus>("status")
-      return <Badge {...SESSION_STATUS_BADGE[status]}>{SESSION_STATUS_LABELS[status]}</Badge>
+      return <StatusBadgeCell status={status} />
     },
   },
   {

@@ -3,6 +3,8 @@ import { navigationHandlers } from "./navigation"
 import { authHandlers } from "./auth"
 import { auditsHandlers } from "./audits"
 import { auditTablesHandlers } from "./audit-tables"
+import { auditSessionStatusesHandlers } from "./audits/audit-session-statuses"
+import { auditOperationTypesHandlers } from "./audits/audit-operation-types"
 import { academicPeriodsHandlers } from "./academic-period/academic-periods"
 import { evaluationPeriodsHandlers } from "./academic-period/evaluation-periods"
 import { gradesHandlers } from "./academic-period/grades"
@@ -34,6 +36,8 @@ export const handlers = [
   ...navigationHandlers,
   ...auditsHandlers,
   ...auditTablesHandlers,
+  ...auditSessionStatusesHandlers,
+  ...auditOperationTypesHandlers,
   ...academicPeriodsHandlers,
   ...evaluationPeriodsHandlers,
   ...gradesHandlers,
