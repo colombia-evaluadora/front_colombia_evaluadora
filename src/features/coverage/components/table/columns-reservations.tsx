@@ -42,48 +42,56 @@ export const columns: ColumnDef<Reservation>[] = [
   {
     id: "documentNumber",
     accessorKey: "documentNumber",
+    meta: { label: "ID" },
     header: ({ column }) => <DataTableColumnHeader column={column} title="ID" />,
     cell: ({ row }) => <span className="tabular-nums">{row.original.documentNumber}</span>,
   },
   {
     id: "firstName",
     accessorKey: "firstName",
+    meta: { label: "Nombres" },
     header: ({ column }) => <DataTableColumnHeader column={column} title="Nombres" />,
     cell: ({ row }) => <span className="font-medium">{row.original.firstName}</span>,
   },
   {
     id: "lastName",
     accessorKey: "lastName",
+    meta: { label: "Apellidos" },
     header: ({ column }) => <DataTableColumnHeader column={column} title="Apellidos" />,
     cell: ({ row }) => <span className="font-medium">{row.original.lastName}</span>,
   },
   {
     id: "institution",
     accessorKey: "institution",
+    meta: { label: "Institución" },
     header: ({ column }) => <DataTableColumnHeader column={column} title="Institución" />,
     cell: ({ row }) => <span className="truncate">{row.original.institution}</span>,
   },
   {
     id: "campus",
     accessorKey: "campus",
+    meta: { label: "Sede" },
     header: ({ column }) => <DataTableColumnHeader column={column} title="Sede" />,
     cell: ({ row }) => <span>{row.original.campus}</span>,
   },
   {
     id: "grade",
     accessorKey: "grade",
+    meta: { label: "Grado" },
     header: ({ column }) => <DataTableColumnHeader column={column} title="Grado" />,
     cell: ({ row }) => <span className="tabular-nums">{formatGrade(row.original.grade)}</span>,
   },
   {
     id: "group",
     accessorKey: "group",
+    meta: { label: "Grupo" },
     header: ({ column }) => <DataTableColumnHeader column={column} title="Grupo" />,
     cell: ({ row }) => <span className="tabular-nums">{row.original.group}</span>,
   },
   {
     id: "shift",
     accessorKey: "shift",
+    meta: { label: "Jornada" },
     header: ({ column }) => <DataTableColumnHeader column={column} title="Jornada" />,
     cell: ({ row }) => (
       <Badge variant="outline" color="secondary">
@@ -94,12 +102,14 @@ export const columns: ColumnDef<Reservation>[] = [
   {
     id: "educationLevel",
     accessorKey: "educationLevel",
+    meta: { label: "Nivel educativo" },
     header: ({ column }) => <DataTableColumnHeader column={column} title="Nivel educativo" />,
     cell: ({ row }) => <span>{EDUCATION_LEVEL_LABELS[row.original.educationLevel]}</span>,
   },
   {
     id: "reservedAt",
     accessorKey: "reservedAt",
+    meta: { label: "Fecha de reserva" },
     header: ({ column }) => <DataTableColumnHeader column={column} title="Fecha de reserva" />,
     cell: ({ row }) => {
       const reservedAt = new Date(row.original.reservedAt)
@@ -116,6 +126,7 @@ export const columns: ColumnDef<Reservation>[] = [
   {
     id: "status",
     accessorKey: "status",
+    meta: { label: "Estado" },
     header: ({ column }) => <DataTableColumnHeader column={column} title="Estado" />,
     cell: ({ row }) => {
       const status = row.getValue<ReservationStatus>("status")

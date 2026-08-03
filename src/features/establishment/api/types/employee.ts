@@ -53,6 +53,12 @@ export interface EmployeesQueryFilters {
   roles?: string[]
   workSchedules?: string[]
   statuses?: EmployeeStatus[]
+  /**
+   * Filtra los funcionarios a los que tienen al menos un permiso en la sede
+   * con este id. Se usa, por ejemplo, en la asignación académica para acotar
+   * el listado de docentes a la sede del periodo.
+   */
+  campusId?: string
 }
 
 export interface EmployeesQueryRequest {

@@ -6,9 +6,19 @@ import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { DataTableColumnHeader } from "@/components/data-table"
 
-import { OPERATION_TYPE_BADGE, OPERATION_TYPE_LABELS } from "../../api/ui-mappings"
+import { OPERATION_TYPE_BADGE } from "../../api/ui-mappings"
+import { useAuditOperationTypesQuery } from "../../api/query/use-audit-operation-types-query"
 import type { OperationType, TableOperation } from "../../api/types/audit-table"
 import { ViewOperationChangesDialog } from "../dialogs/dialog-view-operation-changes"
+
+// El label del tipo de operación lo entrega el backend (`{ key, label }`).
+// Si la query todavía no llegó, caemos al `key` como fallback para no
+// bloquear el render.
+function OperationBadgeCell({ operation }: { operation: OperationType }) {
+  const { data: operationOptions = [] } = useAuditOperationTypesQuery()
+  const label = operationOptions.find((o) => o.key === operation)?.label ?? operation
+  return <Badge {...OPERATION_TYPE_BADGE[operation]}>{label}</Badge>
+}
 
 function initials(name: string): string {
   const [first, second] = name.trim().split(/\s+/)
@@ -44,15 +54,17 @@ export const columns: ColumnDef<TableOperation>[] = [
   {
     id: "operation",
     accessorKey: "operation",
+    meta: { label: "Operación" },
     header: ({ column }) => <DataTableColumnHeader column={column} title="Operación" />,
     cell: ({ row }) => {
       const operation = row.getValue<OperationType>("operation")
-      return <Badge {...OPERATION_TYPE_BADGE[operation]}>{OPERATION_TYPE_LABELS[operation]}</Badge>
+      return <OperationBadgeCell operation={operation} />
     },
   },
   {
     id: "authorIp",
     accessorKey: "authorName",
+    meta: { label: "Autor / IP" },
     header: ({ column }) => <DataTableColumnHeader column={column} title="Autor / IP" />,
     cell: ({ row }) => {
       const op = row.original
@@ -80,6 +92,7 @@ export const columns: ColumnDef<TableOperation>[] = [
   {
     id: "detail",
     accessorKey: "entityName",
+    meta: { label: "Detalle" },
     header: ({ column }) => <DataTableColumnHeader column={column} title="Detalle" />,
     cell: ({ row }) => {
       const op = row.original
@@ -94,6 +107,7 @@ export const columns: ColumnDef<TableOperation>[] = [
   {
     id: "occurredAt",
     accessorKey: "occurredAt",
+    meta: { label: "Fecha" },
     header: ({ column }) => <DataTableColumnHeader column={column} title="Fecha" />,
     cell: ({ row }) => {
       const occurredAt = new Date(row.getValue<string>("occurredAt"))
