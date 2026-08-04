@@ -71,7 +71,7 @@ export function ExportSelectedEmployeesDialog({
             />
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>Exportar funcionarios seleccionados</DialogTitle>
+                    <DialogTitle>Exportar</DialogTitle>
                     <DialogDescription>
                         Elegí un formato para exportar {count} funcionario(s) seleccionado(s).
                     </DialogDescription>

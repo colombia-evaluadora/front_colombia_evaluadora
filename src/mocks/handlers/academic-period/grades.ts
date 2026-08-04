@@ -99,6 +99,18 @@ export const gradesHandlers = [
     })
   }),
 
+  http.post("/api/grades/export", async ({ request }) => {
+    await delay(600)
+    const { ids, format } = (await request.json()) as {
+      ids: number[]
+      format: ExportFormat
+    }
+    return HttpResponse.json<ExportResult>({
+      status: "ok",
+      message: `${ids.length} grado(s) exportado(s) a ${EXPORT_FORMAT_LABELS[format]}.`,
+    })
+  }),
+
   http.post("/api/grades/export-all", async ({ request }) => {
     await delay(600)
     const { filters, format } = (await request.json()) as {
@@ -128,6 +140,22 @@ export const gradesHandlers = [
     gradesDb.push(newGrade)
 
     return HttpResponse.json(newGrade, { status: 201 })
+  }),
+
+  // Borrado en lote por ids (atómico, una sola request).
+  http.post("/api/grades/bulk-delete", async ({ request }) => {
+    await delay(300)
+    const { ids } = (await request.json()) as { ids: number[] }
+    const set = new Set(ids)
+    const before = gradesDb.length
+    for (let i = gradesDb.length - 1; i >= 0; i--) {
+      if (set.has(gradesDb[i].id)) gradesDb.splice(i, 1)
+    }
+    return HttpResponse.json({
+      status: "ok",
+      message: "Grados eliminados.",
+      deleted: before - gradesDb.length,
+    })
   }),
 
   http.patch("/api/grades/:id", async ({ params, request }) => {

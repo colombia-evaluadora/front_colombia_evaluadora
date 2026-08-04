@@ -7,6 +7,7 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
+  AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
@@ -61,12 +62,15 @@ export function DeleteEmployeeDialog({ employee }: DeleteEmployeeDialogProps) {
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>
-            ¿Está seguro de que desea eliminar permanentemente al funcionario {employee.name}? Esta acción no se puede deshacer.
-          </AlertDialogTitle>
+          <AlertDialogTitle>Eliminar</AlertDialogTitle>
+          <AlertDialogDescription>
+            Se eliminará permanentemente al funcionario {employee.name}. Esta
+            acción no se puede deshacer.
+          </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogAction
+            color="destructive"
             disabled={deleteMutation.isPending}
             aria-busy={deleteMutation.isPending}
             onClick={() => deleteMutation.mutate(employee.id)}

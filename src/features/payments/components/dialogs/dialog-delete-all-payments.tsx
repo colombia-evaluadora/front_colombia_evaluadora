@@ -49,7 +49,7 @@ export function DeleteAllPaymentsDialog({ filters }: DeleteAllPaymentsDialogProp
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>¿Eliminar todos los pagos filtrados?</AlertDialogTitle>
+          <AlertDialogTitle>Eliminar</AlertDialogTitle>
           <AlertDialogDescription>
             Esta acción eliminará permanentemente todos los pagos que coincidan con los filtros
             activos. No se puede deshacer.
@@ -58,6 +58,7 @@ export function DeleteAllPaymentsDialog({ filters }: DeleteAllPaymentsDialogProp
         <AlertDialogFooter>
           <AlertDialogCancel>Cancelar</AlertDialogCancel>
           <AlertDialogAction
+            color="destructive"
             disabled={deleteAll.isPending}
             aria-busy={deleteAll.isPending}
             onClick={() => deleteAll.mutate(filters)}

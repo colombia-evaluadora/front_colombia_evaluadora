@@ -25,6 +25,21 @@ export function NavMain() {
   const { data: items, isPending, isError, refetch } = useNavItemsQuery()
   const { pathname } = useLocation()
 
+  /**
+   * Acordeón: un único grupo abierto a la vez. El estado vive aquí (no en cada
+   * `NavCollapsibleItem`) para que abrir uno pueda cerrar los demás. Se siembra
+   * con el grupo que contiene la ruta actual, y solo una vez que los items han
+   * cargado — de ahí el `??` en lugar de un `useState` con initializer, que se
+   * evaluaría cuando `items` aún es `undefined`.
+   */
+  const [openTitle, setOpenTitle] = useState<string | null | undefined>(undefined)
+  const activeTitle =
+    openTitle !== undefined
+      ? openTitle
+      : (items?.find(
+          (item) => item.url === pathname || item.items?.some((sub) => sub.url === pathname),
+        )?.title ?? null)
+
   if (isPending) {
     return (
       <SidebarGroup>
@@ -81,6 +96,8 @@ export function NavMain() {
               items={item.items}
               isActive={isActive}
               pathname={pathname}
+              open={activeTitle === item.title}
+              onOpenChange={(open) => setOpenTitle(open ? item.title : null)}
             />
           )
         })}
@@ -95,15 +112,13 @@ interface NavCollapsibleItemProps {
   items: NavSubItem[]
   isActive: boolean
   pathname: string
+  open: boolean
+  onOpenChange: (open: boolean) => void
 }
 
 /**
- * Its own component (not inlined in the `.map` above) so `defaultOpen` can
- * be seeded once via a lazy `useState` initializer, evaluated only at mount.
- * Passing a value recomputed from `pathname` directly as `defaultOpen` on
- * every render made Base UI's Collapsible warn about changing an
- * uncontrolled component's default state after init, since `NavMain`
- * re-renders (recomputing `isActive`/`isSubActive`) on every route change.
+ * Controlado desde `NavMain` para el comportamiento de acordeón. Sigue siendo
+ * su propio componente para mantener legible el `.map` de arriba.
  */
 function NavCollapsibleItem({
   title,
@@ -111,13 +126,15 @@ function NavCollapsibleItem({
   items,
   isActive,
   pathname,
+  open,
+  onOpenChange,
 }: NavCollapsibleItemProps) {
   const hasActiveChild = items.some((sub) => sub.url === pathname)
-  const [defaultOpen] = useState(() => isActive || hasActiveChild)
 
   return (
     <Collapsible
-      defaultOpen={defaultOpen}
+      open={open}
+      onOpenChange={onOpenChange}
       className="group/collapsible"
       render={<SidebarMenuItem />}
     >

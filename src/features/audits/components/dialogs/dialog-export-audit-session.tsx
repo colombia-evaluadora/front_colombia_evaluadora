@@ -55,7 +55,7 @@ export function ExportAuditSessionDialog({ filters }: ExportAuditSessionDialogPr
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Exportar sesiones filtradas</DialogTitle>
+          <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>
             Elegí un formato para exportar todas las sesiones que coincidan con los filtros activos.
           </DialogDescription>

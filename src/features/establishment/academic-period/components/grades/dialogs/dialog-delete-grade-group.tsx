@@ -59,7 +59,7 @@ export function DeleteGradeGroupDialog({
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>¿Eliminar este grupo?</AlertDialogTitle>
+          <AlertDialogTitle>Eliminar</AlertDialogTitle>
           <AlertDialogDescription>
             Se eliminará permanentemente el grupo {gradeGroup.codigo}. Esta
             acción no se puede deshacer.
@@ -68,6 +68,7 @@ export function DeleteGradeGroupDialog({
         <AlertDialogFooter>
           <AlertDialogCancel>Cancelar</AlertDialogCancel>
           <AlertDialogAction
+            color="destructive"
             disabled={deleteMutation.isPending}
             aria-busy={deleteMutation.isPending}
             onClick={() => deleteMutation.mutate(gradeGroup.codigo)}

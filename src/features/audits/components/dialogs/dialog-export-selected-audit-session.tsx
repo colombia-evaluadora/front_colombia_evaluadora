@@ -66,7 +66,7 @@ export function ExportSelectedAuditSessionDialog({
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Exportar sesiones seleccionadas</DialogTitle>
+          <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>
             Elegí un formato para exportar {count} sesión(es) seleccionada(s).
           </DialogDescription>

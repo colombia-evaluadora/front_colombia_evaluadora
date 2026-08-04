@@ -67,7 +67,7 @@ export function ExportAcademicAssignmentsDialog({
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Exportar asignación académica</DialogTitle>
+          <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>
             Elegí un formato para exportar todos los docentes que coincidan con la
             búsqueda activa.

@@ -75,7 +75,7 @@ export function ExportSelectedGradesDialog({
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Exportar grados seleccionados</DialogTitle>
+          <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>
             Elegí un formato para exportar los {count} grado(s) seleccionado(s).
           </DialogDescription>

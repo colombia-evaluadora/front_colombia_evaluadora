@@ -65,7 +65,7 @@ export function ExportEmployeesDialog({ filters }: ExportEmployeesDialogProps) {
             />
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>Exportar funcionarios filtrados</DialogTitle>
+                    <DialogTitle>Exportar</DialogTitle>
                     <DialogDescription>
                         Elegí un formato para exportar todos los funcionarios que coincidan con los filtros activos.
                     </DialogDescription>

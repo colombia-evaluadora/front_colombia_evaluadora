@@ -60,7 +60,7 @@ export function ExportSelectedReservationsDialog({
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Exportar reservas seleccionadas</DialogTitle>
+          <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>
             Se exportarán {selectedIds.length} reserva(s). Elegí el formato.
           </DialogDescription>

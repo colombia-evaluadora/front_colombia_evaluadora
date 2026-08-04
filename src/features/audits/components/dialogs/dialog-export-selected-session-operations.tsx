@@ -69,7 +69,7 @@ export function ExportSelectedSessionOperationsDialog({
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Exportar operaciones seleccionadas</DialogTitle>
+          <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>
             Elegí un formato para exportar {count} operación(es) seleccionada(s).
           </DialogDescription>

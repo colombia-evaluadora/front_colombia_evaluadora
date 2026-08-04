@@ -61,9 +61,7 @@ export function DeleteEvaluationPeriodDialog({
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>
-            ¿Eliminar este periodo de evaluación?
-          </AlertDialogTitle>
+          <AlertDialogTitle>Eliminar</AlertDialogTitle>
           <AlertDialogDescription>
             Se eliminará permanentemente el periodo {period.nombre}. Esta acción
             no se puede deshacer.
@@ -72,6 +70,7 @@ export function DeleteEvaluationPeriodDialog({
         <AlertDialogFooter>
           <AlertDialogCancel>Cancelar</AlertDialogCancel>
           <AlertDialogAction
+            color="destructive"
             disabled={deleteMutation.isPending}
             aria-busy={deleteMutation.isPending}
             onClick={() =>

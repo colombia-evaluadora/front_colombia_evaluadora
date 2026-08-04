@@ -13,6 +13,12 @@ import type {
   CampusesQueryRequest,
   CampusesQueryResponse,
 } from "@/features/establishment/api/types/campus"
+import type { ExportFormat, ExportResult } from "@/features/establishment/api/types/export"
+
+const EXPORT_FORMAT_LABELS: Record<ExportFormat, string> = {
+  pdf: "PDF",
+  excel: "Excel",
+}
 
 function asArray(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string" && item.length > 0) : []
@@ -115,6 +121,38 @@ export const campusHandlers = [
       rows,
       pageCount,
       totalCount,
+    })
+  }),
+
+  // Las exportaciones cuelgan de `/api/campuses/*`, no de
+  // `/api/establishments/campuses/*`, tal como las pide el front.
+  http.post("*/api/campuses/export", async ({ request }) => {
+    await delay(600)
+
+    const { ids, format } = (await request.json()) as {
+      ids: string[]
+      format: ExportFormat
+    }
+
+    return HttpResponse.json<ExportResult>({
+      status: "ok",
+      message: `${ids.length} sede(s) exportada(s) a ${EXPORT_FORMAT_LABELS[format]}.`,
+    })
+  }),
+
+  http.post("*/api/campuses/export-all", async ({ request }) => {
+    await delay(600)
+
+    const { filters, format } = (await request.json()) as {
+      filters: CampusesQueryRequest["filters"]
+      format: ExportFormat
+    }
+
+    const count = applyFilters(campusesRowsDb, filters).length
+
+    return HttpResponse.json<ExportResult>({
+      status: "ok",
+      message: `${count} sede(s) exportada(s) a ${EXPORT_FORMAT_LABELS[format]}.`,
     })
   }),
 

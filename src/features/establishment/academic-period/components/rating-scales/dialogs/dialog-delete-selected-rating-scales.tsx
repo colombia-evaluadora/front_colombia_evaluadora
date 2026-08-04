@@ -70,9 +70,7 @@ export function DeleteSelectedRatingScalesDialog({
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>
-            ¿Eliminar las escalas de los niveles seleccionados?
-          </AlertDialogTitle>
+          <AlertDialogTitle>Eliminar</AlertDialogTitle>
           <AlertDialogDescription>
             Se eliminarán permanentemente {count} escala(s) de valoración de{" "}
             {levelCount} nivel(es) seleccionado(s). Esta acción no se puede
@@ -82,6 +80,7 @@ export function DeleteSelectedRatingScalesDialog({
         <AlertDialogFooter>
           <AlertDialogCancel disabled={submitting}>Cancelar</AlertDialogCancel>
           <AlertDialogAction
+            color="destructive"
             disabled={submitting}
             aria-busy={submitting}
             onClick={handleDelete}

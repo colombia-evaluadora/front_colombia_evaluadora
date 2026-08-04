@@ -69,9 +69,7 @@ export function DeleteSelectedEvaluationPeriodsDialog({
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>
-            ¿Eliminar los periodos de evaluación seleccionados?
-          </AlertDialogTitle>
+          <AlertDialogTitle>Eliminar</AlertDialogTitle>
           <AlertDialogDescription>
             Se eliminarán permanentemente {count} periodo(s) de evaluación.
             Esta acción no se puede deshacer.
@@ -80,6 +78,7 @@ export function DeleteSelectedEvaluationPeriodsDialog({
         <AlertDialogFooter>
           <AlertDialogCancel disabled={submitting}>Cancelar</AlertDialogCancel>
           <AlertDialogAction
+            color="destructive"
             disabled={submitting}
             aria-busy={submitting}
             onClick={handleDelete}

@@ -59,7 +59,7 @@ export function DeleteAreaSubjectDialog({
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>¿Eliminar esta área/asignatura?</AlertDialogTitle>
+          <AlertDialogTitle>Eliminar</AlertDialogTitle>
           <AlertDialogDescription>
             Se eliminará permanentemente {areaSubject.nombreInterno}. Esta
             acción no se puede deshacer.
@@ -68,6 +68,7 @@ export function DeleteAreaSubjectDialog({
         <AlertDialogFooter>
           <AlertDialogCancel>Cancelar</AlertDialogCancel>
           <AlertDialogAction
+            color="destructive"
             disabled={deleteMutation.isPending}
             aria-busy={deleteMutation.isPending}
             onClick={() => deleteMutation.mutate(areaSubject.codigo)}
