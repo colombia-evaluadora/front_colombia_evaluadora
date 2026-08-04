@@ -4,6 +4,7 @@ import { AuditPageHeader } from "../components/audit-page-header"
 import { AuditTablesGrid } from "../components/table/audit-tables-grid"
 import { FilterAuditTablesForm } from "../components/forms/form-filter-audit-tables"
 import { useAuditTablesFilters } from "../hooks/use-audit-tables-filters"
+import { NoticeOutlet } from "@/components/notice/notice-context"
 
 const FILTER_AUDIT_TABLES_FORM_ID = "filter-audit-tables-form"
 
@@ -22,6 +23,8 @@ export function AuditTablesPage() {
         />
       </AuditPageHeader>
       <div className="px-(--card-spacing)">
+        <NoticeOutlet className="mb-3" />
+
         <AuditTablesGrid />
       </div>
     </Card>

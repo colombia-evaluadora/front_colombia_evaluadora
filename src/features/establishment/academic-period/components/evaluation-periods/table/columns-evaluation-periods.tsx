@@ -71,7 +71,7 @@ export function createEvaluationPeriodColumns({
       <DataTableColumnHeader column={column} title="Nombre" />
     ),
     cell: ({ row }) => (
-      <span className="font-semibold">{row.original.nombre}</span>
+      <span className="font-semibold uppercase">{row.original.nombre}</span>
     ),
   },
   {
@@ -120,7 +120,14 @@ export function createEvaluationPeriodColumns({
     cell: ({ row }) => {
       const estado = row.getValue<EvaluationPeriodStatus>("estado")
       return (
-        <Badge {...EVALUATION_PERIOD_STATUS_BADGE[estado]}>{estado}</Badge>
+        // "Habilitados para algunas asignaturas" no entra en una línea: el
+        // badge se deja envolver en vez de estirar la columna.
+        <Badge
+          {...EVALUATION_PERIOD_STATUS_BADGE[estado]}
+          className="max-w-40 text-left whitespace-normal"
+        >
+          {estado}
+        </Badge>
       )
     },
   },

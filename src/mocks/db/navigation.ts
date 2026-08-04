@@ -73,8 +73,8 @@ export const navigationMenu: RouteResponseDto[] = [
     idParent: null,
     roleIds: [1, 2],
   },
-  // Única entrada del grupo: la vista por tabla se alcanza desde el encabezado
-  // de la propia página (ver audit-session-table.tsx), no desde el menú.
+  // La vista por tabla del registro se alcanza desde el encabezado de la
+  // propia página (ver audit-session-table.tsx), no desde el menú.
   {
     id: 10,
     name: "Registro de actividad",
@@ -84,6 +84,16 @@ export const navigationMenu: RouteResponseDto[] = [
     type: "ITEM",
     idParent: 9,
     roleIds: [1, 2],
+  },
+  {
+    id: 18,
+    name: "Configuración de roles y menús",
+    icon: "",
+    path: "/app/administracion/roles-menus",
+    menuOrder: 1,
+    type: "ITEM",
+    idParent: 9,
+    roleIds: [1],
   },
   {
     id: 5,

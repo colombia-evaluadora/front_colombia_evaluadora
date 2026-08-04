@@ -52,7 +52,7 @@ export function createGradeColumns({
       <DataTableColumnHeader column={column} title="Nombre del grado" />
     ),
     cell: ({ row }) => (
-      <span className="font-semibold">{row.original.nombre}</span>
+      <span className="font-semibold uppercase">{row.original.nombre}</span>
     ),
   },
   {
@@ -72,7 +72,7 @@ export function createGradeColumns({
       <DataTableColumnHeader column={column} title="Nivel de enseñanza" />
     ),
     cell: ({ row }) => (
-      <span className="font-medium">
+      <span className="font-medium uppercase">
         {row.original.teachingLevelName}
       </span>
     ),

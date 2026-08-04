@@ -19,6 +19,7 @@ import { ExportTableOperationsDialog } from "../dialogs/dialog-export-table-oper
 import { ClearSelectionTableOperationsDialog } from "../dialogs/dialog-clear-selection-table-operations"
 import { TableOperationsStatsCards } from "../stats/table-operations-stats-cards"
 import { useParams } from "@tanstack/react-router"
+import { NoticeOutlet } from "@/components/notice/notice-context"
 
 interface TableOperationsDataTableProps {
   title: ReactNode
@@ -89,6 +90,8 @@ export function TableOperationsDataTable({
       </TablePageHeader>
 
       <div className="px-(--card-spacing)">
+        <NoticeOutlet className="mb-3" />
+
         <TableOperationsStatsCards
           tableSlug={tableSlug}
           selectedIds={selectedIds}

@@ -15,6 +15,7 @@ import { ExportAuditSessionDialog } from "../dialogs/dialog-export-audit-session
 import { ClearSelectionAuditSessionDialog } from "../dialogs/dialog-clear-selection-audit-session"
 import { AuditSessionStatsCards } from "../stats/audit-session-stats-cards"
 import { AuditPageHeader } from "../audit-page-header"
+import { NoticeOutlet } from "@/components/notice/notice-context"
 
 export function AuditSessionDataTable() {
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
@@ -68,6 +69,8 @@ export function AuditSessionDataTable() {
       </AuditPageHeader>
 
       <div className="px-(--card-spacing)">
+        <NoticeOutlet className="mb-3" />
+
         <AuditSessionStatsCards
           selectedIds={selectedIds}
           hasSelection={hasSelection}
