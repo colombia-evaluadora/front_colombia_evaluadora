@@ -219,9 +219,15 @@ export function TabEvaluationCriteria({
       </div>
 
       <div className="mt-6 flex justify-end">
-        <Button type="submit" color="primary" disabled={saveCriteria.isPending}>
-          {saveCriteria.isPending ? "Guardando..." : "Guardar"}
-        </Button>
+        <form.Subscribe selector={(state) => state.isDirty}>
+          {(isDirty) =>
+            isDirty ? (
+              <Button type="submit" color="primary" disabled={saveCriteria.isPending}>
+                {saveCriteria.isPending ? "Guardando..." : "Guardar"}
+              </Button>
+            ) : null
+          }
+        </form.Subscribe>
       </div>
     </form>
     </>
