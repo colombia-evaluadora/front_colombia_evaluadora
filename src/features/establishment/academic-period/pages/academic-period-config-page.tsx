@@ -144,23 +144,11 @@ function AcademicPeriodConfigPageContent() {
 
   const header = (
     <CardHeader className="border-b">
-      <CardAction className="flex gap-2">
-        <Button
-          type="submit"
-          size="sm"
-          color="primary"
-          form={FORM_ID}
-          disabled={isSaving || (isEditing && isLoadingDetail)}
-          aria-busy={isSaving}
-        >
-          {isSaving && (
-            <SpinnerIcon data-icon="inline-start" className="animate-spin" />
-          )}
-          Guardar
-        </Button>
+      <CardAction>
         <Button
           size="sm"
-          variant="outline"
+          variant="fill"
+          color="neutral"
           render={<Link to={paths.app.periodosAcademicos.getHref()} />}
           nativeButton={false}
         >
@@ -195,11 +183,29 @@ function AcademicPeriodConfigPageContent() {
               Ocurrió un error al cargar el periodo académico.
             </p>
           ) : (
-            <AcademicPeriodForm
-              id={FORM_ID}
-              defaultValues={detail ? toFormValues(detail) : undefined}
-              onSubmit={handleSubmit}
-            />
+            <>
+              <AcademicPeriodForm
+                id={FORM_ID}
+                defaultValues={detail ? toFormValues(detail) : undefined}
+                onSubmit={handleSubmit}
+              />
+              {/* Acciones en el flujo normal, justo debajo de los campos. */}
+              <div className="mt-6 flex justify-end gap-2 border-t border-border pt-4">
+                <Button
+                  type="submit"
+                  size="sm"
+                  color="primary"
+                  form={FORM_ID}
+                  disabled={isSaving}
+                  aria-busy={isSaving}
+                >
+                  {isSaving && (
+                    <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+                  )}
+                  Guardar
+                </Button>
+              </div>
+            </>
           )}
         </AccordionContent>
       </AccordionItem>

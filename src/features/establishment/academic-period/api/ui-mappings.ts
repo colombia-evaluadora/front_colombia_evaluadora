@@ -13,7 +13,7 @@ interface BadgeProps {
 // back no envía.
 export const ACADEMIC_PERIOD_STATUS_BADGE: Record<AcademicPeriodStatus, BadgeProps> = {
   ACTIVO: { variant: "soft", color: "success" },
-  INACTIVO: { variant: "soft", color: "secondary" },
+  INACTIVO: { variant: "soft", color: "destructive" },
 }
 
 export const EVALUATION_PERIOD_STATUSES: EvaluationPeriodStatus[] = [
