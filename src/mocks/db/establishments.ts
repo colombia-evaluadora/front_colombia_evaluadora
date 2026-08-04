@@ -11,6 +11,7 @@ import type { Person } from "@/features/establishment/api/types/person"
 import { CALENDARS, COST_REGIMEN, DISABILITIES, IDIOMAS, LEGAL_TYPES, LICENSE_STATUSES, RANGO_TARIFAS, ZONES } from "../db/catalogs/establishment"
 import { DOCUMENT_TYPES } from "../db/catalogs/document-types"
 import { GENDERS } from "../db/catalogs/genders"
+import { POPULATION_GENDERS } from "../db/catalogs/population-genders"
 import { MUNICIPALITIES } from "../db/catalogs/municipalities"
 
 faker.seed(20260722)
@@ -64,11 +65,17 @@ function generateNit(): string {
   return faker.string.numeric({ length: 9, allowLeadingZeros: false })
 }
 
-function createCatalogItem(items: Array<{ code: string; name: string }>): CatalogItem {
+/**
+ * El `id` del catálogo real se conserva tal cual: los `<Select>` del formulario
+ * resuelven la etiqueta buscando ese id entre las opciones de `/api/catalogs/*`,
+ * así que inventar un uuid acá hacía que al editar se viera el id crudo en vez
+ * del nombre. Solo las listas ad-hoc (sin `id` propio) reciben uno generado.
+ */
+function createCatalogItem(items: Array<{ id?: string; code: string; name: string }>): CatalogItem {
   const item = faker.helpers.arrayElement(items)
 
   return {
-    id: faker.string.uuid(),
+    id: item.id ?? faker.string.uuid(),
     code: item.code,
     name: item.name,
   }
@@ -135,7 +142,7 @@ function createEstablishmentDetails(): EstablishmentDetails {
       teachingLanguage: createCatalogItem(IDIOMAS),
       calendar: createCatalogItem(CALENDARS),
       costRegime: createCatalogItem(COST_REGIMEN),
-      populationGender: createCatalogItem(GENDERS),
+      populationGender: createCatalogItem(POPULATION_GENDERS),
       tuitionRange: createCatalogItem(RANGO_TARIFAS),
       disabilityType: createCatalogItem(DISABILITIES),
       operatingLicense: faker.datatype.boolean(),
