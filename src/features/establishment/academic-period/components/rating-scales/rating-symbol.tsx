@@ -44,13 +44,34 @@ export function RatingSymbolView({
   label?: string;
   className?: string;
 }) {
+  const [failed, setFailed] = useState(false);
+
   if (!value) return null;
 
   if (isImageValue(value)) {
+    // Si la imagen no carga (404, ruta rota), el alt largo del navegador
+    // desborda la celda; mostramos una "x" con el label accesible en su lugar.
+    if (failed) {
+      return (
+        <span
+          role="img"
+          aria-label={label}
+          title={label}
+          className={cn(
+            "text-muted-foreground inline-flex size-6 items-center justify-center leading-none",
+            className,
+          )}
+        >
+          ✕
+        </span>
+      );
+    }
+
     return (
       <img
         src={value}
         alt={label ?? ""}
+        onError={() => setFailed(true)}
         className={cn("inline-block size-6 object-contain", className)}
       />
     );
