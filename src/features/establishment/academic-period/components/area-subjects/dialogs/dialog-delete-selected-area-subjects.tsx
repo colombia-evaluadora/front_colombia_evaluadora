@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 
 import { SpinnerIcon, TrashIcon } from "@/components/ui/icons"
 
@@ -47,7 +48,7 @@ export function DeleteSelectedAreaSubjectsDialog({
         variant: "error",
       })
     } else {
-      notify(`Se eliminaron ${codigos.length} área(s) correctamente.`)
+      notify(SUCCESS_MESSAGES.areaSubject.deletedMany(codigos.length))
     }
     setOpen(false)
     resetSelection()

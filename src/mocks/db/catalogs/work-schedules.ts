@@ -2,13 +2,18 @@ import type { CatalogItem } from "@/features/establishment/api/types/catalog";
 
 export const WORK_SCHEDULES: CatalogItem[] = [
   {
-    id: "full-time",
-    code: "FULL_TIME",
-    name: "Tiempo completo",
+    id: "morning",
+    code: "MORNING",
+    name: "Mañana",
   },
   {
-    id: "part-time",
-    code: "PART_TIME",
-    name: "Medio tiempo",
+    id: "afternoon",
+    code: "AFTERNOON",
+    name: "Tarde",
+  },
+  {
+    id: "night",
+    code: "NIGHT",
+    name: "Noche",
   },
 ]

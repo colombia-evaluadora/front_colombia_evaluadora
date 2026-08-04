@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { useForm } from "@tanstack/react-form"
 import { ControlPointIcon, PencilIcon, SpinnerIcon } from "@/components/ui/icons"
 
@@ -118,7 +119,7 @@ export function CreateEvaluationPeriodDialog({
       onSuccess: () => {
         form.reset()
         setOpen(false)
-        notify("El periodo de evaluación se agregó correctamente.")
+        notify(SUCCESS_MESSAGES.evaluationPeriod.created)
       },
     },
   })
@@ -131,7 +132,7 @@ export function CreateEvaluationPeriodDialog({
           return
         }
         setOpen(false)
-        notify("El periodo de evaluación se actualizó correctamente.")
+        notify(SUCCESS_MESSAGES.evaluationPeriod.updated)
       },
     },
   })

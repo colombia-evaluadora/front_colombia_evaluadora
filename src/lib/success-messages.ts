@@ -49,16 +49,28 @@ export const SUCCESS_MESSAGES = {
     created: "El periodo académico se creó correctamente.",
     updated: "El periodo académico se actualizó correctamente.",
     deleted: "El periodo académico se eliminó correctamente.",
+    deletedMany: (count) =>
+      count === 1
+        ? "El periodo académico se eliminó correctamente."
+        : `Los ${count} periodos académicos se eliminaron correctamente.`,
   },
   evaluationPeriod: {
     created: "El periodo de evaluación se creó correctamente.",
     updated: "El periodo de evaluación se actualizó correctamente.",
     deleted: "El periodo de evaluación se eliminó correctamente.",
+    deletedMany: (count) =>
+      count === 1
+        ? "El periodo de evaluación se eliminó correctamente."
+        : `Los ${count} periodos de evaluación se eliminaron correctamente.`,
   },
   grade: {
     created: "El grado se creó correctamente.",
     updated: "El grado se actualizó correctamente.",
     deleted: "El grado se eliminó correctamente.",
+    deletedMany: (count) =>
+      count === 1
+        ? "El grado se eliminó correctamente."
+        : `Los ${count} grados se eliminaron correctamente.`,
   },
   gradeGroup: {
     created: "El grupo de grados se creó correctamente.",
@@ -69,6 +81,10 @@ export const SUCCESS_MESSAGES = {
     created: "La escala de valoración se creó correctamente.",
     updated: "La escala de valoración se actualizó correctamente.",
     deleted: "La escala de valoración se eliminó correctamente.",
+    deletedMany: (count) =>
+      count === 1
+        ? "La escala de valoración se eliminó correctamente."
+        : `Las ${count} escalas de valoración se eliminaron correctamente.`,
   },
   studyPlan: {
     created: "El plan de estudio se creó correctamente.",
@@ -79,6 +95,10 @@ export const SUCCESS_MESSAGES = {
     created: "El área o asignatura se creó correctamente.",
     updated: "El área o asignatura se actualizó correctamente.",
     deleted: "El área o asignatura se eliminó correctamente.",
+    deletedMany: (count) =>
+      count === 1
+        ? "El área o asignatura se eliminó correctamente."
+        : `Las ${count} áreas o asignaturas se eliminaron correctamente.`,
   },
   academicAssignment: {
     created: "La asignación académica se creó correctamente.",

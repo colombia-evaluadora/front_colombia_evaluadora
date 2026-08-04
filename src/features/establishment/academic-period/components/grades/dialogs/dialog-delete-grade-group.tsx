@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 
 import { SpinnerIcon, TrashIcon } from "@/components/ui/icons"
 import { useNotify } from "../../common/notice-context"
@@ -36,7 +37,7 @@ export function DeleteGradeGroupDialog({
           notify(result.message, { variant: "error" })
           return
         }
-        notify(result.message)
+        notify(SUCCESS_MESSAGES.gradeGroup.deleted)
         setOpen(false)
       },
     },

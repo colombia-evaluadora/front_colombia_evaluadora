@@ -1,6 +1,7 @@
 "use no memo"
 
 import { useCallback, useMemo, useState } from "react"
+import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import type { SortingState } from "@tanstack/react-table"
 import { CheckIcon, PencilIcon, PlusIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 
@@ -271,7 +272,7 @@ function ScalesSubTable({
   const createMutation = useCreateRatingScalesBulk({
     mutationConfig: {
       onSuccess: () => {
-        notify("La escala de valoración se agregó correctamente.")
+        notify(SUCCESS_MESSAGES.ratingScale.created)
         setAddDraft(makeEmptyScaleDraft(range))
       },
       onError: () => {
@@ -318,7 +319,7 @@ function ScalesSubTable({
           notify(result.message, { variant: "error" })
           return
         }
-        notify(result.message)
+        notify(SUCCESS_MESSAGES.ratingScale.updated)
         cancelEdit()
       },
     },

@@ -1,6 +1,7 @@
 "use no memo"
 
 import { useCallback, useEffect, useMemo, useState } from "react"
+import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import type { SortingState } from "@tanstack/react-table"
 import { SpinnerIcon } from "@/components/ui/icons"
 
@@ -80,7 +81,7 @@ export function TabAcademicAssignments({
           notify(result.message, { variant: "error" })
           return
         }
-        notify(result.message)
+        notify(SUCCESS_MESSAGES.academicAssignment.updated)
       },
     },
   })

@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 
 import { SpinnerIcon, TrashIcon } from "@/components/ui/icons"
 
@@ -37,7 +38,7 @@ export function DeleteAreaSubjectDialog({
           return
         }
         setOpen(false)
-        notify("El área/asignatura se eliminó correctamente.")
+        notify(SUCCESS_MESSAGES.areaSubject.deleted)
       },
     },
   })

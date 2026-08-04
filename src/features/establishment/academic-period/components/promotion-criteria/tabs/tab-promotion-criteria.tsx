@@ -1,4 +1,5 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo } from "react"
+import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import type { AnyFieldApi } from "@tanstack/react-form"
 import { useForm } from "@tanstack/react-form"
 
@@ -159,7 +160,7 @@ const PromotionCriteriaForm = forwardRef<
           notify(result.message, { variant: "error" })
           return
         }
-        notify(result.message)
+        notify(SUCCESS_MESSAGES.promotionCriteria.updated)
       },
     },
   })
@@ -171,7 +172,7 @@ const PromotionCriteriaForm = forwardRef<
           notify(result.message, { variant: "error" })
           return
         }
-        if (!hideSubmit) notify(result.message)
+        if (!hideSubmit) notify(SUCCESS_MESSAGES.promotionCriteria.updated)
       },
     },
   })
@@ -195,7 +196,7 @@ const PromotionCriteriaForm = forwardRef<
         formApi.reset(value)
         return
       }
-      notify("Parámetros guardados.")
+      notify(SUCCESS_MESSAGES.promotionCriteria.updated)
     },
   })
 

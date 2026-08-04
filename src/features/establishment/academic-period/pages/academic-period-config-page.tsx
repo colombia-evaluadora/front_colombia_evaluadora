@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { SpinnerIcon } from "@/components/ui/icons"
 import { Link, useNavigate, useParams } from "@tanstack/react-router"
 
@@ -99,7 +100,7 @@ function AcademicPeriodConfigPageContent() {
       onSuccess: (created) => {
         setCreatedPeriodId(created.id)
         setSaved(true)
-        notify("Periodo académico creado. Ahora podés configurar el resto.")
+        notify(SUCCESS_MESSAGES.academicPeriod.created)
         // Tras crear, pasamos a la ruta de edición del nuevo periodo para que
         // la URL refleje el estado real (editable, recargable, compartible).
         navigate({
@@ -116,7 +117,7 @@ function AcademicPeriodConfigPageContent() {
           notify(result.message, { variant: "error" })
           return
         }
-        notify(result.message)
+        notify(SUCCESS_MESSAGES.academicPeriod.updated)
       },
     },
   })
