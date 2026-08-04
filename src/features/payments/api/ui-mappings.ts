@@ -12,10 +12,10 @@ export const PAYMENT_STATUS_LABELS: Record<PaymentStatus, string> = {
 
 export const PAYMENT_STATUS_BADGE: Record<
   PaymentStatus,
-  { variant: "fill" | "outline"; color: "primary" | "secondary" | "destructive" }
+  { variant: "soft"; color: "primary" | "secondary" | "destructive" }
 > = {
-  pending: { variant: "outline", color: "secondary" },
-  processing: { variant: "fill", color: "secondary" },
-  success: { variant: "fill", color: "primary" },
-  failed: { variant: "fill", color: "destructive" },
+  pending: { variant: "soft", color: "secondary" },
+  processing: { variant: "soft", color: "secondary" },
+  success: { variant: "soft", color: "primary" },
+  failed: { variant: "soft", color: "destructive" },
 }

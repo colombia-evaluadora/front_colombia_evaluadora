@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "react"
-import { PencilIcon, PlusCircleIcon, SpinnerIcon } from "@/components/ui/icons"
+import { ControlPointIcon, PencilIcon, SpinnerIcon } from "@/components/ui/icons"
 
 import { useNotify, NoticeOutlet } from "../../common/notice-context"
 
@@ -236,7 +236,7 @@ export function CreateGradeDialog({
           </>
         ) : (
           <>
-            <PlusCircleIcon weight="fill" data-icon="inline-start" />
+            <ControlPointIcon data-icon="inline-start" />
             Agregar
           </>
         )}

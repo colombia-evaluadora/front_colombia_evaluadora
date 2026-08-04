@@ -178,7 +178,6 @@ export function TabAcademicAssignments({
           ) : (
             <ExportAcademicAssignmentsDialog filters={queryFilters} />
           )}
-          <DataTableViewOptions table={table} />
         </div>
       </div>
 
@@ -236,6 +235,7 @@ export function TabAcademicAssignments({
       />
       {data && (
         <Pagination
+          viewOptions={<DataTableViewOptions table={table} />}
           pageIndex={pageIndex}
           pageCount={data.pageCount}
           canPrev={pageIndex > 0}

@@ -1,13 +1,6 @@
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { PlusIcon } from "@/components/ui/icons"
+import { ControlPointIcon } from "@/components/ui/icons"
 import { Link } from "@tanstack/react-router"
 import { paths } from "@/config/paths"
 
@@ -15,9 +8,14 @@ import { EstablishmentsDataTable } from "../components/table/establishments-tabl
 
 export function EstablishmentsPage() {
   return (
-    <Card>
-      <CardHeader>
-        <CardAction>
+    // `overflow-visible` es requisito del encabezado sticky: el `Card` trae
+    // `overflow-hidden`, que crea un contexto de scroll propio y anula el
+    // `position: sticky` de la sección.
+    <Card className="overflow-visible">
+      <EstablishmentsDataTable
+        title="Establecimiento educativo"
+        description="Lista de establecimientos con búsqueda, filtro por estado y paginación."
+        action={
           <Button
             render={<Link to={paths.app.establishments.add.getHref()} />}
             variant="fill"
@@ -25,18 +23,11 @@ export function EstablishmentsPage() {
             size="sm"
             nativeButton={false}
           >
-            <PlusIcon data-icon="inline-start" />
+            <ControlPointIcon data-icon="inline-start" />
             Agregar
           </Button>
-        </CardAction>
-        <CardTitle>Establecimiento educativo</CardTitle>
-        <CardDescription>
-          Lista de establecimientos con búsqueda, filtro por estado y paginación.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <EstablishmentsDataTable />
-      </CardContent>
+        }
+      />
     </Card>
   )
 }

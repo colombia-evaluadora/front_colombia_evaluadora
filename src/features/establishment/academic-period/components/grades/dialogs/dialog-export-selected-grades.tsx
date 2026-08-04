@@ -65,13 +65,13 @@ export function ExportSelectedGradesDialog({
           <Button
             variant="outline"
             color="muted"
-            size="icon"
+            size="sm"
             aria-label={`Exportar ${count} seleccionados`}
           />
         }
       >
-        <DownloadSimpleIcon aria-hidden="true" />
-        <span aria-hidden="true">{count}</span>
+        <DownloadSimpleIcon data-icon="inline-start" aria-hidden="true" />
+        <span aria-hidden="true" className="tabular-nums">({count})</span>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>

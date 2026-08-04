@@ -60,7 +60,6 @@ export function TabGradeGroups({ gradeId, academicPeriodId }: TabGradeGroupsProp
           gradeId={gradeId}
           academicPeriodId={academicPeriodId}
         />
-        <DataTableViewOptions table={table} />
       </div>
 
       <DataTable
@@ -73,6 +72,7 @@ export function TabGradeGroups({ gradeId, academicPeriodId }: TabGradeGroupsProp
       />
       {data && (
         <Pagination
+          viewOptions={<DataTableViewOptions table={table} />}
           pageIndex={pageIndex}
           pageCount={data.pageCount}
           canPrev={pageIndex > 0}

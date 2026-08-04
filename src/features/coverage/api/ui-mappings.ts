@@ -7,7 +7,7 @@ import type {
 
 type BadgeColor = "primary" | "secondary" | "destructive" | "info" | "warning" | "success"
 interface BadgeProps {
-  variant: "fill" | "outline"
+  variant: "soft"
   color: BadgeColor
 }
 
@@ -42,9 +42,9 @@ export const RESERVATION_STATUS_LABELS: Record<ReservationStatus, string> = {
 }
 
 export const RESERVATION_STATUS_BADGE: Record<ReservationStatus, BadgeProps> = {
-  confirmada: { variant: "fill", color: "success" },
-  pendiente: { variant: "fill", color: "warning" },
-  vencida: { variant: "fill", color: "destructive" },
+  confirmada: { variant: "soft", color: "success" },
+  pendiente: { variant: "soft", color: "warning" },
+  vencida: { variant: "soft", color: "destructive" },
 }
 
 export const RESERVATION_GROUP_BY_LABELS: Record<ReservationGroupBy, string> = {

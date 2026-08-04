@@ -59,7 +59,7 @@ export function ExportSelectedSessionOperationsDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
-        render={<Button color="primary" aria-label={`Exportar ${count} seleccionadas`} />}
+        render={<Button color="primary" size="sm" aria-label={`Exportar ${count} seleccionadas`} />}
       >
         <DownloadSimpleIcon data-icon="inline-start" />
         <span aria-hidden="true" className="md:hidden">

@@ -83,7 +83,7 @@ export function DialogBulkDelete<T>({
               type="button"
               variant="fill"
               color="destructive"
-              size="lg"
+              size="sm"
               aria-label={triggerLabel}
             />
           }

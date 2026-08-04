@@ -23,7 +23,6 @@ export const columns: ColumnDef<SessionOperation>[] = [
     id: "select",
     header: ({ table }) => (
       <Checkbox
-        color="neutral"
         aria-label="Seleccionar página"
         className="translate-y-0.5"
         checked={table.getIsAllPageRowsSelected()}
@@ -33,7 +32,6 @@ export const columns: ColumnDef<SessionOperation>[] = [
     ),
     cell: ({ row }) => (
       <Checkbox
-        color="neutral"
         aria-label={`Seleccionar ${row.original.entityName}`}
         className="translate-y-0.5"
         checked={row.getIsSelected()}
@@ -53,7 +51,7 @@ export const columns: ColumnDef<SessionOperation>[] = [
     meta: { label: "Tabla" },
     header: () => <span className="text-xs font-medium">Tabla</span>,
     cell: ({ row }) => (
-      <Badge variant="fill" color="muted">
+      <Badge variant="soft" color="muted">
         {row.original.tableSlug}
       </Badge>
     ),

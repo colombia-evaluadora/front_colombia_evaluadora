@@ -42,7 +42,7 @@ export function DeleteAllPaymentsDialog({ filters }: DeleteAllPaymentsDialogProp
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger
-        render={<Button variant="fill" color="destructive" aria-label="Eliminar pagos filtrados" />}
+        render={<Button variant="fill" color="destructive" size="sm" aria-label="Eliminar pagos filtrados" />}
       >
         <TrashIcon />
         <span className="sr-only md:not-sr-only">Eliminar</span>

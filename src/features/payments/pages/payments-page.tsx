@@ -1,20 +1,16 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 
 import { PaymentsDataTable } from "../components/table/payments-table"
 
 export function PaymentsPage() {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Pagos</CardTitle>
-        <CardDescription>
-          Listado de pagos con filtros, orden y paginación resueltos vía un endpoint de query
-          simulado (POST /payments/query).
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <PaymentsDataTable />
-      </CardContent>
+    // `overflow-visible`: el `overflow-hidden` del Card anularía el sticky
+    // del encabezado.
+    <Card className="overflow-visible">
+      <PaymentsDataTable
+        title="Pagos"
+        description="Listado de pagos con filtros, orden y paginación resueltos vía un endpoint de query simulado (POST /payments/query)."
+      />
     </Card>
   )
 }

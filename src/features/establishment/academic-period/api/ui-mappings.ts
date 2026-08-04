@@ -4,7 +4,7 @@ import type { RatingScaleType } from "./types/rating-scales"
 
 type BadgeColor = "primary" | "secondary" | "muted" | "destructive" | "info" | "warning" | "success"
 interface BadgeProps {
-  variant: "fill" | "outline" | "soft"
+  variant: "soft"
   color: BadgeColor
 }
 
@@ -12,8 +12,8 @@ interface BadgeProps {
 // `useAcademicPeriodStatusesQuery`). Acá solo queda el color del badge, que el
 // back no envía.
 export const ACADEMIC_PERIOD_STATUS_BADGE: Record<AcademicPeriodStatus, BadgeProps> = {
-  ACTIVO: { variant: "fill", color: "success" },
-  INACTIVO: { variant: "fill", color: "secondary" },
+  ACTIVO: { variant: "soft", color: "success" },
+  INACTIVO: { variant: "soft", color: "secondary" },
 }
 
 export const EVALUATION_PERIOD_STATUSES: EvaluationPeriodStatus[] = [
@@ -34,6 +34,6 @@ export const EVALUATION_PERIOD_STATUS_BADGE: Record<
 }
 
 export const RATING_SCALE_TYPE_BADGE: Record<RatingScaleType, BadgeProps> = {
-  Fortaleza: { variant: "fill", color: "success" },
-  Debilidad: { variant: "fill", color: "destructive" },
+  Fortaleza: { variant: "soft", color: "success" },
+  Debilidad: { variant: "soft", color: "destructive" },
 }

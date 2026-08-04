@@ -1,11 +1,4 @@
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 
 import { AuditSessionDataTable } from "../components/table/audit-session-table"
 import { Button } from "@/components/ui/button"
@@ -14,9 +7,13 @@ import { Link } from "@tanstack/react-router"
 
 export function AuditSessionPage() {
   return (
-    <Card>
-      <CardHeader>
-        <CardAction>
+    // `overflow-visible`: el `overflow-hidden` del Card anularía el sticky
+    // del encabezado.
+    <Card className="overflow-visible">
+      <AuditSessionDataTable
+        title="Registro de actividad por sesión"
+        description="Historial de sesiones de usuario: autor, origen, duración y estado."
+        action={
           <Button
             variant="ghost"
             size="sm"
@@ -25,15 +22,8 @@ export function AuditSessionPage() {
           >
             Por tablas
           </Button>
-        </CardAction>
-        <CardTitle>Auditoría por sesión</CardTitle>
-        <CardDescription>
-          Historial de sesiones de usuario: autor, origen, duración y estado.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <AuditSessionDataTable />
-      </CardContent>
+        }
+      />
     </Card>
   )
 }

@@ -88,7 +88,6 @@ export function TabAreaSubject({ academicPeriodId }: TabAreaSubjectProps) {
               <ExportAreaSubjectsDialog filters={queryFilters} />
             </>
           )}
-          <DataTableViewOptions table={table} />
         </div>
       </div>
 
@@ -104,6 +103,7 @@ export function TabAreaSubject({ academicPeriodId }: TabAreaSubjectProps) {
       />
       {data && (
         <Pagination
+          viewOptions={<DataTableViewOptions table={table} />}
           pageIndex={pageIndex}
           pageCount={data.pageCount}
           canPrev={pageIndex > 0}

@@ -77,7 +77,6 @@ export function createAcademicAssignmentColumns({
       id: "select",
       header: ({ table }) => (
         <Checkbox
-          color="neutral"
           aria-label="Seleccionar página"
           className="translate-y-0.5"
           checked={table.getIsAllPageRowsSelected()}
@@ -90,7 +89,6 @@ export function createAcademicAssignmentColumns({
       ),
       cell: ({ row }) => (
         <Checkbox
-          color="neutral"
           aria-label={`Seleccionar ${row.original.name}`}
           className="translate-y-0.5"
           checked={row.getIsSelected()}
@@ -138,7 +136,7 @@ export function createAcademicAssignmentColumns({
             <Tooltip>
               <TooltipTrigger
                 render={
-                  <Badge variant="outline" color="neutral" className="font-normal">
+                  <Badge variant="soft" color="neutral" className="font-normal">
                     {fullText}
                   </Badge>
                 }

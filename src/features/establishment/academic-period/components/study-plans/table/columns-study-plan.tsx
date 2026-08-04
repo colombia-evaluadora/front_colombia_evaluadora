@@ -21,7 +21,6 @@ export function createStudyPlanColumns({
     id: "select",
     header: ({ table }) => (
       <Checkbox
-        color="neutral"
         aria-label="Seleccionar página"
         className="translate-y-0.5"
         checked={table.getIsAllPageRowsSelected()}
@@ -34,7 +33,6 @@ export function createStudyPlanColumns({
     ),
     cell: ({ row }) => (
       <Checkbox
-        color="neutral"
         aria-label={`Seleccionar ${row.original.asignatura}`}
         className="translate-y-0.5"
         checked={row.getIsSelected()}

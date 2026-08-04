@@ -17,7 +17,6 @@ export const columns: ColumnDef<Establishment>[] = [
     id: "select",
     header: ({ table }) => (
       <Checkbox
-        color="neutral"
         aria-label="Seleccionar página"
         className="translate-y-0.5"
         checked={table.getIsAllPageRowsSelected()}
@@ -30,7 +29,6 @@ export const columns: ColumnDef<Establishment>[] = [
     ),
     cell: ({ row }) => (
       <Checkbox
-        color="neutral"
         aria-label={`Seleccionar ${row.original.name}`}
         className="translate-y-0.5"
         checked={row.getIsSelected()}
@@ -53,6 +51,9 @@ export const columns: ColumnDef<Establishment>[] = [
     id: "name",
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Establecimiento" />
+    ),
+    cell: ({ row }) => (
+      <p className="uppercase font-bold">{row.getValue("name")}</p>
     ),
   },
   {

@@ -1,7 +1,10 @@
 "use no memo"
 
+import type { ReactNode } from "react"
+
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
+import { TablePageHeader } from "@/components/table-page-header"
 import { useDataTable } from "@/hooks/use-data-table"
 import { useTablePagination } from "@/hooks/use-table-pagination"
 import { useSessionOperationsQuery } from "../../api/query/use-session-operations-query"
@@ -15,9 +18,18 @@ import { ClearSelectionSessionOperationsDialog } from "../dialogs/dialog-clear-s
 
 interface SessionOperationsDataTableProps {
   sessionId: string
+  title: ReactNode
+  description?: ReactNode
+  // Acción de navegación del encabezado (ej. "Volver").
+  action?: ReactNode
 }
 
-export function SessionOperationsDataTable({ sessionId }: SessionOperationsDataTableProps) {
+export function SessionOperationsDataTable({
+  sessionId,
+  title,
+  description,
+  action,
+}: SessionOperationsDataTableProps) {
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
   const { filters, queryFilters, applyFilters, clearAllFilters, activeFilterCount } =
     useSessionOperationsFilters()
@@ -45,50 +57,55 @@ export function SessionOperationsDataTable({ sessionId }: SessionOperationsDataT
 
   return (
     <>
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <SearchSessionOperations
-          activeFilterCount={activeFilterCount}
-          filters={filters}
-          applyFilters={applyFilters}
-          clearAllFilters={clearAllFilters}
-        />
+      <TablePageHeader title={title} description={description} action={action}>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <SearchSessionOperations
+            activeFilterCount={activeFilterCount}
+            filters={filters}
+            applyFilters={applyFilters}
+            clearAllFilters={clearAllFilters}
+          />
 
-        <div className="flex gap-2">
-          {hasSelection ? (
-            <>
-              <ClearSelectionSessionOperationsDialog resetSelection={resetSelection} />
-              <ExportSelectedSessionOperationsDialog
-                sessionId={sessionId}
-                selectedIds={selectedIds}
-                resetSelection={resetSelection}
-              />
-            </>
-          ) : (
-            <ExportSessionOperationsDialog sessionId={sessionId} />
-          )}
-          <DataTableViewOptions table={table} />
+          <div className="flex gap-2">
+            {hasSelection ? (
+              <>
+                <ClearSelectionSessionOperationsDialog resetSelection={resetSelection} />
+                <ExportSelectedSessionOperationsDialog
+                  sessionId={sessionId}
+                  selectedIds={selectedIds}
+                  resetSelection={resetSelection}
+                />
+              </>
+            ) : (
+              <ExportSessionOperationsDialog sessionId={sessionId} />
+            )}
+          </div>
         </div>
-      </div>
-      <DataTable
-        table={table}
-        isPending={isPending}
-        isError={isError}
-        onRetry={refetch}
-        emptyMessage="Sin resultados."
-        errorMessage="Ocurrió un error al cargar las operaciones."
-      />
-      {data && (
-        <Pagination
-          pageIndex={pageIndex}
-          pageCount={data.pageCount}
-          canPrev={pageIndex > 0}
-          canNext={pageIndex < data.pageCount - 1}
-          onPageChange={goToPage}
-          totalCount={data.totalCount}
-          pageSize={pageSize}
-          onPageSizeChange={setPageSize}
+      </TablePageHeader>
+
+      <div className="px-(--card-spacing)">
+        <DataTable
+          table={table}
+          isPending={isPending}
+          isError={isError}
+          onRetry={refetch}
+          emptyMessage="Sin resultados."
+          errorMessage="Ocurrió un error al cargar las operaciones."
         />
-      )}
+        {data && (
+          <Pagination
+            viewOptions={<DataTableViewOptions table={table} />}
+            pageIndex={pageIndex}
+            pageCount={data.pageCount}
+            canPrev={pageIndex > 0}
+            canNext={pageIndex < data.pageCount - 1}
+            onPageChange={goToPage}
+            totalCount={data.totalCount}
+            pageSize={pageSize}
+            onPageSizeChange={setPageSize}
+          />
+        )}
+      </div>
     </>
   )
 }

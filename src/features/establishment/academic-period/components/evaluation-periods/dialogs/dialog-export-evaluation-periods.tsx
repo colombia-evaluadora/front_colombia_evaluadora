@@ -60,7 +60,7 @@ export function ExportEvaluationPeriodsDialog({
       <DialogTrigger
         render={
           <Button
-            variant="outline" color="muted" size="icon"
+            variant="outline" color="muted" size="icon-sm"
             aria-label="Exportar periodos de evaluación"
           />
         }

@@ -30,7 +30,6 @@ export const columns: ColumnDef<AcademicPeriod>[] = [
     id: "select",
     header: ({ table }) => (
       <Checkbox
-        color="neutral"
         aria-label="Seleccionar página"
         className="translate-y-0.5"
         checked={table.getIsAllPageRowsSelected()}
@@ -43,7 +42,6 @@ export const columns: ColumnDef<AcademicPeriod>[] = [
     ),
     cell: ({ row }) => (
       <Checkbox
-        color="neutral"
         aria-label={`Seleccionar periodo ${row.original.name}`}
         className="translate-y-0.5"
         checked={row.getIsSelected()}
@@ -71,7 +69,7 @@ export const columns: ColumnDef<AcademicPeriod>[] = [
       <DataTableColumnHeader column={column} title="Sede" />
     ),
     cell: ({ row }) => (
-      <span className="truncate">{row.original.sedeName}</span>
+      <span className="truncate font-bold uppercase">{row.original.sedeName}</span>
     ),
   },
   {

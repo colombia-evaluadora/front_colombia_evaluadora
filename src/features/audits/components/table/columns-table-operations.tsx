@@ -30,7 +30,6 @@ export const columns: ColumnDef<TableOperation>[] = [
     id: "select",
     header: ({ table }) => (
       <Checkbox
-        color="neutral"
         aria-label="Seleccionar página"
         className="translate-y-0.5"
         checked={table.getIsAllPageRowsSelected()}
@@ -40,7 +39,6 @@ export const columns: ColumnDef<TableOperation>[] = [
     ),
     cell: ({ row }) => (
       <Checkbox
-        color="neutral"
         aria-label={`Seleccionar ${row.original.entityName}`}
         className="translate-y-0.5"
         checked={row.getIsSelected()}
@@ -81,7 +79,7 @@ export const columns: ColumnDef<TableOperation>[] = [
           </Avatar>
           <div className="flex min-w-0 flex-col gap-1">
             <span className="truncate font-semibold">{op.authorName}</span>
-            <Badge variant="fill" color="muted">
+            <Badge variant="soft" color="muted">
               {op.ip}
             </Badge>
           </div>

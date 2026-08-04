@@ -3,7 +3,7 @@ import type { OperationType } from "./types/audit-table"
 
 type BadgeColor = "primary" | "secondary" | "destructive" | "info" | "warning" | "success"
 interface BadgeProps {
-  variant: "fill" | "outline"
+  variant: "soft"
   color: BadgeColor
 }
 
@@ -12,12 +12,12 @@ interface BadgeProps {
 // `useAuditOperationTypesQuery`). Acá solo queda el color del badge, que
 // el back no envía.
 export const SESSION_STATUS_BADGE: Record<SessionStatus, BadgeProps> = {
-  active: { variant: "fill", color: "success" },
-  closed: { variant: "fill", color: "secondary" },
+  active: { variant: "soft", color: "success" },
+  closed: { variant: "soft", color: "secondary" },
 }
 
 export const OPERATION_TYPE_BADGE: Record<OperationType, BadgeProps> = {
-  INSERT: { variant: "fill", color: "info" },
-  UPDATE: { variant: "fill", color: "warning" },
-  DELETE: { variant: "fill", color: "destructive" },
+  INSERT: { variant: "soft", color: "info" },
+  UPDATE: { variant: "soft", color: "warning" },
+  DELETE: { variant: "soft", color: "destructive" },
 }

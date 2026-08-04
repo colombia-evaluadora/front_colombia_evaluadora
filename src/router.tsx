@@ -263,8 +263,12 @@ const COBERTURA_CRUMB = {
   label: "Cobertura",
   to: paths.app.coberturaReservaCupo.getHref(),
 }
-const AUDITORIA_CRUMB = {
-  label: "Auditoría",
+const ADMINISTRACION_CRUMB = {
+  label: "Administración",
+  to: paths.app.auditoriaSesiones.getHref(),
+}
+const REGISTRO_ACTIVIDAD_CRUMB = {
+  label: "Registro de actividad",
   to: paths.app.auditoriaSesiones.getHref(),
 }
 
@@ -310,7 +314,9 @@ export const auditoriaSesionesRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.auditoriaSesiones.path,
   validateSearch: auditsSearchSchema,
-  staticData: { breadcrumb: [AUDITORIA_CRUMB, { label: "Sesiones" }] },
+  staticData: {
+    breadcrumb: [ADMINISTRACION_CRUMB, { label: "Registro de actividad" }],
+  },
   component: AuditSessionPage,
 })
 
@@ -318,7 +324,13 @@ export const auditoriaTablasRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.auditoriaTablas.path,
   validateSearch: auditTablesSearchSchema,
-  staticData: { breadcrumb: [AUDITORIA_CRUMB, { label: "Tablas" }] },
+  staticData: {
+    breadcrumb: [
+      ADMINISTRACION_CRUMB,
+      REGISTRO_ACTIVIDAD_CRUMB,
+      { label: "Tablas" },
+    ],
+  },
   component: AuditTablesPage,
 })
 
@@ -328,7 +340,8 @@ export const auditoriaTablaDetalleRoute = createRoute({
   validateSearch: tableOperationsSearchSchema,
   staticData: {
     breadcrumb: (params) => [
-      AUDITORIA_CRUMB,
+      ADMINISTRACION_CRUMB,
+      REGISTRO_ACTIVIDAD_CRUMB,
       { label: "Tablas", to: paths.app.auditoriaTablas.getHref() },
       { label: humanizeSlug(params.tableSlug) },
     ],
@@ -402,8 +415,8 @@ export const auditoriaSesionOperacionesRoute = createRoute({
   // El `sessionId` es un identificador opaco: no se muestra como miga.
   staticData: {
     breadcrumb: [
-      AUDITORIA_CRUMB,
-      { label: "Sesiones", to: paths.app.auditoriaSesiones.getHref() },
+      ADMINISTRACION_CRUMB,
+      REGISTRO_ACTIVIDAD_CRUMB,
       { label: "Operaciones" },
     ],
   },

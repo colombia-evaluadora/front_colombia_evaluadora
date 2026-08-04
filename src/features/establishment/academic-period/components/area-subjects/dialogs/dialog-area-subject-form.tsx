@@ -2,8 +2,8 @@ import { useMemo, useRef, useState } from "react"
 import { useForm } from "@tanstack/react-form"
 import {
   CheckIcon,
+  ControlPointIcon,
   PencilIcon,
-  PlusCircleIcon,
   PlusIcon,
   SpinnerIcon,
   TrashIcon,
@@ -322,7 +322,7 @@ export function AreaSubjectFormDialog({
           </DialogTrigger>
         ) : (
           <DialogTrigger render={<Button color="primary" size="sm" />}>
-            <PlusCircleIcon weight="fill" data-icon="inline-start" />
+            <ControlPointIcon data-icon="inline-start" />
             Agregar
           </DialogTrigger>
         )}
@@ -444,7 +444,7 @@ export function AreaSubjectFormDialog({
                         setConfirmOpen(true)
                       }}
                     >
-                      <PlusCircleIcon weight="fill" data-icon="inline-start" />
+                      <ControlPointIcon data-icon="inline-start" />
                       Añadir asignatura
                     </Button>
                   </div>

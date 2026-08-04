@@ -5,8 +5,8 @@ import {
   ArrowDownIcon,
   ArrowUpIcon,
   CaretUpDownIcon,
-  ColumnsIcon,
   EyeSlashIcon,
+  GearIcon,
 } from "@/components/ui/icons"
 
 import { Button } from "@/components/ui/button"
@@ -135,7 +135,7 @@ export function DataTableViewOptions({ table }: DataTableViewOptionsProps) {
           <Button variant="outline" color="muted" size="icon" aria-label="Columnas visibles" />
         }
       >
-        <ColumnsIcon />
+        <GearIcon />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-44">
         <DropdownMenuGroup>
