@@ -423,7 +423,7 @@ export function CreateGradeDialog({
             {saving && (
               <SpinnerIcon data-icon="inline-start" className="animate-spin" />
             )}
-            {gradeId == null ? "Crear grado" : "Guardar cambios"}
+            {gradeId == null ? "Crear" : "Guardar"}
           </Button>
           <DialogClose render={<Button type="button" variant="outline" />}>
             Cerrar
