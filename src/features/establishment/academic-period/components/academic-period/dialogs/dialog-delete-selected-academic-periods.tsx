@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 
 import { SpinnerIcon, TrashIcon } from "@/components/ui/icons"
 
@@ -47,7 +48,7 @@ export function DeleteSelectedAcademicPeriodsDialog({
         variant: "error",
       })
     } else {
-      notify(`${ids.length} periodo(s) eliminado(s).`)
+      notify(SUCCESS_MESSAGES.academicPeriod.deletedMany(ids.length))
     }
     setOpen(false)
     resetSelection()

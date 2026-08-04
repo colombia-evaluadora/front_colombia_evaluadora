@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from "react"
+import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { ControlPointIcon, PencilIcon, SpinnerIcon } from "@/components/ui/icons"
 
 import { useNotify, NoticeOutlet } from "../../common/notice-context"
@@ -150,7 +151,7 @@ export function CreateGradeDialog({
         }
         await promotionRef.current?.save(gradeId)
         await scheduleRef.current?.save(gradeId)
-        notify("Cambios guardados.")
+        notify(SUCCESS_MESSAGES.grade.updated)
       }
     } catch {
       notify("Ocurrió un error al guardar el grado.", { variant: "error" })

@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from "react"
+import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { useForm } from "@tanstack/react-form"
 import {
   CheckIcon,
@@ -166,7 +167,7 @@ export function AreaSubjectFormDialog({
         }
 
         setOpen(false)
-        notify("El área/asignatura se actualizó correctamente.")
+        notify(SUCCESS_MESSAGES.areaSubject.updated)
         return
       }
 

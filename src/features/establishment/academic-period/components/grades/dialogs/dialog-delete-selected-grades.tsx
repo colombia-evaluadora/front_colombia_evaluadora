@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 
 import { SpinnerIcon, TrashIcon } from "@/components/ui/icons"
 
@@ -48,7 +49,7 @@ export function DeleteSelectedGradesDialog({
         variant: "error",
       })
     } else {
-      notify(`Se eliminaron ${ids.length} grado(s) correctamente.`)
+      notify(SUCCESS_MESSAGES.grade.deletedMany(ids.length))
     }
     setOpen(false)
     resetSelection()

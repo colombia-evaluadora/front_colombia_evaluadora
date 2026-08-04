@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react"
+import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { useForm } from "@tanstack/react-form"
 import { ControlPointIcon, PencilIcon, SpinnerIcon } from "@/components/ui/icons"
 
@@ -104,7 +105,7 @@ export function CreateGradeGroupDialog({
   const createGradeGroup = useCreateGradeGroup({
     mutationConfig: {
       onSuccess: () => {
-        notify("Grupo creado.")
+        notify(SUCCESS_MESSAGES.gradeGroup.created)
         form.reset()
         setOpen(false)
       },
@@ -118,7 +119,7 @@ export function CreateGradeGroupDialog({
           notify(result.message, { variant: "error" })
           return
         }
-        notify(result.message)
+        notify(SUCCESS_MESSAGES.gradeGroup.updated)
         setOpen(false)
       },
     },

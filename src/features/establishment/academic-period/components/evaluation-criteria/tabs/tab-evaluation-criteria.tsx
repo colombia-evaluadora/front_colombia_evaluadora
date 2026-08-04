@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from "react"
+import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { useForm } from "@tanstack/react-form"
 
 import { useNotify, NoticeOutlet } from "../../common/notice-context"
@@ -131,7 +132,7 @@ export function TabEvaluationCriteria({
           notify(result.message, { variant: "error" })
           return
         }
-        notify(result.message)
+        notify(SUCCESS_MESSAGES.evaluationCriteria.updated)
       },
     },
   })
@@ -144,7 +145,7 @@ export function TabEvaluationCriteria({
         saveCriteria.mutate({ academicPeriodId, values: value })
         return
       }
-      notify("Criterios de evaluación guardados.")
+      notify(SUCCESS_MESSAGES.evaluationCriteria.updated)
     },
   })
 

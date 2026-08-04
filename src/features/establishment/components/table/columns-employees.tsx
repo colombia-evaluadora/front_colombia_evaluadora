@@ -15,8 +15,11 @@ interface EmployeeColumnsOptions {
   onEdit: (employeeId: string) => void
 }
 
+// Cuántas sedes se listan por nombre antes de resumir el resto en un "+N".
+const VISIBLE_CAMPUSES = 2
+
 function formatCampusNames(campuses: string[]) {
-  return campuses.join(" · ")
+  return campuses.join(", ")
 }
 
 /**
@@ -130,18 +133,31 @@ export function createEmployeeColumns({ onEdit }: EmployeeColumnsOptions): Colum
     enableSorting: false,
     cell: ({ row }) => {
       const campuses = row.original.campuses
-      const fullText = formatCampusNames(campuses)
+
+      if (campuses.length === 0) {
+        return <span className="text-sm text-foreground">—</span>
+      }
+
+      const extra = campuses.length - VISIBLE_CAMPUSES
 
       return (
         <Tooltip>
           <TooltipTrigger
             render={
-              <div className="max-w-[18rem] truncate text-sm text-foreground">
-                {fullText}
+              // El "+N" va fuera del `truncate` y con `shrink-0`: si compartiera
+              // el bloque que se recorta, se lo comerían los puntos suspensivos
+              // justo cuando hace falta leerlo.
+              <div className="flex max-w-[18rem] items-center gap-1 text-sm text-foreground">
+                <span className="truncate">
+                  {formatCampusNames(campuses.slice(0, VISIBLE_CAMPUSES))}
+                </span>
+                {extra > 0 ? (
+                  <span className="shrink-0 text-muted-foreground">+{extra}</span>
+                ) : null}
               </div>
             }
           />
-          <TooltipContent>{fullText}</TooltipContent>
+          <TooltipContent>{formatCampusNames(campuses)}</TooltipContent>
         </Tooltip>
       )
     },

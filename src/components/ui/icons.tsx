@@ -48,7 +48,7 @@ import {
   MdOutlineImage,
   MdOutlineEmail,
   MdErrorOutline,
-  MdFilterAlt,
+  MdOutlineFilterList,
   MdFolderOpen,
   MdFormatBold,
   MdFormatItalic,
@@ -184,7 +184,7 @@ export const FilePdfIcon = makeIcon(MdPictureAsPdf)
 export const FileTextIcon = makeIcon(MdDescription)
 export const FileXlsIcon = makeIcon(MdTableChart)
 export const FolderOpenIcon = makeIcon(MdFolderOpen)
-export const FunnelIcon = makeIcon(MdFilterAlt)
+export const FunnelIcon = makeIcon(MdOutlineFilterList)
 export const GavelIcon = makeIcon(MdGavel)
 export const GearIcon = makeIcon(MdSettings)
 export const GenderIntersexIcon = makeIcon(MdTransgender)

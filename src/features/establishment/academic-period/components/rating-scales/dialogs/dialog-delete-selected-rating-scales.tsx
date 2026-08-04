@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 
 import { SpinnerIcon, TrashIcon } from "@/components/ui/icons"
 
@@ -46,7 +47,7 @@ export function DeleteSelectedRatingScalesDialog({
     if (result.status === "error") {
       notify("No se pudieron eliminar las escalas.", { variant: "error" })
     } else {
-      notify(`${count} escala(s) de valoración eliminada(s).`)
+      notify(SUCCESS_MESSAGES.ratingScale.deletedMany(count))
     }
     setOpen(false)
     resetSelection()

@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 
 import { SpinnerIcon, TrashIcon } from "@/components/ui/icons"
 
@@ -39,7 +40,7 @@ export function DeleteEvaluationPeriodDialog({
           return
         }
         setOpen(false)
-        notify("El periodo de evaluación se eliminó correctamente.")
+        notify(SUCCESS_MESSAGES.evaluationPeriod.deleted)
       },
     },
   })
