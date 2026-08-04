@@ -2,10 +2,10 @@ import { useState } from "react"
 
 import { useForm } from "@tanstack/react-form"
 import {
+  ControlPointIcon,
   PencilIcon,
   PlusCircleIcon,
   TrashIcon,
-  PlusIcon,
   XIcon,
   SpinnerIcon,
 } from "@/components/ui/icons"
@@ -346,7 +346,7 @@ function FieldFilterSection({ field, availableFields }: FieldFilterSectionProps)
           />
         </Field>
         <Button type="button" onClick={handleAdd} disabled={!composerReady}>
-          <PlusIcon data-icon="inline-start" weight="bold" />
+          <ControlPointIcon data-icon="inline-start" />
           Agregar
         </Button>
       </FieldGroup>

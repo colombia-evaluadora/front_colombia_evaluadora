@@ -1,3 +1,5 @@
+import type { ReactNode } from "react"
+
 import {
   Pagination as UIPagination,
   PaginationContent,
@@ -20,6 +22,9 @@ import {
 } from "@/components/ui/select"
 
 interface PaginationProps {
+  // Controles extra que viven junto a la paginación, bajo la tabla (hoy: el
+  // menú de columnas visibles, `DataTableViewOptions`).
+  viewOptions?: ReactNode
   pageIndex: number
   pageCount: number
   canPrev: boolean
@@ -44,6 +49,7 @@ function buildPageRange(current: number, total: number): (number | "ellipsis")[]
 }
 
 export function Pagination({
+  viewOptions,
   pageIndex,
   pageCount,
   canPrev,
@@ -60,6 +66,8 @@ export function Pagination({
       <p className="shrink-0 text-sm text-muted-foreground">{totalCount} registro(s)</p>
 
       <div className="flex min-w-0 items-center justify-end gap-2 sm:gap-6">
+        {viewOptions}
+
         <Field orientation="horizontal" className="hidden w-fit lg:flex">
           <FieldLabel htmlFor="rows-per-page" className="text-sm">
             Filas

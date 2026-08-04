@@ -44,6 +44,8 @@ import {
   MdEvent,
   MdExplore,
   MdOutlineChromeReaderMode,
+  MdOutlineControlPoint,
+  MdOutlineImage,
   MdOutlineEmail,
   MdErrorOutline,
   MdFilterAlt,
@@ -74,6 +76,7 @@ import {
   MdMenuBook,
   MdMilitaryTech,
   MdMoreHoriz,
+  MdOutlineAdminPanelSettings,
   MdOutlinePassword,
   MdOutlineShield,
   MdPalette,
@@ -130,6 +133,7 @@ function makeIcon(Base: IconType): Icon {
 }
 
 export const AddressBookIcon = makeIcon(MdContacts)
+export const AdminPanelSettingsIcon = makeIcon(MdOutlineAdminPanelSettings)
 export const ArrowCounterClockwiseIcon = makeIcon(MdRefresh)
 export const ArrowDownIcon = makeIcon(MdArrowDownward)
 export const ArrowLeftIcon = makeIcon(MdArrowBack)
@@ -165,6 +169,9 @@ export const ClockCountdownIcon = makeIcon(MdTimelapse)
 export const ClockIcon = makeIcon(MdAccessTime)
 export const ColumnsIcon = makeIcon(MdViewColumn)
 export const CompassIcon = makeIcon(MdExplore)
+// Ícono de las acciones "Agregar" (crear un registro), para distinguirlas de
+// `PlusIcon`/`PlusCircleIcon`, que se usan en sumas dentro de un formulario.
+export const ControlPointIcon = makeIcon(MdOutlineControlPoint)
 export const CreditCardIcon = makeIcon(MdCreditCard)
 export const CurrencyDollarIcon = makeIcon(MdAttachMoney)
 export const DotsThreeIcon = makeIcon(MdMoreHoriz)
@@ -187,6 +194,7 @@ export const HeadsetIcon = makeIcon(MdSupportAgent)
 export const HouseIcon = makeIcon(MdHome)
 export const HouseLineIcon = makeIcon(MdHomeWork)
 export const IdentificationCardIcon = makeIcon(MdBadge)
+export const ImageIcon = makeIcon(MdOutlineImage)
 export const InfoIcon = makeIcon(MdInfoOutline)
 export const KeyIcon = makeIcon(MdKey)
 export const LightningIcon = makeIcon(MdBolt)

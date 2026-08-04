@@ -16,7 +16,6 @@ export const columns: ColumnDef<Campus>[] = [
     id: "select",
     header: ({ table }) => (
       <Checkbox
-        color="neutral"
         aria-label="Seleccionar página"
         className="translate-y-0.5"
         checked={table.getIsAllPageRowsSelected()}
@@ -29,7 +28,6 @@ export const columns: ColumnDef<Campus>[] = [
     ),
     cell: ({ row }) => (
       <Checkbox
-        color="neutral"
         aria-label={`Seleccionar ${row.original.name}`}
         className="translate-y-0.5"
         checked={row.getIsSelected()}
@@ -46,6 +44,9 @@ export const columns: ColumnDef<Campus>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Nombre de la sede" />
     ),
+    cell: ({ row }) => (
+      <p className="uppercase font-bold">{row.getValue("name")}</p>
+    ),
   },
   {
     accessorKey: "dane",
@@ -61,7 +62,7 @@ export const columns: ColumnDef<Campus>[] = [
       <DataTableColumnHeader column={column} title="Zona" />
     ),
     cell: ({ row }) => (
-      <Badge variant="fill" color="muted">
+      <Badge variant="soft" color="muted">
         {row.original.zone.name}
       </Badge>
     ),

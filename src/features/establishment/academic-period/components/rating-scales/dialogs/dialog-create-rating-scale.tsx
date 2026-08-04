@@ -2,8 +2,8 @@ import { useMemo, useRef, useState } from "react"
 import { useForm } from "@tanstack/react-form"
 import {
   CheckIcon,
+  ControlPointIcon,
   PencilIcon,
-  PlusCircleIcon,
   SpinnerIcon,
   TrashIcon,
   XIcon,
@@ -212,7 +212,7 @@ export function CreateRatingScaleDialog({
       }}
     >
       <DialogTrigger render={<Button color="primary" size="sm" />}>
-        <PlusCircleIcon weight="fill" data-icon="inline-start" />
+        <ControlPointIcon data-icon="inline-start" />
         Agregar
       </DialogTrigger>
       <DialogContent
@@ -483,7 +483,7 @@ export function CreateRatingScaleDialog({
                           size="sm"
                           className="w-full"
                         >
-                          <PlusCircleIcon data-icon="inline-start" />
+                          <ControlPointIcon data-icon="inline-start" />
                           Agregar a la lista
                         </Button>
                       </div>

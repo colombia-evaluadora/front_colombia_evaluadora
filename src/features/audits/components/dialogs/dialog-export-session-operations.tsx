@@ -52,7 +52,7 @@ export function ExportSessionOperationsDialog({ sessionId }: ExportSessionOperat
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
-        render={<Button color="primary" aria-label="Exportar todas las operaciones" />}
+        render={<Button color="primary" size="sm" aria-label="Exportar todas las operaciones" />}
       >
         <DownloadSimpleIcon data-icon="inline-start" />
         <span className="sr-only md:not-sr-only">Exportar</span>

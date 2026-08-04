@@ -51,6 +51,7 @@ export function DeleteSelectedPaymentsDialog({
           <Button
             variant="fill"
             color="destructive"
+            size="sm"
             aria-label={`Eliminar ${count} seleccionados`}
           />
         }

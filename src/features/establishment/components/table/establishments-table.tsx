@@ -1,9 +1,10 @@
 "use no memo"
 
-import { useMemo } from "react"
+import { useMemo, type ReactNode } from "react"
 
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
+import { TablePageHeader } from "@/components/table-page-header"
 import { useDataTable } from "@/hooks/use-data-table"
 import { useTablePagination } from "@/hooks/use-table-pagination"
 
@@ -22,7 +23,20 @@ import { ExportSelectedEstablishmentsDialog } from "../dialogs/dialog-export-sel
 import { SearchEstablishments } from "../search/search-establishments"
 import { useNotify, NoticeOutlet } from "../common/notice-context"
 
-export function EstablishmentsDataTable() {
+interface EstablishmentsDataTableProps {
+  title: ReactNode
+  description?: ReactNode
+  // Acción principal de la página (ej. "Agregar"). Se renderiza dentro de la
+  // barra de herramientas, no en el encabezado, para que baje junto al
+  // buscador.
+  action?: ReactNode
+}
+
+export function EstablishmentsDataTable({
+  title,
+  description,
+  action,
+}: EstablishmentsDataTableProps) {
   const { notify } = useNotify()
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } =
     useTablePagination()
@@ -97,69 +111,74 @@ export function EstablishmentsDataTable() {
 
   return (
     <>
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-        <SearchEstablishments
-          filters={filters}
-          applyFilters={applyFilters}
-          clearAllFilters={clearAllFilters}
-          activeFilterCount={activeFilterCount}
-          statuses={establishmentStatuses}
-        />
+      <TablePageHeader title={title} description={description}>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <SearchEstablishments
+            filters={filters}
+            applyFilters={applyFilters}
+            clearAllFilters={clearAllFilters}
+            activeFilterCount={activeFilterCount}
+            statuses={establishmentStatuses}
+          />
 
-        <div className="flex items-center gap-2">
-          {hasSelection ? (
-            <>
-              <ClearSelectionDialog resetSelection={resetSelection} />
-              <DialogBulkDelete<Establishment>
-                items={selectedItems}
-                getItemId={(item) => item.id}
-                getItemLabel={(item) => item.name}
-                title="Eliminar"
-                buildDescription={(count, sample) => {
-                  const list = sample.join(", ")
-                  const suffix = count > sample.length ? ` y ${count - sample.length} más` : ""
-                  return `Se eliminarán permanentemente los establecimientos educativos ${list}${suffix} (${count} en total). Esta acción no se puede deshacer.`
-                }}
-                onConfirm={async (ids) => {
-                  await bulkDelete.mutateAsync(ids)
-                }}
-                triggerLabel={`Eliminar (${selectedIds.length})`}
-              />
-              <ExportSelectedEstablishmentsDialog
-                selectedIds={selectedIds}
-                resetSelection={resetSelection}
-              />
-            </>
-          ) : (
-            <ExportEstablishmentsDialog filters={queryFilters} />
-          )}
-          <DataTableViewOptions table={table} />
+          <div className="flex items-center gap-2">
+            {action}
+            {hasSelection ? (
+              <>
+                <ClearSelectionDialog resetSelection={resetSelection} />
+                <DialogBulkDelete<Establishment>
+                  items={selectedItems}
+                  getItemId={(item) => item.id}
+                  getItemLabel={(item) => item.name}
+                  title="Eliminar"
+                  buildDescription={(count, sample) => {
+                    const list = sample.join(", ")
+                    const suffix = count > sample.length ? ` y ${count - sample.length} más` : ""
+                    return `Se eliminarán permanentemente los establecimientos educativos ${list}${suffix} (${count} en total). Esta acción no se puede deshacer.`
+                  }}
+                  onConfirm={async (ids) => {
+                    await bulkDelete.mutateAsync(ids)
+                  }}
+                  triggerLabel={`Eliminar (${selectedIds.length})`}
+                />
+                <ExportSelectedEstablishmentsDialog
+                  selectedIds={selectedIds}
+                  resetSelection={resetSelection}
+                />
+              </>
+            ) : (
+              <ExportEstablishmentsDialog filters={queryFilters} />
+            )}
+          </div>
         </div>
-      </div>
+      </TablePageHeader>
 
-      <NoticeOutlet className="mb-3" />
+      <div className="px-(--card-spacing)">
+        <NoticeOutlet className="mb-3" />
 
-      <DataTable
-        table={table}
-        isPending={isPending}
-        isError={isError}
-        onRetry={refetch}
-        emptyMessage="Sin resultados."
-        errorMessage="Ocurrió un error al cargar los establecimientos."
-      />
-
-      {data && (
-        <Pagination
-          pageIndex={pageIndex}
-          pageCount={data.pageCount}
-          canPrev={pageIndex > 0}
-          canNext={pageIndex < data.pageCount - 1}
-          onPageChange={goToPage}
-          totalCount={data.totalCount}
-          pageSize={pageSize}
-          onPageSizeChange={setPageSize}
+        <DataTable
+          table={table}
+          isPending={isPending}
+          isError={isError}
+          onRetry={refetch}
+          emptyMessage="Sin resultados."
+          errorMessage="Ocurrió un error al cargar los establecimientos."
         />
-      )}
+
+        {data && (
+          <Pagination
+            viewOptions={<DataTableViewOptions table={table} />}
+            pageIndex={pageIndex}
+            pageCount={data.pageCount}
+            canPrev={pageIndex > 0}
+            canNext={pageIndex < data.pageCount - 1}
+            onPageChange={goToPage}
+            totalCount={data.totalCount}
+            pageSize={pageSize}
+            onPageSizeChange={setPageSize}
+          />
+        )}
+      </div>
     </>
   )
 }

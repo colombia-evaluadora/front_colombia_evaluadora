@@ -64,7 +64,7 @@ export function ExportAcademicPeriodsDialog({
           <Button
             variant="outline"
             color="muted"
-            size="icon"
+            size="icon-sm"
             aria-label="Exportar periodos filtrados"
           />
         }

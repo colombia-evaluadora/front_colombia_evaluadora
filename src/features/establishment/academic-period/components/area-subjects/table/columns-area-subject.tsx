@@ -12,7 +12,6 @@ export const columns: ColumnDef<AreaSubject>[] = [
     id: "select",
     header: ({ table }) => (
       <Checkbox
-        color="neutral"
         aria-label="Seleccionar página"
         className="translate-y-0.5"
         checked={table.getIsAllPageRowsSelected()}
@@ -25,7 +24,6 @@ export const columns: ColumnDef<AreaSubject>[] = [
     ),
     cell: ({ row }) => (
       <Checkbox
-        color="neutral"
         aria-label={`Seleccionar ${row.original.nombreInterno}`}
         className="translate-y-0.5"
         checked={row.getIsSelected()}

@@ -7,7 +7,7 @@ import { PencilIcon } from "@/components/ui/icons"
 import { DataTableColumnHeader } from "@/components/data-table"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
-import { EMPLOYEE_STATUS_LABELS } from "../../api/employee-ui-mappings"
+import { EMPLOYEE_STATUS_BADGE, EMPLOYEE_STATUS_LABELS } from "../../api/employee-ui-mappings"
 import type { EmployeeListItem } from "../../api/types/employee"
 import { DeleteEmployeeDialog } from "../dialogs/dialog-delete-employee"
 
@@ -28,16 +28,26 @@ function formatRoleNames(roles: EmployeeListItem["roles"]) {
 }
 
 /**
- * Render plano de los estados del funcionario. Sin Badge ni color: cuando
- * el funcionario mezcla permisos `ACTIVE` y `SUSPENDED`, un Badge verde/
- * rojo resultaba contradictorio con el texto concatenado (p. ej. "Activo,
- * Suspendido" en rojo). Texto neutro evita esa incoherencia.
+ * Un badge por estado, no uno solo con los estados concatenados: cuando el
+ * funcionario mezcla permisos `ACTIVE` y `SUSPENDED`, un único badge tendría
+ * que elegir un color para dos estados opuestos ("Activo, Suspendido" en
+ * rojo). Separados, cada uno lleva su color —verde activo, rojo suspendido—
+ * y la mezcla se lee sola.
  */
 function renderStatusCell(statuses: EmployeeListItem["statuses"]) {
   if (statuses.length === 0) {
     return "—"
   }
-  return statuses.map((status) => EMPLOYEE_STATUS_LABELS[status]).join(", ")
+
+  return (
+    <div className="flex flex-wrap items-center gap-1">
+      {statuses.map((status) => (
+        <Badge key={status} {...EMPLOYEE_STATUS_BADGE[status]}>
+          {EMPLOYEE_STATUS_LABELS[status]}
+        </Badge>
+      ))}
+    </div>
+  )
 }
 
 export function createEmployeeColumns({ onEdit }: EmployeeColumnsOptions): ColumnDef<EmployeeListItem>[] {
@@ -46,7 +56,6 @@ export function createEmployeeColumns({ onEdit }: EmployeeColumnsOptions): Colum
     id: "select",
     header: ({ table }) => (
       <Checkbox
-        color="neutral"
         aria-label="Seleccionar página"
         className="translate-y-0.5"
         checked={table.getIsAllPageRowsSelected()}
@@ -59,7 +68,6 @@ export function createEmployeeColumns({ onEdit }: EmployeeColumnsOptions): Colum
     ),
     cell: ({ row }) => (
       <Checkbox
-        color="neutral"
         aria-label={`Seleccionar ${row.original.name}`}
         className="translate-y-0.5"
         checked={row.getIsSelected()}
@@ -80,7 +88,7 @@ export function createEmployeeColumns({ onEdit }: EmployeeColumnsOptions): Colum
     accessorKey: "name",
     id: "name",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Nombre" />,
-    cell: ({ row }) => <div className="max-w-md truncate font-medium">{row.original.name}</div>,
+    cell: ({ row }) => <p className="uppercase font-bold">{row.original.name}</p>,
   },
   {
     accessorKey: "role",
@@ -146,7 +154,7 @@ export function createEmployeeColumns({ onEdit }: EmployeeColumnsOptions): Colum
       }
 
       return (
-        <Badge variant="outline" color="neutral">
+        <Badge variant="soft" color="neutral">
           {workSchedule.name}
         </Badge>
       )

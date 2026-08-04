@@ -44,7 +44,6 @@ export const columns: ColumnDef<AuditSession>[] = [
     id: "select",
     header: ({ table }) => (
       <Checkbox
-        color="neutral"
         aria-label="Seleccionar página"
         className="translate-y-0.5"
         checked={table.getIsAllPageRowsSelected()}
@@ -54,7 +53,6 @@ export const columns: ColumnDef<AuditSession>[] = [
     ),
     cell: ({ row }) => (
       <Checkbox
-        color="neutral"
         aria-label={`Seleccionar ${row.original.authorName}`}
         className="translate-y-0.5"
         checked={row.getIsSelected()}
@@ -85,7 +83,7 @@ export const columns: ColumnDef<AuditSession>[] = [
           </Avatar>
           <div className="flex min-w-0 flex-col gap-1">
             <span className="truncate font-semibold">{session.authorName}</span>
-            <Badge variant="fill" color="muted">
+            <Badge variant="soft" color="muted">
               {session.ip}
             </Badge>
           </div>
@@ -140,7 +138,8 @@ export const columns: ColumnDef<AuditSession>[] = [
     header: () => <span className="sr-only">Acciones</span>,
     cell: ({ row }) => (
       <Button
-        variant="ghost"
+        variant="fill"
+        color="secondary"
         size="icon-sm"
         aria-label={`Ver operaciones de la sesión de ${row.original.authorName}`}
         render={<Link to={paths.app.auditoriaSesionOperaciones.getHref(row.original.id)} />}

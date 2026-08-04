@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { PlusIcon, TrashIcon } from "@/components/ui/icons"
+import { ControlPointIcon, PlusIcon, TrashIcon } from "@/components/ui/icons"
 import {
   Select,
   SelectContent,
@@ -577,7 +577,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
 
             <div className="flex items-end md:justify-end">
               <Button variant="fill" color="info" size="sm" onClick={addPermission} className="w-full md:w-auto">
-                <PlusIcon data-icon="inline-start" />
+                <ControlPointIcon data-icon="inline-start" />
                 Agregar
               </Button>
             </div>

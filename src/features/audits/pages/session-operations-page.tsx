@@ -4,14 +4,7 @@ import { Link, useParams } from "@tanstack/react-router"
 import { Avatar, AvatarBadge, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 import { Spinner } from "@/components/ui/spinner"
 import { paths } from "@/config/paths"
 
@@ -51,10 +44,60 @@ export function SessionOperationsPage() {
         ? `${minutes}m`
         : `${Math.floor(minutes / 60)}h ${minutes % 60}m`
 
+  const title = isPending ? (
+    <div className="flex items-center gap-2 text-sm font-normal text-muted-foreground">
+      <Spinner /> Cargando sesión…
+    </div>
+  ) : isError || !session ? (
+    "Sesión no encontrada"
+  ) : (
+    <div className="flex flex-wrap items-center gap-2">
+      <Avatar>
+        {session.authorAvatarUrl && <AvatarImage src={session.authorAvatarUrl} alt="" />}
+        <AvatarFallback>{initials}</AvatarFallback>
+        {session.authorVerified && (
+          <AvatarBadge>
+            <CheckIcon weight="bold" />
+          </AvatarBadge>
+        )}
+      </Avatar>
+      {session.authorName}
+      <Badge variant="soft" color="muted">
+        {session.ip}
+      </Badge>
+      <Badge {...SESSION_STATUS_BADGE[session.status]}>{statusLabel}</Badge>
+    </div>
+  )
+
+  const description =
+    session && !isPending && !isError ? (
+      <>
+        {started?.toLocaleString("es", {
+          dateStyle: "short",
+          timeStyle: "short",
+        })}
+        {ended
+          ? ` → ${ended.toLocaleString("es", {
+              dateStyle: "short",
+              timeStyle: "short",
+            })}`
+          : " · En curso"}
+        {" · "}
+        {durationLabel}
+        {" · "}
+        {session.operationsCount} operación(es)
+      </>
+    ) : undefined
+
   return (
-    <Card>
-      <CardHeader>
-        <CardAction>
+    // `overflow-visible`: el `overflow-hidden` del Card anularía el sticky
+    // del encabezado.
+    <Card className="overflow-visible">
+      <SessionOperationsDataTable
+        sessionId={sessionId}
+        title={title}
+        description={description}
+        action={
           <Button
             variant="ghost"
             size="sm"
@@ -64,53 +107,8 @@ export function SessionOperationsPage() {
             <ArrowLeftIcon weight="bold" className="size-4" />
             Volver
           </Button>
-        </CardAction>
-        {isPending ? (
-          <div className="text-muted-foreground flex items-center gap-2 text-sm">
-            <Spinner /> Cargando sesión…
-          </div>
-        ) : isError || !session ? (
-          <CardTitle>Sesión no encontrada</CardTitle>
-        ) : (
-          <>
-            <div className="flex flex-wrap items-center gap-2">
-              <Avatar>
-                {session.authorAvatarUrl && <AvatarImage src={session.authorAvatarUrl} alt="" />}
-                <AvatarFallback>{initials}</AvatarFallback>
-                {session.authorVerified && (
-                  <AvatarBadge>
-                    <CheckIcon weight="bold" />
-                  </AvatarBadge>
-                )}
-              </Avatar>
-              <CardTitle>{session.authorName}</CardTitle>
-              <Badge variant="fill" color="muted">
-                {session.ip}
-              </Badge>
-              <Badge {...SESSION_STATUS_BADGE[session.status]}>{statusLabel}</Badge>
-            </div>
-            <CardDescription>
-              {started?.toLocaleString("es", {
-                dateStyle: "short",
-                timeStyle: "short",
-              })}
-              {ended
-                ? ` → ${ended.toLocaleString("es", {
-                    dateStyle: "short",
-                    timeStyle: "short",
-                  })}`
-                : " · En curso"}
-              {" · "}
-              {durationLabel}
-              {" · "}
-              {session.operationsCount} operación(es)
-            </CardDescription>
-          </>
-        )}
-      </CardHeader>
-      <CardContent>
-        <SessionOperationsDataTable sessionId={sessionId} />
-      </CardContent>
+        }
+      />
     </Card>
   )
 }

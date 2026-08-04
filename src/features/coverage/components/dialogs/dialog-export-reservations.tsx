@@ -48,7 +48,7 @@ export function ExportReservationsDialog({ filters }: ExportReservationsDialogPr
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="outline" aria-label="Exportar reservas filtradas" />}>
+      <DialogTrigger render={<Button variant="outline" size="sm" aria-label="Exportar reservas filtradas" />}>
         <DownloadSimpleIcon data-icon="inline-start" />
         <span className="sr-only md:not-sr-only">Exportar</span>
       </DialogTrigger>

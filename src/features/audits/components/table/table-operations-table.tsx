@@ -1,7 +1,10 @@
 "use no memo"
 
+import type { ReactNode } from "react"
+
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
+import { TablePageHeader } from "@/components/table-page-header"
 import { useDataTable } from "@/hooks/use-data-table"
 
 import { useTableOperationsQuery } from "../../api/query/use-table-operations-query"
@@ -17,7 +20,18 @@ import { ClearSelectionTableOperationsDialog } from "../dialogs/dialog-clear-sel
 import { TableOperationsStatsCards } from "../stats/table-operations-stats-cards"
 import { useParams } from "@tanstack/react-router"
 
-export function TableOperationsDataTable() {
+interface TableOperationsDataTableProps {
+  title: ReactNode
+  description?: ReactNode
+  // Acción de navegación del encabezado (ej. "Volver").
+  action?: ReactNode
+}
+
+export function TableOperationsDataTable({
+  title,
+  description,
+  action,
+}: TableOperationsDataTableProps) {
   const { tableSlug } = useParams({ strict: false }) as { tableSlug: string }
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
   const { filters, queryFilters, applyFilters, clearAllFilters, activeFilterCount } =
@@ -47,57 +61,62 @@ export function TableOperationsDataTable() {
 
   return (
     <>
-      <TableOperationsStatsCards
-        tableSlug={tableSlug}
-        selectedIds={selectedIds}
-        hasSelection={hasSelection}
-        filters={queryFilters}
-      />
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <SearchTableOperations
-          activeFilterCount={activeFilterCount}
-          filters={filters}
-          applyFilters={applyFilters}
-          clearAllFilters={clearAllFilters}
-          availableFields={availableFields}
-        />
+      <TablePageHeader title={title} description={description} action={action}>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <SearchTableOperations
+            activeFilterCount={activeFilterCount}
+            filters={filters}
+            applyFilters={applyFilters}
+            clearAllFilters={clearAllFilters}
+            availableFields={availableFields}
+          />
 
-        <div className="flex gap-2">
-          {hasSelection ? (
-            <>
-              <ClearSelectionTableOperationsDialog resetSelection={resetSelection} />
-              <ExportSelectedTableOperationsDialog
-                tableSlug={tableSlug}
-                selectedIds={selectedIds}
-                resetSelection={resetSelection}
-              />
-            </>
-          ) : (
-            <ExportTableOperationsDialog tableSlug={tableSlug} filters={queryFilters} />
-          )}
-          <DataTableViewOptions table={table} />
+          <div className="flex gap-2">
+            {hasSelection ? (
+              <>
+                <ClearSelectionTableOperationsDialog resetSelection={resetSelection} />
+                <ExportSelectedTableOperationsDialog
+                  tableSlug={tableSlug}
+                  selectedIds={selectedIds}
+                  resetSelection={resetSelection}
+                />
+              </>
+            ) : (
+              <ExportTableOperationsDialog tableSlug={tableSlug} filters={queryFilters} />
+            )}
+          </div>
         </div>
-      </div>
-      <DataTable
-        table={table}
-        isPending={isPending}
-        isError={isError}
-        onRetry={refetch}
-        emptyMessage="Sin resultados."
-        errorMessage="Ocurrió un error al cargar las operaciones."
-      />
-      {data && (
-        <Pagination
-          pageIndex={pageIndex}
-          pageCount={data.pageCount}
-          canPrev={pageIndex > 0}
-          canNext={pageIndex < data.pageCount - 1}
-          onPageChange={goToPage}
-          totalCount={data.totalCount}
-          pageSize={pageSize}
-          onPageSizeChange={setPageSize}
+      </TablePageHeader>
+
+      <div className="px-(--card-spacing)">
+        <TableOperationsStatsCards
+          tableSlug={tableSlug}
+          selectedIds={selectedIds}
+          hasSelection={hasSelection}
+          filters={queryFilters}
         />
-      )}
+        <DataTable
+          table={table}
+          isPending={isPending}
+          isError={isError}
+          onRetry={refetch}
+          emptyMessage="Sin resultados."
+          errorMessage="Ocurrió un error al cargar las operaciones."
+        />
+        {data && (
+          <Pagination
+            viewOptions={<DataTableViewOptions table={table} />}
+            pageIndex={pageIndex}
+            pageCount={data.pageCount}
+            canPrev={pageIndex > 0}
+            canNext={pageIndex < data.pageCount - 1}
+            onPageChange={goToPage}
+            totalCount={data.totalCount}
+            pageSize={pageSize}
+            onPageSizeChange={setPageSize}
+          />
+        )}
+      </div>
     </>
   )
 }

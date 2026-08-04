@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { useForm } from "@tanstack/react-form"
-import { PencilIcon, PlusCircleIcon, SpinnerIcon } from "@/components/ui/icons"
+import { ControlPointIcon, PencilIcon, SpinnerIcon } from "@/components/ui/icons"
 
 import { useNotify } from "../../common/notice-context"
 import { Button } from "@/components/ui/button"
@@ -196,7 +196,7 @@ export function CreateEvaluationPeriodDialog({
           </>
         ) : (
           <>
-            <PlusCircleIcon weight="fill" data-icon="inline-start" />
+            <ControlPointIcon data-icon="inline-start" />
             Agregar
           </>
         )}

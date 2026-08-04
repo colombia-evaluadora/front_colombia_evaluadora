@@ -174,7 +174,13 @@ function DropdownMenuCheckboxItem({
           <CheckIcon className="size-4" />
         </MenuPrimitive.CheckboxItemIndicator>
       </span>
-      {children}
+      {/*
+        block + min-w-0 en vez de dejar el texto como contenido anónimo del flex:
+        el text-overflow no aplica a ese contenido anónimo, así que la etiqueta
+        larga desbordaba el popup en vez de terminar en "…". El pr-8 del item
+        reserva el lugar del check, así que el "…" nunca se le encima.
+      */}
+      <span className="block min-w-0 flex-1 truncate">{children}</span>
     </MenuPrimitive.CheckboxItem>
   )
 }

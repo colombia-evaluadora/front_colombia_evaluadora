@@ -25,7 +25,7 @@ export function AuditTablesPage() {
             Por sesión
           </Button>
         </CardAction>
-        <CardTitle>Auditoría por tabla</CardTitle>
+        <CardTitle>Registro de actividad por tabla</CardTitle>
         <CardDescription>
           Elegí una tabla para ver el historial de operaciones sobre sus registros.
         </CardDescription>

@@ -55,7 +55,7 @@ export function ExportTableOperationsDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
-        render={<Button color="primary" aria-label="Exportar operaciones filtradas" />}
+        render={<Button color="primary" size="sm" aria-label="Exportar operaciones filtradas" />}
       >
         <DownloadSimpleIcon data-icon="inline-start" />
         <span className="sr-only md:not-sr-only">Exportar</span>

@@ -22,7 +22,6 @@ export function createGradeColumns({
     id: "select",
     header: ({ table }) => (
       <Checkbox
-        color="neutral"
         aria-label="Seleccionar página"
         className="translate-y-0.5"
         checked={table.getIsAllPageRowsSelected()}
@@ -35,7 +34,6 @@ export function createGradeColumns({
     ),
     cell: ({ row }) => (
       <Checkbox
-        color="neutral"
         aria-label={`Seleccionar ${row.original.nombre}`}
         className="translate-y-0.5"
         checked={row.getIsSelected()}

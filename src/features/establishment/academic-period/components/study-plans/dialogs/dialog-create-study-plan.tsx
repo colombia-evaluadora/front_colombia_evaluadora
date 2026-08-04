@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { useForm } from "@tanstack/react-form"
-import { PencilIcon, PlusCircleIcon, SpinnerIcon } from "@/components/ui/icons"
+import { ControlPointIcon, PencilIcon, SpinnerIcon } from "@/components/ui/icons"
 
 import { useNotify, NoticeOutlet } from "../../common/notice-context"
 import { cn } from "@/lib/utils"
@@ -183,7 +183,7 @@ export function CreateStudyPlanDialog({
           </>
         ) : (
           <>
-            <PlusCircleIcon weight="fill" data-icon="inline-start" />
+            <ControlPointIcon data-icon="inline-start" />
             Agregar
           </>
         )}

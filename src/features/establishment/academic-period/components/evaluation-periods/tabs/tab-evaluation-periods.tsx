@@ -90,7 +90,6 @@ export function TabEvaluationPeriods({
             <ExportEvaluationPeriodsDialog filters={{}} />
           </>
         )}
-        <DataTableViewOptions table={table} />
       </div>
 
       <NoticeOutlet className="mb-2" />
@@ -105,6 +104,7 @@ export function TabEvaluationPeriods({
       />
       {data && (
         <Pagination
+          viewOptions={<DataTableViewOptions table={table} />}
           pageIndex={pageIndex}
           pageCount={data.pageCount}
           canPrev={pageIndex > 0}

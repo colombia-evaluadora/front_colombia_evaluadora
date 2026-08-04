@@ -61,11 +61,11 @@ export function ExportSelectedCampusesDialog({
                     <Button
                         variant="outline"
                         color="muted"
-                        size="icon-sm"
+                        size="sm"
                         aria-label={`Exportar ${count} sedes seleccionadas`}
                     >
-                        <DownloadSimpleIcon />
-                        <span className="text-xs font-medium tabular-nums">{count}</span>
+                        <DownloadSimpleIcon data-icon="inline-start" />
+                        <span className="tabular-nums">({count})</span>
                     </Button>
                 }
             />
