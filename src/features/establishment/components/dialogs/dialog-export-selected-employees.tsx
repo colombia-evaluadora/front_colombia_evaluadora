@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button"
 
 import { useExportSelectedEmployees } from "../../api/mutations/export-selected-employees"
 import type { ExportFormat } from "../../api/types/export"
-import { useNotify } from "../common/notice-context"
+import { useNotify } from "@/components/notice/notice-context"
 
 interface ExportSelectedEmployeesDialogProps {
     selectedIds: string[]

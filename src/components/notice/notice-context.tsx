@@ -9,7 +9,7 @@ import {
 } from "react"
 import { toast } from "sonner"
 
-import { NoticeBanner, type Notice, type NoticeVariant } from "./notice-banner"
+import { NoticeBanner, type Notice, type NoticeVariant } from "@/components/notice/notice-banner"
 
 interface NotifyOptions {
   variant?: NoticeVariant

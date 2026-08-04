@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button"
 
 import { useExportSelectedCampuses } from "../../api/mutations/export-selected-campuses"
 import type { ExportFormat } from "../../api/types/export"
-import { useNotify } from "../common/notice-context"
+import { useNotify } from "@/components/notice/notice-context"
 
 interface ExportSelectedCampusesDialogProps {
     selectedIds: string[]

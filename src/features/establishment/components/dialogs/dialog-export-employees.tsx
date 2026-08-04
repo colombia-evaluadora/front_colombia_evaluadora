@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button"
 import { useExportEmployees } from "../../api/mutations/export-employees"
 import type { EmployeesQueryRequest } from "../../api/types/employee"
 import type { ExportFormat } from "../../api/types/export"
-import { useNotify } from "../common/notice-context"
+import { useNotify } from "@/components/notice/notice-context"
 
 interface ExportEmployeesDialogProps {
     filters: EmployeesQueryRequest["filters"]

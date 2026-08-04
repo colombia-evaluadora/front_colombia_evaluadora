@@ -22,7 +22,7 @@ import { ClearSelectionDialog } from "../dialogs/dialog-clear-selection"
 import { ExportCampusesDialog } from "../dialogs/dialog-export-campuses"
 import { ExportSelectedCampusesDialog } from "../dialogs/dialog-export-selected-campuses"
 import { SearchCampuses } from "../search/search-campuses"
-import { useNotify, NoticeOutlet } from "../common/notice-context"
+import { useNotify, NoticeOutlet } from "@/components/notice/notice-context"
 
 interface CampusesDataTableProps {
   onEditCampus: (campusId: string) => void

@@ -1,10 +1,7 @@
 "use no memo"
 
-import type { ReactNode } from "react"
-
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
-import { TablePageHeader } from "@/components/table-page-header"
 import { useDataTable } from "@/hooks/use-data-table"
 
 import { useAuditsQuery } from "../../api/query/use-audits-query"
@@ -17,19 +14,9 @@ import { ExportSelectedAuditSessionDialog } from "../dialogs/dialog-export-selec
 import { ExportAuditSessionDialog } from "../dialogs/dialog-export-audit-session"
 import { ClearSelectionAuditSessionDialog } from "../dialogs/dialog-clear-selection-audit-session"
 import { AuditSessionStatsCards } from "../stats/audit-session-stats-cards"
+import { AuditPageHeader } from "../audit-page-header"
 
-interface AuditSessionDataTableProps {
-  title: ReactNode
-  description?: ReactNode
-  // Acción de navegación del encabezado (ej. "Por tablas").
-  action?: ReactNode
-}
-
-export function AuditSessionDataTable({
-  title,
-  description,
-  action,
-}: AuditSessionDataTableProps) {
+export function AuditSessionDataTable() {
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
   const { filters, queryFilters, applyFilters, clearAllFilters, activeFilterCount } =
     useAuditSessionFilters()
@@ -55,7 +42,7 @@ export function AuditSessionDataTable({
 
   return (
     <>
-      <TablePageHeader title={title} description={description} action={action}>
+      <AuditPageHeader>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <SearchAuditSession
             activeFilterCount={activeFilterCount}
@@ -78,7 +65,7 @@ export function AuditSessionDataTable({
             )}
           </div>
         </div>
-      </TablePageHeader>
+      </AuditPageHeader>
 
       <div className="px-(--card-spacing)">
         <AuditSessionStatsCards

@@ -16,7 +16,7 @@ import { ExportSelectedAcademicPeriodsDialog } from "../dialogs/dialog-export-se
 import { DeleteSelectedAcademicPeriodsDialog } from "../dialogs/dialog-delete-selected-academic-periods"
 import { ClearSelectionAcademicPeriodsDialog } from "../dialogs/dialog-clear-selection-academic-periods"
 import { SearchAcademicPeriods } from "../search/search-academic-periods"
-import { NoticeOutlet } from "../../common/notice-context"
+import { NoticeOutlet } from "@/components/notice/notice-context"
 
 interface AcademicPeriodsDataTableProps {
   title: ReactNode

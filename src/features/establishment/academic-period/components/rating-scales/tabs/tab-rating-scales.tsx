@@ -5,7 +5,7 @@ import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import type { SortingState } from "@tanstack/react-table"
 import { CheckIcon, PencilIcon, PlusIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 
-import { useNotify, NoticeOutlet } from "../../common/notice-context"
+import { useNotify, NoticeOutlet } from "@/components/notice/notice-context"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"

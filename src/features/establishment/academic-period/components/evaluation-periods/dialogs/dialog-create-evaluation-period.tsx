@@ -3,7 +3,7 @@ import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { useForm } from "@tanstack/react-form"
 import { ControlPointIcon, PencilIcon, SpinnerIcon } from "@/components/ui/icons"
 
-import { useNotify } from "../../common/notice-context"
+import { useNotify } from "@/components/notice/notice-context"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,

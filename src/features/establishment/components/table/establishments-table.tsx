@@ -22,7 +22,7 @@ import { ClearSelectionDialog } from "../dialogs/dialog-clear-selection"
 import { ExportEstablishmentsDialog } from "../dialogs/dialog-export-establishments"
 import { ExportSelectedEstablishmentsDialog } from "../dialogs/dialog-export-selected-establishments"
 import { SearchEstablishments } from "../search/search-establishments"
-import { useNotify, NoticeOutlet } from "../common/notice-context"
+import { useNotify, NoticeOutlet } from "@/components/notice/notice-context"
 
 interface EstablishmentsDataTableProps {
   title: ReactNode

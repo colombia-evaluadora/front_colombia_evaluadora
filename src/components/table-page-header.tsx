@@ -9,6 +9,10 @@ interface TablePageHeaderProps {
   // sobre los datos —"Agregar", exportar, columnas— no van acá sino en la
   // barra de herramientas.
   action?: ReactNode
+  // Pestañas de navegación entre vistas de la misma página. Van bajo el
+  // título y a sangre —de borde a borde de la tarjeta—, con la línea que
+  // las separa de la barra de herramientas.
+  tabs?: ReactNode
   // Barra de herramientas de la tabla (buscador + acciones). Va bajo el
   // título, dentro de la misma sección, para que todo se pegue junto al
   // hacer scroll.
@@ -22,9 +26,12 @@ interface TablePageHeaderProps {
  * scrollea.
  *
  * Dos condiciones para que el `sticky` funcione:
- *  - `top-14` es exactamente el alto del header de la app
- *    (`protected-layout`), que también es sticky; sin ese offset la sección
- *    se metería debajo. El `z-20` la deja por debajo de ese header (z-40).
+ *  - `top-18` es el alto del header de la app (`top-14`, también sticky) más
+ *    el `p-4` del contenedor de página: así, al pegarse, la tarjeta conserva
+ *    el mismo aire que tiene en reposo contra el header en vez de quedar
+ *    calzada. Ese respiro lo pinta el `before:` con el fondo de la página,
+ *    porque si no el contenido de la tarjeta se vería pasar por ahí. El
+ *    `z-20` deja la sección por debajo del header de la app (z-40).
  *  - Ningún ancestro puede tener `overflow-hidden` —el `Card` lo trae por
  *    defecto—, así que las páginas que usan esto pasan `overflow-visible`.
  */
@@ -32,6 +39,7 @@ export function TablePageHeader({
   title,
   description,
   action,
+  tabs,
   children,
   className,
 }: TablePageHeaderProps) {
@@ -43,7 +51,12 @@ export function TablePageHeader({
         // de la sección: así lo que se pega incluye ese espacio y nada asoma
         // por encima. `rounded-t-[inherit]` respeta las esquinas del Card,
         // que ya no puede recortarlas por sí mismo.
-        "sticky top-14 z-20 -mt-(--card-spacing) rounded-t-[inherit] border-b border-border bg-card px-(--card-spacing) pt-(--card-spacing) pb-5",
+        "sticky top-18 z-20 -mt-(--card-spacing) rounded-t-[inherit] border-t border-b border-t-foreground/5 border-b-border bg-card px-(--card-spacing) pt-(--card-spacing) pb-5",
+        // La franja tapa lo que pasa por detrás, pero también el `ring-1` de
+        // la tarjeta, que cae justo ahí. Por eso el borde superior lo repone
+        // el `border-t` de la sección: al ir sobre el redondeo heredado,
+        // acompaña las esquinas en vez de cortarlas en recto.
+        "before:absolute before:inset-x-0 before:bottom-full before:h-4 before:bg-background",
         className,
       )}
     >
@@ -58,6 +71,14 @@ export function TablePageHeader({
         </div>
         {action ? <div className="shrink-0">{action}</div> : null}
       </div>
+      {tabs ? (
+        // A sangre: los márgenes negativos cancelan el padding lateral de la
+        // sección para que la línea inferior llegue a los bordes de la
+        // tarjeta; el padding lo repone para el contenido.
+        <div className="-mx-(--card-spacing) mt-5 border-b border-border px-(--card-spacing)">
+          {tabs}
+        </div>
+      ) : null}
       {children ? <div className="mt-6">{children}</div> : null}
     </section>
   )

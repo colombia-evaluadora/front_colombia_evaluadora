@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button"
 import { useExportCampuses } from "../../api/mutations/export-campuses"
 import type { CampusesQueryRequest } from "../../api/types/campus"
 import type { ExportFormat } from "../../api/types/export"
-import { useNotify } from "../common/notice-context"
+import { useNotify } from "@/components/notice/notice-context"
 
 interface ExportCampusesDialogProps {
     filters: CampusesQueryRequest["filters"]

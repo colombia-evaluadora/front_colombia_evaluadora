@@ -23,7 +23,7 @@ import type { CatalogItem } from "../api/types/catalog"
 import type { Person } from "../api/types/person"
 import { UserDetailsForm } from "../components/forms/form-user-datails"
 import { validateEstablishmentForm } from "../utils/validate-establishment-form"
-import { NoticeOutlet, useNotify } from "../components/common/notice-context"
+import { NoticeOutlet, useNotify } from "@/components/notice/notice-context"
 
 function createEmptyCatalogItem(): CatalogItem {
   return { id: "", code: "", name: "" }

@@ -1,7 +1,6 @@
 import { useState } from "react"
 
 import { ArrowCounterClockwiseIcon, SpinnerIcon } from "@/components/ui/icons"
-import { toast } from "sonner"
 
 import {
   AlertDialog,
@@ -17,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button"
 
 import { useRevertOperationChange } from "../../api/mutations/revert-operation-change"
+import { useNotify } from "@/components/notice/notice-context"
 
 interface DialogConfirmRevertChangesProps {
   tableSlug: string
@@ -34,20 +34,21 @@ export function DialogConfirmRevertChanges({
   operationId,
   fieldIndexes,
 }: DialogConfirmRevertChangesProps) {
+  const { notify } = useNotify()
   const [open, setOpen] = useState(false)
 
   const revertChange = useRevertOperationChange({
     mutationConfig: {
       onSuccess: (result) => {
         if (result.status === "error") {
-          toast.error(result.message)
+          notify(result.message, { variant: "error" })
           return
         }
-        toast.success(result.message)
+        notify(result.message)
         setOpen(false)
       },
       onError: (error) => {
-        toast.error(error.message)
+        notify(error.message, { variant: "error" })
       },
     },
   })

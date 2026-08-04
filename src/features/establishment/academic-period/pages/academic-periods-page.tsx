@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card"
 import { paths } from "@/config/paths"
 
 import { AcademicPeriodsDataTable } from "../components/academic-period/table/academic-periods-table"
-import { NoticeProvider } from "../components/common/notice-context"
+import { NoticeProvider } from "@/components/notice/notice-context"
 
 export function AcademicPeriodsPage() {
   return (

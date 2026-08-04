@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button"
 import { useExportEstablishments } from "../../api/mutations/export-establishments"
 import type { EstablishmentsQueryRequest } from "../../api/types/establishment"
 import type { ExportFormat } from "../../api/types/export"
-import { useNotify } from "../common/notice-context"
+import { useNotify } from "@/components/notice/notice-context"
 
 interface ExportEstablishmentsDialogProps {
     filters: EstablishmentsQueryRequest["filters"]

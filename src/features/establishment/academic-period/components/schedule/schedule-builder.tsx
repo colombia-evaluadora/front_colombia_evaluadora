@@ -1,7 +1,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useState } from "react"
 import { MinusIcon, XIcon } from "@/components/ui/icons"
 
-import { useNotify } from "../common/notice-context"
+import { useNotify } from "@/components/notice/notice-context"
 import { cn } from "@/lib/utils"
 import { Field, FieldLabel } from "@/components/ui/field"
 import {

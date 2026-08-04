@@ -9,13 +9,10 @@ import { paths } from "@/config/paths"
 
 import { useAuditTablesFilters } from "../../hooks/use-audit-tables-filters"
 import { useAuditTablesQuery } from "../../api/query/use-audit-tables-query"
-import { FilterAuditTablesForm } from "../forms/form-filter-audit-tables"
-
-const FILTER_AUDIT_TABLES_FORM_ID = "filter-audit-tables-form"
 
 export function AuditTablesGrid() {
   const { pageIndex, pageSize, goToPage, setPageSize } = useTablePagination()
-  const { filters, queryFilters, applyFilters } = useAuditTablesFilters()
+  const { filters, queryFilters } = useAuditTablesFilters()
   const { data, isPending, isError, refetch } = useAuditTablesQuery({
     filters: queryFilters,
     sorting: [],
@@ -60,14 +57,6 @@ export function AuditTablesGrid() {
 
   return (
     <>
-      <div className="mb-3 flex flex-wrap items-center gap-2 pb-2">
-        <FilterAuditTablesForm
-          id={FILTER_AUDIT_TABLES_FORM_ID}
-          defaultValues={filters}
-          onSubmit={applyFilters}
-        />
-      </div>
-
       {totalCount === 0 ? (
         <p className="text-sm text-muted-foreground">
           {filters.name

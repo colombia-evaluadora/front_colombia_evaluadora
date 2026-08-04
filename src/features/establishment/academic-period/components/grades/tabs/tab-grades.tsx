@@ -13,7 +13,7 @@ import { CreateGradeDialog } from "../dialogs/dialog-create-grade"
 import { DeleteSelectedGradesDialog } from "../dialogs/dialog-delete-selected-grades"
 import { ExportGradesDialog } from "../dialogs/dialog-export-grades"
 import { ExportSelectedGradesDialog } from "../dialogs/dialog-export-selected-grades"
-import { NoticeOutlet } from "../../common/notice-context"
+import { NoticeOutlet } from "@/components/notice/notice-context"
 import type { Jornada } from "../../schedule/schedule-data"
 
 interface TabGradesProps {
