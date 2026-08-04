@@ -14,6 +14,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
+import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { campusesRoute } from "@/router"
 
 import { useDeleteCampus } from "../../api/mutations/delete-campus"
@@ -37,7 +38,7 @@ export function DeleteCampusDialog({ campus }: DeleteCampusDialogProps) {
           return
         }
 
-        notify(result.message)
+        notify(SUCCESS_MESSAGES.campus.deleted)
         setOpen(false)
         navigate({
           search: (prev) => ({

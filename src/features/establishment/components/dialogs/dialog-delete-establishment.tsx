@@ -14,6 +14,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
+import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { establishmentsRoute } from "@/router"
 
 import { useDeleteEstablishment } from "../../api/mutations/delete-establishment"
@@ -39,7 +40,7 @@ export function DeleteEstablishmentDialog({
           return
         }
 
-        notify(result.message)
+        notify(SUCCESS_MESSAGES.establishment.deleted)
         setOpen(false)
         navigate({
           search: (prev) => ({

@@ -1,17 +1,20 @@
 import type { ColumnDef } from "@tanstack/react-table"
-import { Link } from "@tanstack/react-router"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { PencilIcon } from "@/components/ui/icons"
 import { DataTableColumnHeader } from "@/components/data-table"
-import { paths } from "@/config/paths"
 
 import type { Campus } from "../../api/types/campus"
 import { DeleteCampusDialog } from "../dialogs/dialog-delete-campus"
 
-export const columns: ColumnDef<Campus>[] = [
+interface CampusColumnsOptions {
+  onEdit: (campusId: string) => void
+}
+
+export function createCampusColumns({ onEdit }: CampusColumnsOptions): ColumnDef<Campus>[] {
+  return [
   {
     id: "select",
     header: ({ table }) => (
@@ -41,6 +44,7 @@ export const columns: ColumnDef<Campus>[] = [
   {
     accessorKey: "name",
     id: "name",
+    meta: { label: "Nombre de la sede" },
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Nombre de la sede" />
     ),
@@ -51,6 +55,7 @@ export const columns: ColumnDef<Campus>[] = [
   {
     accessorKey: "dane",
     id: "dane",
+    meta: { label: "Dane" },
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Dane" />
     ),
@@ -58,6 +63,7 @@ export const columns: ColumnDef<Campus>[] = [
   {
     accessorKey: "zone",
     id: "zone",
+    meta: { label: "Zona" },
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Zona" />
     ),
@@ -70,6 +76,7 @@ export const columns: ColumnDef<Campus>[] = [
   {
     accessorKey: "address",
     id: "address",
+    meta: { label: "Dirección" },
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Dirección" />
     ),
@@ -80,6 +87,7 @@ export const columns: ColumnDef<Campus>[] = [
   {
     accessorKey: "phone",
     id: "phone",
+    meta: { label: "Teléfono" },
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Teléfono" />
     ),
@@ -96,8 +104,7 @@ export const columns: ColumnDef<Campus>[] = [
           size="icon"
           className="size-8"
           aria-label="Editar sede"
-          render={<Link to={paths.app.establishments.campuses.edit.getHref(row.original.id)} />}
-          nativeButton={false}
+          onClick={() => onEdit(row.original.id)}
         >
           <PencilIcon />
         </Button>
@@ -108,4 +115,5 @@ export const columns: ColumnDef<Campus>[] = [
     enableHiding: false,
     size: 96,
   },
-]
+  ]
+}

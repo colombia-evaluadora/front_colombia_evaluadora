@@ -42,6 +42,7 @@ export const columns: ColumnDef<Establishment>[] = [
   {
     accessorKey: "dane",
     id: "dane",
+    meta: { label: "DANE" },
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="DANE" />
     ),
@@ -49,6 +50,7 @@ export const columns: ColumnDef<Establishment>[] = [
   {
     accessorKey: "name",
     id: "name",
+    meta: { label: "Establecimiento" },
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Establecimiento" />
     ),
@@ -59,6 +61,7 @@ export const columns: ColumnDef<Establishment>[] = [
   {
     accessorFn: (row) => `${row.department}/${row.municipality}`,
     id: "departmentMunicipality",
+    meta: { label: "Departamento/Municipio" },
     header: ({ column }) => (
       <DataTableColumnHeader
         column={column}
@@ -74,6 +77,7 @@ export const columns: ColumnDef<Establishment>[] = [
   {
     accessorKey: "status",
     id: "status",
+    meta: { label: "Estado" },
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Estado" />
     ),

@@ -81,18 +81,21 @@ export function createEmployeeColumns({ onEdit }: EmployeeColumnsOptions): Colum
   {
     accessorKey: "documentNumber",
     id: "documentNumber",
+    meta: { label: "N° Documento" },
     header: ({ column }) => <DataTableColumnHeader column={column} title="N° Documento" />,
     cell: ({ row }) => <span className="tabular-nums">{row.original.documentNumber}</span>,
   },
   {
     accessorKey: "name",
     id: "name",
+    meta: { label: "Nombre" },
     header: ({ column }) => <DataTableColumnHeader column={column} title="Nombre" />,
     cell: ({ row }) => <p className="uppercase font-bold">{row.original.name}</p>,
   },
   {
     accessorKey: "role",
     id: "role",
+    meta: { label: "Rol" },
     header: ({ column }) => <DataTableColumnHeader column={column} title="Rol" />,
     cell: ({ row }) => {
       if (row.original.roles.length === 0) {
@@ -122,6 +125,7 @@ export function createEmployeeColumns({ onEdit }: EmployeeColumnsOptions): Colum
   {
     accessorKey: "campuses",
     id: "campuses",
+    meta: { label: "Sede educativa" },
     header: ({ column }) => <DataTableColumnHeader column={column} title="Sede educativa" />,
     enableSorting: false,
     cell: ({ row }) => {
@@ -145,6 +149,7 @@ export function createEmployeeColumns({ onEdit }: EmployeeColumnsOptions): Colum
   {
     accessorKey: "workSchedule",
     id: "workSchedule",
+    meta: { label: "Jornada" },
     header: ({ column }) => <DataTableColumnHeader column={column} title="Jornada" />,
     cell: ({ row }) => {
       const workSchedule = row.original.workSchedule
@@ -163,6 +168,7 @@ export function createEmployeeColumns({ onEdit }: EmployeeColumnsOptions): Colum
   {
     accessorKey: "status",
     id: "status",
+    meta: { label: "Estado" },
     header: ({ column }) => <DataTableColumnHeader column={column} title="Estado" />,
     cell: ({ row }) => (
       <span className="text-sm text-foreground">

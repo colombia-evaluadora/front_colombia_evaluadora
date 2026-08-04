@@ -113,11 +113,6 @@ const AddEstablishmentPage = lazyRouteComponent(
   "AddEstablishmentPage"
 )
 
-const AddCampusPage = lazyRouteComponent(
-  () => import("@/features/establishment/pages/add-campus-page"),
-  "AddCampusPage"
-)
-
 interface RouterContext {
   queryClient: QueryClient
 }
@@ -396,18 +391,6 @@ export const editEstablishmentRoute = createRoute({
   component: AddEstablishmentPage,
 })
 
-export const addCampusRoute = createRoute({
-  getParentRoute: () => establishmentLayoutRoute,
-  path: paths.app.establishments.campuses.add.path,
-  component: AddCampusPage,
-})
-
-export const editCampusRoute = createRoute({
-  getParentRoute: () => establishmentLayoutRoute,
-  path: paths.app.establishments.campuses.edit.path,
-  component: AddCampusPage,
-})
-
 export const auditoriaSesionOperacionesRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.auditoriaSesionOperaciones.path,
@@ -491,16 +474,12 @@ const routeTree = rootRoute.addChildren([
     employeesRoute,
     addEstablishmentRoute,
     editEstablishmentRoute,
-    addCampusRoute,
-    editCampusRoute,
     establishmentLayoutRoute.addChildren([
       establishmentsRoute,
       campusesRoute,
       employeesRoute,
       addEstablishmentRoute,
       editEstablishmentRoute,
-      addCampusRoute,
-      editCampusRoute,
     ]),
     reportesRoute,
     usuariosRoute,

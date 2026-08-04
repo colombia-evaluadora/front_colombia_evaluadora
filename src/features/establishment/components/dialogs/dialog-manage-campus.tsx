@@ -1,25 +1,31 @@
-import { Link, useLocation, useNavigate } from "@tanstack/react-router"
-import { useEffect, useMemo, useState, type FormEvent } from "react"
+import { useEffect, useState, type FormEvent } from "react"
 
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { paths } from "@/config/paths"
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { CATALOGS } from "@/lib/catalogs"
+import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 
-import { CampusDetailsForm } from "../components/forms/form-campus-details"
-import { useCreateCampus } from "../api/mutations/use-create-campus"
-import { useUpdateCampus } from "../api/mutations/use-update-campus"
-import { useCampusQuery } from "../api/query/use-campus-query"
-import { useCatalogQuery } from "../api/query/use-catalogs"
-import type { CatalogItem } from "../api/types/catalog"
-import type { Campus } from "../api/types/campus"
-import { NoticeOutlet, useNotify } from "../components/common/notice-context"
+import { CampusDetailsForm } from "../forms/form-campus-details"
+import { useCreateCampus } from "../../api/mutations/use-create-campus"
+import { useUpdateCampus } from "../../api/mutations/use-update-campus"
+import { useCampusQuery } from "../../api/query/use-campus-query"
+import { useCatalogQuery } from "../../api/query/use-catalogs"
+import type { CatalogItem } from "../../api/types/catalog"
+import type { Campus } from "../../api/types/campus"
+import { NoticeOutlet, useNotify } from "../common/notice-context"
+
+interface ManageCampusDialogProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  // `null`/ausente = alta; con id = edición de esa sede.
+  campusId?: string | null
+}
 
 function createEmptyCatalogItem(): CatalogItem {
   return { id: "", code: "", name: "" }
@@ -57,27 +63,26 @@ function validateCampus(values: Campus): string[] {
   return errors
 }
 
-export function AddCampusPage() {
-  const navigate = useNavigate()
-  const location = useLocation()
+export function ManageCampusDialog({
+  open,
+  onOpenChange,
+  campusId = null,
+}: ManageCampusDialogProps) {
   const { notify } = useNotify()
-  const campusId = useMemo(() => {
-    if (!location.pathname.includes("/sedes/editar/")) {
-      return null
-    }
-
-    return location.pathname.split("/sedes/editar/").at(1) ?? null
-  }, [location.pathname])
-
   const isEditMode = campusId !== null
 
   const [formValues, setFormValues] = useState<Campus>(createInitialCampusValues)
   const [validationErrors, setValidationErrors] = useState<string[]>([])
 
   const { data: zones = [] } = useCatalogQuery<CatalogItem>(CATALOGS.ZONES)
-  const campusQuery = useCampusQuery(campusId, isEditMode)
+  // Solo pedimos la sede cuando el diálogo está abierto en modo edición: al
+  // vivir montado junto a la tabla, la query se dispararía en cada render.
+  const campusQuery = useCampusQuery(campusId, isEditMode && open)
 
+  // El formulario se resetea al abrir (alta) o cuando llega la sede a editar.
   useEffect(() => {
+    if (!open) return
+
     if (!isEditMode) {
       setFormValues(createInitialCampusValues())
       setValidationErrors([])
@@ -88,7 +93,7 @@ export function AddCampusPage() {
       setFormValues(campusQuery.data.campus)
       setValidationErrors([])
     }
-  }, [campusQuery.data, isEditMode])
+  }, [campusQuery.data, isEditMode, open])
 
   const createMutation = useCreateCampus({
     mutationConfig: {
@@ -98,8 +103,8 @@ export function AddCampusPage() {
           return
         }
 
-        notify(result.message)
-        navigate({ to: paths.app.establishments.campuses.getHref() })
+        notify(SUCCESS_MESSAGES.campus.created)
+        onOpenChange(false)
       },
       onError: (error) => {
         notify(error.message || "No fue posible guardar la sede.", { variant: "error" })
@@ -115,8 +120,8 @@ export function AddCampusPage() {
           return
         }
 
-        notify(result.message)
-        navigate({ to: paths.app.establishments.campuses.getHref() })
+        notify(SUCCESS_MESSAGES.campus.updated)
+        onOpenChange(false)
       },
       onError: (error) => {
         notify(error.message || "No fue posible actualizar la sede.", { variant: "error" })
@@ -149,13 +154,20 @@ export function AddCampusPage() {
   const isPending = createMutation.isPending || updateMutation.isPending
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{isEditMode ? "Editar sede" : "Agregar sede"}</CardTitle>
-      </CardHeader>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        // Mientras guarda no dejamos cerrar por click afuera o Escape.
+        if (!isPending) onOpenChange(next)
+      }}
+    >
+      <DialogContent className="w-[min(98vw,64rem)] max-w-none sm:max-w-256 max-h-[92vh] overflow-y-auto overflow-x-hidden">
+        <DialogHeader>
+          <DialogTitle>{isEditMode ? "Editar sede" : "Agregar sede"}</DialogTitle>
+        </DialogHeader>
 
-      <CardContent>
-        <NoticeOutlet className="mb-4" />
+        <NoticeOutlet className="mb-2" />
+
         {validationErrors.length > 0 ? (
           <div className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
             <p className="font-medium">Completa los campos obligatorios:</p>
@@ -168,34 +180,30 @@ export function AddCampusPage() {
         ) : null}
 
         <form id="campus-form" onSubmit={handleSubmit}>
-          <CampusDetailsForm
-            value={formValues}
-            onChange={setFormValues}
-            zones={zones}
-          />
+          <CampusDetailsForm value={formValues} onChange={setFormValues} zones={zones} />
         </form>
-      </CardContent>
 
-      <CardFooter className="justify-end gap-2">
-        <Button
-          render={<Link to={paths.app.establishments.campuses.getHref()} />}
-          variant="fill"
-          color="neutral"
-          nativeButton={false}
-          disabled={isPending}
-        >
-          Cancelar
-        </Button>
-        <Button
-          type="submit"
-          form="campus-form"
-          variant="fill"
-          color="primary"
-          disabled={isPending}
-        >
-          {isPending ? "Guardando..." : isEditMode ? "Guardar cambios" : "Guardar"}
-        </Button>
-      </CardFooter>
-    </Card>
+        <DialogFooter className="justify-end gap-2">
+          <Button
+            type="button"
+            variant="fill"
+            color="neutral"
+            disabled={isPending}
+            onClick={() => onOpenChange(false)}
+          >
+            Cancelar
+          </Button>
+          <Button
+            type="submit"
+            form="campus-form"
+            variant="fill"
+            color="primary"
+            disabled={isPending}
+          >
+            {isPending ? "Guardando..." : isEditMode ? "Guardar cambios" : "Guardar"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

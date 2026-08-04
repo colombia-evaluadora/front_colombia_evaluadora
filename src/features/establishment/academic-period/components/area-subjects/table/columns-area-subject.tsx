@@ -36,6 +36,7 @@ export const columns: ColumnDef<AreaSubject>[] = [
   },
   {
     id: "numero",
+    meta: { label: "N°" },
     header: () => <span className="text-muted-foreground">#</span>,
     cell: ({ row }) => (
       <span className="text-muted-foreground">{row.index + 1}</span>
@@ -47,6 +48,7 @@ export const columns: ColumnDef<AreaSubject>[] = [
   {
     id: "nombreInterno",
     accessorKey: "nombreInterno",
+    meta: { label: "Nombre del área" },
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Nombre del área" />
     ),
@@ -57,6 +59,7 @@ export const columns: ColumnDef<AreaSubject>[] = [
   {
     id: "abreviacion",
     accessorKey: "abreviacion",
+    meta: { label: "Abreviación" },
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Abreviación" />
     ),
@@ -67,6 +70,7 @@ export const columns: ColumnDef<AreaSubject>[] = [
   {
     id: "ordenReportes",
     accessorKey: "ordenReportes",
+    meta: { label: "Orden de reporte" },
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Orden de reporte" />
     ),

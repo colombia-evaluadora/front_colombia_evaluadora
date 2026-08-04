@@ -14,6 +14,7 @@ import { useBulkDeleteEstablishments } from "../../api/mutations/use-bulk-delete
 import { useCatalogQuery } from "../../api/query/use-catalogs"
 import type { CatalogItem } from "../../api/types/catalog"
 import { CATALOGS } from "@/lib/catalogs"
+import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import type { Establishment } from "../../api/types/establishment"
 import { columns } from "./columns"
 import { DialogBulkDelete } from "../dialogs/dialog-bulk-delete"
@@ -100,7 +101,7 @@ export function EstablishmentsDataTable({
           notify(result.message, { variant: "error" })
           return
         }
-        notify(result.message)
+        notify(SUCCESS_MESSAGES.establishment.deletedMany(selectedIds.length))
         resetSelection()
       },
       onError: (error) => {

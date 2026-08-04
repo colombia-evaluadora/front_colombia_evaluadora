@@ -11,11 +11,12 @@ import { useTablePagination } from "@/hooks/use-table-pagination"
 import { useCampusesFilters } from "../../hooks/use-campuses-filters"
 import { useCampusesQuery } from "../../api/query/use-campuses-query"
 import { useBulkDeleteCampuses } from "../../api/mutations/use-bulk-delete-campuses"
-import { columns } from "./columns-campuses"
+import { createCampusColumns } from "./columns-campuses"
 import { useCatalogQuery } from "../../api/query/use-catalogs"
 import type { CatalogItem } from "../../api/types/catalog"
 import type { Campus } from "../../api/types/campus"
 import { CATALOGS } from "@/lib/catalogs"
+import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { DialogBulkDelete } from "../dialogs/dialog-bulk-delete"
 import { ClearSelectionDialog } from "../dialogs/dialog-clear-selection"
 import { ExportCampusesDialog } from "../dialogs/dialog-export-campuses"
@@ -24,6 +25,7 @@ import { SearchCampuses } from "../search/search-campuses"
 import { useNotify, NoticeOutlet } from "../common/notice-context"
 
 interface CampusesDataTableProps {
+  onEditCampus: (campusId: string) => void
   title: ReactNode
   description?: ReactNode
   // Acción principal de la página (ej. "Agregar"). Va en la barra de
@@ -32,6 +34,7 @@ interface CampusesDataTableProps {
 }
 
 export function CampusesDataTable({
+  onEditCampus,
   title,
   description,
   action,
@@ -51,6 +54,8 @@ export function CampusesDataTable({
     pageIndex,
     pageSize,
   })
+
+  const columns = useMemo(() => createCampusColumns({ onEdit: onEditCampus }), [onEditCampus])
 
   const { table, selectedIds, hasSelection, resetSelection } = useDataTable({
     columns,
@@ -78,7 +83,7 @@ export function CampusesDataTable({
           notify(result.message, { variant: "error" })
           return
         }
-        notify(result.message)
+        notify(SUCCESS_MESSAGES.campus.deletedMany(selectedIds.length))
         resetSelection()
       },
       onError: (error) => {

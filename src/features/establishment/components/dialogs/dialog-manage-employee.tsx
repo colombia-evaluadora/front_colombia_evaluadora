@@ -28,6 +28,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { CATALOGS } from "@/lib/catalogs"
+import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 
 import { useCreateEmployee } from "../../api/mutations/use-create-employee"
 import { useCreateEmployeePerson } from "../../api/mutations/use-create-employee-person"
@@ -224,9 +225,9 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
         }
 
         // En modo creación este guardado final también pasa por PUT (una vez
-        // ya existe `activeEmployeeId`), así que el mensaje del backend diría
-        // "actualizado" aunque el funcionario se esté creando por primera vez.
-        notify(isEditMode ? result.message : "Funcionario creado.")
+        // ya existe `activeEmployeeId`), así que hay que distinguir el mensaje
+        // acá: el funcionario se está creando por primera vez.
+        notify(isEditMode ? SUCCESS_MESSAGES.employee.updated : SUCCESS_MESSAGES.employee.created)
         onOpenChange(false)
       },
       onError: (error) => {

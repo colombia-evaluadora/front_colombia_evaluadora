@@ -14,6 +14,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
+import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 
 import { useDeleteEmployee } from "../../api/mutations/use-delete-employee"
 import type { EmployeeListItem } from "../../api/types/employee"
@@ -35,7 +36,7 @@ export function DeleteEmployeeDialog({ employee }: DeleteEmployeeDialogProps) {
           return
         }
 
-        notify(result.message)
+        notify(SUCCESS_MESSAGES.employee.deleted)
         setOpen(false)
       },
       onError: (error) => {

@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 
 import { paths } from "@/config/paths"
+import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { EstablishmentDetailsForm } from "@/features/establishment/components/forms/form-establishment-details"
 import { useCreateEmployeePerson } from "../api/mutations/use-create-employee-person"
 import { useCreateEstablishment } from "../api/mutations/use-create-establishment"
@@ -140,7 +141,7 @@ export function AddEstablishmentPage() {
           notify(result.message, { variant: "error" })
           return
         }
-        notify(result.message)
+        notify(SUCCESS_MESSAGES.establishment.created)
         navigate({ to: paths.app.establishments.general.getHref() })
       },
       onError: (error) => {
@@ -156,7 +157,7 @@ export function AddEstablishmentPage() {
           notify(result.message, { variant: "error" })
           return
         }
-        notify(result.message)
+        notify(SUCCESS_MESSAGES.establishment.updated)
         navigate({ to: paths.app.establishments.general.getHref() })
       },
       onError: (error) => {

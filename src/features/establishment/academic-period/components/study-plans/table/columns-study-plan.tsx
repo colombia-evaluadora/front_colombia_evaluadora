@@ -46,6 +46,7 @@ export function createStudyPlanColumns({
   {
     id: "asignatura",
     accessorKey: "asignatura",
+    meta: { label: "Asignaturas" },
     header: ({ column }) => (
       <DataTableColumnHeader
         column={column}
@@ -59,6 +60,7 @@ export function createStudyPlanColumns({
   {
     id: "intensidadHoraria",
     accessorKey: "intensidadHoraria",
+    meta: { label: "Intensidad horaria" },
     header: ({ column }) => (
       <DataTableColumnHeader
         column={column}
@@ -70,6 +72,7 @@ export function createStudyPlanColumns({
   {
     id: "influenciaArea",
     accessorKey: "influenciaArea",
+    meta: { label: "Influencia área" },
     header: ({ column }) => (
       <DataTableColumnHeader
         column={column}
@@ -81,6 +84,7 @@ export function createStudyPlanColumns({
   {
     id: "numeroCreditos",
     accessorKey: "numeroCreditos",
+    meta: { label: "Número de créditos" },
     header: ({ column }) => (
       <DataTableColumnHeader
         column={column}
@@ -92,6 +96,7 @@ export function createStudyPlanColumns({
   {
     id: "influyeDesempeno",
     accessorKey: "influyeDesempeno",
+    meta: { label: "Influye en el desempeño académico (S/N)" },
     header: ({ column }) => (
       <DataTableColumnHeader
         column={column}
