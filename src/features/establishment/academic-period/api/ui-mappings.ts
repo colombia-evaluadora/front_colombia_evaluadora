@@ -27,10 +27,10 @@ export const EVALUATION_PERIOD_STATUS_BADGE: Record<
   EvaluationPeriodStatus,
   BadgeProps
 > = {
-  "Habilitados para algunas asignaturas": { variant: "soft", color: "muted" },
+  "NO Calificable": { variant: "soft", color: "muted" },
   "Calificable": { variant: "soft", color: "success" },
   "En Recuperaciones": { variant: "soft", color: "warning" },
-  "NO Calificable": { variant: "soft", color: "info" },
+  "Habilitados para algunas asignaturas": { variant: "soft", color: "info" },
 }
 
 export const RATING_SCALE_TYPE_BADGE: Record<RatingScaleType, BadgeProps> = {
