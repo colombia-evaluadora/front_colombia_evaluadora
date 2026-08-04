@@ -69,7 +69,7 @@ export function ExportRatingScalesDialog({
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Exportar escalas de valoración</DialogTitle>
+          <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>
             Elegí un formato para exportar todas las escalas de valoración.
           </DialogDescription>

@@ -69,7 +69,7 @@ export function ExportAreaSubjectsDialog({
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Exportar áreas/asignaturas filtradas</DialogTitle>
+          <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>
             Elegí un formato para exportar todas las áreas/asignaturas que coincidan con
             la búsqueda activa.

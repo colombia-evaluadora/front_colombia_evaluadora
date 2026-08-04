@@ -69,7 +69,7 @@ export function ExportEvaluationPeriodsDialog({
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Exportar periodos de evaluación</DialogTitle>
+          <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>
             Elegí un formato para exportar todos los periodos de evaluación.
           </DialogDescription>

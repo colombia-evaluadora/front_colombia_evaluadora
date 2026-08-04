@@ -75,7 +75,7 @@ export function ExportSelectedAreaSubjectsDialog({
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Exportar áreas/asignaturas seleccionadas</DialogTitle>
+          <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>
             Elegí un formato para exportar las {count} área(s)/asignatura(s)
             seleccionada(s).

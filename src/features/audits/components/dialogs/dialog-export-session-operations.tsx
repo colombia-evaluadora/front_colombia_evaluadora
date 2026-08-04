@@ -59,7 +59,7 @@ export function ExportSessionOperationsDialog({ sessionId }: ExportSessionOperat
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Exportar todas las operaciones</DialogTitle>
+          <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>
             Elegí un formato para exportar todas las operaciones de la sesión.
           </DialogDescription>

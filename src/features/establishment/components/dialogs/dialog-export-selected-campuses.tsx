@@ -71,7 +71,7 @@ export function ExportSelectedCampusesDialog({
             />
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>Exportar sedes seleccionadas</DialogTitle>
+                    <DialogTitle>Exportar</DialogTitle>
                     <DialogDescription>
                         Elegí un formato para exportar {count} sede(s) seleccionada(s).
                     </DialogDescription>

@@ -49,7 +49,7 @@ export function DeletePaymentDialog({ payment }: DeletePaymentDialogProps) {
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>¿Eliminar este pago?</AlertDialogTitle>
+          <AlertDialogTitle>Eliminar</AlertDialogTitle>
           <AlertDialogDescription>
             Se eliminará permanentemente el pago de {payment.email}. Esta acción no se puede
             deshacer.
@@ -58,6 +58,7 @@ export function DeletePaymentDialog({ payment }: DeletePaymentDialogProps) {
         <AlertDialogFooter>
           <AlertDialogCancel>Cancelar</AlertDialogCancel>
           <AlertDialogAction
+            color="destructive"
             disabled={deleteMutation.isPending}
             aria-busy={deleteMutation.isPending}
             onClick={() => deleteMutation.mutate(payment.id)}

@@ -7,6 +7,7 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
+  AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
@@ -22,11 +23,15 @@ interface DialogBulkDeleteProps<T> {
   getItemId: (item: T) => string
   getItemLabel: (item: T) => string
 
-  // Wording reutilizable: cada submódulo aporta una función que arma el
-  // título completo (incluye los nombres de los registros a borrar y la
+  // Encabezado corto de la confirmación (ej. "¿Eliminar las sedes
+  // seleccionadas?"). El detalle largo va en la descripción, no acá.
+  title: string
+
+  // Wording reutilizable: cada submódulo aporta una función que arma la
+  // descripción (incluye los nombres de los registros a borrar y la
   // advertencia de "no se puede deshacer"). Se reusan los `AlertDialog` y
   // `Button` del UI.
-  buildTitle: (count: number, sample: string[]) => string
+  buildDescription: (count: number, sample: string[]) => string
 
   // Disparado al confirmar. Devuelve una promesa; mientras esté pendiente
   // el botón de acción muestra un spinner (igual que los diálogos unitarios).
@@ -41,7 +46,8 @@ export function DialogBulkDelete<T>({
   items,
   getItemId,
   getItemLabel,
-  buildTitle,
+  title,
+  buildDescription,
   onConfirm,
   triggerLabel,
 }: DialogBulkDeleteProps<T>) {
@@ -88,10 +94,14 @@ export function DialogBulkDelete<T>({
       ) : null}
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>{buildTitle(count, sample)}</AlertDialogTitle>
+          <AlertDialogTitle>{title}</AlertDialogTitle>
+          <AlertDialogDescription>
+            {buildDescription(count, sample)}
+          </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogAction
+            color="destructive"
             disabled={isPending}
             aria-busy={isPending}
             onClick={handleConfirm}

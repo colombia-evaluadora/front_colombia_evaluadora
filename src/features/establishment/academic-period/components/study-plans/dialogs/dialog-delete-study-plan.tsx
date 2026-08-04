@@ -57,7 +57,7 @@ export function DeleteStudyPlanDialog({ item }: DeleteStudyPlanDialogProps) {
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>¿Eliminar esta asignatura?</AlertDialogTitle>
+          <AlertDialogTitle>Eliminar</AlertDialogTitle>
           <AlertDialogDescription>
             Se eliminará permanentemente {item.asignatura} del plan de estudio.
             Esta acción no se puede deshacer.
@@ -66,6 +66,7 @@ export function DeleteStudyPlanDialog({ item }: DeleteStudyPlanDialogProps) {
         <AlertDialogFooter>
           <AlertDialogCancel>Cancelar</AlertDialogCancel>
           <AlertDialogAction
+            color="destructive"
             disabled={deleteMutation.isPending}
             aria-busy={deleteMutation.isPending}
             onClick={() => deleteMutation.mutate(item.codigo)}

@@ -80,7 +80,7 @@ export function ExportSelectedRatingScalesDialog({
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Exportar escalas seleccionadas</DialogTitle>
+          <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>
             Elegí un formato para exportar las escalas de los {count}{" "}
             nivel(es) seleccionado(s).

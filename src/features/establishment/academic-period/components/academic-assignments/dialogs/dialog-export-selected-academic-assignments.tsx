@@ -75,7 +75,7 @@ export function ExportSelectedAcademicAssignmentsDialog({
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Exportar docentes seleccionados</DialogTitle>
+          <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>
             Elegí un formato para exportar los {count} docente(s)
             seleccionado(s).

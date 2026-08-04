@@ -75,7 +75,7 @@ export function ExportSelectedAcademicPeriodsDialog({
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Exportar periodos seleccionados</DialogTitle>
+          <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>
             Elegí un formato para exportar {count} periodo(s) seleccionado(s).
           </DialogDescription>

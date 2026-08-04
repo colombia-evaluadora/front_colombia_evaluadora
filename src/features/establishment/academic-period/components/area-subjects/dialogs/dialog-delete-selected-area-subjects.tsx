@@ -71,9 +71,7 @@ export function DeleteSelectedAreaSubjectsDialog({
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>
-            ¿Eliminar las áreas seleccionadas?
-          </AlertDialogTitle>
+          <AlertDialogTitle>Eliminar</AlertDialogTitle>
           <AlertDialogDescription>
             Se eliminarán permanentemente {count} área(s) y todas sus
             asignaturas asociadas. Esta acción no se puede deshacer.
@@ -82,6 +80,7 @@ export function DeleteSelectedAreaSubjectsDialog({
         <AlertDialogFooter>
           <AlertDialogCancel disabled={submitting}>Cancelar</AlertDialogCancel>
           <AlertDialogAction
+            color="destructive"
             disabled={submitting}
             aria-busy={submitting}
             onClick={handleDelete}

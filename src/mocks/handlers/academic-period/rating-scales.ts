@@ -106,6 +106,18 @@ export const ratingScalesHandlers = [
     })
   }),
 
+  http.post("/api/rating-scales/export", async ({ request }) => {
+    await delay(600)
+    const { ids, format } = (await request.json()) as {
+      ids: number[]
+      format: ExportFormat
+    }
+    return HttpResponse.json<ExportResult>({
+      status: "ok",
+      message: `${ids.length} escala(s) de valoración exportada(s) a ${EXPORT_FORMAT_LABELS[format]}.`,
+    })
+  }),
+
   http.post("/api/rating-scales/export-all", async ({ request }) => {
     await delay(600)
     const { filters, format } = (await request.json()) as {

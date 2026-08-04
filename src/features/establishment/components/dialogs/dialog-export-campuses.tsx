@@ -65,7 +65,7 @@ export function ExportCampusesDialog({ filters }: ExportCampusesDialogProps) {
             />
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>Exportar sedes filtradas</DialogTitle>
+                    <DialogTitle>Exportar</DialogTitle>
                     <DialogDescription>
                         Elegí un formato para exportar todas las sedes que coincidan con los filtros activos.
                     </DialogDescription>

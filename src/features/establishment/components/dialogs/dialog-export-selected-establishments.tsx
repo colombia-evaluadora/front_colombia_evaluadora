@@ -71,7 +71,7 @@ export function ExportSelectedEstablishmentsDialog({
             />
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>Exportar establecimientos seleccionados</DialogTitle>
+                    <DialogTitle>Exportar</DialogTitle>
                     <DialogDescription>
                         Elegí un formato para exportar {count} establecimiento(s) seleccionado(s).
                     </DialogDescription>

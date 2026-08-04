@@ -15,6 +15,12 @@ import type {
   EstablishmentsQueryRequest,
   EstablishmentsQueryResponse,
 } from "@/features/establishment/api/types/establishment"
+import type { ExportFormat, ExportResult } from "@/features/establishment/api/types/export"
+
+const EXPORT_FORMAT_LABELS: Record<ExportFormat, string> = {
+  pdf: "PDF",
+  excel: "Excel",
+}
 
 function asArray(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string" && item.length > 0) : []
@@ -152,6 +158,36 @@ export const establishmentHandlers = [
       rows,
       pageCount,
       totalCount,
+    })
+  }),
+
+  http.post("*/api/establishments/export", async ({ request }) => {
+    await delay(600)
+
+    const { ids, format } = (await request.json()) as {
+      ids: string[]
+      format: ExportFormat
+    }
+
+    return HttpResponse.json<ExportResult>({
+      status: "ok",
+      message: `${ids.length} establecimiento(s) exportado(s) a ${EXPORT_FORMAT_LABELS[format]}.`,
+    })
+  }),
+
+  http.post("*/api/establishments/export-all", async ({ request }) => {
+    await delay(600)
+
+    const { filters, format } = (await request.json()) as {
+      filters: EstablishmentsQueryRequest["filters"]
+      format: ExportFormat
+    }
+
+    const count = applyFilters(establishmentsRowsDb, filters).length
+
+    return HttpResponse.json<ExportResult>({
+      status: "ok",
+      message: `${count} establecimiento(s) exportado(s) a ${EXPORT_FORMAT_LABELS[format]}.`,
     })
   }),
 

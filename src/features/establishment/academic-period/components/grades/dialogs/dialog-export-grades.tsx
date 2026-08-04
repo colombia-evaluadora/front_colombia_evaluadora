@@ -64,7 +64,7 @@ export function ExportGradesDialog({ filters }: ExportGradesDialogProps) {
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Exportar grados</DialogTitle>
+          <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>
             Elegí un formato para exportar todos los grados.
           </DialogDescription>

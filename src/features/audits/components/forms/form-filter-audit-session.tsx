@@ -1,18 +1,15 @@
 import { useForm } from "@tanstack/react-form"
 import { CircleDashedIcon, CheckCircleIcon, SpinnerIcon } from "@/components/ui/icons"
 
-import { Checkbox } from "@/components/ui/checkbox"
 import { DatePicker } from "@/components/date-picker"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import {
   Field,
-  FieldContent,
-  FieldGroup,
   FieldLabel,
   FieldLegend,
   FieldSet,
-  FieldTitle,
 } from "@/components/ui/field"
 
 import {
@@ -92,14 +89,6 @@ export function FilterAuditSessionForm({
         name="statuses"
         mode="array"
         children={(field) => {
-          const toggle = (status: SessionStatus, checked: boolean) => {
-            if (checked) {
-              field.pushValue(status)
-            } else {
-              const index = field.state.value.indexOf(status)
-              if (index > -1) field.removeValue(index)
-            }
-          }
           return (
             <FieldSet>
               <FieldLegend variant="label">Estado</FieldLegend>
@@ -109,33 +98,37 @@ export function FilterAuditSessionForm({
                   Cargando estados…
                 </div>
               ) : (
-                <FieldGroup className="grid grid-cols-2 gap-3">
-                  {statusOptions.map((option) => {
-                    const id = `status-filter-${option.key}`
-                    return (
-                      <FieldLabel key={option.key} htmlFor={id} className="min-w-0">
-                        <Field orientation="horizontal">
-                          <Checkbox
-                            id={id}
-                            name={field.name}
-                            checked={field.state.value.includes(option.key)}
-                            onCheckedChange={(checked) => toggle(option.key, checked === true)}
-                          />
-                          <FieldContent className="min-w-0">
-                            <FieldTitle className="w-full min-w-0">
-                              {option.key === "active" ? (
-                                <CircleDashedIcon className="size-4 shrink-0 text-muted-foreground" />
-                              ) : (
-                                <CheckCircleIcon className="size-4 shrink-0 text-muted-foreground" />
-                              )}
-                              <span className="truncate">{option.label}</span>
-                            </FieldTitle>
-                          </FieldContent>
-                        </Field>
-                      </FieldLabel>
-                    )
-                  })}
-                </FieldGroup>
+                // Selección única (`multiple={false}`): el estado es excluyente,
+                // pero se puede volver a pulsar el activo para quitar el filtro.
+                // El valor sigue siendo un array (0 ó 1 elemento) para no cambiar
+                // el contrato de `statuses` con la query.
+                <ToggleGroup
+                  value={field.state.value}
+                  onValueChange={(next) =>
+                    field.handleChange(next.slice(-1) as SessionStatus[])
+                  }
+                  multiple={false}
+                  spacing={0}
+                  variant="outline"
+                  className="w-full"
+                >
+                  {statusOptions.map((option) => (
+                    <ToggleGroupItem
+                      key={option.key}
+                      value={option.key}
+                      size="sm"
+                      aria-label={option.label}
+                      className="min-w-0 flex-1 gap-1.5"
+                    >
+                      {option.key === "active" ? (
+                        <CircleDashedIcon className="size-4 shrink-0" />
+                      ) : (
+                        <CheckCircleIcon className="size-4 shrink-0" />
+                      )}
+                      <span className="truncate">{option.label}</span>
+                    </ToggleGroupItem>
+                  ))}
+                </ToggleGroup>
               )}
             </FieldSet>
           )

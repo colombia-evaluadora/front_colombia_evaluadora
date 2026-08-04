@@ -54,7 +54,7 @@ export function ExportReservationsDialog({ filters }: ExportReservationsDialogPr
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Exportar reservas filtradas</DialogTitle>
+          <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>
             Elegí un formato para exportar todas las reservas que coincidan con los filtros activos.
           </DialogDescription>

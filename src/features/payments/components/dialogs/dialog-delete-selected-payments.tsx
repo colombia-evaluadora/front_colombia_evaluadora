@@ -63,7 +63,7 @@ export function DeleteSelectedPaymentsDialog({
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>¿Eliminar los pagos seleccionados?</AlertDialogTitle>
+          <AlertDialogTitle>Eliminar</AlertDialogTitle>
           <AlertDialogDescription>
             Se eliminarán permanentemente {count} pago(s) seleccionado(s). Esta acción no se puede
             deshacer.
@@ -72,6 +72,7 @@ export function DeleteSelectedPaymentsDialog({
         <AlertDialogFooter>
           <AlertDialogCancel>Cancelar</AlertDialogCancel>
           <AlertDialogAction
+            color="destructive"
             disabled={deleteSelected.isPending}
             aria-busy={deleteSelected.isPending}
             onClick={() => deleteSelected.mutate(selectedIds)}

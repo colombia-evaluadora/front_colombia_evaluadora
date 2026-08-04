@@ -7,6 +7,7 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
+  AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
@@ -70,12 +71,15 @@ export function DeleteCampusDialog({ campus }: DeleteCampusDialogProps) {
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>
-            ¿Está seguro de que desea eliminar permanentemente la sede educativa {campus.name}? Esta acción no se puede deshacer.
-          </AlertDialogTitle>
+          <AlertDialogTitle>Eliminar</AlertDialogTitle>
+          <AlertDialogDescription>
+            Se eliminará permanentemente la sede educativa {campus.name}. Esta
+            acción no se puede deshacer.
+          </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogAction
+            color="destructive"
             disabled={deleteMutation.isPending}
             aria-busy={deleteMutation.isPending}
             onClick={() => deleteMutation.mutate(campus.id)}

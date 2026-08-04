@@ -140,6 +140,26 @@ export const evaluationPeriodsHandlers = [
     return HttpResponse.json(record, { status: 201 })
   }),
 
+  // Borrado en lote por códigos (atómico, una sola request). A diferencia del
+  // borrado individual, el front no manda `academicPeriodId`, así que el match
+  // es sólo por código.
+  http.post("/api/evaluation-periods/bulk-delete", async ({ request }) => {
+    await delay(300)
+    const { ids } = (await request.json()) as { ids: number[] }
+    const set = new Set(ids.map(String))
+    const before = evaluationPeriodsDb.length
+    for (let i = evaluationPeriodsDb.length - 1; i >= 0; i--) {
+      if (set.has(String(evaluationPeriodsDb[i].codigo))) {
+        evaluationPeriodsDb.splice(i, 1)
+      }
+    }
+    return HttpResponse.json({
+      status: "ok",
+      message: "Periodos de evaluación eliminados.",
+      deleted: before - evaluationPeriodsDb.length,
+    })
+  }),
+
   http.patch("/api/evaluation-periods/:codigo", async ({ request, params }) => {
     await delay(400)
     const body = (await request.json()) as UpdateEvaluationPeriodRequest

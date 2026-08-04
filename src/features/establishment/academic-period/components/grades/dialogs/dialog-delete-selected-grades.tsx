@@ -69,9 +69,7 @@ export function DeleteSelectedGradesDialog({
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>
-            ¿Eliminar los grados seleccionados?
-          </AlertDialogTitle>
+          <AlertDialogTitle>Eliminar</AlertDialogTitle>
           <AlertDialogDescription>
             Se eliminarán permanentemente {count} grado(s). Esta acción no se
             puede deshacer.
@@ -80,6 +78,7 @@ export function DeleteSelectedGradesDialog({
         <AlertDialogFooter>
           <AlertDialogCancel disabled={submitting}>Cancelar</AlertDialogCancel>
           <AlertDialogAction
+            color="destructive"
             disabled={submitting}
             aria-busy={submitting}
             onClick={handleDelete}

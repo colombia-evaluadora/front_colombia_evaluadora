@@ -114,10 +114,11 @@ export function EstablishmentsDataTable() {
                 items={selectedItems}
                 getItemId={(item) => item.id}
                 getItemLabel={(item) => item.name}
-                buildTitle={(count, sample) => {
+                title="Eliminar"
+                buildDescription={(count, sample) => {
                   const list = sample.join(", ")
                   const suffix = count > sample.length ? ` y ${count - sample.length} más` : ""
-                  return `¿Está seguro de que desea eliminar permanentemente los establecimientos educativos ${list}${suffix} (${count} en total)? Esta acción no se puede deshacer.`
+                  return `Se eliminarán permanentemente los establecimientos educativos ${list}${suffix} (${count} en total). Esta acción no se puede deshacer.`
                 }}
                 onConfirm={async (ids) => {
                   await bulkDelete.mutateAsync(ids)

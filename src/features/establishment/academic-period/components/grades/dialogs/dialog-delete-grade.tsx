@@ -57,7 +57,7 @@ export function DeleteGradeDialog({ grade }: DeleteGradeDialogProps) {
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>¿Eliminar este grado?</AlertDialogTitle>
+          <AlertDialogTitle>Eliminar</AlertDialogTitle>
           <AlertDialogDescription>
             Se eliminará permanentemente el grado {grade.nombre}. Esta acción no
             se puede deshacer.
@@ -66,6 +66,7 @@ export function DeleteGradeDialog({ grade }: DeleteGradeDialogProps) {
         <AlertDialogFooter>
           <AlertDialogCancel>Cancelar</AlertDialogCancel>
           <AlertDialogAction
+            color="destructive"
             disabled={deleteMutation.isPending}
             aria-busy={deleteMutation.isPending}
             onClick={() => deleteMutation.mutate(grade.id)}

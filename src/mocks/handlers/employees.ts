@@ -16,6 +16,12 @@ import type {
   EmployeesQueryResponse,
 } from "@/features/establishment/api/types/employee"
 import type { Person } from "@/features/establishment/api/types/person"
+import type { ExportFormat, ExportResult } from "@/features/establishment/api/types/export"
+
+const EXPORT_FORMAT_LABELS: Record<ExportFormat, string> = {
+  pdf: "PDF",
+  excel: "Excel",
+}
 
 function asArray(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string" && item.length > 0) : []
@@ -174,6 +180,38 @@ export const employeeHandlers = [
       rows,
       pageCount,
       totalCount,
+    })
+  }),
+
+  // Las exportaciones cuelgan de `/api/employees/*`, no de
+  // `/api/establishments/employees/*`, tal como las pide el front.
+  http.post("*/api/employees/export", async ({ request }) => {
+    await delay(600)
+
+    const { ids, format } = (await request.json()) as {
+      ids: string[]
+      format: ExportFormat
+    }
+
+    return HttpResponse.json<ExportResult>({
+      status: "ok",
+      message: `${ids.length} funcionario(s) exportado(s) a ${EXPORT_FORMAT_LABELS[format]}.`,
+    })
+  }),
+
+  http.post("*/api/employees/export-all", async ({ request }) => {
+    await delay(600)
+
+    const { filters, format } = (await request.json()) as {
+      filters: EmployeesQueryRequest["filters"]
+      format: ExportFormat
+    }
+
+    const count = applyFilters(employeesRowsDb, filters).length
+
+    return HttpResponse.json<ExportResult>({
+      status: "ok",
+      message: `${count} funcionario(s) exportado(s) a ${EXPORT_FORMAT_LABELS[format]}.`,
     })
   }),
 

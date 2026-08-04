@@ -50,7 +50,7 @@ export function DeleteRatingScaleDialog({ scale }: DeleteRatingScaleDialogProps)
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>¿Eliminar esta escala de valoración?</AlertDialogTitle>
+          <AlertDialogTitle>Eliminar</AlertDialogTitle>
           <AlertDialogDescription>
             Se eliminará permanentemente la escala «{scale.nombre}». Esta acción no se
             puede deshacer.
@@ -59,6 +59,7 @@ export function DeleteRatingScaleDialog({ scale }: DeleteRatingScaleDialogProps)
         <AlertDialogFooter>
           <AlertDialogCancel>Cancelar</AlertDialogCancel>
           <AlertDialogAction
+            color="destructive"
             disabled={deleteMutation.isPending}
             aria-busy={deleteMutation.isPending}
             onClick={() => deleteMutation.mutate(scale.codigo)}
