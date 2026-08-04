@@ -20,23 +20,23 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 
-import { useExportSelectedAcademicPeriods } from "../../../api/mutations/academic-period/export-selected-academic-periods"
-import type { ExportFormat } from "../../../api/types/academic-period"
+import { useExportSelectedAreaSubjects } from "../../../api/mutations/area-subjects/export-selected-area-subjects"
+import type { ExportFormat } from "../../../api/types/area-subject"
 
-interface ExportSelectedAcademicPeriodsDialogProps {
-  selectedIds: string[]
+interface ExportSelectedAreaSubjectsDialogProps {
+  selectedIds: number[]
   resetSelection: () => void
 }
 
-export function ExportSelectedAcademicPeriodsDialog({
+export function ExportSelectedAreaSubjectsDialog({
   selectedIds,
   resetSelection,
-}: ExportSelectedAcademicPeriodsDialogProps) {
+}: ExportSelectedAreaSubjectsDialogProps) {
   const [open, setOpen] = useState(false)
   const { notify } = useNotify()
   const count = selectedIds.length
 
-  const exportSelected = useExportSelectedAcademicPeriods({
+  const exportSelected = useExportSelectedAreaSubjects({
     mutationConfig: {
       onSuccess: (result) => {
         if (result.status === "error") {
@@ -75,9 +75,10 @@ export function ExportSelectedAcademicPeriodsDialog({
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Exportar periodos seleccionados</DialogTitle>
+          <DialogTitle>Exportar áreas/asignaturas seleccionadas</DialogTitle>
           <DialogDescription>
-            Elegí un formato para exportar {count} periodo(s) seleccionado(s).
+            Elegí un formato para exportar las {count} área(s)/asignatura(s)
+            seleccionada(s).
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="sm:justify-between">

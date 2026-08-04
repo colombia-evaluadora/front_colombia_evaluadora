@@ -10,7 +10,9 @@ import { useDataTable } from "@/hooks/use-data-table"
 import { useGradesQuery } from "../../../api/query/grades/use-grades-query"
 import { createGradeColumns } from "../table/columns-grades"
 import { CreateGradeDialog } from "../dialogs/dialog-create-grade"
+import { DeleteSelectedGradesDialog } from "../dialogs/dialog-delete-selected-grades"
 import { ExportGradesDialog } from "../dialogs/dialog-export-grades"
+import { ExportSelectedGradesDialog } from "../dialogs/dialog-export-selected-grades"
 import { NoticeOutlet } from "../../common/notice-context"
 import type { Jornada } from "../../schedule/schedule-data"
 
@@ -43,7 +45,12 @@ export function TabGrades({ jornada, academicPeriodId }: TabGradesProps) {
     [jornada, academicPeriodId]
   )
 
-  const { table } = useDataTable({
+  const {
+    table,
+    selectedIds,
+    hasSelection,
+    resetSelection,
+  } = useDataTable({
     columns,
     data: data?.rows ?? [],
     pageCount: data?.pageCount ?? -1,
@@ -56,11 +63,31 @@ export function TabGrades({ jornada, academicPeriodId }: TabGradesProps) {
     setSorting,
   })
 
+  const selectedGradeIds = useMemo(
+    () => selectedIds.map(Number),
+    [selectedIds]
+  )
+
   return (
     <>
       <div className="mb-2 flex items-center justify-end gap-2">
-        <CreateGradeDialog jornada={jornada} academicPeriodId={academicPeriodId} />
-        <ExportGradesDialog filters={{}} />
+        {hasSelection ? (
+          <>
+            <DeleteSelectedGradesDialog
+              selectedIds={selectedIds}
+              resetSelection={resetSelection}
+            />
+            <ExportSelectedGradesDialog
+              selectedIds={selectedGradeIds}
+              resetSelection={resetSelection}
+            />
+          </>
+        ) : (
+          <>
+            <CreateGradeDialog jornada={jornada} academicPeriodId={academicPeriodId} />
+            <ExportGradesDialog filters={{}} />
+          </>
+        )}
         <DataTableViewOptions table={table} />
       </div>
 

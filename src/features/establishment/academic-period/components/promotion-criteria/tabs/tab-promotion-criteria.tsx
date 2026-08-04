@@ -329,13 +329,13 @@ const PromotionCriteriaForm = forwardRef<
 
         <form.Field name="applyAverageApproval">
           {(field) => (
-            <Field>
-              <FieldLabel className="flex-1">
+            <Field variant="outlined">
+              <FieldLabel>
                 ¿Aplica la aprobación por promedio?*
               </FieldLabel>
 
               <RadioGroup
-                className="flex gap-6 pt-2"
+                className="flex min-h-10 items-center gap-6 rounded-md border border-input px-3"
                 value={field.state.value ? "si" : "no"}
                 onValueChange={(value) =>
                   field.handleChange(value === "si")

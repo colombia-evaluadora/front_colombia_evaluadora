@@ -528,6 +528,7 @@ export function AcademicPeriodForm({
                 id={field.name}
                 checked={field.state.value}
                 onCheckedChange={(checked) => field.handleChange(checked)}
+                className="rounded-full [&_[data-slot=switch-thumb]]:rounded-full"
               />
             </label>
           )}
