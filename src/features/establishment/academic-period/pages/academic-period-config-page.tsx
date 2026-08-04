@@ -88,6 +88,8 @@ function AcademicPeriodConfigPageContent() {
   const [createdPeriodId, setCreatedPeriodId] = useState<number | null>(null)
   const [jornada, setJornada] = useState<Jornada>(DEFAULT_JORNADA)
   const [configOpen, setConfigOpen] = useState(true)
+  const [isFormDirty, setIsFormDirty] = useState(false)
+  const [savedToken, setSavedToken] = useState(0)
 
   const {
     data: detail,
@@ -117,6 +119,9 @@ function AcademicPeriodConfigPageContent() {
           notify(result.message, { variant: "error" })
           return
         }
+        // Los valores guardados pasan a ser los iniciales del formulario, así
+        // "Guardar" vuelve a ocultarse hasta que el usuario cambie algo más.
+        setSavedToken((token) => token + 1)
         notify(SUCCESS_MESSAGES.academicPeriod.updated)
       },
     },
@@ -141,6 +146,10 @@ function AcademicPeriodConfigPageContent() {
   const isSaving = createPeriod.isPending || updatePeriod.isPending
 
   const showSecondForm = saved || (isEditing && !!detail)
+
+  // Al crear, "Guardar" es el único camino para continuar; al editar solo tiene
+  // sentido si hay algo que guardar (o mientras se está guardando).
+  const showSaveAction = !isEditing || isFormDirty || isSaving
 
   const header = (
     <CardHeader className="border-b">
@@ -188,23 +197,29 @@ function AcademicPeriodConfigPageContent() {
                 id={FORM_ID}
                 defaultValues={detail ? toFormValues(detail) : undefined}
                 onSubmit={handleSubmit}
+                onDirtyChange={setIsFormDirty}
+                savedToken={savedToken}
               />
-              {/* Acciones en el flujo normal, justo debajo de los campos. */}
-              <div className="mt-6 flex justify-end gap-2 border-t border-border pt-4">
-                <Button
-                  type="submit"
-                  size="sm"
-                  color="primary"
-                  form={FORM_ID}
-                  disabled={isSaving}
-                  aria-busy={isSaving}
-                >
-                  {isSaving && (
-                    <SpinnerIcon data-icon="inline-start" className="animate-spin" />
-                  )}
-                  Guardar
-                </Button>
-              </div>
+              {/* Acciones en el flujo normal, justo debajo de los campos. Al
+                  editar solo aparecen si hay cambios sin guardar, para que el
+                  usuario se concentre en las demás secciones. */}
+              {showSaveAction && (
+                <div className="mt-6 flex justify-end gap-2 border-t border-border pt-4">
+                  <Button
+                    type="submit"
+                    size="sm"
+                    color="primary"
+                    form={FORM_ID}
+                    disabled={isSaving}
+                    aria-busy={isSaving}
+                  >
+                    {isSaving && (
+                      <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+                    )}
+                    Guardar
+                  </Button>
+                </div>
+              )}
             </>
           )}
         </AccordionContent>

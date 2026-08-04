@@ -100,7 +100,9 @@ export function ThemeProvider({ children, defaultColorTheme, storageKey }: Theme
   return (
     <NextThemesProvider
       attribute="class"
-      defaultTheme="system"
+      // Arranca en claro, no en el modo del sistema: quien quiera seguirlo
+      // todavía tiene la opción "Sistema" en el selector de modo.
+      defaultTheme="light"
       storageKey="vite-ui-theme"
       enableSystem
       disableTransitionOnChange

@@ -479,12 +479,12 @@ export function CreateRatingScaleDialog({
                       <div className="flex items-end sm:h-full">
                         <Button
                           type="submit"
-                          variant="outline"
+                          variant="fill"
                           size="sm"
                           className="w-full"
                         >
                           <ControlPointIcon data-icon="inline-start" />
-                          Agregar a la lista
+                          Agregar
                         </Button>
                       </div>
                     )}

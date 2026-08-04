@@ -108,6 +108,11 @@ const EmployeesPage = lazyRouteComponent(
   "EmployeesPage"
 )
 
+const RolesMenusPage = lazyRouteComponent(
+  () => import("@/features/administration/roles-menus/pages/roles-menus-page"),
+  "RolesMenusPage"
+)
+
 const AddEstablishmentPage = lazyRouteComponent(
   () => import("@/features/establishment/pages/add-establishment-page"),
   "AddEstablishmentPage"
@@ -313,8 +318,21 @@ const coberturaMatriculaRoute = createRoute({
   component: () => <ComingSoonPage title="Matrícula" />,
 })
 
-export const auditoriaSesionesRoute = createRoute({
+// Mismo criterio que `_establishment`: las cuatro vistas de auditoría
+// comparten un `NoticeProvider` para que el aviso de una exportación o de un
+// revert siga visible al moverse entre ellas.
+const auditsLayoutRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
+  id: "_audits",
+  component: () => (
+    <NoticeProvider>
+      <Outlet />
+    </NoticeProvider>
+  ),
+})
+
+export const auditoriaSesionesRoute = createRoute({
+  getParentRoute: () => auditsLayoutRoute,
   path: paths.app.auditoriaSesiones.path,
   validateSearch: auditsSearchSchema,
   staticData: {
@@ -324,7 +342,7 @@ export const auditoriaSesionesRoute = createRoute({
 })
 
 export const auditoriaTablasRoute = createRoute({
-  getParentRoute: () => appLayoutRoute,
+  getParentRoute: () => auditsLayoutRoute,
   path: paths.app.auditoriaTablas.path,
   validateSearch: auditTablesSearchSchema,
   staticData: {
@@ -338,7 +356,7 @@ export const auditoriaTablasRoute = createRoute({
 })
 
 export const auditoriaTablaDetalleRoute = createRoute({
-  getParentRoute: () => appLayoutRoute,
+  getParentRoute: () => auditsLayoutRoute,
   path: paths.app.auditoriaTablaDetalle.path,
   validateSearch: tableOperationsSearchSchema,
   staticData: {
@@ -350,6 +368,15 @@ export const auditoriaTablaDetalleRoute = createRoute({
     ],
   },
   component: TableOperationsPage,
+})
+
+export const rolesMenusRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.rolesMenus.path,
+  staticData: {
+    breadcrumb: [ADMINISTRACION_CRUMB, { label: "Configuración de roles y menús" }],
+  },
+  component: RolesMenusPage,
 })
 
 // Ruta sin path propio: agrupa establecimientos/sedes/funcionarios bajo un
@@ -418,7 +445,7 @@ export const editEstablishmentRoute = createRoute({
 })
 
 export const auditoriaSesionOperacionesRoute = createRoute({
-  getParentRoute: () => appLayoutRoute,
+  getParentRoute: () => auditsLayoutRoute,
   path: paths.app.auditoriaSesionOperaciones.path,
   validateSearch: sessionOperationsSearchSchema,
   // El `sessionId` es un identificador opaco: no se muestra como miga.
@@ -496,10 +523,13 @@ const routeTree = rootRoute.addChildren([
     coberturaPreMatriculaRoute,
     coberturaInscritosRoute,
     coberturaMatriculaRoute,
-    auditoriaSesionesRoute,
-    auditoriaTablasRoute,
-    auditoriaTablaDetalleRoute,
-    auditoriaSesionOperacionesRoute,
+    auditsLayoutRoute.addChildren([
+      auditoriaSesionesRoute,
+      auditoriaTablasRoute,
+      auditoriaTablaDetalleRoute,
+      auditoriaSesionOperacionesRoute,
+    ]),
+    rolesMenusRoute,
     periodosAcademicosRoute,
     periodosAcademicosAgregarRoute,
     periodosAcademicosEditarRoute,

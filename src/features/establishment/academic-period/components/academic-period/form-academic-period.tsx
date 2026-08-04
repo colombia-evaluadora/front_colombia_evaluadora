@@ -1,4 +1,5 @@
-import { useForm } from "@tanstack/react-form"
+import { useEffect, useRef } from "react"
+import { useForm, useStore } from "@tanstack/react-form"
 
 import { Badge } from "@/components/ui/badge"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
@@ -35,6 +36,12 @@ interface AcademicPeriodFormProps {
   id: string
   defaultValues?: Partial<AcademicPeriodFormInput>
   onSubmit: (values: AcademicPeriodFormValues) => void
+  /** Avisa si los valores actuales difieren de los iniciales, para que quien
+   *  renderiza las acciones solo muestre "Guardar" cuando haya cambios. */
+  onDirtyChange?: (isDirty: boolean) => void
+  /** Cada vez que cambia, los valores actuales pasan a ser los iniciales
+   *  (se usa tras guardar con éxito, para volver a ocultar "Guardar"). */
+  savedToken?: number
 }
 
 const EMPTY_VALUES: AcademicPeriodFormInput = {
@@ -58,6 +65,8 @@ export function AcademicPeriodForm({
   id,
   defaultValues,
   onSubmit,
+  onDirtyChange,
+  savedToken = 0,
 }: AcademicPeriodFormProps) {
   const initialValues = {
     ...EMPTY_VALUES,
@@ -78,6 +87,21 @@ export function AcademicPeriodForm({
       onSubmit(academicPeriodFormSchema.parse(value))
     },
   })
+
+  // `isDefaultValue` vuelve a ser true si el usuario deshace sus cambios, así
+  // el botón desaparece igual que si nunca hubiera tocado el formulario.
+  const isDefaultValue = useStore(form.store, (state) => state.isDefaultValue)
+
+  useEffect(() => {
+    onDirtyChange?.(!isDefaultValue)
+  }, [isDefaultValue, onDirtyChange])
+
+  const lastSavedToken = useRef(savedToken)
+  useEffect(() => {
+    if (lastSavedToken.current === savedToken) return
+    lastSavedToken.current = savedToken
+    form.reset(form.state.values)
+  }, [form, savedToken])
 
   const { data: periodsData } = useAcademicPeriodsQuery({
     filters: {},

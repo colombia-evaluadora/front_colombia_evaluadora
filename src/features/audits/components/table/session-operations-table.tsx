@@ -15,6 +15,7 @@ import { SearchSessionOperations } from "../search/search-session-operations"
 import { ExportSelectedSessionOperationsDialog } from "../dialogs/dialog-export-selected-session-operations"
 import { ExportSessionOperationsDialog } from "../dialogs/dialog-export-session-operations"
 import { ClearSelectionSessionOperationsDialog } from "../dialogs/dialog-clear-selection-session-operations"
+import { NoticeOutlet } from "@/components/notice/notice-context"
 
 interface SessionOperationsDataTableProps {
   sessionId: string
@@ -84,6 +85,8 @@ export function SessionOperationsDataTable({
       </TablePageHeader>
 
       <div className="px-(--card-spacing)">
+        <NoticeOutlet className="mb-3" />
+
         <DataTable
           table={table}
           isPending={isPending}

@@ -71,6 +71,10 @@ export const paths = {
       path: "auditoria-tablas/$tableSlug",
       getHref: (tableSlug: string) => `/app/auditoria-tablas/${tableSlug}`,
     },
+    rolesMenus: {
+      path: "administracion/roles-menus",
+      getHref: () => "/app/administracion/roles-menus",
+    },
     periodosAcademicos: {
       path: "establecimiento-educativo/periodos",
       getHref: () => "/app/establecimiento-educativo/periodos",

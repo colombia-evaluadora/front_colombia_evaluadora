@@ -29,6 +29,7 @@ import { campusHandlers } from "./campuses"
 import { employeeHandlers } from "./employees"
 import { catalogHandlers } from "./catalog"
 import { reservationsHandlers } from "./reservations"
+import { rolesHandlers } from "./roles"
 
 export const handlers = [
   ...authHandlers,
@@ -61,5 +62,6 @@ export const handlers = [
   ...establishmentHandlers,
   ...campusHandlers,
   ...employeeHandlers,
-  ...catalogHandlers
+  ...catalogHandlers,
+  ...rolesHandlers,
 ]
