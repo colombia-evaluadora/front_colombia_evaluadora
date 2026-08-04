@@ -55,6 +55,7 @@ export function createEvaluationPeriodColumns({
   {
     id: "codigo",
     accessorKey: "codigo",
+    meta: { label: "Código" },
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Código" />
     ),
@@ -65,6 +66,7 @@ export function createEvaluationPeriodColumns({
   {
     id: "nombre",
     accessorKey: "nombre",
+    meta: { label: "Nombre" },
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Nombre" />
     ),
@@ -75,6 +77,7 @@ export function createEvaluationPeriodColumns({
   {
     id: "abreviacion",
     accessorKey: "abreviacion",
+    meta: { label: "Abreviación" },
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Abreviación" />
     ),
@@ -83,6 +86,7 @@ export function createEvaluationPeriodColumns({
   {
     id: "startDate",
     accessorKey: "startDate",
+    meta: { label: "Fecha inicio" },
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Fecha inicio" />
     ),
@@ -91,6 +95,7 @@ export function createEvaluationPeriodColumns({
   {
     id: "endDate",
     accessorKey: "endDate",
+    meta: { label: "Fecha fin" },
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Fecha fin" />
     ),
@@ -99,6 +104,7 @@ export function createEvaluationPeriodColumns({
   {
     id: "peso",
     accessorKey: "peso",
+    meta: { label: "Peso porcentual" },
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Peso porcentual" />
     ),
@@ -107,6 +113,7 @@ export function createEvaluationPeriodColumns({
   {
     id: "estado",
     accessorKey: "estado",
+    meta: { label: "Estado" },
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Estado" />
     ),

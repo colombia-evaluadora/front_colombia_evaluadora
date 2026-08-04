@@ -108,14 +108,16 @@ export function IdentificationDataFormSection({ value, onChange, invalidFields =
                                 className="h-full min-h-40 w-full flex-nowrap has-data-[slot=attachment-content]:w-full"
                             >
                                 {/*
-                                    El alto lo pone la fila, no la imagen: se saca el
-                                    `aspect-square` y el medio se estira con `flex-1`.
-                                    `object-contain` porque un escudo recortado pierde
-                                    sentido, a diferencia de una foto.
+                                    El alto lo pone la fila, no la imagen: la vista
+                                    previa va posicionada sobre el medio (que ya es
+                                    `relative overflow-hidden`) para que su tamaño
+                                    natural no empuje la caja y termine estirando las
+                                    filas del grid. `object-contain` porque un escudo
+                                    recortado pierde sentido, a diferencia de una foto.
                                 */}
                                 <AttachmentMedia
                                     variant="image"
-                                    className="aspect-auto min-h-0 w-full flex-1 *:[img]:aspect-auto *:[img]:h-full *:[img]:object-contain"
+                                    className="aspect-auto min-h-0 w-full flex-1 *:[img]:absolute *:[img]:inset-0 *:[img]:aspect-auto *:[img]:size-full *:[img]:object-contain"
                                 >
                                     {shieldPreview ? (
                                         <img src={shieldPreview} alt={`Escudo: ${shield.name}`} />

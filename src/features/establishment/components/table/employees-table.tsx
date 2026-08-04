@@ -8,6 +8,7 @@ import { TablePageHeader } from "@/components/table-page-header"
 import { useDataTable } from "@/hooks/use-data-table"
 import { useTablePagination } from "@/hooks/use-table-pagination"
 import { CATALOGS } from "@/lib/catalogs"
+import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 
 import { useCatalogQuery } from "../../api/query/use-catalogs"
 import { useEmployeesFilters } from "../../hooks/use-employees-filters"
@@ -84,7 +85,7 @@ export function EmployeesDataTable({
           notify(result.message, { variant: "error" })
           return
         }
-        notify(result.message)
+        notify(SUCCESS_MESSAGES.employee.deletedMany(selectedIds.length))
         resetSelection()
       },
       onError: (error) => {

@@ -71,6 +71,7 @@ export function createRatingScaleLevelColumns({
     {
       id: "nombre",
       accessorKey: "nombre",
+      meta: { label: "Niveles de enseñanza" },
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Niveles de enseñanza" />
       ),

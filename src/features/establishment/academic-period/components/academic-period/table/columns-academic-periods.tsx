@@ -55,6 +55,7 @@ export const columns: ColumnDef<AcademicPeriod>[] = [
   {
     id: "schoolYearId",
     accessorKey: "schoolYearId",
+    meta: { label: "Año lectivo" },
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Año lectivo" />
     ),
@@ -65,6 +66,7 @@ export const columns: ColumnDef<AcademicPeriod>[] = [
   {
     id: "sedeName",
     accessorKey: "sedeName",
+    meta: { label: "Sede" },
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Sede" />
     ),
@@ -75,6 +77,7 @@ export const columns: ColumnDef<AcademicPeriod>[] = [
   {
     id: "status",
     accessorKey: "status",
+    meta: { label: "Estado" },
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Estado" />
     ),
@@ -85,6 +88,7 @@ export const columns: ColumnDef<AcademicPeriod>[] = [
   {
     id: "startDate",
     accessorKey: "startDate",
+    meta: { label: "Fecha inicio" },
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Fecha inicio" />
     ),
@@ -93,6 +97,7 @@ export const columns: ColumnDef<AcademicPeriod>[] = [
   {
     id: "endDate",
     accessorKey: "endDate",
+    meta: { label: "Fecha finalización" },
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Fecha finalización" />
     ),

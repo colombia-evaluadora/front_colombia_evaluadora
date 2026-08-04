@@ -47,6 +47,7 @@ export function createGradeColumns({
   {
     id: "nombre",
     accessorKey: "nombre",
+    meta: { label: "Nombre del grado" },
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Nombre del grado" />
     ),
@@ -57,6 +58,7 @@ export function createGradeColumns({
   {
     id: "grado",
     accessorKey: "grado",
+    meta: { label: "Grado" },
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Grado" />
     ),
@@ -65,6 +67,7 @@ export function createGradeColumns({
   {
     id: "teachingLevelName",
     accessorKey: "teachingLevelName",
+    meta: { label: "Nivel de enseñanza" },
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Nivel de enseñanza" />
     ),

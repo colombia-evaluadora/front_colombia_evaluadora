@@ -108,16 +108,6 @@ export const paths = {
       campuses: {
           path: "establecimiento-educativo/sedes",
           getHref: () => "/app/establecimiento-educativo/sedes",
-
-          add: {
-            path: "establecimiento-educativo/sedes/agregar",
-            getHref: () => "/app/establecimiento-educativo/sedes/agregar",
-          },
-
-          edit: {
-            path: "establecimiento-educativo/sedes/editar/$campusId",
-            getHref: (campusId: string) => `/app/establecimiento-educativo/sedes/editar/${campusId}`,
-          },
       },
 
       officials: {

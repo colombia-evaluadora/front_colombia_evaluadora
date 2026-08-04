@@ -44,6 +44,7 @@ export function createGradeGroupColumns({
   {
     id: "codigo",
     accessorKey: "codigo",
+    meta: { label: "Grupo" },
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Grupo" />
     ),
@@ -54,6 +55,7 @@ export function createGradeGroupColumns({
   {
     id: "jornada",
     accessorKey: "jornada",
+    meta: { label: "Jornada" },
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Jornada" />
     ),
@@ -62,6 +64,7 @@ export function createGradeGroupColumns({
   {
     id: "director",
     accessorKey: "director",
+    meta: { label: "Director de grupo" },
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Director de grupo" />
     ),

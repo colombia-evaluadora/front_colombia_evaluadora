@@ -102,6 +102,7 @@ export function createAcademicAssignmentColumns({
     {
       id: "documentNumber",
       accessorKey: "documentNumber",
+      meta: { label: "Documento" },
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Documento" />
       ),
@@ -112,6 +113,7 @@ export function createAcademicAssignmentColumns({
     {
       id: "name",
       accessorKey: "name",
+      meta: { label: "Nombre" },
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Nombre" />
       ),
@@ -124,6 +126,7 @@ export function createAcademicAssignmentColumns({
     {
       id: "status",
       accessorKey: "status",
+      meta: { label: "Estado" },
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Estado" />
       ),
