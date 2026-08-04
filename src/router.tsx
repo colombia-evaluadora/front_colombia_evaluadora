@@ -266,6 +266,14 @@ const REGISTRO_ACTIVIDAD_CRUMB = {
   label: "Registro de actividad",
   to: paths.app.auditoriaSesiones.getHref(),
 }
+const ESTABLECIMIENTO_CRUMB = {
+  label: "Establecimiento educativo",
+  to: paths.app.establishments.general.getHref(),
+}
+const PERIODOS_CRUMB = {
+  label: "Periodos académicos",
+  to: paths.app.periodosAcademicos.getHref(),
+}
 
 export const paymentsRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
@@ -362,6 +370,7 @@ export const establishmentsRoute = createRoute({
   getParentRoute: () => establishmentLayoutRoute,
   path: paths.app.establishments.general.path,
   validateSearch: establishmentsSearchSchema,
+  staticData: { breadcrumb: [ESTABLECIMIENTO_CRUMB, { label: "Establecimiento" }] },
   component: EstablishmentsPage,
 })
 
@@ -369,6 +378,7 @@ export const campusesRoute = createRoute({
   getParentRoute: () => establishmentLayoutRoute,
   path: paths.app.establishments.campuses.path,
   validateSearch: campusesSearchSchema,
+  staticData: { breadcrumb: [ESTABLECIMIENTO_CRUMB, { label: "Sedes educativas" }] },
   component: CampusesPage,
 })
 
@@ -376,18 +386,34 @@ export const employeesRoute = createRoute({
   getParentRoute: () => establishmentLayoutRoute,
   path: paths.app.establishments.officials.path,
   validateSearch: employeesSearchSchema,
+  staticData: { breadcrumb: [ESTABLECIMIENTO_CRUMB, { label: "Funcionarios" }] },
   component: EmployeesPage,
 })
 
 export const addEstablishmentRoute = createRoute({
   getParentRoute: () => establishmentLayoutRoute,
   path: paths.app.establishments.add.path,
+  staticData: {
+    breadcrumb: [
+      ESTABLECIMIENTO_CRUMB,
+      { label: "Establecimiento", to: paths.app.establishments.general.getHref() },
+      { label: "Agregar" },
+    ],
+  },
   component: AddEstablishmentPage,
 })
 
 export const editEstablishmentRoute = createRoute({
   getParentRoute: () => establishmentLayoutRoute,
   path: paths.app.establishments.edit.path,
+  // El `establishmentId` es un identificador opaco: no se muestra como miga.
+  staticData: {
+    breadcrumb: [
+      ESTABLECIMIENTO_CRUMB,
+      { label: "Establecimiento", to: paths.app.establishments.general.getHref() },
+      { label: "Editar" },
+    ],
+  },
   component: AddEstablishmentPage,
 })
 
@@ -410,18 +436,26 @@ export const periodosAcademicosRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.periodosAcademicos.path,
   validateSearch: academicPeriodsSearchSchema,
+  staticData: { breadcrumb: [ESTABLECIMIENTO_CRUMB, { label: "Periodos académicos" }] },
   component: AcademicPeriodsPage,
 })
 
 export const periodosAcademicosAgregarRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.periodosAcademicosAgregar.path,
+  staticData: {
+    breadcrumb: [ESTABLECIMIENTO_CRUMB, PERIODOS_CRUMB, { label: "Agregar" }],
+  },
   component: AcademicPeriodConfigPage,
 })
 
 export const periodosAcademicosEditarRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.periodosAcademicosEditar.path,
+  // El `periodId` es un identificador opaco: no se muestra como miga.
+  staticData: {
+    breadcrumb: [ESTABLECIMIENTO_CRUMB, PERIODOS_CRUMB, { label: "Editar" }],
+  },
   component: AcademicPeriodConfigPage,
 })
 

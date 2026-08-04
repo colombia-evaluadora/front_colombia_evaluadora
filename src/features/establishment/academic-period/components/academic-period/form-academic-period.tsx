@@ -1,5 +1,6 @@
 import { useForm } from "@tanstack/react-form"
 
+import { Badge } from "@/components/ui/badge"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input, inputVariants } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
@@ -26,6 +27,7 @@ import {
   type AcademicPeriodFormValues,
 } from "../../api/schema"
 import type { AcademicPeriodStatus } from "../../api/types/academic-period"
+import { ACADEMIC_PERIOD_STATUS_BADGE } from "../../api/ui-mappings"
 import { DatePicker } from "@/components/date-picker"
 import { formatDateValue, parseDateValue } from "@/lib/date-value"
 
@@ -305,11 +307,19 @@ export function AcademicPeriodForm({
                 }
               >
                 <SelectTrigger id={field.name}>
+                  {/* El valor elegido se muestra como el mismo badge soft que
+                      usa la columna Estado de la tabla, para que el estado se
+                      lea igual en el formulario y en el listado. */}
                   <SelectValue placeholder="Seleccionar">
-                    {(value) =>
-                      statusOptions.find((option) => option.key === value)
-                        ?.label ?? "Seleccionar"
-                    }
+                    {(value) => {
+                      const status = value as AcademicPeriodStatus
+                      const badge = ACADEMIC_PERIOD_STATUS_BADGE[status]
+                      if (!badge) return "Seleccionar"
+                      const label =
+                        statusOptions.find((option) => option.key === status)
+                          ?.label ?? status
+                      return <Badge {...badge}>{label}</Badge>
+                    }}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
