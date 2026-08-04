@@ -22,7 +22,7 @@ import { ClearSelectionDialog } from "../dialogs/dialog-clear-selection"
 import { ExportEmployeesDialog } from "../dialogs/dialog-export-employees"
 import { ExportSelectedEmployeesDialog } from "../dialogs/dialog-export-selected-employees"
 import { SearchEmployees } from "../search/search-employees"
-import { useNotify, NoticeOutlet } from "../common/notice-context"
+import { useNotify, NoticeOutlet } from "@/components/notice/notice-context"
 
 interface EmployeesDataTableProps {
   onEditEmployee: (employeeId: string) => void

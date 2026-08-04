@@ -19,7 +19,7 @@ import { campusesRoute } from "@/router"
 
 import { useDeleteCampus } from "../../api/mutations/delete-campus"
 import type { Campus } from "../../api/types/campus"
-import { useNotify } from "../common/notice-context"
+import { useNotify } from "@/components/notice/notice-context"
 
 interface DeleteCampusDialogProps {
   campus: Campus

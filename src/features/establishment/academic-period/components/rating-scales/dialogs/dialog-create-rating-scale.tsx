@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/icons"
 import { z } from "zod"
 
-import { useNotify, NoticeOutlet } from "../../common/notice-context"
+import { useNotify, NoticeOutlet } from "@/components/notice/notice-context"
 
 import { Button } from "@/components/ui/button"
 import {

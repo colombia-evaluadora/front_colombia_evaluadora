@@ -7,7 +7,7 @@ import {
   SpinnerIcon,
 } from "@/components/ui/icons"
 
-import { useNotify } from "../../common/notice-context"
+import { useNotify } from "@/components/notice/notice-context"
 import {
   Dialog,
   DialogClose,

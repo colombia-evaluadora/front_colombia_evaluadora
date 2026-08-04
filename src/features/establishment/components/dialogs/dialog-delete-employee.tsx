@@ -18,7 +18,7 @@ import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 
 import { useDeleteEmployee } from "../../api/mutations/use-delete-employee"
 import type { EmployeeListItem } from "../../api/types/employee"
-import { useNotify } from "../common/notice-context"
+import { useNotify } from "@/components/notice/notice-context"
 
 interface DeleteEmployeeDialogProps {
   employee: EmployeeListItem

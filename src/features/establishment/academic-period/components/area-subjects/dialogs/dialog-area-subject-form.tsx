@@ -10,7 +10,7 @@ import {
   TrashIcon,
   XIcon,
 } from "@/components/ui/icons"
-import { useNotify, NoticeOutlet } from "../../common/notice-context"
+import { useNotify, NoticeOutlet } from "@/components/notice/notice-context"
 
 import {
   AlertDialog,

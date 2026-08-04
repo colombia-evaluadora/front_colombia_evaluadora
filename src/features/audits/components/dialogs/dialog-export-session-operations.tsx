@@ -1,7 +1,6 @@
 import { useState } from "react"
 
 import { DownloadSimpleIcon, FilePdfIcon, FileXlsIcon, SpinnerIcon } from "@/components/ui/icons"
-import { toast } from "sonner"
 
 import {
   Dialog,
@@ -17,22 +16,24 @@ import { Button } from "@/components/ui/button"
 
 import { useExportSessionOperations } from "../../api/mutations/export-session-operations"
 import type { ExportFormat } from "../../api/types/audit"
+import { useNotify } from "@/components/notice/notice-context"
 
 interface ExportSessionOperationsDialogProps {
   sessionId: string
 }
 
 export function ExportSessionOperationsDialog({ sessionId }: ExportSessionOperationsDialogProps) {
+  const { notify } = useNotify()
   const [open, setOpen] = useState(false)
 
   const exportAll = useExportSessionOperations({
     mutationConfig: {
       onSuccess: (result) => {
         if (result.status === "error") {
-          toast.error(result.message)
+          notify(result.message, { variant: "error" })
           return
         }
-        toast.success(result.message)
+        notify(result.message)
         setOpen(false)
       },
     },

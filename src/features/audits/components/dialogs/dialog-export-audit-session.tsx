@@ -1,7 +1,6 @@
 import { useState } from "react"
 
 import { DownloadSimpleIcon, FilePdfIcon, FileXlsIcon, SpinnerIcon } from "@/components/ui/icons"
-import { toast } from "sonner"
 
 import {
   Dialog,
@@ -17,22 +16,24 @@ import { Button } from "@/components/ui/button"
 
 import { useExportAudits } from "../../api/mutations/export-audits"
 import type { AuditsQueryRequest, ExportFormat } from "../../api/types/audit"
+import { useNotify } from "@/components/notice/notice-context"
 
 interface ExportAuditSessionDialogProps {
   filters: AuditsQueryRequest["filters"]
 }
 
 export function ExportAuditSessionDialog({ filters }: ExportAuditSessionDialogProps) {
+  const { notify } = useNotify()
   const [open, setOpen] = useState(false)
 
   const exportAll = useExportAudits({
     mutationConfig: {
       onSuccess: (result) => {
         if (result.status === "error") {
-          toast.error(result.message)
+          notify(result.message, { variant: "error" })
           return
         }
-        toast.success(result.message)
+        notify(result.message)
         setOpen(false)
       },
     },

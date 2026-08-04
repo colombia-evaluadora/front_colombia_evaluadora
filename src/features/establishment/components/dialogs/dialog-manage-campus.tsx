@@ -18,7 +18,7 @@ import { useCampusQuery } from "../../api/query/use-campus-query"
 import { useCatalogQuery } from "../../api/query/use-catalogs"
 import type { CatalogItem } from "../../api/types/catalog"
 import type { Campus } from "../../api/types/campus"
-import { NoticeOutlet, useNotify } from "../common/notice-context"
+import { NoticeOutlet, useNotify } from "@/components/notice/notice-context"
 
 interface ManageCampusDialogProps {
   open: boolean

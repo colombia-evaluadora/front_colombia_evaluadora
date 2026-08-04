@@ -50,7 +50,7 @@ import {
   type EmployeeAdditionalInfoValue,
 } from "../forms/form-employee-additional-info"
 import { UserDetailsForm } from "../forms/form-user-datails"
-import { NoticeOutlet, useNotify } from "../common/notice-context"
+import { NoticeOutlet, useNotify } from "@/components/notice/notice-context"
 
 interface ManageEmployeeDialogProps {
   open: boolean

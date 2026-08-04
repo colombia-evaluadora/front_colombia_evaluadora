@@ -33,7 +33,7 @@ import { academicPeriodsSearchSchema } from "@/features/establishment/academic-p
 import { establishmentsSearchSchema } from "@/features/establishment/api/establishment-schema"
 import { campusesSearchSchema } from "@/features/establishment/api/campus-schema"
 import { employeesSearchSchema } from "@/features/establishment/api/employee-schema"
-import { NoticeProvider } from "@/features/establishment/components/common/notice-context"
+import { NoticeProvider } from "@/components/notice/notice-context"
 
 /*const LandingPage = lazyRouteComponent(
   () => import("@/features/landing/pages/landing-page"),

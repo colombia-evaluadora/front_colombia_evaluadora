@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from "react"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { ControlPointIcon, PencilIcon, SpinnerIcon } from "@/components/ui/icons"
 
-import { useNotify, NoticeOutlet } from "../../common/notice-context"
+import { useNotify, NoticeOutlet } from "@/components/notice/notice-context"
 
 import { Button } from "@/components/ui/button"
 import {

@@ -1,38 +1,29 @@
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { Link } from "@tanstack/react-router"
+import { Card } from "@/components/ui/card"
+
+import { AuditPageHeader } from "../components/audit-page-header"
 import { AuditTablesGrid } from "../components/table/audit-tables-grid"
-import { paths } from "@/config/paths"
-import { Button } from "@/components/ui/button"
+import { FilterAuditTablesForm } from "../components/forms/form-filter-audit-tables"
+import { useAuditTablesFilters } from "../hooks/use-audit-tables-filters"
+
+const FILTER_AUDIT_TABLES_FORM_ID = "filter-audit-tables-form"
 
 export function AuditTablesPage() {
+  const { filters, applyFilters } = useAuditTablesFilters()
+
   return (
-    <Card>
-      <CardHeader>
-        <CardAction>
-          <Button
-            variant="ghost"
-            size="sm"
-            render={<Link to={paths.app.auditoriaSesiones.getHref()} />}
-            nativeButton={false}
-          >
-            Por sesión
-          </Button>
-        </CardAction>
-        <CardTitle>Registro de actividad por tabla</CardTitle>
-        <CardDescription>
-          Elegí una tabla para ver el historial de operaciones sobre sus registros.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+    // `overflow-visible`: el `overflow-hidden` del Card anularía el sticky
+    // del encabezado.
+    <Card className="overflow-visible">
+      <AuditPageHeader>
+        <FilterAuditTablesForm
+          id={FILTER_AUDIT_TABLES_FORM_ID}
+          defaultValues={filters}
+          onSubmit={applyFilters}
+        />
+      </AuditPageHeader>
+      <div className="px-(--card-spacing)">
         <AuditTablesGrid />
-      </CardContent>
+      </div>
     </Card>
   )
 }

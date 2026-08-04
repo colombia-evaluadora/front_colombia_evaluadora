@@ -33,7 +33,7 @@ import {
   NoticeOutlet,
   NoticeProvider,
   useNotify,
-} from "../components/common/notice-context"
+} from "@/components/notice/notice-context"
 import {
   DEFAULT_JORNADA,
   type Jornada,

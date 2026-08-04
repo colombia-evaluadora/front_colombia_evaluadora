@@ -1,6 +1,6 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
-import { NoticeProvider } from "../common/notice-context"
+import { NoticeProvider } from "@/components/notice/notice-context"
 import { TabEvaluationPeriods } from "../evaluation-periods/tabs/tab-evaluation-periods"
 import { TabPromotionCriteria } from "../promotion-criteria/tabs/tab-promotion-criteria"
 import { TabGrades } from "../grades/tabs/tab-grades"

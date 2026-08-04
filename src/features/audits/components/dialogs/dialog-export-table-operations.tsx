@@ -1,7 +1,6 @@
 import { useState } from "react"
 
 import { DownloadSimpleIcon, FilePdfIcon, FileXlsIcon, SpinnerIcon } from "@/components/ui/icons"
-import { toast } from "sonner"
 
 import {
   Dialog,
@@ -18,6 +17,7 @@ import { Button } from "@/components/ui/button"
 import { useExportTableOperations } from "../../api/mutations/export-table-operations"
 import type { ExportFormat } from "../../api/types/audit"
 import type { TableOperationsQueryRequest } from "../../api/types/audit-table"
+import { useNotify } from "@/components/notice/notice-context"
 
 interface ExportTableOperationsDialogProps {
   tableSlug: string
@@ -28,16 +28,17 @@ export function ExportTableOperationsDialog({
   tableSlug,
   filters,
 }: ExportTableOperationsDialogProps) {
+  const { notify } = useNotify()
   const [open, setOpen] = useState(false)
 
   const exportAll = useExportTableOperations({
     mutationConfig: {
       onSuccess: (result) => {
         if (result.status === "error") {
-          toast.error(result.message)
+          notify(result.message, { variant: "error" })
           return
         }
-        toast.success(result.message)
+        notify(result.message)
         setOpen(false)
       },
     },

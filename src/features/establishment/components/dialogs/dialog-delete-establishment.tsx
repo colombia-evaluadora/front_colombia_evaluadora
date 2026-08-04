@@ -19,7 +19,7 @@ import { establishmentsRoute } from "@/router"
 
 import { useDeleteEstablishment } from "../../api/mutations/delete-establishment"
 import type { Establishment } from "../../api/types/establishment"
-import { useNotify } from "../common/notice-context"
+import { useNotify } from "@/components/notice/notice-context"
 
 interface DeleteEstablishmentDialogProps {
   establishment: Establishment

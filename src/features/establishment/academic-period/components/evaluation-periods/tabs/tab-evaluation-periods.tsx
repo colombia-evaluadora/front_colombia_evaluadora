@@ -13,7 +13,7 @@ import { CreateEvaluationPeriodDialog } from "../dialogs/dialog-create-evaluatio
 import { DeleteSelectedEvaluationPeriodsDialog } from "../dialogs/dialog-delete-selected-evaluation-periods"
 import { ExportEvaluationPeriodsDialog } from "../dialogs/dialog-export-evaluation-periods"
 import { ExportSelectedEvaluationPeriodsDialog } from "../dialogs/dialog-export-selected-evaluation-periods"
-import { NoticeOutlet } from "../../common/notice-context"
+import { NoticeOutlet } from "@/components/notice/notice-context"
 
 interface TabEvaluationPeriodsProps {
   academicPeriodId?: number

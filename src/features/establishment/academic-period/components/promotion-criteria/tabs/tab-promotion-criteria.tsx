@@ -3,7 +3,7 @@ import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import type { AnyFieldApi } from "@tanstack/react-form"
 import { useForm } from "@tanstack/react-form"
 
-import { useNotify, NoticeOutlet } from "../../common/notice-context"
+import { useNotify, NoticeOutlet } from "@/components/notice/notice-context"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 import { Field, FieldLabel } from "@/components/ui/field"
