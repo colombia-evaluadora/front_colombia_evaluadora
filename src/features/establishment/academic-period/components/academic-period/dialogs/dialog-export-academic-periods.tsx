@@ -61,11 +61,15 @@ export function ExportAcademicPeriodsDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
         render={
-          <Button color="primary" aria-label="Exportar periodos filtrados" />
+          <Button
+            variant="outline"
+            color="muted"
+            size="icon"
+            aria-label="Exportar periodos filtrados"
+          />
         }
       >
-        <DownloadSimpleIcon data-icon="inline-start" />
-        <span className="sr-only md:not-sr-only">Exportar</span>
+        <DownloadSimpleIcon aria-hidden="true" />
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>

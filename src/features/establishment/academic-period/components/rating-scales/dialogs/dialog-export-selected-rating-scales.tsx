@@ -20,23 +20,28 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 
-import { useExportSelectedAcademicPeriods } from "../../../api/mutations/academic-period/export-selected-academic-periods"
-import type { ExportFormat } from "../../../api/types/academic-period"
+import { useExportSelectedRatingScales } from "../../../api/mutations/rating-scales/export-selected-rating-scales"
+import type { ExportFormat } from "../../../api/types/rating-scales"
 
-interface ExportSelectedAcademicPeriodsDialogProps {
-  selectedIds: string[]
+interface ExportSelectedRatingScalesDialogProps {
+  /** Cantidad de niveles de enseñanza seleccionados — se muestra en el trigger
+   *  y en el header del dialog. */
+  levelCount: number
+  /** Códigos de escala a exportar (los niveles se expanden a sus escalas). */
+  scaleCodigos: number[]
   resetSelection: () => void
 }
 
-export function ExportSelectedAcademicPeriodsDialog({
-  selectedIds,
+export function ExportSelectedRatingScalesDialog({
+  levelCount,
+  scaleCodigos,
   resetSelection,
-}: ExportSelectedAcademicPeriodsDialogProps) {
+}: ExportSelectedRatingScalesDialogProps) {
   const [open, setOpen] = useState(false)
   const { notify } = useNotify()
-  const count = selectedIds.length
+  const count = levelCount
 
-  const exportSelected = useExportSelectedAcademicPeriods({
+  const exportSelected = useExportSelectedRatingScales({
     mutationConfig: {
       onSuccess: (result) => {
         if (result.status === "error") {
@@ -51,7 +56,7 @@ export function ExportSelectedAcademicPeriodsDialog({
   })
 
   function handleExport(format: ExportFormat) {
-    exportSelected.mutate({ ids: selectedIds, format })
+    exportSelected.mutate({ ids: scaleCodigos, format })
   }
 
   const pendingFormat = exportSelected.isPending
@@ -75,9 +80,10 @@ export function ExportSelectedAcademicPeriodsDialog({
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Exportar periodos seleccionados</DialogTitle>
+          <DialogTitle>Exportar escalas seleccionadas</DialogTitle>
           <DialogDescription>
-            Elegí un formato para exportar {count} periodo(s) seleccionado(s).
+            Elegí un formato para exportar las escalas de los {count}{" "}
+            nivel(es) seleccionado(s).
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="sm:justify-between">

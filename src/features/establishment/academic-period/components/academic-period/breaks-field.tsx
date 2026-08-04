@@ -118,7 +118,7 @@ export function BreaksField({
         <CaretDownIcon className="text-muted-foreground size-4 shrink-0" />
       </PopoverTrigger>
       <PopoverContent align="start" className="w-auto min-w-72">
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-2">
           <BreakEditor onAdd={onAdd} />
 
           {value.length > 0 && (
@@ -128,15 +128,18 @@ export function BreaksField({
                 return (
                   <li
                     key={`${brk.startTime}-${brk.endTime}-${originalIndex}`}
-                    className="flex items-center justify-between gap-4 border-t py-1 text-sm first:border-t-0"
+                    className="flex items-center justify-between py-0.5 text-sm"
                   >
-                    <span>
-                      {formatTime12(brk.startTime)} → {formatTime12(brk.endTime)}
+                    <span className="font-medium">
+                      {formatTime12(brk.startTime)}
+                      <span className="text-muted-foreground mx-1">→</span>
+                      {formatTime12(brk.endTime)}
                     </span>
                     <Button
                       type="button"
                       variant="ghost"
                       size="icon-sm"
+                      className="text-muted-foreground hover:text-foreground size-6"
                       aria-label={`Quitar descanso ${originalIndex + 1}`}
                       onClick={() => onRemove(originalIndex)}
                     >
@@ -159,7 +162,7 @@ function BreakEditor({ onAdd }: { onAdd: (brk: Break) => void }) {
 
   return (
     <div className="flex w-full items-center gap-2">
-      <div className="border-input flex flex-1 items-center gap-3 border px-2 py-1">
+      <div className="border-input flex flex-1 items-center gap-3 rounded-lg border px-3 py-2.5">
         <BreakTimeTrigger
           value={startTime}
           onChange={setStartTime}
@@ -176,6 +179,7 @@ function BreakEditor({ onAdd }: { onAdd: (brk: Break) => void }) {
         type="button"
         color="primary"
         size="icon"
+        className="size-10 shrink-0 rounded-lg"
         aria-label="Agregar descanso"
         disabled={!startTime || !endTime}
         onClick={() => {

@@ -398,7 +398,7 @@ export const ScheduleBuilder = forwardRef<
                         {subject ? (
                           <div
                             style={subjectStyles(subject.color).container}
-                            className="group absolute inset-1 flex items-center justify-between gap-1 border px-2 py-1.5"
+                            className="group absolute inset-1 flex items-center justify-between gap-1 border-2 rounded px-2 py-1.5"
                           >
                             <span className="text-left text-xs leading-tight font-medium">
                               {subject.name}

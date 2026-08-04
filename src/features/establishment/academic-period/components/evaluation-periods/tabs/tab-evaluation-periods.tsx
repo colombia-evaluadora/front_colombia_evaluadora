@@ -10,7 +10,9 @@ import { useDataTable } from "@/hooks/use-data-table"
 import { useEvaluationPeriodsQuery } from "../../../api/query/evaluation-periods/use-evaluation-periods-query"
 import { createEvaluationPeriodColumns } from "../table/columns-evaluation-periods"
 import { CreateEvaluationPeriodDialog } from "../dialogs/dialog-create-evaluation-period"
+import { DeleteSelectedEvaluationPeriodsDialog } from "../dialogs/dialog-delete-selected-evaluation-periods"
 import { ExportEvaluationPeriodsDialog } from "../dialogs/dialog-export-evaluation-periods"
+import { ExportSelectedEvaluationPeriodsDialog } from "../dialogs/dialog-export-selected-evaluation-periods"
 import { NoticeOutlet } from "../../common/notice-context"
 
 interface TabEvaluationPeriodsProps {
@@ -43,7 +45,12 @@ export function TabEvaluationPeriods({
     [academicPeriodId]
   )
 
-  const { table } = useDataTable({
+  const {
+    table,
+    selectedIds,
+    hasSelection,
+    resetSelection,
+  } = useDataTable({
     columns,
     data: data?.rows ?? [],
     pageCount: data?.pageCount ?? -1,
@@ -56,11 +63,33 @@ export function TabEvaluationPeriods({
     setSorting,
   })
 
+  // `selectedIds` viene como string[] (los ids de la tabla); los codigos de
+  // evaluation period son `number`, así que convertimos antes de mandar al back.
+  const selectedCodigos = useMemo(
+    () => selectedIds.map(Number),
+    [selectedIds]
+  )
+
   return (
     <>
       <div className="mb-2 flex items-center justify-end gap-2">
-        <CreateEvaluationPeriodDialog academicPeriodId={academicPeriodId} />
-        <ExportEvaluationPeriodsDialog filters={{}} />
+        {hasSelection ? (
+          <>
+            <DeleteSelectedEvaluationPeriodsDialog
+              selectedIds={selectedIds}
+              resetSelection={resetSelection}
+            />
+            <ExportSelectedEvaluationPeriodsDialog
+              selectedIds={selectedCodigos}
+              resetSelection={resetSelection}
+            />
+          </>
+        ) : (
+          <>
+            <CreateEvaluationPeriodDialog academicPeriodId={academicPeriodId} />
+            <ExportEvaluationPeriodsDialog filters={{}} />
+          </>
+        )}
         <DataTableViewOptions table={table} />
       </div>
 

@@ -12,6 +12,7 @@ import { columns } from "../table/columns-area-subject"
 import { CreateAreaSubjectDialog } from "../dialogs/dialog-create-area-subject"
 import { DeleteSelectedAreaSubjectsDialog } from "../dialogs/dialog-delete-selected-area-subjects"
 import { ExportAreaSubjectsDialog } from "../dialogs/dialog-export-area-subjects"
+import { ExportSelectedAreaSubjectsDialog } from "../dialogs/dialog-export-selected-area-subjects"
 import { useAreaSubjectQuery } from "@/features/establishment/academic-period/api/query/area-subjects/use-area-subject"
 
 interface TabAreaSubjectProps {
@@ -76,8 +77,17 @@ export function TabAreaSubject({ academicPeriodId }: TabAreaSubjectProps) {
               resetSelection={resetSelection}
             />
           )}
-          <CreateAreaSubjectDialog academicPeriodId={academicPeriodId} />
-          <ExportAreaSubjectsDialog filters={queryFilters} />
+          {hasSelection ? (
+            <ExportSelectedAreaSubjectsDialog
+              selectedIds={selectedIds.map(Number)}
+              resetSelection={resetSelection}
+            />
+          ) : (
+            <>
+              <CreateAreaSubjectDialog academicPeriodId={academicPeriodId} />
+              <ExportAreaSubjectsDialog filters={queryFilters} />
+            </>
+          )}
           <DataTableViewOptions table={table} />
         </div>
       </div>

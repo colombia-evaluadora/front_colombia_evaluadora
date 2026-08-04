@@ -13,6 +13,7 @@ import { useNotify, NoticeOutlet } from "../../common/notice-context"
 import { SearchAcademicAssignments } from "../search-academic-assignments"
 import { ExpandableDataTable } from "../../common/expandable-data-table"
 import { ExportAcademicAssignmentsDialog } from "../dialogs/dialog-export-academic-assignments"
+import { ExportSelectedAcademicAssignmentsDialog } from "../dialogs/dialog-export-selected-academic-assignments"
 
 import { useEmployeesQuery } from "@/features/establishment/api/query/use-employees-query"
 import type {
@@ -120,7 +121,12 @@ export function TabAcademicAssignments({
     [expanded, toggleExpand]
   )
 
-  const { table } = useDataTable({
+  const {
+    table,
+    selectedIds,
+    hasSelection,
+    resetSelection,
+  } = useDataTable({
     columns,
     data: data?.rows ?? [],
     pageCount: data?.pageCount ?? -1,
@@ -164,7 +170,14 @@ export function TabAcademicAssignments({
         />
 
         <div className="flex gap-2">
-          <ExportAcademicAssignmentsDialog filters={queryFilters} />
+          {hasSelection ? (
+            <ExportSelectedAcademicAssignmentsDialog
+              selectedIds={selectedIds}
+              resetSelection={resetSelection}
+            />
+          ) : (
+            <ExportAcademicAssignmentsDialog filters={queryFilters} />
+          )}
           <DataTableViewOptions table={table} />
         </div>
       </div>

@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react"
 import type { SortingState } from "@tanstack/react-table"
-import { CheckIcon, PencilIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
+import { CheckIcon, PencilIcon, PlusIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 
 import { useNotify, NoticeOutlet } from "../../common/notice-context"
 import { Badge } from "@/components/ui/badge"
@@ -33,6 +33,7 @@ import { useRatingSymbolsQuery } from "../../../api/query/rating-scales/use-rati
 import { useRatingScaleTypesQuery } from "../../../api/query/rating-scales/use-rating-scale-types-query"
 import { useEvaluationCriteriaQuery } from "../../../api/query/evaluation-criteria/use-evaluation-criteria-query"
 import { useUpdateRatingScale } from "../../../api/mutations/rating-scales/update-rating-scale"
+import { useCreateRatingScalesBulk } from "../../../api/mutations/rating-scales/create-rating-scales-bulk"
 import { RATING_SCALE_TYPE_BADGE } from "../../../api/ui-mappings"
 import type {
   RatingScale,
@@ -43,6 +44,7 @@ import { CreateRatingScaleDialog } from "../dialogs/dialog-create-rating-scale"
 import { DeleteRatingScaleDialog } from "../dialogs/dialog-delete-rating-scale"
 import { DeleteSelectedRatingScalesDialog } from "../dialogs/dialog-delete-selected-rating-scales"
 import { ExportRatingScalesDialog } from "../dialogs/dialog-export-rating-scales"
+import { ExportSelectedRatingScalesDialog } from "../dialogs/dialog-export-selected-rating-scales"
 import { RatingSymbolSelect, RatingSymbolView } from "../rating-symbol"
 import { createRatingScaleLevelColumns } from "../table/columns-rating-scales"
 import {
@@ -154,15 +156,25 @@ export function TabRatingScales({ academicPeriodId }: TabRatingScalesProps) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-end gap-2">
-        {hasSelection && (
-          <DeleteSelectedRatingScalesDialog
-            levelCount={selectedIds.length}
-            scaleCodigos={selectedScaleCodigos}
-            resetSelection={resetSelection}
-          />
+        {hasSelection ? (
+          <>
+            <DeleteSelectedRatingScalesDialog
+              levelCount={selectedIds.length}
+              scaleCodigos={selectedScaleCodigos}
+              resetSelection={resetSelection}
+            />
+            <ExportSelectedRatingScalesDialog
+              levelCount={selectedIds.length}
+              scaleCodigos={selectedScaleCodigos}
+              resetSelection={resetSelection}
+            />
+          </>
+        ) : (
+          <>
+            <CreateRatingScaleDialog academicPeriodId={academicPeriodId} />
+            <ExportRatingScalesDialog filters={{}} />
+          </>
         )}
-        <CreateRatingScaleDialog academicPeriodId={academicPeriodId} />
-        <ExportRatingScalesDialog filters={{}} />
       </div>
 
       <NoticeOutlet />
@@ -181,7 +193,12 @@ export function TabRatingScales({ academicPeriodId }: TabRatingScalesProps) {
           const level = row.original as TeachingLevel
           if (expandedId !== level.id) return null
           return (
-            <ScalesSubTable scales={scalesForLevel(level.id)} range={range} />
+            <ScalesSubTable
+              levelId={level.id}
+              scales={scalesForLevel(level.id)}
+              range={range}
+              academicPeriodId={academicPeriodId}
+            />
           )
         }}
       />
@@ -212,17 +229,75 @@ function toDraft(scale: RatingScale): EditableScale {
   }
 }
 
+type ScaleDraft = EditableScale
+
+function makeEmptyScaleDraft(range: GradingRange): ScaleDraft {
+  return {
+    nombre: "",
+    abreviacion: "",
+    notaMaxima: range.max,
+    notaMinima: range.min,
+    notaEquivalente: range.min,
+    tipo: "" as RatingScaleType,
+    iconografia: "",
+  }
+}
+
 function ScalesSubTable({
+  levelId,
   scales,
   range,
+  academicPeriodId,
 }: {
+  levelId: number
   scales: RatingScale[]
   range: GradingRange
+  academicPeriodId?: number
 }) {
   const { notify } = useNotify()
   const { data: symbols = [] } = useRatingSymbolsQuery()
   const { data: tipoOptions = [] } = useRatingScaleTypesQuery()
   const [sort, setSort] = useState<ScaleSort>(null)
+
+  // Borrador de la fila de alta: siempre visible al pie de la subtabla para
+  // crear una escala directamente en este nivel de enseñanza.
+  const [addDraft, setAddDraft] = useState<ScaleDraft>(() =>
+    makeEmptyScaleDraft(range)
+  )
+  function patchAddDraft(patch: Partial<ScaleDraft>) {
+    setAddDraft((prev) => ({ ...prev, ...patch }))
+  }
+
+  const createMutation = useCreateRatingScalesBulk({
+    mutationConfig: {
+      onSuccess: () => {
+        notify("La escala de valoración se agregó correctamente.")
+        setAddDraft(makeEmptyScaleDraft(range))
+      },
+      onError: () => {
+        notify("No se pudo agregar la escala de valoración.", {
+          variant: "error",
+        })
+      },
+    },
+  })
+
+  function commitDraft() {
+    // Mismas reglas que el alta desde el diálogo: notas dentro del rango del
+    // periodo (y mínima ≤ máxima).
+    const parsed = makeRatingScaleGradesSchema(range).safeParse(addDraft)
+    if (!parsed.success) {
+      notify(parsed.error.issues[0]?.message ?? "Revisá los datos.", {
+        variant: "error",
+      })
+      return
+    }
+    createMutation.mutate({
+      teachingLevelIds: [levelId],
+      scales: [{ ...parsed.data, tipo: parsed.data.tipo as RatingScaleType }],
+      academicPeriodId,
+    })
+  }
 
   const sortedScales = useMemo(
     () => sortByScaleKey(scales, sort),
@@ -274,16 +349,6 @@ function ScalesSubTable({
     })
   }
 
-  if (scales.length === 0) {
-    return (
-      <div className="-m-4 bg-background p-4">
-        <p className="text-muted-foreground px-1 py-2 text-sm">
-          Sin escalas para este nivel.
-        </p>
-      </div>
-    )
-  }
-
   return (
     <div className="-m-4 bg-background p-4">
       <div className="overflow-x-auto rounded-md border [&_[data-slot=input]]:bg-background [&_[data-slot=select-trigger]]:bg-background">
@@ -292,7 +357,7 @@ function ScalesSubTable({
         <FieldVariantContext.Provider value="outlined">
         <Table>
           <TableHeader>
-            <TableRow>
+            <TableRow className="border-b border-border">
               <TableHead>
                 <ScaleSortableHeader
                   title="Nombre"
@@ -345,7 +410,7 @@ function ScalesSubTable({
               <TableHead className="text-right">Acciones</TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
+          <TableBody className="[&_tr]:border-b [&_tr]:border-border [&_tr:last-child]:border-0">
             {sortedScales.map((scale) => {
               const isEditing = editingCodigo === scale.codigo
 
@@ -504,6 +569,119 @@ function ScalesSubTable({
                 </TableRow>
               )
             })}
+
+            {/* Fila de carga: siempre visible para crear una escala en este
+                nivel directamente desde la subtabla. */}
+            <TableRow>
+              <TableCell>
+                <Input
+                  aria-label="Nombre"
+                  placeholder="Agregar"
+                  value={addDraft.nombre}
+                  onChange={(e) => patchAddDraft({ nombre: e.target.value })}
+                  className="min-w-32"
+                />
+              </TableCell>
+              <TableCell>
+                <Input
+                  aria-label="Abreviación"
+                  placeholder="Agregar"
+                  value={addDraft.abreviacion}
+                  onChange={(e) => patchAddDraft({ abreviacion: e.target.value })}
+                  className="min-w-24"
+                />
+              </TableCell>
+              <TableCell>
+                <Input
+                  aria-label="Nota máximo"
+                  type="number"
+                  step="0.1"
+                  min={range.min}
+                  max={range.max}
+                  value={Number.isNaN(addDraft.notaMaxima) ? "" : addDraft.notaMaxima}
+                  onChange={(e) => patchAddDraft({ notaMaxima: e.target.valueAsNumber })}
+                  className="w-20"
+                />
+              </TableCell>
+              <TableCell>
+                <Input
+                  aria-label="Nota mínimo"
+                  type="number"
+                  step="0.1"
+                  min={range.min}
+                  max={range.max}
+                  value={Number.isNaN(addDraft.notaMinima) ? "" : addDraft.notaMinima}
+                  onChange={(e) => patchAddDraft({ notaMinima: e.target.valueAsNumber })}
+                  className="w-20"
+                />
+              </TableCell>
+              <TableCell>
+                <Input
+                  aria-label="Nota equivalente"
+                  type="number"
+                  step="0.1"
+                  min={range.min}
+                  max={range.max}
+                  value={
+                    Number.isNaN(addDraft.notaEquivalente)
+                      ? ""
+                      : addDraft.notaEquivalente
+                  }
+                  onChange={(e) =>
+                    patchAddDraft({ notaEquivalente: e.target.valueAsNumber })
+                  }
+                  className="w-20"
+                />
+              </TableCell>
+              <TableCell>
+                <Select
+                  value={addDraft.tipo}
+                  onValueChange={(value) =>
+                    value && patchAddDraft({ tipo: value as RatingScaleType })
+                  }
+                >
+                  <SelectTrigger aria-label="Tipo" className="min-w-32">
+                    <SelectValue placeholder="Seleccionar" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      {tipoOptions.map((option) => (
+                        <SelectItem key={option.key} value={option.key}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </TableCell>
+              <TableCell>
+                <RatingSymbolSelect
+                  symbols={symbols}
+                  value={addDraft.iconografia}
+                  onChange={(valor) => patchAddDraft({ iconografia: valor })}
+                />
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center justify-end gap-1">
+                  <Button
+                    type="button"
+                    color="primary"
+                    size="icon"
+                    className="size-8"
+                    aria-label="Agregar escala de valoración a este nivel"
+                    disabled={editingCodigo !== null || createMutation.isPending}
+                    aria-busy={createMutation.isPending}
+                    onClick={commitDraft}
+                  >
+                    {createMutation.isPending ? (
+                      <SpinnerIcon className="animate-spin" />
+                    ) : (
+                      <PlusIcon weight="bold" />
+                    )}
+                  </Button>
+                </div>
+              </TableCell>
+            </TableRow>
           </TableBody>
         </Table>
         </FieldVariantContext.Provider>
