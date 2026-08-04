@@ -1,9 +1,16 @@
 import { useState } from "react"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { useForm } from "@tanstack/react-form"
-import { ControlPointIcon, PencilIcon, SpinnerIcon } from "@/components/ui/icons"
+import {
+  CheckIcon,
+  ControlPointIcon,
+  PencilIcon,
+  SpinnerIcon,
+  XIcon,
+} from "@/components/ui/icons"
 
 import { useNotify } from "@/components/notice/notice-context"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -43,6 +50,7 @@ import type {
 } from "../../../api/types/evaluation-period"
 import { DatePicker } from "@/components/date-picker"
 import { formatDateValue, parseDateValue } from "@/lib/date-value"
+import { EVALUATION_PERIOD_STATUS_BADGE } from "../../../api/ui-mappings"
 import {
   evaluationPeriodFormSchema,
   type EvaluationPeriodFormValues,
@@ -288,48 +296,6 @@ export function CreateEvaluationPeriodDialog({
           </form.Field>
 
           <form.Field
-            name="peso"
-            validators={{
-              onChange: ({ value }) =>
-                value > pesoDisponible
-                  ? {
-                      message: `El peso supera el 100 %. Disponible: ${pesoDisponible} %.`,
-                    }
-                  : undefined,
-            }}
-          >
-            {(field) => {
-              const isInvalid =
-                field.state.meta.isTouched && !field.state.meta.isValid
-              return (
-                <Field variant="outlined" data-invalid={isInvalid}>
-                  <FieldLabel htmlFor={field.name}>Peso porcentual (%)*</FieldLabel>
-                  {/* El sufijo "%" hace explícita la unidad del valor, que de
-                      otro modo se lee como un número suelto. */}
-                  <InputGroup className="h-10 rounded-md border border-input px-3 hover:border-ring has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20 has-[[data-slot][aria-invalid=true]]:border-red">
-                    <InputGroupInput
-                      id={field.name}
-                      type="number"
-                      min={0}
-                      max={100}
-                      placeholder="ej. 25"
-                      className="px-0"
-                      value={Number.isNaN(field.state.value) ? "" : field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.valueAsNumber)}
-                      aria-invalid={isInvalid}
-                    />
-                    <InputGroupAddon align="inline-end">
-                      <InputGroupText>%</InputGroupText>
-                    </InputGroupAddon>
-                  </InputGroup>
-                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                </Field>
-              )
-            }}
-          </form.Field>
-
-          <form.Field
             name="startDate"
             validators={{
               onChange: ({ value }) => {
@@ -440,16 +406,54 @@ export function CreateEvaluationPeriodDialog({
             }}
           </form.Field>
 
+          <form.Field
+            name="peso"
+            validators={{
+              onChange: ({ value }) =>
+                value > pesoDisponible
+                  ? {
+                      message: `El peso supera el 100 %. Disponible: ${pesoDisponible} %.`,
+                    }
+                  : undefined,
+            }}
+          >
+            {(field) => {
+              const isInvalid =
+                field.state.meta.isTouched && !field.state.meta.isValid
+              return (
+                <Field variant="outlined" data-invalid={isInvalid}>
+                  <FieldLabel htmlFor={field.name}>Peso porcentual (%)*</FieldLabel>
+                  {/* El sufijo "%" hace explícita la unidad del valor, que de
+                      otro modo se lee como un número suelto. */}
+                  <InputGroup className="h-10 rounded-md border border-input px-3 hover:border-ring has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20 has-[[data-slot][aria-invalid=true]]:border-red">
+                    <InputGroupInput
+                      id={field.name}
+                      type="number"
+                      min={0}
+                      max={100}
+                      placeholder="ej. 25"
+                      className="px-0"
+                      value={Number.isNaN(field.state.value) ? "" : field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.valueAsNumber)}
+                      aria-invalid={isInvalid}
+                    />
+                    <InputGroupAddon align="inline-end">
+                      <InputGroupText>%</InputGroupText>
+                    </InputGroupAddon>
+                  </InputGroup>
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                </Field>
+              )
+            }}
+          </form.Field>
+
           <form.Field name="estado">
             {(field) => {
               const isInvalid =
                 field.state.meta.isTouched && !field.state.meta.isValid
               return (
-                <Field
-                  variant="outlined"
-                  data-invalid={isInvalid}
-                  className="sm:col-span-3"
-                >
+                <Field variant="outlined" data-invalid={isInvalid}>
                   <FieldLabel htmlFor={field.name}>Estado*</FieldLabel>
                   <Select
                     value={field.state.value}
@@ -458,7 +462,19 @@ export function CreateEvaluationPeriodDialog({
                     }
                   >
                     <SelectTrigger id={field.name} aria-invalid={isInvalid}>
-                      <SelectValue placeholder="Seleccionar" />
+                      {/* El valor elegido se muestra como el mismo badge soft
+                          que usa la columna Estado de la tabla. */}
+                      <SelectValue placeholder="Seleccionar">
+                        {(value) => {
+                          const estado = value as EvaluationPeriodStatus
+                          const badge = EVALUATION_PERIOD_STATUS_BADGE[estado]
+                          if (!badge) return "Seleccionar"
+                          const label =
+                            statusOptions.find((option) => option.key === estado)
+                              ?.label ?? estado
+                          return <Badge {...badge}>{label}</Badge>
+                        }}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>
@@ -477,10 +493,9 @@ export function CreateEvaluationPeriodDialog({
           </form.Field>
         </form>
 
-        <DialogFooter className="sm:justify-between">
-          <DialogClose render={<Button type="button" variant="ghost" />}>
-            Cancelar
-          </DialogClose>
+        {/* Ambas acciones a la derecha; "Cancelar" va última y sólida en
+            neutral, para que el peso visual no compita con el envío. */}
+        <DialogFooter>
           <form.Subscribe selector={(state) => state.values}>
             {(values) => {
               const allRequiredFilled =
@@ -511,14 +526,20 @@ export function CreateEvaluationPeriodDialog({
                   }
                   aria-busy={isSaving}
                 >
-                  {isSaving && (
+                  {isSaving ? (
                     <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+                  ) : (
+                    <CheckIcon data-icon="inline-start" />
                   )}
-                  {isEditing ? "Guardar" : "Agregar"}
+                  Guardar
                 </Button>
               )
             }}
           </form.Subscribe>
+          <DialogClose render={<Button type="button" variant="fill" color="neutral" />}>
+            <XIcon data-icon="inline-start" />
+            Cancelar
+          </DialogClose>
         </DialogFooter>
       </DialogContent>
     </Dialog>

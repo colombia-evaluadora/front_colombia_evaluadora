@@ -152,7 +152,9 @@ function DatePicker(props: DatePickerProps) {
         <span className="min-w-0 flex-1 truncate">{displayValue ?? placeholder}</span>
       </PopoverTrigger>
 
-      <PopoverContent className="w-auto gap-0 p-0" align={align}>
+      {/* El `ring` del popover casi no se ve sobre el fondo del diálogo: el
+          borde es lo que separa el calendario de lo que hay detrás. */}
+      <PopoverContent className="w-auto gap-0 border border-border p-0" align={align}>
         {mode === "time" ? (
           <TimePickerPanel value={timeValue} onChange={handleChangeTime} />
         ) : (
@@ -176,7 +178,7 @@ function DatePicker(props: DatePickerProps) {
                     <ClockIcon data-icon="inline-start" />
                     {formatTimeLabel(timeValue) ?? "--:--"}
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
+                  <PopoverContent className="w-auto border border-border p-0" align="start">
                     <TimePickerPanel value={timeValue} onChange={handleChangeTime} />
                   </PopoverContent>
                 </Popover>
