@@ -24,11 +24,13 @@ const CATEGORY_LABELS: Record<RatingSymbolCategory, string> = {
 
 const CATEGORY_ORDER: RatingSymbolCategory[] = ["carita", "valoracion"];
 
-// Un símbolo es imagen si su valor apunta a una URL/ruta o termina en una
-// extensión de imagen; si no, se trata como emoji (texto). Así el mismo
-// componente sirve para los emojis de hoy y las imágenes reales del futuro.
+// Un símbolo es imagen si su valor es un data URI, apunta a una URL/ruta o
+// termina en una extensión de imagen; si no, se trata como emoji (texto). Así
+// el mismo componente sirve para los emojis de hoy y las imágenes reales del
+// futuro (el backend devuelve base64 en `data:image/...`).
 function isImageValue(value: string): boolean {
   return (
+    /^data:image\//i.test(value) ||
     /^(https?:)?\/\//.test(value) ||
     value.startsWith("/") ||
     /\.(png|jpe?g|svg|webp|gif|avif)$/i.test(value)
