@@ -46,11 +46,9 @@ export function FilterAuditTablesForm({ id, defaultValues, onSubmit }: FilterAud
         }}
       >
         {(field) => (
-          <Field orientation="vertical" className="gap-2">
-            <FieldLabel htmlFor={field.name} className="sr-only">
-              Nombre de la tabla
-            </FieldLabel>
-            <div className="relative w-full sm:w-72">
+          <Field orientation="vertical" variant="outlined" className="w-full sm:w-72">
+            <FieldLabel htmlFor={field.name}>Buscar</FieldLabel>
+            <div className="relative w-full">
               <MagnifyingGlassIcon className="pointer-events-none absolute left-2 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 id={field.name}
