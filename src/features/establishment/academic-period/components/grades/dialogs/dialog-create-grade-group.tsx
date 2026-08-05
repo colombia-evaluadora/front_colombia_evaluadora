@@ -18,14 +18,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import {
-  Combobox,
-  ComboboxContent,
-  ComboboxEmpty,
-  ComboboxInput,
-  ComboboxItem,
-  ComboboxList,
-} from "@/components/ui/combobox"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
@@ -227,28 +219,23 @@ export function CreateGradeGroupDialog({
             {(field) => (
               <Field variant="outlined">
                 <FieldLabel htmlFor={field.name}>Director de grupo</FieldLabel>
-                <Combobox
-                  items={teacherNames}
-                  value={field.state.value || null}
-                  onValueChange={(value) => field.handleChange((value as string) ?? "")}
+                <Select
+                  value={field.state.value}
+                  onValueChange={(value) => value && field.handleChange(value as string)}
                 >
-                  <ComboboxInput
-                    id={field.name}
-                    placeholder="Buscar profesor"
-                    showClear
-                    className="rounded-md border-input has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20"
-                  />
-                  <ComboboxContent>
-                    <ComboboxEmpty>Sin profesores.</ComboboxEmpty>
-                    <ComboboxList>
-                      {(item: string) => (
-                        <ComboboxItem key={item} value={item}>
-                          {item}
-                        </ComboboxItem>
-                      )}
-                    </ComboboxList>
-                  </ComboboxContent>
-                </Combobox>
+                  <SelectTrigger id={field.name}>
+                    <SelectValue placeholder="Seleccionar" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      {teacherNames.map((name) => (
+                        <SelectItem key={name} value={name}>
+                          {name}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
               </Field>
             )}
           </form.Field>

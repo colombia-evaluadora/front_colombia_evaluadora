@@ -5,8 +5,11 @@ import {
   ArrowRightIcon,
   CaretDownIcon,
   CaretUpIcon,
+  ControlPointIcon,
   FolderOpenIcon,
   MagnifyingGlassIcon,
+  PencilIcon,
+  TrashIcon,
 } from "@/components/ui/icons"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -14,6 +17,8 @@ import { getNavIcon } from "@/features/navigation/api/ui-mappings"
 import { cn } from "@/lib/utils"
 
 import type { MenuNode, MenuTreeNode } from "../api/types/role-menu"
+import { DialogDeleteMenu } from "./dialog-delete-menu"
+import { DialogSaveMenu } from "./dialog-save-menu"
 
 function SearchMenus({
   id,
@@ -79,19 +84,22 @@ function MenuRow({
   muted,
   action,
   extra,
+  tools,
 }: {
   node: MenuNode
   depth: 0 | 1
   muted?: boolean
   action?: ReactNode
   extra?: ReactNode
+  /** Editar / eliminar: aparecen al pasar el mouse por la fila. */
+  tools?: ReactNode
 }) {
   const Icon = depth === 0 ? getNavIcon(node.icon) : null
 
   return (
     <li
       className={cn(
-        "flex items-center gap-2 border-b border-border px-3 py-2 last:border-b-0",
+        "group/row flex items-center gap-2 border-b border-border px-3 py-2 transition-colors last:border-b-0 hover:bg-muted/50",
         depth === 1 && "pl-9",
         muted && "text-muted-foreground",
       )}
@@ -106,6 +114,13 @@ function MenuRow({
       <span className={cn("min-w-0 flex-1 truncate text-sm", depth === 0 && "font-medium")}>
         {node.name}
       </span>
+      {tools ? (
+        // Ocultas hasta el hover para no ensuciar la lista, pero visibles con
+        // el foco: si no, no habría forma de llegar a ellas por teclado.
+        <span className="flex items-center opacity-0 transition-opacity group-hover/row:opacity-100 focus-within:opacity-100">
+          {tools}
+        </span>
+      ) : null}
       {extra}
       {action}
     </li>
@@ -158,6 +173,8 @@ export function MenuTransfer({
   const [availableSearch, setAvailableSearch] = useState("")
   const [assignedSearch, setAssignedSearch] = useState("")
   const [collapsed, setCollapsed] = useState<number[]>([])
+  // "new" = alta; un menú = edición de ese menú; null = diálogo cerrado.
+  const [menuBeingEdited, setMenuBeingEdited] = useState<MenuNode | "new" | null>(null)
 
   const assigned = useMemo(() => new Set(assignedIds), [assignedIds])
 
@@ -181,20 +198,62 @@ export function MenuTransfer({
     onUnassign([group.id, ...group.children.map((child) => child.id)])
   }
 
+  /** Editar y eliminar, iguales para grupos y para ítems. */
+  function rowTools(node: MenuNode, childrenCount = 0) {
+    return (
+      <>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="size-7"
+          onClick={() => setMenuBeingEdited(node)}
+        >
+          <span className="sr-only">Editar {node.name}</span>
+          <PencilIcon />
+        </Button>
+        <DialogDeleteMenu
+          menu={node}
+          childrenCount={childrenCount}
+          trigger={
+            <Button type="button" variant="ghost" size="icon" className="size-7">
+              <span className="sr-only">Eliminar {node.name}</span>
+              <TrashIcon />
+            </Button>
+          }
+        />
+      </>
+    )
+  }
+
   return (
     <div className="grid gap-4 lg:grid-cols-2">
+      <DialogSaveMenu
+        open={menuBeingEdited !== null}
+        onOpenChange={(open) => !open && setMenuBeingEdited(null)}
+        roots={tree}
+        menu={menuBeingEdited === "new" ? undefined : (menuBeingEdited ?? undefined)}
+      />
+
       <section className="flex flex-col rounded-lg border border-border">
         <header className="flex items-center justify-between gap-2 px-3 py-3">
           <h3 className="text-sm font-semibold">Menús disponibles</h3>
-          <Button
-            type="button"
-            size="sm"
-            disabled={disabled || availableGroups.length === 0}
-            onClick={() => availableGroups.forEach(({ group }) => assignGroup(group))}
-          >
-            Asignar todo
-            <ArrowRightIcon data-icon="inline-end" />
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={disabled || availableGroups.length === 0}
+              onClick={() => availableGroups.forEach(({ group }) => assignGroup(group))}
+            >
+              Asignar todo
+              <ArrowRightIcon data-icon="inline-end" />
+            </Button>
+            <Button type="button" size="icon" onClick={() => setMenuBeingEdited("new")}>
+              <span className="sr-only">Agregar menú</span>
+              <ControlPointIcon />
+            </Button>
+          </div>
         </header>
         <div className="px-3 pb-3">
           <SearchMenus
@@ -217,6 +276,7 @@ export function MenuTransfer({
                       node={group}
                       depth={0}
                       muted={isAssigned}
+                      tools={rowTools(group, group.children.length)}
                       extra={
                         children.length > 0 && (
                           <Button
@@ -254,6 +314,7 @@ export function MenuTransfer({
                             node={child}
                             depth={1}
                             muted={childAssigned}
+                            tools={rowTools(child)}
                             action={
                               !childAssigned && !disabled ? (
                                 <MoveButton

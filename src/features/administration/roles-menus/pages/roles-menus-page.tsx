@@ -1,8 +1,11 @@
 import { useMemo, useState } from "react"
 
 import { useNotify } from "@/components/notice/notice-context"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Field, FieldLabel } from "@/components/ui/field"
+import { ControlPointIcon } from "@/components/ui/icons"
+import { Input } from "@/components/ui/input"
 import {
   Select,
   SelectContent,
@@ -13,6 +16,7 @@ import {
 } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 
+import { useCreateRole } from "../api/mutations/create-role"
 import { useUpdateRoleMenus } from "../api/mutations/update-role-menus"
 import { useMenusQuery } from "../api/query/use-menus-query"
 import { useRoleMenusQuery } from "../api/query/use-role-menus-query"
@@ -23,6 +27,7 @@ import { MenuTransfer } from "../components/menu-transfer"
 export function RolesMenusPage() {
   const { notify } = useNotify()
   const [selectedRoleId, setSelectedRoleId] = useState<number | null>(null)
+  const [newRoleName, setNewRoleName] = useState("")
 
   const { data: roles = [], isPending: rolesPending } = useRolesQuery()
   // Sin selección explícita se edita el primer rol: la pantalla no tiene
@@ -33,6 +38,22 @@ export function RolesMenusPage() {
   const { data: assignedIds = [], isPending: assignedPending } = useRoleMenusQuery(roleId)
 
   const tree = useMemo(() => buildMenuTree(menus), [menus])
+
+  const createRole = useCreateRole({
+    mutationConfig: {
+      onSuccess: (role) => {
+        setNewRoleName("")
+        // El rol nuevo queda seleccionado: se crea para configurarle los menús.
+        setSelectedRoleId(role.id)
+        notify("El rol se creó correctamente.")
+      },
+    },
+  })
+
+  function handleCreateRole() {
+    if (newRoleName.trim().length === 0) return
+    createRole.mutate({ name: newRoleName })
+  }
 
   const updateRoleMenus = useUpdateRoleMenus({
     mutationConfig: {
@@ -89,6 +110,38 @@ export function RolesMenusPage() {
                   </SelectItem>
                 ))}
               </SelectGroup>
+              {/* Alta rápida al pie de la lista: crear un rol es parte de esta
+                  pantalla y no amerita salir a otro formulario. Los eventos se
+                  frenan acá para que el select no los tome como navegación por
+                  teclado ni cierre el desplegable al escribir. */}
+              <div
+                className="flex items-center gap-2 border-t border-border p-2"
+                onKeyDown={(event) => event.stopPropagation()}
+                onPointerDown={(event) => event.stopPropagation()}
+              >
+                <Input
+                  aria-label="Nombre del nuevo rol"
+                  placeholder="Nombre del nuevo rol"
+                  className="h-9"
+                  value={newRoleName}
+                  onChange={(event) => setNewRoleName(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault()
+                      handleCreateRole()
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  size="icon"
+                  disabled={newRoleName.trim().length === 0 || createRole.isPending}
+                  onClick={handleCreateRole}
+                >
+                  <span className="sr-only">Crear rol</span>
+                  <ControlPointIcon />
+                </Button>
+              </div>
             </SelectContent>
           </Select>
         </Field>

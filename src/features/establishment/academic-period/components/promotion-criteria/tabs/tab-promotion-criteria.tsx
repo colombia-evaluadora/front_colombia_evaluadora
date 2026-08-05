@@ -22,6 +22,12 @@ import {
 } from "../../../api/schema"
 import { Input } from "@/components/ui/input"
 import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+  InputGroupText,
+} from "@/components/ui/input-group"
+import {
   Select,
   SelectContent,
   SelectGroup,
@@ -51,6 +57,37 @@ const EMPTY: PromotionApprovalValues = {
 }
 
 const FORM_ID = "approval-parameters-form"
+
+/**
+ * Input numérico con el sufijo "%" pegado al final, para los campos que se
+ * expresan en porcentaje: sin la unidad el valor se lee como un número suelto.
+ * El borde y el foco los dibuja el `InputGroup` —el control interno va sin
+ * padding lateral— para que el "%" quede dentro de la misma caja.
+ */
+function PercentInput({
+  value,
+  onChange,
+}: {
+  value: number
+  onChange: (value: number) => void
+}) {
+  return (
+    <InputGroup className="h-9 rounded-md border border-input px-3 hover:border-ring has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20 has-[[data-slot][aria-invalid=true]]:border-red">
+      <InputGroupInput
+        type="number"
+        min={0}
+        max={100}
+        placeholder="Ingrese un valor"
+        className="px-0"
+        value={Number.isNaN(value) ? "" : value}
+        onChange={(event) => onChange(Number(event.target.value))}
+      />
+      <InputGroupAddon align="inline-end">
+        <InputGroupText>%</InputGroupText>
+      </InputGroupAddon>
+    </InputGroup>
+  )
+}
 
 interface TabPromotionCriteriaProps {
   hideSubmit?: boolean
@@ -285,15 +322,9 @@ const PromotionCriteriaForm = forwardRef<
                 Porcentaje mínimo de inasistencia para reprobar una asignatura*
               </FieldLabel>
 
-              <Input
-                type="number"
-                min={0}
-                placeholder="Ingrese un valor"
+              <PercentInput
                 value={field.state.value}
-                onChange={(e) =>
-                  field.handleChange(Number(e.target.value))
-                }
-                className="h-9"
+                onChange={(value) => field.handleChange(value)}
               />
             </Field>
           )}
@@ -361,15 +392,9 @@ const PromotionCriteriaForm = forwardRef<
             <Field variant="outlined">
               <FieldLabel className="flex-1">Porcentaje base*</FieldLabel>
 
-              <Input
-                type="number"
-                min={0}
-                placeholder="Ingrese un valor"
+              <PercentInput
                 value={field.state.value}
-                onChange={(e) =>
-                  field.handleChange(Number(e.target.value))
-                }
-                className="h-9"
+                onChange={(value) => field.handleChange(value)}
               />
             </Field>
           )}
@@ -382,15 +407,9 @@ const PromotionCriteriaForm = forwardRef<
                 Porcentaje mínimo de Área/Asignatura*
               </FieldLabel>
 
-              <Input
-                type="number"
-                min={0}
-                placeholder="Ingrese un valor"
+              <PercentInput
                 value={field.state.value}
-                onChange={(e) =>
-                  field.handleChange(Number(e.target.value))
-                }
-                className="h-9"
+                onChange={(value) => field.handleChange(value)}
               />
             </Field>
           )}
