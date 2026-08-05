@@ -65,9 +65,10 @@ export function UserDetailsForm({
     confirmPassword: confirmPasswordProp,
     onConfirmPasswordChange,
 }: UserFormProps) {
-    const roleName =
-        EMPLOYEE_ROLES.find((item) => item.code === role)?.name ??
-        "Agregar usuario"
+    // El encabezado solo nombra el rol de la persona (Rector, Secretaria). Sin
+    // `role` no hay nada que anunciar y el contenedor ya pone su propio título
+    // —en el diálogo de usuario lo duplicaba—, así que se omite.
+    const roleName = EMPLOYEE_ROLES.find((item) => item.code === role)?.name ?? null
 
     const {data: documentTypes = []} = useCatalogQuery<CatalogItem>(CATALOGS.DOCUMENT_TYPES)
     const {data: genders = []} = useCatalogQuery<CatalogItem>(CATALOGS.GENDERS)
@@ -114,9 +115,7 @@ export function UserDetailsForm({
     return (
         <div className="grid grid-cols-1 gap-6">
 
-            <FormSectionHeading>
-                {roleName}
-            </FormSectionHeading>
+            {roleName ? <FormSectionHeading>{roleName}</FormSectionHeading> : null}
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 {/* Foto */}
                 <div className="md:row-span-2">
