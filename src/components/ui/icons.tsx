@@ -3,7 +3,7 @@ import type { IconBaseProps, IconType } from "react-icons"
 import { GoShieldLock } from "react-icons/go"
 import {
   MdAccessTime,
-  MdAccountBalance,
+  MdOutlineAccountBalance,
   MdAccountCircle,
   MdAdd,
   MdAddCircleOutline,
@@ -140,7 +140,7 @@ export const ArrowDownIcon = makeIcon(MdArrowDownward)
 export const ArrowLeftIcon = makeIcon(MdArrowBack)
 export const ArrowRightIcon = makeIcon(MdArrowForward)
 export const ArrowUpIcon = makeIcon(MdArrowUpward)
-export const BankIcon = makeIcon(MdAccountBalance)
+export const BankIcon = makeIcon(MdOutlineAccountBalance)
 export const BellIcon = makeIcon(MdNotifications)
 export const BookIcon = makeIcon(MdMenuBook)
 export const BookOpenIcon = makeIcon(MdOutlineChromeReaderMode)

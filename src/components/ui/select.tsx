@@ -24,10 +24,19 @@ function SelectGroup({ className, ...props }: SelectPrimitive.Group.Props) {
   )
 }
 
-function SelectValue({ className, ...props }: SelectPrimitive.Value.Props) {
+function SelectValue({
+  className,
+  // Texto por defecto de TODOS los selects sin valor. Se define acá y no en
+  // cada formulario para que el vacío se lea igual en toda la app; pasar
+  // `placeholder` sigue funcionando para los casos con semántica propia (los
+  // filtros, por ejemplo, usan "Todos" porque ahí vacío significa "sin filtro").
+  placeholder = "Seleccionar",
+  ...props
+}: SelectPrimitive.Value.Props) {
   return (
     <SelectPrimitive.Value
       data-slot="select-value"
+      placeholder={placeholder}
       // block (no flex): el text-overflow no aplica al contenido anónimo de un
       // flex container, así que con display:flex el "…" nunca se dibuja. min-w-0
       // es lo que deja al item encogerse por debajo del ancho de su contenido.

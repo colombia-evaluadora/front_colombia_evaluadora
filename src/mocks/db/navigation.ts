@@ -145,7 +145,7 @@ export const navigationMenu: MockMenu[] = [
   {
     "id": 17,
     "name": "Establecimiento Educativo",
-    "icon": "Graduation-Cap-Icon",
+    "icon": "Bank-Icon",
     "path": "/app/establecimiento-educativo",
     "menuOrder": 2,
     "type": "GROUP",
