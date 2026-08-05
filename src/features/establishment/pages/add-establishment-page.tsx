@@ -32,7 +32,7 @@ import { NoticeOutlet, useNotify } from "@/components/notice/notice-context"
  * + `justify-end` invierte el orden visual sin tocar el componente compartido.
  */
 const accordionTriggerClassName =
-  "flex-row-reverse justify-end items-center gap-3 py-5 text-lg **:data-[slot=accordion-trigger-icon]:ml-0 **:data-[slot=accordion-trigger-icon]:size-5"
+  "flex-row-reverse justify-end items-center gap-3 py-2.5 text-lg **:data-[slot=accordion-trigger-icon]:ml-0 **:data-[slot=accordion-trigger-icon]:size-5"
 
 function createEmptyCatalogItem(): CatalogItem {
   return { id: "", code: "", name: "" }
@@ -320,7 +320,7 @@ export function AddEstablishmentPage() {
             <AccordionItem value="datos-establecimiento" className="rounded-md border border-border not-last:border-b border">
               <AccordionTrigger className={accordionTriggerClassName}>Datos de establecimiento</AccordionTrigger>
               <AccordionContent>
-                <Card className="mb-4">
+                <Card>
                   <CardContent>
                     <EstablishmentDetailsForm
                       value={formValues}
@@ -336,7 +336,7 @@ export function AddEstablishmentPage() {
             <AccordionItem value="datos-rector-secretaria" className="rounded-md border border-border not-last:border-b border">
               <AccordionTrigger className={accordionTriggerClassName}>Datos de rector y secretaria</AccordionTrigger>
               <AccordionContent>
-                <Card className="mb-4">
+                <Card>
                   <CardContent>
                   <UserDetailsForm
                     role="RECTOR"
