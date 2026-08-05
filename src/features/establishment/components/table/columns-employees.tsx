@@ -16,7 +16,12 @@ interface EmployeeColumnsOptions {
 }
 
 // Cuántas sedes se listan por nombre antes de resumir el resto en un "+N".
-const VISIBLE_CAMPUSES = 2
+//
+// Es 1 y no 2 porque el "+N" cuenta lo que NO se renderiza, no lo que no entra:
+// con 2 los nombres de sede rara vez caben en el ancho de la columna y el
+// segundo se lo comía el `truncate`, así que se veía una sede y un "+1" cuando
+// en realidad quedaban dos escondidas.
+const VISIBLE_CAMPUSES = 1
 
 function formatCampusNames(campuses: string[]) {
   return campuses.join(", ")
