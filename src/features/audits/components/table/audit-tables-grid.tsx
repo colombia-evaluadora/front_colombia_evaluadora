@@ -34,7 +34,8 @@ export function AuditTablesDataTable() {
   if (isPending) {
     return (
       <>
-        <Card className="sticky top-18 z-20 gap-0 overflow-visible rounded-b-none pt-0">
+      <div className="sticky top-0 z-20 gap-0 pt-18 bg-background">
+        <Card className=" gap-0 overflow-hidden rounded-b-none pt-0">
           <CardHeader className="bg-muted/10 py-4">
             <CardTitle>Tablas de auditoría</CardTitle>
           </CardHeader>
@@ -60,6 +61,7 @@ export function AuditTablesDataTable() {
             </div>
           </CardContent>
         </Card>
+        </div>
         <Card className="overflow-visible rounded-t-none">
           <div className="px-(--card-spacing)">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -100,17 +102,18 @@ export function AuditTablesDataTable() {
 
   return (
     <>
-      <Card className="sticky top-18 z-20 gap-0 overflow-visible rounded-b-none pt-0">
+      <div className="sticky top-14 z-20 gap-0 pt-4 bg-background">
+      <Card className="gap-0 overflow-hidden rounded-b-none pt-0">
         <CardHeader className="bg-muted/10 py-4 ">
           <CardTitle>
             Tablas de auditoría
           </CardTitle>
         </CardHeader>
 
-        <div className="border-b border-border px-(--card-spacing)">
+        <div className="border-b border-border px-(--card-spacing) pt-7">
           <nav
             aria-label="Vistas de auditoría"
-            className="flex px-8 items-end gap-1"
+            className="flex items-end gap-1"
           >
             {viewLinks.map((view) => (
               <Link
@@ -124,7 +127,7 @@ export function AuditTablesDataTable() {
             ))}
           </nav>
         </div>
-        <CardContent>
+        <CardContent className="pt-7">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <FilterAuditTablesForm
               id={FILTER_AUDIT_TABLES_FORM_ID}
@@ -134,6 +137,7 @@ export function AuditTablesDataTable() {
           </div>
         </CardContent>
       </Card>
+      </div>
       <Card className="overflow-visible rounded-t-none">
         <div className="px-(--card-spacing)">
           <NoticeOutlet className="mb-3" />
