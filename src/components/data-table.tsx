@@ -1,5 +1,6 @@
 "use no memo"
 
+import { Fragment } from "react"
 import { flexRender, type Column, type RowData, type Table } from "@tanstack/react-table"
 import {
   ArrowDownIcon,
@@ -68,24 +69,55 @@ export function DataTable({
   // scroll (`sticky right-0`), para que los botones sigan alcanzables con la
   // tabla scrolleada en horizontal. La celda NO lleva fondo —así las columnas
   // que pasan por debajo se ven normal—; lo único opaco es el overlay.
+  // `w-px`: con `table-layout: auto` el sobrante de ancho se reparte entre las
+  // columnas, y esta se llevaba una tajada grande pese a no tener contenido en
+  // flujo (los botones son absolutos, su min-content es 0). Pedir 1px la deja
+  // en el mínimo y el sobrante se va a las columnas con texto.
   const isActionsColumn = (id: string) => id === "actions"
-  const actionsCellClass = "sticky right-0 z-10"
+  const actionsCellClass = "sticky right-0 z-10 w-px"
   // `inset-y-0 right-0` y sin radio: el bloque va a sangre contra el borde de
-  // la tabla, con el alto completo de la fila. El color es el del hover de
-  // `TableRow` (`bg-muted/50`) ya resuelto sobre la card con `color-mix`: hace
-  // falta opaco, y así no se lee como un bloque de otro color.
+  // la tabla, con el alto completo de la fila.
+  //
+  // El fondo es el MISMO color del hover de `TableRow` (`bg-muted/50`) pero ya
+  // resuelto sobre la card: acá hace falta opaco, porque el bloque tapa las
+  // columnas que pasan por debajo al scrollear. El mix va `in srgb` porque eso
+  // es exactamente lo que hace el navegador al componer un color translúcido
+  // sobre el fondo —mezclar en oklab da otro tono y el bloque se nota—.
+  //
+  // Aparece con el mismo fade que el hover de la fila: ambos usan la duración y
+  // curva por defecto de Tailwind (150ms), uno sobre `color` y este sobre
+  // `opacity`, así que entran juntos.
+  //
+  // `px-2` y no `px-3` como el resto de celdas: el overlay tiene que caber en el
+  // `size` declarado. Con un botón icon (`size-8`) da 32+16 = 48, justo el
+  // `size: 48` de auditoría; con dos, 84, dentro del `size: 96` del resto.
   const actionsOverlayClass = cn(
-    "absolute inset-y-0 right-0 z-10 flex items-center gap-1 px-3",
-    "bg-[color-mix(in_oklab,var(--muted)_50%,var(--card))]",
+    "absolute inset-y-0 right-0 z-10 flex items-center gap-1 px-2",
+    "bg-[color-mix(in_srgb,var(--muted)_50%,var(--card))]",
     "opacity-0 transition-opacity group-hover/row:opacity-100 group-focus-within/row:opacity-100",
   )
 
-  // Columna de respiro al final de la tabla: reserva el ancho que ocupa el
-  // overlay para que este nunca quede encima de datos, y de paso deja margen
-  // de scroll horizontal. Solo aplica si la tabla trae columna de acciones.
-  const hasActionsColumn = visibleColumns.some((c) => isActionsColumn(c.id))
+  // Columna de respiro, JUSTO ANTES de la de acciones: el overlay está anclado
+  // al borde derecho de su celda y crece hacia la IZQUIERDA, así que el hueco
+  // tiene que quedar de ese lado. Si va después (al final de la fila) no
+  // protege nada y los botones terminan encima de la última columna con datos.
+  //
+  // El ancho sale del `size` que cada `columns.tsx` declara para `actions`, así
+  // que el hueco mide exactamente lo que ocupan los botones de esa tabla.
+  //
+  // El ancho va en un `div` interno además de en la celda: con
+  // `table-layout: auto` el `width` de un `<td>` es solo una sugerencia y una
+  // celda vacía tiene `min-content: 0`, así que el navegador la colapsa. Un
+  // hijo con ancho fijo sí le da min-content real.
+  const actionsColumn = visibleColumns.find((c) => isActionsColumn(c.id))
+  const hasActionsColumn = actionsColumn !== undefined
   const columnCount = visibleColumns.length + (hasActionsColumn ? 1 : 0)
-  const spacer = hasActionsColumn ? <td aria-hidden className="w-24 p-0" /> : null
+  const spacerWidth = actionsColumn?.getSize() ?? 96
+  const spacerCell = (
+    <td aria-hidden className="p-0">
+      <div style={{ width: spacerWidth }} />
+    </td>
+  )
 
   return (
     <div className="overflow-x-auto rounded-md border w-full border-border">
@@ -93,14 +125,23 @@ export function DataTable({
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id} className="bg-muted-22 hover:bg-muted-22">
-              {headerGroup.headers.map((header) => (
-                <TableHead key={header.id} className="text-foreground">
-                  {header.isPlaceholder
-                    ? null
-                    : flexRender(header.column.columnDef.header, header.getContext())}
-                </TableHead>
-              ))}
-              {hasActionsColumn ? <th aria-hidden className="w-24 p-0" /> : null}
+              {headerGroup.headers.map((header) => {
+                const isActions = isActionsColumn(header.column.id)
+                return (
+                  <Fragment key={header.id}>
+                    {isActions ? (
+                      <th aria-hidden className="p-0">
+                        <div style={{ width: spacerWidth }} />
+                      </th>
+                    ) : null}
+                    <TableHead className={cn("text-foreground", isActions && "w-px")}>
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(header.column.columnDef.header, header.getContext())}
+                    </TableHead>
+                  </Fragment>
+                )
+              })}
             </TableRow>
           ))}
         </TableHeader>
@@ -108,15 +149,17 @@ export function DataTable({
           {isPending ? (
             Array.from({ length: skeletonRowCount }).map((_, i) => (
               <TableRow key={i}>
-                {visibleColumns.map((col, j) => (
-                  <TableCell
-                    key={j}
-                    className={cn(isActionsColumn(col.id) && actionsCellClass)}
-                  >
-                    <Skeleton className="h-5 w-full" />
-                  </TableCell>
-                ))}
-                {spacer}
+                {visibleColumns.map((col, j) => {
+                  const isActions = isActionsColumn(col.id)
+                  return (
+                    <Fragment key={j}>
+                      {isActions ? spacerCell : null}
+                      <TableCell className={cn(isActions && actionsCellClass)}>
+                        <Skeleton className="h-5 w-full" />
+                      </TableCell>
+                    </Fragment>
+                  )
+                })}
               </TableRow>
             ))
           ) : isError ? (
@@ -138,14 +181,16 @@ export function DataTable({
                 {row.getVisibleCells().map((cell) => {
                   const isActions = isActionsColumn(cell.column.id)
                   return (
-                    <TableCell key={cell.id} className={cn(isActions && actionsCellClass)}>
-                      <div className={cn(isActions && actionsOverlayClass)}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </div>
-                    </TableCell>
+                    <Fragment key={cell.id}>
+                      {isActions ? spacerCell : null}
+                      <TableCell className={cn(isActions && actionsCellClass)}>
+                        <div className={cn(isActions && actionsOverlayClass)}>
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </div>
+                      </TableCell>
+                    </Fragment>
                   )
                 })}
-                {spacer}
               </TableRow>
             ))
           ) : (
