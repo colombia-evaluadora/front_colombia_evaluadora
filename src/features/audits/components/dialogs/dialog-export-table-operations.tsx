@@ -65,7 +65,7 @@ export function ExportTableOperationsDialog({
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>
-            Elegí un formato para exportar todas las operaciones que coincidan con los filtros
+            Elige un formato para exportar todas las operaciones que coincidan con los filtros
             activos.
           </DialogDescription>
         </DialogHeader>

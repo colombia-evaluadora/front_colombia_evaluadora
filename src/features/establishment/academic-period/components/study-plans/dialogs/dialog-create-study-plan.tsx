@@ -201,7 +201,7 @@ export function CreateStudyPlanDialog({
             {isEditing ? "Editar plan de estudio" : "Agregar plan de estudio"}
           </DialogTitle>
           <DialogDescription>
-            Completá los datos de la asignatura del plan de estudio.
+            Completa los datos de la asignatura del plan de estudio.
           </DialogDescription>
         </DialogHeader>
 

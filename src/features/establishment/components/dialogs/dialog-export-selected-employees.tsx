@@ -73,7 +73,7 @@ export function ExportSelectedEmployeesDialog({
                 <DialogHeader>
                     <DialogTitle>Exportar</DialogTitle>
                     <DialogDescription>
-                        Elegí un formato para exportar {count} funcionario(s) seleccionado(s).
+                        Elige un formato para exportar {count} funcionario(s) seleccionado(s).
                     </DialogDescription>
                 </DialogHeader>
                 <DialogFooter className="sm:justify-between">

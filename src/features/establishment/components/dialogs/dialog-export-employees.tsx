@@ -67,7 +67,7 @@ export function ExportEmployeesDialog({ filters }: ExportEmployeesDialogProps) {
                 <DialogHeader>
                     <DialogTitle>Exportar</DialogTitle>
                     <DialogDescription>
-                        Elegí un formato para exportar todos los funcionarios que coincidan con los filtros activos.
+                        Elige un formato para exportar todos los funcionarios que coincidan con los filtros activos.
                     </DialogDescription>
                 </DialogHeader>
                 <DialogFooter className="sm:justify-between">

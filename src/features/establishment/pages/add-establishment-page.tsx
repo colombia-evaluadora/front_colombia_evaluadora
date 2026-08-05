@@ -34,6 +34,13 @@ import { NoticeOutlet, useNotify } from "@/components/notice/notice-context"
 const accordionTriggerClassName =
   "flex-row-reverse justify-end items-center gap-3 py-2.5 text-lg **:data-[slot=accordion-trigger-icon]:ml-0 **:data-[slot=accordion-trigger-icon]:size-5"
 
+/**
+ * Las cards dentro de los acordeones ya viven en un contenedor con su propio
+ * aire, así que el `py` de 8 de la Card se sentía enorme: lo bajamos a 5 sin
+ * tocar el padding horizontal.
+ */
+const accordionCardClassName = "py-5"
+
 function createEmptyCatalogItem(): CatalogItem {
   return { id: "", code: "", name: "" }
 }
@@ -282,7 +289,15 @@ export function AddEstablishmentPage() {
   const isPending = createMutation.isPending || updateMutation.isPending
 
   return (
-    <>
+    /*
+      La página ocupa al menos el alto libre bajo el header de la app (`h-14`);
+      el `pb-4` del contenedor no se descuenta porque la barra de acciones lo
+      cancela con su `-mb-4`. Así, con poco contenido, la barra cae al fondo de
+      la pantalla en vez de quedar pegada al formulario: `sticky` solo sube un
+      elemento para mantenerlo a la vista, nunca lo empuja hacia abajo.
+    */
+    <div className="flex min-h-[calc(100svh-3.5rem)] flex-col">
+    <div className="flex-1">
     {/*
       Encabezado pegajoso: el `pt-4` opaco del contenedor reproduce el aire
       que la página tiene contra el header de la app (`top-14`) y, al mismo
@@ -320,7 +335,7 @@ export function AddEstablishmentPage() {
             <AccordionItem value="datos-establecimiento" className="rounded-md border border-border not-last:border-b border">
               <AccordionTrigger className={accordionTriggerClassName}>Datos de establecimiento</AccordionTrigger>
               <AccordionContent>
-                <Card>
+                <Card className={accordionCardClassName}>
                   <CardContent>
                     <EstablishmentDetailsForm
                       value={formValues}
@@ -336,42 +351,49 @@ export function AddEstablishmentPage() {
             <AccordionItem value="datos-rector-secretaria" className="rounded-md border border-border not-last:border-b border">
               <AccordionTrigger className={accordionTriggerClassName}>Datos de rector y secretaria</AccordionTrigger>
               <AccordionContent>
-                <Card>
-                  <CardContent>
-                  <UserDetailsForm
-                    role="RECTOR"
-                    fieldPrefix="principal"
-                    value={formValues.principal}
-                    onChange={(principal) => setFormValues((current) => ({ ...current, principal }))}
-                    invalidFields={invalidFields}
-                    showValidation={hasSubmitted}
-                    confirmPassword={confirmPasswords["principal"] ?? ""}
-                    onConfirmPasswordChange={(value) =>
-                      setConfirmPasswords((current) => ({ ...current, principal: value }))
-                    }
-                  />
-                  <div className="mt-8">
-                    <UserDetailsForm
-                      role="SECRETARY"
-                      fieldPrefix="secretary"
-                      value={formValues.secretary}
-                      onChange={(secretary) => setFormValues((current) => ({ ...current, secretary }))}
-                      invalidFields={invalidFields}
-                      showValidation={hasSubmitted}
-                      confirmPassword={confirmPasswords["secretary"] ?? ""}
-                      onConfirmPasswordChange={(value) =>
-                        setConfirmPasswords((current) => ({ ...current, secretary: value }))
-                      }
-                    />
-                  </div>
-                  </CardContent>
-                </Card>
+                {/* Una card por persona: rector y secretaria son bloques
+                    independientes, no un solo formulario partido en dos. */}
+                <div className="space-y-4">
+                  <Card className={accordionCardClassName}>
+                    <CardContent>
+                      <UserDetailsForm
+                        role="RECTOR"
+                        fieldPrefix="principal"
+                        value={formValues.principal}
+                        onChange={(principal) => setFormValues((current) => ({ ...current, principal }))}
+                        invalidFields={invalidFields}
+                        showValidation={hasSubmitted}
+                        confirmPassword={confirmPasswords["principal"] ?? ""}
+                        onConfirmPasswordChange={(value) =>
+                          setConfirmPasswords((current) => ({ ...current, principal: value }))
+                        }
+                      />
+                    </CardContent>
+                  </Card>
+                  <Card className={accordionCardClassName}>
+                    <CardContent>
+                      <UserDetailsForm
+                        role="SECRETARY"
+                        fieldPrefix="secretary"
+                        value={formValues.secretary}
+                        onChange={(secretary) => setFormValues((current) => ({ ...current, secretary }))}
+                        invalidFields={invalidFields}
+                        showValidation={hasSubmitted}
+                        confirmPassword={confirmPasswords["secretary"] ?? ""}
+                        onConfirmPasswordChange={(value) =>
+                          setConfirmPasswords((current) => ({ ...current, secretary: value }))
+                        }
+                      />
+                    </CardContent>
+                  </Card>
+                </div>
               </AccordionContent>
             </AccordionItem>
           </Accordion>
         </form>
       </CardContent>
     </Card>
+    </div>
 
     {/* Barra de acciones fija: acompaña el scroll del formulario. */}
     <div className="sticky bottom-0 z-30 -mx-4 -mb-4 mt-4 flex items-center justify-between gap-4 border-t border-border bg-background/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80">
@@ -381,6 +403,6 @@ export function AddEstablishmentPage() {
         {isPending ? "Guardando..." : isEditMode ? "Guardar cambios" : "Guardar"}
       </Button>
     </div>
-    </>
+    </div>
   )
 }

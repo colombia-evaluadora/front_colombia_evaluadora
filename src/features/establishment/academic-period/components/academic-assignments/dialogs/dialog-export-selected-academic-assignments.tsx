@@ -77,7 +77,7 @@ export function ExportSelectedAcademicAssignmentsDialog({
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>
-            Elegí un formato para exportar los {count} docente(s)
+            Elige un formato para exportar los {count} docente(s)
             seleccionado(s).
           </DialogDescription>
         </DialogHeader>

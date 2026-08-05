@@ -116,7 +116,7 @@ export function RolesMenusPage() {
               onValueChange={(value) => value && setSelectedRoleId(Number(value))}
             >
               <SelectTrigger id="role">
-                <SelectValue placeholder="Seleccionar">
+                <SelectValue>
                   {(value) =>
                     roles.find((role) => String(role.id) === value)?.name ?? "Seleccionar"
                   }

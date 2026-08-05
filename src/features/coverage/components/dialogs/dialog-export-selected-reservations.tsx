@@ -62,7 +62,7 @@ export function ExportSelectedReservationsDialog({
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>
-            Se exportarán {selectedIds.length} reserva(s). Elegí el formato.
+            Se exportarán {selectedIds.length} reserva(s). Elige el formato.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="sm:justify-between">

@@ -77,7 +77,7 @@ function PercentInput({
         type="number"
         min={0}
         max={100}
-        placeholder="Ingrese un valor"
+        placeholder="Ingresar valor"
         className="px-0"
         value={Number.isNaN(value) ? "" : value}
         onChange={(event) => onChange(Number(event.target.value))}
@@ -304,7 +304,7 @@ const PromotionCriteriaForm = forwardRef<
               <Input
                 type="number"
                 min={0}
-                placeholder="Ingrese un valor"
+                placeholder="Ingresar valor"
                 value={field.state.value}
                 onChange={(e) =>
                   field.handleChange(Number(e.target.value))
@@ -340,7 +340,7 @@ const PromotionCriteriaForm = forwardRef<
               <Input
                 type="number"
                 min={0}
-                placeholder="Ingrese un valor"
+                placeholder="Ingresar valor"
                 value={field.state.value}
                 onChange={(e) =>
                   field.handleChange(Number(e.target.value))
@@ -425,7 +425,7 @@ const PromotionCriteriaForm = forwardRef<
               <Input
                 type="number"
                 min={0}
-                placeholder="Ingrese un valor"
+                placeholder="Ingresar valor"
                 value={field.state.value}
                 onChange={(e) =>
                   field.handleChange(Number(e.target.value))

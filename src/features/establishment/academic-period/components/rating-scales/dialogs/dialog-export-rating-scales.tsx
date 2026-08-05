@@ -71,7 +71,7 @@ export function ExportRatingScalesDialog({
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>
-            Elegí un formato para exportar todas las escalas de valoración.
+            Elige un formato para exportar todas las escalas de valoración.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="sm:justify-between">

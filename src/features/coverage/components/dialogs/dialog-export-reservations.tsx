@@ -56,7 +56,7 @@ export function ExportReservationsDialog({ filters }: ExportReservationsDialogPr
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>
-            Elegí un formato para exportar todas las reservas que coincidan con los filtros activos.
+            Elige un formato para exportar todas las reservas que coincidan con los filtros activos.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="sm:justify-between">

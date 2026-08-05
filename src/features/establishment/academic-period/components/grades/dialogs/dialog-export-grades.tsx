@@ -66,7 +66,7 @@ export function ExportGradesDialog({ filters }: ExportGradesDialogProps) {
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>
-            Elegí un formato para exportar todos los grados.
+            Elige un formato para exportar todos los grados.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="sm:justify-between">

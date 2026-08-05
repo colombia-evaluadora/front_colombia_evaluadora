@@ -65,7 +65,7 @@ function PlanSelect({ value, onChange }: { value: string; onChange: (planId: str
   return (
     <Select value={value} onValueChange={(next) => next && onChange(String(next))}>
       <SelectTrigger aria-label="Plan">
-        <SelectValue placeholder="Seleccione">
+        <SelectValue>
           {(current) => plans.find((plan) => String(plan.id) === current)?.name ?? "Seleccione"}
         </SelectValue>
       </SelectTrigger>
@@ -84,7 +84,7 @@ function PlanSelect({ value, onChange }: { value: string; onChange: (planId: str
         >
           <Input
             aria-label="Nombre del nuevo plan"
-            placeholder="Nombre del nuevo plan"
+            placeholder="Ingresar nombre del plan"
             className="h-9"
             value={newPlanName}
             onChange={(event) => setNewPlanName(event.target.value)}
@@ -122,9 +122,9 @@ interface DialogSaveMenuProps {
 /**
  * Alta y edición de menús.
  *
- * En alta el diálogo hace dos cosas a la vez, que es como se usa: elegís el
+ * En alta el diálogo hace dos cosas a la vez, que es como se usa: Eliges el
  * menú padre —o "Crear nuevo menú principal", y ahí pedimos sus datos— y
- * cargás de una varios submenús. En edición se muestra solo el menú elegido.
+ * cargas de una varios submenús. En edición se muestra solo el menú elegido.
  */
 export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMenuProps) {
   const isEditing = menu != null
@@ -201,7 +201,7 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
             <FieldLabel htmlFor="menu-parent">Menú padre</FieldLabel>
             <Select value={parent} onValueChange={(value) => value && setParent(String(value))}>
               <SelectTrigger id="menu-parent">
-                <SelectValue placeholder="Seleccionar">
+                <SelectValue>
                   {(value) =>
                     value === ROOT
                       ? "Crear nuevo menú principal"
@@ -237,7 +237,7 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
                 <FieldLabel htmlFor="menu-name">Nombre*</FieldLabel>
                 <Input
                   id="menu-name"
-                  placeholder="ej. Comunicaciones"
+                  placeholder="Ingresar nombre del menú"
                   value={name}
                   onChange={(event) => setName(event.target.value)}
                 />
@@ -246,7 +246,7 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
                 <FieldLabel htmlFor="menu-path">Ruta*</FieldLabel>
                 <Input
                   id="menu-path"
-                  placeholder="ej. /app/comunicaciones"
+                  placeholder="Ingresar ruta del menú"
                   value={path}
                   onChange={(event) => setPath(event.target.value)}
                 />
@@ -288,13 +288,13 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
                       >
                         <Input
                           aria-label="Nombre del menú"
-                          placeholder="ej. Cursos Virtuales"
+                          placeholder="Ingresar nombre del submenú"
                           value={draft.name}
                           onChange={(event) => updateDraft(draft.key, { name: event.target.value })}
                         />
                         <Input
                           aria-label="URL"
-                          placeholder="ej. /cursos-virtuales"
+                          placeholder="Ingresar ruta del submenú"
                           value={draft.path}
                           onChange={(event) => updateDraft(draft.key, { path: event.target.value })}
                         />

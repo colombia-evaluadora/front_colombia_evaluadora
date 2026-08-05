@@ -77,7 +77,7 @@ export function ExportSelectedAcademicPeriodsDialog({
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>
-            Elegí un formato para exportar {count} periodo(s) seleccionado(s).
+            Elige un formato para exportar {count} periodo(s) seleccionado(s).
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="sm:justify-between">

@@ -57,7 +57,7 @@ export function RestorePasswordForm({ id, onSubmit }: RestorePasswordFormProps) 
                     name={field.name}
                     type={showPassword ? "text" : "password"}
                     autoComplete="new-password"
-                    placeholder="Ingresa tu nueva contraseña"
+                    placeholder="Ingresar nueva contraseña"
                     value={field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value)}
@@ -107,7 +107,7 @@ export function RestorePasswordForm({ id, onSubmit }: RestorePasswordFormProps) 
                     name={field.name}
                     type={showConfirmPassword ? "text" : "password"}
                     autoComplete="new-password"
-                    placeholder="Repite tu nueva contraseña"
+                    placeholder="Ingresar nuevamente la contraseña"
                     value={field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value)}

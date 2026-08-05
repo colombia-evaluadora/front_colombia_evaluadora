@@ -117,7 +117,7 @@ export function CreateGradeDialog({
 
   async function handleSaveGrade() {
     if (!nombre.trim() || teachingLevelId == null) {
-      notify("Completá el nivel de enseñanza y el nombre del grado.", {
+      notify("Completa el nivel de enseñanza y el nombre del grado.", {
         variant: "error",
       })
       return
@@ -138,7 +138,7 @@ export function CreateGradeDialog({
         })
         setGradeId(created.id)
         notify(
-          "Grado creado. Ahora podés configurar grupos, plan de estudio y horario."
+          "Grado creado. Ahora puedes configurar grupos, plan de estudio y horario."
         )
       } else {
         const result = await updateGrade.mutateAsync({
@@ -259,7 +259,7 @@ export function CreateGradeDialog({
               onValueChange={handleChangeTeachingLevel}
             >
               <SelectTrigger id="grade-nivel">
-                <SelectValue placeholder="Seleccionar">
+                <SelectValue>
                   {(value) =>
                     teachingLevels.find((l) => String(l.id) === value)?.nombre ??
                     "Seleccionar"
@@ -307,7 +307,7 @@ export function CreateGradeDialog({
             ) : (
               <Input
                 id="grade-nombre"
-                placeholder="ej. Sexto A"
+                placeholder="Ingresar nombre"
                 value={nombre}
                 onChange={(e) => setNombre(e.target.value)}
               />
@@ -369,7 +369,7 @@ export function CreateGradeDialog({
 
         {gradeId == null ? (
           <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-            Guardá el grado para configurar sus grupos, plan de estudio y
+            Guarda el grado para configurar sus grupos, plan de estudio y
             horario.
           </p>
         ) : (

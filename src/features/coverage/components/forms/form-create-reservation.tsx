@@ -74,7 +74,7 @@ export function CreateReservationForm({ id, onSubmit, catalogs }: CreateReservat
                   type="text"
                   inputMode="numeric"
                   autoComplete="off"
-                  placeholder="ej. 1001234567"
+                  placeholder="Ingresar N° de identificación"
                   value={field.state.value}
                   onBlur={field.handleBlur}
                   onChange={(event) => field.handleChange(event.target.value)}
@@ -99,7 +99,7 @@ export function CreateReservationForm({ id, onSubmit, catalogs }: CreateReservat
                   name={field.name}
                   type="text"
                   autoComplete="off"
-                  placeholder="ej. Sebastián David"
+                  placeholder="Ingresar nombres"
                   value={field.state.value}
                   onBlur={field.handleBlur}
                   onChange={(event) => field.handleChange(event.target.value)}
@@ -124,7 +124,7 @@ export function CreateReservationForm({ id, onSubmit, catalogs }: CreateReservat
                   name={field.name}
                   type="text"
                   autoComplete="off"
-                  placeholder="ej. Jaramillo Gómez"
+                  placeholder="Ingresar apellidos"
                   value={field.state.value}
                   onBlur={field.handleBlur}
                   onChange={(event) => field.handleChange(event.target.value)}
@@ -149,7 +149,7 @@ export function CreateReservationForm({ id, onSubmit, catalogs }: CreateReservat
                   onValueChange={(value) => field.handleChange(value ?? "")}
                 >
                   <SelectTrigger id={field.name} size="sm" className="w-full">
-                    <SelectValue placeholder="Elegí una institución" />
+                    <SelectValue placeholder="Seleccionar" />
                   </SelectTrigger>
                   <SelectContent>
                     {catalogs?.institutions.map((option) => (
@@ -177,7 +177,7 @@ export function CreateReservationForm({ id, onSubmit, catalogs }: CreateReservat
                   onValueChange={(value) => field.handleChange(value ?? "")}
                 >
                   <SelectTrigger id={field.name} size="sm" className="w-full">
-                    <SelectValue placeholder="Elegí una sede" />
+                    <SelectValue placeholder="Seleccionar" />
                   </SelectTrigger>
                   <SelectContent>
                     {catalogs?.campuses.map((option) => (
@@ -206,7 +206,7 @@ export function CreateReservationForm({ id, onSubmit, catalogs }: CreateReservat
                     onValueChange={(value) => field.handleChange(value ?? "")}
                   >
                     <SelectTrigger id={field.name} size="sm" className="w-full">
-                      <SelectValue placeholder="Grado">
+                      <SelectValue>
                         {(value) => (value ? formatGrade(Number(value)) : "Grado")}
                       </SelectValue>
                     </SelectTrigger>
@@ -236,7 +236,7 @@ export function CreateReservationForm({ id, onSubmit, catalogs }: CreateReservat
                     onValueChange={(value) => field.handleChange(value ?? "")}
                   >
                     <SelectTrigger id={field.name} size="sm" className="w-full">
-                      <SelectValue placeholder="Grupo" />
+                      <SelectValue placeholder="Seleccionar" />
                     </SelectTrigger>
                     <SelectContent>
                       {catalogs?.groups.map((option) => (
@@ -265,8 +265,8 @@ export function CreateReservationForm({ id, onSubmit, catalogs }: CreateReservat
                   onValueChange={(value) => field.handleChange((value ?? "") as Shift)}
                 >
                   <SelectTrigger id={field.name} size="sm" className="w-full">
-                    <SelectValue placeholder="Elegí una jornada">
-                      {(value) => (value ? SHIFT_LABELS[value as Shift] : "Elegí una jornada")}
+                    <SelectValue>
+                      {(value) => (value ? SHIFT_LABELS[value as Shift] : "Elige una jornada")}
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
@@ -298,9 +298,9 @@ export function CreateReservationForm({ id, onSubmit, catalogs }: CreateReservat
                   onValueChange={(value) => field.handleChange((value ?? "") as EducationLevel)}
                 >
                   <SelectTrigger id={field.name} size="sm" className="w-full">
-                    <SelectValue placeholder="Elegí un nivel">
+                    <SelectValue>
                       {(value) =>
-                        value ? EDUCATION_LEVEL_LABELS[value as EducationLevel] : "Elegí un nivel"
+                        value ? EDUCATION_LEVEL_LABELS[value as EducationLevel] : "Elige un nivel"
                       }
                     </SelectValue>
                   </SelectTrigger>

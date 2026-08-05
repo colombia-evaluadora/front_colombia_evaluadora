@@ -73,7 +73,7 @@ export function ExportSelectedEstablishmentsDialog({
                 <DialogHeader>
                     <DialogTitle>Exportar</DialogTitle>
                     <DialogDescription>
-                        Elegí un formato para exportar {count} establecimiento(s) seleccionado(s).
+                        Elige un formato para exportar {count} establecimiento(s) seleccionado(s).
                     </DialogDescription>
                 </DialogHeader>
                 <DialogFooter className="sm:justify-between">

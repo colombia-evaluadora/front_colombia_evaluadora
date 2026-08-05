@@ -40,7 +40,7 @@ export function ForgotUsernameForm({ id, onSubmit }: ForgotUsernameFormProps) {
                   type="text"
                   inputMode="numeric"
                   autoComplete="off"
-                  placeholder="1020304050"
+                  placeholder="Ingresar número de documento"
                   value={field.state.value}
                   onBlur={field.handleBlur}
                   onChange={(e) => field.handleChange(e.target.value)}

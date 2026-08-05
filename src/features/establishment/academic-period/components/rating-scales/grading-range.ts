@@ -27,7 +27,7 @@ export function parseGradingRange(gradingFormat?: string): GradingRange {
 // para el alta (diálogo de crear) como para la edición inline (tab).
 export function makeRatingScaleGradesSchema({ min, max }: GradingRange) {
   const nota = z
-    .number({ error: "Ingresá una nota válida" })
+    .number({ error: "Ingresa una nota válida" })
     .min(min, `Debe ser ${min} o más`)
     .max(max, `No puede superar ${max}`)
   return z

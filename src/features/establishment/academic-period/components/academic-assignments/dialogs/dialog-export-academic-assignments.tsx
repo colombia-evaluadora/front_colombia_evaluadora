@@ -69,7 +69,7 @@ export function ExportAcademicAssignmentsDialog({
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>
-            Elegí un formato para exportar todos los docentes que coincidan con la
+            Elige un formato para exportar todos los docentes que coincidan con la
             búsqueda activa.
           </DialogDescription>
         </DialogHeader>

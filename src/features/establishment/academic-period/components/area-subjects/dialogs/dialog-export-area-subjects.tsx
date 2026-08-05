@@ -71,7 +71,7 @@ export function ExportAreaSubjectsDialog({
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>
-            Elegí un formato para exportar todas las áreas/asignaturas que coincidan con
+            Elige un formato para exportar todas las áreas/asignaturas que coincidan con
             la búsqueda activa.
           </DialogDescription>
         </DialogHeader>

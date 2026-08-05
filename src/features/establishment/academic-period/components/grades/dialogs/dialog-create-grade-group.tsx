@@ -170,7 +170,7 @@ export function CreateGradeGroupDialog({
       <DialogContent className="sm:max-w-3xl" showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>{isEditing ? "Editar grupo" : "Agregar grupo"}</DialogTitle>
-          <DialogDescription>Completá los datos del grupo.</DialogDescription>
+          <DialogDescription>Completa los datos del grupo.</DialogDescription>
         </DialogHeader>
 
         <NoticeOutlet />
@@ -192,7 +192,7 @@ export function CreateGradeGroupDialog({
                   <FieldLabel htmlFor={field.name}>Grupo</FieldLabel>
                   <Input
                     id={field.name}
-                    placeholder="ej. 0001"
+                    placeholder="Ingresar grupo"
                     value={field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value)}
@@ -273,7 +273,7 @@ export function CreateGradeGroupDialog({
                   id={field.name}
                   type="number"
                   min={0}
-                  placeholder="Cantidad de cupos"
+                  placeholder="Ingresar cupo"
                   value={Number.isNaN(field.state.value) ? "" : field.state.value}
                   onBlur={field.handleBlur}
                   onChange={(e) => field.handleChange(e.target.valueAsNumber)}

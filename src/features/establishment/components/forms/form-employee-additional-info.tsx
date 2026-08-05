@@ -89,7 +89,7 @@ export function EmployeeAdditionalInfoForm({ value, onChange }: EmployeeAddition
           items={employeeClassItems}
         >
           <SelectTrigger>
-            <SelectValue placeholder="Seleccionar clase" />
+            <SelectValue placeholder="Seleccionar" />
           </SelectTrigger>
           <SelectContent>
             {employeeClassItems.map((item) => (
@@ -119,7 +119,7 @@ export function EmployeeAdditionalInfoForm({ value, onChange }: EmployeeAddition
           items={educationLevelItems}
         >
           <SelectTrigger>
-            <SelectValue placeholder="Seleccionar nivel" />
+            <SelectValue placeholder="Seleccionar" />
           </SelectTrigger>
           <SelectContent>
             {educationLevelItems.map((item) => (
@@ -149,7 +149,7 @@ export function EmployeeAdditionalInfoForm({ value, onChange }: EmployeeAddition
           items={gradeItems}
         >
           <SelectTrigger>
-            <SelectValue placeholder="Seleccionar grado" />
+            <SelectValue placeholder="Seleccionar" />
           </SelectTrigger>
           <SelectContent>
             {gradeItems.map((item) => (
@@ -179,7 +179,7 @@ export function EmployeeAdditionalInfoForm({ value, onChange }: EmployeeAddition
           items={educationLevelItems}
         >
           <SelectTrigger>
-            <SelectValue placeholder="Seleccionar nivel" />
+            <SelectValue placeholder="Seleccionar" />
           </SelectTrigger>
           <SelectContent>
             {educationLevelItems.map((item) => (
@@ -209,7 +209,7 @@ export function EmployeeAdditionalInfoForm({ value, onChange }: EmployeeAddition
           items={fundingSourceItems}
         >
           <SelectTrigger>
-            <SelectValue placeholder="Seleccionar fuente" />
+            <SelectValue placeholder="Seleccionar" />
           </SelectTrigger>
           <SelectContent>
             {fundingSourceItems.map((item) => (
@@ -239,7 +239,7 @@ export function EmployeeAdditionalInfoForm({ value, onChange }: EmployeeAddition
           items={functionalPositionItems}
         >
           <SelectTrigger>
-            <SelectValue placeholder="Seleccionar cargo" />
+            <SelectValue placeholder="Seleccionar" />
           </SelectTrigger>
           <SelectContent>
             {functionalPositionItems.map((item) => (
@@ -269,7 +269,7 @@ export function EmployeeAdditionalInfoForm({ value, onChange }: EmployeeAddition
           items={employmentTypeItems}
         >
           <SelectTrigger>
-            <SelectValue placeholder="Seleccionar vinculación" />
+            <SelectValue placeholder="Seleccionar" />
           </SelectTrigger>
           <SelectContent>
             {employmentTypeItems.map((item) => (
@@ -287,7 +287,7 @@ export function EmployeeAdditionalInfoForm({ value, onChange }: EmployeeAddition
           id="employee-address"
           value={value.address}
           onChange={(event) => patch({ address: event.target.value })}
-          placeholder="Agregar dirección"
+          placeholder="Ingresar dirección"
         />
       </Field>
     </div>

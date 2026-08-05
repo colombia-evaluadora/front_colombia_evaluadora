@@ -157,7 +157,7 @@ export function CreateEvaluationPeriodDialog({
       const values = evaluationPeriodFormSchema.parse(value)
       if (hasOverlap(values.startDate, values.endDate)) {
         notify(
-          "El período coincide con otro período de evaluación existente. Revisá las fechas.",
+          "El período coincide con otro período de evaluación existente. Revisa las fechas.",
           { variant: "error" }
         )
         return
@@ -218,7 +218,7 @@ export function CreateEvaluationPeriodDialog({
               : "Agregar periodo de evaluación"}
           </DialogTitle>
           <DialogDescription>
-            Completá los datos del periodo de evaluación.
+            Completa los datos del periodo de evaluación.
           </DialogDescription>
         </DialogHeader>
 
@@ -241,7 +241,7 @@ export function CreateEvaluationPeriodDialog({
                     id={field.name}
                     type="number"
                     min={1}
-                    placeholder="ej. 1"
+                    placeholder="Ingresar código"
                     value={Number.isNaN(field.state.value) ? "" : field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.valueAsNumber)}
@@ -262,7 +262,7 @@ export function CreateEvaluationPeriodDialog({
                   <FieldLabel htmlFor={field.name}>Nombre*</FieldLabel>
                   <Input
                     id={field.name}
-                    placeholder="ej. Primer periodo"
+                    placeholder="Ingresar nombre"
                     value={field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value)}
@@ -283,7 +283,7 @@ export function CreateEvaluationPeriodDialog({
                   <FieldLabel htmlFor={field.name}>Abreviación*</FieldLabel>
                   <Input
                     id={field.name}
-                    placeholder="ej. PE1"
+                    placeholder="Ingresar abreviación"
                     value={field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value)}
@@ -431,7 +431,7 @@ export function CreateEvaluationPeriodDialog({
                       type="number"
                       min={0}
                       max={100}
-                      placeholder="ej. 25"
+                      placeholder="Ingresar peso porcentual"
                       className="px-0"
                       value={Number.isNaN(field.state.value) ? "" : field.state.value}
                       onBlur={field.handleBlur}
@@ -464,7 +464,7 @@ export function CreateEvaluationPeriodDialog({
                     <SelectTrigger id={field.name} aria-invalid={isInvalid}>
                       {/* El valor elegido se muestra como el mismo badge soft
                           que usa la columna Estado de la tabla. */}
-                      <SelectValue placeholder="Seleccionar">
+                      <SelectValue>
                         {(value) => {
                           const estado = value as EvaluationPeriodStatus
                           const badge = EVALUATION_PERIOD_STATUS_BADGE[estado]
