@@ -138,8 +138,8 @@ export const columns: ColumnDef<AuditSession>[] = [
     header: () => <span className="sr-only">Acciones</span>,
     cell: ({ row }) => (
       <Button
-        variant="fill"
-        color="secondary"
+        variant="ghost"
+        color="neutral"
         size="icon-sm"
         aria-label={`Ver operaciones de la sesión de ${row.original.authorName}`}
         render={<Link to={paths.app.auditoriaSesionOperaciones.getHref(row.original.id)} />}

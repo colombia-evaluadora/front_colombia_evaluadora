@@ -97,8 +97,8 @@ export const columns: ColumnDef<Establishment>[] = [
       <div className="flex items-center justify-end gap-1">
         <Button
           type="button"
-          variant="fill"
-          color="secondary"
+          variant="ghost"
+          color="neutral"
           size="icon"
           className="size-8"
           aria-label={`Editar ${row.original.name}`}

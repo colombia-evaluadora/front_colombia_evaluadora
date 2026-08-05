@@ -46,8 +46,8 @@ export function DeleteStudyPlanDialog({ item }: DeleteStudyPlanDialogProps) {
       <AlertDialogTrigger
         render={
           <Button
-            variant="fill"
-            color="destructive"
+            variant="ghost"
+            color="neutral"
             size="icon"
             className="size-8"
           />

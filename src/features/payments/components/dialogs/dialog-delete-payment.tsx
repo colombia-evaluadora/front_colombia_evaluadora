@@ -42,7 +42,7 @@ export function DeletePaymentDialog({ payment }: DeletePaymentDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger
-        render={<Button variant="fill" color="destructive" size="icon" className="size-8" />}
+        render={<Button variant="ghost" color="neutral" size="icon" className="size-8" />}
       >
         <span className="sr-only">Eliminar pago</span>
         <TrashIcon />

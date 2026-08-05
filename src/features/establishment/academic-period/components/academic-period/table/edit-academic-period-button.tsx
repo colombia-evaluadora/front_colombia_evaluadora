@@ -15,8 +15,8 @@ export function EditAcademicPeriodButton({
 }: EditAcademicPeriodButtonProps) {
   return (
     <Button
-      variant="fill"
-      color="secondary"
+      variant="ghost"
+      color="neutral"
       size="icon"
       className="size-8"
       render={

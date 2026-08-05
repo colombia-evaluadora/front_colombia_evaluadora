@@ -70,7 +70,7 @@ export function ViewOperationChangesDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
-        render={<Button variant="ghost" size="icon-sm" aria-label="Ver cambios de la operación" />}
+        render={<Button variant="ghost" color="neutral" size="icon-sm" aria-label="Ver cambios de la operación" />}
       >
         <EyeIcon weight="bold" />
       </DialogTrigger>
