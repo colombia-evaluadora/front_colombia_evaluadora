@@ -4,9 +4,14 @@ import type { ReactNode } from "react"
 
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
-import { TablePageHeader } from "@/components/table-page-header"
 import { useDataTable } from "@/hooks/use-data-table"
-import { Card } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 
 import { usePaymentsQuery } from "../../api/query/use-payments-query"
 import { useTablePagination } from "@/hooks/use-table-pagination"
@@ -50,32 +55,45 @@ export function PaymentsDataTable({ title, description }: PaymentsDataTableProps
 
   return (
     <>
-      <TablePageHeader title={title} description={description}>
-        <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-2">
-          <div className="flex gap-2">
-            {hasSelection ? (
-              <>
-                <DeleteSelectedPaymentsDialog
-                  selectedIds={selectedIds}
-                  resetSelection={resetSelection}
+      {/*
+        Encabezado pegajoso: el `pt-4` opaco del contenedor reproduce el aire
+        que la página tiene contra el header de la app (`top-14`) y, al mismo
+        tiempo, tapa lo que scrollea por debajo.
+      */}
+      <div className="sticky top-14 z-20 bg-sidebar pt-4">
+        <Card className="gap-0 overflow-hidden rounded-b-none pt-0">
+          <CardHeader className="bg-muted/10 py-4">
+            <CardTitle>{title}</CardTitle>
+            {description ? <CardDescription>{description}</CardDescription> : null}
+          </CardHeader>
+          <CardContent className="pt-7">
+            <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-2">
+              <div className="flex gap-2">
+                {hasSelection ? (
+                  <>
+                    <DeleteSelectedPaymentsDialog
+                      selectedIds={selectedIds}
+                      resetSelection={resetSelection}
+                    />
+                    <ClearSelectionDialog resetSelection={resetSelection} />
+                  </>
+                ) : (
+                  <DeleteAllPaymentsDialog filters={queryFilters} />
+                )}
+              </div>
+              <div className="flex gap-2">
+                <FilterPaymentsSheet
+                  activeFilterCount={activeFilterCount}
+                  filters={filters}
+                  applyFilters={applyFilters}
+                  clearAllFilters={clearAllFilters}
                 />
-                <ClearSelectionDialog resetSelection={resetSelection} />
-              </>
-            ) : (
-              <DeleteAllPaymentsDialog filters={queryFilters} />
-            )}
-          </div>
-          <div className="flex gap-2">
-            <FilterPaymentsSheet
-              activeFilterCount={activeFilterCount}
-              filters={filters}
-              applyFilters={applyFilters}
-              clearAllFilters={clearAllFilters}
-            />
-            <CreatePaymentSheet />
-          </div>
-        </div>
-      </TablePageHeader>
+                <CreatePaymentSheet />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/*
         El cuerpo es su PROPIA Card, separada del encabezado sticky de

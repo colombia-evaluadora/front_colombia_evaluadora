@@ -1,6 +1,5 @@
 import { useState } from "react"
 
-import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ControlPointIcon } from "@/components/ui/icons"
 
@@ -23,21 +22,17 @@ export function CampusesPage() {
 
   return (
     <>
-      {/* `overflow-visible`: el `overflow-hidden` del Card anularía el sticky
-          del encabezado. */}
-      <Card className="overflow-visible">
-        <CampusesDataTable
-          onEditCampus={openEditDialog}
-          title="Sedes educativas"
-          description="Lista de sedes con búsqueda, filtro por zona y nombre."
-          action={
-            <Button variant="fill" color="primary" size="sm" onClick={openCreateDialog}>
-              <ControlPointIcon data-icon="inline-start" />
-              Agregar
-            </Button>
-          }
-        />
-      </Card>
+      <CampusesDataTable
+        onEditCampus={openEditDialog}
+        title="Sedes educativas"
+        description="Lista de sedes con búsqueda, filtro por zona y nombre."
+        action={
+          <Button variant="fill" color="primary" size="sm" onClick={openCreateDialog}>
+            <ControlPointIcon data-icon="inline-start" />
+            Agregar
+          </Button>
+        }
+      />
 
       <ManageCampusDialog
         open={editorOpen}

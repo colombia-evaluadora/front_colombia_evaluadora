@@ -50,7 +50,7 @@ export function AuditSessionDataTable() {
   })
 
   return (
-    <>     <div className="sticky top-14 z-20 gap-0 pt-4 bg-background">
+    <>     <div className="sticky top-14 z-20 gap-0 pt-4 bg-sidebar">
       <Card className="gap-0 overflow-hidden rounded-b-none pt-0">
           <CardHeader className="bg-muted/10 py-4 ">
             <CardTitle>

@@ -4,9 +4,15 @@ import { useMemo, type ReactNode } from "react"
 
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
-import { TablePageHeader } from "@/components/table-page-header"
 import { useDataTable } from "@/hooks/use-data-table"
 import { useTablePagination } from "@/hooks/use-table-pagination"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { CATALOGS } from "@/lib/catalogs"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 
@@ -96,76 +102,99 @@ export function EmployeesDataTable({
 
   return (
     <>
-      <TablePageHeader title={title} description={description}>
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <SearchEmployees
-            filters={filters}
-            applyFilters={applyFilters}
-            clearAllFilters={clearAllFilters}
-            activeFilterCount={activeFilterCount}
-            roles={roles}
-            workSchedules={workSchedules}
-            statuses={entityStatuses}
-          />
+      {/*
+        Encabezado pegajoso: el `pt-4` opaco del contenedor reproduce el aire
+        que la página tiene contra el header de la app (`top-14`) y, al mismo
+        tiempo, tapa lo que scrollea por debajo.
+      */}
+      <div className="sticky top-14 z-20 bg-sidebar pt-4">
+        <Card className="gap-0 overflow-hidden rounded-b-none pt-0">
+          <CardHeader className="bg-muted/10 py-4">
+            <CardTitle>{title}</CardTitle>
+            {description ? <CardDescription>{description}</CardDescription> : null}
+          </CardHeader>
+          <CardContent className="pt-7">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <SearchEmployees
+                filters={filters}
+                applyFilters={applyFilters}
+                clearAllFilters={clearAllFilters}
+                activeFilterCount={activeFilterCount}
+                roles={roles}
+                workSchedules={workSchedules}
+                statuses={entityStatuses}
+              />
 
-          <div className="flex items-center gap-2">
-            {action}
-            {hasSelection ? (
-              <>
-                <ClearSelectionDialog resetSelection={resetSelection} />
-                <DialogBulkDelete<EmployeeListItem>
-                  items={selectedItems}
-                  getItemId={(item) => item.id}
-                  getItemLabel={(item) => item.name}
-                  title="Eliminar"
-                  buildDescription={(count, sample) => {
-                    const list = sample.join(", ")
-                    const suffix = count > sample.length ? ` y ${count - sample.length} más` : ""
-                    return `Se eliminarán permanentemente los funcionarios ${list}${suffix} (${count} en total). Esta acción no se puede deshacer.`
-                  }}
-                  onConfirm={async (ids) => {
-                    await bulkDelete.mutateAsync(ids)
-                  }}
-                  triggerLabel={`Eliminar (${selectedIds.length})`}
-                />
-                <ExportSelectedEmployeesDialog
-                  selectedIds={selectedIds}
-                  resetSelection={resetSelection}
-                />
-              </>
-            ) : (
-              <ExportEmployeesDialog filters={queryFilters} />
-            )}
-          </div>
-        </div>
-      </TablePageHeader>
-
-      <div className="px-(--card-spacing)">
-        <NoticeOutlet className="mb-3" />
-
-        <DataTable
-          table={table}
-          isPending={isPending}
-          isError={isError}
-          onRetry={refetch}
-          emptyMessage="Sin resultados."
-          errorMessage="Ocurrió un error al cargar los funcionarios."
-        />
-
-        {data && (
-          <Pagination
-            viewOptions={<DataTableViewOptions table={table} />}
-            pageIndex={pageIndex}
-            pageCount={data.pageCount}
-            canPrev={pageIndex > 0}
-            canNext={pageIndex < data.pageCount - 1}
-            onPageChange={goToPage}
-            totalCount={data.totalCount}
-            pageSize={pageSize}
-            onPageSizeChange={setPageSize}
-          />
-        )}
+              <div className="flex items-center gap-2">
+                {action}
+                {hasSelection ? (
+                  <>
+                    <ClearSelectionDialog resetSelection={resetSelection} />
+                    <DialogBulkDelete<EmployeeListItem>
+                      items={selectedItems}
+                      getItemId={(item) => item.id}
+                      getItemLabel={(item) => item.name}
+                      title="Eliminar"
+                      buildDescription={(count, sample) => {
+                        const list = sample.join(", ")
+                        const suffix =
+                          count > sample.length ? ` y ${count - sample.length} más` : ""
+                        return `Se eliminarán permanentemente los funcionarios ${list}${suffix} (${count} en total). Esta acción no se puede deshacer.`
+                      }}
+                      onConfirm={async (ids) => {
+                        await bulkDelete.mutateAsync(ids)
+                      }}
+                      triggerLabel={`Eliminar (${selectedIds.length})`}
+                    />
+                    <ExportSelectedEmployeesDialog
+                      selectedIds={selectedIds}
+                      resetSelection={resetSelection}
+                    />
+                  </>
+                ) : (
+                  <ExportEmployeesDialog filters={queryFilters} />
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
+
+      {/*
+        El cuerpo es su PROPIA Card, separada del encabezado sticky de
+        arriba. NO se encapsulan en una misma Card: si compartieran el
+        `ring-1`, el `border-b` del encabezado se sumaría al anillo y daría
+        línea doble en el medio. `rounded-t-none` para pegarse a la base
+        plana del encabezado; `overflow-visible` para no romper el sticky.
+      */}
+      <Card className="overflow-visible rounded-t-none">
+        <div className="px-(--card-spacing)">
+          <NoticeOutlet className="mb-3" />
+
+          <DataTable
+            table={table}
+            isPending={isPending}
+            isError={isError}
+            onRetry={refetch}
+            emptyMessage="Sin resultados."
+            errorMessage="Ocurrió un error al cargar los funcionarios."
+          />
+
+          {data && (
+            <Pagination
+              viewOptions={<DataTableViewOptions table={table} />}
+              pageIndex={pageIndex}
+              pageCount={data.pageCount}
+              canPrev={pageIndex > 0}
+              canNext={pageIndex < data.pageCount - 1}
+              onPageChange={goToPage}
+              totalCount={data.totalCount}
+              pageSize={pageSize}
+              onPageSizeChange={setPageSize}
+            />
+          )}
+        </div>
+      </Card>
     </>
   )
 }

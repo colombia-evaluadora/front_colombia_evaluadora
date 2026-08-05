@@ -17,13 +17,6 @@ export function ProtectedLayout() {
     <SidebarProvider defaultOpen={getInitialSidebarOpen()}>
       <AppSidebar />
       <SidebarInset>
-        {/*
-          Header en tres franjas: trigger a la izquierda, breadcrumbs en el
-          centro, acciones a la derecha. La franja central usa `flex-1` para
-          comerse el espacio sobrante y `justify-center` para mantener el
-          rastro centrado aunque el breadcrumb sea corto (un solo ítem) o
-          largo (varios ítems sin envolver).
-        */}
         <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center gap-2 bg-sidebar px-4">
           <div className="flex items-center gap-2">
             <SidebarTrigger />
@@ -51,7 +44,7 @@ export function ProtectedLayout() {
             <NavUser />
           </div>
         </header>
-        <div className="min-w-0 flex-1 px-4 pb-4">
+        <div className="min-w-0 flex-1 px-4 pb-4 bg-sidebar">
           <Outlet />
         </div>
       </SidebarInset>
