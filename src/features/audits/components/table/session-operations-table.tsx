@@ -7,6 +7,7 @@ import { Pagination } from "@/components/pagination"
 import { TablePageHeader } from "@/components/table-page-header"
 import { useDataTable } from "@/hooks/use-data-table"
 import { useTablePagination } from "@/hooks/use-table-pagination"
+import { Card } from "@/components/ui/card"
 import { useSessionOperationsQuery } from "../../api/query/use-session-operations-query"
 import { useSessionOperationsFilters } from "../../hooks/use-session-operations-filters"
 
@@ -93,29 +94,38 @@ export function SessionOperationsDataTable({
         <NoticeOutlet className="mt-3" />
       </TablePageHeader>
 
-      <div className="px-(--card-spacing)">
-        <DataTable
-          table={table}
-          isPending={isPending}
-          isError={isError}
-          onRetry={refetch}
-          emptyMessage="Sin resultados."
-          errorMessage="Ocurrió un error al cargar las operaciones."
-        />
-        {data && (
-          <Pagination
-            viewOptions={<DataTableViewOptions table={table} />}
-            pageIndex={pageIndex}
-            pageCount={data.pageCount}
-            canPrev={pageIndex > 0}
-            canNext={pageIndex < data.pageCount - 1}
-            onPageChange={goToPage}
-            totalCount={data.totalCount}
-            pageSize={pageSize}
-            onPageSizeChange={setPageSize}
+      {/*
+        El cuerpo es su PROPIA Card, separada del encabezado sticky de
+        arriba. NO se encapsulan en una misma Card: si compartieran el
+        `ring-1`, el `border-b` del encabezado se sumaría al anillo y daría
+        línea doble en el medio. `rounded-t-none` para pegarse a la base
+        plana del encabezado; `overflow-visible` para no romper el sticky.
+      */}
+      <Card className="overflow-visible rounded-t-none">
+        <div className="px-(--card-spacing)">
+          <DataTable
+            table={table}
+            isPending={isPending}
+            isError={isError}
+            onRetry={refetch}
+            emptyMessage="Sin resultados."
+            errorMessage="Ocurrió un error al cargar las operaciones."
           />
-        )}
-      </div>
+          {data && (
+            <Pagination
+              viewOptions={<DataTableViewOptions table={table} />}
+              pageIndex={pageIndex}
+              pageCount={data.pageCount}
+              canPrev={pageIndex > 0}
+              canNext={pageIndex < data.pageCount - 1}
+              onPageChange={goToPage}
+              totalCount={data.totalCount}
+              pageSize={pageSize}
+              onPageSizeChange={setPageSize}
+            />
+          )}
+        </div>
+      </Card>
     </>
   )
 }

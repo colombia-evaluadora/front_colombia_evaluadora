@@ -3,6 +3,7 @@
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
 import { useDataTable } from "@/hooks/use-data-table"
+import { Card } from "@/components/ui/card"
 
 import { useAuditsQuery } from "../../api/query/use-audits-query"
 import { useTablePagination } from "@/hooks/use-table-pagination"
@@ -68,36 +69,45 @@ export function AuditSessionDataTable() {
         </div>
       </AuditPageHeader>
 
-      <div className="px-(--card-spacing)">
-        <NoticeOutlet className="mb-3" />
+      {/*
+        El cuerpo es su PROPIA Card, separada del encabezado sticky de
+        arriba. NO se encapsulan en una misma Card: si compartieran el
+        `ring-1`, el `border-b` del encabezado se sumaría al anillo y daría
+        línea doble en el medio. `rounded-t-none` para pegarse a la base
+        plana del encabezado; `overflow-visible` para no romper el sticky.
+      */}
+      <Card className="overflow-visible rounded-t-none">
+        <div className="px-(--card-spacing)">
+          <NoticeOutlet className="mb-3" />
 
-        <AuditSessionStatsCards
-          selectedIds={selectedIds}
-          hasSelection={hasSelection}
-          filters={queryFilters}
-        />
-        <DataTable
-          table={table}
-          isPending={isPending}
-          isError={isError}
-          onRetry={refetch}
-          emptyMessage="Sin resultados."
-          errorMessage="Ocurrió un error al cargar las sesiones."
-        />
-        {data && (
-          <Pagination
-            viewOptions={<DataTableViewOptions table={table} />}
-            pageIndex={pageIndex}
-            pageCount={data.pageCount}
-            canPrev={pageIndex > 0}
-            canNext={pageIndex < data.pageCount - 1}
-            onPageChange={goToPage}
-            totalCount={data.totalCount}
-            pageSize={pageSize}
-            onPageSizeChange={setPageSize}
+          <AuditSessionStatsCards
+            selectedIds={selectedIds}
+            hasSelection={hasSelection}
+            filters={queryFilters}
           />
-        )}
-      </div>
+          <DataTable
+            table={table}
+            isPending={isPending}
+            isError={isError}
+            onRetry={refetch}
+            emptyMessage="Sin resultados."
+            errorMessage="Ocurrió un error al cargar las sesiones."
+          />
+          {data && (
+            <Pagination
+              viewOptions={<DataTableViewOptions table={table} />}
+              pageIndex={pageIndex}
+              pageCount={data.pageCount}
+              canPrev={pageIndex > 0}
+              canNext={pageIndex < data.pageCount - 1}
+              onPageChange={goToPage}
+              totalCount={data.totalCount}
+              pageSize={pageSize}
+              onPageSizeChange={setPageSize}
+            />
+          )}
+        </div>
+      </Card>
     </>
   )
 }

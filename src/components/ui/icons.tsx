@@ -106,7 +106,6 @@ import {
   MdUnfoldMore,
   MdVerifiedUser,
   MdViewColumn,
-  MdViewSidebar,
   MdVisibility,
   MdVisibilityOff,
   MdWarningAmber,
