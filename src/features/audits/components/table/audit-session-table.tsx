@@ -50,15 +50,15 @@ export function AuditSessionDataTable() {
   })
 
   return (
-    <>
-        <Card className="sticky top-18 z-20 gap-0 overflow-visible rounded-b-none pt-0">
+    <>     <div className="sticky top-14 z-20 gap-0 pt-4 bg-background">
+      <Card className="gap-0 overflow-hidden rounded-b-none pt-0">
           <CardHeader className="bg-muted/10 py-4 ">
             <CardTitle>
               Sesiones de auditoría
             </CardTitle>
           </CardHeader>
   
-        <div className="border-b border-border px-(--card-spacing)">
+        <div className="border-b border-border px-(--card-spacing) pt-7">
           <nav aria-label="Vistas de auditoría" className="flex items-end gap-1">
             {viewLinks.map((view) => (
               <Link
@@ -72,7 +72,7 @@ export function AuditSessionDataTable() {
             ))}
           </nav>
         </div>
-          <CardContent>
+          <CardContent className="pt-7">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <SearchAuditSession
             activeFilterCount={activeFilterCount}
@@ -96,6 +96,7 @@ export function AuditSessionDataTable() {
           </div>
         </div></CardContent>
             </Card>
+            </div>
       <Card className="overflow-visible rounded-t-none">
         <div className="px-(--card-spacing)">
           <NoticeOutlet className="mb-3" />
