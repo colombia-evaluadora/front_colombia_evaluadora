@@ -98,7 +98,7 @@ export function ImageUploadField({
                     orientation="vertical"
                     // `flex-nowrap` porque la variante trae `flex-wrap`, y en
                     // columna con alto fijo eso parte el contenido en dos.
-                    className="h-full min-h-40 w-full flex-nowrap has-data-[slot=attachment-content]:w-full"
+                    className="h-full w-full flex-nowrap has-data-[slot=attachment-content]:w-full"
                 >
                     {/*
                         El alto lo pone la fila, no la imagen: la vista previa va
@@ -133,23 +133,28 @@ export function ImageUploadField({
                 // `FileUploadDropzone` maneja click, drop y Enter/Espacio), así
                 // que acá no va un botón aparte: el "clic aquí" del título es
                 // solo la señal visual de esa afordancia.
-                <FileUploadDropzone className="h-full min-h-40 w-full gap-3 rounded-lg bg-muted/20 px-4 py-6">
-                    {icon ?? <ImageIcon className="size-10 shrink-0 text-muted-foreground" />}
+                // `overflow-hidden` + contenido compacto: la caja la dimensiona
+                // la fila del grid, no el dropzone, así que si el espacio queda
+                // justo el contenido se recorta en vez de estirar la fila.
+                <FileUploadDropzone className="h-full w-full gap-1 overflow-hidden rounded-lg bg-muted/20 px-3 py-3">
+                    {icon ?? <ImageIcon className="size-8 shrink-0 text-muted-foreground" />}
                     {/*
                         Los tres textos van en un bloque propio: el `gap` del
-                        dropzone separa el ícono del texto, y acá adentro el
-                        interlineado es apretado para que se lean como un solo
-                        párrafo centrado.
+                        dropzone separa el ícono del texto, y acá adentro no va
+                        `space-y` —solo el interlineado— para que se lean como
+                        un único párrafo centrado y quepan en la caja.
                     */}
-                    <div className="space-y-1">
-                        <p className="text-sm leading-snug font-semibold text-balance">
+                    <div>
+                        <p className="m-0! text-xs leading-snug font-semibold text-balance">
                             Arrastra y suelta o <span className="text-primary">haz clic aquí</span>
                         </p>
-                        <p className="text-xs leading-snug font-medium text-balance">
+                        <p className="m-0! text-[11px] leading-snug font-medium text-balance">
                             {description}
                         </p>
                         {hint ? (
-                            <p className="text-[11px] leading-snug text-muted-foreground">{hint}</p>
+                            <p className="m-0! text-[10px] leading-snug text-muted-foreground">
+                                {hint}
+                            </p>
                         ) : null}
                     </div>
                 </FileUploadDropzone>

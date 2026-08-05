@@ -118,17 +118,25 @@ export function UserDetailsForm({
             {roleName ? <FormSectionHeading>{roleName}</FormSectionHeading> : null}
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 {/* Foto */}
-                <div className="md:row-span-2">
-                    <ImageUploadField
-                        value={photo}
-                        onValueChange={setPhoto}
-                        icon={<UserCircleIcon className="size-10 shrink-0 text-muted-foreground" />}
-                        description="para cargar la foto del usuario"
-                        // Un retrato se ve mejor encuadrado que con bandas a
-                        // los lados, al revés que un escudo.
-                        fit="cover"
-                        deleteLabel="Eliminar foto"
-                    />
+                {/*
+                    En `md` el contenido va absoluto: así la celda no aporta
+                    altura propia y las dos filas del grid las miden solo los
+                    campos. La foto se estira a ese alto exacto en vez de
+                    empujar las filas y abrir hueco entre los inputs.
+                */}
+                <div className="relative md:row-span-2">
+                    <div className="md:absolute md:inset-0">
+                        <ImageUploadField
+                            value={photo}
+                            onValueChange={setPhoto}
+                            icon={<UserCircleIcon className="size-8 shrink-0 text-muted-foreground" />}
+                            description="para cargar la foto del usuario"
+                            // Un retrato se ve mejor encuadrado que con bandas a
+                            // los lados, al revés que un escudo.
+                            fit="cover"
+                            deleteLabel="Eliminar foto"
+                        />
+                    </div>
                 </div>
                 {/* Formulario */}
 
