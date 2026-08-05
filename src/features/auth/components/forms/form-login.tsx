@@ -59,7 +59,7 @@ export function LoginForm({ id, onSubmit }: LoginFormProps) {
                     name={field.name}
                     type="email"
                     autoComplete="username"
-                    placeholder="nombre@empresa.com"
+                    placeholder="Ingresar correo electrónico"
                     value={field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value)}
@@ -95,7 +95,7 @@ export function LoginForm({ id, onSubmit }: LoginFormProps) {
                     name={field.name}
                     type={showPassword ? "text" : "password"}
                     autoComplete="current-password"
-                    placeholder="Ingresa tu contraseña"
+                    placeholder="Ingresar contraseña"
                     value={field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value)}

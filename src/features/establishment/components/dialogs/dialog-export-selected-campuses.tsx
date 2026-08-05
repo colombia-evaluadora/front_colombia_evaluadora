@@ -73,7 +73,7 @@ export function ExportSelectedCampusesDialog({
                 <DialogHeader>
                     <DialogTitle>Exportar</DialogTitle>
                     <DialogDescription>
-                        Elegí un formato para exportar {count} sede(s) seleccionada(s).
+                        Elige un formato para exportar {count} sede(s) seleccionada(s).
                     </DialogDescription>
                 </DialogHeader>
                 <DialogFooter className="sm:justify-between">

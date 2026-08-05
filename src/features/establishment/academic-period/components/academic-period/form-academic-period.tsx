@@ -234,7 +234,7 @@ export function AcademicPeriodForm({
                   onValueChange={(value) => value && field.handleChange(value)}
                 >
                   <SelectTrigger id={field.name} aria-invalid={isInvalid}>
-                    <SelectValue placeholder="Seleccionar">
+                    <SelectValue>
                       {(value) =>
                         campuses.find((c) => c.id === value)?.name ??
                         "Seleccionar"
@@ -288,7 +288,7 @@ export function AcademicPeriodForm({
                       }
                     >
                       <SelectTrigger id={field.name}>
-                        <SelectValue placeholder="No tiene">
+                        <SelectValue>
                           {(value) => {
                             const p = optionsForSede.find(
                               (o) => String(o.id) === value
@@ -334,7 +334,7 @@ export function AcademicPeriodForm({
                   {/* El valor elegido se muestra como el mismo badge soft que
                       usa la columna Estado de la tabla, para que el estado se
                       lea igual en el formulario y en el listado. */}
-                  <SelectValue placeholder="Seleccionar">
+                  <SelectValue>
                     {(value) => {
                       const status = value as AcademicPeriodStatus
                       const badge = ACADEMIC_PERIOD_STATUS_BADGE[status]
@@ -375,7 +375,7 @@ export function AcademicPeriodForm({
                   }
                 >
                   <SelectTrigger id={field.name} aria-invalid={isInvalid}>
-                    <SelectValue placeholder="Seleccionar">
+                    <SelectValue>
                       {(value) =>
                         jornadas.find((j) => String(j.id) === value)
                           ?.name ?? "Seleccionar"
@@ -422,7 +422,7 @@ export function AcademicPeriodForm({
                           field.handleChange(value)
                           field.handleBlur()
                         }}
-                        placeholder="Seleccione una hora"
+                        placeholder="Ingresar hora"
                         aria-invalid={isInvalid}
                       />
                       {isInvalid ? (
@@ -459,7 +459,7 @@ export function AcademicPeriodForm({
                     field.handleChange(value)
                     field.handleBlur()
                   }}
-                  placeholder="Seleccione una hora"
+                  placeholder="Ingresar hora"
                   aria-invalid={isInvalid}
                 />
                 {isInvalid && <FieldError errors={field.state.meta.errors} />}
@@ -483,7 +483,7 @@ export function AcademicPeriodForm({
                   name={field.name}
                   type="number"
                   min={1}
-                  placeholder="Ingrese la cantidad"
+                  placeholder="Ingresar cantidad"
                   value={field.state.value ?? ""}
                   onBlur={field.handleBlur}
                   aria-invalid={isInvalid}

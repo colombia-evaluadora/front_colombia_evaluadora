@@ -72,7 +72,7 @@ export function ExportSelectedSessionOperationsDialog({
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>
-            Elegí un formato para exportar {count} operación(es) seleccionada(s).
+            Elige un formato para exportar {count} operación(es) seleccionada(s).
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="sm:justify-between">

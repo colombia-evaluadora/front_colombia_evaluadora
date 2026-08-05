@@ -246,7 +246,7 @@ export const ScheduleBuilder = forwardRef<
             <SelectValue
               placeholder={
                 gradeGroups.length === 0
-                  ? "Sin grupos: agregá uno en la pestaña Grupo"
+                  ? "Sin grupos: agrega uno en la pestaña Grupo"
                   : "Seleccionar"
               }
             />
@@ -266,13 +266,13 @@ export const ScheduleBuilder = forwardRef<
       <div className="flex flex-wrap gap-2">
         {!gradeGroup ? (
           <p className="text-xs text-muted-foreground">
-            Seleccioná un grado/grupo para ver las asignaturas disponibles.
+            Selecciona un grado/grupo para ver las asignaturas disponibles.
           </p>
         ) : (
           <>
             {subjects.length === 0 && (
               <p className="text-xs text-muted-foreground">
-                No hay asignaturas en el plan de estudio de este periodo. Agregá
+                No hay asignaturas en el plan de estudio de este periodo. Agrega
                 asignaturas en la pestaña "Plan de estudio" para armar el
                 horario.
               </p>
@@ -325,7 +325,7 @@ export const ScheduleBuilder = forwardRef<
 
       {slots.length === 0 ? (
         <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-          Definí la hora de inicio, fin y el número de bloques en el periodo
+          Define la hora de inicio, fin y el número de bloques en el periodo
           académico para armar el horario.
         </p>
       ) : (

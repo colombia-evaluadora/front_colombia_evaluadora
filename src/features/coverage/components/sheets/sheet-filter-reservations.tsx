@@ -66,7 +66,7 @@ export function FilterReservationsSheet({
             <SheetDescription>
               {activeFilterCount > 0
                 ? `${activeFilterCount} filtro${activeFilterCount === 1 ? "" : "s"} activo${activeFilterCount === 1 ? "" : "s"}.`
-                : "Aplicá los filtros para consultar la información."}
+                : "Aplica los filtros para consultar la información."}
             </SheetDescription>
           </SheetHeader>
 

@@ -129,7 +129,7 @@ export function CreateRatingScaleDialog({
       const r = rangeRef.current
       const parsed = makeRatingScaleGradesSchema(r).safeParse(value)
       if (!parsed.success) {
-        notify(parsed.error.issues[0]?.message ?? "Revisá los datos.", {
+        notify(parsed.error.issues[0]?.message ?? "Revisa los datos.", {
           variant: "error",
         })
         return
@@ -156,7 +156,7 @@ export function CreateRatingScaleDialog({
     const r = rangeRef.current
     const parsed = makeRatingScaleGradesSchema(r).safeParse(editRow)
     if (!parsed.success) {
-      notify(parsed.error.issues[0]?.message ?? "Revisá los datos.", {
+      notify(parsed.error.issues[0]?.message ?? "Revisa los datos.", {
         variant: "error",
       })
       return
@@ -184,11 +184,11 @@ export function CreateRatingScaleDialog({
 
   async function handleSave() {
     if (teachingLevelIds.length === 0) {
-      notify("Seleccioná al menos un nivel de enseñanza.", { variant: "error" })
+      notify("Selecciona al menos un nivel de enseñanza.", { variant: "error" })
       return
     }
     if (drafts.length === 0) {
-      notify("Agregá al menos una escala a la lista.", { variant: "error" })
+      notify("Agrega al menos una escala a la lista.", { variant: "error" })
       return
     }
     await createScalesBulk.mutateAsync({
@@ -225,7 +225,7 @@ export function CreateRatingScaleDialog({
         <DialogHeader>
           <DialogTitle>Agregar escalas de valoración</DialogTitle>
           <DialogDescription>
-            Elegí los niveles de enseñanza y agregá una o más escalas a la
+            Elige los niveles de enseñanza y agrega una o más escalas a la
             lista.
           </DialogDescription>
         </DialogHeader>
@@ -264,7 +264,7 @@ export function CreateRatingScaleDialog({
                         <FieldLabel htmlFor={field.name}>Nombre*</FieldLabel>
                         <Input
                           id={field.name}
-                          placeholder="Agregar nombre"
+                          placeholder="Ingresar nombre"
                           value={field.state.value}
                           onBlur={field.handleBlur}
                           onChange={(e) => field.handleChange(e.target.value)}
@@ -295,7 +295,7 @@ export function CreateRatingScaleDialog({
                           }}
                         >
                           <SelectTrigger id={field.name} aria-invalid={isInvalid}>
-                            <SelectValue placeholder="Agregar valoración" />
+                            <SelectValue placeholder="Seleccionar" />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectGroup>
@@ -326,7 +326,7 @@ export function CreateRatingScaleDialog({
                         <FieldLabel htmlFor={field.name}>Abreviación*</FieldLabel>
                         <Input
                           id={field.name}
-                          placeholder="Agregar abreviación"
+                          placeholder="Ingresar abreviación"
                           value={field.state.value}
                           onBlur={field.handleBlur}
                           onChange={(e) => field.handleChange(e.target.value)}
@@ -389,7 +389,7 @@ export function CreateRatingScaleDialog({
                           step="0.1"
                           min={range.min}
                           max={range.max}
-                          placeholder="ej. 5"
+                          placeholder="Ingresar valor"
                           value={
                             Number.isNaN(field.state.value)
                               ? ""
@@ -421,7 +421,7 @@ export function CreateRatingScaleDialog({
                           step="0.1"
                           min={range.min}
                           max={range.max}
-                          placeholder="ej. 1"
+                          placeholder="Ingresar valor"
                           value={
                             Number.isNaN(field.state.value)
                               ? ""
@@ -455,7 +455,7 @@ export function CreateRatingScaleDialog({
                           step="0.1"
                           min={range.min}
                           max={range.max}
-                          placeholder="ej. 3"
+                          placeholder="Ingresar valor"
                           value={
                             Number.isNaN(field.state.value)
                               ? ""

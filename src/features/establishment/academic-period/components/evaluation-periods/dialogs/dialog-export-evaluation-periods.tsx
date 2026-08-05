@@ -71,7 +71,7 @@ export function ExportEvaluationPeriodsDialog({
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>
-            Elegí un formato para exportar todos los periodos de evaluación.
+            Elige un formato para exportar todos los periodos de evaluación.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="sm:justify-between">

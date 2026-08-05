@@ -474,6 +474,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
               <FieldLabel htmlFor="permission-order">Orden*</FieldLabel>
               <Input
                 id="permission-order"
+                placeholder="Ingresar orden"
                 type="number"
                 min={1}
                 value={permissionDraft.order}
@@ -494,7 +495,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
                 items={roleItems}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar rol" />
+                  <SelectValue placeholder="Seleccionar" />
                 </SelectTrigger>
                 <SelectContent>
                   {roleItems.map((item) => (
@@ -517,7 +518,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
                 items={campusItems}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar sede educativa" />
+                  <SelectValue placeholder="Seleccionar" />
                 </SelectTrigger>
                 <SelectContent>
                   {campusItems.map((item) => (
@@ -540,7 +541,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
                 items={workScheduleItems}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar jornada" />
+                  <SelectValue placeholder="Seleccionar" />
                 </SelectTrigger>
                 <SelectContent>
                   {workScheduleItems.map((item) => (
@@ -566,7 +567,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
                 items={permissionStatusItems}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar estado" />
+                  <SelectValue placeholder="Seleccionar" />
                 </SelectTrigger>
                 <SelectContent>
                   {permissionStatusItems.map((item) => (

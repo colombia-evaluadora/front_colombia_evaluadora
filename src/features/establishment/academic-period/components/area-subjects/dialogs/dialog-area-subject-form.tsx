@@ -267,7 +267,7 @@ export function AreaSubjectFormDialog({
 
   function commitDraft() {
     if (!draft.asignaturaGeneral.trim() && !draft.nombreInterno.trim()) {
-      notify("Elegí una asignatura general o completá el nombre interno.", { variant: "error" })
+      notify("Elige una asignatura general o completa el nombre interno.", { variant: "error" })
       return
     }
     setSubjects((prev) => [...prev, draft])
@@ -288,7 +288,7 @@ export function AreaSubjectFormDialog({
   function saveEditSubject() {
     if (editingIndex === null || !editDraft) return
     if (!editDraft.asignaturaGeneral.trim() && !editDraft.nombreInterno.trim()) {
-      notify("Elegí una asignatura general o completá el nombre interno.", { variant: "error" })
+      notify("Elige una asignatura general o completa el nombre interno.", { variant: "error" })
       return
     }
     const next = editDraft
@@ -334,7 +334,7 @@ export function AreaSubjectFormDialog({
           <DialogHeader>
             <DialogTitle>{isEdit ? "Editar área" : "Agregar área"}</DialogTitle>
             <DialogDescription>
-              Completá los datos del área y asigná sus asignaturas generales.
+              Completa los datos del área y asigna sus asignaturas generales.
             </DialogDescription>
           </DialogHeader>
 
@@ -374,7 +374,7 @@ export function AreaSubjectFormDialog({
                   {(isInvalid) => (
                     <Input
                       id={field.name}
-                      placeholder="ej. Matemáticas"
+                      placeholder="Ingresar nombre"
                       value={field.state.value}
                       onBlur={field.handleBlur}
                       onChange={(e) => {
@@ -394,7 +394,7 @@ export function AreaSubjectFormDialog({
                   {(isInvalid) => (
                     <Input
                       id={field.name}
-                      placeholder="ej. MAT"
+                      placeholder="Ingresar abreviación"
                       value={field.state.value}
                       onBlur={field.handleBlur}
                       onChange={(e) => field.handleChange(e.target.value)}
@@ -413,7 +413,7 @@ export function AreaSubjectFormDialog({
                       id={field.name}
                       type="number"
                       min={0}
-                      placeholder="ej. 1"
+                      placeholder="Ingresar orden"
                       value={
                         Number.isNaN(field.state.value) ? "" : field.state.value
                       }

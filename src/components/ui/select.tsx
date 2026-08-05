@@ -29,7 +29,7 @@ function SelectValue({
   // Texto por defecto de TODOS los selects sin valor. Se define acá y no en
   // cada formulario para que el vacío se lea igual en toda la app; pasar
   // `placeholder` sigue funcionando para los casos con semántica propia (los
-  // filtros, por ejemplo, usan "Todos" porque ahí vacío significa "sin filtro").
+  // filtros usan "Todos", porque ahí vacío significa "sin filtro").
   placeholder = "Seleccionar",
   ...props
 }: SelectPrimitive.Value.Props) {

@@ -77,7 +77,7 @@ export function ExportSelectedEvaluationPeriodsDialog({
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>
-            Elegí un formato para exportar los {count} periodo(s) de evaluación
+            Elige un formato para exportar los {count} periodo(s) de evaluación
             seleccionado(s).
           </DialogDescription>
         </DialogHeader>

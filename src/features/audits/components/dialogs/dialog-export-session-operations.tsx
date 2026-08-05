@@ -40,7 +40,7 @@ export function ExportSessionOperationsDialog({ sessionId }: ExportSessionOperat
   })
 
   function handleExport(format: ExportFormat) {
-    // ids vacío ⇒ el backend interpreta "exportá todas las operaciones
+    // ids vacío ⇒ el backend interpreta "exporta todas las operaciones
     // de esta sesión" (ver handler de export).
     exportAll.mutate({ sessionId, ids: [], format })
   }
@@ -62,7 +62,7 @@ export function ExportSessionOperationsDialog({ sessionId }: ExportSessionOperat
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>
-            Elegí un formato para exportar todas las operaciones de la sesión.
+            Elige un formato para exportar todas las operaciones de la sesión.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="sm:justify-between">

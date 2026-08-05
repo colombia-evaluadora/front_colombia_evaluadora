@@ -58,7 +58,7 @@ export function ExportAuditSessionDialog({ filters }: ExportAuditSessionDialogPr
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>
-            Elegí un formato para exportar todas las sesiones que coincidan con los filtros activos.
+            Elige un formato para exportar todas las sesiones que coincidan con los filtros activos.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="sm:justify-between">

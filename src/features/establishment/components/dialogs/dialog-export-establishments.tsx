@@ -67,7 +67,7 @@ export function ExportEstablishmentsDialog({ filters }: ExportEstablishmentsDial
                 <DialogHeader>
                     <DialogTitle>Exportar</DialogTitle>
                     <DialogDescription>
-                        Elegí un formato para exportar todos los establecimientos que coincidan con los filtros activos.
+                        Elige un formato para exportar todos los establecimientos que coincidan con los filtros activos.
                     </DialogDescription>
                 </DialogHeader>
                 <DialogFooter className="sm:justify-between">

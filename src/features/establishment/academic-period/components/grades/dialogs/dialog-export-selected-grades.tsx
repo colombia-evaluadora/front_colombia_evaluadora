@@ -77,7 +77,7 @@ export function ExportSelectedGradesDialog({
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>
-            Elegí un formato para exportar los {count} grado(s) seleccionado(s).
+            Elige un formato para exportar los {count} grado(s) seleccionado(s).
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="sm:justify-between">

@@ -49,7 +49,7 @@ const meta = preview.meta({
 # Badge
 
 Etiqueta compacta para representar **estado**, **categoría** o **conteo**.
-Es visual, no interactiva — si necesitás que algo sea clicable, usá
+Es visual, no interactiva — si necesitás que algo sea clicable, usa
 **${BT}Button variant="soft"${BT}** en su lugar.
 
 Combina **${BT}variant${BT}** (forma) con **${BT}color${BT}** (tono semántico)
@@ -71,8 +71,8 @@ montar como ${BT}<a>${BT}, ${BT}<button>${BT}, etc. preservando accesibilidad.
 
 ## Cuándo **no** usar
 
-- **Botones interactivos** → usá ${BT}<Button>${BT}. El Badge no debería ser el target de un click.
-- **Notificaciones dismissibles** → usá un componente de Toast/Alert.
+- **Botones interactivos** → usa ${BT}<Button>${BT}. El Badge no debería ser el target de un click.
+- **Notificaciones dismissibles** → usa un componente de Toast/Alert.
 - **Texto largo** → el badge es para **1–3 palabras**. Si necesitás más, es un párrafo.
 - **Como reemplazo de texto** → no conviertas párrafos en badges.
 
@@ -86,13 +86,13 @@ ${BT}${BT}${BT}
 
 - Padding fijo: ${BT}px-2 py-0.5${BT}.
 - Tipografía: **Label/Small** (Inter Semi Bold, 10px, letter-spacing 2px) — la misma que usa Figma.
-- ${BT}rounded-none${BT} por defecto; agregá ${BT}rounded-full${BT} vía ${BT}className${BT} si necesitás una píldora.
+- ${BT}rounded-none${BT} por defecto; agrega ${BT}rounded-full${BT} vía ${BT}className${BT} si necesitás una píldora.
 
 ---
 
 ## Accesibilidad
 
-- **Semántica por defecto**: ${BT}<span>${BT} — no tiene rol interactivo. Si el contenido es accionable, agregá ${BT}render={<a/>}${BT} o ${BT}render={<button/>}${BT}.
+- **Semántica por defecto**: ${BT}<span>${BT} — no tiene rol interactivo. Si el contenido es accionable, agrega ${BT}render={<a/>}${BT} o ${BT}render={<button/>}${BT}.
 - **Color no es suficiente**: el badge transmite estado **también con texto**. Ej. ${BT}<Badge color="success">Activo</Badge>${BT}, no solo un punto verde.
 - **Contraste**: las variantes ${BT}fill${BT} y ${BT}soft${BT} con ${BT}color="muted"${BT} tienen contraste bajo por diseño (≤1.2:1 vs fondo). Reservá muted para casos donde el texto ya se explique solo.
 - **Íconos**: si el ícono carga significado (✓ / ✗ / !), pasá ${BT}aria-hidden="true"${BT} al ${BT}<span data-icon>${BT} y dejá que el texto del badge comunique el estado.
@@ -101,7 +101,7 @@ ${BT}${BT}${BT}
 
 ## Decisiones de diseño
 
-- **Sin variantes ${BT}ghost${BT} ni ${BT}link${BT}** — el Badge es visual, no interactivo. Si necesitás esos comportamientos, usá Button.
+- **Sin variantes ${BT}ghost${BT} ni ${BT}link${BT}** — el Badge es visual, no interactivo. Si necesitás esos comportamientos, usa Button.
 - **${BT}badgeVariants${BT}** exportado para extender componentes no-Badge (ej. un ${BT}<Tag>${BT} que herede estilo).
 
 ---

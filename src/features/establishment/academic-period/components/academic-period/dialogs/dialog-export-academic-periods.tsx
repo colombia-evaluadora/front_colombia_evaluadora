@@ -75,7 +75,7 @@ export function ExportAcademicPeriodsDialog({
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>
-            Elegí un formato para exportar todos los periodos que coincidan con
+            Elige un formato para exportar todos los periodos que coincidan con
             los filtros activos.
           </DialogDescription>
         </DialogHeader>

@@ -64,7 +64,7 @@ export function IdentificationDataFormSection({ value, onChange, invalidFields =
                     <FieldLabel htmlFor="establishment-name">Nombre del establecimiento*</FieldLabel>
                     <Input
                         id="establishment-name"
-                        placeholder="I.E. San Francisco de Asís"
+                        placeholder="Ingresar nombre del establecimiento"
                         value={value.name}
                         aria-invalid={isInvalid("basicInfo.name")}
                         onChange={(event) => onChange({ ...value, name: event.target.value })}
@@ -75,7 +75,7 @@ export function IdentificationDataFormSection({ value, onChange, invalidFields =
                     <FieldLabel htmlFor="establishment-dane">Código DANE*</FieldLabel>
                     <Input
                         id="establishment-dane"
-                        placeholder="0000000000001"
+                        placeholder="Ingresar código DANE"
                         value={value.dane}
                         aria-invalid={isInvalid("basicInfo.dane")}
                         onChange={(event) => onChange({ ...value, dane: event.target.value })}
@@ -86,7 +86,7 @@ export function IdentificationDataFormSection({ value, onChange, invalidFields =
                     <FieldLabel htmlFor="establishment-nit">Nit*</FieldLabel>
                     <Input
                         id="establishment-nit"
-                        placeholder="000000000-1"
+                        placeholder="Ingresar NIT"
                         value={value.nit}
                         aria-invalid={isInvalid("basicInfo.nit")}
                         onChange={(event) => onChange({ ...value, nit: event.target.value })}
@@ -110,7 +110,7 @@ export function IdentificationDataFormSection({ value, onChange, invalidFields =
                         items={legalTypeItems}
                     >
                         <SelectTrigger aria-invalid={isInvalid("basicInfo.ownershipType")}>
-                            <SelectValue placeholder="Seleccione" />
+                            <SelectValue placeholder="Seleccionar" />
                         </SelectTrigger>
 
                         <SelectContent>

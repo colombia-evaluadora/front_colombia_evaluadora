@@ -288,7 +288,7 @@ function ScalesSubTable({
     // periodo (y mínima ≤ máxima).
     const parsed = makeRatingScaleGradesSchema(range).safeParse(addDraft)
     if (!parsed.success) {
-      notify(parsed.error.issues[0]?.message ?? "Revisá los datos.", {
+      notify(parsed.error.issues[0]?.message ?? "Revisa los datos.", {
         variant: "error",
       })
       return
@@ -335,7 +335,7 @@ function ScalesSubTable({
     // periodo (y mínima ≤ máxima).
     const parsed = makeRatingScaleGradesSchema(range).safeParse(draft)
     if (!parsed.success) {
-      notify(parsed.error.issues[0]?.message ?? "Revisá los datos.", {
+      notify(parsed.error.issues[0]?.message ?? "Revisa los datos.", {
         variant: "error",
       })
       return
@@ -482,7 +482,7 @@ function ScalesSubTable({
                         }
                       >
                         <SelectTrigger aria-label="Tipo" className="min-w-32">
-                          <SelectValue />
+                          <SelectValue placeholder="Seleccionar" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectGroup>
@@ -577,7 +577,7 @@ function ScalesSubTable({
               <TableCell>
                 <Input
                   aria-label="Nombre"
-                  placeholder="Agregar"
+                  placeholder="Ingresar nombre"
                   value={addDraft.nombre}
                   onChange={(e) => patchAddDraft({ nombre: e.target.value })}
                   className="min-w-32"
@@ -586,7 +586,7 @@ function ScalesSubTable({
               <TableCell>
                 <Input
                   aria-label="Abreviación"
-                  placeholder="Agregar"
+                  placeholder="Ingresar abreviación"
                   value={addDraft.abreviacion}
                   onChange={(e) => patchAddDraft({ abreviacion: e.target.value })}
                   className="min-w-24"

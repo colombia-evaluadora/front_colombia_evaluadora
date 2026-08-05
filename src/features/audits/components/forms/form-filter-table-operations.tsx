@@ -297,7 +297,7 @@ function FieldFilterSection({ field, availableFields }: FieldFilterSectionProps)
           <FieldLabel htmlFor="field-filter-field">Campo</FieldLabel>
           <Select value={composerField} onValueChange={(value) => setComposerField(value ?? "")}>
             <SelectTrigger id="field-filter-field" size="sm" className="w-full">
-              <SelectValue placeholder="Elegí un campo de la tabla" />
+              <SelectValue placeholder="Seleccionar" />
             </SelectTrigger>
             <SelectContent>
               {availableFields.map((option) => (
@@ -321,7 +321,7 @@ function FieldFilterSection({ field, availableFields }: FieldFilterSectionProps)
             }
           >
             <SelectTrigger id="field-filter-condition" size="sm" className="w-full">
-              <SelectValue placeholder="Elegí cómo comparar" />
+              <SelectValue placeholder="Seleccionar" />
             </SelectTrigger>
             <SelectContent>
               {FIELD_FILTER_CONDITIONS.map((option) => (
@@ -339,7 +339,7 @@ function FieldFilterSection({ field, availableFields }: FieldFilterSectionProps)
             id="field-filter-value"
             type="text"
             autoComplete="off"
-            placeholder="Escribí el texto a buscar…"
+            placeholder="Escribe el texto a buscar…"
             value={composerValue}
             onChange={(event) => setComposerValue(event.target.value)}
             className="h-9"

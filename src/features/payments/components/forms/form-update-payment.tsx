@@ -1,4 +1,4 @@
-﻿import { useForm } from "@tanstack/react-form"
+import { useForm } from "@tanstack/react-form"
 
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
@@ -54,6 +54,7 @@ export function UpdatePaymentForm({ id, payment, onSubmit }: UpdatePaymentFormPr
                   id={field.name}
                   name={field.name}
                   type="email"
+                  placeholder="Ingresar email"
                   value={field.state.value}
                   onBlur={field.handleBlur}
                   onChange={(e) => field.handleChange(e.target.value)}
@@ -76,6 +77,7 @@ export function UpdatePaymentForm({ id, payment, onSubmit }: UpdatePaymentFormPr
                   name={field.name}
                   type="number"
                   step="0.01"
+                  placeholder="Ingresar monto"
                   value={Number.isNaN(field.state.value) ? "" : field.state.value}
                   onBlur={field.handleBlur}
                   onChange={(e) => field.handleChange(e.target.valueAsNumber)}
@@ -100,7 +102,7 @@ export function UpdatePaymentForm({ id, payment, onSubmit }: UpdatePaymentFormPr
                   }}
                 >
                   <SelectTrigger id={field.name} onBlur={field.handleBlur} aria-invalid={isInvalid}>
-                    <SelectValue />
+                    <SelectValue placeholder="Seleccionar" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
