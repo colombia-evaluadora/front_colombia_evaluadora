@@ -44,13 +44,21 @@ export function IdentificationDataFormSection({ value, onChange, invalidFields =
                     dos filas de campos que tiene al lado, de ahí el `row-span-2`
                     más el `h-full` que lo propaga hasta el dropzone.
                 */}
-                <div className="md:row-span-2">
-                    <ImageUploadField
-                        value={shield}
-                        onValueChange={setShield}
-                        description="para cargar el escudo o logo del establecimiento"
-                        deleteLabel="Eliminar escudo"
-                    />
+                {/*
+                    En `md` el contenido va absoluto: así la celda no aporta
+                    altura propia y las dos filas del grid las miden solo los
+                    campos. El escudo se estira a ese alto exacto en vez de
+                    empujar las filas y abrir hueco entre los inputs.
+                */}
+                <div className="relative md:row-span-2">
+                    <div className="md:absolute md:inset-0">
+                        <ImageUploadField
+                            value={shield}
+                            onValueChange={setShield}
+                            description="para cargar el escudo o logo del establecimiento"
+                            deleteLabel="Eliminar escudo"
+                        />
+                    </div>
                 </div>
                 <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid("basicInfo.name") ? "true" : undefined}>
                     <FieldLabel htmlFor="establishment-name">Nombre del establecimiento*</FieldLabel>
