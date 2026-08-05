@@ -30,6 +30,7 @@ import { employeeHandlers } from "./employees"
 import { catalogHandlers } from "./catalog"
 import { reservationsHandlers } from "./reservations"
 import { rolesHandlers } from "./roles"
+import { plansHandlers } from "./plans"
 
 export const handlers = [
   ...authHandlers,
@@ -64,4 +65,5 @@ export const handlers = [
   ...employeeHandlers,
   ...catalogHandlers,
   ...rolesHandlers,
+  ...plansHandlers,
 ]

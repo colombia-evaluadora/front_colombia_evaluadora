@@ -31,43 +31,50 @@ const FIELDS = [
   },
   {
     name: "gradingFormat",
-    label: "Formato de calificación para la asignatura*",
+    label: "Formato de calificación",
   },
   {
     name: "studentWithoutGradesPerformance",
-    label: "Desempeño cuando un estudiante no tiene calificaciones*",
+    label: "Sin calificaciones",
   },
   {
     name: "initialGrade",
-    label: "Nota inicial para las calificaciones*",
+    label: "Nota inicial para las calificaciones",
   },
   {
     name: "maxRecoveryGrade",
-    label: "Nota máxima para las recuperaciones y nivelaciones*",
+    label: "Nota máxima de recuperación",
   },
   {
     name: "roundingMode",
-    label: "Modo en que la aplicación debe redondear los dígitos*",
+    label: "Regla de redondeo",
   },
   {
     name: "periodCalculationElements",
-    label: "Elementos para calcular la nota definitiva del período*",
+    label: "Elementos para calcular la nota de la asignatura",
   },
   {
     name: "subjectGradeCriteria",
-    label: "Criterio para calcular la nota de la asignatura*",
+    label: "Criterio para calcular la nota de la asignatura",
   },
   {
     name: "areaGradeCriteria",
-    label: "Criterio para calcular la nota del área*",
+    label: "Criterio para calcular la nota del área",
   },
   {
     name: "finalGradeCriteria",
-    label:
-      "Criterio para calcular la nota final entre los períodos de evaluación*",
+    label: "Criterio para calcular la nota final",
   },
 ] as const
 
+
+// Qué decir cuando un select se queda sin opciones. Sin esto el desplegable
+// se abría vacío —una caja en blanco sobre el campo— y no había forma de
+// saber si estaba cargando, si falló o si de verdad no hay nada que elegir.
+const DEFAULT_EMPTY_MESSAGE = "No hay opciones disponibles."
+const EMPTY_MESSAGES: Partial<Record<(typeof FIELDS)[number]["name"], string>> = {
+  gradingScale: "Todavía no se creó ninguna escala de valoración para este período.",
+}
 
 const EMPTY: EvaluationCriteriaValues = {
   gradingFormat: "0 - 100",
@@ -202,13 +209,19 @@ export function TabEvaluationCriteria({
                       <SelectValue placeholder="Seleccionar" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectGroup>
-                        {fieldOptions.map((option) => (
-                          <SelectItem key={option.key} value={option.key}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
+                      {fieldOptions.length === 0 ? (
+                        <p className="px-3 py-4 text-center text-sm text-muted-foreground">
+                          {EMPTY_MESSAGES[cfg.name] ?? DEFAULT_EMPTY_MESSAGE}
+                        </p>
+                      ) : (
+                        <SelectGroup>
+                          {fieldOptions.map((option) => (
+                            <SelectItem key={option.key} value={option.key}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      )}
                     </SelectContent>
                   </Select>
                   {isInvalid && <FieldError errors={field.state.meta.errors} />}

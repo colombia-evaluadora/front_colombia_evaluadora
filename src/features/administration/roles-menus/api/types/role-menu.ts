@@ -3,6 +3,12 @@ export interface Role {
   name: string
 }
 
+/** Plan comercial al que puede quedar atado un menú. */
+export interface Plan {
+  id: number
+  name: string
+}
+
 /**
  * Menú tal como lo entrega el SSO: lista plana, jerarquía por `idParent`.
  * Es la misma forma de `RouteResponseDto` (features/navigation) menos
@@ -17,6 +23,9 @@ export interface MenuNode {
   menuOrder: number
   type: string
   idParent: number | null
+  /** Si se pinta en el menú lateral. Los menús viejos no lo traen: se asume `true`. */
+  visible?: boolean
+  planId?: number | null
 }
 
 export interface MenuTreeNode extends MenuNode {

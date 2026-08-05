@@ -1,8 +1,15 @@
 import type { RouteResponseDto } from "@/features/navigation/api/types/nav-item"
 
 // Misma forma que devuelve el backend real (GET /sso-admin/myMenu?app=):
-// lista plana, jerarquía vía `idParent`.
-export const navigationMenu: RouteResponseDto[] = [
+// lista plana, jerarquía vía `idParent`. `visible` y `planId` los agrega la
+// pantalla de configuración de roles y menús; los menús ya cargados no los
+// traen y se leen como visibles y sin plan.
+export interface MockMenu extends RouteResponseDto {
+  visible?: boolean
+  planId?: number | null
+}
+
+export const navigationMenu: MockMenu[] = [
   // {
   //   id: 1,
   //   name: "Pagos",
