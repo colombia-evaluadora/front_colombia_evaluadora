@@ -56,12 +56,13 @@ export function FilterAuditTablesForm({ id, defaultValues, onSubmit }: FilterAud
                 id={field.name}
                 name={field.name}
                 type="search"
+                variant="outlined"
                 autoComplete="off"
                 placeholder="Buscar por nombre de tabla…"
                 value={field.state.value}
                 onBlur={field.handleBlur}
                 onChange={(event) => field.handleChange(event.target.value)}
-                className="h-9 pl-8"
+                className="h-9 rounded-md pl-8"
               />
             </div>
           </Field>
