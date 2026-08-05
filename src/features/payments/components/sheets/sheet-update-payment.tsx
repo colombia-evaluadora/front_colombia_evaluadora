@@ -52,7 +52,7 @@ export function UpdatePaymentSheet({ payment }: UpdatePaymentSheetProps) {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger
-        render={<Button variant="fill" color="secondary" size="icon" className="size-8" />}
+        render={<Button variant="ghost" color="neutral" size="icon" className="size-8" />}
       >
         <span className="sr-only">Editar pago</span>
         <PencilIcon />

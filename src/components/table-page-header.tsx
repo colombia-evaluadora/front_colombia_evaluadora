@@ -28,10 +28,8 @@ interface TablePageHeaderProps {
  * Dos condiciones para que el `sticky` funcione:
  *  - `top-18` es el alto del header de la app (`top-14`, también sticky) más
  *    el `p-4` del contenedor de página: así, al pegarse, la tarjeta conserva
- *    el mismo aire que tiene en reposo contra el header en vez de quedar
- *    calzada. Ese respiro lo pinta el `before:` con el fondo de la página,
- *    porque si no el contenido de la tarjeta se vería pasar por ahí. El
- *    `z-20` deja la sección por debajo del header de la app (z-40).
+ *    el mismo aire que tiene en reposo contra el header. El `z-20` deja la
+ *    sección por debajo del header de la app (z-40).
  *  - Ningún ancestro puede tener `overflow-hidden` —el `Card` lo trae por
  *    defecto—, así que las páginas que usan esto pasan `overflow-visible`.
  */
@@ -52,11 +50,6 @@ export function TablePageHeader({
         // por encima. `rounded-t-[inherit]` respeta las esquinas del Card,
         // que ya no puede recortarlas por sí mismo.
         "sticky top-18 z-20 -mt-(--card-spacing) rounded-t-[inherit] border-t border-b border-t-foreground/5 border-b-border bg-card px-(--card-spacing) pt-(--card-spacing) pb-5",
-        // La franja tapa lo que pasa por detrás, pero también el `ring-1` de
-        // la tarjeta, que cae justo ahí. Por eso el borde superior lo repone
-        // el `border-t` de la sección: al ir sobre el redondeo heredado,
-        // acompaña las esquinas en vez de cortarlas en recto.
-        "before:absolute before:inset-x-0 before:bottom-full before:h-4 before:bg-background",
         className,
       )}
     >

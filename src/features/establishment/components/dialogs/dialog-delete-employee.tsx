@@ -51,8 +51,8 @@ export function DeleteEmployeeDialog({ employee }: DeleteEmployeeDialogProps) {
         render={
           <Button
             type="button"
-            variant="fill"
-            color="destructive"
+            variant="ghost"
+            color="neutral"
             size="icon"
             className="size-8"
             aria-label={`Eliminar ${employee.name}`}

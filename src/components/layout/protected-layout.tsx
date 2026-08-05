@@ -24,7 +24,7 @@ export function ProtectedLayout() {
           rastro centrado aunque el breadcrumb sea corto (un solo ítem) o
           largo (varios ítems sin envolver).
         */}
-        <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center gap-2 border-b bg-sidebar px-4">
+        <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center gap-2 bg-sidebar px-4">
           <div className="flex items-center gap-2">
             <SidebarTrigger />
             <Separator orientation="vertical" className="my-auto h-4" />
