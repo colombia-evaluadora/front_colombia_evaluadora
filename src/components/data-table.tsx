@@ -60,13 +60,13 @@ export function DataTable({
   const visibleColumns = table.getAllColumns().filter((c) => c.getIsVisible())
   const skeletonRowCount = table.getState().pagination.pageSize
 
-  // La columna `actions` **no** es sticky al borde derecho (eso "tapaba" el
-  // resto de columnas durante scroll). En su lugar, los botones se renderizan
-  // como un overlay absoluto sobre la celda: ocultos por defecto
-  // (`opacity-0`) y revelados al hacer hover en la fila, con fondo opaco
-  // para que no se mezclen con el texto que tienen debajo.
+  // La celda de `actions` se ancla al borde derecho del contenedor de scroll
+  // (`sticky right-0`) para que los botones sigan alcanzables cuando la tabla
+  // scrollea en horizontal. La celda en sí es transparente —no lleva fondo—,
+  // así no "tapa" las columnas que pasan por debajo: lo único opaco es el
+  // overlay de los botones, que aparece solo al hacer hover en la fila.
   const isActionsColumn = (id: string) => id === "actions"
-  const actionsCellClass = "relative"
+  const actionsCellClass = "sticky right-0 z-10 bg-transparent"
 
   return (
     <div className="overflow-x-auto rounded-md border w-full border-border">
