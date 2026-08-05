@@ -4,7 +4,6 @@ import { Link, useParams } from "@tanstack/react-router"
 import { Avatar, AvatarBadge, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
 import { Spinner } from "@/components/ui/spinner"
 import { paths } from "@/config/paths"
 
@@ -90,25 +89,25 @@ export function SessionOperationsPage() {
     ) : undefined
 
   return (
-    // `overflow-visible`: el `overflow-hidden` del Card anularía el sticky
-    // del encabezado.
-    <Card className="overflow-visible">
-      <SessionOperationsDataTable
-        sessionId={sessionId}
-        title={title}
-        description={description}
-        action={
-          <Button
-            variant="ghost"
-            size="sm"
-            render={<Link to={paths.app.auditoriaSesiones.getHref()} />}
-            nativeButton={false}
-          >
-            <ArrowLeftIcon weight="bold" className="size-4" />
-            Volver
-          </Button>
-        }
-      />
-    </Card>
+    // El encabezado sticky y el cuerpo son dos Cards independientes, NO se
+    // encapsulan en una misma Card aquí — eso lo hace internamente
+    // `SessionOperationsDataTable` para que el body y su data-fetching
+    // compartan el ciclo de vida.
+    <SessionOperationsDataTable
+      sessionId={sessionId}
+      title={title}
+      description={description}
+      action={
+        <Button
+          variant="ghost"
+          size="sm"
+          render={<Link to={paths.app.auditoriaSesiones.getHref()} />}
+          nativeButton={false}
+        >
+          <ArrowLeftIcon weight="bold" className="size-4" />
+          Volver
+        </Button>
+      }
+    />
   )
 }

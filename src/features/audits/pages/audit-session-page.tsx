@@ -1,13 +1,8 @@
-import { Card } from "@/components/ui/card"
-
 import { AuditSessionDataTable } from "../components/table/audit-session-table"
 
 export function AuditSessionPage() {
-  return (
-    // `overflow-visible`: el `overflow-hidden` del Card anularía el sticky
-    // del encabezado.
-    <Card className="overflow-visible">
-      <AuditSessionDataTable />
-    </Card>
-  )
+  // El encabezado sticky y el cuerpo son dos Cards independientes, NO se
+  // encapsulan en una misma Card aquí — eso lo hace internamente
+  // `AuditSessionDataTable`.
+  return <AuditSessionDataTable />
 }

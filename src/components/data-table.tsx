@@ -157,7 +157,7 @@ export function DataTableViewOptions({ table }: DataTableViewOptionsProps) {
     <DropdownMenu>
       <DropdownMenuTrigger
         render={
-          <Button variant="outline" color="muted" size="icon" aria-label="Columnas visibles" />
+          <Button variant="ghost" color="muted" size="icon" aria-label="Columnas visibles" />
         }
       >
         <GearIcon />

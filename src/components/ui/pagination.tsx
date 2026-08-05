@@ -42,6 +42,7 @@ function PaginationLink({ className, isActive, size = "icon", ...props }: Pagina
       size={size}
       className={cn(className)}
       nativeButton={false}
+      color="neutral"
       render={
         <a
           aria-current={isActive ? "page" : undefined}
