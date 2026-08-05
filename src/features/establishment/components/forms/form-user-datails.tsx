@@ -119,12 +119,16 @@ export function UserDetailsForm({
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 {/* Foto */}
                 {/*
+                    `row-span-3` porque al lado van seis campos en dos columnas:
+                    con menos filas, los últimos se salían del bloque de la
+                    derecha y caían debajo de la foto, en la primera columna.
+
                     En `md` el contenido va absoluto: así la celda no aporta
-                    altura propia y las dos filas del grid las miden solo los
+                    altura propia y las tres filas del grid las miden solo los
                     campos. La foto se estira a ese alto exacto en vez de
                     empujar las filas y abrir hueco entre los inputs.
                 */}
-                <div className="relative md:row-span-2">
+                <div className="relative md:row-span-3">
                     <div className="md:absolute md:inset-0">
                         <ImageUploadField
                             value={photo}
