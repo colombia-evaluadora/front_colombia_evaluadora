@@ -60,13 +60,32 @@ export function DataTable({
   const visibleColumns = table.getAllColumns().filter((c) => c.getIsVisible())
   const skeletonRowCount = table.getState().pagination.pageSize
 
-  // La celda de `actions` se ancla al borde derecho del contenedor de scroll
-  // (`sticky right-0`) para que los botones sigan alcanzables cuando la tabla
-  // scrollea en horizontal. La celda en sí es transparente —no lleva fondo—,
-  // así no "tapa" las columnas que pasan por debajo: lo único opaco es el
-  // overlay de los botones, que aparece solo al hacer hover en la fila.
+  // Los botones de fila son un overlay ABSOLUTO sobre la celda `actions`, no
+  // contenido en flujo: así no empujan el layout y solo se revelan al hacer
+  // hover (o foco) sobre la fila.
+  //
+  // La celda ancla ese overlay y va pegada al borde derecho del contenedor de
+  // scroll (`sticky right-0`), para que los botones sigan alcanzables con la
+  // tabla scrolleada en horizontal. La celda NO lleva fondo —así las columnas
+  // que pasan por debajo se ven normal—; lo único opaco es el overlay.
   const isActionsColumn = (id: string) => id === "actions"
-  const actionsCellClass = "sticky right-0 z-10 bg-transparent"
+  const actionsCellClass = "sticky right-0 z-10"
+  // `inset-y-0 right-0` y sin radio: el bloque va a sangre contra el borde de
+  // la tabla, con el alto completo de la fila. El color es el del hover de
+  // `TableRow` (`bg-muted/50`) ya resuelto sobre la card con `color-mix`: hace
+  // falta opaco, y así no se lee como un bloque de otro color.
+  const actionsOverlayClass = cn(
+    "absolute inset-y-0 right-0 z-10 flex items-center gap-1 px-3",
+    "bg-[color-mix(in_oklab,var(--muted)_50%,var(--card))]",
+    "opacity-0 transition-opacity group-hover/row:opacity-100 group-focus-within/row:opacity-100",
+  )
+
+  // Columna de respiro al final de la tabla: reserva el ancho que ocupa el
+  // overlay para que este nunca quede encima de datos, y de paso deja margen
+  // de scroll horizontal. Solo aplica si la tabla trae columna de acciones.
+  const hasActionsColumn = visibleColumns.some((c) => isActionsColumn(c.id))
+  const columnCount = visibleColumns.length + (hasActionsColumn ? 1 : 0)
+  const spacer = hasActionsColumn ? <td aria-hidden className="w-24 p-0" /> : null
 
   return (
     <div className="overflow-x-auto rounded-md border w-full border-border">
@@ -81,6 +100,7 @@ export function DataTable({
                     : flexRender(header.column.columnDef.header, header.getContext())}
                 </TableHead>
               ))}
+              {hasActionsColumn ? <th aria-hidden className="w-24 p-0" /> : null}
             </TableRow>
           ))}
         </TableHeader>
@@ -96,11 +116,12 @@ export function DataTable({
                     <Skeleton className="h-5 w-full" />
                   </TableCell>
                 ))}
+                {spacer}
               </TableRow>
             ))
           ) : isError ? (
             <TableRow>
-              <TableCell colSpan={visibleColumns.length} className="h-24 text-center">
+              <TableCell colSpan={columnCount} className="h-24 text-center">
                 {errorMessage}{" "}
                 <Button variant="link" onClick={onRetry}>
                   Reintentar
@@ -118,22 +139,18 @@ export function DataTable({
                   const isActions = isActionsColumn(cell.column.id)
                   return (
                     <TableCell key={cell.id} className={cn(isActions && actionsCellClass)}>
-                      <div
-                        className={cn(
-                          isActions &&
-                            "absolute right-2 top-1/2 z-10 -translate-y-1/2 rounded-md bg-background px-1.5 py-1 opacity-0 transition-opacity group-hover/row:opacity-100",
-                        )}
-                      >
+                      <div className={cn(isActions && actionsOverlayClass)}>
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </div>
                     </TableCell>
                   )
                 })}
+                {spacer}
               </TableRow>
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={visibleColumns.length} className="h-24 text-center">
+              <TableCell colSpan={columnCount} className="h-24 text-center">
                 {emptyMessage}
               </TableCell>
             </TableRow>
