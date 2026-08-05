@@ -143,13 +143,20 @@ function NavCollapsibleItem({
           <SidebarMenuButton
             tooltip={title}
             /**
-             * Collapsed to icons the sub-items are hidden, so the parent icon
-             * has to carry the active state itself. Expanded, the highlighted
-             * sub-item already shows it — hence the icon-mode-only classes.
+             * La carpeta se pinta con los colores primarios (fondo + texto
+             * invertido) cuando ella misma es la ruta activa **o** alguno de
+             * sus hijos lo es — así el padre comunica el contexto aunque el
+             * sub-item activo cargue con su propio indicador (el punto •).
+             *
+             * Se aplica en ambos modos (expandido y colapsado a iconos)
+             * porque la pista visual tiene que sobrevivir al colapso, donde
+             * los sub-items desaparecen. Los `!` fuerzan las variantes de
+             * hover/active del cva para que el fondo no salte a
+             * `sidebar-accent` al pasar el cursor.
              */
             className={cn(
               (isActive || hasActiveChild) &&
-                "group-data-[collapsible=icon]:bg-sidebar-accent group-data-[collapsible=icon]:font-medium group-data-[collapsible=icon]:text-sidebar-accent-foreground",
+                "bg-primary text-primary-foreground font-medium hover:!bg-primary/90 hover:!text-primary-foreground active:!bg-primary/80 active:!text-primary-foreground data-open:hover:!bg-primary/90 data-open:hover:!text-primary-foreground",
             )}
             render={<Link to={items[0].url} />}
           />

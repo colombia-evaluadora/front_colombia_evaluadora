@@ -73,6 +73,7 @@ import {
   MdLogout,
   MdManageSearch,
   MdMap,
+  MdMenu,
   MdMenuBook,
   MdMilitaryTech,
   MdMoreHoriz,
@@ -96,6 +97,7 @@ import {
   MdOutlineSend,
   MdSettings,
   MdOutlineSmartDisplay,
+  MdNotifications,
   MdSupportAgent,
   MdTableChart,
   MdTimelapse,
@@ -140,6 +142,7 @@ export const ArrowLeftIcon = makeIcon(MdArrowBack)
 export const ArrowRightIcon = makeIcon(MdArrowForward)
 export const ArrowUpIcon = makeIcon(MdArrowUpward)
 export const BankIcon = makeIcon(MdAccountBalance)
+export const BellIcon = makeIcon(MdNotifications)
 export const BookIcon = makeIcon(MdMenuBook)
 export const BookOpenIcon = makeIcon(MdOutlineChromeReaderMode)
 export const BrainIcon = makeIcon(MdPsychology)
@@ -221,7 +224,7 @@ export const ShieldCheckIcon = makeIcon(MdVerifiedUser)
 export const ShieldIcon = makeIcon(MdOutlineShield)
 export const ShieldOffIcon = makeIcon(MdOutlineRemoveModerator)
 export const ShieldLockIcon = makeIcon(GoShieldLock)
-export const SidebarIcon = makeIcon(MdViewSidebar)
+export const SidebarIcon = makeIcon(MdMenu)
 export const SignInIcon = makeIcon(MdLogin)
 export const SignOutIcon = makeIcon(MdLogout)
 export const SpinnerIcon = makeIcon(MdAutorenew)

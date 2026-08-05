@@ -5,14 +5,12 @@ import logo from "@/assets/logo.svg"
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 
-import { NavUser } from "./nav-user"
 import { NavMain } from "./nav-main"
 
 export function AppSidebar() {
@@ -39,9 +37,6 @@ export function AppSidebar() {
       <SidebarContent>
         <NavMain />
       </SidebarContent>
-      <SidebarFooter>
-        <NavUser />
-      </SidebarFooter>
     </Sidebar>
   )
 }
