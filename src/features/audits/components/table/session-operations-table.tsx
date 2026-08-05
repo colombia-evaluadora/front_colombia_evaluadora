@@ -58,6 +58,14 @@ export function SessionOperationsDataTable({
 
   return (
     <>
+      {/*
+        El `NoticeOutlet` va **dentro** del `TablePageHeader` (no debajo en
+        el flujo normal). El header es `sticky top-18 z-20` —si el banner
+        quedara como hermano, se quedaría "abajo del sticky" al hacer
+        scroll, dando la sensación de que está fuera de la card. Metiéndolo
+        acá, el banner viaja con el header y siempre se ve agrupado con el
+        título y la barra de herramientas.
+      */}
       <TablePageHeader title={title} description={description} action={action}>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <SearchSessionOperations
@@ -82,11 +90,10 @@ export function SessionOperationsDataTable({
             )}
           </div>
         </div>
+        <NoticeOutlet className="mt-3" />
       </TablePageHeader>
 
       <div className="px-(--card-spacing)">
-        <NoticeOutlet className="mb-3" />
-
         <DataTable
           table={table}
           isPending={isPending}

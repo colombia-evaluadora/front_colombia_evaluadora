@@ -60,6 +60,14 @@ export function DataTable({
   const visibleColumns = table.getAllColumns().filter((c) => c.getIsVisible())
   const skeletonRowCount = table.getState().pagination.pageSize
 
+  // La columna `actions` **no** es sticky al borde derecho (eso "tapaba" el
+  // resto de columnas durante scroll). En su lugar, los botones se renderizan
+  // como un overlay absoluto sobre la celda: ocultos por defecto
+  // (`opacity-0`) y revelados al hacer hover en la fila, con fondo opaco
+  // para que no se mezclen con el texto que tienen debajo.
+  const isActionsColumn = (id: string) => id === "actions"
+  const actionsCellClass = "relative"
+
   return (
     <div className="overflow-x-auto rounded-md border w-full border-border">
       <UITable className="w-full">
@@ -80,8 +88,11 @@ export function DataTable({
           {isPending ? (
             Array.from({ length: skeletonRowCount }).map((_, i) => (
               <TableRow key={i}>
-                {visibleColumns.map((_, j) => (
-                  <TableCell key={j}>
+                {visibleColumns.map((col, j) => (
+                  <TableCell
+                    key={j}
+                    className={cn(isActionsColumn(col.id) && actionsCellClass)}
+                  >
                     <Skeleton className="h-5 w-full" />
                   </TableCell>
                 ))}
@@ -98,12 +109,26 @@ export function DataTable({
             </TableRow>
           ) : table.getRowModel().rows.length ? (
             table.getRowModel().rows.map((row) => (
-              <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id}>
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
-                ))}
+              <TableRow
+                key={row.id}
+                data-state={row.getIsSelected() && "selected"}
+                className="group/row"
+              >
+                {row.getVisibleCells().map((cell) => {
+                  const isActions = isActionsColumn(cell.column.id)
+                  return (
+                    <TableCell key={cell.id} className={cn(isActions && actionsCellClass)}>
+                      <div
+                        className={cn(
+                          isActions &&
+                            "absolute right-2 top-1/2 z-10 -translate-y-1/2 rounded-md bg-background px-1.5 py-1 opacity-0 transition-opacity group-hover/row:opacity-100",
+                        )}
+                      >
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </div>
+                    </TableCell>
+                  )
+                })}
               </TableRow>
             ))
           ) : (
