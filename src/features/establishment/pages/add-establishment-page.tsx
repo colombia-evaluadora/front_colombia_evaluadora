@@ -26,6 +26,14 @@ import { UserDetailsForm } from "../components/forms/form-user-datails"
 import { validateEstablishmentForm } from "../utils/validate-establishment-form"
 import { NoticeOutlet, useNotify } from "@/components/notice/notice-context"
 
+/**
+ * Solo para los acordeones de esta página: título más grande y el caret
+ * (botón de abrir/cerrar) a la izquierda, antes del título. `flex-row-reverse`
+ * + `justify-end` invierte el orden visual sin tocar el componente compartido.
+ */
+const accordionTriggerClassName =
+  "flex-row-reverse justify-end items-center gap-3 py-5 text-lg **:data-[slot=accordion-trigger-icon]:ml-0 **:data-[slot=accordion-trigger-icon]:size-5"
+
 function createEmptyCatalogItem(): CatalogItem {
   return { id: "", code: "", name: "" }
 }
@@ -300,23 +308,26 @@ export function AddEstablishmentPage() {
         <form id="create-establishment-form" onSubmit={handleSubmit}>
           <Accordion multiple defaultValue={["datos-establecimiento", "datos-rector-secretaria"]} keepMounted className="space-y-3">
             <AccordionItem value="datos-establecimiento" className="rounded-md border border-border not-last:border-b border">
-              <AccordionTrigger>Datos de establecimiento</AccordionTrigger>
+              <AccordionTrigger className={accordionTriggerClassName}>Datos de establecimiento</AccordionTrigger>
               <AccordionContent>
-                <div className="py-4">
-                  <EstablishmentDetailsForm
-                    value={formValues}
-                    onChange={setFormValues}
-                    invalidFields={invalidFields}
-                    showValidation={hasSubmitted}
-                  />
-                </div>
+                <Card className="mb-4">
+                  <CardContent>
+                    <EstablishmentDetailsForm
+                      value={formValues}
+                      onChange={setFormValues}
+                      invalidFields={invalidFields}
+                      showValidation={hasSubmitted}
+                    />
+                  </CardContent>
+                </Card>
               </AccordionContent>
             </AccordionItem>
 
             <AccordionItem value="datos-rector-secretaria" className="rounded-md border border-border not-last:border-b border">
-              <AccordionTrigger>Datos de rector y secretaria</AccordionTrigger>
+              <AccordionTrigger className={accordionTriggerClassName}>Datos de rector y secretaria</AccordionTrigger>
               <AccordionContent>
-                <div className="py-4 ">
+                <Card className="mb-4">
+                  <CardContent>
                   <UserDetailsForm
                     role="RECTOR"
                     fieldPrefix="principal"
@@ -343,7 +354,8 @@ export function AddEstablishmentPage() {
                       }
                     />
                   </div>
-                </div>
+                  </CardContent>
+                </Card>
               </AccordionContent>
             </AccordionItem>
           </Accordion>
