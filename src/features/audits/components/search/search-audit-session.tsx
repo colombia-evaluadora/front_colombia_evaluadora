@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/icons"
 
 import { Button } from "@/components/ui/button"
+import { Field, FieldLabel } from "@/components/ui/field"
 import {
   InputGroup,
   InputGroupAddon,
@@ -30,6 +31,9 @@ import { useAuditSessionStatusesQuery } from "../../api/query/use-audit-session-
 import { FilterAuditSessionForm } from "../forms/form-filter-audit-session"
 
 const FILTER_AUDIT_SESSION_FORM_ID = "filter-audit-session-form"
+
+// El `htmlFor` de la etiqueta necesita un id estable en el control.
+const SEARCH_INPUT_ID = "audit-session-search"
 
 // Retardo del buscador para no navegar en cada tecla.
 const SEARCH_DEBOUNCE_MS = 350
@@ -138,16 +142,23 @@ export function SearchAuditSession({
 
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-2">
-      <InputGroup className="h-9 w-full max-w-xl rounded-md border-input has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20">
+      {/*
+        El `Field` outlined solo aporta la etiqueta flotante: el borde y el
+        foco los sigue pintando el propio `InputGroup`. Sin `aria-label` en el
+        control, para que el nombre accesible lo dé la etiqueta visible.
+      */}
+      <Field orientation="vertical" variant="outlined" className="w-full max-w-xl">
+        <FieldLabel htmlFor={SEARCH_INPUT_ID}>Buscar</FieldLabel>
+        <InputGroup className="h-9 w-full rounded-md border-input has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20">
         <InputGroupAddon align="inline-start" className="ml-2">
           <MagnifyingGlassIcon className="size-4 text-muted-foreground" />
         </InputGroupAddon>
 
         <InputGroupInput
+          id={SEARCH_INPUT_ID}
           type="search"
           autoComplete="off"
           placeholder="Buscar por autor o IP…"
-          aria-label="Buscar por autor o IP"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -222,7 +233,8 @@ export function SearchAuditSession({
             </PopoverContent>
           </Popover>
         </InputGroupAddon>
-      </InputGroup>
+        </InputGroup>
+      </Field>
 
       {activeChips.length > 0 && (
         <div className="flex flex-wrap items-center gap-1.5">
