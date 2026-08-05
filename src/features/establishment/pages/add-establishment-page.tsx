@@ -283,16 +283,26 @@ export function AddEstablishmentPage() {
 
   return (
     <>
-    <Card>
-      <CardHeader>
-        <CardAction>
-          <Button render={<Link to={paths.app.establishments.general.getHref()} />} variant="fill" color="neutral" size="sm" nativeButton={false}>
-            Cancelar
-          </Button>
-        </CardAction>
-        <CardTitle>{isEditMode ? "Editar establecimiento educativo" : "Agregar establecimiento educativo"}</CardTitle>
-      </CardHeader>
+    {/*
+      Encabezado pegajoso: el `pt-4` opaco del contenedor reproduce el aire
+      que la página tiene contra el header de la app (`top-14`) y, al mismo
+      tiempo, tapa el formulario que scrollea por debajo.
+    */}
+    <div className="sticky top-14 z-20 bg-sidebar pt-4">
+      <Card className="gap-0 rounded-b-none py-0">
+        <CardHeader className="bg-muted/10 py-4">
+          <CardAction>
+            <Button render={<Link to={paths.app.establishments.general.getHref()} />} variant="fill" color="neutral" size="sm" nativeButton={false}>
+              Cancelar
+            </Button>
+          </CardAction>
+          <CardTitle>{isEditMode ? "Editar establecimiento educativo" : "Agregar establecimiento educativo"}</CardTitle>
+        </CardHeader>
+      </Card>
+    </div>
 
+    {/* El cuerpo es una Card aparte que se acopla por debajo del encabezado. */}
+    <Card className="rounded-t-none">
       <CardContent>
         <NoticeOutlet className="mb-4" />
         {validationErrors.length > 0 ? (
