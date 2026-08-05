@@ -250,6 +250,7 @@ function SidebarTrigger({ className, onClick, ...props }: React.ComponentProps<t
       data-sidebar="trigger"
       data-slot="sidebar-trigger"
       variant="ghost"
+      color="muted"
       size="icon-sm"
       className={cn(className)}
       onClick={(event) => {
@@ -614,7 +615,7 @@ function SidebarMenuSub({ className, ...props }: React.ComponentProps<"ul">) {
       data-slot="sidebar-menu-sub"
       data-sidebar="menu-sub"
       className={cn(
-        "mx-3.5 flex min-w-0 translate-x-px flex-col gap-1 border-l border-sidebar-border px-2.5 py-0.5 group-data-[collapsible=icon]:hidden",
+        "mx-3.5 flex min-w-0 translate-x-px flex-col gap-1 px-2.5 py-0.5 group-data-[collapsible=icon]:hidden",
         className,
       )}
       {...props}
@@ -649,7 +650,28 @@ function SidebarMenuSubButton({
     props: mergeProps<"a">(
       {
         className: cn(
-          "flex h-7 min-w-0 -translate-x-px items-center gap-2 overflow-hidden rounded-md px-3 text-sidebar-foreground ring-sidebar-ring outline-hidden group-data-[collapsible=icon]:hidden hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[size=md]:text-sm data-[size=sm]:text-xs data-active:bg-sidebar-accent data-active:text-sidebar-accent-foreground [&>span:last-child]:truncate [&>svg]:size-3.5 [&>svg]:shrink-0 [&>svg]:text-sidebar-accent-foreground",
+          // Subitems: texto y bullet en `text-foreground` cuando están en
+          // reposo para que no parezca que están todos "seleccionados". El
+          // activo se distingue únicamente por el color del texto y del
+          // bullet (primary) — sin fondo ni negrita, para una pista visual
+          // más sutil y menos invasiva.
+          //
+          // El punto (•) generado por `::before` aparece en todos los
+          // sub-items (no solo el activo) para que la lista se lea como un
+          // grupo homogéneo; el ítem activo lo torna a `bg-primary` y a
+          // `text-primary` para destacarse.
+          //
+          // Los modificadores `data-active:hover:*` / `data-active:active:*`
+          // son cruciales: sin ellos, hacer hover sobre un sub-item ya
+          // seleccionado pisaba su texto y bullet de `primary` a `foreground`
+          // (los `hover:*` normales ganan por orden de especificidad y se
+          // "deseleccionaba" visualmente). Como ya no hay `bg` de reposo,
+          // aquí no necesitamos variantes `:hover:` de fondo — solo
+          // preservamos el color del texto y del bullet.
+          //
+          // El espaciado entre el punto y el texto lo aporta el `gap-2` del
+          // flex parent; un `mr` extra lo separaba demasiado.
+          "flex h-7 min-w-0 -translate-x-px items-center gap-2 overflow-hidden rounded-md px-3 text-foreground ring-sidebar-ring outline-hidden group-data-[collapsible=icon]:hidden hover:text-foreground focus-visible:ring-2 active:text-foreground data-active:text-primary data-active:hover:text-primary data-active:active:text-primary disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[size=md]:text-sm data-[size=sm]:text-xs before:content-[''] before:inline-block before:size-1 before:rounded-full before:bg-foreground before:shrink-0 data-active:before:bg-primary data-active:hover:before:bg-primary data-active:active:before:bg-primary [&>span:last-child]:truncate [&>svg]:size-3.5 [&>svg]:shrink-0 [&>svg]:text-foreground data-active:[&>svg]:text-primary data-active:hover:[&>svg]:text-primary data-active:active:[&>svg]:text-primary",
           className,
         ),
       },

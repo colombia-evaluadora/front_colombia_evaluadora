@@ -44,7 +44,7 @@ export function AppBreadcrumb() {
           dangerouslySetInnerHTML={{ __html: jsonLd }}
         />
       )}
-      <BreadcrumbList className="flex-nowrap">
+      <BreadcrumbList className="flex-nowrap justify-center">
         {trail.map((crumb, index) => {
           const isLast = index === trail.length - 1
 
