@@ -1,4 +1,3 @@
-import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ControlPointIcon } from "@/components/ui/icons"
 import { Link } from "@tanstack/react-router"
@@ -8,26 +7,21 @@ import { EstablishmentsDataTable } from "../components/table/establishments-tabl
 
 export function EstablishmentsPage() {
   return (
-    // `overflow-visible` es requisito del encabezado sticky: el `Card` trae
-    // `overflow-hidden`, que crea un contexto de scroll propio y anula el
-    // `position: sticky` de la sección.
-    <Card className="overflow-visible">
-      <EstablishmentsDataTable
-        title="Establecimiento educativo"
-        description="Lista de establecimientos con búsqueda, filtro por estado y paginación."
-        action={
-          <Button
-            render={<Link to={paths.app.establishments.add.getHref()} />}
-            variant="fill"
-            color="primary"
-            size="sm"
-            nativeButton={false}
-          >
-            <ControlPointIcon data-icon="inline-start" />
-            Agregar
-          </Button>
-        }
-      />
-    </Card>
+    <EstablishmentsDataTable
+      title="Establecimiento educativo"
+      description="Lista de establecimientos con búsqueda, filtro por estado y paginación."
+      action={
+        <Button
+          render={<Link to={paths.app.establishments.add.getHref()} />}
+          variant="fill"
+          color="primary"
+          size="sm"
+          nativeButton={false}
+        >
+          <ControlPointIcon data-icon="inline-start" />
+          Agregar
+        </Button>
+      }
+    />
   )
 }

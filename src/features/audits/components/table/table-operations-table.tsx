@@ -4,9 +4,15 @@ import type { ReactNode } from "react"
 
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
-import { TablePageHeader } from "@/components/table-page-header"
 import { useDataTable } from "@/hooks/use-data-table"
-import { Card } from "@/components/ui/card"
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 
 import { useTableOperationsQuery } from "../../api/query/use-table-operations-query"
 import { useAuditTableQuery } from "../../api/query/use-audit-table-query"
@@ -63,32 +69,46 @@ export function TableOperationsDataTable({
 
   return (
     <>
-      <TablePageHeader title={title} description={description} action={action}>
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <SearchTableOperations
-            activeFilterCount={activeFilterCount}
-            filters={filters}
-            applyFilters={applyFilters}
-            clearAllFilters={clearAllFilters}
-            availableFields={availableFields}
-          />
+      {/*
+        Encabezado pegajoso: el `pt-4` opaco del contenedor reproduce el aire
+        que la página tiene contra el header de la app (`top-14`) y, al mismo
+        tiempo, tapa lo que scrollea por debajo.
+      */}
+      <div className="sticky top-14 z-20 bg-sidebar pt-4">
+        <Card className="gap-0 overflow-hidden rounded-b-none pt-0">
+          <CardHeader className="bg-muted/10 py-4">
+            <CardTitle>{title}</CardTitle>
+            {description ? <CardDescription>{description}</CardDescription> : null}
+            {action ? <CardAction>{action}</CardAction> : null}
+          </CardHeader>
+          <CardContent className="pt-7">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <SearchTableOperations
+                activeFilterCount={activeFilterCount}
+                filters={filters}
+                applyFilters={applyFilters}
+                clearAllFilters={clearAllFilters}
+                availableFields={availableFields}
+              />
 
-          <div className="flex gap-2">
-            {hasSelection ? (
-              <>
-                <ClearSelectionTableOperationsDialog resetSelection={resetSelection} />
-                <ExportSelectedTableOperationsDialog
-                  tableSlug={tableSlug}
-                  selectedIds={selectedIds}
-                  resetSelection={resetSelection}
-                />
-              </>
-            ) : (
-              <ExportTableOperationsDialog tableSlug={tableSlug} filters={queryFilters} />
-            )}
-          </div>
-        </div>
-      </TablePageHeader>
+              <div className="flex gap-2">
+                {hasSelection ? (
+                  <>
+                    <ClearSelectionTableOperationsDialog resetSelection={resetSelection} />
+                    <ExportSelectedTableOperationsDialog
+                      tableSlug={tableSlug}
+                      selectedIds={selectedIds}
+                      resetSelection={resetSelection}
+                    />
+                  </>
+                ) : (
+                  <ExportTableOperationsDialog tableSlug={tableSlug} filters={queryFilters} />
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/*
         El cuerpo es su PROPIA Card, separada del encabezado (que es la

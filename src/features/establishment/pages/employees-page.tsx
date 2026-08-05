@@ -1,6 +1,5 @@
 import { useState } from "react"
 
-import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ControlPointIcon } from "@/components/ui/icons"
 
@@ -23,21 +22,17 @@ export function EmployeesPage() {
 
   return (
     <>
-      {/* `overflow-visible`: el `overflow-hidden` del Card anularía el sticky
-          del encabezado. */}
-      <Card className="overflow-visible">
-        <EmployeesDataTable
-          onEditEmployee={openEditDialog}
-          title="Funcionarios"
-          description="Lista de funcionarios con búsqueda, filtros por rol, jornada y estado, y paginación."
-          action={
-            <Button variant="fill" color="primary" size="sm" onClick={openCreateDialog}>
-              <ControlPointIcon data-icon="inline-start" />
-              Agregar
-            </Button>
-          }
-        />
-      </Card>
+      <EmployeesDataTable
+        onEditEmployee={openEditDialog}
+        title="Funcionarios"
+        description="Lista de funcionarios con búsqueda, filtros por rol, jornada y estado, y paginación."
+        action={
+          <Button variant="fill" color="primary" size="sm" onClick={openCreateDialog}>
+            <ControlPointIcon data-icon="inline-start" />
+            Agregar
+          </Button>
+        }
+      />
 
       <ManageEmployeeDialog
         open={editorOpen}

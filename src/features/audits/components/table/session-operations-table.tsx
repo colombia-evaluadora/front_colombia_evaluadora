@@ -4,10 +4,16 @@ import type { ReactNode } from "react"
 
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
-import { TablePageHeader } from "@/components/table-page-header"
 import { useDataTable } from "@/hooks/use-data-table"
 import { useTablePagination } from "@/hooks/use-table-pagination"
-import { Card } from "@/components/ui/card"
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { useSessionOperationsQuery } from "../../api/query/use-session-operations-query"
 import { useSessionOperationsFilters } from "../../hooks/use-session-operations-filters"
 
@@ -60,39 +66,44 @@ export function SessionOperationsDataTable({
   return (
     <>
       {/*
-        El `NoticeOutlet` va **dentro** del `TablePageHeader` (no debajo en
-        el flujo normal). El header es `sticky top-18 z-20` —si el banner
-        quedara como hermano, se quedaría "abajo del sticky" al hacer
-        scroll, dando la sensación de que está fuera de la card. Metiéndolo
-        acá, el banner viaja con el header y siempre se ve agrupado con el
-        título y la barra de herramientas.
+        Encabezado pegajoso: el `pt-4` opaco del contenedor reproduce el aire
+        que la página tiene contra el header de la app (`top-14`) y, al mismo
+        tiempo, tapa lo que scrollea por debajo.
       */}
-      <TablePageHeader title={title} description={description} action={action}>
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <SearchSessionOperations
-            activeFilterCount={activeFilterCount}
-            filters={filters}
-            applyFilters={applyFilters}
-            clearAllFilters={clearAllFilters}
-          />
+      <div className="sticky top-14 z-20 bg-sidebar pt-4">
+        <Card className="gap-0 overflow-hidden rounded-b-none pt-0">
+          <CardHeader className="bg-muted/10 py-4">
+            <CardTitle>{title}</CardTitle>
+            {description ? <CardDescription>{description}</CardDescription> : null}
+            {action ? <CardAction>{action}</CardAction> : null}
+          </CardHeader>
+          <CardContent className="pt-7">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <SearchSessionOperations
+                activeFilterCount={activeFilterCount}
+                filters={filters}
+                applyFilters={applyFilters}
+                clearAllFilters={clearAllFilters}
+              />
 
-          <div className="flex gap-2">
-            {hasSelection ? (
-              <>
-                <ClearSelectionSessionOperationsDialog resetSelection={resetSelection} />
-                <ExportSelectedSessionOperationsDialog
-                  sessionId={sessionId}
-                  selectedIds={selectedIds}
-                  resetSelection={resetSelection}
-                />
-              </>
-            ) : (
-              <ExportSessionOperationsDialog sessionId={sessionId} />
-            )}
-          </div>
-        </div>
-        <NoticeOutlet className="mt-3" />
-      </TablePageHeader>
+              <div className="flex gap-2">
+                {hasSelection ? (
+                  <>
+                    <ClearSelectionSessionOperationsDialog resetSelection={resetSelection} />
+                    <ExportSelectedSessionOperationsDialog
+                      sessionId={sessionId}
+                      selectedIds={selectedIds}
+                      resetSelection={resetSelection}
+                    />
+                  </>
+                ) : (
+                  <ExportSessionOperationsDialog sessionId={sessionId} />
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/*
         El cuerpo es su PROPIA Card, separada del encabezado sticky de
@@ -103,6 +114,8 @@ export function SessionOperationsDataTable({
       */}
       <Card className="overflow-visible rounded-t-none">
         <div className="px-(--card-spacing)">
+          <NoticeOutlet className="mb-3" />
+
           <DataTable
             table={table}
             isPending={isPending}
