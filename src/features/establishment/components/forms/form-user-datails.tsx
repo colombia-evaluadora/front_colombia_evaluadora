@@ -1,20 +1,9 @@
 import { useEffect, useState } from "react"
 import { format } from "date-fns"
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
 import { DatePicker } from "@/components/date-picker"
 import { FormSectionHeading } from "@/components/form-section-heading"
-import {
-  FileUpload,
-  FileUploadDropzone,
-  FileUploadItem,
-  FileUploadItemDelete,
-  FileUploadItemMetadata,
-  FileUploadItemPreview,
-  FileUploadList,
-  FileUploadTrigger,
-} from "@/components/ui/file-upload"
+import { ImageUploadField } from "@/components/image-upload-field"
 import { UserCircleIcon } from "@/components/ui/icons"
 import { EMPLOYEE_ROLES } from "@/mocks/db/catalogs/employee-roles"
 import { Field, FieldLabel } from "@/components/ui/field"
@@ -130,48 +119,17 @@ export function UserDetailsForm({
             </FormSectionHeading>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 {/* Foto */}
-                <div className="row-span-2">
-                    <FileUpload
-                        value={photo ? [photo] : []}
-                        onValueChange={(files) => setPhoto(files[0] ?? null)}
-                        accept="image/*"
-                        maxFiles={1}
-                        className="w-40"
-                    >
-                        {photo ? (
-                            <FileUploadList orientation="vertical">
-                                <FileUploadItem value={photo} orientation="vertical" size="sm" className="w-40">
-                                    <FileUploadItemPreview className="aspect-square w-full" />
-                                    <FileUploadItemMetadata size="sm" />
-                                    <FileUploadItemDelete
-                                        aria-label="Eliminar foto"
-                                        onClick={(event) => {
-                                            // El handler interno ya borra el
-                                            // archivo, pero dejamos el prevent
-                                            // default para que no se propague
-                                            // al row de la tabla.
-                                            event.stopPropagation()
-                                        }}
-                                    />
-                                </FileUploadItem>
-                            </FileUploadList>
-                        ) : (
-                            <FileUploadDropzone className="aspect-square w-40 p-2">
-                                <Avatar className="size-12">
-                                    <AvatarFallback>
-                                        <UserCircleIcon />
-                                    </AvatarFallback>
-                                </Avatar>
-                                <FileUploadTrigger
-                                    render={
-                                        <Button variant="outline" color="muted" size="xs">
-                                            Subir foto
-                                        </Button>
-                                    }
-                                />
-                            </FileUploadDropzone>
-                        )}
-                    </FileUpload>
+                <div className="md:row-span-2">
+                    <ImageUploadField
+                        value={photo}
+                        onValueChange={setPhoto}
+                        icon={<UserCircleIcon className="size-10 shrink-0 text-muted-foreground" />}
+                        description="para cargar la foto del usuario"
+                        // Un retrato se ve mejor encuadrado que con bandas a
+                        // los lados, al revés que un escudo.
+                        fit="cover"
+                        deleteLabel="Eliminar foto"
+                    />
                 </div>
                 {/* Formulario */}
 

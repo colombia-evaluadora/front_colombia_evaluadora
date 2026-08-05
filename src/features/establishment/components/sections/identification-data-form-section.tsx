@@ -1,17 +1,7 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
 
-import {
-    Attachment,
-    AttachmentAction,
-    AttachmentActions,
-    AttachmentContent,
-    AttachmentDescription,
-    AttachmentMedia,
-    AttachmentTitle,
-} from "@/components/ui/attachment"
-import { FileUpload, FileUploadDropzone } from "@/components/ui/file-upload"
-import { ImageIcon, XIcon } from "@/components/ui/icons"
 import { FormSectionHeading } from "@/components/form-section-heading"
+import { ImageUploadField } from "@/components/image-upload-field"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
@@ -25,24 +15,6 @@ import { CATALOGS } from "@/lib/catalogs"
 import { useCatalogQuery } from "../../api/query/use-catalogs"
 import type { CatalogItem } from "../../api/types/catalog"
 import type { EstablishmentDetails } from "../../api/types/establishment"
-
-// Formatos y tamaño del escudo: van juntos acá porque el texto de ayuda del
-// dropzone ("JPG, PNG o SVG · Máximo 2 MB") tiene que decir lo mismo que valida
-// `FileUpload`.
-const SHIELD_ACCEPT = "image/jpeg,image/png,image/svg+xml"
-const SHIELD_MAX_SIZE = 2 * 1024 * 1024
-
-// "PNG · 820 KB". El formato sale del MIME type y no de la extensión del
-// nombre, que el usuario puede haber escrito en minúsculas o cambiado.
-function describeShield(file: File) {
-    const format = (file.type.split("/")[1] ?? "").replace("svg+xml", "svg").toUpperCase()
-    const size =
-        file.size < 1024 * 1024
-            ? `${Math.round(file.size / 1024)} KB`
-            : `${(file.size / (1024 * 1024)).toFixed(1)} MB`
-
-    return format ? `${format} · ${size}` : size
-}
 
 interface IdentificationDataFormSectionProps {
     value: EstablishmentDetails["basicInfo"]
@@ -61,21 +33,6 @@ export function IdentificationDataFormSection({ value, onChange, invalidFields =
     // que solo mantenemos el archivo vivo mientras la sección está montada.
     const [shield, setShield] = useState<File | null>(null)
 
-    // La vista previa necesita una URL: se revoca al cambiar de archivo o al
-    // desmontar para no filtrar el blob.
-    const [shieldPreview, setShieldPreview] = useState<string | null>(null)
-    useEffect(() => {
-        if (!shield) {
-            setShieldPreview(null)
-            return
-        }
-
-        const url = URL.createObjectURL(shield)
-        setShieldPreview(url)
-
-        return () => URL.revokeObjectURL(url)
-    }, [shield])
-
     return (
         <>
             <FormSectionHeading>
@@ -88,83 +45,12 @@ export function IdentificationDataFormSection({ value, onChange, invalidFields =
                     más el `h-full` que lo propaga hasta el dropzone.
                 */}
                 <div className="md:row-span-2">
-                    <FileUpload
-                        value={shield ? [shield] : []}
-                        onValueChange={(files) => setShield(files[0] ?? null)}
-                        accept={SHIELD_ACCEPT}
-                        maxFiles={1}
-                        maxSize={SHIELD_MAX_SIZE}
-                        className="h-full w-full"
-                    >
-                        {shield ? (
-                            // La tarjeta llena la misma caja que ocupaba el dropzone en
-                            // vez de quedar en el ancho fijo de `orientation="vertical"`
-                            // (`w-30`), de ahí los `w-full` —incluido el del `has-*`, que
-                            // gana por especificidad si no se lo pisa explícitamente.
-                            <Attachment
-                                orientation="vertical"
-                                // `flex-nowrap` porque la variante trae `flex-wrap`, y en
-                                // columna con alto fijo eso parte el contenido en dos.
-                                className="h-full min-h-40 w-full flex-nowrap has-data-[slot=attachment-content]:w-full"
-                            >
-                                {/*
-                                    El alto lo pone la fila, no la imagen: la vista
-                                    previa va posicionada sobre el medio (que ya es
-                                    `relative overflow-hidden`) para que su tamaño
-                                    natural no empuje la caja y termine estirando las
-                                    filas del grid. `object-contain` porque un escudo
-                                    recortado pierde sentido, a diferencia de una foto.
-                                */}
-                                <AttachmentMedia
-                                    variant="image"
-                                    className="aspect-auto min-h-0 w-full flex-1 *:[img]:absolute *:[img]:inset-0 *:[img]:aspect-auto *:[img]:size-full *:[img]:object-contain"
-                                >
-                                    {shieldPreview ? (
-                                        <img src={shieldPreview} alt={`Escudo: ${shield.name}`} />
-                                    ) : null}
-                                </AttachmentMedia>
-                                <AttachmentContent>
-                                    <AttachmentTitle>{shield.name}</AttachmentTitle>
-                                    <AttachmentDescription>
-                                        {describeShield(shield)}
-                                    </AttachmentDescription>
-                                </AttachmentContent>
-                                <AttachmentActions>
-                                    <AttachmentAction
-                                        aria-label="Eliminar escudo"
-                                        onClick={() => setShield(null)}
-                                    >
-                                        <XIcon />
-                                    </AttachmentAction>
-                                </AttachmentActions>
-                            </Attachment>
-                        ) : (
-                            // El área completa dispara el selector de archivos (el propio
-                            // `FileUploadDropzone` maneja click, drop y Enter/Espacio), así
-                            // que acá no va un botón aparte: el "clic aquí" del título es
-                            // solo la señal visual de esa afordancia.
-                            <FileUploadDropzone className="h-full min-h-40 w-full gap-3 rounded-lg bg-muted/20 px-4 py-6">
-                                <ImageIcon className="size-10 shrink-0 text-muted-foreground" />
-                                {/*
-                                    Los tres textos van en un bloque propio: el `gap`
-                                    del dropzone separa el ícono del texto, y acá
-                                    adentro el interlineado es apretado para que se
-                                    lean como un solo párrafo centrado.
-                                */}
-                                <div className="space-y-1">
-                                    <p className="text-sm leading-snug font-semibold text-balance">
-                                        Arrastra y suelta o <span className="text-primary">haz clic aquí</span>
-                                    </p>
-                                    <p className="text-xs leading-snug font-medium text-balance">
-                                        para cargar el escudo o logo del establecimiento
-                                    </p>
-                                    <p className="text-[11px] leading-snug text-muted-foreground">
-                                        JPG, PNG o SVG · Máximo 2 MB
-                                    </p>
-                                </div>
-                            </FileUploadDropzone>
-                        )}
-                    </FileUpload>
+                    <ImageUploadField
+                        value={shield}
+                        onValueChange={setShield}
+                        description="para cargar el escudo o logo del establecimiento"
+                        deleteLabel="Eliminar escudo"
+                    />
                 </div>
                 <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid("basicInfo.name") ? "true" : undefined}>
                     <FieldLabel htmlFor="establishment-name">Nombre del establecimiento*</FieldLabel>

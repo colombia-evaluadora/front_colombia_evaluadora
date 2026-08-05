@@ -36,10 +36,10 @@ import {
   MdCoPresent,
   MdCreditCard,
   MdDarkMode,
-  MdDelete,
   MdDescription,
   MdDownload,
-  MdEdit,
+  MdOutlineBorderColor,
+  MdOutlineDelete,
   MdEmojiEvents,
   MdEvent,
   MdExplore,
@@ -215,7 +215,11 @@ export const PaletteIcon = makeIcon(MdPalette)
 export const PasswordIcon = makeIcon(MdOutlinePassword)
 export const PaperPlaneTiltIcon = makeIcon(MdOutlineSend)
 export const PaperclipIcon = makeIcon(MdAttachFile)
-export const PencilIcon = makeIcon(MdEdit)
+// Equivalentes de `BorderColorOutlined` y `DeleteOutlined` de MUI: los dos
+// vienen del mismo set (Material), así que `react-icons/md` los trae con el
+// prefijo `MdOutline`. Se repunta acá y no en cada uso para que el lápiz y el
+// tacho sean los mismos en toda la app (acciones de fila, diálogos, filtros).
+export const PencilIcon = makeIcon(MdOutlineBorderColor)
 export const PlusCircleIcon = makeIcon(MdAddCircleOutline)
 export const PlusIcon = makeIcon(MdAdd)
 export const QuestionIcon = makeIcon(MdHelpOutline)
@@ -231,7 +235,7 @@ export const SunIcon = makeIcon(MdLightMode)
 export const TextBIcon = makeIcon(MdFormatBold)
 export const TextItalicIcon = makeIcon(MdFormatItalic)
 export const TextUnderlineIcon = makeIcon(MdFormatUnderlined)
-export const TrashIcon = makeIcon(MdDelete)
+export const TrashIcon = makeIcon(MdOutlineDelete)
 export const TreeIcon = makeIcon(MdPark)
 export const TrophyIcon = makeIcon(MdEmojiEvents)
 export const VideoIcon = makeIcon(MdOutlineSmartDisplay)
