@@ -57,7 +57,14 @@ function CardAction({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card-action"
-      className={cn("col-start-2 row-span-2 row-start-1 self-start justify-self-end", className)}
+      className={cn(
+        // El `row-span-2` solo cuando hay descripción que abarcar: la rejilla
+        // del header es implícita, así que abarcar dos filas sin descripción
+        // *creaba* una segunda fila vacía y el `gap` del header la separaba,
+        // dejando aire de más bajo el título.
+        "col-start-2 row-span-1 row-start-1 self-start justify-self-end group-has-data-[slot=card-description]/card-header:row-span-2",
+        className,
+      )}
       {...props}
     />
   )

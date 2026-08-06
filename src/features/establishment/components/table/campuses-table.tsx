@@ -9,7 +9,6 @@ import { useTablePagination } from "@/hooks/use-table-pagination"
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
@@ -33,7 +32,6 @@ import { useNotify, NoticeOutlet } from "@/components/notice/notice-context"
 interface CampusesDataTableProps {
   onEditCampus: (campusId: string) => void
   title: ReactNode
-  description?: ReactNode
   // Acción principal de la página (ej. "Agregar"). Va en la barra de
   // herramientas, junto al buscador, no en el encabezado.
   action?: ReactNode
@@ -42,7 +40,6 @@ interface CampusesDataTableProps {
 export function CampusesDataTable({
   onEditCampus,
   title,
-  description,
   action,
 }: CampusesDataTableProps) {
   const { notify } = useNotify()
@@ -109,7 +106,6 @@ export function CampusesDataTable({
         <Card className="gap-0 overflow-hidden rounded-b-none pt-0">
           <CardHeader className="bg-muted/10 py-4">
             <CardTitle>{title}</CardTitle>
-            {description ? <CardDescription>{description}</CardDescription> : null}
           </CardHeader>
           <CardContent className="pt-7">
             <div className="flex flex-wrap items-start justify-between gap-4">
@@ -163,7 +159,7 @@ export function CampusesDataTable({
         línea doble en el medio. `rounded-t-none` para pegarse a la base
         plana del encabezado; `overflow-visible` para no romper el sticky.
       */}
-      <Card className="overflow-visible rounded-t-none">
+      <Card className="grow overflow-visible rounded-t-none">
         <div className="px-(--card-spacing)">
           <NoticeOutlet className="mb-3" />
 

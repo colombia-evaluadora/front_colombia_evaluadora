@@ -13,7 +13,6 @@ export function TableOperationsPage() {
     // cuerpo y su contenido data-driven compartan el ciclo de vida.
     <TableOperationsDataTable
       title="Detalle"
-      description="Historial de operaciones (insert/update/delete) sobre los registros de esta tabla."
       action={
         <Button
           variant="ghost"

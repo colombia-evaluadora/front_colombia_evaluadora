@@ -25,7 +25,6 @@ export function CampusesPage() {
       <CampusesDataTable
         onEditCampus={openEditDialog}
         title="Sedes educativas"
-        description="Lista de sedes con búsqueda, filtro por zona y nombre."
         action={
           <Button variant="fill" color="primary" size="sm" onClick={openCreateDialog}>
             <ControlPointIcon data-icon="inline-start" />

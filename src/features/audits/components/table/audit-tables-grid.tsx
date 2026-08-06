@@ -62,7 +62,7 @@ export function AuditTablesDataTable() {
           </CardContent>
         </Card>
         </div>
-        <Card className="overflow-visible rounded-t-none">
+        <Card className="grow overflow-visible rounded-t-none">
           <div className="px-(--card-spacing)">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {Array.from({ length: 8 }).map((_, i) => (
@@ -138,7 +138,7 @@ export function AuditTablesDataTable() {
         </CardContent>
       </Card>
       </div>
-      <Card className="overflow-visible rounded-t-none">
+      <Card className="grow overflow-visible rounded-t-none">
         <div className="px-(--card-spacing)">
           <NoticeOutlet className="mb-3" />
           {totalCount === 0 ? (

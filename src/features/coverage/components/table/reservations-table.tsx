@@ -9,7 +9,6 @@ import { useTablePagination } from "@/hooks/use-table-pagination"
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
@@ -27,10 +26,9 @@ import { ReservationStatsCards } from "../stats/reservation-stats-cards"
 
 interface ReservationsDataTableProps {
   title: ReactNode
-  description?: ReactNode
 }
 
-export function ReservationsDataTable({ title, description }: ReservationsDataTableProps) {
+export function ReservationsDataTable({ title }: ReservationsDataTableProps) {
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
   const { filters, queryFilters, applyFilters, clearAllFilters, activeFilterCount } =
     useReservationFilters()
@@ -65,7 +63,6 @@ export function ReservationsDataTable({ title, description }: ReservationsDataTa
         <Card className="gap-0 overflow-hidden rounded-b-none pt-0">
           <CardHeader className="bg-muted/10 py-4">
             <CardTitle>{title}</CardTitle>
-            {description ? <CardDescription>{description}</CardDescription> : null}
           </CardHeader>
           <CardContent className="pt-7">
             <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-2">
@@ -105,7 +102,7 @@ export function ReservationsDataTable({ title, description }: ReservationsDataTa
         línea doble en el medio. `rounded-t-none` para pegarse a la base
         plana del encabezado; `overflow-visible` para no romper el sticky.
       */}
-      <Card className="overflow-visible rounded-t-none">
+      <Card className="grow overflow-visible rounded-t-none">
         <div className="px-(--card-spacing)">
           {/* Los indicadores quedan en el cuerpo: son datos que scrollean, no
               controles que convenga tener siempre a la vista. */}

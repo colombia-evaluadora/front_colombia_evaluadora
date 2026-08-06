@@ -32,16 +32,6 @@ export function SessionOperationsPage() {
         .join("")
     : ""
 
-  const started = session ? new Date(session.startedAt) : null
-  const ended = session?.endedAt ? new Date(session.endedAt) : null
-  const durationMs = started && ended ? ended.getTime() - started.getTime() : null
-  const minutes = durationMs ? Math.round(durationMs / 60000) : null
-  const durationLabel =
-    minutes === null
-      ? "—"
-      : minutes < 60
-        ? `${minutes}m`
-        : `${Math.floor(minutes / 60)}h ${minutes % 60}m`
 
   const title = isPending ? (
     <div className="flex items-center gap-2 text-sm font-normal text-muted-foreground">
@@ -68,25 +58,6 @@ export function SessionOperationsPage() {
     </div>
   )
 
-  const description =
-    session && !isPending && !isError ? (
-      <>
-        {started?.toLocaleString("es", {
-          dateStyle: "short",
-          timeStyle: "short",
-        })}
-        {ended
-          ? ` → ${ended.toLocaleString("es", {
-              dateStyle: "short",
-              timeStyle: "short",
-            })}`
-          : " · En curso"}
-        {" · "}
-        {durationLabel}
-        {" · "}
-        {session.operationsCount} operación(es)
-      </>
-    ) : undefined
 
   return (
     // El encabezado sticky y el cuerpo son dos Cards independientes, NO se
@@ -96,7 +67,6 @@ export function SessionOperationsPage() {
     <SessionOperationsDataTable
       sessionId={sessionId}
       title={title}
-      description={description}
       action={
         <Button
           variant="ghost"

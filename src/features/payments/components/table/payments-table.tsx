@@ -8,7 +8,6 @@ import { useDataTable } from "@/hooks/use-data-table"
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
@@ -26,10 +25,9 @@ import { ClearSelectionDialog } from "../dialogs/dialog-clear-selection"
 
 interface PaymentsDataTableProps {
   title: ReactNode
-  description?: ReactNode
 }
 
-export function PaymentsDataTable({ title, description }: PaymentsDataTableProps) {
+export function PaymentsDataTable({ title }: PaymentsDataTableProps) {
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
   const { filters, queryFilters, applyFilters, clearAllFilters, activeFilterCount } =
     usePaymentsFilters()
@@ -64,7 +62,6 @@ export function PaymentsDataTable({ title, description }: PaymentsDataTableProps
         <Card className="gap-0 overflow-hidden rounded-b-none pt-0">
           <CardHeader className="bg-muted/10 py-4">
             <CardTitle>{title}</CardTitle>
-            {description ? <CardDescription>{description}</CardDescription> : null}
           </CardHeader>
           <CardContent className="pt-7">
             <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-2">
@@ -102,7 +99,7 @@ export function PaymentsDataTable({ title, description }: PaymentsDataTableProps
         línea doble en el medio. `rounded-t-none` para pegarse a la base
         plana del encabezado; `overflow-visible` para no romper el sticky.
       */}
-      <Card className="overflow-visible rounded-t-none">
+      <Card className="grow overflow-visible rounded-t-none">
         <div className="px-(--card-spacing)">
           <DataTable
             table={table}
