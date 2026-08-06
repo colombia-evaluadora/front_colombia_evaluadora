@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { MagnifyingGlassIcon, XIcon } from "@/components/ui/icons"
 
-import { Field, FieldLabel, FieldLegend, FieldSet } from "@/components/ui/field"
+import { Field, FieldLabel } from "@/components/ui/field"
 import {
   InputGroup,
   InputGroupAddon,
@@ -95,39 +95,35 @@ export function SearchAcademicAssignments({
             activeFilterCount={hasStatus ? 1 : 0}
             badgeCount={hasStatus ? 1 : 0}
             onApply={() => setOpen(false)}
+            size="sm"
           >
-            <FieldSet className="px-4">
-              <FieldLegend variant="label">Estado</FieldLegend>
-              <div className="grid grid-cols-2 gap-3">
-                <Field orientation="vertical" variant="outlined" className="gap-2">
-                  <FieldLabel htmlFor="academic-assignments-status">Estado</FieldLabel>
-                  <Select
-                    value={status}
-                    onValueChange={(value) =>
-                      onStatusChange((value as EmployeeStatus | null) ?? "")
-                    }
-                  >
-                    <SelectTrigger id="academic-assignments-status" size="sm" className="w-full">
-                      <SelectValue placeholder="Todos">
-                        {(value) =>
-                          EMPLOYEE_STATUS_LABELS[value as EmployeeStatus] ?? "Todos"
-                        }
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        <SelectItem value={ALL_VALUE}>Todos</SelectItem>
-                        {EMPLOYEE_STATUSES.map((value) => (
-                          <SelectItem key={value} value={value}>
-                            {EMPLOYEE_STATUS_LABELS[value]}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                </Field>
-              </div>
-            </FieldSet>
+            {/* Un solo control: sin `FieldSet`, porque el título de la sección
+                repetiría la etiqueta del campo. */}
+            <div className="px-4">
+              <Field orientation="vertical" variant="outlined" className="gap-2">
+                <FieldLabel htmlFor="academic-assignments-status">Estado</FieldLabel>
+                <Select
+                  value={status}
+                  onValueChange={(value) => onStatusChange((value as EmployeeStatus | null) ?? "")}
+                >
+                  <SelectTrigger id="academic-assignments-status" size="sm" className="w-full">
+                    <SelectValue placeholder="Todos">
+                      {(value) => EMPLOYEE_STATUS_LABELS[value as EmployeeStatus] ?? "Todos"}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectItem value={ALL_VALUE}>Todos</SelectItem>
+                      {EMPLOYEE_STATUSES.map((value) => (
+                        <SelectItem key={value} value={value}>
+                          {EMPLOYEE_STATUS_LABELS[value]}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </Field>
+            </div>
           </AdvancedFiltersPopover>
         </InputGroupAddon>
       </InputGroup>

@@ -9,7 +9,6 @@ import {
 
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
-import { Separator } from "@/components/ui/separator"
 import {
   Field,
   FieldContent,
@@ -32,9 +31,17 @@ interface FilterPaymentsFormProps {
   id: string
   defaultValues: PaymentFiltersFormInput
   onSubmit: (values: PaymentFiltersFormValues) => void
+  // El input de email vive en el buscador del InputGroup; cuando `hideEmail`
+  // es `true` se omite del form del popover y se conserva como "search".
+  hideEmail?: boolean
 }
 
-export function FilterPaymentsForm({ id, defaultValues, onSubmit }: FilterPaymentsFormProps) {
+export function FilterPaymentsForm({
+  id,
+  defaultValues,
+  onSubmit,
+  hideEmail = false,
+}: FilterPaymentsFormProps) {
   const form = useForm({
     defaultValues,
     validators: {
@@ -52,30 +59,30 @@ export function FilterPaymentsForm({ id, defaultValues, onSubmit }: FilterPaymen
         e.preventDefault()
         form.handleSubmit()
       }}
-      className="flex flex-1 flex-col gap-4 overflow-y-auto px-4"
+      className="flex flex-1 flex-col gap-5 px-4"
     >
-      <form.Field
-        name="email"
-        children={(field) => (
-          <Field orientation="vertical" variant="outlined" className="gap-2">
-            <FieldLabel htmlFor={field.name}>Email</FieldLabel>
-            <Input
-              id={field.name}
-              name={field.name}
-              type="text"
-              inputMode="email"
-              autoComplete="off"
-              placeholder="Ingresar email"
-              value={field.state.value}
-              onBlur={field.handleBlur}
-              onChange={(event) => field.handleChange(event.target.value)}
-              className="h-9"
-            />
-          </Field>
-        )}
-      />
-
-      <Separator />
+      {!hideEmail && (
+        <form.Field
+          name="email"
+          children={(field) => (
+            <Field orientation="vertical" variant="outlined" className="gap-2">
+              <FieldLabel htmlFor={field.name}>Email</FieldLabel>
+              <Input
+                id={field.name}
+                name={field.name}
+                type="text"
+                inputMode="email"
+                autoComplete="off"
+                placeholder="Ingresar email"
+                value={field.state.value}
+                onBlur={field.handleBlur}
+                onChange={(event) => field.handleChange(event.target.value)}
+                className="h-9"
+              />
+            </Field>
+          )}
+        />
+      )}
 
       <form.Field
         name="statuses"
@@ -162,8 +169,6 @@ export function FilterPaymentsForm({ id, defaultValues, onSubmit }: FilterPaymen
           )
         }}
       />
-
-      <Separator />
 
       <form.Field
         name="amountMin"

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react"
 
 import { MagnifyingGlassIcon, XIcon } from "@/components/ui/icons"
 import { AdvancedFiltersPopover } from "@/components/search/advanced-filters-popover"
-import { Field, FieldLabel, FieldLegend, FieldSet } from "@/components/ui/field"
+import { Field, FieldLabel } from "@/components/ui/field"
 import {
   InputGroup,
   InputGroupAddon,
@@ -158,31 +158,31 @@ export function SearchEstablishments({
             activeFilterCount={activeFilterCount}
             badgeCount={advancedFilterCount}
             onApply={handleApplyAdvanced}
+            size="sm"
           >
-            <FieldSet className="px-4">
-              <FieldLegend variant="label">Estado</FieldLegend>
-              <div className="grid grid-cols-2 gap-3">
-                <Field orientation="vertical" variant="outlined" className="gap-2">
-                  <FieldLabel htmlFor="establishment-status">Estado</FieldLabel>
-                  <Select
-                    items={statusItems}
-                    value={draftStatus}
-                    onValueChange={(value) => setDraftStatus(value ?? "")}
-                  >
-                    <SelectTrigger id="establishment-status" size="sm" className="w-full">
-                      <SelectValue placeholder="Todos" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {statusItems.map((item) => (
-                        <SelectItem key={item.value} value={item.value}>
-                          {item.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </Field>
-              </div>
-            </FieldSet>
+            {/* Un solo control: sin `FieldSet`, porque el título de la sección
+                repetiría la etiqueta del campo. */}
+            <div className="px-4">
+              <Field orientation="vertical" variant="outlined" className="gap-2">
+                <FieldLabel htmlFor="establishment-status">Estado</FieldLabel>
+                <Select
+                  items={statusItems}
+                  value={draftStatus}
+                  onValueChange={(value) => setDraftStatus(value ?? "")}
+                >
+                  <SelectTrigger id="establishment-status" size="sm" className="w-full">
+                    <SelectValue placeholder="Todos" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {statusItems.map((item) => (
+                      <SelectItem key={item.value} value={item.value}>
+                        {item.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+            </div>
           </AdvancedFiltersPopover>
         </InputGroupAddon>
         </InputGroup>

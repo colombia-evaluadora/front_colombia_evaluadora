@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react"
 
 import { MagnifyingGlassIcon, XIcon } from "@/components/ui/icons"
 import { AdvancedFiltersPopover } from "@/components/search/advanced-filters-popover"
-import { Field, FieldLabel, FieldLegend, FieldSet } from "@/components/ui/field"
+import { Field, FieldLabel } from "@/components/ui/field"
 import {
   InputGroup,
   InputGroupAddon,
@@ -151,31 +151,31 @@ export function SearchCampuses({
             activeFilterCount={activeFilterCount}
             badgeCount={advancedFilterCount}
             onApply={handleApplyAdvanced}
+            size="sm"
           >
-            <FieldSet className="px-4">
-              <FieldLegend variant="label">Ubicación</FieldLegend>
-              <div className="grid grid-cols-2 gap-3">
-                <Field orientation="vertical" variant="outlined" className="gap-2">
-                  <FieldLabel htmlFor="campus-zone">Zona</FieldLabel>
-                  <Select
-                    items={zoneItems}
-                    value={draftZone}
-                    onValueChange={(value) => setDraftZone(value ?? "")}
-                  >
-                    <SelectTrigger id="campus-zone" size="sm" className="w-full">
-                      <SelectValue placeholder="Todas" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {zoneItems.map((item) => (
-                        <SelectItem key={item.value} value={item.value}>
-                          {item.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </Field>
-              </div>
-            </FieldSet>
+            {/* Un solo control: sin `FieldSet`, porque el título de la sección
+                repetiría la etiqueta del campo. */}
+            <div className="px-4">
+              <Field orientation="vertical" variant="outlined" className="gap-2">
+                <FieldLabel htmlFor="campus-zone">Zona</FieldLabel>
+                <Select
+                  items={zoneItems}
+                  value={draftZone}
+                  onValueChange={(value) => setDraftZone(value ?? "")}
+                >
+                  <SelectTrigger id="campus-zone" size="sm" className="w-full">
+                    <SelectValue placeholder="Todas" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {zoneItems.map((item) => (
+                      <SelectItem key={item.value} value={item.value}>
+                        {item.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+            </div>
           </AdvancedFiltersPopover>
         </InputGroupAddon>
         </InputGroup>

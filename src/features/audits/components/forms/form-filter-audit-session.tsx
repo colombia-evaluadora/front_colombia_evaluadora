@@ -3,7 +3,6 @@ import { CircleDashedIcon, CheckCircleIcon, SpinnerIcon } from "@/components/ui/
 
 import { DatePicker } from "@/components/date-picker"
 import { Input } from "@/components/ui/input"
-import { Separator } from "@/components/ui/separator"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import {
   Field,
@@ -57,7 +56,7 @@ export function FilterAuditSessionForm({
         e.preventDefault()
         form.handleSubmit()
       }}
-      className="flex flex-1 flex-col gap-4 overflow-y-auto px-4"
+      className="flex flex-1 flex-col gap-5 px-4"
     >
       {!hideAuthor && (
         <>
@@ -80,8 +79,6 @@ export function FilterAuditSessionForm({
               </Field>
             )}
           />
-
-          <Separator />
         </>
       )}
 
@@ -135,41 +132,45 @@ export function FilterAuditSessionForm({
         }}
       />
 
-      <Separator />
-
       {/* Dos campos independientes (no un único rango) — cada uno usa el
           modo `datetime`, que combina calendario y hora en el mismo popover
-          para no tener que abrir dos controles distintos. */}
-      <form.Field
-        name="startedFrom"
-        children={(field) => (
-          <Field orientation="vertical" variant="outlined" className="gap-2">
-            <FieldLabel htmlFor={field.name}>Desde</FieldLabel>
-            <DatePicker
-              mode="datetime"
-              id={field.name}
-              value={parseDateTimeValue(field.state.value)}
-              onChange={(date) => field.handleChange(formatDateTimeValue(date))}
-              className="h-9"
-            />
-          </Field>
-        )}
-      />
-      <form.Field
-        name="startedTo"
-        children={(field) => (
-          <Field orientation="vertical" variant="outlined" className="gap-2">
-            <FieldLabel htmlFor={field.name}>Hasta</FieldLabel>
-            <DatePicker
-              mode="datetime"
-              id={field.name}
-              value={parseDateTimeValue(field.state.value)}
-              onChange={(date) => field.handleChange(formatDateTimeValue(date))}
-              className="h-9"
-            />
-          </Field>
-        )}
-      />
+          para no tener que abrir dos controles distintos. La leyenda sí aporta
+          acá: "Desde" y "Hasta" por separado no dicen de qué son. */}
+      <FieldSet>
+        <FieldLegend variant="label">Rango de fecha</FieldLegend>
+        <div className="grid grid-cols-2 gap-3">
+          <form.Field
+            name="startedFrom"
+            children={(field) => (
+              <Field orientation="vertical" variant="outlined" className="gap-2">
+                <FieldLabel htmlFor={field.name}>Desde</FieldLabel>
+                <DatePicker
+                  mode="datetime"
+                  id={field.name}
+                  value={parseDateTimeValue(field.state.value)}
+                  onChange={(date) => field.handleChange(formatDateTimeValue(date))}
+                  className="h-9"
+                />
+              </Field>
+            )}
+          />
+          <form.Field
+            name="startedTo"
+            children={(field) => (
+              <Field orientation="vertical" variant="outlined" className="gap-2">
+                <FieldLabel htmlFor={field.name}>Hasta</FieldLabel>
+                <DatePicker
+                  mode="datetime"
+                  id={field.name}
+                  value={parseDateTimeValue(field.state.value)}
+                  onChange={(date) => field.handleChange(formatDateTimeValue(date))}
+                  className="h-9"
+                />
+              </Field>
+            )}
+          />
+        </div>
+      </FieldSet>
     </form>
   )
 }
