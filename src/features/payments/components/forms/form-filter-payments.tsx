@@ -65,7 +65,7 @@ export function FilterPaymentsForm({ id, defaultValues, onSubmit }: FilterPaymen
               type="text"
               inputMode="email"
               autoComplete="off"
-              placeholder="ej. user@example.com"
+              placeholder="Ingresar email"
               value={field.state.value}
               onBlur={field.handleBlur}
               onChange={(event) => field.handleChange(event.target.value)}
@@ -181,7 +181,7 @@ export function FilterPaymentsForm({ id, defaultValues, onSubmit }: FilterPaymen
                   inputMode="numeric"
                   step="1"
                   min={0}
-                  placeholder="Mín"
+                  placeholder="Ingresar mínimo"
                   name={field.name}
                   value={field.state.value}
                   onBlur={field.handleBlur}
@@ -202,7 +202,7 @@ export function FilterPaymentsForm({ id, defaultValues, onSubmit }: FilterPaymen
                         inputMode="numeric"
                         step="1"
                         min={0}
-                        placeholder="Máx"
+                        placeholder="Ingresar máximo"
                         name={maxField.name}
                         value={maxField.state.value}
                         onBlur={maxField.handleBlur}

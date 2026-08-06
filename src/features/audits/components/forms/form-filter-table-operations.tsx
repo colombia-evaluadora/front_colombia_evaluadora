@@ -106,7 +106,7 @@ export function FilterTableOperationsForm({
                   name={field.name}
                   type="text"
                   autoComplete="off"
-                  placeholder="ej. Juan Pérez o 190.2.45.12"
+                  placeholder="Ingresar autor o IP"
                   value={field.state.value}
                   onBlur={field.handleBlur}
                   onChange={(event) => field.handleChange(event.target.value)}
@@ -339,7 +339,7 @@ function FieldFilterSection({ field, availableFields }: FieldFilterSectionProps)
             id="field-filter-value"
             type="text"
             autoComplete="off"
-            placeholder="Escribe el texto a buscar…"
+            placeholder="Ingresar texto a buscar"
             value={composerValue}
             onChange={(event) => setComposerValue(event.target.value)}
             className="h-9"

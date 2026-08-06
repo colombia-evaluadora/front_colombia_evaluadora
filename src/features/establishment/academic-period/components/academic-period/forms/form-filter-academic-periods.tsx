@@ -87,7 +87,7 @@ export function FilterAcademicPeriodsForm({
                   name={field.name}
                   type="text"
                   autoComplete="off"
-                  placeholder="ej. I.E. San José"
+                  placeholder="Ingresar sede"
                   value={field.state.value}
                   onBlur={field.handleBlur}
                   onChange={(event) => field.handleChange(event.target.value)}

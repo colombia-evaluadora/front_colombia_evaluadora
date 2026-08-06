@@ -211,6 +211,7 @@ export function ColorPicker({ value, onChange, className }: ColorPickerProps) {
           onChange={(e) => onHexChange(e.target.value)}
           spellCheck={false}
           aria-label="Código hexadecimal"
+          placeholder="Ingresar código hexadecimal"
           className="h-8"
         />
       </div>
