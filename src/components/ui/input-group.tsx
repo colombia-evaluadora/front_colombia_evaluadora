@@ -51,6 +51,13 @@ function InputGroupAddon({
       data-align={align}
       className={cn(inputGroupAddonVariants({ align }), className)}
       onClick={(e) => {
+        // El click puede venir de un portal montado dentro del addon (un
+        // popover, un select): en el DOM está fuera, pero en el árbol de React
+        // burbujea igual hasta acá. Sin esta guarda, escribir en cualquier
+        // campo de ese popover robaba el foco hacia el control del InputGroup.
+        if (!e.currentTarget.contains(e.target as Node)) {
+          return
+        }
         if ((e.target as HTMLElement).closest("button")) {
           return
         }

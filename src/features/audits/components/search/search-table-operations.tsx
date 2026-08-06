@@ -1,11 +1,7 @@
 import { useEffect, useRef, useState } from "react"
-import {
-  EraserIcon,
-  FunnelIcon,
-  MagnifyingGlassIcon,
-  XIcon,
-} from "@/components/ui/icons"
+import { CheckIcon, FunnelIcon, MagnifyingGlassIcon, XIcon } from "@/components/ui/icons"
 
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Field, FieldLabel } from "@/components/ui/field"
 import {
@@ -151,130 +147,147 @@ export function SearchTableOperations({
     })
   })
 
+  // Hay algo que limpiar si el usuario escribió en el buscador o si quedó
+  // algún filtro avanzado puesto.
+  const hasAnythingToClear = activeFilterCount > 0 || search !== ""
+
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-2">
       {/*
         El `Field` outlined solo aporta la etiqueta flotante: el borde y el
         foco los sigue pintando el propio `InputGroup`. Sin `aria-label` en el
         control, para que el nombre accesible lo dé la etiqueta visible.
+
+        Los chips de los filtros activos viven *dentro* del campo, delante del
+        input: el buscador y los filtros son una sola cosa para el usuario, y
+        listarlos debajo separaba visualmente la causa (el embudo) del efecto.
+        De ahí el `h-auto min-h-9 flex-wrap`: el campo crece cuando los chips
+        no caben en una línea.
       */}
       <Field orientation="vertical" variant="outlined" className="w-full max-w-xl">
         <FieldLabel htmlFor={SEARCH_INPUT_ID}>Buscar</FieldLabel>
-        <InputGroup className="h-9 w-full rounded-md border-input has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20">
-        <InputGroupAddon align="inline-start" className="ml-2">
-          <MagnifyingGlassIcon className="size-4 text-muted-foreground" />
-        </InputGroupAddon>
+        <InputGroup className="h-auto min-h-9 w-full flex-wrap rounded-md border-input has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20">
+          <InputGroupAddon align="inline-start" className="ml-2 flex-wrap gap-1">
+            <MagnifyingGlassIcon className="size-4 text-muted-foreground" />
 
-        <InputGroupInput
-          id={SEARCH_INPUT_ID}
-          type="search"
-          autoComplete="off"
-          placeholder="Buscar por autor o IP…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-
-        <InputGroupAddon align="inline-end" className="mr-1 gap-1">
-          {search && (
-            <InputGroupButton
-              size="icon-xs"
-              aria-label="Limpiar búsqueda"
-              className="text-muted-foreground hover:text-primary"
-              onClick={() => setSearch("")}
-            >
-              <XIcon />
-            </InputGroupButton>
-          )}
-
-          <Popover open={open} onOpenChange={setOpen}>
-            <PopoverTrigger
-              render={
-                <InputGroupButton
-                  size="icon-xs"
-                  variant={activeFilterCount > 0 ? "soft" : "ghost"}
-                  color={activeFilterCount > 0 ? "secondary" : undefined}
-                  aria-label="Filtros"
-                  aria-pressed={activeFilterCount > 0}
-                  className="relative text-muted-foreground hover:text-primary aria-pressed:text-secondary-foreground"
-                />
-              }
-            >
-              <FunnelIcon />
-              {advancedFilterCount > 0 && (
-                <span className="absolute -top-1 -right-1 flex size-3.5 items-center justify-center rounded-full bg-primary text-[0.55rem] font-semibold text-primary-foreground">
-                  {advancedFilterCount}
-                </span>
-              )}
-            </PopoverTrigger>
-
-            <PopoverContent align="end" className="w-80 gap-3 p-0">
-              <PopoverHeader className="border-b p-4">
-                <PopoverTitle>Filtros</PopoverTitle>
-              </PopoverHeader>
-
-              <div className="max-h-[60dvh] overflow-y-auto py-4">
-                <FilterTableOperationsForm
-                  id={FILTER_TABLE_OPERATIONS_FORM_ID}
-                  defaultValues={filters}
-                  onSubmit={handleApplyAdvanced}
-                  availableFields={availableFields}
-                  hideAuthor
-                />
-              </div>
-
-              <div className="flex items-center justify-between gap-2 border-t p-4">
-                <Button
+            {activeChips.map((chip) => (
+              // `normal-case tracking-normal`: el Badge del design system es
+              // versalita para etiquetas de estado; acá el contenido es texto
+              // del usuario ("Operación: Actualización") y en mayúsculas se
+              // vuelve ilegible.
+              <Badge
+                key={chip.key}
+                variant="fill"
+                color="muted"
+                className="gap-1 rounded-full py-0.5 pr-1 pl-2.5 text-xs font-medium tracking-normal normal-case"
+              >
+                {chip.label}
+                <button
                   type="button"
-                  color="muted"
-                  size="sm"
-                  onClick={handleClearAll}
-                  disabled={activeFilterCount === 0}
+                  aria-label={`Quitar filtro ${chip.label}`}
+                  className="flex size-4 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-foreground/10 hover:text-foreground"
+                  onClick={chip.onRemove}
                 >
-                  <EraserIcon data-icon="inline-start" />
-                  Limpiar todo
-                </Button>
-                <Button
-                  type="submit"
-                  form={FILTER_TABLE_OPERATIONS_FORM_ID}
-                  color="primary"
-                  size="sm"
-                >
-                  Aplicar
-                </Button>
-              </div>
-            </PopoverContent>
-          </Popover>
-        </InputGroupAddon>
+                  <XIcon className="size-3" />
+                </button>
+              </Badge>
+            ))}
+          </InputGroupAddon>
+
+          <InputGroupInput
+            id={SEARCH_INPUT_ID}
+            type="search"
+            autoComplete="off"
+            placeholder="Buscar por autor o IP…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            // La X que Chrome inyecta en los `type="search"` duplicaba a la
+            // nuestra —y con otro estilo—, así que se apaga y queda una sola
+            // forma de limpiar.
+            className="min-w-32 [&::-webkit-search-cancel-button]:appearance-none"
+          />
+
+          <InputGroupAddon align="inline-end" className="mr-1 gap-1">
+            {hasAnythingToClear && (
+              <InputGroupButton
+                size="icon-xs"
+                variant="ghost"
+                color="muted"
+                aria-label="Limpiar búsqueda y filtros"
+                onClick={handleClearAll}
+              >
+                <XIcon />
+              </InputGroupButton>
+            )}
+
+            <Popover open={open} onOpenChange={setOpen}>
+              <PopoverTrigger
+                render={
+                  <InputGroupButton
+                    size="icon-xs"
+                    // Con filtros puestos el embudo se rellena (`fill muted`)
+                    // para que se lea como un estado activo, no como una
+                    // acción más de la barra.
+                    variant={activeFilterCount > 0 ? "fill" : "ghost"}
+                    color="muted"
+                    aria-label="Filtros avanzados"
+                    aria-pressed={activeFilterCount > 0}
+                    className="relative"
+                  />
+                }
+              >
+                <FunnelIcon />
+                {advancedFilterCount > 0 && (
+                  <span className="absolute -top-1 -right-1 flex size-3.5 items-center justify-center rounded-full bg-primary text-[0.55rem] font-semibold text-primary-foreground">
+                    {advancedFilterCount}
+                  </span>
+                )}
+              </PopoverTrigger>
+
+              {/*
+                Más ancho que un popover normal para que cada sección reparta
+                sus controles en columnas, pero no tanto como para que el
+                recorrido se vuelva horizontal: las secciones se apilan en el
+                orden en que se usan (operación → fechas → filtros por campo).
+                El ancho se topa contra el viewport para que siga cabiendo en
+                pantallas chicas.
+              */}
+              <PopoverContent align="end" className="w-[min(42rem,calc(100vw-2rem))] gap-3 p-0">
+                <PopoverHeader className="border-b p-4">
+                  <PopoverTitle>Filtros avanzados</PopoverTitle>
+                </PopoverHeader>
+
+                <div className="max-h-[60dvh] overflow-y-auto py-4">
+                  <FilterTableOperationsForm
+                    id={FILTER_TABLE_OPERATIONS_FORM_ID}
+                    defaultValues={filters}
+                    onSubmit={handleApplyAdvanced}
+                    availableFields={availableFields}
+                    hideAuthor
+                  />
+                </div>
+
+                {/*
+                  Ya no hay "Limpiar todo" acá: esa acción es la X de la barra,
+                  que está siempre a la vista y no obliga a abrir el popover.
+                */}
+                <div className="flex justify-end border-t p-4">
+                  <Button
+                    type="submit"
+                    form={FILTER_TABLE_OPERATIONS_FORM_ID}
+                    color="primary"
+                    size="sm"
+                    className="min-w-40 rounded-full"
+                  >
+                    <CheckIcon data-icon="inline-start" />
+                    Aplicar filtros
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </InputGroupAddon>
         </InputGroup>
       </Field>
-
-      {activeChips.length > 0 && (
-        <div className="flex flex-wrap items-center gap-1.5">
-          {activeChips.map((chip) => (
-            <span
-              key={chip.key}
-              className="inline-flex items-center gap-1 rounded-full bg-secondary/60 py-0.5 pr-1 pl-2.5 text-xs font-medium text-secondary-foreground"
-            >
-              {chip.label}
-              <button
-                type="button"
-                aria-label={`Quitar filtro ${chip.label}`}
-                className="flex size-4 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/10 hover:text-foreground"
-                onClick={chip.onRemove}
-              >
-                <XIcon className="size-3" />
-              </button>
-            </span>
-          ))}
-          <button
-            type="button"
-            className="ml-1 text-xs font-medium text-muted-foreground underline underline-offset-4 hover:text-foreground"
-            onClick={handleClearAll}
-          >
-            Limpiar todo
-          </button>
-        </div>
-      )}
     </div>
   )
 }
