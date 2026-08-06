@@ -1,14 +1,8 @@
-import { useEffect, useRef, useState } from "react"
-import { MagnifyingGlassIcon, XIcon } from "@/components/ui/icons"
+import { useMemo, useState } from "react"
 
-import { AdvancedFiltersPopover } from "@/components/search/advanced-filters-popover"
-import { Field, FieldLabel } from "@/components/ui/field"
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupButton,
-  InputGroupInput,
-} from "@/components/ui/input-group"
+import { SearchQueryBar } from "@/components/search/search-query-bar"
+import { optionTerm, textTerm, type QuerySyntax } from "@/components/search/query-syntax"
+import { useQuerySearch } from "@/components/search/use-query-search"
 
 import type {
   AcademicPeriodsFiltersFormInput,
@@ -21,9 +15,6 @@ const FILTER_ACADEMIC_PERIODS_FORM_ID = "filter-academic-periods-form"
 
 // El `htmlFor` de la etiqueta necesita un id estable en el control.
 const SEARCH_INPUT_ID = "academic-periods-search"
-
-// Retardo del buscador para no navegar en cada tecla.
-const SEARCH_DEBOUNCE_MS = 350
 
 interface SearchAcademicPeriodsProps {
   activeFilterCount: number
@@ -39,37 +30,40 @@ export function SearchAcademicPeriods({
   clearAllFilters,
 }: SearchAcademicPeriodsProps) {
   const [open, setOpen] = useState(false)
-  const [search, setSearch] = useState(filters.sedeName)
 
   const { data: statusOptions = [] } = useAcademicPeriodStatusesQuery()
+
+  // Los filtros se escriben dentro del input —`año:(2026) estado:(Abierto)`—
+  // igual que en el resto de los listados.
+  // Ver `@/components/search/query-syntax`.
+  const syntax = useMemo<QuerySyntax<AcademicPeriodsFiltersFormInput>>(
+    () => ({
+      empty: { sedeName: "", schoolYearId: "", status: "", startFrom: "", startTo: "" },
+      freeText: { key: "sede", field: "sedeName" },
+      terms: [
+        textTerm("año", "schoolYearId"),
+        optionTerm(
+          "estado",
+          "status",
+          statusOptions.map((option) => ({ value: option.key, label: option.label })),
+        ),
+        textTerm("desde", "startFrom"),
+        textTerm("hasta", "startTo"),
+      ],
+    }),
+    [statusOptions],
+  )
+
+  const { search, setSearch, freeText } = useQuerySearch({ syntax, filters, applyFilters })
 
   // `filters` viene de la URL. Los filtros avanzados (año, estado, fechas) se
   // cuentan aparte del buscador de sede para el badge del botón.
   const advancedFilterCount = activeFilterCount - (filters.sedeName ? 1 : 0)
 
-  // Refs para leer siempre lo último dentro del debounce sin re-suscribir el
-  // efecto en cada cambio de `filters`/`applyFilters`.
-  const latest = useRef({ filters, applyFilters })
-  latest.current = { filters, applyFilters }
-
-  // Sincroniza cambios externos (p. ej. "Limpiar todo") hacia el input.
-  useEffect(() => {
-    setSearch(filters.sedeName)
-  }, [filters.sedeName])
-
-  // Aplica el buscador (por sede) con retardo, preservando los avanzados.
-  useEffect(() => {
-    if (search === latest.current.filters.sedeName) return
-    const timeout = setTimeout(() => {
-      const { filters, applyFilters } = latest.current
-      applyFilters({ ...filters, sedeName: search })
-    }, SEARCH_DEBOUNCE_MS)
-    return () => clearTimeout(timeout)
-  }, [search])
-
   function handleApplyAdvanced(values: AcademicPeriodsFiltersFormValues) {
-    // El buscador es la fuente de verdad de la sede; conservamos su valor.
-    applyFilters({ ...values, sedeName: search })
+    // El popover no toca la búsqueda libre; el resto de la consulta se
+    // reescribe y el buscador la vuelca al input.
+    applyFilters({ ...values, sedeName: freeText })
     setOpen(false)
   }
 
@@ -79,124 +73,27 @@ export function SearchAcademicPeriods({
     setOpen(false)
   }
 
-  // Quita un único filtro avanzado, preservando el resto y el buscador.
-  function removeFilter(field: keyof AcademicPeriodsFiltersFormValues) {
-    applyFilters({ ...filters, [field]: "" })
-  }
-
-  // La X de la barra limpia todo —texto y filtros—, así que solo aparece
-  // cuando hay algo que limpiar.
-  const hasAnythingToClear = activeFilterCount > 0 || search !== ""
-
-  // Chips de los filtros avanzados activos, para que el usuario vea qué
-  // aplicó sin abrir el popover. La sede vive en el buscador, no acá.
-  const activeChips: {
-    key: keyof AcademicPeriodsFiltersFormValues
-    label: string
-  }[] = []
-  if (filters.schoolYearId) {
-    activeChips.push({
-      key: "schoolYearId",
-      label: `Año: ${filters.schoolYearId}`,
-    })
-  }
-  if (filters.status) {
-    activeChips.push({
-      key: "status",
-      label: `Estado: ${
-        statusOptions.find((o) => o.key === filters.status)?.label ??
-        filters.status
-      }`,
-    })
-  }
-  if (filters.startFrom) {
-    activeChips.push({ key: "startFrom", label: `Desde: ${filters.startFrom}` })
-  }
-  if (filters.startTo) {
-    activeChips.push({ key: "startTo", label: `Hasta: ${filters.startTo}` })
-  }
-
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-2">
-      {/*
-        El `Field` outlined solo aporta la etiqueta flotante: el borde y el
-        foco los sigue pintando el propio `InputGroup`. Sin `aria-label` en el
-        control, para que el nombre accesible lo dé la etiqueta visible.
-      */}
-      <Field orientation="vertical" variant="outlined" className="w-full max-w-xl">
-        <FieldLabel htmlFor={SEARCH_INPUT_ID}>Buscar</FieldLabel>
-        <InputGroup className="h-9 w-full rounded-md border-input has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20">
-      <InputGroupAddon align="inline-start" className="ml-2">
-        <MagnifyingGlassIcon className="size-4 text-muted-foreground" />
-      </InputGroupAddon>
-
-      <InputGroupInput
+      <SearchQueryBar
         id={SEARCH_INPUT_ID}
-        type="search"
-        autoComplete="off"
         placeholder="Buscar por sede…"
         value={search}
-        onChange={(e) => setSearch(e.target.value)}
-      />
-
-      <InputGroupAddon align="inline-end" className="mr-1 gap-1">
-        {hasAnythingToClear && (
-          <InputGroupButton
-            size="icon-xs"
-            variant="ghost"
-            color="muted"
-            aria-label="Limpiar búsqueda y filtros"
-            onClick={handleClearAll}
-          >
-            <XIcon />
-          </InputGroupButton>
-        )}
-
-        <AdvancedFiltersPopover
-          open={open}
-          onOpenChange={setOpen}
-          activeFilterCount={activeFilterCount}
-          badgeCount={advancedFilterCount}
-          formId={FILTER_ACADEMIC_PERIODS_FORM_ID}
-        >
-          <FilterAcademicPeriodsForm
-            id={FILTER_ACADEMIC_PERIODS_FORM_ID}
-            defaultValues={filters}
-            onSubmit={handleApplyAdvanced}
-            hideSede
-          />
-        </AdvancedFiltersPopover>
-      </InputGroupAddon>
-        </InputGroup>
-      </Field>
-
-      {activeChips.length > 0 && (
-        <div className="flex flex-wrap items-center gap-1.5">
-          {activeChips.map((chip) => (
-            <span
-              key={chip.key}
-              className="inline-flex items-center gap-1 rounded-full bg-secondary/60 py-0.5 pr-1 pl-2.5 text-xs font-medium text-secondary-foreground"
-            >
-              {chip.label}
-              <button
-                type="button"
-                aria-label={`Quitar filtro ${chip.label}`}
-                className="flex size-4 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/10 hover:text-foreground"
-                onClick={() => removeFilter(chip.key)}
-              >
-                <XIcon className="size-3" />
-              </button>
-            </span>
-          ))}
-          <button
-            type="button"
-            className="ml-1 text-xs font-medium text-muted-foreground underline underline-offset-4 hover:text-foreground"
-            onClick={handleClearAll}
-          >
-            Limpiar todo
-          </button>
-        </div>
-      )}
+        onValueChange={setSearch}
+        onClearAll={handleClearAll}
+        activeFilterCount={activeFilterCount}
+        badgeCount={advancedFilterCount}
+        open={open}
+        onOpenChange={setOpen}
+        formId={FILTER_ACADEMIC_PERIODS_FORM_ID}
+      >
+        <FilterAcademicPeriodsForm
+          id={FILTER_ACADEMIC_PERIODS_FORM_ID}
+          defaultValues={filters}
+          onSubmit={handleApplyAdvanced}
+          hideSede
+        />
+      </SearchQueryBar>
     </div>
   )
 }
