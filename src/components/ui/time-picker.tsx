@@ -31,6 +31,13 @@ export function TimePickerPanel({ value, onChange, className }: TimePickerPanelP
   const [hourText, setHourText] = React.useState(() => pad(hour))
   const [minuteText, setMinuteText] = React.useState(() => pad(minute))
 
+  // Sin valor el panel igual muestra 12:00 AM, así que un blur a secas no se
+  // puede leer como una elección: si no, abrir el picker y hacer clic en
+  // cualquier otro lado ya dejaba la hora en 12:00am. Solo cuenta como
+  // intención haber escrito en el campo (o tocar el reloj / el AM-PM).
+  const hourEdited = React.useRef(false)
+  const minuteEdited = React.useRef(false)
+
   React.useEffect(() => {
     const h = extractHour(value)
     const m = extractMinute(value)
@@ -39,6 +46,8 @@ export function TimePickerPanel({ value, onChange, className }: TimePickerPanelP
     setPeriod(derivePeriod(value))
     setHourText(pad(h))
     setMinuteText(pad(m))
+    hourEdited.current = false
+    minuteEdited.current = false
   }, [value])
 
   function commit(nextHour: number, nextMinute: number, nextPeriod: Period) {
@@ -52,13 +61,34 @@ export function TimePickerPanel({ value, onChange, className }: TimePickerPanelP
   }
 
   function commitHourText() {
-    const safe = clamp(parseIntOrZero(hourText), 1, 12)
-    commit(safe, minute, period)
+    if (!hourEdited.current) return
+    hourEdited.current = false
+    commit(clamp(parseIntOrZero(hourText), 1, 12), readMinuteText(), period)
   }
 
   function commitMinuteText() {
-    const safe = clamp(parseIntOrZero(minuteText), 0, 59)
-    commit(hour, safe, period)
+    if (!minuteEdited.current) return
+    minuteEdited.current = false
+    commit(readHourText(), clamp(parseIntOrZero(minuteText), 0, 59), period)
+  }
+
+  /**
+   * Cambiar AM/PM se toma con lo que hay escrito, no con lo último
+   * confirmado: al hacer clic en el toggle el input todavía no ha alcanzado a
+   * commitear su blur, y con el estado viejo se perdía la hora recién tecleada.
+   */
+  function commitPeriod(nextPeriod: Period) {
+    hourEdited.current = false
+    minuteEdited.current = false
+    commit(readHourText(), readMinuteText(), nextPeriod)
+  }
+
+  function readHourText() {
+    return clamp(parseIntOrZero(hourText), 1, 12)
+  }
+
+  function readMinuteText() {
+    return clamp(parseIntOrZero(minuteText), 0, 59)
   }
 
   return (
@@ -84,11 +114,17 @@ export function TimePickerPanel({ value, onChange, className }: TimePickerPanelP
             hourText={hourText}
             minuteText={minuteText}
             period={period}
-            onHourTextChange={setHourText}
-            onMinuteTextChange={setMinuteText}
+            onHourTextChange={(v) => {
+              hourEdited.current = true
+              setHourText(v)
+            }}
+            onMinuteTextChange={(v) => {
+              minuteEdited.current = true
+              setMinuteText(v)
+            }}
             onHourCommit={commitHourText}
             onMinuteCommit={commitMinuteText}
-            onPeriodChange={(p) => commit(hour, minute, p)}
+            onPeriodChange={commitPeriod}
           />
         ) : (
           <AnalogClockView

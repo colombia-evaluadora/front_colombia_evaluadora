@@ -312,13 +312,13 @@ export function AddEstablishmentPage() {
           </CardAction>
           <CardTitle>{isEditMode ? "Editar establecimiento educativo" : "Agregar establecimiento educativo"}</CardTitle>
         </CardHeader>
+        <NoticeOutlet className="mx-(--card-spacing) my-4" />
       </Card>
     </div>
 
     {/* El cuerpo es una Card aparte que se acopla por debajo del encabezado. */}
     <Card className="grow rounded-t-none">
       <CardContent>
-        <NoticeOutlet className="mb-4" />
         {validationErrors.length > 0 ? (
           <div className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
             <p className="font-medium">Completa los campos obligatorios:</p>

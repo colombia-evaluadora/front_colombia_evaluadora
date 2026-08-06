@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react"
 
-import { useNotify } from "@/components/notice/notice-context"
+import { NoticeOutlet, useNotify } from "@/components/notice/notice-context"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Field, FieldLabel } from "@/components/ui/field"
@@ -96,6 +96,7 @@ export function RolesMenusPage() {
           <CardHeader className="bg-muted/10 py-4">
             <CardTitle>Configuración de roles y menús</CardTitle>
           </CardHeader>
+          <NoticeOutlet className="mx-(--card-spacing) my-4" />
         </Card>
       </div>
 

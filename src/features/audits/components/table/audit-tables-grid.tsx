@@ -135,12 +135,13 @@ export function AuditTablesDataTable() {
               onSubmit={applyFilters}
             />
           </div>
+
+          <NoticeOutlet className="mt-3" />
         </CardContent>
       </Card>
       </div>
       <Card className="grow overflow-visible rounded-t-none">
         <div className="px-(--card-spacing)">
-          <NoticeOutlet className="mb-3" />
           {totalCount === 0 ? (
             <p className="text-sm text-muted-foreground">
               {filters.name

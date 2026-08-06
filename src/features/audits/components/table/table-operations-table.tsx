@@ -102,6 +102,8 @@ export function TableOperationsDataTable({
                 )}
               </div>
             </div>
+
+            <NoticeOutlet className="mt-3" />
           </CardContent>
         </Card>
       </div>
@@ -116,8 +118,6 @@ export function TableOperationsDataTable({
       */}
       <Card className="grow overflow-visible rounded-t-none">
         <div className="px-(--card-spacing)">
-          <NoticeOutlet className="mb-3" />
-
           <TableOperationsStatsCards
             tableSlug={tableSlug}
             selectedIds={selectedIds}
