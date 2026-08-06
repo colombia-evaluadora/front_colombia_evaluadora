@@ -303,7 +303,7 @@ export function AddEstablishmentPage() {
       que la página tiene contra el header de la app (`top-14`) y, al mismo
       tiempo, tapa el formulario que scrollea por debajo.
     */}
-    <div className="sticky top-14 z-20 bg-sidebar pt-4">
+    <div className="sticky top-14 z-20 bg-sidebar">
       <Card className="gap-0 rounded-b-none py-0">
         <CardHeader className="bg-muted/10 py-4">
           <CardAction>

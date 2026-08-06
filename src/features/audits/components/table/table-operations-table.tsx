@@ -74,7 +74,7 @@ export function TableOperationsDataTable({
         que la página tiene contra el header de la app (`top-14`) y, al mismo
         tiempo, tapa lo que scrollea por debajo.
       */}
-      <div className="sticky top-14 z-20 bg-sidebar pt-4">
+      <div className="sticky top-14 z-20 bg-sidebar">
         <Card className="gap-0 overflow-hidden rounded-b-none pt-0">
           <CardHeader className="bg-muted/10 py-4">
             <CardTitle>{title}</CardTitle>

@@ -49,7 +49,7 @@ export function ProtectedLayout() {
             <NavUser />
           </div>
         </header>
-        <div className="min-w-0 flex-1 px-4 pb-4 bg-sidebar">
+        <div className="min-w-0 flex-1 pr-4 pb-4 bg-sidebar">
           <Outlet />
         </div>
       </SidebarInset>

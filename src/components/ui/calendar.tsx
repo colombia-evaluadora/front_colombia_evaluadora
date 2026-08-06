@@ -478,8 +478,11 @@ function getDayPickerClassNames({
       "relative isolate z-0 rounded-r-(--cell-radius) bg-muted after:absolute after:inset-y-0 after:left-0 after:w-4 after:bg-muted",
       defaultClassNames.range_end,
     ),
+    // Sin `bg-muted`: "hoy" ya se marca con el borde del propio botón, y el
+    // fondo de la celda —que es cuadrada, `--cell-radius:0`, para que los
+    // rangos se lean continuos— asomaba por detrás de ese botón redondeado.
     today: cn(
-      "rounded-(--cell-radius) bg-muted text-foreground data-[selected=true]:rounded-none",
+      "rounded-(--cell-radius) text-foreground data-[selected=true]:rounded-none",
       defaultClassNames.today,
     ),
     outside: cn(
