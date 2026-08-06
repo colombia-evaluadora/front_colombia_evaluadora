@@ -185,40 +185,43 @@ export function FilterTableOperationsForm({
 
       {/* Dos campos independientes (no un único rango) — cada uno usa el
           modo `datetime`, que combina calendario y hora en el mismo popover
-          para no tener que abrir dos controles distintos. Van juntos en una
-          fila porque se leen como un intervalo. */}
-      <div className="grid grid-cols-2 gap-3">
-        <form.Field
-          name="occurredFrom"
-          children={(field) => (
-            <Field orientation="vertical" variant="outlined" className="gap-2">
-              <FieldLabel htmlFor={field.name}>Desde</FieldLabel>
-              <DatePicker
-                mode="datetime"
-                id={field.name}
-                value={parseDateTimeValue(field.state.value)}
-                onChange={(date) => field.handleChange(formatDateTimeValue(date))}
-                className="h-9"
-              />
-            </Field>
-          )}
-        />
-        <form.Field
-          name="occurredTo"
-          children={(field) => (
-            <Field orientation="vertical" variant="outlined" className="gap-2">
-              <FieldLabel htmlFor={field.name}>Hasta</FieldLabel>
-              <DatePicker
-                mode="datetime"
-                id={field.name}
-                value={parseDateTimeValue(field.state.value)}
-                onChange={(date) => field.handleChange(formatDateTimeValue(date))}
-                className="h-9"
-              />
-            </Field>
-          )}
-        />
-      </div>
+          para no tener que abrir dos controles distintos. Van juntos bajo un
+          mismo título porque se leen como un intervalo. */}
+      <FieldSet>
+        <FieldLegend variant="label">Rango de fecha</FieldLegend>
+        <div className="grid grid-cols-2 gap-3">
+          <form.Field
+            name="occurredFrom"
+            children={(field) => (
+              <Field orientation="vertical" variant="outlined" className="gap-2">
+                <FieldLabel htmlFor={field.name}>Desde</FieldLabel>
+                <DatePicker
+                  mode="datetime"
+                  id={field.name}
+                  value={parseDateTimeValue(field.state.value)}
+                  onChange={(date) => field.handleChange(formatDateTimeValue(date))}
+                  className="h-9"
+                />
+              </Field>
+            )}
+          />
+          <form.Field
+            name="occurredTo"
+            children={(field) => (
+              <Field orientation="vertical" variant="outlined" className="gap-2">
+                <FieldLabel htmlFor={field.name}>Hasta</FieldLabel>
+                <DatePicker
+                  mode="datetime"
+                  id={field.name}
+                  value={parseDateTimeValue(field.state.value)}
+                  onChange={(date) => field.handleChange(formatDateTimeValue(date))}
+                  className="h-9"
+                />
+              </Field>
+            )}
+          />
+        </div>
+      </FieldSet>
 
       <form.Field
         name="fieldFilters"
@@ -274,7 +277,7 @@ function FieldFilterSection({ field, availableFields }: FieldFilterSectionProps)
   return (
     // Fila completa: el composer es Campo → Condición → Valor → Agregar, una
     // secuencia que se lee en horizontal y que apilada obligaba a scrollear.
-    <FieldSet className="col-span-full border-t pt-5">
+    <FieldSet>
       <FieldLegend variant="label">Filtros por campo</FieldLegend>
       <FieldGroup className="gap-3">
         {field.state.value.length > 0 && (

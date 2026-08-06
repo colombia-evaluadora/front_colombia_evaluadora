@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/icons"
 
 import { Button } from "@/components/ui/button"
-import { Field, FieldLabel } from "@/components/ui/field"
+import { Field, FieldLabel, FieldLegend, FieldSet } from "@/components/ui/field"
 import {
   InputGroup,
   InputGroupAddon,
@@ -148,74 +148,32 @@ export function SearchAcademicPeriods({
       />
 
       <InputGroupAddon align="inline-end" className="mr-1 gap-1">
-        {search && (
+        {hasAnythingToClear && (
           <InputGroupButton
             size="icon-xs"
-            aria-label="Limpiar búsqueda"
-            className="text-muted-foreground hover:text-primary"
-            onClick={() => setSearch("")}
+            variant="ghost"
+            color="muted"
+            aria-label="Limpiar búsqueda y filtros"
+            onClick={handleClearAll}
           >
             <XIcon />
           </InputGroupButton>
         )}
 
-        <Popover open={open} onOpenChange={setOpen}>
-          <PopoverTrigger
-            render={
-              <InputGroupButton
-                size="icon-xs"
-                variant={activeFilterCount > 0 ? "soft" : "ghost"}
-                color={activeFilterCount > 0 ? "secondary" : undefined}
-                aria-label="Filtros"
-                aria-pressed={activeFilterCount > 0}
-                className="relative text-muted-foreground hover:text-primary aria-pressed:text-secondary-foreground"
-              />
-            }
-          >
-            <FunnelIcon />
-            {advancedFilterCount > 0 && (
-              <span className="absolute -top-1 -right-1 flex size-3.5 items-center justify-center rounded-full bg-primary text-[0.55rem] font-semibold text-primary-foreground">
-                {advancedFilterCount}
-              </span>
-            )}
-          </PopoverTrigger>
-
-          <PopoverContent align="end" className="w-80 gap-3 p-0">
-            <PopoverHeader className="border-b p-4">
-              <PopoverTitle>Filtros</PopoverTitle>
-            </PopoverHeader>
-
-            <div className="max-h-[60dvh] overflow-y-auto py-4">
-              <FilterAcademicPeriodsForm
-                id={FILTER_ACADEMIC_PERIODS_FORM_ID}
-                defaultValues={filters}
-                onSubmit={handleApplyAdvanced}
-                hideSede
-              />
-            </div>
-
-            <div className="flex items-center justify-between gap-2 border-t p-4">
-              <Button
-                type="button"
-                color="muted"
-                size="sm"
-                onClick={handleClearAll}
-                disabled={activeFilterCount === 0}
-              >
-                <EraserIcon data-icon="inline-start" />
-                Limpiar todo
-              </Button>
-              <Button
-                type="submit"
-                form={FILTER_ACADEMIC_PERIODS_FORM_ID}
-                color="primary"
-                size="sm"
-              >
-                Aplicar
-              </Button>
-            </div>
-          </PopoverContent>
-        </Popover>
+        <AdvancedFiltersPopover
+          open={open}
+          onOpenChange={setOpen}
+          activeFilterCount={activeFilterCount}
+          badgeCount={advancedFilterCount}
+          formId={FILTER_ACADEMIC_PERIODS_FORM_ID}
+        >
+          <FilterAcademicPeriodsForm
+            id={FILTER_ACADEMIC_PERIODS_FORM_ID}
+            defaultValues={filters}
+            onSubmit={handleApplyAdvanced}
+            hideSede
+          />
+        </AdvancedFiltersPopover>
       </InputGroupAddon>
         </InputGroup>
       </Field>
