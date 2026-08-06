@@ -71,7 +71,7 @@ export function FilterAuditSessionForm({
                   name={field.name}
                   type="text"
                   autoComplete="off"
-                  placeholder="ej. Juan Pérez o 190.2.45.12"
+                  placeholder="Ingresar autor o IP"
                   value={field.state.value}
                   onBlur={field.handleBlur}
                   onChange={(event) => field.handleChange(event.target.value)}

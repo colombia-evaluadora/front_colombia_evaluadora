@@ -166,13 +166,13 @@ function BreakEditor({ onAdd }: { onAdd: (brk: Break) => void }) {
         <BreakTimeTrigger
           value={startTime}
           onChange={setStartTime}
-          placeholder="Hora inicio"
+          placeholder="Ingresar hora inicio"
         />
         <span className="text-muted-foreground shrink-0 text-xs">→</span>
         <BreakTimeTrigger
           value={endTime}
           onChange={setEndTime}
-          placeholder="Hora Final"
+          placeholder="Ingresar hora final"
         />
       </div>
       <Button

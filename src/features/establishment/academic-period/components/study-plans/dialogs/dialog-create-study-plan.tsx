@@ -260,7 +260,7 @@ export function CreateStudyPlanDialog({
                     id={field.name}
                     type="number"
                     min={0}
-                    placeholder="Seleccionar"
+                    placeholder="Ingresar intensidad horaria"
                     value={Number.isNaN(field.state.value) ? "" : field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.valueAsNumber)}
@@ -279,7 +279,7 @@ export function CreateStudyPlanDialog({
                       type="number"
                       min={0}
                       max={100}
-                      placeholder="Seleccionar"
+                      placeholder="Ingresar influencia"
                       className="px-0"
                       value={Number.isNaN(field.state.value) ? "" : field.state.value}
                       onBlur={field.handleBlur}
@@ -301,7 +301,7 @@ export function CreateStudyPlanDialog({
                     id={field.name}
                     type="number"
                     min={0}
-                    placeholder="Seleccionar"
+                    placeholder="Ingresar número de créditos"
                     value={Number.isNaN(field.state.value) ? "" : field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.valueAsNumber)}

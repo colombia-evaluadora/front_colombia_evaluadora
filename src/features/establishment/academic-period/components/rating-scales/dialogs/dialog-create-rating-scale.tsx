@@ -562,6 +562,7 @@ export function CreateRatingScaleDialog({
                           <TableCell>
                             <Input
                               aria-label="Nombre"
+                              placeholder="Ingresar nombre"
                               value={editRow.nombre}
                               onChange={(e) =>
                                 patchEditRow({ nombre: e.target.value })
@@ -572,6 +573,7 @@ export function CreateRatingScaleDialog({
                           <TableCell>
                             <Input
                               aria-label="Abreviación"
+                              placeholder="Ingresar abreviación"
                               value={editRow.abreviacion}
                               onChange={(e) =>
                                 patchEditRow({ abreviacion: e.target.value })
@@ -582,6 +584,7 @@ export function CreateRatingScaleDialog({
                           <TableCell>
                             <Input
                               aria-label="Nota máximo"
+                              placeholder="Ingresar nota máxima"
                               type="number"
                               step="0.1"
                               min={range.min}
@@ -602,6 +605,7 @@ export function CreateRatingScaleDialog({
                           <TableCell>
                             <Input
                               aria-label="Nota mínimo"
+                              placeholder="Ingresar nota mínima"
                               type="number"
                               step="0.1"
                               min={range.min}
@@ -622,6 +626,7 @@ export function CreateRatingScaleDialog({
                           <TableCell>
                             <Input
                               aria-label="Nota equivalente"
+                              placeholder="Ingresar nota equivalente"
                               type="number"
                               step="0.1"
                               min={range.min}

@@ -136,7 +136,7 @@ export function FilterSessionOperationsForm({
                   name={field.name}
                   type="text"
                   autoComplete="off"
-                  placeholder="ej. tnivel_ensenanza"
+                  placeholder="Ingresar nombre de tabla"
                   value={field.state.value}
                   onBlur={field.handleBlur}
                   onChange={(event) => field.handleChange(event.target.value)}
