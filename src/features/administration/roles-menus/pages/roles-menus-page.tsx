@@ -89,7 +89,7 @@ export function RolesMenusPage() {
         que la página tiene contra el header de la app (`top-14`) y, al mismo
         tiempo, tapa lo que scrollea por debajo.
       */}
-      <div className="sticky top-14 z-20 bg-sidebar pt-4">
+      <div className="sticky top-14 z-20 bg-sidebar">
         {/* Sin `CardContent`: el `py-0` deja que el bloque del título sea todo
             el alto de la card. */}
         <Card className="gap-0 overflow-hidden rounded-b-none py-0">

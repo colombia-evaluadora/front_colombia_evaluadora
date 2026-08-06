@@ -31,7 +31,7 @@ export function AppSidebar() {
             <img
               src={logo}
               alt="Colombia Evaluadora"
-              className="h-10 w-auto shrink-0 group-data-[collapsible=icon]:hidden"
+              className="h-13 w-auto shrink-0 group-data-[collapsible=icon]:hidden"
             />
           </Link>
           <SidebarTrigger className="ml-auto group-data-[collapsible=icon]:hidden" />

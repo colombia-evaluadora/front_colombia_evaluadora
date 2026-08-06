@@ -34,7 +34,7 @@ export function AuditTablesDataTable() {
   if (isPending) {
     return (
       <>
-      <div className="sticky top-14 z-20 bg-sidebar pt-4">
+      <div className="sticky top-14 z-20 bg-sidebar">
         <Card className="gap-0 overflow-hidden rounded-b-none pt-0">
           <CardHeader className="bg-muted/10 py-4">
             <CardTitle>Tablas de auditoría</CardTitle>
@@ -102,7 +102,7 @@ export function AuditTablesDataTable() {
 
   return (
     <>
-      <div className="sticky top-14 z-20 gap-0 pt-4 bg-sidebar">
+      <div className="sticky top-14 z-20 gap-0 bg-sidebar">
       <Card className="gap-0 overflow-hidden rounded-b-none pt-0">
         <CardHeader className="bg-muted/10 py-4 ">
           <CardTitle>
