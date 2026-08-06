@@ -1,4 +1,4 @@
-import { ArrowLeftIcon, CheckIcon } from "@/components/ui/icons"
+import { CheckIcon, XIcon } from "@/components/ui/icons"
 import { Link, useParams } from "@tanstack/react-router"
 
 import { Avatar, AvatarBadge, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -69,13 +69,14 @@ export function SessionOperationsPage() {
       title={title}
       action={
         <Button
-          variant="ghost"
+          variant="fill"
+          color="neutral"
           size="sm"
           render={<Link to={paths.app.auditoriaSesiones.getHref()} />}
           nativeButton={false}
         >
-          <ArrowLeftIcon weight="bold" className="size-4" />
-          Volver
+          <XIcon data-icon="inline-start" />
+          Cerrar
         </Button>
       }
     />
