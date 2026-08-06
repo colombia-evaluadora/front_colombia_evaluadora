@@ -583,7 +583,6 @@ function ScalesSubTable({
                 <Input
                   aria-label="Nombre"
                   placeholder="Ingresar nombre"
-                  placeholder="Ingresar nombre"
                   value={addDraft.nombre}
                   onChange={(e) => patchAddDraft({ nombre: e.target.value })}
                   className="min-w-32"
@@ -592,7 +591,6 @@ function ScalesSubTable({
               <TableCell>
                 <Input
                   aria-label="Abreviación"
-                  placeholder="Ingresar abreviación"
                   placeholder="Ingresar abreviación"
                   value={addDraft.abreviacion}
                   onChange={(e) => patchAddDraft({ abreviacion: e.target.value })}
