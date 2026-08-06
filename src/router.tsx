@@ -331,12 +331,22 @@ const auditsLayoutRoute = createRoute({
   ),
 })
 
+// `/registro-de-actividad` a secas no tiene página propia: la vista por sesión
+// es la entrada del grupo.
+const registroActividadIndexRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.registroActividad.path,
+  beforeLoad: () => {
+    throw redirect({ to: paths.app.auditoriaSesiones.getHref() })
+  },
+})
+
 export const auditoriaSesionesRoute = createRoute({
   getParentRoute: () => auditsLayoutRoute,
   path: paths.app.auditoriaSesiones.path,
   validateSearch: auditsSearchSchema,
   staticData: {
-    breadcrumb: [ADMINISTRACION_CRUMB, { label: "Registro de actividad" }],
+    breadcrumb: [ADMINISTRACION_CRUMB, REGISTRO_ACTIVIDAD_CRUMB, { label: "Sesiones" }],
   },
   component: AuditSessionPage,
 })
@@ -453,6 +463,7 @@ export const auditoriaSesionOperacionesRoute = createRoute({
     breadcrumb: [
       ADMINISTRACION_CRUMB,
       REGISTRO_ACTIVIDAD_CRUMB,
+      { label: "Sesiones", to: paths.app.auditoriaSesiones.getHref() },
       { label: "Operaciones" },
     ],
   },
@@ -523,6 +534,7 @@ const routeTree = rootRoute.addChildren([
     coberturaPreMatriculaRoute,
     coberturaInscritosRoute,
     coberturaMatriculaRoute,
+    registroActividadIndexRoute,
     auditsLayoutRoute.addChildren([
       auditoriaSesionesRoute,
       auditoriaTablasRoute,

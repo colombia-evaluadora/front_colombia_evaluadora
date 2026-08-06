@@ -46,8 +46,8 @@ function lineClamp(maxLines: NavMaxLines = 1) {
 /**
  * ¿La ruta actual pertenece a este item del menú? No alcanza con la igualdad:
  * las subpáginas (detalle, agregar, editar) tienen que seguir marcando activo
- * al item del que salieron. El `/` del final evita que `/app/auditoria` matchee
- * a `/app/auditoria-tablas`.
+ * al item del que salieron. El `/` del final evita que `/app/cobertura` matchee
+ * a `/app/cobertura-x`.
  */
 function isUnder(pathname: string, url: string) {
   return pathname === url || pathname.startsWith(`${url}/`)
@@ -62,6 +62,10 @@ function isUnder(pathname: string, url: string) {
 const NAV_PATH_ALIASES: Array<[from: string, to: string]> = [
   ["/app/establecimiento-educativo/agregar", "/app/establecimiento-educativo/general"],
   ["/app/establecimiento-educativo/editar", "/app/establecimiento-educativo/general"],
+  // El registro de actividad tiene dos vistas hermanas (`/sesiones` y
+  // `/tablas`) pero un solo item de menú, que apunta a la de sesiones: todo
+  // lo que cuelgue del prefijo lo marca activo, esté en la vista que esté.
+  ["/app/registro-de-actividad", "/app/registro-de-actividad/sesiones"],
 ]
 
 function resolveNavPathname(pathname: string) {

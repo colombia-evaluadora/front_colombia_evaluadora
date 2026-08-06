@@ -17,7 +17,7 @@ import { useReservationsQuery } from "../../api/query/use-reservations-query"
 import { useReservationFilters } from "../../hooks/use-reservation-filters"
 
 import { columns } from "./columns-reservations"
-import { FilterReservationsSheet } from "../sheets/sheet-filter-reservations"
+import { SearchReservations } from "../search/search-reservations"
 import { CreateReservationSheet } from "../sheets/sheet-create-reservation"
 import { ExportReservationsDialog } from "../dialogs/dialog-export-reservations"
 import { ExportSelectedReservationsDialog } from "../dialogs/dialog-export-selected-reservations"
@@ -66,14 +66,13 @@ export function ReservationsDataTable({ title }: ReservationsDataTableProps) {
           </CardHeader>
           <CardContent className="pt-7">
             <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-2">
-              <div className="flex gap-2">
-                <FilterReservationsSheet
-                  activeFilterCount={activeFilterCount}
-                  filters={filters}
-                  applyFilters={applyFilters}
-                  clearAllFilters={clearAllFilters}
-                />
-              </div>
+              <SearchReservations
+                activeFilterCount={activeFilterCount}
+                filters={filters}
+                applyFilters={applyFilters}
+                clearAllFilters={clearAllFilters}
+              />
+
               <div className="flex gap-2">
                 {hasSelection ? (
                   <>

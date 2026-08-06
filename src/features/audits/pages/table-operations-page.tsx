@@ -1,4 +1,4 @@
-import { ArrowLeftIcon } from "@/components/ui/icons"
+import { XIcon } from "@/components/ui/icons"
 import { Link } from "@tanstack/react-router"
 
 import { Button } from "@/components/ui/button"
@@ -15,13 +15,14 @@ export function TableOperationsPage() {
       title="Detalle"
       action={
         <Button
-          variant="ghost"
+          variant="fill"
+          color="neutral"
           size="sm"
           render={<Link to={paths.app.auditoriaTablas.getHref()} />}
           nativeButton={false}
         >
-          <ArrowLeftIcon weight="bold" className="size-4" />
-          Volver
+          <XIcon data-icon="inline-start" />
+          Cerrar
         </Button>
       }
     />
