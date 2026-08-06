@@ -37,6 +37,12 @@ interface AdvancedFiltersPopoverProps {
    */
   formId?: string
   onApply?: () => void
+  /**
+   * Ancho del panel según cuánto tenga que mostrar. `sm` para uno o dos
+   * controles —un panel ancho con un solo select es casi todo espacio en
+   * blanco—; `lg` cuando hay secciones que repartir en columnas.
+   */
+  size?: "sm" | "lg"
   children: ReactNode
   className?: string
 }
@@ -48,6 +54,7 @@ export function AdvancedFiltersPopover({
   badgeCount,
   formId,
   onApply,
+  size = "lg",
   children,
   className,
 }: AdvancedFiltersPopoverProps) {
@@ -76,14 +83,18 @@ export function AdvancedFiltersPopover({
       </PopoverTrigger>
 
       {/*
-        Más ancho que un popover normal para que cada sección reparta sus
-        controles en columnas, pero no tanto como para que el recorrido se
-        vuelva horizontal. El ancho se topa contra el viewport para que siga
+        En `lg`, más ancho que un popover normal para que cada sección reparta
+        sus controles en columnas, pero no tanto como para que el recorrido se
+        vuelva horizontal. Siempre topado contra el viewport para que siga
         cabiendo en pantallas chicas.
       */}
       <PopoverContent
         align="end"
-        className={cn("w-[min(42rem,calc(100vw-2rem))] gap-0 p-0", className)}
+        className={cn(
+          "gap-0 p-0",
+          size === "lg" ? "w-[min(42rem,calc(100vw-2rem))]" : "w-[min(22rem,calc(100vw-2rem))]",
+          className,
+        )}
       >
         {/*
           Sin `border-b`: el panel se lee como un bloque continuo y la jerarquía
