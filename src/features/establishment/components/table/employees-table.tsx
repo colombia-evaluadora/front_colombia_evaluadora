@@ -152,6 +152,8 @@ export function EmployeesDataTable({
                 )}
               </div>
             </div>
+
+            <NoticeOutlet className="mt-3" />
           </CardContent>
         </Card>
       </div>
@@ -165,8 +167,6 @@ export function EmployeesDataTable({
       */}
       <Card className="grow overflow-visible rounded-t-none">
         <div className="px-(--card-spacing)">
-          <NoticeOutlet className="mb-3" />
-
           <DataTable
             table={table}
             isPending={isPending}

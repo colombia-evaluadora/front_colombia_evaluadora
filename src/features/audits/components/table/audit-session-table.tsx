@@ -94,13 +94,13 @@ export function AuditSessionDataTable() {
               <ExportAuditSessionDialog filters={queryFilters} />
             )}
           </div>
-        </div></CardContent>
+        </div>
+
+        <NoticeOutlet className="mt-3" /></CardContent>
             </Card>
             </div>
       <Card className="grow overflow-visible rounded-t-none">
         <div className="px-(--card-spacing)">
-          <NoticeOutlet className="mb-3" />
-
           <AuditSessionStatsCards
             selectedIds={selectedIds}
             hasSelection={hasSelection}

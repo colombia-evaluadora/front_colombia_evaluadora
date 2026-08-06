@@ -106,7 +106,10 @@ export function BreaksField({
         )}
         <CaretDownIcon className="text-muted-foreground size-4 shrink-0" />
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-auto min-w-72">
+      {/* `min-w-96` y no `w-auto` a secas: el editor lleva dos horas y el botón
+          en una sola fila, y con el ancho por contenido la fila se quedaba
+          corta y las etiquetas se salían de la caja. */}
+      <PopoverContent align="start" className="w-auto min-w-96">
         <div className="flex flex-col gap-2">
           <BreakEditor onAdd={onAdd} />
 
@@ -152,13 +155,9 @@ function BreakEditor({ onAdd }: { onAdd: (brk: Break) => void }) {
   return (
     <div className="flex w-full items-center gap-2">
       <div className="border-input flex flex-1 items-center gap-3 rounded-lg border px-3 py-2.5">
-        <BreakTimeTrigger
-          value={startTime}
-          onChange={setStartTime}
-          placeholder="Ingresar hora inicio"
-        />
+        <BreakTimeTrigger value={startTime} onChange={setStartTime} placeholder="Hora inicio" />
         <span className="text-muted-foreground shrink-0 text-xs">→</span>
-        <BreakTimeTrigger value={endTime} onChange={setEndTime} placeholder="Ingresar hora final" />
+        <BreakTimeTrigger value={endTime} onChange={setEndTime} placeholder="Hora final" />
       </div>
       <Button
         type="button"
@@ -195,7 +194,10 @@ function BreakTimeTrigger({
           <button
             type="button"
             className={cn(
-              "min-w-0 flex-1 whitespace-nowrap text-left text-sm outline-none",
+              // `truncate` y no `whitespace-nowrap`: si la fila se queda
+              // corta el texto se recorta dentro de la caja en vez de
+              // desbordarse por debajo del botón de agregar.
+              "min-w-0 flex-1 truncate text-left text-sm outline-none",
               value ? "text-foreground font-medium" : "text-muted-foreground",
             )}
           />
