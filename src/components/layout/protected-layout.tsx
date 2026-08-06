@@ -18,7 +18,12 @@ export function ProtectedLayout() {
       <AppSidebar />
       <SidebarInset>
         <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center gap-2 bg-sidebar px-4">
-          <div className="flex items-center gap-2">
+          {/*
+            En escritorio el trigger vive junto al logo, dentro del sidebar. En
+            móvil no puede: ahí el sidebar es un `Sheet` cerrado, así que el
+            botón que lo abre tiene que quedar fuera de él.
+          */}
+          <div className="flex items-center gap-2 md:hidden">
             <SidebarTrigger />
             <Separator orientation="vertical" className="my-auto h-4" />
           </div>
