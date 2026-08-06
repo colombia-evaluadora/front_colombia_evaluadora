@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react"
 
-import { EraserIcon, FunnelIcon, MagnifyingGlassIcon, XIcon } from "@/components/ui/icons"
-import { Button } from "@/components/ui/button"
-import { Field, FieldLabel } from "@/components/ui/field"
+import { MagnifyingGlassIcon, XIcon } from "@/components/ui/icons"
+import { AdvancedFiltersPopover } from "@/components/search/advanced-filters-popover"
+import { Field, FieldLabel, FieldLegend, FieldSet } from "@/components/ui/field"
 import {
   InputGroup,
   InputGroupAddon,
@@ -10,20 +10,12 @@ import {
   InputGroupInput,
 } from "@/components/ui/input-group"
 import {
-  Popover,
-  PopoverContent,
-  PopoverHeader,
-  PopoverTitle,
-  PopoverTrigger,
-} from "@/components/ui/popover"
-import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Separator } from "@/components/ui/separator"
 
 import type { EmployeeFiltersFormInput } from "../../api/employee-schema"
 import type { CatalogItem } from "../../api/types/catalog"
@@ -128,6 +120,10 @@ export function SearchEmployees({
     ...statuses.map((status) => ({ value: status.id, label: status.name })),
   ]
 
+  // La X de la barra limpia todo —texto y filtros—, así que solo aparece
+  // cuando hay algo que limpiar.
+  const hasAnythingToClear = activeFilterCount > 0 || search !== ""
+
   // Chips de los filtros avanzados activos, para que el usuario vea qué
   // aplicó sin abrir el popover.
   const activeChips: { key: "roles" | "workSchedules" | "statuses"; label: string }[] = []
@@ -179,44 +175,30 @@ export function SearchEmployees({
         />
 
         <InputGroupAddon align="inline-end" className="mr-1 gap-1">
-          {search && (
+          {hasAnythingToClear && (
             <InputGroupButton
               size="icon-xs"
-              aria-label="Limpiar búsqueda"
-              className="text-muted-foreground hover:text-primary"
-              onClick={() => setSearch("")}
+              variant="ghost"
+              color="muted"
+              aria-label="Limpiar búsqueda y filtros"
+              onClick={handleClearAll}
             >
               <XIcon />
             </InputGroupButton>
           )}
 
-          <Popover open={open} onOpenChange={setOpen}>
-            <PopoverTrigger
-              render={
-                <InputGroupButton
-                  size="icon-xs"
-                  variant={activeFilterCount > 0 ? "soft" : "ghost"}
-                  color={activeFilterCount > 0 ? "secondary" : undefined}
-                  aria-label="Filtros"
-                  aria-pressed={activeFilterCount > 0}
-                  className="relative text-muted-foreground hover:text-primary aria-pressed:text-secondary-foreground"
-                />
-              }
-            >
-              <FunnelIcon />
-              {advancedFilterCount > 0 && (
-                <span className="absolute -top-1 -right-1 flex size-3.5 items-center justify-center rounded-full bg-primary text-[0.55rem] font-semibold text-primary-foreground">
-                  {advancedFilterCount}
-                </span>
-              )}
-            </PopoverTrigger>
-
-            <PopoverContent align="end" className="w-80 gap-3 p-0">
-              <PopoverHeader className="border-b p-4">
-                <PopoverTitle>Filtros</PopoverTitle>
-              </PopoverHeader>
-
-              <div className="flex max-h-[60dvh] flex-col gap-4 overflow-y-auto px-4 py-4">
+          <AdvancedFiltersPopover
+            open={open}
+            onOpenChange={setOpen}
+            activeFilterCount={activeFilterCount}
+            badgeCount={advancedFilterCount}
+            onApply={handleApplyAdvanced}
+          >
+            {/* Los tres son atributos del funcionario: van en una rejilla bajo
+                un mismo título, no separados por líneas. */}
+            <FieldSet className="px-4">
+              <FieldLegend variant="label">Clasificación</FieldLegend>
+              <div className="grid grid-cols-3 gap-3">
                 <Field orientation="vertical" variant="outlined" className="gap-2">
                   <FieldLabel htmlFor="employee-role">Rol</FieldLabel>
                   <Select
@@ -224,7 +206,7 @@ export function SearchEmployees({
                     value={draftRole}
                     onValueChange={(value) => setDraftRole(value ?? "")}
                   >
-                    <SelectTrigger id="employee-role" size="sm">
+                    <SelectTrigger id="employee-role" size="sm" className="w-full">
                       <SelectValue placeholder="Todos" />
                     </SelectTrigger>
                     <SelectContent>
@@ -237,8 +219,6 @@ export function SearchEmployees({
                   </Select>
                 </Field>
 
-                <Separator />
-
                 <Field orientation="vertical" variant="outlined" className="gap-2">
                   <FieldLabel htmlFor="employee-schedule">Jornada</FieldLabel>
                   <Select
@@ -246,7 +226,7 @@ export function SearchEmployees({
                     value={draftSchedule}
                     onValueChange={(value) => setDraftSchedule(value ?? "")}
                   >
-                    <SelectTrigger id="employee-schedule" size="sm">
+                    <SelectTrigger id="employee-schedule" size="sm" className="w-full">
                       <SelectValue placeholder="Todas" />
                     </SelectTrigger>
                     <SelectContent>
@@ -259,8 +239,6 @@ export function SearchEmployees({
                   </Select>
                 </Field>
 
-                <Separator />
-
                 <Field orientation="vertical" variant="outlined" className="gap-2">
                   <FieldLabel htmlFor="employee-status">Estado</FieldLabel>
                   <Select
@@ -268,7 +246,7 @@ export function SearchEmployees({
                     value={draftStatus}
                     onValueChange={(value) => setDraftStatus(value ?? "")}
                   >
-                    <SelectTrigger id="employee-status" size="sm">
+                    <SelectTrigger id="employee-status" size="sm" className="w-full">
                       <SelectValue placeholder="Todos" />
                     </SelectTrigger>
                     <SelectContent>
@@ -281,23 +259,8 @@ export function SearchEmployees({
                   </Select>
                 </Field>
               </div>
-
-              <div className="flex items-center justify-between gap-2 border-t p-4">
-                <Button
-                  type="button"
-                  color="muted"
-                  size="sm"
-                  onClick={handleClearAll}
-                >
-                  <EraserIcon data-icon="inline-start" />
-                  Limpiar todo
-                </Button>
-                <Button type="button" color="primary" size="sm" onClick={handleApplyAdvanced}>
-                  Aplicar
-                </Button>
-              </div>
-            </PopoverContent>
-          </Popover>
+            </FieldSet>
+          </AdvancedFiltersPopover>
         </InputGroupAddon>
         </InputGroup>
       </Field>

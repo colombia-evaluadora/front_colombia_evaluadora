@@ -1,21 +1,14 @@
 import { useEffect, useRef, useState } from "react"
 
-import { EraserIcon, FunnelIcon, MagnifyingGlassIcon, XIcon } from "@/components/ui/icons"
-import { Button } from "@/components/ui/button"
-import { Field, FieldLabel } from "@/components/ui/field"
+import { MagnifyingGlassIcon, XIcon } from "@/components/ui/icons"
+import { AdvancedFiltersPopover } from "@/components/search/advanced-filters-popover"
+import { Field, FieldLabel, FieldLegend, FieldSet } from "@/components/ui/field"
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupButton,
   InputGroupInput,
 } from "@/components/ui/input-group"
-import {
-  Popover,
-  PopoverContent,
-  PopoverHeader,
-  PopoverTitle,
-  PopoverTrigger,
-} from "@/components/ui/popover"
 import {
   Select,
   SelectContent,
@@ -104,6 +97,10 @@ export function SearchCampuses({
     ...zones.map((zone) => ({ value: zone.code, label: zone.name })),
   ]
 
+  // La X de la barra limpia todo —texto y filtros—, así que solo aparece
+  // cuando hay algo que limpiar.
+  const hasAnythingToClear = activeFilterCount > 0 || search !== ""
+
   const activeChips: { key: "zones"; label: string }[] = []
   if (filters.zones[0]) {
     activeChips.push({
@@ -136,44 +133,28 @@ export function SearchCampuses({
         />
 
         <InputGroupAddon align="inline-end" className="mr-1 gap-1">
-          {search && (
+          {hasAnythingToClear && (
             <InputGroupButton
               size="icon-xs"
-              aria-label="Limpiar búsqueda"
-              className="text-muted-foreground hover:text-primary"
-              onClick={() => setSearch("")}
+              variant="ghost"
+              color="muted"
+              aria-label="Limpiar búsqueda y filtros"
+              onClick={handleClearAll}
             >
               <XIcon />
             </InputGroupButton>
           )}
 
-          <Popover open={open} onOpenChange={setOpen}>
-            <PopoverTrigger
-              render={
-                <InputGroupButton
-                  size="icon-xs"
-                  variant={activeFilterCount > 0 ? "soft" : "ghost"}
-                  color={activeFilterCount > 0 ? "secondary" : undefined}
-                  aria-label="Filtros"
-                  aria-pressed={activeFilterCount > 0}
-                  className="relative text-muted-foreground hover:text-primary aria-pressed:text-secondary-foreground"
-                />
-              }
-            >
-              <FunnelIcon />
-              {advancedFilterCount > 0 && (
-                <span className="absolute -top-1 -right-1 flex size-3.5 items-center justify-center rounded-full bg-primary text-[0.55rem] font-semibold text-primary-foreground">
-                  {advancedFilterCount}
-                </span>
-              )}
-            </PopoverTrigger>
-
-            <PopoverContent align="end" className="w-80 gap-3 p-0">
-              <PopoverHeader className="border-b p-4">
-                <PopoverTitle>Filtros</PopoverTitle>
-              </PopoverHeader>
-
-              <div className="flex max-h-[60dvh] flex-col gap-4 overflow-y-auto px-4 py-4">
+          <AdvancedFiltersPopover
+            open={open}
+            onOpenChange={setOpen}
+            activeFilterCount={activeFilterCount}
+            badgeCount={advancedFilterCount}
+            onApply={handleApplyAdvanced}
+          >
+            <FieldSet className="px-4">
+              <FieldLegend variant="label">Ubicación</FieldLegend>
+              <div className="grid grid-cols-2 gap-3">
                 <Field orientation="vertical" variant="outlined" className="gap-2">
                   <FieldLabel htmlFor="campus-zone">Zona</FieldLabel>
                   <Select
@@ -181,7 +162,7 @@ export function SearchCampuses({
                     value={draftZone}
                     onValueChange={(value) => setDraftZone(value ?? "")}
                   >
-                    <SelectTrigger id="campus-zone" size="sm">
+                    <SelectTrigger id="campus-zone" size="sm" className="w-full">
                       <SelectValue placeholder="Todas" />
                     </SelectTrigger>
                     <SelectContent>
@@ -194,23 +175,8 @@ export function SearchCampuses({
                   </Select>
                 </Field>
               </div>
-
-              <div className="flex items-center justify-between gap-2 border-t p-4">
-                <Button
-                  type="button"
-                  color="muted"
-                  size="sm"
-                  onClick={handleClearAll}
-                >
-                  <EraserIcon data-icon="inline-start" />
-                  Limpiar todo
-                </Button>
-                <Button type="button" color="primary" size="sm" onClick={handleApplyAdvanced}>
-                  Aplicar
-                </Button>
-              </div>
-            </PopoverContent>
-          </Popover>
+            </FieldSet>
+          </AdvancedFiltersPopover>
         </InputGroupAddon>
         </InputGroup>
       </Field>

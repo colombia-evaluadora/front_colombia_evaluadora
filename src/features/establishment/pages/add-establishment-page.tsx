@@ -290,14 +290,13 @@ export function AddEstablishmentPage() {
 
   return (
     /*
-      La página ocupa al menos el alto libre bajo el header de la app (`h-14`);
-      el `pb-4` del contenedor no se descuenta porque la barra de acciones lo
-      cancela con su `-mb-4`. Así, con poco contenido, la barra cae al fondo de
-      la pantalla en vez de quedar pegada al formulario: `sticky` solo sube un
-      elemento para mantenerlo a la vista, nunca lo empuja hacia abajo.
+      Igual que las páginas de tabla: los hijos van directos al contenedor
+      `flex flex-col flex-1` del layout protegido, para que la Card del cuerpo
+      se estire con `grow` hasta el borde inferior. Envolverlos en divs
+      intermedios rompía esa cadena de flex y dejaba la Card con el alto del
+      contenido, con una franja de `bg-sidebar` debajo.
     */
-    <div className="flex min-h-[calc(100svh-3.5rem)] flex-col">
-    <div className="flex-1">
+    <>
     {/*
       Encabezado pegajoso: el `pt-4` opaco del contenedor reproduce el aire
       que la página tiene contra el header de la app (`top-14`) y, al mismo
@@ -393,9 +392,11 @@ export function AddEstablishmentPage() {
         </form>
       </CardContent>
     </Card>
-    </div>
 
-    {/* Barra de acciones fija: acompaña el scroll del formulario. */}
+    {/*
+      Barra de acciones fija: acompaña el scroll del formulario. El `-mb-4`
+      cancela el `pb-4` del layout para que quede pegada al borde inferior.
+    */}
     <div className="sticky bottom-0 z-30 -mx-4 -mb-4 mt-4 flex items-center justify-between gap-4 border-t border-border bg-background/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80">
       <p className="text-sm text-muted-foreground">Complete la información antes de guardar.</p>
       <Button type="submit" form="create-establishment-form" variant="fill" color="primary" size="sm" disabled={isPending}>
@@ -403,6 +404,6 @@ export function AddEstablishmentPage() {
         {isPending ? "Guardando..." : isEditMode ? "Guardar cambios" : "Guardar"}
       </Button>
     </div>
-    </div>
+    </>
   )
 }

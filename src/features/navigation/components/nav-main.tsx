@@ -43,9 +43,35 @@ function lineClamp(maxLines: NavMaxLines = 1) {
   return LINE_CLAMP[maxLines]
 }
 
+/**
+ * ¿La ruta actual pertenece a este item del menú? No alcanza con la igualdad:
+ * las subpáginas (detalle, agregar, editar) tienen que seguir marcando activo
+ * al item del que salieron. El `/` del final evita que `/app/auditoria` matchee
+ * a `/app/auditoria-tablas`.
+ */
+function isUnder(pathname: string, url: string) {
+  return pathname === url || pathname.startsWith(`${url}/`)
+}
+
+/**
+ * Rutas que no cuelgan de la URL del item al que pertenecen: agregar y editar
+ * establecimiento viven **al lado** de la lista (`/agregar`, `/editar/$id` vs
+ * `/general`), no debajo, así que `isUnder` no las alcanza. Se resuelven a la
+ * URL del item que tienen que marcar.
+ */
+const NAV_PATH_ALIASES: Array<[from: string, to: string]> = [
+  ["/app/establecimiento-educativo/agregar", "/app/establecimiento-educativo/general"],
+  ["/app/establecimiento-educativo/editar", "/app/establecimiento-educativo/general"],
+]
+
+function resolveNavPathname(pathname: string) {
+  const alias = NAV_PATH_ALIASES.find(([from]) => isUnder(pathname, from))
+  return alias ? alias[1] : pathname
+}
+
 export function NavMain() {
   const { data: items, isPending, isError, refetch } = useNavItemsQuery()
-  const { pathname } = useLocation()
+  const pathname = resolveNavPathname(useLocation().pathname)
 
   /**
    * Acordeón: un único grupo abierto a la vez. El estado vive aquí (no en cada
@@ -59,7 +85,8 @@ export function NavMain() {
     openTitle !== undefined
       ? openTitle
       : (items?.find(
-          (item) => item.url === pathname || item.items?.some((sub) => sub.url === pathname),
+          (item) =>
+            isUnder(pathname, item.url) || item.items?.some((sub) => isUnder(pathname, sub.url)),
         )?.title ?? null)
 
   if (isPending) {
@@ -93,7 +120,7 @@ export function NavMain() {
     <SidebarGroup>
       <SidebarMenu>
         {items?.map((item) => {
-          const isActive = pathname === item.url
+          const isActive = isUnder(pathname, item.url)
 
           if (!item.items?.length) {
             return (
@@ -154,7 +181,7 @@ function NavCollapsibleItem({
   open,
   onOpenChange,
 }: NavCollapsibleItemProps) {
-  const hasActiveChild = items.some((sub) => sub.url === pathname)
+  const hasActiveChild = items.some((sub) => isUnder(pathname, sub.url))
 
   return (
     <Collapsible
@@ -183,7 +210,6 @@ function NavCollapsibleItem({
               (isActive || hasActiveChild) &&
                 "bg-primary text-primary-foreground font-medium hover:!bg-primary/90 hover:!text-primary-foreground active:!bg-primary/80 active:!text-primary-foreground data-open:hover:!bg-primary/90 data-open:hover:!text-primary-foreground",
             )}
-            render={<Link to={items[0].url} />}
           />
         }
       >
@@ -195,7 +221,10 @@ function NavCollapsibleItem({
         <SidebarMenuSub>
           {items.map((sub) => (
             <SidebarMenuSubItem key={sub.url}>
-              <SidebarMenuSubButton isActive={pathname === sub.url} render={<Link to={sub.url} />}>
+              <SidebarMenuSubButton
+                isActive={isUnder(pathname, sub.url)}
+                render={<Link to={sub.url} />}
+              >
                 <span className={lineClamp(sub.maxLines)}>{sub.title}</span>
               </SidebarMenuSubButton>
             </SidebarMenuSubItem>

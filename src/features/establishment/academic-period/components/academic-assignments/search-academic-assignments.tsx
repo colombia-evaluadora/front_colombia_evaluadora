@@ -5,20 +5,14 @@ import {
   XIcon,
 } from "@/components/ui/icons"
 
-import { Field, FieldLabel } from "@/components/ui/field"
+import { Field, FieldLabel, FieldLegend, FieldSet } from "@/components/ui/field"
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupButton,
   InputGroupInput,
 } from "@/components/ui/input-group"
-import {
-  Popover,
-  PopoverContent,
-  PopoverHeader,
-  PopoverTitle,
-  PopoverTrigger,
-} from "@/components/ui/popover"
+import { AdvancedFiltersPopover } from "@/components/search/advanced-filters-popover"
 import {
   Select,
   SelectContent,
@@ -54,6 +48,16 @@ export function SearchAcademicAssignments({
 
   const hasStatus = status !== ""
 
+  // La X de la barra limpia todo —texto y filtros—, así que solo aparece
+  // cuando hay algo que limpiar.
+  const hasAnythingToClear = hasStatus || search !== ""
+
+  function handleClearAll() {
+    onSearchChange("")
+    onStatusChange("")
+    setOpen(false)
+  }
+
   return (
     <div className="flex min-w-0 flex-col gap-2">
       <InputGroup className="h-9 w-full rounded-md border-input has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20 sm:w-96">
@@ -72,57 +76,45 @@ export function SearchAcademicAssignments({
         />
 
         <InputGroupAddon align="inline-end" className="mr-1 gap-1">
-          {search && (
+          {hasAnythingToClear && (
             <InputGroupButton
               size="icon-xs"
-              aria-label="Limpiar búsqueda"
-              className="text-muted-foreground hover:text-primary"
-              onClick={() => onSearchChange("")}
+              variant="ghost"
+              color="muted"
+              aria-label="Limpiar búsqueda y filtros"
+              onClick={handleClearAll}
             >
               <XIcon />
             </InputGroupButton>
           )}
 
-          <Popover open={open} onOpenChange={setOpen}>
-            <PopoverTrigger
-              render={
-                <InputGroupButton
-                  size="icon-xs"
-                  variant={hasStatus ? "soft" : "ghost"}
-                  color={hasStatus ? "secondary" : undefined}
-                  aria-label="Filtros"
-                  aria-pressed={hasStatus}
-                  className="relative text-muted-foreground hover:text-primary aria-pressed:text-secondary-foreground"
-                />
-              }
-            >
-              <FunnelIcon />
-              {hasStatus && (
-                <span className="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-primary" />
-              )}
-            </PopoverTrigger>
-
-            <PopoverContent align="end" className="w-72 gap-3 p-0">
-              <PopoverHeader className="border-b p-4">
-                <PopoverTitle>Filtros</PopoverTitle>
-              </PopoverHeader>
-
-              <div className="p-4">
+          {/*
+            Acá los filtros se aplican al vuelo (no hay borrador), así que
+            "Aplicar filtros" solo cierra el panel — mantiene el mismo gesto de
+            salida que en el resto de los buscadores.
+          */}
+          <AdvancedFiltersPopover
+            open={open}
+            onOpenChange={setOpen}
+            activeFilterCount={hasStatus ? 1 : 0}
+            badgeCount={hasStatus ? 1 : 0}
+            onApply={() => setOpen(false)}
+          >
+            <FieldSet className="px-4">
+              <FieldLegend variant="label">Estado</FieldLegend>
+              <div className="grid grid-cols-2 gap-3">
                 <Field orientation="vertical" variant="outlined" className="gap-2">
-                  <FieldLabel htmlFor="academic-assignments-status">
-                    Estado
-                  </FieldLabel>
+                  <FieldLabel htmlFor="academic-assignments-status">Estado</FieldLabel>
                   <Select
                     value={status}
                     onValueChange={(value) =>
                       onStatusChange((value as EmployeeStatus | null) ?? "")
                     }
                   >
-                    <SelectTrigger id="academic-assignments-status" size="sm">
+                    <SelectTrigger id="academic-assignments-status" size="sm" className="w-full">
                       <SelectValue placeholder="Todos">
                         {(value) =>
-                          EMPLOYEE_STATUS_LABELS[value as EmployeeStatus] ??
-                          "Todos"
+                          EMPLOYEE_STATUS_LABELS[value as EmployeeStatus] ?? "Todos"
                         }
                       </SelectValue>
                     </SelectTrigger>
@@ -139,8 +131,8 @@ export function SearchAcademicAssignments({
                   </Select>
                 </Field>
               </div>
-            </PopoverContent>
-          </Popover>
+            </FieldSet>
+          </AdvancedFiltersPopover>
         </InputGroupAddon>
       </InputGroup>
 

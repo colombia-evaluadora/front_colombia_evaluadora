@@ -66,7 +66,7 @@
   --popover-foreground: var(--foreground);
 
   /* ---------- MARCA ------------------------------------------ */
-  --primary: #0079b5;
+  --primary: #0D99FF;
   --primary-foreground: #f7fbfd;
   --secondary: #618200;
   --secondary-foreground: #f9fbf5;
@@ -78,7 +78,7 @@
   /* ---------- COLORES ------------------------------ */
   --red: #e40017;
   --red-foreground: #fff8f7;
-  --green: #618200;
+  --green: #1F9254;
   --green-foreground: #f9fbf5;
   --yellow: #eab300;
   --yellow-foreground: #352600;
@@ -113,25 +113,26 @@
 
   /* ---------- STROKES (alpha 30%) --------------------------- */
   --foreground-stroke: #090d104d;
-  --primary-stroke: #0079b54d;
+  --primary-stroke: #0D99FF4d;
   --secondary-stroke: #6182004d;
   --muted-stroke: #d6dbe54d;
   --blue-stroke: #0079b54d;
   --red-stroke: #e400174d;
   --yellow-stroke: #eab3004d;
-  --green-stroke: #6182004d;
+  --green-stroke: #1F92544d;
   --purple-stroke: #7a3ec84d;
   --orange-stroke: #e2620e4d;
 
   /* ---------- SOFT FILLS (alpha 22%) ----------------------- */
   --foreground-22: #090d1038;
-  --primary-22: #0079b538;
+  --primary-22: #0D99FF38;
   --secondary-22: #61820038;
+  --green-22: #1F925438;
   --muted-22: #d6dbe538;
   --blue-22: #0079b538;
   --red-22: #e4001738;
   --yellow-22: #eab30038;
-  --green-22: #61820038;
+  --green-22: #1F925438;
   --purple-22: #7a3ec838;
   --orange-22: #e2620e38;
 }

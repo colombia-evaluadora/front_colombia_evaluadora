@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react"
-import { CheckIcon, FunnelIcon, MagnifyingGlassIcon, XIcon } from "@/components/ui/icons"
+import { MagnifyingGlassIcon, XIcon } from "@/components/ui/icons"
 
-import { Button } from "@/components/ui/button"
+import { AdvancedFiltersPopover } from "@/components/search/advanced-filters-popover"
 import { Field, FieldLabel } from "@/components/ui/field"
 import {
   InputGroup,
@@ -9,13 +9,6 @@ import {
   InputGroupButton,
   InputGroupInput,
 } from "@/components/ui/input-group"
-import {
-  Popover,
-  PopoverContent,
-  PopoverHeader,
-  PopoverTitle,
-  PopoverTrigger,
-} from "@/components/ui/popover"
 
 import type {
   TableOperationsFiltersFormInput,
@@ -152,79 +145,21 @@ export function SearchTableOperations({
               </InputGroupButton>
             )}
 
-            <Popover open={open} onOpenChange={setOpen}>
-              <PopoverTrigger
-                render={
-                  <InputGroupButton
-                    size="icon-xs"
-                    // Con filtros puestos el embudo se rellena (`fill muted`)
-                    // para que se lea como un estado activo, no como una
-                    // acción más de la barra.
-                    variant={activeFilterCount > 0 ? "fill" : "ghost"}
-                    color="muted"
-                    aria-label="Filtros avanzados"
-                    aria-pressed={activeFilterCount > 0}
-                    className="relative"
-                  />
-                }
-              >
-                <FunnelIcon />
-                {advancedFilterCount > 0 && (
-                  <span className="absolute -top-1 -right-1 flex size-3.5 items-center justify-center rounded-full bg-primary text-[0.55rem] font-semibold text-primary-foreground">
-                    {advancedFilterCount}
-                  </span>
-                )}
-              </PopoverTrigger>
-
-              {/*
-                Más ancho que un popover normal para que cada sección reparta
-                sus controles en columnas, pero no tanto como para que el
-                recorrido se vuelva horizontal: las secciones se apilan en el
-                orden en que se usan (operación → fechas → filtros por campo).
-                El ancho se topa contra el viewport para que siga cabiendo en
-                pantallas chicas.
-              */}
-              <PopoverContent align="end" className="w-[min(42rem,calc(100vw-2rem))] gap-0 p-0">
-                {/*
-                  Sin `border-b`: el panel se lee como un bloque continuo y la
-                  jerarquía la marca el tamaño del título, no una línea. El
-                  `PopoverTitle` del design system es versalita —pensado para
-                  popovers chicos—, y acá encabeza un panel entero.
-                */}
-                <PopoverHeader className="px-4 pt-4">
-                  <PopoverTitle className="text-xl font-semibold normal-case">
-                    Filtros avanzados
-                  </PopoverTitle>
-                </PopoverHeader>
-
-                <div className="max-h-[60dvh] overflow-y-auto py-4">
-                  <FilterTableOperationsForm
-                    id={FILTER_TABLE_OPERATIONS_FORM_ID}
-                    defaultValues={filters}
-                    onSubmit={handleApplyAdvanced}
-                    availableFields={availableFields}
-                    hideAuthor
-                  />
-                </div>
-
-                {/*
-                  Ya no hay "Limpiar todo" acá: esa acción es la X de la barra,
-                  que está siempre a la vista y no obliga a abrir el popover.
-                */}
-                <div className="flex justify-end px-4 pb-4">
-                  <Button
-                    type="submit"
-                    form={FILTER_TABLE_OPERATIONS_FORM_ID}
-                    color="primary"
-                    size="sm"
-                    className="min-w-40 rounded-full"
-                  >
-                    <CheckIcon data-icon="inline-start" />
-                    Aplicar filtros
-                  </Button>
-                </div>
-              </PopoverContent>
-            </Popover>
+            <AdvancedFiltersPopover
+              open={open}
+              onOpenChange={setOpen}
+              activeFilterCount={activeFilterCount}
+              badgeCount={advancedFilterCount}
+              formId={FILTER_TABLE_OPERATIONS_FORM_ID}
+            >
+              <FilterTableOperationsForm
+                id={FILTER_TABLE_OPERATIONS_FORM_ID}
+                defaultValues={filters}
+                onSubmit={handleApplyAdvanced}
+                availableFields={availableFields}
+                hideAuthor
+              />
+            </AdvancedFiltersPopover>
           </InputGroupAddon>
         </InputGroup>
       </Field>
