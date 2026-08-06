@@ -34,6 +34,12 @@ type SidebarContextProps = {
   setOpenMobile: (open: boolean) => void
   isMobile: boolean
   toggleSidebar: () => void
+  // Verdadero mientras el sidebar plegado se despliega por hover ("peek").
+  // `state` sigue siendo "collapsed" —el peek es temporal y no toca la
+  // preferencia guardada—, así que quien necesite distinguir el desplegado
+  // real del asomo mira esta bandera.
+  isPeeking: boolean
+  setIsPeeking: (peeking: boolean) => void
 }
 
 const SidebarContext = React.createContext<SidebarContextProps | null>(null)
@@ -104,6 +110,15 @@ function SidebarProvider({
   // This makes it easier to style the sidebar with Tailwind classes.
   const state = open ? "expanded" : "collapsed"
 
+  const [isPeeking, setIsPeeking] = React.useState(false)
+
+  // Al desplegar el sidebar de verdad se corta cualquier peek en curso: si no,
+  // el estado quedaría pegado en `true` (el puntero ya está encima) y al volver
+  // a plegarlo se vería desplegado sin que nadie lo haya tocado.
+  React.useEffect(() => {
+    if (open) setIsPeeking(false)
+  }, [open])
+
   const contextValue = React.useMemo<SidebarContextProps>(
     () => ({
       state,
@@ -113,8 +128,10 @@ function SidebarProvider({
       openMobile,
       setOpenMobile,
       toggleSidebar,
+      isPeeking,
+      setIsPeeking,
     }),
-    [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar],
+    [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar, isPeeking],
   )
 
   return (
@@ -153,7 +170,18 @@ function Sidebar({
   variant?: "sidebar" | "floating" | "inset"
   collapsible?: "offcanvas" | "icon" | "none"
 }) {
-  const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
+  const { isMobile, state, openMobile, setOpenMobile, isPeeking, setIsPeeking } = useSidebar()
+
+  // "Peek": con el sidebar plegado a iconos, pasar el puntero por encima lo
+  // despliega como un drawer sobre el contenido. Solo aplica en escritorio y en
+  // modo `icon` —en `offcanvas` no hay nada a lo que apuntar, y en móvil ya
+  // existe el `Sheet`—.
+  const canPeek = collapsible === "icon" && !isMobile && state === "collapsed"
+  const peeking = canPeek && isPeeking
+  // Mientras asoma se comporta como desplegado: así los hijos que se esconden
+  // con `group-data-[collapsible=icon]:*` (etiquetas, acciones, títulos de
+  // grupo) reaparecen sin duplicar reglas para el peek.
+  const effectiveState = peeking ? "expanded" : state
 
   if (collapsible === "none") {
     return (
@@ -199,11 +227,17 @@ function Sidebar({
   return (
     <div
       className="group peer hidden text-sidebar-foreground md:block"
-      data-state={state}
-      data-collapsible={state === "collapsed" ? collapsible : ""}
+      data-state={effectiveState}
+      data-collapsible={effectiveState === "collapsed" ? collapsible : ""}
+      data-peek={peeking ? "true" : undefined}
       data-variant={variant}
       data-side={side}
       data-slot="sidebar"
+      // Los handlers van en la raíz —no en el panel fijo— para que el
+      // `mouseleave` dispare recién al salir del sidebar desplegado, y no en el
+      // borde de la franja de iconos.
+      onMouseEnter={canPeek ? () => setIsPeeking(true) : undefined}
+      onMouseLeave={peeking ? () => setIsPeeking(false) : undefined}
     >
       {/* This is what handles the sidebar gap on desktop */}
       <div
@@ -215,6 +249,12 @@ function Sidebar({
           variant === "floating" || variant === "inset"
             ? "group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4)))]"
             : "group-data-[collapsible=icon]:w-(--sidebar-width-icon)",
+          // El hueco NO crece con el peek: el panel se monta sobre el contenido
+          // como un drawer en vez de empujarlo. Sin esto la página entera se
+          // correría cada vez que el puntero roza el sidebar.
+          variant === "floating" || variant === "inset"
+            ? "group-data-[peek=true]:w-[calc(var(--sidebar-width-icon)+(--spacing(4)))]"
+            : "group-data-[peek=true]:w-(--sidebar-width-icon)",
         )}
       />
       <div
@@ -226,6 +266,10 @@ function Sidebar({
           variant === "floating" || variant === "inset"
             ? "p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4))+2px)]"
             : "group-data-[collapsible=icon]:w-(--sidebar-width-icon)",
+          // Mientras asoma va por encima del contenido y con sombra, para que se
+          // lea como una capa flotante y no como parte del layout. El `z-50`
+          // tiene que ganarle al header de la app, que es `sticky z-40`.
+          "group-data-[peek=true]:z-50 group-data-[peek=true]:shadow-xl",
           className,
         )}
         {...props}
@@ -491,7 +535,7 @@ function SidebarMenuButton({
     isActive?: boolean
     tooltip?: string | React.ComponentProps<typeof TooltipContent>
   } & VariantProps<typeof sidebarMenuButtonVariants>) {
-  const { isMobile, state } = useSidebar()
+  const { isMobile, state, isPeeking } = useSidebar()
   const comp = useRender({
     defaultTagName: "button",
     props: mergeProps<"button">(
@@ -525,7 +569,9 @@ function SidebarMenuButton({
       <TooltipContent
         side="right"
         align="center"
-        hidden={state !== "collapsed" || isMobile}
+        // Durante el peek la etiqueta ya está a la vista: el tooltip repetiría
+        // el mismo texto al lado.
+        hidden={state !== "collapsed" || isPeeking || isMobile}
         {...tooltip}
       />
     </Tooltip>
