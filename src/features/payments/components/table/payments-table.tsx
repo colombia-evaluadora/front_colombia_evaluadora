@@ -18,7 +18,7 @@ import { usePaymentsFilters } from "../../hooks/use-payments-filters"
 
 import { columns } from "./columns"
 import { CreatePaymentSheet } from "../sheets/sheet-create-payment"
-import { FilterPaymentsSheet } from "../sheets/sheet-filter-payments"
+import { SearchPayments } from "../search/search-payments"
 import { DeleteAllPaymentsDialog } from "../dialogs/dialog-delete-all-payments"
 import { DeleteSelectedPaymentsDialog } from "../dialogs/dialog-delete-selected-payments"
 import { ClearSelectionDialog } from "../dialogs/dialog-clear-selection"
@@ -65,6 +65,13 @@ export function PaymentsDataTable({ title }: PaymentsDataTableProps) {
           </CardHeader>
           <CardContent className="pt-7">
             <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-2">
+              <SearchPayments
+                activeFilterCount={activeFilterCount}
+                filters={filters}
+                applyFilters={applyFilters}
+                clearAllFilters={clearAllFilters}
+              />
+
               <div className="flex gap-2">
                 {hasSelection ? (
                   <>
@@ -77,14 +84,6 @@ export function PaymentsDataTable({ title }: PaymentsDataTableProps) {
                 ) : (
                   <DeleteAllPaymentsDialog filters={queryFilters} />
                 )}
-              </div>
-              <div className="flex gap-2">
-                <FilterPaymentsSheet
-                  activeFilterCount={activeFilterCount}
-                  filters={filters}
-                  applyFilters={applyFilters}
-                  clearAllFilters={clearAllFilters}
-                />
                 <CreatePaymentSheet />
               </div>
             </div>

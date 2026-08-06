@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react"
 
 import { MagnifyingGlassIcon, XIcon } from "@/components/ui/icons"
 import { AdvancedFiltersPopover } from "@/components/search/advanced-filters-popover"
-import { Field, FieldLabel, FieldLegend, FieldSet } from "@/components/ui/field"
+import { Field, FieldLabel } from "@/components/ui/field"
 import {
   InputGroup,
   InputGroupAddon,
@@ -194,10 +194,10 @@ export function SearchEmployees({
             badgeCount={advancedFilterCount}
             onApply={handleApplyAdvanced}
           >
-            {/* Los tres son atributos del funcionario: van en una rejilla bajo
-                un mismo título, no separados por líneas. */}
-            <FieldSet className="px-4">
-              <FieldLegend variant="label">Clasificación</FieldLegend>
+            {/* Los tres son atributos del funcionario y sus etiquetas ya se
+                explican solas: una leyenda encima sería un título inventado.
+                Van en rejilla, no separados por líneas. */}
+            <div className="px-4">
               <div className="grid grid-cols-3 gap-3">
                 <Field orientation="vertical" variant="outlined" className="gap-2">
                   <FieldLabel htmlFor="employee-role">Rol</FieldLabel>
@@ -259,7 +259,7 @@ export function SearchEmployees({
                   </Select>
                 </Field>
               </div>
-            </FieldSet>
+            </div>
           </AdvancedFiltersPopover>
         </InputGroupAddon>
         </InputGroup>

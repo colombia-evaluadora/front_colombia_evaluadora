@@ -1,6 +1,6 @@
 import { Link, Outlet } from "@tanstack/react-router"
 
-import loginBg from "@/assets/login.jpg"
+import loginBg from "@/assets/login.png"
 import logo from "@/assets/logo.svg"
 import { Card } from "@/components/ui/card"
 import { paths } from "@/config/paths"
