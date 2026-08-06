@@ -158,40 +158,17 @@ export function SearchTableOperations({
         foco los sigue pintando el propio `InputGroup`. Sin `aria-label` en el
         control, para que el nombre accesible lo dé la etiqueta visible.
 
-        Los chips de los filtros activos viven *dentro* del campo, delante del
-        input: el buscador y los filtros son una sola cosa para el usuario, y
-        listarlos debajo separaba visualmente la causa (el embudo) del efecto.
-        De ahí el `h-auto min-h-9 flex-wrap`: el campo crece cuando los chips
-        no caben en una línea.
+        Los chips de los filtros activos viven *dentro* del campo, en un
+        renglón propio bajo el input: el buscador y los filtros son una sola
+        cosa para el usuario, y listarlos fuera separaba visualmente la causa
+        (el embudo) del efecto. De ahí el `h-auto min-h-9 flex-wrap`: el campo
+        crece hacia abajo en vez de comprimir el input.
       */}
       <Field orientation="vertical" variant="outlined" className="w-full max-w-xl">
         <FieldLabel htmlFor={SEARCH_INPUT_ID}>Buscar</FieldLabel>
         <InputGroup className="h-auto min-h-9 w-full flex-wrap rounded-md border-input has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20">
-          <InputGroupAddon align="inline-start" className="ml-2 flex-wrap gap-1">
+          <InputGroupAddon align="inline-start" className="ml-2">
             <MagnifyingGlassIcon className="size-4 text-muted-foreground" />
-
-            {activeChips.map((chip) => (
-              // `normal-case tracking-normal`: el Badge del design system es
-              // versalita para etiquetas de estado; acá el contenido es texto
-              // del usuario ("Operación: Actualización") y en mayúsculas se
-              // vuelve ilegible.
-              <Badge
-                key={chip.key}
-                variant="fill"
-                color="muted"
-                className="gap-1 rounded-full py-0.5 pr-1 pl-2.5 text-xs font-medium tracking-normal normal-case"
-              >
-                {chip.label}
-                <button
-                  type="button"
-                  aria-label={`Quitar filtro ${chip.label}`}
-                  className="flex size-4 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-foreground/10 hover:text-foreground"
-                  onClick={chip.onRemove}
-                >
-                  <XIcon className="size-3" />
-                </button>
-              </Badge>
-            ))}
           </InputGroupAddon>
 
           <InputGroupInput
@@ -286,6 +263,45 @@ export function SearchTableOperations({
               </PopoverContent>
             </Popover>
           </InputGroupAddon>
+
+          {/*
+            Los chips ocupan su propia línea, debajo: `w-full` los saca del
+            renglón por el `flex-wrap` del grupo y `order-last` los manda al
+            final. Así el input siempre queda arriba, pegado a la lupa y con su
+            ancho completo, en vez de irse achicando a medida que se agregan
+            filtros. Va con `align="inline-end"` a propósito: `block-end`
+            volvería columna a todo el InputGroup y apilaría también la lupa y
+            los botones.
+          */}
+          {activeChips.length > 0 && (
+            <InputGroupAddon
+              align="inline-end"
+              className="order-last w-full flex-wrap justify-start gap-1 px-2 pt-0 pb-2"
+            >
+              {activeChips.map((chip) => (
+                // `normal-case tracking-normal`: el Badge del design system es
+                // versalita para etiquetas de estado; acá el contenido es texto
+                // del usuario ("Operación: Actualización") y en mayúsculas se
+                // vuelve ilegible.
+                <Badge
+                  key={chip.key}
+                  variant="fill"
+                  color="muted"
+                  className="max-w-full gap-1 rounded-full py-0.5 pr-1 pl-2.5 text-xs font-medium tracking-normal normal-case"
+                >
+                  <span className="truncate">{chip.label}</span>
+                  <button
+                    type="button"
+                    aria-label={`Quitar filtro ${chip.label}`}
+                    className="flex size-4 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-foreground/10 hover:text-foreground"
+                    onClick={chip.onRemove}
+                  >
+                    <XIcon className="size-3" />
+                  </button>
+                </Badge>
+              ))}
+            </InputGroupAddon>
+          )}
         </InputGroup>
       </Field>
     </div>

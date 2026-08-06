@@ -89,6 +89,10 @@ export function FilterTableOperationsForm({
   // rango de fechas, luego los filtros por campo— y cada una reparte sus
   // propios controles en columnas. Así el recorrido es vertical y corto en vez
   // de una sola fila larga que obliga a barrer la pantalla de lado a lado.
+  //
+  // El scroll no vive acá sino en el contenedor de arriba: con `overflow` en
+  // el form este se volvía su propio contexto de recorte y, al no tener
+  // padding vertical, cortaba el ring de foco del último control.
   return (
     <form
       id={id}
@@ -96,7 +100,7 @@ export function FilterTableOperationsForm({
         e.preventDefault()
         form.handleSubmit()
       }}
-      className="flex flex-1 flex-col gap-5 overflow-y-auto px-4"
+      className="flex flex-1 flex-col gap-5 px-4"
     >
       {!hideAuthor && (
         <form.Field
@@ -184,36 +188,36 @@ export function FilterTableOperationsForm({
           para no tener que abrir dos controles distintos. Van juntos en una
           fila porque se leen como un intervalo. */}
       <div className="grid grid-cols-2 gap-3">
-      <form.Field
-        name="occurredFrom"
-        children={(field) => (
-          <Field orientation="vertical" variant="outlined" className="gap-2">
-            <FieldLabel htmlFor={field.name}>Desde</FieldLabel>
-            <DatePicker
-              mode="datetime"
-              id={field.name}
-              value={parseDateTimeValue(field.state.value)}
-              onChange={(date) => field.handleChange(formatDateTimeValue(date))}
-              className="h-9"
-            />
-          </Field>
-        )}
-      />
-      <form.Field
-        name="occurredTo"
-        children={(field) => (
-          <Field orientation="vertical" variant="outlined" className="gap-2">
-            <FieldLabel htmlFor={field.name}>Hasta</FieldLabel>
-            <DatePicker
-              mode="datetime"
-              id={field.name}
-              value={parseDateTimeValue(field.state.value)}
-              onChange={(date) => field.handleChange(formatDateTimeValue(date))}
-              className="h-9"
-            />
-          </Field>
-        )}
-      />
+        <form.Field
+          name="occurredFrom"
+          children={(field) => (
+            <Field orientation="vertical" variant="outlined" className="gap-2">
+              <FieldLabel htmlFor={field.name}>Desde</FieldLabel>
+              <DatePicker
+                mode="datetime"
+                id={field.name}
+                value={parseDateTimeValue(field.state.value)}
+                onChange={(date) => field.handleChange(formatDateTimeValue(date))}
+                className="h-9"
+              />
+            </Field>
+          )}
+        />
+        <form.Field
+          name="occurredTo"
+          children={(field) => (
+            <Field orientation="vertical" variant="outlined" className="gap-2">
+              <FieldLabel htmlFor={field.name}>Hasta</FieldLabel>
+              <DatePicker
+                mode="datetime"
+                id={field.name}
+                value={parseDateTimeValue(field.state.value)}
+                onChange={(date) => field.handleChange(formatDateTimeValue(date))}
+                className="h-9"
+              />
+            </Field>
+          )}
+        />
       </div>
 
       <form.Field
@@ -302,7 +306,9 @@ function FieldFilterSection({ field, availableFields }: FieldFilterSectionProps)
           </ul>
         )}
 
-        <div className="grid grid-cols-1 items-end gap-3 md:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_auto]">
+        {/* Campo → Condición → Valor → Agregar en una sola línea: es la
+            secuencia en la que se arma el filtro y se lee de corrido. */}
+        <div className="grid grid-cols-[1fr_1fr_1fr_auto] items-end gap-3">
           <Field variant="outlined" className="gap-2">
             <FieldLabel htmlFor="field-filter-field">Campo</FieldLabel>
             <Select value={composerField} onValueChange={(value) => setComposerField(value ?? "")}>
@@ -349,7 +355,7 @@ function FieldFilterSection({ field, availableFields }: FieldFilterSectionProps)
               id="field-filter-value"
               type="text"
               autoComplete="off"
-              placeholder="Ingresar texto a buscar"
+              placeholder="Ingresar texto"
               value={composerValue}
               onChange={(event) => setComposerValue(event.target.value)}
               className="h-9"
@@ -359,7 +365,7 @@ function FieldFilterSection({ field, availableFields }: FieldFilterSectionProps)
             type="button"
             onClick={handleAdd}
             disabled={!composerReady}
-            className="h-9 rounded-full lg:w-auto"
+            className="h-9 rounded-full"
           >
             <ControlPointIcon data-icon="inline-start" />
             Agregar
