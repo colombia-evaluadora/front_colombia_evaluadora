@@ -22,8 +22,15 @@ export function toNavItemDtos(routes: RouteResponseDto[]): NavItemDto[] {
         title: route.name,
         url: route.path,
         icon: route.icon,
+        maxLines: route.maxLines,
         ...(children?.length
-          ? { items: children.map((c) => ({ title: c.name, url: c.path })) }
+          ? {
+              items: children.map((c) => ({
+                title: c.name,
+                url: c.path,
+                maxLines: c.maxLines,
+              })),
+            }
           : {}),
       }
     })
