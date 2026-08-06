@@ -97,7 +97,7 @@ export function AuditSessionDataTable() {
         </div></CardContent>
             </Card>
             </div>
-      <Card className="overflow-visible rounded-t-none">
+      <Card className="grow overflow-visible rounded-t-none">
         <div className="px-(--card-spacing)">
           <NoticeOutlet className="mb-3" />
 

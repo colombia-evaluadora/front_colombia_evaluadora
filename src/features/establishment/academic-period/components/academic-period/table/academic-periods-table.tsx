@@ -6,13 +6,7 @@ import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
 import { useDataTable } from "@/hooks/use-data-table"
 import { useTablePagination } from "@/hooks/use-table-pagination"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 import { useAcademicPeriodsQuery } from "../../../api/query/academic-period/use-academic-periods-query"
 import { useAcademicPeriodFilters } from "../../../hooks/use-academic-period-filters"
@@ -26,17 +20,12 @@ import { NoticeOutlet } from "@/components/notice/notice-context"
 
 interface AcademicPeriodsDataTableProps {
   title: ReactNode
-  description?: ReactNode
   // Acción principal de la página (ej. "Agregar"). Va en la barra de
   // herramientas, junto al buscador, no en el encabezado.
   action?: ReactNode
 }
 
-export function AcademicPeriodsDataTable({
-  title,
-  description,
-  action,
-}: AcademicPeriodsDataTableProps) {
+export function AcademicPeriodsDataTable({ title, action }: AcademicPeriodsDataTableProps) {
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } =
     useTablePagination()
 
@@ -74,7 +63,6 @@ export function AcademicPeriodsDataTable({
         <Card className="gap-0 overflow-hidden rounded-b-none pt-0">
           <CardHeader className="bg-muted/10 py-4">
             <CardTitle>{title}</CardTitle>
-            {description ? <CardDescription>{description}</CardDescription> : null}
           </CardHeader>
           <CardContent className="pt-7">
             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -115,7 +103,7 @@ export function AcademicPeriodsDataTable({
         línea doble en el medio. `rounded-t-none` para pegarse a la base
         plana del encabezado; `overflow-visible` para no romper el sticky.
       */}
-      <Card className="overflow-visible rounded-t-none">
+      <Card className="grow overflow-visible rounded-t-none">
         <div className="px-(--card-spacing)">
           <NoticeOutlet className="mb-3" />
 

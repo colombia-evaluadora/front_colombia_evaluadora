@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { CheckIcon, FunnelIcon, MagnifyingGlassIcon, XIcon } from "@/components/ui/icons"
 
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Field, FieldLabel } from "@/components/ui/field"
 import {
@@ -18,15 +17,13 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 
-import {
-  FIELD_FILTER_CONDITION_LABELS,
-  type FieldFilter,
-  type TableOperationsFiltersFormInput,
-  type TableOperationsFiltersFormValues,
+import type {
+  TableOperationsFiltersFormInput,
+  TableOperationsFiltersFormValues,
 } from "../../api/schema"
-import type { OperationType } from "../../api/types/audit-table"
 import { useAuditOperationTypesQuery } from "../../api/query/use-audit-operation-types-query"
 import { FilterTableOperationsForm } from "../forms/form-filter-table-operations"
+import { buildQuery, parseQuery, sameFilters } from "./query-syntax"
 
 const FILTER_TABLE_OPERATIONS_FORM_ID = "filter-table-operations-form"
 
@@ -54,9 +51,13 @@ export function SearchTableOperations({
   availableFields,
 }: SearchTableOperationsProps) {
   const [open, setOpen] = useState(false)
-  const [search, setSearch] = useState(filters.author)
 
   const { data: operationOptions = [] } = useAuditOperationTypesQuery()
+
+  // El input contiene la consulta entera —términos `clave:(valor)` más la
+  // búsqueda libre—, no solo el autor. Ver `query-syntax.ts`.
+  const queryFromFilters = buildQuery(filters, operationOptions)
+  const [search, setSearch] = useState(queryFromFilters)
 
   // `filters` viene de la URL. El buscador de autor se cuenta aparte del
   // badge del botón de filtros.
@@ -64,27 +65,36 @@ export function SearchTableOperations({
 
   // Refs para leer siempre lo último dentro del debounce sin re-suscribir el
   // efecto en cada cambio de `filters`/`applyFilters`.
-  const latest = useRef({ filters, applyFilters })
-  latest.current = { filters, applyFilters }
+  const latest = useRef({ filters, applyFilters, operationOptions })
+  latest.current = { filters, applyFilters, operationOptions }
 
-  // Sincroniza cambios externos (p. ej. "Limpiar todo") hacia el input.
+  // Sincroniza hacia el input los cambios que no vienen de teclear: el
+  // popover, "limpiar todo", el botón atrás del navegador. La guarda evita
+  // pisar lo escrito cuando el texto ya significa lo mismo que los filtros
+  // (si no, normalizar el espaciado movería el cursor al final en cada tecla).
   useEffect(() => {
-    setSearch(filters.author)
-  }, [filters.author])
+    setSearch((current) =>
+      sameFilters(parseQuery(current, latest.current.operationOptions), latest.current.filters)
+        ? current
+        : queryFromFilters,
+    )
+  }, [queryFromFilters])
 
-  // Aplica el buscador (por autor) con retardo, preservando los avanzados.
+  // Aplica la consulta escrita, con retardo para no navegar en cada tecla.
   useEffect(() => {
-    if (search === latest.current.filters.author) return
     const timeout = setTimeout(() => {
-      const { filters, applyFilters } = latest.current
-      applyFilters({ ...filters, author: search })
+      const { filters, applyFilters, operationOptions } = latest.current
+      const parsed = parseQuery(search, operationOptions)
+      if (sameFilters(parsed, filters)) return
+      applyFilters(parsed)
     }, SEARCH_DEBOUNCE_MS)
     return () => clearTimeout(timeout)
   }, [search])
 
   function handleApplyAdvanced(values: TableOperationsFiltersFormValues) {
-    // El buscador es la fuente de verdad del autor; conservamos su valor.
-    applyFilters({ ...values, author: search })
+    // El popover no toca la búsqueda libre; el resto de la consulta se
+    // reescribe y el efecto de arriba la vuelca al input.
+    applyFilters({ ...values, author: parseQuery(search, operationOptions).author })
     setOpen(false)
   }
 
@@ -93,59 +103,6 @@ export function SearchTableOperations({
     setSearch("")
     setOpen(false)
   }
-
-  // Quita un único filtro avanzado, preservando el resto y el buscador.
-  function removeOperation(operation: OperationType) {
-    applyFilters({
-      ...filters,
-      operations: filters.operations.filter((o) => o !== operation),
-    })
-  }
-
-  function removeFieldFilter(index: number) {
-    applyFilters({
-      ...filters,
-      fieldFilters: filters.fieldFilters.filter((_, i) => i !== index),
-    })
-  }
-
-  // Chips de los filtros avanzados activos, para que el usuario vea qué
-  // aplicó sin abrir el popover. El autor vive en el buscador, no acá.
-  const activeChips: {
-    key: string
-    label: string
-    onRemove: () => void
-  }[] = []
-  for (const operation of filters.operations) {
-    activeChips.push({
-      key: `operation-${operation}`,
-      label: `Operación: ${
-        operationOptions.find((o) => o.key === operation)?.label ?? operation
-      }`,
-      onRemove: () => removeOperation(operation),
-    })
-  }
-  if (filters.occurredFrom) {
-    activeChips.push({
-      key: "occurredFrom",
-      label: `Desde: ${filters.occurredFrom}`,
-      onRemove: () => applyFilters({ ...filters, occurredFrom: "" }),
-    })
-  }
-  if (filters.occurredTo) {
-    activeChips.push({
-      key: "occurredTo",
-      label: `Hasta: ${filters.occurredTo}`,
-      onRemove: () => applyFilters({ ...filters, occurredTo: "" }),
-    })
-  }
-  filters.fieldFilters.forEach((fieldFilter: FieldFilter, index: number) => {
-    activeChips.push({
-      key: `field-filter-${index}`,
-      label: `${fieldFilter.field} ${FIELD_FILTER_CONDITION_LABELS[fieldFilter.condition]} "${fieldFilter.value}"`,
-      onRemove: () => removeFieldFilter(index),
-    })
-  })
 
   // Hay algo que limpiar si el usuario escribió en el buscador o si quedó
   // algún filtro avanzado puesto.
@@ -158,15 +115,13 @@ export function SearchTableOperations({
         foco los sigue pintando el propio `InputGroup`. Sin `aria-label` en el
         control, para que el nombre accesible lo dé la etiqueta visible.
 
-        Los chips de los filtros activos viven *dentro* del campo, en un
-        renglón propio bajo el input: el buscador y los filtros son una sola
-        cosa para el usuario, y listarlos fuera separaba visualmente la causa
-        (el embudo) del efecto. De ahí el `h-auto min-h-9 flex-wrap`: el campo
-        crece hacia abajo en vez de comprimir el input.
+        Los filtros activos son literalmente el texto del input, en la sintaxis
+        de `query-syntax.ts`: el buscador y los filtros son una sola consulta,
+        y quitar un filtro es borrar sus caracteres.
       */}
       <Field orientation="vertical" variant="outlined" className="w-full max-w-xl">
         <FieldLabel htmlFor={SEARCH_INPUT_ID}>Buscar</FieldLabel>
-        <InputGroup className="h-auto min-h-9 w-full flex-wrap rounded-md border-input has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20">
+        <InputGroup className="h-9 w-full rounded-md border-input has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20">
           <InputGroupAddon align="inline-start" className="ml-2">
             <MagnifyingGlassIcon className="size-4 text-muted-foreground" />
           </InputGroupAddon>
@@ -175,7 +130,7 @@ export function SearchTableOperations({
             id={SEARCH_INPUT_ID}
             type="search"
             autoComplete="off"
-            placeholder="Buscar por autor o IP…"
+            placeholder="Buscar en la auditoría…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             // La X que Chrome inyecta en los `type="search"` duplicaba a la
@@ -229,9 +184,17 @@ export function SearchTableOperations({
                 El ancho se topa contra el viewport para que siga cabiendo en
                 pantallas chicas.
               */}
-              <PopoverContent align="end" className="w-[min(42rem,calc(100vw-2rem))] gap-3 p-0">
-                <PopoverHeader className="border-b p-4">
-                  <PopoverTitle>Filtros avanzados</PopoverTitle>
+              <PopoverContent align="end" className="w-[min(42rem,calc(100vw-2rem))] gap-0 p-0">
+                {/*
+                  Sin `border-b`: el panel se lee como un bloque continuo y la
+                  jerarquía la marca el tamaño del título, no una línea. El
+                  `PopoverTitle` del design system es versalita —pensado para
+                  popovers chicos—, y acá encabeza un panel entero.
+                */}
+                <PopoverHeader className="px-4 pt-4">
+                  <PopoverTitle className="text-xl font-semibold normal-case">
+                    Filtros avanzados
+                  </PopoverTitle>
                 </PopoverHeader>
 
                 <div className="max-h-[60dvh] overflow-y-auto py-4">
@@ -248,7 +211,7 @@ export function SearchTableOperations({
                   Ya no hay "Limpiar todo" acá: esa acción es la X de la barra,
                   que está siempre a la vista y no obliga a abrir el popover.
                 */}
-                <div className="flex justify-end border-t p-4">
+                <div className="flex justify-end px-4 pb-4">
                   <Button
                     type="submit"
                     form={FILTER_TABLE_OPERATIONS_FORM_ID}
@@ -263,45 +226,6 @@ export function SearchTableOperations({
               </PopoverContent>
             </Popover>
           </InputGroupAddon>
-
-          {/*
-            Los chips ocupan su propia línea, debajo: `w-full` los saca del
-            renglón por el `flex-wrap` del grupo y `order-last` los manda al
-            final. Así el input siempre queda arriba, pegado a la lupa y con su
-            ancho completo, en vez de irse achicando a medida que se agregan
-            filtros. Va con `align="inline-end"` a propósito: `block-end`
-            volvería columna a todo el InputGroup y apilaría también la lupa y
-            los botones.
-          */}
-          {activeChips.length > 0 && (
-            <InputGroupAddon
-              align="inline-end"
-              className="order-last w-full flex-wrap justify-start gap-1 px-2 pt-0 pb-2"
-            >
-              {activeChips.map((chip) => (
-                // `normal-case tracking-normal`: el Badge del design system es
-                // versalita para etiquetas de estado; acá el contenido es texto
-                // del usuario ("Operación: Actualización") y en mayúsculas se
-                // vuelve ilegible.
-                <Badge
-                  key={chip.key}
-                  variant="fill"
-                  color="muted"
-                  className="max-w-full gap-1 rounded-full py-0.5 pr-1 pl-2.5 text-xs font-medium tracking-normal normal-case"
-                >
-                  <span className="truncate">{chip.label}</span>
-                  <button
-                    type="button"
-                    aria-label={`Quitar filtro ${chip.label}`}
-                    className="flex size-4 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-foreground/10 hover:text-foreground"
-                    onClick={chip.onRemove}
-                  >
-                    <XIcon className="size-3" />
-                  </button>
-                </Badge>
-              ))}
-            </InputGroupAddon>
-          )}
         </InputGroup>
       </Field>
     </div>

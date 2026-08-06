@@ -9,7 +9,6 @@ export function EstablishmentsPage() {
   return (
     <EstablishmentsDataTable
       title="Establecimiento educativo"
-      description="Lista de establecimientos con búsqueda, filtro por estado y paginación."
       action={
         <Button
           render={<Link to={paths.app.establishments.add.getHref()} />}

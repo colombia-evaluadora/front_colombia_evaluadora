@@ -317,7 +317,7 @@ export function AddEstablishmentPage() {
     </div>
 
     {/* El cuerpo es una Card aparte que se acopla por debajo del encabezado. */}
-    <Card className="rounded-t-none">
+    <Card className="grow rounded-t-none">
       <CardContent>
         <NoticeOutlet className="mb-4" />
         {validationErrors.length > 0 ? (

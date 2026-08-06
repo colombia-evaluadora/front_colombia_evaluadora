@@ -10,7 +10,6 @@ import {
   Card,
   CardAction,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
@@ -27,7 +26,6 @@ import { NoticeOutlet } from "@/components/notice/notice-context"
 interface SessionOperationsDataTableProps {
   sessionId: string
   title: ReactNode
-  description?: ReactNode
   // Acción de navegación del encabezado (ej. "Volver").
   action?: ReactNode
 }
@@ -35,7 +33,6 @@ interface SessionOperationsDataTableProps {
 export function SessionOperationsDataTable({
   sessionId,
   title,
-  description,
   action,
 }: SessionOperationsDataTableProps) {
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
@@ -74,7 +71,6 @@ export function SessionOperationsDataTable({
         <Card className="gap-0 overflow-hidden rounded-b-none pt-0">
           <CardHeader className="bg-muted/10 py-4">
             <CardTitle>{title}</CardTitle>
-            {description ? <CardDescription>{description}</CardDescription> : null}
             {action ? <CardAction>{action}</CardAction> : null}
           </CardHeader>
           <CardContent className="pt-7">
@@ -112,7 +108,7 @@ export function SessionOperationsDataTable({
         línea doble en el medio. `rounded-t-none` para pegarse a la base
         plana del encabezado; `overflow-visible` para no romper el sticky.
       */}
-      <Card className="overflow-visible rounded-t-none">
+      <Card className="grow overflow-visible rounded-t-none">
         <div className="px-(--card-spacing)">
           <NoticeOutlet className="mb-3" />
 

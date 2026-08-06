@@ -49,7 +49,12 @@ export function ProtectedLayout() {
             <NavUser />
           </div>
         </header>
-        <div className="min-w-0 flex-1 pr-4 pb-4 bg-sidebar">
+        {/*
+          `flex flex-col` para que la card de contenido de cada página pueda
+          estirarse (`grow`) hasta el borde inferior cuando la tabla es corta.
+          Sin esto quedaba una franja de `bg-sidebar` bajo la card.
+        */}
+        <div className="flex min-w-0 flex-1 flex-col pr-4 pb-4 bg-sidebar">
           <Outlet />
         </div>
       </SidebarInset>

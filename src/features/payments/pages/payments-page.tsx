@@ -7,7 +7,6 @@ export function PaymentsPage() {
   return (
     <PaymentsDataTable
       title="Pagos"
-      description="Listado de pagos con filtros, orden y paginación resueltos vía un endpoint de query simulado (POST /payments/query)."
     />
   )
 }

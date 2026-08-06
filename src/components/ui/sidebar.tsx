@@ -25,6 +25,8 @@ const SIDEBAR_WIDTH = "16rem"
 const SIDEBAR_WIDTH_MOBILE = "18rem"
 const SIDEBAR_WIDTH_ICON = "3rem"
 const SIDEBAR_KEYBOARD_SHORTCUT = "b"
+// Debe coincidir con el `duration-200` de la animación de ancho del panel.
+const SIDEBAR_TRANSITION_MS = 200
 
 type SidebarContextProps = {
   state: "expanded" | "collapsed"
@@ -183,6 +185,20 @@ function Sidebar({
   // grupo) reaparecen sin duplicar reglas para el peek.
   const effectiveState = peeking ? "expanded" : state
 
+  // La capa flotante tiene que sobrevivir al repliegue: si el `z-50` se cae en
+  // el mismo frame en que el puntero sale, el panel termina de encogerse por
+  // debajo del header y de los `thead` sticky. Se mantiene elevado hasta que
+  // la animación de ancho termina.
+  const [elevated, setElevated] = React.useState(false)
+  React.useEffect(() => {
+    if (peeking) {
+      setElevated(true)
+      return
+    }
+    const timeout = setTimeout(() => setElevated(false), SIDEBAR_TRANSITION_MS)
+    return () => clearTimeout(timeout)
+  }, [peeking])
+
   if (collapsible === "none") {
     return (
       <div
@@ -230,6 +246,7 @@ function Sidebar({
       data-state={effectiveState}
       data-collapsible={effectiveState === "collapsed" ? collapsible : ""}
       data-peek={peeking ? "true" : undefined}
+      data-elevated={elevated ? "true" : undefined}
       data-variant={variant}
       data-side={side}
       data-slot="sidebar"
@@ -268,8 +285,10 @@ function Sidebar({
             : "group-data-[collapsible=icon]:w-(--sidebar-width-icon)",
           // Mientras asoma va por encima del contenido y con sombra, para que se
           // lea como una capa flotante y no como parte del layout. El `z-50`
-          // tiene que ganarle al header de la app, que es `sticky z-40`.
-          "group-data-[peek=true]:z-50 group-data-[peek=true]:shadow-xl",
+          // tiene que ganarle al header de la app (`sticky z-40`) y a los
+          // `thead` sticky de las tablas. Va colgado de `data-elevated` y no de
+          // `data-peek` para que también cubra la animación de repliegue.
+          "group-data-[elevated=true]:z-50 group-data-[elevated=true]:shadow-xl",
           className,
         )}
         {...props}

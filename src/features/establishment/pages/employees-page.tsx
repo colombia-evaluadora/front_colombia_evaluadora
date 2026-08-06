@@ -25,7 +25,6 @@ export function EmployeesPage() {
       <EmployeesDataTable
         onEditEmployee={openEditDialog}
         title="Funcionarios"
-        description="Lista de funcionarios con búsqueda, filtros por rol, jornada y estado, y paginación."
         action={
           <Button variant="fill" color="primary" size="sm" onClick={openCreateDialog}>
             <ControlPointIcon data-icon="inline-start" />

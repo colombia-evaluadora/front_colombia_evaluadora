@@ -2,7 +2,7 @@ import { useMemo, useState } from "react"
 
 import { useNotify } from "@/components/notice/notice-context"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { ControlPointIcon } from "@/components/ui/icons"
 import { Input } from "@/components/ui/input"
@@ -95,9 +95,6 @@ export function RolesMenusPage() {
         <Card className="gap-0 overflow-hidden rounded-b-none py-0">
           <CardHeader className="bg-muted/10 py-4">
             <CardTitle>Configuración de roles y menús</CardTitle>
-            <CardDescription>
-              Administra los roles del sistema y los menús a los que tiene acceso cada rol.
-            </CardDescription>
           </CardHeader>
         </Card>
       </div>
@@ -107,7 +104,7 @@ export function RolesMenusPage() {
         arriba. `rounded-t-none` para pegarse a la base plana del encabezado;
         `overflow-visible` para no romper el sticky.
       */}
-      <Card className="overflow-visible rounded-t-none">
+      <Card className="grow overflow-visible rounded-t-none">
         <CardContent className="flex flex-col gap-6">
           <Field variant="outlined" className="max-w-md">
             <FieldLabel htmlFor="role">Rol</FieldLabel>
