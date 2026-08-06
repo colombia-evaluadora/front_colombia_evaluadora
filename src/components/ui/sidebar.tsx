@@ -277,7 +277,7 @@ function Sidebar({
         <div
           data-sidebar="sidebar"
           data-slot="sidebar-inner"
-          className="flex size-full flex-col bg-sidebar group-data-[variant=floating]:rounded-md group-data-[variant=floating]:shadow-sm group-data-[variant=floating]:ring-1 group-data-[variant=floating]:ring-sidebar-border"
+          className="flex size-full flex-col overflow-hidden bg-sidebar group-data-[variant=floating]:rounded-md group-data-[variant=floating]:shadow-sm group-data-[variant=floating]:ring-1 group-data-[variant=floating]:ring-sidebar-border"
         >
           {children}
         </div>
@@ -480,7 +480,17 @@ function SidebarMenu({ className, ...props }: React.ComponentProps<"ul">) {
     <ul
       data-slot="sidebar-menu"
       data-sidebar="menu"
-      className={cn("flex w-full min-w-0 flex-col gap-0.5", className)}
+      className={cn(
+        // Ancho congelado al del sidebar desplegado (menos el `p-2` del
+        // contenedor) en vez de `w-full`: durante la transición de plegado el
+        // panel se angosta y las etiquetas se reacomodaban —"Establecimiento
+        // educativo" pasaba de 2 líneas a 3 y de vuelta a 2—, lo que hacía
+        // saltar la lista entera. Con el ancho fijo el maquetado no cambia
+        // nunca; el panel simplemente lo va recortando (de ahí el
+        // `overflow-hidden` en `sidebar-inner`).
+        "flex w-[calc(var(--sidebar-width)-(--spacing(4)))] min-w-0 flex-col gap-0.5",
+        className,
+      )}
       {...props}
     />
   )
@@ -497,8 +507,12 @@ function SidebarMenuItem({ className, ...props }: React.ComponentProps<"li">) {
   )
 }
 
+// Las etiquetas envuelven (`[&>span]:min-w-0 [&>span]:break-words`) en lugar de
+// recortarse con "…" como en el original de shadcn (`[&>span:last-child]:truncate`):
+// títulos como "Establecimiento educativo" se leen completos en dos líneas, y
+// para eso mismo el tamaño usa `min-h-*` y no una altura fija.
 const sidebarMenuButtonVariants = cva(
-  "peer/menu-button group/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md px-3 py-2 text-left text-sm ring-sidebar-ring outline-hidden transition-[width,height,padding] group-has-data-[sidebar=menu-action]/menu-item:pr-8 group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:min-h-8! group-data-[collapsible=icon]:p-2! hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-open:hover:bg-sidebar-accent data-open:hover:text-sidebar-accent-foreground data-active:bg-sidebar-accent data-active:font-medium data-active:text-sidebar-accent-foreground [&_svg]:size-4 [&_svg]:shrink-0 [&>span:last-child]:truncate",
+  "peer/menu-button group/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md px-3 py-2 text-left text-sm ring-sidebar-ring outline-hidden transition-[width,height,padding] group-has-data-[sidebar=menu-action]/menu-item:pr-8 group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:min-h-8! group-data-[collapsible=icon]:p-2! hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-open:hover:bg-sidebar-accent data-open:hover:text-sidebar-accent-foreground data-active:bg-sidebar-accent data-active:font-medium data-active:text-sidebar-accent-foreground [&_svg]:size-4 [&_svg]:shrink-0 [&>span]:min-w-0 [&>span]:break-words",
   {
     variants: {
       variant: {
@@ -717,7 +731,12 @@ function SidebarMenuSubButton({
           //
           // El espaciado entre el punto y el texto lo aporta el `gap-2` del
           // flex parent; un `mr` extra lo separaba demasiado.
-          "flex h-7 min-w-0 -translate-x-px items-center gap-2 overflow-hidden rounded-md px-3 text-foreground ring-sidebar-ring outline-hidden group-data-[collapsible=icon]:hidden hover:text-foreground focus-visible:ring-2 active:text-foreground data-active:text-primary data-active:hover:text-primary data-active:active:text-primary disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[size=md]:text-sm data-[size=sm]:text-xs before:content-[''] before:inline-block before:size-1 before:rounded-full before:bg-foreground before:shrink-0 data-active:before:bg-primary data-active:hover:before:bg-primary data-active:active:before:bg-primary [&>span:last-child]:truncate [&>svg]:size-3.5 [&>svg]:shrink-0 [&>svg]:text-foreground data-active:[&>svg]:text-primary data-active:hover:[&>svg]:text-primary data-active:active:[&>svg]:text-primary",
+          //
+          // `min-h-7` + `py-1` (y no `h-7`) por la misma razón que el botón
+          // principal: las etiquetas llegan de la API y envuelven en dos líneas
+          // cuando hacen falta —"Configuración de roles y menús"— en vez de
+          // cortarse con "…".
+          "flex min-h-7 min-w-0 -translate-x-px items-center gap-2 overflow-hidden rounded-md px-3 py-1 text-foreground ring-sidebar-ring outline-hidden group-data-[collapsible=icon]:hidden hover:text-foreground focus-visible:ring-2 active:text-foreground data-active:text-primary data-active:hover:text-primary data-active:active:text-primary disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[size=md]:text-sm data-[size=sm]:text-xs before:content-[''] before:inline-block before:size-1 before:rounded-full before:bg-foreground before:shrink-0 data-active:before:bg-primary data-active:hover:before:bg-primary data-active:active:before:bg-primary [&>span]:min-w-0 [&>span]:break-words [&>svg]:size-3.5 [&>svg]:shrink-0 [&>svg]:text-foreground data-active:[&>svg]:text-primary data-active:hover:[&>svg]:text-primary data-active:active:[&>svg]:text-primary",
           className,
         ),
       },

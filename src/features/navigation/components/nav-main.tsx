@@ -18,8 +18,30 @@ import {
 import { cn } from "@/lib/utils"
 
 import { useNavItemsQuery } from "@/features/navigation/api/query/use-nav-items-query"
-import type { NavSubItem } from "@/features/navigation/api/types/nav-item"
+import type { NavMaxLines, NavSubItem } from "@/features/navigation/api/types/nav-item"
 import type { Icon } from "@/components/ui/icons"
+
+/**
+ * `maxLines` viene de la API (ver `NavMaxLines`): cuántas líneas se ven de la
+ * etiqueta antes de cortarla con "…". El mapa es explícito porque Tailwind
+ * necesita las clases literales en el código —un `line-clamp-${n}` armado en
+ * runtime no se genera—.
+ *
+ * Sin valor se asume 1: la gran mayoría de los títulos caben en una línea, así
+ * que solo los que necesitan más lo piden explícitamente desde la API. `0`
+ * desactiva el corte y deja el título completo, ocupe las líneas que ocupe.
+ */
+const LINE_CLAMP: Record<NavMaxLines, string> = {
+  0: "",
+  1: "line-clamp-1",
+  2: "line-clamp-2",
+  3: "line-clamp-3",
+  4: "line-clamp-4",
+}
+
+function lineClamp(maxLines: NavMaxLines = 1) {
+  return LINE_CLAMP[maxLines]
+}
 
 export function NavMain() {
   const { data: items, isPending, isError, refetch } = useNavItemsQuery()
@@ -82,7 +104,7 @@ export function NavMain() {
                   render={<Link to={item.url} />}
                 >
                   <item.icon />
-                  <span>{item.title}</span>
+                  <span className={lineClamp(item.maxLines)}>{item.title}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             )
@@ -94,6 +116,7 @@ export function NavMain() {
               title={item.title}
               icon={item.icon}
               items={item.items}
+              maxLines={item.maxLines}
               isActive={isActive}
               pathname={pathname}
               open={activeTitle === item.title}
@@ -110,6 +133,7 @@ interface NavCollapsibleItemProps {
   title: string
   icon: Icon
   items: NavSubItem[]
+  maxLines?: NavMaxLines
   isActive: boolean
   pathname: string
   open: boolean
@@ -124,6 +148,7 @@ function NavCollapsibleItem({
   title,
   icon: Icon,
   items,
+  maxLines,
   isActive,
   pathname,
   open,
@@ -163,7 +188,7 @@ function NavCollapsibleItem({
         }
       >
         <Icon />
-        <span>{title}</span>
+        <span className={lineClamp(maxLines)}>{title}</span>
         <CaretRightIcon className="ml-auto transition-transform duration-200 group-data-open/collapsible:rotate-90" />
       </CollapsibleTrigger>
       <CollapsibleContent>
@@ -171,7 +196,7 @@ function NavCollapsibleItem({
           {items.map((sub) => (
             <SidebarMenuSubItem key={sub.url}>
               <SidebarMenuSubButton isActive={pathname === sub.url} render={<Link to={sub.url} />}>
-                <span>{sub.title}</span>
+                <span className={lineClamp(sub.maxLines)}>{sub.title}</span>
               </SidebarMenuSubButton>
             </SidebarMenuSubItem>
           ))}

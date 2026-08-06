@@ -28,7 +28,7 @@ export function AppSidebar() {
               <img
                 src={logo}
                 alt="Colombia Evaluadora"
-                className="h-10 w-auto group-data-[collapsible=icon]:hidden"
+                className="h-10 w-auto shrink-0 group-data-[collapsible=icon]:hidden"
               />
             </SidebarMenuButton>
           </SidebarMenuItem>

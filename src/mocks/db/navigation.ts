@@ -101,6 +101,7 @@ export const navigationMenu: MockMenu[] = [
     type: "ITEM",
     idParent: 9,
     roleIds: [1],
+    maxLines: 2,
   },
   {
     id: 5,
@@ -150,7 +151,8 @@ export const navigationMenu: MockMenu[] = [
     "menuOrder": 2,
     "type": "GROUP",
     "idParent": null,
-    "roleIds": [1, 2]
+    "roleIds": [1, 2],
+    "maxLines": 2
   },
   {
     "id": 13,
