@@ -1,11 +1,6 @@
 import { useState } from "react"
 
-import {
-  DownloadSimpleIcon,
-  FilePdfIcon,
-  FileXlsIcon,
-  SpinnerIcon,
-} from "@/components/ui/icons"
+import { DownloadSimpleIcon, FilePdfIcon, FileXlsIcon, SpinnerIcon } from "@/components/ui/icons"
 import { useNotify } from "@/components/notice/notice-context"
 
 import {
@@ -59,9 +54,7 @@ export function ExportSelectedRatingScalesDialog({
     exportSelected.mutate({ ids: scaleCodigos, format })
   }
 
-  const pendingFormat = exportSelected.isPending
-    ? exportSelected.variables?.format
-    : undefined
+  const pendingFormat = exportSelected.isPending ? exportSelected.variables?.format : undefined
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -76,20 +69,19 @@ export function ExportSelectedRatingScalesDialog({
         }
       >
         <DownloadSimpleIcon data-icon="inline-start" aria-hidden="true" />
-        <span aria-hidden="true" className="tabular-nums">({count})</span>
+        <span aria-hidden="true" className="tabular-nums">
+          ({count})
+        </span>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>
-            Elige un formato para exportar las escalas de los {count}{" "}
-            nivel(es) seleccionado(s).
+            Elige un formato para exportar las escalas de los {count} nivel(es) seleccionado(s).
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="sm:justify-between">
-          <DialogClose render={<Button type="button" variant="ghost" />}>
-            Cancelar
-          </DialogClose>
+          <DialogClose render={<Button type="button" variant="ghost" />}>Cancelar</DialogClose>
           <div className="flex flex-col-reverse gap-2 sm:flex-row">
             <Button
               type="button"

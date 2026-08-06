@@ -93,10 +93,7 @@ export function SubjectRowFields({
         />
       </TableCell>
       <TableCell>
-        <ColorPickerPopover
-          value={draft.color}
-          onChange={(hex) => onPatch({ color: hex })}
-        />
+        <ColorPickerPopover value={draft.color} onChange={(hex) => onPatch({ color: hex })} />
       </TableCell>
       <TableCell>
         <EspecialidadSelect

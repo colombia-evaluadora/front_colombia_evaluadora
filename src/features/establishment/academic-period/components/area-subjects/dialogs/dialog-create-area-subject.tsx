@@ -5,8 +5,6 @@ interface CreateAreaSubjectDialogProps {
 }
 
 // Alta de un área: reusa el mismo diálogo/formulario que la edición.
-export function CreateAreaSubjectDialog({
-  academicPeriodId,
-}: CreateAreaSubjectDialogProps) {
+export function CreateAreaSubjectDialog({ academicPeriodId }: CreateAreaSubjectDialogProps) {
   return <AreaSubjectFormDialog academicPeriodId={academicPeriodId} />
 }

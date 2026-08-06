@@ -1,11 +1,6 @@
 import { useState } from "react"
 
-import {
-  DownloadSimpleIcon,
-  FilePdfIcon,
-  FileXlsIcon,
-  SpinnerIcon,
-} from "@/components/ui/icons"
+import { DownloadSimpleIcon, FilePdfIcon, FileXlsIcon, SpinnerIcon } from "@/components/ui/icons"
 import { useNotify } from "@/components/notice/notice-context"
 
 import {
@@ -21,18 +16,13 @@ import {
 import { Button } from "@/components/ui/button"
 
 import { useExportRatingScales } from "../../../api/mutations/rating-scales/export-rating-scales"
-import type {
-  ExportFormat,
-  RatingScalesQueryFilters,
-} from "../../../api/types/rating-scales"
+import type { ExportFormat, RatingScalesQueryFilters } from "../../../api/types/rating-scales"
 
 interface ExportRatingScalesDialogProps {
   filters: RatingScalesQueryFilters
 }
 
-export function ExportRatingScalesDialog({
-  filters,
-}: ExportRatingScalesDialogProps) {
+export function ExportRatingScalesDialog({ filters }: ExportRatingScalesDialogProps) {
   const [open, setOpen] = useState(false)
   const { notify } = useNotify()
 
@@ -60,7 +50,9 @@ export function ExportRatingScalesDialog({
       <DialogTrigger
         render={
           <Button
-            variant="outline" color="muted" size="icon-sm"
+            variant="outline"
+            color="muted"
+            size="icon-sm"
             aria-label="Exportar escalas de valoración"
           />
         }
@@ -75,9 +67,7 @@ export function ExportRatingScalesDialog({
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="sm:justify-between">
-          <DialogClose render={<Button type="button" variant="ghost" />}>
-            Cancelar
-          </DialogClose>
+          <DialogClose render={<Button type="button" variant="ghost" />}>Cancelar</DialogClose>
           <div className="flex flex-col-reverse gap-2 sm:flex-row">
             <Button
               type="button"

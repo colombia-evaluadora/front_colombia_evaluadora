@@ -36,9 +36,7 @@ export function DeleteSelectedGradesDialog({
 
   async function handleDelete() {
     setSubmitting(true)
-    const ids = selectedIds
-      .map((id) => Number(id))
-      .filter(Number.isFinite)
+    const ids = selectedIds.map((id) => Number(id)).filter(Number.isFinite)
     const result = await bulkDelete
       .mutateAsync(ids)
       .catch(() => ({ status: "error" as const, message: "" }))
@@ -59,10 +57,7 @@ export function DeleteSelectedGradesDialog({
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger
         render={
-          <Button
-            color="destructive"
-            aria-label={`Eliminar ${count} grado(s) seleccionado(s)`}
-          />
+          <Button color="destructive" aria-label={`Eliminar ${count} grado(s) seleccionado(s)`} />
         }
       >
         <TrashIcon data-icon="inline-start" />
@@ -72,8 +67,7 @@ export function DeleteSelectedGradesDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>Eliminar</AlertDialogTitle>
           <AlertDialogDescription>
-            Se eliminarán permanentemente {count} grado(s). Esta acción no se
-            puede deshacer.
+            Se eliminarán permanentemente {count} grado(s). Esta acción no se puede deshacer.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

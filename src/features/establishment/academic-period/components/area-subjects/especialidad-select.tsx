@@ -2,12 +2,7 @@ import { useState } from "react"
 
 import { CaretDownIcon, CheckIcon, PlusIcon } from "@/components/ui/icons"
 import { Button } from "@/components/ui/button"
-import {
-  Input,
-  inputTriggerVariants,
-  inputVariants,
-  useInputVariant,
-} from "@/components/ui/input"
+import { Input, inputTriggerVariants, inputVariants, useInputVariant } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 
@@ -48,7 +43,7 @@ export function EspecialidadSelect({
               inputTriggerVariants({ variant: resolvedVariant }),
               "flex items-center justify-between gap-1.5 text-left",
               resolvedVariant === "outlined" && "bg-background",
-              value ? "text-foreground" : "text-muted-foreground"
+              value ? "text-foreground" : "text-muted-foreground",
             )}
           />
         }

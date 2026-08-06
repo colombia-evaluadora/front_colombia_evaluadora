@@ -47,7 +47,6 @@ interface SearchQueryBarProps {
   onApply?: () => void
   /** Ancho del panel de filtros. */
   size?: "sm" | "lg"
-  inputMode?: "numeric"
   /** Ancho de la barra; por defecto la misma medida en todos los listados. */
   className?: string
   children: ReactNode
@@ -67,7 +66,6 @@ export function SearchQueryBar({
   formId,
   onApply,
   size,
-  inputMode,
   className,
   children,
 }: SearchQueryBarProps) {
@@ -80,7 +78,6 @@ export function SearchQueryBar({
       <InputGroupInput
         id={id}
         type="search"
-        inputMode={inputMode}
         autoComplete="off"
         placeholder={placeholder}
         aria-label={label ? undefined : placeholder}
@@ -128,11 +125,7 @@ export function SearchQueryBar({
   // los sigue pintando el propio `InputGroup`. Sin `aria-label` en el control,
   // para que el nombre accesible lo dé la etiqueta visible.
   return (
-    <Field
-      orientation="vertical"
-      variant="outlined"
-      className={cn("w-full max-w-xl", className)}
-    >
+    <Field orientation="vertical" variant="outlined" className={cn("w-full max-w-xl", className)}>
       <FieldLabel htmlFor={id}>{label}</FieldLabel>
       {input}
     </Field>

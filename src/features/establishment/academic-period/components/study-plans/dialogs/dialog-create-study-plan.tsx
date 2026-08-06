@@ -43,10 +43,7 @@ import { useSubjectsQuery } from "../../../api/query/area-subjects/use-subjects-
 import { useEvaluationCriteriaQuery } from "../../../api/query/evaluation-criteria/use-evaluation-criteria-query"
 import { useEvaluationCriteriaOptionsQuery } from "../../../api/query/evaluation-criteria/use-evaluation-criteria-options-query"
 import type { StudyPlanItem } from "../../../api/types/study-plan"
-import {
-  studyPlanFormSchema,
-  type StudyPlanFormValues,
-} from "../../../api/schema"
+import { studyPlanFormSchema, type StudyPlanFormValues } from "../../../api/schema"
 
 const EMPTY: StudyPlanFormValues = {
   asignatura: "",
@@ -78,8 +75,7 @@ export function CreateStudyPlanDialog({
   const { notify } = useNotify()
   const [open, setOpen] = useState(false)
   const tienePersonalizacion =
-    item != null &&
-    (item.formatoCalificacion != null || item.criterioNota != null)
+    item != null && (item.formatoCalificacion != null || item.criterioNota != null)
   const [personalizar, setPersonalizar] = useState(tienePersonalizacion)
 
   const { data: criteria } = useEvaluationCriteriaQuery(academicPeriodId)
@@ -97,8 +93,7 @@ export function CreateStudyPlanDialog({
         influyeDesempeno: item.influyeDesempeno,
         matriculaObligatoria: item.matriculaObligatoria ?? false,
         aprobacionObligatoria: item.aprobacionObligatoria ?? false,
-        formatoCalificacion:
-          item.formatoCalificacion ?? formatoHeredado,
+        formatoCalificacion: item.formatoCalificacion ?? formatoHeredado,
         criterioNota: item.criterioNota ?? criterioHeredado,
       }
     : EMPTY
@@ -218,8 +213,7 @@ export function CreateStudyPlanDialog({
           <div className="grid gap-4 sm:grid-cols-3">
             <form.Field name="asignatura">
               {(field) => {
-                const isInvalid =
-                  field.state.meta.isTouched && !field.state.meta.isValid
+                const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
                 return (
                   <Field variant="outlined" data-invalid={isInvalid}>
                     <FieldLabel htmlFor={field.name}>Asignaturas*</FieldLabel>
@@ -319,15 +313,13 @@ export function CreateStudyPlanDialog({
           <div
             className={cn(
               "grid gap-4 sm:grid-cols-3",
-              !personalizar && "pointer-events-none opacity-50"
+              !personalizar && "pointer-events-none opacity-50",
             )}
           >
             <form.Field name="influyeDesempeno">
               {(field) => (
                 <Field>
-                  <FieldLabel>
-                    Influye en el desempeño académico (S/N)
-                  </FieldLabel>
+                  <FieldLabel>Influye en el desempeño académico (S/N)</FieldLabel>
                   <RadioGroup
                     className="flex gap-6 pt-2"
                     disabled={!personalizar}
@@ -396,9 +388,7 @@ export function CreateStudyPlanDialog({
             <form.Field name="formatoCalificacion">
               {(field) => (
                 <Field variant="outlined">
-                  <FieldLabel htmlFor={field.name}>
-                    Formato de calificación
-                  </FieldLabel>
+                  <FieldLabel htmlFor={field.name}>Formato de calificación</FieldLabel>
                   <Select
                     value={personalizar ? field.state.value : formatoHeredado}
                     disabled={!personalizar}
@@ -452,9 +442,7 @@ export function CreateStudyPlanDialog({
         </form>
 
         <DialogFooter className="sm:justify-between">
-          <DialogClose render={<Button type="button" variant="ghost" />}>
-            Cancelar
-          </DialogClose>
+          <DialogClose render={<Button type="button" variant="ghost" />}>Cancelar</DialogClose>
           <Button
             type="submit"
             color="primary"
@@ -462,9 +450,7 @@ export function CreateStudyPlanDialog({
             disabled={isSaving}
             aria-busy={isSaving}
           >
-            {isSaving && (
-              <SpinnerIcon data-icon="inline-start" className="animate-spin" />
-            )}
+            {isSaving && <SpinnerIcon data-icon="inline-start" className="animate-spin" />}
             {isEditing ? "Guardar" : "Agregar"}
           </Button>
         </DialogFooter>

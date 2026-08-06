@@ -62,13 +62,9 @@ export function ExpandableDataTable({
                   className={cn(
                     "text-foreground",
                     cellClassName,
-                    header.column.id === growColumnId && growColumnClassName
+                    header.column.id === growColumnId && growColumnClassName,
                   )}
-                  style={
-                    header.column.id === growColumnId
-                      ? { width: "100%" }
-                      : undefined
-                  }
+                  style={header.column.id === growColumnId ? { width: "100%" } : undefined}
                 >
                   {header.isPlaceholder
                     ? null
@@ -109,13 +105,9 @@ export function ExpandableDataTable({
                         key={cell.id}
                         className={cn(
                           cellClassName,
-                          cell.column.id === growColumnId && growColumnClassName
+                          cell.column.id === growColumnId && growColumnClassName,
                         )}
-                        style={
-                          cell.column.id === growColumnId
-                            ? { width: "100%" }
-                            : undefined
-                        }
+                        style={cell.column.id === growColumnId ? { width: "100%" } : undefined}
                       >
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </TableCell>

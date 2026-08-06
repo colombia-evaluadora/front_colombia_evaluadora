@@ -4,10 +4,7 @@ import { SearchQueryBar } from "@/components/search/search-query-bar"
 import { useQuerySearch } from "@/components/search/use-query-search"
 
 import { useReservationCatalogsQuery } from "../../api/query/use-reservation-catalogs-query"
-import type {
-  ReservationFiltersFormInput,
-  ReservationFiltersFormValues,
-} from "../../api/schema"
+import type { ReservationFiltersFormInput, ReservationFiltersFormValues } from "../../api/schema"
 import { FilterReservationsForm } from "../forms/form-filter-reservations"
 import { reservationsSyntax } from "./query-syntax"
 

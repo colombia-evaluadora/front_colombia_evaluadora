@@ -1,8 +1,4 @@
-import {
-  ArrowDownIcon,
-  ArrowUpIcon,
-  CaretUpDownIcon,
-} from "@/components/ui/icons"
+import { ArrowDownIcon, ArrowUpIcon, CaretUpDownIcon } from "@/components/ui/icons"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -22,17 +18,14 @@ export type ScaleSortKey =
 
 export type ScaleSort = { key: ScaleSortKey; dir: "asc" | "desc" } | null
 
-export function compareByScaleKey(
-  av: unknown,
-  bv: unknown
-): number {
+export function compareByScaleKey(av: unknown, bv: unknown): number {
   if (typeof av === "number" && typeof bv === "number") return av - bv
   return String(av).localeCompare(String(bv))
 }
 
 export function sortByScaleKey<T extends Record<ScaleSortKey, unknown>>(
   rows: T[],
-  sort: ScaleSort
+  sort: ScaleSort,
 ): T[] {
   if (!sort) return rows
   const { key, dir } = sort
@@ -59,11 +52,7 @@ export function ScaleSortableHeader({
       <DropdownMenu>
         <DropdownMenuTrigger
           render={
-            <Button
-              variant="ghost"
-              size="sm"
-              className="-ml-3 h-8 data-[state=open]:bg-accent"
-            />
+            <Button variant="ghost" size="sm" className="-ml-3 h-8 data-[state=open]:bg-accent" />
           }
         >
           <span>{title}</span>

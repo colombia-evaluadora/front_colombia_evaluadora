@@ -73,9 +73,8 @@ export function DeleteSelectedRatingScalesDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>Eliminar</AlertDialogTitle>
           <AlertDialogDescription>
-            Se eliminarán permanentemente {count} escala(s) de valoración de{" "}
-            {levelCount} nivel(es) seleccionado(s). Esta acción no se puede
-            deshacer.
+            Se eliminarán permanentemente {count} escala(s) de valoración de {levelCount} nivel(es)
+            seleccionado(s). Esta acción no se puede deshacer.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

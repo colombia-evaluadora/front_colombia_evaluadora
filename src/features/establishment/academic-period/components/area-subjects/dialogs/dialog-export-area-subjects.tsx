@@ -1,11 +1,6 @@
 import { useState } from "react"
 
-import {
-  DownloadSimpleIcon,
-  FilePdfIcon,
-  FileXlsIcon,
-  SpinnerIcon,
-} from "@/components/ui/icons"
+import { DownloadSimpleIcon, FilePdfIcon, FileXlsIcon, SpinnerIcon } from "@/components/ui/icons"
 import { useNotify } from "@/components/notice/notice-context"
 
 import {
@@ -21,18 +16,13 @@ import {
 import { Button } from "@/components/ui/button"
 
 import { useExportAreaSubjects } from "../../../api/mutations/area-subjects/export-area-subjects"
-import type {
-  AreaSubjectsQueryFilters,
-  ExportFormat,
-} from "../../../api/types/area-subject"
+import type { AreaSubjectsQueryFilters, ExportFormat } from "../../../api/types/area-subject"
 
 interface ExportAreaSubjectsDialogProps {
   filters: AreaSubjectsQueryFilters
 }
 
-export function ExportAreaSubjectsDialog({
-  filters,
-}: ExportAreaSubjectsDialogProps) {
+export function ExportAreaSubjectsDialog({ filters }: ExportAreaSubjectsDialogProps) {
   const [open, setOpen] = useState(false)
   const { notify } = useNotify()
 
@@ -60,7 +50,9 @@ export function ExportAreaSubjectsDialog({
       <DialogTrigger
         render={
           <Button
-            variant="outline" color="muted" size="icon-sm"
+            variant="outline"
+            color="muted"
+            size="icon-sm"
             aria-label="Exportar áreas/asignaturas filtradas"
           />
         }
@@ -71,14 +63,12 @@ export function ExportAreaSubjectsDialog({
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>
-            Elige un formato para exportar todas las áreas/asignaturas que coincidan con
-            la búsqueda activa.
+            Elige un formato para exportar todas las áreas/asignaturas que coincidan con la búsqueda
+            activa.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="sm:justify-between">
-          <DialogClose render={<Button type="button" variant="ghost" />}>
-            Cancelar
-          </DialogClose>
+          <DialogClose render={<Button type="button" variant="ghost" />}>Cancelar</DialogClose>
           <div className="flex flex-col-reverse gap-2 sm:flex-row">
             <Button
               type="button"

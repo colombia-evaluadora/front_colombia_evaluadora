@@ -37,10 +37,7 @@ import { useMetodologiasQuery } from "../../../api/query/use-metodologias-query"
 import { useAcademicPeriodQuery } from "../../../api/query/academic-period/use-academic-period-query"
 import { useJornadasQuery } from "../../../api/query/use-jornadas-query"
 import type { GradeGroup } from "../../../api/types/grade-group"
-import {
-  gradeGroupFormSchema,
-  type GradeGroupFormValues,
-} from "../../../api/schema"
+import { gradeGroupFormSchema, type GradeGroupFormValues } from "../../../api/schema"
 
 const EMPTY: GradeGroupFormValues = {
   codigo: "",
@@ -82,7 +79,7 @@ export function CreateGradeGroupDialog({
   })
   const teacherNames = useMemo(
     () => (employeesData?.rows ?? []).map((e) => e.name),
-    [employeesData]
+    [employeesData],
   )
 
   const defaultValues: GradeGroupFormValues = gradeGroup
@@ -185,8 +182,7 @@ export function CreateGradeGroupDialog({
         >
           <form.Field name="codigo">
             {(field) => {
-              const isInvalid =
-                field.state.meta.isTouched && !field.state.meta.isValid
+              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
               return (
                 <Field variant="outlined" data-invalid={isInvalid}>
                   <FieldLabel htmlFor={field.name}>Grupo</FieldLabel>
@@ -285,9 +281,7 @@ export function CreateGradeGroupDialog({
 
         <DialogFooter>
           <form.Subscribe
-            selector={(state) =>
-              gradeGroupFormSchema.safeParse(state.values).success
-            }
+            selector={(state) => gradeGroupFormSchema.safeParse(state.values).success}
           >
             {(isComplete) =>
               isComplete ? (
@@ -298,20 +292,13 @@ export function CreateGradeGroupDialog({
                   disabled={isSaving}
                   aria-busy={isSaving}
                 >
-                  {isSaving && (
-                    <SpinnerIcon
-                      data-icon="inline-start"
-                      className="animate-spin"
-                    />
-                  )}
+                  {isSaving && <SpinnerIcon data-icon="inline-start" className="animate-spin" />}
                   Guardar
                 </Button>
               ) : null
             }
           </form.Subscribe>
-          <DialogClose render={<Button type="button" variant="outline" />}>
-            Cancelar
-          </DialogClose>
+          <DialogClose render={<Button type="button" variant="outline" />}>Cancelar</DialogClose>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -58,10 +58,7 @@ export function DeleteSelectedAreaSubjectsDialog({
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger
         render={
-          <Button
-            color="destructive"
-            aria-label={`Eliminar ${count} área(s) seleccionada(s)`}
-          />
+          <Button color="destructive" aria-label={`Eliminar ${count} área(s) seleccionada(s)`} />
         }
       >
         <TrashIcon data-icon="inline-start" />
@@ -74,8 +71,8 @@ export function DeleteSelectedAreaSubjectsDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>Eliminar</AlertDialogTitle>
           <AlertDialogDescription>
-            Se eliminarán permanentemente {count} área(s) y todas sus
-            asignaturas asociadas. Esta acción no se puede deshacer.
+            Se eliminarán permanentemente {count} área(s) y todas sus asignaturas asociadas. Esta
+            acción no se puede deshacer.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

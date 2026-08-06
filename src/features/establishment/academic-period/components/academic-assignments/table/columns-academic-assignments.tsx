@@ -35,12 +35,8 @@ function formatStatusLabels(statuses: EmployeeListItem["statuses"]) {
  * Color del badge cuando hay varios estados mezclados: si alguno es
  * `SUSPENDED` mostramos destructive; si todos son `ACTIVE`, success.
  */
-function pickStatusColor(
-  statuses: EmployeeListItem["statuses"]
-): "success" | "destructive" {
-  return statuses.includes("SUSPENDED" satisfies PermissionStatus)
-    ? "destructive"
-    : "success"
+function pickStatusColor(statuses: EmployeeListItem["statuses"]): "success" | "destructive" {
+  return statuses.includes("SUSPENDED" satisfies PermissionStatus) ? "destructive" : "success"
 }
 
 export function createAcademicAssignmentColumns({
@@ -61,11 +57,7 @@ export function createAcademicAssignmentColumns({
             aria-expanded={isOpen}
             onClick={() => onToggleExpand(row.original)}
           >
-            {isOpen ? (
-              <CaretDownIcon weight="bold" />
-            ) : (
-              <CaretRightIcon weight="bold" />
-            )}
+            {isOpen ? <CaretDownIcon weight="bold" /> : <CaretRightIcon weight="bold" />}
           </Button>
         )
       },
@@ -80,10 +72,7 @@ export function createAcademicAssignmentColumns({
           aria-label="Seleccionar página"
           className="translate-y-0.5"
           checked={table.getIsAllPageRowsSelected()}
-          indeterminate={
-            !table.getIsAllPageRowsSelected() &&
-            table.getIsSomePageRowsSelected()
-          }
+          indeterminate={!table.getIsAllPageRowsSelected() && table.getIsSomePageRowsSelected()}
           onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
         />
       ),
@@ -103,33 +92,21 @@ export function createAcademicAssignmentColumns({
       id: "documentNumber",
       accessorKey: "documentNumber",
       meta: { label: "Documento" },
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Documento" />
-      ),
-      cell: ({ row }) => (
-        <span className="tabular-nums">{row.original.documentNumber}</span>
-      ),
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Documento" />,
+      cell: ({ row }) => <span className="tabular-nums">{row.original.documentNumber}</span>,
     },
     {
       id: "name",
       accessorKey: "name",
       meta: { label: "Nombre" },
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Nombre" />
-      ),
-      cell: ({ row }) => (
-        <div className="max-w-md truncate font-medium">
-          {row.original.name}
-        </div>
-      ),
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Nombre" />,
+      cell: ({ row }) => <div className="max-w-md truncate font-medium">{row.original.name}</div>,
     },
     {
       id: "status",
       accessorKey: "status",
       meta: { label: "Estado" },
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Estado" />
-      ),
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Estado" />,
       cell: ({ row }) => {
         const statuses = row.original.statuses
         const fullText = formatStatusLabels(statuses)

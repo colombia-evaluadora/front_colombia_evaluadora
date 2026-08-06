@@ -13,11 +13,7 @@ interface SubjectNoticeBannerProps {
   className?: string
 }
 
-export function SubjectNoticeBanner({
-  notice,
-  onClose,
-  className,
-}: SubjectNoticeBannerProps) {
+export function SubjectNoticeBanner({ notice, onClose, className }: SubjectNoticeBannerProps) {
   if (!notice) return null
 
   return (

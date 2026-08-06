@@ -24,9 +24,7 @@ interface DeleteAcademicPeriodDialogProps {
   period: AcademicPeriod
 }
 
-export function DeleteAcademicPeriodDialog({
-  period,
-}: DeleteAcademicPeriodDialogProps) {
+export function DeleteAcademicPeriodDialog({ period }: DeleteAcademicPeriodDialogProps) {
   const [open, setOpen] = useState(false)
   const { notify } = useNotify()
 
@@ -46,14 +44,7 @@ export function DeleteAcademicPeriodDialog({
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger
-        render={
-          <Button
-            variant="ghost"
-            color="neutral"
-            size="icon"
-            className="size-8"
-          />
-        }
+        render={<Button variant="ghost" color="neutral" size="icon" className="size-8" />}
       >
         <span className="sr-only">Eliminar periodo</span>
         <TrashIcon />
@@ -62,8 +53,7 @@ export function DeleteAcademicPeriodDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>Eliminar</AlertDialogTitle>
           <AlertDialogDescription>
-            Se eliminará permanentemente el periodo {period.name}. Esta acción
-            no se puede deshacer.
+            Se eliminará permanentemente el periodo {period.name}. Esta acción no se puede deshacer.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

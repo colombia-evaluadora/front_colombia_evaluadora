@@ -53,8 +53,8 @@ export function DeleteRatingScaleDialog({ scale }: DeleteRatingScaleDialogProps)
         <AlertDialogHeader>
           <AlertDialogTitle>Eliminar</AlertDialogTitle>
           <AlertDialogDescription>
-            Se eliminará permanentemente la escala «{scale.nombre}». Esta acción no se
-            puede deshacer.
+            Se eliminará permanentemente la escala «{scale.nombre}». Esta acción no se puede
+            deshacer.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

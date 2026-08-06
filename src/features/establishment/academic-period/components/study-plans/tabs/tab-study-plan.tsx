@@ -38,7 +38,7 @@ export function TabStudyPlan({ academicPeriodId, gradeId }: TabStudyPlanProps) {
 
   const columns = useMemo(
     () => createStudyPlanColumns({ academicPeriodId, gradeId }),
-    [academicPeriodId, gradeId]
+    [academicPeriodId, gradeId],
   )
 
   const { table } = useDataTable({
@@ -57,10 +57,7 @@ export function TabStudyPlan({ academicPeriodId, gradeId }: TabStudyPlanProps) {
   return (
     <>
       <div className="mb-2 flex justify-end gap-2">
-        <CreateStudyPlanDialog
-          academicPeriodId={academicPeriodId}
-          gradeId={gradeId}
-        />
+        <CreateStudyPlanDialog academicPeriodId={academicPeriodId} gradeId={gradeId} />
       </div>
 
       <DataTable

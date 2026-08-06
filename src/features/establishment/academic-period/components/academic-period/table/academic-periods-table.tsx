@@ -26,8 +26,7 @@ interface AcademicPeriodsDataTableProps {
 }
 
 export function AcademicPeriodsDataTable({ title, action }: AcademicPeriodsDataTableProps) {
-  const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } =
-    useTablePagination()
+  const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
 
   const { filters, queryFilters, applyFilters, clearAllFilters, activeFilterCount } =
     useAcademicPeriodFilters()
