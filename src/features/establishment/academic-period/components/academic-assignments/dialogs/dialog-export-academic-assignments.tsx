@@ -1,11 +1,6 @@
 import { useState } from "react"
 
-import {
-  DownloadSimpleIcon,
-  FilePdfIcon,
-  FileXlsIcon,
-  SpinnerIcon,
-} from "@/components/ui/icons"
+import { DownloadSimpleIcon, FilePdfIcon, FileXlsIcon, SpinnerIcon } from "@/components/ui/icons"
 import { useNotify } from "@/components/notice/notice-context"
 
 import {
@@ -28,9 +23,7 @@ interface ExportAcademicAssignmentsDialogProps {
   filters: EmployeesQueryFilters
 }
 
-export function ExportAcademicAssignmentsDialog({
-  filters,
-}: ExportAcademicAssignmentsDialogProps) {
+export function ExportAcademicAssignmentsDialog({ filters }: ExportAcademicAssignmentsDialogProps) {
   const [open, setOpen] = useState(false)
   const { notify } = useNotify()
 
@@ -58,7 +51,9 @@ export function ExportAcademicAssignmentsDialog({
       <DialogTrigger
         render={
           <Button
-            variant="outline" color="muted" size="icon-sm"
+            variant="outline"
+            color="muted"
+            size="icon-sm"
             aria-label="Exportar docentes filtrados"
           />
         }
@@ -69,14 +64,11 @@ export function ExportAcademicAssignmentsDialog({
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>
-            Elige un formato para exportar todos los docentes que coincidan con la
-            búsqueda activa.
+            Elige un formato para exportar todos los docentes que coincidan con la búsqueda activa.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="sm:justify-between">
-          <DialogClose render={<Button type="button" variant="ghost" />}>
-            Cancelar
-          </DialogClose>
+          <DialogClose render={<Button type="button" variant="ghost" />}>Cancelar</DialogClose>
           <div className="flex flex-col-reverse gap-2 sm:flex-row">
             <Button
               type="button"

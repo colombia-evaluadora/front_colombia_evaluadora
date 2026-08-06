@@ -17,10 +17,7 @@ import { ExportAcademicAssignmentsDialog } from "../dialogs/dialog-export-academ
 import { ExportSelectedAcademicAssignmentsDialog } from "../dialogs/dialog-export-selected-academic-assignments"
 
 import { useEmployeesQuery } from "@/features/establishment/api/query/use-employees-query"
-import type {
-  EmployeeListItem,
-  EmployeeStatus,
-} from "@/features/establishment/api/types/employee"
+import type { EmployeeListItem, EmployeeStatus } from "@/features/establishment/api/types/employee"
 
 import { useAssignmentSubjectsQuery } from "../../../api/query/academic-assignments/use-assignment-subjects-query"
 import { useTeacherAssignmentsQuery } from "../../../api/query/academic-assignments/use-teacher-assignments-query"
@@ -33,9 +30,7 @@ interface TabAcademicAssignmentsProps {
   academicPeriodId?: number
 }
 
-export function TabAcademicAssignments({
-  academicPeriodId,
-}: TabAcademicAssignmentsProps) {
+export function TabAcademicAssignments({ academicPeriodId }: TabAcademicAssignmentsProps) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [pageIndex, setPageIndex] = useState(0)
   const [pageSize, setPageSize] = useState(10)
@@ -52,7 +47,7 @@ export function TabAcademicAssignments({
       statuses: status ? [status] : undefined,
       campusId,
     }),
-    [search, status, campusId]
+    [search, status, campusId],
   )
 
   const [expanded, setExpanded] = useState<EmployeeListItem | null>(null)
@@ -60,16 +55,9 @@ export function TabAcademicAssignments({
 
   const { data: pool = [] } = useAssignmentSubjectsQuery(academicPeriodId)
 
-  const { data: savedIds } = useTeacherAssignmentsQuery(
-    academicPeriodId,
-    expanded?.documentNumber
-  )
+  const { data: savedIds } = useTeacherAssignmentsQuery(academicPeriodId, expanded?.documentNumber)
   useEffect(() => {
-    if (
-      expanded &&
-      savedIds &&
-      assignedIds[expanded.id] === undefined
-    ) {
+    if (expanded && savedIds && assignedIds[expanded.id] === undefined) {
       setAssignedIds((prev) => ({ ...prev, [expanded.id]: savedIds }))
     }
   }, [expanded, savedIds, assignedIds])
@@ -119,15 +107,10 @@ export function TabAcademicAssignments({
         expandedId: expanded?.id ?? null,
         onToggleExpand: toggleExpand,
       }),
-    [expanded, toggleExpand]
+    [expanded, toggleExpand],
   )
 
-  const {
-    table,
-    selectedIds,
-    hasSelection,
-    resetSelection,
-  } = useDataTable({
+  const { table, selectedIds, hasSelection, resetSelection } = useDataTable({
     columns,
     data: data?.rows ?? [],
     pageCount: data?.pageCount ?? -1,
@@ -222,10 +205,7 @@ export function TabAcademicAssignments({
                   }
                 >
                   {saveAssignments.isPending && (
-                    <SpinnerIcon
-                      data-icon="inline-start"
-                      className="animate-spin"
-                    />
+                    <SpinnerIcon data-icon="inline-start" className="animate-spin" />
                   )}
                   Guardar asignaturas
                 </Button>

@@ -2,11 +2,7 @@ import { useState } from "react"
 import { CaretDownIcon, PlusIcon, TrashIcon, XIcon } from "@/components/ui/icons"
 
 import { Button } from "@/components/ui/button"
-import {
-  inputTriggerVariants,
-  inputVariants,
-  useInputVariant,
-} from "@/components/ui/input"
+import { inputTriggerVariants, inputVariants, useInputVariant } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { TimePickerPanel } from "@/components/ui/time-picker"
 import { cn } from "@/lib/utils"
@@ -29,7 +25,6 @@ function formatBreakTimeCompact(value: string): string {
   return `${h12}:${String(m).padStart(2, "0")}${period}`
 }
 
-
 function getSortedBreakIndices(breaks: Break[]): number[] {
   return breaks
     .map((_, index) => index)
@@ -38,13 +33,7 @@ function getSortedBreakIndices(breaks: Break[]): number[] {
 
 const MAX_VISIBLE_CHIPS = 3
 
-function BreakChips({
-  value,
-  onRemove,
-}: {
-  value: Break[]
-  onRemove: (index: number) => void
-}) {
+function BreakChips({ value, onRemove }: { value: Break[]; onRemove: (index: number) => void }) {
   const sortedIndices = getSortedBreakIndices(value)
   const visibleIndices = sortedIndices.slice(0, MAX_VISIBLE_CHIPS)
   const extra = sortedIndices.length - visibleIndices.length
@@ -105,7 +94,7 @@ export function BreaksField({
               inputVariants({ variant: resolvedVariant }),
               inputTriggerVariants({ variant: resolvedVariant }),
               "flex items-center justify-between gap-1.5 text-left",
-              value.length === 0 && "text-muted-foreground"
+              value.length === 0 && "text-muted-foreground",
             )}
           />
         }
@@ -169,11 +158,7 @@ function BreakEditor({ onAdd }: { onAdd: (brk: Break) => void }) {
           placeholder="Ingresar hora inicio"
         />
         <span className="text-muted-foreground shrink-0 text-xs">→</span>
-        <BreakTimeTrigger
-          value={endTime}
-          onChange={setEndTime}
-          placeholder="Ingresar hora final"
-        />
+        <BreakTimeTrigger value={endTime} onChange={setEndTime} placeholder="Ingresar hora final" />
       </div>
       <Button
         type="button"
@@ -211,7 +196,7 @@ function BreakTimeTrigger({
             type="button"
             className={cn(
               "min-w-0 flex-1 whitespace-nowrap text-left text-sm outline-none",
-              value ? "text-foreground font-medium" : "text-muted-foreground"
+              value ? "text-foreground font-medium" : "text-muted-foreground",
             )}
           />
         }

@@ -2,16 +2,9 @@
 
 import { useState } from "react"
 
-import {
-  Input,
-  inputTriggerVariants,
-  inputVariants,
-  useInputVariant,
-} from "@/components/ui/input"
+import { Input, inputTriggerVariants, inputVariants, useInputVariant } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
-
-
 
 // --- Conversiones de color (sin librerías) ---
 
@@ -90,14 +83,11 @@ function beginDrag(
   el: HTMLElement,
   clientX: number,
   clientY: number,
-  onMove: (x: number, y: number) => void
+  onMove: (x: number, y: number) => void,
 ) {
   const handle = (cx: number, cy: number) => {
     const rect = el.getBoundingClientRect()
-    onMove(
-      clamp01((cx - rect.left) / rect.width),
-      clamp01((cy - rect.top) / rect.height)
-    )
+    onMove(clamp01((cx - rect.left) / rect.width), clamp01((cy - rect.top) / rect.height))
   }
   handle(clientX, clientY)
   const move = (ev: PointerEvent) => handle(ev.clientX, ev.clientY)
@@ -131,15 +121,13 @@ export function ColorPicker({ value, onChange, className }: ColorPickerProps) {
 
   function onSquarePointerDown(e: React.PointerEvent<HTMLDivElement>) {
     e.preventDefault()
-    beginDrag(e.currentTarget, e.clientX, e.clientY, (x, y) =>
-      commit({ h: hsv.h, s: x, v: 1 - y })
-    )
+    beginDrag(e.currentTarget, e.clientX, e.clientY, (x, y) => commit({ h: hsv.h, s: x, v: 1 - y }))
   }
 
   function onHuePointerDown(e: React.PointerEvent<HTMLDivElement>) {
     e.preventDefault()
     beginDrag(e.currentTarget, e.clientX, e.clientY, (x) =>
-      commit({ h: x * 360, s: hsv.s, v: hsv.v })
+      commit({ h: x * 360, s: hsv.s, v: hsv.v }),
     )
   }
 
@@ -240,7 +228,7 @@ export function ColorPickerPopover({ value, onChange }: ColorPickerPopoverProps)
               inputTriggerVariants({ variant: resolvedVariant }),
               "flex items-center gap-2 text-left",
               resolvedVariant === "outlined" && "bg-background",
-              !value && "text-muted-foreground"
+              !value && "text-muted-foreground",
             )}
           />
         }

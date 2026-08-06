@@ -36,11 +36,7 @@ import { useEvaluationCriteriaQuery } from "../../../api/query/evaluation-criter
 import { useUpdateRatingScale } from "../../../api/mutations/rating-scales/update-rating-scale"
 import { useCreateRatingScalesBulk } from "../../../api/mutations/rating-scales/create-rating-scales-bulk"
 import { RATING_SCALE_TYPE_BADGE } from "../../../api/ui-mappings"
-import type {
-  RatingScale,
-  RatingScaleType,
-  TeachingLevel,
-} from "../../../api/types/rating-scales"
+import type { RatingScale, RatingScaleType, TeachingLevel } from "../../../api/types/rating-scales"
 import { CreateRatingScaleDialog } from "../dialogs/dialog-create-rating-scale"
 import { DeleteRatingScaleDialog } from "../dialogs/dialog-delete-rating-scale"
 import { DeleteSelectedRatingScalesDialog } from "../dialogs/dialog-delete-selected-rating-scales"
@@ -48,16 +44,8 @@ import { ExportRatingScalesDialog } from "../dialogs/dialog-export-rating-scales
 import { ExportSelectedRatingScalesDialog } from "../dialogs/dialog-export-selected-rating-scales"
 import { RatingSymbolSelect, RatingSymbolView } from "../rating-symbol"
 import { createRatingScaleLevelColumns } from "../table/columns-rating-scales"
-import {
-  ScaleSortableHeader,
-  sortByScaleKey,
-  type ScaleSort,
-} from "../table/scale-sort-header"
-import {
-  makeRatingScaleGradesSchema,
-  parseGradingRange,
-  type GradingRange,
-} from "../grading-range"
+import { ScaleSortableHeader, sortByScaleKey, type ScaleSort } from "../table/scale-sort-header"
+import { makeRatingScaleGradesSchema, parseGradingRange, type GradingRange } from "../grading-range"
 import { useRowEdit } from "../../../hooks/use-row-edit"
 
 interface TabRatingScalesProps {
@@ -79,10 +67,7 @@ export function TabRatingScales({ academicPeriodId }: TabRatingScalesProps) {
   })
 
   const { data: criteria } = useEvaluationCriteriaQuery(academicPeriodId)
-  const range = useMemo(
-    () => parseGradingRange(criteria?.gradingFormat),
-    [criteria]
-  )
+  const range = useMemo(() => parseGradingRange(criteria?.gradingFormat), [criteria])
 
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const [sorting, setSorting] = useState<SortingState>([])
@@ -106,9 +91,7 @@ export function TabRatingScales({ academicPeriodId }: TabRatingScalesProps) {
     if (!sorting.length) return levels
     const [{ id, desc }] = sorting
     const copy = [...levels].sort((a, b) =>
-      String(a[id as keyof TeachingLevel]).localeCompare(
-        String(b[id as keyof TeachingLevel])
-      )
+      String(a[id as keyof TeachingLevel]).localeCompare(String(b[id as keyof TeachingLevel])),
     )
     return desc ? copy.reverse() : copy
   }, [levels, sorting])
@@ -123,7 +106,7 @@ export function TabRatingScales({ academicPeriodId }: TabRatingScalesProps) {
         expandedId,
         onToggleExpand: toggleExpand,
       }),
-    [expandedId, toggleExpand]
+    [expandedId, toggleExpand],
   )
 
   const { table, selectedIds, hasSelection, resetSelection } = useDataTable({
@@ -262,9 +245,7 @@ function ScalesSubTable({
 
   // Borrador de la fila de alta: siempre visible al pie de la subtabla para
   // crear una escala directamente en este nivel de enseñanza.
-  const [addDraft, setAddDraft] = useState<ScaleDraft>(() =>
-    makeEmptyScaleDraft(range)
-  )
+  const [addDraft, setAddDraft] = useState<ScaleDraft>(() => makeEmptyScaleDraft(range))
   function patchAddDraft(patch: Partial<ScaleDraft>) {
     setAddDraft((prev) => ({ ...prev, ...patch }))
   }
@@ -300,10 +281,7 @@ function ScalesSubTable({
     })
   }
 
-  const sortedScales = useMemo(
-    () => sortByScaleKey(scales, sort),
-    [scales, sort]
-  )
+  const sortedScales = useMemo(() => sortByScaleKey(scales, sort), [scales, sort])
   const {
     editingKey: editingCodigo,
     draft,
@@ -356,343 +334,333 @@ function ScalesSubTable({
         {/* Los controles de la fila en edición usan la variante `outlined`:
             cada input queda recuadrado y se distingue del hover de la fila. */}
         <FieldVariantContext.Provider value="outlined">
-        <Table>
-          <TableHeader>
-            <TableRow className="border-b border-border">
-              <TableHead>
-                <ScaleSortableHeader
-                  title="Nombre"
-                  sortKey="nombre"
-                  sort={sort}
-                  onSortChange={setSort}
-                />
-              </TableHead>
-              <TableHead>
-                <ScaleSortableHeader
-                  title="Abreviación"
-                  sortKey="abreviacion"
-                  sort={sort}
-                  onSortChange={setSort}
-                />
-              </TableHead>
-              <TableHead>
-                <ScaleSortableHeader
-                  title="Nota máximo"
-                  sortKey="notaMaxima"
-                  sort={sort}
-                  onSortChange={setSort}
-                />
-              </TableHead>
-              <TableHead>
-                <ScaleSortableHeader
-                  title="Nota mínimo"
-                  sortKey="notaMinima"
-                  sort={sort}
-                  onSortChange={setSort}
-                />
-              </TableHead>
-              <TableHead>
-                <ScaleSortableHeader
-                  title="Nota equivalente"
-                  sortKey="notaEquivalente"
-                  sort={sort}
-                  onSortChange={setSort}
-                />
-              </TableHead>
-              <TableHead>
-                <ScaleSortableHeader
-                  title="Tipo"
-                  sortKey="tipo"
-                  sort={sort}
-                  onSortChange={setSort}
-                />
-              </TableHead>
-              <TableHead>Iconografía</TableHead>
-              <TableHead className="text-right">Acciones</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody className="[&_tr]:border-b [&_tr]:border-border [&_tr:last-child]:border-0">
-            {sortedScales.map((scale) => {
-              const isEditing = editingCodigo === scale.codigo
+          <Table>
+            <TableHeader>
+              <TableRow className="border-b border-border">
+                <TableHead>
+                  <ScaleSortableHeader
+                    title="Nombre"
+                    sortKey="nombre"
+                    sort={sort}
+                    onSortChange={setSort}
+                  />
+                </TableHead>
+                <TableHead>
+                  <ScaleSortableHeader
+                    title="Abreviación"
+                    sortKey="abreviacion"
+                    sort={sort}
+                    onSortChange={setSort}
+                  />
+                </TableHead>
+                <TableHead>
+                  <ScaleSortableHeader
+                    title="Nota máximo"
+                    sortKey="notaMaxima"
+                    sort={sort}
+                    onSortChange={setSort}
+                  />
+                </TableHead>
+                <TableHead>
+                  <ScaleSortableHeader
+                    title="Nota mínimo"
+                    sortKey="notaMinima"
+                    sort={sort}
+                    onSortChange={setSort}
+                  />
+                </TableHead>
+                <TableHead>
+                  <ScaleSortableHeader
+                    title="Nota equivalente"
+                    sortKey="notaEquivalente"
+                    sort={sort}
+                    onSortChange={setSort}
+                  />
+                </TableHead>
+                <TableHead>
+                  <ScaleSortableHeader
+                    title="Tipo"
+                    sortKey="tipo"
+                    sort={sort}
+                    onSortChange={setSort}
+                  />
+                </TableHead>
+                <TableHead>Iconografía</TableHead>
+                <TableHead className="text-right">Acciones</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="[&_tr]:border-b [&_tr]:border-border [&_tr:last-child]:border-0">
+              {sortedScales.map((scale) => {
+                const isEditing = editingCodigo === scale.codigo
 
-              if (isEditing && draft) {
+                if (isEditing && draft) {
+                  return (
+                    <TableRow key={scale.codigo}>
+                      <TableCell>
+                        <Input
+                          aria-label="Nombre"
+                          placeholder="Ingresar nombre"
+                          value={draft.nombre}
+                          onChange={(e) => patchDraft({ nombre: e.target.value })}
+                          className="min-w-32"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          aria-label="Abreviación"
+                          placeholder="Ingresar abreviación"
+                          value={draft.abreviacion}
+                          onChange={(e) => patchDraft({ abreviacion: e.target.value })}
+                          className="min-w-24"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          aria-label="Nota máximo"
+                          placeholder="Ingresar nota máxima"
+                          type="number"
+                          step="0.1"
+                          min={range.min}
+                          max={range.max}
+                          value={Number.isNaN(draft.notaMaxima) ? "" : draft.notaMaxima}
+                          onChange={(e) => patchDraft({ notaMaxima: e.target.valueAsNumber })}
+                          className="w-20"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          aria-label="Nota mínimo"
+                          placeholder="Ingresar nota mínima"
+                          type="number"
+                          step="0.1"
+                          min={range.min}
+                          max={range.max}
+                          value={Number.isNaN(draft.notaMinima) ? "" : draft.notaMinima}
+                          onChange={(e) => patchDraft({ notaMinima: e.target.valueAsNumber })}
+                          className="w-20"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          aria-label="Nota equivalente"
+                          placeholder="Ingresar nota equivalente"
+                          type="number"
+                          step="0.1"
+                          min={range.min}
+                          max={range.max}
+                          value={Number.isNaN(draft.notaEquivalente) ? "" : draft.notaEquivalente}
+                          onChange={(e) => patchDraft({ notaEquivalente: e.target.valueAsNumber })}
+                          className="w-20"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Select
+                          value={draft.tipo}
+                          onValueChange={(value) =>
+                            value && patchDraft({ tipo: value as RatingScaleType })
+                          }
+                        >
+                          <SelectTrigger aria-label="Tipo" className="min-w-32">
+                            <SelectValue placeholder="Seleccionar" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectGroup>
+                              {tipoOptions.map((option) => (
+                                <SelectItem key={option.key} value={option.key}>
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </SelectGroup>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell>
+                        <RatingSymbolSelect
+                          symbols={symbols}
+                          value={draft.iconografia}
+                          onChange={(valor) => patchDraft({ iconografia: valor })}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            type="button"
+                            color="primary"
+                            size="icon"
+                            className="size-8"
+                            aria-label="Guardar cambios"
+                            disabled={updateMutation.isPending}
+                            aria-busy={updateMutation.isPending}
+                            onClick={() => saveEdit(scale)}
+                          >
+                            {updateMutation.isPending ? (
+                              <SpinnerIcon className="animate-spin" />
+                            ) : (
+                              <CheckIcon />
+                            )}
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="size-8"
+                            aria-label="Cancelar edición"
+                            disabled={updateMutation.isPending}
+                            onClick={cancelEdit}
+                          >
+                            <XIcon />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )
+                }
+
                 return (
                   <TableRow key={scale.codigo}>
+                    <TableCell className="font-medium">{scale.nombre}</TableCell>
+                    <TableCell>{scale.abreviacion}</TableCell>
+                    <TableCell>{scale.notaMaxima}</TableCell>
+                    <TableCell>{scale.notaMinima}</TableCell>
+                    <TableCell>{scale.notaEquivalente}</TableCell>
                     <TableCell>
-                      <Input
-                        aria-label="Nombre"
-                        placeholder="Ingresar nombre"
-                        value={draft.nombre}
-                        onChange={(e) => patchDraft({ nombre: e.target.value })}
-                        className="min-w-32"
-                      />
+                      <Badge {...RATING_SCALE_TYPE_BADGE[scale.tipo]}>{scale.tipo}</Badge>
                     </TableCell>
-                    <TableCell>
-                      <Input
-                        aria-label="Abreviación"
-                        placeholder="Ingresar abreviación"
-                        value={draft.abreviacion}
-                        onChange={(e) => patchDraft({ abreviacion: e.target.value })}
-                        className="min-w-24"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        aria-label="Nota máximo"
-                        placeholder="Ingresar nota máxima"
-                        type="number"
-                        step="0.1"
-                        min={range.min}
-                        max={range.max}
-                        value={Number.isNaN(draft.notaMaxima) ? "" : draft.notaMaxima}
-                        onChange={(e) => patchDraft({ notaMaxima: e.target.valueAsNumber })}
-                        className="w-20"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        aria-label="Nota mínimo"
-                        placeholder="Ingresar nota mínima"
-                        type="number"
-                        step="0.1"
-                        min={range.min}
-                        max={range.max}
-                        value={Number.isNaN(draft.notaMinima) ? "" : draft.notaMinima}
-                        onChange={(e) => patchDraft({ notaMinima: e.target.valueAsNumber })}
-                        className="w-20"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        aria-label="Nota equivalente"
-                        placeholder="Ingresar nota equivalente"
-                        type="number"
-                        step="0.1"
-                        min={range.min}
-                        max={range.max}
-                        value={
-                          Number.isNaN(draft.notaEquivalente) ? "" : draft.notaEquivalente
-                        }
-                        onChange={(e) =>
-                          patchDraft({ notaEquivalente: e.target.valueAsNumber })
-                        }
-                        className="w-20"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Select
-                        value={draft.tipo}
-                        onValueChange={(value) =>
-                          value && patchDraft({ tipo: value as RatingScaleType })
-                        }
-                      >
-                        <SelectTrigger aria-label="Tipo" className="min-w-32">
-                          <SelectValue placeholder="Seleccionar" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectGroup>
-                            {tipoOptions.map((option) => (
-                              <SelectItem key={option.key} value={option.key}>
-                                {option.label}
-                              </SelectItem>
-                            ))}
-                          </SelectGroup>
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                    <TableCell>
-                      <RatingSymbolSelect
-                        symbols={symbols}
-                        value={draft.iconografia}
-                        onChange={(valor) => patchDraft({ iconografia: valor })}
-                      />
+                    <TableCell className="text-lg">
+                      <RatingSymbolView value={scale.iconografia} />
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center justify-end gap-1">
                         <Button
                           type="button"
-                          color="primary"
+                          variant="ghost"
+                          color="neutral"
                           size="icon"
                           className="size-8"
-                          aria-label="Guardar cambios"
-                          disabled={updateMutation.isPending}
-                          aria-busy={updateMutation.isPending}
-                          onClick={() => saveEdit(scale)}
+                          aria-label="Editar escala de valoración"
+                          disabled={editingCodigo !== null}
+                          onClick={() => startEdit(scale)}
                         >
-                          {updateMutation.isPending ? (
-                            <SpinnerIcon className="animate-spin" />
-                          ) : (
-                            <CheckIcon />
-                          )}
+                          <PencilIcon />
                         </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          className="size-8"
-                          aria-label="Cancelar edición"
-                          disabled={updateMutation.isPending}
-                          onClick={cancelEdit}
-                        >
-                          <XIcon />
-                        </Button>
+                        <DeleteRatingScaleDialog scale={scale} />
                       </div>
                     </TableCell>
                   </TableRow>
                 )
-              }
+              })}
 
-              return (
-                <TableRow key={scale.codigo}>
-                  <TableCell className="font-medium">{scale.nombre}</TableCell>
-                  <TableCell>{scale.abreviacion}</TableCell>
-                  <TableCell>{scale.notaMaxima}</TableCell>
-                  <TableCell>{scale.notaMinima}</TableCell>
-                  <TableCell>{scale.notaEquivalente}</TableCell>
-                  <TableCell>
-                    <Badge {...RATING_SCALE_TYPE_BADGE[scale.tipo]}>{scale.tipo}</Badge>
-                  </TableCell>
-                  <TableCell className="text-lg">
-                    <RatingSymbolView value={scale.iconografia} />
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center justify-end gap-1">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        color="neutral"
-                        size="icon"
-                        className="size-8"
-                        aria-label="Editar escala de valoración"
-                        disabled={editingCodigo !== null}
-                        onClick={() => startEdit(scale)}
-                      >
-                        <PencilIcon />
-                      </Button>
-                      <DeleteRatingScaleDialog scale={scale} />
-                    </div>
-                  </TableCell>
-                </TableRow>
-              )
-            })}
-
-            {/* Fila de carga: siempre visible para crear una escala en este
+              {/* Fila de carga: siempre visible para crear una escala en este
                 nivel directamente desde la subtabla. */}
-            <TableRow>
-              <TableCell>
-                <Input
-                  aria-label="Nombre"
-                  placeholder="Ingresar nombre"
-                  value={addDraft.nombre}
-                  onChange={(e) => patchAddDraft({ nombre: e.target.value })}
-                  className="min-w-32"
-                />
-              </TableCell>
-              <TableCell>
-                <Input
-                  aria-label="Abreviación"
-                  placeholder="Ingresar abreviación"
-                  value={addDraft.abreviacion}
-                  onChange={(e) => patchAddDraft({ abreviacion: e.target.value })}
-                  className="min-w-24"
-                />
-              </TableCell>
-              <TableCell>
-                <Input
-                  aria-label="Nota máximo"
-                  placeholder="Ingresar nota máxima"
-                  type="number"
-                  step="0.1"
-                  min={range.min}
-                  max={range.max}
-                  value={Number.isNaN(addDraft.notaMaxima) ? "" : addDraft.notaMaxima}
-                  onChange={(e) => patchAddDraft({ notaMaxima: e.target.valueAsNumber })}
-                  className="w-20"
-                />
-              </TableCell>
-              <TableCell>
-                <Input
-                  aria-label="Nota mínimo"
-                  placeholder="Ingresar nota mínima"
-                  type="number"
-                  step="0.1"
-                  min={range.min}
-                  max={range.max}
-                  value={Number.isNaN(addDraft.notaMinima) ? "" : addDraft.notaMinima}
-                  onChange={(e) => patchAddDraft({ notaMinima: e.target.valueAsNumber })}
-                  className="w-20"
-                />
-              </TableCell>
-              <TableCell>
-                <Input
-                  aria-label="Nota equivalente"
-                  placeholder="Ingresar nota equivalente"
-                  type="number"
-                  step="0.1"
-                  min={range.min}
-                  max={range.max}
-                  value={
-                    Number.isNaN(addDraft.notaEquivalente)
-                      ? ""
-                      : addDraft.notaEquivalente
-                  }
-                  onChange={(e) =>
-                    patchAddDraft({ notaEquivalente: e.target.valueAsNumber })
-                  }
-                  className="w-20"
-                />
-              </TableCell>
-              <TableCell>
-                <Select
-                  value={addDraft.tipo}
-                  onValueChange={(value) =>
-                    value && patchAddDraft({ tipo: value as RatingScaleType })
-                  }
-                >
-                  <SelectTrigger aria-label="Tipo" className="min-w-32">
-                    <SelectValue placeholder="Seleccionar" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      {tipoOptions.map((option) => (
-                        <SelectItem key={option.key} value={option.key}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              </TableCell>
-              <TableCell>
-                <RatingSymbolSelect
-                  symbols={symbols}
-                  value={addDraft.iconografia}
-                  onChange={(valor) => patchAddDraft({ iconografia: valor })}
-                />
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center justify-end gap-1">
-                  <Button
-                    type="button"
-                    color="primary"
-                    size="icon"
-                    className="size-8"
-                    aria-label="Agregar escala de valoración a este nivel"
-                    disabled={editingCodigo !== null || createMutation.isPending}
-                    aria-busy={createMutation.isPending}
-                    onClick={commitDraft}
+              <TableRow>
+                <TableCell>
+                  <Input
+                    aria-label="Nombre"
+                    placeholder="Ingresar nombre"
+                    value={addDraft.nombre}
+                    onChange={(e) => patchAddDraft({ nombre: e.target.value })}
+                    className="min-w-32"
+                  />
+                </TableCell>
+                <TableCell>
+                  <Input
+                    aria-label="Abreviación"
+                    placeholder="Ingresar abreviación"
+                    value={addDraft.abreviacion}
+                    onChange={(e) => patchAddDraft({ abreviacion: e.target.value })}
+                    className="min-w-24"
+                  />
+                </TableCell>
+                <TableCell>
+                  <Input
+                    aria-label="Nota máximo"
+                    placeholder="Ingresar nota máxima"
+                    type="number"
+                    step="0.1"
+                    min={range.min}
+                    max={range.max}
+                    value={Number.isNaN(addDraft.notaMaxima) ? "" : addDraft.notaMaxima}
+                    onChange={(e) => patchAddDraft({ notaMaxima: e.target.valueAsNumber })}
+                    className="w-20"
+                  />
+                </TableCell>
+                <TableCell>
+                  <Input
+                    aria-label="Nota mínimo"
+                    placeholder="Ingresar nota mínima"
+                    type="number"
+                    step="0.1"
+                    min={range.min}
+                    max={range.max}
+                    value={Number.isNaN(addDraft.notaMinima) ? "" : addDraft.notaMinima}
+                    onChange={(e) => patchAddDraft({ notaMinima: e.target.valueAsNumber })}
+                    className="w-20"
+                  />
+                </TableCell>
+                <TableCell>
+                  <Input
+                    aria-label="Nota equivalente"
+                    placeholder="Ingresar nota equivalente"
+                    type="number"
+                    step="0.1"
+                    min={range.min}
+                    max={range.max}
+                    value={Number.isNaN(addDraft.notaEquivalente) ? "" : addDraft.notaEquivalente}
+                    onChange={(e) => patchAddDraft({ notaEquivalente: e.target.valueAsNumber })}
+                    className="w-20"
+                  />
+                </TableCell>
+                <TableCell>
+                  <Select
+                    value={addDraft.tipo}
+                    onValueChange={(value) =>
+                      value && patchAddDraft({ tipo: value as RatingScaleType })
+                    }
                   >
-                    {createMutation.isPending ? (
-                      <SpinnerIcon className="animate-spin" />
-                    ) : (
-                      <PlusIcon weight="bold" />
-                    )}
-                  </Button>
-                </div>
-              </TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
+                    <SelectTrigger aria-label="Tipo" className="min-w-32">
+                      <SelectValue placeholder="Seleccionar" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        {tipoOptions.map((option) => (
+                          <SelectItem key={option.key} value={option.key}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                </TableCell>
+                <TableCell>
+                  <RatingSymbolSelect
+                    symbols={symbols}
+                    value={addDraft.iconografia}
+                    onChange={(valor) => patchAddDraft({ iconografia: valor })}
+                  />
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center justify-end gap-1">
+                    <Button
+                      type="button"
+                      color="primary"
+                      size="icon"
+                      className="size-8"
+                      aria-label="Agregar escala de valoración a este nivel"
+                      disabled={editingCodigo !== null || createMutation.isPending}
+                      aria-busy={createMutation.isPending}
+                      onClick={commitDraft}
+                    >
+                      {createMutation.isPending ? (
+                        <SpinnerIcon className="animate-spin" />
+                      ) : (
+                        <PlusIcon weight="bold" />
+                      )}
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
         </FieldVariantContext.Provider>
       </div>
     </div>

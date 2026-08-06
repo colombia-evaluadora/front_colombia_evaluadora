@@ -29,7 +29,9 @@ import {
 const FIELD_VALUE_RE = /^(.*?)\s*"(.*)"$/
 
 /** Sesiones de auditoría: la búsqueda libre es el autor o su IP. */
-export function auditSessionsSyntax(statusOptions: QueryOption[]): QuerySyntax<AuditFiltersFormValues> {
+export function auditSessionsSyntax(
+  statusOptions: QueryOption[],
+): QuerySyntax<AuditFiltersFormValues> {
   return {
     empty: { author: "", statuses: [], startedFrom: "", startedTo: "" },
     freeText: { key: "author_ip", field: "author" },

@@ -42,15 +42,10 @@ export function TabGrades({ jornada, academicPeriodId }: TabGradesProps) {
 
   const columns = useMemo(
     () => createGradeColumns({ jornada, academicPeriodId }),
-    [jornada, academicPeriodId]
+    [jornada, academicPeriodId],
   )
 
-  const {
-    table,
-    selectedIds,
-    hasSelection,
-    resetSelection,
-  } = useDataTable({
+  const { table, selectedIds, hasSelection, resetSelection } = useDataTable({
     columns,
     data: data?.rows ?? [],
     pageCount: data?.pageCount ?? -1,
@@ -63,20 +58,14 @@ export function TabGrades({ jornada, academicPeriodId }: TabGradesProps) {
     setSorting,
   })
 
-  const selectedGradeIds = useMemo(
-    () => selectedIds.map(Number),
-    [selectedIds]
-  )
+  const selectedGradeIds = useMemo(() => selectedIds.map(Number), [selectedIds])
 
   return (
     <>
       <div className="mb-2 flex items-center justify-end gap-2">
         {hasSelection ? (
           <>
-            <DeleteSelectedGradesDialog
-              selectedIds={selectedIds}
-              resetSelection={resetSelection}
-            />
+            <DeleteSelectedGradesDialog selectedIds={selectedIds} resetSelection={resetSelection} />
             <ExportSelectedGradesDialog
               selectedIds={selectedGradeIds}
               resetSelection={resetSelection}

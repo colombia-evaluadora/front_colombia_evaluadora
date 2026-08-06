@@ -30,11 +30,7 @@ export function createRatingScaleLevelColumns({
             aria-expanded={isOpen}
             onClick={() => onToggleExpand(row.original)}
           >
-            {isOpen ? (
-              <CaretDownIcon weight="bold" />
-            ) : (
-              <CaretRightIcon weight="bold" />
-            )}
+            {isOpen ? <CaretDownIcon weight="bold" /> : <CaretRightIcon weight="bold" />}
           </Button>
         )
       },
@@ -49,10 +45,7 @@ export function createRatingScaleLevelColumns({
           aria-label="Seleccionar página"
           className="translate-y-0.5"
           checked={table.getIsAllPageRowsSelected()}
-          indeterminate={
-            !table.getIsAllPageRowsSelected() &&
-            table.getIsSomePageRowsSelected()
-          }
+          indeterminate={!table.getIsAllPageRowsSelected() && table.getIsSomePageRowsSelected()}
           onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
         />
       ),
@@ -75,9 +68,7 @@ export function createRatingScaleLevelColumns({
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Niveles de enseñanza" />
       ),
-      cell: ({ row }) => (
-        <span className="font-semibold uppercase">{row.original.nombre}</span>
-      ),
+      cell: ({ row }) => <span className="font-semibold uppercase">{row.original.nombre}</span>,
       enableHiding: false,
     },
   ]

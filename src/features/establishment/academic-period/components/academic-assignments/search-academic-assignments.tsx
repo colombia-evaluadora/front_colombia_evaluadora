@@ -14,10 +14,7 @@ import {
 } from "@/components/ui/select"
 
 import { EMPLOYEE_STATUS_LABELS } from "@/features/establishment/api/employee-ui-mappings"
-import {
-  EMPLOYEE_STATUSES,
-  type EmployeeStatus,
-} from "@/features/establishment/api/types/employee"
+import { EMPLOYEE_STATUSES, type EmployeeStatus } from "@/features/establishment/api/types/employee"
 
 // Valor vacío del select = sin filtro de estado ("Todos").
 const ALL_VALUE = ""

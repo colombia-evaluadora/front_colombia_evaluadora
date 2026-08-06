@@ -5,10 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { DataTableColumnHeader } from "@/components/data-table"
 
 import { EVALUATION_PERIOD_STATUS_BADGE } from "../../../api/ui-mappings"
-import type {
-  EvaluationPeriod,
-  EvaluationPeriodStatus,
-} from "../../../api/types/evaluation-period"
+import type { EvaluationPeriod, EvaluationPeriodStatus } from "../../../api/types/evaluation-period"
 import { DeleteEvaluationPeriodDialog } from "../dialogs/dialog-delete-evaluation-period"
 import { CreateEvaluationPeriodDialog } from "../dialogs/dialog-create-evaluation-period"
 
@@ -26,129 +23,102 @@ export function createEvaluationPeriodColumns({
   academicPeriodId,
 }: CreateEvaluationPeriodColumnsOptions = {}): ColumnDef<EvaluationPeriod>[] {
   return [
-  {
-    id: "select",
-    header: ({ table }) => (
-      <Checkbox
-        aria-label="Seleccionar página"
-        className="translate-y-0.5"
-        checked={table.getIsAllPageRowsSelected()}
-        indeterminate={
-          !table.getIsAllPageRowsSelected() &&
-          table.getIsSomePageRowsSelected()
-        }
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-      />
-    ),
-    cell: ({ row }) => (
-      <Checkbox
-        aria-label={`Seleccionar ${row.original.nombre}`}
-        className="translate-y-0.5"
-        checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
-      />
-    ),
-    enableSorting: false,
-    enableHiding: false,
-    size: 32,
-  },
-  {
-    id: "codigo",
-    accessorKey: "codigo",
-    meta: { label: "Código" },
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Código" />
-    ),
-    cell: ({ row }) => (
-      <span className="font-medium">{row.original.codigo}</span>
-    ),
-  },
-  {
-    id: "nombre",
-    accessorKey: "nombre",
-    meta: { label: "Nombre" },
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Nombre" />
-    ),
-    cell: ({ row }) => (
-      <span className="font-semibold uppercase">{row.original.nombre}</span>
-    ),
-  },
-  {
-    id: "abreviacion",
-    accessorKey: "abreviacion",
-    meta: { label: "Abreviación" },
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Abreviación" />
-    ),
-    cell: ({ row }) => <span>{row.original.abreviacion}</span>,
-  },
-  {
-    id: "startDate",
-    accessorKey: "startDate",
-    meta: { label: "Fecha inicio" },
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Fecha inicio" />
-    ),
-    cell: ({ row }) => <span>{formatDate(row.original.startDate)}</span>,
-  },
-  {
-    id: "endDate",
-    accessorKey: "endDate",
-    meta: { label: "Fecha fin" },
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Fecha fin" />
-    ),
-    cell: ({ row }) => <span>{formatDate(row.original.endDate)}</span>,
-  },
-  {
-    id: "peso",
-    accessorKey: "peso",
-    meta: { label: "Peso porcentual" },
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Peso porcentual" />
-    ),
-    cell: ({ row }) => <span>{row.original.peso}%</span>,
-  },
-  {
-    id: "estado",
-    accessorKey: "estado",
-    meta: { label: "Estado" },
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Estado" />
-    ),
-    cell: ({ row }) => {
-      const estado = row.getValue<EvaluationPeriodStatus>("estado")
-      return (
-        // "Habilitados para algunas asignaturas" no entra en una línea: el
-        // badge se deja envolver en vez de estirar la columna.
-        <Badge
-          {...EVALUATION_PERIOD_STATUS_BADGE[estado]}
-          className="max-w-40 text-left whitespace-normal"
-        >
-          {estado}
-        </Badge>
-      )
+    {
+      id: "select",
+      header: ({ table }) => (
+        <Checkbox
+          aria-label="Seleccionar página"
+          className="translate-y-0.5"
+          checked={table.getIsAllPageRowsSelected()}
+          indeterminate={!table.getIsAllPageRowsSelected() && table.getIsSomePageRowsSelected()}
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+        />
+      ),
+      cell: ({ row }) => (
+        <Checkbox
+          aria-label={`Seleccionar ${row.original.nombre}`}
+          className="translate-y-0.5"
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(!!value)}
+        />
+      ),
+      enableSorting: false,
+      enableHiding: false,
+      size: 32,
     },
-  },
-  {
-    id: "actions",
-    header: () => <span className="sr-only">Acciones</span>,
-    cell: ({ row }) => (
-      <div className="flex items-center justify-end gap-1">
-        <CreateEvaluationPeriodDialog
-          period={row.original}
-          academicPeriodId={academicPeriodId}
-        />
-        <DeleteEvaluationPeriodDialog
-          period={row.original}
-          academicPeriodId={academicPeriodId}
-        />
-      </div>
-    ),
-    enableSorting: false,
-    enableHiding: false,
-    size: 96,
+    {
+      id: "codigo",
+      accessorKey: "codigo",
+      meta: { label: "Código" },
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Código" />,
+      cell: ({ row }) => <span className="font-medium">{row.original.codigo}</span>,
+    },
+    {
+      id: "nombre",
+      accessorKey: "nombre",
+      meta: { label: "Nombre" },
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Nombre" />,
+      cell: ({ row }) => <span className="font-semibold uppercase">{row.original.nombre}</span>,
+    },
+    {
+      id: "abreviacion",
+      accessorKey: "abreviacion",
+      meta: { label: "Abreviación" },
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Abreviación" />,
+      cell: ({ row }) => <span>{row.original.abreviacion}</span>,
+    },
+    {
+      id: "startDate",
+      accessorKey: "startDate",
+      meta: { label: "Fecha inicio" },
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Fecha inicio" />,
+      cell: ({ row }) => <span>{formatDate(row.original.startDate)}</span>,
+    },
+    {
+      id: "endDate",
+      accessorKey: "endDate",
+      meta: { label: "Fecha fin" },
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Fecha fin" />,
+      cell: ({ row }) => <span>{formatDate(row.original.endDate)}</span>,
+    },
+    {
+      id: "peso",
+      accessorKey: "peso",
+      meta: { label: "Peso porcentual" },
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Peso porcentual" />,
+      cell: ({ row }) => <span>{row.original.peso}%</span>,
+    },
+    {
+      id: "estado",
+      accessorKey: "estado",
+      meta: { label: "Estado" },
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Estado" />,
+      cell: ({ row }) => {
+        const estado = row.getValue<EvaluationPeriodStatus>("estado")
+        return (
+          // "Habilitados para algunas asignaturas" no entra en una línea: el
+          // badge se deja envolver en vez de estirar la columna.
+          <Badge
+            {...EVALUATION_PERIOD_STATUS_BADGE[estado]}
+            className="max-w-40 text-left whitespace-normal"
+          >
+            {estado}
+          </Badge>
+        )
+      },
+    },
+    {
+      id: "actions",
+      header: () => <span className="sr-only">Acciones</span>,
+      cell: ({ row }) => (
+        <div className="flex items-center justify-end gap-1">
+          <CreateEvaluationPeriodDialog period={row.original} academicPeriodId={academicPeriodId} />
+          <DeleteEvaluationPeriodDialog period={row.original} academicPeriodId={academicPeriodId} />
+        </div>
+      ),
+      enableSorting: false,
+      enableHiding: false,
+      size: 96,
     },
   ]
 }

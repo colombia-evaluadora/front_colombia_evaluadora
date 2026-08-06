@@ -44,14 +44,7 @@ export function DeleteGradeDialog({ grade }: DeleteGradeDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger
-        render={
-          <Button
-            variant="ghost"
-            color="neutral"
-            size="icon"
-            className="size-8"
-          />
-        }
+        render={<Button variant="ghost" color="neutral" size="icon" className="size-8" />}
       >
         <span className="sr-only">Eliminar grado</span>
         <TrashIcon />
@@ -60,8 +53,7 @@ export function DeleteGradeDialog({ grade }: DeleteGradeDialogProps) {
         <AlertDialogHeader>
           <AlertDialogTitle>Eliminar</AlertDialogTitle>
           <AlertDialogDescription>
-            Se eliminará permanentemente el grado {grade.nombre}. Esta acción no
-            se puede deshacer.
+            Se eliminará permanentemente el grado {grade.nombre}. Esta acción no se puede deshacer.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

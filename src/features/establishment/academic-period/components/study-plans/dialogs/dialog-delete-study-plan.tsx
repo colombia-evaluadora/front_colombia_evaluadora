@@ -44,14 +44,7 @@ export function DeleteStudyPlanDialog({ item }: DeleteStudyPlanDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger
-        render={
-          <Button
-            variant="ghost"
-            color="neutral"
-            size="icon"
-            className="size-8"
-          />
-        }
+        render={<Button variant="ghost" color="neutral" size="icon" className="size-8" />}
       >
         <span className="sr-only">Eliminar asignatura</span>
         <TrashIcon />
@@ -60,8 +53,8 @@ export function DeleteStudyPlanDialog({ item }: DeleteStudyPlanDialogProps) {
         <AlertDialogHeader>
           <AlertDialogTitle>Eliminar</AlertDialogTitle>
           <AlertDialogDescription>
-            Se eliminará permanentemente {item.asignatura} del plan de estudio.
-            Esta acción no se puede deshacer.
+            Se eliminará permanentemente {item.asignatura} del plan de estudio. Esta acción no se
+            puede deshacer.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

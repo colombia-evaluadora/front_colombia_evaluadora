@@ -24,9 +24,7 @@ interface DeleteAreaSubjectDialogProps {
   areaSubject: AreaSubject
 }
 
-export function DeleteAreaSubjectDialog({
-  areaSubject,
-}: DeleteAreaSubjectDialogProps) {
+export function DeleteAreaSubjectDialog({ areaSubject }: DeleteAreaSubjectDialogProps) {
   const [open, setOpen] = useState(false)
   const { notify } = useNotify()
 
@@ -46,14 +44,7 @@ export function DeleteAreaSubjectDialog({
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger
-        render={
-          <Button
-            variant="ghost"
-            color="neutral"
-            size="icon"
-            className="size-8"
-          />
-        }
+        render={<Button variant="ghost" color="neutral" size="icon" className="size-8" />}
       >
         <span className="sr-only">Eliminar área/asignatura</span>
         <TrashIcon />
@@ -62,8 +53,8 @@ export function DeleteAreaSubjectDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>Eliminar</AlertDialogTitle>
           <AlertDialogDescription>
-            Se eliminará permanentemente {areaSubject.nombreInterno}. Esta
-            acción no se puede deshacer.
+            Se eliminará permanentemente {areaSubject.nombreInterno}. Esta acción no se puede
+            deshacer.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

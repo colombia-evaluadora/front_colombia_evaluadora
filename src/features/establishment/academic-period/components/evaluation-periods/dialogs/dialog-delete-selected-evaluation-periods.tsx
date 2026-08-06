@@ -36,9 +36,7 @@ export function DeleteSelectedEvaluationPeriodsDialog({
 
   async function handleDelete() {
     setSubmitting(true)
-    const codigos = selectedIds
-      .map((id) => Number(id))
-      .filter(Number.isFinite)
+    const codigos = selectedIds.map((id) => Number(id)).filter(Number.isFinite)
     const result = await bulkDelete
       .mutateAsync(codigos)
       .catch(() => ({ status: "error" as const, message: "" }))
@@ -72,8 +70,8 @@ export function DeleteSelectedEvaluationPeriodsDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>Eliminar</AlertDialogTitle>
           <AlertDialogDescription>
-            Se eliminarán permanentemente {count} periodo(s) de evaluación.
-            Esta acción no se puede deshacer.
+            Se eliminarán permanentemente {count} periodo(s) de evaluación. Esta acción no se puede
+            deshacer.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

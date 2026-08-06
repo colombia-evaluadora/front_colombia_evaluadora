@@ -106,7 +106,7 @@ export function buildSlots(jornada: Jornada): Slot[] {
     const segLen = seg.end - seg.start
     const blocksInSeg = Math.max(
       0,
-      isLast ? blocksCount - placed : Math.round(segLen / blockMinutes)
+      isLast ? blocksCount - placed : Math.round(segLen / blockMinutes),
     )
     const localBlock = blocksInSeg > 0 ? segLen / blocksInSeg : blockMinutes
 

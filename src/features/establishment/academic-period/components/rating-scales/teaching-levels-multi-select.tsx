@@ -1,26 +1,22 @@
-import { CaretDownIcon, XIcon } from "@/components/ui/icons";
+import { CaretDownIcon, XIcon } from "@/components/ui/icons"
 
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  inputTriggerVariants,
-  inputVariants,
-  useInputVariant,
-} from "@/components/ui/input";
-import { cn } from "@/lib/utils";
+} from "@/components/ui/dropdown-menu"
+import { inputTriggerVariants, inputVariants, useInputVariant } from "@/components/ui/input"
+import { cn } from "@/lib/utils"
 
-import type { TeachingLevel } from "../../api/types/rating-scales";
+import type { TeachingLevel } from "../../api/types/rating-scales"
 
 interface TeachingLevelsMultiSelectProps {
-  id?: string;
-  levels: TeachingLevel[];
-  value: number[];
-  onChange: (ids: number[]) => void;
-  invalid?: boolean;
+  id?: string
+  levels: TeachingLevel[]
+  value: number[]
+  onChange: (ids: number[]) => void
+  invalid?: boolean
 }
 
 // Chips en el trigger + dropdown con checkboxes al estilo de "Columnas
@@ -32,15 +28,11 @@ export function TeachingLevelsMultiSelect({
   onChange,
   invalid,
 }: TeachingLevelsMultiSelectProps) {
-  const selected = levels.filter((level) => value.includes(level.id));
-  const resolvedVariant = useInputVariant();
+  const selected = levels.filter((level) => value.includes(level.id))
+  const resolvedVariant = useInputVariant()
 
   function toggle(levelId: number) {
-    onChange(
-      value.includes(levelId)
-        ? value.filter((v) => v !== levelId)
-        : [...value, levelId],
-    );
+    onChange(value.includes(levelId) ? value.filter((v) => v !== levelId) : [...value, levelId])
   }
 
   return (
@@ -76,8 +68,8 @@ export function TeachingLevelsMultiSelect({
                   className="text-muted-foreground hover:text-foreground cursor-pointer"
                   onPointerDown={(e) => e.stopPropagation()}
                   onClick={(e) => {
-                    e.stopPropagation();
-                    toggle(level.id);
+                    e.stopPropagation()
+                    toggle(level.id)
                   }}
                 >
                   <XIcon className="size-3" />
@@ -101,5 +93,5 @@ export function TeachingLevelsMultiSelect({
         ))}
       </DropdownMenuContent>
     </DropdownMenu>
-  );
+  )
 }

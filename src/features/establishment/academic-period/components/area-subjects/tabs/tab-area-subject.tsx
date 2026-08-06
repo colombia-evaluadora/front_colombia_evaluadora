@@ -25,10 +25,7 @@ export function TabAreaSubject({ academicPeriodId }: TabAreaSubjectProps) {
   const [pageSize, setPageSize] = useState(10)
   const [search, setSearch] = useState("")
 
-  const queryFilters = useMemo(
-    () => ({ nombreInterno: search.trim() || undefined }),
-    [search]
-  )
+  const queryFilters = useMemo(() => ({ nombreInterno: search.trim() || undefined }), [search])
 
   const { data, isPending, isError, refetch } = useAreaSubjectQuery({
     filters: queryFilters,

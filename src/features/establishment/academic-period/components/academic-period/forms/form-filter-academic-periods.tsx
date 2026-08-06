@@ -25,7 +25,7 @@ const ALL_VALUE = ""
 
 const YEAR_OPTIONS = Array.from(
   { length: new Date().getFullYear() - 2020 + 1 },
-  (_, i) => new Date().getFullYear() - i
+  (_, i) => new Date().getFullYear() - i,
 )
 
 const yearItems: Record<string, React.ReactNode> = {
@@ -63,7 +63,7 @@ export function FilterAcademicPeriodsForm({
       [ALL_VALUE]: "Todos",
       ...Object.fromEntries(statusOptions.map((o) => [o.key, o.label])),
     }),
-    [statusOptions]
+    [statusOptions],
   )
 
   return (
