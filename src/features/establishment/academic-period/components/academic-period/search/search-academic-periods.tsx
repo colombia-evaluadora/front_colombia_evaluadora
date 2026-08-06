@@ -1,26 +1,14 @@
 import { useEffect, useRef, useState } from "react"
-import {
-  EraserIcon,
-  FunnelIcon,
-  MagnifyingGlassIcon,
-  XIcon,
-} from "@/components/ui/icons"
+import { MagnifyingGlassIcon, XIcon } from "@/components/ui/icons"
 
-import { Button } from "@/components/ui/button"
-import { Field, FieldLabel, FieldLegend, FieldSet } from "@/components/ui/field"
+import { AdvancedFiltersPopover } from "@/components/search/advanced-filters-popover"
+import { Field, FieldLabel } from "@/components/ui/field"
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupButton,
   InputGroupInput,
 } from "@/components/ui/input-group"
-import {
-  Popover,
-  PopoverContent,
-  PopoverHeader,
-  PopoverTitle,
-  PopoverTrigger,
-} from "@/components/ui/popover"
 
 import type {
   AcademicPeriodsFiltersFormInput,
@@ -95,6 +83,10 @@ export function SearchAcademicPeriods({
   function removeFilter(field: keyof AcademicPeriodsFiltersFormValues) {
     applyFilters({ ...filters, [field]: "" })
   }
+
+  // La X de la barra limpia todo —texto y filtros—, así que solo aparece
+  // cuando hay algo que limpiar.
+  const hasAnythingToClear = activeFilterCount > 0 || search !== ""
 
   // Chips de los filtros avanzados activos, para que el usuario vea qué
   // aplicó sin abrir el popover. La sede vive en el buscador, no acá.

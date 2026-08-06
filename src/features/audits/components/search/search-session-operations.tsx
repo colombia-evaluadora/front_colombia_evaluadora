@@ -88,6 +88,10 @@ export function SearchSessionOperations({
     })
   }
 
+  // La X de la barra limpia todo —texto y filtros—, así que solo aparece
+  // cuando hay algo que limpiar.
+  const hasAnythingToClear = activeFilterCount > 0 || search !== ""
+
   // Chips de los filtros avanzados activos, para que el usuario vea qué
   // aplicó sin abrir el popover. La tabla vive en el buscador, no acá.
   const activeChips: {

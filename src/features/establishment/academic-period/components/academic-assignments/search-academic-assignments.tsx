@@ -1,9 +1,5 @@
 import { useState } from "react"
-import {
-  FunnelIcon,
-  MagnifyingGlassIcon,
-  XIcon,
-} from "@/components/ui/icons"
+import { MagnifyingGlassIcon, XIcon } from "@/components/ui/icons"
 
 import { Field, FieldLabel, FieldLegend, FieldSet } from "@/components/ui/field"
 import {
