@@ -1,6 +1,6 @@
 import { useState } from "react"
 
-import { DownloadSimpleIcon, FilePdfIcon, FileXlsIcon, SpinnerIcon } from "@/components/ui/icons"
+import { FileDownloadOutlinedIcon, FilePdfIcon, FileXlsIcon, SpinnerIcon } from "@/components/ui/icons"
 import { useNotify } from "@/components/notice/notice-context"
 
 import {
@@ -63,7 +63,7 @@ export function ExportSelectedAreaSubjectsDialog({
           />
         }
       >
-        <DownloadSimpleIcon data-icon="inline-start" aria-hidden="true" />
+        <FileDownloadOutlinedIcon data-icon="inline-start" aria-hidden="true" />
         <span aria-hidden="true" className="tabular-nums">
           ({count})
         </span>

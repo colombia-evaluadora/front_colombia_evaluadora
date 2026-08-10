@@ -1,6 +1,6 @@
 import { useState } from "react"
 
-import { DownloadSimpleIcon, FilePdfIcon, FileXlsIcon, SpinnerIcon } from "@/components/ui/icons"
+import { FileDownloadOutlinedIcon, FilePdfIcon, FileXlsIcon, SpinnerIcon } from "@/components/ui/icons"
 
 import {
   Dialog,
@@ -51,7 +51,7 @@ export function ExportAuditSessionDialog({ filters }: ExportAuditSessionDialogPr
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={<Button color="primary" size="sm" aria-label="Exportar sesiones filtradas" />}>
-        <DownloadSimpleIcon data-icon="inline-start" />
+        <FileDownloadOutlinedIcon data-icon="inline-start" />
         <span className="sr-only md:not-sr-only">Exportar</span>
       </DialogTrigger>
       <DialogContent>

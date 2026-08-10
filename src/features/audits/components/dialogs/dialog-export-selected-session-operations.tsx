@@ -1,6 +1,6 @@
 import { useState } from "react"
 
-import { DownloadSimpleIcon, FilePdfIcon, FileXlsIcon, SpinnerIcon } from "@/components/ui/icons"
+import { FileDownloadOutlinedIcon, FilePdfIcon, FileXlsIcon, SpinnerIcon } from "@/components/ui/icons"
 
 import {
   Dialog,
@@ -62,7 +62,7 @@ export function ExportSelectedSessionOperationsDialog({
       <DialogTrigger
         render={<Button color="primary" size="sm" aria-label={`Exportar ${count} seleccionadas`} />}
       >
-        <DownloadSimpleIcon data-icon="inline-start" />
+        <FileDownloadOutlinedIcon data-icon="inline-start" />
         <span aria-hidden="true" className="md:hidden">
           ({count})
         </span>

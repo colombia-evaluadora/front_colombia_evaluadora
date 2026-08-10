@@ -1,6 +1,6 @@
 import { useState } from "react"
 
-import { DownloadSimpleIcon, FilePdfIcon, FileXlsIcon, SpinnerIcon } from "@/components/ui/icons"
+import { FileDownloadOutlinedIcon, FilePdfIcon, FileXlsIcon, SpinnerIcon } from "@/components/ui/icons"
 
 import {
   Dialog,
@@ -58,7 +58,7 @@ export function ExportTableOperationsDialog({
       <DialogTrigger
         render={<Button color="primary" size="sm" aria-label="Exportar operaciones filtradas" />}
       >
-        <DownloadSimpleIcon data-icon="inline-start" />
+        <FileDownloadOutlinedIcon data-icon="inline-start" />
         <span className="sr-only md:not-sr-only">Exportar</span>
       </DialogTrigger>
       <DialogContent>

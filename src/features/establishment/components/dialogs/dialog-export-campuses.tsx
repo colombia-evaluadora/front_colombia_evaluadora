@@ -1,6 +1,6 @@
 import { useState } from "react"
 
-import { DownloadSimpleIcon, FilePdfIcon, FileXlsIcon, SpinnerIcon } from "@/components/ui/icons"
+import { FileDownloadOutlinedIcon, FilePdfIcon, FileXlsIcon, SpinnerIcon } from "@/components/ui/icons"
 
 import {
     Dialog,
@@ -59,7 +59,7 @@ export function ExportCampusesDialog({ filters }: ExportCampusesDialogProps) {
                         size="icon-sm"
                         aria-label="Exportar sedes filtradas"
                     >
-                        <DownloadSimpleIcon />
+                        <FileDownloadOutlinedIcon />
                     </Button>
                 }
             />

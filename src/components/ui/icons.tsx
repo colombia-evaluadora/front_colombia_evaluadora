@@ -37,7 +37,7 @@ import {
   MdCreditCard,
   MdDarkMode,
   MdDescription,
-  MdDownload,
+  MdOutlineFileDownload,
   MdOutlineBorderColor,
   MdOutlineDelete,
   MdEmojiEvents,
@@ -97,7 +97,7 @@ import {
   MdOutlineSend,
   MdSettings,
   MdOutlineSmartDisplay,
-  MdNotifications,
+  MdOutlineNotifications,
   MdSupportAgent,
   MdTableChart,
   MdTimelapse,
@@ -141,7 +141,7 @@ export const ArrowLeftIcon = makeIcon(MdArrowBack)
 export const ArrowRightIcon = makeIcon(MdArrowForward)
 export const ArrowUpIcon = makeIcon(MdArrowUpward)
 export const BankIcon = makeIcon(MdOutlineAccountBalance)
-export const BellIcon = makeIcon(MdNotifications)
+export const BellIcon = makeIcon(MdOutlineNotifications)
 export const BookIcon = makeIcon(MdMenuBook)
 export const BookOpenIcon = makeIcon(MdOutlineChromeReaderMode)
 export const BrainIcon = makeIcon(MdPsychology)
@@ -177,11 +177,12 @@ export const ControlPointIcon = makeIcon(MdOutlineControlPoint)
 export const CreditCardIcon = makeIcon(MdCreditCard)
 export const CurrencyDollarIcon = makeIcon(MdAttachMoney)
 export const DotsThreeIcon = makeIcon(MdMoreHoriz)
-export const DownloadSimpleIcon = makeIcon(MdDownload)
 export const EnvelopeIcon = makeIcon(MdOutlineEmail)
 export const EraserIcon = makeIcon(MdBackspace)
 export const EyeIcon = makeIcon(MdVisibility)
 export const EyeSlashIcon = makeIcon(MdVisibilityOff)
+// `FileDownloadOutlined` de MUI: el de las acciones de exportar.
+export const FileDownloadOutlinedIcon = makeIcon(MdOutlineFileDownload)
 export const FilePdfIcon = makeIcon(MdPictureAsPdf)
 export const FileTextIcon = makeIcon(MdDescription)
 export const FileXlsIcon = makeIcon(MdTableChart)
