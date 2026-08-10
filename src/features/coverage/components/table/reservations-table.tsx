@@ -7,11 +7,13 @@ import { Pagination } from "@/components/pagination"
 import { useDataTable } from "@/hooks/use-data-table"
 import { useTablePagination } from "@/hooks/use-table-pagination"
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+  TableScreen,
+  TableScreenActions,
+  TableScreenBody,
+  TableScreenHeader,
+  TableScreenTitle,
+  TableScreenToolbar,
+} from "@/components/layout/table-screen"
 
 import { useReservationsQuery } from "../../api/query/use-reservations-query"
 import { useReservationFilters } from "../../hooks/use-reservation-filters"
@@ -53,86 +55,66 @@ export function ReservationsDataTable({ title }: ReservationsDataTableProps) {
   })
 
   return (
-    <>
-      {/*
-        Encabezado pegajoso: el `pt-4` opaco del contenedor reproduce el aire
-        que la página tiene contra el header de la app (`top-14`) y, al mismo
-        tiempo, tapa lo que scrollea por debajo.
-      */}
-      <div className="sticky top-14 z-20 bg-sidebar">
-        <Card className="gap-0 overflow-hidden rounded-b-none py-0">
-          <CardHeader className="bg-muted/10 py-4">
-            <CardTitle className="text-2xl">{title}</CardTitle>
-          </CardHeader>
-          <CardContent className="py-4">
-            <div className="flex flex-wrap items-end justify-between gap-x-2 gap-y-2">
-              <SearchReservations
-                activeFilterCount={activeFilterCount}
-                filters={filters}
-                applyFilters={applyFilters}
-                clearAllFilters={clearAllFilters}
-              />
+    <TableScreen>
+      <TableScreenHeader>
+        <TableScreenTitle>{title}</TableScreenTitle>
+        <TableScreenToolbar>
+          <SearchReservations
+            activeFilterCount={activeFilterCount}
+            filters={filters}
+            applyFilters={applyFilters}
+            clearAllFilters={clearAllFilters}
+          />
 
-              <div className="flex gap-2">
-                {hasSelection ? (
-                  <>
-                    <ClearSelectionReservationsDialog resetSelection={resetSelection} />
-                    <ExportSelectedReservationsDialog
-                      selectedIds={selectedIds}
-                      resetSelection={resetSelection}
-                    />
-                  </>
-                ) : (
-                  <>
-                    <CreateReservationSheet />
-                    <ExportReservationsDialog filters={queryFilters} />
-                  </>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+          <TableScreenActions>
+            {hasSelection ? (
+              <>
+                <ClearSelectionReservationsDialog resetSelection={resetSelection} />
+                <ExportSelectedReservationsDialog
+                  selectedIds={selectedIds}
+                  resetSelection={resetSelection}
+                />
+              </>
+            ) : (
+              <>
+                <CreateReservationSheet />
+                <ExportReservationsDialog filters={queryFilters} />
+              </>
+            )}
+          </TableScreenActions>
+        </TableScreenToolbar>
+      </TableScreenHeader>
 
-      {/*
-        El cuerpo es su PROPIA Card, separada del encabezado sticky de
-        arriba. NO se encapsulan en una misma Card: si compartieran el
-        `ring-1`, el `border-b` del encabezado se sumaría al anillo y daría
-        línea doble en el medio. `rounded-t-none` para pegarse a la base
-        plana del encabezado; `overflow-visible` para no romper el sticky.
-      */}
-      <Card className="grow overflow-visible rounded-t-none py-4">
-        <div className="px-(--card-spacing)">
-          {/* Los indicadores quedan en el cuerpo: son datos que scrollean, no
+      <TableScreenBody>
+        {/* Los indicadores quedan en el cuerpo: son datos que scrollean, no
               controles que convenga tener siempre a la vista. */}
-          <ReservationStatsCards
-            selectedIds={selectedIds}
-            hasSelection={hasSelection}
-            filters={queryFilters}
+        <ReservationStatsCards
+          selectedIds={selectedIds}
+          hasSelection={hasSelection}
+          filters={queryFilters}
+        />
+        <DataTable
+          table={table}
+          isPending={isPending}
+          isError={isError}
+          onRetry={refetch}
+          emptyMessage="Sin resultados."
+          errorMessage="Ocurrió un error al cargar las reservas."
+        />
+        {data && (
+          <Pagination
+            viewOptions={<DataTableViewOptions table={table} />}
+            pageIndex={pageIndex}
+            pageCount={data.pageCount}
+            canPrev={pageIndex > 0}
+            canNext={pageIndex < data.pageCount - 1}
+            onPageChange={goToPage}
+            totalCount={data.totalCount}
+            pageSize={pageSize}
+            onPageSizeChange={setPageSize}
           />
-          <DataTable
-            table={table}
-            isPending={isPending}
-            isError={isError}
-            onRetry={refetch}
-            emptyMessage="Sin resultados."
-            errorMessage="Ocurrió un error al cargar las reservas."
-          />
-          {data && (
-            <Pagination
-              viewOptions={<DataTableViewOptions table={table} />}
-              pageIndex={pageIndex}
-              pageCount={data.pageCount}
-              canPrev={pageIndex > 0}
-              canNext={pageIndex < data.pageCount - 1}
-              onPageChange={goToPage}
-              totalCount={data.totalCount}
-              pageSize={pageSize}
-              onPageSizeChange={setPageSize}
-            />
-          )}
-        </div>
-      </Card>
-    </>
+        )}
+      </TableScreenBody>
+    </TableScreen>
   )
 }

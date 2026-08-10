@@ -7,12 +7,13 @@ import { Pagination } from "@/components/pagination"
 import { useDataTable } from "@/hooks/use-data-table"
 import { useTablePagination } from "@/hooks/use-table-pagination"
 import {
-  Card,
-  CardAction,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+  TableScreen,
+  TableScreenActions,
+  TableScreenBody,
+  TableScreenHeader,
+  TableScreenTitle,
+  TableScreenToolbar,
+} from "@/components/layout/table-screen"
 import { useSessionOperationsQuery } from "../../api/query/use-session-operations-query"
 import { useSessionOperationsFilters } from "../../hooks/use-session-operations-filters"
 
@@ -21,7 +22,6 @@ import { SearchSessionOperations } from "../search/search-session-operations"
 import { ExportSelectedSessionOperationsDialog } from "../dialogs/dialog-export-selected-session-operations"
 import { ExportSessionOperationsDialog } from "../dialogs/dialog-export-session-operations"
 import { ClearSelectionSessionOperationsDialog } from "../dialogs/dialog-clear-selection-session-operations"
-import { NoticeOutlet } from "@/components/notice/notice-context"
 
 interface SessionOperationsDataTableProps {
   sessionId: string
@@ -61,80 +61,57 @@ export function SessionOperationsDataTable({
   })
 
   return (
-    <>
-      {/*
-        Encabezado pegajoso: el `pt-4` opaco del contenedor reproduce el aire
-        que la página tiene contra el header de la app (`top-14`) y, al mismo
-        tiempo, tapa lo que scrollea por debajo.
-      */}
-      <div className="sticky top-14 z-20 bg-sidebar">
-        <Card className="gap-0 overflow-hidden rounded-b-none py-0">
-          <CardHeader className="bg-muted/10 py-4">
-            <CardTitle className="text-2xl">{title}</CardTitle>
-            {action ? <CardAction>{action}</CardAction> : null}
-          </CardHeader>
-          <CardContent className="py-4">
-            <div className="flex flex-wrap items-end justify-between gap-2">
-              <SearchSessionOperations
-                activeFilterCount={activeFilterCount}
-                filters={filters}
-                applyFilters={applyFilters}
-                clearAllFilters={clearAllFilters}
-              />
-
-              <div className="flex gap-2">
-                {hasSelection ? (
-                  <>
-                    <ClearSelectionSessionOperationsDialog resetSelection={resetSelection} />
-                    <ExportSelectedSessionOperationsDialog
-                      sessionId={sessionId}
-                      selectedIds={selectedIds}
-                      resetSelection={resetSelection}
-                    />
-                  </>
-                ) : (
-                  <ExportSessionOperationsDialog sessionId={sessionId} />
-                )}
-              </div>
-            </div>
-
-            <NoticeOutlet className="mt-3" />
-          </CardContent>
-        </Card>
-      </div>
-
-      {/*
-        El cuerpo es su PROPIA Card, separada del encabezado sticky de
-        arriba. NO se encapsulan en una misma Card: si compartieran el
-        `ring-1`, el `border-b` del encabezado se sumaría al anillo y daría
-        línea doble en el medio. `rounded-t-none` para pegarse a la base
-        plana del encabezado; `overflow-visible` para no romper el sticky.
-      */}
-      <Card className="grow overflow-visible rounded-t-none py-4">
-        <div className="px-(--card-spacing)">
-          <DataTable
-            table={table}
-            isPending={isPending}
-            isError={isError}
-            onRetry={refetch}
-            emptyMessage="Sin resultados."
-            errorMessage="Ocurrió un error al cargar las operaciones."
+    <TableScreen>
+      <TableScreenHeader>
+        <TableScreenTitle action={action}>{title}</TableScreenTitle>
+        <TableScreenToolbar>
+          <SearchSessionOperations
+            activeFilterCount={activeFilterCount}
+            filters={filters}
+            applyFilters={applyFilters}
+            clearAllFilters={clearAllFilters}
           />
-          {data && (
-            <Pagination
-              viewOptions={<DataTableViewOptions table={table} />}
-              pageIndex={pageIndex}
-              pageCount={data.pageCount}
-              canPrev={pageIndex > 0}
-              canNext={pageIndex < data.pageCount - 1}
-              onPageChange={goToPage}
-              totalCount={data.totalCount}
-              pageSize={pageSize}
-              onPageSizeChange={setPageSize}
-            />
-          )}
-        </div>
-      </Card>
-    </>
+
+          <TableScreenActions>
+            {hasSelection ? (
+              <>
+                <ClearSelectionSessionOperationsDialog resetSelection={resetSelection} />
+                <ExportSelectedSessionOperationsDialog
+                  sessionId={sessionId}
+                  selectedIds={selectedIds}
+                  resetSelection={resetSelection}
+                />
+              </>
+            ) : (
+              <ExportSessionOperationsDialog sessionId={sessionId} />
+            )}
+          </TableScreenActions>
+        </TableScreenToolbar>
+      </TableScreenHeader>
+
+      <TableScreenBody>
+        <DataTable
+          table={table}
+          isPending={isPending}
+          isError={isError}
+          onRetry={refetch}
+          emptyMessage="Sin resultados."
+          errorMessage="Ocurrió un error al cargar las operaciones."
+        />
+        {data && (
+          <Pagination
+            viewOptions={<DataTableViewOptions table={table} />}
+            pageIndex={pageIndex}
+            pageCount={data.pageCount}
+            canPrev={pageIndex > 0}
+            canNext={pageIndex < data.pageCount - 1}
+            onPageChange={goToPage}
+            totalCount={data.totalCount}
+            pageSize={pageSize}
+            onPageSizeChange={setPageSize}
+          />
+        )}
+      </TableScreenBody>
+    </TableScreen>
   )
 }

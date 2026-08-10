@@ -2,7 +2,12 @@ import { useMemo, useState } from "react"
 
 import { NoticeOutlet, useNotify } from "@/components/notice/notice-context"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  TableScreen,
+  TableScreenBody,
+  TableScreenHeader,
+  TableScreenTitle,
+} from "@/components/layout/table-screen"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { ControlPointIcon } from "@/components/ui/icons"
 import { Input } from "@/components/ui/input"
@@ -83,30 +88,17 @@ export function RolesMenusPage() {
   const isLoading = rolesPending || menusPending || assignedPending
 
   return (
-    <>
-      {/*
-        Encabezado pegajoso: el `pt-4` opaco del contenedor reproduce el aire
-        que la página tiene contra el header de la app (`top-14`) y, al mismo
-        tiempo, tapa lo que scrollea por debajo.
-      */}
-      <div className="sticky top-14 z-20 bg-sidebar">
-        {/* Sin `CardContent`: el `py-0` deja que el bloque del título sea todo
-            el alto de la card. */}
-        <Card className="gap-0 overflow-hidden rounded-b-none py-0">
-          <CardHeader className="bg-muted/10 py-4">
-            <CardTitle className="text-2xl">Configuración de roles y menús</CardTitle>
-          </CardHeader>
-          <NoticeOutlet className="mx-(--card-spacing) my-4" />
-        </Card>
-      </div>
+    <TableScreen>
+      <TableScreenHeader>
+        <TableScreenTitle>Configuración de roles y menús</TableScreenTitle>
+        {/* Esta pantalla no tiene barra de herramientas —no hay buscador ni
+            acciones sobre una tabla—, así que los avisos van sueltos bajo el
+            título en vez de colgar del `TableScreenToolbar`. */}
+        <NoticeOutlet className="mx-(--screen-spacing) my-4" />
+      </TableScreenHeader>
 
-      {/*
-        El cuerpo es su PROPIA Card, separada del encabezado sticky de
-        arriba. `rounded-t-none` para pegarse a la base plana del encabezado;
-        `overflow-visible` para no romper el sticky.
-      */}
-      <Card className="grow overflow-visible rounded-t-none py-4">
-        <CardContent className="flex flex-col gap-6">
+      <TableScreenBody>
+        <div className="flex flex-col gap-6">
           <Field variant="outlined" className="max-w-md">
             <FieldLabel htmlFor="role">Rol</FieldLabel>
             <Select
@@ -178,8 +170,8 @@ export function RolesMenusPage() {
               disabled={updateRoleMenus.isPending}
             />
           )}
-        </CardContent>
-      </Card>
-    </>
+        </div>
+      </TableScreenBody>
+    </TableScreen>
   )
 }
