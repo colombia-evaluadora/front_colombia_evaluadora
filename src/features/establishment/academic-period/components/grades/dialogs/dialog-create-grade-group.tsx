@@ -159,10 +159,7 @@ export function CreateGradeGroupDialog({
         )}
       </DialogTrigger>
       <DialogPortal>
-        <DialogOverlay
-          forceRender
-          className="bg-transparent backdrop-blur-none supports-backdrop-filter:backdrop-blur-none"
-        />
+        <DialogOverlay forceRender className="bg-transparent" />
       </DialogPortal>
       <DialogContent className="sm:max-w-3xl" showCloseButton={false}>
         <DialogHeader>
