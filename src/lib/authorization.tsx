@@ -1,19 +1,12 @@
 import * as React from "react"
 
 import { useUser } from "./auth"
-import type { Role, User } from "@/types/api"
-import type { Payment } from "@/features/payments/api/types/payment"
+import type { Role } from "@/types/api"
 
 export const ROLES = {
   ADMIN: "ADMIN",
   USER: "USER",
 } as const
-
-export const POLICIES = {
-  "payment:delete": (user: User, _payment: Payment) => {
-    return user.role === "ADMIN"
-  },
-}
 
 export function useAuthorization() {
   const user = useUser()

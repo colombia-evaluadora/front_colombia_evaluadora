@@ -657,7 +657,6 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
         </div>
 
         <DialogFooter className="sm:justify-end">
-          <DialogClose render={<Button type="button" variant="ghost" />}>Cancelar</DialogClose>
           {continued ? (
             <Button
               type="button"
@@ -666,18 +665,25 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
               disabled={createScalesBulk.isPending || drafts.length === 0}
               aria-busy={createScalesBulk.isPending}
             >
-              {createScalesBulk.isPending && (
+              {createScalesBulk.isPending ? (
                 <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+              ) : (
+                <CheckIcon data-icon="inline-start" />
               )}
               Guardar
             </Button>
           ) : (
             teachingLevelIds.length > 0 && (
               <Button type="button" color="primary" onClick={() => setContinued(true)}>
+                <CheckIcon data-icon="inline-start" />
                 Continuar
               </Button>
             )
           )}
+          <DialogClose render={<Button type="button" variant="fill" color="neutral" />}>
+            <XIcon data-icon="inline-start" />
+            Cancelar
+          </DialogClose>
         </DialogFooter>
       </DialogContent>
     </Dialog>

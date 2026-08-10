@@ -35,10 +35,6 @@ export const paths = {
       path: "/app",
       getHref: () => "/app",
     },
-    payments: {
-      path: "/",
-      getHref: () => "/app",
-    },
     coberturaReservaCupo: {
       path: "cobertura/reserva-de-cupo",
       getHref: () => "/app/cobertura/reserva-de-cupo",

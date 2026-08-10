@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { CaretDownIcon, PlusIcon, TrashIcon, XIcon } from "@/components/ui/icons"
 
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { inputTriggerVariants, inputVariants, useInputVariant } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -43,13 +44,13 @@ function BreakChips({ value, onRemove }: { value: Break[]; onRemove: (index: num
       {visibleIndices.map((originalIndex) => {
         const brk = value[originalIndex]
         return (
-          <span
+          <Badge
             key={`${brk.startTime}-${brk.endTime}-${originalIndex}`}
-            className="bg-muted text-muted-foreground inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs"
+            variant="soft"
+            color="muted"
+            className="normal-case tracking-normal"
           >
-            <span className="font-medium">
-              {formatBreakTimeCompact(brk.startTime)} → {formatBreakTimeCompact(brk.endTime)}
-            </span>
+            {formatBreakTimeCompact(brk.startTime)} → {formatBreakTimeCompact(brk.endTime)}
             <button
               type="button"
               onClick={(e) => {
@@ -57,17 +58,18 @@ function BreakChips({ value, onRemove }: { value: Break[]; onRemove: (index: num
                 onRemove(originalIndex)
               }}
               aria-label={`Quitar descanso ${originalIndex + 1}`}
-              className="hover:text-foreground -mr-1 inline-flex items-center"
+              data-icon="inline-end"
+              className="inline-flex items-center hover:text-foreground"
             >
               <XIcon className="size-3" />
             </button>
-          </span>
+          </Badge>
         )
       })}
       {extra > 0 && (
-        <span className="bg-muted text-muted-foreground inline-flex items-center rounded-full px-2 py-0.5 text-xs">
+        <Badge variant="soft" color="muted" className="normal-case tracking-normal">
           +{extra}
-        </span>
+        </Badge>
       )}
     </span>
   )
