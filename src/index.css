@@ -487,6 +487,28 @@
     display: none;
   }
 
+  /* Chrome/Safari pintan un fondo amarillo (o azul en dark) sobre los campos
+     autocompletados y no se puede sobreescribir con `background`. El truco es
+     tapar el fondo con una sombra interna del color real del input y forzar el
+     color del texto vía `-webkit-text-fill-color`. La transición larguísima
+     evita el flash amarillo del primer frame. */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  input:-webkit-autofill:active,
+  textarea:-webkit-autofill,
+  textarea:-webkit-autofill:hover,
+  textarea:-webkit-autofill:focus,
+  select:-webkit-autofill,
+  select:-webkit-autofill:hover,
+  select:-webkit-autofill:focus {
+    -webkit-text-fill-color: var(--foreground);
+    -webkit-box-shadow: 0 0 0 1000px var(--input-bg, var(--background)) inset;
+    box-shadow: 0 0 0 1000px var(--input-bg, var(--background)) inset;
+    caret-color: var(--foreground);
+    transition: background-color 5000s ease-in-out 0s;
+  }
+
   /* Typography — titles in Noto, body in Inter */
   h1,
   h2,
