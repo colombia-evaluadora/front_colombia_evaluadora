@@ -67,14 +67,6 @@ export function LoginForm({ id, onSubmit }: LoginFormProps) {
                   />
                 </InputGroup>
                 {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                <div className="flex justify-end">
-                  <Link
-                    to={paths.auth.forgotUsername.path}
-                    className="text-muted-foreground hover:text-primary text-xs underline underline-offset-4"
-                  >
-                    ¿Lo olvidaste?
-                  </Link>
-                </div>
               </Field>
             )
           }}
@@ -114,15 +106,6 @@ export function LoginForm({ id, onSubmit }: LoginFormProps) {
                   </InputGroupAddon>
                 </InputGroup>
                 {isInvalid && <FieldError errors={field.state.meta.errors} />}
-
-                <div className="flex justify-end">
-                  <Link
-                    to={paths.auth.forgotPassword.path}
-                    className="text-muted-foreground hover:text-primary text-xs underline underline-offset-4"
-                  >
-                    ¿La olvidaste?
-                  </Link>
-                </div>
               </Field>
             )
           }}
@@ -131,16 +114,25 @@ export function LoginForm({ id, onSubmit }: LoginFormProps) {
         <form.Field name="rememberMe">
           {(field) => (
             // `Field` en horizontal: el checkbox va pegado a la izquierda y
-            // el label a la derecha, alineados con el inicio de los inputs.
-            <Field orientation="horizontal">
-              <Checkbox
-                id={field.name}
-                checked={field.state.value}
-                onCheckedChange={(checked) => field.handleChange(checked === true)}
-              />
-              <FieldLabel htmlFor={field.name} className="font-normal">
-                Mantener sesión iniciada
-              </FieldLabel>
+            // el label a la derecha, alineados con el inicio de los inputs. El
+            // enlace de contraseña olvidada cierra la fila por el otro extremo.
+            <Field orientation="horizontal" className="justify-between">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id={field.name}
+                  checked={field.state.value}
+                  onCheckedChange={(checked) => field.handleChange(checked === true)}
+                />
+                <FieldLabel htmlFor={field.name} className="font-normal">
+                  Mantener sesión iniciada
+                </FieldLabel>
+              </div>
+              <Link
+                to={paths.auth.forgotPassword.path}
+                className="text-sm text-primary hover:underline"
+              >
+                ¿Olvidaste tu contraseña?
+              </Link>
             </Field>
           )}
         </form.Field>

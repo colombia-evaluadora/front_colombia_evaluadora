@@ -44,7 +44,7 @@ export function HelpFaqSheet({ data = defaultHelpData }: { data?: HelpSheetData 
         render={
           <Button
             type="button"
-            variant="link"
+            variant="ghost"
             color="primary"
             size="sm"
             className="tracking-normal normal-case"
