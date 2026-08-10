@@ -192,7 +192,10 @@ export function DataTable({
           {/* El encabezado no lleva fondo propio ni hover: comparte el de la
               tabla en reposo, igual que una fila sin el puntero encima. */}
           {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id} className="hover:bg-transparent">
+            <TableRow
+              key={headerGroup.id}
+              className="hover:bg-transparent has-aria-expanded:bg-transparent"
+            >
               {headerGroup.headers.map((header) => {
                 const isActions = isActionsColumn(header.column.id)
                 return (
