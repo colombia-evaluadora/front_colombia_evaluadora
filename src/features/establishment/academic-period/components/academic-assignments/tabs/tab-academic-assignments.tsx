@@ -6,13 +6,12 @@ import type { SortingState } from "@tanstack/react-table"
 import { SpinnerIcon } from "@/components/ui/icons"
 
 import { Button } from "@/components/ui/button"
-import { DataTableViewOptions } from "@/components/data-table"
+import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
 import { useDataTable } from "@/hooks/use-data-table"
 
 import { useNotify, NoticeOutlet } from "@/components/notice/notice-context"
 import { SearchAcademicAssignments } from "../search-academic-assignments"
-import { ExpandableDataTable } from "../../common/expandable-data-table"
 import { ExportAcademicAssignmentsDialog } from "../dialogs/dialog-export-academic-assignments"
 import { ExportSelectedAcademicAssignmentsDialog } from "../dialogs/dialog-export-selected-academic-assignments"
 
@@ -167,7 +166,7 @@ export function TabAcademicAssignments({ academicPeriodId }: TabAcademicAssignme
 
       <NoticeOutlet />
 
-      <ExpandableDataTable
+      <DataTable
         table={table}
         isPending={isPending}
         isError={isError}

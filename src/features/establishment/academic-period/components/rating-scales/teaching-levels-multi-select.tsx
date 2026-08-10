@@ -1,5 +1,6 @@
 import { CaretDownIcon, XIcon } from "@/components/ui/icons"
 
+import { Badge } from "@/components/ui/badge"
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -56,16 +57,14 @@ export function TeachingLevelsMultiSelect({
             <span className="text-muted-foreground">Seleccionar</span>
           ) : (
             selected.map((level) => (
-              <span
-                key={level.id}
-                className="bg-muted flex items-center gap-1 rounded-none px-2 py-0.5 text-xs"
-              >
+              <Badge key={level.id} variant="soft" color="muted" className="normal-case tracking-normal">
                 {level.nombre}
                 <span
                   role="button"
                   tabIndex={-1}
                   aria-label={`Quitar ${level.nombre}`}
-                  className="text-muted-foreground hover:text-foreground cursor-pointer"
+                  data-icon="inline-end"
+                  className="cursor-pointer text-muted-foreground hover:text-foreground"
                   onPointerDown={(e) => e.stopPropagation()}
                   onClick={(e) => {
                     e.stopPropagation()
@@ -74,7 +73,7 @@ export function TeachingLevelsMultiSelect({
                 >
                   <XIcon className="size-3" />
                 </span>
-              </span>
+              </Badge>
             ))
           )}
         </div>

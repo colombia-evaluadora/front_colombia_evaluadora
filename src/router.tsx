@@ -20,8 +20,6 @@ import {
   loginSearchSchema,
   restorePasswordSearchSchema,
 } from "@/features/auth/api/schema"
-import { paymentsSearchSchema } from "@/features/payments/api/schema"
-import { PaymentsErrorPage } from "@/features/payments/pages/payments-error-page"
 import { reservationsSearchSchema } from "@/features/coverage/api/schema"
 import {
   auditsSearchSchema,
@@ -60,10 +58,6 @@ const AuthLayout = lazyRouteComponent(() => import("@/components/layout/auth-lay
 const ProtectedLayout = lazyRouteComponent(
   () => import("@/components/layout/protected-layout"),
   "ProtectedLayout",
-)
-const PaymentsPage = lazyRouteComponent(
-  () => import("@/features/payments/pages/payments-page"),
-  "PaymentsPage",
 )
 const AuditSessionPage = lazyRouteComponent(
   () => import("@/features/audits/pages/audit-session-page"),
@@ -280,13 +274,13 @@ const PERIODOS_CRUMB = {
   to: paths.app.periodosAcademicos.getHref(),
 }
 
-export const paymentsRoute = createRoute({
+// `/app` no tiene página propia: manda a la primera pantalla del menú.
+const appIndexRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
-  path: paths.app.payments.path,
-  validateSearch: paymentsSearchSchema,
-  errorComponent: PaymentsErrorPage,
-  staticData: { breadcrumb: [{ label: "Pagos" }] },
-  component: PaymentsPage,
+  path: "/",
+  beforeLoad: () => {
+    throw redirect({ to: paths.app.coberturaReservaCupo.getHref() })
+  },
 })
 
 export const coberturaReservaCupoRoute = createRoute({
@@ -529,7 +523,7 @@ const routeTree = rootRoute.addChildren([
     restorePasswordRoute,
   ]),
   appLayoutRoute.addChildren([
-    paymentsRoute,
+    appIndexRoute,
     coberturaReservaCupoRoute,
     coberturaPreMatriculaRoute,
     coberturaInscritosRoute,

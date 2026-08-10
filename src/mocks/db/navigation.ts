@@ -10,16 +10,6 @@ export interface MockMenu extends RouteResponseDto {
 }
 
 export const navigationMenu: MockMenu[] = [
-  // {
-  //   id: 1,
-  //   name: "Pagos",
-  //   icon: "Credit-Card-Icon",
-  //   path: "/app",
-  //   menuOrder: 0,
-  //   type: "ITEM",
-  //   idParent: null,
-  //   roleIds: [1, 2],
-  // },
   {
     id: 12,
     name: "Cobertura educativa",
