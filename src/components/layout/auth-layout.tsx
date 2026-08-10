@@ -7,13 +7,13 @@ import { paths } from "@/config/paths"
 
 export function AuthLayout() {
   return (
-    <div className="relative bg-primary/5 flex min-h-screen flex-col overflow-hidden p-4">
-      <div className="absolute bottom-0 right-0 z-0 h-1/2 w-full overflow-hidden bg-primary">
+    <div className="relative bg-navy/5 flex min-h-screen flex-col overflow-hidden p-4">
+      <div className="absolute bottom-0 right-0 z-0 h-1/2 w-full overflow-hidden bg-navy">
         <img
           src={loginBg}
           alt=""
           aria-hidden="true"
-          className="h-full w-full object-cover filter grayscale opacity-40 brightness-45"
+          className="h-full w-full object-cover opacity-10"
         />
       </div>
       <div className="relative z-10 flex flex-1 flex-col items-center justify-center gap-8 px-4">
