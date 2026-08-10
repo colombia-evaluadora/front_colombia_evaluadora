@@ -383,20 +383,20 @@ export function DataTableColumnHeader<TData, TValue>({
             <Button
               variant="ghost"
               color="neutral"
-              className="-ml-3 h-8 px-3 text-sm font-bold uppercase has-data-[icon=inline-start]:pl-3 data-[state=open]:bg-accent"
+              className="-ml-3 h-8 px-3 text-sm font-bold uppercase has-data-[icon=inline-end]:pr-3 data-[state=open]:bg-accent"
             />
           }
         >
-          {/* El indicador va ANTES del título: en DOM order queda a la
-              izquierda. `data-icon` solo ajusta el padding de ese lado. */}
-          {sorted === "desc" ? (
-            <ArrowDownIcon data-icon="inline-start" />
-          ) : sorted === "asc" ? (
-            <ArrowUpIcon data-icon="inline-start" />
-          ) : (
-            <CaretUpDownIcon data-icon="inline-start" />
-          )}
+          {/* El indicador va DESPUÉS del título: en DOM order queda a la
+              derecha. `data-icon` solo ajusta el padding de ese lado. */}
           <span>{title}</span>
+          {sorted === "desc" ? (
+            <ArrowDownIcon data-icon="inline-end" />
+          ) : sorted === "asc" ? (
+            <ArrowUpIcon data-icon="inline-end" />
+          ) : (
+            <CaretUpDownIcon data-icon="inline-end" />
+          )}
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start">
           <DropdownMenuGroup>
