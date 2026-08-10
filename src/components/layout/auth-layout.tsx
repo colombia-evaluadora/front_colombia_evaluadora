@@ -18,7 +18,7 @@ export function AuthLayout() {
       </div>
       <div className="relative z-10 flex flex-1 flex-col items-center justify-center gap-8 px-4">
         <Link to={paths.home.getHref()}>
-          <img src={logo} alt="Colombia Evaluadora" className="h-13 w-auto" />
+          <img src={logo} alt="Colombia Evaluadora" className="h-15 w-auto sm:h-20" />
         </Link>
 
         <Card className="w-full max-w-lg gap-4">

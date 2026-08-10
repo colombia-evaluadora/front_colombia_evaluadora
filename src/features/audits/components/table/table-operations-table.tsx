@@ -6,12 +6,13 @@ import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
 import { useDataTable } from "@/hooks/use-data-table"
 import {
-  Card,
-  CardAction,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+  TableScreen,
+  TableScreenActions,
+  TableScreenBody,
+  TableScreenHeader,
+  TableScreenTitle,
+  TableScreenToolbar,
+} from "@/components/layout/table-screen"
 
 import { useTableOperationsQuery } from "../../api/query/use-table-operations-query"
 import { useAuditTableQuery } from "../../api/query/use-audit-table-query"
@@ -25,7 +26,6 @@ import { ExportTableOperationsDialog } from "../dialogs/dialog-export-table-oper
 import { ClearSelectionTableOperationsDialog } from "../dialogs/dialog-clear-selection-table-operations"
 import { TableOperationsStatsCards } from "../stats/table-operations-stats-cards"
 import { useParams } from "@tanstack/react-router"
-import { NoticeOutlet } from "@/components/notice/notice-context"
 
 interface TableOperationsDataTableProps {
   title: ReactNode
@@ -33,10 +33,7 @@ interface TableOperationsDataTableProps {
   action?: ReactNode
 }
 
-export function TableOperationsDataTable({
-  title,
-  action,
-}: TableOperationsDataTableProps) {
+export function TableOperationsDataTable({ title, action }: TableOperationsDataTableProps) {
   const { tableSlug } = useParams({ strict: false }) as { tableSlug: string }
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
   const { filters, queryFilters, applyFilters, clearAllFilters, activeFilterCount } =
@@ -65,88 +62,64 @@ export function TableOperationsDataTable({
   })
 
   return (
-    <>
-      {/*
-        Encabezado pegajoso: el `pt-4` opaco del contenedor reproduce el aire
-        que la página tiene contra el header de la app (`top-14`) y, al mismo
-        tiempo, tapa lo que scrollea por debajo.
-      */}
-      <div className="sticky top-14 z-20 bg-sidebar">
-        <Card className="gap-0 overflow-hidden rounded-b-none py-0">
-          <CardHeader className="bg-muted/10 py-4">
-            <CardTitle className="text-2xl">{title}</CardTitle>
-            {action ? <CardAction>{action}</CardAction> : null}
-          </CardHeader>
-          <CardContent className="py-4">
-            <div className="flex flex-wrap items-end justify-between gap-2">
-              <SearchTableOperations
-                activeFilterCount={activeFilterCount}
-                filters={filters}
-                applyFilters={applyFilters}
-                clearAllFilters={clearAllFilters}
-                availableFields={availableFields}
-              />
-
-              <div className="flex gap-2">
-                {hasSelection ? (
-                  <>
-                    <ClearSelectionTableOperationsDialog resetSelection={resetSelection} />
-                    <ExportSelectedTableOperationsDialog
-                      tableSlug={tableSlug}
-                      selectedIds={selectedIds}
-                      resetSelection={resetSelection}
-                    />
-                  </>
-                ) : (
-                  <ExportTableOperationsDialog tableSlug={tableSlug} filters={queryFilters} />
-                )}
-              </div>
-            </div>
-
-            <NoticeOutlet className="mt-3" />
-          </CardContent>
-        </Card>
-      </div>
-
-      {/*
-        El cuerpo es su PROPIA Card, separada del encabezado (que es la
-        sección sticky de arriba). NO se encapsulan en una misma Card: si
-        compartieran el `ring-1`, el `border-b` del encabezado se sumaría al
-        anillo y daría línea doble en el medio. `rounded-t-none` para
-        pegarse a la base plana del encabezado; `overflow-visible` para no
-        romper el sticky.
-      */}
-      <Card className="grow overflow-visible rounded-t-none py-4">
-        <div className="px-(--card-spacing)">
-          <TableOperationsStatsCards
-            tableSlug={tableSlug}
-            selectedIds={selectedIds}
-            hasSelection={hasSelection}
-            filters={queryFilters}
+    <TableScreen>
+      <TableScreenHeader>
+        <TableScreenTitle action={action}>{title}</TableScreenTitle>
+        <TableScreenToolbar>
+          <SearchTableOperations
+            activeFilterCount={activeFilterCount}
+            filters={filters}
+            applyFilters={applyFilters}
+            clearAllFilters={clearAllFilters}
+            availableFields={availableFields}
           />
-          <DataTable
-            table={table}
-            isPending={isPending}
-            isError={isError}
-            onRetry={refetch}
-            emptyMessage="Sin resultados."
-            errorMessage="Ocurrió un error al cargar las operaciones."
+
+          <TableScreenActions>
+            {hasSelection ? (
+              <>
+                <ClearSelectionTableOperationsDialog resetSelection={resetSelection} />
+                <ExportSelectedTableOperationsDialog
+                  tableSlug={tableSlug}
+                  selectedIds={selectedIds}
+                  resetSelection={resetSelection}
+                />
+              </>
+            ) : (
+              <ExportTableOperationsDialog tableSlug={tableSlug} filters={queryFilters} />
+            )}
+          </TableScreenActions>
+        </TableScreenToolbar>
+      </TableScreenHeader>
+
+      <TableScreenBody>
+        <TableOperationsStatsCards
+          tableSlug={tableSlug}
+          selectedIds={selectedIds}
+          hasSelection={hasSelection}
+          filters={queryFilters}
+        />
+        <DataTable
+          table={table}
+          isPending={isPending}
+          isError={isError}
+          onRetry={refetch}
+          emptyMessage="Sin resultados."
+          errorMessage="Ocurrió un error al cargar las operaciones."
+        />
+        {data && (
+          <Pagination
+            viewOptions={<DataTableViewOptions table={table} />}
+            pageIndex={pageIndex}
+            pageCount={data.pageCount}
+            canPrev={pageIndex > 0}
+            canNext={pageIndex < data.pageCount - 1}
+            onPageChange={goToPage}
+            totalCount={data.totalCount}
+            pageSize={pageSize}
+            onPageSizeChange={setPageSize}
           />
-          {data && (
-            <Pagination
-              viewOptions={<DataTableViewOptions table={table} />}
-              pageIndex={pageIndex}
-              pageCount={data.pageCount}
-              canPrev={pageIndex > 0}
-              canNext={pageIndex < data.pageCount - 1}
-              onPageChange={goToPage}
-              totalCount={data.totalCount}
-              pageSize={pageSize}
-              onPageSizeChange={setPageSize}
-            />
-          )}
-        </div>
-      </Card>
-    </>
+        )}
+      </TableScreenBody>
+    </TableScreen>
   )
 }

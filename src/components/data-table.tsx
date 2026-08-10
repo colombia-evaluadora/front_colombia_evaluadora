@@ -148,9 +148,7 @@ export function DataTable({
   const overlayClass = (active = false) =>
     cn(
       "absolute inset-y-0 right-0 z-10 flex items-center gap-1 px-2",
-      insideSubRow
-        ? "bg-muted/20"
-        : "bg-[color-mix(in_srgb,var(--muted)_50%,var(--card))]",
+      insideSubRow ? "bg-muted/20" : "bg-[color-mix(in_srgb,var(--muted)_50%,var(--card))]",
       "transition-opacity",
       active
         ? "opacity-100"
@@ -280,7 +278,10 @@ export function DataTable({
                   </TableRow>
                   {subRow != null && (
                     <TableRow className="hover:bg-transparent" data-sub-row>
-                      <TableCell colSpan={columnCount} className="whitespace-normal bg-muted/20 p-4">
+                      <TableCell
+                        colSpan={columnCount}
+                        className="whitespace-normal bg-muted/20 p-4"
+                      >
                         {subRow}
                       </TableCell>
                     </TableRow>
@@ -325,9 +326,7 @@ export function DataTableViewOptions({ table }: DataTableViewOptionsProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        render={
-          <Button variant="ghost" color="muted" size="icon" aria-label="Columnas visibles" />
-        }
+        render={<Button variant="ghost" color="muted" size="icon" aria-label="Columnas visibles" />}
       >
         <GearIcon />
       </DropdownMenuTrigger>

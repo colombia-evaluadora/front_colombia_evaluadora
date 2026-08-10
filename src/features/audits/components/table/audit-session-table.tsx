@@ -5,7 +5,15 @@ import { Link } from "@tanstack/react-router"
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
 import { useDataTable } from "@/hooks/use-data-table"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  TableScreen,
+  TableScreenActions,
+  TableScreenBody,
+  TableScreenHeader,
+  TableScreenTabs,
+  TableScreenTitle,
+  TableScreenToolbar,
+} from "@/components/layout/table-screen"
 import { paths } from "@/config/paths"
 
 import { useAuditsQuery } from "../../api/query/use-audits-query"
@@ -18,7 +26,6 @@ import { ExportSelectedAuditSessionDialog } from "../dialogs/dialog-export-selec
 import { ExportAuditSessionDialog } from "../dialogs/dialog-export-audit-session"
 import { ClearSelectionAuditSessionDialog } from "../dialogs/dialog-clear-selection-audit-session"
 import { AuditSessionStatsCards } from "../stats/audit-session-stats-cards"
-import { NoticeOutlet } from "@/components/notice/notice-context"
 
 const viewLinks = [
   { label: "Por sesión", to: paths.app.auditoriaSesiones.getHref() },
@@ -50,15 +57,11 @@ export function AuditSessionDataTable() {
   })
 
   return (
-    <>     <div className="sticky top-14 z-20 gap-0 bg-sidebar">
-      <Card className="gap-0 overflow-hidden rounded-b-none py-0">
-          <CardHeader className="bg-muted/10 py-4 ">
-            <CardTitle className="text-2xl">
-              Sesiones de auditoría
-            </CardTitle>
-          </CardHeader>
-  
-        <div className="border-b border-border px-(--card-spacing) pt-4">
+    <TableScreen>
+      <TableScreenHeader>
+        <TableScreenTitle>Sesiones de auditoría</TableScreenTitle>
+
+        <TableScreenTabs>
           <nav aria-label="Vistas de auditoría" className="flex items-end gap-1">
             {viewLinks.map((view) => (
               <Link
@@ -71,9 +74,8 @@ export function AuditSessionDataTable() {
               </Link>
             ))}
           </nav>
-        </div>
-          <CardContent className="py-4">
-        <div className="flex flex-wrap items-end justify-between gap-2">
+        </TableScreenTabs>
+        <TableScreenToolbar>
           <SearchAuditSession
             activeFilterCount={activeFilterCount}
             filters={filters}
@@ -81,7 +83,7 @@ export function AuditSessionDataTable() {
             clearAllFilters={clearAllFilters}
           />
 
-          <div className="flex gap-2">
+          <TableScreenActions>
             {hasSelection ? (
               <>
                 <ClearSelectionAuditSessionDialog resetSelection={resetSelection} />
@@ -93,42 +95,37 @@ export function AuditSessionDataTable() {
             ) : (
               <ExportAuditSessionDialog filters={queryFilters} />
             )}
-          </div>
-        </div>
-
-        <NoticeOutlet className="mt-3" /></CardContent>
-            </Card>
-            </div>
-      <Card className="grow overflow-visible rounded-t-none py-4">
-        <div className="px-(--card-spacing)">
-          <AuditSessionStatsCards
-            selectedIds={selectedIds}
-            hasSelection={hasSelection}
-            filters={queryFilters}
+          </TableScreenActions>
+        </TableScreenToolbar>
+      </TableScreenHeader>
+      <TableScreenBody>
+        <AuditSessionStatsCards
+          selectedIds={selectedIds}
+          hasSelection={hasSelection}
+          filters={queryFilters}
+        />
+        <DataTable
+          table={table}
+          isPending={isPending}
+          isError={isError}
+          onRetry={refetch}
+          emptyMessage="Sin resultados."
+          errorMessage="Ocurrió un error al cargar las sesiones."
+        />
+        {data && (
+          <Pagination
+            viewOptions={<DataTableViewOptions table={table} />}
+            pageIndex={pageIndex}
+            pageCount={data.pageCount}
+            canPrev={pageIndex > 0}
+            canNext={pageIndex < data.pageCount - 1}
+            onPageChange={goToPage}
+            totalCount={data.totalCount}
+            pageSize={pageSize}
+            onPageSizeChange={setPageSize}
           />
-          <DataTable
-            table={table}
-            isPending={isPending}
-            isError={isError}
-            onRetry={refetch}
-            emptyMessage="Sin resultados."
-            errorMessage="Ocurrió un error al cargar las sesiones."
-          />
-          {data && (
-            <Pagination
-              viewOptions={<DataTableViewOptions table={table} />}
-              pageIndex={pageIndex}
-              pageCount={data.pageCount}
-              canPrev={pageIndex > 0}
-              canNext={pageIndex < data.pageCount - 1}
-              onPageChange={goToPage}
-              totalCount={data.totalCount}
-              pageSize={pageSize}
-              onPageSizeChange={setPageSize}
-            />
-          )}
-        </div>
-      </Card>
-    </>
+        )}
+      </TableScreenBody>
+    </TableScreen>
   )
 }

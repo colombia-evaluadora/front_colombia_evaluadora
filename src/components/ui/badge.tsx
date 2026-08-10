@@ -90,8 +90,7 @@ const badgeVariants = cva(
       {
         variant: "soft",
         color: "primary",
-        class:
-          "bg-primary-22 text-primary [a]:hover:bg-primary/30 focus-visible:ring-primary/20",
+        class: "bg-primary-22 text-primary [a]:hover:bg-primary/30 focus-visible:ring-primary/20",
       },
       {
         variant: "soft",
@@ -102,8 +101,7 @@ const badgeVariants = cva(
       {
         variant: "soft",
         color: "muted",
-        class:
-          "bg-muted-22 text-muted-foreground [a]:hover:bg-muted/40 focus-visible:ring-ring/30",
+        class: "bg-muted-22 text-muted-foreground [a]:hover:bg-muted/40 focus-visible:ring-ring/30",
       },
       {
         variant: "soft",
@@ -119,20 +117,17 @@ const badgeVariants = cva(
       {
         variant: "soft",
         color: "info",
-        class:
-          "bg-blue-22 text-blue [a]:hover:bg-blue/30 focus-visible:ring-blue/20",
+        class: "bg-blue-22 text-blue [a]:hover:bg-blue/30 focus-visible:ring-blue/20",
       },
       {
         variant: "soft",
         color: "warning",
-        class:
-          "bg-yellow-22 text-yellow [a]:hover:bg-yellow/30 focus-visible:ring-yellow/20",
+        class: "bg-yellow-22 text-yellow [a]:hover:bg-yellow/30 focus-visible:ring-yellow/20",
       },
       {
         variant: "soft",
         color: "success",
-        class:
-          "bg-green-22 text-green [a]:hover:bg-green/30 focus-visible:ring-green/20",
+        class: "bg-green-22 text-green [a]:hover:bg-green/30 focus-visible:ring-green/20",
       },
 
       // ============ outline (Outline en Figma) ============
