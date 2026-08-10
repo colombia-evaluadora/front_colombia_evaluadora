@@ -121,12 +121,17 @@ export function EstablishmentsDataTable({
         tiempo, tapa lo que scrollea por debajo.
       */}
       <div className="sticky top-14 z-20 bg-sidebar">
-        <Card className="gap-0 overflow-hidden rounded-b-none pt-0">
+        <Card className="gap-0 overflow-hidden rounded-b-none py-0">
           <CardHeader className="bg-muted/10 py-4">
-            <CardTitle>{title}</CardTitle>
+            <CardTitle className="text-2xl">{title}</CardTitle>
           </CardHeader>
-          <CardContent className="pt-7">
-            <div className="flex flex-wrap items-start justify-between gap-4">
+          {/*
+            La barra de búsqueda es más alta que los botones (lleva etiqueta
+            flotante), así que la fila alinea al pie (`items-end`) para que
+            todo comparta la línea base inferior.
+          */}
+          <CardContent className="py-4">
+            <div className="flex flex-wrap items-end justify-between gap-4">
               <SearchEstablishments
                 filters={filters}
                 applyFilters={applyFilters}
@@ -179,7 +184,7 @@ export function EstablishmentsDataTable({
         línea doble en el medio. `rounded-t-none` para pegarse a la base
         plana del encabezado; `overflow-visible` para no romper el sticky.
       */}
-      <Card className="grow overflow-visible rounded-t-none">
+      <Card className="grow overflow-visible rounded-t-none py-4">
         <div className="px-(--card-spacing)">
           <DataTable
             table={table}

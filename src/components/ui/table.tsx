@@ -58,7 +58,9 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
     <th
       data-slot="table-head"
       className={cn(
-        "h-12 px-3 text-left align-middle text-xs font-medium tracking-wider whitespace-nowrap text-muted-foreground uppercase [&:has([role=checkbox])]:pr-0",
+        // `text-sm`: el encabezado usa el MISMO tamaño que las celdas del
+        // cuerpo (lo hereda de `<table class="text-sm">`), no una escala menor.
+        "h-12 px-3 text-left align-middle text-sm font-medium tracking-wider whitespace-nowrap text-muted-foreground uppercase [&:has([role=checkbox])]:pr-0",
         className,
       )}
       {...props}

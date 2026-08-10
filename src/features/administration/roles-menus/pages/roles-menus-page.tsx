@@ -94,7 +94,7 @@ export function RolesMenusPage() {
             el alto de la card. */}
         <Card className="gap-0 overflow-hidden rounded-b-none py-0">
           <CardHeader className="bg-muted/10 py-4">
-            <CardTitle>Configuración de roles y menús</CardTitle>
+            <CardTitle className="text-2xl">Configuración de roles y menús</CardTitle>
           </CardHeader>
           <NoticeOutlet className="mx-(--card-spacing) my-4" />
         </Card>
@@ -105,7 +105,7 @@ export function RolesMenusPage() {
         arriba. `rounded-t-none` para pegarse a la base plana del encabezado;
         `overflow-visible` para no romper el sticky.
       */}
-      <Card className="grow overflow-visible rounded-t-none">
+      <Card className="grow overflow-visible rounded-t-none py-4">
         <CardContent className="flex flex-col gap-6">
           <Field variant="outlined" className="max-w-md">
             <FieldLabel htmlFor="role">Rol</FieldLabel>
