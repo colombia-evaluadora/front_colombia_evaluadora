@@ -173,8 +173,11 @@
   --purple-foreground: #150a2b;
   --orange: #ff8a4c;
   --orange-foreground: #2a1103;
-  --navy: #6c9be2;
-  --navy-foreground: #030c1c;
+  /* Navy no se aclara en oscuro como el resto de colores: es una superficie de
+     marca (el bloque de la pantalla de login), y aclararla la vuelve un parche
+     lavanda sobre el fondo oscuro. Se queda igual en los cuatro temas. */
+  --navy: #0b3879;
+  --navy-foreground: #f5f8fd;
 
   /* ---------- BORDES / FOCO ---------------------------------- */
   --border: #ffffff1a;
@@ -209,7 +212,7 @@
   --green-stroke: #84a73c4d;
   --purple-stroke: #a98bf04d;
   --orange-stroke: #ff8a4c4d;
-  --navy-stroke: #6c9be24d;
+  --navy-stroke: #0b38794d;
 
   /* ---------- SOFT FILLS (alpha 22%) ----------------------- */
   --foreground-22: #f2f6f838;
@@ -222,7 +225,7 @@
   --green-22: #84a73c38;
   --purple-22: #a98bf038;
   --orange-22: #ff8a4c38;
-  --navy-22: #6c9be238;
+  --navy-22: #0b387938;
 }
 
 [data-theme="red"] {
@@ -341,8 +344,11 @@
   --purple-foreground: #150a2b;
   --orange: #ff8a4c;
   --orange-foreground: #2a1103;
-  --navy: #6c9be2;
-  --navy-foreground: #030c1c;
+  /* Navy no se aclara en oscuro como el resto de colores: es una superficie de
+     marca (el bloque de la pantalla de login), y aclararla la vuelve un parche
+     lavanda sobre el fondo oscuro. Se queda igual en los cuatro temas. */
+  --navy: #0b3879;
+  --navy-foreground: #f5f8fd;
 
   /* ---------- BORDES / FOCO ---------------------------------- */
   --border: #ffffff1a;
@@ -377,7 +383,7 @@
   --green-stroke: #84a73c4d;
   --purple-stroke: #a98bf04d;
   --orange-stroke: #ff8a4c4d;
-  --navy-stroke: #6c9be24d;
+  --navy-stroke: #0b38794d;
 
   /* ---------- SOFT FILLS (alpha 22%) ----------------------- */
   --foreground-22: #f2f6f838;
@@ -390,7 +396,7 @@
   --green-22: #84a73c38;
   --purple-22: #a98bf038;
   --orange-22: #ff8a4c38;
-  --navy-22: #6c9be238;
+  --navy-22: #0b387938;
 }
 
 @theme inline {
