@@ -60,12 +60,12 @@ export function ReservationsDataTable({ title }: ReservationsDataTableProps) {
         tiempo, tapa lo que scrollea por debajo.
       */}
       <div className="sticky top-14 z-20 bg-sidebar">
-        <Card className="gap-0 overflow-hidden rounded-b-none pt-0">
+        <Card className="gap-0 overflow-hidden rounded-b-none py-0">
           <CardHeader className="bg-muted/10 py-4">
-            <CardTitle>{title}</CardTitle>
+            <CardTitle className="text-2xl">{title}</CardTitle>
           </CardHeader>
-          <CardContent className="pt-7">
-            <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-2">
+          <CardContent className="py-4">
+            <div className="flex flex-wrap items-end justify-between gap-x-2 gap-y-2">
               <SearchReservations
                 activeFilterCount={activeFilterCount}
                 filters={filters}
@@ -101,7 +101,7 @@ export function ReservationsDataTable({ title }: ReservationsDataTableProps) {
         línea doble en el medio. `rounded-t-none` para pegarse a la base
         plana del encabezado; `overflow-visible` para no romper el sticky.
       */}
-      <Card className="grow overflow-visible rounded-t-none">
+      <Card className="grow overflow-visible rounded-t-none py-4">
         <div className="px-(--card-spacing)">
           {/* Los indicadores quedan en el cuerpo: son datos que scrollean, no
               controles que convenga tener siempre a la vista. */}

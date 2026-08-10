@@ -189,8 +189,10 @@ export function DataTable({
     <div className="overflow-x-auto rounded-md border w-full border-border">
       <UITable className="w-full">
         <TableHeader>
+          {/* El encabezado no lleva fondo propio ni hover: comparte el de la
+              tabla en reposo, igual que una fila sin el puntero encima. */}
           {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id} className="bg-muted-22 hover:bg-muted-22">
+            <TableRow key={headerGroup.id} className="hover:bg-transparent">
               {headerGroup.headers.map((header) => {
                 const isActions = isActionsColumn(header.column.id)
                 return (
@@ -370,19 +372,28 @@ export function DataTableColumnHeader<TData, TValue>({
   return (
     <div className={cn("flex items-center", className)}>
       <DropdownMenu>
+        {/* `text-sm`: el botón trae `text-xs` de la base y el encabezado tiene
+            que leerse igual que las celdas. `px-3` + `-ml-3` alinean el título
+            con el texto de la columna que va debajo. */}
         <DropdownMenuTrigger
           render={
-            <Button variant="ghost" size="sm" color="neutral" className="data-[state=open]:bg-accent uppercase font-bold -ml-3 h-8" />
+            <Button
+              variant="ghost"
+              color="neutral"
+              className="-ml-3 h-8 px-3 text-sm font-bold uppercase has-data-[icon=inline-start]:pl-3 data-[state=open]:bg-accent"
+            />
           }
         >
-          <span>{title}</span>
+          {/* El indicador va ANTES del título: en DOM order queda a la
+              izquierda. `data-icon` solo ajusta el padding de ese lado. */}
           {sorted === "desc" ? (
-            <ArrowDownIcon data-icon="inline-end" />
+            <ArrowDownIcon data-icon="inline-start" />
           ) : sorted === "asc" ? (
-            <ArrowUpIcon data-icon="inline-end" />
+            <ArrowUpIcon data-icon="inline-start" />
           ) : (
-            <CaretUpDownIcon data-icon="inline-end" />
+            <CaretUpDownIcon data-icon="inline-start" />
           )}
+          <span>{title}</span>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start">
           <DropdownMenuGroup>

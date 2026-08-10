@@ -155,6 +155,19 @@ function DropdownMenuCheckboxItem({
 }: MenuPrimitive.CheckboxItem.Props & {
   inset?: boolean
 }) {
+  // Los iconos que van al frente de la etiqueta (`data-icon="inline-start"`,
+  // misma convención que Button) se sacan del `<span>` que trunca: ese span es
+  // `block`, así que un svg adentro rompe línea y el icono terminaba ARRIBA del
+  // texto en vez de a su izquierda. Fuera del span son hijos del flex del item
+  // y se acomodan en línea.
+  const children_ = React.Children.toArray(children)
+  const leadingIcons = children_.filter(
+    (child) =>
+      React.isValidElement<{ "data-icon"?: string }>(child) &&
+      child.props["data-icon"] === "inline-start",
+  )
+  const label = children_.filter((child) => !leadingIcons.includes(child))
+
   return (
     <MenuPrimitive.CheckboxItem
       data-slot="dropdown-menu-checkbox-item"
@@ -180,7 +193,8 @@ function DropdownMenuCheckboxItem({
         larga desbordaba el popup en vez de terminar en "…". El pr-8 del item
         reserva el lugar del check, así que el "…" nunca se le encima.
       */}
-      <span className="block min-w-0 flex-1 truncate">{children}</span>
+      {leadingIcons}
+      <span className="block min-w-0 flex-1 truncate">{label}</span>
     </MenuPrimitive.CheckboxItem>
   )
 }

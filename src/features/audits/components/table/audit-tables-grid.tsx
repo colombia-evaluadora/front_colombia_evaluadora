@@ -35,12 +35,12 @@ export function AuditTablesDataTable() {
     return (
       <>
       <div className="sticky top-14 z-20 bg-sidebar">
-        <Card className="gap-0 overflow-hidden rounded-b-none pt-0">
+        <Card className="gap-0 overflow-hidden rounded-b-none py-0">
           <CardHeader className="bg-muted/10 py-4">
-            <CardTitle>Tablas de auditoría</CardTitle>
+            <CardTitle className="text-2xl">Tablas de auditoría</CardTitle>
           </CardHeader>
 
-        <div className="border-b border-border px-(--card-spacing) pt-7">
+        <div className="border-b border-border px-(--card-spacing) pt-4">
           <nav aria-label="Vistas de auditoría" className="flex items-end gap-1">
             {viewLinks.map((view) => (
               <Link
@@ -55,14 +55,14 @@ export function AuditTablesDataTable() {
           </nav>
         </div>
 
-          <CardContent className="pt-7">
-            <div className="flex flex-wrap items-center justify-between gap-2">
+          <CardContent className="py-4">
+            <div className="flex flex-wrap items-end justify-between gap-2">
               <Skeleton className="h-9 w-72" />
             </div>
           </CardContent>
         </Card>
         </div>
-        <Card className="grow overflow-visible rounded-t-none">
+        <Card className="grow overflow-visible rounded-t-none py-4">
           <div className="px-(--card-spacing)">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {Array.from({ length: 8 }).map((_, i) => (
@@ -103,14 +103,14 @@ export function AuditTablesDataTable() {
   return (
     <>
       <div className="sticky top-14 z-20 gap-0 bg-sidebar">
-      <Card className="gap-0 overflow-hidden rounded-b-none pt-0">
+      <Card className="gap-0 overflow-hidden rounded-b-none py-0">
         <CardHeader className="bg-muted/10 py-4 ">
-          <CardTitle>
+          <CardTitle className="text-2xl">
             Tablas de auditoría
           </CardTitle>
         </CardHeader>
 
-        <div className="border-b border-border px-(--card-spacing) pt-7">
+        <div className="border-b border-border px-(--card-spacing) pt-4">
           <nav
             aria-label="Vistas de auditoría"
             className="flex items-end gap-1"
@@ -127,8 +127,8 @@ export function AuditTablesDataTable() {
             ))}
           </nav>
         </div>
-        <CardContent className="pt-7">
-          <div className="flex flex-wrap items-center justify-between gap-2">
+        <CardContent className="py-4">
+          <div className="flex flex-wrap items-end justify-between gap-2">
             <FilterAuditTablesForm
               id={FILTER_AUDIT_TABLES_FORM_ID}
               defaultValues={filters}
@@ -140,7 +140,7 @@ export function AuditTablesDataTable() {
         </CardContent>
       </Card>
       </div>
-      <Card className="grow overflow-visible rounded-t-none">
+      <Card className="grow overflow-visible rounded-t-none py-4">
         <div className="px-(--card-spacing)">
           {totalCount === 0 ? (
             <p className="text-sm text-muted-foreground">
