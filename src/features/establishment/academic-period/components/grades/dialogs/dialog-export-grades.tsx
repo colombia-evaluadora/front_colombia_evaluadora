@@ -1,6 +1,6 @@
 import { useState } from "react"
 
-import { DownloadSimpleIcon, FilePdfIcon, FileXlsIcon, SpinnerIcon } from "@/components/ui/icons"
+import { FileDownloadOutlinedIcon, FilePdfIcon, FileXlsIcon, SpinnerIcon } from "@/components/ui/icons"
 import { useNotify } from "@/components/notice/notice-context"
 
 import {
@@ -52,7 +52,7 @@ export function ExportGradesDialog({ filters }: ExportGradesDialogProps) {
           <Button variant="outline" color="muted" size="icon-sm" aria-label="Exportar grados" />
         }
       >
-        <DownloadSimpleIcon />
+        <FileDownloadOutlinedIcon />
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>

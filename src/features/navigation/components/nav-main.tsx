@@ -212,7 +212,7 @@ function NavCollapsibleItem({
              */
             className={cn(
               (isActive || hasActiveChild) &&
-                "bg-primary text-primary-foreground font-medium hover:!bg-primary/90 hover:!text-primary-foreground active:!bg-primary/80 active:!text-primary-foreground data-open:hover:!bg-primary/90 data-open:hover:!text-primary-foreground",
+                "bg-primary text-primary-foreground font-medium shadow-md shadow-primary/30 hover:!bg-primary/90 hover:!text-primary-foreground active:!bg-primary/80 active:!text-primary-foreground data-open:hover:!bg-primary/90 data-open:hover:!text-primary-foreground",
             )}
           />
         }

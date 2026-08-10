@@ -1,6 +1,6 @@
 import { useState } from "react"
 
-import { DownloadSimpleIcon, FilePdfIcon, FileXlsIcon, SpinnerIcon } from "@/components/ui/icons"
+import { FileDownloadOutlinedIcon, FilePdfIcon, FileXlsIcon, SpinnerIcon } from "@/components/ui/icons"
 import { useNotify } from "@/components/notice/notice-context"
 
 import {
@@ -57,7 +57,7 @@ export function ExportAcademicPeriodsDialog({ filters }: ExportAcademicPeriodsDi
           />
         }
       >
-        <DownloadSimpleIcon aria-hidden="true" />
+        <FileDownloadOutlinedIcon aria-hidden="true" />
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
