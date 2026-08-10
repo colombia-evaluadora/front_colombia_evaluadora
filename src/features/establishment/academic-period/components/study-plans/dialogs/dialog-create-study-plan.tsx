@@ -187,7 +187,7 @@ export function CreateStudyPlanDialog({
       <DialogPortal>
         <DialogOverlay
           forceRender
-          className="bg-black/30 supports-backdrop-filter:backdrop-blur-md"
+          className="bg-black/30"
         />
       </DialogPortal>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
