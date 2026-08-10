@@ -2,7 +2,6 @@ import { Link, useSearch } from "@tanstack/react-router"
 import {
   ArrowLeftIcon,
   CheckCircleIcon,
-  ClockIcon,
   PaperPlaneTiltIcon,
   WarningCircleIcon,
 } from "@/components/ui/icons"
@@ -27,7 +26,7 @@ export function CheckEmailPage() {
     from: "/_auth/check-email",
     select: (s) => s.token,
   })
-  const { isExpired, isInvalid, maskedEmail, issuedAtLabel, remainingLabel, ttlLabel } =
+  const { isExpired, isInvalid, maskedEmail, remainingLabel, ttlLabel } =
     usePasswordResetLink(token)
 
   const isDead = isExpired || (isInvalid && !!token)
@@ -74,7 +73,9 @@ export function CheckEmailPage() {
               {maskedEmail ? (
                 <>
                   <br />
-                  <span className="text-green font-semibold break-all">{maskedEmail}</span>
+                  <span className="text-green text-base font-semibold break-all">
+                    {maskedEmail}
+                  </span>
                 </>
               ) : (
                 " tu dirección registrada"
@@ -86,34 +87,24 @@ export function CheckEmailPage() {
 
       {!isDead && (
         <CardContent className="space-y-4">
+          {/* La cuenta regresiva va dentro de la frase, no en un aviso aparte:
+              mientras corre reemplaza a la vida total del enlace, que solo se
+              muestra si todavía no hay contador. */}
           <p className="text-muted-foreground text-center text-sm">
             Sigue las instrucciones del correo para restablecer tu contraseña.
-            {remainingLabel === null && ttlLabel !== null
-              ? ` El enlace será válido por ${ttlLabel}.`
-              : null}
-          </p>
-
-          {remainingLabel !== null && (
-            <div className="bg-green/10 flex items-center rounded-lg justify-center gap-2 p-3">
-              <ClockIcon
-                weight="duotone"
-                className="text-green size-5 shrink-0"
-                aria-hidden="true"
-              />
-              <p className="text-sm">
+            {remainingLabel !== null ? (
+              <>
+                {" "}
                 El enlace vence en{" "}
                 <span className="text-green font-semibold tabular-nums" aria-live="polite">
                   {remainingLabel}
                 </span>
-              </p>
-            </div>
-          )}
-
-          {issuedAtLabel !== null && (
-            <p className="text-muted-foreground text-center text-xs">
-              Enviado a las {issuedAtLabel}
-            </p>
-          )}
+                .
+              </>
+            ) : ttlLabel !== null ? (
+              ` El enlace será válido por ${ttlLabel}.`
+            ) : null}
+          </p>
 
           <div className="bg-green/10 flex items-start rounded-lg gap-3 p-4">
             <CheckCircleIcon
