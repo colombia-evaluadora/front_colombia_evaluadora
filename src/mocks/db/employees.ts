@@ -88,6 +88,16 @@ export function createEmployeeRow(employee: Employee): EmployeeListItem {
   }
   const roles: CatalogItem[] = Array.from(rolesByCode.values())
 
+  // Mismo criterio para las jornadas: un funcionario puede tener permisos en
+  // varias y la columna las muestra todas, no solo la del primer permiso.
+  const workSchedulesByCode = new Map<string, CatalogItem>()
+  for (const permission of employee.permissions) {
+    if (!workSchedulesByCode.has(permission.workSchedule.code)) {
+      workSchedulesByCode.set(permission.workSchedule.code, permission.workSchedule)
+    }
+  }
+  const workSchedules: CatalogItem[] = Array.from(workSchedulesByCode.values())
+
   /**
    * Estados del funcionario, agregados desde sus permisos y deduplicados
    * preservando el orden de aparición. Si todavía no hay permisos
@@ -114,7 +124,7 @@ export function createEmployeeRow(employee: Employee): EmployeeListItem {
     name,
     roles,
     campuses: campusNames,
-    workSchedule: primaryPermission?.workSchedule,
+    workSchedules,
     statuses,
   }
 }
