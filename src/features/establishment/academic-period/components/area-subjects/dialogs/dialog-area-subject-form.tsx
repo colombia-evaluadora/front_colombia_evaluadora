@@ -424,7 +424,7 @@ export function AreaSubjectFormDialog({
           <SubjectNoticeBanner key={notice?.id} notice={notice} onClose={() => setNotice(null)} />
 
           {subjectsStarted && (
-            <div className="overflow-x-auto border [&_[data-slot=input]]:bg-background [&_[data-slot=select-trigger]]:bg-background">
+            <div className="[&_[data-slot=input]]:bg-background [&_[data-slot=select-trigger]]:bg-background">
               <FieldVariantContext.Provider value="outlined">
                 <Table>
                   <TableHeader>

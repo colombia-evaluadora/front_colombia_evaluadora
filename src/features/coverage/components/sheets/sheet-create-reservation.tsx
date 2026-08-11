@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { toast } from "sonner"
 
-import { PlusIcon, SpinnerIcon } from "@/components/ui/icons"
+import { PlusIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 import { Button } from "@/components/ui/button"
 import {
   Sheet,
@@ -66,6 +66,7 @@ export function CreateReservationSheet() {
 
         <SheetFooter className="flex-row items-center justify-end gap-2">
           <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
+            <XIcon data-icon="inline-start" />
             Cancelar
           </Button>
           <Button

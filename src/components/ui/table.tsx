@@ -4,14 +4,29 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-function Table({ className, ...props }: React.ComponentProps<"table">) {
+function Table({
+  className,
+  containerClassName,
+  ...props
+}: React.ComponentProps<"table"> & {
+  /**
+   * Clases para el contenedor con el scroll, no para el `<table>`. Es por donde
+   * se le pone alto máximo (`max-h-… overflow-y-auto`): quien lo envuelva en
+   * otra caja para eso termina con dos bordes, porque el borde y el radio ya
+   * viven acá.
+   */
+  containerClassName?: string
+}) {
   return (
     // El contenedor es el que lleva borde y radio: el `<table>` no puede
     // redondear sus esquinas (las pintan las celdas), y el `overflow` que ya
     // necesitaba para el scroll horizontal recorta las filas contra la curva.
     <div
       data-slot="table-container"
-      className="scrollbar-slim relative w-full overflow-x-auto rounded-lg border border-border"
+      className={cn(
+        "scrollbar-slim relative w-full overflow-x-auto rounded-lg border border-border",
+        containerClassName,
+      )}
     >
       <table
         data-slot="table"
