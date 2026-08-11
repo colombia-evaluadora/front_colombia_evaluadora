@@ -482,6 +482,43 @@
   --color-orange-22: var(--orange-22);
   --color-navy-22: var(--navy-22);
 }
+
+/* Barra de scroll minimalista.
+
+   La nativa de Windows es una franja gris de ~16px con flechas en los extremos;
+   dentro de una caja redondeada se ve como un bloque pegado que no pertenece al
+   diseño. Esta es de 6px, sin flechas y sin pista: lo único que se ve es el
+   pulgar `muted`, flotando sobre el fondo de la caja.
+
+   `scrollbar-width`/`scrollbar-color` es el estándar (Firefox, Chrome nuevos);
+   las reglas `::-webkit-scrollbar` cubren el resto de navegadores WebKit.
+
+   Es opt-in a propósito: hoy solo la usa el contenedor de `Table`. El resto de
+   las barras del sitio siguen siendo las nativas. */
+@utility scrollbar-slim {
+  scrollbar-width: thin;
+  scrollbar-color: var(--muted) transparent;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  &::-webkit-scrollbar-track {
+    background-color: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: var(--muted);
+    border-radius: 9999px;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background-color: var(--muted-foreground);
+  }
+  &::-webkit-scrollbar-button,
+  &::-webkit-scrollbar-corner {
+    display: none;
+  }
+}
+
 /* Base styles */
 
 @layer base {

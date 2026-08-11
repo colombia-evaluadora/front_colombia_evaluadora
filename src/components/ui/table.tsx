@@ -11,7 +11,7 @@ function Table({ className, ...props }: React.ComponentProps<"table">) {
     // necesitaba para el scroll horizontal recorta las filas contra la curva.
     <div
       data-slot="table-container"
-      className="relative w-full overflow-x-auto rounded-lg border border-border"
+      className="scrollbar-slim relative w-full overflow-x-auto rounded-lg border border-border"
     >
       <table
         data-slot="table"
