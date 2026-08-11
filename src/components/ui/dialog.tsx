@@ -108,7 +108,9 @@ function DialogTitle({ className, ...props }: DialogPrimitive.Title.Props) {
     <DialogPrimitive.Title
       data-slot="dialog-title"
       className={cn(
-        "font-heading text-lg leading-none font-semibold",
+        // `font-bold`, igual que los títulos de pantalla (`TableScreenTitle`):
+        // el `semibold` se quedaba corto contra las etiquetas de los campos.
+        "font-heading text-lg leading-none font-bold",
         className,
       )}
       {...props}
