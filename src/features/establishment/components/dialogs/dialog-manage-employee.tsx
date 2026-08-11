@@ -11,7 +11,13 @@ import {
 } from "@/components/ui/dialog"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { CheckIcon, ControlPointIcon, PlusIcon, TrashIcon, XIcon } from "@/components/ui/icons"
+import {
+  CheckIcon,
+  ControlPointIcon,
+  PencilIcon,
+  TrashIcon,
+  XIcon,
+} from "@/components/ui/icons"
 import {
   Select,
   SelectContent,
@@ -70,6 +76,24 @@ interface PermissionDraft {
   campusId: string
   workScheduleCode: string
   status: PermissionStatus | ""
+}
+
+/**
+ * ¿La información complementaria trae algo? Se usa al abrir el diálogo en modo
+ * edición: si el funcionario ya llega con estos datos del backend, la sección
+ * cuenta como guardada.
+ */
+function hasAdditionalInfoData(value: EmployeeAdditionalInfoValue): boolean {
+  return Boolean(
+    value.address.trim() ||
+      value.employeeClass.id ||
+      value.educationLevel.id ||
+      value.grade.id ||
+      value.highestEducationLevel.id ||
+      value.fundingSource.id ||
+      value.functionalPosition.id ||
+      value.employmentType.id,
+  )
 }
 
 /** Columnas por las que se puede ordenar la tabla de permisos. */
@@ -215,6 +239,15 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
   const [permissionDraft, setPermissionDraft] = useState<PermissionDraft>(createPermissionDraft)
   // Orden de la tabla de permisos: estado local, la tabla se arma a mano.
   const [permissionSort, setPermissionSort] = useState<TableSort<PermissionSortKey>>(null)
+  /*
+   * Secciones opcionales ya confirmadas con su botón Guardar. Es lo que decide
+   * qué botón se ve y con qué ícono, y va aparte de los datos a propósito:
+   * agregar una fila a la tabla —o escribir en el formulario— todavía no
+   * cuenta, recién el Guardar del diálogo lo hace. Cancelar deja el estado
+   * como estaba.
+   */
+  const [permissionsSaved, setPermissionsSaved] = useState(false)
+  const [additionalInfoSaved, setAdditionalInfoSaved] = useState(false)
   // Estado UI: vive fuera de `Person` porque no es parte del modelo de negocio.
   const [confirmPassword, setConfirmPassword] = useState("")
 
@@ -258,6 +291,8 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
       setPermissionDraft(createPermissionDraft())
       setConfirmPassword("")
       setCreatedEmployeeId(null)
+      setPermissionsSaved(false)
+      setAdditionalInfoSaved(false)
       return
     }
 
@@ -268,6 +303,10 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
       setAdditionalInfo(createAdditionalInfoFromEmployee(employee))
       setPermissionDraft(createPermissionDraft(employee.permissions.length + 1))
       setConfirmPassword(employee.person.password)
+      // En edición lo que llega del backend ya está guardado: los botones
+      // arrancan con el ícono de editar, sin pedir un Guardar que no aplica.
+      setPermissionsSaved(employee.permissions.length > 0)
+      setAdditionalInfoSaved(hasAdditionalInfoData(createAdditionalInfoFromEmployee(employee)))
     }
   }, [employeeQuery.data, isEditMode, open])
 
@@ -441,11 +480,13 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
   }
 
   function closePermissionsDialog() {
+    setPermissionsSaved(true)
     setPermissionsDialogOpen(false)
     notify("Permisos agregados al borrador. Pulsa Guardar para persistir el funcionario.", { variant: "info" })
   }
 
   function closeAdditionalInfoDialog() {
+    setAdditionalInfoSaved(true)
     setAdditionalInfoDialogOpen(false)
     notify("Información complementaria agregada al borrador. Pulsa Guardar para persistir el funcionario.", { variant: "info" })
   }
@@ -477,6 +518,14 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
               `twMerge` no la funde con la pelada — sin el `sm:` los dos grupos
               se iban juntos a la derecha en escritorio. */}
           <DialogFooter className="flex-row flex-wrap items-center justify-between gap-3 sm:justify-between">
+            {/*
+              Los dos accesos opcionales se recorren en orden: permisos primero
+              y, solo cuando ya hay al menos uno, aparece la información
+              complementaria. Cada botón cuenta en qué punto está con su ícono:
+              el "+" en círculo de los listados (`ControlPointIcon`) mientras la
+              sección está vacía, y el lápiz de las tablas cuando ya tiene datos
+              —entrar deja de ser agregar y pasa a ser editar—.
+            */}
             <div className="flex flex-wrap items-center gap-2">
               {canOpenOptionalSections && (
                 <Button
@@ -485,21 +534,27 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
                   size="sm"
                   onClick={() => setPermissionsDialogOpen(true)}
                 >
-                  {/* El mismo "+" en círculo del botón Agregar de los listados
-                      (`ControlPointIcon`): abrir permisos es agregar. */}
-                  <ControlPointIcon data-icon="inline-start" />
-                  Permisos / {permissions.length}
+                  {hasPermissions ? (
+                    <PencilIcon data-icon="inline-start" />
+                  ) : (
+                    <ControlPointIcon data-icon="inline-start" />
+                  )}
+                  {hasPermissions ? `Permisos / ${permissions.length}` : "Permisos"}
                 </Button>
               )}
 
-              {canOpenOptionalSections && (
+              {canOpenOptionalSections && hasPermissions && (
                 <Button
                   variant="fill"
                   color="primary"
                   size="sm"
                   onClick={() => setAdditionalInfoDialogOpen(true)}
                 >
-                  <PlusIcon data-icon="inline-start" />
+                  {hasAdditionalInfo ? (
+                    <PencilIcon data-icon="inline-start" />
+                  ) : (
+                    <ControlPointIcon data-icon="inline-start" />
+                  )}
                   Información complementaria
                 </Button>
               )}
