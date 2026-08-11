@@ -166,7 +166,7 @@ export function CreateStudyPlanDialog({
       <DialogTrigger
         render={
           isEditing ? (
-            <Button variant="fill" color="secondary" size="icon" className="size-8" />
+            <Button variant="ghost" color="neutral" size="icon-sm" />
           ) : (
             <Button color="primary" size="sm" />
           )

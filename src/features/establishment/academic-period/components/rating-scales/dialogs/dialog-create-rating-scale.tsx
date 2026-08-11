@@ -26,6 +26,7 @@ import {
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { FieldVariantContext } from "@/hooks/use-field-variant"
+import { cn } from "@/lib/utils"
 import {
   Select,
   SelectContent,
@@ -54,6 +55,60 @@ import { makeRatingScaleGradesSchema, parseGradingRange, type GradingRange } fro
 import { TeachingLevelsMultiSelect } from "../teaching-levels-multi-select"
 import { ScaleSortableHeader, compareByScaleKey, type ScaleSort } from "../table/scale-sort-header"
 import { useRowEdit } from "../../../hooks/use-row-edit"
+
+/*
+ * Réplica de la mecánica de la columna `actions` de `DataTable`: esta tabla se
+ * arma a mano (ordena con estado local, no con TanStack), así que no puede
+ * reutilizar el componente y las clases se repiten acá.
+ *
+ * La celda de acciones es `sticky` y de 1px —los botones son absolutos, su
+ * min-content es 0— y el `spacer` que va justo antes es quien le reserva el
+ * ancho en el flujo, para que la columna no se lleve una tajada del reparto.
+ */
+const ACTIONS_CELL_CLASS = "sticky right-0 z-10 w-px"
+const ACTIONS_SPACER_WIDTH = 96
+
+const actionsSpacerCell = (
+  <td aria-hidden className="p-0">
+    <div style={{ width: ACTIONS_SPACER_WIDTH }} />
+  </td>
+)
+
+const actionsSpacerHeadCell = (
+  <th aria-hidden className="p-0">
+    <div style={{ width: ACTIONS_SPACER_WIDTH }} />
+  </th>
+)
+
+/*
+ * El bloque va a sangre contra el borde derecho, con el alto completo de la
+ * fila, y aparece con el mismo fade que el hover (150ms, el default de
+ * Tailwind) para que entren juntos.
+ *
+ * El fondo es el mismo color del hover de `TableRow` (`bg-muted/50`) pero ya
+ * resuelto: acá hace falta opaco, porque el bloque tapa las columnas que pasan
+ * por debajo al scrollear. Se mezcla contra `--popover` y no contra `--card`
+ * como en `DataTable`: esta tabla vive dentro de un Dialog, que es `bg-popover`
+ * —en el tema rojo los dos tokens no coinciden—.
+ *
+ * `active` deja el bloque fijo: mientras se edita una fila, guardar y cancelar
+ * no pueden depender de que el puntero siga encima.
+ *
+ * El revelado por teclado va con `has(:focus-visible)` y no con `focus-within`:
+ * al hacer click el botón queda enfocado, y como React reusa ese nodo del DOM
+ * al cambiar la fila entre modo lectura y edición, el foco sobrevive al cambio
+ * y `focus-within` dejaba el bloque pegado hasta hacer click en otro lado.
+ * `:focus-visible` solo lo activa el foco por teclado, que es a quien apunta la
+ * regla.
+ */
+const actionsOverlayClass = (active = false) =>
+  cn(
+    "absolute inset-y-0 right-0 z-10 flex items-center gap-1 px-2 transition-opacity",
+    "bg-[color-mix(in_srgb,var(--muted)_50%,var(--popover))]",
+    active
+      ? "opacity-100"
+      : "opacity-0 group-hover/row:opacity-100 group-has-[:focus-visible]/row:opacity-100",
+  )
 
 type RatingScaleDraftValues = z.infer<ReturnType<typeof makeRatingScaleGradesSchema>>
 
@@ -420,8 +475,12 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
               <FieldVariantContext.Provider value="outlined">
                 <Table>
                   <TableHeader>
-                    <TableRow>
-                      <TableHead>
+                    {/* El encabezado no lleva fondo propio ni hover: comparte
+                        el de la tabla en reposo, igual que una fila sin el
+                        puntero encima. `has-aria-expanded` cubre el rato en que
+                        un menú de orden está abierto. */}
+                    <TableRow className="hover:bg-transparent has-aria-expanded:bg-transparent">
+                      <TableHead className="text-foreground">
                         <ScaleSortableHeader
                           title="Nombre"
                           sortKey="nombre"
@@ -429,7 +488,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                           onSortChange={setSort}
                         />
                       </TableHead>
-                      <TableHead>
+                      <TableHead className="text-foreground">
                         <ScaleSortableHeader
                           title="Abreviación"
                           sortKey="abreviacion"
@@ -437,7 +496,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                           onSortChange={setSort}
                         />
                       </TableHead>
-                      <TableHead>
+                      <TableHead className="text-foreground">
                         <ScaleSortableHeader
                           title="Nota máximo"
                           sortKey="notaMaxima"
@@ -445,7 +504,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                           onSortChange={setSort}
                         />
                       </TableHead>
-                      <TableHead>
+                      <TableHead className="text-foreground">
                         <ScaleSortableHeader
                           title="Nota mínimo"
                           sortKey="notaMinima"
@@ -453,7 +512,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                           onSortChange={setSort}
                         />
                       </TableHead>
-                      <TableHead>
+                      <TableHead className="text-foreground">
                         <ScaleSortableHeader
                           title="Nota equivalente"
                           sortKey="notaEquivalente"
@@ -461,7 +520,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                           onSortChange={setSort}
                         />
                       </TableHead>
-                      <TableHead>
+                      <TableHead className="text-foreground">
                         <ScaleSortableHeader
                           title="Tipo"
                           sortKey="tipo"
@@ -469,8 +528,21 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                           onSortChange={setSort}
                         />
                       </TableHead>
-                      <TableHead>Iconografía</TableHead>
-                      <TableHead className="text-right">Acciones</TableHead>
+                      <TableHead className="text-foreground">
+                        <ScaleSortableHeader
+                          title="Iconografía"
+                          sortKey="iconografia"
+                          sort={sort}
+                          onSortChange={setSort}
+                        />
+                      </TableHead>
+                      {/* Igual que en `DataTable`: la columna de acciones no
+                          rotula —el `th` solo reserva el ancho del bloque— y el
+                          título queda para lectores de pantalla. */}
+                      {actionsSpacerHeadCell}
+                      <TableHead className="w-px text-foreground">
+                        <span className="sr-only">Acciones</span>
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -479,7 +551,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
 
                       if (isEditing && editRow) {
                         return (
-                          <TableRow key={index}>
+                          <TableRow key={index} className="group/row">
                             <TableCell>
                               <Input
                                 aria-label="Nombre"
@@ -579,8 +651,11 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                                 onChange={(valor) => patchEditRow({ iconografia: valor })}
                               />
                             </TableCell>
-                            <TableCell>
-                              <div className="flex items-center justify-end gap-1">
+                            {actionsSpacerCell}
+                            <TableCell className={ACTIONS_CELL_CLASS}>
+                              {/* `true`: la fila en edición mantiene el bloque
+                                  fijo, no sujeto al hover. */}
+                              <div className={actionsOverlayClass(true)}>
                                 <Button
                                   type="button"
                                   color="primary"
@@ -606,7 +681,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                       }
 
                       return (
-                        <TableRow key={index}>
+                        <TableRow key={index} className="group/row">
                           <TableCell className="font-medium">{d.nombre}</TableCell>
                           <TableCell>{d.abreviacion}</TableCell>
                           <TableCell>{d.notaMaxima}</TableCell>
@@ -616,12 +691,13 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                           <TableCell className="text-lg">
                             <RatingSymbolView value={d.iconografia} />
                           </TableCell>
-                          <TableCell>
-                            <div className="flex items-center justify-end gap-1">
+                          {actionsSpacerCell}
+                          <TableCell className={ACTIONS_CELL_CLASS}>
+                            <div className={actionsOverlayClass()}>
                               <Button
                                 type="button"
-                                variant="fill"
-                                color="secondary"
+                                variant="ghost"
+                                color="neutral"
                                 size="icon-sm"
                                 aria-label={`Editar ${d.nombre}`}
                                 disabled={editingIndex !== null}
@@ -631,8 +707,8 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                               </Button>
                               <Button
                                 type="button"
-                                variant="fill"
-                                color="destructive"
+                                variant="ghost"
+                                color="neutral"
                                 size="icon-sm"
                                 aria-label={`Quitar ${d.nombre}`}
                                 disabled={editingIndex !== null}

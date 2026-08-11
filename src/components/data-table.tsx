@@ -145,6 +145,12 @@ export function DataTable({
   // `insideSubRow` (tabla dentro de una sub-fila con `bg-muted/20`): usa ese
   // mismo tono como base del overlay. Mezclar `muted` con `--card` queda muy
   // oscuro sobre el gris de la sub-fila y los botones ghost se ven rellenos.
+  //
+  // El revelado por teclado va con `has(:focus-visible)` y no con `focus-within`:
+  // al hacer click el botón queda enfocado y el bloque se quedaba pegado hasta
+  // hacer click en otro lado —se nota al cerrar un diálogo de acción, que
+  // devuelve el foco a su trigger—. `:focus-visible` solo lo activa el foco por
+  // teclado, que es a quien apunta la regla.
   const overlayClass = (active = false) =>
     cn(
       "absolute inset-y-0 right-0 z-10 flex items-center gap-1 px-2",
@@ -152,7 +158,7 @@ export function DataTable({
       "transition-opacity",
       active
         ? "opacity-100"
-        : "opacity-0 group-hover/row:opacity-100 group-focus-within/row:opacity-100",
+        : "opacity-0 group-hover/row:opacity-100 group-has-[:focus-visible]/row:opacity-100",
     )
 
   // Ancho y clases de la columna que absorbe el sobrante, para th y td.

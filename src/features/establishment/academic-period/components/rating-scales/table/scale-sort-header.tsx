@@ -15,6 +15,7 @@ export type ScaleSortKey =
   | "notaMinima"
   | "notaEquivalente"
   | "tipo"
+  | "iconografia"
 
 export type ScaleSort = { key: ScaleSortKey; dir: "asc" | "desc" } | null
 
@@ -50,9 +51,19 @@ export function ScaleSortableHeader({
   return (
     <div className="flex items-center">
       <DropdownMenu>
+        {/* Mismas clases que el botón de `DataTableColumnHeader`: esta tabla se
+            arma a mano (no pasa por `DataTable`), así que si acá se diverge el
+            encabezado del modal deja de parecerse al del resto de la app.
+            `color="neutral"` da el `text-foreground`; sin él el ghost cae en el
+            color primary. `text-sm` pisa el `text-xs` de la base del botón, que
+            es lo que dejaba el título más chico que las celdas. */}
         <DropdownMenuTrigger
           render={
-            <Button variant="ghost" size="sm" className="-ml-3 h-8 data-[state=open]:bg-accent" />
+            <Button
+              variant="ghost"
+              color="neutral"
+              className="-ml-3 h-8 px-3 text-sm font-bold uppercase has-data-[icon=inline-end]:pr-3 data-[state=open]:bg-accent"
+            />
           }
         >
           <span>{title}</span>
