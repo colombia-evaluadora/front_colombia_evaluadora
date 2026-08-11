@@ -193,7 +193,7 @@ export function ManageCampusDialog({
             disabled={isPending}
           >
             <CheckIcon data-icon="inline-start" />
-            {isPending ? "Guardando..." : isEditMode ? "Guardar cambios" : "Guardar"}
+            {isPending ? "Guardando..." : "Guardar"}
           </Button>
           <Button
             type="button"
