@@ -55,15 +55,23 @@ function TableScreen({ children, className }: { children: ReactNode; className?:
  * Encabezado de la pantalla. Queda pegado bajo el header de la app (`top-14`
  * = su alto): el `bg-sidebar` opaco tapa lo que scrollea por debajo.
  *
- * Es su PROPIA superficie, separada del cuerpo. No se encapsulan en una sola:
- * si compartieran el `ring-1`, el borde inferior del encabezado se sumaría al
- * anillo y daría línea doble en el medio.
+ * Es su PROPIA superficie, separada del cuerpo —tiene que serlo: el `sticky`
+ * vive acá y el cuerpo scrollea por debajo—. Por eso el contorno se pinta con
+ * `border` y no con `ring`: el borde se puede quitar de un solo lado
+ * (`border-b-0`) y así el encuentro con el cuerpo no muestra las dos líneas de
+ * 1px, una de cada superficie, que se veían como una costura en el medio.
  */
 function TableScreenHeader({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <header className={cn("sticky top-14 z-20 bg-sidebar", className)}>
-      <div className="overflow-hidden rounded-t-lg bg-card text-sm text-card-foreground ring-1 ring-foreground/5 ring-inset">
+      <div className="overflow-hidden rounded-t-lg border border-b-0 border-foreground/5 bg-card text-sm text-card-foreground">
         {children}
+        {/* Cierre del encabezado. Va acá dentro —y no como borde del cuerpo—
+            para que viaje con el `sticky`: la línea se queda arriba mientras el
+            contenido pasa por debajo. El `mx` es el mismo `--screen-spacing`
+            que el padding de las piezas, así que arranca y termina donde el
+            texto, no de borde a borde. */}
+        <hr className="mx-(--screen-spacing) border-border" />
       </div>
     </header>
   )
@@ -134,14 +142,41 @@ function TableScreenActions({ children, className }: { children: ReactNode; clas
 }
 
 /**
+ * Barra de acciones pegada al borde inferior. Espejo de `TableScreenHeader`:
+ * el `sticky` lo lleva un contenedor con `bg-sidebar` opaco —que tapa lo que
+ * scrollea por debajo— y adentro va la superficie, para que la barra quede
+ * DENTRO de la página y no como una franja suelta de borde a borde.
+ *
+ * La usan las pantallas de formulario (agregar/editar), donde el guardar tiene
+ * que estar siempre a la vista; los listados no la montan. Cuando está, el
+ * cuerpo pierde su radio inferior: `<TableScreenBody className="rounded-b-none">`.
+ */
+function TableScreenFooter({ children, className }: { children: ReactNode; className?: string }) {
+  return (
+    <footer className={cn("sticky bottom-0 z-30 bg-sidebar", className)}>
+      {/* Una sola línea arriba: la del propio contorno, que acá hace de
+          separador con el cuerpo (por eso el cuerpo se monta con `border-b-0`
+          cuando hay footer). */}
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-b-lg border border-foreground/5 bg-muted/10 px-(--screen-spacing) py-4 text-sm text-card-foreground">
+        {children}
+      </div>
+    </footer>
+  )
+}
+
+/**
  * Cuerpo: la tabla y su paginación. `overflow-visible` para no romper el
- * sticky del encabezado; `rounded-t-none` para pegarse a su base plana.
+ * sticky del encabezado; sin borde arriba porque lo pone el encabezado, y sin
+ * radio superior para pegarse a su base plana.
+ *
+ * Cuando debajo va un `TableScreenFooter`, también pierde el de abajo:
+ * `<TableScreenBody className="rounded-b-none border-b-0">`.
  */
 function TableScreenBody({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <div
       className={cn(
-        "grow overflow-visible rounded-b-lg bg-card py-4 text-sm text-card-foreground ring-1 ring-foreground/5 ring-inset",
+        "grow overflow-visible rounded-b-lg border border-t-0 border-foreground/5 bg-card py-4 text-sm text-card-foreground",
         className,
       )}
     >
@@ -154,6 +189,7 @@ export {
   TableScreen,
   TableScreenActions,
   TableScreenBody,
+  TableScreenFooter,
   TableScreenHeader,
   TableScreenTabs,
   TableScreenTitle,

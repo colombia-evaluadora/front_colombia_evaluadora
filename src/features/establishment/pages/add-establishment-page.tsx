@@ -1,14 +1,14 @@
 import { Link, useLocation, useNavigate } from "@tanstack/react-router"
 import { useEffect, useState, type FormEvent } from "react"
 
+import { Card, CardContent } from "@/components/ui/card"
 import {
-  Card,
-  CardAction,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+  TableScreen,
+  TableScreenBody,
+  TableScreenFooter,
+  TableScreenHeader,
+  TableScreenTitle,
+} from "@/components/layout/table-screen"
 import { Button } from "@/components/ui/button"
 import { CheckIcon } from "@/components/ui/icons"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
@@ -291,36 +291,33 @@ export function AddEstablishmentPage() {
 
   return (
     /*
-      Igual que las páginas de tabla: los hijos van directos al contenedor
-      `flex flex-col flex-1` del layout protegido, para que la Card del cuerpo
-      se estire con `grow` hasta el borde inferior. Envolverlos en divs
-      intermedios rompía esa cadena de flex y dejaba la Card con el alto del
-      contenido, con una franja de `bg-sidebar` debajo.
+      El mismo andamiaje que las pantallas de listado: encabezado pegajoso,
+      cuerpo que se estira hasta el borde inferior y —lo propio de un
+      formulario— la barra de guardar pegada abajo.
     */
-    <>
-    {/*
-      Encabezado pegajoso: el `pt-4` opaco del contenedor reproduce el aire
-      que la página tiene contra el header de la app (`top-14`) y, al mismo
-      tiempo, tapa el formulario que scrollea por debajo.
-    */}
-    <div className="sticky top-14 z-20 bg-sidebar">
-      <Card className="gap-0 rounded-b-none py-0">
-        <CardHeader className="bg-muted/10 py-4">
-          <CardAction>
-            <Button render={<Link to={paths.app.establishments.general.getHref()} />} variant="fill" color="neutral" size="sm" nativeButton={false}>
+    <TableScreen>
+      <TableScreenHeader>
+        <TableScreenTitle
+          action={
+            <Button
+              render={<Link to={paths.app.establishments.general.getHref()} />}
+              variant="fill"
+              color="neutral"
+              size="sm"
+              nativeButton={false}
+            >
               Cerrar
             </Button>
-          </CardAction>
-          <CardTitle>{isEditMode ? "Editar establecimiento educativo" : "Agregar establecimiento educativo"}</CardTitle>
-        </CardHeader>
-        <NoticeOutlet className="mx-(--card-spacing) my-4" />
-      </Card>
-    </div>
+          }
+        >
+          {isEditMode ? "Editar establecimiento educativo" : "Agregar establecimiento educativo"}
+        </TableScreenTitle>
+        <NoticeOutlet className="mx-(--screen-spacing) my-4" />
+      </TableScreenHeader>
 
-    {/* El cuerpo es una Card aparte que se acopla entre el encabezado y la
-        barra de acciones: sin radios arriba ni abajo. */}
-    <Card className="grow rounded-none">
-      <CardContent>
+      {/* Sin radio ni borde abajo: ahí se acopla la barra de acciones, que trae
+          el suyo — si no, quedan dos líneas de 1px juntas. */}
+      <TableScreenBody className="rounded-b-none border-b-0">
         {validationErrors.length > 0 ? (
           <div className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
             <p className="font-medium">Completa los campos obligatorios:</p>
@@ -392,26 +389,22 @@ export function AddEstablishmentPage() {
             </AccordionItem>
           </Accordion>
         </form>
-      </CardContent>
-    </Card>
+      </TableScreenBody>
 
-    {/*
-      Barra de acciones pegajosa. Espejo del encabezado: el sticky lo lleva un
-      contenedor con `bg-sidebar` opaco y adentro va una Card propia, para que
-      la barra quede DENTRO de la superficie de la página y no como una franja
-      suelta de borde a borde.
-    */}
-    <div className="sticky bottom-0 z-30 bg-sidebar">
-      <Card className="gap-0 rounded-t-none py-0">
-        <CardFooter className="justify-between gap-4 bg-muted/10 py-4">
-          <p className="text-sm text-muted-foreground">Complete la información antes de guardar.</p>
-          <Button type="submit" form="create-establishment-form" variant="fill" color="primary" size="sm" disabled={isPending}>
-            <CheckIcon />
-            {isPending ? "Guardando..." : isEditMode ? "Guardar cambios" : "Guardar"}
-          </Button>
-        </CardFooter>
-      </Card>
-    </div>
-    </>
+      <TableScreenFooter>
+        <p className="text-sm text-muted-foreground">Complete la información antes de guardar.</p>
+        <Button
+          type="submit"
+          form="create-establishment-form"
+          variant="fill"
+          color="primary"
+          size="sm"
+          disabled={isPending}
+        >
+          <CheckIcon />
+          {isPending ? "Guardando..." : isEditMode ? "Guardar cambios" : "Guardar"}
+        </Button>
+      </TableScreenFooter>
+    </TableScreen>
   )
 }
