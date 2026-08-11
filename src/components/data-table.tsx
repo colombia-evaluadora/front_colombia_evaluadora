@@ -190,10 +190,9 @@ export function DataTable({
   )
 
   return (
-    // Sin caja: el recuadro redondeado dejaba una línea inferior colgando bajo
-    // la última fila, cortada a los lados por el padding de la pantalla. Las
-    // únicas líneas son ahora los separadores entre filas.
-    <div className="w-full overflow-x-auto">
+    // El borde, el radio y el scroll horizontal los pone el contenedor propio
+    // de `Table`; acá no se envuelve en otro scroller para no anidar dos.
+    <div className="w-full">
       <UITable className="w-full">
         <TableHeader>
           {/* El encabezado no lleva fondo propio ni hover: comparte el de la
