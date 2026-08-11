@@ -123,7 +123,7 @@ export function LoginForm({ id, onSubmit }: LoginFormProps) {
                   checked={field.state.value}
                   onCheckedChange={(checked) => field.handleChange(checked === true)}
                 />
-                <FieldLabel htmlFor={field.name} className="font-normal">
+                <FieldLabel htmlFor={field.name} className="font-normal text-muted-foreground">
                   Mantener sesión iniciada
                 </FieldLabel>
               </div>

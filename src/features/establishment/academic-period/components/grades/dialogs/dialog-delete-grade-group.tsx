@@ -44,7 +44,7 @@ export function DeleteGradeGroupDialog({ gradeGroup }: DeleteGradeGroupDialogPro
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger
-        render={<Button variant="ghost" color="neutral" size="icon" className="size-8" />}
+        render={<Button variant="ghost" color="neutral" size="icon-sm" />}
       >
         <span className="sr-only">Eliminar grupo</span>
         <TrashIcon />

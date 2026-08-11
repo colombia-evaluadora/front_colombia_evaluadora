@@ -238,8 +238,7 @@ export function createRatingScaleDetailColumns({
               <Button
                 type="button"
                 color="primary"
-                size="icon"
-                className="size-8"
+                size="icon-sm"
                 aria-label="Guardar cambios"
                 disabled={isSaving}
                 aria-busy={isSaving}
@@ -250,8 +249,7 @@ export function createRatingScaleDetailColumns({
               <Button
                 type="button"
                 variant="outline"
-                size="icon"
-                className="size-8"
+                size="icon-sm"
                 aria-label="Cancelar edición"
                 disabled={isSaving}
                 onClick={onCancel}
@@ -268,8 +266,7 @@ export function createRatingScaleDetailColumns({
               type="button"
               variant="ghost"
               color="neutral"
-              size="icon"
-              className="size-8"
+              size="icon-sm"
               aria-label="Editar escala de valoración"
               disabled={editingCodigo !== null}
               onClick={() => onStartEdit(scale)}

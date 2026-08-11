@@ -287,7 +287,7 @@ export function AreaSubjectFormDialog({
       <Dialog open={open} onOpenChange={handleOpenChange}>
         {isEdit ? (
           <DialogTrigger
-            render={<Button variant="fill" color="secondary" size="icon" className="size-8" />}
+            render={<Button variant="fill" color="secondary" size="icon-sm" />}
           >
             <span className="sr-only">Editar área</span>
             <PencilIcon />
@@ -494,8 +494,7 @@ export function AreaSubjectFormDialog({
                                 <Button
                                   type="button"
                                   color="primary"
-                                  size="icon"
-                                  className="size-8"
+                                  size="icon-sm"
                                   aria-label="Guardar cambios"
                                   onClick={saveEditSubject}
                                 >
@@ -504,8 +503,7 @@ export function AreaSubjectFormDialog({
                                 <Button
                                   type="button"
                                   variant="outline"
-                                  size="icon"
-                                  className="size-8"
+                                  size="icon-sm"
                                   aria-label="Cancelar edición"
                                   onClick={cancelEditSubject}
                                 >
@@ -540,8 +538,7 @@ export function AreaSubjectFormDialog({
                                 type="button"
                                 variant="fill"
                                 color="secondary"
-                                size="icon"
-                                className="size-8"
+                                size="icon-sm"
                                 aria-label={`Editar asignatura ${index + 1}`}
                                 disabled={editingIndex !== null}
                                 onClick={() => startEditSubject(realIndex)}
@@ -552,8 +549,7 @@ export function AreaSubjectFormDialog({
                                 type="button"
                                 variant="fill"
                                 color="destructive"
-                                size="icon"
-                                className="size-8"
+                                size="icon-sm"
                                 aria-label={`Quitar asignatura ${index + 1}`}
                                 disabled={editingIndex !== null}
                                 onClick={() => removeSubject(realIndex)}

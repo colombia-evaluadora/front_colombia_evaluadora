@@ -55,8 +55,8 @@ const DEFAULT_PLACEHOLDER = {
 } as const
 
 const DEFAULT_FORMAT = {
-  date: "d MMM yyyy",
-  datetime: "d MMM yyyy, HH:mm",
+  date: "dd/MM/yyyy",
+  datetime: "dd/MM/yyyy, HH:mm",
 } as const
 
 /**
@@ -148,8 +148,8 @@ function DatePicker(props: DatePickerProps) {
           />
         }
       >
-        <Icon className="text-muted-foreground size-4 shrink-0" aria-hidden="true" />
         <span className="min-w-0 flex-1 truncate">{displayValue ?? placeholder}</span>
+        <Icon className="text-muted-foreground size-4 shrink-0" aria-hidden="true" />
       </PopoverTrigger>
 
       {/* El `ring` del popover casi no se ve sobre el fondo del diálogo: el

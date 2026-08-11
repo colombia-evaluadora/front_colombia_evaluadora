@@ -72,7 +72,13 @@ function TableCell({ className, ...props }: React.ComponentProps<"td">) {
   return (
     <td
       data-slot="table-cell"
-      className={cn("p-3 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0", className)}
+      className={cn(
+        // Los badges de la base son de 10px, que dentro de una tabla quedan
+        // muy por debajo del texto de las celdas. Se suben a 12px acá y no en
+        // el componente para no tocar su uso fuera de tablas.
+        "p-3 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&_[data-slot=badge]]:text-xs",
+        className,
+      )}
       {...props}
     />
   )

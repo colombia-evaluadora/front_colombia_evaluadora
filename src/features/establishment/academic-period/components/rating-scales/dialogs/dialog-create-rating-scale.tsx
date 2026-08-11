@@ -584,8 +584,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                                 <Button
                                   type="button"
                                   color="primary"
-                                  size="icon"
-                                  className="size-8"
+                                  size="icon-sm"
                                   aria-label="Guardar cambios"
                                   onClick={saveEditRow}
                                 >
@@ -594,8 +593,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                                 <Button
                                   type="button"
                                   variant="outline"
-                                  size="icon"
-                                  className="size-8"
+                                  size="icon-sm"
                                   aria-label="Cancelar edición"
                                   onClick={cancelEdit}
                                 >
@@ -624,8 +622,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                                 type="button"
                                 variant="fill"
                                 color="secondary"
-                                size="icon"
-                                className="size-8"
+                                size="icon-sm"
                                 aria-label={`Editar ${d.nombre}`}
                                 disabled={editingIndex !== null}
                                 onClick={() => startEdit(index)}
@@ -636,8 +633,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                                 type="button"
                                 variant="fill"
                                 color="destructive"
-                                size="icon"
-                                className="size-8"
+                                size="icon-sm"
                                 aria-label={`Quitar ${d.nombre}`}
                                 disabled={editingIndex !== null}
                                 onClick={() => removeDraft(index)}

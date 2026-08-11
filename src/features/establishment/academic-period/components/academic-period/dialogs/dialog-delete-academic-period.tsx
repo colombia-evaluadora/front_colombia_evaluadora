@@ -44,7 +44,7 @@ export function DeleteAcademicPeriodDialog({ period }: DeleteAcademicPeriodDialo
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger
-        render={<Button variant="ghost" color="neutral" size="icon" className="size-8" />}
+        render={<Button variant="ghost" color="neutral" size="icon-sm" />}
       >
         <span className="sr-only">Eliminar periodo</span>
         <TrashIcon />

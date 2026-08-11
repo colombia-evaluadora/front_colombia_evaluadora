@@ -1,6 +1,5 @@
 import type { ColumnDef } from "@tanstack/react-table"
 
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { PencilIcon } from "@/components/ui/icons"
@@ -67,11 +66,7 @@ export function createCampusColumns({ onEdit }: CampusColumnsOptions): ColumnDef
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Zona" />
     ),
-    cell: ({ row }) => (
-      <Badge variant="soft" color="muted">
-        {row.original.zone.name}
-      </Badge>
-    ),
+    cell: ({ row }) => <p>{row.original.zone.name}</p>,
   },
   {
     accessorKey: "address",
@@ -101,8 +96,7 @@ export function createCampusColumns({ onEdit }: CampusColumnsOptions): ColumnDef
           type="button"
           variant="ghost"
           color="neutral"
-          size="icon"
-          className="size-8"
+          size="icon-sm"
           aria-label="Editar sede"
           onClick={() => onEdit(row.original.id)}
         >

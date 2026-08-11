@@ -626,8 +626,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
                           type="button"
                           variant="fill"
                           color="destructive"
-                          size="icon"
-                          className="size-8"
+                          size="icon-sm"
                           aria-label="Eliminar permiso"
                           onClick={() => removePermission(permission.order)}
                         >
