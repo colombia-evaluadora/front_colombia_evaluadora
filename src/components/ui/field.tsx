@@ -108,17 +108,18 @@ function FieldContent({ className, ...props }: React.ComponentProps<"div">) {
 }
 
 const floatingLabelVariants = cva(
-  "pointer-events-none absolute z-10 w-fit origin-left text-xs font-medium normal-case tracking-normal text-foreground transition-colors group-data-[disabled=true]/field:opacity-50 group-data-[invalid=true]/field:text-red group-focus-within/field:text-ring",
+  "pointer-events-none absolute z-10 w-fit origin-left text-sm font-medium normal-case tracking-normal text-foreground transition-colors group-data-[disabled=true]/field:opacity-50 group-data-[invalid=true]/field:text-red group-focus-within/field:text-ring",
   {
     variants: {
       variant: {
         plain: "",
-        // El desplazamiento se mide contra la última línea (0.5rem = media línea
-        // de text-xs), no contra la altura total: así cada línea extra crece hacia
-        // arriba y la de abajo sigue centrada en el borde. Con -translate-y-1/2 un
-        // label de dos líneas caía por debajo del borde y tapaba el control.
+        // El desplazamiento se mide contra la última línea (0.625rem = media
+        // línea de text-sm), no contra la altura total: así cada línea extra
+        // crece hacia arriba y la de abajo sigue centrada en el borde. Con
+        // -translate-y-1/2 un label de dos líneas caía por debajo del borde y
+        // tapaba el control.
         outlined:
-          "left-2.5 top-0 -translate-y-[calc(100%-0.5rem)] bg-background rounded-xs px-1",
+          "left-2.5 top-0 -translate-y-[calc(100%-0.625rem)] bg-background rounded-xs px-1",
         filled: "left-3 top-2",
         standard: "left-0 top-0 -translate-y-full",
       },
