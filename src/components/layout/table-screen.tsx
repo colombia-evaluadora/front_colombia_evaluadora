@@ -64,7 +64,10 @@ function TableScreen({ children, className }: { children: ReactNode; className?:
 function TableScreenHeader({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <header className={cn("sticky top-14 z-20 bg-sidebar", className)}>
-      <div className="overflow-hidden rounded-t-lg border border-b-0 border-foreground/5 bg-card text-sm text-card-foreground">
+      {/* Sin barra de herramientas el encabezado es solo el título, que ya
+          cierra con su propio `border-b`: ahí el `hr` daba línea doble, así que
+          se esconde cuando no hay `TableScreenToolbar` dentro. */}
+      <div className="overflow-hidden rounded-t-lg border border-b-0 border-foreground/5 bg-card text-sm text-card-foreground not-has-[[data-slot=table-screen-toolbar]]:[&>hr]:hidden">
         {children}
         {/* Cierre del encabezado. Va acá dentro —y no como borde del cuerpo—
             para que viaje con el `sticky`: la línea se queda arriba mientras el
@@ -129,7 +132,9 @@ function TableScreenTabs({ children, className }: { children: ReactNode; classNa
  */
 function TableScreenToolbar({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <div className={cn("px-(--screen-spacing) py-4", className)}>
+    // El `data-slot` es lo que mira el encabezado para decidir si dibuja su
+    // línea de cierre; sin barra, el borde del título ya cierra.
+    <div data-slot="table-screen-toolbar" className={cn("px-(--screen-spacing) py-4", className)}>
       <div className="flex flex-wrap items-end justify-between gap-4">{children}</div>
       <NoticeOutlet className="mt-3" />
     </div>
