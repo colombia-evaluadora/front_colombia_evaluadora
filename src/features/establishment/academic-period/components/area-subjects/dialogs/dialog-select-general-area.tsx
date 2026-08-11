@@ -133,7 +133,7 @@ export function SelectGeneralAreaDialog({
         </div>
 
         {/* Grilla de áreas: 3 columnas, estilo tabla de áreas. */}
-        <div className="min-w-0 overflow-hidden rounded-md border">
+        <div className="min-w-0">
           <Table>
             <TableBody>
               {grid.length === 0 ? (

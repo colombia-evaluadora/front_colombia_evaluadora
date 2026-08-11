@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -27,8 +27,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import {
+  TableSortableHeader,
+  compareBySortKey,
+  type TableSort,
+} from "@/components/table-sort-header"
 import { CATALOGS } from "@/lib/catalogs"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
+import { cn } from "@/lib/utils"
 
 import { useCreateEmployee } from "../../api/mutations/use-create-employee"
 import { useCreateEmployeePerson } from "../../api/mutations/use-create-employee-person"
@@ -65,6 +71,60 @@ interface PermissionDraft {
   workScheduleCode: string
   status: PermissionStatus | ""
 }
+
+/** Columnas por las que se puede ordenar la tabla de permisos. */
+type PermissionSortKey = "order" | "role" | "campus" | "workSchedule" | "status"
+
+/** El valor plano por el que ordena cada columna (los catálogos son objetos). */
+function permissionSortValue(permission: Permission, key: PermissionSortKey): unknown {
+  switch (key) {
+    case "order":
+      return permission.order
+    case "role":
+      return permission.role.name
+    case "campus":
+      return permission.campus.name
+    case "workSchedule":
+      return permission.workSchedule.name
+    case "status":
+      return permission.status
+  }
+}
+
+/*
+ * Columna de acciones al estilo de `DataTable` y de la tabla de escalas de
+ * valoración: la celda es `sticky` y de 1px —los botones son absolutos, su
+ * min-content es 0— y el `spacer` que va justo antes es quien le reserva el
+ * ancho en el flujo, para que no se lleve una tajada del reparto.
+ */
+const PERMISSION_ACTIONS_CELL_CLASS = "sticky right-0 z-10 w-px"
+const PERMISSION_ACTIONS_SPACER_WIDTH = 96
+
+const PERMISSION_ACTIONS_SPACER_CELL = (
+  <td aria-hidden className="p-0">
+    <div style={{ width: PERMISSION_ACTIONS_SPACER_WIDTH }} />
+  </td>
+)
+
+const PERMISSION_ACTIONS_SPACER_HEAD = (
+  <th aria-hidden className="p-0">
+    <div style={{ width: PERMISSION_ACTIONS_SPACER_WIDTH }} />
+  </th>
+)
+
+/*
+ * El bloque va a sangre contra el borde derecho, con el alto completo de la
+ * fila, y aparece con el mismo fade que el hover. El fondo es el color del
+ * hover de `TableRow` (`bg-muted/50`) ya resuelto: acá hace falta opaco porque
+ * tapa las columnas que pasan por debajo al scrollear, y se mezcla contra
+ * `--popover` —la tabla vive dentro de un Dialog—.
+ */
+const permissionActionsOverlayClass = () =>
+  cn(
+    "absolute inset-y-0 right-0 z-10 flex items-center gap-1 px-2 transition-opacity",
+    "bg-[color-mix(in_srgb,var(--muted)_50%,var(--popover))]",
+    "opacity-0 group-hover/row:opacity-100 group-has-[:focus-visible]/row:opacity-100",
+  )
 
 function createEmptyCatalogItem(): CatalogItem {
   return { id: "", code: "", name: "" }
@@ -153,8 +213,19 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
   const [permissionsDialogOpen, setPermissionsDialogOpen] = useState(false)
   const [additionalInfoDialogOpen, setAdditionalInfoDialogOpen] = useState(false)
   const [permissionDraft, setPermissionDraft] = useState<PermissionDraft>(createPermissionDraft)
+  // Orden de la tabla de permisos: estado local, la tabla se arma a mano.
+  const [permissionSort, setPermissionSort] = useState<TableSort<PermissionSortKey>>(null)
   // Estado UI: vive fuera de `Person` porque no es parte del modelo de negocio.
   const [confirmPassword, setConfirmPassword] = useState("")
+
+  const sortedPermissions = useMemo(() => {
+    if (!permissionSort) return permissions
+    const { key, dir } = permissionSort
+    const sorted = [...permissions].sort((a, b) =>
+      compareBySortKey(permissionSortValue(a, key), permissionSortValue(b, key)),
+    )
+    return dir === "desc" ? sorted.reverse() : sorted
+  }, [permissions, permissionSort])
 
   /**
    * id efectivo del empleado: el de la URL en edición, o el recién creado
@@ -401,16 +472,22 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
             onConfirmPasswordChange={setConfirmPassword}
           />
 
-          <DialogFooter className="flex-row flex-wrap items-center justify-between gap-3">
+          {/* `sm:justify-between` y no solo `justify-between`: el `DialogFooter`
+              trae `sm:justify-end` propio y, al ser una clase con variante,
+              `twMerge` no la funde con la pelada — sin el `sm:` los dos grupos
+              se iban juntos a la derecha en escritorio. */}
+          <DialogFooter className="flex-row flex-wrap items-center justify-between gap-3 sm:justify-between">
             <div className="flex flex-wrap items-center gap-2">
               {canOpenOptionalSections && (
                 <Button
                   variant="fill"
-                  color="info"
+                  color="primary"
                   size="sm"
                   onClick={() => setPermissionsDialogOpen(true)}
                 >
-                  <PlusIcon data-icon="inline-start" />
+                  {/* El mismo "+" en círculo del botón Agregar de los listados
+                      (`ControlPointIcon`): abrir permisos es agregar. */}
+                  <ControlPointIcon data-icon="inline-start" />
                   Permisos / {permissions.length}
                 </Button>
               )}
@@ -418,7 +495,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
               {canOpenOptionalSections && (
                 <Button
                   variant="fill"
-                  color="info"
+                  color="primary"
                   size="sm"
                   onClick={() => setAdditionalInfoDialogOpen(true)}
                 >
@@ -580,76 +657,130 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
             </Field>
 
             <div className="flex items-end md:justify-end">
-              <Button variant="fill" color="info" size="sm" onClick={addPermission} className="w-full md:w-auto">
+              <Button
+                variant="fill"
+                color="primary"
+                size="sm"
+                onClick={addPermission}
+                className="w-full md:w-auto"
+              >
                 <ControlPointIcon data-icon="inline-start" />
                 Agregar
               </Button>
             </div>
           </div>
 
-          <div className="max-h-[36vh] overflow-auto rounded-md border">
-            <Table>
+          {/* La tabla aparece recién con el primer permiso: vacía no aportaba
+              nada más que un encabezado y una fila de "aún no hay". */}
+          {permissions.length > 0 && (
+            <Table containerClassName="max-h-[36vh] overflow-y-auto">
               <TableHeader>
-                <TableRow>
-                  <TableHead>Orden</TableHead>
-                  <TableHead>Rol</TableHead>
-                  <TableHead>Sede educativa</TableHead>
-                  <TableHead>Jornada</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead className="w-16 text-right">Acciones</TableHead>
+                {/* El encabezado no lleva fondo propio ni hover: comparte el de
+                    la tabla en reposo, igual que una fila sin el puntero
+                    encima. `has-aria-expanded` cubre el rato en que un menú de
+                    orden está abierto. */}
+                <TableRow className="hover:bg-transparent has-aria-expanded:bg-transparent">
+                  <TableHead className="text-foreground">
+                    <TableSortableHeader
+                      title="Orden"
+                      sortKey="order"
+                      sort={permissionSort}
+                      onSortChange={setPermissionSort}
+                    />
+                  </TableHead>
+                  <TableHead className="text-foreground">
+                    <TableSortableHeader
+                      title="Rol"
+                      sortKey="role"
+                      sort={permissionSort}
+                      onSortChange={setPermissionSort}
+                    />
+                  </TableHead>
+                  <TableHead className="text-foreground">
+                    <TableSortableHeader
+                      title="Sede educativa"
+                      sortKey="campus"
+                      sort={permissionSort}
+                      onSortChange={setPermissionSort}
+                    />
+                  </TableHead>
+                  <TableHead className="text-foreground">
+                    <TableSortableHeader
+                      title="Jornada"
+                      sortKey="workSchedule"
+                      sort={permissionSort}
+                      onSortChange={setPermissionSort}
+                    />
+                  </TableHead>
+                  <TableHead className="text-foreground">
+                    <TableSortableHeader
+                      title="Estado"
+                      sortKey="status"
+                      sort={permissionSort}
+                      onSortChange={setPermissionSort}
+                    />
+                  </TableHead>
+                  {/* La columna de acciones no rotula —el `th` solo reserva el
+                      ancho del bloque— y el título queda para lectores. */}
+                  {PERMISSION_ACTIONS_SPACER_HEAD}
+                  <TableHead className="w-px text-foreground">
+                    <span className="sr-only">Acciones</span>
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {permissions.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground">
-                      Aún no hay permisos agregados.
+                {sortedPermissions.map((permission) => (
+                  <TableRow key={`${permission.order}-${permission.campus.id}`} className="group/row">
+                    <TableCell className="font-medium">{permission.order}</TableCell>
+                    <TableCell>{permission.role.name}</TableCell>
+                    <TableCell>{permission.campus.name}</TableCell>
+                    <TableCell className="uppercase">{permission.workSchedule.name}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant="soft"
+                        color={permission.status === "ACTIVE" ? "success" : "destructive"}
+                      >
+                        {permission.status === "ACTIVE" ? "Activo" : "Suspendido"}
+                      </Badge>
                     </TableCell>
-                  </TableRow>
-                ) : (
-                  permissions.map((permission) => (
-                    <TableRow key={`${permission.order}-${permission.campus.id}`}>
-                      <TableCell>{permission.order}</TableCell>
-                      <TableCell>{permission.role.name}</TableCell>
-                      <TableCell>{permission.campus.name}</TableCell>
-                      <TableCell>{permission.workSchedule.name}</TableCell>
-                      <TableCell>
-                        <Badge
-                          variant="fill"
-                          color={permission.status === "ACTIVE" ? "success" : "destructive"}
-                        >
-                          {permission.status === "ACTIVE" ? "Activo" : "Suspendido"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
+                    {PERMISSION_ACTIONS_SPACER_CELL}
+                    <TableCell className={PERMISSION_ACTIONS_CELL_CLASS}>
+                      <div className={permissionActionsOverlayClass()}>
                         <Button
                           type="button"
-                          variant="fill"
-                          color="destructive"
+                          variant="ghost"
+                          color="neutral"
                           size="icon-sm"
-                          aria-label="Eliminar permiso"
+                          aria-label={`Quitar permiso ${permission.order}`}
                           onClick={() => removePermission(permission.order)}
                         >
                           <TrashIcon />
                         </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
-          </div>
+          )}
 
           <DialogFooter className="justify-end sm:justify-end">
-            <Button variant="fill" color="primary" size="sm" onClick={closePermissionsDialog}>
-              Aceptar
-            </Button>
+            {/* "Guardar" solo cuando hay algo que guardar: sin permisos en la
+                tabla no confirma nada y competía con "Agregar", que es la
+                acción real de esta pantalla. */}
+            {permissions.length > 0 && (
+              <Button variant="fill" color="primary" size="sm" onClick={closePermissionsDialog}>
+                <CheckIcon data-icon="inline-start" />
+                Guardar
+              </Button>
+            )}
             <Button
               variant="fill"
               color="neutral"
               size="sm"
               onClick={() => setPermissionsDialogOpen(false)}
             >
+              <XIcon data-icon="inline-start" />
               Cancelar
             </Button>
           </DialogFooter>
@@ -674,6 +805,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
 
           <DialogFooter className="justify-end sm:justify-end">
             <Button variant="fill" color="primary" size="sm" onClick={closeAdditionalInfoDialog}>
+              <CheckIcon data-icon="inline-start" />
               Aceptar
             </Button>
             <Button
@@ -682,6 +814,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
               size="sm"
               onClick={() => setAdditionalInfoDialogOpen(false)}
             >
+              <XIcon data-icon="inline-start" />
               Cancelar
             </Button>
           </DialogFooter>
