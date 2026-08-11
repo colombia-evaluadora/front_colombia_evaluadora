@@ -1,6 +1,6 @@
 import { useState } from "react"
 
-import { SpinnerIcon, TrashIcon } from "@/components/ui/icons"
+import { CheckIcon, SpinnerIcon, TrashIcon, XIcon } from "@/components/ui/icons"
 
 import {
   AlertDialog,
@@ -89,11 +89,12 @@ export function DeleteEstablishmentDialog({
             {deleteMutation.isPending ? (
               <SpinnerIcon data-icon="inline-start" className="animate-spin" />
             ) : (
-              <TrashIcon data-icon="inline-start" />
+              <CheckIcon data-icon="inline-start" />
             )}
             Si
           </AlertDialogAction>
-          <AlertDialogCancel disabled={deleteMutation.isPending}>
+          <AlertDialogCancel variant="fill" color="neutral" disabled={deleteMutation.isPending}>
+            <XIcon data-icon="inline-start" />
             No
           </AlertDialogCancel>
         </AlertDialogFooter>

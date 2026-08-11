@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 
-import { SpinnerIcon, TrashIcon } from "@/components/ui/icons"
+import { CheckIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 
 import { useNotify } from "@/components/notice/notice-context"
 import {
@@ -63,7 +63,7 @@ export function DeleteSelectedRatingScalesDialog({
           />
         }
       >
-        <TrashIcon data-icon="inline-start" />
+        <CheckIcon data-icon="inline-start" />
         <span aria-hidden="true" className="md:hidden">
           ({levelCount})
         </span>
@@ -78,7 +78,6 @@ export function DeleteSelectedRatingScalesDialog({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={submitting}>Cancelar</AlertDialogCancel>
           <AlertDialogAction
             color="destructive"
             disabled={submitting}
@@ -88,10 +87,14 @@ export function DeleteSelectedRatingScalesDialog({
             {submitting ? (
               <SpinnerIcon data-icon="inline-start" className="animate-spin" />
             ) : (
-              <TrashIcon data-icon="inline-start" />
+              <CheckIcon data-icon="inline-start" />
             )}
-            Eliminar
+            Si
           </AlertDialogAction>
+          <AlertDialogCancel variant="fill" color="neutral" disabled={submitting}>
+            <XIcon data-icon="inline-start" />
+            No
+          </AlertDialogCancel>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

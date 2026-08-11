@@ -28,11 +28,13 @@ function formatCampusNames(campuses: string[]) {
 }
 
 /**
- * Une los nombres de los roles del funcionario con comas. Se usa para
- * mostrar el contenido resumido dentro del badge de la columna "Rol".
+ * Une los nombres de un catálogo con comas. Lo usan "Rol" y "Jornada": ambas
+ * son texto plano y no badges — el funcionario puede tener varios de cada uno
+ * y una hilera de píldoras compite con el badge de estado, que sí necesita el
+ * color para distinguir activo de suspendido.
  */
-function formatRoleNames(roles: EmployeeListItem["roles"]) {
-  return roles.map((role) => role.name).join(", ")
+function formatCatalogNames(items: EmployeeListItem["roles"]) {
+  return items.map((item) => item.name).join(", ")
 }
 
 /**
@@ -110,21 +112,17 @@ export function createEmployeeColumns({ onEdit }: EmployeeColumnsOptions): Colum
         return <span className="text-sm text-foreground">—</span>
       }
 
-      const fullText = formatRoleNames(row.original.roles)
+      const fullText = formatCatalogNames(row.original.roles)
 
       return (
         <Tooltip>
           <TooltipTrigger
             render={
-              <Badge
-                variant="soft"
-                color="secondary"
-                className="max-w-[16rem] truncate font-normal"
-              >
-                {fullText}
-              </Badge>
+              <span className="block max-w-[16rem] truncate text-sm text-foreground uppercase" />
             }
-          />
+          >
+            {fullText}
+          </TooltipTrigger>
           <TooltipContent>{fullText}</TooltipContent>
         </Tooltip>
       )
@@ -168,21 +166,32 @@ export function createEmployeeColumns({ onEdit }: EmployeeColumnsOptions): Colum
     },
   },
   {
-    accessorKey: "workSchedule",
+    accessorKey: "workSchedules",
     id: "workSchedule",
     meta: { label: "Jornada" },
     header: ({ column }) => <DataTableColumnHeader column={column} title="Jornada" />,
     cell: ({ row }) => {
-      const workSchedule = row.original.workSchedule
+      const workSchedules = row.original.workSchedules
 
-      if (!workSchedule) {
+      if (workSchedules.length === 0) {
         return <span className="text-sm text-foreground">—</span>
       }
 
+      // Un funcionario puede tener permisos en varias jornadas: se listan
+      // separadas por comas y en mayúsculas, igual que la columna "Rol".
+      const fullText = formatCatalogNames(workSchedules)
+
       return (
-        <Badge variant="soft" color="neutral">
-          {workSchedule.name}
-        </Badge>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <span className="block max-w-[16rem] truncate text-sm text-foreground uppercase" />
+            }
+          >
+            {fullText}
+          </TooltipTrigger>
+          <TooltipContent>{fullText}</TooltipContent>
+        </Tooltip>
       )
     },
   },
