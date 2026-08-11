@@ -222,7 +222,12 @@ function Sidebar({
           data-sidebar="sidebar"
           data-slot="sidebar"
           data-mobile="true"
-          className="w-(--sidebar-width) bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
+          // El ancho se repite con las variantes `data-[side=…]` porque el
+          // `SheetContent` trae un `data-[side=left]:w-3/4` propio: es una
+          // clase con variante, así que `twMerge` no la funde con un `w-…`
+          // pelado y encima gana por especificidad. Sin esto el drawer se
+          // abría al 75% de la pantalla en vez de los 18rem del sidebar.
+          className="w-(--sidebar-width) bg-sidebar p-0 text-sidebar-foreground data-[side=left]:w-(--sidebar-width) data-[side=right]:w-(--sidebar-width) [&>button]:hidden"
           style={
             {
               "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
