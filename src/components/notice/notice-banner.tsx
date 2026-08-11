@@ -1,10 +1,5 @@
 import { useEffect, useRef } from "react"
-import {
-  CheckCircleIcon,
-  InfoIcon,
-  WarningCircleIcon,
-  XIcon,
-} from "@/components/ui/icons"
+import { InfoIcon, WarningCircleIcon, XIcon } from "@/components/ui/icons"
 
 import { cn } from "@/lib/utils"
 
@@ -20,15 +15,34 @@ export interface Notice {
 
 export type NoticeVariant = "info" | "success" | "error"
 
+/**
+ * Fondo del color, más cargado que el `X-22` del badge soft —el banner es una
+ * franja ancha y con 22% el tono casi no se leía—, borde transparente que solo
+ * reserva el 1px, y el mensaje en `foreground`: el texto es lo que se lee, no
+ * lo que colorea. El color de la variante queda para los íconos.
+ */
 const VARIANT_CLASSES: Record<NoticeVariant, string> = {
-  info: "border-blue-stroke bg-blue-22 text-foreground",
-  success: "border-green-stroke bg-green-22 text-foreground",
-  error: "border-red-stroke bg-red-22 text-foreground",
+  info: "border-transparent bg-blue/30 text-foreground",
+  success: "border-transparent bg-green/30 text-foreground",
+  error: "border-transparent bg-red/30 text-foreground",
 }
 
+/** Los íconos —el de la variante y la X de cerrar— sí llevan el color. */
+const VARIANT_ICON_CLASSES: Record<NoticeVariant, string> = {
+  info: "text-blue",
+  success: "text-green",
+  error: "text-red",
+}
+
+/**
+ * El aviso informa del resultado de una acción; no es un "listo" con chulito
+ * —el check duplicaba el mensaje y competía con los botones de confirmar—, así
+ * que el éxito comparte el ícono de información con `info`. El error sí cambia:
+ * ahí el ícono es parte de la advertencia.
+ */
 const VARIANT_ICON: Record<NoticeVariant, typeof InfoIcon> = {
   info: InfoIcon,
-  success: CheckCircleIcon,
+  success: InfoIcon,
   error: WarningCircleIcon,
 }
 
@@ -81,13 +95,16 @@ export function NoticeBanner({
         className,
       )}
     >
-      <Icon className="size-5 shrink-0" />
+      <Icon className={cn("size-5 shrink-0", VARIANT_ICON_CLASSES[variant])} />
       <span className="flex-1">{notice.message}</span>
       <button
         type="button"
         aria-label="Cerrar notificación"
         onClick={onClose}
-        className="flex size-6 shrink-0 items-center justify-center rounded-md text-current transition-colors hover:bg-current/10"
+        className={cn(
+          "flex size-6 shrink-0 items-center justify-center rounded-md transition-colors hover:bg-current/10",
+          VARIANT_ICON_CLASSES[variant],
+        )}
       >
         <XIcon className="size-4" />
       </button>
