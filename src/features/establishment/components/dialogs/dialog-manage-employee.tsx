@@ -534,23 +534,23 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
                   size="sm"
                   onClick={() => setPermissionsDialogOpen(true)}
                 >
-                  {hasPermissions ? (
+                  {permissionsSaved ? (
                     <PencilIcon data-icon="inline-start" />
                   ) : (
                     <ControlPointIcon data-icon="inline-start" />
                   )}
-                  {hasPermissions ? `Permisos / ${permissions.length}` : "Permisos"}
+                  {permissionsSaved ? `Permisos / ${permissions.length}` : "Permisos"}
                 </Button>
               )}
 
-              {canOpenOptionalSections && hasPermissions && (
+              {canOpenOptionalSections && permissionsSaved && (
                 <Button
                   variant="fill"
                   color="primary"
                   size="sm"
                   onClick={() => setAdditionalInfoDialogOpen(true)}
                 >
-                  {hasAdditionalInfo ? (
+                  {additionalInfoSaved ? (
                     <PencilIcon data-icon="inline-start" />
                   ) : (
                     <ControlPointIcon data-icon="inline-start" />
