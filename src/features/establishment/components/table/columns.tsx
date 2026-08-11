@@ -99,8 +99,7 @@ export const columns: ColumnDef<Establishment>[] = [
           type="button"
           variant="ghost"
           color="neutral"
-          size="icon"
-          className="size-8"
+          size="icon-sm"
           aria-label={`Editar ${row.original.name}`}
           render={<Link to={paths.app.establishments.edit.getHref(row.original.id)} />}
           nativeButton={false}

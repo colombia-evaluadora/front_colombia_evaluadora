@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react"
 
 import { Button } from "@/components/ui/button"
+import { CheckIcon, XIcon } from "@/components/ui/icons"
 import {
   Dialog,
   DialogContent,
@@ -185,22 +186,24 @@ export function ManageCampusDialog({
 
         <DialogFooter className="justify-end gap-2">
           <Button
-            type="button"
-            variant="fill"
-            color="neutral"
-            disabled={isPending}
-            onClick={() => onOpenChange(false)}
-          >
-            Cancelar
-          </Button>
-          <Button
             type="submit"
             form="campus-form"
             variant="fill"
             color="primary"
             disabled={isPending}
           >
+            <CheckIcon data-icon="inline-start" />
             {isPending ? "Guardando..." : isEditMode ? "Guardar cambios" : "Guardar"}
+          </Button>
+          <Button
+            type="button"
+            variant="fill"
+            color="neutral"
+            disabled={isPending}
+            onClick={() => onOpenChange(false)}
+          >
+            <XIcon data-icon="inline-start" />
+            Cancelar
           </Button>
         </DialogFooter>
       </DialogContent>

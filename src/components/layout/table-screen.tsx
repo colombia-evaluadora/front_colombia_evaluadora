@@ -44,7 +44,7 @@ function TableScreen({ children, className }: { children: ReactNode; className?:
   // pueda estirarse (`grow`) hasta el borde inferior con tablas cortas.
   return (
     <section
-      className={cn("flex min-w-0 flex-1 flex-col [--screen-spacing:--spacing(8)]", className)}
+      className={cn("flex min-w-0 flex-1 flex-col [--screen-spacing:--spacing(4)]", className)}
     >
       {children}
     </section>

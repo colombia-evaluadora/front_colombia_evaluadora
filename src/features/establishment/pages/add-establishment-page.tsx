@@ -5,6 +5,7 @@ import {
   Card,
   CardAction,
   CardContent,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
@@ -307,7 +308,7 @@ export function AddEstablishmentPage() {
         <CardHeader className="bg-muted/10 py-4">
           <CardAction>
             <Button render={<Link to={paths.app.establishments.general.getHref()} />} variant="fill" color="neutral" size="sm" nativeButton={false}>
-              Cancelar
+              Cerrar
             </Button>
           </CardAction>
           <CardTitle>{isEditMode ? "Editar establecimiento educativo" : "Agregar establecimiento educativo"}</CardTitle>
@@ -316,8 +317,9 @@ export function AddEstablishmentPage() {
       </Card>
     </div>
 
-    {/* El cuerpo es una Card aparte que se acopla por debajo del encabezado. */}
-    <Card className="grow rounded-t-none">
+    {/* El cuerpo es una Card aparte que se acopla entre el encabezado y la
+        barra de acciones: sin radios arriba ni abajo. */}
+    <Card className="grow rounded-none">
       <CardContent>
         {validationErrors.length > 0 ? (
           <div className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
@@ -394,15 +396,21 @@ export function AddEstablishmentPage() {
     </Card>
 
     {/*
-      Barra de acciones fija: acompaña el scroll del formulario. El `-mb-4`
-      cancela el `pb-4` del layout para que quede pegada al borde inferior.
+      Barra de acciones pegajosa. Espejo del encabezado: el sticky lo lleva un
+      contenedor con `bg-sidebar` opaco y adentro va una Card propia, para que
+      la barra quede DENTRO de la superficie de la página y no como una franja
+      suelta de borde a borde.
     */}
-    <div className="sticky bottom-0 z-30 -mx-4 -mb-4 mt-4 flex items-center justify-between gap-4 border-t border-border bg-background/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-      <p className="text-sm text-muted-foreground">Complete la información antes de guardar.</p>
-      <Button type="submit" form="create-establishment-form" variant="fill" color="primary" size="sm" disabled={isPending}>
-        <CheckIcon />
-        {isPending ? "Guardando..." : isEditMode ? "Guardar cambios" : "Guardar"}
-      </Button>
+    <div className="sticky bottom-0 z-30 bg-sidebar">
+      <Card className="gap-0 rounded-t-none py-0">
+        <CardFooter className="justify-between gap-4 bg-muted/10 py-4">
+          <p className="text-sm text-muted-foreground">Complete la información antes de guardar.</p>
+          <Button type="submit" form="create-establishment-form" variant="fill" color="primary" size="sm" disabled={isPending}>
+            <CheckIcon />
+            {isPending ? "Guardando..." : isEditMode ? "Guardar cambios" : "Guardar"}
+          </Button>
+        </CardFooter>
+      </Card>
     </div>
     </>
   )

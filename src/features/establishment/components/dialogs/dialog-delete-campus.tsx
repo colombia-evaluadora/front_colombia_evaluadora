@@ -62,8 +62,7 @@ export function DeleteCampusDialog({ campus }: DeleteCampusDialogProps) {
             type="button"
             variant="ghost"
             color="neutral"
-            size="icon"
-            className="size-8"
+            size="icon-sm"
             aria-label={`Eliminar ${campus.name}`}
           />
         }

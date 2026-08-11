@@ -206,8 +206,7 @@ export function createEmployeeColumns({ onEdit }: EmployeeColumnsOptions): Colum
           type="button"
           variant="ghost"
           color="neutral"
-          size="icon"
-          className="size-8"
+          size="icon-sm"
           aria-label="Editar funcionario"
           onClick={() => onEdit(row.original.id)}
         >

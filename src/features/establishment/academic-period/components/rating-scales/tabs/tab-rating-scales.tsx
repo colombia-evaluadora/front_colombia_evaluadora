@@ -452,8 +452,7 @@ function ScalesSubTable({
                     <Button
                       type="button"
                       color="primary"
-                      size="icon"
-                      className="size-8"
+                      size="icon-sm"
                       aria-label="Agregar escala de valoraciÃ³n a este nivel"
                       disabled={editingCodigo !== null || createMutation.isPending}
                       aria-busy={createMutation.isPending}

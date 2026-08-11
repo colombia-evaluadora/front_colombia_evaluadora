@@ -46,7 +46,12 @@ const buttonVariants = cva(
         lg: "h-11 gap-1.5 px-8 has-data-[icon=inline-end]:pr-5 has-data-[icon=inline-start]:pl-5",
         icon: "size-10",
         "icon-xs": "size-7 [&_svg:not([class*='size-'])]:size-3",
-        "icon-sm": "size-9",
+        // El glifo va a size-5 y no al size-3.5 de la base: es el tamaño de los
+        // botones de acción (editar/eliminar) de las filas de tabla, donde el
+        // icono ES el control —no acompaña a un texto— y a 14px no se leía.
+        // Repite el `:not([class*='size-'])` de la base a propósito: con un
+        // `[&_svg]:size-5` a secas pierde por especificidad y no aplica nada.
+        "icon-sm": "size-9 [&_svg:not([class*='size-'])]:size-5",
         "icon-lg": "size-11",
       },
     },
