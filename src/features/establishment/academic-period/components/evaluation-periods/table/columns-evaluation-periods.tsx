@@ -96,16 +96,22 @@ export function createEvaluationPeriodColumns({
       cell: ({ row }) => {
         const estado = row.getValue<EvaluationPeriodStatus>("estado")
         return (
-          // "Habilitados para algunas asignaturas" no entra en una línea: el
-          // badge se deja envolver en vez de estirar la columna.
-          <Badge
-            {...EVALUATION_PERIOD_STATUS_BADGE[estado]}
-            className="max-w-40 text-left whitespace-normal"
-          >
-            {estado}
-          </Badge>
+          // "Habilitados para algunas asignaturas" no entra en una línea. El
+          // `min-w` del contenedor le reserva ancho a la columna —si no, el
+          // reparto automático de la tabla la estrangula y el texto se parte en
+          // cuatro— y el `max-w` del badge lo deja envolver en dos líneas
+          // ("Habilitados para" / "algunas asignaturas"), sin recortes.
+          <div className="min-w-56">
+            <Badge
+              {...EVALUATION_PERIOD_STATUS_BADGE[estado]}
+              className="max-w-64 text-left whitespace-normal"
+            >
+              {estado}
+            </Badge>
+          </div>
         )
       },
+      size: 200,
     },
     {
       id: "actions",

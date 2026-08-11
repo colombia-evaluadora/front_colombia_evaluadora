@@ -287,7 +287,7 @@ export function AreaSubjectFormDialog({
       <Dialog open={open} onOpenChange={handleOpenChange}>
         {isEdit ? (
           <DialogTrigger
-            render={<Button variant="fill" color="secondary" size="icon-sm" />}
+            render={<Button variant="ghost" color="neutral" size="icon-sm" />}
           >
             <span className="sr-only">Editar área</span>
             <PencilIcon />
