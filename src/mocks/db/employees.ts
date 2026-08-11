@@ -108,7 +108,6 @@ export function createEmployeeRow(employee: Employee): EmployeeListItem {
     new Set(employee.permissions.map((permission) => permission.status))
   )
 
-  const primaryPermission = employee.permissions[0]
   const name = [
     employee.person.firstName,
     employee.person.middleName,
