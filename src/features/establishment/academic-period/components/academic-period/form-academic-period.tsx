@@ -27,7 +27,6 @@ import {
   type AcademicPeriodFormInput,
   type AcademicPeriodFormValues,
 } from "../../api/schema"
-import type { AcademicPeriodStatus } from "../../api/types/academic-period"
 import { ACADEMIC_PERIOD_STATUS_BADGE } from "../../api/ui-mappings"
 import { DatePicker } from "@/components/date-picker"
 import { formatDateValue, parseDateValue } from "@/lib/date-value"
@@ -304,12 +303,12 @@ export function AcademicPeriodForm({
                       lea igual en el formulario y en el listado. */}
                   <SelectValue>
                     {(value) => {
-                      const status = value as AcademicPeriodStatus
-                      const badge = ACADEMIC_PERIOD_STATUS_BADGE[status]
-                      if (!badge) return "Seleccionar"
-                      const label =
-                        statusOptions.find((option) => option.key === status)?.label ?? status
-                      return <Badge {...badge}>{label}</Badge>
+                      const option = statusOptions.find(
+                        (o) => String(o.id) === value
+                      )
+                      if (!option) return "Seleccionar"
+                      const badge = ACADEMIC_PERIOD_STATUS_BADGE[option.key]
+                      return <Badge {...badge}>{option.label}</Badge>
                     }}
                   </SelectValue>
                 </SelectTrigger>

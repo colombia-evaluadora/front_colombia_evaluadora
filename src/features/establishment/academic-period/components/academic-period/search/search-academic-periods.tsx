@@ -38,14 +38,17 @@ export function SearchAcademicPeriods({
   // Ver `@/components/search/query-syntax`.
   const syntax = useMemo<QuerySyntax<AcademicPeriodsFiltersFormInput>>(
     () => ({
-      empty: { sedeName: "", schoolYearId: "", status: "", startFrom: "", startTo: "" },
+      empty: { sedeName: "", schoolYearId: "", statusId: "", startFrom: "", startTo: "" },
       freeText: { key: "sede", field: "sedeName" },
       terms: [
         textTerm("año", "schoolYearId"),
         optionTerm(
           "estado",
-          "status",
-          statusOptions.map((option) => ({ value: option.key, label: option.label })),
+          "statusId",
+          statusOptions.map((option) => ({
+            value: String(option.id),
+            label: option.label,
+          })),
         ),
         textTerm("desde", "startFrom"),
         textTerm("hasta", "startTo"),

@@ -100,8 +100,6 @@ export function TabEvaluationCriteria({ academicPeriodId }: TabEvaluationCriteri
   const { data: ratingScalesData, isPending: isLoadingRatingScales } = useRatingScalesQuery({
     filters: {},
     sorting: [],
-    pageIndex: 0,
-    pageSize: 100,
     academicPeriodId,
   })
 

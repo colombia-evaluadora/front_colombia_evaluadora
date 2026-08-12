@@ -126,7 +126,7 @@ export function FilterAcademicPeriodsForm({
           )}
         </form.Field>
 
-        <form.Field name="status">
+        <form.Field name="statusId">
           {(field) => (
             <Field orientation="vertical" variant="outlined" className="gap-2">
               <FieldLabel htmlFor={field.name}>Estado</FieldLabel>
@@ -142,7 +142,7 @@ export function FilterAcademicPeriodsForm({
                   <SelectGroup>
                     <SelectItem value={ALL_VALUE}>Todos</SelectItem>
                     {statusOptions.map((option) => (
-                      <SelectItem key={option.key} value={option.key}>
+                      <SelectItem key={option.id} value={String(option.id)}>
                         {option.label}
                       </SelectItem>
                     ))}

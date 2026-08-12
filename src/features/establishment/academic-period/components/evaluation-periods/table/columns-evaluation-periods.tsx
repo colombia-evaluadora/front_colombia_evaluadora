@@ -119,7 +119,7 @@ export function createEvaluationPeriodColumns({
       cell: ({ row }) => (
         <div className="flex items-center justify-end gap-1">
           <CreateEvaluationPeriodDialog period={row.original} academicPeriodId={academicPeriodId} />
-          <DeleteEvaluationPeriodDialog period={row.original} academicPeriodId={academicPeriodId} />
+          <DeleteEvaluationPeriodDialog period={row.original} />
         </div>
       ),
       enableSorting: false,
