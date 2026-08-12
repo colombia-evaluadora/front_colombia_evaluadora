@@ -38,7 +38,7 @@ import { useUpdateEvaluationPeriod } from "../../../api/mutations/evaluation-per
 import { useEvaluationPeriodsQuery } from "../../../api/query/evaluation-periods/use-evaluation-periods-query"
 import { useEvaluationPeriodStatusesQuery } from "../../../api/query/evaluation-periods/use-evaluation-period-statuses-query"
 import { useAcademicPeriodQuery } from "../../../api/query/academic-period/use-academic-period-query"
-import type { EvaluationPeriod, EvaluationPeriodStatus } from "../../../api/types/evaluation-period"
+import type { EvaluationPeriod } from "../../../api/types/evaluation-period"
 import { DatePicker } from "@/components/date-picker"
 import { formatDateValue, parseDateValue } from "@/lib/date-value"
 import { EVALUATION_PERIOD_STATUS_BADGE } from "../../../api/ui-mappings"
@@ -77,7 +77,7 @@ export function CreateEvaluationPeriodDialog({
     academicPeriodId,
   })
   const otherPeriods = (periodsData?.rows ?? []).filter(
-    (p) => period == null || p.codigo !== period.codigo,
+    (p) => period == null || p.id !== period.id,
   )
   const pesoUsado = otherPeriods.reduce((sum, p) => sum + (p.peso ?? 0), 0)
   const pesoDisponible = Math.max(0, 100 - pesoUsado)
@@ -411,7 +411,7 @@ export function CreateEvaluationPeriodDialog({
             }}
           </form.Field>
 
-          <form.Field name="estado">
+          <form.Field name="estadoId">
             {(field) => {
               const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
               return (
@@ -425,15 +425,15 @@ export function CreateEvaluationPeriodDialog({
                   >
                     <SelectTrigger id={field.name} aria-invalid={isInvalid}>
                       {/* El valor elegido se muestra como el mismo badge soft
-                          que usa la columna Estado de la tabla. */}
+                          que usa la columna Estado de la tabla. Se resuelve por id. */}
                       <SelectValue>
                         {(value) => {
-                          const estado = value as EvaluationPeriodStatus
-                          const badge = EVALUATION_PERIOD_STATUS_BADGE[estado]
-                          if (!badge) return "Seleccionar"
-                          const label =
-                            statusOptions.find((option) => option.key === estado)?.label ?? estado
-                          return <Badge {...badge}>{label}</Badge>
+                          const option = statusOptions.find(
+                            (o) => String(o.id) === value
+                          )
+                          if (!option) return "Seleccionar"
+                          const badge = EVALUATION_PERIOD_STATUS_BADGE[option.key]
+                          return <Badge {...badge}>{option.label}</Badge>
                         }}
                       </SelectValue>
                     </SelectTrigger>

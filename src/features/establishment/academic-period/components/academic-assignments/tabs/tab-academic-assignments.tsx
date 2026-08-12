@@ -54,7 +54,7 @@ export function TabAcademicAssignments({ academicPeriodId }: TabAcademicAssignme
 
   const { data: pool = [] } = useAssignmentSubjectsQuery(academicPeriodId)
 
-  const { data: savedIds } = useTeacherAssignmentsQuery(academicPeriodId, expanded?.documentNumber)
+  const { data: savedIds } = useTeacherAssignmentsQuery(academicPeriodId, expanded?.id)
   useEffect(() => {
     if (expanded && savedIds && assignedIds[expanded.id] === undefined) {
       setAssignedIds((prev) => ({ ...prev, [expanded.id]: savedIds }))
