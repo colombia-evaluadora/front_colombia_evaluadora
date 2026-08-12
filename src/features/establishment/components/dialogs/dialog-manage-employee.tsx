@@ -528,13 +528,24 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
 
     setPermissions((current) => [...current, nextPermission])
     setPermissionDraft(createPermissionDraft(permissions.length + 2))
+    notify(`Permiso de ${role.name} en ${campus.name} agregado.`)
   }
 
   function removePermission(order: number) {
+    // El permiso se busca antes de filtrar: después del `setPermissions` los
+    // órdenes se renumeran y ya no habría con qué armar el mensaje.
+    const removed = permissions.find((permission) => permission.order === order)
+
     setPermissions((current) =>
       current
         .filter((permission) => permission.order !== order)
         .map((permission, index) => ({ ...permission, order: index + 1 }))
+    )
+
+    notify(
+      removed
+        ? `Permiso de ${removed.role.name} en ${removed.campus.name} eliminado.`
+        : "Permiso eliminado.",
     )
   }
 
@@ -657,8 +668,6 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
           <DialogHeader>
             <DialogTitle>Asignar permisos</DialogTitle>
           </DialogHeader>
-
-          <NoticeOutlet className="mb-2" />
 
           {/* Fila fluida: los campos crecen y bajan de línea solos, y el botón
               ocupa solo lo que mide en vez de reservar una columna entera. */}
@@ -825,6 +834,11 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
               </Button>
             </div>
           </div>
+
+          {/* El aviso va entre el formulario y la tabla: es la respuesta a lo
+              que se acaba de hacer con los campos de arriba, y queda pegado al
+              listado que cambió. */}
+          <NoticeOutlet />
 
           {/* La tabla aparece recién con el primer permiso: vacía no aportaba
               nada más que un encabezado y una fila de "aún no hay". */}
