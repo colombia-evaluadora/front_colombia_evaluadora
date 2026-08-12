@@ -258,12 +258,15 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                     </Field>
                 </div>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <Field orientation="vertical" className="w-full">
+                    {/* Mismo recuadro que los sí/no de periodo académico: la
+                        etiqueta flota sobre el borde y el grupo comparte alto
+                        con los inputs y selects de al lado. */}
+                    <Field orientation="vertical" variant="outlined" className="w-full">
                         <FieldLabel>Atención a población perteneciente a etnias</FieldLabel>
                         <RadioGroup
                             value={value.ethnicAttention ? "si" : "no"}
                             onValueChange={(selectedValue) => onChange({ ...value, ethnicAttention: selectedValue === "si" })}
-                            className="flex gap-3"
+                            className="flex min-h-10 items-center gap-6 rounded-md border border-input px-3"
                         >
                             <label className="flex items-center gap-2">
                                 <RadioGroupItem value="si" id="etnias-si" />
@@ -289,7 +292,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                     </Field>
                 </div>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <Field orientation="vertical" className="w-full">
+                    <Field orientation="vertical" variant="outlined" className="w-full">
                         <FieldLabel>
                             Atención a población con talentos adicionales
                         </FieldLabel>
@@ -297,7 +300,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                         <RadioGroup
                             value={value.giftedAttention ? "si" : "no"}
                             onValueChange={(selectedValue) => onChange({ ...value, giftedAttention: selectedValue === "si" })}
-                            className="flex gap-3"
+                            className="flex min-h-10 items-center gap-6 rounded-md border border-input px-3"
                         >
 
                             <label className="flex items-center gap-2">
@@ -312,12 +315,12 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
 
                         </RadioGroup>
                     </Field>
-                    <Field orientation="vertical" className="w-full">
+                    <Field orientation="vertical" variant="outlined" className="w-full">
                         <FieldLabel>Ofrece subsidio</FieldLabel>
                         <RadioGroup
                             value={value.subsidy ? "si" : "no"}
                             onValueChange={(selectedValue) => onChange({ ...value, subsidy: selectedValue === "si" })}
-                            className="flex gap-3"
+                            className="flex min-h-10 items-center gap-6 rounded-md border border-input px-3"
                         >
                             <label className="flex items-center gap-2">
                                 <RadioGroupItem value="si" id="subsidio-si" />

@@ -133,7 +133,9 @@ export function TabRatingScales({ academicPeriodId }: TabRatingScalesProps) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-end gap-2">
+      {/* El `border-b` cierra la barra de acciones igual que el `hr` de
+          `TableScreenHeader` en las pantallas de listado. */}
+      <div className="flex items-center justify-end gap-2 border-b border-border pb-4">
         {hasSelection ? (
           <>
             <DeleteSelectedRatingScalesDialog
