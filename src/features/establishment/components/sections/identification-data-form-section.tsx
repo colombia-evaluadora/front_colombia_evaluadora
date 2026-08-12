@@ -2,7 +2,7 @@ import { useState } from "react"
 
 import { FormSectionHeading } from "@/components/form-section-heading"
 import { ImageUploadField } from "@/components/image-upload-field"
-import { Field, FieldLabel } from "@/components/ui/field"
+import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
     Select,
@@ -20,11 +20,15 @@ interface IdentificationDataFormSectionProps {
     value: EstablishmentDetails["basicInfo"]
     onChange: (value: EstablishmentDetails["basicInfo"]) => void
     invalidFields?: string[]
+    /** Mensaje de error por ruta de campo. */
+    errors?: Record<string, string>
     showValidation?: boolean
 }
 
-export function IdentificationDataFormSection({ value, onChange, invalidFields = [], showValidation = false }: IdentificationDataFormSectionProps) {
+export function IdentificationDataFormSection({ value, onChange, invalidFields = [], errors = {}, showValidation = false }: IdentificationDataFormSectionProps) {
     const isInvalid = (field: string) => showValidation && invalidFields.includes(field)
+    // Mensaje debajo del campo: solo tras el primer submit, igual que el borde rojo.
+    const errorFor = (field: string) => (showValidation ? errors[field] : undefined)
     const { data: legalTypes = []} = useCatalogQuery<CatalogItem>(CATALOGS.LEGAL_TYPES)
     const legalTypeItems = legalTypes.map(item => ({ value: item.id, label: item.name }))
 
@@ -33,8 +37,8 @@ export function IdentificationDataFormSection({ value, onChange, invalidFields =
     // que solo mantenemos el archivo vivo mientras la sección está montada.
     const [shield, setShield] = useState<File | null>(null)
 
-    // `gap-2`: el mismo ritmo vertical que usa el formulario entre secciones,
-    // así el encabezado, las filas y la sección siguiente van todos al mismo paso.
+    // `gap-2` puertas adentro: encabezado y filas de esta sección van al mismo
+    // paso. El salto mayor entre secciones lo pone el `gap-6` del formulario.
     return (
         <div className="grid gap-2">
             <FormSectionHeading>
@@ -71,6 +75,7 @@ export function IdentificationDataFormSection({ value, onChange, invalidFields =
                         aria-invalid={isInvalid("basicInfo.name")}
                         onChange={(event) => onChange({ ...value, name: event.target.value })}
                     />
+                    <FieldError>{errorFor("basicInfo.name")}</FieldError>
                 </Field>
 
                 <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid("basicInfo.dane") ? "true" : undefined}>
@@ -82,6 +87,7 @@ export function IdentificationDataFormSection({ value, onChange, invalidFields =
                         aria-invalid={isInvalid("basicInfo.dane")}
                         onChange={(event) => onChange({ ...value, dane: event.target.value })}
                     />
+                    <FieldError>{errorFor("basicInfo.dane")}</FieldError>
                 </Field>
 
                 <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid("basicInfo.nit") ? "true" : undefined}>
@@ -93,6 +99,7 @@ export function IdentificationDataFormSection({ value, onChange, invalidFields =
                         aria-invalid={isInvalid("basicInfo.nit")}
                         onChange={(event) => onChange({ ...value, nit: event.target.value })}
                     />
+                    <FieldError>{errorFor("basicInfo.nit")}</FieldError>
                 </Field>
                 <Field orientation="vertical" variant="outlined" data-invalid={isInvalid("basicInfo.ownershipType") ? "true" : undefined}>
                     <FieldLabel htmlFor="establishment-legal-type">
@@ -123,6 +130,7 @@ export function IdentificationDataFormSection({ value, onChange, invalidFields =
                             ))}
                         </SelectContent>
                     </Select>
+                    <FieldError>{errorFor("basicInfo.ownershipType")}</FieldError>
                 </Field>
             </div>
         </div>

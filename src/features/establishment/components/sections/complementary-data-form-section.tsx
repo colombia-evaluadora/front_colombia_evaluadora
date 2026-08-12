@@ -21,6 +21,8 @@ interface ComplementaryDataFormSectionProps {
     value: EstablishmentDetails["additionalInfo"]
     onChange: (value: EstablishmentDetails["additionalInfo"]) => void
     invalidFields?: string[]
+    /** Mensaje de error por ruta de campo. */
+    errors?: Record<string, string>
     showValidation?: boolean
 }
 
@@ -43,8 +45,8 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
     const disabilityItems = disabilities.map((item: CatalogItem) => ({ value: item.id, label: item.name }))
     const licenseStatusItems = licenseStatuses.map((item: CatalogItem) => ({ value: item.id, label: item.name }))
 
-    // `gap-2`: el mismo ritmo vertical que usa el formulario entre secciones,
-    // así el encabezado, las filas y la sección siguiente van todos al mismo paso.
+    // `gap-2` puertas adentro: encabezado y filas de esta sección van al mismo
+    // paso. El salto mayor entre secciones lo pone el `gap-6` del formulario.
     return(
         <div className="grid gap-2">
             {/* Complementary information subsection */}
@@ -81,7 +83,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                             }}
                             items={idiomaItems}
                         >
-                            <SelectTrigger>
+                            <SelectTrigger aria-invalid={isInvalid("additionalInfo.teachingLanguage")}>
                                 <SelectValue placeholder="Seleccionar" />
                             </SelectTrigger>
 
@@ -108,7 +110,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                             }}
                             items={calendarioItems}
                         >
-                            <SelectTrigger className="w-full">
+                            <SelectTrigger className="w-full" aria-invalid={isInvalid("additionalInfo.calendar")}>
                                 <SelectValue placeholder="Seleccionar" />
                             </SelectTrigger>
                             <SelectContent>
@@ -135,7 +137,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                             }}
                             items={costRegimenItems}
                         >
-                            <SelectTrigger>
+                            <SelectTrigger aria-invalid={isInvalid("additionalInfo.costRegime")}>
                                 <SelectValue placeholder="Seleccionar" />
                             </SelectTrigger>
 
@@ -162,7 +164,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                             }}
                             items={populationGenderItems}
                         >
-                            <SelectTrigger className="w-full">
+                            <SelectTrigger className="w-full" aria-invalid={isInvalid("additionalInfo.populationGender")}>
                                 <SelectValue placeholder="Seleccionar" />
                             </SelectTrigger>
                             <SelectContent>
@@ -187,7 +189,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                             }}
                             items={rangoTarifaItems}
                         >
-                            <SelectTrigger className="w-full">
+                            <SelectTrigger className="w-full" aria-invalid={isInvalid("additionalInfo.tuitionRange")}>
                                 <SelectValue placeholder="Seleccionar" />
                             </SelectTrigger>
                             <SelectContent>
@@ -216,7 +218,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                             }}
                             items={disabilityItems}
                         >
-                            <SelectTrigger>
+                            <SelectTrigger aria-invalid={isInvalid("additionalInfo.disabilityType")}>
                                 <SelectValue placeholder="Seleccionar" />
                             </SelectTrigger>
 
@@ -245,7 +247,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                             }}
                             items={licenseStatusItems}
                         >
-                            <SelectTrigger>
+                            <SelectTrigger aria-invalid={isInvalid("additionalInfo.licenseStatus")}>
                                 <SelectValue placeholder="Seleccionar" />
                             </SelectTrigger>
 

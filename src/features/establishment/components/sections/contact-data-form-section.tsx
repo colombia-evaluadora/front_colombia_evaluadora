@@ -7,13 +7,15 @@ interface ContactDataFormSectionProps {
     value: EstablishmentDetails["contact"]
     onChange: (value: EstablishmentDetails["contact"]) => void
     invalidFields?: string[]
+    /** Mensaje de error por ruta de campo. */
+    errors?: Record<string, string>
     showValidation?: boolean
 }
 
 export function ContactDataFormSection({ value, onChange, invalidFields = [], showValidation = false }: ContactDataFormSectionProps) {
     const isInvalid = (field: string) => showValidation && invalidFields.includes(field)
-    // `gap-2`: el mismo ritmo vertical que usa el formulario entre secciones,
-    // así el encabezado, las filas y la sección siguiente van todos al mismo paso.
+    // `gap-2` puertas adentro: encabezado y filas de esta sección van al mismo
+    // paso. El salto mayor entre secciones lo pone el `gap-6` del formulario.
     return(
         <div className="grid gap-2">
             <FormSectionHeading>
