@@ -4,7 +4,6 @@ import { format } from "date-fns"
 import { DatePicker } from "@/components/date-picker"
 import { FormSectionHeading } from "@/components/form-section-heading"
 import { ImageUploadField } from "@/components/image-upload-field"
-import { UserCircleIcon } from "@/components/ui/icons"
 import { EMPLOYEE_ROLES } from "@/mocks/db/catalogs/employee-roles"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
@@ -133,11 +132,7 @@ export function UserDetailsForm({
                         <ImageUploadField
                             value={photo}
                             onValueChange={setPhoto}
-                            icon={<UserCircleIcon className="size-8 shrink-0 text-muted-foreground" />}
                             description="para cargar la foto del usuario"
-                            // Un retrato se ve mejor encuadrado que con bandas a
-                            // los lados, al revés que un escudo.
-                            fit="cover"
                             deleteLabel="Eliminar foto"
                         />
                     </div>

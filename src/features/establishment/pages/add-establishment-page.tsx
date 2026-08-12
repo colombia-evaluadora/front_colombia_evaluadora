@@ -16,6 +16,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { paths } from "@/config/paths"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { EstablishmentDetailsForm } from "@/features/establishment/components/forms/form-establishment-details"
+import { ComplementaryDataFormSection } from "@/features/establishment/components/sections/complementary-data-form-section"
 import { useCreateEmployeePerson } from "../api/mutations/use-create-employee-person"
 import { useCreateEstablishment } from "../api/mutations/use-create-establishment"
 import { useUpdateEstablishment } from "../api/mutations/use-update-establishment"
@@ -333,16 +334,33 @@ export function AddEstablishmentPage() {
             <AccordionItem value="datos-establecimiento" className="rounded-md border border-border not-last:border-b border">
               <AccordionTrigger className={accordionTriggerClassName}>Datos de establecimiento</AccordionTrigger>
               <AccordionContent>
-                <Card className={accordionCardClassName}>
-                  <CardContent>
-                    <EstablishmentDetailsForm
-                      value={formValues}
-                      onChange={setFormValues}
-                      invalidFields={invalidFields}
-                      showValidation={hasSubmitted}
-                    />
-                  </CardContent>
-                </Card>
+                {/* Dos cards, igual que rector y secretaria: identificación,
+                    domicilio y contacto describen al establecimiento y van
+                    juntos; la información complementaria es un bloque aparte. */}
+                <div className="space-y-4">
+                  <Card className={accordionCardClassName}>
+                    <CardContent>
+                      <EstablishmentDetailsForm
+                        value={formValues}
+                        onChange={setFormValues}
+                        invalidFields={invalidFields}
+                        showValidation={hasSubmitted}
+                      />
+                    </CardContent>
+                  </Card>
+                  <Card className={accordionCardClassName}>
+                    <CardContent>
+                      <ComplementaryDataFormSection
+                        value={formValues.additionalInfo}
+                        onChange={(additionalInfo) =>
+                          setFormValues((current) => ({ ...current, additionalInfo }))
+                        }
+                        invalidFields={invalidFields}
+                        showValidation={hasSubmitted}
+                      />
+                    </CardContent>
+                  </Card>
+                </div>
               </AccordionContent>
             </AccordionItem>
 

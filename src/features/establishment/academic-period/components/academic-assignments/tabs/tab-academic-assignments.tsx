@@ -138,7 +138,9 @@ export function TabAcademicAssignments({ academicPeriodId }: TabAcademicAssignme
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      {/* El `border-b` cierra la barra de acciones igual que el `hr` de
+          `TableScreenHeader` en las pantallas de listado. */}
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-4">
         <SearchAcademicAssignments
           search={search}
           onSearchChange={(value) => {

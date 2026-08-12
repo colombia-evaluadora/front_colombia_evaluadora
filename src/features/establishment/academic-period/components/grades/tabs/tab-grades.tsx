@@ -62,7 +62,9 @@ export function TabGrades({ jornada, academicPeriodId }: TabGradesProps) {
 
   return (
     <>
-      <div className="mb-2 flex items-center justify-end gap-2">
+      {/* El `border-b` cierra la barra de acciones igual que el `hr` de
+          `TableScreenHeader` en las pantallas de listado. */}
+      <div className="mb-2 flex items-center justify-end gap-2 border-b border-border pb-2">
         {hasSelection ? (
           <>
             <DeleteSelectedGradesDialog selectedIds={selectedIds} resetSelection={resetSelection} />
