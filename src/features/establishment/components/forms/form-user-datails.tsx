@@ -112,10 +112,10 @@ export function UserDetailsForm({
     }
 
     return (
-        <div className="grid grid-cols-1 gap-6">
+        <div className="grid grid-cols-1 gap-2">
 
             {roleName ? <FormSectionHeading>{roleName}</FormSectionHeading> : null}
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div className="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-3">
                 {/* Foto */}
                 {/*
                     `row-span-3` porque al lado van seis campos en dos columnas:
@@ -220,7 +220,7 @@ export function UserDetailsForm({
                     />
                 </Field>
             </div>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div className="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-3">
                 <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid(`${fieldPrefix}.email`) ? "true" : undefined}>
                     <FieldLabel htmlFor="user-email">Correo Electrónico</FieldLabel>
                     <Input
@@ -254,7 +254,7 @@ export function UserDetailsForm({
                     />
                 </Field>
             </div>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div className="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-3">
                 <Field orientation="vertical" variant="outlined" data-invalid={isInvalid(`${fieldPrefix}.birthDate`) ? "true" : undefined}>
                     <FieldLabel htmlFor="birth-date">
                         Fecha de nacimiento

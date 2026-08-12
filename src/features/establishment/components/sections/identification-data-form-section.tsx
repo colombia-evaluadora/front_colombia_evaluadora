@@ -33,12 +33,14 @@ export function IdentificationDataFormSection({ value, onChange, invalidFields =
     // que solo mantenemos el archivo vivo mientras la sección está montada.
     const [shield, setShield] = useState<File | null>(null)
 
+    // `gap-2`: el mismo ritmo vertical que usa el formulario entre secciones,
+    // así el encabezado, las filas y la sección siguiente van todos al mismo paso.
     return (
-        <>
+        <div className="grid gap-2">
             <FormSectionHeading>
                 Datos de identificación
             </FormSectionHeading>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div className="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-3">
                 {/*
                     El escudo ocupa una sola columna y se estira a lo alto de las
                     dos filas de campos que tiene al lado, de ahí el `row-span-2`
@@ -123,6 +125,6 @@ export function IdentificationDataFormSection({ value, onChange, invalidFields =
                     </Select>
                 </Field>
             </div>
-        </>
+        </div>
     )
 }
