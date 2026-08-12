@@ -5,17 +5,14 @@ import type { MutationConfig } from "@/lib/react-query"
 import type { MutationResult } from "../../types/evaluation-period"
 
 interface DeleteEvaluationPeriodInput {
-  academicPeriodId?: number
-  codigo: number
+  // PK real; el PK es único, así que no hace falta desambiguar por periodo.
+  id: number
 }
 
 function deleteEvaluationPeriod({
-  academicPeriodId,
-  codigo,
+  id,
 }: DeleteEvaluationPeriodInput): Promise<MutationResult> {
-  const query =
-    academicPeriodId != null ? `?academicPeriodId=${academicPeriodId}` : ""
-  return api.delete(`/evaluation-periods/${codigo}${query}`)
+  return api.delete(`/evaluation-periods/${id}`)
 }
 
 interface UseDeleteEvaluationPeriodOptions {

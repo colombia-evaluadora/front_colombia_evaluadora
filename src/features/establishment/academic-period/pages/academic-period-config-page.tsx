@@ -49,7 +49,7 @@ function toFormValues(
     enrollmentDeadline: detail.enrollmentDeadline,
     sedeId: detail.sedeId,
     previousPeriodId: detail.previousPeriodId,
-    status: detail.status,
+    statusId: detail.statusId ?? 0,
     jornadaId: detail.config.jornadaId,
     reservationEnabled: detail.config.reservationEnabled,
     defaultBlocksCount: detail.config.defaultBlocksCount,

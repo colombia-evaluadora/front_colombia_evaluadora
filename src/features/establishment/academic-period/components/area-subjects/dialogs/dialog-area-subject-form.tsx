@@ -43,6 +43,7 @@ import {
 
 import { useCreateAreaSubject } from "../../../api/mutations/area-subjects/create-area-subject"
 import { useUpdateAreaSubject } from "../../../api/mutations/area-subjects/update-area-subject"
+import { useGeneralAreasQuery } from "../../../api/query/use-general-areas-query"
 import { useEspecialidadesQuery } from "../../../api/query/use-especialidades-query"
 import type {
   AreaSubject,
@@ -135,6 +136,15 @@ export function AreaSubjectFormDialog({
   const updateAreaSubject = useUpdateAreaSubject()
   const isPending = createAreaSubject.isPending || updateAreaSubject.isPending
 
+  // Catálogo de áreas generales para mapear el nombre (que usa la UI) al id
+  // (fk_area_asignatura) que el backend espera en el bulk. La UI sigue con
+  // nombres; solo el payload viaja como id.
+  const { data: generalAreas = [] } = useGeneralAreasQuery()
+  const areaGeneralNameToId = (nombre: string): string => {
+    const match = generalAreas.find((a) => a.nombre === nombre)
+    return match ? String(match.id) : ""
+  }
+
   const form = useForm({
     defaultValues: areaDefaults,
     validators: { onSubmit: areaSubjectFormSchema },
@@ -142,7 +152,9 @@ export function AreaSubjectFormDialog({
       const base = areaSubjectFormSchema.parse(value)
 
       const payloadSubjects: AreaSubjectItem[] = subjects.map((subject) => ({
-        asignaturaGeneral: subject.asignaturaGeneral,
+        // El backend espera el id del área general (fk_area_asignatura), no el
+        // nombre. La UI/estado conserva el nombre; aquí se mapea a id.
+        asignaturaGeneral: areaGeneralNameToId(subject.asignaturaGeneral),
         nombreInterno: subject.nombreInterno || subject.asignaturaGeneral,
         abreviacion: subject.abreviacion,
         ordenReportes: subject.ordenReportes,
@@ -156,6 +168,9 @@ export function AreaSubjectFormDialog({
           values: {
             ...areaSubject,
             ...base,
+            // El backend espera el id del área general (fk_area_asignatura), no
+            // el nombre. La UI conserva el nombre; aquí se manda como id.
+            areaGeneral: areaGeneralNameToId(base.areaGeneral),
             subjects: payloadSubjects,
           },
         })
@@ -171,7 +186,8 @@ export function AreaSubjectFormDialog({
       }
 
       await createAreaSubject.mutateAsync({
-        areaGeneral: base.areaGeneral,
+        // Id del área general (fk_area_asignatura); la UI lo maneja por nombre.
+        areaGeneral: areaGeneralNameToId(base.areaGeneral),
         nombreInterno: base.nombreInterno,
         abreviacion: base.abreviacion,
         ordenReportes: base.ordenReportes,

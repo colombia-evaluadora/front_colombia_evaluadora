@@ -34,10 +34,17 @@ export const academicAssignmentsHandlers = [
         for (const group of groups) {
           for (const item of plan) {
             subjects.push({
-              id: `${grade.id}-${group.codigo}-${item.codigo}`,
+              // El backend usa el par "grupoId:asignaturaId" (PK_TGRUPO:PK_TASIGNATURA).
+              // En el mock no hay id de asignatura suelto, así que usamos el código
+              // del renglón de plan como segundo componente; lo importante es que
+              // sea "número:número" y haga round-trip con el guardado.
+              id: `${group.id}:${item.codigo}`,
               nombre: item.asignatura,
               gradoGrupo: group.codigo,
               jornada: jornadaAbbrev(group.jornada),
+              // El backend manda el nombre completo (TLISTA_VALOR.NOMBRE);
+              // `jornada` es solo la inicial para la ficha.
+              jornadaName: group.jornada,
             })
           }
         }
@@ -48,28 +55,28 @@ export const academicAssignmentsHandlers = [
   ),
 
   http.get(
-    "/api/academic-periods/:academicPeriodId/teachers/:documento/assignments",
+    "/api/academic-periods/:academicPeriodId/teachers/:funcionarioId/assignments",
     async ({ params }) => {
       await delay(200)
       const periodId = Number(params.academicPeriodId)
-      const documento = String(params.documento)
-      const ids = teacherAssignmentsDb[periodId]?.[documento] ?? []
+      const funcionarioId = String(params.funcionarioId)
+      const ids = teacherAssignmentsDb[periodId]?.[funcionarioId] ?? []
       return HttpResponse.json<string[]>(ids)
     }
   ),
 
   http.put(
-    "/api/academic-periods/:academicPeriodId/teachers/:documento/assignments",
+    "/api/academic-periods/:academicPeriodId/teachers/:funcionarioId/assignments",
     async ({ params, request }) => {
       await delay(400)
       const periodId = Number(params.academicPeriodId)
-      const documento = String(params.documento)
+      const funcionarioId = String(params.funcionarioId)
       const { subjectIds } = (await request.json()) as {
         subjectIds: string[]
       }
 
       const byTeacher = teacherAssignmentsDb[periodId] ?? {}
-      byTeacher[documento] = subjectIds
+      byTeacher[funcionarioId] = subjectIds
       teacherAssignmentsDb[periodId] = byTeacher
 
       return HttpResponse.json<MutationResult>({

@@ -2,9 +2,11 @@
 
 import { http, HttpResponse, delay } from "msw"
 import { evaluationPeriodsDb } from "../../db/academic-period/evaluation-periods"
+import { evaluationPeriodStatusesDb } from "../../db/academic-period/evaluation-period-statuses"
 
 import type {
   EvaluationPeriod,
+  EvaluationPeriodRecord,
   EvaluationPeriodsQueryRequest,
   EvaluationPeriodsQueryResponse,
   CreateEvaluationPeriodRequest,
@@ -48,7 +50,7 @@ function applyFilters(
 }
 
 function sortValue(row: EvaluationPeriod, id: string) {
-  return row[id as keyof EvaluationPeriod]
+  return row[id as keyof EvaluationPeriod] ?? ""
 }
 
 function applySorting(
@@ -90,7 +92,11 @@ export const evaluationPeriodsHandlers = [
     const pageCount = Math.max(1, Math.ceil(totalCount / pageSize))
     const start = pageIndex * pageSize
 
-    const rows = filtered.slice(start, start + pageSize)
+    // El backend resuelve el nombre del estado (TLISTA_VALOR.NOMBRE); el mock
+    // lo espeja del valor.
+    const rows = filtered
+      .slice(start, start + pageSize)
+      .map((row) => ({ ...row, estadoName: row.estado }))
 
     return HttpResponse.json<EvaluationPeriodsQueryResponse>({
       rows,
@@ -133,23 +139,34 @@ export const evaluationPeriodsHandlers = [
     await delay(400)
 
     const body = (await request.json()) as CreateEvaluationPeriodRequest
+    const { estadoId, ...rest } = body
+    // El back guarda el estado por id; resolvemos el código/etiqueta para el listado.
+    const statusOption = evaluationPeriodStatusesDb.find((s) => s.id === estadoId)
 
-    const record = { ...body, academicPeriodId: body.academicPeriodId ?? 0 }
+    // El PK lo asigna el backend (identity); el mock lo autoincrementa.
+    const id =
+      evaluationPeriodsDb.reduce((max, p) => Math.max(max, p.id), 0) + 1
+    const record: EvaluationPeriodRecord = {
+      ...rest,
+      id,
+      estado: statusOption?.key ?? "NO Calificable",
+      estadoId,
+      estadoName: statusOption?.label,
+      academicPeriodId: body.academicPeriodId ?? 0,
+    }
     evaluationPeriodsDb.push(record)
 
     return HttpResponse.json(record, { status: 201 })
   }),
 
-  // Borrado en lote por códigos (atómico, una sola request). A diferencia del
-  // borrado individual, el front no manda `academicPeriodId`, así que el match
-  // es sólo por código.
+  // Borrado en lote por PK (atómico, una sola request).
   http.post("/api/evaluation-periods/bulk-delete", async ({ request }) => {
     await delay(300)
     const { ids } = (await request.json()) as { ids: number[] }
     const set = new Set(ids.map(String))
     const before = evaluationPeriodsDb.length
     for (let i = evaluationPeriodsDb.length - 1; i >= 0; i--) {
-      if (set.has(String(evaluationPeriodsDb[i].codigo))) {
+      if (set.has(String(evaluationPeriodsDb[i].id))) {
         evaluationPeriodsDb.splice(i, 1)
       }
     }
@@ -160,16 +177,12 @@ export const evaluationPeriodsHandlers = [
     })
   }),
 
-  http.patch("/api/evaluation-periods/:codigo", async ({ request, params }) => {
+  http.patch("/api/evaluation-periods/:id", async ({ request, params }) => {
     await delay(400)
     const body = (await request.json()) as UpdateEvaluationPeriodRequest
-    // El código no es único globalmente: se desambigua por academicPeriodId
-    // para no editar el registro homónimo de otro periodo académico.
+    // Match por PK (único); ya no hace falta desambiguar por academicPeriodId.
     const index = evaluationPeriodsDb.findIndex(
-      (p) =>
-        String(p.codigo) === String(params.codigo) &&
-        (body.academicPeriodId == null ||
-          p.academicPeriodId === body.academicPeriodId)
+      (p) => String(p.id) === String(params.id)
     )
     if (index === -1) {
       return HttpResponse.json(
@@ -177,23 +190,26 @@ export const evaluationPeriodsHandlers = [
         { status: 404 }
       )
     }
-    evaluationPeriodsDb[index] = { ...evaluationPeriodsDb[index], ...body }
+    const { estadoId, ...rest } = body
+    const statusOption = evaluationPeriodStatusesDb.find((s) => s.id === estadoId)
+    evaluationPeriodsDb[index] = {
+      ...evaluationPeriodsDb[index],
+      ...rest,
+      estado: statusOption?.key ?? evaluationPeriodsDb[index].estado,
+      estadoId,
+      estadoName: statusOption?.label ?? evaluationPeriodsDb[index].estadoName,
+    }
     return HttpResponse.json({
       status: "ok",
       message: "Periodo de evaluación actualizado.",
     })
   }),
 
-  http.delete("/api/evaluation-periods/:codigo", async ({ params, request }) => {
+  http.delete("/api/evaluation-periods/:id", async ({ params }) => {
     await delay(300)
-    const url = new URL(request.url)
-    const academicPeriodId = url.searchParams.get("academicPeriodId")
-    // Mismo motivo que el PATCH: el código se desambigua por academicPeriodId.
+    // Match por PK (único).
     const index = evaluationPeriodsDb.findIndex(
-      (p) =>
-        String(p.codigo) === String(params.codigo) &&
-        (academicPeriodId == null ||
-          p.academicPeriodId === Number(academicPeriodId))
+      (p) => String(p.id) === String(params.id)
     )
     if (index === -1) {
       return HttpResponse.json(

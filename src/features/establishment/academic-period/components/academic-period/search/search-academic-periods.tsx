@@ -104,12 +104,12 @@ export function SearchAcademicPeriods({
       label: `Año: ${filters.schoolYearId}`,
     })
   }
-  if (filters.status) {
+  if (filters.statusId) {
     activeChips.push({
-      key: "status",
+      key: "statusId",
       label: `Estado: ${
-        statusOptions.find((o) => o.key === filters.status)?.label ??
-        filters.status
+        statusOptions.find((o) => String(o.id) === filters.statusId)?.label ??
+        filters.statusId
       }`,
     })
   }

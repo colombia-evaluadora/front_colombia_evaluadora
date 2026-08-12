@@ -6,9 +6,11 @@ import {
   nextAreaSubjectId,
 } from "../../db/academic-period/area-subject"
 import { studyPlansDb } from "../../db/academic-period/study-plans"
+import { generalAreasDb } from "../../db/academic-period/general-areas"
 
 import type {
   AreaSubject,
+  AreaSubjectItem,
   AreaSubjectsQueryRequest,
   AreaSubjectsQueryResponse,
   CreateAreaSubjectRequest,
@@ -16,6 +18,27 @@ import type {
   ExportFormat,
   ExportResult,
 } from "@/features/establishment/academic-period/api/types/area-subject"
+
+// El front manda `asignaturaGeneral` como id (fk_area_asignatura). Para que el
+// listado/edición sigan mostrando el nombre, el mock lo resuelve a nombre al
+// guardar (el backend real trabaja con el id directamente).
+function resolveSubjectAreaNames(
+  subjects: AreaSubjectItem[] = []
+): AreaSubjectItem[] {
+  return subjects.map((s) => {
+    const match = generalAreasDb.find(
+      (a) => String(a.id) === String(s.asignaturaGeneral)
+    )
+    return match ? { ...s, asignaturaGeneral: match.nombre } : s
+  })
+}
+
+// El área también manda su `areaGeneral` como id; se resuelve a nombre para el
+// listado/edición (igual que las asignaturas).
+function resolveAreaGeneralName(areaGeneral: string): string {
+  const match = generalAreasDb.find((a) => String(a.id) === String(areaGeneral))
+  return match ? match.nombre : areaGeneral
+}
 
 const EXPORT_FORMAT_LABELS: Record<ExportFormat, string> = {
   pdf: "PDF",
@@ -172,6 +195,8 @@ export const areaSubjectsHandlers = [
     // El código lo asigna el backend, no el front.
     const record = {
       ...body,
+      areaGeneral: resolveAreaGeneralName(body.areaGeneral),
+      subjects: resolveSubjectAreaNames(body.subjects),
       codigo: nextAreaSubjectId(),
       academicPeriodId: body.academicPeriodId ?? 0,
     }
@@ -192,7 +217,14 @@ export const areaSubjectsHandlers = [
         { status: 404 }
       )
     }
-    areaSubjectsDb[index] = { ...areaSubjectsDb[index], ...body }
+    const patched = {
+      ...body,
+      areaGeneral: resolveAreaGeneralName(body.areaGeneral),
+      ...(body.subjects
+        ? { subjects: resolveSubjectAreaNames(body.subjects) }
+        : {}),
+    }
+    areaSubjectsDb[index] = { ...areaSubjectsDb[index], ...patched }
     return HttpResponse.json({
       status: "ok",
       message: "Área/asignatura actualizada.",

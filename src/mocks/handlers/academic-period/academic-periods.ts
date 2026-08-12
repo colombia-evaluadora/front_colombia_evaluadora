@@ -6,6 +6,7 @@ import {
   academicPeriodsDb,
   sedesLookup,
 } from "../../db/academic-period/academic-periods"
+import { academicPeriodStatusesDb } from "../../db/academic-period/academic-period-statuses"
 import type {
   AcademicPeriod,
   AcademicPeriodConfig,
@@ -37,7 +38,10 @@ function applyFilters(
     if (filters.schoolYearId && row.schoolYearId !== filters.schoolYearId) {
       return false
     }
-    if (filters.status?.length && !filters.status.includes(row.status)) {
+    if (
+      filters.statusId?.length &&
+      (row.statusId == null || !filters.statusId.includes(row.statusId))
+    ) {
       return false
     }
     // Rango sobre startDate (yyyy-MM-dd ordena cronológicamente como string).
@@ -82,7 +86,11 @@ export const academicPeriodsHandlers = [
     const totalCount = filtered.length
     const pageCount = Math.max(1, Math.ceil(totalCount / pageSize))
     const start = pageIndex * pageSize
-    const rows = filtered.slice(start, start + pageSize)
+    // El backend resuelve el nombre del estado (TLISTA_VALOR.NOMBRE); el mock
+    // lo espeja del valor, que en el front ya es la etiqueta.
+    const rows = filtered
+      .slice(start, start + pageSize)
+      .map((row) => ({ ...row, statusName: row.status }))
 
     return HttpResponse.json<AcademicPeriodsQueryResponse>({
       rows,
@@ -119,14 +127,29 @@ export const academicPeriodsHandlers = [
   http.post("/api/academic-periods", async ({ request }) => {
     await delay(400)
     const body = (await request.json()) as CreateAcademicPeriodRequest
-    const { config, ...periodData } = body
+    const { config, statusId, ...periodData } = body
     const sede = sedesLookup.find((s) => s.id === periodData.sedeId)
+    // El back guarda el estado por id; resolvemos el código/etiqueta para el listado.
+    const statusOption = academicPeriodStatusesDb.find((s) => s.id === statusId)
+    // El back DERIVA el año lectivo (del año de inicio) y el nombre.
+    const schoolYearId = periodData.startDate
+      ? new Date(periodData.startDate).getFullYear()
+      : new Date().getFullYear()
 
     const id =
       academicPeriodsDb.reduce((max, p) => Math.max(max, p.id), 0) + 1
     const newPeriod: AcademicPeriod = {
       id,
       sedeName: sede?.name ?? "—",
+      status: statusOption?.key ?? "ACTIVO",
+      statusId,
+      statusName: statusOption?.label,
+      schoolYearId,
+      name: `Año lectivo ${schoolYearId}`,
+      minAbsences: null,
+      weeksCount: null,
+      minFailedSubjects: null,
+      isPrincipal: true,
       ...periodData,
     }
     academicPeriodsDb.push(newPeriod)
@@ -174,14 +197,24 @@ export const academicPeriodsHandlers = [
     }
 
     const body = (await request.json()) as UpdateAcademicPeriodRequest
-    const { config, ...periodData } = body
+    const { config, statusId, ...periodData } = body
     const id = academicPeriodsDb[index].id
     const sede = sedesLookup.find((s) => s.id === periodData.sedeId)
+    const statusOption = academicPeriodStatusesDb.find((s) => s.id === statusId)
+    // El back re-deriva año lectivo/nombre al cambiar la fecha de inicio.
+    const schoolYearId = periodData.startDate
+      ? new Date(periodData.startDate).getFullYear()
+      : academicPeriodsDb[index].schoolYearId
 
     academicPeriodsDb[index] = {
       ...academicPeriodsDb[index],
       ...periodData,
       id,
+      status: statusOption?.key ?? academicPeriodsDb[index].status,
+      statusId,
+      statusName: statusOption?.label ?? academicPeriodsDb[index].statusName,
+      schoolYearId,
+      name: `Año lectivo ${schoolYearId}`,
       sedeName: sede?.name ?? academicPeriodsDb[index].sedeName,
     }
 

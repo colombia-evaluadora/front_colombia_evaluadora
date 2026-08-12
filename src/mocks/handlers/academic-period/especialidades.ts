@@ -2,7 +2,7 @@ import { http, HttpResponse, delay } from "msw"
 
 import { especialidadesDb } from "../../db/academic-period/especialidades"
 import { areaSubjectsDb } from "../../db/academic-period/area-subject"
-import type { EspecialidadOption } from "@/features/establishment/academic-period/api/types/especialidad"
+import type { EspecialidadEnfasisRow } from "@/features/establishment/academic-period/api/types/especialidad"
 
 export const especialidadesHandlers = [
   http.get("/api/especialidades", async ({ request }) => {
@@ -19,12 +19,24 @@ export const especialidadesHandlers = [
         .map((subject) => subject.especialidad)
         .filter((esp): esp is string => Boolean(esp))
     )
-    // Fusiona el catálogo con las especialidades ya en uso, dedup por `key`.
-    const merged = new Map<string, EspecialidadOption>()
-    for (const option of especialidadesDb) merged.set(option.key, option)
+    // Catálogo (ESPECIALIDAD) + las ya en uso como énfasis (ENFASIS), dedup por
+    // nombre. Simula `fn_especialidad_enfasis_listar`.
+    const merged = new Map<string, EspecialidadEnfasisRow>()
+    for (const row of especialidadesDb) merged.set(row.nombre, row)
+    let nextId = especialidadesDb.reduce((max, row) => Math.max(max, row.id), 0)
     for (const name of enUso) {
-      if (!merged.has(name)) merged.set(name, { key: name, label: name })
+      if (!merged.has(name)) {
+        nextId += 1
+        merged.set(name, {
+          id: nextId,
+          nombre: name,
+          codigo: name.slice(0, 30),
+          origen: "ENFASIS",
+        })
+      }
     }
-    return HttpResponse.json<EspecialidadOption[]>(Array.from(merged.values()))
+    return HttpResponse.json<EspecialidadEnfasisRow[]>(
+      Array.from(merged.values())
+    )
   }),
 ]

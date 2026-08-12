@@ -72,8 +72,6 @@ export function TabRatingScales({ academicPeriodId }: TabRatingScalesProps) {
   } = useRatingScalesQuery({
     filters: {},
     sorting: [],
-    pageIndex: 0,
-    pageSize: 100,
     academicPeriodId,
   })
 

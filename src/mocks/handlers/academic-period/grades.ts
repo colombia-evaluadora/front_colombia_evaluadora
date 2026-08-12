@@ -90,7 +90,11 @@ export const gradesHandlers = [
     const pageCount = Math.max(1, Math.ceil(totalCount / pageSize))
     const start = pageIndex * pageSize
 
-    const rows = filtered.slice(start, start + pageSize)
+    // El backend resuelve el nombre del grado siguiente (TLISTA_VALOR.NOMBRE);
+    // el mock lo espeja del valor.
+    const rows = filtered
+      .slice(start, start + pageSize)
+      .map((row) => ({ ...row, gradoSiguienteName: row.gradoSiguiente }))
 
     return HttpResponse.json<GradesQueryResponse>({
       rows,

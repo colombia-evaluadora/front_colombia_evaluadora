@@ -10,11 +10,11 @@ import { teacherAssignmentsQueryKey } from "../../query/academic-assignments/use
 
 function saveTeacherAssignments({
   academicPeriodId,
-  documentNumber,
+  funcionarioId,
   subjectIds,
 }: SaveTeacherAssignmentsRequest): Promise<MutationResult> {
   return api.put(
-    `/academic-periods/${academicPeriodId}/teachers/${documentNumber}/assignments`,
+    `/academic-periods/${academicPeriodId}/teachers/${funcionarioId}/assignments`,
     { subjectIds }
   )
 }
@@ -35,7 +35,7 @@ export function useSaveTeacherAssignments({
       queryClient.invalidateQueries({
         queryKey: teacherAssignmentsQueryKey(
           variables.academicPeriodId,
-          variables.documentNumber
+          variables.funcionarioId
         ),
       })
       mutationConfig?.onSuccess?.(...args)

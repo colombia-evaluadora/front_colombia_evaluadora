@@ -3,6 +3,7 @@ import {
   studyPlansDb,
   nextStudyPlanId,
 } from "../../db/academic-period/study-plans"
+import { areaSubjectsDb } from "../../db/academic-period/area-subject"
 
 import type {
   StudyPlanItem,
@@ -10,6 +11,7 @@ import type {
   StudyPlanQueryResponse,
   CreateStudyPlanItemRequest,
   UpdateStudyPlanItemRequest,
+  AvailableStudyPlanSubject,
 } from "@/features/establishment/academic-period/api/types/study-plan"
 
 function applyFilters(
@@ -49,6 +51,46 @@ function applySorting(
 }
 
 export const studyPlansHandlers = [
+  // Asignaturas del periodo del grado que aún no están en su plan (disponibles).
+  http.get(
+    "/api/grades/:gradeId/study-plan-available",
+    async ({ params, request }) => {
+      await delay(200)
+      const gradeId = Number(params.gradeId)
+      const periodParam = new URL(request.url).searchParams.get(
+        "academicPeriodId"
+      )
+      const periodId = periodParam != null ? Number(periodParam) : undefined
+
+      const scopedAreas =
+        periodId == null
+          ? areaSubjectsDb
+          : areaSubjectsDb.filter((a) => a.academicPeriodId === periodId)
+
+      // Nombres ya presentes en el plan del grado (para excluirlos).
+      const enPlan = new Set(
+        studyPlansDb
+          .filter((p) => p.gradeId === gradeId)
+          .map((p) => p.asignatura)
+      )
+
+      const disponibles: AvailableStudyPlanSubject[] = []
+      let id = 1
+      for (const area of scopedAreas) {
+        for (const subject of area.subjects) {
+          if (enPlan.has(subject.nombreInterno)) continue
+          disponibles.push({
+            id: id++,
+            nombre: subject.nombreInterno,
+            areaNombre: area.nombreInterno,
+          })
+        }
+      }
+
+      return HttpResponse.json<AvailableStudyPlanSubject[]>(disponibles)
+    }
+  ),
+
   http.post("/api/study-plans/query", async ({ request }) => {
     await delay(250)
 

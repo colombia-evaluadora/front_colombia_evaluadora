@@ -37,6 +37,9 @@ export interface RatingScale {
   nombre: string
   abreviacion: string
   tipo: RatingScaleType
+  // Nombre del tipo resuelto por el backend (TLISTA_VALOR.NOMBRE); adicional al
+  // valor `tipo`.
+  tipoName?: string
   iconografia: string
   notaMaxima: number
   notaMinima: number
@@ -52,8 +55,9 @@ export interface RatingScalesQueryFilters {
 export interface RatingScalesQueryRequest {
   filters: RatingScalesQueryFilters
   sorting: { id: string; desc: boolean }[]
-  pageIndex: number
-  pageSize: number
+  // Sin paginación: `fn_escala_listar` devuelve todas las bandas del periodo
+  // (la tabla arma niveles/subtablas en cliente). Filtro opcional por nivel.
+  teachingLevelId?: number
   academicPeriodId?: number
 }
 
@@ -63,8 +67,6 @@ export interface RatingScaleRecord extends RatingScale {
 
 export interface RatingScalesQueryResponse {
   rows: RatingScale[]
-  pageCount: number
-  totalCount: number
 }
 
 export type CreateRatingScaleRequest = RatingScale & {

@@ -8,17 +8,18 @@ import type {
 } from "../../types/evaluation-period"
 
 interface UpdateEvaluationPeriodInput {
+  // PK real (path); el `codigo` de negocio va en el body dentro de `values`.
+  id: number
   academicPeriodId?: number
-  codigo: number
   values: UpdateEvaluationPeriodRequest
 }
 
 function updateEvaluationPeriod({
+  id,
   academicPeriodId,
-  codigo,
   values,
 }: UpdateEvaluationPeriodInput): Promise<MutationResult> {
-  return api.patch(`/evaluation-periods/${codigo}`, {
+  return api.patch(`/evaluation-periods/${id}`, {
     ...values,
     academicPeriodId,
   })

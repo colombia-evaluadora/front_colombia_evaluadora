@@ -36,10 +36,7 @@ import { useUpdateEvaluationPeriod } from "../../../api/mutations/evaluation-per
 import { useEvaluationPeriodsQuery } from "../../../api/query/evaluation-periods/use-evaluation-periods-query"
 import { useEvaluationPeriodStatusesQuery } from "../../../api/query/evaluation-periods/use-evaluation-period-statuses-query"
 import { useAcademicPeriodQuery } from "../../../api/query/academic-period/use-academic-period-query"
-import type {
-  EvaluationPeriod,
-  EvaluationPeriodStatus,
-} from "../../../api/types/evaluation-period"
+import type { EvaluationPeriod } from "../../../api/types/evaluation-period"
 import { DatePicker } from "@/components/date-picker"
 import { formatDateValue, parseDateValue } from "@/lib/date-value"
 import {
@@ -55,7 +52,7 @@ const EMPTY: EvaluationPeriodFormValues = {
   startDate: "",
   endDate: "",
   peso: 0,
-  estado: "NO Calificable",
+  estadoId: 0,
 }
 
 const FORM_ID = "evaluation-period-form"
@@ -81,7 +78,7 @@ export function CreateEvaluationPeriodDialog({
     academicPeriodId,
   })
   const otherPeriods = (periodsData?.rows ?? []).filter(
-    (p) => period == null || p.codigo !== period.codigo
+    (p) => period == null || p.id !== period.id
   )
   const pesoUsado = otherPeriods.reduce((sum, p) => sum + (p.peso ?? 0), 0)
   const pesoDisponible = Math.max(0, 100 - pesoUsado)
@@ -109,7 +106,7 @@ export function CreateEvaluationPeriodDialog({
         startDate: period.startDate,
         endDate: period.endDate,
         peso: period.peso,
-        estado: period.estado,
+        estadoId: period.estadoId ?? 0,
       }
     : EMPTY
 
@@ -160,11 +157,11 @@ export function CreateEvaluationPeriodDialog({
         )
         return
       }
-      const payload = { ...values, estado: values.estado as EvaluationPeriodStatus }
+      const payload = { ...values }
       if (isEditing) {
         updateEvaluation.mutate({
           academicPeriodId,
-          codigo: period.codigo,
+          id: period.id,
           values: payload,
         })
       } else {
@@ -439,7 +436,49 @@ export function CreateEvaluationPeriodDialog({
             }}
           </form.Field>
 
-          <form.Field name="estado">
+          <form.Field
+            name="peso"
+            validators={{
+              onChange: ({ value }) =>
+                value > pesoDisponible
+                  ? {
+                      message: `El peso supera el 100 %. Disponible: ${pesoDisponible} %.`,
+                    }
+                  : undefined,
+            }}
+          >
+            {(field) => {
+              const isInvalid =
+                field.state.meta.isTouched && !field.state.meta.isValid
+              return (
+                <Field variant="outlined" data-invalid={isInvalid}>
+                  <FieldLabel htmlFor={field.name}>Peso porcentual (%)*</FieldLabel>
+                  {/* El sufijo "%" hace explícita la unidad del valor, que de
+                      otro modo se lee como un número suelto. */}
+                  <InputGroup className="h-10 rounded-md border border-input px-3 hover:border-ring has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20 has-[[data-slot][aria-invalid=true]]:border-red">
+                    <InputGroupInput
+                      id={field.name}
+                      type="number"
+                      min={0}
+                      max={100}
+                      placeholder="Ingresar peso porcentual"
+                      className="px-0"
+                      value={Number.isNaN(field.state.value) ? "" : field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.valueAsNumber)}
+                      aria-invalid={isInvalid}
+                    />
+                    <InputGroupAddon align="inline-end">
+                      <InputGroupText>%</InputGroupText>
+                    </InputGroupAddon>
+                  </InputGroup>
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                </Field>
+              )
+            }}
+          </form.Field>
+
+          <form.Field name="estadoId">
             {(field) => {
               const isInvalid =
                 field.state.meta.isTouched && !field.state.meta.isValid
@@ -451,18 +490,29 @@ export function CreateEvaluationPeriodDialog({
                 >
                   <FieldLabel htmlFor={field.name}>Estado*</FieldLabel>
                   <Select
-                    value={field.state.value}
+                    value={field.state.value ? String(field.state.value) : ""}
                     onValueChange={(value) =>
-                      value && field.handleChange(value as EvaluationPeriodStatus)
+                      value && field.handleChange(Number(value))
                     }
                   >
                     <SelectTrigger id={field.name} aria-invalid={isInvalid}>
-                      <SelectValue placeholder="Seleccionar" />
+                      {/* El valor elegido se muestra como el mismo badge soft
+                          que usa la columna Estado de la tabla. Se resuelve por id. */}
+                      <SelectValue>
+                        {(value) => {
+                          const option = statusOptions.find(
+                            (o) => String(o.id) === value
+                          )
+                          if (!option) return "Seleccionar"
+                          const badge = EVALUATION_PERIOD_STATUS_BADGE[option.key]
+                          return <Badge {...badge}>{option.label}</Badge>
+                        }}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>
                         {statusOptions.map((option) => (
-                          <SelectItem key={option.key} value={option.key}>
+                          <SelectItem key={option.id} value={String(option.id)}>
                             {option.label}
                           </SelectItem>
                         ))}
@@ -489,7 +539,7 @@ export function CreateEvaluationPeriodDialog({
                 values.startDate.length > 0 &&
                 values.endDate.length > 0 &&
                 !Number.isNaN(values.peso) &&
-                values.estado.length > 0
+                values.estadoId > 0
               // Las fechas deben caer dentro del rango del periodo académico
               // (cuando este existe). Si no, se deshabilita el submit además
               // del FieldError que muestra el form al tocar el campo.

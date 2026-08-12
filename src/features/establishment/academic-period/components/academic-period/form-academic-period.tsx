@@ -25,7 +25,7 @@ import {
   type AcademicPeriodFormInput,
   type AcademicPeriodFormValues,
 } from "../../api/schema"
-import type { AcademicPeriodStatus } from "../../api/types/academic-period"
+import { ACADEMIC_PERIOD_STATUS_BADGE } from "../../api/ui-mappings"
 import { DatePicker } from "@/components/date-picker"
 import { formatDateValue, parseDateValue } from "@/lib/date-value"
 
@@ -41,7 +41,7 @@ const EMPTY_VALUES: AcademicPeriodFormInput = {
   enrollmentDeadline: "",
   sedeId: "",
   previousPeriodId: null,
-  status: "ACTIVO",
+  statusId: 0,
   jornadaId: 0,
   reservationEnabled: true,
   defaultBlocksCount: null,
@@ -294,28 +294,34 @@ export function AcademicPeriodForm({
           }}
         </form.Subscribe>
 
-        <form.Field name="status">
+        <form.Field name="statusId">
           {(field) => (
             <Field variant="outlined">
               <FieldLabel htmlFor={field.name}>Estado*</FieldLabel>
               <Select
-                value={field.state.value}
+                value={field.state.value ? String(field.state.value) : ""}
                 onValueChange={(value) =>
-                  value && field.handleChange(value as AcademicPeriodStatus)
+                  value && field.handleChange(Number(value))
                 }
               >
                 <SelectTrigger id={field.name}>
-                  <SelectValue placeholder="Seleccionar">
-                    {(value) =>
-                      statusOptions.find((option) => option.key === value)
-                        ?.label ?? "Seleccionar"
-                    }
+                  {/* El valor elegido se muestra como el mismo badge soft que
+                      usa la columna Estado de la tabla. Se resuelve por id. */}
+                  <SelectValue>
+                    {(value) => {
+                      const option = statusOptions.find(
+                        (o) => String(o.id) === value
+                      )
+                      if (!option) return "Seleccionar"
+                      const badge = ACADEMIC_PERIOD_STATUS_BADGE[option.key]
+                      return <Badge {...badge}>{option.label}</Badge>
+                    }}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
                     {statusOptions.map((option) => (
-                      <SelectItem key={option.key} value={option.key}>
+                      <SelectItem key={option.id} value={String(option.id)}>
                         {option.label}
                       </SelectItem>
                     ))}
