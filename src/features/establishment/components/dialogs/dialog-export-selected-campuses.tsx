@@ -82,9 +82,12 @@ export function ExportSelectedCampusesDialog({
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="sm:justify-between">
-          <DialogClose render={<Button type="button" variant="ghost" />}>Cancelar</DialogClose>
+          <DialogClose render={<Button size="sm" type="button" variant="ghost" />}>
+            Cancelar
+          </DialogClose>
           <div className="flex flex-col-reverse gap-2 sm:flex-row">
             <Button
+              size="sm"
               type="button"
               variant="outline"
               disabled={exportSelected.isPending}
@@ -99,6 +102,7 @@ export function ExportSelectedCampusesDialog({
               Excel
             </Button>
             <Button
+              size="sm"
               type="button"
               color="primary"
               disabled={exportSelected.isPending}

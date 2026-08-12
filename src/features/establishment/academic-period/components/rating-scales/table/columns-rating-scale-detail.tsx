@@ -141,7 +141,7 @@ export function createRatingScaleDetailColumns({
         return (
           <Input
             aria-label="Nombre"
-            placeholder="Ingresar nombre"
+            placeholder="Agregar"
             value={draft!.nombre}
             onChange={(e) => patchDraft({ nombre: e.target.value })}
             className="min-w-32"
@@ -161,7 +161,7 @@ export function createRatingScaleDetailColumns({
         return (
           <Input
             aria-label="Abreviación"
-            placeholder="Ingresar abreviación"
+            placeholder="Agregar"
             value={draft!.abreviacion}
             onChange={(e) => patchDraft({ abreviacion: e.target.value })}
             className="min-w-24"

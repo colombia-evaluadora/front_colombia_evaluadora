@@ -380,7 +380,7 @@ export function AcademicPeriodForm({
                           field.handleChange(value)
                           field.handleBlur()
                         }}
-                        placeholder="Ingresar hora"
+                        placeholder="Agregar"
                         aria-invalid={isInvalid}
                       />
                       {isInvalid ? (
@@ -412,7 +412,7 @@ export function AcademicPeriodForm({
                     field.handleChange(value)
                     field.handleBlur()
                   }}
-                  placeholder="Ingresar hora"
+                  placeholder="Agregar"
                   aria-invalid={isInvalid}
                 />
                 {isInvalid && <FieldError errors={field.state.meta.errors} />}
@@ -433,7 +433,7 @@ export function AcademicPeriodForm({
                   name={field.name}
                   type="number"
                   min={1}
-                  placeholder="Ingresar cantidad"
+                  placeholder="Agregar"
                   value={field.state.value ?? ""}
                   onBlur={field.handleBlur}
                   aria-invalid={isInvalid}

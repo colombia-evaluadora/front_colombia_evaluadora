@@ -364,7 +364,7 @@ function ScalesSubTable({
                 <TableCell>
                   <Input
                     aria-label="Nombre"
-                    placeholder="Ingresar nombre"
+                    placeholder="Agregar"
                     value={addDraft.nombre}
                     onChange={(e) => patchAddDraft({ nombre: e.target.value })}
                     className="min-w-32"
@@ -373,7 +373,7 @@ function ScalesSubTable({
                 <TableCell>
                   <Input
                     aria-label="AbreviaciÃ³n"
-                    placeholder="Ingresar abreviaciÃ³n"
+                    placeholder="Agregar"
                     value={addDraft.abreviacion}
                     onChange={(e) => patchAddDraft({ abreviacion: e.target.value })}
                     className="min-w-24"
@@ -382,7 +382,7 @@ function ScalesSubTable({
                 <TableCell>
                   <Input
                     aria-label="Nota mÃ¡ximo"
-                    placeholder="Ingresar nota mÃ¡xima"
+                    placeholder="Agregar"
                     type="number"
                     step="0.1"
                     min={range.min}
@@ -395,7 +395,7 @@ function ScalesSubTable({
                 <TableCell>
                   <Input
                     aria-label="Nota mÃ­nimo"
-                    placeholder="Ingresar nota mÃ­nima"
+                    placeholder="Agregar"
                     type="number"
                     step="0.1"
                     min={range.min}
@@ -408,7 +408,7 @@ function ScalesSubTable({
                 <TableCell>
                   <Input
                     aria-label="Nota equivalente"
-                    placeholder="Ingresar nota equivalente"
+                    placeholder="Agregar"
                     type="number"
                     step="0.1"
                     min={range.min}

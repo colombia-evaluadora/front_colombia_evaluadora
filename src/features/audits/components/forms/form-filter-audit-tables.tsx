@@ -56,7 +56,7 @@ export function FilterAuditTablesForm({ id, defaultValues, onSubmit }: FilterAud
                 type="search"
                 variant="outlined"
                 autoComplete="off"
-                placeholder="Ingresar nombre de tabla"
+                placeholder="Agregar"
                 value={field.state.value}
                 onBlur={field.handleBlur}
                 onChange={(event) => field.handleChange(event.target.value)}

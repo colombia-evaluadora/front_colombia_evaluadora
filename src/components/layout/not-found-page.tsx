@@ -11,6 +11,7 @@ export function NotFoundPage() {
       <h1 className="text-2xl font-semibold">Página no encontrada</h1>
       <p className="text-muted-foreground">La URL a la que intentaste acceder no existe.</p>
       <Button
+        size="sm"
         render={<Link to={isAuthenticated ? "/app" : "/"} />}
         nativeButton={false}
         className="mt-2"

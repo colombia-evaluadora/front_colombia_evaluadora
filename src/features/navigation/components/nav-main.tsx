@@ -112,7 +112,7 @@ export function NavMain() {
       <SidebarGroup>
         <div className="px-2 py-1.5 text-sm text-muted-foreground group-data-[collapsible=icon]:hidden">
           Ocurrió un error al cargar el menú.{" "}
-          <Button variant="link" className="h-auto p-0" onClick={() => refetch()}>
+          <Button size="sm" variant="link" className="h-auto p-0" onClick={() => refetch()}>
             Reintentar
           </Button>
         </div>

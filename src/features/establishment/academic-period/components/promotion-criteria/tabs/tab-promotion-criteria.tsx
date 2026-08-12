@@ -65,7 +65,7 @@ function PercentInput({ value, onChange }: { value: number; onChange: (value: nu
         type="number"
         min={0}
         max={100}
-        placeholder="Ingresar valor"
+        placeholder="Agregar"
         className="px-0"
         value={Number.isNaN(value) ? "" : value}
         onChange={(event) => onChange(Number(event.target.value))}
@@ -279,7 +279,7 @@ const PromotionCriteriaForm = forwardRef<PromotionCriteriaHandle, PromotionCrite
                 <Input
                   type="number"
                   min={0}
-                  placeholder="Ingresar valor"
+                  placeholder="Agregar"
                   value={field.state.value}
                   onChange={(e) => field.handleChange(Number(e.target.value))}
                   className="h-9"
@@ -313,7 +313,7 @@ const PromotionCriteriaForm = forwardRef<PromotionCriteriaHandle, PromotionCrite
                 <Input
                   type="number"
                   min={0}
-                  placeholder="Ingresar valor"
+                  placeholder="Agregar"
                   value={field.state.value}
                   onChange={(e) => field.handleChange(Number(e.target.value))}
                   className="h-9"
@@ -387,7 +387,7 @@ const PromotionCriteriaForm = forwardRef<PromotionCriteriaHandle, PromotionCrite
                 <Input
                   type="number"
                   min={0}
-                  placeholder="Ingresar valor"
+                  placeholder="Agregar"
                   value={field.state.value}
                   onChange={(e) => field.handleChange(Number(e.target.value))}
                   className="h-9"

@@ -58,6 +58,7 @@ export function DeleteSelectedEvaluationPeriodsDialog({
       <AlertDialogTrigger
         render={
           <Button
+            size="sm"
             color="destructive"
             aria-label={`Eliminar ${count} periodo(s) de evaluación seleccionado(s)`}
           />

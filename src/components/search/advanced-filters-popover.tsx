@@ -120,7 +120,6 @@ export function AdvancedFiltersPopover({
             form={formId}
             color="primary"
             size="sm"
-            className="min-w-40 rounded-full"
             onClick={onApply}
           >
             <CheckIcon data-icon="inline-start" />

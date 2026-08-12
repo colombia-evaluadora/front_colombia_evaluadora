@@ -286,9 +286,7 @@ export function AreaSubjectFormDialog({
     <>
       <Dialog open={open} onOpenChange={handleOpenChange}>
         {isEdit ? (
-          <DialogTrigger
-            render={<Button variant="ghost" color="neutral" size="icon-sm" />}
-          >
+          <DialogTrigger render={<Button variant="ghost" color="neutral" size="icon-sm" />}>
             <span className="sr-only">Editar área</span>
             <PencilIcon />
           </DialogTrigger>
@@ -343,7 +341,7 @@ export function AreaSubjectFormDialog({
                   {(isInvalid) => (
                     <Input
                       id={field.name}
-                      placeholder="Ingresar nombre"
+                      placeholder="Agregar"
                       value={field.state.value}
                       onBlur={field.handleBlur}
                       onChange={(e) => {
@@ -363,7 +361,7 @@ export function AreaSubjectFormDialog({
                   {(isInvalid) => (
                     <Input
                       id={field.name}
-                      placeholder="Ingresar abreviación"
+                      placeholder="Agregar"
                       value={field.state.value}
                       onBlur={field.handleBlur}
                       onChange={(e) => field.handleChange(e.target.value)}
@@ -382,7 +380,7 @@ export function AreaSubjectFormDialog({
                       id={field.name}
                       type="number"
                       min={0}
-                      placeholder="Ingresar orden"
+                      placeholder="Agregar"
                       value={Number.isNaN(field.state.value) ? "" : field.state.value}
                       onBlur={field.handleBlur}
                       onChange={(e) => field.handleChange(e.target.valueAsNumber)}
@@ -590,6 +588,7 @@ export function AreaSubjectFormDialog({
 
           <DialogFooter className="sm:justify-end">
             <Button
+              size="sm"
               type="submit"
               color="primary"
               form={FORM_ID}
@@ -599,7 +598,9 @@ export function AreaSubjectFormDialog({
               {isPending && <SpinnerIcon data-icon="inline-start" className="animate-spin" />}
               Guardar
             </Button>
-            <DialogClose render={<Button type="button" variant="ghost" />}>Cancelar</DialogClose>
+            <DialogClose render={<Button size="sm" type="button" variant="ghost" />}>
+              Cancelar
+            </DialogClose>
           </DialogFooter>
         </DialogContent>
       </Dialog>

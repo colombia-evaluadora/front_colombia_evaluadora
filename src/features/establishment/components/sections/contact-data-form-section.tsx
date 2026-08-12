@@ -22,7 +22,7 @@ export function ContactDataFormSection({ value, onChange, invalidFields = [], sh
                     <FieldLabel htmlFor="establishment-email">Correo electrónico</FieldLabel>
                     <Input
                         id="establishment-email"
-                        placeholder="Ingresar correo electrónico"
+                        placeholder="Agregar"
                         value={value.email}
                         aria-invalid={isInvalid("contact.email")}
                         onChange={(event) => onChange({ ...value, email: event.target.value })}
@@ -33,7 +33,7 @@ export function ContactDataFormSection({ value, onChange, invalidFields = [], sh
                     <FieldLabel htmlFor="establishment-website">Página web</FieldLabel>
                     <Input
                         id="establishment-website"
-                        placeholder="Ingresar página web"
+                        placeholder="Agregar"
                         value={value.website}
                         onChange={(event) => onChange({ ...value, website: event.target.value })}
                     />
@@ -43,7 +43,7 @@ export function ContactDataFormSection({ value, onChange, invalidFields = [], sh
                     <FieldLabel htmlFor="establishment-phone">Teléfono</FieldLabel>
                     <Input
                         id="establishment-phone"
-                        placeholder="Ingresar teléfono"
+                        placeholder="Agregar"
                         value={value.phone}
                         aria-invalid={isInvalid("contact.phone")}
                         onChange={(event) => onChange({ ...value, phone: event.target.value })}
@@ -53,7 +53,7 @@ export function ContactDataFormSection({ value, onChange, invalidFields = [], sh
                     <FieldLabel htmlFor="establishment-fax">fax</FieldLabel>
                     <Input
                         id="establishment-fax"
-                        placeholder="Ingresar fax"
+                        placeholder="Agregar"
                         value={value.fax ?? ""}
                         onChange={(event) => onChange({ ...value, fax: event.target.value })}
                     />

@@ -289,7 +289,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                         <FieldLabel htmlFor={field.name}>Nombre*</FieldLabel>
                         <Input
                           id={field.name}
-                          placeholder="Ingresar nombre"
+                          placeholder="Agregar"
                           value={field.state.value}
                           onBlur={field.handleBlur}
                           onChange={(e) => field.handleChange(e.target.value)}
@@ -343,7 +343,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                         <FieldLabel htmlFor={field.name}>Abreviación*</FieldLabel>
                         <Input
                           id={field.name}
-                          placeholder="Ingresar abreviación"
+                          placeholder="Agregar"
                           value={field.state.value}
                           onBlur={field.handleBlur}
                           onChange={(e) => field.handleChange(e.target.value)}
@@ -398,7 +398,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                               step="0.1"
                               min={range.min}
                               max={range.max}
-                              placeholder="Ingresar valor"
+                              placeholder="Agregar"
                               value={Number.isNaN(field.state.value) ? "" : field.state.value}
                               onBlur={field.handleBlur}
                               onChange={(e) => field.handleChange(e.target.valueAsNumber)}
@@ -421,7 +421,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                               step="0.1"
                               min={range.min}
                               max={range.max}
-                              placeholder="Ingresar valor"
+                              placeholder="Agregar"
                               value={Number.isNaN(field.state.value) ? "" : field.state.value}
                               onBlur={field.handleBlur}
                               onChange={(e) => field.handleChange(e.target.valueAsNumber)}
@@ -444,7 +444,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                               step="0.1"
                               min={range.min}
                               max={range.max}
-                              placeholder="Ingresar valor"
+                              placeholder="Agregar"
                               value={Number.isNaN(field.state.value) ? "" : field.state.value}
                               onBlur={field.handleBlur}
                               onChange={(e) => field.handleChange(e.target.valueAsNumber)}
@@ -555,7 +555,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                             <TableCell>
                               <Input
                                 aria-label="Nombre"
-                                placeholder="Ingresar nombre"
+                                placeholder="Agregar"
                                 value={editRow.nombre}
                                 onChange={(e) => patchEditRow({ nombre: e.target.value })}
                                 className="min-w-32"
@@ -564,7 +564,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                             <TableCell>
                               <Input
                                 aria-label="Abreviación"
-                                placeholder="Ingresar abreviación"
+                                placeholder="Agregar"
                                 value={editRow.abreviacion}
                                 onChange={(e) => patchEditRow({ abreviacion: e.target.value })}
                                 className="min-w-24"
@@ -573,7 +573,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                             <TableCell>
                               <Input
                                 aria-label="Nota máximo"
-                                placeholder="Ingresar nota máxima"
+                                placeholder="Agregar"
                                 type="number"
                                 step="0.1"
                                 min={range.min}
@@ -590,7 +590,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                             <TableCell>
                               <Input
                                 aria-label="Nota mínimo"
-                                placeholder="Ingresar nota mínima"
+                                placeholder="Agregar"
                                 type="number"
                                 step="0.1"
                                 min={range.min}
@@ -607,7 +607,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                             <TableCell>
                               <Input
                                 aria-label="Nota equivalente"
-                                placeholder="Ingresar nota equivalente"
+                                placeholder="Agregar"
                                 type="number"
                                 step="0.1"
                                 min={range.min}
@@ -731,6 +731,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
         <DialogFooter className="sm:justify-end">
           {continued ? (
             <Button
+              size="sm"
               type="button"
               color="primary"
               onClick={handleSave}
@@ -746,13 +747,13 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
             </Button>
           ) : (
             teachingLevelIds.length > 0 && (
-              <Button type="button" color="primary" onClick={() => setContinued(true)}>
+              <Button size="sm" type="button" color="primary" onClick={() => setContinued(true)}>
                 <CheckIcon data-icon="inline-start" />
                 Continuar
               </Button>
             )
           )}
-          <DialogClose render={<Button type="button" variant="fill" color="neutral" />}>
+          <DialogClose render={<Button size="sm" type="button" variant="fill" color="neutral" />}>
             <XIcon data-icon="inline-start" />
             Cancelar
           </DialogClose>

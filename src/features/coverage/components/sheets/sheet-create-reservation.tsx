@@ -45,7 +45,7 @@ export function CreateReservationSheet() {
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger render={<Button color="primary" aria-label="Realizar reserva" />}>
+      <SheetTrigger render={<Button size="sm" color="primary" aria-label="Realizar reserva" />}>
         <PlusIcon data-icon="inline-start" weight="bold" />
         <span className="sr-only md:not-sr-only">Realizar reserva</span>
       </SheetTrigger>
@@ -65,11 +65,12 @@ export function CreateReservationSheet() {
         />
 
         <SheetFooter className="flex-row items-center justify-end gap-2">
-          <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
+          <Button size="sm" type="button" variant="ghost" onClick={() => setOpen(false)}>
             <XIcon data-icon="inline-start" />
             Cancelar
           </Button>
           <Button
+            size="sm"
             type="submit"
             form={CREATE_RESERVATION_FORM_ID}
             color="primary"

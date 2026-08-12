@@ -402,7 +402,7 @@ export function AddEstablishmentPage() {
           disabled={isPending}
         >
           <CheckIcon />
-          {isPending ? "Guardando..." : isEditMode ? "Guardar cambios" : "Guardar"}
+          {isPending ? "Guardando..." : "Guardar"}
         </Button>
       </TableScreenFooter>
     </TableScreen>

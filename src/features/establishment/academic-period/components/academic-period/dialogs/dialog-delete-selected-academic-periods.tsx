@@ -58,7 +58,11 @@ export function DeleteSelectedAcademicPeriodsDialog({
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger
         render={
-          <Button color="destructive" aria-label={`Eliminar ${count} periodo(s) seleccionado(s)`} />
+          <Button
+            size="sm"
+            color="destructive"
+            aria-label={`Eliminar ${count} periodo(s) seleccionado(s)`}
+          />
         }
       >
         <CheckIcon data-icon="inline-start" />

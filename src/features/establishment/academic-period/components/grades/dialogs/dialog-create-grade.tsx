@@ -287,7 +287,7 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
             ) : (
               <Input
                 id="grade-nombre"
-                placeholder="Ingresar nombre"
+                placeholder="Agregar"
                 value={nombre}
                 onChange={(e) => setNombre(e.target.value)}
               />
@@ -387,6 +387,7 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
 
         <DialogFooter>
           <Button
+            size="sm"
             type="button"
             color="primary"
             onClick={handleSaveGrade}
@@ -396,7 +397,9 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
             {saving && <SpinnerIcon data-icon="inline-start" className="animate-spin" />}
             {gradeId == null ? "Crear" : "Guardar"}
           </Button>
-          <DialogClose render={<Button type="button" variant="outline" />}>Cerrar</DialogClose>
+          <DialogClose render={<Button size="sm" type="button" variant="outline" />}>
+            Cerrar
+          </DialogClose>
         </DialogFooter>
       </DialogContent>
     </Dialog>

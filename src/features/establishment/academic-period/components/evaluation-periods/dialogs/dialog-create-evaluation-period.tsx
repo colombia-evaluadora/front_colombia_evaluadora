@@ -219,7 +219,7 @@ export function CreateEvaluationPeriodDialog({
                     id={field.name}
                     type="number"
                     min={1}
-                    placeholder="Ingresar código"
+                    placeholder="Agregar"
                     value={Number.isNaN(field.state.value) ? "" : field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.valueAsNumber)}
@@ -239,7 +239,7 @@ export function CreateEvaluationPeriodDialog({
                   <FieldLabel htmlFor={field.name}>Nombre*</FieldLabel>
                   <Input
                     id={field.name}
-                    placeholder="Ingresar nombre"
+                    placeholder="Agregar"
                     value={field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value)}
@@ -259,7 +259,7 @@ export function CreateEvaluationPeriodDialog({
                   <FieldLabel htmlFor={field.name}>Abreviación*</FieldLabel>
                   <Input
                     id={field.name}
-                    placeholder="Ingresar abreviación"
+                    placeholder="Agregar"
                     value={field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value)}
@@ -394,7 +394,7 @@ export function CreateEvaluationPeriodDialog({
                       type="number"
                       min={0}
                       max={100}
-                      placeholder="Ingresar peso porcentual"
+                      placeholder="Agregar"
                       className="px-0"
                       value={Number.isNaN(field.state.value) ? "" : field.state.value}
                       onBlur={field.handleBlur}
@@ -477,6 +477,7 @@ export function CreateEvaluationPeriodDialog({
                 (!academicPeriodEnd || values.endDate <= academicPeriodEnd)
               return (
                 <Button
+                  size="sm"
                   type="submit"
                   color="primary"
                   form={FORM_ID}
@@ -493,7 +494,7 @@ export function CreateEvaluationPeriodDialog({
               )
             }}
           </form.Subscribe>
-          <DialogClose render={<Button type="button" variant="fill" color="neutral" />}>
+          <DialogClose render={<Button size="sm" type="button" variant="fill" color="neutral" />}>
             <XIcon data-icon="inline-start" />
             Cancelar
           </DialogClose>
