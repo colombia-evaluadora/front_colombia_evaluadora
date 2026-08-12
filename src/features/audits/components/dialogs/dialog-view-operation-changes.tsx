@@ -1,6 +1,6 @@
 import { useState } from "react"
 
-import { EyeIcon } from "@/components/ui/icons"
+import { EyeIcon, XIcon } from "@/components/ui/icons"
 
 import {
   Dialog,
@@ -126,15 +126,18 @@ export function ViewOperationChangesDialog({
           </div>
         )}
 
-        <DialogFooter className="sm:justify-between">
-          <DialogClose render={<Button size="sm" type="button" variant="ghost" />}>
-            Cerrar
-          </DialogClose>
+        <DialogFooter>
           <DialogConfirmRevertChanges
             tableSlug={tableSlug}
             operationId={operationId}
             fieldIndexes={revertibleIndexes}
           />
+          <DialogClose
+            render={<Button size="sm" type="button" variant="fill" color="neutral" />}
+          >
+            <XIcon data-icon="inline-start" />
+            Cerrar
+          </DialogClose>
         </DialogFooter>
       </DialogContent>
     </Dialog>

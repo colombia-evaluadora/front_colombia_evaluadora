@@ -65,7 +65,8 @@ export function DialogConfirmRevertChanges({
         render={
           <Button
             type="button"
-            variant="outline"
+            variant="fill"
+            color="primary"
             size="sm"
             disabled={disabled}
             aria-label="Revertir todos los cambios mostrados"

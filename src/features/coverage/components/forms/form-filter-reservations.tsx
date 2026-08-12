@@ -1,4 +1,5 @@
-import { useForm } from "@tanstack/react-form"
+import { useForm, type AnyFieldApi } from "@tanstack/react-form"
+import type { ReactNode } from "react"
 
 import { Checkbox } from "@/components/ui/checkbox"
 import { DatePicker } from "@/components/date-picker"
@@ -12,12 +13,11 @@ import {
 } from "@/components/ui/select"
 import {
   Field,
-  FieldContent,
+  FieldError,
   FieldGroup,
   FieldLabel,
   FieldLegend,
   FieldSet,
-  FieldTitle,
 } from "@/components/ui/field"
 import { formatDateTimeValue, parseDateTimeValue } from "@/lib/date-time-value"
 
@@ -73,6 +73,10 @@ export function FilterReservationsForm({
     },
   })
 
+  // `gap-x-4 gap-y-2` en las filas y `gap-4` entre secciones: el mismo ritmo
+  // que los formularios de establecimiento. Los campos `outlined` ya traen su
+  // propio `mt-2` para la etiqueta flotante, así que un gap más grande deja el
+  // panel lleno de aire.
   return (
     <form
       id={id}
@@ -80,47 +84,16 @@ export function FilterReservationsForm({
         e.preventDefault()
         form.handleSubmit()
       }}
-      className="flex flex-1 flex-col gap-5 px-4"
+      className="flex flex-1 flex-col gap-4 px-4"
     >
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-x-4 gap-y-2">
         <form.Field
           name="firstName"
-          children={(field) => (
-            <Field orientation="vertical" variant="outlined" className="gap-2">
-              <FieldLabel htmlFor={field.name}>Nombre</FieldLabel>
-              <Input
-                id={field.name}
-                name={field.name}
-                type="text"
-                autoComplete="off"
-                placeholder="Agregar"
-                value={field.state.value}
-                onBlur={field.handleBlur}
-                onChange={(event) => field.handleChange(event.target.value)}
-                className="h-9"
-              />
-            </Field>
-          )}
+          children={(field) => <TextFilter field={field} label="Nombre" />}
         />
-
         <form.Field
           name="lastName"
-          children={(field) => (
-            <Field orientation="vertical" variant="outlined" className="gap-2">
-              <FieldLabel htmlFor={field.name}>Apellido</FieldLabel>
-              <Input
-                id={field.name}
-                name={field.name}
-                type="text"
-                autoComplete="off"
-                placeholder="Agregar"
-                value={field.state.value}
-                onBlur={field.handleBlur}
-                onChange={(event) => field.handleChange(event.target.value)}
-                className="h-9"
-              />
-            </Field>
-          )}
+          children={(field) => <TextFilter field={field} label="Apellido" />}
         />
       </div>
 
@@ -128,133 +101,60 @@ export function FilterReservationsForm({
         <form.Field
           name="documentNumber"
           children={(field) => (
-            <Field orientation="vertical" variant="outlined" className="gap-2">
-              <FieldLabel htmlFor={field.name}>N° Identificación</FieldLabel>
-              <Input
-                id={field.name}
-                name={field.name}
-                type="text"
-                inputMode="numeric"
-                autoComplete="off"
-                placeholder="Agregar"
-                value={field.state.value}
-                onBlur={field.handleBlur}
-                onChange={(event) => field.handleChange(event.target.value)}
-                className="h-9"
-              />
-            </Field>
+            <TextFilter field={field} label="N° Identificación" inputMode="numeric" />
           )}
         />
       )}
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-x-4 gap-y-2">
         <form.Field
           name="institution"
           children={(field) => (
-            <Field orientation="vertical" variant="outlined" className="gap-2">
-              <FieldLabel htmlFor={field.name}>Institución educativa</FieldLabel>
-              <Select
-                value={field.state.value || ANY}
-                onValueChange={(value) => field.handleChange(value === ANY ? "" : (value ?? ""))}
-              >
-                <SelectTrigger id={field.name} size="sm" className="w-full">
-                  <SelectValue>
-                    {(value) => (!value || value === ANY ? "Todas" : String(value))}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={ANY}>Todas</SelectItem>
-                  {catalogs?.institutions.map((option) => (
-                    <SelectItem key={option} value={option}>
-                      {option}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
+            <SelectFilter
+              field={field}
+              label="Institución educativa"
+              anyLabel="Todas"
+              options={catalogs?.institutions ?? []}
+            />
           )}
         />
-
         <form.Field
           name="campus"
           children={(field) => (
-            <Field orientation="vertical" variant="outlined" className="gap-2">
-              <FieldLabel htmlFor={field.name}>Sede</FieldLabel>
-              <Select
-                value={field.state.value || ANY}
-                onValueChange={(value) => field.handleChange(value === ANY ? "" : (value ?? ""))}
-              >
-                <SelectTrigger id={field.name} size="sm" className="w-full">
-                  <SelectValue>
-                    {(value) => (!value || value === ANY ? "Todas" : String(value))}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={ANY}>Todas</SelectItem>
-                  {catalogs?.campuses.map((option) => (
-                    <SelectItem key={option} value={option}>
-                      {option}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
+            <SelectFilter
+              field={field}
+              label="Sede"
+              anyLabel="Todas"
+              options={catalogs?.campuses ?? []}
+            />
           )}
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-x-4 gap-y-2">
         <form.Field
           name="grade"
           children={(field) => (
-            <Field orientation="vertical" variant="outlined" className="gap-2">
-              <FieldLabel htmlFor={field.name}>Grado</FieldLabel>
-              <Select
-                value={field.state.value || ANY}
-                onValueChange={(value) => field.handleChange(value === ANY ? "" : (value ?? ""))}
-              >
-                <SelectTrigger id={field.name} size="sm" className="w-full">
-                  <SelectValue>
-                    {(value) => (!value || value === ANY ? "Todos" : formatGrade(Number(value)))}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={ANY}>Todos</SelectItem>
-                  {catalogs?.grades.map((option) => (
-                    <SelectItem key={option} value={String(option)}>
-                      {formatGrade(option)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
+            <SelectFilter
+              field={field}
+              label="Grado"
+              anyLabel="Todos"
+              // El grado viaja como string en el form (igual que en la URL) y
+              // se muestra como se lee en la tabla: "3°".
+              options={(catalogs?.grades ?? []).map((grade) => String(grade))}
+              renderOption={(value) => formatGrade(Number(value))}
+            />
           )}
         />
-
         <form.Field
           name="group"
           children={(field) => (
-            <Field orientation="vertical" variant="outlined" className="gap-2">
-              <FieldLabel htmlFor={field.name}>Grupo</FieldLabel>
-              <Select
-                value={field.state.value || ANY}
-                onValueChange={(value) => field.handleChange(value === ANY ? "" : (value ?? ""))}
-              >
-                <SelectTrigger id={field.name} size="sm" className="w-full">
-                  <SelectValue>
-                    {(value) => (!value || value === ANY ? "Todos" : String(value))}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={ANY}>Todos</SelectItem>
-                  {catalogs?.groups.map((option) => (
-                    <SelectItem key={option} value={option}>
-                      {option}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
+            <SelectFilter
+              field={field}
+              label="Grupo"
+              anyLabel="Todos"
+              options={catalogs?.groups ?? []}
+            />
           )}
         />
       </div>
@@ -262,118 +162,46 @@ export function FilterReservationsForm({
       <form.Field
         name="shifts"
         mode="array"
-        children={(field) => {
-          const toggle = (shift: (typeof SHIFTS)[number], checked: boolean) => {
-            if (checked) {
-              field.pushValue(shift)
-            } else {
-              const index = field.state.value.indexOf(shift)
-              if (index > -1) field.removeValue(index)
-            }
-          }
-          return (
-            <FieldSet>
-              <FieldLegend variant="label">Jornada</FieldLegend>
-              <FieldGroup className="grid grid-cols-2 gap-3">
-                {SHIFTS.map((shift) => (
-                  <FieldLabel key={shift} htmlFor={`shift-filter-${shift}`} className="min-w-0">
-                    <Field orientation="horizontal">
-                      <Checkbox
-                        id={`shift-filter-${shift}`}
-                        name={field.name}
-                        checked={field.state.value.includes(shift)}
-                        onCheckedChange={(checked) => toggle(shift, checked === true)}
-                      />
-                      <FieldContent className="min-w-0">
-                        <FieldTitle className="w-full min-w-0">
-                          <span className="truncate">{SHIFT_LABELS[shift]}</span>
-                        </FieldTitle>
-                      </FieldContent>
-                    </Field>
-                  </FieldLabel>
-                ))}
-              </FieldGroup>
-            </FieldSet>
-          )
-        }}
+        children={(field) => (
+          <CheckboxFilterGroup
+            legend="Jornada"
+            name={field.name}
+            options={SHIFTS}
+            labels={SHIFT_LABELS}
+            selected={field.state.value}
+            onToggle={(value, checked) => toggleArrayValue(field, value, checked)}
+          />
+        )}
       />
 
       <form.Field
         name="levels"
         mode="array"
-        children={(field) => {
-          const toggle = (level: (typeof EDUCATION_LEVELS)[number], checked: boolean) => {
-            if (checked) {
-              field.pushValue(level)
-            } else {
-              const index = field.state.value.indexOf(level)
-              if (index > -1) field.removeValue(index)
-            }
-          }
-          return (
-            <FieldSet>
-              <FieldLegend variant="label">Nivel educativo</FieldLegend>
-              <FieldGroup className="grid grid-cols-1 gap-3">
-                {EDUCATION_LEVELS.map((level) => (
-                  <FieldLabel key={level} htmlFor={`level-filter-${level}`} className="min-w-0">
-                    <Field orientation="horizontal">
-                      <Checkbox
-                        id={`level-filter-${level}`}
-                        name={field.name}
-                        checked={field.state.value.includes(level)}
-                        onCheckedChange={(checked) => toggle(level, checked === true)}
-                      />
-                      <FieldContent className="min-w-0">
-                        <FieldTitle className="w-full min-w-0">
-                          <span className="truncate">{EDUCATION_LEVEL_LABELS[level]}</span>
-                        </FieldTitle>
-                      </FieldContent>
-                    </Field>
-                  </FieldLabel>
-                ))}
-              </FieldGroup>
-            </FieldSet>
-          )
-        }}
+        children={(field) => (
+          <CheckboxFilterGroup
+            legend="Nivel educativo"
+            name={field.name}
+            options={EDUCATION_LEVELS}
+            labels={EDUCATION_LEVEL_LABELS}
+            selected={field.state.value}
+            onToggle={(value, checked) => toggleArrayValue(field, value, checked)}
+          />
+        )}
       />
 
       <form.Field
         name="statuses"
         mode="array"
-        children={(field) => {
-          const toggle = (status: (typeof RESERVATION_STATUSES)[number], checked: boolean) => {
-            if (checked) {
-              field.pushValue(status)
-            } else {
-              const index = field.state.value.indexOf(status)
-              if (index > -1) field.removeValue(index)
-            }
-          }
-          return (
-            <FieldSet>
-              <FieldLegend variant="label">Estado</FieldLegend>
-              <FieldGroup className="grid grid-cols-2 gap-3">
-                {RESERVATION_STATUSES.map((status) => (
-                  <FieldLabel key={status} htmlFor={`status-filter-${status}`} className="min-w-0">
-                    <Field orientation="horizontal">
-                      <Checkbox
-                        id={`status-filter-${status}`}
-                        name={field.name}
-                        checked={field.state.value.includes(status)}
-                        onCheckedChange={(checked) => toggle(status, checked === true)}
-                      />
-                      <FieldContent className="min-w-0">
-                        <FieldTitle className="w-full min-w-0">
-                          <span className="truncate">{RESERVATION_STATUS_LABELS[status]}</span>
-                        </FieldTitle>
-                      </FieldContent>
-                    </Field>
-                  </FieldLabel>
-                ))}
-              </FieldGroup>
-            </FieldSet>
-          )
-        }}
+        children={(field) => (
+          <CheckboxFilterGroup
+            legend="Estado"
+            name={field.name}
+            options={RESERVATION_STATUSES}
+            labels={RESERVATION_STATUS_LABELS}
+            selected={field.state.value}
+            onToggle={(value, checked) => toggleArrayValue(field, value, checked)}
+          />
+        )}
       />
 
       {/* Fecha de reserva: dos campos independientes (no un único rango), cada
@@ -381,7 +209,7 @@ export function FilterReservationsForm({
           leyenda sí aporta acá: "Desde" y "Hasta" sueltos no dicen de qué son. */}
       <FieldSet>
         <FieldLegend variant="label">Fecha de reserva</FieldLegend>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-2">
           <form.Field
             name="reservedFrom"
             children={(field) => (
@@ -400,7 +228,14 @@ export function FilterReservationsForm({
           <form.Field
             name="reservedTo"
             children={(field) => (
-              <Field orientation="vertical" variant="outlined" className="gap-2">
+              // Sin `isTouched`: el error nace del otro campo del rango, así
+              // que se muestra apenas la validación de submit lo reporta.
+              <Field
+                orientation="vertical"
+                variant="outlined"
+                className="gap-2"
+                data-invalid={field.state.meta.errors.length > 0 ? "true" : undefined}
+              >
                 <FieldLabel htmlFor={field.name}>Hasta</FieldLabel>
                 <DatePicker
                   mode="datetime"
@@ -409,6 +244,7 @@ export function FilterReservationsForm({
                   onChange={(date) => field.handleChange(formatDateTimeValue(date))}
                   className="h-9"
                 />
+                <FieldError errors={field.state.meta.errors} />
               </Field>
             )}
           />
@@ -420,33 +256,158 @@ export function FilterReservationsForm({
       <form.Field
         name="groupBy"
         children={(field) => (
-          <Field orientation="vertical" variant="outlined" className="gap-2">
-            <FieldLabel htmlFor={field.name}>Agrupar por</FieldLabel>
-            <Select
-              value={field.state.value || ANY}
-              onValueChange={(value) => field.handleChange(value === ANY ? "" : (value ?? ""))}
-            >
-              <SelectTrigger id={field.name} size="sm" className="w-full">
-                <SelectValue>
-                  {(value) =>
-                    !value || value === ANY
-                      ? "Sin agrupar"
-                      : RESERVATION_GROUP_BY_LABELS[value as ReservationGroupBy]
-                  }
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ANY}>Sin agrupar</SelectItem>
-                {RESERVATION_GROUP_BY.map((option) => (
-                  <SelectItem key={option} value={option}>
-                    {RESERVATION_GROUP_BY_LABELS[option]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Field>
+          <SelectFilter
+            field={field}
+            label="Agrupar por"
+            anyLabel="Sin agrupar"
+            options={[...RESERVATION_GROUP_BY]}
+            renderOption={(value) => RESERVATION_GROUP_BY_LABELS[value as ReservationGroupBy]}
+          />
         )}
       />
     </form>
   )
+}
+
+/*
+ * Los ladrillos del panel. Están acá y no en un componente compartido porque
+ * solo los usa este formulario; el `field` se tipa como `AnyFieldApi` para no
+ * arrastrar los genéricos del form hasta cada helper —los campos que reciben
+ * son todos de tipo `string`—.
+ */
+function TextFilter({
+  field,
+  label,
+  inputMode,
+}: {
+  field: AnyFieldApi
+  label: string
+  inputMode?: "numeric"
+}) {
+  return (
+    <Field orientation="vertical" variant="outlined" className="gap-2">
+      <FieldLabel htmlFor={field.name}>{label}</FieldLabel>
+      <Input
+        id={field.name}
+        name={field.name}
+        type="text"
+        inputMode={inputMode}
+        autoComplete="off"
+        placeholder="Agregar"
+        value={field.state.value as string}
+        onBlur={field.handleBlur}
+        onChange={(event) => field.handleChange(event.target.value)}
+        className="h-9"
+      />
+    </Field>
+  )
+}
+
+function SelectFilter({
+  field,
+  label,
+  anyLabel,
+  options,
+  renderOption = (value) => value,
+}: {
+  field: AnyFieldApi
+  label: string
+  /** Etiqueta de la opción "sin filtro" ("Todas", "Todos", "Sin agrupar"). */
+  anyLabel: string
+  options: string[]
+  /** Cómo se lee cada valor; por defecto, el valor tal cual. */
+  renderOption?: (value: string) => ReactNode
+}) {
+  const value = (field.state.value as string) || ANY
+
+  return (
+    <Field orientation="vertical" variant="outlined" className="gap-2">
+      <FieldLabel htmlFor={field.name}>{label}</FieldLabel>
+      <Select
+        value={value}
+        onValueChange={(next) => field.handleChange(next === ANY ? "" : (next ?? ""))}
+      >
+        <SelectTrigger id={field.name} size="sm" className="w-full">
+          <SelectValue>
+            {(current) => (!current || current === ANY ? anyLabel : renderOption(String(current)))}
+          </SelectValue>
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={ANY}>{anyLabel}</SelectItem>
+          {options.map((option) => (
+            <SelectItem key={option} value={option}>
+              {renderOption(option)}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </Field>
+  )
+}
+
+function CheckboxFilterGroup<T extends string>({
+  legend,
+  name,
+  options,
+  labels,
+  selected,
+  onToggle,
+}: {
+  legend: string
+  name: string
+  options: readonly T[]
+  labels: Record<T, string>
+  selected: readonly T[]
+  onToggle: (value: T, checked: boolean) => void
+}) {
+  /*
+   * Las opciones van "peladas" —casilla y texto—, no como tarjetas con borde:
+   * `FieldLabel` solo dibuja la tarjeta cuando envuelve un `Field`, así que
+   * acá el `Field` es el contenedor y la etiqueta va adentro. Con 5 jornadas o
+   * 4 niveles, las tarjetas de `p-4` gastaban media pantalla del panel para
+   * mostrar una palabra por fila.
+   */
+  return (
+    <FieldSet className="gap-0">
+      <FieldLegend variant="label">{legend}</FieldLegend>
+      {/* Tres columnas en las tres secciones: las etiquetas más largas
+          ("Básica secundaria") entran en la columna y las opciones quedan
+          alineadas entre secciones. */}
+      <FieldGroup className="grid grid-cols-3 gap-x-4 gap-y-2">
+        {options.map((option) => {
+          const optionId = `${name}-filter-${option}`
+          return (
+            <Field key={option} orientation="horizontal" className="min-w-0 gap-2">
+              <Checkbox
+                id={optionId}
+                name={name}
+                checked={selected.includes(option)}
+                onCheckedChange={(checked) => onToggle(option, checked === true)}
+              />
+              <FieldLabel
+                htmlFor={optionId}
+                className="min-w-0 flex-1 truncate text-sm font-normal normal-case"
+              >
+                {labels[option]}
+              </FieldLabel>
+            </Field>
+          )
+        })}
+      </FieldGroup>
+    </FieldSet>
+  )
+}
+
+/** Alta/baja de una opción en un campo `mode="array"` de TanStack Form. */
+function toggleArrayValue<T>(
+  field: { state: { value: T[] }; pushValue: (value: T) => void; removeValue: (i: number) => void },
+  value: T,
+  checked: boolean,
+) {
+  if (checked) {
+    field.pushValue(value)
+    return
+  }
+  const index = field.state.value.indexOf(value)
+  if (index > -1) field.removeValue(index)
 }

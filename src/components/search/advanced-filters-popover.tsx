@@ -11,6 +11,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
+import { FieldVariantContext } from "@/hooks/use-field-variant"
 
 /**
  * El panel de "Filtros avanzados" que cuelga del embudo de cada buscador.
@@ -108,7 +109,20 @@ export function AdvancedFiltersPopover({
           </PopoverTitle>
         </PopoverHeader>
 
-        <div className="max-h-[60dvh] overflow-y-auto py-4">{children}</div>
+        {/*
+          El panel arranca con la variante de campo en `plain`. La barra de
+          búsqueda envuelve todo en un `Field variant="outlined"` para su
+          etiqueta flotante, y React propaga el contexto también a través del
+          portal del popover: sin este corte, cada `FieldLabel` de acá dentro
+          —los de las opciones con checkbox, que no cuelgan de un `Field`
+          propio— se renderizaba flotante (`position: absolute`) y las opciones
+          terminaban apiladas en la esquina del panel, con su contenedor en
+          altura 0. Los campos que sí quieren label flotante declaran su
+          `variant` y vuelven a poner el contexto.
+        */}
+        <div className="max-h-[60dvh] overflow-y-auto py-4">
+          <FieldVariantContext.Provider value="plain">{children}</FieldVariantContext.Provider>
+        </div>
 
         {/*
           Sin "Limpiar todo": esa acción es la X de la barra, que está siempre a
