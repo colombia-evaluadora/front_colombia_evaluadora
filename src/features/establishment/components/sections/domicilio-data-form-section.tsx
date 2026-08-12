@@ -1,4 +1,4 @@
-import { Field, FieldLabel } from "@/components/ui/field"
+import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { FormSectionHeading } from "@/components/form-section-heading"
 import {
@@ -18,11 +18,15 @@ interface DomicilioDataFormSectionProps {
     value: EstablishmentDetails["address"]
     onChange: (value: EstablishmentDetails["address"]) => void
     invalidFields?: string[]
+    /** Mensaje de error por ruta de campo. */
+    errors?: Record<string, string>
     showValidation?: boolean
 }
 
-export function DomicilioDataFormSection({ value, onChange, invalidFields = [], showValidation = false }: DomicilioDataFormSectionProps) {
+export function DomicilioDataFormSection({ value, onChange, invalidFields = [], errors = {}, showValidation = false }: DomicilioDataFormSectionProps) {
     const isInvalid = (field: string) => showValidation && invalidFields.includes(field)
+    // Mensaje debajo del campo: solo tras el primer submit, igual que el borde rojo.
+    const errorFor = (field: string) => (showValidation ? errors[field] : undefined)
     const { data: municipalities = [] } = useCatalogQuery<Municipality>(CATALOGS.MUNICIPALITIES)
     const { data: zones = [] } = useCatalogQuery<CatalogItem>(CATALOGS.ZONES)
     const municipalityItems = municipalities.map((municipality) => ({
@@ -31,8 +35,8 @@ export function DomicilioDataFormSection({ value, onChange, invalidFields = [], 
     }))
     const zoneItems = zones.map((zone) => ({ value: zone.id, label: zone.name }))
 
-    // `gap-2`: el mismo ritmo vertical que usa el formulario entre secciones,
-    // así el encabezado, las filas y la sección siguiente van todos al mismo paso.
+    // `gap-2` puertas adentro: encabezado y filas de esta sección van al mismo
+    // paso. El salto mayor entre secciones lo pone el `gap-6` del formulario.
     return (
         <div className="grid gap-2">
             <FormSectionHeading>
@@ -58,7 +62,7 @@ export function DomicilioDataFormSection({ value, onChange, invalidFields = [], 
                         }}
                         items={municipalityItems}
                     >
-                        <SelectTrigger>
+                        <SelectTrigger aria-invalid={isInvalid("address.municipality")}>
                             <SelectValue placeholder="Seleccionar" />
                         </SelectTrigger>
 
@@ -70,6 +74,7 @@ export function DomicilioDataFormSection({ value, onChange, invalidFields = [], 
                             ))}
                         </SelectContent>
                     </Select>
+                    <FieldError>{errorFor("address.municipality")}</FieldError>
                 </Field>
 
                 <Field orientation="vertical" variant="outlined" className="w-full">

@@ -119,7 +119,8 @@ export function AddEstablishmentPage() {
     : null
   const isEditMode = establishmentId !== null
   const [formValues, setFormValues] = useState<EstablishmentDetails>(createInitialEstablishmentValues)
-  const [validationErrors, setValidationErrors] = useState<string[]>([])
+  // Mensaje por campo, indexado por ruta (`basicInfo.name`, `principal.password`, …).
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [invalidFields, setInvalidFields] = useState<string[]>([])
   const [hasSubmitted, setHasSubmitted] = useState(false)
   // Confirmaciones de contraseña: estado de UI, no parte del modelo de negocio.
@@ -131,7 +132,7 @@ export function AddEstablishmentPage() {
   useEffect(() => {
     if (!isEditMode) {
       setFormValues(createInitialEstablishmentValues())
-      setValidationErrors([])
+      setFieldErrors({})
       setInvalidFields([])
       setHasSubmitted(false)
       setConfirmPasswords({ principal: "", secretary: "" })
@@ -142,7 +143,7 @@ export function AddEstablishmentPage() {
 
     if (existing) {
       setFormValues(existing)
-      setValidationErrors([])
+      setFieldErrors({})
       setInvalidFields([])
       setHasSubmitted(false)
       setConfirmPasswords({
@@ -236,7 +237,7 @@ export function AddEstablishmentPage() {
     setHasSubmitted(true)
 
     const validation = validateEstablishmentForm(formValues, confirmPasswords)
-    setValidationErrors(validation.errors)
+    setFieldErrors(validation.fieldErrors)
     setInvalidFields(validation.invalidFields)
 
     if (validation.errors.length > 0) {
@@ -319,16 +320,9 @@ export function AddEstablishmentPage() {
       {/* Sin radio ni borde abajo: ahí se acopla la barra de acciones, que trae
           el suyo — si no, quedan dos líneas de 1px juntas. */}
       <TableScreenBody className="rounded-b-none border-b-0">
-        {validationErrors.length > 0 ? (
-          <div className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
-            <p className="font-medium">Completa los campos obligatorios:</p>
-            <ul className="mt-2 list-disc pl-5">
-              {validationErrors.map((error) => (
-                <li key={error}>{error}</li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
+        {/* Sin resumen de errores arriba: cada mensaje vive debajo de su campo
+            (`fieldErrors`), que es donde el usuario tiene que actuar. Del aviso
+            general se encarga el `notify` del submit. */}
         <form id="create-establishment-form" onSubmit={handleSubmit}>
           <Accordion multiple defaultValue={["datos-establecimiento", "datos-rector-secretaria"]} keepMounted className="space-y-3">
             <AccordionItem value="datos-establecimiento" className="rounded-md border border-border not-last:border-b border">
@@ -344,6 +338,7 @@ export function AddEstablishmentPage() {
                         value={formValues}
                         onChange={setFormValues}
                         invalidFields={invalidFields}
+                        errors={fieldErrors}
                         showValidation={hasSubmitted}
                       />
                     </CardContent>
@@ -356,6 +351,7 @@ export function AddEstablishmentPage() {
                           setFormValues((current) => ({ ...current, additionalInfo }))
                         }
                         invalidFields={invalidFields}
+                        errors={fieldErrors}
                         showValidation={hasSubmitted}
                       />
                     </CardContent>
@@ -378,6 +374,7 @@ export function AddEstablishmentPage() {
                         value={formValues.principal}
                         onChange={(principal) => setFormValues((current) => ({ ...current, principal }))}
                         invalidFields={invalidFields}
+                        errors={fieldErrors}
                         showValidation={hasSubmitted}
                         confirmPassword={confirmPasswords["principal"] ?? ""}
                         onConfirmPasswordChange={(value) =>
@@ -394,6 +391,7 @@ export function AddEstablishmentPage() {
                         value={formValues.secretary}
                         onChange={(secretary) => setFormValues((current) => ({ ...current, secretary }))}
                         invalidFields={invalidFields}
+                        errors={fieldErrors}
                         showValidation={hasSubmitted}
                         confirmPassword={confirmPasswords["secretary"] ?? ""}
                         onConfirmPasswordChange={(value) =>

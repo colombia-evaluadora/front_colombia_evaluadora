@@ -1,9 +1,18 @@
+import { z } from "zod"
+
 import type { EstablishmentDetails } from "../api/types/establishment"
 import type { Person } from "../api/types/person"
 
 export interface EstablishmentFormValidationResult {
+  /** Etiquetas de los campos que fallaron, en el orden en que se validan. */
   errors: string[]
+  /** Rutas de los campos que fallaron (`basicInfo.name`, `principal.password`, …). */
   invalidFields: string[]
+  /**
+   * Mensaje a mostrar debajo de cada campo, indexado por su ruta. Es lo que
+   * consumen los formularios; `errors` e `invalidFields` se derivan de acá.
+   */
+  fieldErrors: Record<string, string>
 }
 
 /**
@@ -14,13 +23,60 @@ export interface EstablishmentFormConfirmPasswords {
   [fieldPrefix: string]: string
 }
 
-function isBlank(value: string | null | undefined): boolean {
-  return value == null || value.trim() === ""
+/** Texto obligatorio: se ignora el relleno de espacios. */
+function requiredText(message: string) {
+  return z
+    .string()
+    .transform((value) => value?.trim() ?? "")
+    .refine((value) => value !== "", { message })
 }
 
-function addError(errors: string[], invalidFields: Set<string>, field: string, message: string) {
-  errors.push(message)
-  invalidFields.add(field)
+/**
+ * Ítem de catálogo obligatorio. El `select` guarda el objeto completo, así que
+ * lo que se exige es que tenga nombre; el issue queda en la ruta del ítem
+ * (`basicInfo.ownershipType`) y no en `…ownershipType.name`, que es la ruta que
+ * el formulario usa para marcar el campo.
+ */
+function requiredCatalogItem(message: string) {
+  return z
+    .object({ name: z.string().nullish() })
+    .nullish()
+    .refine((item) => (item?.name ?? "").trim() !== "", { message })
+}
+
+const establishmentSchema = z.object({
+  basicInfo: z.object({
+    name: requiredText("Ingresa el nombre del establecimiento."),
+    dane: requiredText("Ingresa el código DANE."),
+    nit: requiredText("Ingresa el NIT."),
+    ownershipType: requiredCatalogItem("Selecciona la propiedad jurídica."),
+  }),
+  address: z.object({
+    municipality: requiredCatalogItem("Selecciona el municipio."),
+  }),
+})
+
+/** Etiqueta para el resumen, por ruta de campo del establecimiento. */
+const ESTABLISHMENT_LABELS: Record<string, string> = {
+  "basicInfo.name": "Nombre del establecimiento",
+  "basicInfo.dane": "Código DANE",
+  "basicInfo.nit": "NIT",
+  "basicInfo.ownershipType": "Propiedad jurídica",
+  "address.municipality": "Municipio",
+}
+
+/** Etiqueta para el resumen, por campo de persona (se prefija con el rol). */
+const PERSON_LABELS: Record<string, string> = {
+  documentType: "tipo de documento",
+  identification: "número de documento",
+  firstName: "primer nombre",
+  lastName: "primer apellido",
+  password: "contraseña",
+  confirmPassword: "confirmación de contraseña",
+}
+
+function isBlank(value: string | null | undefined): boolean {
+  return value == null || value.trim() === ""
 }
 
 /**
@@ -41,107 +97,116 @@ function isPersonEmpty(person: Person | null): boolean {
 }
 
 /**
- * Si el usuario tocó al menos un campo de la persona, exigimos los 4 mínimos.
- * Si además escribió una contraseña, debe coincidir con la confirmación.
+ * Persona con reglas condicionales, por eso va en un `superRefine` y no en un
+ * `object` plano: los 4 mínimos solo se exigen si la persona fue tocada, y la
+ * contraseña solo si se escribió en alguno de los dos campos.
  */
-function validatePerson(
-  person: Person | null,
-  label: string,
-  fieldPrefix: string,
-  confirmPassword: string,
-  errors: string[],
-  invalidFields: Set<string>
-) {
-  if (!person || isPersonEmpty(person)) {
-    return
-  }
-
-  if (isBlank(person.documentType?.name)) {
-    addError(errors, invalidFields, `${fieldPrefix}.documentType`, `${label}: tipo de documento`)
-  }
-
-  if (isBlank(person.identification)) {
-    addError(errors, invalidFields, `${fieldPrefix}.identification`, `${label}: número de documento`)
-  }
-
-  if (isBlank(person.firstName)) {
-    addError(errors, invalidFields, `${fieldPrefix}.firstName`, `${label}: primer nombre`)
-  }
-
-  if (isBlank(person.lastName)) {
-    addError(errors, invalidFields, `${fieldPrefix}.lastName`, `${label}: primer apellido`)
-  }
-
-  // Contraseña: sólo se valida si escribió algo (en cualquiera de los dos campos).
-  const hasPassword = !isBlank(person.password)
-  const hasConfirm = !isBlank(confirmPassword)
-
-  if (hasPassword || hasConfirm) {
-    if (isBlank(person.password)) {
-      addError(errors, invalidFields, `${fieldPrefix}.password`, `${label}: contraseña`)
+const personSchema = z
+  .object({
+    person: z.custom<Person | null>(),
+    confirmPassword: z.string(),
+  })
+  .superRefine(({ person, confirmPassword }, ctx) => {
+    if (!person || isPersonEmpty(person)) {
+      return
     }
 
-    if (isBlank(confirmPassword)) {
-      addError(errors, invalidFields, `${fieldPrefix}.confirmPassword`, `${label}: confirmación de contraseña`)
+    const require = (path: string, value: string | null | undefined, message: string) => {
+      if (isBlank(value)) {
+        ctx.addIssue({ code: "custom", path: [path], message })
+      }
     }
+
+    require("documentType", person.documentType?.name, "Selecciona el tipo de documento.")
+    require("identification", person.identification, "Ingresa el número de documento.")
+    require("firstName", person.firstName, "Ingresa el primer nombre.")
+    require("lastName", person.lastName, "Ingresa el primer apellido.")
+
+    // Contraseña: sólo se valida si escribió algo (en cualquiera de los dos campos).
+    const hasPassword = !isBlank(person.password)
+    const hasConfirm = !isBlank(confirmPassword)
+
+    if (!hasPassword && !hasConfirm) {
+      return
+    }
+
+    require("password", person.password, "Ingresa la contraseña.")
+    require("confirmPassword", confirmPassword, "Repite la contraseña.")
 
     if (hasPassword && hasConfirm && person.password !== confirmPassword) {
-      addError(errors, invalidFields, `${fieldPrefix}.confirmPassword`, `${label}: las contraseñas no coinciden`)
+      ctx.addIssue({
+        code: "custom",
+        path: ["confirmPassword"],
+        message: "Las contraseñas no coinciden.",
+      })
     }
-  }
-}
+  })
 
 export function validateEstablishmentForm(
   values: EstablishmentDetails,
   confirmPasswords: EstablishmentFormConfirmPasswords = {}
 ): EstablishmentFormValidationResult {
   const errors: string[] = []
-  const invalidFields = new Set<string>()
+  const fieldErrors: Record<string, string> = {}
 
-  // === Campos obligatorios del establecimiento (asterisco en el formulario) ===
-  if (isBlank(values.basicInfo.name)) {
-    addError(errors, invalidFields, "basicInfo.name", "Nombre del establecimiento")
+  // Primer mensaje por campo: el resto se descarta porque debajo del input solo
+  // cabe una línea, y la primera regla que falla es la más específica.
+  const collect = (path: string, message: string, label: string) => {
+    if (fieldErrors[path] != null) {
+      return
+    }
+
+    fieldErrors[path] = message
+    errors.push(label)
   }
 
-  if (isBlank(values.basicInfo.dane)) {
-    addError(errors, invalidFields, "basicInfo.dane", "Código DANE")
+  const establishment = establishmentSchema.safeParse(values)
+  if (!establishment.success) {
+    // Se recorren las rutas conocidas y no `error.issues` para que el resumen
+    // conserve el orden del formulario, sin depender del de Zod.
+    for (const [path, label] of Object.entries(ESTABLISHMENT_LABELS)) {
+      const issue = establishment.error.issues.find((item) => item.path.join(".") === path)
+      if (issue) {
+        collect(path, issue.message, label)
+      }
+    }
   }
 
-  if (isBlank(values.basicInfo.nit)) {
-    addError(errors, invalidFields, "basicInfo.nit", "NIT")
+  for (const [fieldPrefix, label] of [
+    ["principal", "Rector"],
+    ["secretary", "Secretaria"],
+  ] as const) {
+    const person = values[fieldPrefix]
+    const result = personSchema.safeParse({
+      person,
+      confirmPassword: confirmPasswords[fieldPrefix] ?? "",
+    })
+
+    if (result.success) {
+      continue
+    }
+
+    for (const [field, fieldLabel] of Object.entries(PERSON_LABELS)) {
+      const issue = result.error.issues.find((item) => item.path.join(".") === field)
+      if (issue) {
+        collect(`${fieldPrefix}.${field}`, issue.message, `${label}: ${fieldLabel}`)
+      }
+    }
+
+    // "No coinciden" reemplaza al mensaje de campo vacío cuando ambos tienen
+    // contenido, así que se busca aparte para que el resumen lo refleje.
+    const mismatch = result.error.issues.find(
+      (item) => item.path.join(".") === "confirmPassword" && item.message.includes("no coinciden")
+    )
+    if (mismatch && !errors.includes(`${label}: las contraseñas no coinciden`)) {
+      fieldErrors[`${fieldPrefix}.confirmPassword`] = mismatch.message
+      errors.push(`${label}: las contraseñas no coinciden`)
+    }
   }
-
-  if (isBlank(values.basicInfo.ownershipType?.name)) {
-    addError(errors, invalidFields, "basicInfo.ownershipType", "Propiedad jurídica")
-  }
-
-  if (isBlank(values.address.municipality?.name)) {
-    addError(errors, invalidFields, "address.municipality", "Municipio")
-  }
-
-  // El resto del establecimiento (contacto, información complementaria, etc.)
-  // pasa a ser opcional.
-
-  validatePerson(
-    values.principal,
-    "Rector",
-    "principal",
-    confirmPasswords["principal"] ?? "",
-    errors,
-    invalidFields
-  )
-  validatePerson(
-    values.secretary,
-    "Secretaria",
-    "secretary",
-    confirmPasswords["secretary"] ?? "",
-    errors,
-    invalidFields
-  )
 
   return {
     errors,
-    invalidFields: Array.from(invalidFields),
+    invalidFields: Object.keys(fieldErrors),
+    fieldErrors,
   }
 }
-

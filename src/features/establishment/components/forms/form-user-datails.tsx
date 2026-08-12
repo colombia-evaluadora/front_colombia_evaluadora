@@ -5,7 +5,7 @@ import { DatePicker } from "@/components/date-picker"
 import { FormSectionHeading } from "@/components/form-section-heading"
 import { ImageUploadField } from "@/components/image-upload-field"
 import { EMPLOYEE_ROLES } from "@/mocks/db/catalogs/employee-roles"
-import { Field, FieldLabel } from "@/components/ui/field"
+import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
     Select,
@@ -28,6 +28,8 @@ interface UserFormProps {
     value: Person | null
     onChange: (person: Person | null) => void
     invalidFields?: string[]
+    /** Mensaje de error por ruta de campo. */
+    errors?: Record<string, string>
     showValidation?: boolean
     /**
      * Estado UI para la confirmación de contraseña. Vive fuera de la entidad
@@ -59,7 +61,7 @@ export function UserDetailsForm({
     fieldPrefix = "principal",
     value,
     onChange,
-    invalidFields = [],
+    invalidFields = [], errors = {},
     showValidation = false,
     confirmPassword: confirmPasswordProp,
     onConfirmPasswordChange,
@@ -106,6 +108,8 @@ export function UserDetailsForm({
 
     const passwordsMatch = person.password === confirmPassword
     const isInvalid = (field: string) => showValidation && invalidFields.includes(field)
+    // Mensaje debajo del campo: solo tras el primer submit, igual que el borde rojo.
+    const errorFor = (field: string) => (showValidation ? errors[field] : undefined)
 
     const emitChange = (patch: Partial<Person>) => {
         onChange({ ...person, ...patch })
@@ -139,7 +143,7 @@ export function UserDetailsForm({
                 </div>
                 {/* Formulario */}
 
-                <Field orientation="vertical" variant="outlined">
+                <Field orientation="vertical" variant="outlined" data-invalid={isInvalid(`${fieldPrefix}.documentType`) ? "true" : undefined}>
                     <FieldLabel htmlFor="document-type">
                         Tipo de documento*
                     </FieldLabel>
@@ -154,7 +158,7 @@ export function UserDetailsForm({
                         }}
                         items={documentTypeItems}
                     >
-                        <SelectTrigger>
+                        <SelectTrigger aria-invalid={isInvalid(`${fieldPrefix}.documentType`)}>
                             <SelectValue placeholder="Seleccionar" />
                         </SelectTrigger>
                         <SelectContent>
@@ -165,9 +169,10 @@ export function UserDetailsForm({
                             ))}
                         </SelectContent>
                     </Select>
+                    <FieldError>{errorFor(`${fieldPrefix}.documentType`)}</FieldError>
                 </Field>
 
-                <Field orientation="vertical" variant="outlined" className="w-full">
+                <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid(`${fieldPrefix}.identification`) ? "true" : undefined}>
                     <FieldLabel htmlFor="document-number">Número de documento*</FieldLabel>
                     <Input
                         id="document-number"
@@ -176,9 +181,10 @@ export function UserDetailsForm({
                         aria-invalid={isInvalid(`${fieldPrefix}.identification`)}
                         onChange={(event) => emitChange({ identification: event.target.value })}
                     />
+                    <FieldError>{errorFor(`${fieldPrefix}.identification`)}</FieldError>
                 </Field>
 
-                <Field orientation="vertical" variant="outlined" className="w-full">
+                <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid(`${fieldPrefix}.firstName`) ? "true" : undefined}>
                     <FieldLabel htmlFor="user-name">Primer Nombre*</FieldLabel>
                     <Input
                         id="user-name"
@@ -187,6 +193,7 @@ export function UserDetailsForm({
                         aria-invalid={isInvalid(`${fieldPrefix}.firstName`)}
                         onChange={(event) => emitChange({ firstName: event.target.value })}
                     />
+                    <FieldError>{errorFor(`${fieldPrefix}.firstName`)}</FieldError>
                 </Field>
 
                 <Field orientation="vertical" variant="outlined" className="w-full">
@@ -199,7 +206,7 @@ export function UserDetailsForm({
                     />
                 </Field>
 
-                <Field orientation="vertical" variant="outlined" className="w-full">
+                <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid(`${fieldPrefix}.lastName`) ? "true" : undefined}>
                     <FieldLabel htmlFor="user-last-name">Primer Apellido*</FieldLabel>
                     <Input
                         id="user-last-name"
@@ -208,6 +215,7 @@ export function UserDetailsForm({
                         aria-invalid={isInvalid(`${fieldPrefix}.lastName`)}
                         onChange={(event) => emitChange({ lastName: event.target.value })}
                     />
+                    <FieldError>{errorFor(`${fieldPrefix}.lastName`)}</FieldError>
                 </Field>
 
                 <Field orientation="vertical" variant="outlined" className="w-full">
@@ -241,6 +249,7 @@ export function UserDetailsForm({
                         aria-invalid={isInvalid(`${fieldPrefix}.password`)}
                         onChange={(event) => emitChange({ password: event.target.value })}
                     />
+                    <FieldError>{errorFor(`${fieldPrefix}.password`)}</FieldError>
                 </Field>
                 <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid(`${fieldPrefix}.confirmPassword`) ? "true" : undefined}>
                     <FieldLabel htmlFor="user-confirm-password">Confirmar Contraseña</FieldLabel>
@@ -252,6 +261,7 @@ export function UserDetailsForm({
                         aria-invalid={isInvalid(`${fieldPrefix}.confirmPassword`)}
                         onChange={(event) => setConfirmPassword(event.target.value)}
                     />
+                    <FieldError>{errorFor(`${fieldPrefix}.confirmPassword`)}</FieldError>
                 </Field>
             </div>
             <div className="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-3">
@@ -281,7 +291,7 @@ export function UserDetailsForm({
                         }}
                         items={genderItems}
                     >
-                        <SelectTrigger>
+                        <SelectTrigger aria-invalid={isInvalid(`${fieldPrefix}.gender`)}>
                             <SelectValue placeholder="Seleccionar" />
                         </SelectTrigger>
                         <SelectContent>

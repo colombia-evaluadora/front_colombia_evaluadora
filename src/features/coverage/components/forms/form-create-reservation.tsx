@@ -148,7 +148,7 @@ export function CreateReservationForm({ id, onSubmit, catalogs }: CreateReservat
                   value={field.state.value}
                   onValueChange={(value) => field.handleChange(value ?? "")}
                 >
-                  <SelectTrigger id={field.name} size="sm" className="w-full">
+                  <SelectTrigger id={field.name} size="sm" className="w-full" aria-invalid={isInvalid}>
                     <SelectValue placeholder="Seleccionar" />
                   </SelectTrigger>
                   <SelectContent>
@@ -176,7 +176,7 @@ export function CreateReservationForm({ id, onSubmit, catalogs }: CreateReservat
                   value={field.state.value}
                   onValueChange={(value) => field.handleChange(value ?? "")}
                 >
-                  <SelectTrigger id={field.name} size="sm" className="w-full">
+                  <SelectTrigger id={field.name} size="sm" className="w-full" aria-invalid={isInvalid}>
                     <SelectValue placeholder="Seleccionar" />
                   </SelectTrigger>
                   <SelectContent>
@@ -205,7 +205,7 @@ export function CreateReservationForm({ id, onSubmit, catalogs }: CreateReservat
                     value={field.state.value}
                     onValueChange={(value) => field.handleChange(value ?? "")}
                   >
-                    <SelectTrigger id={field.name} size="sm" className="w-full">
+                    <SelectTrigger id={field.name} size="sm" className="w-full" aria-invalid={isInvalid}>
                       <SelectValue>
                         {(value) => (value ? formatGrade(Number(value)) : "Grado")}
                       </SelectValue>
@@ -235,7 +235,7 @@ export function CreateReservationForm({ id, onSubmit, catalogs }: CreateReservat
                     value={field.state.value}
                     onValueChange={(value) => field.handleChange(value ?? "")}
                   >
-                    <SelectTrigger id={field.name} size="sm" className="w-full">
+                    <SelectTrigger id={field.name} size="sm" className="w-full" aria-invalid={isInvalid}>
                       <SelectValue placeholder="Seleccionar" />
                     </SelectTrigger>
                     <SelectContent>
@@ -264,7 +264,7 @@ export function CreateReservationForm({ id, onSubmit, catalogs }: CreateReservat
                   value={field.state.value}
                   onValueChange={(value) => field.handleChange((value ?? "") as Shift)}
                 >
-                  <SelectTrigger id={field.name} size="sm" className="w-full">
+                  <SelectTrigger id={field.name} size="sm" className="w-full" aria-invalid={isInvalid}>
                     <SelectValue>
                       {(value) => (value ? SHIFT_LABELS[value as Shift] : "Elige una jornada")}
                     </SelectValue>
@@ -297,7 +297,7 @@ export function CreateReservationForm({ id, onSubmit, catalogs }: CreateReservat
                   value={field.state.value}
                   onValueChange={(value) => field.handleChange((value ?? "") as EducationLevel)}
                 >
-                  <SelectTrigger id={field.name} size="sm" className="w-full">
+                  <SelectTrigger id={field.name} size="sm" className="w-full" aria-invalid={isInvalid}>
                     <SelectValue>
                       {(value) =>
                         value ? EDUCATION_LEVEL_LABELS[value as EducationLevel] : "Elige un nivel"
