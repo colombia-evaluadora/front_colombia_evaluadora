@@ -1,41 +1,43 @@
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { useState } from "react"
+
 import { Button } from "@/components/ui/button"
-import { PlusIcon } from "@/components/ui/icons"
-import { Link } from "@tanstack/react-router"
-import { paths } from "@/config/paths"
+import { ControlPointIcon } from "@/components/ui/icons"
+
+import { ManageCampusDialog } from "../components/dialogs/dialog-manage-campus"
 import { CampusesDataTable } from "../components/table/campuses-table"
 
 export function CampusesPage() {
+  const [editorOpen, setEditorOpen] = useState(false)
+  const [editingCampusId, setEditingCampusId] = useState<string | null>(null)
+
+  function openCreateDialog() {
+    setEditingCampusId(null)
+    setEditorOpen(true)
+  }
+
+  function openEditDialog(campusId: string) {
+    setEditingCampusId(campusId)
+    setEditorOpen(true)
+  }
+
   return (
-    <Card>
-      <CardHeader>
-        <CardAction>
-          <Button
-            variant="fill"
-            color="primary"
-            size="sm"
-            render={<Link to={paths.app.establishments.campuses.add.getHref()} />}
-            nativeButton={false}
-          >
-            <PlusIcon data-icon="inline-start" />
+    <>
+      <CampusesDataTable
+        onEditCampus={openEditDialog}
+        title="Sedes educativas"
+        action={
+          <Button variant="fill" color="primary" size="sm" onClick={openCreateDialog}>
+            <ControlPointIcon data-icon="inline-start" />
             Agregar
           </Button>
-        </CardAction>
-        <CardTitle>Sedes educativas</CardTitle>
-        <CardDescription>
-          Lista de sedes con búsqueda, filtro por zona y nombre.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <CampusesDataTable />
-      </CardContent>
-    </Card>
+        }
+      />
+
+      <ManageCampusDialog
+        open={editorOpen}
+        onOpenChange={setEditorOpen}
+        campusId={editingCampusId}
+      />
+    </>
   )
 }

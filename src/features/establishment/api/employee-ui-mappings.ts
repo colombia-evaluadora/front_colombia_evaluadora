@@ -3,7 +3,7 @@ import type { PermissionStatus } from "./types/permission"
 type BadgeColor = "success" | "destructive"
 
 interface BadgeProps {
-  variant: "fill"
+  variant: "soft"
   color: BadgeColor
 }
 
@@ -14,11 +14,11 @@ export const EMPLOYEE_STATUS_LABELS: Record<PermissionStatus, string> = {
 
 export const EMPLOYEE_STATUS_BADGE: Record<PermissionStatus, BadgeProps> = {
   ACTIVE: {
-    variant: "fill",
+    variant: "soft",
     color: "success",
   },
   SUSPENDED: {
-    variant: "fill",
+    variant: "soft",
     color: "destructive",
   },
 }

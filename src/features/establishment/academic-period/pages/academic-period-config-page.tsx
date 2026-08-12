@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { SpinnerIcon } from "@/components/ui/icons"
 import { Link, useNavigate, useParams } from "@tanstack/react-router"
 
@@ -32,7 +33,7 @@ import {
   NoticeOutlet,
   NoticeProvider,
   useNotify,
-} from "../components/common/notice-context"
+} from "@/components/notice/notice-context"
 import {
   DEFAULT_JORNADA,
   type Jornada,
@@ -87,6 +88,8 @@ function AcademicPeriodConfigPageContent() {
   const [createdPeriodId, setCreatedPeriodId] = useState<number | null>(null)
   const [jornada, setJornada] = useState<Jornada>(DEFAULT_JORNADA)
   const [configOpen, setConfigOpen] = useState(true)
+  const [isFormDirty, setIsFormDirty] = useState(false)
+  const [savedToken, setSavedToken] = useState(0)
 
   const {
     data: detail,
@@ -99,7 +102,7 @@ function AcademicPeriodConfigPageContent() {
       onSuccess: (created) => {
         setCreatedPeriodId(created.id)
         setSaved(true)
-        notify("Periodo académico creado. Ahora podés configurar el resto.")
+        notify(SUCCESS_MESSAGES.academicPeriod.created)
         // Tras crear, pasamos a la ruta de edición del nuevo periodo para que
         // la URL refleje el estado real (editable, recargable, compartible).
         navigate({
@@ -116,7 +119,10 @@ function AcademicPeriodConfigPageContent() {
           notify(result.message, { variant: "error" })
           return
         }
-        notify(result.message)
+        // Los valores guardados pasan a ser los iniciales del formulario, así
+        // "Guardar" vuelve a ocultarse hasta que el usuario cambie algo más.
+        setSavedToken((token) => token + 1)
+        notify(SUCCESS_MESSAGES.academicPeriod.updated)
       },
     },
   })
@@ -141,25 +147,17 @@ function AcademicPeriodConfigPageContent() {
 
   const showSecondForm = saved || (isEditing && !!detail)
 
+  // Al crear, "Guardar" es el único camino para continuar; al editar solo tiene
+  // sentido si hay algo que guardar (o mientras se está guardando).
+  const showSaveAction = !isEditing || isFormDirty || isSaving
+
   const header = (
     <CardHeader className="border-b">
-      <CardAction className="flex gap-2">
-        <Button
-          type="submit"
-          size="sm"
-          color="primary"
-          form={FORM_ID}
-          disabled={isSaving || (isEditing && isLoadingDetail)}
-          aria-busy={isSaving}
-        >
-          {isSaving && (
-            <SpinnerIcon data-icon="inline-start" className="animate-spin" />
-          )}
-          Guardar
-        </Button>
+      <CardAction>
         <Button
           size="sm"
-          variant="outline"
+          variant="fill"
+          color="neutral"
           render={<Link to={paths.app.periodosAcademicos.getHref()} />}
           nativeButton={false}
         >
@@ -194,11 +192,35 @@ function AcademicPeriodConfigPageContent() {
               Ocurrió un error al cargar el periodo académico.
             </p>
           ) : (
-            <AcademicPeriodForm
-              id={FORM_ID}
-              defaultValues={detail ? toFormValues(detail) : undefined}
-              onSubmit={handleSubmit}
-            />
+            <>
+              <AcademicPeriodForm
+                id={FORM_ID}
+                defaultValues={detail ? toFormValues(detail) : undefined}
+                onSubmit={handleSubmit}
+                onDirtyChange={setIsFormDirty}
+                savedToken={savedToken}
+              />
+              {/* Acciones en el flujo normal, justo debajo de los campos. Al
+                  editar solo aparecen si hay cambios sin guardar, para que el
+                  usuario se concentre en las demás secciones. */}
+              {showSaveAction && (
+                <div className="mt-6 flex justify-end gap-2 border-t border-border pt-4">
+                  <Button
+                    type="submit"
+                    size="sm"
+                    color="primary"
+                    form={FORM_ID}
+                    disabled={isSaving}
+                    aria-busy={isSaving}
+                  >
+                    {isSaving && (
+                      <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+                    )}
+                    Guardar
+                  </Button>
+                </div>
+              )}
+            </>
           )}
         </AccordionContent>
       </AccordionItem>

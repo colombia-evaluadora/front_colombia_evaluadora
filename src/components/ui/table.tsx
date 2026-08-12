@@ -4,9 +4,30 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-function Table({ className, ...props }: React.ComponentProps<"table">) {
+function Table({
+  className,
+  containerClassName,
+  ...props
+}: React.ComponentProps<"table"> & {
+  /**
+   * Clases para el contenedor con el scroll, no para el `<table>`. Es por donde
+   * se le pone alto máximo (`max-h-… overflow-y-auto`): quien lo envuelva en
+   * otra caja para eso termina con dos bordes, porque el borde y el radio ya
+   * viven acá.
+   */
+  containerClassName?: string
+}) {
   return (
-    <div data-slot="table-container" className="relative w-full overflow-x-auto">
+    // El contenedor es el que lleva borde y radio: el `<table>` no puede
+    // redondear sus esquinas (las pintan las celdas), y el `overflow` que ya
+    // necesitaba para el scroll horizontal recorta las filas contra la curva.
+    <div
+      data-slot="table-container"
+      className={cn(
+        "scrollbar-slim relative w-full overflow-x-auto rounded-lg border border-border",
+        containerClassName,
+      )}
+    >
       <table
         data-slot="table"
         className={cn("w-full caption-bottom text-sm", className)}
@@ -58,7 +79,9 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
     <th
       data-slot="table-head"
       className={cn(
-        "h-12 px-3 text-left align-middle text-xs font-medium tracking-wider whitespace-nowrap text-muted-foreground uppercase [&:has([role=checkbox])]:pr-0",
+        // `text-sm`: el encabezado usa el MISMO tamaño que las celdas del
+        // cuerpo (lo hereda de `<table class="text-sm">`), no una escala menor.
+        "h-12 px-3 text-left align-middle text-sm font-medium tracking-wider whitespace-nowrap text-muted-foreground uppercase [&:has([role=checkbox])]:pr-0",
         className,
       )}
       {...props}
@@ -70,7 +93,13 @@ function TableCell({ className, ...props }: React.ComponentProps<"td">) {
   return (
     <td
       data-slot="table-cell"
-      className={cn("p-3 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0", className)}
+      className={cn(
+        // Los badges de la base son de 10px, que dentro de una tabla quedan
+        // muy por debajo del texto de las celdas. Se suben a 12px acá y no en
+        // el componente para no tocar su uso fuera de tablas.
+        "p-3 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&_[data-slot=badge]]:text-xs",
+        className,
+      )}
       {...props}
     />
   )

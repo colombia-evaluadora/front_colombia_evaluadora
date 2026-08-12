@@ -13,15 +13,13 @@ import { CreateEvaluationPeriodDialog } from "../dialogs/dialog-create-evaluatio
 import { DeleteSelectedEvaluationPeriodsDialog } from "../dialogs/dialog-delete-selected-evaluation-periods"
 import { ExportEvaluationPeriodsDialog } from "../dialogs/dialog-export-evaluation-periods"
 import { ExportSelectedEvaluationPeriodsDialog } from "../dialogs/dialog-export-selected-evaluation-periods"
-import { NoticeOutlet } from "../../common/notice-context"
+import { NoticeOutlet } from "@/components/notice/notice-context"
 
 interface TabEvaluationPeriodsProps {
   academicPeriodId?: number
 }
 
-export function TabEvaluationPeriods({
-  academicPeriodId,
-}: TabEvaluationPeriodsProps) {
+export function TabEvaluationPeriods({ academicPeriodId }: TabEvaluationPeriodsProps) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [pageIndex, setPageIndex] = useState(0)
   const [pageSize, setPageSize] = useState(10)
@@ -42,15 +40,10 @@ export function TabEvaluationPeriods({
 
   const columns = useMemo(
     () => createEvaluationPeriodColumns({ academicPeriodId }),
-    [academicPeriodId]
+    [academicPeriodId],
   )
 
-  const {
-    table,
-    selectedIds,
-    hasSelection,
-    resetSelection,
-  } = useDataTable({
+  const { table, selectedIds, hasSelection, resetSelection } = useDataTable({
     columns,
     data: data?.rows ?? [],
     pageCount: data?.pageCount ?? -1,
@@ -65,10 +58,7 @@ export function TabEvaluationPeriods({
 
   // `selectedIds` viene como string[] (los ids de la tabla); los codigos de
   // evaluation period son `number`, así que convertimos antes de mandar al back.
-  const selectedCodigos = useMemo(
-    () => selectedIds.map(Number),
-    [selectedIds]
-  )
+  const selectedCodigos = useMemo(() => selectedIds.map(Number), [selectedIds])
 
   return (
     <>
@@ -90,7 +80,6 @@ export function TabEvaluationPeriods({
             <ExportEvaluationPeriodsDialog filters={{}} />
           </>
         )}
-        <DataTableViewOptions table={table} />
       </div>
 
       <NoticeOutlet className="mb-2" />
@@ -105,6 +94,7 @@ export function TabEvaluationPeriods({
       />
       {data && (
         <Pagination
+          viewOptions={<DataTableViewOptions table={table} />}
           pageIndex={pageIndex}
           pageCount={data.pageCount}
           canPrev={pageIndex > 0}

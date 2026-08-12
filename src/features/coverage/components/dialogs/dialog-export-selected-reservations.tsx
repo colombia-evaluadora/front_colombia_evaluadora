@@ -1,6 +1,11 @@
 import { useState } from "react"
 
-import { DownloadSimpleIcon, FilePdfIcon, FileXlsIcon, SpinnerIcon } from "@/components/ui/icons"
+import {
+  FileDownloadOutlinedIcon,
+  FilePdfIcon,
+  FileXlsIcon,
+  SpinnerIcon,
+} from "@/components/ui/icons"
 import { toast } from "sonner"
 
 import {
@@ -52,9 +57,9 @@ export function ExportSelectedReservationsDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
-        render={<Button color="primary" aria-label="Exportar reservas seleccionadas" />}
+        render={<Button color="primary" size="sm" aria-label="Exportar reservas seleccionadas" />}
       >
-        <DownloadSimpleIcon data-icon="inline-start" />
+        <FileDownloadOutlinedIcon data-icon="inline-start" />
         <span className="sr-only md:not-sr-only">Exportar selección</span>
         <span>· {selectedIds.length}</span>
       </DialogTrigger>
@@ -62,7 +67,7 @@ export function ExportSelectedReservationsDialog({
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>
-            Se exportarán {selectedIds.length} reserva(s). Elegí el formato.
+            Se exportarán {selectedIds.length} reserva(s). Elige el formato.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="sm:justify-between">

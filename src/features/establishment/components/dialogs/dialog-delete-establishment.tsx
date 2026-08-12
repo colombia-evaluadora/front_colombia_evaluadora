@@ -1,6 +1,6 @@
 import { useState } from "react"
 
-import { SpinnerIcon, TrashIcon } from "@/components/ui/icons"
+import { CheckIcon, SpinnerIcon, TrashIcon, XIcon } from "@/components/ui/icons"
 
 import {
   AlertDialog,
@@ -14,11 +14,12 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
+import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { establishmentsRoute } from "@/router"
 
 import { useDeleteEstablishment } from "../../api/mutations/delete-establishment"
 import type { Establishment } from "../../api/types/establishment"
-import { useNotify } from "../common/notice-context"
+import { useNotify } from "@/components/notice/notice-context"
 
 interface DeleteEstablishmentDialogProps {
   establishment: Establishment
@@ -39,7 +40,7 @@ export function DeleteEstablishmentDialog({
           return
         }
 
-        notify(result.message)
+        notify(SUCCESS_MESSAGES.establishment.deleted)
         setOpen(false)
         navigate({
           search: (prev) => ({
@@ -61,10 +62,9 @@ export function DeleteEstablishmentDialog({
         render={
           <Button
             type="button"
-            variant="fill"
-            color="destructive"
-            size="icon"
-            className="size-8"
+            variant="ghost"
+            color="neutral"
+            size="icon-sm"
             aria-label={`Eliminar ${establishment.name}`}
           />
         }
@@ -89,11 +89,12 @@ export function DeleteEstablishmentDialog({
             {deleteMutation.isPending ? (
               <SpinnerIcon data-icon="inline-start" className="animate-spin" />
             ) : (
-              <TrashIcon data-icon="inline-start" />
+              <CheckIcon data-icon="inline-start" />
             )}
             Si
           </AlertDialogAction>
-          <AlertDialogCancel disabled={deleteMutation.isPending}>
+          <AlertDialogCancel variant="fill" color="neutral" disabled={deleteMutation.isPending}>
+            <XIcon data-icon="inline-start" />
             No
           </AlertDialogCancel>
         </AlertDialogFooter>

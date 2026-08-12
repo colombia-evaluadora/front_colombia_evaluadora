@@ -1,19 +1,7 @@
 import { useState } from "react"
 
-import {
-    FileUpload,
-    FileUploadDropzone,
-    FileUploadItem,
-    FileUploadItemDelete,
-    FileUploadItemMetadata,
-    FileUploadItemPreview,
-    FileUploadList,
-    FileUploadTrigger,
-} from "@/components/ui/file-upload"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
-import { ShieldIcon } from "@/components/ui/icons"
 import { FormSectionHeading } from "@/components/form-section-heading"
+import { ImageUploadField } from "@/components/image-upload-field"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
@@ -51,48 +39,32 @@ export function IdentificationDataFormSection({ value, onChange, invalidFields =
                 Datos de identificación
             </FormSectionHeading>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                <div className="row-span-2">
-                    <FileUpload
-                        value={shield ? [shield] : []}
-                        onValueChange={(files) => setShield(files[0] ?? null)}
-                        accept="image/*"
-                        maxFiles={1}
-                        className="w-full"
-                    >
-                        {shield ? (
-                            <FileUploadList orientation="vertical">
-                                <FileUploadItem value={shield} orientation="horizontal" size="sm" className="w-full">
-                                    <FileUploadItemPreview className="size-16 shrink-0" />
-                                    <FileUploadItemMetadata size="sm" />
-                                    <FileUploadItemDelete
-                                        aria-label="Eliminar escudo"
-                                        onClick={(event) => event.stopPropagation()}
-                                    />
-                                </FileUploadItem>
-                            </FileUploadList>
-                        ) : (
-                            <FileUploadDropzone className="h-32 w-full p-2">
-                                <Avatar className="size-12">
-                                    <AvatarFallback>
-                                        <ShieldIcon />
-                                    </AvatarFallback>
-                                </Avatar>
-                                <FileUploadTrigger
-                                    render={
-                                        <Button variant="outline" color="muted" size="xs">
-                                            Subir escudo
-                                        </Button>
-                                    }
-                                />
-                            </FileUploadDropzone>
-                        )}
-                    </FileUpload>
+                {/*
+                    El escudo ocupa una sola columna y se estira a lo alto de las
+                    dos filas de campos que tiene al lado, de ahí el `row-span-2`
+                    más el `h-full` que lo propaga hasta el dropzone.
+                */}
+                {/*
+                    En `md` el contenido va absoluto: así la celda no aporta
+                    altura propia y las dos filas del grid las miden solo los
+                    campos. El escudo se estira a ese alto exacto en vez de
+                    empujar las filas y abrir hueco entre los inputs.
+                */}
+                <div className="relative md:row-span-2">
+                    <div className="md:absolute md:inset-0">
+                        <ImageUploadField
+                            value={shield}
+                            onValueChange={setShield}
+                            description="para cargar el escudo o logo del establecimiento"
+                            deleteLabel="Eliminar escudo"
+                        />
+                    </div>
                 </div>
                 <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid("basicInfo.name") ? "true" : undefined}>
                     <FieldLabel htmlFor="establishment-name">Nombre del establecimiento*</FieldLabel>
                     <Input
                         id="establishment-name"
-                        placeholder="I.E. San Francisco de Asís"
+                        placeholder="Ingresar nombre del establecimiento"
                         value={value.name}
                         aria-invalid={isInvalid("basicInfo.name")}
                         onChange={(event) => onChange({ ...value, name: event.target.value })}
@@ -103,7 +75,7 @@ export function IdentificationDataFormSection({ value, onChange, invalidFields =
                     <FieldLabel htmlFor="establishment-dane">Código DANE*</FieldLabel>
                     <Input
                         id="establishment-dane"
-                        placeholder="0000000000001"
+                        placeholder="Ingresar código DANE"
                         value={value.dane}
                         aria-invalid={isInvalid("basicInfo.dane")}
                         onChange={(event) => onChange({ ...value, dane: event.target.value })}
@@ -114,7 +86,7 @@ export function IdentificationDataFormSection({ value, onChange, invalidFields =
                     <FieldLabel htmlFor="establishment-nit">Nit*</FieldLabel>
                     <Input
                         id="establishment-nit"
-                        placeholder="000000000-1"
+                        placeholder="Ingresar NIT"
                         value={value.nit}
                         aria-invalid={isInvalid("basicInfo.nit")}
                         onChange={(event) => onChange({ ...value, nit: event.target.value })}
@@ -138,7 +110,7 @@ export function IdentificationDataFormSection({ value, onChange, invalidFields =
                         items={legalTypeItems}
                     >
                         <SelectTrigger aria-invalid={isInvalid("basicInfo.ownershipType")}>
-                            <SelectValue placeholder="Seleccione" />
+                            <SelectValue placeholder="Seleccionar" />
                         </SelectTrigger>
 
                         <SelectContent>

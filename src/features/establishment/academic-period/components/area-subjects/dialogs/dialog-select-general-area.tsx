@@ -1,9 +1,5 @@
 import { useMemo, useState } from "react"
-import {
-  CaretDownIcon,
-  CheckIcon,
-  MagnifyingGlassIcon,
-} from "@/components/ui/icons"
+import { CaretDownIcon, CheckIcon, MagnifyingGlassIcon } from "@/components/ui/icons"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -16,12 +12,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import {
-  Input,
-  inputTriggerVariants,
-  inputVariants,
-  useInputVariant,
-} from "@/components/ui/input"
+import { Input, inputTriggerVariants, inputVariants, useInputVariant } from "@/components/ui/input"
 import {
   Pagination as UIPagination,
   PaginationContent,
@@ -115,7 +106,7 @@ export function SelectGeneralAreaDialog({
               inputTriggerVariants({ variant: resolvedVariant }),
               "flex items-center justify-between gap-1.5 text-left",
               resolvedVariant === "outlined" && "bg-background",
-              value ? "text-foreground" : "text-muted-foreground"
+              value ? "text-foreground" : "text-muted-foreground",
             )}
           />
         }
@@ -142,15 +133,12 @@ export function SelectGeneralAreaDialog({
         </div>
 
         {/* Grilla de áreas: 3 columnas, estilo tabla de áreas. */}
-        <div className="min-w-0 overflow-hidden rounded-md border">
+        <div className="min-w-0">
           <Table>
             <TableBody>
               {grid.length === 0 ? (
                 <TableRow className="hover:bg-transparent">
-                  <TableCell
-                    colSpan={COLUMNS}
-                    className="h-24 text-center text-muted-foreground"
-                  >
+                  <TableCell colSpan={COLUMNS} className="h-24 text-center text-muted-foreground">
                     No se encontraron áreas.
                   </TableCell>
                 </TableRow>
@@ -160,31 +148,20 @@ export function SelectGeneralAreaDialog({
                     {Array.from({ length: COLUMNS }).map((_, c) => {
                       const area = rowAreas[c]
                       if (!area) {
-                        return (
-                          <TableCell
-                            key={c}
-                            className="border-r p-0 last:border-r-0"
-                          />
-                        )
+                        return <TableCell key={c} className="border-r p-0 last:border-r-0" />
                       }
                       const selected = area.nombre === value
                       return (
-                        <TableCell
-                          key={c}
-                          className="border-r p-0 last:border-r-0"
-                        >
+                        <TableCell key={c} className="border-r p-0 last:border-r-0">
                           <button
                             type="button"
                             onClick={() => handleSelect(area.nombre)}
                             className={cn(
                               "flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm transition-colors hover:bg-muted/50",
-                              selected &&
-                                "bg-muted font-medium text-primary hover:bg-muted"
+                              selected && "bg-muted font-medium text-primary hover:bg-muted",
                             )}
                           >
-                            {selected && (
-                              <CheckIcon className="size-4 shrink-0" />
-                            )}
+                            {selected && <CheckIcon className="size-4 shrink-0" />}
                             <span className="truncate">{area.nombre}</span>
                           </button>
                         </TableCell>
@@ -199,9 +176,7 @@ export function SelectGeneralAreaDialog({
 
         {/* Paginación (3 × 15 = 45 áreas por página) */}
         <div className="flex items-center justify-between gap-2">
-          <p className="shrink-0 text-sm text-muted-foreground">
-            {filtered.length} área(s)
-          </p>
+          <p className="shrink-0 text-sm text-muted-foreground">{filtered.length} área(s)</p>
           <UIPagination className="mx-0 w-auto justify-end">
             <PaginationContent>
               <PaginationItem>
@@ -226,11 +201,7 @@ export function SelectGeneralAreaDialog({
                   href={page < pageCount - 1 ? "#" : undefined}
                   text="Sig."
                   aria-label="Página siguiente"
-                  className={
-                    page >= pageCount - 1
-                      ? "pointer-events-none opacity-50"
-                      : ""
-                  }
+                  className={page >= pageCount - 1 ? "pointer-events-none opacity-50" : ""}
                   onClick={(e) => {
                     e.preventDefault()
                     if (page < pageCount - 1) setPageIndex(page + 1)
@@ -242,9 +213,7 @@ export function SelectGeneralAreaDialog({
         </div>
 
         <DialogFooter>
-          <DialogClose render={<Button type="button" variant="outline" />}>
-            Cancelar
-          </DialogClose>
+          <DialogClose render={<Button type="button" variant="outline" />}>Cancelar</DialogClose>
         </DialogFooter>
       </DialogContent>
     </Dialog>

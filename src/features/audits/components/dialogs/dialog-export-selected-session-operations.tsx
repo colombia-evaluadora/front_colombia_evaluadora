@@ -1,7 +1,11 @@
 import { useState } from "react"
 
-import { DownloadSimpleIcon, FilePdfIcon, FileXlsIcon, SpinnerIcon } from "@/components/ui/icons"
-import { toast } from "sonner"
+import {
+  FileDownloadOutlinedIcon,
+  FilePdfIcon,
+  FileXlsIcon,
+  SpinnerIcon,
+} from "@/components/ui/icons"
 
 import {
   Dialog,
@@ -17,6 +21,7 @@ import { Button } from "@/components/ui/button"
 
 import { useExportSessionOperations } from "../../api/mutations/export-session-operations"
 import type { ExportFormat } from "../../api/types/audit"
+import { useNotify } from "@/components/notice/notice-context"
 
 interface ExportSelectedSessionOperationsDialogProps {
   sessionId: string
@@ -29,6 +34,7 @@ export function ExportSelectedSessionOperationsDialog({
   selectedIds,
   resetSelection,
 }: ExportSelectedSessionOperationsDialogProps) {
+  const { notify } = useNotify()
   const [open, setOpen] = useState(false)
   const count = selectedIds.length
 
@@ -36,10 +42,10 @@ export function ExportSelectedSessionOperationsDialog({
     mutationConfig: {
       onSuccess: (result) => {
         if (result.status === "error") {
-          toast.error(result.message)
+          notify(result.message, { variant: "error" })
           return
         }
-        toast.success(result.message)
+        notify(result.message)
         setOpen(false)
         resetSelection()
       },
@@ -59,9 +65,9 @@ export function ExportSelectedSessionOperationsDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
-        render={<Button color="primary" aria-label={`Exportar ${count} seleccionadas`} />}
+        render={<Button color="primary" size="sm" aria-label={`Exportar ${count} seleccionadas`} />}
       >
-        <DownloadSimpleIcon data-icon="inline-start" />
+        <FileDownloadOutlinedIcon data-icon="inline-start" />
         <span aria-hidden="true" className="md:hidden">
           ({count})
         </span>
@@ -71,7 +77,7 @@ export function ExportSelectedSessionOperationsDialog({
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>
-            Elegí un formato para exportar {count} operación(es) seleccionada(s).
+            Elige un formato para exportar {count} operación(es) seleccionada(s).
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="sm:justify-between">

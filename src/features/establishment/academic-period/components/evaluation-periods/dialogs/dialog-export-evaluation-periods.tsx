@@ -1,13 +1,13 @@
 import { useState } from "react"
 
 import {
-  DownloadSimpleIcon,
+  FileDownloadOutlinedIcon,
   FilePdfIcon,
   FileXlsIcon,
   SpinnerIcon,
 } from "@/components/ui/icons"
 
-import { useNotify } from "../../common/notice-context"
+import { useNotify } from "@/components/notice/notice-context"
 import {
   Dialog,
   DialogClose,
@@ -30,9 +30,7 @@ interface ExportEvaluationPeriodsDialogProps {
   filters: EvaluationPeriodsQueryFilters
 }
 
-export function ExportEvaluationPeriodsDialog({
-  filters,
-}: ExportEvaluationPeriodsDialogProps) {
+export function ExportEvaluationPeriodsDialog({ filters }: ExportEvaluationPeriodsDialogProps) {
   const [open, setOpen] = useState(false)
   const { notify } = useNotify()
 
@@ -60,24 +58,24 @@ export function ExportEvaluationPeriodsDialog({
       <DialogTrigger
         render={
           <Button
-            variant="outline" color="muted" size="icon"
+            variant="outline"
+            color="muted"
+            size="icon-sm"
             aria-label="Exportar periodos de evaluación"
           />
         }
       >
-        <DownloadSimpleIcon />
+        <FileDownloadOutlinedIcon />
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>
-            Elegí un formato para exportar todos los periodos de evaluación.
+            Elige un formato para exportar todos los periodos de evaluación.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="sm:justify-between">
-          <DialogClose render={<Button type="button" variant="ghost" />}>
-            Cancelar
-          </DialogClose>
+          <DialogClose render={<Button type="button" variant="ghost" />}>Cancelar</DialogClose>
           <div className="flex flex-col-reverse gap-2 sm:flex-row">
             <Button
               type="button"

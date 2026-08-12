@@ -70,7 +70,7 @@ Construido sobre ${BT}@base-ui/react/button${BT}.
 
 ## Cuándo **no** usar
 
-- **Navegación entre rutas** → usá ${BT}<a>${BT} o el router. No semántices un botón para navegar.
+- **Navegación entre rutas** → usa ${BT}<a>${BT} o el router. No semántices un botón para navegar.
 - **Selección de opciones** → ${BT}ToggleGroup${BT}, ${BT}RadioGroup${BT}, ${BT}Select${BT}.
 - **Labels largas** → el texto debe ser accionable y conciso ("Guardar", no "Haga clic aquí para guardar el formulario").
 
@@ -95,13 +95,13 @@ ${BT}${BT}${BT}
 - **Disabled**: aplica ${BT}pointer-events: none${BT} + opacidad 50%. El cursor pasa a ${BT}not-allowed${BT} (definido en ${BT}index.css${BT}).
 - **Loading**: combiná ${BT}disabled${BT} + un spinner + ${BT}aria-busy="true"${BT}.
 - **Ícono-only**: siempre pasá ${BT}aria-label${BT} describiendo la acción. Sin label es un agujero de a11y.
-- **Como enlace**: usá ${BT}render={<a href="..." />}${BT} para mantener la semántica accesible. **No** hagas ${BT}<Button><a/></Button>${BT}.
+- **Como enlace**: usa ${BT}render={<a href="..." />}${BT} para mantener la semántica accesible. **No** hagas ${BT}<Button><a/></Button>${BT}.
 
 ---
 
 ## Decisiones de diseño
 
-- **${BT}rounded-none${BT}** por defecto (sincronizado con Figma). Para esquinas redondeadas, agregá ${BT}className="rounded-full"${BT}.
+- **${BT}rounded-none${BT}** por defecto (sincronizado con Figma). Para esquinas redondeadas, agrega ${BT}className="rounded-full"${BT}.
 - **Tipografía**: uppercase + ${BT}tracking-widest${BT} para emular la tipografía de etiqueta (Label/Small en Figma).
 - **Sin icono por defecto** — agregar íconos solo cuando aportan información.
 
@@ -109,7 +109,7 @@ ${BT}${BT}${BT}
 
 ## API
 
-La tabla de props se autogenera desde los tipos de TypeScript. Tocá el panel **Controls** abajo para experimentar con cada combinación.
+La tabla de props se autogenera desde los tipos de TypeScript. Toca el panel **Controls** abajo para experimentar con cada combinación.
 `,
       },
     },
@@ -323,7 +323,7 @@ export const AsLink = meta.story({
     docs: {
       description: {
         story:
-          "`render` viene de `@base-ui/react/use-render` — el botón se monta como `<a>` pero mantiene su semántica accesible. Recordá pasar `nativeButton={false}`.",
+          "`render` viene de `@base-ui/react/use-render` — el botón se monta como `<a>` pero mantiene su semántica accesible. Recuerda pasar `nativeButton={false}`.",
       },
       source: {
         code: `<Button render={<a href="/docs" />} nativeButton={false}>

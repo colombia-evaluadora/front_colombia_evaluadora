@@ -1,20 +1,9 @@
 import { useEffect, useState } from "react"
 import { format } from "date-fns"
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
 import { DatePicker } from "@/components/date-picker"
 import { FormSectionHeading } from "@/components/form-section-heading"
-import {
-  FileUpload,
-  FileUploadDropzone,
-  FileUploadItem,
-  FileUploadItemDelete,
-  FileUploadItemMetadata,
-  FileUploadItemPreview,
-  FileUploadList,
-  FileUploadTrigger,
-} from "@/components/ui/file-upload"
+import { ImageUploadField } from "@/components/image-upload-field"
 import { UserCircleIcon } from "@/components/ui/icons"
 import { EMPLOYEE_ROLES } from "@/mocks/db/catalogs/employee-roles"
 import { Field, FieldLabel } from "@/components/ui/field"
@@ -76,9 +65,10 @@ export function UserDetailsForm({
     confirmPassword: confirmPasswordProp,
     onConfirmPasswordChange,
 }: UserFormProps) {
-    const roleName =
-        EMPLOYEE_ROLES.find((item) => item.code === role)?.name ??
-        "Agregar usuario"
+    // El encabezado solo nombra el rol de la persona (Rector, Secretaria). Sin
+    // `role` no hay nada que anunciar y el contenedor ya pone su propio título
+    // —en el diálogo de usuario lo duplicaba—, así que se omite.
+    const roleName = EMPLOYEE_ROLES.find((item) => item.code === role)?.name ?? null
 
     const {data: documentTypes = []} = useCatalogQuery<CatalogItem>(CATALOGS.DOCUMENT_TYPES)
     const {data: genders = []} = useCatalogQuery<CatalogItem>(CATALOGS.GENDERS)
@@ -125,53 +115,32 @@ export function UserDetailsForm({
     return (
         <div className="grid grid-cols-1 gap-6">
 
-            <FormSectionHeading>
-                {roleName}
-            </FormSectionHeading>
+            {roleName ? <FormSectionHeading>{roleName}</FormSectionHeading> : null}
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 {/* Foto */}
-                <div className="row-span-2">
-                    <FileUpload
-                        value={photo ? [photo] : []}
-                        onValueChange={(files) => setPhoto(files[0] ?? null)}
-                        accept="image/*"
-                        maxFiles={1}
-                        className="w-40"
-                    >
-                        {photo ? (
-                            <FileUploadList orientation="vertical">
-                                <FileUploadItem value={photo} orientation="vertical" size="sm" className="w-40">
-                                    <FileUploadItemPreview className="aspect-square w-full" />
-                                    <FileUploadItemMetadata size="sm" />
-                                    <FileUploadItemDelete
-                                        aria-label="Eliminar foto"
-                                        onClick={(event) => {
-                                            // El handler interno ya borra el
-                                            // archivo, pero dejamos el prevent
-                                            // default para que no se propague
-                                            // al row de la tabla.
-                                            event.stopPropagation()
-                                        }}
-                                    />
-                                </FileUploadItem>
-                            </FileUploadList>
-                        ) : (
-                            <FileUploadDropzone className="aspect-square w-40 p-2">
-                                <Avatar className="size-12">
-                                    <AvatarFallback>
-                                        <UserCircleIcon />
-                                    </AvatarFallback>
-                                </Avatar>
-                                <FileUploadTrigger
-                                    render={
-                                        <Button variant="outline" color="muted" size="xs">
-                                            Subir foto
-                                        </Button>
-                                    }
-                                />
-                            </FileUploadDropzone>
-                        )}
-                    </FileUpload>
+                {/*
+                    `row-span-3` porque al lado van seis campos en dos columnas:
+                    con menos filas, los últimos se salían del bloque de la
+                    derecha y caían debajo de la foto, en la primera columna.
+
+                    En `md` el contenido va absoluto: así la celda no aporta
+                    altura propia y las tres filas del grid las miden solo los
+                    campos. La foto se estira a ese alto exacto en vez de
+                    empujar las filas y abrir hueco entre los inputs.
+                */}
+                <div className="relative md:row-span-3">
+                    <div className="md:absolute md:inset-0">
+                        <ImageUploadField
+                            value={photo}
+                            onValueChange={setPhoto}
+                            icon={<UserCircleIcon className="size-8 shrink-0 text-muted-foreground" />}
+                            description="para cargar la foto del usuario"
+                            // Un retrato se ve mejor encuadrado que con bandas a
+                            // los lados, al revés que un escudo.
+                            fit="cover"
+                            deleteLabel="Eliminar foto"
+                        />
+                    </div>
                 </div>
                 {/* Formulario */}
 
@@ -191,7 +160,7 @@ export function UserDetailsForm({
                         items={documentTypeItems}
                     >
                         <SelectTrigger>
-                            <SelectValue placeholder="CC cedula de ciudadanía" />
+                            <SelectValue placeholder="Seleccionar" />
                         </SelectTrigger>
                         <SelectContent>
                             {documentTypeItems.map((item) => (
@@ -207,7 +176,7 @@ export function UserDetailsForm({
                     <FieldLabel htmlFor="document-number">Número de documento*</FieldLabel>
                     <Input
                         id="document-number"
-                        placeholder="925557829"
+                        placeholder="Ingresar número de documento"
                         value={person.identification}
                         aria-invalid={isInvalid(`${fieldPrefix}.identification`)}
                         onChange={(event) => emitChange({ identification: event.target.value })}
@@ -218,7 +187,7 @@ export function UserDetailsForm({
                     <FieldLabel htmlFor="user-name">Primer Nombre*</FieldLabel>
                     <Input
                         id="user-name"
-                        placeholder="Fernney"
+                        placeholder="Ingresar primer nombre"
                         value={person.firstName}
                         aria-invalid={isInvalid(`${fieldPrefix}.firstName`)}
                         onChange={(event) => emitChange({ firstName: event.target.value })}
@@ -229,7 +198,7 @@ export function UserDetailsForm({
                     <FieldLabel htmlFor="user-second-name">Segundo Nombre</FieldLabel>
                     <Input
                         id="user-second-name"
-                        placeholder="Antonio"
+                        placeholder="Ingresar segundo nombre"
                         value={person.middleName ?? ""}
                         onChange={(event) => emitChange({ middleName: event.target.value })}
                     />
@@ -239,7 +208,7 @@ export function UserDetailsForm({
                     <FieldLabel htmlFor="user-last-name">Primer Apellido*</FieldLabel>
                     <Input
                         id="user-last-name"
-                        placeholder="Jaramillo"
+                        placeholder="Ingresar primer apellido"
                         value={person.lastName}
                         aria-invalid={isInvalid(`${fieldPrefix}.lastName`)}
                         onChange={(event) => emitChange({ lastName: event.target.value })}
@@ -250,7 +219,7 @@ export function UserDetailsForm({
                     <FieldLabel htmlFor="user-second-last-name">Segundo Apellido</FieldLabel>
                     <Input
                         id="user-second-last-name"
-                        placeholder="Gomez"
+                        placeholder="Ingresar segundo apellido"
                         value={person.secondLastName ?? ""}
                         onChange={(event) => emitChange({ secondLastName: event.target.value })}
                     />
@@ -261,7 +230,7 @@ export function UserDetailsForm({
                     <FieldLabel htmlFor="user-email">Correo Electrónico</FieldLabel>
                     <Input
                         id="user-email"
-                        placeholder="luis.diaz@gmail.com"
+                        placeholder="Ingresar correo electrónico"
                         value={person.email}
                         aria-invalid={isInvalid(`${fieldPrefix}.email`)}
                         onChange={(event) => emitChange({ email: event.target.value })}
@@ -271,7 +240,7 @@ export function UserDetailsForm({
                     <FieldLabel htmlFor="user-password">Contraseña</FieldLabel>
                     <Input
                         id="user-password"
-                        placeholder="••••••••"
+                        placeholder="Ingresar contraseña"
                         type="password"
                         value={person.password}
                         aria-invalid={isInvalid(`${fieldPrefix}.password`)}
@@ -282,7 +251,7 @@ export function UserDetailsForm({
                     <FieldLabel htmlFor="user-confirm-password">Confirmar Contraseña</FieldLabel>
                     <Input
                         id="user-confirm-password"
-                        placeholder="••••••••"
+                        placeholder="Ingresar nuevamente la contraseña"
                         type="password"
                         value={confirmPassword}
                         aria-invalid={isInvalid(`${fieldPrefix}.confirmPassword`)}
@@ -318,7 +287,7 @@ export function UserDetailsForm({
                         items={genderItems}
                     >
                         <SelectTrigger>
-                            <SelectValue placeholder="Masculino" />
+                            <SelectValue placeholder="Seleccionar" />
                         </SelectTrigger>
                         <SelectContent>
                             {genderItems.map((item) => (
@@ -333,7 +302,7 @@ export function UserDetailsForm({
                     <FieldLabel htmlFor="user-phone">Teléfono</FieldLabel>
                     <Input
                         id="user-phone"
-                        placeholder="3323868"
+                        placeholder="Ingresar teléfono"
                         type="tel"
                         value={person.phone}
                         aria-invalid={isInvalid(`${fieldPrefix}.phone`)}

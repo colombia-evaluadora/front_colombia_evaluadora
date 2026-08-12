@@ -1,6 +1,11 @@
 import { useState } from "react"
 
-import { DownloadSimpleIcon, FilePdfIcon, FileXlsIcon, SpinnerIcon } from "@/components/ui/icons"
+import {
+  FileDownloadOutlinedIcon,
+  FilePdfIcon,
+  FileXlsIcon,
+  SpinnerIcon,
+} from "@/components/ui/icons"
 import { toast } from "sonner"
 
 import {
@@ -48,15 +53,17 @@ export function ExportReservationsDialog({ filters }: ExportReservationsDialogPr
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="outline" aria-label="Exportar reservas filtradas" />}>
-        <DownloadSimpleIcon data-icon="inline-start" />
+      <DialogTrigger
+        render={<Button variant="outline" size="sm" aria-label="Exportar reservas filtradas" />}
+      >
+        <FileDownloadOutlinedIcon data-icon="inline-start" />
         <span className="sr-only md:not-sr-only">Exportar</span>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>
-            Elegí un formato para exportar todas las reservas que coincidan con los filtros activos.
+            Elige un formato para exportar todas las reservas que coincidan con los filtros activos.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="sm:justify-between">

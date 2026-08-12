@@ -41,7 +41,7 @@ export const CrossYearRange = meta.story({
     return (
       <div className="flex flex-col gap-4">
         <div className="text-muted-foreground text-sm">
-          Rango inicial: <strong>9 Abr 2024</strong> – <strong>17 Jul 2026</strong>. Probá hacer
+          Rango inicial: <strong>9 Abr 2024</strong> – <strong>17 Jul 2026</strong>. Prueba hacer
           drill-down (click en "Julio" o "2026") para ver cómo se renderiza el rango en cada nivel.
         </div>
         <Calendar mode="range" selected={range} onSelect={setRange} className="rounded-md border" />

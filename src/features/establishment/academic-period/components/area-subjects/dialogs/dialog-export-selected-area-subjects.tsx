@@ -1,12 +1,12 @@
 import { useState } from "react"
 
 import {
-  DownloadSimpleIcon,
+  FileDownloadOutlinedIcon,
   FilePdfIcon,
   FileXlsIcon,
   SpinnerIcon,
 } from "@/components/ui/icons"
-import { useNotify } from "../../common/notice-context"
+import { useNotify } from "@/components/notice/notice-context"
 
 import {
   Dialog,
@@ -54,9 +54,7 @@ export function ExportSelectedAreaSubjectsDialog({
     exportSelected.mutate({ ids: selectedIds, format })
   }
 
-  const pendingFormat = exportSelected.isPending
-    ? exportSelected.variables?.format
-    : undefined
+  const pendingFormat = exportSelected.isPending ? exportSelected.variables?.format : undefined
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -65,26 +63,25 @@ export function ExportSelectedAreaSubjectsDialog({
           <Button
             variant="outline"
             color="muted"
-            size="icon"
+            size="sm"
             aria-label={`Exportar ${count} seleccionados`}
           />
         }
       >
-        <DownloadSimpleIcon aria-hidden="true" />
-        <span aria-hidden="true">{count}</span>
+        <FileDownloadOutlinedIcon data-icon="inline-start" aria-hidden="true" />
+        <span aria-hidden="true" className="tabular-nums">
+          ({count})
+        </span>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>
-            Elegí un formato para exportar las {count} área(s)/asignatura(s)
-            seleccionada(s).
+            Elige un formato para exportar las {count} área(s)/asignatura(s) seleccionada(s).
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="sm:justify-between">
-          <DialogClose render={<Button type="button" variant="ghost" />}>
-            Cancelar
-          </DialogClose>
+          <DialogClose render={<Button type="button" variant="ghost" />}>Cancelar</DialogClose>
           <div className="flex flex-col-reverse gap-2 sm:flex-row">
             <Button
               type="button"

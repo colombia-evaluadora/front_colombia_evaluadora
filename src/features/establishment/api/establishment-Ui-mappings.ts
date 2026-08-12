@@ -9,7 +9,7 @@ type BadgeColor =
   | "success"
 
 interface BadgeProps {
-  variant: "fill" | "outline"
+  variant: "soft"
   color: BadgeColor
 }
 
@@ -26,11 +26,11 @@ export const ESTABLISHMENT_STATUS_BADGE: Record<
   BadgeProps
 > = {
   ACTIVE: {
-    variant: "fill",
+    variant: "soft",
     color: "success",
   },
   SUSPENDED: {
-    variant: "fill",
+    variant: "soft",
     color: "destructive",
   },
 }

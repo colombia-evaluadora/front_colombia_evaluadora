@@ -38,7 +38,7 @@ export function ForgotPasswordPage() {
         <div className="bg-primary/10 mx-auto flex size-14 items-center justify-center rounded-full">
           <PasswordIcon className="text-primary size-7" aria-hidden="true" />
         </div>
-        <CardTitle>¿Olvidaste tu contraseña?</CardTitle>
+        <CardTitle>Olvidaste tu contraseña</CardTitle>
         <CardDescription>
           Ingresa tu correo electrónico y te enviaremos instrucciones para restablecer tu
           contraseña.
@@ -67,8 +67,8 @@ export function ForgotPasswordPage() {
         <Button
           render={<Link to={paths.auth.login.path} />}
           nativeButton={false}
-          variant="link"
-          color="secondary"
+          variant="ghost"
+          color="primary"
         >
           <ArrowLeftIcon data-icon="inline-start" />
           Volver a iniciar sesión

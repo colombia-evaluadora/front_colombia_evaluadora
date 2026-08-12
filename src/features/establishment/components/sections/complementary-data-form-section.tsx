@@ -57,7 +57,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
 
                         <Input
                             id="approval-resolution"
-                            placeholder="Resolución No. 0123 Mayo de 2001"
+                            placeholder="Ingresar resolución de aprobación"
                             value={value.approvalResolution}
                             aria-invalid={isInvalid("additionalInfo.approvalResolution")}
                             onChange={(event) => onChange({ ...value, approvalResolution: event.target.value })}
@@ -80,7 +80,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                             items={idiomaItems}
                         >
                             <SelectTrigger>
-                                <SelectValue placeholder="Seleccione" />
+                                <SelectValue placeholder="Seleccionar" />
                             </SelectTrigger>
 
                             <SelectContent>
@@ -107,7 +107,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                             items={calendarioItems}
                         >
                             <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Seleccione" />
+                                <SelectValue placeholder="Seleccionar" />
                             </SelectTrigger>
                             <SelectContent>
                                 {calendarioItems.map((item) => (
@@ -134,7 +134,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                             items={costRegimenItems}
                         >
                             <SelectTrigger>
-                                <SelectValue placeholder="Seleccione" />
+                                <SelectValue placeholder="Seleccionar" />
                             </SelectTrigger>
 
                             <SelectContent>
@@ -161,7 +161,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                             items={populationGenderItems}
                         >
                             <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Seleccione" />
+                                <SelectValue placeholder="Seleccionar" />
                             </SelectTrigger>
                             <SelectContent>
                                 {populationGenderItems.map((item) => (
@@ -186,7 +186,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                             items={rangoTarifaItems}
                         >
                             <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Seleccione" />
+                                <SelectValue placeholder="Seleccionar" />
                             </SelectTrigger>
                             <SelectContent>
                                 {rangoTarifaItems.map((item) => (
@@ -215,7 +215,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                             items={disabilityItems}
                         >
                             <SelectTrigger>
-                                <SelectValue placeholder="Seleccione" />
+                                <SelectValue placeholder="Seleccionar" />
                             </SelectTrigger>
 
                             <SelectContent>
@@ -244,7 +244,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                             items={licenseStatusItems}
                         >
                             <SelectTrigger>
-                                <SelectValue placeholder="Seleccione" />
+                                <SelectValue placeholder="Seleccionar" />
                             </SelectTrigger>
 
                             <SelectContent>

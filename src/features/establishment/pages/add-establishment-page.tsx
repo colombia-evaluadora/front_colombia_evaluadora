@@ -1,17 +1,20 @@
 import { Link, useLocation, useNavigate } from "@tanstack/react-router"
 import { useEffect, useState, type FormEvent } from "react"
 
+import { Card, CardContent } from "@/components/ui/card"
 import {
-  Card,
-  CardAction,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+  TableScreen,
+  TableScreenBody,
+  TableScreenFooter,
+  TableScreenHeader,
+  TableScreenTitle,
+} from "@/components/layout/table-screen"
 import { Button } from "@/components/ui/button"
+import { CheckIcon } from "@/components/ui/icons"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 
 import { paths } from "@/config/paths"
+import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { EstablishmentDetailsForm } from "@/features/establishment/components/forms/form-establishment-details"
 import { useCreateEmployeePerson } from "../api/mutations/use-create-employee-person"
 import { useCreateEstablishment } from "../api/mutations/use-create-establishment"
@@ -22,7 +25,22 @@ import type { CatalogItem } from "../api/types/catalog"
 import type { Person } from "../api/types/person"
 import { UserDetailsForm } from "../components/forms/form-user-datails"
 import { validateEstablishmentForm } from "../utils/validate-establishment-form"
-import { NoticeOutlet, useNotify } from "../components/common/notice-context"
+import { NoticeOutlet, useNotify } from "@/components/notice/notice-context"
+
+/**
+ * Solo para los acordeones de esta página: título más grande y el caret
+ * (botón de abrir/cerrar) a la izquierda, antes del título. `flex-row-reverse`
+ * + `justify-end` invierte el orden visual sin tocar el componente compartido.
+ */
+const accordionTriggerClassName =
+  "flex-row-reverse justify-end items-center gap-3 py-2.5 text-lg **:data-[slot=accordion-trigger-icon]:ml-0 **:data-[slot=accordion-trigger-icon]:size-5"
+
+/**
+ * Las cards dentro de los acordeones ya viven en un contenedor con su propio
+ * aire, así que el `py` de 8 de la Card se sentía enorme: lo bajamos a 5 sin
+ * tocar el padding horizontal.
+ */
+const accordionCardClassName = "py-5"
 
 function createEmptyCatalogItem(): CatalogItem {
   return { id: "", code: "", name: "" }
@@ -140,7 +158,7 @@ export function AddEstablishmentPage() {
           notify(result.message, { variant: "error" })
           return
         }
-        notify(result.message)
+        notify(SUCCESS_MESSAGES.establishment.created)
         navigate({ to: paths.app.establishments.general.getHref() })
       },
       onError: (error) => {
@@ -156,7 +174,7 @@ export function AddEstablishmentPage() {
           notify(result.message, { variant: "error" })
           return
         }
-        notify(result.message)
+        notify(SUCCESS_MESSAGES.establishment.updated)
         navigate({ to: paths.app.establishments.general.getHref() })
       },
       onError: (error) => {
@@ -272,23 +290,34 @@ export function AddEstablishmentPage() {
   const isPending = createMutation.isPending || updateMutation.isPending
 
   return (
-    <Card>
-      <CardHeader>
-        <CardAction>
-          <div className="flex gap-2">
-            <Button type="submit" form="create-establishment-form" variant="fill" color="primary" size="sm" disabled={isPending}>
-              {isPending ? "Guardando..." : isEditMode ? "Guardar cambios" : "Guardar"}
+    /*
+      El mismo andamiaje que las pantallas de listado: encabezado pegajoso,
+      cuerpo que se estira hasta el borde inferior y —lo propio de un
+      formulario— la barra de guardar pegada abajo.
+    */
+    <TableScreen>
+      <TableScreenHeader>
+        <TableScreenTitle
+          action={
+            <Button
+              render={<Link to={paths.app.establishments.general.getHref()} />}
+              variant="fill"
+              color="neutral"
+              size="sm"
+              nativeButton={false}
+            >
+              Cerrar
             </Button>
-            <Button render={<Link to={paths.app.establishments.general.getHref()} />} variant="ghost" color="neutral" size="sm" nativeButton={false}>
-              Cancelar
-            </Button>
-          </div>
-        </CardAction>
-        <CardTitle>{isEditMode ? "Editar establecimiento educativo" : "Agregar establecimiento educativo"}</CardTitle>
-      </CardHeader>
+          }
+        >
+          {isEditMode ? "Editar establecimiento educativo" : "Agregar establecimiento educativo"}
+        </TableScreenTitle>
+        <NoticeOutlet className="mx-(--screen-spacing) my-4" />
+      </TableScreenHeader>
 
-      <CardContent>
-        <NoticeOutlet className="mb-4" />
+      {/* Sin radio ni borde abajo: ahí se acopla la barra de acciones, que trae
+          el suyo — si no, quedan dos líneas de 1px juntas. */}
+      <TableScreenBody className="rounded-b-none border-b-0">
         {validationErrors.length > 0 ? (
           <div className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
             <p className="font-medium">Completa los campos obligatorios:</p>
@@ -302,55 +331,80 @@ export function AddEstablishmentPage() {
         <form id="create-establishment-form" onSubmit={handleSubmit}>
           <Accordion multiple defaultValue={["datos-establecimiento", "datos-rector-secretaria"]} keepMounted className="space-y-3">
             <AccordionItem value="datos-establecimiento" className="rounded-md border border-border not-last:border-b border">
-              <AccordionTrigger>Datos de establecimiento</AccordionTrigger>
+              <AccordionTrigger className={accordionTriggerClassName}>Datos de establecimiento</AccordionTrigger>
               <AccordionContent>
-                <div className="py-4">
-                  <EstablishmentDetailsForm
-                    value={formValues}
-                    onChange={setFormValues}
-                    invalidFields={invalidFields}
-                    showValidation={hasSubmitted}
-                  />
-                </div>
+                <Card className={accordionCardClassName}>
+                  <CardContent>
+                    <EstablishmentDetailsForm
+                      value={formValues}
+                      onChange={setFormValues}
+                      invalidFields={invalidFields}
+                      showValidation={hasSubmitted}
+                    />
+                  </CardContent>
+                </Card>
               </AccordionContent>
             </AccordionItem>
 
             <AccordionItem value="datos-rector-secretaria" className="rounded-md border border-border not-last:border-b border">
-              <AccordionTrigger>Datos de rector y secretaria</AccordionTrigger>
+              <AccordionTrigger className={accordionTriggerClassName}>Datos de rector y secretaria</AccordionTrigger>
               <AccordionContent>
-                <div className="py-4 ">
-                  <UserDetailsForm
-                    role="RECTOR"
-                    fieldPrefix="principal"
-                    value={formValues.principal}
-                    onChange={(principal) => setFormValues((current) => ({ ...current, principal }))}
-                    invalidFields={invalidFields}
-                    showValidation={hasSubmitted}
-                    confirmPassword={confirmPasswords["principal"] ?? ""}
-                    onConfirmPasswordChange={(value) =>
-                      setConfirmPasswords((current) => ({ ...current, principal: value }))
-                    }
-                  />
-                  <div className="mt-8">
-                    <UserDetailsForm
-                      role="SECRETARY"
-                      fieldPrefix="secretary"
-                      value={formValues.secretary}
-                      onChange={(secretary) => setFormValues((current) => ({ ...current, secretary }))}
-                      invalidFields={invalidFields}
-                      showValidation={hasSubmitted}
-                      confirmPassword={confirmPasswords["secretary"] ?? ""}
-                      onConfirmPasswordChange={(value) =>
-                        setConfirmPasswords((current) => ({ ...current, secretary: value }))
-                      }
-                    />
-                  </div>
+                {/* Una card por persona: rector y secretaria son bloques
+                    independientes, no un solo formulario partido en dos. */}
+                <div className="space-y-4">
+                  <Card className={accordionCardClassName}>
+                    <CardContent>
+                      <UserDetailsForm
+                        role="RECTOR"
+                        fieldPrefix="principal"
+                        value={formValues.principal}
+                        onChange={(principal) => setFormValues((current) => ({ ...current, principal }))}
+                        invalidFields={invalidFields}
+                        showValidation={hasSubmitted}
+                        confirmPassword={confirmPasswords["principal"] ?? ""}
+                        onConfirmPasswordChange={(value) =>
+                          setConfirmPasswords((current) => ({ ...current, principal: value }))
+                        }
+                      />
+                    </CardContent>
+                  </Card>
+                  <Card className={accordionCardClassName}>
+                    <CardContent>
+                      <UserDetailsForm
+                        role="SECRETARY"
+                        fieldPrefix="secretary"
+                        value={formValues.secretary}
+                        onChange={(secretary) => setFormValues((current) => ({ ...current, secretary }))}
+                        invalidFields={invalidFields}
+                        showValidation={hasSubmitted}
+                        confirmPassword={confirmPasswords["secretary"] ?? ""}
+                        onConfirmPasswordChange={(value) =>
+                          setConfirmPasswords((current) => ({ ...current, secretary: value }))
+                        }
+                      />
+                    </CardContent>
+                  </Card>
                 </div>
               </AccordionContent>
             </AccordionItem>
           </Accordion>
         </form>
-      </CardContent>
-    </Card>
+      </TableScreenBody>
+
+      <TableScreenFooter>
+        <p className="text-sm text-muted-foreground">Complete la información antes de guardar.</p>
+        <Button
+          type="submit"
+          form="create-establishment-form"
+          variant="fill"
+          color="primary"
+          size="sm"
+          disabled={isPending}
+        >
+          <CheckIcon />
+          {isPending ? "Guardando..." : isEditMode ? "Guardar cambios" : "Guardar"}
+        </Button>
+      </TableScreenFooter>
+    </TableScreen>
   )
 }

@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react"
+import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { useForm } from "@tanstack/react-form"
-import { PencilIcon, PlusCircleIcon, SpinnerIcon } from "@/components/ui/icons"
+import { ControlPointIcon, PencilIcon, SpinnerIcon } from "@/components/ui/icons"
 
-import { useNotify, NoticeOutlet } from "../../common/notice-context"
+import { useNotify, NoticeOutlet } from "@/components/notice/notice-context"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -17,14 +18,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import {
-  Combobox,
-  ComboboxContent,
-  ComboboxEmpty,
-  ComboboxInput,
-  ComboboxItem,
-  ComboboxList,
-} from "@/components/ui/combobox"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
@@ -44,10 +37,7 @@ import { useMetodologiasQuery } from "../../../api/query/use-metodologias-query"
 import { useAcademicPeriodQuery } from "../../../api/query/academic-period/use-academic-period-query"
 import { useJornadasQuery } from "../../../api/query/use-jornadas-query"
 import type { GradeGroup } from "../../../api/types/grade-group"
-import {
-  gradeGroupFormSchema,
-  type GradeGroupFormValues,
-} from "../../../api/schema"
+import { gradeGroupFormSchema, type GradeGroupFormValues } from "../../../api/schema"
 
 const EMPTY: GradeGroupFormValues = {
   codigo: "",
@@ -89,7 +79,7 @@ export function CreateGradeGroupDialog({
   })
   const teacherNames = useMemo(
     () => (employeesData?.rows ?? []).map((e) => e.name),
-    [employeesData]
+    [employeesData],
   )
 
   const defaultValues: GradeGroupFormValues = gradeGroup
@@ -104,7 +94,7 @@ export function CreateGradeGroupDialog({
   const createGradeGroup = useCreateGradeGroup({
     mutationConfig: {
       onSuccess: () => {
-        notify("Grupo creado.")
+        notify(SUCCESS_MESSAGES.gradeGroup.created)
         form.reset()
         setOpen(false)
       },
@@ -118,7 +108,7 @@ export function CreateGradeGroupDialog({
           notify(result.message, { variant: "error" })
           return
         }
-        notify(result.message)
+        notify(SUCCESS_MESSAGES.gradeGroup.updated)
         setOpen(false)
       },
     },
@@ -150,7 +140,7 @@ export function CreateGradeGroupDialog({
       <DialogTrigger
         render={
           isEditing ? (
-            <Button variant="fill" color="secondary" size="icon" className="size-8" />
+            <Button variant="ghost" color="neutral" size="icon-sm" />
           ) : (
             <Button color="primary" size="sm" />
           )
@@ -163,21 +153,18 @@ export function CreateGradeGroupDialog({
           </>
         ) : (
           <>
-            <PlusCircleIcon weight="fill" data-icon="inline-start" />
+            <ControlPointIcon data-icon="inline-start" />
             Agregar
           </>
         )}
       </DialogTrigger>
       <DialogPortal>
-        <DialogOverlay
-          forceRender
-          className="bg-transparent backdrop-blur-none supports-backdrop-filter:backdrop-blur-none"
-        />
+        <DialogOverlay forceRender className="bg-transparent" />
       </DialogPortal>
       <DialogContent className="sm:max-w-3xl" showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>{isEditing ? "Editar grupo" : "Agregar grupo"}</DialogTitle>
-          <DialogDescription>Completá los datos del grupo.</DialogDescription>
+          <DialogDescription>Completa los datos del grupo.</DialogDescription>
         </DialogHeader>
 
         <NoticeOutlet />
@@ -192,14 +179,13 @@ export function CreateGradeGroupDialog({
         >
           <form.Field name="codigo">
             {(field) => {
-              const isInvalid =
-                field.state.meta.isTouched && !field.state.meta.isValid
+              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
               return (
                 <Field variant="outlined" data-invalid={isInvalid}>
                   <FieldLabel htmlFor={field.name}>Grupo</FieldLabel>
                   <Input
                     id={field.name}
-                    placeholder="ej. 0001"
+                    placeholder="Ingresar grupo"
                     value={field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value)}
@@ -226,28 +212,23 @@ export function CreateGradeGroupDialog({
             {(field) => (
               <Field variant="outlined">
                 <FieldLabel htmlFor={field.name}>Director de grupo</FieldLabel>
-                <Combobox
-                  items={teacherNames}
-                  value={field.state.value || null}
-                  onValueChange={(value) => field.handleChange((value as string) ?? "")}
+                <Select
+                  value={field.state.value}
+                  onValueChange={(value) => value && field.handleChange(value as string)}
                 >
-                  <ComboboxInput
-                    id={field.name}
-                    placeholder="Buscar profesor"
-                    showClear
-                    className="rounded-md border-input has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20"
-                  />
-                  <ComboboxContent>
-                    <ComboboxEmpty>Sin profesores.</ComboboxEmpty>
-                    <ComboboxList>
-                      {(item: string) => (
-                        <ComboboxItem key={item} value={item}>
-                          {item}
-                        </ComboboxItem>
-                      )}
-                    </ComboboxList>
-                  </ComboboxContent>
-                </Combobox>
+                  <SelectTrigger id={field.name}>
+                    <SelectValue placeholder="Seleccionar" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      {teacherNames.map((name) => (
+                        <SelectItem key={name} value={name}>
+                          {name}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
               </Field>
             )}
           </form.Field>
@@ -285,7 +266,7 @@ export function CreateGradeGroupDialog({
                   id={field.name}
                   type="number"
                   min={0}
-                  placeholder="Cantidad de cupos"
+                  placeholder="Ingresar cupo"
                   value={Number.isNaN(field.state.value) ? "" : field.state.value}
                   onBlur={field.handleBlur}
                   onChange={(e) => field.handleChange(e.target.valueAsNumber)}
@@ -297,9 +278,7 @@ export function CreateGradeGroupDialog({
 
         <DialogFooter>
           <form.Subscribe
-            selector={(state) =>
-              gradeGroupFormSchema.safeParse(state.values).success
-            }
+            selector={(state) => gradeGroupFormSchema.safeParse(state.values).success}
           >
             {(isComplete) =>
               isComplete ? (
@@ -310,20 +289,13 @@ export function CreateGradeGroupDialog({
                   disabled={isSaving}
                   aria-busy={isSaving}
                 >
-                  {isSaving && (
-                    <SpinnerIcon
-                      data-icon="inline-start"
-                      className="animate-spin"
-                    />
-                  )}
+                  {isSaving && <SpinnerIcon data-icon="inline-start" className="animate-spin" />}
                   Guardar
                 </Button>
               ) : null
             }
           </form.Subscribe>
-          <DialogClose render={<Button type="button" variant="outline" />}>
-            Cancelar
-          </DialogClose>
+          <DialogClose render={<Button type="button" variant="outline" />}>Cancelar</DialogClose>
         </DialogFooter>
       </DialogContent>
     </Dialog>

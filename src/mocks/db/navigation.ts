@@ -1,18 +1,15 @@
 import type { RouteResponseDto } from "@/features/navigation/api/types/nav-item"
 
 // Misma forma que devuelve el backend real (GET /sso-admin/myMenu?app=):
-// lista plana, jerarquía vía `idParent`.
-export const navigationMenu: RouteResponseDto[] = [
-  // {
-  //   id: 1,
-  //   name: "Pagos",
-  //   icon: "Credit-Card-Icon",
-  //   path: "/app",
-  //   menuOrder: 0,
-  //   type: "ITEM",
-  //   idParent: null,
-  //   roleIds: [1, 2],
-  // },
+// lista plana, jerarquía vía `idParent`. `visible` y `planId` los agrega la
+// pantalla de configuración de roles y menús; los menús ya cargados no los
+// traen y se leen como visibles y sin plan.
+export interface MockMenu extends RouteResponseDto {
+  visible?: boolean
+  planId?: number | null
+}
+
+export const navigationMenu: MockMenu[] = [
   {
     id: 12,
     name: "Cobertura educativa",
@@ -65,33 +62,36 @@ export const navigationMenu: RouteResponseDto[] = [
   },
   {
     id: 9,
-    name: "Auditoría",
-    icon: "Shield-Check-Icon",
-    path: "/app/auditoria-sesiones",
+    name: "Administración",
+    icon: "Admin-Panel-Settings-Icon",
+    path: "/app/registro-de-actividad/sesiones",
     menuOrder: 2,
     type: "GROUP",
     idParent: null,
     roleIds: [1, 2],
   },
+  // La vista por tabla del registro se alcanza desde el encabezado de la
+  // propia página (ver audit-session-table.tsx), no desde el menú.
   {
     id: 10,
-    name: "Por sesión",
+    name: "Registro de actividad",
     icon: "",
-    path: "/app/auditoria-sesiones",
+    path: "/app/registro-de-actividad/sesiones",
     menuOrder: 0,
     type: "ITEM",
     idParent: 9,
     roleIds: [1, 2],
   },
   {
-    id: 11,
-    name: "Por tabla",
+    id: 18,
+    name: "Configuración de roles y menús",
     icon: "",
-    path: "/app/auditoria-tablas",
+    path: "/app/administracion/roles-menus",
     menuOrder: 1,
     type: "ITEM",
     idParent: 9,
-    roleIds: [1, 2],
+    roleIds: [1],
+    maxLines: 2,
   },
   {
     id: 5,
@@ -136,12 +136,13 @@ export const navigationMenu: RouteResponseDto[] = [
   {
     "id": 17,
     "name": "Establecimiento Educativo",
-    "icon": "Graduation-Cap-Icon",
+    "icon": "Bank-Icon",
     "path": "/app/establecimiento-educativo",
     "menuOrder": 2,
     "type": "GROUP",
     "idParent": null,
-    "roleIds": [1, 2]
+    "roleIds": [1, 2],
+    "maxLines": 2
   },
   {
     "id": 13,

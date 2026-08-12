@@ -7,7 +7,7 @@ import { Pagination } from "@/components/pagination"
 import { useDataTable } from "@/hooks/use-data-table"
 
 import { SearchInput } from "../../common/search-input"
-import { NoticeOutlet } from "../../common/notice-context"
+import { NoticeOutlet } from "@/components/notice/notice-context"
 import { columns } from "../table/columns-area-subject"
 import { CreateAreaSubjectDialog } from "../dialogs/dialog-create-area-subject"
 import { DeleteSelectedAreaSubjectsDialog } from "../dialogs/dialog-delete-selected-area-subjects"
@@ -25,10 +25,7 @@ export function TabAreaSubject({ academicPeriodId }: TabAreaSubjectProps) {
   const [pageSize, setPageSize] = useState(10)
   const [search, setSearch] = useState("")
 
-  const queryFilters = useMemo(
-    () => ({ nombreInterno: search.trim() || undefined }),
-    [search]
-  )
+  const queryFilters = useMemo(() => ({ nombreInterno: search.trim() || undefined }), [search])
 
   const { data, isPending, isError, refetch } = useAreaSubjectQuery({
     filters: queryFilters,
@@ -88,7 +85,6 @@ export function TabAreaSubject({ academicPeriodId }: TabAreaSubjectProps) {
               <ExportAreaSubjectsDialog filters={queryFilters} />
             </>
           )}
-          <DataTableViewOptions table={table} />
         </div>
       </div>
 
@@ -104,6 +100,7 @@ export function TabAreaSubject({ academicPeriodId }: TabAreaSubjectProps) {
       />
       {data && (
         <Pagination
+          viewOptions={<DataTableViewOptions table={table} />}
           pageIndex={pageIndex}
           pageCount={data.pageCount}
           canPrev={pageIndex > 0}

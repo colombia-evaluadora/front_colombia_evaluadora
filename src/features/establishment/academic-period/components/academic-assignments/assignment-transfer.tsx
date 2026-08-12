@@ -83,9 +83,7 @@ export function AssignmentTransfer({
       {/* Disponibles */}
       <div className="flex flex-col gap-3">
         <div className="flex min-h-9 items-center justify-between gap-2">
-          <HeadingTag className="text-sm font-semibold">
-            Asignatura(s) disponible(s)
-          </HeadingTag>
+          <HeadingTag className="text-sm font-semibold">Asignatura(s) disponible(s)</HeadingTag>
           {available.length > 0 && (
             <Button
               type="button"
@@ -146,9 +144,7 @@ export function AssignmentTransfer({
       {/* Actuales */}
       <div className="flex flex-col gap-3">
         <div className="flex min-h-9 items-center justify-between gap-2">
-          <HeadingTag className="text-sm font-semibold">
-            Asignaturas actuales
-          </HeadingTag>
+          <HeadingTag className="text-sm font-semibold">Asignaturas actuales</HeadingTag>
           {assigned.length > 0 && (
             <Button
               type="button"

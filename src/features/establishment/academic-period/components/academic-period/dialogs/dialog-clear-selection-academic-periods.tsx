@@ -27,7 +27,7 @@ export function ClearSelectionAcademicPeriodsDialog({
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger
-        render={<Button variant="outline" aria-label="Deseleccionar" />}
+        render={<Button variant="outline" size="sm" aria-label="Deseleccionar" />}
       >
         <XSquareIcon />
         <span className="sr-only md:not-sr-only">Deseleccionar</span>

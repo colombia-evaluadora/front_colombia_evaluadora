@@ -16,11 +16,7 @@ export function AreaField({
 }) {
   const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
   return (
-    <Field
-      variant="outlined"
-      data-invalid={isInvalid}
-      className="w-auto min-w-[11rem] flex-1"
-    >
+    <Field variant="outlined" data-invalid={isInvalid} className="w-auto min-w-[11rem] flex-1">
       <FieldLabel htmlFor={field.name} className="flex-1">
         {label}
       </FieldLabel>

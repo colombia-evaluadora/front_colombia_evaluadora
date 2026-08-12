@@ -6,11 +6,7 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import {
-  inputTriggerVariants,
-  inputVariants,
-  useInputVariant,
-} from "@/components/ui/input"
+import { inputTriggerVariants, inputVariants, useInputVariant } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 
 interface SubjectsMultiSelectProps {
@@ -35,11 +31,7 @@ export function SubjectsMultiSelect({
   const resolvedVariant = useInputVariant()
 
   function toggle(option: string) {
-    onChange(
-      value.includes(option)
-        ? value.filter((v) => v !== option)
-        : [...value, option]
-    )
+    onChange(value.includes(option) ? value.filter((v) => v !== option) : [...value, option])
   }
 
   return (
@@ -52,7 +44,7 @@ export function SubjectsMultiSelect({
             className={cn(
               inputVariants({ variant: resolvedVariant }),
               inputTriggerVariants({ variant: resolvedVariant }),
-              "flex h-auto min-h-10 items-center justify-between gap-2 text-left"
+              "flex h-auto min-h-10 items-center justify-between gap-2 text-left",
             )}
           />
         }
@@ -88,9 +80,7 @@ export function SubjectsMultiSelect({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="min-w-64">
         {options.length === 0 ? (
-          <p className="text-muted-foreground px-2 py-1.5 text-sm">
-            {emptyMessage}
-          </p>
+          <p className="text-muted-foreground px-2 py-1.5 text-sm">{emptyMessage}</p>
         ) : (
           options.map((option) => (
             <DropdownMenuCheckboxItem

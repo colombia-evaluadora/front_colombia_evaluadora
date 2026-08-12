@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -11,7 +11,13 @@ import {
 } from "@/components/ui/dialog"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { PlusIcon, TrashIcon } from "@/components/ui/icons"
+import {
+  CheckIcon,
+  ControlPointIcon,
+  PencilIcon,
+  TrashIcon,
+  XIcon,
+} from "@/components/ui/icons"
 import {
   Select,
   SelectContent,
@@ -27,7 +33,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import {
+  TableSortableHeader,
+  compareBySortKey,
+  type TableSort,
+} from "@/components/table-sort-header"
 import { CATALOGS } from "@/lib/catalogs"
+import { SUCCESS_MESSAGES } from "@/lib/success-messages"
+import { cn } from "@/lib/utils"
 
 import { useCreateEmployee } from "../../api/mutations/use-create-employee"
 import { useCreateEmployeePerson } from "../../api/mutations/use-create-employee-person"
@@ -49,7 +62,7 @@ import {
   type EmployeeAdditionalInfoValue,
 } from "../forms/form-employee-additional-info"
 import { UserDetailsForm } from "../forms/form-user-datails"
-import { NoticeOutlet, useNotify } from "../common/notice-context"
+import { NoticeOutlet, useNotify } from "@/components/notice/notice-context"
 
 interface ManageEmployeeDialogProps {
   open: boolean
@@ -64,6 +77,78 @@ interface PermissionDraft {
   workScheduleCode: string
   status: PermissionStatus | ""
 }
+
+/**
+ * ¿La información complementaria trae algo? Se usa al abrir el diálogo en modo
+ * edición: si el funcionario ya llega con estos datos del backend, la sección
+ * cuenta como guardada.
+ */
+function hasAdditionalInfoData(value: EmployeeAdditionalInfoValue): boolean {
+  return Boolean(
+    value.address.trim() ||
+      value.employeeClass.id ||
+      value.educationLevel.id ||
+      value.grade.id ||
+      value.highestEducationLevel.id ||
+      value.fundingSource.id ||
+      value.functionalPosition.id ||
+      value.employmentType.id,
+  )
+}
+
+/** Columnas por las que se puede ordenar la tabla de permisos. */
+type PermissionSortKey = "order" | "role" | "campus" | "workSchedule" | "status"
+
+/** El valor plano por el que ordena cada columna (los catálogos son objetos). */
+function permissionSortValue(permission: Permission, key: PermissionSortKey): unknown {
+  switch (key) {
+    case "order":
+      return permission.order
+    case "role":
+      return permission.role.name
+    case "campus":
+      return permission.campus.name
+    case "workSchedule":
+      return permission.workSchedule.name
+    case "status":
+      return permission.status
+  }
+}
+
+/*
+ * Columna de acciones al estilo de `DataTable` y de la tabla de escalas de
+ * valoración: la celda es `sticky` y de 1px —los botones son absolutos, su
+ * min-content es 0— y el `spacer` que va justo antes es quien le reserva el
+ * ancho en el flujo, para que no se lleve una tajada del reparto.
+ */
+const PERMISSION_ACTIONS_CELL_CLASS = "sticky right-0 z-10 w-px"
+const PERMISSION_ACTIONS_SPACER_WIDTH = 96
+
+const PERMISSION_ACTIONS_SPACER_CELL = (
+  <td aria-hidden className="p-0">
+    <div style={{ width: PERMISSION_ACTIONS_SPACER_WIDTH }} />
+  </td>
+)
+
+const PERMISSION_ACTIONS_SPACER_HEAD = (
+  <th aria-hidden className="p-0">
+    <div style={{ width: PERMISSION_ACTIONS_SPACER_WIDTH }} />
+  </th>
+)
+
+/*
+ * El bloque va a sangre contra el borde derecho, con el alto completo de la
+ * fila, y aparece con el mismo fade que el hover. El fondo es el color del
+ * hover de `TableRow` (`bg-muted/50`) ya resuelto: acá hace falta opaco porque
+ * tapa las columnas que pasan por debajo al scrollear, y se mezcla contra
+ * `--popover` —la tabla vive dentro de un Dialog—.
+ */
+const permissionActionsOverlayClass = () =>
+  cn(
+    "absolute inset-y-0 right-0 z-10 flex items-center gap-1 px-2 transition-opacity",
+    "bg-[color-mix(in_srgb,var(--muted)_50%,var(--popover))]",
+    "opacity-0 group-hover/row:opacity-100 group-has-[:focus-visible]/row:opacity-100",
+  )
 
 function createEmptyCatalogItem(): CatalogItem {
   return { id: "", code: "", name: "" }
@@ -152,8 +237,28 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
   const [permissionsDialogOpen, setPermissionsDialogOpen] = useState(false)
   const [additionalInfoDialogOpen, setAdditionalInfoDialogOpen] = useState(false)
   const [permissionDraft, setPermissionDraft] = useState<PermissionDraft>(createPermissionDraft)
+  // Orden de la tabla de permisos: estado local, la tabla se arma a mano.
+  const [permissionSort, setPermissionSort] = useState<TableSort<PermissionSortKey>>(null)
+  /*
+   * Secciones opcionales ya confirmadas con su botón Guardar. Es lo que decide
+   * qué botón se ve y con qué ícono, y va aparte de los datos a propósito:
+   * agregar una fila a la tabla —o escribir en el formulario— todavía no
+   * cuenta, recién el Guardar del diálogo lo hace. Cancelar deja el estado
+   * como estaba.
+   */
+  const [permissionsSaved, setPermissionsSaved] = useState(false)
+  const [additionalInfoSaved, setAdditionalInfoSaved] = useState(false)
   // Estado UI: vive fuera de `Person` porque no es parte del modelo de negocio.
   const [confirmPassword, setConfirmPassword] = useState("")
+
+  const sortedPermissions = useMemo(() => {
+    if (!permissionSort) return permissions
+    const { key, dir } = permissionSort
+    const sorted = [...permissions].sort((a, b) =>
+      compareBySortKey(permissionSortValue(a, key), permissionSortValue(b, key)),
+    )
+    return dir === "desc" ? sorted.reverse() : sorted
+  }, [permissions, permissionSort])
 
   /**
    * id efectivo del empleado: el de la URL en edición, o el recién creado
@@ -186,6 +291,8 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
       setPermissionDraft(createPermissionDraft())
       setConfirmPassword("")
       setCreatedEmployeeId(null)
+      setPermissionsSaved(false)
+      setAdditionalInfoSaved(false)
       return
     }
 
@@ -196,6 +303,10 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
       setAdditionalInfo(createAdditionalInfoFromEmployee(employee))
       setPermissionDraft(createPermissionDraft(employee.permissions.length + 1))
       setConfirmPassword(employee.person.password)
+      // En edición lo que llega del backend ya está guardado: los botones
+      // arrancan con el ícono de editar, sin pedir un Guardar que no aplica.
+      setPermissionsSaved(employee.permissions.length > 0)
+      setAdditionalInfoSaved(hasAdditionalInfoData(createAdditionalInfoFromEmployee(employee)))
     }
   }, [employeeQuery.data, isEditMode, open])
 
@@ -224,9 +335,9 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
         }
 
         // En modo creación este guardado final también pasa por PUT (una vez
-        // ya existe `activeEmployeeId`), así que el mensaje del backend diría
-        // "actualizado" aunque el funcionario se esté creando por primera vez.
-        notify(isEditMode ? result.message : "Funcionario creado.")
+        // ya existe `activeEmployeeId`), así que hay que distinguir el mensaje
+        // acá: el funcionario se está creando por primera vez.
+        notify(isEditMode ? SUCCESS_MESSAGES.employee.updated : SUCCESS_MESSAGES.employee.created)
         onOpenChange(false)
       },
       onError: (error) => {
@@ -369,11 +480,13 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
   }
 
   function closePermissionsDialog() {
+    setPermissionsSaved(true)
     setPermissionsDialogOpen(false)
     notify("Permisos agregados al borrador. Pulsa Guardar para persistir el funcionario.", { variant: "info" })
   }
 
   function closeAdditionalInfoDialog() {
+    setAdditionalInfoSaved(true)
     setAdditionalInfoDialogOpen(false)
     notify("Información complementaria agregada al borrador. Pulsa Guardar para persistir el funcionario.", { variant: "info" })
   }
@@ -384,7 +497,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent
-          className="w-[min(98vw,76rem)] max-w-none sm:max-w-304 max-h-[92vh] overflow-y-auto overflow-x-hidden"
+          className="w-[min(95vw,56rem)] max-w-none sm:max-w-224 max-h-[85vh] overflow-y-auto overflow-x-hidden"
           showCloseButton={false}
         >
           <DialogHeader>
@@ -400,28 +513,48 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
             onConfirmPasswordChange={setConfirmPassword}
           />
 
-          <DialogFooter className="flex-row flex-wrap items-center justify-between gap-3">
+          {/* `sm:justify-between` y no solo `justify-between`: el `DialogFooter`
+              trae `sm:justify-end` propio y, al ser una clase con variante,
+              `twMerge` no la funde con la pelada — sin el `sm:` los dos grupos
+              se iban juntos a la derecha en escritorio. */}
+          <DialogFooter className="flex-row flex-wrap items-center justify-between gap-3 sm:justify-between">
+            {/*
+              Los dos accesos opcionales se recorren en orden: permisos primero
+              y, solo cuando ya hay al menos uno, aparece la información
+              complementaria. Cada botón cuenta en qué punto está con su ícono:
+              el "+" en círculo de los listados (`ControlPointIcon`) mientras la
+              sección está vacía, y el lápiz de las tablas cuando ya tiene datos
+              —entrar deja de ser agregar y pasa a ser editar—.
+            */}
             <div className="flex flex-wrap items-center gap-2">
               {canOpenOptionalSections && (
                 <Button
                   variant="fill"
-                  color="info"
+                  color="primary"
                   size="sm"
                   onClick={() => setPermissionsDialogOpen(true)}
                 >
-                  <PlusIcon data-icon="inline-start" />
-                  Permisos / {permissions.length}
+                  {permissionsSaved ? (
+                    <PencilIcon data-icon="inline-start" />
+                  ) : (
+                    <ControlPointIcon data-icon="inline-start" />
+                  )}
+                  {permissionsSaved ? `Permisos / ${permissions.length}` : "Permisos"}
                 </Button>
               )}
 
-              {canOpenOptionalSections && (
+              {canOpenOptionalSections && permissionsSaved && (
                 <Button
                   variant="fill"
-                  color="info"
+                  color="primary"
                   size="sm"
                   onClick={() => setAdditionalInfoDialogOpen(true)}
                 >
-                  <PlusIcon data-icon="inline-start" />
+                  {additionalInfoSaved ? (
+                    <PencilIcon data-icon="inline-start" />
+                  ) : (
+                    <ControlPointIcon data-icon="inline-start" />
+                  )}
                   Información complementaria
                 </Button>
               )}
@@ -435,6 +568,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
                 onClick={() => void handleMainSave()}
                 disabled={isSavingMain}
               >
+                <CheckIcon data-icon="inline-start" />
                 {isSavingMain
                   ? "Guardando..."
                   : isEditMode
@@ -448,6 +582,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
                 onClick={() => onOpenChange(false)}
                 disabled={isSavingMain}
               >
+                <XIcon data-icon="inline-start" />
                 Cancelar
               </Button>
             </div>
@@ -471,6 +606,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
               <FieldLabel htmlFor="permission-order">Orden*</FieldLabel>
               <Input
                 id="permission-order"
+                placeholder="Ingresar orden"
                 type="number"
                 min={1}
                 value={permissionDraft.order}
@@ -491,7 +627,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
                 items={roleItems}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar rol" />
+                  <SelectValue placeholder="Seleccionar" />
                 </SelectTrigger>
                 <SelectContent>
                   {roleItems.map((item) => (
@@ -514,7 +650,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
                 items={campusItems}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar sede educativa" />
+                  <SelectValue placeholder="Seleccionar" />
                 </SelectTrigger>
                 <SelectContent>
                   {campusItems.map((item) => (
@@ -537,7 +673,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
                 items={workScheduleItems}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar jornada" />
+                  <SelectValue placeholder="Seleccionar" />
                 </SelectTrigger>
                 <SelectContent>
                   {workScheduleItems.map((item) => (
@@ -563,7 +699,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
                 items={permissionStatusItems}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar estado" />
+                  <SelectValue placeholder="Seleccionar" />
                 </SelectTrigger>
                 <SelectContent>
                   {permissionStatusItems.map((item) => (
@@ -576,77 +712,130 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
             </Field>
 
             <div className="flex items-end md:justify-end">
-              <Button variant="fill" color="info" size="sm" onClick={addPermission} className="w-full md:w-auto">
-                <PlusIcon data-icon="inline-start" />
+              <Button
+                variant="fill"
+                color="primary"
+                size="sm"
+                onClick={addPermission}
+                className="w-full md:w-auto"
+              >
+                <ControlPointIcon data-icon="inline-start" />
                 Agregar
               </Button>
             </div>
           </div>
 
-          <div className="max-h-[36vh] overflow-auto rounded-md border">
-            <Table>
+          {/* La tabla aparece recién con el primer permiso: vacía no aportaba
+              nada más que un encabezado y una fila de "aún no hay". */}
+          {permissions.length > 0 && (
+            <Table containerClassName="max-h-[36vh] overflow-y-auto">
               <TableHeader>
-                <TableRow>
-                  <TableHead>Orden</TableHead>
-                  <TableHead>Rol</TableHead>
-                  <TableHead>Sede educativa</TableHead>
-                  <TableHead>Jornada</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead className="w-16 text-right">Acciones</TableHead>
+                {/* El encabezado no lleva fondo propio ni hover: comparte el de
+                    la tabla en reposo, igual que una fila sin el puntero
+                    encima. `has-aria-expanded` cubre el rato en que un menú de
+                    orden está abierto. */}
+                <TableRow className="hover:bg-transparent has-aria-expanded:bg-transparent">
+                  <TableHead className="text-foreground">
+                    <TableSortableHeader
+                      title="Orden"
+                      sortKey="order"
+                      sort={permissionSort}
+                      onSortChange={setPermissionSort}
+                    />
+                  </TableHead>
+                  <TableHead className="text-foreground">
+                    <TableSortableHeader
+                      title="Rol"
+                      sortKey="role"
+                      sort={permissionSort}
+                      onSortChange={setPermissionSort}
+                    />
+                  </TableHead>
+                  <TableHead className="text-foreground">
+                    <TableSortableHeader
+                      title="Sede educativa"
+                      sortKey="campus"
+                      sort={permissionSort}
+                      onSortChange={setPermissionSort}
+                    />
+                  </TableHead>
+                  <TableHead className="text-foreground">
+                    <TableSortableHeader
+                      title="Jornada"
+                      sortKey="workSchedule"
+                      sort={permissionSort}
+                      onSortChange={setPermissionSort}
+                    />
+                  </TableHead>
+                  <TableHead className="text-foreground">
+                    <TableSortableHeader
+                      title="Estado"
+                      sortKey="status"
+                      sort={permissionSort}
+                      onSortChange={setPermissionSort}
+                    />
+                  </TableHead>
+                  {/* La columna de acciones no rotula —el `th` solo reserva el
+                      ancho del bloque— y el título queda para lectores. */}
+                  {PERMISSION_ACTIONS_SPACER_HEAD}
+                  <TableHead className="w-px text-foreground">
+                    <span className="sr-only">Acciones</span>
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {permissions.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground">
-                      Aún no hay permisos agregados.
+                {sortedPermissions.map((permission) => (
+                  <TableRow key={`${permission.order}-${permission.campus.id}`} className="group/row">
+                    <TableCell className="font-medium">{permission.order}</TableCell>
+                    <TableCell>{permission.role.name}</TableCell>
+                    <TableCell>{permission.campus.name}</TableCell>
+                    <TableCell className="uppercase">{permission.workSchedule.name}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant="soft"
+                        color={permission.status === "ACTIVE" ? "success" : "destructive"}
+                      >
+                        {permission.status === "ACTIVE" ? "Activo" : "Suspendido"}
+                      </Badge>
                     </TableCell>
-                  </TableRow>
-                ) : (
-                  permissions.map((permission) => (
-                    <TableRow key={`${permission.order}-${permission.campus.id}`}>
-                      <TableCell>{permission.order}</TableCell>
-                      <TableCell>{permission.role.name}</TableCell>
-                      <TableCell>{permission.campus.name}</TableCell>
-                      <TableCell>{permission.workSchedule.name}</TableCell>
-                      <TableCell>
-                        <Badge
-                          variant="fill"
-                          color={permission.status === "ACTIVE" ? "success" : "destructive"}
-                        >
-                          {permission.status === "ACTIVE" ? "Activo" : "Suspendido"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
+                    {PERMISSION_ACTIONS_SPACER_CELL}
+                    <TableCell className={PERMISSION_ACTIONS_CELL_CLASS}>
+                      <div className={permissionActionsOverlayClass()}>
                         <Button
                           type="button"
-                          variant="fill"
-                          color="destructive"
-                          size="icon"
-                          className="size-8"
-                          aria-label="Eliminar permiso"
+                          variant="ghost"
+                          color="neutral"
+                          size="icon-sm"
+                          aria-label={`Quitar permiso ${permission.order}`}
                           onClick={() => removePermission(permission.order)}
                         >
                           <TrashIcon />
                         </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
-          </div>
+          )}
 
           <DialogFooter className="justify-end sm:justify-end">
-            <Button variant="fill" color="primary" size="sm" onClick={closePermissionsDialog}>
-              Aceptar
-            </Button>
+            {/* "Guardar" solo cuando hay algo que guardar: sin permisos en la
+                tabla no confirma nada y competía con "Agregar", que es la
+                acción real de esta pantalla. */}
+            {permissions.length > 0 && (
+              <Button variant="fill" color="primary" size="sm" onClick={closePermissionsDialog}>
+                <CheckIcon data-icon="inline-start" />
+                Guardar
+              </Button>
+            )}
             <Button
               variant="fill"
               color="neutral"
               size="sm"
               onClick={() => setPermissionsDialogOpen(false)}
             >
+              <XIcon data-icon="inline-start" />
               Cancelar
             </Button>
           </DialogFooter>
@@ -655,7 +844,9 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
 
       <Dialog open={additionalInfoDialogOpen} onOpenChange={setAdditionalInfoDialogOpen}>
         <DialogContent
-          className="w-[min(98vw,74rem)] max-w-none sm:max-w-296 max-h-[92vh] overflow-y-auto overflow-x-hidden"
+          // Mismo ancho que el diálogo principal y el de permisos: era el único
+          // más ancho y se notaba al saltar de uno a otro.
+          className="w-[min(98vw,70rem)] max-w-none sm:max-w-280 max-h-[92vh] overflow-y-auto overflow-x-hidden"
           showCloseButton={false}
         >
           <DialogHeader>
@@ -671,7 +862,8 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
 
           <DialogFooter className="justify-end sm:justify-end">
             <Button variant="fill" color="primary" size="sm" onClick={closeAdditionalInfoDialog}>
-              Aceptar
+              <CheckIcon data-icon="inline-start" />
+              Guardar
             </Button>
             <Button
               variant="fill"
@@ -679,6 +871,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
               size="sm"
               onClick={() => setAdditionalInfoDialogOpen(false)}
             >
+              <XIcon data-icon="inline-start" />
               Cancelar
             </Button>
           </DialogFooter>

@@ -6,7 +6,12 @@ import { cn } from "@/lib/utils"
 import { useFieldVariant, type FieldVariant } from "@/hooks/use-field-variant"
 
 const inputVariants = cva(
-  "w-full min-w-0 bg-transparent text-base transition-[color,border-color,background-color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+  // `text-sm` fijo, no el `text-base md:text-sm` de shadcn: ese default existe
+  // para que Safari en iOS no haga zoom al enfocar un campo de menos de 16px,
+  // pero dejaba al input más grande que el resto de los controles (las opciones
+  // de Select/Combobox son `text-sm` siempre) en viewports angostos. La app se
+  // usa en escritorio, así que pesa más la consistencia.
+  "w-full min-w-0 bg-transparent text-sm transition-[color,border-color,background-color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50",
   {
     variants: {
       variant: {

@@ -1,8 +1,20 @@
 "use no memo"
 
+import { Link } from "@tanstack/react-router"
+
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
 import { useDataTable } from "@/hooks/use-data-table"
+import {
+  TableScreen,
+  TableScreenActions,
+  TableScreenBody,
+  TableScreenHeader,
+  TableScreenTabs,
+  TableScreenTitle,
+  TableScreenToolbar,
+} from "@/components/layout/table-screen"
+import { paths } from "@/config/paths"
 
 import { useAuditsQuery } from "../../api/query/use-audits-query"
 import { useTablePagination } from "@/hooks/use-table-pagination"
@@ -14,6 +26,11 @@ import { ExportSelectedAuditSessionDialog } from "../dialogs/dialog-export-selec
 import { ExportAuditSessionDialog } from "../dialogs/dialog-export-audit-session"
 import { ClearSelectionAuditSessionDialog } from "../dialogs/dialog-clear-selection-audit-session"
 import { AuditSessionStatsCards } from "../stats/audit-session-stats-cards"
+
+const viewLinks = [
+  { label: "Por sesión", to: paths.app.auditoriaSesiones.getHref() },
+  { label: "Por tablas", to: paths.app.auditoriaTablas.getHref() },
+]
 
 export function AuditSessionDataTable() {
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
@@ -40,55 +57,75 @@ export function AuditSessionDataTable() {
   })
 
   return (
-    <>
-      <AuditSessionStatsCards
-        selectedIds={selectedIds}
-        hasSelection={hasSelection}
-        filters={queryFilters}
-      />
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <SearchAuditSession
-          activeFilterCount={activeFilterCount}
-          filters={filters}
-          applyFilters={applyFilters}
-          clearAllFilters={clearAllFilters}
-        />
+    <TableScreen>
+      <TableScreenHeader>
+        <TableScreenTitle>Sesiones de auditoría</TableScreenTitle>
 
-        <div className="flex gap-2">
-          {hasSelection ? (
-            <>
-              <ClearSelectionAuditSessionDialog resetSelection={resetSelection} />
-              <ExportSelectedAuditSessionDialog
-                selectedIds={selectedIds}
-                resetSelection={resetSelection}
-              />
-            </>
-          ) : (
-            <ExportAuditSessionDialog filters={queryFilters} />
-          )}
-          <DataTableViewOptions table={table} />
-        </div>
-      </div>
-      <DataTable
-        table={table}
-        isPending={isPending}
-        isError={isError}
-        onRetry={refetch}
-        emptyMessage="Sin resultados."
-        errorMessage="Ocurrió un error al cargar las sesiones."
-      />
-      {data && (
-        <Pagination
-          pageIndex={pageIndex}
-          pageCount={data.pageCount}
-          canPrev={pageIndex > 0}
-          canNext={pageIndex < data.pageCount - 1}
-          onPageChange={goToPage}
-          totalCount={data.totalCount}
-          pageSize={pageSize}
-          onPageSizeChange={setPageSize}
+        <TableScreenTabs>
+          <nav aria-label="Vistas de auditoría" className="flex items-end gap-1">
+            {viewLinks.map((view) => (
+              <Link
+                key={view.to}
+                to={view.to}
+                activeProps={{ "data-active": "true" }}
+                className="-mb-px rounded-t-lg border border-border border-b-border bg-muted/60 px-4 py-1.5 text-sm font-medium text-muted-foreground data-active:border-b-card data-active:bg-card data-active:text-foreground"
+              >
+                {view.label}
+              </Link>
+            ))}
+          </nav>
+        </TableScreenTabs>
+        <TableScreenToolbar>
+          <SearchAuditSession
+            activeFilterCount={activeFilterCount}
+            filters={filters}
+            applyFilters={applyFilters}
+            clearAllFilters={clearAllFilters}
+          />
+
+          <TableScreenActions>
+            {hasSelection ? (
+              <>
+                <ClearSelectionAuditSessionDialog resetSelection={resetSelection} />
+                <ExportSelectedAuditSessionDialog
+                  selectedIds={selectedIds}
+                  resetSelection={resetSelection}
+                />
+              </>
+            ) : (
+              <ExportAuditSessionDialog filters={queryFilters} />
+            )}
+          </TableScreenActions>
+        </TableScreenToolbar>
+      </TableScreenHeader>
+      <TableScreenBody>
+        <AuditSessionStatsCards
+          selectedIds={selectedIds}
+          hasSelection={hasSelection}
+          filters={queryFilters}
         />
-      )}
-    </>
+        <DataTable
+          table={table}
+          isPending={isPending}
+          isError={isError}
+          onRetry={refetch}
+          emptyMessage="Sin resultados."
+          errorMessage="Ocurrió un error al cargar las sesiones."
+        />
+        {data && (
+          <Pagination
+            viewOptions={<DataTableViewOptions table={table} />}
+            pageIndex={pageIndex}
+            pageCount={data.pageCount}
+            canPrev={pageIndex > 0}
+            canNext={pageIndex < data.pageCount - 1}
+            onPageChange={goToPage}
+            totalCount={data.totalCount}
+            pageSize={pageSize}
+            onPageSizeChange={setPageSize}
+          />
+        )}
+      </TableScreenBody>
+    </TableScreen>
   )
 }

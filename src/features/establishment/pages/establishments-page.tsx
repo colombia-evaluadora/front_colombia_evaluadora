@@ -1,13 +1,5 @@
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { PlusIcon } from "@/components/ui/icons"
+import { ControlPointIcon } from "@/components/ui/icons"
 import { Link } from "@tanstack/react-router"
 import { paths } from "@/config/paths"
 
@@ -15,28 +7,20 @@ import { EstablishmentsDataTable } from "../components/table/establishments-tabl
 
 export function EstablishmentsPage() {
   return (
-    <Card>
-      <CardHeader>
-        <CardAction>
-          <Button
-            render={<Link to={paths.app.establishments.add.getHref()} />}
-            variant="fill"
-            color="primary"
-            size="sm"
-            nativeButton={false}
-          >
-            <PlusIcon data-icon="inline-start" />
-            Agregar
-          </Button>
-        </CardAction>
-        <CardTitle>Establecimiento educativo</CardTitle>
-        <CardDescription>
-          Lista de establecimientos con búsqueda, filtro por estado y paginación.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <EstablishmentsDataTable />
-      </CardContent>
-    </Card>
+    <EstablishmentsDataTable
+      title="Establecimiento educativo"
+      action={
+        <Button
+          render={<Link to={paths.app.establishments.add.getHref()} />}
+          variant="fill"
+          color="primary"
+          size="sm"
+          nativeButton={false}
+        >
+          <ControlPointIcon data-icon="inline-start" />
+          Agregar
+        </Button>
+      }
+    />
   )
 }

@@ -1,25 +1,22 @@
 "use no memo"
 
 import { useCallback, useEffect, useMemo, useState } from "react"
+import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import type { SortingState } from "@tanstack/react-table"
 import { SpinnerIcon } from "@/components/ui/icons"
 
 import { Button } from "@/components/ui/button"
-import { DataTableViewOptions } from "@/components/data-table"
+import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
 import { useDataTable } from "@/hooks/use-data-table"
 
-import { useNotify, NoticeOutlet } from "../../common/notice-context"
+import { useNotify, NoticeOutlet } from "@/components/notice/notice-context"
 import { SearchAcademicAssignments } from "../search-academic-assignments"
-import { ExpandableDataTable } from "../../common/expandable-data-table"
 import { ExportAcademicAssignmentsDialog } from "../dialogs/dialog-export-academic-assignments"
 import { ExportSelectedAcademicAssignmentsDialog } from "../dialogs/dialog-export-selected-academic-assignments"
 
 import { useEmployeesQuery } from "@/features/establishment/api/query/use-employees-query"
-import type {
-  EmployeeListItem,
-  EmployeeStatus,
-} from "@/features/establishment/api/types/employee"
+import type { EmployeeListItem, EmployeeStatus } from "@/features/establishment/api/types/employee"
 
 import { useAssignmentSubjectsQuery } from "../../../api/query/academic-assignments/use-assignment-subjects-query"
 import { useTeacherAssignmentsQuery } from "../../../api/query/academic-assignments/use-teacher-assignments-query"
@@ -32,9 +29,7 @@ interface TabAcademicAssignmentsProps {
   academicPeriodId?: number
 }
 
-export function TabAcademicAssignments({
-  academicPeriodId,
-}: TabAcademicAssignmentsProps) {
+export function TabAcademicAssignments({ academicPeriodId }: TabAcademicAssignmentsProps) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [pageIndex, setPageIndex] = useState(0)
   const [pageSize, setPageSize] = useState(10)
@@ -51,7 +46,7 @@ export function TabAcademicAssignments({
       statuses: status ? [status] : undefined,
       campusId,
     }),
-    [search, status, campusId]
+    [search, status, campusId],
   )
 
   const [expanded, setExpanded] = useState<EmployeeListItem | null>(null)
@@ -59,16 +54,9 @@ export function TabAcademicAssignments({
 
   const { data: pool = [] } = useAssignmentSubjectsQuery(academicPeriodId)
 
-  const { data: savedIds } = useTeacherAssignmentsQuery(
-    academicPeriodId,
-    expanded?.id
-  )
+  const { data: savedIds } = useTeacherAssignmentsQuery(academicPeriodId, expanded?.documentNumber)
   useEffect(() => {
-    if (
-      expanded &&
-      savedIds &&
-      assignedIds[expanded.id] === undefined
-    ) {
+    if (expanded && savedIds && assignedIds[expanded.id] === undefined) {
       setAssignedIds((prev) => ({ ...prev, [expanded.id]: savedIds }))
     }
   }, [expanded, savedIds, assignedIds])
@@ -80,7 +68,7 @@ export function TabAcademicAssignments({
           notify(result.message, { variant: "error" })
           return
         }
-        notify(result.message)
+        notify(SUCCESS_MESSAGES.academicAssignment.updated)
       },
     },
   })
@@ -118,15 +106,10 @@ export function TabAcademicAssignments({
         expandedId: expanded?.id ?? null,
         onToggleExpand: toggleExpand,
       }),
-    [expanded, toggleExpand]
+    [expanded, toggleExpand],
   )
 
-  const {
-    table,
-    selectedIds,
-    hasSelection,
-    resetSelection,
-  } = useDataTable({
+  const { table, selectedIds, hasSelection, resetSelection } = useDataTable({
     columns,
     data: data?.rows ?? [],
     pageCount: data?.pageCount ?? -1,
@@ -178,13 +161,12 @@ export function TabAcademicAssignments({
           ) : (
             <ExportAcademicAssignmentsDialog filters={queryFilters} />
           )}
-          <DataTableViewOptions table={table} />
         </div>
       </div>
 
       <NoticeOutlet />
 
-      <ExpandableDataTable
+      <DataTable
         table={table}
         isPending={isPending}
         isError={isError}
@@ -222,10 +204,7 @@ export function TabAcademicAssignments({
                   }
                 >
                   {saveAssignments.isPending && (
-                    <SpinnerIcon
-                      data-icon="inline-start"
-                      className="animate-spin"
-                    />
+                    <SpinnerIcon data-icon="inline-start" className="animate-spin" />
                   )}
                   Guardar asignaturas
                 </Button>
@@ -236,6 +215,7 @@ export function TabAcademicAssignments({
       />
       {data && (
         <Pagination
+          viewOptions={<DataTableViewOptions table={table} />}
           pageIndex={pageIndex}
           pageCount={data.pageCount}
           canPrev={pageIndex > 0}

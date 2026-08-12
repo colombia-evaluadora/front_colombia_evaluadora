@@ -10,18 +10,13 @@ interface EditAcademicPeriodButtonProps {
   period: AcademicPeriod
 }
 
-export function EditAcademicPeriodButton({
-  period,
-}: EditAcademicPeriodButtonProps) {
+export function EditAcademicPeriodButton({ period }: EditAcademicPeriodButtonProps) {
   return (
     <Button
-      variant="fill"
-      color="secondary"
-      size="icon"
-      className="size-8"
-      render={
-        <Link to={paths.app.periodosAcademicosEditar.getHref(period.id)} />
-      }
+      variant="ghost"
+      color="neutral"
+      size="icon-sm"
+      render={<Link to={paths.app.periodosAcademicosEditar.getHref(period.id)} />}
       nativeButton={false}
     >
       <span className="sr-only">Editar periodo</span>

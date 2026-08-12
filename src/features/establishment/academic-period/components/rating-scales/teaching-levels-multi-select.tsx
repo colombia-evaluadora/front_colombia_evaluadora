@@ -1,26 +1,23 @@
-import { CaretDownIcon, XIcon } from "@/components/ui/icons";
+import { CaretDownIcon, XIcon } from "@/components/ui/icons"
 
+import { Badge } from "@/components/ui/badge"
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  inputTriggerVariants,
-  inputVariants,
-  useInputVariant,
-} from "@/components/ui/input";
-import { cn } from "@/lib/utils";
+} from "@/components/ui/dropdown-menu"
+import { inputTriggerVariants, inputVariants, useInputVariant } from "@/components/ui/input"
+import { cn } from "@/lib/utils"
 
-import type { TeachingLevel } from "../../api/types/rating-scales";
+import type { TeachingLevel } from "../../api/types/rating-scales"
 
 interface TeachingLevelsMultiSelectProps {
-  id?: string;
-  levels: TeachingLevel[];
-  value: number[];
-  onChange: (ids: number[]) => void;
-  invalid?: boolean;
+  id?: string
+  levels: TeachingLevel[]
+  value: number[]
+  onChange: (ids: number[]) => void
+  invalid?: boolean
 }
 
 // Chips en el trigger + dropdown con checkboxes al estilo de "Columnas
@@ -32,15 +29,11 @@ export function TeachingLevelsMultiSelect({
   onChange,
   invalid,
 }: TeachingLevelsMultiSelectProps) {
-  const selected = levels.filter((level) => value.includes(level.id));
-  const resolvedVariant = useInputVariant();
+  const selected = levels.filter((level) => value.includes(level.id))
+  const resolvedVariant = useInputVariant()
 
   function toggle(levelId: number) {
-    onChange(
-      value.includes(levelId)
-        ? value.filter((v) => v !== levelId)
-        : [...value, levelId],
-    );
+    onChange(value.includes(levelId) ? value.filter((v) => v !== levelId) : [...value, levelId])
   }
 
   return (
@@ -64,25 +57,23 @@ export function TeachingLevelsMultiSelect({
             <span className="text-muted-foreground">Seleccionar</span>
           ) : (
             selected.map((level) => (
-              <span
-                key={level.id}
-                className="bg-muted flex items-center gap-1 rounded-none px-2 py-0.5 text-xs"
-              >
+              <Badge key={level.id} variant="soft" color="muted" className="normal-case tracking-normal">
                 {level.nombre}
                 <span
                   role="button"
                   tabIndex={-1}
                   aria-label={`Quitar ${level.nombre}`}
-                  className="text-muted-foreground hover:text-foreground cursor-pointer"
+                  data-icon="inline-end"
+                  className="cursor-pointer text-muted-foreground hover:text-foreground"
                   onPointerDown={(e) => e.stopPropagation()}
                   onClick={(e) => {
-                    e.stopPropagation();
-                    toggle(level.id);
+                    e.stopPropagation()
+                    toggle(level.id)
                   }}
                 >
                   <XIcon className="size-3" />
                 </span>
-              </span>
+              </Badge>
             ))
           )}
         </div>
@@ -101,5 +92,5 @@ export function TeachingLevelsMultiSelect({
         ))}
       </DropdownMenuContent>
     </DropdownMenu>
-  );
+  )
 }

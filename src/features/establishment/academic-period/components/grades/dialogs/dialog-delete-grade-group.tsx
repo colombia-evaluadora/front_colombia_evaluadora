@@ -1,7 +1,8 @@
 import { useState } from "react"
+import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 
-import { SpinnerIcon, TrashIcon } from "@/components/ui/icons"
-import { useNotify } from "../../common/notice-context"
+import { CheckIcon, SpinnerIcon, TrashIcon, XIcon } from "@/components/ui/icons"
+import { useNotify } from "@/components/notice/notice-context"
 
 import {
   AlertDialog,
@@ -23,9 +24,7 @@ interface DeleteGradeGroupDialogProps {
   gradeGroup: GradeGroup
 }
 
-export function DeleteGradeGroupDialog({
-  gradeGroup,
-}: DeleteGradeGroupDialogProps) {
+export function DeleteGradeGroupDialog({ gradeGroup }: DeleteGradeGroupDialogProps) {
   const [open, setOpen] = useState(false)
   const { notify } = useNotify()
 
@@ -36,7 +35,7 @@ export function DeleteGradeGroupDialog({
           notify(result.message, { variant: "error" })
           return
         }
-        notify(result.message)
+        notify(SUCCESS_MESSAGES.gradeGroup.deleted)
         setOpen(false)
       },
     },
@@ -45,14 +44,7 @@ export function DeleteGradeGroupDialog({
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger
-        render={
-          <Button
-            variant="fill"
-            color="destructive"
-            size="icon"
-            className="size-8"
-          />
-        }
+        render={<Button variant="ghost" color="neutral" size="icon-sm" />}
       >
         <span className="sr-only">Eliminar grupo</span>
         <TrashIcon />
@@ -61,12 +53,11 @@ export function DeleteGradeGroupDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>Eliminar</AlertDialogTitle>
           <AlertDialogDescription>
-            Se eliminará permanentemente el grupo {gradeGroup.codigo}. Esta
-            acción no se puede deshacer.
+            Se eliminará permanentemente el grupo {gradeGroup.codigo}. Esta acción no se puede
+            deshacer.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancelar</AlertDialogCancel>
           <AlertDialogAction
             color="destructive"
             disabled={deleteMutation.isPending}
@@ -76,10 +67,14 @@ export function DeleteGradeGroupDialog({
             {deleteMutation.isPending ? (
               <SpinnerIcon data-icon="inline-start" className="animate-spin" />
             ) : (
-              <TrashIcon data-icon="inline-start" />
+              <CheckIcon data-icon="inline-start" />
             )}
-            Eliminar
+            Si
           </AlertDialogAction>
+          <AlertDialogCancel variant="fill" color="neutral">
+            <XIcon data-icon="inline-start" />
+            No
+          </AlertDialogCancel>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

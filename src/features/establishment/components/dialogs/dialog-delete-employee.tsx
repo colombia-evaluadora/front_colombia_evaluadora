@@ -1,6 +1,6 @@
 import { useState } from "react"
 
-import { SpinnerIcon, TrashIcon } from "@/components/ui/icons"
+import { CheckIcon, SpinnerIcon, TrashIcon, XIcon } from "@/components/ui/icons"
 
 import {
   AlertDialog,
@@ -14,10 +14,11 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
+import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 
 import { useDeleteEmployee } from "../../api/mutations/use-delete-employee"
 import type { EmployeeListItem } from "../../api/types/employee"
-import { useNotify } from "../common/notice-context"
+import { useNotify } from "@/components/notice/notice-context"
 
 interface DeleteEmployeeDialogProps {
   employee: EmployeeListItem
@@ -35,7 +36,7 @@ export function DeleteEmployeeDialog({ employee }: DeleteEmployeeDialogProps) {
           return
         }
 
-        notify(result.message)
+        notify(SUCCESS_MESSAGES.employee.deleted)
         setOpen(false)
       },
       onError: (error) => {
@@ -50,10 +51,9 @@ export function DeleteEmployeeDialog({ employee }: DeleteEmployeeDialogProps) {
         render={
           <Button
             type="button"
-            variant="fill"
-            color="destructive"
-            size="icon"
-            className="size-8"
+            variant="ghost"
+            color="neutral"
+            size="icon-sm"
             aria-label={`Eliminar ${employee.name}`}
           />
         }
@@ -78,11 +78,12 @@ export function DeleteEmployeeDialog({ employee }: DeleteEmployeeDialogProps) {
             {deleteMutation.isPending ? (
               <SpinnerIcon data-icon="inline-start" className="animate-spin" />
             ) : (
-              <TrashIcon data-icon="inline-start" />
+              <CheckIcon data-icon="inline-start" />
             )}
             Si
           </AlertDialogAction>
-          <AlertDialogCancel disabled={deleteMutation.isPending}>
+          <AlertDialogCancel variant="fill" color="neutral" disabled={deleteMutation.isPending}>
+            <XIcon data-icon="inline-start" />
             No
           </AlertDialogCancel>
         </AlertDialogFooter>

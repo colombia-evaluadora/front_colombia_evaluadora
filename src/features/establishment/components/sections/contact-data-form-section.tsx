@@ -22,7 +22,7 @@ export function ContactDataFormSection({ value, onChange, invalidFields = [], sh
                     <FieldLabel htmlFor="establishment-email">Correo electrónico</FieldLabel>
                     <Input
                         id="establishment-email"
-                        placeholder="iesfa@sanfrancisco.com"
+                        placeholder="Ingresar correo electrónico"
                         value={value.email}
                         aria-invalid={isInvalid("contact.email")}
                         onChange={(event) => onChange({ ...value, email: event.target.value })}
@@ -33,7 +33,7 @@ export function ContactDataFormSection({ value, onChange, invalidFields = [], sh
                     <FieldLabel htmlFor="establishment-website">Página web</FieldLabel>
                     <Input
                         id="establishment-website"
-                        placeholder="www.sanfrancisco.com"
+                        placeholder="Ingresar página web"
                         value={value.website}
                         onChange={(event) => onChange({ ...value, website: event.target.value })}
                     />
@@ -43,7 +43,7 @@ export function ContactDataFormSection({ value, onChange, invalidFields = [], sh
                     <FieldLabel htmlFor="establishment-phone">Teléfono</FieldLabel>
                     <Input
                         id="establishment-phone"
-                        placeholder="3160474000"
+                        placeholder="Ingresar teléfono"
                         value={value.phone}
                         aria-invalid={isInvalid("contact.phone")}
                         onChange={(event) => onChange({ ...value, phone: event.target.value })}
@@ -53,7 +53,7 @@ export function ContactDataFormSection({ value, onChange, invalidFields = [], sh
                     <FieldLabel htmlFor="establishment-fax">fax</FieldLabel>
                     <Input
                         id="establishment-fax"
-                        placeholder="3323879"
+                        placeholder="Ingresar fax"
                         value={value.fax ?? ""}
                         onChange={(event) => onChange({ ...value, fax: event.target.value })}
                     />
