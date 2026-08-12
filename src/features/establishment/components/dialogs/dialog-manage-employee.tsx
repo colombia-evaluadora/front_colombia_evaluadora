@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState, type ComponentProps } from "react"
 import { z } from "zod"
 
 import { Badge } from "@/components/ui/badge"
@@ -121,6 +121,20 @@ function hasAdditionalInfoData(value: EmployeeAdditionalInfoValue): boolean {
   )
 }
 
+/**
+ * Badge por estado del permiso, con el mismo criterio que los estados de
+ * periodo académico: `soft` y el color según la carga del estado. Lo consumen
+ * el select del formulario y la columna Estado de la tabla, para que el mismo
+ * dato no se pinte de dos maneras distintas en el mismo diálogo.
+ */
+const PERMISSION_STATUS_BADGE: Record<
+  PermissionStatus,
+  Pick<ComponentProps<typeof Badge>, "variant" | "color">
+> = {
+  ACTIVE: { variant: "soft", color: "success" },
+  SUSPENDED: { variant: "soft", color: "destructive" },
+}
+
 /** Columnas por las que se puede ordenar la tabla de permisos. */
 type PermissionSortKey = "order" | "role" | "campus" | "workSchedule" | "status"
 
@@ -209,18 +223,21 @@ function createInitialAdditionalInfo(): EmployeeAdditionalInfoValue {
   }
 }
 
-function isPersonMinComplete(person: Person | null) {
-  if (!person) {
-    return false
-  }
+/**
+ * Datos mínimos para dar de alta a la persona: los cuatro con asterisco. Las
+ * rutas coinciden con las que `UserDetailsForm` usa para ubicar el mensaje
+ * debajo de cada campo, por eso van prefijadas con `employee`.
+ */
+const employeePersonSchema = z.object({
+  documentType: z.object({ id: z.string() }).refine((item) => item.id.trim() !== "", {
+    message: "Selecciona el tipo de documento.",
+  }),
+  identification: z.string().trim().min(1, "Ingresa el número de documento."),
+  firstName: z.string().trim().min(1, "Ingresa el primer nombre."),
+  lastName: z.string().trim().min(1, "Ingresa el primer apellido."),
+})
 
-  return Boolean(
-    person.documentType.id &&
-      person.identification.trim() &&
-      person.firstName.trim() &&
-      person.lastName.trim()
-  )
-}
+const EMPLOYEE_FIELD_PREFIX = "employee"
 
 function createPermissionDraft(nextOrder = 1): PermissionDraft {
   return {
@@ -264,6 +281,8 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
   const [permissionDraft, setPermissionDraft] = useState<PermissionDraft>(createPermissionDraft)
   // Mensaje por campo del borrador de permiso, indexado por su nombre.
   const [permissionErrors, setPermissionErrors] = useState<Record<string, string>>({})
+  // Ídem para los datos de la persona, con las rutas de `UserDetailsForm`.
+  const [personErrors, setPersonErrors] = useState<Record<string, string>>({})
   // Orden de la tabla de permisos: estado local, la tabla se arma a mano.
   const [permissionSort, setPermissionSort] = useState<TableSort<PermissionSortKey>>(null)
   /*
@@ -316,6 +335,8 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
       setPermissions([])
       setAdditionalInfo(createInitialAdditionalInfo())
       setPermissionDraft(createPermissionDraft())
+      setPermissionErrors({})
+      setPersonErrors({})
       setConfirmPassword("")
       setCreatedEmployeeId(null)
       setPermissionsSaved(false)
@@ -329,6 +350,8 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
       setPermissions(employee.permissions)
       setAdditionalInfo(createAdditionalInfoFromEmployee(employee))
       setPermissionDraft(createPermissionDraft(employee.permissions.length + 1))
+      setPermissionErrors({})
+      setPersonErrors({})
       setConfirmPassword(employee.person.password)
       // En edición lo que llega del backend ya está guardado: los botones
       // arrancan con el ícono de editar, sin pedir un Guardar que no aplica.
@@ -390,13 +413,20 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
     let persistedPerson = draft
 
     if (!persistedPerson.id) {
-      if (!isPersonMinComplete(persistedPerson)) {
-        notify(
-          "Completa los datos mínimos del usuario (tipo de documento, número, primer nombre y primer apellido).",
-          { variant: "error" }
-        )
+      const parsed = employeePersonSchema.safeParse(persistedPerson)
+
+      if (!parsed.success) {
+        // Un mensaje debajo de cada campo, con la ruta que espera
+        // `UserDetailsForm` (`employee.firstName`, …).
+        const nextErrors: Record<string, string> = {}
+        for (const issue of parsed.error.issues) {
+          nextErrors[`${EMPLOYEE_FIELD_PREFIX}.${issue.path.join(".")}`] ??= issue.message
+        }
+        setPersonErrors(nextErrors)
         return
       }
+
+      setPersonErrors({})
 
       const result = await createPersonMutation.mutateAsync(persistedPerson)
 
@@ -538,6 +568,10 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
           <UserDetailsForm
             value={person}
             onChange={setPerson}
+            fieldPrefix={EMPLOYEE_FIELD_PREFIX}
+            errors={personErrors}
+            invalidFields={Object.keys(personErrors)}
+            showValidation
             confirmPassword={confirmPassword}
             onConfirmPasswordChange={setConfirmPassword}
           />
@@ -755,7 +789,17 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
                 items={permissionStatusItems}
               >
                 <SelectTrigger aria-invalid={Boolean(permissionErrors["status"])}>
-                  <SelectValue placeholder="Seleccionar" />
+                  {/* El valor elegido se muestra como el mismo badge que la
+                      columna Estado de la tabla de abajo. */}
+                  <SelectValue placeholder="Seleccionar">
+                    {(value) => {
+                      const badge = PERMISSION_STATUS_BADGE[value as PermissionStatus]
+                      if (!badge) return "Seleccionar"
+                      const label =
+                        permissionStatusItems.find((item) => item.value === value)?.label ?? value
+                      return <Badge {...badge}>{label}</Badge>
+                    }}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {permissionStatusItems.map((item) => (
@@ -848,10 +892,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
                     <TableCell>{permission.campus.name}</TableCell>
                     <TableCell className="uppercase">{permission.workSchedule.name}</TableCell>
                     <TableCell>
-                      <Badge
-                        variant="soft"
-                        color={permission.status === "ACTIVE" ? "success" : "destructive"}
-                      >
+                      <Badge {...PERMISSION_STATUS_BADGE[permission.status]}>
                         {permission.status === "ACTIVE" ? "Activo" : "Suspendido"}
                       </Badge>
                     </TableCell>
