@@ -844,7 +844,9 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
 
       <Dialog open={additionalInfoDialogOpen} onOpenChange={setAdditionalInfoDialogOpen}>
         <DialogContent
-          className="w-[min(98vw,74rem)] max-w-none sm:max-w-296 max-h-[92vh] overflow-y-auto overflow-x-hidden"
+          // Mismo ancho que el diálogo principal y el de permisos: era el único
+          // más ancho y se notaba al saltar de uno a otro.
+          className="w-[min(98vw,70rem)] max-w-none sm:max-w-280 max-h-[92vh] overflow-y-auto overflow-x-hidden"
           showCloseButton={false}
         >
           <DialogHeader>
@@ -861,7 +863,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
           <DialogFooter className="justify-end sm:justify-end">
             <Button variant="fill" color="primary" size="sm" onClick={closeAdditionalInfoDialog}>
               <CheckIcon data-icon="inline-start" />
-              Aceptar
+              Guardar
             </Button>
             <Button
               variant="fill"
