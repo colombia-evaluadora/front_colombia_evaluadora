@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/select"
 import {
   Field,
+  FieldError,
   FieldContent,
   FieldGroup,
   FieldLabel,
@@ -208,7 +209,7 @@ export function FilterTableOperationsForm({
           <form.Field
             name="occurredTo"
             children={(field) => (
-              <Field orientation="vertical" variant="outlined" className="gap-2">
+              <Field orientation="vertical" variant="outlined" className="gap-2" data-invalid={field.state.meta.errors.length > 0 ? "true" : undefined}>
                 <FieldLabel htmlFor={field.name}>Hasta</FieldLabel>
                 <DatePicker
                   mode="datetime"
@@ -217,6 +218,7 @@ export function FilterTableOperationsForm({
                   onChange={(date) => field.handleChange(formatDateTimeValue(date))}
                   className="h-9"
                 />
+                <FieldError errors={field.state.meta.errors} />
               </Field>
             )}
           />
