@@ -31,12 +31,14 @@ export function DomicilioDataFormSection({ value, onChange, invalidFields = [], 
     }))
     const zoneItems = zones.map((zone) => ({ value: zone.id, label: zone.name }))
 
+    // `gap-2`: el mismo ritmo vertical que usa el formulario entre secciones,
+    // así el encabezado, las filas y la sección siguiente van todos al mismo paso.
     return (
-        <>
+        <div className="grid gap-2">
             <FormSectionHeading>
                 Domicilio
             </FormSectionHeading>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div className="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-3">
                 <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid("address.municipality") ? "true" : undefined}>
                     <FieldLabel htmlFor="establishment-municipio">Municipio*</FieldLabel>
                     <Select
@@ -108,7 +110,7 @@ items={zoneItems}
                 </Field>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div className="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-3">
                 <Field orientation="vertical" variant="outlined" className="w-full">
                     <FieldLabel htmlFor="establishment-address">Dirección</FieldLabel>
                     <Input
@@ -140,6 +142,6 @@ items={zoneItems}
                 </Field>
             </div>
 
-        </>
+        </div>
     )
 }

@@ -91,7 +91,11 @@ export function ImageUploadField({
                         {preview ? <img src={preview} alt={value.name} /> : null}
                     </AttachmentMedia>
                     <AttachmentActions>
+                        {/* Neutral: borrar la imagen no es la acción principal
+                            de la tarjeta, y en primario competía con el resto
+                            del formulario. */}
                         <AttachmentAction
+                            color="neutral"
                             aria-label={deleteLabel}
                             onClick={() => onValueChange(null)}
                         >

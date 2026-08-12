@@ -17,8 +17,11 @@ interface EstablishmentDetailsFormProps {
  * igual que rector y secretaria— y por eso no se arma acá.
  */
 export function EstablishmentDetailsForm({ value, onChange, invalidFields = [], showValidation = false }: EstablishmentDetailsFormProps) {
+    // `gap-2`, el mismo que usan las secciones entre sus filas: un solo ritmo
+    // vertical en todo el formulario. Lo que separa una sección de otra es su
+    // encabezado, no un salto de espacio más grande.
     return (
-        <div className="grid grid-cols-1 gap-6">
+        <div className="grid grid-cols-1 gap-2">
             <IdentificationDataFormSection
                 value={value.basicInfo}
                 onChange={(basicInfo) => onChange({ ...value, basicInfo })}

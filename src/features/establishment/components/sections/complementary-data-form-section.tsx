@@ -43,13 +43,15 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
     const disabilityItems = disabilities.map((item: CatalogItem) => ({ value: item.id, label: item.name }))
     const licenseStatusItems = licenseStatuses.map((item: CatalogItem) => ({ value: item.id, label: item.name }))
 
+    // `gap-2`: el mismo ritmo vertical que usa el formulario entre secciones,
+    // así el encabezado, las filas y la sección siguiente van todos al mismo paso.
     return(
-        <>
+        <div className="grid gap-2">
             {/* Complementary information subsection */}
             <FormSectionHeading>
                 Información complementaria
             </FormSectionHeading>
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2">
                     <Field orientation="vertical" variant="outlined" data-invalid={isInvalid("additionalInfo.approvalResolution") ? "true" : undefined}>
                         <FieldLabel htmlFor="approval-resolution">
                             Resolución de aprobación
@@ -93,7 +95,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                         </Select>
                     </Field>
                 </div>
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2">
                     <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid("additionalInfo.calendar") ? "true" : undefined}>
                         <FieldLabel htmlFor="establishment-calendario">Calendario</FieldLabel>
                         <Select
@@ -147,7 +149,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                         </Select>
                     </Field>
                 </div>
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2">
                     <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid("additionalInfo.populationGender") ? "true" : undefined}>
                         <FieldLabel htmlFor="establishment-genero">Género de la población atendida</FieldLabel>
                         <Select
@@ -198,7 +200,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                         </Select>
                     </Field>
                 </div>
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2">
                     <Field orientation="vertical" variant="outlined" data-invalid={isInvalid("additionalInfo.disabilityType") ? "true" : undefined}>
                         <FieldLabel htmlFor="disabilities">
                             Discapacidades atendidas
@@ -257,7 +259,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                         </Select>
                     </Field>
                 </div>
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2">
                     {/* Mismo recuadro que los sí/no de periodo académico: la
                         etiqueta flota sobre el borde y el grupo comparte alto
                         con los inputs y selects de al lado. */}
@@ -291,7 +293,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                         />
                     </Field>
                 </div>
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2">
                     <Field orientation="vertical" variant="outlined" className="w-full">
                         <FieldLabel>
                             Atención a población con talentos adicionales
@@ -333,6 +335,6 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                         </RadioGroup>
                     </Field>
                 </div>
-        </>
+        </div>
     )
 }

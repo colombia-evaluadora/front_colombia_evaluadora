@@ -12,12 +12,14 @@ interface ContactDataFormSectionProps {
 
 export function ContactDataFormSection({ value, onChange, invalidFields = [], showValidation = false }: ContactDataFormSectionProps) {
     const isInvalid = (field: string) => showValidation && invalidFields.includes(field)
+    // `gap-2`: el mismo ritmo vertical que usa el formulario entre secciones,
+    // así el encabezado, las filas y la sección siguiente van todos al mismo paso.
     return(
-        <>
+        <div className="grid gap-2">
             <FormSectionHeading>
                 Datos de contacto
             </FormSectionHeading>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div className="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-3">
                 <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid("contact.email") ? "true" : undefined}>
                     <FieldLabel htmlFor="establishment-email">Correo electrónico</FieldLabel>
                     <Input
@@ -60,6 +62,6 @@ export function ContactDataFormSection({ value, onChange, invalidFields = [], sh
                 </Field>
 
             </div>
-        </>
+        </div>
     )
 }
