@@ -20,8 +20,6 @@ import {
   loginSearchSchema,
   restorePasswordSearchSchema,
 } from "@/features/auth/api/schema"
-import { paymentsSearchSchema } from "@/features/payments/api/schema"
-import { PaymentsErrorPage } from "@/features/payments/pages/payments-error-page"
 import { reservationsSearchSchema } from "@/features/coverage/api/schema"
 import {
   auditsSearchSchema,
@@ -33,7 +31,7 @@ import { academicPeriodsSearchSchema } from "@/features/establishment/academic-p
 import { establishmentsSearchSchema } from "@/features/establishment/api/establishment-schema"
 import { campusesSearchSchema } from "@/features/establishment/api/campus-schema"
 import { employeesSearchSchema } from "@/features/establishment/api/employee-schema"
-import { NoticeProvider } from "@/features/establishment/components/common/notice-context"
+import { NoticeProvider } from "@/components/notice/notice-context"
 
 /*const LandingPage = lazyRouteComponent(
   () => import("@/features/landing/pages/landing-page"),
@@ -60,10 +58,6 @@ const AuthLayout = lazyRouteComponent(() => import("@/components/layout/auth-lay
 const ProtectedLayout = lazyRouteComponent(
   () => import("@/components/layout/protected-layout"),
   "ProtectedLayout",
-)
-const PaymentsPage = lazyRouteComponent(
-  () => import("@/features/payments/pages/payments-page"),
-  "PaymentsPage",
 )
 const AuditSessionPage = lazyRouteComponent(
   () => import("@/features/audits/pages/audit-session-page"),
@@ -108,14 +102,14 @@ const EmployeesPage = lazyRouteComponent(
   "EmployeesPage"
 )
 
+const RolesMenusPage = lazyRouteComponent(
+  () => import("@/features/administration/roles-menus/pages/roles-menus-page"),
+  "RolesMenusPage"
+)
+
 const AddEstablishmentPage = lazyRouteComponent(
   () => import("@/features/establishment/pages/add-establishment-page"),
   "AddEstablishmentPage"
-)
-
-const AddCampusPage = lazyRouteComponent(
-  () => import("@/features/establishment/pages/add-campus-page"),
-  "AddCampusPage"
 )
 
 interface RouterContext {
@@ -263,18 +257,30 @@ const COBERTURA_CRUMB = {
   label: "Cobertura",
   to: paths.app.coberturaReservaCupo.getHref(),
 }
-const AUDITORIA_CRUMB = {
-  label: "Auditoría",
+const ADMINISTRACION_CRUMB = {
+  label: "Administración",
   to: paths.app.auditoriaSesiones.getHref(),
 }
+const REGISTRO_ACTIVIDAD_CRUMB = {
+  label: "Registro de actividad",
+  to: paths.app.auditoriaSesiones.getHref(),
+}
+const ESTABLECIMIENTO_CRUMB = {
+  label: "Establecimiento educativo",
+  to: paths.app.establishments.general.getHref(),
+}
+const PERIODOS_CRUMB = {
+  label: "Periodos académicos",
+  to: paths.app.periodosAcademicos.getHref(),
+}
 
-export const paymentsRoute = createRoute({
+// `/app` no tiene página propia: manda a la primera pantalla del menú.
+const appIndexRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
-  path: paths.app.payments.path,
-  validateSearch: paymentsSearchSchema,
-  errorComponent: PaymentsErrorPage,
-  staticData: { breadcrumb: [{ label: "Pagos" }] },
-  component: PaymentsPage,
+  path: "/",
+  beforeLoad: () => {
+    throw redirect({ to: paths.app.coberturaReservaCupo.getHref() })
+  },
 })
 
 export const coberturaReservaCupoRoute = createRoute({
@@ -306,34 +312,75 @@ const coberturaMatriculaRoute = createRoute({
   component: () => <ComingSoonPage title="Matrícula" />,
 })
 
-export const auditoriaSesionesRoute = createRoute({
+// Mismo criterio que `_establishment`: las cuatro vistas de auditoría
+// comparten un `NoticeProvider` para que el aviso de una exportación o de un
+// revert siga visible al moverse entre ellas.
+const auditsLayoutRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
+  id: "_audits",
+  component: () => (
+    <NoticeProvider>
+      <Outlet />
+    </NoticeProvider>
+  ),
+})
+
+// `/registro-de-actividad` a secas no tiene página propia: la vista por sesión
+// es la entrada del grupo.
+const registroActividadIndexRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.registroActividad.path,
+  beforeLoad: () => {
+    throw redirect({ to: paths.app.auditoriaSesiones.getHref() })
+  },
+})
+
+export const auditoriaSesionesRoute = createRoute({
+  getParentRoute: () => auditsLayoutRoute,
   path: paths.app.auditoriaSesiones.path,
   validateSearch: auditsSearchSchema,
-  staticData: { breadcrumb: [AUDITORIA_CRUMB, { label: "Sesiones" }] },
+  staticData: {
+    breadcrumb: [ADMINISTRACION_CRUMB, REGISTRO_ACTIVIDAD_CRUMB, { label: "Sesiones" }],
+  },
   component: AuditSessionPage,
 })
 
 export const auditoriaTablasRoute = createRoute({
-  getParentRoute: () => appLayoutRoute,
+  getParentRoute: () => auditsLayoutRoute,
   path: paths.app.auditoriaTablas.path,
   validateSearch: auditTablesSearchSchema,
-  staticData: { breadcrumb: [AUDITORIA_CRUMB, { label: "Tablas" }] },
+  staticData: {
+    breadcrumb: [
+      ADMINISTRACION_CRUMB,
+      REGISTRO_ACTIVIDAD_CRUMB,
+      { label: "Tablas" },
+    ],
+  },
   component: AuditTablesPage,
 })
 
 export const auditoriaTablaDetalleRoute = createRoute({
-  getParentRoute: () => appLayoutRoute,
+  getParentRoute: () => auditsLayoutRoute,
   path: paths.app.auditoriaTablaDetalle.path,
   validateSearch: tableOperationsSearchSchema,
   staticData: {
     breadcrumb: (params) => [
-      AUDITORIA_CRUMB,
+      ADMINISTRACION_CRUMB,
+      REGISTRO_ACTIVIDAD_CRUMB,
       { label: "Tablas", to: paths.app.auditoriaTablas.getHref() },
       { label: humanizeSlug(params.tableSlug) },
     ],
   },
   component: TableOperationsPage,
+})
+
+export const rolesMenusRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.rolesMenus.path,
+  staticData: {
+    breadcrumb: [ADMINISTRACION_CRUMB, { label: "Configuración de roles y menús" }],
+  },
+  component: RolesMenusPage,
 })
 
 // Ruta sin path propio: agrupa establecimientos/sedes/funcionarios bajo un
@@ -354,6 +401,7 @@ export const establishmentsRoute = createRoute({
   getParentRoute: () => establishmentLayoutRoute,
   path: paths.app.establishments.general.path,
   validateSearch: establishmentsSearchSchema,
+  staticData: { breadcrumb: [ESTABLECIMIENTO_CRUMB, { label: "Establecimiento" }] },
   component: EstablishmentsPage,
 })
 
@@ -361,6 +409,7 @@ export const campusesRoute = createRoute({
   getParentRoute: () => establishmentLayoutRoute,
   path: paths.app.establishments.campuses.path,
   validateSearch: campusesSearchSchema,
+  staticData: { breadcrumb: [ESTABLECIMIENTO_CRUMB, { label: "Sedes educativas" }] },
   component: CampusesPage,
 })
 
@@ -368,41 +417,46 @@ export const employeesRoute = createRoute({
   getParentRoute: () => establishmentLayoutRoute,
   path: paths.app.establishments.officials.path,
   validateSearch: employeesSearchSchema,
+  staticData: { breadcrumb: [ESTABLECIMIENTO_CRUMB, { label: "Funcionarios" }] },
   component: EmployeesPage,
 })
 
 export const addEstablishmentRoute = createRoute({
   getParentRoute: () => establishmentLayoutRoute,
   path: paths.app.establishments.add.path,
+  staticData: {
+    breadcrumb: [
+      ESTABLECIMIENTO_CRUMB,
+      { label: "Establecimiento", to: paths.app.establishments.general.getHref() },
+      { label: "Agregar" },
+    ],
+  },
   component: AddEstablishmentPage,
 })
 
 export const editEstablishmentRoute = createRoute({
   getParentRoute: () => establishmentLayoutRoute,
   path: paths.app.establishments.edit.path,
+  // El `establishmentId` es un identificador opaco: no se muestra como miga.
+  staticData: {
+    breadcrumb: [
+      ESTABLECIMIENTO_CRUMB,
+      { label: "Establecimiento", to: paths.app.establishments.general.getHref() },
+      { label: "Editar" },
+    ],
+  },
   component: AddEstablishmentPage,
 })
 
-export const addCampusRoute = createRoute({
-  getParentRoute: () => establishmentLayoutRoute,
-  path: paths.app.establishments.campuses.add.path,
-  component: AddCampusPage,
-})
-
-export const editCampusRoute = createRoute({
-  getParentRoute: () => establishmentLayoutRoute,
-  path: paths.app.establishments.campuses.edit.path,
-  component: AddCampusPage,
-})
-
 export const auditoriaSesionOperacionesRoute = createRoute({
-  getParentRoute: () => appLayoutRoute,
+  getParentRoute: () => auditsLayoutRoute,
   path: paths.app.auditoriaSesionOperaciones.path,
   validateSearch: sessionOperationsSearchSchema,
   // El `sessionId` es un identificador opaco: no se muestra como miga.
   staticData: {
     breadcrumb: [
-      AUDITORIA_CRUMB,
+      ADMINISTRACION_CRUMB,
+      REGISTRO_ACTIVIDAD_CRUMB,
       { label: "Sesiones", to: paths.app.auditoriaSesiones.getHref() },
       { label: "Operaciones" },
     ],
@@ -414,18 +468,26 @@ export const periodosAcademicosRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.periodosAcademicos.path,
   validateSearch: academicPeriodsSearchSchema,
+  staticData: { breadcrumb: [ESTABLECIMIENTO_CRUMB, { label: "Periodos académicos" }] },
   component: AcademicPeriodsPage,
 })
 
 export const periodosAcademicosAgregarRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.periodosAcademicosAgregar.path,
+  staticData: {
+    breadcrumb: [ESTABLECIMIENTO_CRUMB, PERIODOS_CRUMB, { label: "Agregar" }],
+  },
   component: AcademicPeriodConfigPage,
 })
 
 export const periodosAcademicosEditarRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.periodosAcademicosEditar.path,
+  // El `periodId` es un identificador opaco: no se muestra como miga.
+  staticData: {
+    breadcrumb: [ESTABLECIMIENTO_CRUMB, PERIODOS_CRUMB, { label: "Editar" }],
+  },
   component: AcademicPeriodConfigPage,
 })
 
@@ -461,15 +523,19 @@ const routeTree = rootRoute.addChildren([
     restorePasswordRoute,
   ]),
   appLayoutRoute.addChildren([
-    paymentsRoute,
+    appIndexRoute,
     coberturaReservaCupoRoute,
     coberturaPreMatriculaRoute,
     coberturaInscritosRoute,
     coberturaMatriculaRoute,
-    auditoriaSesionesRoute,
-    auditoriaTablasRoute,
-    auditoriaTablaDetalleRoute,
-    auditoriaSesionOperacionesRoute,
+    registroActividadIndexRoute,
+    auditsLayoutRoute.addChildren([
+      auditoriaSesionesRoute,
+      auditoriaTablasRoute,
+      auditoriaTablaDetalleRoute,
+      auditoriaSesionOperacionesRoute,
+    ]),
+    rolesMenusRoute,
     periodosAcademicosRoute,
     periodosAcademicosAgregarRoute,
     periodosAcademicosEditarRoute,
@@ -478,16 +544,12 @@ const routeTree = rootRoute.addChildren([
     employeesRoute,
     addEstablishmentRoute,
     editEstablishmentRoute,
-    addCampusRoute,
-    editCampusRoute,
     establishmentLayoutRoute.addChildren([
       establishmentsRoute,
       campusesRoute,
       employeesRoute,
       addEstablishmentRoute,
       editEstablishmentRoute,
-      addCampusRoute,
-      editCampusRoute,
     ]),
     reportesRoute,
     usuariosRoute,

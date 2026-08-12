@@ -44,7 +44,7 @@ export function ForgotPasswordForm({ id, onSubmit }: ForgotPasswordFormProps) {
                     name={field.name}
                     type="email"
                     autoComplete="email"
-                    placeholder="nombre@empresa.com"
+                    placeholder="Ingresar correo electrónico"
                     value={field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value)}

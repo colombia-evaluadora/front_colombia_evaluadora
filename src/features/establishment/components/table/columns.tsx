@@ -17,7 +17,6 @@ export const columns: ColumnDef<Establishment>[] = [
     id: "select",
     header: ({ table }) => (
       <Checkbox
-        color="neutral"
         aria-label="Seleccionar página"
         className="translate-y-0.5"
         checked={table.getIsAllPageRowsSelected()}
@@ -30,7 +29,6 @@ export const columns: ColumnDef<Establishment>[] = [
     ),
     cell: ({ row }) => (
       <Checkbox
-        color="neutral"
         aria-label={`Seleccionar ${row.original.name}`}
         className="translate-y-0.5"
         checked={row.getIsSelected()}
@@ -44,6 +42,7 @@ export const columns: ColumnDef<Establishment>[] = [
   {
     accessorKey: "dane",
     id: "dane",
+    meta: { label: "DANE" },
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="DANE" />
     ),
@@ -51,13 +50,18 @@ export const columns: ColumnDef<Establishment>[] = [
   {
     accessorKey: "name",
     id: "name",
+    meta: { label: "Establecimiento" },
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Establecimiento" />
+    ),
+    cell: ({ row }) => (
+      <p className="uppercase font-bold">{row.getValue("name")}</p>
     ),
   },
   {
     accessorFn: (row) => `${row.department}/${row.municipality}`,
     id: "departmentMunicipality",
+    meta: { label: "Departamento/Municipio" },
     header: ({ column }) => (
       <DataTableColumnHeader
         column={column}
@@ -73,6 +77,7 @@ export const columns: ColumnDef<Establishment>[] = [
   {
     accessorKey: "status",
     id: "status",
+    meta: { label: "Estado" },
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Estado" />
     ),
@@ -92,10 +97,9 @@ export const columns: ColumnDef<Establishment>[] = [
       <div className="flex items-center justify-end gap-1">
         <Button
           type="button"
-          variant="fill"
-          color="secondary"
-          size="icon"
-          className="size-8"
+          variant="ghost"
+          color="neutral"
+          size="icon-sm"
           aria-label={`Editar ${row.original.name}`}
           render={<Link to={paths.app.establishments.edit.getHref(row.original.id)} />}
           nativeButton={false}

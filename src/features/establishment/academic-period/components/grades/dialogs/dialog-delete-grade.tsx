@@ -1,7 +1,8 @@
 import { useState } from "react"
+import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 
-import { SpinnerIcon, TrashIcon } from "@/components/ui/icons"
-import { useNotify } from "../../common/notice-context"
+import { CheckIcon, SpinnerIcon, TrashIcon, XIcon } from "@/components/ui/icons"
+import { useNotify } from "@/components/notice/notice-context"
 
 import {
   AlertDialog,
@@ -34,7 +35,7 @@ export function DeleteGradeDialog({ grade }: DeleteGradeDialogProps) {
           notify(result.message, { variant: "error" })
           return
         }
-        notify(result.message)
+        notify(SUCCESS_MESSAGES.grade.deleted)
         setOpen(false)
       },
     },
@@ -43,14 +44,7 @@ export function DeleteGradeDialog({ grade }: DeleteGradeDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger
-        render={
-          <Button
-            variant="fill"
-            color="destructive"
-            size="icon"
-            className="size-8"
-          />
-        }
+        render={<Button variant="ghost" color="neutral" size="icon-sm" />}
       >
         <span className="sr-only">Eliminar grado</span>
         <TrashIcon />
@@ -59,12 +53,10 @@ export function DeleteGradeDialog({ grade }: DeleteGradeDialogProps) {
         <AlertDialogHeader>
           <AlertDialogTitle>Eliminar</AlertDialogTitle>
           <AlertDialogDescription>
-            Se eliminará permanentemente el grado {grade.nombre}. Esta acción no
-            se puede deshacer.
+            Se eliminará permanentemente el grado {grade.nombre}. Esta acción no se puede deshacer.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancelar</AlertDialogCancel>
           <AlertDialogAction
             color="destructive"
             disabled={deleteMutation.isPending}
@@ -74,10 +66,14 @@ export function DeleteGradeDialog({ grade }: DeleteGradeDialogProps) {
             {deleteMutation.isPending ? (
               <SpinnerIcon data-icon="inline-start" className="animate-spin" />
             ) : (
-              <TrashIcon data-icon="inline-start" />
+              <CheckIcon data-icon="inline-start" />
             )}
-            Eliminar
+            Si
           </AlertDialogAction>
+          <AlertDialogCancel variant="fill" color="neutral">
+            <XIcon data-icon="inline-start" />
+            No
+          </AlertDialogCancel>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

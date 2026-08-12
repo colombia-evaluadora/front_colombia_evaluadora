@@ -1,28 +1,17 @@
-import { useState } from "react";
-import { CaretDownIcon } from "@/components/ui/icons";
+import { useState } from "react"
+import { CaretDownIcon } from "@/components/ui/icons"
 
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  inputTriggerVariants,
-  inputVariants,
-  useInputVariant,
-} from "@/components/ui/input";
-import { cn } from "@/lib/utils";
-import type {
-  RatingSymbol,
-  RatingSymbolCategory,
-} from "../../api/types/rating-scales";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { inputTriggerVariants, inputVariants, useInputVariant } from "@/components/ui/input"
+import { cn } from "@/lib/utils"
+import type { RatingSymbol, RatingSymbolCategory } from "../../api/types/rating-scales"
 
 const CATEGORY_LABELS: Record<RatingSymbolCategory, string> = {
   carita: "Símbolo calificación por carita",
   valoracion: "Símbolo calificación por valoración",
-};
+}
 
-const CATEGORY_ORDER: RatingSymbolCategory[] = ["carita", "valoracion"];
+const CATEGORY_ORDER: RatingSymbolCategory[] = ["carita", "valoracion"]
 
 // Un símbolo es imagen si su valor es un data URI, apunta a una URL/ruta o
 // termina en una extensión de imagen; si no, se trata como emoji (texto). Así
@@ -34,7 +23,7 @@ function isImageValue(value: string): boolean {
     /^(https?:)?\/\//.test(value) ||
     value.startsWith("/") ||
     /\.(png|jpe?g|svg|webp|gif|avif)$/i.test(value)
-  );
+  )
 }
 
 export function RatingSymbolView({
@@ -42,13 +31,13 @@ export function RatingSymbolView({
   label,
   className,
 }: {
-  value: string;
-  label?: string;
-  className?: string;
+  value: string
+  label?: string
+  className?: string
 }) {
-  const [failed, setFailed] = useState(false);
+  const [failed, setFailed] = useState(false)
 
-  if (!value) return null;
+  if (!value) return null
 
   if (isImageValue(value)) {
     // Si la imagen no carga (404, ruta rota), el alt largo del navegador
@@ -66,7 +55,7 @@ export function RatingSymbolView({
         >
           ✕
         </span>
-      );
+      )
     }
 
     return (
@@ -76,18 +65,14 @@ export function RatingSymbolView({
         onError={() => setFailed(true)}
         className={cn("inline-block size-6 object-contain", className)}
       />
-    );
+    )
   }
 
   return (
-    <span
-      role="img"
-      aria-label={label}
-      className={cn("inline-block leading-none", className)}
-    >
+    <span role="img" aria-label={label} className={cn("inline-block leading-none", className)}>
       {value}
     </span>
-  );
+  )
 }
 
 // Select con la estética del design system (trigger subrayado, esquinas
@@ -100,16 +85,16 @@ export function RatingSymbolSelect({
   invalid,
   placeholder = "Seleccionar",
 }: {
-  id?: string;
-  symbols: RatingSymbol[];
-  value: string;
-  onChange: (value: string) => void;
-  invalid?: boolean;
-  placeholder?: string;
+  id?: string
+  symbols: RatingSymbol[]
+  value: string
+  onChange: (value: string) => void
+  invalid?: boolean
+  placeholder?: string
 }) {
-  const [open, setOpen] = useState(false);
-  const selected = symbols.find((symbol) => symbol.valor === value);
-  const resolvedVariant = useInputVariant();
+  const [open, setOpen] = useState(false)
+  const selected = symbols.find((symbol) => symbol.valor === value)
+  const resolvedVariant = useInputVariant()
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -130,11 +115,7 @@ export function RatingSymbolSelect({
       >
         <span className="flex flex-1 items-center gap-2">
           {selected ? (
-            <RatingSymbolView
-              value={selected.valor}
-              label={selected.label}
-              className="text-lg"
-            />
+            <RatingSymbolView value={selected.valor} label={selected.label} className="text-lg" />
           ) : (
             <span className="text-muted-foreground">{placeholder}</span>
           )}
@@ -146,13 +127,13 @@ export function RatingSymbolSelect({
           symbols={symbols}
           value={value}
           onChange={(valor) => {
-            onChange(valor);
-            setOpen(false);
+            onChange(valor)
+            setOpen(false)
           }}
         />
       </PopoverContent>
     </Popover>
-  );
+  )
 }
 
 // Tamaño de la grilla por categoría. Las caritas vienen ordenadas por
@@ -161,7 +142,7 @@ export function RatingSymbolSelect({
 const CATEGORY_GRID_COLS: Record<RatingSymbolCategory, string> = {
   carita: "grid-cols-8",
   valoracion: "grid-cols-7",
-};
+}
 
 export function RatingSymbolPicker({
   symbols,
@@ -169,16 +150,16 @@ export function RatingSymbolPicker({
   onChange,
   className,
 }: {
-  symbols: RatingSymbol[];
-  value: string;
-  onChange: (value: string) => void;
-  className?: string;
+  symbols: RatingSymbol[]
+  value: string
+  onChange: (value: string) => void
+  className?: string
 }) {
   return (
     <div className={cn("flex flex-col gap-3", className)}>
       {CATEGORY_ORDER.map((categoria) => {
         const items = symbols.filter((s) => s.categoria === categoria)
-        if (items.length === 0) return null;
+        if (items.length === 0) return null
 
         return (
           <div key={categoria} className="flex flex-col gap-1.5">
@@ -205,10 +186,7 @@ export function RatingSymbolPicker({
                         : "border-input hover:bg-foreground/10",
                     )}
                   >
-                    <RatingSymbolView
-                      value={symbol.valor}
-                      label={symbol.label}
-                    />
+                    <RatingSymbolView value={symbol.valor} label={symbol.label} />
                   </button>
                 )
               })}

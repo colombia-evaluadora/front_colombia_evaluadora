@@ -35,10 +35,6 @@ export const paths = {
       path: "/app",
       getHref: () => "/app",
     },
-    payments: {
-      path: "/",
-      getHref: () => "/app",
-    },
     coberturaReservaCupo: {
       path: "cobertura/reserva-de-cupo",
       getHref: () => "/app/cobertura/reserva-de-cupo",
@@ -55,21 +51,34 @@ export const paths = {
       path: "cobertura/matricula",
       getHref: () => "/app/cobertura/matricula",
     },
+    // Las dos vistas del registro de actividad (por sesión y por tablas)
+    // cuelgan del mismo prefijo `registro-de-actividad` para que el item del
+    // menú pueda marcarse activo en cualquiera de las dos y en sus subrutas
+    // (ver `resolveNavPathname` en nav-main.tsx).
+    registroActividad: {
+      path: "registro-de-actividad",
+      getHref: () => "/app/registro-de-actividad",
+    },
     auditoriaSesiones: {
-      path: "auditoria-sesiones",
-      getHref: () => "/app/auditoria-sesiones",
+      path: "registro-de-actividad/sesiones",
+      getHref: () => "/app/registro-de-actividad/sesiones",
     },
     auditoriaSesionOperaciones: {
-      path: "auditoria-sesiones/$sessionId/operaciones",
-      getHref: (sessionId: string) => `/app/auditoria-sesiones/${sessionId}/operaciones`,
+      path: "registro-de-actividad/sesiones/$sessionId/operaciones",
+      getHref: (sessionId: string) =>
+        `/app/registro-de-actividad/sesiones/${sessionId}/operaciones`,
     },
     auditoriaTablas: {
-      path: "auditoria-tablas",
-      getHref: () => "/app/auditoria-tablas",
+      path: "registro-de-actividad/tablas",
+      getHref: () => "/app/registro-de-actividad/tablas",
     },
     auditoriaTablaDetalle: {
-      path: "auditoria-tablas/$tableSlug",
-      getHref: (tableSlug: string) => `/app/auditoria-tablas/${tableSlug}`,
+      path: "registro-de-actividad/tablas/$tableSlug",
+      getHref: (tableSlug: string) => `/app/registro-de-actividad/tablas/${tableSlug}`,
+    },
+    rolesMenus: {
+      path: "administracion/roles-menus",
+      getHref: () => "/app/administracion/roles-menus",
     },
     periodosAcademicos: {
       path: "establecimiento-educativo/periodos",
@@ -108,16 +117,6 @@ export const paths = {
       campuses: {
           path: "establecimiento-educativo/sedes",
           getHref: () => "/app/establecimiento-educativo/sedes",
-
-          add: {
-            path: "establecimiento-educativo/sedes/agregar",
-            getHref: () => "/app/establecimiento-educativo/sedes/agregar",
-          },
-
-          edit: {
-            path: "establecimiento-educativo/sedes/editar/$campusId",
-            getHref: (campusId: string) => `/app/establecimiento-educativo/sedes/editar/${campusId}`,
-          },
       },
 
       officials: {

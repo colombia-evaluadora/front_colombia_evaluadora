@@ -1,17 +1,9 @@
-import { ArrowLeftIcon, CheckIcon } from "@/components/ui/icons"
+import { CheckIcon, XIcon } from "@/components/ui/icons"
 import { Link, useParams } from "@tanstack/react-router"
 
 import { Avatar, AvatarBadge, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
 import { Spinner } from "@/components/ui/spinner"
 import { paths } from "@/config/paths"
 
@@ -40,77 +32,53 @@ export function SessionOperationsPage() {
         .join("")
     : ""
 
-  const started = session ? new Date(session.startedAt) : null
-  const ended = session?.endedAt ? new Date(session.endedAt) : null
-  const durationMs = started && ended ? ended.getTime() - started.getTime() : null
-  const minutes = durationMs ? Math.round(durationMs / 60000) : null
-  const durationLabel =
-    minutes === null
-      ? "—"
-      : minutes < 60
-        ? `${minutes}m`
-        : `${Math.floor(minutes / 60)}h ${minutes % 60}m`
+
+  const title = isPending ? (
+    <div className="flex items-center gap-2 text-sm font-normal text-muted-foreground">
+      <Spinner /> Cargando sesión…
+    </div>
+  ) : isError || !session ? (
+    "Sesión no encontrada"
+  ) : (
+    <div className="flex flex-wrap items-center gap-2">
+      <Avatar>
+        {session.authorAvatarUrl && <AvatarImage src={session.authorAvatarUrl} alt="" />}
+        <AvatarFallback>{initials}</AvatarFallback>
+        {session.authorVerified && (
+          <AvatarBadge>
+            <CheckIcon weight="bold" />
+          </AvatarBadge>
+        )}
+      </Avatar>
+      {session.authorName}
+      <Badge variant="soft" color="muted">
+        {session.ip}
+      </Badge>
+      <Badge {...SESSION_STATUS_BADGE[session.status]}>{statusLabel}</Badge>
+    </div>
+  )
+
 
   return (
-    <Card>
-      <CardHeader>
-        <CardAction>
-          <Button
-            variant="ghost"
-            size="sm"
-            render={<Link to={paths.app.auditoriaSesiones.getHref()} />}
-            nativeButton={false}
-          >
-            <ArrowLeftIcon weight="bold" className="size-4" />
-            Volver
-          </Button>
-        </CardAction>
-        {isPending ? (
-          <div className="text-muted-foreground flex items-center gap-2 text-sm">
-            <Spinner /> Cargando sesión…
-          </div>
-        ) : isError || !session ? (
-          <CardTitle>Sesión no encontrada</CardTitle>
-        ) : (
-          <>
-            <div className="flex flex-wrap items-center gap-2">
-              <Avatar>
-                {session.authorAvatarUrl && <AvatarImage src={session.authorAvatarUrl} alt="" />}
-                <AvatarFallback>{initials}</AvatarFallback>
-                {session.authorVerified && (
-                  <AvatarBadge>
-                    <CheckIcon weight="bold" />
-                  </AvatarBadge>
-                )}
-              </Avatar>
-              <CardTitle>{session.authorName}</CardTitle>
-              <Badge variant="fill" color="muted">
-                {session.ip}
-              </Badge>
-              <Badge {...SESSION_STATUS_BADGE[session.status]}>{statusLabel}</Badge>
-            </div>
-            <CardDescription>
-              {started?.toLocaleString("es", {
-                dateStyle: "short",
-                timeStyle: "short",
-              })}
-              {ended
-                ? ` → ${ended.toLocaleString("es", {
-                    dateStyle: "short",
-                    timeStyle: "short",
-                  })}`
-                : " · En curso"}
-              {" · "}
-              {durationLabel}
-              {" · "}
-              {session.operationsCount} operación(es)
-            </CardDescription>
-          </>
-        )}
-      </CardHeader>
-      <CardContent>
-        <SessionOperationsDataTable sessionId={sessionId} />
-      </CardContent>
-    </Card>
+    // El encabezado sticky y el cuerpo son dos Cards independientes, NO se
+    // encapsulan en una misma Card aquí — eso lo hace internamente
+    // `SessionOperationsDataTable` para que el body y su data-fetching
+    // compartan el ciclo de vida.
+    <SessionOperationsDataTable
+      sessionId={sessionId}
+      title={title}
+      action={
+        <Button
+          variant="fill"
+          color="neutral"
+          size="sm"
+          render={<Link to={paths.app.auditoriaSesiones.getHref()} />}
+          nativeButton={false}
+        >
+          <XIcon data-icon="inline-start" />
+          Cerrar
+        </Button>
+      }
+    />
   )
 }

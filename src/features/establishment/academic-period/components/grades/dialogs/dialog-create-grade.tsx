@@ -1,7 +1,8 @@
 import { useMemo, useRef, useState } from "react"
-import { PencilIcon, PlusCircleIcon, SpinnerIcon } from "@/components/ui/icons"
+import { SUCCESS_MESSAGES } from "@/lib/success-messages"
+import { ControlPointIcon, PencilIcon, SpinnerIcon } from "@/components/ui/icons"
 
-import { useNotify, NoticeOutlet } from "../../common/notice-context"
+import { useNotify, NoticeOutlet } from "@/components/notice/notice-context"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -39,10 +40,7 @@ import {
   type PromotionCriteriaHandle,
 } from "../../promotion-criteria/tabs/tab-promotion-criteria"
 import { TabStudyPlan } from "../../study-plans/tabs/tab-study-plan"
-import {
-  ScheduleBuilder,
-  type ScheduleBuilderHandle,
-} from "../../schedule/schedule-builder"
+import { ScheduleBuilder, type ScheduleBuilderHandle } from "../../schedule/schedule-builder"
 import {
   DEFAULT_SUBJECT_COLOR,
   type Jornada,
@@ -59,11 +57,7 @@ interface CreateGradeDialogProps {
   grade?: Grade
 }
 
-export function CreateGradeDialog({
-  jornada,
-  academicPeriodId,
-  grade,
-}: CreateGradeDialogProps) {
+export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGradeDialogProps) {
   const { notify } = useNotify()
   const [open, setOpen] = useState(false)
   const [gradeId, setGradeId] = useState<number | null>(grade?.id ?? null)
@@ -74,14 +68,12 @@ export function CreateGradeDialog({
   const isEditing = gradeId != null
 
   const [teachingLevelId, setTeachingLevelId] = useState<number | null>(
-    grade?.teachingLevelId ?? null
+    grade?.teachingLevelId ?? null,
   )
   const [nombre, setNombre] = useState(grade?.nombre ?? "")
-  const [gradoSiguiente, setGradoSiguiente] = useState(
-    grade?.gradoSiguiente ?? ""
-  )
+  const [gradoSiguiente, setGradoSiguiente] = useState(grade?.gradoSiguiente ?? "")
   const [tieneGradoSiguiente, setTieneGradoSiguiente] = useState(
-    grade ? (grade.tieneGradoSiguiente ? "si" : "no") : ""
+    grade ? (grade.tieneGradoSiguiente ? "si" : "no") : "",
   )
 
   function resetForm() {
@@ -96,7 +88,7 @@ export function CreateGradeDialog({
 
   const gradoOptions = useMemo(
     () => [...new Set(teachingLevels.flatMap((level) => level.grados))],
-    [teachingLevels]
+    [teachingLevels],
   )
 
   function handleChangeTeachingLevel(value: string | null) {
@@ -116,7 +108,7 @@ export function CreateGradeDialog({
 
   async function handleSaveGrade() {
     if (!nombre.trim() || teachingLevelId == null) {
-      notify("Completá el nivel de enseñanza y el nombre del grado.", {
+      notify("Completa el nivel de enseñanza y el nombre del grado.", {
         variant: "error",
       })
       return
@@ -136,9 +128,7 @@ export function CreateGradeDialog({
           academicPeriodId,
         })
         setGradeId(created.id)
-        notify(
-          "Grado creado. Ahora podés configurar grupos, plan de estudio y horario."
-        )
+        notify("Grado creado. Ahora puedes configurar grupos, plan de estudio y horario.")
       } else {
         const result = await updateGrade.mutateAsync({
           id: gradeId,
@@ -150,7 +140,7 @@ export function CreateGradeDialog({
         }
         await promotionRef.current?.save(gradeId)
         await scheduleRef.current?.save(gradeId)
-        notify("Cambios guardados.")
+        notify(SUCCESS_MESSAGES.grade.updated)
       }
     } catch {
       notify("Ocurrió un error al guardar el grado.", { variant: "error" })
@@ -183,11 +173,8 @@ export function CreateGradeDialog({
   })
   const gradeGroupOptions = useMemo(
     () =>
-      (gradeGroupsData?.rows ?? []).map((g) => ({
-        id: g.id,
-        label: [g.codigo, g.jornada].filter(Boolean).join(" - "),
-      })),
-    [gradeGroupsData]
+      (gradeGroupsData?.rows ?? []).map((g) => [g.codigo, g.jornada].filter(Boolean).join(" - ")),
+    [gradeGroupsData],
   )
 
   const scheduleSubjects = useMemo<ScheduleSubject[]>(() => {
@@ -203,8 +190,7 @@ export function CreateGradeDialog({
       id: String(item.codigo),
       name: item.asignatura,
       blocks: item.intensidadHoraria,
-      color:
-        colorByName.get(item.asignatura.toLowerCase()) ?? DEFAULT_SUBJECT_COLOR,
+      color: colorByName.get(item.asignatura.toLowerCase()) ?? DEFAULT_SUBJECT_COLOR,
     }))
   }, [planData, areaData])
 
@@ -219,12 +205,7 @@ export function CreateGradeDialog({
       <DialogTrigger
         render={
           isEditing ? (
-            <Button
-              variant="fill"
-              color="secondary"
-              size="icon"
-              className="size-8"
-            />
+            <Button variant="ghost" color="neutral" size="icon-sm" />
           ) : (
             <Button color="primary" size="sm" />
           )
@@ -237,7 +218,7 @@ export function CreateGradeDialog({
           </>
         ) : (
           <>
-            <PlusCircleIcon weight="fill" data-icon="inline-start" />
+            <ControlPointIcon data-icon="inline-start" />
             Agregar
           </>
         )}
@@ -259,10 +240,9 @@ export function CreateGradeDialog({
               onValueChange={handleChangeTeachingLevel}
             >
               <SelectTrigger id="grade-nivel">
-                <SelectValue placeholder="Seleccionar">
+                <SelectValue>
                   {(value) =>
-                    teachingLevels.find((l) => String(l.id) === value)?.nombre ??
-                    "Seleccionar"
+                    teachingLevels.find((l) => String(l.id) === value)?.nombre ?? "Seleccionar"
                   }
                 </SelectValue>
               </SelectTrigger>
@@ -307,7 +287,7 @@ export function CreateGradeDialog({
             ) : (
               <Input
                 id="grade-nombre"
-                placeholder="ej. Sexto A"
+                placeholder="Ingresar nombre"
                 value={nombre}
                 onChange={(e) => setNombre(e.target.value)}
               />
@@ -318,9 +298,7 @@ export function CreateGradeDialog({
             <RadioGroup
               className="flex min-h-10 items-center gap-6 rounded-md border border-input px-3"
               value={tieneGradoSiguiente}
-              onValueChange={(value) =>
-                value && setTieneGradoSiguiente(value)
-              }
+              onValueChange={(value) => value && setTieneGradoSiguiente(value)}
             >
               <label className="flex items-center gap-2">
                 <RadioGroupItem value="si" />
@@ -336,9 +314,7 @@ export function CreateGradeDialog({
           {hasNextGrade && (
             <>
               <Field variant="outlined">
-                <FieldLabel htmlFor="grade-siguiente">
-                  Grado siguiente
-                </FieldLabel>
+                <FieldLabel htmlFor="grade-siguiente">Grado siguiente</FieldLabel>
                 <Select
                   value={gradoSiguiente || undefined}
                   onValueChange={(value) => value && setGradoSiguiente(value)}
@@ -369,8 +345,7 @@ export function CreateGradeDialog({
 
         {gradeId == null ? (
           <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-            Guardá el grado para configurar sus grupos, plan de estudio y
-            horario.
+            Guarda el grado para configurar sus grupos, plan de estudio y horario.
           </p>
         ) : (
           <Tabs defaultValue="grupo" className="w-full min-w-0">
@@ -395,10 +370,7 @@ export function CreateGradeDialog({
             </TabsContent>
 
             <TabsContent value="plan" className={PANEL}>
-              <TabStudyPlan
-                academicPeriodId={academicPeriodId}
-                gradeId={gradeId}
-              />
+              <TabStudyPlan academicPeriodId={academicPeriodId} gradeId={gradeId} />
             </TabsContent>
 
             <TabsContent value="horario" keepMounted className={PANEL}>
@@ -421,14 +393,10 @@ export function CreateGradeDialog({
             disabled={saving}
             aria-busy={saving}
           >
-            {saving && (
-              <SpinnerIcon data-icon="inline-start" className="animate-spin" />
-            )}
+            {saving && <SpinnerIcon data-icon="inline-start" className="animate-spin" />}
             {gradeId == null ? "Crear" : "Guardar"}
           </Button>
-          <DialogClose render={<Button type="button" variant="outline" />}>
-            Cerrar
-          </DialogClose>
+          <DialogClose render={<Button type="button" variant="outline" />}>Cerrar</DialogClose>
         </DialogFooter>
       </DialogContent>
     </Dialog>

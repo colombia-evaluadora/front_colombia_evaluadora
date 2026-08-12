@@ -1,8 +1,10 @@
 import { useState } from "react"
+import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { useForm } from "@tanstack/react-form"
-import { PencilIcon, PlusCircleIcon, SpinnerIcon } from "@/components/ui/icons"
+import { CheckIcon, ControlPointIcon, PencilIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 
-import { useNotify } from "../../common/notice-context"
+import { useNotify } from "@/components/notice/notice-context"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -36,14 +38,11 @@ import { useUpdateEvaluationPeriod } from "../../../api/mutations/evaluation-per
 import { useEvaluationPeriodsQuery } from "../../../api/query/evaluation-periods/use-evaluation-periods-query"
 import { useEvaluationPeriodStatusesQuery } from "../../../api/query/evaluation-periods/use-evaluation-period-statuses-query"
 import { useAcademicPeriodQuery } from "../../../api/query/academic-period/use-academic-period-query"
-import type { EvaluationPeriod } from "../../../api/types/evaluation-period"
+import type { EvaluationPeriod, EvaluationPeriodStatus } from "../../../api/types/evaluation-period"
 import { DatePicker } from "@/components/date-picker"
 import { formatDateValue, parseDateValue } from "@/lib/date-value"
-import {
-  evaluationPeriodFormSchema,
-  type EvaluationPeriodFormValues,
-} from "../../../api/schema"
-
+import { EVALUATION_PERIOD_STATUS_BADGE } from "../../../api/ui-mappings"
+import { evaluationPeriodFormSchema, type EvaluationPeriodFormValues } from "../../../api/schema"
 
 const EMPTY: EvaluationPeriodFormValues = {
   codigo: 0,
@@ -78,7 +77,7 @@ export function CreateEvaluationPeriodDialog({
     academicPeriodId,
   })
   const otherPeriods = (periodsData?.rows ?? []).filter(
-    (p) => period == null || p.id !== period.id
+    (p) => period == null || p.codigo !== period.codigo,
   )
   const pesoUsado = otherPeriods.reduce((sum, p) => sum + (p.peso ?? 0), 0)
   const pesoDisponible = Math.max(0, 100 - pesoUsado)
@@ -93,9 +92,7 @@ export function CreateEvaluationPeriodDialog({
 
   function hasOverlap(start: string, end: string): boolean {
     if (!start || !end) return false
-    return otherPeriods.some(
-      (p) => start <= p.endDate && p.startDate <= end
-    )
+    return otherPeriods.some((p) => start <= p.endDate && p.startDate <= end)
   }
 
   const defaultValues: EvaluationPeriodFormValues = period
@@ -115,7 +112,7 @@ export function CreateEvaluationPeriodDialog({
       onSuccess: () => {
         form.reset()
         setOpen(false)
-        notify("El periodo de evaluación se agregó correctamente.")
+        notify(SUCCESS_MESSAGES.evaluationPeriod.created)
       },
     },
   })
@@ -128,7 +125,7 @@ export function CreateEvaluationPeriodDialog({
           return
         }
         setOpen(false)
-        notify("El periodo de evaluación se actualizó correctamente.")
+        notify(SUCCESS_MESSAGES.evaluationPeriod.updated)
       },
     },
   })
@@ -144,17 +141,15 @@ export function CreateEvaluationPeriodDialog({
     onSubmit: ({ value }) => {
       const values = evaluationPeriodFormSchema.parse(value)
       if (hasOverlap(values.startDate, values.endDate)) {
-        notify(
-          "El período coincide con otro período de evaluación existente. Revisá las fechas.",
-          { variant: "error" }
-        )
+        notify("El período coincide con otro período de evaluación existente. Revisa las fechas.", {
+          variant: "error",
+        })
         return
       }
       if (values.peso > pesoDisponible) {
-        notify(
-          `El peso porcentual supera el 100 %. Disponible: ${pesoDisponible} %.`,
-          { variant: "error" }
-        )
+        notify(`El peso porcentual supera el 100 %. Disponible: ${pesoDisponible} %.`, {
+          variant: "error",
+        })
         return
       }
       const payload = { ...values }
@@ -180,7 +175,7 @@ export function CreateEvaluationPeriodDialog({
       <DialogTrigger
         render={
           isEditing ? (
-            <Button variant="fill" color="secondary" size="icon" className="size-8" />
+            <Button variant="ghost" color="neutral" size="icon-sm" />
           ) : (
             <Button color="primary" size="sm" />
           )
@@ -193,7 +188,7 @@ export function CreateEvaluationPeriodDialog({
           </>
         ) : (
           <>
-            <PlusCircleIcon weight="fill" data-icon="inline-start" />
+            <ControlPointIcon data-icon="inline-start" />
             Agregar
           </>
         )}
@@ -201,13 +196,9 @@ export function CreateEvaluationPeriodDialog({
       <DialogContent className="sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>
-            {isEditing
-              ? "Editar periodo de evaluación"
-              : "Agregar periodo de evaluación"}
+            {isEditing ? "Editar periodo de evaluación" : "Agregar periodo de evaluación"}
           </DialogTitle>
-          <DialogDescription>
-            Completá los datos del periodo de evaluación.
-          </DialogDescription>
+          <DialogDescription>Completa los datos del periodo de evaluación.</DialogDescription>
         </DialogHeader>
 
         <form
@@ -220,8 +211,7 @@ export function CreateEvaluationPeriodDialog({
         >
           <form.Field name="codigo">
             {(field) => {
-              const isInvalid =
-                field.state.meta.isTouched && !field.state.meta.isValid
+              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
               return (
                 <Field variant="outlined" data-invalid={isInvalid}>
                   <FieldLabel htmlFor={field.name}>Código*</FieldLabel>
@@ -229,7 +219,7 @@ export function CreateEvaluationPeriodDialog({
                     id={field.name}
                     type="number"
                     min={1}
-                    placeholder="ej. 1"
+                    placeholder="Ingresar código"
                     value={Number.isNaN(field.state.value) ? "" : field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.valueAsNumber)}
@@ -243,14 +233,13 @@ export function CreateEvaluationPeriodDialog({
 
           <form.Field name="nombre">
             {(field) => {
-              const isInvalid =
-                field.state.meta.isTouched && !field.state.meta.isValid
+              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
               return (
                 <Field variant="outlined" data-invalid={isInvalid}>
                   <FieldLabel htmlFor={field.name}>Nombre*</FieldLabel>
                   <Input
                     id={field.name}
-                    placeholder="ej. Primer periodo"
+                    placeholder="Ingresar nombre"
                     value={field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value)}
@@ -264,14 +253,13 @@ export function CreateEvaluationPeriodDialog({
 
           <form.Field name="abreviacion">
             {(field) => {
-              const isInvalid =
-                field.state.meta.isTouched && !field.state.meta.isValid
+              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
               return (
                 <Field variant="outlined" data-invalid={isInvalid}>
                   <FieldLabel htmlFor={field.name}>Abreviación*</FieldLabel>
                   <Input
                     id={field.name}
-                    placeholder="ej. PE1"
+                    placeholder="Ingresar abreviación"
                     value={field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value)}
@@ -284,56 +272,11 @@ export function CreateEvaluationPeriodDialog({
           </form.Field>
 
           <form.Field
-            name="peso"
-            validators={{
-              onChange: ({ value }) =>
-                value > pesoDisponible
-                  ? {
-                      message: `El peso supera el 100 %. Disponible: ${pesoDisponible} %.`,
-                    }
-                  : undefined,
-            }}
-          >
-            {(field) => {
-              const isInvalid =
-                field.state.meta.isTouched && !field.state.meta.isValid
-              return (
-                <Field variant="outlined" data-invalid={isInvalid}>
-                  <FieldLabel htmlFor={field.name}>Peso porcentual (%)*</FieldLabel>
-                  {/* El sufijo "%" hace explícita la unidad del valor, que de
-                      otro modo se lee como un número suelto. */}
-                  <InputGroup className="h-10 rounded-md border border-input px-3 hover:border-ring has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20 has-[[data-slot][aria-invalid=true]]:border-red">
-                    <InputGroupInput
-                      id={field.name}
-                      type="number"
-                      min={0}
-                      max={100}
-                      placeholder="ej. 25"
-                      className="px-0"
-                      value={Number.isNaN(field.state.value) ? "" : field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.valueAsNumber)}
-                      aria-invalid={isInvalid}
-                    />
-                    <InputGroupAddon align="inline-end">
-                      <InputGroupText>%</InputGroupText>
-                    </InputGroupAddon>
-                  </InputGroup>
-                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                </Field>
-              )
-            }}
-          </form.Field>
-
-          <form.Field
             name="startDate"
             validators={{
               onChange: ({ value }) => {
                 if (!value) return undefined
-                if (
-                  academicPeriodStart &&
-                  value < academicPeriodStart
-                ) {
+                if (academicPeriodStart && value < academicPeriodStart) {
                   return {
                     message:
                       "La fecha de inicio no puede ser anterior a la fecha de inicio del período académico.",
@@ -350,17 +293,12 @@ export function CreateEvaluationPeriodDialog({
             }}
           >
             {(field) => {
-              const isInvalid =
-                field.state.meta.isTouched && !field.state.meta.isValid
+              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
               return (
-                <form.Subscribe
-                  selector={(state) => state.values.endDate}
-                >
+                <form.Subscribe selector={(state) => state.values.endDate}>
                   {(endDate) => {
                     const outOfRange =
-                      !!field.state.value &&
-                      !!endDate &&
-                      field.state.value >= endDate
+                      !!field.state.value && !!endDate && field.state.value >= endDate
                     return (
                       <Field variant="outlined" data-invalid={isInvalid}>
                         <FieldLabel htmlFor={field.name}>Fecha inicio*</FieldLabel>
@@ -377,12 +315,9 @@ export function CreateEvaluationPeriodDialog({
                         {isInvalid ? (
                           <FieldError errors={field.state.meta.errors} />
                         ) : outOfRange ? (
-                          <p
-                            role="alert"
-                            className="text-muted-foreground text-xs"
-                          >
-                            La fecha de inicio debe ser anterior a la fecha de
-                            fin del período de evaluación.
+                          <p role="alert" className="text-muted-foreground text-xs">
+                            La fecha de inicio debe ser anterior a la fecha de fin del período de
+                            evaluación.
                           </p>
                         ) : null}
                       </Field>
@@ -415,8 +350,7 @@ export function CreateEvaluationPeriodDialog({
             }}
           >
             {(field) => {
-              const isInvalid =
-                field.state.meta.isTouched && !field.state.meta.isValid
+              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
               return (
                 <Field variant="outlined" data-invalid={isInvalid}>
                   <FieldLabel htmlFor={field.name}>Fecha fin*</FieldLabel>
@@ -448,8 +382,7 @@ export function CreateEvaluationPeriodDialog({
             }}
           >
             {(field) => {
-              const isInvalid =
-                field.state.meta.isTouched && !field.state.meta.isValid
+              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
               return (
                 <Field variant="outlined" data-invalid={isInvalid}>
                   <FieldLabel htmlFor={field.name}>Peso porcentual (%)*</FieldLabel>
@@ -478,16 +411,11 @@ export function CreateEvaluationPeriodDialog({
             }}
           </form.Field>
 
-          <form.Field name="estadoId">
+          <form.Field name="estado">
             {(field) => {
-              const isInvalid =
-                field.state.meta.isTouched && !field.state.meta.isValid
+              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
               return (
-                <Field
-                  variant="outlined"
-                  data-invalid={isInvalid}
-                  className="sm:col-span-3"
-                >
+                <Field variant="outlined" data-invalid={isInvalid}>
                   <FieldLabel htmlFor={field.name}>Estado*</FieldLabel>
                   <Select
                     value={field.state.value ? String(field.state.value) : ""}
@@ -497,15 +425,15 @@ export function CreateEvaluationPeriodDialog({
                   >
                     <SelectTrigger id={field.name} aria-invalid={isInvalid}>
                       {/* El valor elegido se muestra como el mismo badge soft
-                          que usa la columna Estado de la tabla. Se resuelve por id. */}
+                          que usa la columna Estado de la tabla. */}
                       <SelectValue>
                         {(value) => {
-                          const option = statusOptions.find(
-                            (o) => String(o.id) === value
-                          )
-                          if (!option) return "Seleccionar"
-                          const badge = EVALUATION_PERIOD_STATUS_BADGE[option.key]
-                          return <Badge {...badge}>{option.label}</Badge>
+                          const estado = value as EvaluationPeriodStatus
+                          const badge = EVALUATION_PERIOD_STATUS_BADGE[estado]
+                          if (!badge) return "Seleccionar"
+                          const label =
+                            statusOptions.find((option) => option.key === estado)?.label ?? estado
+                          return <Badge {...badge}>{label}</Badge>
                         }}
                       </SelectValue>
                     </SelectTrigger>
@@ -526,10 +454,9 @@ export function CreateEvaluationPeriodDialog({
           </form.Field>
         </form>
 
-        <DialogFooter className="sm:justify-between">
-          <DialogClose render={<Button type="button" variant="ghost" />}>
-            Cancelar
-          </DialogClose>
+        {/* Ambas acciones a la derecha; "Cancelar" va última y sólida en
+            neutral, para que el peso visual no compita con el envío. */}
+        <DialogFooter>
           <form.Subscribe selector={(state) => state.values}>
             {(values) => {
               const allRequiredFilled =
@@ -553,21 +480,23 @@ export function CreateEvaluationPeriodDialog({
                   type="submit"
                   color="primary"
                   form={FORM_ID}
-                  disabled={
-                    isSaving ||
-                    !allRequiredFilled ||
-                    !datesWithinAcademicPeriod
-                  }
+                  disabled={isSaving || !allRequiredFilled || !datesWithinAcademicPeriod}
                   aria-busy={isSaving}
                 >
-                  {isSaving && (
+                  {isSaving ? (
                     <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+                  ) : (
+                    <CheckIcon data-icon="inline-start" />
                   )}
-                  {isEditing ? "Guardar" : "Agregar"}
+                  Guardar
                 </Button>
               )
             }}
           </form.Subscribe>
+          <DialogClose render={<Button type="button" variant="fill" color="neutral" />}>
+            <XIcon data-icon="inline-start" />
+            Cancelar
+          </DialogClose>
         </DialogFooter>
       </DialogContent>
     </Dialog>

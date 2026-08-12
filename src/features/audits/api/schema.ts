@@ -62,7 +62,9 @@ export const tableOperationsSearchSchema = z.object({
   pageSize: z.coerce.number().int().positive().catch(10).default(10),
   sortBy: z.string().optional().catch(undefined),
   sortDir: z.enum(["asc", "desc"]).optional().catch(undefined),
-  author: z.string().optional().catch(undefined),
+  // El filtro busca por autor o por IP, y el nombre del parámetro lo dice:
+  // `?author_ip=…`. Es también la clave del término en el buscador.
+  author_ip: z.string().optional().catch(undefined),
   operations: z.array(z.enum(OPERATION_TYPES)).optional().catch(undefined),
   occurredFrom: z.string().optional().catch(undefined),
   occurredTo: z.string().optional().catch(undefined),

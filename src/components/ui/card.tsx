@@ -12,7 +12,7 @@ function Card({
       data-slot="card"
       data-size={size}
       className={cn(
-        "group/card flex rounded-lg flex-col gap-(--card-spacing) overflow-hidden bg-card py-(--card-spacing) text-sm text-card-foreground shadow-lg ring-1 ring-foreground/5 [--card-spacing:--spacing(8)] has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(5)] *:[img:first-child]:rounded-none *:[img:last-child]:rounded-none",
+        "group/card flex rounded-lg flex-col gap-(--card-spacing) overflow-hidden bg-card py-(--card-spacing) text-sm text-card-foreground ring-1 ring-foreground/5 ring-inset [--card-spacing:--spacing(8)] has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(5)] *:[img:first-child]:rounded-none *:[img:last-child]:rounded-none",
         className,
       )}
       {...props}
@@ -57,7 +57,14 @@ function CardAction({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card-action"
-      className={cn("col-start-2 row-span-2 row-start-1 self-start justify-self-end", className)}
+      className={cn(
+        // El `row-span-2` solo cuando hay descripción que abarcar: la rejilla
+        // del header es implícita, así que abarcar dos filas sin descripción
+        // *creaba* una segunda fila vacía y el `gap` del header la separaba,
+        // dejando aire de más bajo el título.
+        "col-start-2 row-span-1 row-start-1 self-start justify-self-end group-has-data-[slot=card-description]/card-header:row-span-2",
+        className,
+      )}
       {...props}
     />
   )

@@ -1,8 +1,9 @@
 import { useState } from "react"
+import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 
-import { SpinnerIcon, TrashIcon } from "@/components/ui/icons"
+import { CheckIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 
-import { useNotify } from "../../common/notice-context"
+import { useNotify } from "@/components/notice/notice-context"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,9 +36,7 @@ export function DeleteSelectedGradesDialog({
 
   async function handleDelete() {
     setSubmitting(true)
-    const ids = selectedIds
-      .map((id) => Number(id))
-      .filter(Number.isFinite)
+    const ids = selectedIds.map((id) => Number(id)).filter(Number.isFinite)
     const result = await bulkDelete
       .mutateAsync(ids)
       .catch(() => ({ status: "error" as const, message: "" }))
@@ -48,7 +47,7 @@ export function DeleteSelectedGradesDialog({
         variant: "error",
       })
     } else {
-      notify(`Se eliminaron ${ids.length} grado(s) correctamente.`)
+      notify(SUCCESS_MESSAGES.grade.deletedMany(ids.length))
     }
     setOpen(false)
     resetSelection()
@@ -58,25 +57,20 @@ export function DeleteSelectedGradesDialog({
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger
         render={
-          <Button
-            color="destructive"
-            aria-label={`Eliminar ${count} grado(s) seleccionado(s)`}
-          />
+          <Button color="destructive" aria-label={`Eliminar ${count} grado(s) seleccionado(s)`} />
         }
       >
-        <TrashIcon data-icon="inline-start" />
+        <CheckIcon data-icon="inline-start" />
         <span aria-hidden="true">Eliminar ({count})</span>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Eliminar</AlertDialogTitle>
           <AlertDialogDescription>
-            Se eliminarán permanentemente {count} grado(s). Esta acción no se
-            puede deshacer.
+            Se eliminarán permanentemente {count} grado(s). Esta acción no se puede deshacer.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={submitting}>Cancelar</AlertDialogCancel>
           <AlertDialogAction
             color="destructive"
             disabled={submitting}
@@ -86,10 +80,14 @@ export function DeleteSelectedGradesDialog({
             {submitting ? (
               <SpinnerIcon data-icon="inline-start" className="animate-spin" />
             ) : (
-              <TrashIcon data-icon="inline-start" />
+              <CheckIcon data-icon="inline-start" />
             )}
-            Eliminar
+            Si
           </AlertDialogAction>
+          <AlertDialogCancel variant="fill" color="neutral" disabled={submitting}>
+            <XIcon data-icon="inline-start" />
+            No
+          </AlertDialogCancel>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

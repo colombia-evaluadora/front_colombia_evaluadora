@@ -10,7 +10,7 @@
 
 :root {
   --font-sans: "Inter Variable", sans-serif;
-  --font-heading: "Noto Sans Variable", sans-serif;
+  --font-heading: "Inter Variable", sans-serif;
 }
 
 @theme inline {
@@ -66,7 +66,7 @@
   --popover-foreground: var(--foreground);
 
   /* ---------- MARCA ------------------------------------------ */
-  --primary: #0079b5;
+  --primary: #0D99FF;
   --primary-foreground: #f7fbfd;
   --secondary: #618200;
   --secondary-foreground: #f9fbf5;
@@ -78,7 +78,7 @@
   /* ---------- COLORES ------------------------------ */
   --red: #e40017;
   --red-foreground: #fff8f7;
-  --green: #618200;
+  --green: #1F9254;
   --green-foreground: #f9fbf5;
   --yellow: #eab300;
   --yellow-foreground: #352600;
@@ -88,6 +88,8 @@
   --purple-foreground: #faf7fe;
   --orange: #e2620e;
   --orange-foreground: #fff9f5;
+  --navy: #0b3879;
+  --navy-foreground: #f5f8fd;
 
   /* ---------- BORDES / FOCO ---------------------------------- */
   --border: #e3e7ea;
@@ -113,27 +115,30 @@
 
   /* ---------- STROKES (alpha 30%) --------------------------- */
   --foreground-stroke: #090d104d;
-  --primary-stroke: #0079b54d;
+  --primary-stroke: #0D99FF4d;
   --secondary-stroke: #6182004d;
   --muted-stroke: #d6dbe54d;
   --blue-stroke: #0079b54d;
   --red-stroke: #e400174d;
   --yellow-stroke: #eab3004d;
-  --green-stroke: #6182004d;
+  --green-stroke: #1F92544d;
   --purple-stroke: #7a3ec84d;
   --orange-stroke: #e2620e4d;
+  --navy-stroke: #0b38794d;
 
   /* ---------- SOFT FILLS (alpha 22%) ----------------------- */
   --foreground-22: #090d1038;
-  --primary-22: #0079b538;
+  --primary-22: #0D99FF38;
   --secondary-22: #61820038;
+  --green-22: #1F925438;
   --muted-22: #d6dbe538;
   --blue-22: #0079b538;
   --red-22: #e4001738;
   --yellow-22: #eab30038;
-  --green-22: #61820038;
+  --green-22: #1F925438;
   --purple-22: #7a3ec838;
   --orange-22: #e2620e38;
+  --navy-22: #0b387938;
 }
 
 .dark {
@@ -168,6 +173,11 @@
   --purple-foreground: #150a2b;
   --orange: #ff8a4c;
   --orange-foreground: #2a1103;
+  /* Navy no se aclara en oscuro como el resto de colores: es una superficie de
+     marca (el bloque de la pantalla de login), y aclararla la vuelve un parche
+     lavanda sobre el fondo oscuro. Se queda igual en los cuatro temas. */
+  --navy: #0b3879;
+  --navy-foreground: #f5f8fd;
 
   /* ---------- BORDES / FOCO ---------------------------------- */
   --border: #ffffff1a;
@@ -202,6 +212,7 @@
   --green-stroke: #84a73c4d;
   --purple-stroke: #a98bf04d;
   --orange-stroke: #ff8a4c4d;
+  --navy-stroke: #0b38794d;
 
   /* ---------- SOFT FILLS (alpha 22%) ----------------------- */
   --foreground-22: #f2f6f838;
@@ -214,6 +225,7 @@
   --green-22: #84a73c38;
   --purple-22: #a98bf038;
   --orange-22: #ff8a4c38;
+  --navy-22: #0b387938;
 }
 
 [data-theme="red"] {
@@ -248,6 +260,8 @@
   --purple-foreground: #faf7fe;
   --orange: #e2620e;
   --orange-foreground: #fff9f5;
+  --navy: #0b3879;
+  --navy-foreground: #f5f8fd;
 
   /* ---------- BORDES / FOCO ---------------------------------- */
   --border: #e3e7ea;
@@ -282,6 +296,7 @@
   --green-stroke: #6182004d;
   --purple-stroke: #7a3ec84d;
   --orange-stroke: #e2620e4d;
+  --navy-stroke: #0b38794d;
 
   /* ---------- SOFT FILLS (alpha 22%) ----------------------- */
   --foreground-22: #090d1038;
@@ -294,6 +309,7 @@
   --green-22: #61820038;
   --purple-22: #7a3ec838;
   --orange-22: #e2620e38;
+  --navy-22: #0b387938;
 }
 
 .dark[data-theme="red"] {
@@ -328,6 +344,11 @@
   --purple-foreground: #150a2b;
   --orange: #ff8a4c;
   --orange-foreground: #2a1103;
+  /* Navy no se aclara en oscuro como el resto de colores: es una superficie de
+     marca (el bloque de la pantalla de login), y aclararla la vuelve un parche
+     lavanda sobre el fondo oscuro. Se queda igual en los cuatro temas. */
+  --navy: #0b3879;
+  --navy-foreground: #f5f8fd;
 
   /* ---------- BORDES / FOCO ---------------------------------- */
   --border: #ffffff1a;
@@ -362,6 +383,7 @@
   --green-stroke: #84a73c4d;
   --purple-stroke: #a98bf04d;
   --orange-stroke: #ff8a4c4d;
+  --navy-stroke: #0b38794d;
 
   /* ---------- SOFT FILLS (alpha 22%) ----------------------- */
   --foreground-22: #f2f6f838;
@@ -374,6 +396,7 @@
   --green-22: #84a73c38;
   --purple-22: #a98bf038;
   --orange-22: #ff8a4c38;
+  --navy-22: #0b387938;
 }
 
 @theme inline {
@@ -408,6 +431,8 @@
   --color-purple-foreground: var(--purple-foreground);
   --color-orange: var(--orange);
   --color-orange-foreground: var(--orange-foreground);
+  --color-navy: var(--navy);
+  --color-navy-foreground: var(--navy-foreground);
 
   /* ---------- BORDES / FOCO ---------------------------------- */
   --color-border: var(--border);
@@ -442,6 +467,7 @@
   --color-green-stroke: var(--green-stroke);
   --color-purple-stroke: var(--purple-stroke);
   --color-orange-stroke: var(--orange-stroke);
+  --color-navy-stroke: var(--navy-stroke);
 
   /* ---------- SOFT FILLS (alpha 22%) ----------------------- */
   --color-foreground-22: var(--foreground-22);
@@ -454,7 +480,45 @@
   --color-green-22: var(--green-22);
   --color-purple-22: var(--purple-22);
   --color-orange-22: var(--orange-22);
+  --color-navy-22: var(--navy-22);
 }
+
+/* Barra de scroll minimalista.
+
+   La nativa de Windows es una franja gris de ~16px con flechas en los extremos;
+   dentro de una caja redondeada se ve como un bloque pegado que no pertenece al
+   diseño. Esta es de 6px, sin flechas y sin pista: lo único que se ve es el
+   pulgar `muted`, flotando sobre el fondo de la caja.
+
+   `scrollbar-width`/`scrollbar-color` es el estándar (Firefox, Chrome nuevos);
+   las reglas `::-webkit-scrollbar` cubren el resto de navegadores WebKit.
+
+   Es opt-in a propósito: hoy solo la usa el contenedor de `Table`. El resto de
+   las barras del sitio siguen siendo las nativas. */
+@utility scrollbar-slim {
+  scrollbar-width: thin;
+  scrollbar-color: var(--muted) transparent;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  &::-webkit-scrollbar-track {
+    background-color: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: var(--muted);
+    border-radius: 9999px;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background-color: var(--muted-foreground);
+  }
+  &::-webkit-scrollbar-button,
+  &::-webkit-scrollbar-corner {
+    display: none;
+  }
+}
+
 /* Base styles */
 
 @layer base {
@@ -485,6 +549,7 @@
   input::-ms-clear {
     display: none;
   }
+
 
   /* Typography — titles in Noto, body in Inter */
   h1,
@@ -519,4 +584,35 @@
   small {
     @apply text-xs leading-snug;
   }
+}
+
+/* Autofill de Chrome/Safari.
+
+   El navegador pinta un fondo amarillo (azul si el sistema está en dark) sobre
+   los campos autocompletados, en una capa que `background: transparent` no
+   puede tocar. `background-clip: text` sí: recorta ese fondo a la silueta del
+   texto, con lo que deja de verse y el campo queda realmente transparente
+   —importa porque el input vive dentro de un `InputGroup` que es quien pinta el
+   fondo—. `-webkit-text-fill-color` devuelve el color de texto del tema, que el
+   recorte se llevaría por delante. La transición larguísima retrasa
+   indefinidamente el pintado del fondo y mata el flash amarillo del primer
+   frame.
+
+   Va FUERA de `@layer base` a propósito: el CSS sin capa gana a cualquier capa,
+   y dentro de `base` las utilidades de Tailwind lo pisarían. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus {
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: var(--foreground);
+  caret-color: var(--foreground);
+  transition: background-color 5000s ease-in-out 0s;
 }

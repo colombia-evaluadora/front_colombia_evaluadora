@@ -25,7 +25,7 @@ export function useTableOperationsFilters(): TableOperationsFilters {
       navigate({
         search: (prev) => ({
           ...prev,
-          author: values.author || undefined,
+          author_ip: values.author || undefined,
           operations: values.operations.length ? values.operations : undefined,
           occurredFrom: values.occurredFrom || undefined,
           occurredTo: values.occurredTo || undefined,
@@ -42,7 +42,7 @@ export function useTableOperationsFilters(): TableOperationsFilters {
     navigate({
       search: (prev) => ({
         ...prev,
-        author: undefined,
+        author_ip: undefined,
         operations: undefined,
         occurredFrom: undefined,
         occurredTo: undefined,
@@ -53,26 +53,34 @@ export function useTableOperationsFilters(): TableOperationsFilters {
     })
   }, [navigate])
 
+  // Puertas adentro (form, request al backend) el filtro sigue llamándose
+  // `author`; `author_ip` es el nombre del parámetro en la URL.
   const queryFilters: TableOperationsQueryRequest["filters"] = useMemo(
     () => ({
-      author: search.author,
+      author: search.author_ip,
       operations: search.operations,
       occurredFrom: search.occurredFrom,
       occurredTo: search.occurredTo,
       fieldFilters: search.fieldFilters,
     }),
-    [search.author, search.operations, search.occurredFrom, search.occurredTo, search.fieldFilters],
+    [
+      search.author_ip,
+      search.operations,
+      search.occurredFrom,
+      search.occurredTo,
+      search.fieldFilters,
+    ],
   )
 
   const activeFilterCount = useMemo(() => {
     let n = 0
-    if (search.author) n += 1
+    if (search.author_ip) n += 1
     n += search.operations?.length ?? 0
     if (search.occurredFrom || search.occurredTo) n += 1
     n += search.fieldFilters?.length ?? 0
     return n
   }, [
-    search.author,
+    search.author_ip,
     search.operations,
     search.occurredFrom,
     search.occurredTo,
@@ -81,7 +89,7 @@ export function useTableOperationsFilters(): TableOperationsFilters {
 
   return {
     filters: {
-      author: search.author ?? "",
+      author: search.author_ip ?? "",
       operations: search.operations ?? [],
       occurredFrom: search.occurredFrom ?? "",
       occurredTo: search.occurredTo ?? "",

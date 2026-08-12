@@ -18,81 +18,69 @@ export function createGradeColumns({
   academicPeriodId,
 }: GradeColumnsOptions): ColumnDef<Grade>[] {
   return [
-  {
-    id: "select",
-    header: ({ table }) => (
-      <Checkbox
-        color="neutral"
-        aria-label="Seleccionar página"
-        className="translate-y-0.5"
-        checked={table.getIsAllPageRowsSelected()}
-        indeterminate={
-          !table.getIsAllPageRowsSelected() &&
-          table.getIsSomePageRowsSelected()
-        }
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-      />
-    ),
-    cell: ({ row }) => (
-      <Checkbox
-        color="neutral"
-        aria-label={`Seleccionar ${row.original.nombre}`}
-        className="translate-y-0.5"
-        checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
-      />
-    ),
-    enableSorting: false,
-    enableHiding: false,
-    size: 32,
-  },
-  {
-    id: "nombre",
-    accessorKey: "nombre",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Nombre del grado" />
-    ),
-    cell: ({ row }) => (
-      <span className="font-semibold">{row.original.nombre}</span>
-    ),
-  },
-  {
-    id: "grado",
-    accessorKey: "grado",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Grado" />
-    ),
-    cell: ({ row }) => <span className="font-medium">{row.original.grado}</span>,
-  },
-  {
-    id: "teachingLevelName",
-    accessorKey: "teachingLevelName",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Nivel de enseñanza" />
-    ),
-    cell: ({ row }) => (
-      <span className="font-medium">
-        {row.original.teachingLevelName}
-      </span>
-    ),
-  },
-  {
-    id: "actions",
-    header: () => <span className="sr-only">Acciones</span>,
-    cell: ({ row }) => (
-      <div className="flex items-center justify-end gap-1">
-        <CreateGradeDialog
-          grade={row.original}
-          jornada={jornada}
-          academicPeriodId={academicPeriodId}
+    {
+      id: "select",
+      header: ({ table }) => (
+        <Checkbox
+          aria-label="Seleccionar página"
+          className="translate-y-0.5"
+          checked={table.getIsAllPageRowsSelected()}
+          indeterminate={!table.getIsAllPageRowsSelected() && table.getIsSomePageRowsSelected()}
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
         />
-        <DeleteGradeDialog grade={row.original} />
-      </div>
-    ),
-    enableSorting: false,
-    enableHiding: false,
-    size: 96,
-  },
+      ),
+      cell: ({ row }) => (
+        <Checkbox
+          aria-label={`Seleccionar ${row.original.nombre}`}
+          className="translate-y-0.5"
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(!!value)}
+        />
+      ),
+      enableSorting: false,
+      enableHiding: false,
+      size: 32,
+    },
+    {
+      id: "nombre",
+      accessorKey: "nombre",
+      meta: { label: "Nombre del grado" },
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Nombre del grado" />,
+      cell: ({ row }) => <span className="font-semibold uppercase">{row.original.nombre}</span>,
+    },
+    {
+      id: "grado",
+      accessorKey: "grado",
+      meta: { label: "Grado" },
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Grado" />,
+      cell: ({ row }) => <span className="font-medium">{row.original.grado}</span>,
+    },
+    {
+      id: "teachingLevelName",
+      accessorKey: "teachingLevelName",
+      meta: { label: "Nivel de enseñanza" },
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Nivel de enseñanza" />,
+      cell: ({ row }) => (
+        <span className="font-medium uppercase">{row.original.teachingLevelName}</span>
+      ),
+    },
+    {
+      id: "actions",
+      header: () => <span className="sr-only">Acciones</span>,
+      cell: ({ row }) => (
+        <div className="flex items-center justify-end gap-1">
+          <CreateGradeDialog
+            grade={row.original}
+            jornada={jornada}
+            academicPeriodId={academicPeriodId}
+          />
+          <DeleteGradeDialog grade={row.original} />
+        </div>
+      ),
+      enableSorting: false,
+      enableHiding: false,
+      size: 96,
+    },
   ]
 }
 

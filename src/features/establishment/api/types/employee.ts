@@ -39,8 +39,13 @@ export interface EmployeeListItem {
    */
   roles: CatalogItem[]
   campuses: string[]
-  /** Ausente cuando el funcionario todavía no tiene permisos asignados. */
-  workSchedule?: CatalogItem
+  /**
+   * Jornadas agregadas desde los permisos, igual que `roles`: un funcionario
+   * puede tener permisos en más de una jornada (mañana y tarde, por ejemplo),
+   * así que la celda las lista separadas por comas. Vacío mientras no tenga
+   * permisos asignados.
+   */
+  workSchedules: CatalogItem[]
   /**
    * Estados agregados desde los permisos del funcionario. Análogo a
    * `roles`: se preserva el orden de aparición, sin duplicados.

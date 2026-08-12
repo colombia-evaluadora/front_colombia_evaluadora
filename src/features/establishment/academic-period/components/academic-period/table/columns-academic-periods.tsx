@@ -5,10 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { DataTableColumnHeader } from "@/components/data-table"
 
 import { ACADEMIC_PERIOD_STATUS_BADGE } from "../../../api/ui-mappings"
-import type {
-  AcademicPeriod,
-  AcademicPeriodStatus,
-} from "../../../api/types/academic-period"
+import type { AcademicPeriod, AcademicPeriodStatus } from "../../../api/types/academic-period"
 import { useAcademicPeriodStatusesQuery } from "../../../api/query/academic-period/use-academic-period-statuses-query"
 import { DeleteAcademicPeriodDialog } from "../dialogs/dialog-delete-academic-period"
 import { EditAcademicPeriodButton } from "./edit-academic-period-button"
@@ -30,20 +27,15 @@ export const columns: ColumnDef<AcademicPeriod>[] = [
     id: "select",
     header: ({ table }) => (
       <Checkbox
-        color="neutral"
         aria-label="Seleccionar página"
         className="translate-y-0.5"
         checked={table.getIsAllPageRowsSelected()}
-        indeterminate={
-          !table.getIsAllPageRowsSelected() &&
-          table.getIsSomePageRowsSelected()
-        }
+        indeterminate={!table.getIsAllPageRowsSelected() && table.getIsSomePageRowsSelected()}
         onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
       />
     ),
     cell: ({ row }) => (
       <Checkbox
-        color="neutral"
         aria-label={`Seleccionar periodo ${row.original.name}`}
         className="translate-y-0.5"
         checked={row.getIsSelected()}
@@ -57,47 +49,38 @@ export const columns: ColumnDef<AcademicPeriod>[] = [
   {
     id: "schoolYearId",
     accessorKey: "schoolYearId",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Año lectivo" />
-    ),
-    cell: ({ row }) => (
-      <span className="font-medium">{row.original.schoolYearId}</span>
-    ),
+    meta: { label: "Año lectivo" },
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Año lectivo" />,
+    cell: ({ row }) => <span className="font-medium">{row.original.schoolYearId}</span>,
   },
   {
     id: "sedeName",
     accessorKey: "sedeName",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Sede" />
-    ),
+    meta: { label: "Sede" },
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Sede" />,
     cell: ({ row }) => (
-      <span className="truncate">{row.original.sedeName}</span>
+      <span className="truncate font-bold uppercase">{row.original.sedeName}</span>
     ),
   },
   {
     id: "status",
     accessorKey: "status",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Estado" />
-    ),
-    cell: ({ row }) => (
-      <StatusCell status={row.getValue<AcademicPeriodStatus>("status")} />
-    ),
+    meta: { label: "Estado" },
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Estado" />,
+    cell: ({ row }) => <StatusCell status={row.getValue<AcademicPeriodStatus>("status")} />,
   },
   {
     id: "startDate",
     accessorKey: "startDate",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Fecha inicio" />
-    ),
+    meta: { label: "Fecha inicio" },
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Fecha inicio" />,
     cell: ({ row }) => <span>{formatDate(row.original.startDate)}</span>,
   },
   {
     id: "endDate",
     accessorKey: "endDate",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Fecha finalización" />
-    ),
+    meta: { label: "Fecha finalización" },
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Fecha finalización" />,
     cell: ({ row }) => <span>{formatDate(row.original.endDate)}</span>,
   },
   {

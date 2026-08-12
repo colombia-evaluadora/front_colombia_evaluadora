@@ -18,7 +18,6 @@ export const columns: ColumnDef<Reservation>[] = [
     id: "select",
     header: ({ table }) => (
       <Checkbox
-        color="neutral"
         aria-label="Seleccionar página"
         className="translate-y-0.5"
         checked={table.getIsAllPageRowsSelected()}
@@ -28,7 +27,6 @@ export const columns: ColumnDef<Reservation>[] = [
     ),
     cell: ({ row }) => (
       <Checkbox
-        color="neutral"
         aria-label={`Seleccionar reserva de ${row.original.firstName} ${row.original.lastName}`}
         className="translate-y-0.5"
         checked={row.getIsSelected()}
@@ -94,7 +92,7 @@ export const columns: ColumnDef<Reservation>[] = [
     meta: { label: "Jornada" },
     header: ({ column }) => <DataTableColumnHeader column={column} title="Jornada" />,
     cell: ({ row }) => (
-      <Badge variant="outline" color="secondary">
+      <Badge variant="soft" color="secondary">
         {SHIFT_LABELS[row.original.shift]}
       </Badge>
     ),

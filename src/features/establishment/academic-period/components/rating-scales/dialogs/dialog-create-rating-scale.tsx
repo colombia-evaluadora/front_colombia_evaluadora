@@ -2,15 +2,15 @@ import { useMemo, useRef, useState } from "react"
 import { useForm } from "@tanstack/react-form"
 import {
   CheckIcon,
+  ControlPointIcon,
   PencilIcon,
-  PlusCircleIcon,
   SpinnerIcon,
   TrashIcon,
   XIcon,
 } from "@/components/ui/icons"
 import { z } from "zod"
 
-import { useNotify, NoticeOutlet } from "../../common/notice-context"
+import { useNotify, NoticeOutlet } from "@/components/notice/notice-context"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -26,6 +26,7 @@ import {
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { FieldVariantContext } from "@/hooks/use-field-variant"
+import { cn } from "@/lib/utils"
 import {
   Select,
   SelectContent,
@@ -50,22 +51,66 @@ import { useTeachingLevelsQuery } from "../../../api/query/use-teaching-levels-q
 import { useRatingScaleTypesQuery } from "../../../api/query/rating-scales/use-rating-scale-types-query"
 import type { RatingScaleType } from "../../../api/types/rating-scales"
 import { RatingSymbolSelect, RatingSymbolView } from "../rating-symbol"
-import {
-  makeRatingScaleGradesSchema,
-  parseGradingRange,
-  type GradingRange,
-} from "../grading-range"
+import { makeRatingScaleGradesSchema, parseGradingRange, type GradingRange } from "../grading-range"
 import { TeachingLevelsMultiSelect } from "../teaching-levels-multi-select"
-import {
-  ScaleSortableHeader,
-  compareByScaleKey,
-  type ScaleSort,
-} from "../table/scale-sort-header"
+import { ScaleSortableHeader, compareByScaleKey, type ScaleSort } from "../table/scale-sort-header"
 import { useRowEdit } from "../../../hooks/use-row-edit"
 
-type RatingScaleDraftValues = z.infer<
-  ReturnType<typeof makeRatingScaleGradesSchema>
->
+/*
+ * Réplica de la mecánica de la columna `actions` de `DataTable`: esta tabla se
+ * arma a mano (ordena con estado local, no con TanStack), así que no puede
+ * reutilizar el componente y las clases se repiten acá.
+ *
+ * La celda de acciones es `sticky` y de 1px —los botones son absolutos, su
+ * min-content es 0— y el `spacer` que va justo antes es quien le reserva el
+ * ancho en el flujo, para que la columna no se lleve una tajada del reparto.
+ */
+const ACTIONS_CELL_CLASS = "sticky right-0 z-10 w-px"
+const ACTIONS_SPACER_WIDTH = 96
+
+const actionsSpacerCell = (
+  <td aria-hidden className="p-0">
+    <div style={{ width: ACTIONS_SPACER_WIDTH }} />
+  </td>
+)
+
+const actionsSpacerHeadCell = (
+  <th aria-hidden className="p-0">
+    <div style={{ width: ACTIONS_SPACER_WIDTH }} />
+  </th>
+)
+
+/*
+ * El bloque va a sangre contra el borde derecho, con el alto completo de la
+ * fila, y aparece con el mismo fade que el hover (150ms, el default de
+ * Tailwind) para que entren juntos.
+ *
+ * El fondo es el mismo color del hover de `TableRow` (`bg-muted/50`) pero ya
+ * resuelto: acá hace falta opaco, porque el bloque tapa las columnas que pasan
+ * por debajo al scrollear. Se mezcla contra `--popover` y no contra `--card`
+ * como en `DataTable`: esta tabla vive dentro de un Dialog, que es `bg-popover`
+ * —en el tema rojo los dos tokens no coinciden—.
+ *
+ * `active` deja el bloque fijo: mientras se edita una fila, guardar y cancelar
+ * no pueden depender de que el puntero siga encima.
+ *
+ * El revelado por teclado va con `has(:focus-visible)` y no con `focus-within`:
+ * al hacer click el botón queda enfocado, y como React reusa ese nodo del DOM
+ * al cambiar la fila entre modo lectura y edición, el foco sobrevive al cambio
+ * y `focus-within` dejaba el bloque pegado hasta hacer click en otro lado.
+ * `:focus-visible` solo lo activa el foco por teclado, que es a quien apunta la
+ * regla.
+ */
+const actionsOverlayClass = (active = false) =>
+  cn(
+    "absolute inset-y-0 right-0 z-10 flex items-center gap-1 px-2 transition-opacity",
+    "bg-[color-mix(in_srgb,var(--muted)_50%,var(--popover))]",
+    active
+      ? "opacity-100"
+      : "opacity-0 group-hover/row:opacity-100 group-has-[:focus-visible]/row:opacity-100",
+  )
+
+type RatingScaleDraftValues = z.infer<ReturnType<typeof makeRatingScaleGradesSchema>>
 
 function makeEmptyDraft(range: GradingRange): RatingScaleDraftValues {
   return {
@@ -85,9 +130,7 @@ interface CreateRatingScaleDialogProps {
   academicPeriodId?: number
 }
 
-export function CreateRatingScaleDialog({
-  academicPeriodId,
-}: CreateRatingScaleDialogProps) {
+export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleDialogProps) {
   const { notify } = useNotify()
   const [open, setOpen] = useState(false)
   const [continued, setContinued] = useState(false)
@@ -108,16 +151,10 @@ export function CreateRatingScaleDialog({
   const { data: criteria } = useEvaluationCriteriaQuery(academicPeriodId)
   const createScalesBulk = useCreateRatingScalesBulk()
 
-  const range = useMemo(
-    () => parseGradingRange(criteria?.gradingFormat),
-    [criteria]
-  )
+  const range = useMemo(() => parseGradingRange(criteria?.gradingFormat), [criteria])
   const rangeRef = useRef(range)
   rangeRef.current = range
-  const draftSchema = useMemo(
-    () => makeRatingScaleGradesSchema(range),
-    [range]
-  )
+  const draftSchema = useMemo(() => makeRatingScaleGradesSchema(range), [range])
 
   const form = useForm({
     defaultValues: makeEmptyDraft(range),
@@ -129,7 +166,7 @@ export function CreateRatingScaleDialog({
       const r = rangeRef.current
       const parsed = makeRatingScaleGradesSchema(r).safeParse(value)
       if (!parsed.success) {
-        notify(parsed.error.issues[0]?.message ?? "Revisá los datos.", {
+        notify(parsed.error.issues[0]?.message ?? "Revisa los datos.", {
           variant: "error",
         })
         return
@@ -156,14 +193,12 @@ export function CreateRatingScaleDialog({
     const r = rangeRef.current
     const parsed = makeRatingScaleGradesSchema(r).safeParse(editRow)
     if (!parsed.success) {
-      notify(parsed.error.issues[0]?.message ?? "Revisá los datos.", {
+      notify(parsed.error.issues[0]?.message ?? "Revisa los datos.", {
         variant: "error",
       })
       return
     }
-    setDrafts((prev) =>
-      prev.map((d, i) => (i === editingIndex ? parsed.data : d))
-    )
+    setDrafts((prev) => prev.map((d, i) => (i === editingIndex ? parsed.data : d)))
     cancelEdit()
   }
 
@@ -176,19 +211,17 @@ export function CreateRatingScaleDialog({
     const withIndex = drafts.map((draft, index) => ({ draft, index }))
     if (!sort) return withIndex
     const { key, dir } = sort
-    const copy = [...withIndex].sort((a, b) =>
-      compareByScaleKey(a.draft[key], b.draft[key])
-    )
+    const copy = [...withIndex].sort((a, b) => compareByScaleKey(a.draft[key], b.draft[key]))
     return dir === "desc" ? copy.reverse() : copy
   }, [drafts, sort])
 
   async function handleSave() {
     if (teachingLevelIds.length === 0) {
-      notify("Seleccioná al menos un nivel de enseñanza.", { variant: "error" })
+      notify("Selecciona al menos un nivel de enseñanza.", { variant: "error" })
       return
     }
     if (drafts.length === 0) {
-      notify("Agregá al menos una escala a la lista.", { variant: "error" })
+      notify("Agrega al menos una escala a la lista.", { variant: "error" })
       return
     }
     await createScalesBulk.mutateAsync({
@@ -212,21 +245,16 @@ export function CreateRatingScaleDialog({
       }}
     >
       <DialogTrigger render={<Button color="primary" size="sm" />}>
-        <PlusCircleIcon weight="fill" data-icon="inline-start" />
+        <ControlPointIcon data-icon="inline-start" />
         Agregar
       </DialogTrigger>
       <DialogContent
-        className={
-          continued
-            ? "max-h-[90dvh] overflow-y-auto sm:max-w-4xl"
-            : "sm:max-w-md"
-        }
+        className={continued ? "max-h-[90dvh] overflow-y-auto sm:max-w-4xl" : "sm:max-w-md"}
       >
         <DialogHeader>
           <DialogTitle>Agregar escalas de valoración</DialogTitle>
           <DialogDescription>
-            Elegí los niveles de enseñanza y agregá una o más escalas a la
-            lista.
+            Elige los niveles de enseñanza y agrega una o más escalas a la lista.
           </DialogDescription>
         </DialogHeader>
 
@@ -234,9 +262,7 @@ export function CreateRatingScaleDialog({
 
         <div className="flex min-w-0 flex-col gap-4">
           <Field variant="outlined">
-            <FieldLabel htmlFor="rating-scale-levels">
-              Niveles de enseñanza
-            </FieldLabel>
+            <FieldLabel htmlFor="rating-scale-levels">Niveles de enseñanza</FieldLabel>
             <TeachingLevelsMultiSelect
               id="rating-scale-levels"
               levels={levels}
@@ -257,22 +283,19 @@ export function CreateRatingScaleDialog({
               <div className="grid gap-x-4 gap-y-4 sm:grid-cols-2">
                 <form.Field name="nombre">
                   {(field) => {
-                    const isInvalid =
-                      field.state.meta.isTouched && !field.state.meta.isValid
+                    const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
                     return (
                       <Field variant="outlined" data-invalid={isInvalid}>
                         <FieldLabel htmlFor={field.name}>Nombre*</FieldLabel>
                         <Input
                           id={field.name}
-                          placeholder="Agregar nombre"
+                          placeholder="Ingresar nombre"
                           value={field.state.value}
                           onBlur={field.handleBlur}
                           onChange={(e) => field.handleChange(e.target.value)}
                           aria-invalid={isInvalid}
                         />
-                        {isInvalid && (
-                          <FieldError errors={field.state.meta.errors} />
-                        )}
+                        {isInvalid && <FieldError errors={field.state.meta.errors} />}
                       </Field>
                     )
                   }}
@@ -280,13 +303,10 @@ export function CreateRatingScaleDialog({
 
                 <form.Field name="tipo">
                   {(field) => {
-                    const isInvalid =
-                      field.state.meta.isTouched && !field.state.meta.isValid
+                    const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
                     return (
                       <Field variant="outlined" data-invalid={isInvalid}>
-                        <FieldLabel htmlFor={field.name}>
-                          Tipo de valoración*
-                        </FieldLabel>
+                        <FieldLabel htmlFor={field.name}>Tipo de valoración*</FieldLabel>
                         <Select
                           value={field.state.value}
                           onValueChange={(value) => {
@@ -295,7 +315,7 @@ export function CreateRatingScaleDialog({
                           }}
                         >
                           <SelectTrigger id={field.name} aria-invalid={isInvalid}>
-                            <SelectValue placeholder="Agregar valoración" />
+                            <SelectValue placeholder="Seleccionar" />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectGroup>
@@ -307,9 +327,7 @@ export function CreateRatingScaleDialog({
                             </SelectGroup>
                           </SelectContent>
                         </Select>
-                        {isInvalid && (
-                          <FieldError errors={field.state.meta.errors} />
-                        )}
+                        {isInvalid && <FieldError errors={field.state.meta.errors} />}
                       </Field>
                     )
                   }}
@@ -319,22 +337,19 @@ export function CreateRatingScaleDialog({
               <div className="grid gap-x-4 gap-y-4 sm:grid-cols-2">
                 <form.Field name="abreviacion">
                   {(field) => {
-                    const isInvalid =
-                      field.state.meta.isTouched && !field.state.meta.isValid
+                    const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
                     return (
                       <Field variant="outlined" data-invalid={isInvalid}>
                         <FieldLabel htmlFor={field.name}>Abreviación*</FieldLabel>
                         <Input
                           id={field.name}
-                          placeholder="Agregar abreviación"
+                          placeholder="Ingresar abreviación"
                           value={field.state.value}
                           onBlur={field.handleBlur}
                           onChange={(e) => field.handleChange(e.target.value)}
                           aria-invalid={isInvalid}
                         />
-                        {isInvalid && (
-                          <FieldError errors={field.state.meta.errors} />
-                        )}
+                        {isInvalid && <FieldError errors={field.state.meta.errors} />}
                       </Field>
                     )
                   }}
@@ -342,8 +357,7 @@ export function CreateRatingScaleDialog({
 
                 <form.Field name="iconografia">
                   {(field) => {
-                    const isInvalid =
-                      field.state.meta.isTouched && !field.state.meta.isValid
+                    const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
                     return (
                       <Field variant="outlined" data-invalid={isInvalid}>
                         <FieldLabel htmlFor={field.name}>Iconografía*</FieldLabel>
@@ -356,18 +370,14 @@ export function CreateRatingScaleDialog({
                             field.handleBlur()
                           }}
                         />
-                        {isInvalid && (
-                          <FieldError errors={field.state.meta.errors} />
-                        )}
+                        {isInvalid && <FieldError errors={field.state.meta.errors} />}
                       </Field>
                     )
                   }}
                 </form.Field>
               </div>
 
-              <form.Subscribe
-                selector={(state) => draftSchema.safeParse(state.values).success}
-              >
+              <form.Subscribe selector={(state) => draftSchema.safeParse(state.values).success}>
                 {(canSubmit) => (
                   <div
                     className={
@@ -377,114 +387,80 @@ export function CreateRatingScaleDialog({
                     }
                   >
                     <form.Field name="notaMaxima">
-                  {(field) => {
-                    const isInvalid =
-                      field.state.meta.isTouched && !field.state.meta.isValid
-                    return (
-                      <Field variant="outlined" data-invalid={isInvalid}>
-                        <FieldLabel htmlFor={field.name}>Nota máximo*</FieldLabel>
-                        <Input
-                          id={field.name}
-                          type="number"
-                          step="0.1"
-                          min={range.min}
-                          max={range.max}
-                          placeholder="ej. 5"
-                          value={
-                            Number.isNaN(field.state.value)
-                              ? ""
-                              : field.state.value
-                          }
-                          onBlur={field.handleBlur}
-                          onChange={(e) =>
-                            field.handleChange(e.target.valueAsNumber)
-                          }
-                          aria-invalid={isInvalid}
-                        />
-                        {isInvalid && (
-                          <FieldError errors={field.state.meta.errors} />
-                        )}
-                      </Field>
-                    )
-                  }}
-                </form.Field>
-                <form.Field name="notaMinima">
-                  {(field) => {
-                    const isInvalid =
-                      field.state.meta.isTouched && !field.state.meta.isValid
-                    return (
-                      <Field variant="outlined" data-invalid={isInvalid}>
-                        <FieldLabel htmlFor={field.name}>Nota mínimo*</FieldLabel>
-                        <Input
-                          id={field.name}
-                          type="number"
-                          step="0.1"
-                          min={range.min}
-                          max={range.max}
-                          placeholder="ej. 1"
-                          value={
-                            Number.isNaN(field.state.value)
-                              ? ""
-                              : field.state.value
-                          }
-                          onBlur={field.handleBlur}
-                          onChange={(e) =>
-                            field.handleChange(e.target.valueAsNumber)
-                          }
-                          aria-invalid={isInvalid}
-                        />
-                        {isInvalid && (
-                          <FieldError errors={field.state.meta.errors} />
-                        )}
-                      </Field>
-                    )
-                  }}
-                </form.Field>
-                <form.Field name="notaEquivalente">
-                  {(field) => {
-                    const isInvalid =
-                      field.state.meta.isTouched && !field.state.meta.isValid
-                    return (
-                      <Field variant="outlined" data-invalid={isInvalid}>
-                        <FieldLabel htmlFor={field.name}>
-                          Nota equivalente*
-                        </FieldLabel>
-                        <Input
-                          id={field.name}
-                          type="number"
-                          step="0.1"
-                          min={range.min}
-                          max={range.max}
-                          placeholder="ej. 3"
-                          value={
-                            Number.isNaN(field.state.value)
-                              ? ""
-                              : field.state.value
-                          }
-                          onBlur={field.handleBlur}
-                          onChange={(e) =>
-                            field.handleChange(e.target.valueAsNumber)
-                          }
-                          aria-invalid={isInvalid}
-                        />
-                        {isInvalid && (
-                          <FieldError errors={field.state.meta.errors} />
-                        )}
-                      </Field>
-                    )
-                  }}
+                      {(field) => {
+                        const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
+                        return (
+                          <Field variant="outlined" data-invalid={isInvalid}>
+                            <FieldLabel htmlFor={field.name}>Nota máximo*</FieldLabel>
+                            <Input
+                              id={field.name}
+                              type="number"
+                              step="0.1"
+                              min={range.min}
+                              max={range.max}
+                              placeholder="Ingresar valor"
+                              value={Number.isNaN(field.state.value) ? "" : field.state.value}
+                              onBlur={field.handleBlur}
+                              onChange={(e) => field.handleChange(e.target.valueAsNumber)}
+                              aria-invalid={isInvalid}
+                            />
+                            {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                          </Field>
+                        )
+                      }}
+                    </form.Field>
+                    <form.Field name="notaMinima">
+                      {(field) => {
+                        const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
+                        return (
+                          <Field variant="outlined" data-invalid={isInvalid}>
+                            <FieldLabel htmlFor={field.name}>Nota mínimo*</FieldLabel>
+                            <Input
+                              id={field.name}
+                              type="number"
+                              step="0.1"
+                              min={range.min}
+                              max={range.max}
+                              placeholder="Ingresar valor"
+                              value={Number.isNaN(field.state.value) ? "" : field.state.value}
+                              onBlur={field.handleBlur}
+                              onChange={(e) => field.handleChange(e.target.valueAsNumber)}
+                              aria-invalid={isInvalid}
+                            />
+                            {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                          </Field>
+                        )
+                      }}
+                    </form.Field>
+                    <form.Field name="notaEquivalente">
+                      {(field) => {
+                        const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
+                        return (
+                          <Field variant="outlined" data-invalid={isInvalid}>
+                            <FieldLabel htmlFor={field.name}>Nota equivalente*</FieldLabel>
+                            <Input
+                              id={field.name}
+                              type="number"
+                              step="0.1"
+                              min={range.min}
+                              max={range.max}
+                              placeholder="Ingresar valor"
+                              value={Number.isNaN(field.state.value) ? "" : field.state.value}
+                              onBlur={field.handleBlur}
+                              onChange={(e) => field.handleChange(e.target.valueAsNumber)}
+                              aria-invalid={isInvalid}
+                            />
+                            {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                          </Field>
+                        )
+                      }}
                     </form.Field>
 
                     {canSubmit && (
                       <div className="flex items-end sm:h-full">
-                        <Button
-                          type="submit"
-                          variant="outline"
-                          size="sm"
-                          className="w-full"
-                        >
-                          <PlusCircleIcon data-icon="inline-start" />
-                          Agregar a la lista
+                        <Button type="submit" variant="fill" size="sm" className="w-full">
+                          <ControlPointIcon data-icon="inline-start" />
+                          Agregar
                         </Button>
                       </div>
                     )}
@@ -495,264 +471,264 @@ export function CreateRatingScaleDialog({
           )}
 
           {drafts.length > 0 && (
-            <div className="overflow-x-auto rounded-lg border [&_[data-slot=input]]:bg-background [&_[data-slot=select-trigger]]:bg-background">
+            <div className="[&_[data-slot=input]]:bg-background [&_[data-slot=select-trigger]]:bg-background">
               <FieldVariantContext.Provider value="outlined">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>
-                      <ScaleSortableHeader
-                        title="Nombre"
-                        sortKey="nombre"
-                        sort={sort}
-                        onSortChange={setSort}
-                      />
-                    </TableHead>
-                    <TableHead>
-                      <ScaleSortableHeader
-                        title="Abreviación"
-                        sortKey="abreviacion"
-                        sort={sort}
-                        onSortChange={setSort}
-                      />
-                    </TableHead>
-                    <TableHead>
-                      <ScaleSortableHeader
-                        title="Nota máximo"
-                        sortKey="notaMaxima"
-                        sort={sort}
-                        onSortChange={setSort}
-                      />
-                    </TableHead>
-                    <TableHead>
-                      <ScaleSortableHeader
-                        title="Nota mínimo"
-                        sortKey="notaMinima"
-                        sort={sort}
-                        onSortChange={setSort}
-                      />
-                    </TableHead>
-                    <TableHead>
-                      <ScaleSortableHeader
-                        title="Nota equivalente"
-                        sortKey="notaEquivalente"
-                        sort={sort}
-                        onSortChange={setSort}
-                      />
-                    </TableHead>
-                    <TableHead>
-                      <ScaleSortableHeader
-                        title="Tipo"
-                        sortKey="tipo"
-                        sort={sort}
-                        onSortChange={setSort}
-                      />
-                    </TableHead>
-                    <TableHead>Iconografía</TableHead>
-                    <TableHead className="text-right">Acciones</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {orderedDrafts.map(({ draft: d, index }) => {
-                    const isEditing = editingIndex === index
+                <Table>
+                  <TableHeader>
+                    {/* El encabezado no lleva fondo propio ni hover: comparte
+                        el de la tabla en reposo, igual que una fila sin el
+                        puntero encima. `has-aria-expanded` cubre el rato en que
+                        un menú de orden está abierto. */}
+                    <TableRow className="hover:bg-transparent has-aria-expanded:bg-transparent">
+                      <TableHead className="text-foreground">
+                        <ScaleSortableHeader
+                          title="Nombre"
+                          sortKey="nombre"
+                          sort={sort}
+                          onSortChange={setSort}
+                        />
+                      </TableHead>
+                      <TableHead className="text-foreground">
+                        <ScaleSortableHeader
+                          title="Abreviación"
+                          sortKey="abreviacion"
+                          sort={sort}
+                          onSortChange={setSort}
+                        />
+                      </TableHead>
+                      <TableHead className="text-foreground">
+                        <ScaleSortableHeader
+                          title="Nota máximo"
+                          sortKey="notaMaxima"
+                          sort={sort}
+                          onSortChange={setSort}
+                        />
+                      </TableHead>
+                      <TableHead className="text-foreground">
+                        <ScaleSortableHeader
+                          title="Nota mínimo"
+                          sortKey="notaMinima"
+                          sort={sort}
+                          onSortChange={setSort}
+                        />
+                      </TableHead>
+                      <TableHead className="text-foreground">
+                        <ScaleSortableHeader
+                          title="Nota equivalente"
+                          sortKey="notaEquivalente"
+                          sort={sort}
+                          onSortChange={setSort}
+                        />
+                      </TableHead>
+                      <TableHead className="text-foreground">
+                        <ScaleSortableHeader
+                          title="Tipo"
+                          sortKey="tipo"
+                          sort={sort}
+                          onSortChange={setSort}
+                        />
+                      </TableHead>
+                      <TableHead className="text-foreground">
+                        <ScaleSortableHeader
+                          title="Iconografía"
+                          sortKey="iconografia"
+                          sort={sort}
+                          onSortChange={setSort}
+                        />
+                      </TableHead>
+                      {/* Igual que en `DataTable`: la columna de acciones no
+                          rotula —el `th` solo reserva el ancho del bloque— y el
+                          título queda para lectores de pantalla. */}
+                      {actionsSpacerHeadCell}
+                      <TableHead className="w-px text-foreground">
+                        <span className="sr-only">Acciones</span>
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {orderedDrafts.map(({ draft: d, index }) => {
+                      const isEditing = editingIndex === index
 
-                    if (isEditing && editRow) {
-                      return (
-                        <TableRow key={index}>
-                          <TableCell>
-                            <Input
-                              aria-label="Nombre"
-                              value={editRow.nombre}
-                              onChange={(e) =>
-                                patchEditRow({ nombre: e.target.value })
-                              }
-                              className="min-w-32"
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <Input
-                              aria-label="Abreviación"
-                              value={editRow.abreviacion}
-                              onChange={(e) =>
-                                patchEditRow({ abreviacion: e.target.value })
-                              }
-                              className="min-w-24"
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <Input
-                              aria-label="Nota máximo"
-                              type="number"
-                              step="0.1"
-                              min={range.min}
-                              max={range.max}
-                              value={
-                                Number.isNaN(editRow.notaMaxima)
-                                  ? ""
-                                  : editRow.notaMaxima
-                              }
-                              onChange={(e) =>
-                                patchEditRow({
-                                  notaMaxima: e.target.valueAsNumber,
-                                })
-                              }
-                              className="w-20"
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <Input
-                              aria-label="Nota mínimo"
-                              type="number"
-                              step="0.1"
-                              min={range.min}
-                              max={range.max}
-                              value={
-                                Number.isNaN(editRow.notaMinima)
-                                  ? ""
-                                  : editRow.notaMinima
-                              }
-                              onChange={(e) =>
-                                patchEditRow({
-                                  notaMinima: e.target.valueAsNumber,
-                                })
-                              }
-                              className="w-20"
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <Input
-                              aria-label="Nota equivalente"
-                              type="number"
-                              step="0.1"
-                              min={range.min}
-                              max={range.max}
-                              value={
-                                Number.isNaN(editRow.notaEquivalente)
-                                  ? ""
-                                  : editRow.notaEquivalente
-                              }
-                              onChange={(e) =>
-                                patchEditRow({
-                                  notaEquivalente: e.target.valueAsNumber,
-                                })
-                              }
-                              className="w-20"
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <Select
-                              value={editRow.tipo}
-                              onValueChange={(value) =>
-                                value && patchEditRow({ tipo: value })
-                              }
-                            >
-                              <SelectTrigger
-                                aria-label="Tipo"
+                      if (isEditing && editRow) {
+                        return (
+                          <TableRow key={index} className="group/row">
+                            <TableCell>
+                              <Input
+                                aria-label="Nombre"
+                                placeholder="Ingresar nombre"
+                                value={editRow.nombre}
+                                onChange={(e) => patchEditRow({ nombre: e.target.value })}
                                 className="min-w-32"
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Input
+                                aria-label="Abreviación"
+                                placeholder="Ingresar abreviación"
+                                value={editRow.abreviacion}
+                                onChange={(e) => patchEditRow({ abreviacion: e.target.value })}
+                                className="min-w-24"
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Input
+                                aria-label="Nota máximo"
+                                placeholder="Ingresar nota máxima"
+                                type="number"
+                                step="0.1"
+                                min={range.min}
+                                max={range.max}
+                                value={Number.isNaN(editRow.notaMaxima) ? "" : editRow.notaMaxima}
+                                onChange={(e) =>
+                                  patchEditRow({
+                                    notaMaxima: e.target.valueAsNumber,
+                                  })
+                                }
+                                className="w-20"
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Input
+                                aria-label="Nota mínimo"
+                                placeholder="Ingresar nota mínima"
+                                type="number"
+                                step="0.1"
+                                min={range.min}
+                                max={range.max}
+                                value={Number.isNaN(editRow.notaMinima) ? "" : editRow.notaMinima}
+                                onChange={(e) =>
+                                  patchEditRow({
+                                    notaMinima: e.target.valueAsNumber,
+                                  })
+                                }
+                                className="w-20"
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Input
+                                aria-label="Nota equivalente"
+                                placeholder="Ingresar nota equivalente"
+                                type="number"
+                                step="0.1"
+                                min={range.min}
+                                max={range.max}
+                                value={
+                                  Number.isNaN(editRow.notaEquivalente)
+                                    ? ""
+                                    : editRow.notaEquivalente
+                                }
+                                onChange={(e) =>
+                                  patchEditRow({
+                                    notaEquivalente: e.target.valueAsNumber,
+                                  })
+                                }
+                                className="w-20"
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Select
+                                value={editRow.tipo}
+                                onValueChange={(value) => value && patchEditRow({ tipo: value })}
                               >
-                                <SelectValue placeholder="Seleccionar" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectGroup>
-                                  {tipoOptions.map((option) => (
-                                    <SelectItem key={option.key} value={option.key}>
-                                      {option.label}
-                                    </SelectItem>
-                                  ))}
-                                </SelectGroup>
-                              </SelectContent>
-                            </Select>
+                                <SelectTrigger aria-label="Tipo" className="min-w-32">
+                                  <SelectValue placeholder="Seleccionar" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectGroup>
+                                    {tipoOptions.map((option) => (
+                                      <SelectItem key={option.key} value={option.key}>
+                                        {option.label}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectGroup>
+                                </SelectContent>
+                              </Select>
+                            </TableCell>
+                            <TableCell>
+                              <RatingSymbolSelect
+                                symbols={symbols}
+                                value={editRow.iconografia}
+                                onChange={(valor) => patchEditRow({ iconografia: valor })}
+                              />
+                            </TableCell>
+                            {actionsSpacerCell}
+                            <TableCell className={ACTIONS_CELL_CLASS}>
+                              {/* `true`: la fila en edición mantiene el bloque
+                                  fijo, no sujeto al hover. */}
+                              <div className={actionsOverlayClass(true)}>
+                                <Button
+                                  type="button"
+                                  color="primary"
+                                  size="icon-sm"
+                                  aria-label="Guardar cambios"
+                                  onClick={saveEditRow}
+                                >
+                                  <CheckIcon />
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="icon-sm"
+                                  aria-label="Cancelar edición"
+                                  onClick={cancelEdit}
+                                >
+                                  <XIcon />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )
+                      }
+
+                      return (
+                        <TableRow key={index} className="group/row">
+                          <TableCell className="font-medium">{d.nombre}</TableCell>
+                          <TableCell>{d.abreviacion}</TableCell>
+                          <TableCell>{d.notaMaxima}</TableCell>
+                          <TableCell>{d.notaMinima}</TableCell>
+                          <TableCell>{d.notaEquivalente}</TableCell>
+                          <TableCell>{d.tipo}</TableCell>
+                          <TableCell className="text-lg">
+                            <RatingSymbolView value={d.iconografia} />
                           </TableCell>
-                          <TableCell>
-                            <RatingSymbolSelect
-                              symbols={symbols}
-                              value={editRow.iconografia}
-                              onChange={(valor) =>
-                                patchEditRow({ iconografia: valor })
-                              }
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center justify-end gap-1">
+                          {actionsSpacerCell}
+                          <TableCell className={ACTIONS_CELL_CLASS}>
+                            <div className={actionsOverlayClass()}>
                               <Button
                                 type="button"
-                                color="primary"
-                                size="icon"
-                                className="size-8"
-                                aria-label="Guardar cambios"
-                                onClick={saveEditRow}
+                                variant="ghost"
+                                color="neutral"
+                                size="icon-sm"
+                                aria-label={`Editar ${d.nombre}`}
+                                disabled={editingIndex !== null}
+                                onClick={() => startEdit(index)}
                               >
-                                <CheckIcon />
+                                <PencilIcon />
                               </Button>
                               <Button
                                 type="button"
-                                variant="outline"
-                                size="icon"
-                                className="size-8"
-                                aria-label="Cancelar edición"
-                                onClick={cancelEdit}
+                                variant="ghost"
+                                color="neutral"
+                                size="icon-sm"
+                                aria-label={`Quitar ${d.nombre}`}
+                                disabled={editingIndex !== null}
+                                onClick={() => removeDraft(index)}
                               >
-                                <XIcon />
+                                <TrashIcon />
                               </Button>
                             </div>
                           </TableCell>
                         </TableRow>
                       )
-                    }
-
-                    return (
-                      <TableRow key={index}>
-                        <TableCell className="font-medium">{d.nombre}</TableCell>
-                        <TableCell>{d.abreviacion}</TableCell>
-                        <TableCell>{d.notaMaxima}</TableCell>
-                        <TableCell>{d.notaMinima}</TableCell>
-                        <TableCell>{d.notaEquivalente}</TableCell>
-                        <TableCell>{d.tipo}</TableCell>
-                        <TableCell className="text-lg">
-                          <RatingSymbolView value={d.iconografia} />
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center justify-end gap-1">
-                            <Button
-                              type="button"
-                              variant="fill"
-                              color="secondary"
-                              size="icon"
-                              className="size-8"
-                              aria-label={`Editar ${d.nombre}`}
-                              disabled={editingIndex !== null}
-                              onClick={() => startEdit(index)}
-                            >
-                              <PencilIcon />
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="fill"
-                              color="destructive"
-                              size="icon"
-                              className="size-8"
-                              aria-label={`Quitar ${d.nombre}`}
-                              disabled={editingIndex !== null}
-                              onClick={() => removeDraft(index)}
-                            >
-                              <TrashIcon />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })}
-                </TableBody>
-              </Table>
+                    })}
+                  </TableBody>
+                </Table>
               </FieldVariantContext.Provider>
             </div>
           )}
         </div>
 
         <DialogFooter className="sm:justify-end">
-          <DialogClose render={<Button type="button" variant="ghost" />}>
-            Cancelar
-          </DialogClose>
           {continued ? (
             <Button
               type="button"
@@ -761,22 +737,25 @@ export function CreateRatingScaleDialog({
               disabled={createScalesBulk.isPending || drafts.length === 0}
               aria-busy={createScalesBulk.isPending}
             >
-              {createScalesBulk.isPending && (
+              {createScalesBulk.isPending ? (
                 <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+              ) : (
+                <CheckIcon data-icon="inline-start" />
               )}
               Guardar
             </Button>
           ) : (
             teachingLevelIds.length > 0 && (
-              <Button
-                type="button"
-                color="primary"
-                onClick={() => setContinued(true)}
-              >
+              <Button type="button" color="primary" onClick={() => setContinued(true)}>
+                <CheckIcon data-icon="inline-start" />
                 Continuar
               </Button>
             )
           )}
+          <DialogClose render={<Button type="button" variant="fill" color="neutral" />}>
+            <XIcon data-icon="inline-start" />
+            Cancelar
+          </DialogClose>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -100,7 +100,7 @@ export function useLogout({
     onSuccess: (...args) => {
       setAuthToken(null)
       // Full clear, not just the user key — otherwise cached protected data
-      // (payments, nav menu, ...) stays "fresh" for `staleTime` and could be
+      // (nav menu, ...) stays "fresh" for `staleTime` and could be
       // reused if a different user logs in on the same tab before it expires.
       queryClient.clear()
       mutationConfig?.onSuccess?.(...args)

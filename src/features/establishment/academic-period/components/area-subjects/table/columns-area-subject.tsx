@@ -12,20 +12,15 @@ export const columns: ColumnDef<AreaSubject>[] = [
     id: "select",
     header: ({ table }) => (
       <Checkbox
-        color="neutral"
         aria-label="Seleccionar página"
         className="translate-y-0.5"
         checked={table.getIsAllPageRowsSelected()}
-        indeterminate={
-          !table.getIsAllPageRowsSelected() &&
-          table.getIsSomePageRowsSelected()
-        }
+        indeterminate={!table.getIsAllPageRowsSelected() && table.getIsSomePageRowsSelected()}
         onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
       />
     ),
     cell: ({ row }) => (
       <Checkbox
-        color="neutral"
         aria-label={`Seleccionar ${row.original.nombreInterno}`}
         className="translate-y-0.5"
         checked={row.getIsSelected()}
@@ -38,10 +33,9 @@ export const columns: ColumnDef<AreaSubject>[] = [
   },
   {
     id: "numero",
+    meta: { label: "N°" },
     header: () => <span className="text-muted-foreground">#</span>,
-    cell: ({ row }) => (
-      <span className="text-muted-foreground">{row.index + 1}</span>
-    ),
+    cell: ({ row }) => <span className="text-muted-foreground">{row.index + 1}</span>,
     enableSorting: false,
     enableHiding: false,
     size: 40,
@@ -49,29 +43,22 @@ export const columns: ColumnDef<AreaSubject>[] = [
   {
     id: "nombreInterno",
     accessorKey: "nombreInterno",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Nombre del área" />
-    ),
-    cell: ({ row }) => (
-      <span className="font-medium">{row.original.nombreInterno}</span>
-    ),
+    meta: { label: "Nombre del área" },
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Nombre del área" />,
+    cell: ({ row }) => <span className="font-medium">{row.original.nombreInterno}</span>,
   },
   {
     id: "abreviacion",
     accessorKey: "abreviacion",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Abreviación" />
-    ),
-    cell: ({ row }) => (
-      <span className="font-semibold">{row.original.abreviacion}</span>
-    ),
+    meta: { label: "Abreviación" },
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Abreviación" />,
+    cell: ({ row }) => <span className="font-semibold">{row.original.abreviacion}</span>,
   },
   {
     id: "ordenReportes",
     accessorKey: "ordenReportes",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Orden de reporte" />
-    ),
+    meta: { label: "Orden de reporte" },
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Orden de reporte" />,
     cell: ({ row }) => <span>{row.original.ordenReportes}</span>,
   },
   {

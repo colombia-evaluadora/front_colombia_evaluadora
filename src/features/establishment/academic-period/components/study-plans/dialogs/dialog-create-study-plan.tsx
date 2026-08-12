@@ -1,8 +1,9 @@
 import { useState } from "react"
+import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { useForm } from "@tanstack/react-form"
-import { PencilIcon, PlusCircleIcon, SpinnerIcon } from "@/components/ui/icons"
+import { ControlPointIcon, PencilIcon, SpinnerIcon } from "@/components/ui/icons"
 
-import { useNotify, NoticeOutlet } from "../../common/notice-context"
+import { useNotify, NoticeOutlet } from "@/components/notice/notice-context"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
@@ -42,10 +43,7 @@ import { useAvailableStudyPlanSubjectsQuery } from "../../../api/query/study-pla
 import { useEvaluationCriteriaQuery } from "../../../api/query/evaluation-criteria/use-evaluation-criteria-query"
 import { useEvaluationCriteriaOptionsQuery } from "../../../api/query/evaluation-criteria/use-evaluation-criteria-options-query"
 import type { StudyPlanItem } from "../../../api/types/study-plan"
-import {
-  studyPlanFormSchema,
-  type StudyPlanFormValues,
-} from "../../../api/schema"
+import { studyPlanFormSchema, type StudyPlanFormValues } from "../../../api/schema"
 
 const EMPTY: StudyPlanFormValues = {
   asignatura: "",
@@ -77,10 +75,7 @@ export function CreateStudyPlanDialog({
   const { notify } = useNotify()
   const [open, setOpen] = useState(false)
   const tienePersonalizacion =
-    item != null &&
-    // El back marca `personalizado`; si no viene, se infiere de los overrides.
-    (item.personalizado ??
-      (item.formatoCalificacion != null || item.criterioNota != null))
+    item != null && (item.formatoCalificacion != null || item.criterioNota != null)
   const [personalizar, setPersonalizar] = useState(tienePersonalizacion)
 
   const { data: criteria } = useEvaluationCriteriaQuery(academicPeriodId)
@@ -98,8 +93,7 @@ export function CreateStudyPlanDialog({
         influyeDesempeno: item.influyeDesempeno,
         matriculaObligatoria: item.matriculaObligatoria ?? false,
         aprobacionObligatoria: item.aprobacionObligatoria ?? false,
-        formatoCalificacion:
-          item.formatoCalificacion ?? formatoHeredado,
+        formatoCalificacion: item.formatoCalificacion ?? formatoHeredado,
         criterioNota: item.criterioNota ?? criterioHeredado,
       }
     : EMPTY
@@ -140,7 +134,7 @@ export function CreateStudyPlanDialog({
           notify(result.message, { variant: "error" })
           return
         }
-        notify(result.message)
+        notify(SUCCESS_MESSAGES.studyPlan.updated)
         setOpen(false)
       },
     },
@@ -185,7 +179,7 @@ export function CreateStudyPlanDialog({
       <DialogTrigger
         render={
           isEditing ? (
-            <Button variant="fill" color="secondary" size="icon" className="size-8" />
+            <Button variant="ghost" color="neutral" size="icon-sm" />
           ) : (
             <Button color="primary" size="sm" />
           )
@@ -198,7 +192,7 @@ export function CreateStudyPlanDialog({
           </>
         ) : (
           <>
-            <PlusCircleIcon weight="fill" data-icon="inline-start" />
+            <ControlPointIcon data-icon="inline-start" />
             Agregar
           </>
         )}
@@ -206,7 +200,7 @@ export function CreateStudyPlanDialog({
       <DialogPortal>
         <DialogOverlay
           forceRender
-          className="bg-black/30 supports-backdrop-filter:backdrop-blur-md"
+          className="bg-black/30"
         />
       </DialogPortal>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
@@ -215,7 +209,7 @@ export function CreateStudyPlanDialog({
             {isEditing ? "Editar plan de estudio" : "Agregar plan de estudio"}
           </DialogTitle>
           <DialogDescription>
-            Completá los datos de la asignatura del plan de estudio.
+            Completa los datos de la asignatura del plan de estudio.
           </DialogDescription>
         </DialogHeader>
 
@@ -232,8 +226,7 @@ export function CreateStudyPlanDialog({
           <div className="grid gap-4 sm:grid-cols-3">
             <form.Field name="asignatura">
               {(field) => {
-                const isInvalid =
-                  field.state.meta.isTouched && !field.state.meta.isValid
+                const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
                 return (
                   <Field variant="outlined" data-invalid={isInvalid}>
                     <FieldLabel htmlFor={field.name}>Asignaturas*</FieldLabel>
@@ -274,7 +267,7 @@ export function CreateStudyPlanDialog({
                     id={field.name}
                     type="number"
                     min={0}
-                    placeholder="Seleccionar"
+                    placeholder="Ingresar intensidad horaria"
                     value={Number.isNaN(field.state.value) ? "" : field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.valueAsNumber)}
@@ -293,7 +286,7 @@ export function CreateStudyPlanDialog({
                       type="number"
                       min={0}
                       max={100}
-                      placeholder="Seleccionar"
+                      placeholder="Ingresar influencia"
                       className="px-0"
                       value={Number.isNaN(field.state.value) ? "" : field.state.value}
                       onBlur={field.handleBlur}
@@ -315,7 +308,7 @@ export function CreateStudyPlanDialog({
                     id={field.name}
                     type="number"
                     min={0}
-                    placeholder="Seleccionar"
+                    placeholder="Ingresar número de créditos"
                     value={Number.isNaN(field.state.value) ? "" : field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.valueAsNumber)}
@@ -333,15 +326,13 @@ export function CreateStudyPlanDialog({
           <div
             className={cn(
               "grid gap-4 sm:grid-cols-3",
-              !personalizar && "pointer-events-none opacity-50"
+              !personalizar && "pointer-events-none opacity-50",
             )}
           >
             <form.Field name="influyeDesempeno">
               {(field) => (
                 <Field>
-                  <FieldLabel>
-                    Influye en el desempeño académico (S/N)
-                  </FieldLabel>
+                  <FieldLabel>Influye en el desempeño académico (S/N)</FieldLabel>
                   <RadioGroup
                     className="flex gap-6 pt-2"
                     disabled={!personalizar}
@@ -410,9 +401,7 @@ export function CreateStudyPlanDialog({
             <form.Field name="formatoCalificacion">
               {(field) => (
                 <Field variant="outlined">
-                  <FieldLabel htmlFor={field.name}>
-                    Formato de calificación
-                  </FieldLabel>
+                  <FieldLabel htmlFor={field.name}>Formato de calificación</FieldLabel>
                   <Select
                     value={personalizar ? field.state.value : formatoHeredado}
                     disabled={!personalizar}
@@ -466,9 +455,7 @@ export function CreateStudyPlanDialog({
         </form>
 
         <DialogFooter className="sm:justify-between">
-          <DialogClose render={<Button type="button" variant="ghost" />}>
-            Cancelar
-          </DialogClose>
+          <DialogClose render={<Button type="button" variant="ghost" />}>Cancelar</DialogClose>
           <Button
             type="submit"
             color="primary"
@@ -476,9 +463,7 @@ export function CreateStudyPlanDialog({
             disabled={isSaving}
             aria-busy={isSaving}
           >
-            {isSaving && (
-              <SpinnerIcon data-icon="inline-start" className="animate-spin" />
-            )}
+            {isSaving && <SpinnerIcon data-icon="inline-start" className="animate-spin" />}
             {isEditing ? "Guardar" : "Agregar"}
           </Button>
         </DialogFooter>

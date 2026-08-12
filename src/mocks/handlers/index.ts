@@ -1,4 +1,3 @@
-import { paymentsHandlers } from "./payments"
 import { navigationHandlers } from "./navigation"
 import { authHandlers } from "./auth"
 import { auditsHandlers } from "./audits"
@@ -29,10 +28,11 @@ import { campusHandlers } from "./campuses"
 import { employeeHandlers } from "./employees"
 import { catalogHandlers } from "./catalog"
 import { reservationsHandlers } from "./reservations"
+import { rolesHandlers } from "./roles"
+import { plansHandlers } from "./plans"
 
 export const handlers = [
   ...authHandlers,
-  ...paymentsHandlers,
   ...navigationHandlers,
   ...auditsHandlers,
   ...auditTablesHandlers,
@@ -61,5 +61,7 @@ export const handlers = [
   ...establishmentHandlers,
   ...campusHandlers,
   ...employeeHandlers,
-  ...catalogHandlers
+  ...catalogHandlers,
+  ...rolesHandlers,
+  ...plansHandlers,
 ]

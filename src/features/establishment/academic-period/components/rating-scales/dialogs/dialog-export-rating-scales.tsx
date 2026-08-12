@@ -1,12 +1,12 @@
 import { useState } from "react"
 
 import {
-  DownloadSimpleIcon,
+  FileDownloadOutlinedIcon,
   FilePdfIcon,
   FileXlsIcon,
   SpinnerIcon,
 } from "@/components/ui/icons"
-import { useNotify } from "../../common/notice-context"
+import { useNotify } from "@/components/notice/notice-context"
 
 import {
   Dialog,
@@ -21,18 +21,13 @@ import {
 import { Button } from "@/components/ui/button"
 
 import { useExportRatingScales } from "../../../api/mutations/rating-scales/export-rating-scales"
-import type {
-  ExportFormat,
-  RatingScalesQueryFilters,
-} from "../../../api/types/rating-scales"
+import type { ExportFormat, RatingScalesQueryFilters } from "../../../api/types/rating-scales"
 
 interface ExportRatingScalesDialogProps {
   filters: RatingScalesQueryFilters
 }
 
-export function ExportRatingScalesDialog({
-  filters,
-}: ExportRatingScalesDialogProps) {
+export function ExportRatingScalesDialog({ filters }: ExportRatingScalesDialogProps) {
   const [open, setOpen] = useState(false)
   const { notify } = useNotify()
 
@@ -60,24 +55,24 @@ export function ExportRatingScalesDialog({
       <DialogTrigger
         render={
           <Button
-            variant="outline" color="muted" size="icon"
+            variant="outline"
+            color="muted"
+            size="icon-sm"
             aria-label="Exportar escalas de valoración"
           />
         }
       >
-        <DownloadSimpleIcon />
+        <FileDownloadOutlinedIcon />
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>
-            Elegí un formato para exportar todas las escalas de valoración.
+            Elige un formato para exportar todas las escalas de valoración.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="sm:justify-between">
-          <DialogClose render={<Button type="button" variant="ghost" />}>
-            Cancelar
-          </DialogClose>
+          <DialogClose render={<Button type="button" variant="ghost" />}>Cancelar</DialogClose>
           <div className="flex flex-col-reverse gap-2 sm:flex-row">
             <Button
               type="button"

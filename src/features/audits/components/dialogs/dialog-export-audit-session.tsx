@@ -1,7 +1,11 @@
 import { useState } from "react"
 
-import { DownloadSimpleIcon, FilePdfIcon, FileXlsIcon, SpinnerIcon } from "@/components/ui/icons"
-import { toast } from "sonner"
+import {
+  FileDownloadOutlinedIcon,
+  FilePdfIcon,
+  FileXlsIcon,
+  SpinnerIcon,
+} from "@/components/ui/icons"
 
 import {
   Dialog,
@@ -17,22 +21,24 @@ import { Button } from "@/components/ui/button"
 
 import { useExportAudits } from "../../api/mutations/export-audits"
 import type { AuditsQueryRequest, ExportFormat } from "../../api/types/audit"
+import { useNotify } from "@/components/notice/notice-context"
 
 interface ExportAuditSessionDialogProps {
   filters: AuditsQueryRequest["filters"]
 }
 
 export function ExportAuditSessionDialog({ filters }: ExportAuditSessionDialogProps) {
+  const { notify } = useNotify()
   const [open, setOpen] = useState(false)
 
   const exportAll = useExportAudits({
     mutationConfig: {
       onSuccess: (result) => {
         if (result.status === "error") {
-          toast.error(result.message)
+          notify(result.message, { variant: "error" })
           return
         }
-        toast.success(result.message)
+        notify(result.message)
         setOpen(false)
       },
     },
@@ -49,15 +55,17 @@ export function ExportAuditSessionDialog({ filters }: ExportAuditSessionDialogPr
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button color="primary" aria-label="Exportar sesiones filtradas" />}>
-        <DownloadSimpleIcon data-icon="inline-start" />
+      <DialogTrigger
+        render={<Button color="primary" size="sm" aria-label="Exportar sesiones filtradas" />}
+      >
+        <FileDownloadOutlinedIcon data-icon="inline-start" />
         <span className="sr-only md:not-sr-only">Exportar</span>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>
-            Elegí un formato para exportar todas las sesiones que coincidan con los filtros activos.
+            Elige un formato para exportar todas las sesiones que coincidan con los filtros activos.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="sm:justify-between">

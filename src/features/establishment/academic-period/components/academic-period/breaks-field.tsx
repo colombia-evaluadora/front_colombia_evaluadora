@@ -1,12 +1,9 @@
 import { useState } from "react"
 import { CaretDownIcon, PlusIcon, TrashIcon, XIcon } from "@/components/ui/icons"
 
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  inputTriggerVariants,
-  inputVariants,
-  useInputVariant,
-} from "@/components/ui/input"
+import { inputTriggerVariants, inputVariants, useInputVariant } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { TimePickerPanel } from "@/components/ui/time-picker"
 import { cn } from "@/lib/utils"
@@ -29,7 +26,6 @@ function formatBreakTimeCompact(value: string): string {
   return `${h12}:${String(m).padStart(2, "0")}${period}`
 }
 
-
 function getSortedBreakIndices(breaks: Break[]): number[] {
   return breaks
     .map((_, index) => index)
@@ -38,13 +34,7 @@ function getSortedBreakIndices(breaks: Break[]): number[] {
 
 const MAX_VISIBLE_CHIPS = 3
 
-function BreakChips({
-  value,
-  onRemove,
-}: {
-  value: Break[]
-  onRemove: (index: number) => void
-}) {
+function BreakChips({ value, onRemove }: { value: Break[]; onRemove: (index: number) => void }) {
   const sortedIndices = getSortedBreakIndices(value)
   const visibleIndices = sortedIndices.slice(0, MAX_VISIBLE_CHIPS)
   const extra = sortedIndices.length - visibleIndices.length
@@ -54,13 +44,13 @@ function BreakChips({
       {visibleIndices.map((originalIndex) => {
         const brk = value[originalIndex]
         return (
-          <span
+          <Badge
             key={`${brk.startTime}-${brk.endTime}-${originalIndex}`}
-            className="bg-muted text-muted-foreground inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs"
+            variant="soft"
+            color="muted"
+            className="normal-case tracking-normal"
           >
-            <span className="font-medium">
-              {formatBreakTimeCompact(brk.startTime)} → {formatBreakTimeCompact(brk.endTime)}
-            </span>
+            {formatBreakTimeCompact(brk.startTime)} → {formatBreakTimeCompact(brk.endTime)}
             <button
               type="button"
               onClick={(e) => {
@@ -68,17 +58,18 @@ function BreakChips({
                 onRemove(originalIndex)
               }}
               aria-label={`Quitar descanso ${originalIndex + 1}`}
-              className="hover:text-foreground -mr-1 inline-flex items-center"
+              data-icon="inline-end"
+              className="inline-flex items-center hover:text-foreground"
             >
               <XIcon className="size-3" />
             </button>
-          </span>
+          </Badge>
         )
       })}
       {extra > 0 && (
-        <span className="bg-muted text-muted-foreground inline-flex items-center rounded-full px-2 py-0.5 text-xs">
+        <Badge variant="soft" color="muted" className="normal-case tracking-normal">
           +{extra}
-        </span>
+        </Badge>
       )}
     </span>
   )
@@ -105,7 +96,7 @@ export function BreaksField({
               inputVariants({ variant: resolvedVariant }),
               inputTriggerVariants({ variant: resolvedVariant }),
               "flex items-center justify-between gap-1.5 text-left",
-              value.length === 0 && "text-muted-foreground"
+              value.length === 0 && "text-muted-foreground",
             )}
           />
         }
@@ -117,7 +108,10 @@ export function BreaksField({
         )}
         <CaretDownIcon className="text-muted-foreground size-4 shrink-0" />
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-auto min-w-72">
+      {/* `min-w-96` y no `w-auto` a secas: el editor lleva dos horas y el botón
+          en una sola fila, y con el ancho por contenido la fila se quedaba
+          corta y las etiquetas se salían de la caja. */}
+      <PopoverContent align="start" className="w-auto min-w-96">
         <div className="flex flex-col gap-2">
           <BreakEditor onAdd={onAdd} />
 
@@ -163,17 +157,9 @@ function BreakEditor({ onAdd }: { onAdd: (brk: Break) => void }) {
   return (
     <div className="flex w-full items-center gap-2">
       <div className="border-input flex flex-1 items-center gap-3 rounded-lg border px-3 py-2.5">
-        <BreakTimeTrigger
-          value={startTime}
-          onChange={setStartTime}
-          placeholder="Hora inicio"
-        />
+        <BreakTimeTrigger value={startTime} onChange={setStartTime} placeholder="Hora inicio" />
         <span className="text-muted-foreground shrink-0 text-xs">→</span>
-        <BreakTimeTrigger
-          value={endTime}
-          onChange={setEndTime}
-          placeholder="Hora Final"
-        />
+        <BreakTimeTrigger value={endTime} onChange={setEndTime} placeholder="Hora final" />
       </div>
       <Button
         type="button"
@@ -210,8 +196,11 @@ function BreakTimeTrigger({
           <button
             type="button"
             className={cn(
-              "min-w-0 flex-1 whitespace-nowrap text-left text-sm outline-none",
-              value ? "text-foreground font-medium" : "text-muted-foreground"
+              // `truncate` y no `whitespace-nowrap`: si la fila se queda
+              // corta el texto se recorta dentro de la caja en vez de
+              // desbordarse por debajo del botón de agregar.
+              "min-w-0 flex-1 truncate text-left text-sm outline-none",
+              value ? "text-foreground font-medium" : "text-muted-foreground",
             )}
           />
         }

@@ -28,7 +28,7 @@ export function CampusDetailsForm({ value, zones, onChange }: CampusDetailsFormP
           id="campus-name"
           value={value.name}
           onChange={(event) => onChange({ ...value, name: event.target.value })}
-          placeholder="I.E. San Francisco de Asís"
+          placeholder="Ingresar nombre de la sede"
         />
       </Field>
 
@@ -38,7 +38,7 @@ export function CampusDetailsForm({ value, zones, onChange }: CampusDetailsFormP
           id="campus-dane"
           value={value.dane}
           onChange={(event) => onChange({ ...value, dane: event.target.value })}
-          placeholder="27921853"
+          placeholder="Ingresar código DANE antiguo"
         />
       </Field>
 
@@ -60,7 +60,7 @@ export function CampusDetailsForm({ value, zones, onChange }: CampusDetailsFormP
           items={zoneItems}
         >
           <SelectTrigger id="campus-zone">
-            <SelectValue placeholder="Seleccione zona" />
+            <SelectValue placeholder="Seleccionar" />
           </SelectTrigger>
           <SelectContent>
             {zoneItems.map((item) => (
@@ -78,7 +78,7 @@ export function CampusDetailsForm({ value, zones, onChange }: CampusDetailsFormP
           id="campus-neighborhood"
           value={value.neighborhood}
           onChange={(event) => onChange({ ...value, neighborhood: event.target.value })}
-          placeholder="Villa Tita"
+          placeholder="Ingresar barrio"
         />
       </Field>
 
@@ -88,7 +88,7 @@ export function CampusDetailsForm({ value, zones, onChange }: CampusDetailsFormP
           id="campus-commune"
           value={value.commune}
           onChange={(event) => onChange({ ...value, commune: event.target.value })}
-          placeholder="20"
+          placeholder="Ingresar comuna"
         />
       </Field>
 
@@ -98,7 +98,7 @@ export function CampusDetailsForm({ value, zones, onChange }: CampusDetailsFormP
           id="campus-address"
           value={value.address}
           onChange={(event) => onChange({ ...value, address: event.target.value })}
-          placeholder="Calle 56 No. 16 - 18"
+          placeholder="Ingresar dirección de la sede"
         />
       </Field>
 
@@ -108,7 +108,7 @@ export function CampusDetailsForm({ value, zones, onChange }: CampusDetailsFormP
           id="campus-phone"
           value={value.phone}
           onChange={(event) => onChange({ ...value, phone: event.target.value })}
-          placeholder="6042690520"
+          placeholder="Ingresar teléfono de la sede"
         />
       </Field>
 
@@ -118,7 +118,7 @@ export function CampusDetailsForm({ value, zones, onChange }: CampusDetailsFormP
           id="campus-approval-resolution"
           value={value.approvalResolution}
           onChange={(event) => onChange({ ...value, approvalResolution: event.target.value })}
-          placeholder="0035"
+          placeholder="Ingresar resolución de aprobación"
         />
       </Field>
     </div>

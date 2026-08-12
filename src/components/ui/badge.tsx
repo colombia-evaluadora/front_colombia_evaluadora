@@ -21,7 +21,9 @@ const badgeVariants = cva(
       variant: {
         // Solid en Figma
         fill: "",
-        // Soft en Figma: bg-X-22 + border-X-stroke (alpha 30%) + texto del color
+        // Soft en Figma: bg-X-22 + texto del color, SIN borde (el `border` de la
+        // base queda transparente y solo reserva el mismo 1px que las otras
+        // variantes, para que no cambie el alto entre una y otra).
         soft: "",
         // Outline en Figma: border-X-stroke + texto del color (sin fondo)
         outline: "",
@@ -88,49 +90,44 @@ const badgeVariants = cva(
       {
         variant: "soft",
         color: "primary",
-        class:
-          "border-primary-stroke bg-primary-22 text-primary [a]:hover:bg-primary/30 focus-visible:ring-primary/20",
+        class: "bg-primary-22 text-primary [a]:hover:bg-primary/30 focus-visible:ring-primary/20",
       },
       {
         variant: "soft",
         color: "secondary",
         class:
-          "border-secondary-stroke bg-secondary-22 text-secondary [a]:hover:bg-secondary/30 focus-visible:ring-ring/30",
+          "bg-secondary-22 text-secondary [a]:hover:bg-secondary/30 focus-visible:ring-ring/30",
       },
       {
         variant: "soft",
         color: "muted",
-        class:
-          "border-muted-stroke bg-muted-22 text-muted-foreground [a]:hover:bg-muted/40 focus-visible:ring-ring/30",
+        class: "bg-muted-22 text-muted-foreground [a]:hover:bg-muted/40 focus-visible:ring-ring/30",
       },
       {
         variant: "soft",
         color: "neutral",
         class:
-          "border-foreground-stroke bg-foreground-22 text-foreground [a]:hover:bg-foreground/30 focus-visible:ring-foreground/20",
+          "bg-foreground-22 text-foreground [a]:hover:bg-foreground/30 focus-visible:ring-foreground/20",
       },
       {
         variant: "soft",
         color: "destructive",
-        class: "border-red-stroke bg-red-22 text-red [a]:hover:bg-red/30 focus-visible:ring-red/20",
+        class: "bg-red-22 text-red [a]:hover:bg-red/30 focus-visible:ring-red/20",
       },
       {
         variant: "soft",
         color: "info",
-        class:
-          "border-blue-stroke bg-blue-22 text-blue [a]:hover:bg-blue/30 focus-visible:ring-blue/20",
+        class: "bg-blue-22 text-blue [a]:hover:bg-blue/30 focus-visible:ring-blue/20",
       },
       {
         variant: "soft",
         color: "warning",
-        class:
-          "border-yellow-stroke bg-yellow-22 text-yellow [a]:hover:bg-yellow/30 focus-visible:ring-yellow/20",
+        class: "bg-yellow-22 text-yellow [a]:hover:bg-yellow/30 focus-visible:ring-yellow/20",
       },
       {
         variant: "soft",
         color: "success",
-        class:
-          "border-green-stroke bg-green-22 text-green [a]:hover:bg-green/30 focus-visible:ring-green/20",
+        class: "bg-green-22 text-green [a]:hover:bg-green/30 focus-visible:ring-green/20",
       },
 
       // ============ outline (Outline en Figma) ============

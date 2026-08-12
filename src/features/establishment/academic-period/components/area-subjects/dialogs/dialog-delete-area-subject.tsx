@@ -1,8 +1,9 @@
 import { useState } from "react"
+import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 
-import { SpinnerIcon, TrashIcon } from "@/components/ui/icons"
+import { CheckIcon, SpinnerIcon, TrashIcon, XIcon } from "@/components/ui/icons"
 
-import { useNotify } from "../../common/notice-context"
+import { useNotify } from "@/components/notice/notice-context"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,9 +24,7 @@ interface DeleteAreaSubjectDialogProps {
   areaSubject: AreaSubject
 }
 
-export function DeleteAreaSubjectDialog({
-  areaSubject,
-}: DeleteAreaSubjectDialogProps) {
+export function DeleteAreaSubjectDialog({ areaSubject }: DeleteAreaSubjectDialogProps) {
   const [open, setOpen] = useState(false)
   const { notify } = useNotify()
 
@@ -37,7 +36,7 @@ export function DeleteAreaSubjectDialog({
           return
         }
         setOpen(false)
-        notify("El área/asignatura se eliminó correctamente.")
+        notify(SUCCESS_MESSAGES.areaSubject.deleted)
       },
     },
   })
@@ -45,14 +44,7 @@ export function DeleteAreaSubjectDialog({
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger
-        render={
-          <Button
-            variant="fill"
-            color="destructive"
-            size="icon"
-            className="size-8"
-          />
-        }
+        render={<Button variant="ghost" color="neutral" size="icon-sm" />}
       >
         <span className="sr-only">Eliminar área/asignatura</span>
         <TrashIcon />
@@ -61,12 +53,11 @@ export function DeleteAreaSubjectDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>Eliminar</AlertDialogTitle>
           <AlertDialogDescription>
-            Se eliminará permanentemente {areaSubject.nombreInterno}. Esta
-            acción no se puede deshacer.
+            Se eliminará permanentemente {areaSubject.nombreInterno}. Esta acción no se puede
+            deshacer.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancelar</AlertDialogCancel>
           <AlertDialogAction
             color="destructive"
             disabled={deleteMutation.isPending}
@@ -78,10 +69,14 @@ export function DeleteAreaSubjectDialog({
             {deleteMutation.isPending ? (
               <SpinnerIcon data-icon="inline-start" className="animate-spin" />
             ) : (
-              <TrashIcon data-icon="inline-start" />
+              <CheckIcon data-icon="inline-start" />
             )}
-            Eliminar
+            Si
           </AlertDialogAction>
+          <AlertDialogCancel variant="fill" color="neutral">
+            <XIcon data-icon="inline-start" />
+            No
+          </AlertDialogCancel>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

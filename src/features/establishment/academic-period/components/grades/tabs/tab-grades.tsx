@@ -13,7 +13,7 @@ import { CreateGradeDialog } from "../dialogs/dialog-create-grade"
 import { DeleteSelectedGradesDialog } from "../dialogs/dialog-delete-selected-grades"
 import { ExportGradesDialog } from "../dialogs/dialog-export-grades"
 import { ExportSelectedGradesDialog } from "../dialogs/dialog-export-selected-grades"
-import { NoticeOutlet } from "../../common/notice-context"
+import { NoticeOutlet } from "@/components/notice/notice-context"
 import type { Jornada } from "../../schedule/schedule-data"
 
 interface TabGradesProps {
@@ -42,15 +42,10 @@ export function TabGrades({ jornada, academicPeriodId }: TabGradesProps) {
 
   const columns = useMemo(
     () => createGradeColumns({ jornada, academicPeriodId }),
-    [jornada, academicPeriodId]
+    [jornada, academicPeriodId],
   )
 
-  const {
-    table,
-    selectedIds,
-    hasSelection,
-    resetSelection,
-  } = useDataTable({
+  const { table, selectedIds, hasSelection, resetSelection } = useDataTable({
     columns,
     data: data?.rows ?? [],
     pageCount: data?.pageCount ?? -1,
@@ -63,20 +58,14 @@ export function TabGrades({ jornada, academicPeriodId }: TabGradesProps) {
     setSorting,
   })
 
-  const selectedGradeIds = useMemo(
-    () => selectedIds.map(Number),
-    [selectedIds]
-  )
+  const selectedGradeIds = useMemo(() => selectedIds.map(Number), [selectedIds])
 
   return (
     <>
       <div className="mb-2 flex items-center justify-end gap-2">
         {hasSelection ? (
           <>
-            <DeleteSelectedGradesDialog
-              selectedIds={selectedIds}
-              resetSelection={resetSelection}
-            />
+            <DeleteSelectedGradesDialog selectedIds={selectedIds} resetSelection={resetSelection} />
             <ExportSelectedGradesDialog
               selectedIds={selectedGradeIds}
               resetSelection={resetSelection}
@@ -88,7 +77,6 @@ export function TabGrades({ jornada, academicPeriodId }: TabGradesProps) {
             <ExportGradesDialog filters={{}} />
           </>
         )}
-        <DataTableViewOptions table={table} />
       </div>
 
       <NoticeOutlet className="mb-2" />
@@ -103,6 +91,7 @@ export function TabGrades({ jornada, academicPeriodId }: TabGradesProps) {
       />
       {data && (
         <Pagination
+          viewOptions={<DataTableViewOptions table={table} />}
           pageIndex={pageIndex}
           pageCount={data.pageCount}
           canPrev={pageIndex > 0}

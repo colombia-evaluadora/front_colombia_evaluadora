@@ -18,12 +18,64 @@ import {
 import { cn } from "@/lib/utils"
 
 import { useNavItemsQuery } from "@/features/navigation/api/query/use-nav-items-query"
-import type { NavSubItem } from "@/features/navigation/api/types/nav-item"
+import type { NavMaxLines, NavSubItem } from "@/features/navigation/api/types/nav-item"
 import type { Icon } from "@/components/ui/icons"
+
+/**
+ * `maxLines` viene de la API (ver `NavMaxLines`): cuántas líneas se ven de la
+ * etiqueta antes de cortarla con "…". El mapa es explícito porque Tailwind
+ * necesita las clases literales en el código —un `line-clamp-${n}` armado en
+ * runtime no se genera—.
+ *
+ * Sin valor se asume 1: la gran mayoría de los títulos caben en una línea, así
+ * que solo los que necesitan más lo piden explícitamente desde la API. `0`
+ * desactiva el corte y deja el título completo, ocupe las líneas que ocupe.
+ */
+const LINE_CLAMP: Record<NavMaxLines, string> = {
+  0: "",
+  1: "line-clamp-1",
+  2: "line-clamp-2",
+  3: "line-clamp-3",
+  4: "line-clamp-4",
+}
+
+function lineClamp(maxLines: NavMaxLines = 1) {
+  return LINE_CLAMP[maxLines]
+}
+
+/**
+ * ¿La ruta actual pertenece a este item del menú? No alcanza con la igualdad:
+ * las subpáginas (detalle, agregar, editar) tienen que seguir marcando activo
+ * al item del que salieron. El `/` del final evita que `/app/cobertura` matchee
+ * a `/app/cobertura-x`.
+ */
+function isUnder(pathname: string, url: string) {
+  return pathname === url || pathname.startsWith(`${url}/`)
+}
+
+/**
+ * Rutas que no cuelgan de la URL del item al que pertenecen: agregar y editar
+ * establecimiento viven **al lado** de la lista (`/agregar`, `/editar/$id` vs
+ * `/general`), no debajo, así que `isUnder` no las alcanza. Se resuelven a la
+ * URL del item que tienen que marcar.
+ */
+const NAV_PATH_ALIASES: Array<[from: string, to: string]> = [
+  ["/app/establecimiento-educativo/agregar", "/app/establecimiento-educativo/general"],
+  ["/app/establecimiento-educativo/editar", "/app/establecimiento-educativo/general"],
+  // El registro de actividad tiene dos vistas hermanas (`/sesiones` y
+  // `/tablas`) pero un solo item de menú, que apunta a la de sesiones: todo
+  // lo que cuelgue del prefijo lo marca activo, esté en la vista que esté.
+  ["/app/registro-de-actividad", "/app/registro-de-actividad/sesiones"],
+]
+
+function resolveNavPathname(pathname: string) {
+  const alias = NAV_PATH_ALIASES.find(([from]) => isUnder(pathname, from))
+  return alias ? alias[1] : pathname
+}
 
 export function NavMain() {
   const { data: items, isPending, isError, refetch } = useNavItemsQuery()
-  const { pathname } = useLocation()
+  const pathname = resolveNavPathname(useLocation().pathname)
 
   /**
    * Acordeón: un único grupo abierto a la vez. El estado vive aquí (no en cada
@@ -37,7 +89,8 @@ export function NavMain() {
     openTitle !== undefined
       ? openTitle
       : (items?.find(
-          (item) => item.url === pathname || item.items?.some((sub) => sub.url === pathname),
+          (item) =>
+            isUnder(pathname, item.url) || item.items?.some((sub) => isUnder(pathname, sub.url)),
         )?.title ?? null)
 
   if (isPending) {
@@ -71,7 +124,7 @@ export function NavMain() {
     <SidebarGroup>
       <SidebarMenu>
         {items?.map((item) => {
-          const isActive = pathname === item.url
+          const isActive = isUnder(pathname, item.url)
 
           if (!item.items?.length) {
             return (
@@ -82,7 +135,7 @@ export function NavMain() {
                   render={<Link to={item.url} />}
                 >
                   <item.icon />
-                  <span>{item.title}</span>
+                  <span className={lineClamp(item.maxLines)}>{item.title}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             )
@@ -94,6 +147,7 @@ export function NavMain() {
               title={item.title}
               icon={item.icon}
               items={item.items}
+              maxLines={item.maxLines}
               isActive={isActive}
               pathname={pathname}
               open={activeTitle === item.title}
@@ -110,6 +164,7 @@ interface NavCollapsibleItemProps {
   title: string
   icon: Icon
   items: NavSubItem[]
+  maxLines?: NavMaxLines
   isActive: boolean
   pathname: string
   open: boolean
@@ -124,12 +179,13 @@ function NavCollapsibleItem({
   title,
   icon: Icon,
   items,
+  maxLines,
   isActive,
   pathname,
   open,
   onOpenChange,
 }: NavCollapsibleItemProps) {
-  const hasActiveChild = items.some((sub) => sub.url === pathname)
+  const hasActiveChild = items.some((sub) => isUnder(pathname, sub.url))
 
   return (
     <Collapsible
@@ -143,28 +199,37 @@ function NavCollapsibleItem({
           <SidebarMenuButton
             tooltip={title}
             /**
-             * Collapsed to icons the sub-items are hidden, so the parent icon
-             * has to carry the active state itself. Expanded, the highlighted
-             * sub-item already shows it — hence the icon-mode-only classes.
+             * La carpeta se pinta con los colores primarios (fondo + texto
+             * invertido) cuando ella misma es la ruta activa **o** alguno de
+             * sus hijos lo es — así el padre comunica el contexto aunque el
+             * sub-item activo cargue con su propio indicador (el punto •).
+             *
+             * Se aplica en ambos modos (expandido y colapsado a iconos)
+             * porque la pista visual tiene que sobrevivir al colapso, donde
+             * los sub-items desaparecen. Los `!` fuerzan las variantes de
+             * hover/active del cva para que el fondo no salte a
+             * `sidebar-accent` al pasar el cursor.
              */
             className={cn(
               (isActive || hasActiveChild) &&
-                "group-data-[collapsible=icon]:bg-sidebar-accent group-data-[collapsible=icon]:font-medium group-data-[collapsible=icon]:text-sidebar-accent-foreground",
+                "bg-primary text-primary-foreground font-medium shadow-md hover:!bg-primary/90 hover:!text-primary-foreground active:!bg-primary/80 active:!text-primary-foreground data-open:hover:!bg-primary/90 data-open:hover:!text-primary-foreground",
             )}
-            render={<Link to={items[0].url} />}
           />
         }
       >
         <Icon />
-        <span>{title}</span>
+        <span className={lineClamp(maxLines)}>{title}</span>
         <CaretRightIcon className="ml-auto transition-transform duration-200 group-data-open/collapsible:rotate-90" />
       </CollapsibleTrigger>
       <CollapsibleContent>
         <SidebarMenuSub>
           {items.map((sub) => (
             <SidebarMenuSubItem key={sub.url}>
-              <SidebarMenuSubButton isActive={pathname === sub.url} render={<Link to={sub.url} />}>
-                <span>{sub.title}</span>
+              <SidebarMenuSubButton
+                isActive={isUnder(pathname, sub.url)}
+                render={<Link to={sub.url} />}
+              >
+                <span className={lineClamp(sub.maxLines)}>{sub.title}</span>
               </SidebarMenuSubButton>
             </SidebarMenuSubItem>
           ))}

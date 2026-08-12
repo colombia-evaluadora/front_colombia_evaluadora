@@ -1,15 +1,16 @@
 import { useMemo, useRef, useState } from "react"
+import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { useForm } from "@tanstack/react-form"
 import {
   CheckIcon,
+  ControlPointIcon,
   PencilIcon,
-  PlusCircleIcon,
   PlusIcon,
   SpinnerIcon,
   TrashIcon,
   XIcon,
 } from "@/components/ui/icons"
-import { useNotify, NoticeOutlet } from "../../common/notice-context"
+import { useNotify, NoticeOutlet } from "@/components/notice/notice-context"
 
 import {
   AlertDialog,
@@ -45,27 +46,13 @@ import { useCreateAreaSubject } from "../../../api/mutations/area-subjects/creat
 import { useUpdateAreaSubject } from "../../../api/mutations/area-subjects/update-area-subject"
 import { useGeneralAreasQuery } from "../../../api/query/use-general-areas-query"
 import { useEspecialidadesQuery } from "../../../api/query/use-especialidades-query"
-import type {
-  AreaSubject,
-  AreaSubjectItem,
-} from "../../../api/types/area-subject"
+import type { AreaSubject, AreaSubjectItem } from "../../../api/types/area-subject"
 import { AreaField } from "../area-field"
 import { SortableHeader } from "../sortable-header"
-import {
-  SubjectNoticeBanner,
-  type SubjectNotice,
-} from "../subject-notice"
-import {
-  SubjectRowFields,
-  emptyDraft,
-  itemToDraft,
-  type SubjectDraft,
-} from "../subject-row-fields"
+import { SubjectNoticeBanner, type SubjectNotice } from "../subject-notice"
+import { SubjectRowFields, emptyDraft, itemToDraft, type SubjectDraft } from "../subject-row-fields"
 import { SelectGeneralAreaDialog } from "./dialog-select-general-area"
-import {
-  areaSubjectFormSchema,
-  type AreaSubjectFormValues,
-} from "../../../api/schema"
+import { areaSubjectFormSchema, type AreaSubjectFormValues } from "../../../api/schema"
 import { useRowEdit } from "../../../hooks/use-row-edit"
 
 const FORM_ID = "area-subject-form"
@@ -93,7 +80,7 @@ export function AreaSubjectFormDialog({
   const [open, setOpen] = useState(false)
   const [subjectsStarted, setSubjectsStarted] = useState(isEdit)
   const [subjects, setSubjects] = useState<SubjectDraft[]>(
-    () => areaSubject?.subjects.map(itemToDraft) ?? []
+    () => areaSubject?.subjects.map(itemToDraft) ?? [],
   )
   const [draft, setDraft] = useState<SubjectDraft>(emptyDraft())
   const {
@@ -103,14 +90,11 @@ export function AreaSubjectFormDialog({
     patchDraft: patchEditDraft,
     cancelEdit: cancelEditSubject,
   } = useRowEdit<SubjectDraft>()
-  const { data: backendEspecialidades = [] } =
-    useEspecialidadesQuery(academicPeriodId)
+  const { data: backendEspecialidades = [] } = useEspecialidadesQuery(academicPeriodId)
   // El catálogo llega como `{ key, label }`; acá la lista es de nombres libres
   // (el `especialidad` del subject es un string), así que tomamos el `label`.
   const backendEspecialidadNames = backendEspecialidades.map((o) => o.label)
-  const [especialidades, setEspecialidades] = useState<string[]>(
-    backendEspecialidadNames
-  )
+  const [especialidades, setEspecialidades] = useState<string[]>(backendEspecialidadNames)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [successOpen, setSuccessOpen] = useState(false)
   const [sort, setSort] = useState<SortState>(null)
@@ -181,7 +165,7 @@ export function AreaSubjectFormDialog({
         }
 
         setOpen(false)
-        notify("El área/asignatura se actualizó correctamente.")
+        notify(SUCCESS_MESSAGES.areaSubject.updated)
         return
       }
 
@@ -197,9 +181,8 @@ export function AreaSubjectFormDialog({
 
       setSuccessOpen(true)
 
-
       setSuccessOpen(true)
-    }
+    },
   })
 
   function handleOpenChange(next: boolean) {
@@ -263,14 +246,14 @@ export function AreaSubjectFormDialog({
     setDraft(
       useAreaInfo
         ? {
-          asignaturaGeneral: area.areaGeneral,
-          nombreInterno: area.nombreInterno,
-          abreviacion: area.abreviacion,
-          ordenReportes: 1,
-          color: "",
-          especialidad: "",
-        }
-        : emptyDraft()
+            asignaturaGeneral: area.areaGeneral,
+            nombreInterno: area.nombreInterno,
+            abreviacion: area.abreviacion,
+            ordenReportes: 1,
+            color: "",
+            especialidad: "",
+          }
+        : emptyDraft(),
     )
     setSubjectsStarted(true)
     setConfirmOpen(false)
@@ -282,7 +265,7 @@ export function AreaSubjectFormDialog({
 
   function commitDraft() {
     if (!draft.asignaturaGeneral.trim() && !draft.nombreInterno.trim()) {
-      notify("Elegí una asignatura general o completá el nombre interno.", { variant: "error" })
+      notify("Elige una asignatura general o completa el nombre interno.", { variant: "error" })
       return
     }
     setSubjects((prev) => [...prev, draft])
@@ -303,20 +286,16 @@ export function AreaSubjectFormDialog({
   function saveEditSubject() {
     if (editingIndex === null || !editDraft) return
     if (!editDraft.asignaturaGeneral.trim() && !editDraft.nombreInterno.trim()) {
-      notify("Elegí una asignatura general o completá el nombre interno.", { variant: "error" })
+      notify("Elige una asignatura general o completa el nombre interno.", { variant: "error" })
       return
     }
     const next = editDraft
-    setSubjects((prev) =>
-      prev.map((item, i) => (i === editingIndex ? next : item))
-    )
+    setSubjects((prev) => prev.map((item, i) => (i === editingIndex ? next : item)))
     cancelEditSubject()
   }
 
   function addEspecialidad(nombre: string) {
-    setEspecialidades((prev) =>
-      prev.includes(nombre) ? prev : [...prev, nombre]
-    )
+    setEspecialidades((prev) => (prev.includes(nombre) ? prev : [...prev, nombre]))
   }
 
   return (
@@ -324,32 +303,23 @@ export function AreaSubjectFormDialog({
       <Dialog open={open} onOpenChange={handleOpenChange}>
         {isEdit ? (
           <DialogTrigger
-            render={
-              <Button
-                variant="fill"
-                color="secondary"
-                size="icon"
-                className="size-8"
-              />
-            }
+            render={<Button variant="ghost" color="neutral" size="icon-sm" />}
           >
             <span className="sr-only">Editar área</span>
             <PencilIcon />
           </DialogTrigger>
         ) : (
           <DialogTrigger render={<Button color="primary" size="sm" />}>
-            <PlusCircleIcon weight="fill" data-icon="inline-start" />
+            <ControlPointIcon data-icon="inline-start" />
             Agregar
           </DialogTrigger>
         )}
 
-        <DialogContent
-          className={subjectsStarted ? "sm:max-w-7xl" : "sm:max-w-5xl"}
-        >
+        <DialogContent className={subjectsStarted ? "sm:max-w-7xl" : "sm:max-w-5xl"}>
           <DialogHeader>
             <DialogTitle>{isEdit ? "Editar área" : "Agregar área"}</DialogTitle>
             <DialogDescription>
-              Completá los datos del área y asigná sus asignaturas generales.
+              Completa los datos del área y asigna sus asignaturas generales.
             </DialogDescription>
           </DialogHeader>
 
@@ -389,7 +359,7 @@ export function AreaSubjectFormDialog({
                   {(isInvalid) => (
                     <Input
                       id={field.name}
-                      placeholder="ej. Matemáticas"
+                      placeholder="Ingresar nombre"
                       value={field.state.value}
                       onBlur={field.handleBlur}
                       onChange={(e) => {
@@ -409,7 +379,7 @@ export function AreaSubjectFormDialog({
                   {(isInvalid) => (
                     <Input
                       id={field.name}
-                      placeholder="ej. MAT"
+                      placeholder="Ingresar abreviación"
                       value={field.state.value}
                       onBlur={field.handleBlur}
                       onChange={(e) => field.handleChange(e.target.value)}
@@ -428,10 +398,8 @@ export function AreaSubjectFormDialog({
                       id={field.name}
                       type="number"
                       min={0}
-                      placeholder="ej. 1"
-                      value={
-                        Number.isNaN(field.state.value) ? "" : field.state.value
-                      }
+                      placeholder="Ingresar orden"
+                      value={Number.isNaN(field.state.value) ? "" : field.state.value}
                       onBlur={field.handleBlur}
                       onChange={(e) => field.handleChange(e.target.valueAsNumber)}
                       aria-invalid={isInvalid}
@@ -460,7 +428,7 @@ export function AreaSubjectFormDialog({
                         setConfirmOpen(true)
                       }}
                     >
-                      <PlusCircleIcon weight="fill" data-icon="inline-start" />
+                      <ControlPointIcon data-icon="inline-start" />
                       Añadir asignatura
                     </Button>
                   </div>
@@ -469,14 +437,10 @@ export function AreaSubjectFormDialog({
             </form.Subscribe>
           </form>
 
-          <SubjectNoticeBanner
-            key={notice?.id}
-            notice={notice}
-            onClose={() => setNotice(null)}
-          />
+          <SubjectNoticeBanner key={notice?.id} notice={notice} onClose={() => setNotice(null)} />
 
           {subjectsStarted && (
-            <div className="overflow-x-auto border [&_[data-slot=input]]:bg-background [&_[data-slot=select-trigger]]:bg-background">
+            <div className="[&_[data-slot=input]]:bg-background [&_[data-slot=select-trigger]]:bg-background">
               <FieldVariantContext.Provider value="outlined">
                 <Table>
                   <TableHeader>
@@ -530,8 +494,7 @@ export function AreaSubjectFormDialog({
                     {sortedSubjects.map((subject, index) => {
                       // Editamos contra el índice real del arreglo (no el ordenado).
                       const realIndex = subjects.indexOf(subject)
-                      const isEditing =
-                        editingIndex === realIndex && editDraft !== null
+                      const isEditing = editingIndex === realIndex && editDraft !== null
 
                       if (isEditing && editDraft) {
                         return (
@@ -547,8 +510,7 @@ export function AreaSubjectFormDialog({
                                 <Button
                                   type="button"
                                   color="primary"
-                                  size="icon"
-                                  className="size-8"
+                                  size="icon-sm"
                                   aria-label="Guardar cambios"
                                   onClick={saveEditSubject}
                                 >
@@ -557,8 +519,7 @@ export function AreaSubjectFormDialog({
                                 <Button
                                   type="button"
                                   variant="outline"
-                                  size="icon"
-                                  className="size-8"
+                                  size="icon-sm"
                                   aria-label="Cancelar edición"
                                   onClick={cancelEditSubject}
                                 >
@@ -593,8 +554,7 @@ export function AreaSubjectFormDialog({
                                 type="button"
                                 variant="fill"
                                 color="secondary"
-                                size="icon"
-                                className="size-8"
+                                size="icon-sm"
                                 aria-label={`Editar asignatura ${index + 1}`}
                                 disabled={editingIndex !== null}
                                 onClick={() => startEditSubject(realIndex)}
@@ -605,8 +565,7 @@ export function AreaSubjectFormDialog({
                                 type="button"
                                 variant="fill"
                                 color="destructive"
-                                size="icon"
-                                className="size-8"
+                                size="icon-sm"
                                 aria-label={`Quitar asignatura ${index + 1}`}
                                 disabled={editingIndex !== null}
                                 onClick={() => removeSubject(realIndex)}
@@ -653,14 +612,10 @@ export function AreaSubjectFormDialog({
               disabled={isPending}
               aria-busy={isPending}
             >
-              {isPending && (
-                <SpinnerIcon data-icon="inline-start" className="animate-spin" />
-              )}
+              {isPending && <SpinnerIcon data-icon="inline-start" className="animate-spin" />}
               Guardar
             </Button>
-            <DialogClose render={<Button type="button" variant="ghost" />}>
-              Cancelar
-            </DialogClose>
+            <DialogClose render={<Button type="button" variant="ghost" />}>Cancelar</DialogClose>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -669,14 +624,11 @@ export function AreaSubjectFormDialog({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              ¿Desea agregar una asignatura general utilizando la misma
-              información de esta área?
+              ¿Desea agregar una asignatura general utilizando la misma información de esta área?
             </AlertDialogTitle>
           </AlertDialogHeader>
           <AlertDialogFooter className="sm:justify-center">
-            <AlertDialogAction onClick={() => startSubject(true)}>
-              Sí
-            </AlertDialogAction>
+            <AlertDialogAction onClick={() => startSubject(true)}>Sí</AlertDialogAction>
             <AlertDialogAction
               color="neutral"
               variant="outline"

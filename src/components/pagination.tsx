@@ -1,3 +1,7 @@
+import type { ReactNode } from "react"
+
+import { cn } from "@/lib/utils"
+
 import {
   Pagination as UIPagination,
   PaginationContent,
@@ -20,6 +24,9 @@ import {
 } from "@/components/ui/select"
 
 interface PaginationProps {
+  // Controles extra que viven junto a la paginación, bajo la tabla (hoy: el
+  // menú de columnas visibles, `DataTableViewOptions`).
+  viewOptions?: ReactNode
   pageIndex: number
   pageCount: number
   canPrev: boolean
@@ -44,11 +51,11 @@ function buildPageRange(current: number, total: number): (number | "ellipsis")[]
 }
 
 export function Pagination({
+  viewOptions,
   pageIndex,
   pageCount,
   canPrev,
   canNext,
-  totalCount,
   pageSize,
   onPageChange,
   onPageSizeChange,
@@ -56,87 +63,102 @@ export function Pagination({
   const range = buildPageRange(pageIndex + 1, pageCount)
 
   return (
-    <div className="flex items-center justify-between gap-2 px-2 py-4">
-      <p className="shrink-0 text-sm text-muted-foreground">{totalCount} registro(s)</p>
+    // Orden: selector de entradas (outline) → controles de página
+    // (texto neutral, página activa en fill primario) → columnas visibles.
+    // Se quita el "N registro(s)" que vivía a la izquierda porque ya no
+    // aporta contexto (el conteo se puede leer del propio selector de filas).
+    <div className="flex flex-wrap items-center justify-center gap-3 px-2 py-4 sm:gap-6">
+      <UIPagination className="mx-0 w-auto justify-center">
+        <PaginationContent>
+          <PaginationItem>
+            <PaginationPrevious
+              href={canPrev ? `#page=${pageIndex}` : undefined}
+              aria-label="Página anterior"
+              text="Previo"
+              className={!canPrev ? "pointer-events-none opacity-50" : ""}
+              onClick={(e) => {
+                e.preventDefault()
+                if (canPrev) onPageChange(pageIndex - 1)
+              }}
+            />
+          </PaginationItem>
 
-      <div className="flex min-w-0 items-center justify-end gap-2 sm:gap-6">
-        <Field orientation="horizontal" className="hidden w-fit lg:flex">
-          <FieldLabel htmlFor="rows-per-page" className="text-sm">
-            Filas
-          </FieldLabel>
-          <Select value={`${pageSize}`} onValueChange={(value) => onPageSizeChange(Number(value))}>
-            <SelectTrigger id="rows-per-page" className="w-20">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                {[10, 20, 30, 50].map((size) => (
-                  <SelectItem key={size} value={`${size}`}>
-                    {size}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </Field>
+          <PaginationItem className="sm:hidden">
+            <span className="px-2 text-sm text-muted-foreground">
+              {pageIndex + 1}/{pageCount}
+            </span>
+          </PaginationItem>
 
-        <UIPagination className="mx-0 w-auto justify-center">
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationPrevious
-                href={canPrev ? `#page=${pageIndex}` : undefined}
-                aria-label="Página anterior"
-                text="Atrás"
-                className={!canPrev ? "pointer-events-none opacity-50" : ""}
-                onClick={(e) => {
-                  e.preventDefault()
-                  if (canPrev) onPageChange(pageIndex - 1)
-                }}
-              />
-            </PaginationItem>
+          {range.map((item, i) =>
+            item === "ellipsis" ? (
+              <PaginationItem key={`e-${i}`} className="hidden sm:list-item">
+                <PaginationEllipsis />
+              </PaginationItem>
+            ) : (
+              <PaginationItem key={item} className="hidden sm:list-item">
+                <PaginationLink
+                  href={`#page=${item}`}
+                  isActive={item === pageIndex + 1}
+                  // La activa rompe el outline del cva y se pinta en fill
+                  // primario — sigue siendo la página actual, solo que con
+                  // el peso visual que el resto del UI usa para "seleccionado".
+                  className={cn(
+                    item === pageIndex + 1 &&
+                      "data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:border-primary",
+                  )}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    onPageChange(item - 1)
+                  }}
+                >
+                  {item}
+                </PaginationLink>
+              </PaginationItem>
+            ),
+          )}
 
-            <PaginationItem className="sm:hidden">
-              <span className="px-2 text-sm text-muted-foreground">
-                {pageIndex + 1}/{pageCount}
-              </span>
-            </PaginationItem>
+          <PaginationItem>
+            <PaginationNext
+              href={canNext ? `#page=${pageIndex + 2}` : undefined}
+              aria-label="Página siguiente"
+              text="Próximo"
+              className={!canNext ? "pointer-events-none opacity-50" : ""}
+              onClick={(e) => {
+                e.preventDefault()
+                if (canNext) onPageChange(pageIndex + 1)
+              }}
+            />
+          </PaginationItem>
+        </PaginationContent>
+      </UIPagination>
+      <Field orientation="horizontal" className="hidden w-fit lg:flex">
+        <Select
+          value={`${pageSize}`}
+          onValueChange={(value) => onPageSizeChange(Number(value))}
+        >
+          <SelectTrigger id="rows-per-page" variant="outlined" className="bg-muted/50 w-17">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              {[10, 20, 30, 50].map((size) => (
+                <SelectItem key={size} value={`${size}`}>
+                  {size}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+        <FieldLabel
+          htmlFor="rows-per-page"
+          className="text-sm normal-case text-muted-foreground"
+        >
+          Entradas
+        </FieldLabel>
+      </Field>
 
-            {range.map((item, i) =>
-              item === "ellipsis" ? (
-                <PaginationItem key={`e-${i}`} className="hidden sm:list-item">
-                  <PaginationEllipsis />
-                </PaginationItem>
-              ) : (
-                <PaginationItem key={item} className="hidden sm:list-item">
-                  <PaginationLink
-                    href={`#page=${item}`}
-                    isActive={item === pageIndex + 1}
-                    onClick={(e) => {
-                      e.preventDefault()
-                      onPageChange(item - 1)
-                    }}
-                  >
-                    {item}
-                  </PaginationLink>
-                </PaginationItem>
-              ),
-            )}
 
-            <PaginationItem>
-              <PaginationNext
-                href={canNext ? `#page=${pageIndex + 2}` : undefined}
-                aria-label="Página siguiente"
-                text="Sig."
-                className={!canNext ? "pointer-events-none opacity-50" : ""}
-                onClick={(e) => {
-                  e.preventDefault()
-                  if (canNext) onPageChange(pageIndex + 1)
-                }}
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </UIPagination>
-      </div>
+      {viewOptions}
     </div>
   )
 }

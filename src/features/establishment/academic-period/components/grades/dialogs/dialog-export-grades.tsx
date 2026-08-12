@@ -1,12 +1,12 @@
 import { useState } from "react"
 
 import {
-  DownloadSimpleIcon,
+  FileDownloadOutlinedIcon,
   FilePdfIcon,
   FileXlsIcon,
   SpinnerIcon,
 } from "@/components/ui/icons"
-import { useNotify } from "../../common/notice-context"
+import { useNotify } from "@/components/notice/notice-context"
 
 import {
   Dialog,
@@ -21,10 +21,7 @@ import {
 import { Button } from "@/components/ui/button"
 
 import { useExportGrades } from "../../../api/mutations/grades/export-grades"
-import type {
-  ExportFormat,
-  GradesQueryFilters,
-} from "../../../api/types/grade"
+import type { ExportFormat, GradesQueryFilters } from "../../../api/types/grade"
 
 interface ExportGradesDialogProps {
   filters: GradesQueryFilters
@@ -57,22 +54,18 @@ export function ExportGradesDialog({ filters }: ExportGradesDialogProps) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
         render={
-          <Button variant="outline" color="muted" size="icon" aria-label="Exportar grados" />
+          <Button variant="outline" color="muted" size="icon-sm" aria-label="Exportar grados" />
         }
       >
-        <DownloadSimpleIcon />
+        <FileDownloadOutlinedIcon />
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
-          <DialogDescription>
-            Elegí un formato para exportar todos los grados.
-          </DialogDescription>
+          <DialogDescription>Elige un formato para exportar todos los grados.</DialogDescription>
         </DialogHeader>
         <DialogFooter className="sm:justify-between">
-          <DialogClose render={<Button type="button" variant="ghost" />}>
-            Cancelar
-          </DialogClose>
+          <DialogClose render={<Button type="button" variant="ghost" />}>Cancelar</DialogClose>
           <div className="flex flex-col-reverse gap-2 sm:flex-row">
             <Button
               type="button"

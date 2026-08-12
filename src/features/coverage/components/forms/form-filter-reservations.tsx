@@ -3,7 +3,6 @@ import { useForm } from "@tanstack/react-form"
 import { Checkbox } from "@/components/ui/checkbox"
 import { DatePicker } from "@/components/date-picker"
 import { Input } from "@/components/ui/input"
-import { Separator } from "@/components/ui/separator"
 import {
   Select,
   SelectContent,
@@ -45,6 +44,10 @@ interface FilterReservationsFormProps {
   defaultValues: ReservationFiltersFormInput
   onSubmit: (values: ReservationFiltersFormValues) => void
   catalogs?: ReservationCatalogs
+  // El input de identificación vive en el buscador del InputGroup; cuando
+  // `hideDocumentNumber` es `true` se omite del form y se conserva como
+  // "search".
+  hideDocumentNumber?: boolean
 }
 
 // El "sin filtro" necesita un valor propio (el string vacío no distingue de
@@ -58,6 +61,7 @@ export function FilterReservationsForm({
   defaultValues,
   onSubmit,
   catalogs,
+  hideDocumentNumber = false,
 }: FilterReservationsFormProps) {
   const form = useForm({
     defaultValues,
@@ -76,124 +80,128 @@ export function FilterReservationsForm({
         e.preventDefault()
         form.handleSubmit()
       }}
-      className="flex flex-1 flex-col gap-4 overflow-y-auto px-4"
+      className="flex flex-1 flex-col gap-5 px-4"
     >
-      <form.Field
-        name="firstName"
-        children={(field) => (
-          <Field orientation="vertical" variant="outlined" className="gap-2">
-            <FieldLabel htmlFor={field.name}>Nombre</FieldLabel>
-            <Input
-              id={field.name}
-              name={field.name}
-              type="text"
-              autoComplete="off"
-              placeholder="ej. Sebastián David"
-              value={field.state.value}
-              onBlur={field.handleBlur}
-              onChange={(event) => field.handleChange(event.target.value)}
-              className="h-9"
-            />
-          </Field>
-        )}
-      />
+      <div className="grid grid-cols-2 gap-3">
+        <form.Field
+          name="firstName"
+          children={(field) => (
+            <Field orientation="vertical" variant="outlined" className="gap-2">
+              <FieldLabel htmlFor={field.name}>Nombre</FieldLabel>
+              <Input
+                id={field.name}
+                name={field.name}
+                type="text"
+                autoComplete="off"
+                placeholder="Ingresar nombres"
+                value={field.state.value}
+                onBlur={field.handleBlur}
+                onChange={(event) => field.handleChange(event.target.value)}
+                className="h-9"
+              />
+            </Field>
+          )}
+        />
 
-      <form.Field
-        name="lastName"
-        children={(field) => (
-          <Field orientation="vertical" variant="outlined" className="gap-2">
-            <FieldLabel htmlFor={field.name}>Apellido</FieldLabel>
-            <Input
-              id={field.name}
-              name={field.name}
-              type="text"
-              autoComplete="off"
-              placeholder="ej. Jaramillo Gómez"
-              value={field.state.value}
-              onBlur={field.handleBlur}
-              onChange={(event) => field.handleChange(event.target.value)}
-              className="h-9"
-            />
-          </Field>
-        )}
-      />
+        <form.Field
+          name="lastName"
+          children={(field) => (
+            <Field orientation="vertical" variant="outlined" className="gap-2">
+              <FieldLabel htmlFor={field.name}>Apellido</FieldLabel>
+              <Input
+                id={field.name}
+                name={field.name}
+                type="text"
+                autoComplete="off"
+                placeholder="Ingresar apellidos"
+                value={field.state.value}
+                onBlur={field.handleBlur}
+                onChange={(event) => field.handleChange(event.target.value)}
+                className="h-9"
+              />
+            </Field>
+          )}
+        />
+      </div>
 
-      <form.Field
-        name="documentNumber"
-        children={(field) => (
-          <Field orientation="vertical" variant="outlined" className="gap-2">
-            <FieldLabel htmlFor={field.name}>N° Identificación</FieldLabel>
-            <Input
-              id={field.name}
-              name={field.name}
-              type="text"
-              inputMode="numeric"
-              autoComplete="off"
-              placeholder="ej. 1001234567"
-              value={field.state.value}
-              onBlur={field.handleBlur}
-              onChange={(event) => field.handleChange(event.target.value)}
-              className="h-9"
-            />
-          </Field>
-        )}
-      />
+      {!hideDocumentNumber && (
+        <form.Field
+          name="documentNumber"
+          children={(field) => (
+            <Field orientation="vertical" variant="outlined" className="gap-2">
+              <FieldLabel htmlFor={field.name}>N° Identificación</FieldLabel>
+              <Input
+                id={field.name}
+                name={field.name}
+                type="text"
+                inputMode="numeric"
+                autoComplete="off"
+                placeholder="Ingresar N° de identificación"
+                value={field.state.value}
+                onBlur={field.handleBlur}
+                onChange={(event) => field.handleChange(event.target.value)}
+                className="h-9"
+              />
+            </Field>
+          )}
+        />
+      )}
 
-      <Separator />
+      <div className="grid grid-cols-2 gap-3">
+        <form.Field
+          name="institution"
+          children={(field) => (
+            <Field orientation="vertical" variant="outlined" className="gap-2">
+              <FieldLabel htmlFor={field.name}>Institución educativa</FieldLabel>
+              <Select
+                value={field.state.value || ANY}
+                onValueChange={(value) => field.handleChange(value === ANY ? "" : (value ?? ""))}
+              >
+                <SelectTrigger id={field.name} size="sm" className="w-full">
+                  <SelectValue>
+                    {(value) => (!value || value === ANY ? "Todas" : String(value))}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ANY}>Todas</SelectItem>
+                  {catalogs?.institutions.map((option) => (
+                    <SelectItem key={option} value={option}>
+                      {option}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+          )}
+        />
 
-      <form.Field
-        name="institution"
-        children={(field) => (
-          <Field orientation="vertical" variant="outlined" className="gap-2">
-            <FieldLabel htmlFor={field.name}>Institución educativa</FieldLabel>
-            <Select
-              value={field.state.value || ANY}
-              onValueChange={(value) => field.handleChange(value === ANY ? "" : (value ?? ""))}
-            >
-              <SelectTrigger id={field.name} size="sm" className="w-full">
-                <SelectValue>
-                  {(value) => (!value || value === ANY ? "Todas" : String(value))}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ANY}>Todas</SelectItem>
-                {catalogs?.institutions.map((option) => (
-                  <SelectItem key={option} value={option}>
-                    {option}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Field>
-        )}
-      />
-
-      <form.Field
-        name="campus"
-        children={(field) => (
-          <Field orientation="vertical" variant="outlined" className="gap-2">
-            <FieldLabel htmlFor={field.name}>Sede</FieldLabel>
-            <Select
-              value={field.state.value || ANY}
-              onValueChange={(value) => field.handleChange(value === ANY ? "" : (value ?? ""))}
-            >
-              <SelectTrigger id={field.name} size="sm" className="w-full">
-                <SelectValue>
-                  {(value) => (!value || value === ANY ? "Todas" : String(value))}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ANY}>Todas</SelectItem>
-                {catalogs?.campuses.map((option) => (
-                  <SelectItem key={option} value={option}>
-                    {option}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Field>
-        )}
-      />
+        <form.Field
+          name="campus"
+          children={(field) => (
+            <Field orientation="vertical" variant="outlined" className="gap-2">
+              <FieldLabel htmlFor={field.name}>Sede</FieldLabel>
+              <Select
+                value={field.state.value || ANY}
+                onValueChange={(value) => field.handleChange(value === ANY ? "" : (value ?? ""))}
+              >
+                <SelectTrigger id={field.name} size="sm" className="w-full">
+                  <SelectValue>
+                    {(value) => (!value || value === ANY ? "Todas" : String(value))}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ANY}>Todas</SelectItem>
+                  {catalogs?.campuses.map((option) => (
+                    <SelectItem key={option} value={option}>
+                      {option}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+          )}
+        />
+      </div>
 
       <div className="grid grid-cols-2 gap-3">
         <form.Field
@@ -251,8 +259,6 @@ export function FilterReservationsForm({
         />
       </div>
 
-      <Separator />
-
       <form.Field
         name="shifts"
         mode="array"
@@ -291,8 +297,6 @@ export function FilterReservationsForm({
           )
         }}
       />
-
-      <Separator />
 
       <form.Field
         name="levels"
@@ -333,8 +337,6 @@ export function FilterReservationsForm({
         }}
       />
 
-      <Separator />
-
       <form.Field
         name="statuses"
         mode="array"
@@ -374,42 +376,44 @@ export function FilterReservationsForm({
         }}
       />
 
-      <Separator />
-
-      {/* Fecha de reserva: dos campos independientes, mismo criterio que el
-          sheet de auditoría (el popover combina calendario y hora). */}
-      <form.Field
-        name="reservedFrom"
-        children={(field) => (
-          <Field orientation="vertical" variant="outlined" className="gap-2">
-            <FieldLabel htmlFor={field.name}>Reservado desde</FieldLabel>
-            <DatePicker
-              mode="datetime"
-              id={field.name}
-              value={parseDateTimeValue(field.state.value)}
-              onChange={(date) => field.handleChange(formatDateTimeValue(date))}
-              className="h-9"
-            />
-          </Field>
-        )}
-      />
-      <form.Field
-        name="reservedTo"
-        children={(field) => (
-          <Field orientation="vertical" variant="outlined" className="gap-2">
-            <FieldLabel htmlFor={field.name}>Reservado hasta</FieldLabel>
-            <DatePicker
-              mode="datetime"
-              id={field.name}
-              value={parseDateTimeValue(field.state.value)}
-              onChange={(date) => field.handleChange(formatDateTimeValue(date))}
-              className="h-9"
-            />
-          </Field>
-        )}
-      />
-
-      <Separator />
+      {/* Fecha de reserva: dos campos independientes (no un único rango), cada
+          uno en modo `datetime` —calendario y hora en el mismo popover—. La
+          leyenda sí aporta acá: "Desde" y "Hasta" sueltos no dicen de qué son. */}
+      <FieldSet>
+        <FieldLegend variant="label">Fecha de reserva</FieldLegend>
+        <div className="grid grid-cols-2 gap-3">
+          <form.Field
+            name="reservedFrom"
+            children={(field) => (
+              <Field orientation="vertical" variant="outlined" className="gap-2">
+                <FieldLabel htmlFor={field.name}>Desde</FieldLabel>
+                <DatePicker
+                  mode="datetime"
+                  id={field.name}
+                  value={parseDateTimeValue(field.state.value)}
+                  onChange={(date) => field.handleChange(formatDateTimeValue(date))}
+                  className="h-9"
+                />
+              </Field>
+            )}
+          />
+          <form.Field
+            name="reservedTo"
+            children={(field) => (
+              <Field orientation="vertical" variant="outlined" className="gap-2">
+                <FieldLabel htmlFor={field.name}>Hasta</FieldLabel>
+                <DatePicker
+                  mode="datetime"
+                  id={field.name}
+                  value={parseDateTimeValue(field.state.value)}
+                  onChange={(date) => field.handleChange(formatDateTimeValue(date))}
+                  className="h-9"
+                />
+              </Field>
+            )}
+          />
+        </div>
+      </FieldSet>
 
       {/* "Agrupar por" no filtra: reordena el listado para que las filas de
           la misma institución/sede/grado queden juntas. */}

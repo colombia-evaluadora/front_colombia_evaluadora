@@ -57,7 +57,7 @@ export function DomicilioDataFormSection({ value, onChange, invalidFields = [], 
                         items={municipalityItems}
                     >
                         <SelectTrigger>
-                            <SelectValue placeholder="Seleccione municipio" />
+                            <SelectValue placeholder="Seleccionar" />
                         </SelectTrigger>
 
                         <SelectContent>
@@ -84,7 +84,7 @@ export function DomicilioDataFormSection({ value, onChange, invalidFields = [], 
 items={zoneItems}
                     >
                         <SelectTrigger>
-                            <SelectValue placeholder="Urbana" />
+                            <SelectValue placeholder="Seleccionar" />
                         </SelectTrigger>
 
                         <SelectContent>
@@ -101,7 +101,7 @@ items={zoneItems}
                     <FieldLabel htmlFor="establishment-barrio">Barrio</FieldLabel>
                     <Input
                         id="establishment-barrio"
-                        placeholder="La Cumbre"
+                        placeholder="Ingresar barrio"
                         value={value.district.name}
                         onChange={(event) => onChange({ ...value, district: { ...value.district, id: event.target.value, code: event.target.value, name: event.target.value } })}
                     />
@@ -113,7 +113,7 @@ items={zoneItems}
                     <FieldLabel htmlFor="establishment-address">Dirección</FieldLabel>
                     <Input
                         id="establishment-address"
-                        placeholder="Calle 56 No. 16 - 18"
+                        placeholder="Ingresar dirección"
                         value={value.address}
                         onChange={(event) => onChange({ ...value, address: event.target.value })}
                     />
@@ -123,7 +123,7 @@ items={zoneItems}
                     <FieldLabel htmlFor="establishment-comuna">Comuna</FieldLabel>
                     <Input
                         id="establishment-comuna"
-                        placeholder="10"
+                        placeholder="Ingresar comuna"
                         value={value.commune.name}
                         onChange={(event) => onChange({ ...value, commune: { ...value.commune, id: event.target.value, code: event.target.value, name: event.target.value } })}
                     />
@@ -133,7 +133,7 @@ items={zoneItems}
                     <FieldLabel htmlFor="establishment-localidad">Localidad</FieldLabel>
                     <Input
                         id="establishment-localidad"
-                        placeholder="De la virgen y turistica"
+                        placeholder="Ingresar localidad"
                         value={value.locality.name}
                         onChange={(event) => onChange({ ...value, locality: { ...value.locality, id: event.target.value, code: event.target.value, name: event.target.value } })}
                     />
