@@ -118,7 +118,10 @@ export function createEmployeeColumns({ onEdit }: EmployeeColumnsOptions): Colum
         <Tooltip>
           <TooltipTrigger
             render={
-              <span className="block max-w-[16rem] truncate text-sm text-foreground uppercase" />
+              // El ancho es lo que dispara los puntos suspensivos: con el tope
+              // anterior (16rem) casi ningún rol llegaba a recortarse y el
+              // tooltip aparecía sin que nada avisara que había más texto.
+              <span className="block max-w-[12rem] truncate text-sm text-foreground uppercase" />
             }
           >
             {fullText}
@@ -185,7 +188,9 @@ export function createEmployeeColumns({ onEdit }: EmployeeColumnsOptions): Colum
         <Tooltip>
           <TooltipTrigger
             render={
-              <span className="block max-w-[16rem] truncate text-sm text-foreground uppercase" />
+              // Mismo tope que "Rol": con varias jornadas el texto se recorta
+              // con "…" y el tooltip trae la lista completa.
+              <span className="block max-w-[12rem] truncate text-sm text-foreground uppercase" />
             }
           >
             {fullText}

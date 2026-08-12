@@ -569,11 +569,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
                 disabled={isSavingMain}
               >
                 <CheckIcon data-icon="inline-start" />
-                {isSavingMain
-                  ? "Guardando..."
-                  : isEditMode
-                    ? "Guardar cambios"
-                    : "Guardar"}
+                {isSavingMain ? "Guardando..." : "Guardar"}
               </Button>
               <Button
                 variant="fill"
