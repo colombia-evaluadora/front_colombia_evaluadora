@@ -58,6 +58,7 @@ export function DeleteSelectedRatingScalesDialog({
       <AlertDialogTrigger
         render={
           <Button
+            size="sm"
             color="destructive"
             aria-label={`Eliminar escalas de ${levelCount} nivel(es) seleccionado(s)`}
           />

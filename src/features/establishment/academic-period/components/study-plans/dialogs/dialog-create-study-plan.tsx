@@ -185,10 +185,7 @@ export function CreateStudyPlanDialog({
         )}
       </DialogTrigger>
       <DialogPortal>
-        <DialogOverlay
-          forceRender
-          className="bg-black/30"
-        />
+        <DialogOverlay forceRender className="bg-black/30" />
       </DialogPortal>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
         <DialogHeader>
@@ -254,7 +251,7 @@ export function CreateStudyPlanDialog({
                     id={field.name}
                     type="number"
                     min={0}
-                    placeholder="Ingresar intensidad horaria"
+                    placeholder="Agregar"
                     value={Number.isNaN(field.state.value) ? "" : field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.valueAsNumber)}
@@ -273,7 +270,7 @@ export function CreateStudyPlanDialog({
                       type="number"
                       min={0}
                       max={100}
-                      placeholder="Ingresar influencia"
+                      placeholder="Agregar"
                       className="px-0"
                       value={Number.isNaN(field.state.value) ? "" : field.state.value}
                       onBlur={field.handleBlur}
@@ -295,7 +292,7 @@ export function CreateStudyPlanDialog({
                     id={field.name}
                     type="number"
                     min={0}
-                    placeholder="Ingresar número de créditos"
+                    placeholder="Agregar"
                     value={Number.isNaN(field.state.value) ? "" : field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.valueAsNumber)}
@@ -442,8 +439,11 @@ export function CreateStudyPlanDialog({
         </form>
 
         <DialogFooter className="sm:justify-between">
-          <DialogClose render={<Button type="button" variant="ghost" />}>Cancelar</DialogClose>
+          <DialogClose render={<Button size="sm" type="button" variant="ghost" />}>
+            Cancelar
+          </DialogClose>
           <Button
+            size="sm"
             type="submit"
             color="primary"
             form={FORM_ID}

@@ -176,7 +176,7 @@ export function UserDetailsForm({
                     <FieldLabel htmlFor="document-number">Número de documento*</FieldLabel>
                     <Input
                         id="document-number"
-                        placeholder="Ingresar número de documento"
+                        placeholder="Agregar"
                         value={person.identification}
                         aria-invalid={isInvalid(`${fieldPrefix}.identification`)}
                         onChange={(event) => emitChange({ identification: event.target.value })}
@@ -187,7 +187,7 @@ export function UserDetailsForm({
                     <FieldLabel htmlFor="user-name">Primer Nombre*</FieldLabel>
                     <Input
                         id="user-name"
-                        placeholder="Ingresar primer nombre"
+                        placeholder="Agregar"
                         value={person.firstName}
                         aria-invalid={isInvalid(`${fieldPrefix}.firstName`)}
                         onChange={(event) => emitChange({ firstName: event.target.value })}
@@ -198,7 +198,7 @@ export function UserDetailsForm({
                     <FieldLabel htmlFor="user-second-name">Segundo Nombre</FieldLabel>
                     <Input
                         id="user-second-name"
-                        placeholder="Ingresar segundo nombre"
+                        placeholder="Agregar"
                         value={person.middleName ?? ""}
                         onChange={(event) => emitChange({ middleName: event.target.value })}
                     />
@@ -208,7 +208,7 @@ export function UserDetailsForm({
                     <FieldLabel htmlFor="user-last-name">Primer Apellido*</FieldLabel>
                     <Input
                         id="user-last-name"
-                        placeholder="Ingresar primer apellido"
+                        placeholder="Agregar"
                         value={person.lastName}
                         aria-invalid={isInvalid(`${fieldPrefix}.lastName`)}
                         onChange={(event) => emitChange({ lastName: event.target.value })}
@@ -219,7 +219,7 @@ export function UserDetailsForm({
                     <FieldLabel htmlFor="user-second-last-name">Segundo Apellido</FieldLabel>
                     <Input
                         id="user-second-last-name"
-                        placeholder="Ingresar segundo apellido"
+                        placeholder="Agregar"
                         value={person.secondLastName ?? ""}
                         onChange={(event) => emitChange({ secondLastName: event.target.value })}
                     />
@@ -230,7 +230,7 @@ export function UserDetailsForm({
                     <FieldLabel htmlFor="user-email">Correo Electrónico</FieldLabel>
                     <Input
                         id="user-email"
-                        placeholder="Ingresar correo electrónico"
+                        placeholder="Agregar"
                         value={person.email}
                         aria-invalid={isInvalid(`${fieldPrefix}.email`)}
                         onChange={(event) => emitChange({ email: event.target.value })}
@@ -240,7 +240,7 @@ export function UserDetailsForm({
                     <FieldLabel htmlFor="user-password">Contraseña</FieldLabel>
                     <Input
                         id="user-password"
-                        placeholder="Ingresar contraseña"
+                        placeholder="Agregar"
                         type="password"
                         value={person.password}
                         aria-invalid={isInvalid(`${fieldPrefix}.password`)}
@@ -251,7 +251,7 @@ export function UserDetailsForm({
                     <FieldLabel htmlFor="user-confirm-password">Confirmar Contraseña</FieldLabel>
                     <Input
                         id="user-confirm-password"
-                        placeholder="Ingresar nuevamente la contraseña"
+                        placeholder="Agregar"
                         type="password"
                         value={confirmPassword}
                         aria-invalid={isInvalid(`${fieldPrefix}.confirmPassword`)}
@@ -302,7 +302,7 @@ export function UserDetailsForm({
                     <FieldLabel htmlFor="user-phone">Teléfono</FieldLabel>
                     <Input
                         id="user-phone"
-                        placeholder="Ingresar teléfono"
+                        placeholder="Agregar"
                         type="tel"
                         value={person.phone}
                         aria-invalid={isInvalid(`${fieldPrefix}.phone`)}

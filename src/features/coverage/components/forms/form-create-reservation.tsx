@@ -74,7 +74,7 @@ export function CreateReservationForm({ id, onSubmit, catalogs }: CreateReservat
                   type="text"
                   inputMode="numeric"
                   autoComplete="off"
-                  placeholder="Ingresar N° de identificación"
+                  placeholder="Agregar"
                   value={field.state.value}
                   onBlur={field.handleBlur}
                   onChange={(event) => field.handleChange(event.target.value)}
@@ -99,7 +99,7 @@ export function CreateReservationForm({ id, onSubmit, catalogs }: CreateReservat
                   name={field.name}
                   type="text"
                   autoComplete="off"
-                  placeholder="Ingresar nombres"
+                  placeholder="Agregar"
                   value={field.state.value}
                   onBlur={field.handleBlur}
                   onChange={(event) => field.handleChange(event.target.value)}
@@ -124,7 +124,7 @@ export function CreateReservationForm({ id, onSubmit, catalogs }: CreateReservat
                   name={field.name}
                   type="text"
                   autoComplete="off"
-                  placeholder="Ingresar apellidos"
+                  placeholder="Agregar"
                   value={field.state.value}
                   onBlur={field.handleBlur}
                   onChange={(event) => field.handleChange(event.target.value)}

@@ -82,7 +82,7 @@ export function SearchAcademicAssignments({
       <SearchQueryBar
         id="academic-assignments-search"
         label={null}
-        placeholder="Buscar por nombre"
+        placeholder="Buscar por"
         value={search}
         onValueChange={setSearch}
         onClearAll={handleClearAll}

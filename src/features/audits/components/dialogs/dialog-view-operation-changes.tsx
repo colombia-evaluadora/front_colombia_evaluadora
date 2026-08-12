@@ -70,7 +70,14 @@ export function ViewOperationChangesDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
-        render={<Button variant="ghost" color="neutral" size="icon-sm" aria-label="Ver cambios de la operación" />}
+        render={
+          <Button
+            variant="ghost"
+            color="neutral"
+            size="icon-sm"
+            aria-label="Ver cambios de la operación"
+          />
+        }
       >
         <EyeIcon weight="bold" />
       </DialogTrigger>
@@ -78,9 +85,7 @@ export function ViewOperationChangesDialog({
         <DialogHeader>
           <div className="flex flex-wrap items-center gap-2">
             <DialogTitle>{data ? data.entityName : "Detalle de cambios"}</DialogTitle>
-            {data && (
-              <Badge {...OPERATION_TYPE_BADGE[data.operation]}>{operationLabel}</Badge>
-            )}
+            {data && <Badge {...OPERATION_TYPE_BADGE[data.operation]}>{operationLabel}</Badge>}
           </div>
           <DialogDescription>{data ? `${data.entityId}` : "Cargando…"}</DialogDescription>
           <div className="flex justify-between gap-2">
@@ -122,7 +127,9 @@ export function ViewOperationChangesDialog({
         )}
 
         <DialogFooter className="sm:justify-between">
-          <DialogClose render={<Button type="button" variant="ghost" />}>Cerrar</DialogClose>
+          <DialogClose render={<Button size="sm" type="button" variant="ghost" />}>
+            Cerrar
+          </DialogClose>
           <DialogConfirmRevertChanges
             tableSlug={tableSlug}
             operationId={operationId}

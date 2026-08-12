@@ -131,7 +131,7 @@ export function RolesMenusPage() {
                 >
                   <Input
                     aria-label="Nombre del nuevo rol"
-                    placeholder="Ingresar nombre del rol"
+                    placeholder="Agregar"
                     className="h-9"
                     value={newRoleName}
                     onChange={(event) => setNewRoleName(event.target.value)}

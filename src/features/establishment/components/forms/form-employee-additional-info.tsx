@@ -287,7 +287,7 @@ export function EmployeeAdditionalInfoForm({ value, onChange }: EmployeeAddition
           id="employee-address"
           value={value.address}
           onChange={(event) => patch({ address: event.target.value })}
-          placeholder="Ingresar dirección"
+          placeholder="Agregar"
         />
       </Field>
     </div>

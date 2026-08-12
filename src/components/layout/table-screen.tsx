@@ -162,7 +162,7 @@ function TableScreenFooter({ children, className }: { children: ReactNode; class
       {/* Una sola línea arriba: la del propio contorno, que acá hace de
           separador con el cuerpo (por eso el cuerpo se monta con `border-b-0`
           cuando hay footer). */}
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-b-lg border border-border bg-muted/10 px-(--screen-spacing) py-4 text-sm text-card-foreground">
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-b-lg border border-border bg-background px-(--screen-spacing) py-4 text-sm text-card-foreground">
         {children}
       </div>
     </footer>

@@ -113,7 +113,7 @@ export function FilterTableOperationsForm({
                 name={field.name}
                 type="text"
                 autoComplete="off"
-                placeholder="Ingresar autor o IP"
+                placeholder="Agregar"
                 value={field.state.value}
                 onBlur={field.handleBlur}
                 onChange={(event) => field.handleChange(event.target.value)}
@@ -358,17 +358,18 @@ function FieldFilterSection({ field, availableFields }: FieldFilterSectionProps)
               id="field-filter-value"
               type="text"
               autoComplete="off"
-              placeholder="Ingresar texto"
+              placeholder="Agregar"
               value={composerValue}
               onChange={(event) => setComposerValue(event.target.value)}
               className="h-9"
             />
           </Field>
           <Button
+            size="sm"
             type="button"
             onClick={handleAdd}
             disabled={!composerReady}
-            className="h-9 rounded-full"
+            className="h-9"
           >
             <ControlPointIcon data-icon="inline-start" />
             Agregar

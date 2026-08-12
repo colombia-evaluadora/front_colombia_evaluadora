@@ -92,7 +92,7 @@ export function SearchEstablishments({
     <div className="flex min-w-0 flex-1 flex-col gap-2">
       <SearchQueryBar
         id={SEARCH_INPUT_ID}
-        placeholder="Buscar por establecimiento, municipio o código DANE"
+        placeholder="Buscar por"
         value={search}
         onValueChange={setSearch}
         onClearAll={handleClearAll}

@@ -84,7 +84,7 @@ function PlanSelect({ value, onChange }: { value: string; onChange: (planId: str
         >
           <Input
             aria-label="Nombre del nuevo plan"
-            placeholder="Ingresar nombre del plan"
+            placeholder="Agregar"
             className="h-9"
             value={newPlanName}
             onChange={(event) => setNewPlanName(event.target.value)}
@@ -237,7 +237,7 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
                 <FieldLabel htmlFor="menu-name">Nombre*</FieldLabel>
                 <Input
                   id="menu-name"
-                  placeholder="Ingresar nombre del menú"
+                  placeholder="Agregar"
                   value={name}
                   onChange={(event) => setName(event.target.value)}
                 />
@@ -246,7 +246,7 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
                 <FieldLabel htmlFor="menu-path">Ruta*</FieldLabel>
                 <Input
                   id="menu-path"
-                  placeholder="Ingresar ruta del menú"
+                  placeholder="Agregar"
                   value={path}
                   onChange={(event) => setPath(event.target.value)}
                 />
@@ -288,13 +288,13 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
                       >
                         <Input
                           aria-label="Nombre del menú"
-                          placeholder="Ingresar nombre del submenú"
+                          placeholder="Agregar"
                           value={draft.name}
                           onChange={(event) => updateDraft(draft.key, { name: event.target.value })}
                         />
                         <Input
                           aria-label="URL"
-                          placeholder="Ingresar ruta del submenú"
+                          placeholder="Agregar"
                           value={draft.path}
                           onChange={(event) => updateDraft(draft.key, { path: event.target.value })}
                         />
@@ -338,6 +338,7 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
 
         <DialogFooter>
           <Button
+            size="sm"
             type="button"
             disabled={!canSave || saveMenu.isPending}
             aria-busy={saveMenu.isPending}
@@ -348,7 +349,7 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
             )}
             Guardar
           </Button>
-          <DialogClose render={<Button type="button" variant="fill" color="neutral" />}>
+          <DialogClose render={<Button size="sm" type="button" variant="fill" color="neutral" />}>
             Cancelar
           </DialogClose>
         </DialogFooter>

@@ -28,7 +28,7 @@ export function CampusDetailsForm({ value, zones, onChange }: CampusDetailsFormP
           id="campus-name"
           value={value.name}
           onChange={(event) => onChange({ ...value, name: event.target.value })}
-          placeholder="Ingresar nombre de la sede"
+          placeholder="Agregar"
         />
       </Field>
 
@@ -38,7 +38,7 @@ export function CampusDetailsForm({ value, zones, onChange }: CampusDetailsFormP
           id="campus-dane"
           value={value.dane}
           onChange={(event) => onChange({ ...value, dane: event.target.value })}
-          placeholder="Ingresar código DANE antiguo"
+          placeholder="Agregar"
         />
       </Field>
 
@@ -78,7 +78,7 @@ export function CampusDetailsForm({ value, zones, onChange }: CampusDetailsFormP
           id="campus-neighborhood"
           value={value.neighborhood}
           onChange={(event) => onChange({ ...value, neighborhood: event.target.value })}
-          placeholder="Ingresar barrio"
+          placeholder="Agregar"
         />
       </Field>
 
@@ -88,7 +88,7 @@ export function CampusDetailsForm({ value, zones, onChange }: CampusDetailsFormP
           id="campus-commune"
           value={value.commune}
           onChange={(event) => onChange({ ...value, commune: event.target.value })}
-          placeholder="Ingresar comuna"
+          placeholder="Agregar"
         />
       </Field>
 
@@ -98,7 +98,7 @@ export function CampusDetailsForm({ value, zones, onChange }: CampusDetailsFormP
           id="campus-address"
           value={value.address}
           onChange={(event) => onChange({ ...value, address: event.target.value })}
-          placeholder="Ingresar dirección de la sede"
+          placeholder="Agregar"
         />
       </Field>
 
@@ -108,7 +108,7 @@ export function CampusDetailsForm({ value, zones, onChange }: CampusDetailsFormP
           id="campus-phone"
           value={value.phone}
           onChange={(event) => onChange({ ...value, phone: event.target.value })}
-          placeholder="Ingresar teléfono de la sede"
+          placeholder="Agregar"
         />
       </Field>
 
@@ -118,7 +118,7 @@ export function CampusDetailsForm({ value, zones, onChange }: CampusDetailsFormP
           id="campus-approval-resolution"
           value={value.approvalResolution}
           onChange={(event) => onChange({ ...value, approvalResolution: event.target.value })}
-          placeholder="Ingresar resolución de aprobación"
+          placeholder="Agregar"
         />
       </Field>
     </div>

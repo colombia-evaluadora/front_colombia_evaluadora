@@ -213,7 +213,9 @@ export function SelectGeneralAreaDialog({
         </div>
 
         <DialogFooter>
-          <DialogClose render={<Button type="button" variant="outline" />}>Cancelar</DialogClose>
+          <DialogClose render={<Button size="sm" type="button" variant="outline" />}>
+            Cancelar
+          </DialogClose>
         </DialogFooter>
       </DialogContent>
     </Dialog>

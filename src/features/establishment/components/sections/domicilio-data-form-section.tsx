@@ -101,7 +101,7 @@ items={zoneItems}
                     <FieldLabel htmlFor="establishment-barrio">Barrio</FieldLabel>
                     <Input
                         id="establishment-barrio"
-                        placeholder="Ingresar barrio"
+                        placeholder="Agregar"
                         value={value.district.name}
                         onChange={(event) => onChange({ ...value, district: { ...value.district, id: event.target.value, code: event.target.value, name: event.target.value } })}
                     />
@@ -113,7 +113,7 @@ items={zoneItems}
                     <FieldLabel htmlFor="establishment-address">Dirección</FieldLabel>
                     <Input
                         id="establishment-address"
-                        placeholder="Ingresar dirección"
+                        placeholder="Agregar"
                         value={value.address}
                         onChange={(event) => onChange({ ...value, address: event.target.value })}
                     />
@@ -123,7 +123,7 @@ items={zoneItems}
                     <FieldLabel htmlFor="establishment-comuna">Comuna</FieldLabel>
                     <Input
                         id="establishment-comuna"
-                        placeholder="Ingresar comuna"
+                        placeholder="Agregar"
                         value={value.commune.name}
                         onChange={(event) => onChange({ ...value, commune: { ...value.commune, id: event.target.value, code: event.target.value, name: event.target.value } })}
                     />
@@ -133,7 +133,7 @@ items={zoneItems}
                     <FieldLabel htmlFor="establishment-localidad">Localidad</FieldLabel>
                     <Input
                         id="establishment-localidad"
-                        placeholder="Ingresar localidad"
+                        placeholder="Agregar"
                         value={value.locality.name}
                         onChange={(event) => onChange({ ...value, locality: { ...value.locality, id: event.target.value, code: event.target.value, name: event.target.value } })}
                     />

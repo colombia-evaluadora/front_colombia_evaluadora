@@ -121,7 +121,7 @@ export function SearchEmployees({
     <div className="flex min-w-0 flex-1 flex-col gap-2">
       <SearchQueryBar
         id={SEARCH_INPUT_ID}
-        placeholder="Buscar por documento, nombre o sede"
+        placeholder="Buscar por"
         value={search}
         onValueChange={setSearch}
         onClearAll={handleClearAll}

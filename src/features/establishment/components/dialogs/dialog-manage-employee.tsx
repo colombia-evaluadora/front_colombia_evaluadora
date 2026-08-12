@@ -602,7 +602,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
               <FieldLabel htmlFor="permission-order">Orden*</FieldLabel>
               <Input
                 id="permission-order"
-                placeholder="Ingresar orden"
+                placeholder="Agregar"
                 type="number"
                 min={1}
                 value={permissionDraft.order}

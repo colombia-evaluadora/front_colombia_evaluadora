@@ -78,7 +78,7 @@ export function EspecialidadSelect({
                   agregar()
                 }
               }}
-              placeholder="Ingresar nueva especialidad"
+              placeholder="Agregar"
               className="h-8"
             />
             <Button

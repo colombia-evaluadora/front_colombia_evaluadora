@@ -93,7 +93,7 @@ export function FilterReservationsForm({
                 name={field.name}
                 type="text"
                 autoComplete="off"
-                placeholder="Ingresar nombres"
+                placeholder="Agregar"
                 value={field.state.value}
                 onBlur={field.handleBlur}
                 onChange={(event) => field.handleChange(event.target.value)}
@@ -113,7 +113,7 @@ export function FilterReservationsForm({
                 name={field.name}
                 type="text"
                 autoComplete="off"
-                placeholder="Ingresar apellidos"
+                placeholder="Agregar"
                 value={field.state.value}
                 onBlur={field.handleBlur}
                 onChange={(event) => field.handleChange(event.target.value)}
@@ -136,7 +136,7 @@ export function FilterReservationsForm({
                 type="text"
                 inputMode="numeric"
                 autoComplete="off"
-                placeholder="Ingresar N° de identificación"
+                placeholder="Agregar"
                 value={field.state.value}
                 onBlur={field.handleBlur}
                 onChange={(event) => field.handleChange(event.target.value)}

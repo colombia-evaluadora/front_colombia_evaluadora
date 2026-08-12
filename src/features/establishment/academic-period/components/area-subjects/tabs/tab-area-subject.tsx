@@ -59,7 +59,7 @@ export function TabAreaSubject({ academicPeriodId }: TabAreaSubjectProps) {
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <SearchInput
           id="area-subject-search"
-          placeholder="Buscar por nombre"
+          placeholder="Buscar por"
           value={search}
           onValueChange={(value) => {
             setSearch(value)

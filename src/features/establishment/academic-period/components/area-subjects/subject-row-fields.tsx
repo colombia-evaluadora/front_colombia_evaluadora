@@ -64,7 +64,7 @@ export function SubjectRowFields({
           aria-label="Orden en los reportes"
           type="number"
           min={0}
-          placeholder="Ingresar orden"
+          placeholder="Agregar"
           className="w-20"
           value={Number.isNaN(draft.ordenReportes) ? "" : draft.ordenReportes}
           onChange={(e) => onPatch({ ordenReportes: e.target.valueAsNumber })}
@@ -79,7 +79,7 @@ export function SubjectRowFields({
       <TableCell>
         <Input
           aria-label="Nombre interno"
-          placeholder="Ingresar nombre"
+          placeholder="Agregar"
           value={draft.nombreInterno}
           onChange={(e) => onPatch({ nombreInterno: e.target.value })}
         />
@@ -87,7 +87,7 @@ export function SubjectRowFields({
       <TableCell>
         <Input
           aria-label="Abreviación"
-          placeholder="Ingresar abreviación"
+          placeholder="Agregar"
           value={draft.abreviacion}
           onChange={(e) => onPatch({ abreviacion: e.target.value })}
         />

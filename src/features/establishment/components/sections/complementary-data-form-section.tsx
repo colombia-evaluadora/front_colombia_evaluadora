@@ -57,7 +57,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
 
                         <Input
                             id="approval-resolution"
-                            placeholder="Ingresar resolución de aprobación"
+                            placeholder="Agregar"
                             value={value.approvalResolution}
                             aria-invalid={isInvalid("additionalInfo.approvalResolution")}
                             onChange={(event) => onChange({ ...value, approvalResolution: event.target.value })}

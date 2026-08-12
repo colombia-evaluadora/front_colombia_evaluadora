@@ -185,7 +185,7 @@ export function CreateGradeGroupDialog({
                   <FieldLabel htmlFor={field.name}>Grupo</FieldLabel>
                   <Input
                     id={field.name}
-                    placeholder="Ingresar grupo"
+                    placeholder="Agregar"
                     value={field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value)}
@@ -266,7 +266,7 @@ export function CreateGradeGroupDialog({
                   id={field.name}
                   type="number"
                   min={0}
-                  placeholder="Ingresar cupo"
+                  placeholder="Agregar"
                   value={Number.isNaN(field.state.value) ? "" : field.state.value}
                   onBlur={field.handleBlur}
                   onChange={(e) => field.handleChange(e.target.valueAsNumber)}
@@ -283,6 +283,7 @@ export function CreateGradeGroupDialog({
             {(isComplete) =>
               isComplete ? (
                 <Button
+                  size="sm"
                   type="submit"
                   color="primary"
                   form={FORM_ID}
@@ -295,7 +296,9 @@ export function CreateGradeGroupDialog({
               ) : null
             }
           </form.Subscribe>
-          <DialogClose render={<Button type="button" variant="outline" />}>Cancelar</DialogClose>
+          <DialogClose render={<Button size="sm" type="button" variant="outline" />}>
+            Cancelar
+          </DialogClose>
         </DialogFooter>
       </DialogContent>
     </Dialog>

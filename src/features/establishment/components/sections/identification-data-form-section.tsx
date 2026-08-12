@@ -64,7 +64,7 @@ export function IdentificationDataFormSection({ value, onChange, invalidFields =
                     <FieldLabel htmlFor="establishment-name">Nombre del establecimiento*</FieldLabel>
                     <Input
                         id="establishment-name"
-                        placeholder="Ingresar nombre del establecimiento"
+                        placeholder="Agregar"
                         value={value.name}
                         aria-invalid={isInvalid("basicInfo.name")}
                         onChange={(event) => onChange({ ...value, name: event.target.value })}
@@ -75,7 +75,7 @@ export function IdentificationDataFormSection({ value, onChange, invalidFields =
                     <FieldLabel htmlFor="establishment-dane">Código DANE*</FieldLabel>
                     <Input
                         id="establishment-dane"
-                        placeholder="Ingresar código DANE"
+                        placeholder="Agregar"
                         value={value.dane}
                         aria-invalid={isInvalid("basicInfo.dane")}
                         onChange={(event) => onChange({ ...value, dane: event.target.value })}
@@ -86,7 +86,7 @@ export function IdentificationDataFormSection({ value, onChange, invalidFields =
                     <FieldLabel htmlFor="establishment-nit">Nit*</FieldLabel>
                     <Input
                         id="establishment-nit"
-                        placeholder="Ingresar NIT"
+                        placeholder="Agregar"
                         value={value.nit}
                         aria-invalid={isInvalid("basicInfo.nit")}
                         onChange={(event) => onChange({ ...value, nit: event.target.value })}

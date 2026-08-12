@@ -104,7 +104,7 @@ export function LandingAdmissionTimeline() {
       </div>
 
       <div className="mt-14 flex justify-center px-8">
-        <Button>
+        <Button size="sm">
           <GraduationCapIcon data-icon="inline-start" />
           Buscador de establecimientos
         </Button>

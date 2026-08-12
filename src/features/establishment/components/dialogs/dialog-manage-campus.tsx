@@ -186,6 +186,7 @@ export function ManageCampusDialog({
 
         <DialogFooter className="justify-end gap-2">
           <Button
+            size="sm"
             type="submit"
             form="campus-form"
             variant="fill"
@@ -196,6 +197,7 @@ export function ManageCampusDialog({
             {isPending ? "Guardando..." : "Guardar"}
           </Button>
           <Button
+            size="sm"
             type="button"
             variant="fill"
             color="neutral"

@@ -8,7 +8,7 @@ export function LandingReserveSection() {
         Reserva tu cupo y asegura tu ingreso en nuestra institución, garantizando tu participación
         en el próximo periodo académico.
       </p>
-      <Button>Reservar ahora</Button>
+      <Button size="sm">Reservar ahora</Button>
     </section>
   )
 }

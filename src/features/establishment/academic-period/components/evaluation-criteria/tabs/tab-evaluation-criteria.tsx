@@ -217,7 +217,7 @@ export function TabEvaluationCriteria({ academicPeriodId }: TabEvaluationCriteri
           <form.Subscribe selector={(state) => state.isDirty}>
             {(isDirty) =>
               isDirty ? (
-                <Button type="submit" color="primary" disabled={saveCriteria.isPending}>
+                <Button size="sm" type="submit" color="primary" disabled={saveCriteria.isPending}>
                   {saveCriteria.isPending ? "Guardando..." : "Guardar"}
                 </Button>
               ) : null

@@ -58,7 +58,11 @@ export function DeleteSelectedAreaSubjectsDialog({
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger
         render={
-          <Button color="destructive" aria-label={`Eliminar ${count} área(s) seleccionada(s)`} />
+          <Button
+            size="sm"
+            color="destructive"
+            aria-label={`Eliminar ${count} área(s) seleccionada(s)`}
+          />
         }
       >
         <CheckIcon data-icon="inline-start" />

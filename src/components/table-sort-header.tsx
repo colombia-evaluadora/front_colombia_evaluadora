@@ -58,6 +58,7 @@ export function TableSortableHeader<K extends string>({
         <DropdownMenuTrigger
           render={
             <Button
+              size="sm"
               variant="ghost"
               color="neutral"
               className="-ml-3 h-8 px-3 text-sm font-bold uppercase has-data-[icon=inline-end]:pr-3 data-[state=open]:bg-accent"
