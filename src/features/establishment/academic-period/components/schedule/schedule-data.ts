@@ -11,14 +11,16 @@ export interface Day {
   id: string
   label: string
   weekday: number
+  /** PK_LISTA_VALOR del dia en el catalogo TLISTA_VALOR (backend). */
+  dayId: number
 }
 
 export const DAYS: Day[] = [
-  { id: "lun", label: "LUNES", weekday: 1 },
-  { id: "mar", label: "MARTES", weekday: 2 },
-  { id: "mie", label: "MIÉRCOLES", weekday: 3 },
-  { id: "jue", label: "JUEVES", weekday: 4 },
-  { id: "vie", label: "VIERNES", weekday: 5 },
+  { id: "lun", label: "LUNES", weekday: 1, dayId: 272 },
+  { id: "mar", label: "MARTES", weekday: 2, dayId: 273 },
+  { id: "mie", label: "MIÉRCOLES", weekday: 3, dayId: 274 },
+  { id: "jue", label: "JUEVES", weekday: 4, dayId: 275 },
+  { id: "vie", label: "VIERNES", weekday: 5, dayId: 276 },
 ]
 
 export type SlotKind = "class" | "break" | "exit"

@@ -9,6 +9,18 @@ export interface StudyPlanItem {
   aprobacionObligatoria?: boolean
   formatoCalificacion?: string
   criterioNota?: string
+  personalizado?: boolean
+}
+
+// Asignatura del periodo del grado que aún NO está en su plan de estudio
+// (backend: `fn_plan_asignaturas_disponibles_listar` → `[{id, nombre, area_id,
+// area_nombre}]`). El front hoy referencia la asignatura por nombre; `id`/`areaId`
+// quedan disponibles para cuando el guardado migre a id.
+export interface AvailableStudyPlanSubject {
+  id: number
+  nombre: string
+  areaId?: number
+  areaNombre: string
 }
 
 export interface StudyPlanQueryFilters {

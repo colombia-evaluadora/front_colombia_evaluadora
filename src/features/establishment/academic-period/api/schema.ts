@@ -14,7 +14,9 @@ export const academicPeriodFormSchema = z
     // Derivado: el periodo anterior se resuelve por sede, no lo captura el
     // usuario. Puede ser null cuando la sede no tiene periodos previos.
     previousPeriodId: z.number().int().positive().nullable(),
-    status: z.enum(ACADEMIC_PERIOD_STATUSES),
+    // Id del estado (PK_LISTA_VALOR). El select del form trabaja con el id; el
+    // código/etiqueta se resuelven vía el catálogo de estados.
+    statusId: z.number().int().positive("El estado es obligatorio"),
     jornadaId: z.number().int().positive("La jornada es obligatoria"),
     reservationEnabled: z.boolean(),
     defaultBlocksCount: z
@@ -111,7 +113,8 @@ export type AcademicPeriodFormValues = z.infer<typeof academicPeriodFormSchema>
 export const academicPeriodsFiltersFormSchema = z.object({
   sedeName: z.string(),
   schoolYearId: z.string(),
-  status: z.string(),
+  // Id del estado como string ("" = Todos); se manda como statusId (no código).
+  statusId: z.string(),
   startFrom: z.string(),
   startTo: z.string(),
 })
@@ -129,7 +132,7 @@ export const academicPeriodsSearchSchema = z.object({
   sortDir: z.enum(["asc", "desc"]).optional().catch(undefined),
   sedeName: z.string().optional().catch(undefined),
   schoolYearId: z.coerce.number().optional().catch(undefined),
-  status: z.enum(ACADEMIC_PERIOD_STATUSES).optional().catch(undefined),
+  statusId: z.coerce.number().optional().catch(undefined),
   startFrom: z.string().optional().catch(undefined),
   startTo: z.string().optional().catch(undefined),
 })
@@ -190,7 +193,8 @@ export const evaluationPeriodFormSchema = z
       })
       .min(0)
       .max(100),
-    estado: z.string().min(1, "El estado es obligatorio"),
+    // Id del estado (PK_LISTA_VALOR); el código/etiqueta se resuelven por catálogo.
+    estadoId: z.number().int().positive("El estado es obligatorio"),
   })
   .refine(
     (data) => !data.startDate || !data.endDate || data.startDate < data.endDate,

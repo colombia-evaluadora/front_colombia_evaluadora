@@ -9,8 +9,7 @@ import type {
 interface UseRatingScalesQueryParams {
   filters: RatingScalesQueryRequest["filters"]
   sorting: RatingScalesQueryRequest["sorting"]
-  pageIndex: number
-  pageSize: number
+  teachingLevelId?: number
   academicPeriodId?: number
 }
 

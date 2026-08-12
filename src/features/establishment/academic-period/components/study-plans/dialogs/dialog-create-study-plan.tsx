@@ -38,7 +38,7 @@ import {
 
 import { useCreateStudyPlanItem } from "../../../api/mutations/study-plans/create-study-plan"
 import { useUpdateStudyPlanItem } from "../../../api/mutations/study-plans/update-study-plan"
-import { useSubjectsQuery } from "../../../api/query/area-subjects/use-subjects-query"
+import { useAvailableStudyPlanSubjectsQuery } from "../../../api/query/study-plans/use-available-study-plan-subjects-query"
 import { useEvaluationCriteriaQuery } from "../../../api/query/evaluation-criteria/use-evaluation-criteria-query"
 import { useEvaluationCriteriaOptionsQuery } from "../../../api/query/evaluation-criteria/use-evaluation-criteria-options-query"
 import type { StudyPlanItem } from "../../../api/types/study-plan"
@@ -78,7 +78,9 @@ export function CreateStudyPlanDialog({
   const [open, setOpen] = useState(false)
   const tienePersonalizacion =
     item != null &&
-    (item.formatoCalificacion != null || item.criterioNota != null)
+    // El back marca `personalizado`; si no viene, se infiere de los overrides.
+    (item.personalizado ??
+      (item.formatoCalificacion != null || item.criterioNota != null))
   const [personalizar, setPersonalizar] = useState(tienePersonalizacion)
 
   const { data: criteria } = useEvaluationCriteriaQuery(academicPeriodId)
@@ -102,7 +104,20 @@ export function CreateStudyPlanDialog({
       }
     : EMPTY
 
-  const { data: asignaturaOptions = [] } = useSubjectsQuery(academicPeriodId)
+  // Solo las asignaturas del grado que aún no están en el plan. Al editar, la
+  // asignatura del renglón no viene en "disponibles", así que la agregamos para
+  // que el select pueda mostrarla como valor actual.
+  const { data: availableSubjects = [] } = useAvailableStudyPlanSubjectsQuery(
+    gradeId,
+    academicPeriodId
+  )
+  const asignaturaOptions = (() => {
+    const names = availableSubjects.map((s) => s.nombre)
+    if (item && !names.includes(item.asignatura)) {
+      return [item.asignatura, ...names]
+    }
+    return names
+  })()
 
   const formatoOptions = criteriaOptions?.gradingFormat ?? []
   const criterioOptions = criteriaOptions?.subjectGradeCriteria ?? []
@@ -233,7 +248,7 @@ export function CreateStudyPlanDialog({
                         <SelectGroup>
                           {asignaturaOptions.length === 0 ? (
                             <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                              No hay asignaturas en este periodo.
+                              No hay asignaturas disponibles para este grado.
                             </div>
                           ) : (
                             asignaturaOptions.map((option) => (

@@ -54,7 +54,7 @@ export function TabEvaluationPeriods({
     columns,
     data: data?.rows ?? [],
     pageCount: data?.pageCount ?? -1,
-    getRowId: (row) => String(row.codigo),
+    getRowId: (row) => String(row.id),
     pageIndex,
     pageSize,
     goToPage,

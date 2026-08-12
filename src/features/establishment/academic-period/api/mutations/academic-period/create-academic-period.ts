@@ -12,25 +12,17 @@ import type {
 export function toCreateAcademicPeriodRequest(
   values: AcademicPeriodFormValues
 ): CreateAcademicPeriodRequest {
-  const schoolYearId = values.startDate
-    ? new Date(values.startDate).getFullYear()
-    : new Date().getFullYear()
-
+  // `name` y `schoolYearId` los deriva el backend; `minAbsences`/`weeksCount`/
+  // `minFailedSubjects`/`isPrincipal` no son parámetros de creación → no se mandan.
   return {
-    // `sedeId` ahora es string en todo el módulo académico, alineado con
-    // `Campus.id` del módulo de establecimientos.
+    // `sedeId` es string en el front (Campus.id). ⚠️ el backend espera el
+    // PK_TSEDE numérico; ver pendiente cross-módulo en MAPEO_ENDPOINTS §4.
     sedeId: values.sedeId,
     previousPeriodId: values.previousPeriodId,
-    schoolYearId,
-    status: values.status,
+    statusId: values.statusId,
     startDate: values.startDate,
     endDate: values.endDate,
     enrollmentDeadline: values.enrollmentDeadline,
-    minAbsences: null,
-    weeksCount: null,
-    minFailedSubjects: null,
-    name: `Año lectivo ${schoolYearId}`,
-    isPrincipal: true,
     config: {
       jornadaId: values.jornadaId,
       reservationEnabled: values.reservationEnabled,

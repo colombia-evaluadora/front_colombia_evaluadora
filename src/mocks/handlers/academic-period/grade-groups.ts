@@ -67,7 +67,15 @@ export const gradeGroupsHandlers = [
     const totalCount = filtered.length
     const pageCount = Math.max(1, Math.ceil(totalCount / pageSize))
     const start = pageIndex * pageSize
-    const rows = filtered.slice(start, start + pageSize)
+    // El backend resuelve jornada/metodología (TLISTA_VALOR.NOMBRE); el mock los
+    // espeja de sus valores.
+    const rows = filtered
+      .slice(start, start + pageSize)
+      .map((row) => ({
+        ...row,
+        jornadaName: row.jornada,
+        metodologiaName: row.metodologia,
+      }))
 
     return HttpResponse.json<GradeGroupsQueryResponse>({
       rows,
@@ -79,7 +87,9 @@ export const gradeGroupsHandlers = [
   http.post("/api/grade-groups", async ({ request }) => {
     await delay(400)
     const body = (await request.json()) as CreateGradeGroupRequest
-    const record = { ...body, gradeId: body.gradeId ?? 0 }
+    const nextId =
+      gradeGroupsDb.reduce((max, row) => Math.max(max, row.id), 0) + 1
+    const record = { ...body, id: nextId, gradeId: body.gradeId ?? 0 }
     gradeGroupsDb.push(record)
     return HttpResponse.json(record, { status: 201 })
   }),

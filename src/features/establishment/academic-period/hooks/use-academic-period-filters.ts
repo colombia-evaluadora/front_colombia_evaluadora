@@ -6,10 +6,7 @@ import type {
   AcademicPeriodsFiltersFormInput,
   AcademicPeriodsFiltersFormValues,
 } from "../api/schema"
-import type {
-  AcademicPeriodsQueryFilters,
-  AcademicPeriodStatus,
-} from "../api/types/academic-period"
+import type { AcademicPeriodsQueryFilters } from "../api/types/academic-period"
 
 export interface AcademicPeriodFilters {
   filters: AcademicPeriodsFiltersFormInput
@@ -32,7 +29,7 @@ export function useAcademicPeriodFilters(): AcademicPeriodFilters {
           schoolYearId: values.schoolYearId
             ? Number(values.schoolYearId)
             : undefined,
-          status: (values.status as AcademicPeriodStatus) || undefined,
+          statusId: values.statusId ? Number(values.statusId) : undefined,
           startFrom: values.startFrom || undefined,
           startTo: values.startTo || undefined,
           page: 0,
@@ -49,7 +46,7 @@ export function useAcademicPeriodFilters(): AcademicPeriodFilters {
         ...prev,
         sedeName: undefined,
         schoolYearId: undefined,
-        status: undefined,
+        statusId: undefined,
         startFrom: undefined,
         startTo: undefined,
         page: 0,
@@ -62,14 +59,14 @@ export function useAcademicPeriodFilters(): AcademicPeriodFilters {
     () => ({
       sedeName: search.sedeName,
       schoolYearId: search.schoolYearId,
-      status: search.status ? [search.status] : undefined,
+      statusId: search.statusId ? [search.statusId] : undefined,
       startFrom: search.startFrom,
       startTo: search.startTo,
     }),
     [
       search.sedeName,
       search.schoolYearId,
-      search.status,
+      search.statusId,
       search.startFrom,
       search.startTo,
     ]
@@ -79,13 +76,13 @@ export function useAcademicPeriodFilters(): AcademicPeriodFilters {
     let n = 0
     if (search.sedeName) n += 1
     if (search.schoolYearId) n += 1
-    if (search.status) n += 1
+    if (search.statusId) n += 1
     if (search.startFrom || search.startTo) n += 1
     return n
   }, [
     search.sedeName,
     search.schoolYearId,
-    search.status,
+    search.statusId,
     search.startFrom,
     search.startTo,
   ])
@@ -94,7 +91,7 @@ export function useAcademicPeriodFilters(): AcademicPeriodFilters {
     filters: {
       sedeName: search.sedeName ?? "",
       schoolYearId: search.schoolYearId ? String(search.schoolYearId) : "",
-      status: search.status ?? "",
+      statusId: search.statusId != null ? String(search.statusId) : "",
       startFrom: search.startFrom ?? "",
       startTo: search.startTo ?? "",
     },

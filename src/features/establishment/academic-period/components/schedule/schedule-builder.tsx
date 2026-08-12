@@ -15,6 +15,7 @@ import {
 
 import { useGradeConfigQuery } from "../../api/query/use-grade-config-query"
 import { useUpdateGradeConfig } from "../../api/mutations/update-grade-config"
+import type { ScheduleEntry } from "../../api/types/grade-config"
 import {
   buildRuns,
   buildSlots,
@@ -92,10 +93,15 @@ function spaced(text: string): string {
   return text.split("").join(" ")
 }
 
+interface ScheduleGroupOption {
+  id: number
+  label: string
+}
+
 interface ScheduleBuilderProps {
   jornada: Jornada
   subjects: ScheduleSubject[]
-  gradeGroups: string[]
+  gradeGroups: ScheduleGroupOption[]
   gradeId: number
 }
 
@@ -121,8 +127,19 @@ export const ScheduleBuilder = forwardRef<
   const { data: gradeConfig } = useGradeConfigQuery(gradeId)
   useEffect(() => {
     if (!hydrated && gradeConfig) {
-      if (gradeConfig.schedule?.byGroup) {
-        setSchedulesByGroup(gradeConfig.schedule.byGroup)
+      const entries = gradeConfig.schedule?.entries
+      if (entries?.length) {
+        const byGroup: Record<string, Schedule> = {}
+        for (const e of entries) {
+          const dayLocal = DAYS.find((d) => d.dayId === e.diaId)?.id
+          if (!dayLocal) continue
+          const groupKey = String(e.grupoId)
+          const slotId = `c${e.bloque + 1}`
+          byGroup[groupKey] ??= {}
+          byGroup[groupKey][dayLocal] ??= {}
+          byGroup[groupKey][dayLocal][slotId] = String(e.planItemId)
+        }
+        setSchedulesByGroup(byGroup)
       }
       setHydrated(true)
     }
@@ -205,24 +222,32 @@ export const ScheduleBuilder = forwardRef<
     ref,
     () => ({
       save: async (id: number) => {
-        const byGroup: Record<
-          string,
-          Record<string, Record<string, string>>
-        > = {}
-        for (const [group, groupSchedule] of Object.entries(schedulesByGroup)) {
-          const cells: Record<string, Record<string, string>> = {}
-          for (const [dayId, daySlots] of Object.entries(groupSchedule)) {
-            const clean: Record<string, string> = {}
+        const entries: ScheduleEntry[] = []
+        for (const [groupKey, groupSchedule] of Object.entries(
+          schedulesByGroup
+        )) {
+          const grupoId = Number(groupKey)
+          if (!Number.isFinite(grupoId)) continue
+          for (const [dayLocalId, daySlots] of Object.entries(groupSchedule)) {
+            const day = DAYS.find((d) => d.id === dayLocalId)
+            if (!day) continue
             for (const [slotId, subjectId] of Object.entries(daySlots)) {
-              if (subjectId) clean[slotId] = subjectId
+              if (!subjectId) continue
+              // slotId "cN" (1-based) -> bloque 0-based
+              const blockNumber = Number(slotId.replace(/^c/, ""))
+              if (!Number.isFinite(blockNumber)) continue
+              entries.push({
+                grupoId,
+                planItemId: Number(subjectId),
+                diaId: day.dayId,
+                bloque: blockNumber - 1,
+              })
             }
-            if (Object.keys(clean).length) cells[dayId] = clean
           }
-          byGroup[group] = cells
         }
         await updateGradeConfig.mutateAsync({
           gradeId: id,
-          values: { schedule: { byGroup } },
+          values: { schedule: { entries } },
         })
       },
     }),
@@ -254,8 +279,8 @@ export const ScheduleBuilder = forwardRef<
           <SelectContent>
             <SelectGroup>
               {gradeGroups.map((option) => (
-                <SelectItem key={option} value={option}>
-                  {option}
+                <SelectItem key={option.id} value={String(option.id)}>
+                  {option.label}
                 </SelectItem>
               ))}
             </SelectGroup>

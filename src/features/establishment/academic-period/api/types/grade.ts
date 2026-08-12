@@ -5,6 +5,9 @@ export interface Grade {
   teachingLevelId: number
   teachingLevelName: string
   gradoSiguiente?: string
+  // Nombre del grado siguiente resuelto por el backend (TLISTA_VALOR.NOMBRE);
+  // adicional al valor `gradoSiguiente`.
+  gradoSiguienteName?: string
   tieneGradoSiguiente?: boolean
 }
 

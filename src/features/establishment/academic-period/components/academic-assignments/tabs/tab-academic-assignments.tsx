@@ -61,7 +61,7 @@ export function TabAcademicAssignments({
 
   const { data: savedIds } = useTeacherAssignmentsQuery(
     academicPeriodId,
-    expanded?.documentNumber
+    expanded?.id
   )
   useEffect(() => {
     if (
@@ -216,7 +216,7 @@ export function TabAcademicAssignments({
                   onClick={() =>
                     saveAssignments.mutate({
                       academicPeriodId: academicPeriodId as number,
-                      documentNumber: employee.documentNumber,
+                      funcionarioId: employee.id,
                       subjectIds: assignedIds[employee.id] ?? [],
                     })
                   }

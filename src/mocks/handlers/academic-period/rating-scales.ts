@@ -83,27 +83,28 @@ export const ratingScalesHandlers = [
 
   http.post("/api/rating-scales/query", async ({ request }) => {
     await delay(250)
-    const { filters, sorting, pageIndex, pageSize, academicPeriodId } =
+    const { filters, sorting, teachingLevelId, academicPeriodId } =
       (await request.json()) as RatingScalesQueryRequest
 
-    const scoped =
-      academicPeriodId == null
-        ? ratingScalesDb
-        : ratingScalesDb.filter(
-            (row) => row.academicPeriodId === academicPeriodId
-          )
-
-    const filtered = applySorting(applyFilters(scoped, filters), sorting)
-    const totalCount = filtered.length
-    const pageCount = Math.max(1, Math.ceil(totalCount / pageSize))
-    const start = pageIndex * pageSize
-    const rows = filtered.slice(start, start + pageSize)
-
-    return HttpResponse.json<RatingScalesQueryResponse>({
-      rows,
-      pageCount,
-      totalCount,
+    const scoped = ratingScalesDb.filter((row) => {
+      if (academicPeriodId != null && row.academicPeriodId !== academicPeriodId)
+        return false
+      // Filtro opcional por nivel de enseñanza (como `p_teaching_level_id`).
+      if (
+        teachingLevelId != null &&
+        !row.teachingLevelIds.includes(teachingLevelId)
+      )
+        return false
+      return true
     })
+
+    // Sin paginación: se devuelven todas las bandas del periodo. El backend
+    // resuelve el nombre del tipo (TLISTA_VALOR.NOMBRE); el mock lo espeja del valor.
+    const rows = applySorting(applyFilters(scoped, filters), sorting).map(
+      (row) => ({ ...row, tipoName: row.tipo })
+    )
+
+    return HttpResponse.json<RatingScalesQueryResponse>({ rows })
   }),
 
   http.post("/api/rating-scales/export", async ({ request }) => {
