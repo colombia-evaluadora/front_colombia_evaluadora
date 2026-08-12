@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from "react"
+import { z } from "zod"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { ControlPointIcon, PencilIcon, SpinnerIcon } from "@/components/ui/icons"
 
@@ -14,7 +15,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Field, FieldLabel } from "@/components/ui/field"
+import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import {
@@ -56,6 +57,18 @@ interface CreateGradeDialogProps {
   academicPeriodId?: number
   grade?: Grade
 }
+
+/**
+ * Los dos campos con asterisco. El nivel llega como `number | null` del
+ * select, y el nombre como texto tanto si es select (alta) como input
+ * (edición).
+ */
+const gradeSchema = z.object({
+  teachingLevelId: z
+    .number({ error: "Selecciona el nivel de enseñanza." })
+    .int("Selecciona el nivel de enseñanza."),
+  nombre: z.string().trim().min(1, "Selecciona el nombre del grado."),
+})
 
 export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGradeDialogProps) {
   const { notify } = useNotify()
@@ -105,18 +118,27 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
   const scheduleRef = useRef<ScheduleBuilderHandle>(null)
 
   const [saving, setSaving] = useState(false)
+  // Mensaje por campo, indexado por su nombre en `gradeSchema`.
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
   async function handleSaveGrade() {
-    if (!nombre.trim() || teachingLevelId == null) {
-      notify("Completa el nivel de enseñanza y el nombre del grado.", {
-        variant: "error",
-      })
+    const parsed = gradeSchema.safeParse({ teachingLevelId, nombre })
+
+    if (!parsed.success) {
+      const nextErrors: Record<string, string> = {}
+      for (const issue of parsed.error.issues) {
+        nextErrors[issue.path.join(".")] ??= issue.message
+      }
+      setFieldErrors(nextErrors)
       return
     }
+
+    setFieldErrors({})
+    // Del resultado del parseo: ahí `teachingLevelId` ya viene sin `null`.
     const payload = {
-      nombre,
-      grado: nombre,
-      teachingLevelId,
+      nombre: parsed.data.nombre,
+      grado: parsed.data.nombre,
+      teachingLevelId: parsed.data.teachingLevelId,
       tieneGradoSiguiente: hasNextGrade,
       gradoSiguiente: hasNextGrade ? gradoSiguiente || undefined : undefined,
     }
@@ -232,14 +254,17 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
           <NoticeOutlet />
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Field variant="outlined">
+        <div className="grid gap-x-4 gap-y-2 sm:grid-cols-2 lg:grid-cols-4">
+          <Field variant="outlined" data-invalid={fieldErrors["teachingLevelId"] ? "true" : undefined}>
             <FieldLabel htmlFor="grade-nivel">Nivel de enseñanza*</FieldLabel>
             <Select
               value={teachingLevelId != null ? String(teachingLevelId) : ""}
               onValueChange={handleChangeTeachingLevel}
             >
-              <SelectTrigger id="grade-nivel">
+              <SelectTrigger
+                id="grade-nivel"
+                aria-invalid={Boolean(fieldErrors["teachingLevelId"])}
+              >
                 <SelectValue>
                   {(value) =>
                     teachingLevels.find((l) => String(l.id) === value)?.nombre ?? "Seleccionar"
@@ -256,16 +281,17 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
                 </SelectGroup>
               </SelectContent>
             </Select>
+            <FieldError>{fieldErrors["teachingLevelId"]}</FieldError>
           </Field>
 
-          <Field variant="outlined">
+          <Field variant="outlined" data-invalid={fieldErrors["nombre"] ? "true" : undefined}>
             <FieldLabel htmlFor="grade-nombre">Nombre*</FieldLabel>
             {gradeId == null ? (
               <Select
                 value={nombre || undefined}
                 onValueChange={(value) => value && setNombre(value)}
               >
-                <SelectTrigger id="grade-nombre">
+                <SelectTrigger id="grade-nombre" aria-invalid={Boolean(fieldErrors["nombre"])}>
                   <SelectValue placeholder="Seleccionar" />
                 </SelectTrigger>
                 <SelectContent>
@@ -289,9 +315,11 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
                 id="grade-nombre"
                 placeholder="Agregar"
                 value={nombre}
+                aria-invalid={Boolean(fieldErrors["nombre"])}
                 onChange={(e) => setNombre(e.target.value)}
               />
             )}
+            <FieldError>{fieldErrors["nombre"]}</FieldError>
           </Field>
           <Field variant="outlined">
             <FieldLabel>Tiene grado siguiente</FieldLabel>

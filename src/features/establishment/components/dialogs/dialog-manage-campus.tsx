@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react"
+import { z } from "zod"
 
 import { Button } from "@/components/ui/button"
 import { CheckIcon, XIcon } from "@/components/ui/icons"
@@ -46,19 +47,30 @@ function createInitialCampusValues(): Campus {
   }
 }
 
-function validateCampus(values: Campus): string[] {
-  const errors: string[] = []
+/**
+ * Solo los tres campos con asterisco. El resto de la sede (barrio, comuna,
+ * dirección, teléfono, resolución) es opcional, así que no entra al esquema.
+ */
+const campusSchema = z.object({
+  name: z.string().trim().min(1, "Ingresa el nombre de la sede."),
+  dane: z.string().trim().min(1, "Ingresa el código DANE antiguo de la sede."),
+  zone: z.object({ id: z.string() }).refine((zone) => zone.id.trim() !== "", {
+    message: "Selecciona la zona.",
+  }),
+})
 
-  if (!values.name.trim()) {
-    errors.push("El nombre de la sede es obligatorio.")
+/** Un mensaje por campo, indexado por su ruta dentro de `Campus`. */
+function validateCampus(values: Campus): Record<string, string> {
+  const result = campusSchema.safeParse(values)
+
+  if (result.success) {
+    return {}
   }
 
-  if (!values.dane.trim()) {
-    errors.push("El código DANE es obligatorio.")
-  }
+  const errors: Record<string, string> = {}
 
-  if (!values.zone.id.trim()) {
-    errors.push("La zona es obligatoria.")
+  for (const issue of result.error.issues) {
+    errors[issue.path.join(".")] ??= issue.message
   }
 
   return errors
@@ -73,7 +85,7 @@ export function ManageCampusDialog({
   const isEditMode = campusId !== null
 
   const [formValues, setFormValues] = useState<Campus>(createInitialCampusValues)
-  const [validationErrors, setValidationErrors] = useState<string[]>([])
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
   const { data: zones = [] } = useCatalogQuery<CatalogItem>(CATALOGS.ZONES)
   // Solo pedimos la sede cuando el diálogo está abierto en modo edición: al
@@ -86,13 +98,13 @@ export function ManageCampusDialog({
 
     if (!isEditMode) {
       setFormValues(createInitialCampusValues())
-      setValidationErrors([])
+      setFieldErrors({})
       return
     }
 
     if (campusQuery.data?.status === "ok") {
       setFormValues(campusQuery.data.campus)
-      setValidationErrors([])
+      setFieldErrors({})
     }
   }, [campusQuery.data, isEditMode, open])
 
@@ -134,9 +146,9 @@ export function ManageCampusDialog({
     event.preventDefault()
 
     const errors = validateCampus(formValues)
-    setValidationErrors(errors)
+    setFieldErrors(errors)
 
-    if (errors.length > 0) {
+    if (Object.keys(errors).length > 0) {
       notify("Completa los campos obligatorios antes de guardar.", { variant: "error" })
       return
     }
@@ -169,19 +181,8 @@ export function ManageCampusDialog({
 
         <NoticeOutlet className="mb-2" />
 
-        {validationErrors.length > 0 ? (
-          <div className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
-            <p className="font-medium">Completa los campos obligatorios:</p>
-            <ul className="mt-2 list-disc pl-5">
-              {validationErrors.map((error) => (
-                <li key={error}>{error}</li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
-
         <form id="campus-form" onSubmit={handleSubmit}>
-          <CampusDetailsForm value={formValues} onChange={setFormValues} zones={zones} />
+          <CampusDetailsForm value={formValues} onChange={setFormValues} zones={zones} errors={fieldErrors} />
         </form>
 
         <DialogFooter className="justify-end gap-2">

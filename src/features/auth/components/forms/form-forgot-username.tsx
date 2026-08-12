@@ -1,6 +1,12 @@
 import { useForm } from "@tanstack/react-form"
 
-import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 
 import { forgotUsernameFormSchema, type ForgotUsernameFormValues } from "../../api/schema"
@@ -40,13 +46,17 @@ export function ForgotUsernameForm({ id, onSubmit }: ForgotUsernameFormProps) {
                   type="text"
                   inputMode="numeric"
                   autoComplete="off"
-                  placeholder="Agregar"
+                  placeholder="1234567890"
                   value={field.state.value}
                   onBlur={field.handleBlur}
                   onChange={(e) => field.handleChange(e.target.value)}
                   aria-invalid={isInvalid}
                 />
-                {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                {isInvalid ? (
+                  <FieldError errors={field.state.meta.errors} />
+                ) : (
+                  <FieldDescription>Sin puntos ni espacios.</FieldDescription>
+                )}
               </Field>
             )
           }}

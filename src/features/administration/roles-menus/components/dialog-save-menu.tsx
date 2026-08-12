@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { z } from "zod"
 
 import { useNotify } from "@/components/notice/notice-context"
 import { Button } from "@/components/ui/button"
@@ -10,7 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Field, FieldLabel } from "@/components/ui/field"
+import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { ControlPointIcon, SpinnerIcon, TrashIcon } from "@/components/ui/icons"
 import { Input } from "@/components/ui/input"
 import {
@@ -110,6 +111,12 @@ function PlanSelect({ value, onChange }: { value: string; onChange: (planId: str
   )
 }
 
+/** Los dos campos con asterisco del menú raíz. */
+const menuRootSchema = z.object({
+  name: z.string().trim().min(1, "Ingresa el nombre del menú."),
+  path: z.string().trim().min(1, "Ingresa la ruta del menú."),
+})
+
 interface DialogSaveMenuProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -134,6 +141,8 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
   const [name, setName] = useState("")
   const [path, setPath] = useState("")
   const [drafts, setDrafts] = useState<Draft[]>([])
+  // Mensaje por campo del menú raíz, indexado por su nombre en el esquema.
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
   useEffect(() => {
     if (!open) return
@@ -141,6 +150,7 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
     setName(menu?.name ?? "")
     setPath(menu?.path ?? "")
     setDrafts([])
+    setFieldErrors({})
   }, [open, menu])
 
   const saveMenu = useSaveMenu()
@@ -153,16 +163,38 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
   const filledDrafts = drafts.filter(
     (draft) => draft.name.trim().length > 0 && draft.path.trim().length > 0,
   )
-  const rootIsValid = name.trim().length > 0 && path.trim().length > 0
-  const canSave = isEditing
-    ? rootIsValid
-    : (isNewRoot ? rootIsValid : true) && (isNewRoot || filledDrafts.length > 0)
+  /*
+   * Nombre y ruta ya no bloquean el botón: se validan al guardar y el motivo
+   * aparece debajo del campo, como en el resto de los formularios. Un botón
+   * deshabilitado no explica qué falta.
+   *
+   * Lo que sí lo bloquea es la única regla que no cuelga de un campo: colgando
+   * de un menú existente hay que haber cargado al menos un submenú.
+   */
+  const canSave = isEditing || isNewRoot || filledDrafts.length > 0
 
   function updateDraft(key: number, patch: Partial<Draft>) {
     setDrafts((prev) => prev.map((it) => (it.key === key ? { ...it, ...patch } : it)))
   }
 
   async function handleSubmit() {
+    // El nombre y la ruta solo se piden cuando sus campos están a la vista:
+    // colgando de un menú existente, esos datos los aportan los submenús.
+    if (isNewRoot || isEditing) {
+      const parsed = menuRootSchema.safeParse({ name, path })
+
+      if (!parsed.success) {
+        const nextErrors: Record<string, string> = {}
+        for (const issue of parsed.error.issues) {
+          nextErrors[issue.path.join(".")] ??= issue.message
+        }
+        setFieldErrors(nextErrors)
+        return
+      }
+    }
+
+    setFieldErrors({})
+
     try {
       if (isEditing) {
         await saveMenu.mutateAsync({ id: menu.id, name, path, icon: menu.icon, idParent })
@@ -232,24 +264,28 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
           </Field>
 
           {(isNewRoot || isEditing) && (
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field variant="outlined">
+            <div className="grid gap-x-4 gap-y-2 sm:grid-cols-2">
+              <Field variant="outlined" data-invalid={fieldErrors["name"] ? "true" : undefined}>
                 <FieldLabel htmlFor="menu-name">Nombre*</FieldLabel>
                 <Input
                   id="menu-name"
                   placeholder="Agregar"
                   value={name}
+                  aria-invalid={Boolean(fieldErrors["name"])}
                   onChange={(event) => setName(event.target.value)}
                 />
+                <FieldError>{fieldErrors["name"]}</FieldError>
               </Field>
-              <Field variant="outlined">
+              <Field variant="outlined" data-invalid={fieldErrors["path"] ? "true" : undefined}>
                 <FieldLabel htmlFor="menu-path">Ruta*</FieldLabel>
                 <Input
                   id="menu-path"
                   placeholder="Agregar"
                   value={path}
+                  aria-invalid={Boolean(fieldErrors["path"])}
                   onChange={(event) => setPath(event.target.value)}
                 />
+                <FieldError>{fieldErrors["path"]}</FieldError>
               </Field>
             </div>
           )}

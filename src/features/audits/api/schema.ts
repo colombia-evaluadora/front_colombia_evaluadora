@@ -2,13 +2,42 @@ import { z } from "zod"
 
 export const SESSION_STATUSES = ["active", "closed"] as const
 
+/**
+ * Los filtros no tienen campos obligatorios —filtrar por nada es válido—, así
+ * que lo único que se valida es la coherencia del rango: si el usuario cargó
+ * las dos fechas, la de fin no puede quedar antes que la de inicio.
+ *
+ * La comparación es de strings porque `DATE_TIME_VALUE_FORMAT` es ISO
+ * (`yyyy-MM-ddTHH:mm`) y en ese formato el orden lexicográfico coincide con el
+ * cronológico; no hace falta reconstruir un `Date`.
+ *
+ * El issue se ancla en el campo "hasta", que es el que el usuario debe mover.
+ */
+function refineDateRange<T extends Record<string, unknown>>(
+  from: keyof T & string,
+  to: keyof T & string,
+) {
+  return (value: T, ctx: { addIssue: (issue: { code: "custom"; path: string[]; message: string }) => void }) => {
+    const start = String(value[from] ?? "")
+    const end = String(value[to] ?? "")
+
+    if (start && end && end < start) {
+      ctx.addIssue({
+        code: "custom",
+        path: [to],
+        message: "La fecha final no puede ser anterior a la inicial.",
+      })
+    }
+  }
+}
+
 export const auditFiltersFormSchema = z.object({
   author: z.string(),
   statuses: z.array(z.enum(SESSION_STATUSES)),
   // yyyy-MM-dd, string en vez de Date para que el form/URL los serialicen igual.
   startedFrom: z.string(),
   startedTo: z.string(),
-})
+}).superRefine(refineDateRange("startedFrom", "startedTo"))
 export type AuditFiltersFormInput = z.input<typeof auditFiltersFormSchema>
 export type AuditFiltersFormValues = z.infer<typeof auditFiltersFormSchema>
 
@@ -53,7 +82,7 @@ export const tableOperationsFiltersFormSchema = z.object({
   occurredFrom: z.string(),
   occurredTo: z.string(),
   fieldFilters: z.array(fieldFilterSchema),
-})
+}).superRefine(refineDateRange("occurredFrom", "occurredTo"))
 export type TableOperationsFiltersFormInput = z.input<typeof tableOperationsFiltersFormSchema>
 export type TableOperationsFiltersFormValues = z.infer<typeof tableOperationsFiltersFormSchema>
 
@@ -101,7 +130,7 @@ export const sessionOperationsFiltersFormSchema = z.object({
   tableSlug: z.string(),
   occurredFrom: z.string(),
   occurredTo: z.string(),
-})
+}).superRefine(refineDateRange("occurredFrom", "occurredTo"))
 export type SessionOperationsFiltersFormInput = z.input<typeof sessionOperationsFiltersFormSchema>
 export type SessionOperationsFiltersFormValues = z.infer<typeof sessionOperationsFiltersFormSchema>
 

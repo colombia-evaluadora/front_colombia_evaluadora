@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
+import { z } from "zod"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -9,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Field, FieldLabel } from "@/components/ui/field"
+import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
   CheckIcon,
@@ -77,6 +78,30 @@ interface PermissionDraft {
   workScheduleCode: string
   status: PermissionStatus | ""
 }
+
+/**
+ * Los cinco campos del permiso son obligatorios (llevan asterisco). El orden
+ * llega como texto del `input[type=number]`, así que se valida como texto y se
+ * convierte aparte: un `number` vacío llega como `NaN` y el mensaje sería el
+ * de tipo, no el de "falta el dato".
+ */
+const permissionDraftSchema = z.object({
+  order: z
+    .string()
+    .trim()
+    .min(1, "Ingresa el orden.")
+    .refine((value) => Number.isInteger(Number(value)) && Number(value) > 0, {
+      message: "El orden debe ser un número entero mayor que cero.",
+    }),
+  roleCode: z.string().min(1, "Selecciona el rol."),
+  campusId: z.string().min(1, "Selecciona la sede educativa."),
+  workScheduleCode: z.string().min(1, "Selecciona la jornada."),
+  // `custom` y no `string`: al validar que no está vacío, el resultado ya sale
+  // tipado como `PermissionStatus` y el permiso se arma sin castear.
+  status: z.custom<PermissionStatus>((value) => typeof value === "string" && value !== "", {
+    message: "Selecciona el estado.",
+  }),
+})
 
 /**
  * ¿La información complementaria trae algo? Se usa al abrir el diálogo en modo
@@ -237,6 +262,8 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
   const [permissionsDialogOpen, setPermissionsDialogOpen] = useState(false)
   const [additionalInfoDialogOpen, setAdditionalInfoDialogOpen] = useState(false)
   const [permissionDraft, setPermissionDraft] = useState<PermissionDraft>(createPermissionDraft)
+  // Mensaje por campo del borrador de permiso, indexado por su nombre.
+  const [permissionErrors, setPermissionErrors] = useState<Record<string, string>>({})
   // Orden de la tabla de permisos: estado local, la tabla se arma a mano.
   const [permissionSort, setPermissionSort] = useState<TableSort<PermissionSortKey>>(null)
   /*
@@ -435,24 +462,26 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
   }
 
   function addPermission() {
-    const parsedOrder = Number(permissionDraft.order)
+    const parsed = permissionDraftSchema.safeParse(permissionDraft)
 
-    if (
-      !permissionDraft.order.trim() ||
-      !Number.isInteger(parsedOrder) ||
-      parsedOrder <= 0 ||
-      !permissionDraft.roleCode ||
-      !permissionDraft.campusId ||
-      !permissionDraft.workScheduleCode ||
-      !permissionDraft.status
-    ) {
-      notify("Completa los campos obligatorios del permiso.", { variant: "error" })
+    if (!parsed.success) {
+      // Un mensaje por campo, debajo del input que hay que corregir. Se guarda
+      // el primer issue de cada ruta porque ahí solo cabe una línea.
+      const nextErrors: Record<string, string> = {}
+      for (const issue of parsed.error.issues) {
+        const path = issue.path.join(".")
+        nextErrors[path] ??= issue.message
+      }
+      setPermissionErrors(nextErrors)
       return
     }
 
-    const role = roles.find((item) => item.code === permissionDraft.roleCode)
-    const campus = findCampusById(permissionDraft.campusId)
-    const workSchedule = workSchedules.find((item) => item.code === permissionDraft.workScheduleCode)
+    setPermissionErrors({})
+    const draft = parsed.data
+
+    const role = roles.find((item) => item.code === draft.roleCode)
+    const campus = findCampusById(draft.campusId)
+    const workSchedule = workSchedules.find((item) => item.code === draft.workScheduleCode)
 
     if (!role || !campus || !workSchedule) {
       notify("No fue posible resolver los datos del permiso seleccionado.", { variant: "error" })
@@ -460,11 +489,11 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
     }
 
     const nextPermission: Permission = {
-      order: parsedOrder,
+      order: Number(draft.order),
       role,
       campus,
       workSchedule,
-      status: permissionDraft.status,
+      status: draft.status,
     }
 
     setPermissions((current) => [...current, nextPermission])
@@ -597,8 +626,15 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
 
           <NoticeOutlet className="mb-2" />
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <Field orientation="vertical" variant="outlined">
+          {/* Fila fluida: los campos crecen y bajan de línea solos, y el botón
+              ocupa solo lo que mide en vez de reservar una columna entera. */}
+          <div className="flex flex-wrap items-end gap-4">
+            <Field
+              orientation="vertical"
+              variant="outlined"
+              className="min-w-56 grow basis-[calc(33%-1rem)]"
+              data-invalid={permissionErrors["order"] ? "true" : undefined}
+            >
               <FieldLabel htmlFor="permission-order">Orden*</FieldLabel>
               <Input
                 id="permission-order"
@@ -610,9 +646,15 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
                   setPermissionDraft((prev) => ({ ...prev, order: event.target.value }))
                 }
               />
+              <FieldError>{permissionErrors["order"]}</FieldError>
             </Field>
 
-            <Field orientation="vertical" variant="outlined">
+            <Field
+              orientation="vertical"
+              variant="outlined"
+              className="min-w-56 grow basis-[calc(33%-1rem)]"
+              data-invalid={permissionErrors["roleCode"] ? "true" : undefined}
+            >
               <FieldLabel htmlFor="permission-role">Rol*</FieldLabel>
               <Select
                 id="permission-role"
@@ -622,7 +664,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
                 }
                 items={roleItems}
               >
-                <SelectTrigger>
+                <SelectTrigger aria-invalid={Boolean(permissionErrors["roleCode"])}>
                   <SelectValue placeholder="Seleccionar" />
                 </SelectTrigger>
                 <SelectContent>
@@ -633,9 +675,15 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
                   ))}
                 </SelectContent>
               </Select>
+              <FieldError>{permissionErrors["roleCode"]}</FieldError>
             </Field>
 
-            <Field orientation="vertical" variant="outlined">
+            <Field
+              orientation="vertical"
+              variant="outlined"
+              className="min-w-56 grow basis-[calc(33%-1rem)]"
+              data-invalid={permissionErrors["campusId"] ? "true" : undefined}
+            >
               <FieldLabel htmlFor="permission-campus">Sede educativa*</FieldLabel>
               <Select
                 id="permission-campus"
@@ -645,7 +693,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
                 }
                 items={campusItems}
               >
-                <SelectTrigger>
+                <SelectTrigger aria-invalid={Boolean(permissionErrors["campusId"])}>
                   <SelectValue placeholder="Seleccionar" />
                 </SelectTrigger>
                 <SelectContent>
@@ -656,9 +704,15 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
                   ))}
                 </SelectContent>
               </Select>
+              <FieldError>{permissionErrors["campusId"]}</FieldError>
             </Field>
 
-            <Field orientation="vertical" variant="outlined">
+            <Field
+              orientation="vertical"
+              variant="outlined"
+              className="min-w-56 grow basis-[calc(33%-1rem)]"
+              data-invalid={permissionErrors["workScheduleCode"] ? "true" : undefined}
+            >
               <FieldLabel htmlFor="permission-schedule">Jornada*</FieldLabel>
               <Select
                 id="permission-schedule"
@@ -668,7 +722,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
                 }
                 items={workScheduleItems}
               >
-                <SelectTrigger>
+                <SelectTrigger aria-invalid={Boolean(permissionErrors["workScheduleCode"])}>
                   <SelectValue placeholder="Seleccionar" />
                 </SelectTrigger>
                 <SelectContent>
@@ -679,9 +733,15 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
                   ))}
                 </SelectContent>
               </Select>
+              <FieldError>{permissionErrors["workScheduleCode"]}</FieldError>
             </Field>
 
-            <Field orientation="vertical" variant="outlined">
+            <Field
+              orientation="vertical"
+              variant="outlined"
+              className="min-w-56 grow basis-[calc(33%-1rem)]"
+              data-invalid={permissionErrors["status"] ? "true" : undefined}
+            >
               <FieldLabel htmlFor="permission-status">Estado*</FieldLabel>
               <Select
                 id="permission-status"
@@ -694,7 +754,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
                 }
                 items={permissionStatusItems}
               >
-                <SelectTrigger>
+                <SelectTrigger aria-invalid={Boolean(permissionErrors["status"])}>
                   <SelectValue placeholder="Seleccionar" />
                 </SelectTrigger>
                 <SelectContent>
@@ -705,15 +765,16 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
                   ))}
                 </SelectContent>
               </Select>
+              <FieldError>{permissionErrors["status"]}</FieldError>
             </Field>
 
-            <div className="flex items-end md:justify-end">
+            <div className="flex w-full items-end sm:w-auto">
               <Button
                 variant="fill"
                 color="primary"
                 size="sm"
                 onClick={addPermission}
-                className="w-full md:w-auto"
+                className="w-full sm:w-auto"
               >
                 <ControlPointIcon data-icon="inline-start" />
                 Agregar

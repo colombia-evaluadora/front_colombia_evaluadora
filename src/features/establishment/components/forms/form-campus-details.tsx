@@ -1,4 +1,4 @@
-import { Field, FieldLabel } from "@/components/ui/field"
+import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
   Select,
@@ -15,34 +15,57 @@ interface CampusDetailsFormProps {
   value: Campus
   zones: CatalogItem[]
   onChange: (next: Campus) => void
+  /** Mensaje de error por ruta de campo; lo llena el diálogo al guardar. */
+  errors?: Record<string, string>
 }
 
-export function CampusDetailsForm({ value, zones, onChange }: CampusDetailsFormProps) {
+export function CampusDetailsForm({ value, zones, onChange, errors = {} }: CampusDetailsFormProps) {
   const zoneItems = zones.map((zone) => ({ value: zone.id, label: zone.name }))
 
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-      <Field orientation="vertical" variant="outlined" className="w-full">
+    // `gap-x-4 gap-y-2`: mismo ritmo que los formularios de establecimiento —
+    // aire entre columnas, filas pegadas.
+    <div className="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-3">
+      <Field
+        orientation="vertical"
+        variant="outlined"
+        className="w-full"
+        data-invalid={errors["name"] ? "true" : undefined}
+      >
         <FieldLabel htmlFor="campus-name">Nombre de la sede *</FieldLabel>
         <Input
           id="campus-name"
           value={value.name}
+          aria-invalid={Boolean(errors["name"])}
           onChange={(event) => onChange({ ...value, name: event.target.value })}
           placeholder="Agregar"
         />
+        <FieldError>{errors["name"]}</FieldError>
       </Field>
 
-      <Field orientation="vertical" variant="outlined" className="w-full">
+      <Field
+        orientation="vertical"
+        variant="outlined"
+        className="w-full"
+        data-invalid={errors["dane"] ? "true" : undefined}
+      >
         <FieldLabel htmlFor="campus-dane">Código DANE antiguo de la sede *</FieldLabel>
         <Input
           id="campus-dane"
           value={value.dane}
+          aria-invalid={Boolean(errors["dane"])}
           onChange={(event) => onChange({ ...value, dane: event.target.value })}
           placeholder="Agregar"
         />
+        <FieldError>{errors["dane"]}</FieldError>
       </Field>
 
-      <Field orientation="vertical" variant="outlined" className="w-full">
+      <Field
+        orientation="vertical"
+        variant="outlined"
+        className="w-full"
+        data-invalid={errors["zone"] ? "true" : undefined}
+      >
         <FieldLabel htmlFor="campus-zone">Zona *</FieldLabel>
         <Select
           value={value.zone.id}
@@ -59,7 +82,7 @@ export function CampusDetailsForm({ value, zones, onChange }: CampusDetailsFormP
           }}
           items={zoneItems}
         >
-          <SelectTrigger id="campus-zone">
+          <SelectTrigger id="campus-zone" aria-invalid={Boolean(errors["zone"])}>
             <SelectValue placeholder="Seleccionar" />
           </SelectTrigger>
           <SelectContent>
@@ -70,6 +93,7 @@ export function CampusDetailsForm({ value, zones, onChange }: CampusDetailsFormP
             ))}
           </SelectContent>
         </Select>
+        <FieldError>{errors["zone"]}</FieldError>
       </Field>
 
       <Field orientation="vertical" variant="outlined" className="w-full">
