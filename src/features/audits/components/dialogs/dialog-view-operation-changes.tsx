@@ -17,11 +17,11 @@ import { Spinner } from "@/components/ui/spinner"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 
-import { useOperationChangesQuery } from "../../api/query/use-operation-changes-query"
-import { useAuditOperationTypesQuery } from "../../api/query/use-audit-operation-types-query"
-import { OPERATION_TYPE_BADGE } from "../../api/ui-mappings"
-import { OperationChangesTable } from "../table/operation-changes-table"
-import { DialogConfirmRevertChanges } from "./dialog-confirm-revert-changes"
+import { useOperationChangesQuery } from "@/features/audits/api/query/use-operation-changes-query"
+import { useAuditOperationTypesQuery } from "@/features/audits/api/query/use-audit-operation-types-query"
+import { OPERATION_TYPE_BADGE } from "@/features/audits/api/ui-mappings"
+import { OperationChangesTable } from "@/features/audits/components/table/operation-changes-table"
+import { DialogConfirmRevertChanges } from "@/features/audits/components/dialogs/dialog-confirm-revert-changes"
 import { useParams } from "@tanstack/react-router"
 
 interface ViewOperationChangesDialogProps {

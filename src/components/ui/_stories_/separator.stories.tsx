@@ -1,5 +1,5 @@
 import preview from "../../../../.storybook/preview"
-import { Separator } from "../separator"
+import { Separator } from "@/components/ui/separator"
 
 const meta = preview.meta({
   title: "Design System/Layout/Separator",

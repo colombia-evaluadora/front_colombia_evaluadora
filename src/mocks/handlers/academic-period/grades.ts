@@ -1,5 +1,5 @@
 import { http, HttpResponse, delay } from "msw"
-import { gradesDb, gradeLevelName } from "../../db/academic-period/grades"
+import { gradesDb, gradeLevelName } from "@/mocks/db/academic-period/grades"
 
 import type {
   CreateGradeRequest,

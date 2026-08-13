@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/input-group"
 import { paths } from "@/config/paths"
 
-import { loginFormSchema, type LoginFormValues } from "../../api/schema"
+import { loginFormSchema, type LoginFormValues } from "@/features/auth/api/schema"
 
 interface LoginFormProps {
   id: string

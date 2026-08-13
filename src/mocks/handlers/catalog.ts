@@ -1,16 +1,16 @@
 import { http, HttpResponse } from "msw"
 import { CATALOGS } from "@/lib/catalogs"
-import { DOCUMENT_TYPES } from "../db/catalogs/document-types"
-import { EMPLOYEE_ROLES } from "../db/catalogs/employee-roles"
-import { GENDERS } from "../db/catalogs/genders"
-import { MUNICIPALITIES } from "../db/catalogs/municipalities"
-import { EDUCATION_LEVELS } from "../db/catalogs/education-levels"
-import { WORK_SCHEDULES } from "../db/catalogs/work-schedules"
-import { EMPLOYEE_CLASSES } from "../db/catalogs/employee-classes"
-import { EMPLOYEE_GRADES } from "../db/catalogs/employee-grades"
-import { FUNDING_SOURCES } from "../db/catalogs/funding-sources"
-import { FUNCTIONAL_POSITIONS } from "../db/catalogs/functional-positions"
-import { EMPLOYMENT_TYPES } from "../db/catalogs/employment-types"
+import { DOCUMENT_TYPES } from "@/mocks/db/catalogs/document-types"
+import { EMPLOYEE_ROLES } from "@/mocks/db/catalogs/employee-roles"
+import { GENDERS } from "@/mocks/db/catalogs/genders"
+import { MUNICIPALITIES } from "@/mocks/db/catalogs/municipalities"
+import { EDUCATION_LEVELS } from "@/mocks/db/catalogs/education-levels"
+import { WORK_SCHEDULES } from "@/mocks/db/catalogs/work-schedules"
+import { EMPLOYEE_CLASSES } from "@/mocks/db/catalogs/employee-classes"
+import { EMPLOYEE_GRADES } from "@/mocks/db/catalogs/employee-grades"
+import { FUNDING_SOURCES } from "@/mocks/db/catalogs/funding-sources"
+import { FUNCTIONAL_POSITIONS } from "@/mocks/db/catalogs/functional-positions"
+import { EMPLOYMENT_TYPES } from "@/mocks/db/catalogs/employment-types"
 import {
   CALENDARS,
   COST_REGIMEN,
@@ -20,9 +20,9 @@ import {
   ZONES,
   DISABILITIES,
   LICENSE_STATUSES,
-} from "../db/catalogs/establishment"
-import { POPULATION_GENDERS } from "../db/catalogs/population-genders"
-import { ENTITY_STATUSES } from "../db/catalogs/entity-statuses"
+} from "@/mocks/db/catalogs/establishment"
+import { POPULATION_GENDERS } from "@/mocks/db/catalogs/population-genders"
+import { ENTITY_STATUSES } from "@/mocks/db/catalogs/entity-statuses"
 
 export const catalogHandlers = [
   http.get(`/api/catalogs/${CATALOGS.DOCUMENT_TYPES}`, () => {

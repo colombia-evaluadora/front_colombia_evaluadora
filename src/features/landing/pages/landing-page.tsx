@@ -1,7 +1,7 @@
-import { LandingNavbar } from "../components/landing-navbar"
-import { LandingHero } from "../components/landing-hero"
-import { LandingReserveSection } from "../components/landing-reserve-section"
-import { LandingAdmissionTimeline } from "../components/landing-admission-timeline"
+import { LandingNavbar } from "@/features/landing/components/landing-navbar"
+import { LandingHero } from "@/features/landing/components/landing-hero"
+import { LandingReserveSection } from "@/features/landing/components/landing-reserve-section"
+import { LandingAdmissionTimeline } from "@/features/landing/components/landing-admission-timeline"
 
 export function LandingPage() {
   return (

@@ -1,8 +1,8 @@
 import { http, HttpResponse, delay } from "msw"
 
-import { getSessionOperations } from "./_session-operations"
+import { getSessionOperations } from "@/mocks/handlers/_session-operations"
 
-import { auditsDb } from "../db/audits"
+import { auditsDb } from "@/mocks/db/audits"
 import type {
   AuditSession,
   AuditsQueryRequest,

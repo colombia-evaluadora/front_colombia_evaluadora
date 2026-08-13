@@ -4,8 +4,8 @@ import { http, HttpResponse, delay } from "msw"
 import {
   areaSubjectsDb,
   nextAreaSubjectId,
-} from "../../db/academic-period/area-subject"
-import { studyPlansDb } from "../../db/academic-period/study-plans"
+} from "@/mocks/db/academic-period/area-subject"
+import { studyPlansDb } from "@/mocks/db/academic-period/study-plans"
 
 import type {
   AreaSubject,

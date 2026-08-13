@@ -10,7 +10,7 @@ import {
   findUserByToken,
   getPasswordResetTokenStatus,
   setUserPassword,
-} from "../db/auth"
+} from "@/mocks/db/auth"
 
 function getBearerToken(request: Request): string | null {
   const header = request.headers.get("authorization") ?? ""

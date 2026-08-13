@@ -1,5 +1,5 @@
 import preview from "../../../../.storybook/preview"
-import { Message, MessageAvatar, MessageContent } from "../message"
+import { Message, MessageAvatar, MessageContent } from "@/components/ui/message"
 
 const meta = preview.meta({
   title: "Design System/Chat/Message",

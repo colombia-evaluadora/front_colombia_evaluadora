@@ -1,5 +1,5 @@
 import preview from "../../../../.storybook/preview"
-import { Progress, ProgressLabel, ProgressValue } from "../progress"
+import { Progress, ProgressLabel, ProgressValue } from "@/components/ui/progress"
 
 const meta = preview.meta({
   title: "Design System/Feedback/Progress",

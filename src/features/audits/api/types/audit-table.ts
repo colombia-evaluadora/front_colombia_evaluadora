@@ -1,4 +1,4 @@
-import type { FieldFilter } from "../schema"
+import type { FieldFilter } from "@/features/audits/api/schema"
 
 export interface AuditTable {
   slug: string

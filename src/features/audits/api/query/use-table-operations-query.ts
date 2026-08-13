@@ -4,7 +4,7 @@ import { api } from "@/lib/api-client"
 import type {
   TableOperationsQueryRequest,
   TableOperationsQueryResponse,
-} from "../types/audit-table"
+} from "@/features/audits/api/types/audit-table"
 
 interface UseTableOperationsQueryParams {
   tableSlug: string

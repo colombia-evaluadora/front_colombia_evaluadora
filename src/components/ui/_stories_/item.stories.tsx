@@ -1,6 +1,6 @@
 import preview from "../../../../.storybook/preview"
 import { GearIcon } from "@/components/ui/icons"
-import { Button } from "../button"
+import { Button } from "@/components/ui/button"
 import {
   Item,
   ItemActions,
@@ -10,7 +10,7 @@ import {
   ItemMedia,
   ItemSeparator,
   ItemTitle,
-} from "../item"
+} from "@/components/ui/item"
 
 const meta = preview.meta({
   title: "Design System/Layout/Item",

@@ -1,4 +1,4 @@
-import type { CatalogItem } from "@/features/establishment/api/types/catalog"
+import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 
 export const FUNCTIONAL_POSITIONS: CatalogItem[] = [
   { id: "director", code: "DIRECTOR", name: "Dirección" },

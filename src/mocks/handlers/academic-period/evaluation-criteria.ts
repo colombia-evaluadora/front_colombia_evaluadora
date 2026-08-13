@@ -3,8 +3,8 @@ import { http, HttpResponse, delay } from "msw"
 import {
   DEFAULT_EVALUATION_CRITERIA,
   evaluationCriteriaDb,
-} from "../../db/academic-period/evaluation-criteria"
-import { evaluationCriteriaOptionsDb } from "../../db/academic-period/evaluation-criteria-options"
+} from "@/mocks/db/academic-period/evaluation-criteria"
+import { evaluationCriteriaOptionsDb } from "@/mocks/db/academic-period/evaluation-criteria-options"
 import type {
   EvaluationCriteria,
   EvaluationCriteriaOptions,

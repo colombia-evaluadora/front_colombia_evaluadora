@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
-import type { ReservationsStats, ReservationsStatsRequest } from "../types/reservation"
+import type { ReservationsStats, ReservationsStatsRequest } from "@/features/coverage/api/types/reservation"
 
 function fetchReservationsStats(body: ReservationsStatsRequest): Promise<ReservationsStats> {
   return api.query("/coverage/reservations/stats", body)

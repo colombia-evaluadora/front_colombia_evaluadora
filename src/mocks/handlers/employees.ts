@@ -6,17 +6,17 @@ import {
   employeesDb,
   employeesRowsDb,
   upsertEmployeeDetails,
-} from "../db/employees"
-import { upsertPerson } from "../db/persons"
+} from "@/mocks/db/employees"
+import { upsertPerson } from "@/mocks/db/persons"
 
 import type {
   Employee,
   EmployeeStatus,
   EmployeesQueryRequest,
   EmployeesQueryResponse,
-} from "@/features/establishment/api/types/employee"
-import type { Person } from "@/features/establishment/api/types/person"
-import type { ExportFormat, ExportResult } from "@/features/establishment/api/types/export"
+} from "@/features/establishment/employees/api/types/employee"
+import type { Person } from "@/features/establishment/employees/api/types/person"
+import type { ExportFormat, ExportResult } from "@/features/establishment/institution/api/types/export"
 
 const EXPORT_FORMAT_LABELS: Record<ExportFormat, string> = {
   pdf: "PDF",

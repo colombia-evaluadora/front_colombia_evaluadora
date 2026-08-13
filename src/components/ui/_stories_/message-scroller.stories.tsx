@@ -6,8 +6,8 @@ import {
   MessageScrollerItem,
   MessageScrollerProvider,
   MessageScrollerViewport,
-} from "../message-scroller"
-import { Message, MessageContent } from "../message"
+} from "@/components/ui/message-scroller"
+import { Message, MessageContent } from "@/components/ui/message"
 
 const meta = preview.meta({
   title: "Design System/Chat/MessageScroller",

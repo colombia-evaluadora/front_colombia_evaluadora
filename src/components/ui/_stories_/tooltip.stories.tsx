@@ -1,6 +1,6 @@
 import preview from "../../../../.storybook/preview"
-import { Button } from "../button"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../tooltip"
+import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 const meta = preview.meta({
   title: "Design System/Overlays/Tooltip",

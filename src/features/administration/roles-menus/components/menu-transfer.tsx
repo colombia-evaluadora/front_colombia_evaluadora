@@ -16,9 +16,9 @@ import { Input } from "@/components/ui/input"
 import { getNavIcon } from "@/features/navigation/api/ui-mappings"
 import { cn } from "@/lib/utils"
 
-import type { MenuNode, MenuTreeNode } from "../api/types/role-menu"
-import { DialogDeleteMenu } from "./dialog-delete-menu"
-import { DialogSaveMenu } from "./dialog-save-menu"
+import type { MenuNode, MenuTreeNode } from "@/features/administration/roles-menus/api/types/role-menu"
+import { DialogDeleteMenu } from "@/features/administration/roles-menus/components/dialog-delete-menu"
+import { DialogSaveMenu } from "@/features/administration/roles-menus/components/dialog-save-menu"
 
 function SearchMenus({
   id,

@@ -2,7 +2,7 @@ import { useMutation } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
-import type { ExportFormat, ExportResult } from "../types/audit"
+import type { ExportFormat, ExportResult } from "@/features/audits/api/types/audit"
 
 interface ExportSelectedTableOperationsInput {
   tableSlug: string

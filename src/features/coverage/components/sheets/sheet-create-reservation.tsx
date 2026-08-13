@@ -13,10 +13,10 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 
-import { useCreateReservation } from "../../api/mutations/create-reservation"
-import { useReservationCatalogsQuery } from "../../api/query/use-reservation-catalogs-query"
-import type { CreateReservationFormValues } from "../../api/schema"
-import { CreateReservationForm } from "../forms/form-create-reservation"
+import { useCreateReservation } from "@/features/coverage/api/mutations/create-reservation"
+import { useReservationCatalogsQuery } from "@/features/coverage/api/query/use-reservation-catalogs-query"
+import type { CreateReservationFormValues } from "@/features/coverage/api/schema"
+import { CreateReservationForm } from "@/features/coverage/components/forms/form-create-reservation"
 
 const CREATE_RESERVATION_FORM_ID = "create-reservation-form"
 

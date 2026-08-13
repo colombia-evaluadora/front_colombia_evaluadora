@@ -1,7 +1,7 @@
 import preview from "../../../../.storybook/preview"
 import { useState } from "react"
-import { Label } from "../label"
-import { RadioGroup, RadioGroupItem } from "../radio-group"
+import { Label } from "@/components/ui/label"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
 const meta = preview.meta({
   title: "Design System/Forms/RadioGroup",

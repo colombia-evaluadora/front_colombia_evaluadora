@@ -1,5 +1,5 @@
 import preview from "../../../../.storybook/preview"
-import { Button } from "../button"
+import { Button } from "@/components/ui/button"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -10,7 +10,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "../alert-dialog"
+} from "@/components/ui/alert-dialog"
 
 const meta = preview.meta({
   title: "Design System/Overlays/AlertDialog",

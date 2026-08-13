@@ -1,4 +1,4 @@
-import type { NavItemDto, RouteResponseDto } from "./types/nav-item"
+import type { NavItemDto, RouteResponseDto } from "@/features/navigation/api/types/nav-item"
 
 // El backend devuelve una lista plana ordenada por `menuOrder`, con la
 // jerarquía expresada vía `idParent` (null = ítem de primer nivel). La UI

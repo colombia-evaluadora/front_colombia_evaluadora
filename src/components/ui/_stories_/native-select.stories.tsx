@@ -1,5 +1,5 @@
 import preview from "../../../../.storybook/preview"
-import { NativeSelect, NativeSelectOptGroup, NativeSelectOption } from "../native-select"
+import { NativeSelect, NativeSelectOptGroup, NativeSelectOption } from "@/components/ui/native-select"
 
 const meta = preview.meta({
   title: "Design System/Forms/NativeSelect",

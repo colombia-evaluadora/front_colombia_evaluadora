@@ -1,4 +1,4 @@
-import type { CatalogItem } from "@/features/establishment/api/types/catalog";
+import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog";
 
 // Tipos de documento tal como los devuelve la base de datos, en su mismo orden.
 // Ojo: "CC" aparece dos veces (la cédula y su versión 2), así que el `id` es lo

@@ -1,7 +1,7 @@
 import { http, HttpResponse, delay } from "msw"
 
-import { especialidadesDb } from "../../db/academic-period/especialidades"
-import { areaSubjectsDb } from "../../db/academic-period/area-subject"
+import { especialidadesDb } from "@/mocks/db/academic-period/especialidades"
+import { areaSubjectsDb } from "@/mocks/db/academic-period/area-subject"
 import type { EspecialidadOption } from "@/features/establishment/academic-period/api/types/especialidad"
 
 export const especialidadesHandlers = [

@@ -1,6 +1,6 @@
 import { useChat } from "@tanstack/ai-react"
 
-import { assistantChat, assistantConnection } from "../lib/mock-chat"
+import { assistantChat, assistantConnection } from "@/features/assistant/lib/mock-chat"
 
 export function useAssistantChat() {
   return useChat({

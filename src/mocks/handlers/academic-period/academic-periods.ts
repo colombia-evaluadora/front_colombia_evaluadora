@@ -5,7 +5,7 @@ import {
   academicPeriodConfigsDb,
   academicPeriodsDb,
   sedesLookup,
-} from "../../db/academic-period/academic-periods"
+} from "@/mocks/db/academic-period/academic-periods"
 import type {
   AcademicPeriod,
   AcademicPeriodConfig,

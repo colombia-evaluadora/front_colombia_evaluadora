@@ -5,7 +5,7 @@ import {
   CarouselItem,
   CarouselNext,
   CarouselPrevious,
-} from "../carousel"
+} from "@/components/ui/carousel"
 
 const meta = preview.meta({
   title: "Design System/Data Display/Carousel",

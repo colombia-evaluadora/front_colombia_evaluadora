@@ -16,9 +16,9 @@ import {
   createReservationFormSchema,
   type CreateReservationFormInput,
   type CreateReservationFormValues,
-} from "../../api/schema"
-import { EDUCATION_LEVEL_LABELS, SHIFT_LABELS, formatGrade } from "../../api/ui-mappings"
-import type { EducationLevel, ReservationCatalogs, Shift } from "../../api/types/reservation"
+} from "@/features/coverage/api/schema"
+import { EDUCATION_LEVEL_LABELS, SHIFT_LABELS, formatGrade } from "@/features/coverage/api/ui-mappings"
+import type { EducationLevel, ReservationCatalogs, Shift } from "@/features/coverage/api/types/reservation"
 
 interface CreateReservationFormProps {
   id: string

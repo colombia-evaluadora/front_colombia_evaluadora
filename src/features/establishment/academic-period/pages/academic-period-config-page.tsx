@@ -21,16 +21,16 @@ import {
 } from "@/components/ui/accordion"
 import { paths } from "@/config/paths"
 
-import { useCreateAcademicPeriod } from "../api/mutations/academic-period/create-academic-period"
-import { useUpdateAcademicPeriod } from "../api/mutations/academic-period/update-academic-period"
-import { useAcademicPeriodQuery } from "../api/query/academic-period/use-academic-period-query"
+import { useCreateAcademicPeriod } from "@/features/establishment/academic-period/api/mutations/create-academic-period"
+import { useUpdateAcademicPeriod } from "@/features/establishment/academic-period/api/mutations/update-academic-period"
+import { useAcademicPeriodQuery } from "@/features/establishment/academic-period/api/query/use-academic-period-query"
 import type {
   AcademicPeriodFormInput,
   AcademicPeriodFormValues,
-} from "../api/schema"
-import type { AcademicPeriodDetail } from "../api/types/academic-period"
-import { AcademicPeriodForm } from "../components/academic-period/form-academic-period"
-import { EvaluationPeriodsSection } from "../components/academic-period/evaluation-periods-section"
+} from "@/features/establishment/academic-period/api/schema"
+import type { AcademicPeriodDetail } from "@/features/establishment/academic-period/api/types/academic-period"
+import { AcademicPeriodForm } from "@/features/establishment/academic-period/components/forms/form-academic-period"
+import { EvaluationPeriodsSection } from "@/features/establishment/academic-period/components/evaluation-periods-section"
 import {
   NoticeOutlet,
   NoticeProvider,
@@ -39,7 +39,7 @@ import {
 import {
   DEFAULT_JORNADA,
   type Jornada,
-} from "../components/schedule/schedule-data"
+} from "@/features/establishment/academic-period/components/schedule-data"
 
 const FORM_ID = "academic-period-config-form"
 

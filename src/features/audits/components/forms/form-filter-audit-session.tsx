@@ -16,8 +16,8 @@ import {
   auditFiltersFormSchema,
   type AuditFiltersFormInput,
   type AuditFiltersFormValues,
-} from "../../api/schema"
-import { useAuditSessionStatusesQuery } from "../../api/query/use-audit-session-statuses-query"
+} from "@/features/audits/api/schema"
+import { useAuditSessionStatusesQuery } from "@/features/audits/api/query/use-audit-session-statuses-query"
 import { formatDateTimeValue, parseDateTimeValue } from "@/lib/date-time-value"
 
 interface FilterAuditSessionFormProps {

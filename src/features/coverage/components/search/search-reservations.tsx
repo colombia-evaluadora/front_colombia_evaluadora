@@ -3,10 +3,10 @@ import { useState } from "react"
 import { SearchQueryBar } from "@/components/search/search-query-bar"
 import { useQuerySearch } from "@/components/search/use-query-search"
 
-import { useReservationCatalogsQuery } from "../../api/query/use-reservation-catalogs-query"
-import type { ReservationFiltersFormInput, ReservationFiltersFormValues } from "../../api/schema"
-import { FilterReservationsForm } from "../forms/form-filter-reservations"
-import { reservationsSyntax } from "./query-syntax"
+import { useReservationCatalogsQuery } from "@/features/coverage/api/query/use-reservation-catalogs-query"
+import type { ReservationFiltersFormInput, ReservationFiltersFormValues } from "@/features/coverage/api/schema"
+import { FilterReservationsForm } from "@/features/coverage/components/forms/form-filter-reservations"
+import { reservationsSyntax } from "@/features/coverage/components/search/query-syntax"
 
 const FILTER_RESERVATIONS_FORM_ID = "filter-reservations-form"
 

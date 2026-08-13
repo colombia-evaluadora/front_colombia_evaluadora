@@ -1,5 +1,5 @@
 import preview from "../../../../.storybook/preview"
-import { Alert, AlertDescription, AlertTitle } from "../alert"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 const meta = preview.meta({
   title: "Design System/Feedback/Alert",

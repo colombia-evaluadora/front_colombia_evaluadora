@@ -11,14 +11,14 @@ import {
   RESERVATION_STATUSES,
   SHIFTS,
   type ReservationFiltersFormInput,
-} from "../../api/schema"
+} from "@/features/coverage/api/schema"
 import {
   EDUCATION_LEVEL_LABELS,
   RESERVATION_GROUP_BY_LABELS,
   RESERVATION_STATUS_LABELS,
   SHIFT_LABELS,
   formatGrade,
-} from "../../api/ui-mappings"
+} from "@/features/coverage/api/ui-mappings"
 
 /**
  * Sintaxis del buscador de reservas: `grado:(3°) jornada:(Mañana)`, y lo que

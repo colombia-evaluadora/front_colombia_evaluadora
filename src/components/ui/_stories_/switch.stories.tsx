@@ -1,7 +1,7 @@
 import preview from "../../../../.storybook/preview"
 import { useState } from "react"
-import { Label } from "../label"
-import { Switch } from "../switch"
+import { Label } from "@/components/ui/label"
+import { Switch } from "@/components/ui/switch"
 
 const meta = preview.meta({
   title: "Design System/Forms/Switch",

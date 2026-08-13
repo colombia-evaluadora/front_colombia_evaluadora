@@ -1,8 +1,8 @@
 import { faker } from "@faker-js/faker"
 
-import type { Person } from "@/features/establishment/api/types/person"
-import { DOCUMENT_TYPES } from "./catalogs/document-types"
-import { GENDERS } from "./catalogs/genders"
+import type { Person } from "@/features/establishment/employees/api/types/person"
+import { DOCUMENT_TYPES } from "@/mocks/db/catalogs/document-types"
+import { GENDERS } from "@/mocks/db/catalogs/genders"
 
 faker.seed(20260730)
 

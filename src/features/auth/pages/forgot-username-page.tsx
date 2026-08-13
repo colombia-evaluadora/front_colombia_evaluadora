@@ -19,10 +19,10 @@ import {
 import { Spinner } from "@/components/ui/spinner"
 import { paths } from "@/config/paths"
 
-import { useForgotUsername } from "../api/mutations/forgot-username"
-import type { ForgotUsernameResponse } from "../api/types/password-recovery"
-import { ForgotUsernameForm } from "../components/forms/form-forgot-username"
-import type { ForgotUsernameFormValues } from "../api/schema"
+import { useForgotUsername } from "@/features/auth/api/mutations/forgot-username"
+import type { ForgotUsernameResponse } from "@/features/auth/api/types/password-recovery"
+import { ForgotUsernameForm } from "@/features/auth/components/forms/form-forgot-username"
+import type { ForgotUsernameFormValues } from "@/features/auth/api/schema"
 
 const FORGOT_USERNAME_FORM_ID = "forgot-username-form"
 

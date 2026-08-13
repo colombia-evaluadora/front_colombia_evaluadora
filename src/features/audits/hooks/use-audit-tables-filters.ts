@@ -2,8 +2,8 @@ import { useCallback, useMemo } from "react"
 
 import { auditoriaTablasRoute } from "@/router"
 
-import type { AuditTablesFiltersFormInput, AuditTablesFiltersFormValues } from "../api/schema"
-import type { AuditTablesQueryRequest } from "../api/types/audit-table"
+import type { AuditTablesFiltersFormInput, AuditTablesFiltersFormValues } from "@/features/audits/api/schema"
+import type { AuditTablesQueryRequest } from "@/features/audits/api/types/audit-table"
 
 export interface AuditTablesFilters {
   filters: AuditTablesFiltersFormInput

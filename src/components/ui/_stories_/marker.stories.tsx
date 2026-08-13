@@ -1,6 +1,6 @@
 import preview from "../../../../.storybook/preview"
 import { CircleIcon } from "@/components/ui/icons"
-import { Marker, MarkerContent, MarkerIcon } from "../marker"
+import { Marker, MarkerContent, MarkerIcon } from "@/components/ui/marker"
 
 const meta = preview.meta({
   title: "Design System/Data Display/Marker",

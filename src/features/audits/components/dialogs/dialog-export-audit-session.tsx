@@ -19,8 +19,8 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 
-import { useExportAudits } from "../../api/mutations/export-audits"
-import type { AuditsQueryRequest, ExportFormat } from "../../api/types/audit"
+import { useExportAudits } from "@/features/audits/api/mutations/export-audits"
+import type { AuditsQueryRequest, ExportFormat } from "@/features/audits/api/types/audit"
 import { useNotify } from "@/components/notice/notice-context"
 
 interface ExportAuditSessionDialogProps {

@@ -1,6 +1,6 @@
 import preview from "../../../../.storybook/preview"
-import { Separator } from "../separator"
-import { ScrollArea } from "../scroll-area"
+import { Separator } from "@/components/ui/separator"
+import { ScrollArea } from "@/components/ui/scroll-area"
 
 const tags = Array.from({ length: 30 }, (_, i) => `Tag ${i + 1}`)
 

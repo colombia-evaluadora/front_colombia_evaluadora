@@ -5,8 +5,8 @@ import { auditoriaTablaDetalleRoute } from "@/router"
 import type {
   TableOperationsFiltersFormInput,
   TableOperationsFiltersFormValues,
-} from "../api/schema"
-import type { TableOperationsQueryRequest } from "../api/types/audit-table"
+} from "@/features/audits/api/schema"
+import type { TableOperationsQueryRequest } from "@/features/audits/api/types/audit-table"
 
 export interface TableOperationsFilters {
   filters: TableOperationsFiltersFormInput

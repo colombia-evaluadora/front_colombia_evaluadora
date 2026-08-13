@@ -1,6 +1,6 @@
 import preview from "../../../../.storybook/preview"
 import { TextBIcon, TextItalicIcon, TextUnderlineIcon } from "@/components/ui/icons"
-import { ToggleGroup, ToggleGroupItem } from "../toggle-group"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 
 const meta = preview.meta({
   title: "Design System/Forms/ToggleGroup",

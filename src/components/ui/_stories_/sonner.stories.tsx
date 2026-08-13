@@ -1,7 +1,7 @@
 import preview from "../../../../.storybook/preview"
 import { toast } from "sonner"
-import { Button } from "../button"
-import { Toaster } from "../sonner"
+import { Button } from "@/components/ui/button"
+import { Toaster } from "@/components/ui/sonner"
 
 const meta = preview.meta({
   title: "Design System/Feedback/Sonner",

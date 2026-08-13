@@ -1,6 +1,6 @@
 import preview from "../../../../.storybook/preview"
 import { FolderOpenIcon } from "@/components/ui/icons"
-import { Button } from "../button"
+import { Button } from "@/components/ui/button"
 import {
   Empty,
   EmptyContent,
@@ -8,7 +8,7 @@ import {
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
-} from "../empty"
+} from "@/components/ui/empty"
 
 const meta = preview.meta({
   title: "Design System/Feedback/Empty",

@@ -20,8 +20,8 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 
-import { useExportSelectedReservations } from "../../api/mutations/export-selected-reservations"
-import type { ExportFormat } from "../../api/types/reservation"
+import { useExportSelectedReservations } from "@/features/coverage/api/mutations/export-selected-reservations"
+import type { ExportFormat } from "@/features/coverage/api/types/reservation"
 
 interface ExportSelectedReservationsDialogProps {
   selectedIds: string[]

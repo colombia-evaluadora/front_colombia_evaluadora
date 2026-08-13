@@ -6,10 +6,10 @@ import { useQuerySearch } from "@/components/search/use-query-search"
 import type {
   SessionOperationsFiltersFormInput,
   SessionOperationsFiltersFormValues,
-} from "../../api/schema"
-import { useAuditOperationTypesQuery } from "../../api/query/use-audit-operation-types-query"
-import { FilterSessionOperationsForm } from "../forms/form-filter-session-operations"
-import { sessionOperationsSyntax } from "./query-syntax"
+} from "@/features/audits/api/schema"
+import { useAuditOperationTypesQuery } from "@/features/audits/api/query/use-audit-operation-types-query"
+import { FilterSessionOperationsForm } from "@/features/audits/components/forms/form-filter-session-operations"
+import { sessionOperationsSyntax } from "@/features/audits/components/search/query-syntax"
 
 const FILTER_SESSION_OPERATIONS_FORM_ID = "filter-session-operations-form"
 

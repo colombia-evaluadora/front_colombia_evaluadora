@@ -1,6 +1,6 @@
 import { faker } from "@faker-js/faker"
 
-import { auditTablesDb, getTableFields } from "../db/audit-tables"
+import { auditTablesDb, getTableFields } from "@/mocks/db/audit-tables"
 import type { SessionOperation, AuditSession } from "@/features/audits/api/types/audit"
 import type { OperationChange, OperationType } from "@/features/audits/api/types/audit-table"
 
