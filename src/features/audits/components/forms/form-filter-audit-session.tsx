@@ -93,8 +93,11 @@ export function FilterAuditSessionForm({
               // "" para "sin filtro"). La URL sigue almacenando un array
               // (`statuses`) — la conversión vive en el hook.
               <ToggleGroup
-                value={field.state.value}
-                onValueChange={(value) => field.handleChange(value ?? "")}
+                // El form lleva un `status` único (string); Base UI lo espera
+                // como array porque internamente modela single-select como
+                // array de 0-1 elementos. Convertimos en el borde.
+                value={field.state.value ? [field.state.value] : []}
+                onValueChange={(value) => field.handleChange(value[0] ?? "")}
                 multiple={false}
                 spacing={0}
                 variant="outline"

@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 
-import { forgotUsernameFormSchema } from "../../api/schema"
+import { forgotUsernameFormSchema, type ForgotUsernameFormValues } from "../../api/schema"
 
 interface ForgotUsernameFormProps {
   id: string

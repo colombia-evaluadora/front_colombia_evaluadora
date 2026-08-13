@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { ControlPointIcon } from "@/components/ui/icons"
 
 import { ManageEmployeeDialog } from "../components/dialogs/dialog-manage-employee"
-import { EmployeesDataTable } from "../components/table/employees-table"
+import { EmployeesDataTable } from "../components/table/table-employees"
 
 export function EmployeesPage() {
   const [editorOpen, setEditorOpen] = useState(false)
