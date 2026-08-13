@@ -57,7 +57,7 @@ export function TeachingLevelsMultiSelect({
             <span className="text-muted-foreground">Seleccionar</span>
           ) : (
             selected.map((level) => (
-              <Badge key={level.id} variant="soft" color="muted" className="normal-case tracking-normal">
+              <Badge key={level.id} variant="soft" color="muted" className="text-xs normal-case">
                 {level.nombre}
                 <span
                   role="button"
