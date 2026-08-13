@@ -10,7 +10,6 @@ import {
   Dialog,
   DialogClose,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -198,7 +197,6 @@ export function CreateEvaluationPeriodDialog({
           <DialogTitle>
             {isEditing ? "Editar periodo de evaluación" : "Agregar periodo de evaluación"}
           </DialogTitle>
-          <DialogDescription>Completa los datos del periodo de evaluación.</DialogDescription>
         </DialogHeader>
 
         <form
