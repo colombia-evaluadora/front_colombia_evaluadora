@@ -250,12 +250,10 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
       </DialogTrigger>
       <DialogContent
         className={continued ? "max-h-[90dvh] overflow-y-auto sm:max-w-4xl" : "sm:max-w-md"}
+        showCloseButton={false}
       >
         <DialogHeader>
           <DialogTitle>Agregar escalas de valoración</DialogTitle>
-          <DialogDescription>
-            Elige los niveles de enseñanza y agrega una o más escalas a la lista.
-          </DialogDescription>
         </DialogHeader>
 
         <NoticeOutlet />
