@@ -3,8 +3,8 @@ import { CalendarIcon, LightningIcon, UsersIcon, type Icon } from "@/components/
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 
-import { useAuditsStatsQuery } from "../../api/query/use-audits-stats-query"
-import type { AuditsQueryRequest } from "../../api/types/audit"
+import { useAuditsStatsQuery } from "@/features/audits/api/query/use-audits-stats-query"
+import type { AuditsQueryRequest } from "@/features/audits/api/types/audit"
 
 interface AuditSessionStatsCardsProps {
   selectedIds: string[]

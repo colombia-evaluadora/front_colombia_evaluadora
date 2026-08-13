@@ -1,5 +1,5 @@
 import preview from "../../../../.storybook/preview"
-import { Kbd, KbdGroup } from "../kbd"
+import { Kbd, KbdGroup } from "@/components/ui/kbd"
 
 const meta = preview.meta({
   title: "Design System/Data Display/Kbd",

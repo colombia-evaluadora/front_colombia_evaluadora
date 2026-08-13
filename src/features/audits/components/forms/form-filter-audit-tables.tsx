@@ -7,7 +7,7 @@ import { Field, FieldLabel } from "@/components/ui/field"
 import {
   type AuditTablesFiltersFormInput,
   type AuditTablesFiltersFormValues,
-} from "../../api/schema"
+} from "@/features/audits/api/schema"
 
 const DEBOUNCE_MS = 300
 

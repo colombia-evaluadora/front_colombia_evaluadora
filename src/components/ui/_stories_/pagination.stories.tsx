@@ -7,7 +7,7 @@ import {
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
-} from "../pagination"
+} from "@/components/ui/pagination"
 
 const meta = preview.meta({
   title: "Design System/Navigation/Pagination",

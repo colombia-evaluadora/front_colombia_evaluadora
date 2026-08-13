@@ -1,4 +1,4 @@
-import type { CatalogItem } from "@/features/establishment/api/types/catalog";
+import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog";
 
 // Género de la **población atendida** por el establecimiento (a quién va
 // dirigida la oferta educativa). NO debe confundirse con el género de la

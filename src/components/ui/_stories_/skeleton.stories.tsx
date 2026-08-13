@@ -1,5 +1,5 @@
 import preview from "../../../../.storybook/preview"
-import { Skeleton } from "../skeleton"
+import { Skeleton } from "@/components/ui/skeleton"
 
 const meta = preview.meta({
   title: "Design System/Feedback/Skeleton",

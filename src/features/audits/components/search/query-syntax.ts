@@ -13,7 +13,7 @@ import {
   type FieldFilterCondition,
   type SessionOperationsFiltersFormValues,
   type TableOperationsFiltersFormValues,
-} from "../../api/schema"
+} from "@/features/audits/api/schema"
 
 /**
  * Las sintaxis de consulta de los buscadores del registro de actividad. La mecánica

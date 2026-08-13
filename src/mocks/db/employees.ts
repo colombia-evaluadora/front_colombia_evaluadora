@@ -1,22 +1,22 @@
 import { faker } from "@faker-js/faker"
 
-import type { CatalogItem } from "@/features/establishment/api/types/catalog"
+import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 import type {
   Employee,
   EmployeeListItem,
-} from "@/features/establishment/api/types/employee"
-import type { Person } from "@/features/establishment/api/types/person"
-import { campusesDb } from "./campuses"
-import { DOCUMENT_TYPES } from "./catalogs/document-types"
-import { EDUCATION_LEVELS } from "./catalogs/education-levels"
-import { EMPLOYEE_CLASSES } from "./catalogs/employee-classes"
-import { EMPLOYEE_GRADES } from "./catalogs/employee-grades"
-import { EMPLOYEE_ROLES } from "./catalogs/employee-roles"
-import { EMPLOYMENT_TYPES } from "./catalogs/employment-types"
-import { FUNDING_SOURCES } from "./catalogs/funding-sources"
-import { FUNCTIONAL_POSITIONS } from "./catalogs/functional-positions"
-import { GENDERS } from "./catalogs/genders"
-import { WORK_SCHEDULES } from "./catalogs/work-schedules"
+} from "@/features/establishment/employees/api/types/employee"
+import type { Person } from "@/features/establishment/employees/api/types/person"
+import { campusesDb } from "@/mocks/db/campuses"
+import { DOCUMENT_TYPES } from "@/mocks/db/catalogs/document-types"
+import { EDUCATION_LEVELS } from "@/mocks/db/catalogs/education-levels"
+import { EMPLOYEE_CLASSES } from "@/mocks/db/catalogs/employee-classes"
+import { EMPLOYEE_GRADES } from "@/mocks/db/catalogs/employee-grades"
+import { EMPLOYEE_ROLES } from "@/mocks/db/catalogs/employee-roles"
+import { EMPLOYMENT_TYPES } from "@/mocks/db/catalogs/employment-types"
+import { FUNDING_SOURCES } from "@/mocks/db/catalogs/funding-sources"
+import { FUNCTIONAL_POSITIONS } from "@/mocks/db/catalogs/functional-positions"
+import { GENDERS } from "@/mocks/db/catalogs/genders"
+import { WORK_SCHEDULES } from "@/mocks/db/catalogs/work-schedules"
 
 faker.seed(20260729)
 

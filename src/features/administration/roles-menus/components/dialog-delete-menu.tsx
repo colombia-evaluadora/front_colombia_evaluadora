@@ -14,8 +14,8 @@ import {
 } from "@/components/ui/alert-dialog"
 import { CheckIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 
-import { useDeleteMenu } from "../api/mutations/delete-menu"
-import type { MenuNode } from "../api/types/role-menu"
+import { useDeleteMenu } from "@/features/administration/roles-menus/api/mutations/delete-menu"
+import type { MenuNode } from "@/features/administration/roles-menus/api/types/role-menu"
 
 interface DialogDeleteMenuProps {
   menu: MenuNode

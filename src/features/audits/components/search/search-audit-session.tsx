@@ -3,10 +3,10 @@ import { useMemo, useState } from "react"
 import { SearchQueryBar } from "@/components/search/search-query-bar"
 import { useQuerySearch } from "@/components/search/use-query-search"
 
-import type { AuditFiltersFormInput, AuditFiltersFormValues } from "../../api/schema"
-import { useAuditSessionStatusesQuery } from "../../api/query/use-audit-session-statuses-query"
-import { FilterAuditSessionForm } from "../forms/form-filter-audit-session"
-import { auditSessionsSyntax } from "./query-syntax"
+import type { AuditFiltersFormInput, AuditFiltersFormValues } from "@/features/audits/api/schema"
+import { useAuditSessionStatusesQuery } from "@/features/audits/api/query/use-audit-session-statuses-query"
+import { FilterAuditSessionForm } from "@/features/audits/components/forms/form-filter-audit-session"
+import { auditSessionsSyntax } from "@/features/audits/components/search/query-syntax"
 
 const FILTER_AUDIT_SESSION_FORM_ID = "filter-audit-session-form"
 

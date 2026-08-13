@@ -1,5 +1,5 @@
 import preview from "../../../../.storybook/preview"
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "../accordion"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 
 const meta = preview.meta({
   title: "Design System/Layout/Accordion",

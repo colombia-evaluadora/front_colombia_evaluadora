@@ -41,9 +41,9 @@ import {
   type FieldFilterCondition,
   type TableOperationsFiltersFormInput,
   type TableOperationsFiltersFormValues,
-} from "../../api/schema"
-import type { OperationType } from "../../api/types/audit-table"
-import { useAuditOperationTypesQuery } from "../../api/query/use-audit-operation-types-query"
+} from "@/features/audits/api/schema"
+import type { OperationType } from "@/features/audits/api/types/audit-table"
+import { useAuditOperationTypesQuery } from "@/features/audits/api/query/use-audit-operation-types-query"
 import { formatDateTimeValue, parseDateTimeValue } from "@/lib/date-time-value"
 
 // `key=${filter.field}-${index}` no sobrevive a remover el primer elemento:

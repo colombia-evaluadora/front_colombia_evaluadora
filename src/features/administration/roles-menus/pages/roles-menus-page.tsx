@@ -21,13 +21,13 @@ import {
 } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 
-import { useCreateRole } from "../api/mutations/create-role"
-import { useUpdateRoleMenus } from "../api/mutations/update-role-menus"
-import { useMenusQuery } from "../api/query/use-menus-query"
-import { useRoleMenusQuery } from "../api/query/use-role-menus-query"
-import { useRolesQuery } from "../api/query/use-roles-query"
-import { buildMenuTree } from "../api/types/role-menu"
-import { MenuTransfer } from "../components/menu-transfer"
+import { useCreateRole } from "@/features/administration/roles-menus/api/mutations/create-role"
+import { useUpdateRoleMenus } from "@/features/administration/roles-menus/api/mutations/update-role-menus"
+import { useMenusQuery } from "@/features/administration/roles-menus/api/query/use-menus-query"
+import { useRoleMenusQuery } from "@/features/administration/roles-menus/api/query/use-role-menus-query"
+import { useRolesQuery } from "@/features/administration/roles-menus/api/query/use-roles-query"
+import { buildMenuTree } from "@/features/administration/roles-menus/api/types/role-menu"
+import { MenuTransfer } from "@/features/administration/roles-menus/components/menu-transfer"
 
 export function RolesMenusPage() {
   const { notify } = useNotify()

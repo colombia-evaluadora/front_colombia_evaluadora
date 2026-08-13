@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
-import type { CreateReservationInput, Reservation } from "../types/reservation"
+import type { CreateReservationInput, Reservation } from "@/features/coverage/api/types/reservation"
 
 function createReservation(input: CreateReservationInput): Promise<Reservation> {
   return api.post("/coverage/reservations", input)

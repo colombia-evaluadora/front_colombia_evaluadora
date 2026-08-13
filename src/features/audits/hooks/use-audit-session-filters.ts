@@ -2,8 +2,8 @@ import { useCallback, useMemo } from "react"
 
 import { auditoriaSesionesRoute } from "@/router"
 
-import type { AuditFiltersFormInput, AuditFiltersFormValues } from "../api/schema"
-import type { AuditsQueryRequest, SessionStatus } from "../api/types/audit"
+import type { AuditFiltersFormInput, AuditFiltersFormValues } from "@/features/audits/api/schema"
+import type { AuditsQueryRequest, SessionStatus } from "@/features/audits/api/types/audit"
 
 export interface AuditSessionFilters {
   filters: AuditFiltersFormInput

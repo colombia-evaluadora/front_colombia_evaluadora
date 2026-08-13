@@ -1,6 +1,6 @@
 import { http, HttpResponse, delay } from "msw"
 
-import { auditSessionStatusesDb } from "../../db/audits/audit-session-statuses"
+import { auditSessionStatusesDb } from "@/mocks/db/audits/audit-session-statuses"
 import type { SessionStatusOption } from "@/features/audits/api/types/audit"
 
 export const auditSessionStatusesHandlers = [

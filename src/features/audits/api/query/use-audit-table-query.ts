@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
-import type { AuditTable } from "../types/audit-table"
+import type { AuditTable } from "@/features/audits/api/types/audit-table"
 
 interface UseAuditTableQueryParams {
   tableSlug: string

@@ -3,8 +3,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
 
-import { menusQueryKey } from "../query/use-menus-query"
-import type { UpdateRoleMenusResult } from "../types/role-menu"
+import { menusQueryKey } from "@/features/administration/roles-menus/api/query/use-menus-query"
+import type { UpdateRoleMenusResult } from "@/features/administration/roles-menus/api/types/role-menu"
 
 function deleteMenu({ id }: { id: number }): Promise<UpdateRoleMenusResult> {
   return api.delete(`/menus/${id}`)

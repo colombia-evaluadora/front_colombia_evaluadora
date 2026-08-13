@@ -10,8 +10,8 @@ import {
   RESERVATION_STATUS_LABELS,
   SHIFT_LABELS,
   formatGrade,
-} from "../../api/ui-mappings"
-import type { Reservation, ReservationStatus } from "../../api/types/reservation"
+} from "@/features/coverage/api/ui-mappings"
+import type { Reservation, ReservationStatus } from "@/features/coverage/api/types/reservation"
 
 export const columns: ColumnDef<Reservation>[] = [
   {

@@ -3,7 +3,7 @@ import { http, HttpResponse, delay } from "msw"
 import {
   DEFAULT_PROMOTION_CRITERIA,
   promotionCriteriaDb,
-} from "../../db/academic-period/promotion-criteria"
+} from "@/mocks/db/academic-period/promotion-criteria"
 import type {
   MutationResult,
   PromotionCriteria,

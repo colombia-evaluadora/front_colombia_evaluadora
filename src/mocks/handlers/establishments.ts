@@ -6,7 +6,7 @@ import {
   deleteEstablishmentDetails,
   deleteManyEstablishmentDetails,
   upsertEstablishmentDetails,
-} from "../db/establishments"
+} from "@/mocks/db/establishments"
 
 import type {
   Establishment,
@@ -14,8 +14,8 @@ import type {
   EstablishmentStatus,
   EstablishmentsQueryRequest,
   EstablishmentsQueryResponse,
-} from "@/features/establishment/api/types/establishment"
-import type { ExportFormat, ExportResult } from "@/features/establishment/api/types/export"
+} from "@/features/establishment/institution/api/types/establishment"
+import type { ExportFormat, ExportResult } from "@/features/establishment/institution/api/types/export"
 
 const EXPORT_FORMAT_LABELS: Record<ExportFormat, string> = {
   pdf: "PDF",

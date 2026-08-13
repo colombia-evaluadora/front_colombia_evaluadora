@@ -26,9 +26,9 @@ import {
 } from "@/components/ui/select"
 import { getNavIcon } from "@/features/navigation/api/ui-mappings"
 
-import { useSaveMenu } from "../api/mutations/save-menu"
-import { useCreatePlan, usePlansQuery } from "../api/query/use-plans-query"
-import type { MenuNode, MenuTreeNode } from "../api/types/role-menu"
+import { useSaveMenu } from "@/features/administration/roles-menus/api/mutations/save-menu"
+import { useCreatePlan, usePlansQuery } from "@/features/administration/roles-menus/api/query/use-plans-query"
+import type { MenuNode, MenuTreeNode } from "@/features/administration/roles-menus/api/types/role-menu"
 
 // Los `value` de un select son strings y el vacío significa "sin elegir", así
 // que "menú principal" (sin padre) necesita su propio valor.

@@ -19,8 +19,8 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 
-import { useExportSessionOperations } from "../../api/mutations/export-session-operations"
-import type { ExportFormat } from "../../api/types/audit"
+import { useExportSessionOperations } from "@/features/audits/api/mutations/export-session-operations"
+import type { ExportFormat } from "@/features/audits/api/types/audit"
 import { useNotify } from "@/components/notice/notice-context"
 
 interface ExportSelectedSessionOperationsDialogProps {

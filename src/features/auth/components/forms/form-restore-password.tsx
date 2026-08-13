@@ -18,7 +18,7 @@ import {
   InputGroupInput,
 } from "@/components/ui/input-group"
 
-import { passwordRules, restorePasswordFormSchema } from "../../api/schema"
+import { passwordRules, restorePasswordFormSchema } from "@/features/auth/api/schema"
 
 interface RestorePasswordFormProps {
   id: string

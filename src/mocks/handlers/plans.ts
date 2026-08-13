@@ -2,7 +2,7 @@ import { http, HttpResponse, delay } from "msw"
 
 import type { Plan } from "@/features/administration/roles-menus/api/types/role-menu"
 
-import { plansDb } from "../db/plans"
+import { plansDb } from "@/mocks/db/plans"
 
 export const plansHandlers = [
   http.get("/api/plans", async () => {

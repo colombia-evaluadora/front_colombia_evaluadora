@@ -6,7 +6,7 @@ import {
   NavigationMenuLink,
   NavigationMenuList,
   NavigationMenuTrigger,
-} from "../navigation-menu"
+} from "@/components/ui/navigation-menu"
 
 const meta = preview.meta({
   title: "Design System/Navigation/NavigationMenu",

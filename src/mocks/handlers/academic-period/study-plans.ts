@@ -2,7 +2,7 @@ import { http, HttpResponse, delay } from "msw"
 import {
   studyPlansDb,
   nextStudyPlanId,
-} from "../../db/academic-period/study-plans"
+} from "@/mocks/db/academic-period/study-plans"
 
 import type {
   StudyPlanItem,

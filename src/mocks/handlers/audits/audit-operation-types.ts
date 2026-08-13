@@ -1,6 +1,6 @@
 import { http, HttpResponse, delay } from "msw"
 
-import { auditOperationTypesDb } from "../../db/audits/audit-operation-types"
+import { auditOperationTypesDb } from "@/mocks/db/audits/audit-operation-types"
 import type { OperationTypeOption } from "@/features/audits/api/types/audit-table"
 
 export const auditOperationTypesHandlers = [

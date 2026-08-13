@@ -2,9 +2,9 @@ import { useCallback, useMemo } from "react"
 
 import { coberturaReservaCupoRoute } from "@/router"
 
-import { RESERVATION_GROUP_BY } from "../api/schema"
-import type { ReservationFiltersFormInput, ReservationFiltersFormValues } from "../api/schema"
-import type { ReservationGroupBy, ReservationsQueryFilters } from "../api/types/reservation"
+import { RESERVATION_GROUP_BY } from "@/features/coverage/api/schema"
+import type { ReservationFiltersFormInput, ReservationFiltersFormValues } from "@/features/coverage/api/schema"
+import type { ReservationGroupBy, ReservationsQueryFilters } from "@/features/coverage/api/types/reservation"
 
 export interface ReservationFilters {
   filters: ReservationFiltersFormInput

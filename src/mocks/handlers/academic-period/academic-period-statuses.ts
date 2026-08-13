@@ -1,6 +1,6 @@
 import { http, HttpResponse, delay } from "msw"
 
-import { academicPeriodStatusesDb } from "../../db/academic-period/academic-period-statuses"
+import { academicPeriodStatusesDb } from "@/mocks/db/academic-period/academic-period-statuses"
 import type { AcademicPeriodStatusOption } from "@/features/establishment/academic-period/api/types/academic-period"
 
 export const academicPeriodStatusesHandlers = [

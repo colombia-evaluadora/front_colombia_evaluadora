@@ -3,7 +3,7 @@ import { toast } from "sonner"
 
 import { env } from "@/config/env"
 import { paths } from "@/config/paths"
-import { queryClient } from "./query-client"
+import { queryClient } from "@/lib/query-client"
 
 declare module "axios" {
   export interface AxiosInstance {

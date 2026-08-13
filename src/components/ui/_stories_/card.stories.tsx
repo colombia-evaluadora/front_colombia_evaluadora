@@ -1,5 +1,5 @@
 import preview from "../../../../.storybook/preview"
-import { Button } from "../button"
+import { Button } from "@/components/ui/button"
 import {
   Card,
   CardAction,
@@ -8,7 +8,7 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "../card"
+} from "@/components/ui/card"
 
 const meta = preview.meta({
   title: "Design System/Layout/Card",

@@ -1,4 +1,4 @@
-import type { PromotionCriteria } from "./promotion-criteria"
+import type { PromotionCriteria } from "@/features/establishment/academic-period/api/types/promotion-criteria"
 
 export type ScheduleCells = Record<string, Record<string, string>>
 

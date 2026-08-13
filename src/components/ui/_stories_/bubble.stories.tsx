@@ -1,5 +1,5 @@
 import preview from "../../../../.storybook/preview"
-import { Bubble, BubbleContent, BubbleGroup, BubbleReactions } from "../bubble"
+import { Bubble, BubbleContent, BubbleGroup, BubbleReactions } from "@/components/ui/bubble"
 
 const meta = preview.meta({
   title: "Design System/Chat/Bubble",

@@ -10,7 +10,7 @@ import {
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { EnvelopeIcon } from "@/components/ui/icons"
 
-import { forgotPasswordFormSchema, type ForgotPasswordFormValues } from "../../api/schema"
+import { forgotPasswordFormSchema, type ForgotPasswordFormValues } from "@/features/auth/api/schema"
 
 interface ForgotPasswordFormProps {
   id: string

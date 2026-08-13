@@ -1,6 +1,6 @@
 import preview from "../../../../.storybook/preview"
-import { Button } from "../button"
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "../hover-card"
+import { Button } from "@/components/ui/button"
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card"
 
 const meta = preview.meta({
   title: "Design System/Overlays/HoverCard",

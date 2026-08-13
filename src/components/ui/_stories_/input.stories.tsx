@@ -1,5 +1,5 @@
 import preview from "../../../../.storybook/preview"
-import { Input } from "../input"
+import { Input } from "@/components/ui/input"
 
 const meta = preview.meta({
   title: "Design System/Forms/Input",

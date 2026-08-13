@@ -20,8 +20,8 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 
-import { useExportReservations } from "../../api/mutations/export-reservations"
-import type { ExportFormat, ReservationsQueryFilters } from "../../api/types/reservation"
+import { useExportReservations } from "@/features/coverage/api/mutations/export-reservations"
+import type { ExportFormat, ReservationsQueryFilters } from "@/features/coverage/api/types/reservation"
 
 interface ExportReservationsDialogProps {
   filters: ReservationsQueryFilters

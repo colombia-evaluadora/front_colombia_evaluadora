@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
-import type { AuditSession } from "../types/audit"
+import type { AuditSession } from "@/features/audits/api/types/audit"
 
 interface UseAuditSessionQueryParams {
   sessionId: string

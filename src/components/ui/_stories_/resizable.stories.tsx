@@ -1,5 +1,5 @@
 import preview from "../../../../.storybook/preview"
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "../resizable"
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable"
 
 const meta = preview.meta({
   title: "Design System/Layout/Resizable",

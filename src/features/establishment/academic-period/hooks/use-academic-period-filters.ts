@@ -5,11 +5,11 @@ import { periodosAcademicosRoute } from "@/router"
 import type {
   AcademicPeriodsFiltersFormInput,
   AcademicPeriodsFiltersFormValues,
-} from "../api/schema"
+} from "@/features/establishment/academic-period/api/schema"
 import type {
   AcademicPeriodsQueryFilters,
   AcademicPeriodStatus,
-} from "../api/types/academic-period"
+} from "@/features/establishment/academic-period/api/types/academic-period"
 
 export interface AcademicPeriodFilters {
   filters: AcademicPeriodsFiltersFormInput

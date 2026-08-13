@@ -3,8 +3,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
 
-import { roleMenusQueryKey } from "../query/use-role-menus-query"
-import type { UpdateRoleMenusResult } from "../types/role-menu"
+import { roleMenusQueryKey } from "@/features/administration/roles-menus/api/query/use-role-menus-query"
+import type { UpdateRoleMenusResult } from "@/features/administration/roles-menus/api/types/role-menu"
 
 interface UpdateRoleMenusInput {
   roleId: number

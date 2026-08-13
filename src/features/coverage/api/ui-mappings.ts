@@ -3,7 +3,7 @@ import type {
   ReservationGroupBy,
   ReservationStatus,
   Shift,
-} from "./types/reservation"
+} from "@/features/coverage/api/types/reservation"
 
 type BadgeColor = "primary" | "secondary" | "destructive" | "info" | "warning" | "success"
 interface BadgeProps {

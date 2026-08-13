@@ -4,11 +4,11 @@ import {
   getSessionOperationById,
   getSessionOperationChanges,
   applySessionOperationRevert,
-} from "./_session-operations"
+} from "@/mocks/handlers/_session-operations"
 
-import { auditsDb } from "../db/audits"
-import { auditTablesDb } from "../db/audit-tables"
-import { tableOperationChangesDb, tableOperationsDb } from "../db/table-operations"
+import { auditsDb } from "@/mocks/db/audits"
+import { auditTablesDb } from "@/mocks/db/audit-tables"
+import { tableOperationChangesDb, tableOperationsDb } from "@/mocks/db/table-operations"
 import type { FieldFilter } from "@/features/audits/api/schema"
 import type {
   AuditTable,

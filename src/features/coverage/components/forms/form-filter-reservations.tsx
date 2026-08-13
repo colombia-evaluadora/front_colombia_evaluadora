@@ -29,15 +29,15 @@ import {
   reservationFiltersFormSchema,
   type ReservationFiltersFormInput,
   type ReservationFiltersFormValues,
-} from "../../api/schema"
+} from "@/features/coverage/api/schema"
 import {
   EDUCATION_LEVEL_LABELS,
   RESERVATION_GROUP_BY_LABELS,
   RESERVATION_STATUS_LABELS,
   SHIFT_LABELS,
   formatGrade,
-} from "../../api/ui-mappings"
-import type { ReservationCatalogs, ReservationGroupBy } from "../../api/types/reservation"
+} from "@/features/coverage/api/ui-mappings"
+import type { ReservationCatalogs, ReservationGroupBy } from "@/features/coverage/api/types/reservation"
 
 interface FilterReservationsFormProps {
   id: string

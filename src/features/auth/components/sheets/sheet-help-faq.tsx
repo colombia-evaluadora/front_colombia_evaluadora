@@ -32,7 +32,7 @@ import {
   type HelpSection,
   type HelpSheetData,
   type HelpSupport,
-} from "./help-faq-data"
+} from "@/features/auth/components/sheets/help-faq-data"
 
 import { Button } from "@/components/ui/button"
 

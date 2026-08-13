@@ -1,6 +1,6 @@
 import * as React from "react"
 
-import { useUser } from "./auth"
+import { useUser } from "@/lib/auth"
 import type { Role } from "@/types/api"
 
 export const ROLES = {

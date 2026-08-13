@@ -9,7 +9,7 @@ import {
   SelectSeparator,
   SelectTrigger,
   SelectValue,
-} from "../select"
+} from "@/components/ui/select"
 
 const meta = preview.meta({
   title: "Design System/Forms/Select",

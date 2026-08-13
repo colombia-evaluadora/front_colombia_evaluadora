@@ -1,7 +1,7 @@
 import preview from "../../../../.storybook/preview"
 import { ArrowRightIcon, PlusIcon, SpinnerIcon } from "@/components/ui/icons"
 
-import { Button, buttonVariants } from "../button"
+import { Button, buttonVariants } from "@/components/ui/button"
 
 // Truco para escribir backticks literales dentro de un template literal sin
 // que JS los desactive. Sin esto, `\`variant\`` en el source se procesa como

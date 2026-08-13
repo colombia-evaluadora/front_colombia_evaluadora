@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
-import { resetTokenStatusQueryKey } from "../query/use-reset-token-status-query"
+import { resetTokenStatusQueryKey } from "@/features/auth/api/query/use-reset-token-status-query"
 
 interface RestorePasswordInput {
   token: string

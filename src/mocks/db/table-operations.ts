@@ -5,7 +5,7 @@ import type {
   OperationType,
   TableOperation,
 } from "@/features/audits/api/types/audit-table"
-import { auditTablesDb, getTableFields } from "./audit-tables"
+import { auditTablesDb, getTableFields } from "@/mocks/db/audit-tables"
 
 const ENTITY_NAMES_BY_TABLE: Record<string, string[]> = {
   tnivel_ensenanza: ["Preescolar", "Primaria", "Secundaria", "Media", "Superior"],

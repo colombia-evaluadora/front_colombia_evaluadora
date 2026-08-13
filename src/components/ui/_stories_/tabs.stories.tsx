@@ -1,5 +1,5 @@
 import preview from "../../../../.storybook/preview"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../tabs"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 const meta = preview.meta({
   title: "Design System/Navigation/Tabs",

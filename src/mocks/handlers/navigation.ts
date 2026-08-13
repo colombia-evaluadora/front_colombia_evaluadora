@@ -1,6 +1,6 @@
 import { http, HttpResponse, delay } from "msw"
 
-import { navigationMenu } from "../db/navigation"
+import { navigationMenu } from "@/mocks/db/navigation"
 
 export const navigationHandlers = [
   http.get("/api/sso-admin/myMenu", async () => {

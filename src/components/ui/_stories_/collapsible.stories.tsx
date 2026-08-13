@@ -1,7 +1,7 @@
 import preview from "../../../../.storybook/preview"
 import { useState } from "react"
-import { Button } from "../button"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../collapsible"
+import { Button } from "@/components/ui/button"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 
 const meta = preview.meta({
   title: "Design System/Layout/Collapsible",

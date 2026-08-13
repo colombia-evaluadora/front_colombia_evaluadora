@@ -19,9 +19,9 @@ import {
   sessionOperationsFiltersFormSchema,
   type SessionOperationsFiltersFormInput,
   type SessionOperationsFiltersFormValues,
-} from "../../api/schema"
-import type { OperationType } from "../../api/types/audit-table"
-import { useAuditOperationTypesQuery } from "../../api/query/use-audit-operation-types-query"
+} from "@/features/audits/api/schema"
+import type { OperationType } from "@/features/audits/api/types/audit-table"
+import { useAuditOperationTypesQuery } from "@/features/audits/api/query/use-audit-operation-types-query"
 import { formatDateTimeValue, parseDateTimeValue } from "@/lib/date-time-value"
 
 interface FilterSessionOperationsFormProps {

@@ -14,9 +14,9 @@ import {
   EDUCATION_LEVEL_SHORT_LABELS,
   RESERVATION_STATUS_LABELS,
   SHIFT_LABELS,
-} from "../../api/ui-mappings"
-import { useReservationsStatsQuery } from "../../api/query/use-reservations-stats-query"
-import type { ReservationsQueryFilters } from "../../api/types/reservation"
+} from "@/features/coverage/api/ui-mappings"
+import { useReservationsStatsQuery } from "@/features/coverage/api/query/use-reservations-stats-query"
+import type { ReservationsQueryFilters } from "@/features/coverage/api/types/reservation"
 
 interface ReservationStatsCardsProps {
   selectedIds: string[]

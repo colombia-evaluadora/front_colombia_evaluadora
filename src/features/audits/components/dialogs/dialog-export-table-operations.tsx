@@ -19,9 +19,9 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 
-import { useExportTableOperations } from "../../api/mutations/export-table-operations"
-import type { ExportFormat } from "../../api/types/audit"
-import type { TableOperationsQueryRequest } from "../../api/types/audit-table"
+import { useExportTableOperations } from "@/features/audits/api/mutations/export-table-operations"
+import type { ExportFormat } from "@/features/audits/api/types/audit"
+import type { TableOperationsQueryRequest } from "@/features/audits/api/types/audit-table"
 import { useNotify } from "@/components/notice/notice-context"
 
 interface ExportTableOperationsDialogProps {

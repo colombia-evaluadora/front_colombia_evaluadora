@@ -28,9 +28,9 @@ import {
   tableOperationsSearchSchema,
 } from "@/features/audits/api/schema"
 import { academicPeriodsSearchSchema } from "@/features/establishment/academic-period/api/schema"
-import { establishmentsSearchSchema } from "@/features/establishment/api/establishment-schema"
-import { campusesSearchSchema } from "@/features/establishment/api/campus-schema"
-import { employeesSearchSchema } from "@/features/establishment/api/employee-schema"
+import { establishmentsSearchSchema } from "@/features/establishment/institution/api/schema"
+import { campusesSearchSchema } from "@/features/establishment/campuses/api/schema"
+import { employeesSearchSchema } from "@/features/establishment/employees/api/schema"
 import { NoticeProvider } from "@/components/notice/notice-context"
 
 /*const LandingPage = lazyRouteComponent(
@@ -88,17 +88,17 @@ const AcademicPeriodConfigPage = lazyRouteComponent(
   "AcademicPeriodConfigPage"
 )
 const EstablishmentsPage = lazyRouteComponent(
-  () => import("@/features/establishment/pages/establishments-page"),
+  () => import("@/features/establishment/institution/pages/establishments-page"),
   "EstablishmentsPage"
 )
 
 const CampusesPage = lazyRouteComponent(
-  () => import("@/features/establishment/pages/campuses-page"),
+  () => import("@/features/establishment/campuses/pages/campuses-page"),
   "CampusesPage"
 )
 
 const EmployeesPage = lazyRouteComponent(
-  () => import("@/features/establishment/pages/employees-page"),
+  () => import("@/features/establishment/employees/pages/employees-page"),
   "EmployeesPage"
 )
 
@@ -108,7 +108,7 @@ const RolesMenusPage = lazyRouteComponent(
 )
 
 const AddEstablishmentPage = lazyRouteComponent(
-  () => import("@/features/establishment/pages/add-establishment-page"),
+  () => import("@/features/establishment/institution/pages/add-establishment-page"),
   "AddEstablishmentPage"
 )
 

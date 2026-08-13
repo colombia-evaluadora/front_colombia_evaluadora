@@ -14,7 +14,7 @@ import {
   MessageScrollerViewport,
 } from "@/components/ui/message-scroller"
 
-import { StreamingText } from "./streaming-text"
+import { StreamingText } from "@/features/assistant/components/streaming-text"
 
 interface ChatMessageListProps {
   messages: UIMessage[]
