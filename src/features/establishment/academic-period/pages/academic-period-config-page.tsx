@@ -198,7 +198,7 @@ function AcademicPeriodConfigPageContent() {
           del componente compartido.
         */}
         <AccordionTrigger className="items-center gap-3 px-4 py-2.5 text-lg **:data-[slot=accordion-trigger-icon]:size-5">
-          Configuración del periodo
+          Información general del periodo
         </AccordionTrigger>
         <AccordionContent keepMounted className="px-4 pb-4">
           {isEditing && isLoadingDetail ? (
