@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
-import type { MutationResult } from "@/features/establishment/academic-period/types/academic-period"
+import type { MutationResult } from "@/features/establishment/academic-period/api/types/academic-period"
 
 function deleteAcademicPeriod(id: number): Promise<MutationResult> {
   return api.delete(`/academic-periods/${id}`)

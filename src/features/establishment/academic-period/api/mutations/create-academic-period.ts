@@ -3,11 +3,11 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
 
-import type { AcademicPeriodFormValues } from "@/features/establishment/academic-period/schema"
+import type { AcademicPeriodFormValues } from "@/features/establishment/academic-period/api/schema"
 import type {
   AcademicPeriod,
   CreateAcademicPeriodRequest,
-} from "@/features/establishment/academic-period/types/academic-period"
+} from "@/features/establishment/academic-period/api/types/academic-period"
 
 export function toCreateAcademicPeriodRequest(
   values: AcademicPeriodFormValues

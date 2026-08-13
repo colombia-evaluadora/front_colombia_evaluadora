@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
-import type { AssignmentSubject } from "@/features/establishment/academic-period/types/academic-assignment"
+import type { AssignmentSubject } from "@/features/establishment/academic-period/api/types/academic-assignment"
 
 // Pool de asignaturas asignables del periodo: grado × grupo × plan de estudio.
 function fetchAssignmentSubjects(

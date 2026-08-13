@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
-import type { MutationResult } from "@/features/establishment/academic-period/types/academic-period"
+import type { MutationResult } from "@/features/establishment/academic-period/api/types/academic-period"
 
 // Borrado en lote por ids, en una sola request atómica.
 function deleteAcademicPeriodsBulk(ids: number[]): Promise<MutationResult> {

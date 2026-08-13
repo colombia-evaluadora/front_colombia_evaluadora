@@ -5,7 +5,7 @@ import type { MutationConfig } from "@/lib/react-query"
 import type {
   CreateGradeGroupRequest,
   GradeGroup,
-} from "@/features/establishment/academic-period/types/grade-group"
+} from "@/features/establishment/academic-period/api/types/grade-group"
 
 function createGradeGroup(input: CreateGradeGroupRequest): Promise<GradeGroup> {
   return api.post("/grade-groups", input)

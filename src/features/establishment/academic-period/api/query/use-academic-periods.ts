@@ -4,7 +4,7 @@ import { api } from "@/lib/api-client"
 import type {
   AcademicPeriodsQueryRequest,
   AcademicPeriodsQueryResponse,
-} from "@/features/establishment/academic-period/types/academic-period"
+} from "@/features/establishment/academic-period/api/types/academic-period"
 
 interface UseAcademicPeriodsQueryParams {
   filters: AcademicPeriodsQueryRequest["filters"]

@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
-import type { EvaluationCriteria } from "@/features/establishment/academic-period/types/evaluation-criteria"
+import type { EvaluationCriteria } from "@/features/establishment/academic-period/api/types/evaluation-criteria"
 
 function fetchEvaluationCriteria(
   academicPeriodId: number

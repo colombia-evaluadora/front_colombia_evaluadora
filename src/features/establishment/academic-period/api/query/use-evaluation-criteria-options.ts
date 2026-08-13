@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
-import type { EvaluationCriteriaOptions } from "@/features/establishment/academic-period/types/evaluation-criteria"
+import type { EvaluationCriteriaOptions } from "@/features/establishment/academic-period/api/types/evaluation-criteria"
 
 function fetchEvaluationCriteriaOptions(): Promise<EvaluationCriteriaOptions> {
   return api.get("/evaluation-criteria/options")

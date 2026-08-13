@@ -5,7 +5,7 @@ import type { MutationConfig } from "@/lib/react-query"
 import type {
   MutationResult,
   UpdateEvaluationPeriodRequest,
-} from "@/features/establishment/academic-period/types/evaluation-period"
+} from "@/features/establishment/academic-period/api/types/evaluation-period"
 
 interface UpdateEvaluationPeriodInput {
   academicPeriodId?: number
