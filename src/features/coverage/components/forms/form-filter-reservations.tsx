@@ -1,4 +1,3 @@
-import { useForm, type AnyFieldApi } from "@tanstack/react-form"
 import type { ReactNode } from "react"
 
 import { Checkbox } from "@/components/ui/checkbox"
@@ -19,6 +18,7 @@ import {
   FieldLegend,
   FieldSet,
 } from "@/components/ui/field"
+import { useAppForm, useFieldContext } from "@/lib/forms"
 import { formatDateTimeValue, parseDateTimeValue } from "@/lib/date-time-value"
 
 import {
@@ -52,8 +52,8 @@ interface FilterReservationsFormProps {
 
 // El "sin filtro" necesita un valor propio (el string vacío no distingue de
 // "sin elegir"); usamos un centinela y lo traducimos a "" al guardar. El
-// trigger nunca lo muestra: `SelectValue` recibe una función que mapea el
-// valor a su etiqueta.
+// trigger nunca lo muestra: cuando el value es `ANY`, el `SelectValue`
+// resuelve el label desde `items` y el form lo guarda como "".
 const ANY = "__any__"
 
 export function FilterReservationsForm({
@@ -63,14 +63,12 @@ export function FilterReservationsForm({
   catalogs,
   hideDocumentNumber = false,
 }: FilterReservationsFormProps) {
-  const form = useForm({
+  const form = useAppForm({
     defaultValues,
     validators: {
       onSubmit: reservationFiltersFormSchema,
     },
-    onSubmit: ({ value }) => {
-      onSubmit(reservationFiltersFormSchema.parse(value))
-    },
+    onSubmit: ({ value }) => onSubmit(value),
   })
 
   // `gap-x-4 gap-y-2` en las filas y `gap-4` entre secciones: el mismo ritmo
@@ -87,56 +85,45 @@ export function FilterReservationsForm({
       className="flex flex-1 flex-col gap-4 px-4"
     >
       <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-        <form.Field
-          name="firstName"
-          children={(field) => <TextFilter field={field} label="Nombre" />}
-        />
-        <form.Field
-          name="lastName"
-          children={(field) => <TextFilter field={field} label="Apellido" />}
-        />
+        <form.AppField name="firstName">
+          {(field) => <TextFilter label="Nombre" />}
+        </form.AppField>
+        <form.AppField name="lastName">
+          {(field) => <TextFilter label="Apellido" />}
+        </form.AppField>
       </div>
 
       {!hideDocumentNumber && (
-        <form.Field
-          name="documentNumber"
-          children={(field) => (
-            <TextFilter field={field} label="N° Identificación" inputMode="numeric" />
-          )}
-        />
+        <form.AppField name="documentNumber">
+          {(field) => <TextFilter label="N° Identificación" inputMode="numeric" />}
+        </form.AppField>
       )}
 
       <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-        <form.Field
-          name="institution"
-          children={(field) => (
+        <form.AppField name="institution">
+          {(field) => (
             <SelectFilter
-              field={field}
               label="Institución educativa"
               anyLabel="Todas"
               options={catalogs?.institutions ?? []}
             />
           )}
-        />
-        <form.Field
-          name="campus"
-          children={(field) => (
+        </form.AppField>
+        <form.AppField name="campus">
+          {(field) => (
             <SelectFilter
-              field={field}
               label="Sede"
               anyLabel="Todas"
               options={catalogs?.campuses ?? []}
             />
           )}
-        />
+        </form.AppField>
       </div>
 
       <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-        <form.Field
-          name="grade"
-          children={(field) => (
+        <form.AppField name="grade">
+          {(field) => (
             <SelectFilter
-              field={field}
               label="Grado"
               anyLabel="Todos"
               // El grado viaja como string en el form (igual que en la URL) y
@@ -145,64 +132,53 @@ export function FilterReservationsForm({
               renderOption={(value) => formatGrade(Number(value))}
             />
           )}
-        />
-        <form.Field
-          name="group"
-          children={(field) => (
+        </form.AppField>
+        <form.AppField name="group">
+          {(field) => (
             <SelectFilter
-              field={field}
               label="Grupo"
               anyLabel="Todos"
               options={catalogs?.groups ?? []}
             />
           )}
-        />
+        </form.AppField>
       </div>
 
-      <form.Field
-        name="shifts"
-        mode="array"
-        children={(field) => (
+      <form.AppField name="shifts" mode="array">
+        {(field) => (
           <CheckboxFilterGroup
             legend="Jornada"
-            name={field.name}
             options={SHIFTS}
             labels={SHIFT_LABELS}
             selected={field.state.value}
             onToggle={(value, checked) => toggleArrayValue(field, value, checked)}
           />
         )}
-      />
+      </form.AppField>
 
-      <form.Field
-        name="levels"
-        mode="array"
-        children={(field) => (
+      <form.AppField name="levels" mode="array">
+        {(field) => (
           <CheckboxFilterGroup
             legend="Nivel educativo"
-            name={field.name}
             options={EDUCATION_LEVELS}
             labels={EDUCATION_LEVEL_LABELS}
             selected={field.state.value}
             onToggle={(value, checked) => toggleArrayValue(field, value, checked)}
           />
         )}
-      />
+      </form.AppField>
 
-      <form.Field
-        name="statuses"
-        mode="array"
-        children={(field) => (
+      <form.AppField name="statuses" mode="array">
+        {(field) => (
           <CheckboxFilterGroup
             legend="Estado"
-            name={field.name}
             options={RESERVATION_STATUSES}
             labels={RESERVATION_STATUS_LABELS}
             selected={field.state.value}
             onToggle={(value, checked) => toggleArrayValue(field, value, checked)}
           />
         )}
-      />
+      </form.AppField>
 
       {/* Fecha de reserva: dos campos independientes (no un único rango), cada
           uno en modo `datetime` —calendario y hora en el mismo popover—. La
@@ -210,80 +186,74 @@ export function FilterReservationsForm({
       <FieldSet>
         <FieldLegend variant="label">Fecha de reserva</FieldLegend>
         <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-          <form.Field
-            name="reservedFrom"
-            children={(field) => (
+          <form.AppField name="reservedFrom">
+            {(field) => (
               <Field orientation="vertical" variant="outlined" className="gap-2">
                 <FieldLabel htmlFor={field.name}>Desde</FieldLabel>
                 <DatePicker
                   mode="datetime"
                   id={field.name}
+                  size="sm"
                   value={parseDateTimeValue(field.state.value)}
                   onChange={(date) => field.handleChange(formatDateTimeValue(date))}
-                  className="h-9"
                 />
               </Field>
             )}
-          />
-          <form.Field
-            name="reservedTo"
-            children={(field) => (
-              // Sin `isTouched`: el error nace del otro campo del rango, así
-              // que se muestra apenas la validación de submit lo reporta.
-              <Field
-                orientation="vertical"
-                variant="outlined"
-                className="gap-2"
-                data-invalid={field.state.meta.errors.length > 0 ? "true" : undefined}
-              >
-                <FieldLabel htmlFor={field.name}>Hasta</FieldLabel>
-                <DatePicker
-                  mode="datetime"
-                  id={field.name}
-                  value={parseDateTimeValue(field.state.value)}
-                  onChange={(date) => field.handleChange(formatDateTimeValue(date))}
-                  className="h-9"
-                />
-                <FieldError errors={field.state.meta.errors} />
-              </Field>
-            )}
-          />
+          </form.AppField>
+          <form.AppField name="reservedTo">
+            {(field) => {
+              // El error de rango es de submit (validación cruzada entre los
+              // dos campos), no del campo: se muestra apenas la validación
+              // dispara, sin esperar al `isTouched` del propio "Hasta".
+              const isInvalid = !field.state.meta.isValid
+              return (
+                <Field
+                  orientation="vertical"
+                  variant="outlined"
+                  className="gap-2"
+                  data-invalid={isInvalid ? "true" : undefined}
+                >
+                  <FieldLabel htmlFor={field.name}>Hasta</FieldLabel>
+                  <DatePicker
+                    mode="datetime"
+                    id={field.name}
+                    size="sm"
+                    aria-invalid={isInvalid}
+                    value={parseDateTimeValue(field.state.value)}
+                    onChange={(date) => field.handleChange(formatDateTimeValue(date))}
+                  />
+                  <FieldError errors={field.state.meta.errors} />
+                </Field>
+              )
+            }}
+          </form.AppField>
         </div>
       </FieldSet>
 
       {/* "Agrupar por" no filtra: reordena el listado para que las filas de
           la misma institución/sede/grado queden juntas. */}
-      <form.Field
-        name="groupBy"
-        children={(field) => (
+      <form.AppField name="groupBy">
+        {(field) => (
           <SelectFilter
-            field={field}
             label="Agrupar por"
             anyLabel="Sin agrupar"
             options={[...RESERVATION_GROUP_BY]}
             renderOption={(value) => RESERVATION_GROUP_BY_LABELS[value as ReservationGroupBy]}
           />
         )}
-      />
+      </form.AppField>
     </form>
   )
 }
 
 /*
- * Los ladrillos del panel. Están acá y no en un componente compartido porque
- * solo los usa este formulario; el `field` se tipa como `AnyFieldApi` para no
- * arrastrar los genéricos del form hasta cada helper —los campos que reciben
- * son todos de tipo `string`—.
+ * Helpers que viven dentro de `<form.AppField>` y leen el `field` del
+ * contexto, así no arrastran `field: AnyFieldApi` por props. Cada uno declara
+ * el tipo del valor que espera del form (`string`, `string[]`, …).
  */
-function TextFilter({
-  field,
-  label,
-  inputMode,
-}: {
-  field: AnyFieldApi
-  label: string
-  inputMode?: "numeric"
-}) {
+
+function TextFilter({ label, inputMode }: { label: string; inputMode?: "numeric" }) {
+  const field = useFieldContext<string>()
   return (
     <Field orientation="vertical" variant="outlined" className="gap-2">
       <FieldLabel htmlFor={field.name}>{label}</FieldLabel>
@@ -292,25 +262,23 @@ function TextFilter({
         name={field.name}
         type="text"
         inputMode={inputMode}
+        size="sm"
         autoComplete="off"
         placeholder="Agregar"
-        value={field.state.value as string}
+        value={field.state.value}
         onBlur={field.handleBlur}
         onChange={(event) => field.handleChange(event.target.value)}
-        className="h-9"
       />
     </Field>
   )
 }
 
 function SelectFilter({
-  field,
   label,
   anyLabel,
   options,
   renderOption = (value) => value,
 }: {
-  field: AnyFieldApi
   label: string
   /** Etiqueta de la opción "sin filtro" ("Todas", "Todos", "Sin agrupar"). */
   anyLabel: string
@@ -318,19 +286,26 @@ function SelectFilter({
   /** Cómo se lee cada valor; por defecto, el valor tal cual. */
   renderOption?: (value: string) => ReactNode
 }) {
-  const value = (field.state.value as string) || ANY
+  const field = useFieldContext<string>()
+  // El estado interno del select usa `ANY` para "sin filtro"; al guardar lo
+  // traducimos a `""` para que el serializador del search schema no mande un
+  // centinela a la API.
+  const currentValue = field.state.value || ANY
+  const itemsMap: Record<string, ReactNode> = {
+    [ANY]: anyLabel,
+    ...Object.fromEntries(options.map((option) => [option, renderOption(option)])),
+  }
 
   return (
     <Field orientation="vertical" variant="outlined" className="gap-2">
       <FieldLabel htmlFor={field.name}>{label}</FieldLabel>
       <Select
-        value={value}
+        items={itemsMap}
+        value={currentValue}
         onValueChange={(next) => field.handleChange(next === ANY ? "" : (next ?? ""))}
       >
         <SelectTrigger id={field.name} size="sm" className="w-full">
-          <SelectValue>
-            {(current) => (!current || current === ANY ? anyLabel : renderOption(String(current)))}
-          </SelectValue>
+          <SelectValue />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value={ANY}>{anyLabel}</SelectItem>
@@ -347,14 +322,12 @@ function SelectFilter({
 
 function CheckboxFilterGroup<T extends string>({
   legend,
-  name,
   options,
   labels,
   selected,
   onToggle,
 }: {
   legend: string
-  name: string
   options: readonly T[]
   labels: Record<T, string>
   selected: readonly T[]
@@ -375,12 +348,11 @@ function CheckboxFilterGroup<T extends string>({
           alineadas entre secciones. */}
       <FieldGroup className="grid grid-cols-3 gap-x-4 gap-y-2">
         {options.map((option) => {
-          const optionId = `${name}-filter-${option}`
+          const optionId = `${legend}-filter-${option}`
           return (
             <Field key={option} orientation="horizontal" className="min-w-0 gap-2">
               <Checkbox
                 id={optionId}
-                name={name}
                 checked={selected.includes(option)}
                 onCheckedChange={(checked) => onToggle(option, checked === true)}
               />

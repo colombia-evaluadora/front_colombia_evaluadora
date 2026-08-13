@@ -19,7 +19,7 @@ interface ForgotPasswordFormProps {
 
 export function ForgotPasswordForm({ id, onSubmit }: ForgotPasswordFormProps) {
   const form = useForm({
-    defaultValues: { email: "" } as ForgotPasswordFormValues,
+    defaultValues: { email: "" },
     validators: {
       onChange: forgotPasswordFormSchema,
     },

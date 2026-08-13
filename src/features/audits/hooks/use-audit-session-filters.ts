@@ -3,7 +3,7 @@ import { useCallback, useMemo } from "react"
 import { auditoriaSesionesRoute } from "@/router"
 
 import type { AuditFiltersFormInput, AuditFiltersFormValues } from "../api/schema"
-import type { AuditsQueryRequest } from "../api/types/audit"
+import type { AuditsQueryRequest, SessionStatus } from "../api/types/audit"
 
 export interface AuditSessionFilters {
   filters: AuditFiltersFormInput
@@ -19,11 +19,15 @@ export function useAuditSessionFilters(): AuditSessionFilters {
 
   const applyFilters = useCallback(
     (values: AuditFiltersFormValues) => {
+      // El form lleva un único `status`; la URL/serialización de la API
+      // esperan un array. Convertimos en el borde: "" → undefined, valor →
+      // array de un elemento.
+      const status = values.status as SessionStatus | ""
       navigate({
         search: (prev) => ({
           ...prev,
           author: values.author || undefined,
-          statuses: values.statuses.length ? values.statuses : undefined,
+          statuses: status ? [status] : undefined,
           startedFrom: values.startedFrom || undefined,
           startedTo: values.startedTo || undefined,
           page: 0,
@@ -67,9 +71,10 @@ export function useAuditSessionFilters(): AuditSessionFilters {
   }, [search.author, search.statuses, search.startedFrom, search.startedTo])
 
   return {
+    // El form recibe un único `status`; el resto de campos pasan tal cual.
     filters: {
       author: search.author ?? "",
-      statuses: search.statuses ?? [],
+      status: search.statuses?.[0] ?? "",
       startedFrom: search.startedFrom ?? "",
       startedTo: search.startedTo ?? "",
     },

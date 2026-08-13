@@ -20,7 +20,7 @@ interface CampusDetailsFormProps {
 }
 
 export function CampusDetailsForm({ value, zones, onChange, errors = {} }: CampusDetailsFormProps) {
-  const zoneItems = zones.map((zone) => ({ value: zone.id, label: zone.name }))
+  const zoneLabels = Object.fromEntries(zones.map((zone) => [zone.id, zone.name]))
 
   return (
     // `gap-x-4 gap-y-2`: mismo ritmo que los formularios de establecimiento —
@@ -35,6 +35,7 @@ export function CampusDetailsForm({ value, zones, onChange, errors = {} }: Campu
         <FieldLabel htmlFor="campus-name">Nombre de la sede *</FieldLabel>
         <Input
           id="campus-name"
+          size="sm"
           value={value.name}
           aria-invalid={Boolean(errors["name"])}
           onChange={(event) => onChange({ ...value, name: event.target.value })}
@@ -52,6 +53,7 @@ export function CampusDetailsForm({ value, zones, onChange, errors = {} }: Campu
         <FieldLabel htmlFor="campus-dane">Código DANE antiguo de la sede *</FieldLabel>
         <Input
           id="campus-dane"
+          size="sm"
           value={value.dane}
           aria-invalid={Boolean(errors["dane"])}
           onChange={(event) => onChange({ ...value, dane: event.target.value })}
@@ -68,6 +70,7 @@ export function CampusDetailsForm({ value, zones, onChange, errors = {} }: Campu
       >
         <FieldLabel htmlFor="campus-zone">Zona *</FieldLabel>
         <Select
+          items={zoneLabels}
           value={value.zone.id}
           onValueChange={(selectedValue) => {
             const option = zones.find((item) => item.id === selectedValue)
@@ -80,15 +83,14 @@ export function CampusDetailsForm({ value, zones, onChange, errors = {} }: Campu
               },
             })
           }}
-          items={zoneItems}
         >
-          <SelectTrigger id="campus-zone" aria-invalid={Boolean(errors["zone"])}>
+          <SelectTrigger id="campus-zone" size="sm" aria-invalid={Boolean(errors["zone"])}>
             <SelectValue placeholder="Seleccionar" />
           </SelectTrigger>
           <SelectContent>
-            {zoneItems.map((item) => (
-              <SelectItem key={item.value} value={item.value}>
-                {item.label}
+            {zones.map((item) => (
+              <SelectItem key={item.id} value={item.id}>
+                {item.name}
               </SelectItem>
             ))}
           </SelectContent>
@@ -100,6 +102,7 @@ export function CampusDetailsForm({ value, zones, onChange, errors = {} }: Campu
         <FieldLabel htmlFor="campus-neighborhood">Barrio</FieldLabel>
         <Input
           id="campus-neighborhood"
+          size="sm"
           value={value.neighborhood}
           onChange={(event) => onChange({ ...value, neighborhood: event.target.value })}
           placeholder="Agregar"
@@ -110,6 +113,7 @@ export function CampusDetailsForm({ value, zones, onChange, errors = {} }: Campu
         <FieldLabel htmlFor="campus-commune">Comuna</FieldLabel>
         <Input
           id="campus-commune"
+          size="sm"
           value={value.commune}
           onChange={(event) => onChange({ ...value, commune: event.target.value })}
           placeholder="Agregar"
@@ -120,6 +124,7 @@ export function CampusDetailsForm({ value, zones, onChange, errors = {} }: Campu
         <FieldLabel htmlFor="campus-address">Dirección de la sede</FieldLabel>
         <Input
           id="campus-address"
+          size="sm"
           value={value.address}
           onChange={(event) => onChange({ ...value, address: event.target.value })}
           placeholder="Agregar"
@@ -130,6 +135,7 @@ export function CampusDetailsForm({ value, zones, onChange, errors = {} }: Campu
         <FieldLabel htmlFor="campus-phone">Teléfono de la sede</FieldLabel>
         <Input
           id="campus-phone"
+          size="sm"
           value={value.phone}
           onChange={(event) => onChange({ ...value, phone: event.target.value })}
           placeholder="Agregar"
@@ -140,6 +146,7 @@ export function CampusDetailsForm({ value, zones, onChange, errors = {} }: Campu
         <FieldLabel htmlFor="campus-approval-resolution">Resolución de aprobación</FieldLabel>
         <Input
           id="campus-approval-resolution"
+          size="sm"
           value={value.approvalResolution}
           onChange={(event) => onChange({ ...value, approvalResolution: event.target.value })}
           placeholder="Agregar"

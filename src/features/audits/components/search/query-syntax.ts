@@ -1,4 +1,5 @@
 import {
+  optionTerm,
   optionsTerm,
   textTerm,
   type QueryOption,
@@ -33,10 +34,12 @@ export function auditSessionsSyntax(
   statusOptions: QueryOption[],
 ): QuerySyntax<AuditFiltersFormValues> {
   return {
-    empty: { author: "", statuses: [], startedFrom: "", startedTo: "" },
+    empty: { author: "", status: "", startedFrom: "", startedTo: "" },
     freeText: { key: "author_ip", field: "author" },
     terms: [
-      optionsTerm("estado", "statuses", statusOptions),
+      // Selección única: el form lleva un `status`, no `statuses`. La URL sigue
+      // exponiendo `statuses` (array) — la conversión se hace en el hook.
+      optionTerm("estado", "status", statusOptions),
       textTerm("desde", "startedFrom"),
       textTerm("hasta", "startedTo"),
     ],

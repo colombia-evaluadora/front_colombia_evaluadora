@@ -1,6 +1,6 @@
 import { useState } from "react"
 
-import { useForm } from "@tanstack/react-form"
+import { useAppForm, useFieldContext } from "@/lib/forms"
 import {
   ControlPointIcon,
   PencilIcon,
@@ -46,6 +46,13 @@ import type { OperationType } from "../../api/types/audit-table"
 import { useAuditOperationTypesQuery } from "../../api/query/use-audit-operation-types-query"
 import { formatDateTimeValue, parseDateTimeValue } from "@/lib/date-time-value"
 
+// `key=${filter.field}-${index}` no sobrevive a remover el primer elemento:
+// al cambiar los índices, todo el array se remonta y se pierde foco. El id
+// viene del contenido, así que es estable ante inserciones/eliminaciones.
+function filterKey(filter: FieldFilter, index: number) {
+  return `${filter.field}:${filter.value}:${index}`
+}
+
 interface FilterTableOperationsFormProps {
   id: string
   defaultValues: TableOperationsFiltersFormInput
@@ -63,14 +70,12 @@ export function FilterTableOperationsForm({
   availableFields,
   hideAuthor = false,
 }: FilterTableOperationsFormProps) {
-  const form = useForm({
+  const form = useAppForm({
     defaultValues,
     validators: {
       onSubmit: tableOperationsFiltersFormSchema,
     },
-    onSubmit: ({ value }) => {
-      onSubmit(tableOperationsFiltersFormSchema.parse(value))
-    },
+    onSubmit: ({ value }) => onSubmit(value),
   })
 
   // Las opciones de tipo de operación las entrega el backend como
@@ -104,31 +109,28 @@ export function FilterTableOperationsForm({
       className="flex flex-1 flex-col gap-5 px-4"
     >
       {!hideAuthor && (
-        <form.Field
-          name="author"
-          children={(field) => (
+        <form.AppField name="author">
+          {(field) => (
             <Field orientation="vertical" variant="outlined" className="gap-2">
               <FieldLabel htmlFor={field.name}>Autor / IP</FieldLabel>
               <Input
                 id={field.name}
                 name={field.name}
                 type="text"
+                size="sm"
                 autoComplete="off"
                 placeholder="Agregar"
                 value={field.state.value}
                 onBlur={field.handleBlur}
                 onChange={(event) => field.handleChange(event.target.value)}
-                className="h-9"
               />
             </Field>
           )}
-        />
+        </form.AppField>
       )}
 
-      <form.Field
-        name="operations"
-        mode="array"
-        children={(field) => {
+      <form.AppField name="operations" mode="array">
+        {(field) => {
           const toggle = (operation: OperationType, checked: boolean) => {
             if (checked) {
               field.pushValue(operation)
@@ -163,7 +165,6 @@ export function FilterTableOperationsForm({
                         <Field orientation="horizontal">
                           <Checkbox
                             id={id}
-                            name={field.name}
                             checked={field.state.value.includes(option.key)}
                             onCheckedChange={(checked) => toggle(option.key, checked === true)}
                           />
@@ -182,7 +183,7 @@ export function FilterTableOperationsForm({
             </FieldSet>
           )
         }}
-      />
+      </form.AppField>
 
       {/* Dos campos independientes (no un único rango) — cada uno usa el
           modo `datetime`, que combina calendario y hora en el mismo popover
@@ -191,57 +192,55 @@ export function FilterTableOperationsForm({
       <FieldSet>
         <FieldLegend variant="label">Rango de fecha</FieldLegend>
         <div className="grid grid-cols-2 gap-3">
-          <form.Field
-            name="occurredFrom"
-            children={(field) => (
+          <form.AppField name="occurredFrom">
+            {(field) => (
               <Field orientation="vertical" variant="outlined" className="gap-2">
                 <FieldLabel htmlFor={field.name}>Desde</FieldLabel>
                 <DatePicker
                   mode="datetime"
                   id={field.name}
+                  size="sm"
                   value={parseDateTimeValue(field.state.value)}
                   onChange={(date) => field.handleChange(formatDateTimeValue(date))}
-                  className="h-9"
                 />
               </Field>
             )}
-          />
-          <form.Field
-            name="occurredTo"
-            children={(field) => (
-              <Field orientation="vertical" variant="outlined" className="gap-2" data-invalid={field.state.meta.errors.length > 0 ? "true" : undefined}>
-                <FieldLabel htmlFor={field.name}>Hasta</FieldLabel>
-                <DatePicker
-                  mode="datetime"
-                  id={field.name}
-                  value={parseDateTimeValue(field.state.value)}
-                  onChange={(date) => field.handleChange(formatDateTimeValue(date))}
-                  className="h-9"
-                />
-                <FieldError errors={field.state.meta.errors} />
-              </Field>
-            )}
-          />
+          </form.AppField>
+          <form.AppField name="occurredTo">
+            {(field) => {
+              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
+              return (
+                <Field
+                  orientation="vertical"
+                  variant="outlined"
+                  className="gap-2"
+                  data-invalid={isInvalid ? "true" : undefined}
+                >
+                  <FieldLabel htmlFor={field.name}>Hasta</FieldLabel>
+                  <DatePicker
+                    mode="datetime"
+                    id={field.name}
+                    size="sm"
+                    aria-invalid={isInvalid}
+                    value={parseDateTimeValue(field.state.value)}
+                    onChange={(date) => field.handleChange(formatDateTimeValue(date))}
+                  />
+                  <FieldError errors={field.state.meta.errors} />
+                </Field>
+              )
+            }}
+          </form.AppField>
         </div>
       </FieldSet>
 
-      <form.Field
-        name="fieldFilters"
-        mode="array"
-        children={(field) => <FieldFilterSection field={field} availableFields={availableFields} />}
-      />
+      <form.AppField name="fieldFilters" mode="array">
+        {() => <FieldFilterSection availableFields={availableFields} />}
+      </form.AppField>
     </form>
   )
 }
 
 interface FieldFilterSectionProps {
-  // El field viene de TanStack Form; usamos solo lo que necesitamos para
-  // no atar la sección al tipado del form completo.
-  field: {
-    state: { value: FieldFilter[] }
-    pushValue: (value: FieldFilter) => void
-    removeValue: (index: number) => void
-  }
   // Campos de la tabla auditada para el dropdown "Campo".
   availableFields: string[]
 }
@@ -252,7 +251,10 @@ interface FieldFilterSectionProps {
  * Cancelar). El composer tiene estado local porque no queremos pushear
  * filtros incompletos al array del form.
  */
-function FieldFilterSection({ field, availableFields }: FieldFilterSectionProps) {
+function FieldFilterSection({ availableFields }: FieldFilterSectionProps) {
+  // `useFieldContext` lee el `field` del form por contexto, así no hay que
+  // pasarlo por props. `FieldFilter[]` es el tipo del array del form.
+  const field = useFieldContext<FieldFilter[]>()
   const [composerField, setComposerField] = useState<string>("")
   const [composerCondition, setComposerCondition] = useState<FieldFilterCondition | "">("")
   const [composerValue, setComposerValue] = useState("")
@@ -286,7 +288,7 @@ function FieldFilterSection({ field, availableFields }: FieldFilterSectionProps)
           <ul className="flex flex-col gap-2">
             {field.state.value.map((filter, index) => (
               <li
-                key={`${filter.field}-${index}`}
+                key={filterKey(filter, index)}
                 className="bg-muted/40 flex items-center justify-between gap-2 rounded-none border px-3 py-2 text-xs"
               >
                 <span className="min-w-0 truncate">
@@ -333,8 +335,8 @@ function FieldFilterSection({ field, availableFields }: FieldFilterSectionProps)
           <Field orientation="vertical" variant="outlined" className="gap-2">
             <FieldLabel htmlFor="field-filter-condition">Condición</FieldLabel>
             <Select
-              // `items` le da al trigger el label del valor seleccionado; sin
-              // esto SelectValue imprime la clave cruda ("startsWith").
+              // `items` mapea el value del enum a su label ("startsWith" →
+              // "Empieza con") para que el trigger no muestre la clave cruda.
               items={FIELD_FILTER_CONDITION_LABELS}
               value={composerCondition}
               onValueChange={(value) =>
@@ -359,11 +361,11 @@ function FieldFilterSection({ field, availableFields }: FieldFilterSectionProps)
             <Input
               id="field-filter-value"
               type="text"
+              size="sm"
               autoComplete="off"
               placeholder="Agregar"
               value={composerValue}
               onChange={(event) => setComposerValue(event.target.value)}
-              className="h-9"
             />
           </Field>
           <Button
@@ -371,6 +373,7 @@ function FieldFilterSection({ field, availableFields }: FieldFilterSectionProps)
             type="button"
             onClick={handleAdd}
             disabled={!composerReady}
+            aria-disabled={!composerReady}
             className="h-9"
           >
             <ControlPointIcon data-icon="inline-start" />

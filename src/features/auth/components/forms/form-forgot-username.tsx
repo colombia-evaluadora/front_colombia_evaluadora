@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 
-import { forgotUsernameFormSchema, type ForgotUsernameFormValues } from "../../api/schema"
+import { forgotUsernameFormSchema } from "../../api/schema"
 
 interface ForgotUsernameFormProps {
   id: string
@@ -18,7 +18,7 @@ interface ForgotUsernameFormProps {
 
 export function ForgotUsernameForm({ id, onSubmit }: ForgotUsernameFormProps) {
   const form = useForm({
-    defaultValues: { document: "" } as ForgotUsernameFormValues,
+    defaultValues: { document: "" },
     validators: {
       onChange: forgotUsernameFormSchema,
     },
