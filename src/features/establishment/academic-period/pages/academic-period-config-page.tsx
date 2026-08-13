@@ -1,24 +1,24 @@
 import { useState } from "react"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
-import { SpinnerIcon } from "@/components/ui/icons"
+import { CheckIcon, SpinnerIcon } from "@/components/ui/icons"
 import { Link, notFound, useNavigate, useParams } from "@tanstack/react-router"
 
 import { isNotFoundError } from "@/lib/api-client"
 
 import { Button } from "@/components/ui/button"
 import {
-  Card,
-  CardAction,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
+import {
+  TableScreen,
+  TableScreenBody,
+  TableScreenFooter,
+  TableScreenHeader,
+  TableScreenTitle,
+} from "@/components/layout/table-screen"
 import { paths } from "@/config/paths"
 
 import { useCreateAcademicPeriod } from "@/features/establishment/academic-period/api/mutations/create-academic-period"
@@ -166,25 +166,6 @@ function AcademicPeriodConfigPageContent() {
   // sentido si hay algo que guardar (o mientras se está guardando).
   const showSaveAction = !isEditing || isFormDirty || isSaving
 
-  const header = (
-    <CardHeader className="border-b">
-      <CardAction>
-        <Button
-          size="sm"
-          variant="fill"
-          color="neutral"
-          render={<Link to={paths.app.periodosAcademicos.getHref()} />}
-          nativeButton={false}
-        >
-          Cerrar
-        </Button>
-      </CardAction>
-      <CardTitle>
-        {isEditing ? "Editar periodo académico" : "Agregar periodo académico"}
-      </CardTitle>
-    </CardHeader>
-  )
-
   const configBody = (
     <Accordion
       value={configOpen ? ["config"] : []}
@@ -211,58 +192,77 @@ function AcademicPeriodConfigPageContent() {
               Ocurrió un error al cargar el periodo académico.
             </p>
           ) : (
-            <>
-              <AcademicPeriodForm
-                id={FORM_ID}
-                defaultValues={detail ? toFormValues(detail) : undefined}
-                onSubmit={handleSubmit}
-                onDirtyChange={setIsFormDirty}
-                savedToken={savedToken}
-              />
-              {/* Acciones en el flujo normal, justo debajo de los campos. Al
-                  editar solo aparecen si hay cambios sin guardar, para que el
-                  usuario se concentre en las demás secciones. */}
-              {showSaveAction && (
-                <div className="mt-6 flex justify-end gap-2 border-t border-border pt-4">
-                  <Button
-                    type="submit"
-                    size="sm"
-                    color="primary"
-                    form={FORM_ID}
-                    disabled={isSaving}
-                    aria-busy={isSaving}
-                  >
-                    {isSaving && (
-                      <SpinnerIcon data-icon="inline-start" className="animate-spin" />
-                    )}
-                    Guardar
-                  </Button>
-                </div>
-              )}
-            </>
+            <AcademicPeriodForm
+              id={FORM_ID}
+              defaultValues={detail ? toFormValues(detail) : undefined}
+              onSubmit={handleSubmit}
+              onDirtyChange={setIsFormDirty}
+              savedToken={savedToken}
+            />
           )}
         </AccordionContent>
       </AccordionItem>
     </Accordion>
   )
+
   return (
-    <div className="flex flex-col gap-6">
-      <Card>
-        {header}
-        <CardContent className="flex flex-col gap-6">
-          <NoticeOutlet />
-          {configBody}
-          {/* Las pestañas van sueltas: su propio panel ya dibuja el borde de
-              "carpeta", así que envolverlas en otra card duplicaba contorno y
-              padding. */}
-          {showSecondForm && (
+    <TableScreen>
+      <TableScreenHeader>
+        <TableScreenTitle
+          action={
+            <Button
+              size="sm"
+              variant="fill"
+              color="neutral"
+              render={<Link to={paths.app.periodosAcademicos.getHref()} />}
+              nativeButton={false}
+            >
+              Cerrar
+            </Button>
+          }
+        >
+          {isEditing ? "Editar periodo académico" : "Agregar periodo académico"}
+        </TableScreenTitle>
+        <NoticeOutlet className="mx-(--screen-spacing) my-4" />
+      </TableScreenHeader>
+
+      {/* Sin radio ni borde abajo: ahí se acopla la barra de acciones, que trae
+          el suyo —si no, quedan dos líneas de 1px juntas. */}
+      <TableScreenBody className="rounded-b-none border-b-0">
+        {configBody}
+        {showSecondForm && (
+          <div className="mt-6">
             <EvaluationPeriodsSection
               academicPeriodId={academicPeriodId}
               jornada={saved || !detail ? jornada : toJornada(detail)}
             />
-          )}
-        </CardContent>
-      </Card>
-    </div>
+          </div>
+        )}
+      </TableScreenBody>
+
+      {showSaveAction && (
+        <TableScreenFooter>
+          <p className="text-sm text-muted-foreground">
+            Complete la información antes de guardar.
+          </p>
+          <Button
+            type="submit"
+            size="sm"
+            variant="fill"
+            color="primary"
+            form={FORM_ID}
+            disabled={isSaving}
+            aria-busy={isSaving}
+          >
+            {isSaving ? (
+              <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+            ) : (
+              <CheckIcon data-icon="inline-start" />
+            )}
+            {isSaving ? "Guardando..." : "Guardar"}
+          </Button>
+        </TableScreenFooter>
+      )}
+    </TableScreen>
   )
 }
