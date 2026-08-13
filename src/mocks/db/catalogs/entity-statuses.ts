@@ -12,6 +12,6 @@ import type { CatalogItem } from "@/features/establishment/employees/api/types/c
  * decisión de presentación, no de dominio.
  */
 export const ENTITY_STATUSES: CatalogItem[] = [
-  { id: "ACTIVE", code: "ACTIVE", name: "Activo" },
-  { id: "SUSPENDED", code: "SUSPENDED", name: "Suspendido" },
+  { id: 1, code: "ACTIVE", name: "Activo" },
+  { id: 2, code: "SUSPENDED", name: "Suspendido" },
 ]

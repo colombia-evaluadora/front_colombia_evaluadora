@@ -8,7 +8,7 @@ export interface DeleteEstablishmentResult {
   message: string
 }
 
-function deleteEstablishment(id: string): Promise<DeleteEstablishmentResult> {
+function deleteEstablishment(id: number): Promise<DeleteEstablishmentResult> {
   return api.delete(`/establishments/${id}`)
 }
 

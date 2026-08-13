@@ -1,5 +1,5 @@
 export interface CatalogItem {
-    id: string
+    id: number
     code: string
     name: string
 }

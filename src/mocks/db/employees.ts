@@ -20,6 +20,10 @@ import { WORK_SCHEDULES } from "@/mocks/db/catalogs/work-schedules"
 
 faker.seed(20260729)
 
+// Autoincremental simulado: la base real asigna el id al crear.
+let nextPersonId = 1
+let nextEmployeeId = 1
+
 function createCatalogItem(items: CatalogItem[]): CatalogItem {
   return faker.helpers.arrayElement(items)
 }
@@ -31,7 +35,7 @@ function createPerson(): Person {
   const secondLastName = faker.datatype.boolean() ? faker.person.lastName() : undefined
 
   return {
-    id: faker.string.uuid(),
+    id: nextPersonId++,
     documentType: createCatalogItem(DOCUMENT_TYPES),
     identification: faker.string.numeric({ length: 10, allowLeadingZeros: false }),
     firstName,
@@ -46,11 +50,11 @@ function createPerson(): Person {
   }
 }
 
-function createEmployee(index: number): Employee {
+function createEmployee(): Employee {
   const campusesPool = faker.helpers.shuffle([...campusesDb]).slice(0, faker.number.int({ min: 1, max: 3 }))
 
   return {
-    id: `employee-${index}`,
+    id: nextEmployeeId++,
     person: createPerson(),
     employeeClass: createCatalogItem(EMPLOYEE_CLASSES),
     educationLevel: createCatalogItem(EDUCATION_LEVELS),
@@ -71,7 +75,7 @@ function createEmployee(index: number): Employee {
   }
 }
 
-export function createEmployeeRow(employee: Employee): EmployeeListItem {
+export function createEmployeeRow(employee: Employee & { id: number }): EmployeeListItem {
   const campusNames = [...new Set(employee.permissions.map((permission) => permission.campus.name))]
 
   /**
@@ -128,8 +132,11 @@ export function createEmployeeRow(employee: Employee): EmployeeListItem {
   }
 }
 
-const employeeRecords = Array.from({ length: 20 }, (_, index) => {
-  const employee = createEmployee(index + 1)
+const employeeRecords = Array.from({ length: 20 }, () => {
+  // `createEmployee` siempre asigna `id` (contador); el cast solo declara
+  // esa garantía donde el tipo `Employee` (con `id` opcional para el borrador
+  // de alta) no la expresa.
+  const employee = createEmployee() as Employee & { id: number }
 
   return {
     employee,
@@ -141,7 +148,15 @@ export const employeesDb: Employee[] = employeeRecords.map((record) => record.em
 
 export const employeesRowsDb: EmployeeListItem[] = employeeRecords.map((record) => record.row)
 
-export function upsertEmployeeDetails(employee: Employee) {
+/**
+ * `rawEmployee.id` ausente = alta: el backend real lo asignaría al crear,
+ * acá lo hace el contador. Con `id` presente es una actualización.
+ */
+export function upsertEmployeeDetails(rawEmployee: Employee) {
+  const employee: Employee & { id: number } = {
+    ...rawEmployee,
+    id: rawEmployee.id ?? nextEmployeeId++,
+  }
   const employeeIndex = employeesDb.findIndex((item) => item.id === employee.id)
 
   if (employeeIndex >= 0) {
@@ -162,7 +177,7 @@ export function upsertEmployeeDetails(employee: Employee) {
   return employee
 }
 
-export function deleteEmployeeDetails(id: string) {
+export function deleteEmployeeDetails(id: number) {
   const employeeIndex = employeesDb.findIndex((item) => item.id === id)
   const rowIndex = employeesRowsDb.findIndex((item) => item.id === id)
 
@@ -175,11 +190,11 @@ export function deleteEmployeeDetails(id: string) {
   }
 }
 
-export function deleteManyEmployeeDetails(ids: string[]) {
+export function deleteManyEmployeeDetails(ids: number[]) {
   const idSet = new Set(ids)
 
   for (let index = employeesDb.length - 1; index >= 0; index -= 1) {
-    if (idSet.has(employeesDb[index].id)) {
+    if (idSet.has(employeesDb[index].id ?? -1)) {
       employeesDb.splice(index, 1)
     }
   }

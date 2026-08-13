@@ -12,7 +12,7 @@ export const ESTABLISHMENT_STATUSES: EstablishmentStatus[] = [
 ]
 
 export interface Establishment {
-  id: string
+  id: number
   dane: string
   name: string
   department: string
@@ -21,7 +21,8 @@ export interface Establishment {
 }
 
 export interface EstablishmentDetails {
-    id: string
+    /** Ausente hasta que el backend lo asigna (POST /establishments). */
+    id?: number
 
     basicInfo: EstablishmentBasicInfo
 
@@ -44,20 +45,20 @@ export interface EstablishmentBasicInfo {
 
     nit: string
 
-    ownershipType: CatalogItem
+    ownershipType: CatalogItem | null
 }
 
 export interface EstablishmentAddress {
 
-    municipality: Municipality
+    municipality: Municipality | null
 
-    zone: CatalogItem
+    zone: CatalogItem | null
 
-    district: CatalogItem
+    district: CatalogItem | null
 
-    commune: CatalogItem
+    commune: CatalogItem | null
 
-    locality: CatalogItem
+    locality: CatalogItem | null
 
     address: string
 }
@@ -77,21 +78,21 @@ export interface EstablishmentAdditionalInfo {
 
     approvalResolution: string
 
-    teachingLanguage: CatalogItem
+    teachingLanguage: CatalogItem | null
 
-    calendar: CatalogItem
+    calendar: CatalogItem | null
 
-    costRegime: CatalogItem
+    costRegime: CatalogItem | null
 
-    populationGender: CatalogItem
+    populationGender: CatalogItem | null
 
-    tuitionRange: CatalogItem
+    tuitionRange: CatalogItem | null
 
-    disabilityType: CatalogItem
+    disabilityType: CatalogItem | null
 
     operatingLicense: boolean
 
-    licenseStatus: CatalogItem
+    licenseStatus: CatalogItem | null
 
     licenseDate: string | null
 

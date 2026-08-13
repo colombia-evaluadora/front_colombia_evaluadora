@@ -68,13 +68,13 @@ import { NoticeOutlet, useNotify } from "@/components/notice/notice-context"
 interface ManageEmployeeDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  employeeId?: string | null
+  employeeId?: number | null
 }
 
 interface PermissionDraft {
   order: string
   roleCode: string
-  campusId: string
+  campusId: number | null
   workScheduleCode: string
   status: PermissionStatus | ""
 }
@@ -94,7 +94,11 @@ const permissionDraftSchema = z.object({
       message: "El orden debe ser un número entero mayor que cero.",
     }),
   roleCode: z.string().min(1, "Selecciona el rol."),
-  campusId: z.string().min(1, "Selecciona la sede educativa."),
+  // `custom` y no `number`: al validar que no es `null`, el resultado ya sale
+  // tipado como `number` y el permiso se arma sin castear.
+  campusId: z.custom<number>((value) => typeof value === "number", {
+    message: "Selecciona la sede educativa.",
+  }),
   workScheduleCode: z.string().min(1, "Selecciona la jornada."),
   // `custom` y no `string`: al validar que no está vacío, el resultado ya sale
   // tipado como `PermissionStatus` y el permiso se arma sin castear.
@@ -111,13 +115,13 @@ const permissionDraftSchema = z.object({
 function hasAdditionalInfoData(value: EmployeeAdditionalInfoValue): boolean {
   return Boolean(
     value.address.trim() ||
-      value.employeeClass.id ||
-      value.educationLevel.id ||
-      value.grade.id ||
-      value.highestEducationLevel.id ||
-      value.fundingSource.id ||
-      value.functionalPosition.id ||
-      value.employmentType.id,
+      value.employeeClass?.id ||
+      value.educationLevel?.id ||
+      value.grade?.id ||
+      value.highestEducationLevel?.id ||
+      value.fundingSource?.id ||
+      value.functionalPosition?.id ||
+      value.employmentType?.id,
   )
 }
 
@@ -189,13 +193,8 @@ const permissionActionsOverlayClass = () =>
     "opacity-0 group-hover/row:opacity-100 group-has-[:focus-visible]/row:opacity-100",
   )
 
-function createEmptyCatalogItem(): CatalogItem {
-  return { id: "", code: "", name: "" }
-}
-
 function createEmptyPerson(): Person {
   return {
-    id: "",
     documentType: null,
     identification: "",
     firstName: "",
@@ -212,13 +211,13 @@ function createEmptyPerson(): Person {
 
 function createInitialAdditionalInfo(): EmployeeAdditionalInfoValue {
   return {
-    employeeClass: createEmptyCatalogItem(),
-    educationLevel: createEmptyCatalogItem(),
-    grade: createEmptyCatalogItem(),
-    highestEducationLevel: createEmptyCatalogItem(),
-    fundingSource: createEmptyCatalogItem(),
-    functionalPosition: createEmptyCatalogItem(),
-    employmentType: createEmptyCatalogItem(),
+    employeeClass: null,
+    educationLevel: null,
+    grade: null,
+    highestEducationLevel: null,
+    fundingSource: null,
+    functionalPosition: null,
+    employmentType: null,
     address: "",
   }
 }
@@ -231,10 +230,10 @@ function createInitialAdditionalInfo(): EmployeeAdditionalInfoValue {
 const employeePersonSchema = z.object({
   documentType: z
     .union([
-      z.object({ id: z.string() }),
+      z.object({ id: z.number() }),
       z.null(),
     ])
-    .refine((item) => item !== null && item.id.trim() !== "", {
+    .refine((item) => item !== null, {
       message: "Selecciona el tipo de documento.",
     }),
   identification: z.string().trim().min(1, "Ingresa el número de documento."),
@@ -248,7 +247,7 @@ function createPermissionDraft(nextOrder = 1): PermissionDraft {
   return {
     order: String(nextOrder),
     roleCode: "",
-    campusId: "",
+    campusId: null,
     workScheduleCode: "",
     status: "",
   }
@@ -273,7 +272,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
    * habilita los botones opcionales (permisos / información complementaria)
    * y `handleMainSave` pasa a usar PUT /employees/:id.
    */
-  const [createdEmployeeId, setCreatedEmployeeId] = useState<string | null>(null)
+  const [createdEmployeeId, setCreatedEmployeeId] = useState<number | null>(null)
 
   const [person, setPerson] = useState<Person | null>(createEmptyPerson())
   const [permissions, setPermissions] = useState<Permission[]>([])
@@ -328,7 +327,10 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
   const roleItems = roles.map((role) => ({ value: role.code, label: role.name }))
   const campusItems = campuses.map((campus) => ({ value: campus.id, label: campus.name }))
   const workScheduleItems = workSchedules.map((schedule) => ({ value: schedule.code, label: schedule.name }))
-  const permissionStatusItems = entityStatuses.map((status: CatalogItem) => ({ value: status.id, label: status.name }))
+  // `status.code` (no `.id`): el permiso guarda el estado como el literal
+  // "ACTIVE"/"SUSPENDED" — el `id` de este catálogo es un correlativo interno,
+  // no el discriminador de estado.
+  const permissionStatusItems = entityStatuses.map((status: CatalogItem) => ({ value: status.code, label: status.name }))
 
   useEffect(() => {
     if (!open) {
@@ -451,7 +453,8 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
     // ni información complementaria. A partir de ese momento los botones
     // opcionales quedan disponibles sin cerrar el diálogo.
     const payload: Employee = {
-      id: activeEmployeeId ?? `employee-${Date.now()}`,
+      // Sin `id` cuando todavía no existe: lo asigna el backend al crear.
+      id: activeEmployeeId ?? undefined,
       person: persistedPerson,
       employeeClass: additionalInfo.employeeClass,
       educationLevel: additionalInfo.educationLevel,
@@ -476,7 +479,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
       // Fijamos el id del empleado recién creado para que las próximas
       // invocaciones a handleMainSave pasen por PUT, y habilitamos los
       // botones opcionales sin cerrar el diálogo.
-      setCreatedEmployeeId(result.employee.id)
+      setCreatedEmployeeId(result.employee.id ?? null)
       notify(
         permissions.length === 0
           ? "Usuario guardado. Puedes asignar permisos e información complementaria."
@@ -492,7 +495,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
     })
   }
 
-  function findCampusById(campusId: string): Campus | undefined {
+  function findCampusById(campusId: number): Campus | undefined {
     return campuses.find((campus) => campus.id === campusId)
   }
 
@@ -737,7 +740,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
                 id="permission-campus"
                 value={permissionDraft.campusId}
                 onValueChange={(value) =>
-                  setPermissionDraft((prev) => ({ ...prev, campusId: value ?? "" }))
+                  setPermissionDraft((prev) => ({ ...prev, campusId: value ?? null }))
                 }
                 items={campusItems}
               >

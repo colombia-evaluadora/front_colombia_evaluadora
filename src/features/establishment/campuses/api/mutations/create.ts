@@ -8,12 +8,13 @@ export interface CreateResult {
   campus: Campus
 }
 
-export function create(values: Campus): Promise<CreateResult> {
+// El cliente no manda `id`: lo asigna el backend al crear.
+export function create(values: Omit<Campus, "id">): Promise<CreateResult> {
   return api.post("/establishments/campuses", values)
 }
 
 export function updateCampus(
-  campusId: string,
+  campusId: number,
   values: Campus
 ): Promise<CreateResult> {
   return api.put(`/establishments/campuses/${campusId}`, values)

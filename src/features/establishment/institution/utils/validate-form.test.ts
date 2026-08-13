@@ -6,15 +6,15 @@ import { validateEstablishmentForm } from "@/features/establishment/institution/
 
 function createPerson(overrides: Partial<Person> = {}): Person {
   return {
-    id: "person-1",
-    documentType: { id: "cc", code: "CC", name: "Cédula de ciudadanía" },
+    id: 1,
+    documentType: { id: 1, code: "CC", name: "Cédula de ciudadanía" },
     identification: "1000000000",
     firstName: "Juan",
     lastName: "Pérez",
     middleName: "",
     secondLastName: "",
     birthDate: "1990-01-01",
-    gender: { id: "m", code: "M", name: "Masculino" },
+    gender: { id: 1, code: "M", name: "Masculino" },
     email: "person@example.com",
     phone: "3000000000",
     password: "12345678",
@@ -25,10 +25,10 @@ function createPerson(overrides: Partial<Person> = {}): Person {
 /**
  * Persona vacía: representa el caso "no se asignó rector/secretaria".
  * Como los 4 mínimos están vacíos, NO debe disparar errores de validación.
+ * Sin `id`: todavía no se persistió.
  */
 function createEmptyPerson(): Person {
   return {
-    id: "",
     documentType: null,
     identification: "",
     firstName: "",
@@ -43,24 +43,24 @@ function createEmptyPerson(): Person {
 
 function createValues(overrides: Partial<EstablishmentDetails> = {}): EstablishmentDetails {
   const defaults: EstablishmentDetails = {
-    id: "establishment-1",
+    id: 1,
     basicInfo: {
       name: "I.E. Prueba",
       dane: "12345678",
       nit: "900123456",
-      ownershipType: { id: "oficial", code: "OFFICIAL", name: "Oficial" },
+      ownershipType: { id: 1, code: "OFFICIAL", name: "Oficial" },
     },
     address: {
       municipality: {
-        id: "11001",
+        id: 11001,
         code: "11001",
         name: "Bogotá",
-        department: { id: "11", code: "11", name: "Bogotá" },
+        department: { id: 11, code: "11", name: "Bogotá" },
       },
-      zone: { id: "urbana", code: "URBANA", name: "Urbana" },
-      district: { id: "", code: "", name: "" },
-      commune: { id: "", code: "", name: "" },
-      locality: { id: "", code: "", name: "" },
+      zone: { id: 1, code: "URBANA", name: "Urbana" },
+      district: null,
+      commune: null,
+      locality: null,
       address: "",
     },
     contact: {
@@ -71,14 +71,14 @@ function createValues(overrides: Partial<EstablishmentDetails> = {}): Establishm
     },
     additionalInfo: {
       approvalResolution: "",
-      teachingLanguage: { id: "", code: "", name: "" },
-      calendar: { id: "", code: "", name: "" },
-      costRegime: { id: "", code: "", name: "" },
-      populationGender: { id: "", code: "", name: "" },
-      tuitionRange: { id: "", code: "", name: "" },
-      disabilityType: { id: "", code: "", name: "" },
+      teachingLanguage: null,
+      calendar: null,
+      costRegime: null,
+      populationGender: null,
+      tuitionRange: null,
+      disabilityType: null,
       operatingLicense: false,
-      licenseStatus: { id: "", code: "", name: "" },
+      licenseStatus: null,
       licenseDate: null,
       ethnicAttention: false,
       giftedAttention: false,
@@ -118,7 +118,7 @@ describe("validateEstablishmentForm", () => {
         name: "",
         dane: "12345678",
         nit: "900123456",
-        ownershipType: { id: "oficial", code: "OFFICIAL", name: "Oficial" },
+        ownershipType: { id: 1, code: "OFFICIAL", name: "Oficial" },
       },
     })
 
@@ -133,7 +133,7 @@ describe("validateEstablishmentForm", () => {
         identification: "", // falta el número de documento
       }),
       secretary: createPerson({
-        id: "secretary-1",
+        id: 2,
         firstName: "María",
         lastName: "Gómez",
       }),
@@ -157,7 +157,7 @@ describe("validateEstablishmentForm", () => {
         secondLastName: "",
       }),
       secretary: createPerson({
-        id: "secretary-1",
+        id: 2,
         firstName: "María",
         lastName: "Gómez",
         birthDate: "",

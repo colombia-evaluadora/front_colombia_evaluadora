@@ -6,7 +6,7 @@ import { updateEstablishment } from "@/features/establishment/institution/api/mu
 import type { EstablishmentDetails } from "@/features/establishment/institution/api/types/establishment"
 
 interface UpdateEstablishmentInput {
-  establishmentId: string
+  establishmentId: number
   values: EstablishmentDetails
 }
 

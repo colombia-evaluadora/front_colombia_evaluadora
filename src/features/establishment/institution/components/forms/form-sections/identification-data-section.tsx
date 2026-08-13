@@ -108,13 +108,10 @@ export function IdentificationDataFormSection({ value, onChange, invalidFields =
                     <Select
                         id="establishment-legal-type"
                         aria-invalid={isInvalid("basicInfo.ownershipType")}
-                        value={value.ownershipType.id}
+                        value={value.ownershipType?.id ?? null}
                         onValueChange={(selectedValue) => {
                             const option = legalTypes.find((item) => item.id === selectedValue)
-                            onChange({
-                                ...value,
-                                ownershipType: option ?? { id: selectedValue ?? "", code: selectedValue ?? "", name: selectedValue ?? "" },
-                            })
+                            if (option) onChange({ ...value, ownershipType: option })
                         }}
                         items={legalTypeItems}
                     >

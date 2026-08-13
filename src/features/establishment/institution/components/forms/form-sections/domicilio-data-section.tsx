@@ -46,19 +46,11 @@ export function DomicilioDataFormSection({ value, onChange, invalidFields = [], 
                 <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid("address.municipality") ? "true" : undefined}>
                     <FieldLabel htmlFor="establishment-municipio">Municipio*</FieldLabel>
                     <Select
-                        value={value.municipality.id}
+                        value={value.municipality?.id ?? null}
                         aria-invalid={isInvalid("address.municipality")}
                         onValueChange={(selectedValue) => {
                             const municipality = municipalities.find((item) => item.id === selectedValue)
-                            onChange({
-                                ...value,
-                                municipality: municipality ?? {
-                                    id: selectedValue ?? "",
-                                    code: selectedValue ?? "",
-                                    name: selectedValue ?? "",
-                                    department: { id: "", code: "", name: "" },
-                                },
-                            })
+                            if (municipality) onChange({ ...value, municipality })
                         }}
                         items={municipalityItems}
                     >
@@ -80,13 +72,10 @@ export function DomicilioDataFormSection({ value, onChange, invalidFields = [], 
                 <Field orientation="vertical" variant="outlined" className="w-full">
                     <FieldLabel htmlFor="establishment-zone">Zona</FieldLabel>
                     <Select
-                        value={value.zone.id}
+                        value={value.zone?.id ?? null}
                         onValueChange={(selectedValue) => {
                             const option = zones.find((item) => item.id === selectedValue)
-                            onChange({
-                                ...value,
-                                zone: option ?? { id: selectedValue ?? "", code: selectedValue ?? "", name: selectedValue ?? "" },
-                            })
+                            if (option) onChange({ ...value, zone: option })
                         }}
 items={zoneItems}
                     >
@@ -109,8 +98,11 @@ items={zoneItems}
                     <Input
                         id="establishment-barrio"
                         placeholder="Agregar"
-                        value={value.district.name}
-                        onChange={(event) => onChange({ ...value, district: { ...value.district, id: event.target.value, code: event.target.value, name: event.target.value } })}
+                        value={value.district?.name ?? ""}
+                        // No es un catálogo real: es texto libre con la forma de
+                        // `CatalogItem` para reusar el tipo de `address`. El `id`
+                        // no se lee en ningún otro lado, así que un 0 fijo alcanza.
+                        onChange={(event) => onChange({ ...value, district: { id: 0, code: event.target.value, name: event.target.value } })}
                     />
                 </Field>
             </div>
@@ -131,8 +123,8 @@ items={zoneItems}
                     <Input
                         id="establishment-comuna"
                         placeholder="Agregar"
-                        value={value.commune.name}
-                        onChange={(event) => onChange({ ...value, commune: { ...value.commune, id: event.target.value, code: event.target.value, name: event.target.value } })}
+                        value={value.commune?.name ?? ""}
+                        onChange={(event) => onChange({ ...value, commune: { id: 0, code: event.target.value, name: event.target.value } })}
                     />
                 </Field>
 
@@ -141,8 +133,8 @@ items={zoneItems}
                     <Input
                         id="establishment-localidad"
                         placeholder="Agregar"
-                        value={value.locality.name}
-                        onChange={(event) => onChange({ ...value, locality: { ...value.locality, id: event.target.value, code: event.target.value, name: event.target.value } })}
+                        value={value.locality?.name ?? ""}
+                        onChange={(event) => onChange({ ...value, locality: { id: 0, code: event.target.value, name: event.target.value } })}
                     />
                 </Field>
             </div>

@@ -43,7 +43,6 @@ interface UserFormProps {
 
 function createEmptyPerson(): Person {
     return {
-        id: "",
         documentType: null,
         identification: "",
         firstName: "",
