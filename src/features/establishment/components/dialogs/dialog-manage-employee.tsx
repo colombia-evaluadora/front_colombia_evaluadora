@@ -16,9 +16,9 @@ import {
   CheckIcon,
   ControlPointIcon,
   PencilIcon,
-  TrashIcon,
   XIcon,
 } from "@/components/ui/icons"
+import { ConfirmRemoveButton } from "@/components/confirm-remove-button"
 import {
   Select,
   SelectContent,
@@ -913,16 +913,16 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
                     {PERMISSION_ACTIONS_SPACER_CELL}
                     <TableCell className={PERMISSION_ACTIONS_CELL_CLASS}>
                       <div className={permissionActionsOverlayClass()}>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          color="neutral"
-                          size="icon-sm"
-                          aria-label={`Quitar permiso ${permission.order}`}
-                          onClick={() => removePermission(permission.order)}
-                        >
-                          <TrashIcon />
-                        </Button>
+                        <ConfirmRemoveButton
+                          label={`Quitar permiso ${permission.order}`}
+                          description={
+                            <>
+                              Se quitará el permiso de {permission.role.name} en{" "}
+                              {permission.campus.name}. Esta acción no se puede deshacer.
+                            </>
+                          }
+                          onConfirm={() => removePermission(permission.order)}
+                        />
                       </div>
                     </TableCell>
                   </TableRow>

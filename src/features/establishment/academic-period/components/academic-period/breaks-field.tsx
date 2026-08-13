@@ -1,5 +1,6 @@
 import { useState } from "react"
-import { CaretDownIcon, PlusIcon, TrashIcon, XIcon } from "@/components/ui/icons"
+import { CaretDownIcon, PlusIcon, XIcon } from "@/components/ui/icons"
+import { ConfirmRemoveButton } from "@/components/confirm-remove-button"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -129,16 +130,12 @@ export function BreaksField({
                       <span className="text-muted-foreground mx-1">→</span>
                       {formatTime12(brk.endTime)}
                     </span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-sm"
+                    <ConfirmRemoveButton
+                      label={`Quitar descanso ${originalIndex + 1}`}
+                      description={`Se quitará el descanso de ${formatTime12(brk.startTime)} a ${formatTime12(brk.endTime)}. Esta acción no se puede deshacer.`}
                       className="text-muted-foreground hover:text-foreground size-6"
-                      aria-label={`Quitar descanso ${originalIndex + 1}`}
-                      onClick={() => onRemove(originalIndex)}
-                    >
-                      <TrashIcon />
-                    </Button>
+                      onConfirm={() => onRemove(originalIndex)}
+                    />
                   </li>
                 )
               })}

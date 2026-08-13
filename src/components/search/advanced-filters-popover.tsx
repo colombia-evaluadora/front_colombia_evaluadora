@@ -121,7 +121,7 @@ export function AdvancedFiltersPopover({
           `variant` y vuelven a poner el contexto.
         */}
         <div className="max-h-[60dvh] overflow-y-auto py-4">
-          <FieldVariantContext.Provider value="plain">{children}</FieldVariantContext.Provider>
+          <FieldVariantContext.Provider value="outlined">{children}</FieldVariantContext.Provider>
         </div>
 
         {/*

@@ -5,11 +5,11 @@ import {
   ControlPointIcon,
   PencilIcon,
   SpinnerIcon,
-  TrashIcon,
   XIcon,
 } from "@/components/ui/icons"
 import { z } from "zod"
 
+import { ConfirmRemoveButton } from "@/components/confirm-remove-button"
 import { useNotify, NoticeOutlet } from "@/components/notice/notice-context"
 
 import { Button } from "@/components/ui/button"
@@ -705,17 +705,12 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                               >
                                 <PencilIcon />
                               </Button>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                color="neutral"
-                                size="icon-sm"
-                                aria-label={`Quitar ${d.nombre}`}
+                              <ConfirmRemoveButton
+                                label={`Quitar ${d.nombre}`}
+                                description={`Se quitará la escala «${d.nombre}». Esta acción no se puede deshacer.`}
                                 disabled={editingIndex !== null}
-                                onClick={() => removeDraft(index)}
-                              >
-                                <TrashIcon />
-                              </Button>
+                                onConfirm={() => removeDraft(index)}
+                              />
                             </div>
                           </TableCell>
                         </TableRow>

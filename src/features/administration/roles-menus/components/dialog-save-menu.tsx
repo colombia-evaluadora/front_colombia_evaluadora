@@ -12,7 +12,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
-import { ControlPointIcon, SpinnerIcon, TrashIcon } from "@/components/ui/icons"
+import { ControlPointIcon, SpinnerIcon } from "@/components/ui/icons"
+import { ConfirmRemoveButton } from "@/components/confirm-remove-button"
 import { Input } from "@/components/ui/input"
 import {
   Select,
@@ -352,17 +353,18 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
                           value={draft.planId}
                           onChange={(planId) => updateDraft(draft.key, { planId })}
                         />
-                        <Button
-                          type="button"
-                          variant="ghost"
+                        <ConfirmRemoveButton
+                          label="Quitar submenú"
                           size="icon"
-                          onClick={() =>
+                          description={
+                            draft.name.trim()
+                              ? `Se quitará el submenú «${draft.name}». Esta acción no se puede deshacer.`
+                              : "Se quitará el submenú. Esta acción no se puede deshacer."
+                          }
+                          onConfirm={() =>
                             setDrafts((prev) => prev.filter((it) => it.key !== draft.key))
                           }
-                        >
-                          <span className="sr-only">Quitar submenú</span>
-                          <TrashIcon />
-                        </Button>
+                        />
                       </li>
                     ))}
                   </ul>
