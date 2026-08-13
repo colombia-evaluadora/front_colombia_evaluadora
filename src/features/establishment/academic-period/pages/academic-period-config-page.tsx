@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { CheckIcon, SpinnerIcon } from "@/components/ui/icons"
-import { Link, notFound, useNavigate, useParams } from "@tanstack/react-router"
+import { Link, useNavigate, useParams } from "@tanstack/react-router"
 
 import { isNotFoundError } from "@/lib/api-client"
 
@@ -19,6 +19,7 @@ import {
   TableScreenHeader,
   TableScreenTitle,
 } from "@/components/layout/table-screen"
+import { NotFoundPage } from "@/components/layout/not-found-page"
 import { paths } from "@/config/paths"
 
 import { useCreateAcademicPeriod } from "@/features/establishment/academic-period/api/mutations/create-academic-period"
@@ -130,7 +131,7 @@ function AcademicPeriodConfigPageContent() {
   })
 
   if (isEditing && (!isValidPeriodId || isNotFoundError(detailError))) {
-    throw notFound()
+    return <NotFoundPage />
   }
 
   const academicPeriodId = isEditing ? numericPeriodId : createdPeriodId ?? undefined
