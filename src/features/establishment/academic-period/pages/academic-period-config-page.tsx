@@ -207,9 +207,9 @@ function AcademicPeriodConfigPageContent() {
         >
           {isEditing ? "Editar periodo académico" : "Agregar periodo académico"}
         </TableScreenTitle>
-        <NoticeOutlet className="mx-(--screen-spacing) my-4" />
       </TableScreenHeader>
       <TableScreenBody className="rounded-b-none border-b-0">
+        <NoticeOutlet className="mb-4" />
         {configBody}
         {showSecondForm && (
           <div className="mt-6">
