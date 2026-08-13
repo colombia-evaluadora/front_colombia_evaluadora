@@ -65,20 +65,9 @@ function Select<Value, Multiple extends boolean | undefined = false>({
   // El resto de los formatos pasan a `SelectPrimitive.Root` y `SelectValue`
   // cae al `children` (placeholder por default).
   const lookupMap = isLookupMap(items) ? items : undefined
-  // Base UI solo considera "sin valor" a `null`: con `""` (lo que producen los
-  // modelos vacíos, p. ej. `documentType.id === ""`) no marca `data-placeholder`
-  // y el trigger queda en blanco en vez de mostrar el placeholder. Normalizamos
-  // la cadena vacía a `null` para que el vacío se vea igual en toda la app.
-  const normalized = { ...props } as SelectProps<Value, Multiple>
-  if (normalized.value === ("" as unknown as Value)) {
-    normalized.value = null as unknown as typeof normalized.value
-  }
-  if (normalized.defaultValue === ("" as unknown as Value)) {
-    normalized.defaultValue = null as unknown as typeof normalized.defaultValue
-  }
   return (
     <SelectItemsContext.Provider value={lookupMap}>
-      <SelectPrimitive.Root {...normalized}>{children}</SelectPrimitive.Root>
+      <SelectPrimitive.Root {...props}>{children}</SelectPrimitive.Root>
     </SelectItemsContext.Provider>
   )
 }

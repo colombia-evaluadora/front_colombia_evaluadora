@@ -196,14 +196,14 @@ function createEmptyCatalogItem(): CatalogItem {
 function createEmptyPerson(): Person {
   return {
     id: "",
-    documentType: createEmptyCatalogItem(),
+    documentType: null,
     identification: "",
     firstName: "",
     middleName: "",
     lastName: "",
     secondLastName: "",
     birthDate: "",
-    gender: createEmptyCatalogItem(),
+    gender: null,
     email: "",
     phone: "",
     password: "",
@@ -229,9 +229,14 @@ function createInitialAdditionalInfo(): EmployeeAdditionalInfoValue {
  * debajo de cada campo, por eso van prefijadas con `employee`.
  */
 const employeePersonSchema = z.object({
-  documentType: z.object({ id: z.string() }).refine((item) => item.id.trim() !== "", {
-    message: "Selecciona el tipo de documento.",
-  }),
+  documentType: z
+    .union([
+      z.object({ id: z.string() }),
+      z.null(),
+    ])
+    .refine((item) => item !== null && item.id.trim() !== "", {
+      message: "Selecciona el tipo de documento.",
+    }),
   identification: z.string().trim().min(1, "Ingresa el número de documento."),
   firstName: z.string().trim().min(1, "Ingresa el primer nombre."),
   lastName: z.string().trim().min(1, "Ingresa el primer apellido."),
