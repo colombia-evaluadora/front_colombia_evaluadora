@@ -86,22 +86,22 @@ export function FilterReservationsForm({
     >
       <div className="grid grid-cols-2 gap-x-4 gap-y-2">
         <form.AppField name="firstName">
-          {(field) => <TextFilter label="Nombre" />}
+          {() => <TextFilter label="Nombre" />}
         </form.AppField>
         <form.AppField name="lastName">
-          {(field) => <TextFilter label="Apellido" />}
+          {() => <TextFilter label="Apellido" />}
         </form.AppField>
       </div>
 
       {!hideDocumentNumber && (
         <form.AppField name="documentNumber">
-          {(field) => <TextFilter label="N° Identificación" inputMode="numeric" />}
+          {() => <TextFilter label="N° Identificación" inputMode="numeric" />}
         </form.AppField>
       )}
 
       <div className="grid grid-cols-2 gap-x-4 gap-y-2">
         <form.AppField name="institution">
-          {(field) => (
+          {() => (
             <SelectFilter
               label="Institución educativa"
               anyLabel="Todas"
@@ -110,7 +110,7 @@ export function FilterReservationsForm({
           )}
         </form.AppField>
         <form.AppField name="campus">
-          {(field) => (
+          {() => (
             <SelectFilter
               label="Sede"
               anyLabel="Todas"
@@ -122,7 +122,7 @@ export function FilterReservationsForm({
 
       <div className="grid grid-cols-2 gap-x-4 gap-y-2">
         <form.AppField name="grade">
-          {(field) => (
+          {() => (
             <SelectFilter
               label="Grado"
               anyLabel="Todos"
@@ -134,7 +134,7 @@ export function FilterReservationsForm({
           )}
         </form.AppField>
         <form.AppField name="group">
-          {(field) => (
+          {() => (
             <SelectFilter
               label="Grupo"
               anyLabel="Todos"
@@ -233,7 +233,7 @@ export function FilterReservationsForm({
       {/* "Agrupar por" no filtra: reordena el listado para que las filas de
           la misma institución/sede/grado queden juntas. */}
       <form.AppField name="groupBy">
-        {(field) => (
+        {() => (
           <SelectFilter
             label="Agrupar por"
             anyLabel="Sin agrupar"

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { ControlPointIcon } from "@/components/ui/icons"
 
 import { ManageCampusDialog } from "../components/dialogs/dialog-manage-campus"
-import { CampusesDataTable } from "../components/table/campuses-table"
+import { CampusesDataTable } from "../components/table/table-campuses"
 
 export function CampusesPage() {
   const [editorOpen, setEditorOpen] = useState(false)

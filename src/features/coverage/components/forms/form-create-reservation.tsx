@@ -35,12 +35,13 @@ const EMPTY = {
   grade: "",
   group: "",
   // El schema exige un enum; el placeholder del Select cubre el estado vacío
-  // y el submit falla con "Requerido." si el usuario no elige. `undefined` es
-  // el "sin valor" honesto: el schema lo rechaza con el mensaje de "Requerido."
-  // sin necesidad de un cast a `Shift`.
-  shift: undefined,
-  educationLevel: undefined,
-} satisfies CreateReservationFormInput
+  // y el submit falla con "Requerido." si el usuario no elige. `""` no es
+  // un `Shift` válido, pero el schema lo rechaza en `onSubmit` antes de que
+  // llegue al backend — usar el cast explícito es la forma honesta de decir
+  // "no tengo valor pero sé que el schema me obliga a poner uno".
+  shift: "" as Shift,
+  educationLevel: "" as EducationLevel,
+} as CreateReservationFormInput
 
 export function CreateReservationForm({ id, onSubmit, catalogs }: CreateReservationFormProps) {
   const form = useForm({
@@ -146,7 +147,7 @@ export function CreateReservationForm({ id, onSubmit, catalogs }: CreateReservat
                 <FieldLabel htmlFor={field.name}>Institución educativa</FieldLabel>
                 <Select
                   value={field.state.value}
-                  onValueChange={field.handleChange}
+                  onValueChange={(value) => field.handleChange(value ?? "")}
                 >
                   <SelectTrigger id={field.name} size="sm" className="w-full" aria-invalid={isInvalid}>
                     <SelectValue placeholder="Seleccionar" />
@@ -174,7 +175,7 @@ export function CreateReservationForm({ id, onSubmit, catalogs }: CreateReservat
                 <FieldLabel htmlFor={field.name}>Sede</FieldLabel>
                 <Select
                   value={field.state.value}
-                  onValueChange={field.handleChange}
+                  onValueChange={(value) => field.handleChange(value ?? "")}
                 >
                   <SelectTrigger id={field.name} size="sm" className="w-full" aria-invalid={isInvalid}>
                     <SelectValue placeholder="Seleccionar" />
@@ -207,7 +208,7 @@ export function CreateReservationForm({ id, onSubmit, catalogs }: CreateReservat
                   <Select
                     items={gradeItems}
                     value={field.state.value}
-                    onValueChange={field.handleChange}
+                    onValueChange={(value) => field.handleChange(value ?? "")}
                   >
                     <SelectTrigger id={field.name} size="sm" className="w-full" aria-invalid={isInvalid}>
                       <SelectValue placeholder="Grado" />
@@ -235,7 +236,7 @@ export function CreateReservationForm({ id, onSubmit, catalogs }: CreateReservat
                   <FieldLabel htmlFor={field.name}>Grupo</FieldLabel>
                   <Select
                     value={field.state.value}
-                    onValueChange={field.handleChange}
+                    onValueChange={(value) => field.handleChange(value ?? "")}
                   >
                     <SelectTrigger id={field.name} size="sm" className="w-full" aria-invalid={isInvalid}>
                       <SelectValue placeholder="Seleccionar" />

@@ -3,7 +3,7 @@ import { ControlPointIcon } from "@/components/ui/icons"
 import { Link } from "@tanstack/react-router"
 import { paths } from "@/config/paths"
 
-import { EstablishmentsDataTable } from "../components/table/establishments-table"
+import { EstablishmentsDataTable } from "../components/table/table-establishments"
 
 export function EstablishmentsPage() {
   return (

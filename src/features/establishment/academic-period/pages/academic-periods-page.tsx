@@ -4,7 +4,7 @@ import { Link } from "@tanstack/react-router"
 import { Button } from "@/components/ui/button"
 import { paths } from "@/config/paths"
 
-import { AcademicPeriodsDataTable } from "../components/academic-period/table/academic-periods-table"
+import { AcademicPeriodsDataTable } from "../components/academic-period/table/table-academic-periods"
 import { NoticeProvider } from "@/components/notice/notice-context"
 
 export function AcademicPeriodsPage() {
