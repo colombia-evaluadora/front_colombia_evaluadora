@@ -667,7 +667,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
 
       <Dialog open={permissionsDialogOpen} onOpenChange={setPermissionsDialogOpen}>
         <DialogContent
-          className="w-[min(98vw,70rem)] max-w-none sm:max-w-280 max-h-[92vh] overflow-y-auto overflow-x-hidden"
+          className="w-[min(95vw,56rem)] max-w-none sm:max-w-224 max-h-[85vh] overflow-y-auto overflow-x-hidden"
           showCloseButton={false}
         >
           <DialogHeader>
@@ -811,7 +811,11 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
                       if (!badge) return "Seleccionar"
                       const label =
                         permissionStatusItems.find((item) => item.value === value)?.label ?? value
-                      return <Badge {...badge}>{label}</Badge>
+                      return (
+                        <Badge {...badge} className="text-xs">
+                          {label}
+                        </Badge>
+                      )
                     }}
                   </SelectValue>
                 </SelectTrigger>
@@ -961,9 +965,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
 
       <Dialog open={additionalInfoDialogOpen} onOpenChange={setAdditionalInfoDialogOpen}>
         <DialogContent
-          // Mismo ancho que el diálogo principal y el de permisos: era el único
-          // más ancho y se notaba al saltar de uno a otro.
-          className="w-[min(98vw,70rem)] max-w-none sm:max-w-280 max-h-[92vh] overflow-y-auto overflow-x-hidden"
+          className="w-[min(95vw,56rem)] max-w-none sm:max-w-224 max-h-[85vh] overflow-y-auto overflow-x-hidden"
           showCloseButton={false}
         >
           <DialogHeader>
