@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
-import type { PromotionCriteria } from "@/features/establishment/academic-period/types/promotion-criteria"
+import type { PromotionCriteria } from "@/features/establishment/academic-period/api/types/promotion-criteria"
 
 function fetchPromotionCriteria(
   academicPeriodId: number

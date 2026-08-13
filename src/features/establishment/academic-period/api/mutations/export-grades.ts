@@ -6,7 +6,7 @@ import type {
   ExportFormat,
   ExportResult,
   GradesQueryFilters,
-} from "@/features/establishment/academic-period/types/grade"
+} from "@/features/establishment/academic-period/api/types/grade"
 
 interface ExportGradesInput {
   filters: GradesQueryFilters

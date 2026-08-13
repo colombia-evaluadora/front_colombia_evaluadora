@@ -6,7 +6,7 @@ import type {
   EvaluationPeriodsQueryFilters,
   ExportFormat,
   ExportResult,
-} from "@/features/establishment/academic-period/types/evaluation-period"
+} from "@/features/establishment/academic-period/api/types/evaluation-period"
 
 interface ExportEvaluationPeriodsInput {
   filters: EvaluationPeriodsQueryFilters

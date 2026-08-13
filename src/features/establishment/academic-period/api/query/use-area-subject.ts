@@ -4,7 +4,7 @@ import { api } from "@/lib/api-client"
 import type {
   AreaSubjectsQueryRequest,
   AreaSubjectsQueryResponse
-} from "@/features/establishment/academic-period/types/area-subject"
+} from "@/features/establishment/academic-period/api/types/area-subject"
 
 interface UseAreaSubjectQueryParams {
   filters: AreaSubjectsQueryRequest["filters"]

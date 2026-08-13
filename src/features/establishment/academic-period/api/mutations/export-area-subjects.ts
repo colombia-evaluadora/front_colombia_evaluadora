@@ -6,7 +6,7 @@ import type {
   AreaSubjectsQueryFilters,
   ExportFormat,
   ExportResult,
-} from "@/features/establishment/academic-period/types/area-subject"
+} from "@/features/establishment/academic-period/api/types/area-subject"
 
 interface ExportAreaSubjectsInput {
   filters: AreaSubjectsQueryFilters

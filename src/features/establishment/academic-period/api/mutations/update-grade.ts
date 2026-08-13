@@ -5,7 +5,7 @@ import type { MutationConfig } from "@/lib/react-query"
 import type {
   MutationResult,
   UpdateGradeRequest,
-} from "@/features/establishment/academic-period/types/grade"
+} from "@/features/establishment/academic-period/api/types/grade"
 
 interface UpdateGradeInput {
   id: number

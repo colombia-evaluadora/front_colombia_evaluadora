@@ -4,7 +4,7 @@ import { api } from "@/lib/api-client"
 import type {
   GradeGroupsQueryRequest,
   GradeGroupsQueryResponse,
-} from "@/features/establishment/academic-period/types/grade-group"
+} from "@/features/establishment/academic-period/api/types/grade-group"
 
 interface UseGradeGroupsQueryParams {
   filters: GradeGroupsQueryRequest["filters"]

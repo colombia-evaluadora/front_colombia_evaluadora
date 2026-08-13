@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
-import type { EvaluationPeriodStatusOption } from "@/features/establishment/academic-period/types/evaluation-period"
+import type { EvaluationPeriodStatusOption } from "@/features/establishment/academic-period/api/types/evaluation-period"
 
 function fetchEvaluationPeriodStatuses(): Promise<EvaluationPeriodStatusOption[]> {
   return api.get("/evaluation-period-statuses")

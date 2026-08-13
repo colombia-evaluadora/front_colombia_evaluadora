@@ -5,7 +5,7 @@ import type { MutationConfig } from "@/lib/react-query"
 import type {
   ExportFormat,
   ExportResult,
-} from "@/features/establishment/academic-period/types/academic-period"
+} from "@/features/establishment/academic-period/api/types/academic-period"
 
 interface ExportSelectedAcademicPeriodsInput {
   ids: string[]

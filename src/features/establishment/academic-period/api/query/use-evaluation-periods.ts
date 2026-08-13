@@ -4,7 +4,7 @@ import { api } from "@/lib/api-client"
 import type {
   EvaluationPeriodsQueryResponse,
   EvaluationPeriodsQueryRequest,
-} from "@/features/establishment/academic-period/types/evaluation-period"
+} from "@/features/establishment/academic-period/api/types/evaluation-period"
 
 interface UseEvaluationPeriodsQueryParams {
   filters: EvaluationPeriodsQueryRequest["filters"]

@@ -2,7 +2,7 @@ import { useMutation } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
-import type { ExportFormat, ExportResult } from "@/features/establishment/academic-period/types/grade"
+import type { ExportFormat, ExportResult } from "@/features/establishment/academic-period/api/types/grade"
 
 interface ExportSelectedGradesInput {
   ids: number[]

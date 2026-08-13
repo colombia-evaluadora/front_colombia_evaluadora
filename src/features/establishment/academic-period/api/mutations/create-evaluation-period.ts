@@ -5,7 +5,7 @@ import type { MutationConfig } from "@/lib/react-query"
 import type {
   CreateEvaluationPeriodRequest,
   EvaluationPeriod,
-} from "@/features/establishment/academic-period/types/evaluation-period"
+} from "@/features/establishment/academic-period/api/types/evaluation-period"
 
 function createEvaluationPeriod(
   input: CreateEvaluationPeriodRequest

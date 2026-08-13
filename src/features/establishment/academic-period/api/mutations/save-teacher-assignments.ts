@@ -5,8 +5,8 @@ import type { MutationConfig } from "@/lib/react-query"
 import type {
   MutationResult,
   SaveTeacherAssignmentsRequest,
-} from "@/features/establishment/academic-period/types/academic-assignment"
-import { teacherAssignmentsQueryKey } from "@/features/establishment/academic-period/query/academic-assignments/use-teacher-assignments-query"
+} from "@/features/establishment/academic-period/api/types/academic-assignment"
+import { teacherAssignmentsQueryKey } from "@/features/establishment/academic-period/api/query/use-teacher-assignments"
 
 function saveTeacherAssignments({
   academicPeriodId,

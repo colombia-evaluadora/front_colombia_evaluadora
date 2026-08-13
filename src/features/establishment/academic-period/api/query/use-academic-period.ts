@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
-import type { AcademicPeriodDetail } from "@/features/establishment/academic-period/types/academic-period"
+import type { AcademicPeriodDetail } from "@/features/establishment/academic-period/api/types/academic-period"
 
 function fetchAcademicPeriod(id: number): Promise<AcademicPeriodDetail> {
   return api.get(`/academic-periods/${id}`)

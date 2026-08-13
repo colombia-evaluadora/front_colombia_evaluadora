@@ -5,7 +5,7 @@ import type { MutationConfig } from "@/lib/react-query"
 import type {
   MutationResult,
   PromotionCriteria,
-} from "@/features/establishment/academic-period/types/promotion-criteria"
+} from "@/features/establishment/academic-period/api/types/promotion-criteria"
 
 interface UpdatePromotionCriteriaInput {
   academicPeriodId: number

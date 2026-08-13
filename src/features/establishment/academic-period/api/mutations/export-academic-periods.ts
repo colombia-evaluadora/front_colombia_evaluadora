@@ -6,7 +6,7 @@ import type {
   AcademicPeriodsQueryFilters,
   ExportFormat,
   ExportResult,
-} from "@/features/establishment/academic-period/types/academic-period"
+} from "@/features/establishment/academic-period/api/types/academic-period"
 
 interface ExportAcademicPeriodsInput {
   filters: AcademicPeriodsQueryFilters
