@@ -297,7 +297,7 @@ export function AreaSubjectFormDialog({
           </DialogTrigger>
         )}
 
-        <DialogContent className={subjectsStarted ? "sm:max-w-7xl" : "sm:max-w-5xl"}>
+        <DialogContent className={subjectsStarted ? "sm:max-w-5xl" : "sm:max-w-4xl"}>
           <DialogHeader>
             <DialogTitle>{isEdit ? "Editar área" : "Agregar área"}</DialogTitle>
             <DialogDescription>

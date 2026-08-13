@@ -431,7 +431,11 @@ export function CreateEvaluationPeriodDialog({
                           if (!badge) return "Seleccionar"
                           const label =
                             statusOptions.find((option) => option.key === estado)?.label ?? estado
-                          return <Badge {...badge}>{label}</Badge>
+                          return (
+                            <Badge {...badge} className="text-xs">
+                              {label}
+                            </Badge>
+                          )
                         }}
                       </SelectValue>
                     </SelectTrigger>

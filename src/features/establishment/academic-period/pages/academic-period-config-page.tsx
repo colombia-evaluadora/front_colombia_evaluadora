@@ -1,24 +1,25 @@
 import { useState } from "react"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
-import { SpinnerIcon } from "@/components/ui/icons"
-import { Link, notFound, useNavigate, useParams } from "@tanstack/react-router"
+import { CheckIcon, SpinnerIcon } from "@/components/ui/icons"
+import { Link, useNavigate, useParams } from "@tanstack/react-router"
 
 import { isNotFoundError } from "@/lib/api-client"
 
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
+import {
+  TableScreen,
+  TableScreenBody,
+  TableScreenFooter,
+  TableScreenHeader,
+  TableScreenTitle,
+} from "@/components/layout/table-screen"
+import { NotFoundPage } from "@/components/layout/not-found-page"
 import { paths } from "@/config/paths"
 
 import { useCreateAcademicPeriod } from "@/features/establishment/academic-period/api/mutations/create-academic-period"
@@ -85,8 +86,6 @@ function AcademicPeriodConfigPageContent() {
   const { periodId } = useParams({ strict: false }) as { periodId?: string }
   const isEditing = periodId != null
   const parsedPeriodId = periodId ? Number(periodId) : undefined
-  // Un id no numérico (/periodos/abc/editar) no es un periodo que se pueda
-  // pedir: se trata igual que uno inexistente, sin gastar la petición.
   const isValidPeriodId =
     parsedPeriodId != null && Number.isInteger(parsedPeriodId)
   const numericPeriodId = isValidPeriodId ? parsedPeriodId : undefined
@@ -111,8 +110,6 @@ function AcademicPeriodConfigPageContent() {
         setCreatedPeriodId(created.id)
         setSaved(true)
         notify(SUCCESS_MESSAGES.academicPeriod.created)
-        // Tras crear, pasamos a la ruta de edición del nuevo periodo para que
-        // la URL refleje el estado real (editable, recargable, compartible).
         navigate({
           to: paths.app.periodosAcademicosEditar.getHref(created.id),
         })
@@ -127,19 +124,14 @@ function AcademicPeriodConfigPageContent() {
           notify(result.message, { variant: "error" })
           return
         }
-        // Los valores guardados pasan a ser los iniciales del formulario, así
-        // "Guardar" vuelve a ocultarse hasta que el usuario cambie algo más.
         setSavedToken((token) => token + 1)
         notify(SUCCESS_MESSAGES.academicPeriod.updated)
       },
     },
   })
 
-  // Editar un periodo que no existe no es un error de la pantalla: es una URL
-  // que no lleva a ningún lado, así que se delega en el 404 del router. Va
-  // después de los hooks para no romper su orden.
   if (isEditing && (!isValidPeriodId || isNotFoundError(detailError))) {
-    throw notFound()
+    return <NotFoundPage />
   }
 
   const academicPeriodId = isEditing ? numericPeriodId : createdPeriodId ?? undefined
@@ -162,28 +154,7 @@ function AcademicPeriodConfigPageContent() {
 
   const showSecondForm = saved || (isEditing && !!detail)
 
-  // Al crear, "Guardar" es el único camino para continuar; al editar solo tiene
-  // sentido si hay algo que guardar (o mientras se está guardando).
   const showSaveAction = !isEditing || isFormDirty || isSaving
-
-  const header = (
-    <CardHeader className="border-b">
-      <CardAction>
-        <Button
-          size="sm"
-          variant="fill"
-          color="neutral"
-          render={<Link to={paths.app.periodosAcademicos.getHref()} />}
-          nativeButton={false}
-        >
-          Cerrar
-        </Button>
-      </CardAction>
-      <CardTitle>
-        {isEditing ? "Editar periodo académico" : "Agregar periodo académico"}
-      </CardTitle>
-    </CardHeader>
-  )
 
   const configBody = (
     <Accordion
@@ -191,14 +162,8 @@ function AcademicPeriodConfigPageContent() {
       onValueChange={(value) => setConfigOpen(value.includes("config"))}
     >
       <AccordionItem value="config" className="rounded-md border border-border">
-        {/*
-          Misma tipografía y mismo caret que los acordeones de "Agregar
-          establecimiento" (`accordionTriggerClassName`), pero sin invertir la
-          fila: acá el caret se queda a la derecha, donde lo deja el `ml-auto`
-          del componente compartido.
-        */}
         <AccordionTrigger className="items-center gap-3 px-4 py-2.5 text-lg **:data-[slot=accordion-trigger-icon]:size-5">
-          Configuración del periodo
+          Información general del periodo
         </AccordionTrigger>
         <AccordionContent keepMounted className="px-4 pb-4">
           {isEditing && isLoadingDetail ? (
@@ -211,58 +176,74 @@ function AcademicPeriodConfigPageContent() {
               Ocurrió un error al cargar el periodo académico.
             </p>
           ) : (
-            <>
-              <AcademicPeriodForm
-                id={FORM_ID}
-                defaultValues={detail ? toFormValues(detail) : undefined}
-                onSubmit={handleSubmit}
-                onDirtyChange={setIsFormDirty}
-                savedToken={savedToken}
-              />
-              {/* Acciones en el flujo normal, justo debajo de los campos. Al
-                  editar solo aparecen si hay cambios sin guardar, para que el
-                  usuario se concentre en las demás secciones. */}
-              {showSaveAction && (
-                <div className="mt-6 flex justify-end gap-2 border-t border-border pt-4">
-                  <Button
-                    type="submit"
-                    size="sm"
-                    color="primary"
-                    form={FORM_ID}
-                    disabled={isSaving}
-                    aria-busy={isSaving}
-                  >
-                    {isSaving && (
-                      <SpinnerIcon data-icon="inline-start" className="animate-spin" />
-                    )}
-                    Guardar
-                  </Button>
-                </div>
-              )}
-            </>
+            <AcademicPeriodForm
+              id={FORM_ID}
+              defaultValues={detail ? toFormValues(detail) : undefined}
+              onSubmit={handleSubmit}
+              onDirtyChange={setIsFormDirty}
+              savedToken={savedToken}
+            />
           )}
         </AccordionContent>
       </AccordionItem>
     </Accordion>
   )
+
   return (
-    <div className="flex flex-col gap-6">
-      <Card>
-        {header}
-        <CardContent className="flex flex-col gap-6">
-          <NoticeOutlet />
-          {configBody}
-          {/* Las pestañas van sueltas: su propio panel ya dibuja el borde de
-              "carpeta", así que envolverlas en otra card duplicaba contorno y
-              padding. */}
-          {showSecondForm && (
+    <TableScreen>
+      <TableScreenHeader>
+        <TableScreenTitle
+          action={
+            <Button
+              size="sm"
+              variant="fill"
+              color="neutral"
+              render={<Link to={paths.app.periodosAcademicos.getHref()} />}
+              nativeButton={false}
+            >
+              Cerrar
+            </Button>
+          }
+        >
+          {isEditing ? "Editar periodo académico" : "Agregar periodo académico"}
+        </TableScreenTitle>
+      </TableScreenHeader>
+      <TableScreenBody className="rounded-b-none border-b-0">
+        <NoticeOutlet className="mb-4" />
+        {configBody}
+        {showSecondForm && (
+          <div className="mt-6">
             <EvaluationPeriodsSection
               academicPeriodId={academicPeriodId}
               jornada={saved || !detail ? jornada : toJornada(detail)}
             />
-          )}
-        </CardContent>
-      </Card>
-    </div>
+          </div>
+        )}
+      </TableScreenBody>
+
+      {showSaveAction && (
+        <TableScreenFooter>
+          <p className="text-sm text-muted-foreground">
+            Complete la información antes de guardar.
+          </p>
+          <Button
+            type="submit"
+            size="sm"
+            variant="fill"
+            color="primary"
+            form={FORM_ID}
+            disabled={isSaving}
+            aria-busy={isSaving}
+          >
+            {isSaving ? (
+              <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+            ) : (
+              <CheckIcon data-icon="inline-start" />
+            )}
+            {isSaving ? "Guardando..." : "Guardar"}
+          </Button>
+        </TableScreenFooter>
+      )}
+    </TableScreen>
   )
 }
