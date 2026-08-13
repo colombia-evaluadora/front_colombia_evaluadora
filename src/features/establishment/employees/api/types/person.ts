@@ -4,7 +4,13 @@ export interface Person {
 
     id: string
 
-    documentType: CatalogItem
+    /**
+     * Catálogo referencial. Es `null` mientras la persona está sin asignar
+     * (formularios vacíos, filtros sin selección) en lugar de un
+     * `CatalogItem` con campos vacíos — el modelo distingue "elegí nada"
+     * de "elegí algo que ahora no tengo".
+     */
+    documentType: CatalogItem | null
 
     identification: string
 
@@ -18,7 +24,7 @@ export interface Person {
 
     birthDate: string
 
-    gender: CatalogItem
+    gender: CatalogItem | null
 
     email: string
 

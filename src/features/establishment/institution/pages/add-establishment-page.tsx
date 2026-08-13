@@ -50,12 +50,12 @@ function createEmptyCatalogItem(): CatalogItem {
 function createEmptyPerson(): Person {
   return {
     id: "",
-    documentType: createEmptyCatalogItem(),
+    documentType: null,
     identification: "",
     firstName: "",
     lastName: "",
     birthDate: "",
-    gender: createEmptyCatalogItem(),
+    gender: null,
     email: "",
     phone: "",
     password: "",

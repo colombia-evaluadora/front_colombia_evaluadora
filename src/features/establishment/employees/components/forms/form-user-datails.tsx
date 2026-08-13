@@ -44,12 +44,12 @@ interface UserFormProps {
 function createEmptyPerson(): Person {
     return {
         id: "",
-        documentType: { id: "", code: "", name: "" },
+        documentType: null,
         identification: "",
         firstName: "",
         lastName: "",
         birthDate: "",
-        gender: { id: "", code: "", name: "" },
+        gender: null,
         email: "",
         phone: "",
         password: "",
@@ -161,7 +161,7 @@ export function UserDetailsForm({
                         id="document-type"
                         items={documentTypeLabels}
                         aria-invalid={isInvalid(`${fieldPrefix}.documentType`)}
-                        value={person.documentType.id}
+                        value={person.documentType?.id ?? null}
                         onValueChange={(selectedValue) => {
                             const option = documentTypes.find((item) => item.id === selectedValue)
                             if (option) emitChange({ documentType: option })
@@ -303,7 +303,7 @@ export function UserDetailsForm({
                         id="gender-user"
                         items={genderLabels}
                         aria-invalid={isInvalid(`${fieldPrefix}.gender`)}
-                        value={person.gender.id}
+                        value={person.gender?.id ?? null}
                         onValueChange={(selectedValue) => {
                             const option = genders.find((item) => item.id === selectedValue)
                             if (option) emitChange({ gender: option })
