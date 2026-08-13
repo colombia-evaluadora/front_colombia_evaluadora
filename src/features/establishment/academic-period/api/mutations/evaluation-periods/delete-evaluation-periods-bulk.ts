@@ -4,9 +4,9 @@ import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
 import type { MutationResult } from "../../types/evaluation-period"
 
-// Borrado en lote por códigos, en una sola request atómica.
+// Borrado en lote por PK, en una sola request atómica (`fn_periodo_eval_bulk_delete`).
 function deleteEvaluationPeriodsBulk(ids: number[]): Promise<MutationResult> {
-  return api.post("/evaluation-periods/bulk-delete", { ids })
+  return api.post("/eval-col/periodo-evaluacion/bulk-delete", { IDS: ids })
 }
 
 interface UseDeleteEvaluationPeriodsBulkOptions {

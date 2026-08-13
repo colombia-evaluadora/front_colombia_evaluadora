@@ -19,10 +19,8 @@ import { academicAssignmentsHandlers } from "./academic-period/academic-assignme
 import { metodologiasHandlers } from "./academic-period/metodologias"
 import { ratingScaleTypesHandlers } from "./academic-period/rating-scale-types"
 import { curriculumNodesHandlers } from "./academic-period/curriculum-nodes"
-import { evaluationPeriodStatusesHandlers } from "./academic-period/evaluation-period-statuses"
-import { academicPeriodStatusesHandlers } from "./academic-period/academic-period-statuses"
 import { especialidadesHandlers } from "./academic-period/especialidades"
-import { jornadasHandlers } from "./academic-period/jornadas"
+import { selectCatalogHandlers } from "./academic-period/select-catalog"
 import { establishmentHandlers } from "./establishments"
 import { campusHandlers } from "./campuses"
 import { employeeHandlers } from "./employees"
@@ -53,10 +51,8 @@ export const handlers = [
   ...metodologiasHandlers,
   ...ratingScaleTypesHandlers,
   ...curriculumNodesHandlers,
-  ...evaluationPeriodStatusesHandlers,
-  ...academicPeriodStatusesHandlers,
   ...especialidadesHandlers,
-  ...jornadasHandlers,
+  ...selectCatalogHandlers,
   ...reservationsHandlers,
   ...establishmentHandlers,
   ...campusHandlers,

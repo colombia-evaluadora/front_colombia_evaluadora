@@ -173,7 +173,10 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
   })
   const gradeGroupOptions = useMemo(
     () =>
-      (gradeGroupsData?.rows ?? []).map((g) => [g.codigo, g.jornada].filter(Boolean).join(" - ")),
+      (gradeGroupsData?.rows ?? []).map((g) => ({
+        id: g.id,
+        label: [g.codigo, g.jornada].filter(Boolean).join(" - "),
+      })),
     [gradeGroupsData],
   )
 

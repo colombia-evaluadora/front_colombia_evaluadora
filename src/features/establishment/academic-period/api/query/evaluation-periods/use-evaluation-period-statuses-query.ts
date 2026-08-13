@@ -1,10 +1,22 @@
 import { useQuery } from "@tanstack/react-query"
 
-import { api } from "@/lib/api-client"
-import type { EvaluationPeriodStatusOption } from "../../types/evaluation-period"
+import type {
+  EvaluationPeriodStatus,
+  EvaluationPeriodStatusOption,
+} from "../../types/evaluation-period"
+import { fetchSelectCategory } from "../fetch-select-category"
 
-function fetchEvaluationPeriodStatuses(): Promise<EvaluationPeriodStatusOption[]> {
-  return api.get("/evaluation-period-statuses")
+// Catálogo genérico de TLISTA_VALOR
+// (`GET /eval-col/select/ESTADOPERIODOEVALUACION`).
+async function fetchEvaluationPeriodStatuses(): Promise<
+  EvaluationPeriodStatusOption[]
+> {
+  const rows = await fetchSelectCategory("ESTADOPERIODOEVALUACION")
+  return rows.map((row) => ({
+    id: row.pk_lista_valor,
+    key: row.valor as EvaluationPeriodStatus,
+    label: row.nombre,
+  }))
 }
 
 export const evaluationPeriodStatusesQueryKey = () => [

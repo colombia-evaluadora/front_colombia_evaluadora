@@ -19,7 +19,7 @@ import { BreaksField } from "./breaks-field"
 
 import { useCampusesOptionsQuery } from "@/features/establishment/api/query/use-campuses-options-query"
 
-import { useAcademicPeriodsQuery } from "../../api/query/academic-period/use-academic-periods-query"
+import { useSedePreviousPeriodsQuery } from "../../api/query/academic-period/use-sede-previous-periods-query"
 import { useAcademicPeriodStatusesQuery } from "../../api/query/academic-period/use-academic-period-statuses-query"
 import { useJornadasQuery } from "../../api/query/use-jornadas-query"
 import {
@@ -41,6 +41,9 @@ interface AcademicPeriodFormProps {
   /** Cada vez que cambia, los valores actuales pasan a ser los iniciales
    *  (se usa tras guardar con éxito, para volver a ocultar "Guardar"). */
   savedToken?: number
+  /** Id del periodo en edición: se excluye de las opciones de "periodo
+   *  anterior" (un periodo no puede ser su propio anterior). */
+  currentPeriodId?: number
 }
 
 const EMPTY_VALUES: AcademicPeriodFormInput = {
@@ -66,6 +69,7 @@ export function AcademicPeriodForm({
   onSubmit,
   onDirtyChange,
   savedToken = 0,
+  currentPeriodId,
 }: AcademicPeriodFormProps) {
   const initialValues = {
     ...EMPTY_VALUES,
@@ -102,13 +106,14 @@ export function AcademicPeriodForm({
     form.reset(form.state.values)
   }, [form, savedToken])
 
-  const { data: periodsData } = useAcademicPeriodsQuery({
-    filters: {},
-    sorting: [],
-    pageIndex: 0,
-    pageSize: 100,
-  })
-  const previousPeriodOptions = periodsData?.rows ?? []
+  // Las opciones de "periodo anterior" dependen de la sede elegida; el hook se
+  // dispara cuando hay sede y trae solo los candidatos válidos (el backend ya
+  // filtra por sede/alcance y excluye el periodo en edición).
+  const selectedSedeId = useStore(form.store, (state) => state.values.sedeId)
+  const { data: previousPeriodOptions = [] } = useSedePreviousPeriodsQuery(
+    selectedSedeId || undefined,
+    currentPeriodId
+  )
 
   return (
     <form
@@ -241,51 +246,43 @@ export function AcademicPeriodForm({
           }}
         </form.Field>
 
-        {/* Periodo anterior: se consulta por la sede seleccionada e incluye
-            siempre la opción "No tiene" (equivale a null). El form maneja
-            `sedeId` como string, igual que `AcademicPeriod.sedeId` y
-            `Campus.id`. */}
-        <form.Subscribe selector={(state) => state.values.sedeId}>
-          {(sedeId) => {
-            const optionsForSede = previousPeriodOptions.filter((p) => p.sedeId === sedeId)
-            return (
-              <form.Field name="previousPeriodId">
-                {(field) => (
-                  <Field variant="outlined">
-                    <FieldLabel htmlFor={field.name}>Periodo académico anterior</FieldLabel>
-                    <Select
-                      value={field.state.value ? String(field.state.value) : NO_PREVIOUS_PERIOD}
-                      onValueChange={(value) =>
-                        field.handleChange(
-                          value && value !== NO_PREVIOUS_PERIOD ? Number(value) : null,
-                        )
-                      }
-                    >
-                      <SelectTrigger id={field.name}>
-                        <SelectValue>
-                          {(value) => {
-                            const p = optionsForSede.find((o) => String(o.id) === value)
-                            return p ? `${p.name} — ${p.sedeName}` : "No tiene"
-                          }}
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectGroup>
-                          <SelectItem value={NO_PREVIOUS_PERIOD}>No tiene</SelectItem>
-                          {optionsForSede.map((period) => (
-                            <SelectItem key={period.id} value={String(period.id)}>
-                              {period.name} — {period.sedeName}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                  </Field>
-                )}
-              </form.Field>
-            )
-          }}
-        </form.Subscribe>
+        {/* Periodo anterior: opciones de la sede seleccionada (las trae el hook
+            ya filtradas por el backend) más la opción "No tiene" (equivale a
+            null). */}
+        <form.Field name="previousPeriodId">
+          {(field) => (
+            <Field variant="outlined">
+              <FieldLabel htmlFor={field.name}>Periodo académico anterior</FieldLabel>
+              <Select
+                value={field.state.value ? String(field.state.value) : NO_PREVIOUS_PERIOD}
+                onValueChange={(value) =>
+                  field.handleChange(
+                    value && value !== NO_PREVIOUS_PERIOD ? Number(value) : null,
+                  )
+                }
+              >
+                <SelectTrigger id={field.name}>
+                  <SelectValue>
+                    {(value) => {
+                      const p = previousPeriodOptions.find((o) => String(o.id) === value)
+                      return p ? p.name : "No tiene"
+                    }}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem value={NO_PREVIOUS_PERIOD}>No tiene</SelectItem>
+                    {previousPeriodOptions.map((period) => (
+                      <SelectItem key={period.id} value={String(period.id)}>
+                        {period.name}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </Field>
+          )}
+        </form.Field>
 
         <form.Field name="statusId">
           {(field) => (

@@ -4,7 +4,7 @@ import { api } from "@/lib/api-client"
 import type { AcademicPeriodDetail } from "../../types/academic-period"
 
 function fetchAcademicPeriod(id: number): Promise<AcademicPeriodDetail> {
-  return api.get(`/academic-periods/${id}`)
+  return api.get(`/eval-col/periodos-academicos/${id}`)
 }
 
 export const academicPeriodQueryKey = (id: number) => ["academic-period", id]
