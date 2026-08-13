@@ -1,0 +1,112 @@
+"use no memo"
+
+import { useMemo, useState } from "react"
+import type { SortingState } from "@tanstack/react-table"
+
+import { DataTable, DataTableViewOptions } from "@/components/data-table"
+import { Pagination } from "@/components/pagination"
+import { useDataTable } from "@/hooks/use-data-table"
+
+import { useEvaluationPeriodsQuery } from "@/features/establishment/academic-period/api/query/use-evaluation-periods"
+import { createEvaluationPeriodColumns } from "@/features/establishment/academic-period/components/table/columns-evaluation-periods"
+import { CreateEvaluationPeriodDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-create-evaluation-period"
+import { DeleteSelectedEvaluationPeriodsDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-delete-selected-evaluation-periods"
+import { ExportEvaluationPeriodsDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-export-evaluation-periods"
+import { ExportSelectedEvaluationPeriodsDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-export-selected-evaluation-periods"
+import { NoticeOutlet } from "@/components/notice/notice-context"
+
+interface TabEvaluationPeriodsProps {
+  academicPeriodId?: number
+}
+
+export function TabEvaluationPeriods({ academicPeriodId }: TabEvaluationPeriodsProps) {
+  const [sorting, setSorting] = useState<SortingState>([])
+  const [pageIndex, setPageIndex] = useState(0)
+  const [pageSize, setPageSize] = useState(10)
+
+  const { data, isPending, isError, refetch } = useEvaluationPeriodsQuery({
+    filters: {},
+    sorting,
+    pageIndex,
+    pageSize,
+    academicPeriodId,
+  })
+
+  const goToPage = setPageIndex
+  const changePageSize = (size: number) => {
+    setPageSize(size)
+    setPageIndex(0)
+  }
+
+  const columns = useMemo(
+    () => createEvaluationPeriodColumns({ academicPeriodId }),
+    [academicPeriodId],
+  )
+
+  const { table, selectedIds, hasSelection, resetSelection } = useDataTable({
+    columns,
+    data: data?.rows ?? [],
+    pageCount: data?.pageCount ?? -1,
+    getRowId: (row) => String(row.id),
+    pageIndex,
+    pageSize,
+    goToPage,
+    setPageSize: changePageSize,
+    sorting,
+    setSorting,
+  })
+
+  // `selectedIds` viene como string[] (los ids de la tabla); los codigos de
+  // evaluation period son `number`, así que convertimos antes de mandar al back.
+  const selectedCodigos = useMemo(() => selectedIds.map(Number), [selectedIds])
+
+  return (
+    <>
+      {/* El `border-b` cierra la barra de acciones igual que el `hr` de
+          `TableScreenHeader` en las pantallas de listado. */}
+      <div className="mb-2 flex items-center justify-end gap-2 border-b border-border pb-2">
+        {hasSelection ? (
+          <>
+            <DeleteSelectedEvaluationPeriodsDialog
+              selectedIds={selectedIds}
+              resetSelection={resetSelection}
+            />
+            <ExportSelectedEvaluationPeriodsDialog
+              selectedIds={selectedCodigos}
+              resetSelection={resetSelection}
+            />
+          </>
+        ) : (
+          <>
+            <CreateEvaluationPeriodDialog academicPeriodId={academicPeriodId} />
+            <ExportEvaluationPeriodsDialog filters={{}} />
+          </>
+        )}
+      </div>
+
+      <NoticeOutlet className="mb-2" />
+
+      <DataTable
+        table={table}
+        isPending={isPending}
+        isError={isError}
+        onRetry={refetch}
+        emptyMessage="Aún no hay periodos de evaluación."
+        errorMessage="Ocurrió un error al cargar los periodos de evaluación."
+      />
+      {data && (
+        <Pagination
+          viewOptions={<DataTableViewOptions table={table} />}
+          pageIndex={pageIndex}
+          pageCount={data.pageCount}
+          canPrev={pageIndex > 0}
+          canNext={pageIndex < data.pageCount - 1}
+          onPageChange={goToPage}
+          totalCount={data.totalCount}
+          pageSize={pageSize}
+          onPageSizeChange={changePageSize}
+        />
+      )}
+    </>
+  )
+}

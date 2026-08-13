@@ -12,9 +12,9 @@ import {
 import { Spinner } from "@/components/ui/spinner"
 import { paths } from "@/config/paths"
 
-import { useForgotPassword } from "../api/mutations/forgot-password"
-import { ForgotPasswordForm } from "../components/forms/form-forgot-password"
-import type { ForgotPasswordFormValues } from "../api/schema"
+import { useForgotPassword } from "@/features/auth/api/mutations/forgot-password"
+import { ForgotPasswordForm } from "@/features/auth/components/forms/form-forgot-password"
+import type { ForgotPasswordFormValues } from "@/features/auth/api/schema"
 
 const FORGOT_PASSWORD_FORM_ID = "forgot-password-form"
 

@@ -1,6 +1,6 @@
 import preview from "../../../../.storybook/preview"
 import { useState } from "react"
-import { Slider } from "../slider"
+import { Slider } from "@/components/ui/slider"
 
 const meta = preview.meta({
   title: "Design System/Forms/Slider",

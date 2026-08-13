@@ -1,5 +1,5 @@
 import preview from "../../../../.storybook/preview"
-import { Spinner } from "../spinner"
+import { Spinner } from "@/components/ui/spinner"
 
 const meta = preview.meta({
   title: "Design System/Feedback/Spinner",

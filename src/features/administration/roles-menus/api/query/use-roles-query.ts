@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
 
-import type { Role } from "../types/role-menu"
+import type { Role } from "@/features/administration/roles-menus/api/types/role-menu"
 
 function fetchRoles(): Promise<Role[]> {
   return api.get("/roles")

@@ -17,9 +17,9 @@ import { useTablePagination } from "@/hooks/use-table-pagination"
 import { getNavIcon } from "@/features/navigation/api/ui-mappings"
 import { paths } from "@/config/paths"
 
-import { FilterAuditTablesForm } from "../forms/form-filter-audit-tables"
-import { useAuditTablesFilters } from "../../hooks/use-audit-tables-filters"
-import { useAuditTablesQuery } from "../../api/query/use-audit-tables-query"
+import { FilterAuditTablesForm } from "@/features/audits/components/forms/form-filter-audit-tables"
+import { useAuditTablesFilters } from "@/features/audits/hooks/use-audit-tables-filters"
+import { useAuditTablesQuery } from "@/features/audits/api/query/use-audit-tables-query"
 
 const FILTER_AUDIT_TABLES_FORM_ID = "filter-audit-tables-form"
 

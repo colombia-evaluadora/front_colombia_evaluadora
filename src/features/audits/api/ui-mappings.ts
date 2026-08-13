@@ -1,5 +1,5 @@
-import type { SessionStatus } from "./types/audit"
-import type { OperationType } from "./types/audit-table"
+import type { SessionStatus } from "@/features/audits/api/types/audit"
+import type { OperationType } from "@/features/audits/api/types/audit-table"
 
 type BadgeColor = "primary" | "secondary" | "destructive" | "info" | "warning" | "success"
 interface BadgeProps {

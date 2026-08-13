@@ -4,26 +4,11 @@ import {
     Attachment,
     AttachmentAction,
     AttachmentActions,
-    AttachmentContent,
-    AttachmentDescription,
     AttachmentMedia,
-    AttachmentTitle,
 } from "@/components/ui/attachment"
 import { FileUpload, FileUploadDropzone } from "@/components/ui/file-upload"
 import { ImageIcon, XIcon } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
-
-// "PNG · 820 KB". El formato sale del MIME type y no de la extensión del
-// nombre, que el usuario puede haber escrito en minúsculas o cambiado.
-function describeFile(file: File) {
-    const format = (file.type.split("/")[1] ?? "").replace("svg+xml", "svg").toUpperCase()
-    const size =
-        file.size < 1024 * 1024
-            ? `${Math.round(file.size / 1024)} KB`
-            : `${(file.size / (1024 * 1024)).toFixed(1)} MB`
-
-    return format ? `${format} · ${size}` : size
-}
 
 interface ImageUploadFieldProps {
     value: File | null
@@ -32,18 +17,10 @@ interface ImageUploadFieldProps {
     accept?: string
     /** Tamaño máximo en bytes; debe coincidir con lo que diga `hint`. */
     maxSize?: number
-    /** Ícono del estado vacío. Por defecto, una imagen. */
-    icon?: ReactNode
     /** Segunda línea del dropzone: qué se está cargando. */
     description: ReactNode
     /** Tercera línea: formatos y tamaño permitidos. */
     hint?: ReactNode
-    /**
-     * `contain` para escudos o logos, donde recortar pierde sentido;
-     * `cover` para fotos de personas, donde el encuadre importa más
-     * que ver el archivo completo.
-     */
-    fit?: "contain" | "cover"
     /** Etiqueta accesible del botón de borrado. */
     deleteLabel?: string
     className?: string
@@ -51,17 +28,16 @@ interface ImageUploadFieldProps {
 
 /**
  * Carga de una sola imagen: dropzone con arrastrar-y-soltar mientras está
- * vacío y tarjeta con vista previa, nombre y peso una vez hay archivo.
+ * vacío y, una vez hay archivo, la vista previa sola —sin nombre ni peso—
+ * ocupando la misma caja.
  */
 export function ImageUploadField({
     value,
     onValueChange,
     accept = "image/jpeg,image/png,image/svg+xml",
     maxSize = 2 * 1024 * 1024,
-    icon,
     description,
     hint = "JPG, PNG o SVG · Máximo 2 MB",
-    fit = "contain",
     deleteLabel = "Eliminar imagen",
     className,
 }: ImageUploadFieldProps) {
@@ -90,37 +66,36 @@ export function ImageUploadField({
             className={cn("h-full w-full", className)}
         >
             {value ? (
-                // La tarjeta llena la misma caja que ocupaba el dropzone en
-                // vez de quedar en el ancho fijo de `orientation="vertical"`
-                // (`w-30`), de ahí los `w-full` —incluido el del `has-*`, que
-                // gana por especificidad si no se lo pisa explícitamente.
+                // La tarjeta llena la misma caja que ocupaba el dropzone en vez
+                // de quedar en el ancho fijo de `orientation="vertical"`
+                // (`w-24`), de ahí el `w-full`.
                 <Attachment
                     orientation="vertical"
                     // `flex-nowrap` porque la variante trae `flex-wrap`, y en
                     // columna con alto fijo eso parte el contenido en dos.
-                    className="h-full w-full flex-nowrap has-data-[slot=attachment-content]:w-full"
+                    className="h-full w-full flex-nowrap"
                 >
                     {/*
                         El alto lo pone la fila, no la imagen: la vista previa va
                         posicionada sobre el medio (que ya es `relative
                         overflow-hidden`) para que su tamaño natural no empuje la
                         caja y termine estirando las filas del grid.
+
+                        Siempre `object-contain`: se ve el archivo completo, que
+                        es lo que el usuario acaba de elegir, sin recortes.
                     */}
                     <AttachmentMedia
                         variant="image"
-                        className={cn(
-                            "aspect-auto min-h-0 w-full flex-1 *:[img]:absolute *:[img]:inset-0 *:[img]:aspect-auto *:[img]:size-full",
-                            fit === "cover" ? "*:[img]:object-cover" : "*:[img]:object-contain",
-                        )}
+                        className="aspect-auto min-h-0 w-full flex-1 *:[img]:absolute *:[img]:inset-0 *:[img]:aspect-auto *:[img]:size-full *:[img]:object-contain"
                     >
                         {preview ? <img src={preview} alt={value.name} /> : null}
                     </AttachmentMedia>
-                    <AttachmentContent>
-                        <AttachmentTitle>{value.name}</AttachmentTitle>
-                        <AttachmentDescription>{describeFile(value)}</AttachmentDescription>
-                    </AttachmentContent>
                     <AttachmentActions>
+                        {/* Neutral: borrar la imagen no es la acción principal
+                            de la tarjeta, y en primario competía con el resto
+                            del formulario. */}
                         <AttachmentAction
+                            color="neutral"
                             aria-label={deleteLabel}
                             onClick={() => onValueChange(null)}
                         >
@@ -137,7 +112,7 @@ export function ImageUploadField({
                 // la fila del grid, no el dropzone, así que si el espacio queda
                 // justo el contenido se recorta en vez de estirar la fila.
                 <FileUploadDropzone className="h-full w-full gap-1 overflow-hidden rounded-lg bg-muted/20 px-3 py-3">
-                    {icon ?? <ImageIcon className="size-8 shrink-0 text-muted-foreground" />}
+                    <ImageIcon className="size-8 shrink-0 text-muted-foreground" />
                     {/*
                         Los tres textos van en un bloque propio: el `gap` del
                         dropzone separa el ícono del texto, y acá adentro no va

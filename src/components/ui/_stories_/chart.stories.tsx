@@ -1,6 +1,6 @@
 import preview from "../../../../.storybook/preview"
 import { Bar, BarChart, CartesianGrid, XAxis } from "recharts"
-import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "../chart"
+import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart"
 
 const chartData = [
   { month: "January", desktop: 186, mobile: 80 },

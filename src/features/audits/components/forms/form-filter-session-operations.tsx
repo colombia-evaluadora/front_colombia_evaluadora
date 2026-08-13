@@ -6,6 +6,7 @@ import { DatePicker } from "@/components/date-picker"
 import { Input } from "@/components/ui/input"
 import {
   Field,
+  FieldError,
   FieldContent,
   FieldGroup,
   FieldLabel,
@@ -18,9 +19,9 @@ import {
   sessionOperationsFiltersFormSchema,
   type SessionOperationsFiltersFormInput,
   type SessionOperationsFiltersFormValues,
-} from "../../api/schema"
-import type { OperationType } from "../../api/types/audit-table"
-import { useAuditOperationTypesQuery } from "../../api/query/use-audit-operation-types-query"
+} from "@/features/audits/api/schema"
+import type { OperationType } from "@/features/audits/api/types/audit-table"
+import { useAuditOperationTypesQuery } from "@/features/audits/api/query/use-audit-operation-types-query"
 import { formatDateTimeValue, parseDateTimeValue } from "@/lib/date-time-value"
 
 interface FilterSessionOperationsFormProps {
@@ -43,9 +44,7 @@ export function FilterSessionOperationsForm({
     validators: {
       onSubmit: sessionOperationsFiltersFormSchema,
     },
-    onSubmit: ({ value }) => {
-      onSubmit(sessionOperationsFiltersFormSchema.parse(value))
-    },
+    onSubmit: ({ value }) => onSubmit(value),
   })
 
   // Las opciones de tipo de operación las entrega el backend como
@@ -122,27 +121,25 @@ export function FilterSessionOperationsForm({
       />
 
       {!hideTableSlug && (
-        <>
-          <form.Field
-            name="tableSlug"
-            children={(field) => (
-              <Field orientation="vertical" variant="outlined">
-                <FieldLabel htmlFor={field.name}>Tabla</FieldLabel>
-                <Input
-                  id={field.name}
-                  name={field.name}
-                  type="text"
-                  autoComplete="off"
-                  placeholder="Ingresar nombre de tabla"
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(event) => field.handleChange(event.target.value)}
-                  className="h-9"
-                />
-              </Field>
-            )}
-          />
-        </>
+        <form.Field
+          name="tableSlug"
+          children={(field) => (
+            <Field orientation="vertical" variant="outlined">
+              <FieldLabel htmlFor={field.name}>Tabla</FieldLabel>
+              <Input
+                id={field.name}
+                name={field.name}
+                type="text"
+                size="sm"
+                autoComplete="off"
+                placeholder="Agregar"
+                value={field.state.value}
+                onBlur={field.handleBlur}
+                onChange={(event) => field.handleChange(event.target.value)}
+              />
+            </Field>
+          )}
+        />
       )}
 
       {/* Dos campos independientes (no un único rango) — cada uno usa el
@@ -160,27 +157,37 @@ export function FilterSessionOperationsForm({
                 <DatePicker
                   mode="datetime"
                   id={field.name}
+                  size="sm"
                   value={parseDateTimeValue(field.state.value)}
                   onChange={(date) => field.handleChange(formatDateTimeValue(date))}
-                  className="h-9"
                 />
               </Field>
             )}
           />
           <form.Field
             name="occurredTo"
-            children={(field) => (
-              <Field orientation="vertical" variant="outlined" className="gap-2">
-                <FieldLabel htmlFor={field.name}>Hasta</FieldLabel>
-                <DatePicker
-                  mode="datetime"
-                  id={field.name}
-                  value={parseDateTimeValue(field.state.value)}
-                  onChange={(date) => field.handleChange(formatDateTimeValue(date))}
-                  className="h-9"
-                />
-              </Field>
-            )}
+            children={(field) => {
+              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
+              return (
+                <Field
+                  orientation="vertical"
+                  variant="outlined"
+                  className="gap-2"
+                  data-invalid={isInvalid ? "true" : undefined}
+                >
+                  <FieldLabel htmlFor={field.name}>Hasta</FieldLabel>
+                  <DatePicker
+                    mode="datetime"
+                    id={field.name}
+                    size="sm"
+                    aria-invalid={isInvalid}
+                    value={parseDateTimeValue(field.state.value)}
+                    onChange={(date) => field.handleChange(formatDateTimeValue(date))}
+                  />
+                  <FieldError errors={field.state.meta.errors} />
+                </Field>
+              )
+            }}
           />
         </div>
       </FieldSet>

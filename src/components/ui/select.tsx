@@ -12,7 +12,65 @@ import {
   type InputVariant,
 } from "@/components/ui/input"
 
-const Select = SelectPrimitive.Root
+/**
+ * Mapa opcional `value → label` que el `Select` raíz puede pasar para que el
+ * `SelectValue` lo consulte en vez de tener que pintarlo a mano con un
+ * `children` función. Aceptamos la unión completa de Base UI (record | array
+ * de `{label, value}` | array de `Group`) para no romper los call sites que
+ * usan el formato nativo. Si llega un array, `SelectValue` cae al `children`
+ * (típicamente `placeholder`).
+ */
+type SelectItemsMap = Record<string, React.ReactNode>
+
+const SelectItemsContext = React.createContext<SelectItemsMap | undefined>(undefined)
+
+function isLookupMap(items: unknown): items is SelectItemsMap {
+  return items !== null && typeof items === "object" && !Array.isArray(items)
+}
+
+function useSelectItems() {
+  return React.useContext(SelectItemsContext)
+}
+
+type SelectProps<Value, Multiple extends boolean | undefined = false> = SelectPrimitive.Root.Props<
+  Value,
+  Multiple
+> & {
+  /**
+   * `items` admite dos formas:
+   * - `Record<value, label>`: `SelectValue` lo usa como lookup para mostrar el
+   *   label del valor seleccionado en el trigger.
+   * - El formato nativo de Base UI (`ReadonlyArray<{ label, value }>` o
+   *   `ReadonlyArray<Group<…}>`): se pasa tal cual a `Select.Root` y el
+   *   trigger cae al `children` (placeholder por default).
+   *
+   * Aceptamos la unión para no romper los call sites que ya usaban el
+   * formato nativo con el `Select` antiguo.
+   */
+  items?: SelectPrimitive.Root.Props<Value, Multiple>["items"]
+}
+
+/**
+ * Wrapper sobre `SelectPrimitive.Root` que conserva los genéricos `<Value,
+ * Multiple>` — fundamentales para que TS infiera el tipo del `value` en
+ * `onValueChange` desde el `value` prop. Sin declararlos acá, el wrapper
+ * pierde la generic y los call sites quedan con `selectedValue: any`.
+ */
+function Select<Value, Multiple extends boolean | undefined = false>({
+  items,
+  children,
+  ...props
+}: SelectProps<Value, Multiple>) {
+  // El contexto del `SelectValue` solo entiende la forma `Record<value, label>`.
+  // El resto de los formatos pasan a `SelectPrimitive.Root` y `SelectValue`
+  // cae al `children` (placeholder por default).
+  const lookupMap = isLookupMap(items) ? items : undefined
+  return (
+    <SelectItemsContext.Provider value={lookupMap}>
+      <SelectPrimitive.Root {...props}>{children}</SelectPrimitive.Root>
+    </SelectItemsContext.Provider>
+  )
+}
 
 function SelectGroup({ className, ...props }: SelectPrimitive.Group.Props) {
   return (
@@ -31,8 +89,21 @@ function SelectValue({
   // `placeholder` sigue funcionando para los casos con semántica propia (los
   // filtros usan "Todos", porque ahí vacío significa "sin filtro").
   placeholder = "Seleccionar",
+  children,
   ...props
 }: SelectPrimitive.Value.Props) {
+  const items = useSelectItems()
+
+  // Si el `Select` raíz recibió `items`, lo usamos como lookup y descartamos
+  // `children` — coexistirían en el render y el `children` ganaría siempre que
+  // sea función, dejando al `items` como una promesa vacía.
+  // El fallback al `placeholder` cubre el valor ausente (`null`) y también el
+  // que no está en el mapa: sin él, el trigger quedaba literalmente en blanco.
+  const renderChildren = items
+    ? (value: unknown) =>
+        (value === null || value === undefined ? null : items[String(value)]) ?? placeholder
+    : children
+
   return (
     <SelectPrimitive.Value
       data-slot="select-value"
@@ -42,7 +113,9 @@ function SelectValue({
       // es lo que deja al item encogerse por debajo del ancho de su contenido.
       className={cn("block min-w-0 flex-1 truncate text-left", className)}
       {...props}
-    />
+    >
+      {renderChildren}
+    </SelectPrimitive.Value>
   )
 }
 
@@ -63,12 +136,12 @@ function SelectTrigger({
       data-slot="select-trigger"
       data-size={size}
       className={cn(
-        inputVariants({ variant: resolvedVariant }),
+        inputVariants({ variant: resolvedVariant, size }),
         inputTriggerVariants({ variant: resolvedVariant }),
         // El recorte del valor lo resuelve SelectValue con block+truncate; acá no
         // se le impone display, porque el flex anulaba ese text-overflow y dejaba
         // al line-clamp inerte, que era lo que hacía desbordar al valor largo.
-        "flex items-center justify-between gap-1.5 whitespace-nowrap data-placeholder:text-muted-foreground data-[size=sm]:h-9 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
+        "flex items-center justify-between gap-1.5 whitespace-nowrap data-placeholder:text-muted-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
         className,
       )}
       {...props}

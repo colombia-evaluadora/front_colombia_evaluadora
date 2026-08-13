@@ -1,6 +1,6 @@
 import preview from "../../../../.storybook/preview"
 import { useState } from "react"
-import { Button } from "../button"
+import { Button } from "@/components/ui/button"
 import {
   Command,
   CommandDialog,
@@ -11,7 +11,7 @@ import {
   CommandList,
   CommandSeparator,
   CommandShortcut,
-} from "../command"
+} from "@/components/ui/command"
 
 const meta = preview.meta({
   title: "Design System/Overlays/Command",

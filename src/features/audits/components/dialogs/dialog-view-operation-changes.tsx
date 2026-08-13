@@ -1,6 +1,6 @@
 import { useState } from "react"
 
-import { EyeIcon } from "@/components/ui/icons"
+import { EyeIcon, XIcon } from "@/components/ui/icons"
 
 import {
   Dialog,
@@ -17,11 +17,11 @@ import { Spinner } from "@/components/ui/spinner"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 
-import { useOperationChangesQuery } from "../../api/query/use-operation-changes-query"
-import { useAuditOperationTypesQuery } from "../../api/query/use-audit-operation-types-query"
-import { OPERATION_TYPE_BADGE } from "../../api/ui-mappings"
-import { OperationChangesTable } from "../table/operation-changes-table"
-import { DialogConfirmRevertChanges } from "./dialog-confirm-revert-changes"
+import { useOperationChangesQuery } from "@/features/audits/api/query/use-operation-changes-query"
+import { useAuditOperationTypesQuery } from "@/features/audits/api/query/use-audit-operation-types-query"
+import { OPERATION_TYPE_BADGE } from "@/features/audits/api/ui-mappings"
+import { OperationChangesTable } from "@/features/audits/components/table/operation-changes-table"
+import { DialogConfirmRevertChanges } from "@/features/audits/components/dialogs/dialog-confirm-revert-changes"
 import { useParams } from "@tanstack/react-router"
 
 interface ViewOperationChangesDialogProps {
@@ -70,7 +70,14 @@ export function ViewOperationChangesDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
-        render={<Button variant="ghost" color="neutral" size="icon-sm" aria-label="Ver cambios de la operación" />}
+        render={
+          <Button
+            variant="ghost"
+            color="neutral"
+            size="icon-sm"
+            aria-label="Ver cambios de la operación"
+          />
+        }
       >
         <EyeIcon weight="bold" />
       </DialogTrigger>
@@ -78,9 +85,7 @@ export function ViewOperationChangesDialog({
         <DialogHeader>
           <div className="flex flex-wrap items-center gap-2">
             <DialogTitle>{data ? data.entityName : "Detalle de cambios"}</DialogTitle>
-            {data && (
-              <Badge {...OPERATION_TYPE_BADGE[data.operation]}>{operationLabel}</Badge>
-            )}
+            {data && <Badge {...OPERATION_TYPE_BADGE[data.operation]}>{operationLabel}</Badge>}
           </div>
           <DialogDescription>{data ? `${data.entityId}` : "Cargando…"}</DialogDescription>
           <div className="flex justify-between gap-2">
@@ -121,13 +126,18 @@ export function ViewOperationChangesDialog({
           </div>
         )}
 
-        <DialogFooter className="sm:justify-between">
-          <DialogClose render={<Button type="button" variant="ghost" />}>Cerrar</DialogClose>
+        <DialogFooter>
           <DialogConfirmRevertChanges
             tableSlug={tableSlug}
             operationId={operationId}
             fieldIndexes={revertibleIndexes}
           />
+          <DialogClose
+            render={<Button size="sm" type="button" variant="fill" color="neutral" />}
+          >
+            <XIcon data-icon="inline-start" />
+            Cerrar
+          </DialogClose>
         </DialogFooter>
       </DialogContent>
     </Dialog>

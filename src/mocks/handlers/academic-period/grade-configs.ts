@@ -1,6 +1,6 @@
 import { http, HttpResponse, delay } from "msw"
 
-import { gradeConfigsDb } from "../../db/academic-period/grade-configs"
+import { gradeConfigsDb } from "@/mocks/db/academic-period/grade-configs"
 import type {
   GradeConfig,
   MutationResult,

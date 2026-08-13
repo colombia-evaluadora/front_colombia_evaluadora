@@ -1,7 +1,7 @@
 import preview from "../../../../.storybook/preview"
-import { Button } from "../button"
-import { Input } from "../input"
-import { Label } from "../label"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import {
   Popover,
   PopoverContent,
@@ -9,7 +9,7 @@ import {
   PopoverHeader,
   PopoverTitle,
   PopoverTrigger,
-} from "../popover"
+} from "@/components/ui/popover"
 
 const meta = preview.meta({
   title: "Design System/Overlays/Popover",

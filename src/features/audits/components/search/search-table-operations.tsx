@@ -6,10 +6,10 @@ import { useQuerySearch } from "@/components/search/use-query-search"
 import type {
   TableOperationsFiltersFormInput,
   TableOperationsFiltersFormValues,
-} from "../../api/schema"
-import { useAuditOperationTypesQuery } from "../../api/query/use-audit-operation-types-query"
-import { FilterTableOperationsForm } from "../forms/form-filter-table-operations"
-import { tableOperationsSyntax } from "./query-syntax"
+} from "@/features/audits/api/schema"
+import { useAuditOperationTypesQuery } from "@/features/audits/api/query/use-audit-operation-types-query"
+import { FilterTableOperationsForm } from "@/features/audits/components/forms/form-filter-table-operations"
+import { tableOperationsSyntax } from "@/features/audits/components/search/query-syntax"
 
 const FILTER_TABLE_OPERATIONS_FORM_ID = "filter-table-operations-form"
 
@@ -70,7 +70,7 @@ export function SearchTableOperations({
     <div className="flex min-w-0 flex-1 flex-col gap-2">
       <SearchQueryBar
         id={SEARCH_INPUT_ID}
-        placeholder="Buscar en la auditoría…"
+        placeholder="Buscar por"
         value={search}
         onValueChange={setSearch}
         onClearAll={handleClearAll}

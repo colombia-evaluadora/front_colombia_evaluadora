@@ -7,7 +7,7 @@ import {
   MenubarSeparator,
   MenubarShortcut,
   MenubarTrigger,
-} from "../menubar"
+} from "@/components/ui/menubar"
 
 const meta = preview.meta({
   title: "Design System/Overlays/Menubar",

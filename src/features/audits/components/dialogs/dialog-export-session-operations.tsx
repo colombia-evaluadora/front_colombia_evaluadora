@@ -19,8 +19,8 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 
-import { useExportSessionOperations } from "../../api/mutations/export-session-operations"
-import type { ExportFormat } from "../../api/types/audit"
+import { useExportSessionOperations } from "@/features/audits/api/mutations/export-session-operations"
+import type { ExportFormat } from "@/features/audits/api/types/audit"
 import { useNotify } from "@/components/notice/notice-context"
 
 interface ExportSessionOperationsDialogProps {
@@ -71,9 +71,12 @@ export function ExportSessionOperationsDialog({ sessionId }: ExportSessionOperat
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="sm:justify-between">
-          <DialogClose render={<Button type="button" variant="ghost" />}>Cancelar</DialogClose>
+          <DialogClose render={<Button size="sm" type="button" variant="ghost" />}>
+            Cancelar
+          </DialogClose>
           <div className="flex flex-col-reverse gap-2 sm:flex-row">
             <Button
+              size="sm"
               type="button"
               variant="outline"
               disabled={exportAll.isPending}
@@ -88,6 +91,7 @@ export function ExportSessionOperationsDialog({ sessionId }: ExportSessionOperat
               Excel
             </Button>
             <Button
+              size="sm"
               type="button"
               color="primary"
               disabled={exportAll.isPending}

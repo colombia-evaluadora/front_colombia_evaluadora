@@ -16,16 +16,16 @@ import {
 } from "@/components/layout/table-screen"
 import { paths } from "@/config/paths"
 
-import { useAuditsQuery } from "../../api/query/use-audits-query"
+import { useAuditsQuery } from "@/features/audits/api/query/use-audits-query"
 import { useTablePagination } from "@/hooks/use-table-pagination"
-import { useAuditSessionFilters } from "../../hooks/use-audit-session-filters"
+import { useAuditSessionFilters } from "@/features/audits/hooks/use-audit-session-filters"
 
-import { columns } from "./columns-audit-session"
-import { SearchAuditSession } from "../search/search-audit-session"
-import { ExportSelectedAuditSessionDialog } from "../dialogs/dialog-export-selected-audit-session"
-import { ExportAuditSessionDialog } from "../dialogs/dialog-export-audit-session"
-import { ClearSelectionAuditSessionDialog } from "../dialogs/dialog-clear-selection-audit-session"
-import { AuditSessionStatsCards } from "../stats/audit-session-stats-cards"
+import { columns } from "@/features/audits/components/table/columns-audit-session"
+import { SearchAuditSession } from "@/features/audits/components/search/search-audit-session"
+import { ExportSelectedAuditSessionDialog } from "@/features/audits/components/dialogs/dialog-export-selected-audit-session"
+import { ExportAuditSessionDialog } from "@/features/audits/components/dialogs/dialog-export-audit-session"
+import { ClearSelectionAuditSessionDialog } from "@/features/audits/components/dialogs/dialog-clear-selection-audit-session"
+import { AuditSessionStatsCards } from "@/features/audits/components/stats/audit-session-stats-cards"
 
 const viewLinks = [
   { label: "Por sesión", to: paths.app.auditoriaSesiones.getHref() },

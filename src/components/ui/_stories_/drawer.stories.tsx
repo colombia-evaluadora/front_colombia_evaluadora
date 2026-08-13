@@ -1,5 +1,5 @@
 import preview from "../../../../.storybook/preview"
-import { Button } from "../button"
+import { Button } from "@/components/ui/button"
 import {
   Drawer,
   DrawerClose,
@@ -9,7 +9,7 @@ import {
   DrawerHeader,
   DrawerTitle,
   DrawerTrigger,
-} from "../drawer"
+} from "@/components/ui/drawer"
 
 const meta = preview.meta({
   title: "Design System/Overlays/Drawer",

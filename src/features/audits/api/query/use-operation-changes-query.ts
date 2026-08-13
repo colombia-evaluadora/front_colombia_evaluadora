@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
-import type { OperationChangesResponse } from "../types/audit-table"
+import type { OperationChangesResponse } from "@/features/audits/api/types/audit-table"
 
 interface UseOperationChangesQueryParams {
   tableSlug: string

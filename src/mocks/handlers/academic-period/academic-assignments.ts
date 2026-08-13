@@ -1,9 +1,9 @@
 import { http, HttpResponse, delay } from "msw"
 
-import { gradesDb } from "../../db/academic-period/grades"
-import { gradeGroupsDb } from "../../db/academic-period/grade-groups"
-import { studyPlansDb } from "../../db/academic-period/study-plans"
-import { teacherAssignmentsDb } from "../../db/academic-period/teacher-assignments"
+import { gradesDb } from "@/mocks/db/academic-period/grades"
+import { gradeGroupsDb } from "@/mocks/db/academic-period/grade-groups"
+import { studyPlansDb } from "@/mocks/db/academic-period/study-plans"
+import { teacherAssignmentsDb } from "@/mocks/db/academic-period/teacher-assignments"
 import type {
   AssignmentSubject,
   MutationResult,

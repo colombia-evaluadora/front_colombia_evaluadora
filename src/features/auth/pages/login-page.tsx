@@ -15,9 +15,9 @@ import { Spinner } from "@/components/ui/spinner"
 import { paths } from "@/config/paths"
 import { useLogin } from "@/lib/auth"
 
-import { HelpFaqSheet } from "../components/sheets/sheet-help-faq"
-import { LoginForm } from "../components/forms/form-login"
-import type { LoginFormValues } from "../api/schema"
+import { HelpFaqSheet } from "@/features/auth/components/sheets/sheet-help-faq"
+import { LoginForm } from "@/features/auth/components/forms/form-login"
+import type { LoginFormValues } from "@/features/auth/api/schema"
 
 const LOGIN_FORM_ID = "login-form"
 

@@ -1,8 +1,8 @@
 // src/features/evaluation-periods/api/mocks/evaluation-periods.handlers.ts
 
 import { http, HttpResponse, delay } from "msw"
-import { evaluationPeriodsDb } from "../../db/academic-period/evaluation-periods"
 import { evaluationPeriodStatusesDb } from "../../db/academic-period/evaluation-period-statuses"
+import { evaluationPeriodsDb } from "@/mocks/db/academic-period/evaluation-periods"
 
 import type {
   EvaluationPeriod,

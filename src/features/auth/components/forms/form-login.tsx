@@ -3,7 +3,13 @@ import { useForm } from "@tanstack/react-form"
 import { Link } from "@tanstack/react-router"
 import { EnvelopeIcon, EyeIcon, EyeSlashIcon, LockIcon } from "@/components/ui/icons"
 
-import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
   InputGroup,
@@ -13,7 +19,7 @@ import {
 } from "@/components/ui/input-group"
 import { paths } from "@/config/paths"
 
-import { loginFormSchema, type LoginFormValues } from "../../api/schema"
+import { loginFormSchema, type LoginFormValues } from "@/features/auth/api/schema"
 
 interface LoginFormProps {
   id: string
@@ -28,7 +34,7 @@ export function LoginForm({ id, onSubmit }: LoginFormProps) {
       email: "",
       password: "",
       rememberMe: false,
-    } as LoginFormValues,
+    },
     validators: {
       onChange: loginFormSchema,
     },
@@ -59,14 +65,18 @@ export function LoginForm({ id, onSubmit }: LoginFormProps) {
                     name={field.name}
                     type="email"
                     autoComplete="username"
-                    placeholder="Ingresar correo electrónico"
+                    placeholder="usuario@institucion.edu.co"
                     value={field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value)}
                     aria-invalid={isInvalid}
                   />
                 </InputGroup>
-                {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                {isInvalid ? (
+                  <FieldError errors={field.state.meta.errors} />
+                ) : (
+                  <FieldDescription>Usa tu correo electrónico.</FieldDescription>
+                )}
               </Field>
             )
           }}
@@ -87,7 +97,7 @@ export function LoginForm({ id, onSubmit }: LoginFormProps) {
                     name={field.name}
                     type={showPassword ? "text" : "password"}
                     autoComplete="current-password"
-                    placeholder="Ingresar contraseña"
+                    placeholder="Ingresar tu contraseña"
                     value={field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value)}
@@ -105,7 +115,11 @@ export function LoginForm({ id, onSubmit }: LoginFormProps) {
                     </InputGroupButton>
                   </InputGroupAddon>
                 </InputGroup>
-                {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                {isInvalid ? (
+                  <FieldError errors={field.state.meta.errors} />
+                ) : (
+                  <FieldDescription>Debe contener al menos 8 caracteres.</FieldDescription>
+                )}
               </Field>
             )
           }}

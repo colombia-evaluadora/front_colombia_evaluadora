@@ -7,7 +7,7 @@ import {
   XCircleIcon,
 } from "@/components/ui/icons"
 
-import { Badge, badgeVariants } from "../badge"
+import { Badge, badgeVariants } from "@/components/ui/badge"
 
 // Truco para escribir backticks literales dentro de un template literal sin
 // que JS los desactive. Ver button.stories.tsx para más contexto.

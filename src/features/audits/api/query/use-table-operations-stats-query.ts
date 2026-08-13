@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
-import type { TableOperationsStats, TableOperationsStatsRequest } from "../types/audit-table"
+import type { TableOperationsStats, TableOperationsStatsRequest } from "@/features/audits/api/types/audit-table"
 
 interface UseTableOperationsStatsQueryParams extends TableOperationsStatsRequest {
   tableSlug: string

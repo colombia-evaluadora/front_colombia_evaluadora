@@ -1,5 +1,5 @@
 import preview from "../../../../.storybook/preview"
-import { Button } from "../button"
+import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogClose,
@@ -9,7 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "../dialog"
+} from "@/components/ui/dialog"
 
 const meta = preview.meta({
   title: "Design System/Overlays/Dialog",

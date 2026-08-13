@@ -7,7 +7,7 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from "../breadcrumb"
+} from "@/components/ui/breadcrumb"
 
 const meta = preview.meta({
   title: "Design System/Navigation/Breadcrumb",

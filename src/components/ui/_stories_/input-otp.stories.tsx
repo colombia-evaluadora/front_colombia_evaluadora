@@ -1,6 +1,6 @@
 import preview from "../../../../.storybook/preview"
 import { useState } from "react"
-import { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot } from "../input-otp"
+import { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot } from "@/components/ui/input-otp"
 
 const meta = preview.meta({
   title: "Design System/Forms/InputOTP",

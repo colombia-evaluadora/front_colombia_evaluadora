@@ -5,8 +5,8 @@ import { auditoriaSesionOperacionesRoute } from "@/router"
 import type {
   SessionOperationsFiltersFormInput,
   SessionOperationsFiltersFormValues,
-} from "../api/schema"
-import type { SessionOperationsQueryRequest } from "../api/types/audit"
+} from "@/features/audits/api/schema"
+import type { SessionOperationsQueryRequest } from "@/features/audits/api/types/audit"
 
 export interface SessionOperationsFilters {
   filters: SessionOperationsFiltersFormInput

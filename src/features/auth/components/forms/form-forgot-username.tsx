@@ -1,9 +1,15 @@
 import { useForm } from "@tanstack/react-form"
 
-import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 
-import { forgotUsernameFormSchema, type ForgotUsernameFormValues } from "../../api/schema"
+import { forgotUsernameFormSchema, type ForgotUsernameFormValues } from "@/features/auth/api/schema"
 
 interface ForgotUsernameFormProps {
   id: string
@@ -12,7 +18,7 @@ interface ForgotUsernameFormProps {
 
 export function ForgotUsernameForm({ id, onSubmit }: ForgotUsernameFormProps) {
   const form = useForm({
-    defaultValues: { document: "" } as ForgotUsernameFormValues,
+    defaultValues: { document: "" },
     validators: {
       onChange: forgotUsernameFormSchema,
     },
@@ -40,13 +46,17 @@ export function ForgotUsernameForm({ id, onSubmit }: ForgotUsernameFormProps) {
                   type="text"
                   inputMode="numeric"
                   autoComplete="off"
-                  placeholder="Ingresar número de documento"
+                  placeholder="1234567890"
                   value={field.state.value}
                   onBlur={field.handleBlur}
                   onChange={(e) => field.handleChange(e.target.value)}
                   aria-invalid={isInvalid}
                 />
-                {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                {isInvalid ? (
+                  <FieldError errors={field.state.meta.errors} />
+                ) : (
+                  <FieldDescription>Sin puntos ni espacios.</FieldDescription>
+                )}
               </Field>
             )
           }}

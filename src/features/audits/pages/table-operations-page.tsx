@@ -3,7 +3,7 @@ import { Link } from "@tanstack/react-router"
 
 import { Button } from "@/components/ui/button"
 import { paths } from "@/config/paths"
-import { TableOperationsDataTable } from "../components/table/table-operations-table"
+import { TableOperationsDataTable } from "@/features/audits/components/table/table-operations-table"
 
 export function TableOperationsPage() {
   return (

@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import {
   Field,
+  FieldError,
   FieldLabel,
   FieldLegend,
   FieldSet,
@@ -15,9 +16,8 @@ import {
   auditFiltersFormSchema,
   type AuditFiltersFormInput,
   type AuditFiltersFormValues,
-} from "../../api/schema"
-import type { SessionStatus } from "../../api/types/audit"
-import { useAuditSessionStatusesQuery } from "../../api/query/use-audit-session-statuses-query"
+} from "@/features/audits/api/schema"
+import { useAuditSessionStatusesQuery } from "@/features/audits/api/query/use-audit-session-statuses-query"
 import { formatDateTimeValue, parseDateTimeValue } from "@/lib/date-time-value"
 
 interface FilterAuditSessionFormProps {
@@ -40,9 +40,7 @@ export function FilterAuditSessionForm({
     validators: {
       onSubmit: auditFiltersFormSchema,
     },
-    onSubmit: ({ value }) => {
-      onSubmit(auditFiltersFormSchema.parse(value))
-    },
+    onSubmit: ({ value }) => onSubmit(value),
   })
 
   // Las opciones de estado las entrega el backend como `{ key, label }`.
@@ -59,77 +57,72 @@ export function FilterAuditSessionForm({
       className="flex flex-1 flex-col gap-5 px-4"
     >
       {!hideAuthor && (
-        <>
-          <form.Field
-            name="author"
-            children={(field) => (
-              <Field orientation="vertical" variant="outlined" className="gap-2">
-                <FieldLabel htmlFor={field.name}>Autor / IP</FieldLabel>
-                <Input
-                  id={field.name}
-                  name={field.name}
-                  type="text"
-                  autoComplete="off"
-                  placeholder="Ingresar autor o IP"
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(event) => field.handleChange(event.target.value)}
-                  className="h-9"
-                />
-              </Field>
-            )}
-          />
-        </>
+        <form.Field
+          name="author"
+          children={(field) => (
+            <Field orientation="vertical" variant="outlined" className="gap-2">
+              <FieldLabel htmlFor={field.name}>Autor / IP</FieldLabel>
+              <Input
+                id={field.name}
+                name={field.name}
+                type="text"
+                size="sm"
+                autoComplete="off"
+                placeholder="Agregar"
+                value={field.state.value}
+                onBlur={field.handleBlur}
+                onChange={(event) => field.handleChange(event.target.value)}
+              />
+            </Field>
+          )}
+        />
       )}
 
       <form.Field
-        name="statuses"
-        mode="array"
-        children={(field) => {
-          return (
-            <FieldSet>
-              <FieldLegend variant="label">Estado</FieldLegend>
-              {isLoadingStatuses ? (
-                <div className="text-muted-foreground flex items-center gap-2 text-xs">
-                  <SpinnerIcon className="size-3 animate-spin" />
-                  Cargando estados…
-                </div>
-              ) : (
-                // Selección única (`multiple={false}`): el estado es excluyente,
-                // pero se puede volver a pulsar el activo para quitar el filtro.
-                // El valor sigue siendo un array (0 ó 1 elemento) para no cambiar
-                // el contrato de `statuses` con la query.
-                <ToggleGroup
-                  value={field.state.value}
-                  onValueChange={(next) =>
-                    field.handleChange(next.slice(-1) as SessionStatus[])
-                  }
-                  multiple={false}
-                  spacing={0}
-                  variant="outline"
-                  className="w-full"
-                >
-                  {statusOptions.map((option) => (
-                    <ToggleGroupItem
-                      key={option.key}
-                      value={option.key}
-                      size="sm"
-                      aria-label={option.label}
-                      className="min-w-0 flex-1 gap-1.5"
-                    >
-                      {option.key === "active" ? (
-                        <CircleDashedIcon className="size-4 shrink-0" />
-                      ) : (
-                        <CheckCircleIcon className="size-4 shrink-0" />
-                      )}
-                      <span className="truncate">{option.label}</span>
-                    </ToggleGroupItem>
-                  ))}
-                </ToggleGroup>
-              )}
-            </FieldSet>
-          )
-        }}
+        name="status"
+        children={(field) => (
+          <FieldSet>
+            <FieldLegend variant="label">Estado</FieldLegend>
+            {isLoadingStatuses ? (
+              <div className="text-muted-foreground flex items-center gap-2 text-xs">
+                <SpinnerIcon className="size-3 animate-spin" />
+                Cargando estados…
+              </div>
+            ) : (
+              // Selección única: el valor del form es un único `status` (o
+              // "" para "sin filtro"). La URL sigue almacenando un array
+              // (`statuses`) — la conversión vive en el hook.
+              <ToggleGroup
+                // El form lleva un `status` único (string); Base UI lo espera
+                // como array porque internamente modela single-select como
+                // array de 0-1 elementos. Convertimos en el borde.
+                value={field.state.value ? [field.state.value] : []}
+                onValueChange={(value) => field.handleChange(value[0] ?? "")}
+                multiple={false}
+                spacing={0}
+                variant="outline"
+                className="w-full"
+              >
+                {statusOptions.map((option) => (
+                  <ToggleGroupItem
+                    key={option.key}
+                    value={option.key}
+                    size="sm"
+                    aria-label={`Filtrar por ${option.label}`}
+                    className="min-w-0 flex-1 gap-1.5"
+                  >
+                    {option.key === "active" ? (
+                      <CircleDashedIcon className="size-4 shrink-0" />
+                    ) : (
+                      <CheckCircleIcon className="size-4 shrink-0" />
+                    )}
+                    <span className="truncate">{option.label}</span>
+                  </ToggleGroupItem>
+                ))}
+              </ToggleGroup>
+            )}
+          </FieldSet>
+        )}
       />
 
       {/* Dos campos independientes (no un único rango) — cada uno usa el
@@ -147,27 +140,37 @@ export function FilterAuditSessionForm({
                 <DatePicker
                   mode="datetime"
                   id={field.name}
+                  size="sm"
                   value={parseDateTimeValue(field.state.value)}
                   onChange={(date) => field.handleChange(formatDateTimeValue(date))}
-                  className="h-9"
                 />
               </Field>
             )}
           />
           <form.Field
             name="startedTo"
-            children={(field) => (
-              <Field orientation="vertical" variant="outlined" className="gap-2">
-                <FieldLabel htmlFor={field.name}>Hasta</FieldLabel>
-                <DatePicker
-                  mode="datetime"
-                  id={field.name}
-                  value={parseDateTimeValue(field.state.value)}
-                  onChange={(date) => field.handleChange(formatDateTimeValue(date))}
-                  className="h-9"
-                />
-              </Field>
-            )}
+            children={(field) => {
+              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
+              return (
+                <Field
+                  orientation="vertical"
+                  variant="outlined"
+                  className="gap-2"
+                  data-invalid={isInvalid ? "true" : undefined}
+                >
+                  <FieldLabel htmlFor={field.name}>Hasta</FieldLabel>
+                  <DatePicker
+                    mode="datetime"
+                    id={field.name}
+                    size="sm"
+                    aria-invalid={isInvalid}
+                    value={parseDateTimeValue(field.state.value)}
+                    onChange={(date) => field.handleChange(formatDateTimeValue(date))}
+                  />
+                  <FieldError errors={field.state.meta.errors} />
+                </Field>
+              )
+            }}
           />
         </div>
       </FieldSet>

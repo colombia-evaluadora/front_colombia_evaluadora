@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/table"
 import { ArrowCounterClockwiseIcon } from "@/components/ui/icons"
 
-import type { OperationChange } from "../../api/types/audit-table"
+import type { OperationChange } from "@/features/audits/api/types/audit-table"
 
 interface OperationChangesTableProps {
   changes: OperationChange[]

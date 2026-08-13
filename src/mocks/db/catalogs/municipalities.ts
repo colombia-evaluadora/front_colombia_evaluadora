@@ -1,4 +1,4 @@
-import type { Municipality } from "@/features/establishment/api/types/location"
+import type { Municipality } from "@/features/establishment/institution/api/types/location"
 
 export const MUNICIPALITIES: Municipality[] = [
   {

@@ -13,7 +13,7 @@ import {
   SidebarMenuItem,
   SidebarProvider,
   SidebarTrigger,
-} from "../sidebar"
+} from "@/components/ui/sidebar"
 
 const meta = preview.meta({
   title: "Design System/Navigation/Sidebar",

@@ -6,8 +6,8 @@ import type {
   UpdateRoleMenusResult,
 } from "@/features/administration/roles-menus/api/types/role-menu"
 
-import { navigationMenu } from "../db/navigation"
-import { rolesDb } from "../db/roles"
+import { navigationMenu } from "@/mocks/db/navigation"
+import { rolesDb } from "@/mocks/db/roles"
 
 function toMenuNode({ roleIds: _roleIds, ...menu }: (typeof navigationMenu)[number]): MenuNode {
   return menu

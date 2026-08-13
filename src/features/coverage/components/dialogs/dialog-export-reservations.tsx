@@ -20,8 +20,8 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 
-import { useExportReservations } from "../../api/mutations/export-reservations"
-import type { ExportFormat, ReservationsQueryFilters } from "../../api/types/reservation"
+import { useExportReservations } from "@/features/coverage/api/mutations/export-reservations"
+import type { ExportFormat, ReservationsQueryFilters } from "@/features/coverage/api/types/reservation"
 
 interface ExportReservationsDialogProps {
   filters: ReservationsQueryFilters
@@ -67,9 +67,12 @@ export function ExportReservationsDialog({ filters }: ExportReservationsDialogPr
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="sm:justify-between">
-          <DialogClose render={<Button type="button" variant="ghost" />}>Cancelar</DialogClose>
+          <DialogClose render={<Button size="sm" type="button" variant="ghost" />}>
+            Cancelar
+          </DialogClose>
           <div className="flex flex-col-reverse gap-2 sm:flex-row">
             <Button
+              size="sm"
               type="button"
               variant="outline"
               disabled={exportAll.isPending}
@@ -84,6 +87,7 @@ export function ExportReservationsDialog({ filters }: ExportReservationsDialogPr
               Excel
             </Button>
             <Button
+              size="sm"
               type="button"
               color="primary"
               disabled={exportAll.isPending}

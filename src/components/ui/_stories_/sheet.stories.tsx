@@ -1,5 +1,5 @@
 import preview from "../../../../.storybook/preview"
-import { Button } from "../button"
+import { Button } from "@/components/ui/button"
 import {
   Sheet,
   SheetClose,
@@ -9,7 +9,7 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from "../sheet"
+} from "@/components/ui/sheet"
 
 const meta = preview.meta({
   title: "Design System/Overlays/Sheet",

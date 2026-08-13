@@ -3,8 +3,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
 
-import { menusQueryKey } from "../query/use-menus-query"
-import type { MenuNode } from "../types/role-menu"
+import { menusQueryKey } from "@/features/administration/roles-menus/api/query/use-menus-query"
+import type { MenuNode } from "@/features/administration/roles-menus/api/types/role-menu"
 
 export interface MenuFormValues {
   name: string

@@ -6,14 +6,14 @@ import {
   deleteCampusDetails,
   deleteManyCampusDetails,
   upsertCampusDetails,
-} from "../db/campuses"
+} from "@/mocks/db/campuses"
 
 import type {
   Campus,
   CampusesQueryRequest,
   CampusesQueryResponse,
-} from "@/features/establishment/api/types/campus"
-import type { ExportFormat, ExportResult } from "@/features/establishment/api/types/export"
+} from "@/features/establishment/campuses/api/types/campus"
+import type { ExportFormat, ExportResult } from "@/features/establishment/institution/api/types/export"
 
 const EXPORT_FORMAT_LABELS: Record<ExportFormat, string> = {
   pdf: "PDF",

@@ -1,4 +1,4 @@
-import type { CatalogItem } from "@/features/establishment/api/types/catalog"
+import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 
 /**
  * Estados de entidad compartidos por `establishment` y `employee`.

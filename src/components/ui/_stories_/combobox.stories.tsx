@@ -7,7 +7,7 @@ import {
   ComboboxInput,
   ComboboxItem,
   ComboboxList,
-} from "../combobox"
+} from "@/components/ui/combobox"
 
 const fruits = ["Apple", "Banana", "Blueberry", "Grapes", "Pineapple"]
 

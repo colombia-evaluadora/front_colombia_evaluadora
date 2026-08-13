@@ -1,10 +1,16 @@
 import { useForm } from "@tanstack/react-form"
 
-import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { EnvelopeIcon } from "@/components/ui/icons"
 
-import { forgotPasswordFormSchema, type ForgotPasswordFormValues } from "../../api/schema"
+import { forgotPasswordFormSchema, type ForgotPasswordFormValues } from "@/features/auth/api/schema"
 
 interface ForgotPasswordFormProps {
   id: string
@@ -13,7 +19,7 @@ interface ForgotPasswordFormProps {
 
 export function ForgotPasswordForm({ id, onSubmit }: ForgotPasswordFormProps) {
   const form = useForm({
-    defaultValues: { email: "" } as ForgotPasswordFormValues,
+    defaultValues: { email: "" },
     validators: {
       onChange: forgotPasswordFormSchema,
     },
@@ -44,14 +50,20 @@ export function ForgotPasswordForm({ id, onSubmit }: ForgotPasswordFormProps) {
                     name={field.name}
                     type="email"
                     autoComplete="email"
-                    placeholder="Ingresar correo electrónico"
+                    placeholder="usuario@institucion.edu.co"
                     value={field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value)}
                     aria-invalid={isInvalid}
                   />
                 </InputGroup>
-                {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                {isInvalid ? (
+                  <FieldError errors={field.state.meta.errors} />
+                ) : (
+                  <FieldDescription>
+                    Usa el correo electrónico asociado a tu cuenta
+                  </FieldDescription>
+                )}
               </Field>
             )
           }}

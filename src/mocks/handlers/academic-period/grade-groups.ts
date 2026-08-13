@@ -1,5 +1,5 @@
 import { http, HttpResponse, delay } from "msw"
-import { gradeGroupsDb } from "../../db/academic-period/grade-groups"
+import { gradeGroupsDb } from "@/mocks/db/academic-period/grade-groups"
 
 import type {
   GradeGroup,

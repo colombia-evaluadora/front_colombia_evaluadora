@@ -9,7 +9,7 @@ import {
   AttachmentGroup,
   AttachmentMedia,
   AttachmentTitle,
-} from "../attachment"
+} from "@/components/ui/attachment"
 
 const meta = preview.meta({
   title: "Design System/Chat/Attachment",

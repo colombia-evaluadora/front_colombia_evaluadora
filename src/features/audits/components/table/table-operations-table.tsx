@@ -14,17 +14,17 @@ import {
   TableScreenToolbar,
 } from "@/components/layout/table-screen"
 
-import { useTableOperationsQuery } from "../../api/query/use-table-operations-query"
-import { useAuditTableQuery } from "../../api/query/use-audit-table-query"
+import { useTableOperationsQuery } from "@/features/audits/api/query/use-table-operations-query"
+import { useAuditTableQuery } from "@/features/audits/api/query/use-audit-table-query"
 import { useTablePagination } from "@/hooks/use-table-pagination"
-import { useTableOperationsFilters } from "../../hooks/use-table-operations-filters"
+import { useTableOperationsFilters } from "@/features/audits/hooks/use-table-operations-filters"
 
-import { columns } from "./columns-table-operations"
-import { SearchTableOperations } from "../search/search-table-operations"
-import { ExportSelectedTableOperationsDialog } from "../dialogs/dialog-export-selected-table-operations"
-import { ExportTableOperationsDialog } from "../dialogs/dialog-export-table-operations"
-import { ClearSelectionTableOperationsDialog } from "../dialogs/dialog-clear-selection-table-operations"
-import { TableOperationsStatsCards } from "../stats/table-operations-stats-cards"
+import { columns } from "@/features/audits/components/table/columns-table-operations"
+import { SearchTableOperations } from "@/features/audits/components/search/search-table-operations"
+import { ExportSelectedTableOperationsDialog } from "@/features/audits/components/dialogs/dialog-export-selected-table-operations"
+import { ExportTableOperationsDialog } from "@/features/audits/components/dialogs/dialog-export-table-operations"
+import { ClearSelectionTableOperationsDialog } from "@/features/audits/components/dialogs/dialog-clear-selection-table-operations"
+import { TableOperationsStatsCards } from "@/features/audits/components/stats/table-operations-stats-cards"
 import { useParams } from "@tanstack/react-router"
 
 interface TableOperationsDataTableProps {

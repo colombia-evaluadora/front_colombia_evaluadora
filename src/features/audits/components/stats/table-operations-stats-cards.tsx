@@ -3,8 +3,8 @@ import { PencilIcon, PlusCircleIcon, TrashIcon, type Icon } from "@/components/u
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 
-import { useTableOperationsStatsQuery } from "../../api/query/use-table-operations-stats-query"
-import type { TableOperationsQueryRequest } from "../../api/types/audit-table"
+import { useTableOperationsStatsQuery } from "@/features/audits/api/query/use-table-operations-stats-query"
+import type { TableOperationsQueryRequest } from "@/features/audits/api/types/audit-table"
 
 interface TableOperationsStatsCardsProps {
   tableSlug: string

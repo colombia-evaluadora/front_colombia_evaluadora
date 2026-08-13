@@ -14,14 +14,14 @@ import {
   TableScreenTitle,
   TableScreenToolbar,
 } from "@/components/layout/table-screen"
-import { useSessionOperationsQuery } from "../../api/query/use-session-operations-query"
-import { useSessionOperationsFilters } from "../../hooks/use-session-operations-filters"
+import { useSessionOperationsQuery } from "@/features/audits/api/query/use-session-operations-query"
+import { useSessionOperationsFilters } from "@/features/audits/hooks/use-session-operations-filters"
 
-import { columns } from "./columns-session-operations"
-import { SearchSessionOperations } from "../search/search-session-operations"
-import { ExportSelectedSessionOperationsDialog } from "../dialogs/dialog-export-selected-session-operations"
-import { ExportSessionOperationsDialog } from "../dialogs/dialog-export-session-operations"
-import { ClearSelectionSessionOperationsDialog } from "../dialogs/dialog-clear-selection-session-operations"
+import { columns } from "@/features/audits/components/table/columns-session-operations"
+import { SearchSessionOperations } from "@/features/audits/components/search/search-session-operations"
+import { ExportSelectedSessionOperationsDialog } from "@/features/audits/components/dialogs/dialog-export-selected-session-operations"
+import { ExportSessionOperationsDialog } from "@/features/audits/components/dialogs/dialog-export-session-operations"
+import { ClearSelectionSessionOperationsDialog } from "@/features/audits/components/dialogs/dialog-clear-selection-session-operations"
 
 interface SessionOperationsDataTableProps {
   sessionId: string

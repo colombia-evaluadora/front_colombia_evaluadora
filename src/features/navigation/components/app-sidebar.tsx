@@ -4,7 +4,7 @@ import icon from "@/assets/icon.svg"
 import logo from "@/assets/logo.svg"
 import { Sidebar, SidebarContent, SidebarHeader, SidebarTrigger } from "@/components/ui/sidebar"
 
-import { NavMain } from "./nav-main"
+import { NavMain } from "@/features/navigation/components/nav-main"
 
 export function AppSidebar() {
   return (

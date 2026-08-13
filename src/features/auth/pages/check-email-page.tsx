@@ -17,7 +17,7 @@ import {
 import { paths } from "@/config/paths"
 import { cn } from "@/lib/utils"
 
-import { usePasswordResetLink } from "../hooks/use-password-reset-link"
+import { usePasswordResetLink } from "@/features/auth/hooks/use-password-reset-link"
 
 export function CheckEmailPage() {
   // El token es el único dato en la URL: el correo, la hora de envío y el

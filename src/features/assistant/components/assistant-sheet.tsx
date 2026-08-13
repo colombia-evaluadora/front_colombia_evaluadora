@@ -4,9 +4,9 @@ import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { MessageScrollerProvider } from "@/components/ui/message-scroller"
 
-import { useAssistantChat } from "../hooks/use-assistant-chat"
-import { ChatComposer } from "./chat-composer"
-import { ChatMessageList } from "./chat-message-list"
+import { useAssistantChat } from "@/features/assistant/hooks/use-assistant-chat"
+import { ChatComposer } from "@/features/assistant/components/chat-composer"
+import { ChatMessageList } from "@/features/assistant/components/chat-message-list"
 
 export function AssistantSheet() {
   const { messages, sendMessage, isLoading, error } = useAssistantChat()

@@ -1,7 +1,9 @@
 import { useState } from "react"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { SpinnerIcon } from "@/components/ui/icons"
-import { Link, useNavigate, useParams } from "@tanstack/react-router"
+import { Link, notFound, useNavigate, useParams } from "@tanstack/react-router"
+
+import { isNotFoundError } from "@/lib/api-client"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -19,16 +21,16 @@ import {
 } from "@/components/ui/accordion"
 import { paths } from "@/config/paths"
 
-import { useCreateAcademicPeriod } from "../api/mutations/academic-period/create-academic-period"
-import { useUpdateAcademicPeriod } from "../api/mutations/academic-period/update-academic-period"
-import { useAcademicPeriodQuery } from "../api/query/academic-period/use-academic-period-query"
+import { useCreateAcademicPeriod } from "@/features/establishment/academic-period/api/mutations/create-academic-period"
+import { useUpdateAcademicPeriod } from "@/features/establishment/academic-period/api/mutations/update-academic-period"
+import { useAcademicPeriodQuery } from "@/features/establishment/academic-period/api/query/use-academic-period"
 import type {
   AcademicPeriodFormInput,
   AcademicPeriodFormValues,
-} from "../api/schema"
-import type { AcademicPeriodDetail } from "../api/types/academic-period"
-import { AcademicPeriodForm } from "../components/academic-period/form-academic-period"
-import { EvaluationPeriodsSection } from "../components/academic-period/evaluation-periods-section"
+} from "@/features/establishment/academic-period/api/schema"
+import type { AcademicPeriodDetail } from "@/features/establishment/academic-period/api/types/academic-period"
+import { AcademicPeriodForm } from "@/features/establishment/academic-period/components/forms/form-academic-period"
+import { EvaluationPeriodsSection } from "@/features/establishment/academic-period/components/evaluation-periods-section"
 import {
   NoticeOutlet,
   NoticeProvider,
@@ -37,7 +39,7 @@ import {
 import {
   DEFAULT_JORNADA,
   type Jornada,
-} from "../components/schedule/schedule-data"
+} from "@/features/establishment/academic-period/components/schedule-data"
 
 const FORM_ID = "academic-period-config-form"
 
@@ -82,7 +84,12 @@ function AcademicPeriodConfigPageContent() {
   const navigate = useNavigate()
   const { periodId } = useParams({ strict: false }) as { periodId?: string }
   const isEditing = periodId != null
-  const numericPeriodId = periodId ? Number(periodId) : undefined
+  const parsedPeriodId = periodId ? Number(periodId) : undefined
+  // Un id no numérico (/periodos/abc/editar) no es un periodo que se pueda
+  // pedir: se trata igual que uno inexistente, sin gastar la petición.
+  const isValidPeriodId =
+    parsedPeriodId != null && Number.isInteger(parsedPeriodId)
+  const numericPeriodId = isValidPeriodId ? parsedPeriodId : undefined
 
   const [saved, setSaved] = useState(false)
   const [createdPeriodId, setCreatedPeriodId] = useState<number | null>(null)
@@ -95,6 +102,7 @@ function AcademicPeriodConfigPageContent() {
     data: detail,
     isPending: isLoadingDetail,
     isError: isDetailError,
+    error: detailError,
   } = useAcademicPeriodQuery(numericPeriodId)
 
   const createPeriod = useCreateAcademicPeriod({
@@ -126,6 +134,13 @@ function AcademicPeriodConfigPageContent() {
       },
     },
   })
+
+  // Editar un periodo que no existe no es un error de la pantalla: es una URL
+  // que no lleva a ningún lado, así que se delega en el 404 del router. Va
+  // después de los hooks para no romper su orden.
+  if (isEditing && (!isValidPeriodId || isNotFoundError(detailError))) {
+    throw notFound()
+  }
 
   const academicPeriodId = isEditing ? numericPeriodId : createdPeriodId ?? undefined
 
@@ -177,10 +192,14 @@ function AcademicPeriodConfigPageContent() {
       onValueChange={(value) => setConfigOpen(value.includes("config"))}
     >
       <AccordionItem value="config" className="rounded-md border border-border">
-        <AccordionTrigger className="px-4 py-3">
-          <span className="font-heading text-sm font-semibold tracking-wider uppercase">
-            Configuración del periodo
-          </span>
+        {/*
+          Misma tipografía y mismo caret que los acordeones de "Agregar
+          establecimiento" (`accordionTriggerClassName`), pero sin invertir la
+          fila: acá el caret se queda a la derecha, donde lo deja el `ml-auto`
+          del componente compartido.
+        */}
+        <AccordionTrigger className="items-center gap-3 px-4 py-2.5 text-lg **:data-[slot=accordion-trigger-icon]:size-5">
+          Configuración del periodo
         </AccordionTrigger>
         <AccordionContent keepMounted className="px-4 pb-4">
           {isEditing && isLoadingDetail ? (
@@ -235,15 +254,14 @@ function AcademicPeriodConfigPageContent() {
         <CardContent className="flex flex-col gap-6">
           <NoticeOutlet />
           {configBody}
+          {/* Las pestañas van sueltas: su propio panel ya dibuja el borde de
+              "carpeta", así que envolverlas en otra card duplicaba contorno y
+              padding. */}
           {showSecondForm && (
-            <Card>
-              <CardContent>
-                <EvaluationPeriodsSection
-                  academicPeriodId={academicPeriodId}
-                  jornada={saved || !detail ? jornada : toJornada(detail)}
-                />
-              </CardContent>
-            </Card>
+            <EvaluationPeriodsSection
+              academicPeriodId={academicPeriodId}
+              jornada={saved || !detail ? jornada : toJornada(detail)}
+            />
           )}
         </CardContent>
       </Card>

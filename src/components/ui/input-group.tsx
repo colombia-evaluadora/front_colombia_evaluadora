@@ -118,6 +118,11 @@ function InputGroupText({ className, ...props }: React.ComponentProps<"span">) {
 }
 
 function InputGroupInput({ className, ...props }: React.ComponentProps<"input">) {
+  // Omitimos el `size` nativo de `<input>` (HTML, numérico) para que no
+  // choque con el `size` de nuestro `Input` ("default" | "sm").
+  const { size: _size, ...inputProps } = props as React.ComponentProps<"input"> & {
+    size?: unknown
+  }
   return (
     <Input
       data-slot="input-group-control"
@@ -125,7 +130,7 @@ function InputGroupInput({ className, ...props }: React.ComponentProps<"input">)
         "flex-1 border-0 bg-transparent ring-0 group-has-[>[data-align=inline-end]]/input-group:pr-2 group-has-[>[data-align=inline-start]]/input-group:pl-2 focus-visible:ring-0 aria-invalid:ring-0 dark:bg-transparent",
         className,
       )}
-      {...props}
+      {...inputProps}
     />
   )
 }
