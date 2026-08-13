@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
-import type { RatingSymbol } from "@/features/establishment/academic-period/types/rating-scales"
+import type { RatingSymbol } from "@/features/establishment/academic-period/api/types/rating-scales"
 
 function fetchRatingSymbols(): Promise<RatingSymbol[]> {
   return api.get("/rating-symbols")

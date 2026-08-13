@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 
-import { useExportEvaluationPeriods } from "@/features/establishment/api/mutations/evaluation-periods/export-evaluation-periods"
+import { useExportEvaluationPeriods } from "@/features/establishment/academic-period/api/mutations/export-evaluation-periods"
 import type {
   EvaluationPeriodsQueryFilters,
   ExportFormat,

@@ -5,7 +5,7 @@ import type { MutationConfig } from "@/lib/react-query"
 import type {
   MutationResult,
   UpdateRatingScaleRequest,
-} from "@/features/establishment/academic-period/types/rating-scales"
+} from "@/features/establishment/academic-period/api/types/rating-scales"
 
 interface UpdateRatingScaleInput {
   codigo: number

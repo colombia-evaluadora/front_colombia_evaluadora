@@ -1,13 +1,13 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 import { NoticeProvider } from "@/components/notice/notice-context"
-import { TabEvaluationPeriods } from "@/features/establishment/academic-period/evaluation-periods/tabs/tab-evaluation-periods"
-import { TabPromotionCriteria } from "@/features/establishment/academic-period/promotion-criteria/tabs/tab-promotion-criteria"
-import { TabGrades } from "@/features/establishment/academic-period/grades/tabs/tab-grades"
-import { TabRatingScales } from "@/features/establishment/academic-period/rating-scales/tabs/tab-rating-scales"
-import { TabAreaSubject } from "@/features/establishment/academic-period/area-subjects/tabs/tab-area-subject"
-import { TabEvaluationCriteria } from "@/features/establishment/academic-period/evaluation-criteria/tabs/tab-evaluation-criteria"
-import { TabAcademicAssignments } from "@/features/establishment/academic-period/academic-assignments/tabs/tab-academic-assignments"
+import { TabEvaluationPeriods } from "@/features/establishment/academic-period/components/tabs/tab-evaluation-periods"
+import { TabPromotionCriteria } from "@/features/establishment/academic-period/components/tabs/tab-promotion-criteria"
+import { TabGrades } from "@/features/establishment/academic-period/components/tabs/tab-grades"
+import { TabRatingScales } from "@/features/establishment/academic-period/components/tabs/tab-rating-scales"
+import { TabAreaSubject } from "@/features/establishment/academic-period/components/tabs/tab-area-subject"
+import { TabEvaluationCriteria } from "@/features/establishment/academic-period/components/tabs/tab-evaluation-criteria"
+import { TabAcademicAssignments } from "@/features/establishment/academic-period/components/tabs/tab-academic-assignments"
 import type { Jornada } from "@/features/establishment/academic-period/components/schedule-data"
 
 const TABS: { value: string; label: string }[] = [

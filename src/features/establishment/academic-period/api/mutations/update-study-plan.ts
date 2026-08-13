@@ -5,7 +5,7 @@ import type { MutationConfig } from "@/lib/react-query"
 import type {
   MutationResult,
   UpdateStudyPlanItemRequest,
-} from "@/features/establishment/academic-period/types/study-plan"
+} from "@/features/establishment/academic-period/api/types/study-plan"
 
 interface UpdateStudyPlanItemInput {
   codigo: number

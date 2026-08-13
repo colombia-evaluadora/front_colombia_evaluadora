@@ -4,7 +4,7 @@ import { Link } from "@tanstack/react-router"
 import { Button } from "@/components/ui/button"
 import { paths } from "@/config/paths"
 
-import type { AcademicPeriod } from "@/features/api/types/academic-period"
+import type { AcademicPeriod } from "@/features/establishment/academic-period/api/types/academic-period"
 
 interface EditAcademicPeriodButtonProps {
   period: AcademicPeriod

@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 
-import { useDeleteGradesBulk } from "@/features/establishment/api/mutations/grades/delete-grades-bulk"
+import { useDeleteGradesBulk } from "@/features/establishment/academic-period/api/mutations/delete-grades-bulk"
 
 interface DeleteSelectedGradesDialogProps {
   selectedIds: string[]

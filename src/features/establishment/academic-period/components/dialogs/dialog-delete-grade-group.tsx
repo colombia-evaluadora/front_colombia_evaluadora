@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 
-import { useDeleteGradeGroup } from "@/features/establishment/api/mutations/grades/delete-grade-group"
+import { useDeleteGradeGroup } from "@/features/establishment/academic-period/api/mutations/delete-grade-group"
 import type { GradeGroup } from "@/features/establishment/academic-period/api/types/grade-group"
 
 interface DeleteGradeGroupDialogProps {

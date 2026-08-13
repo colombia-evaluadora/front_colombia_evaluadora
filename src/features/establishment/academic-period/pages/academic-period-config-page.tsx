@@ -23,7 +23,7 @@ import { paths } from "@/config/paths"
 
 import { useCreateAcademicPeriod } from "@/features/establishment/academic-period/api/mutations/create-academic-period"
 import { useUpdateAcademicPeriod } from "@/features/establishment/academic-period/api/mutations/update-academic-period"
-import { useAcademicPeriodQuery } from "@/features/establishment/academic-period/api/query/use-academic-period-query"
+import { useAcademicPeriodQuery } from "@/features/establishment/academic-period/api/query/use-academic-period"
 import type {
   AcademicPeriodFormInput,
   AcademicPeriodFormValues,

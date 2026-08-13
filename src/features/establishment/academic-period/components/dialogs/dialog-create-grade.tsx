@@ -28,8 +28,8 @@ import {
 } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
-import { useCreateGrade } from "@/features/establishment/api/mutations/grades/create-grade"
-import { useUpdateGrade } from "@/features/establishment/api/mutations/grades/update-grade"
+import { useCreateGrade } from "@/features/establishment/academic-period/api/mutations/create-grade"
+import { useUpdateGrade } from "@/features/establishment/academic-period/api/mutations/update-grade"
 import { useStudyPlansQuery } from "@/features/establishment/academic-period/api/query/use-study-plans"
 import { useAreaSubjectQuery } from "@/features/establishment/academic-period/api/query/use-area-subject"
 import { useGradeGroupsQuery } from "@/features/establishment/academic-period/api/query/use-grade-groups"
@@ -39,9 +39,9 @@ import { TabGradeGroups } from "@/features/establishment/academic-period/compone
 import {
   TabPromotionCriteria,
   type PromotionCriteriaHandle,
-} from "@/features/establishment/academic-period/promotion-criteria/tabs/tab-promotion-criteria"
-import { TabStudyPlan } from "@/features/establishment/academic-period/study-plans/tabs/tab-study-plan"
-import { ScheduleBuilder, type ScheduleBuilderHandle } from "@/features/establishment/academic-period/schedule/schedule-builder"
+} from "@/features/establishment/academic-period/components/tabs/tab-promotion-criteria"
+import { TabStudyPlan } from "@/features/establishment/academic-period/components/tabs/tab-study-plan"
+import { ScheduleBuilder, type ScheduleBuilderHandle } from "@/features/establishment/academic-period/components/schedule-builder"
 import {
   DEFAULT_SUBJECT_COLOR,
   type Jornada,

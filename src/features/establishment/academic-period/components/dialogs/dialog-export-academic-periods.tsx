@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 
-import { useExportAcademicPeriods } from "@/features/establishment/api/mutations/academic-period/export-academic-periods"
+import { useExportAcademicPeriods } from "@/features/establishment/academic-period/api/mutations/export-academic-periods"
 import type { AcademicPeriodsQueryFilters, ExportFormat } from "@/features/establishment/academic-period/api/types/academic-period"
 
 interface ExportAcademicPeriodsDialogProps {

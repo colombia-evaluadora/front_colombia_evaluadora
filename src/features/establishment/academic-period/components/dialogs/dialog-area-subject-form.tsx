@@ -42,8 +42,8 @@ import {
   TableRow,
 } from "@/components/ui/table"
 
-import { useCreateAreaSubject } from "@/features/establishment/api/mutations/area-subjects/create-area-subject"
-import { useUpdateAreaSubject } from "@/features/establishment/api/mutations/area-subjects/update-area-subject"
+import { useCreateAreaSubject } from "@/features/establishment/academic-period/api/mutations/create-area-subject"
+import { useUpdateAreaSubject } from "@/features/establishment/academic-period/api/mutations/update-area-subject"
 import { useEspecialidadesQuery } from "@/features/establishment/academic-period/api/query/use-especialidades"
 import type { AreaSubject, AreaSubjectItem } from "@/features/establishment/academic-period/api/types/area-subject"
 import { AreaField } from "@/features/establishment/academic-period/components/area-field"

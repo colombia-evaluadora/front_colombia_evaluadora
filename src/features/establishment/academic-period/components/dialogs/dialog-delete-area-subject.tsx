@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 
-import { useDeleteAreaSubject } from "@/features/establishment/api/mutations/area-subjects/delete-area-subject"
+import { useDeleteAreaSubject } from "@/features/establishment/academic-period/api/mutations/delete-area-subject"
 import type { AreaSubject } from "@/features/establishment/academic-period/api/types/area-subject"
 
 interface DeleteAreaSubjectDialogProps {

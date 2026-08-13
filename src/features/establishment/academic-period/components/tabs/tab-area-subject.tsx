@@ -6,7 +6,7 @@ import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
 import { useDataTable } from "@/hooks/use-data-table"
 
-import { SearchInput } from "@/features/establishment/academic-period/common/search-input"
+import { SearchInput } from "@/features/establishment/academic-period/components/search/search-input"
 import { NoticeOutlet } from "@/components/notice/notice-context"
 import { columns } from "@/features/establishment/academic-period/components/table/columns-area-subject"
 import { CreateAreaSubjectDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-create-area-subject"

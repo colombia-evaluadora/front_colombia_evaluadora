@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 
-import { useExportAreaSubjects } from "@/features/establishment/api/mutations/area-subjects/export-area-subjects"
+import { useExportAreaSubjects } from "@/features/establishment/academic-period/api/mutations/export-area-subjects"
 import type { AreaSubjectsQueryFilters, ExportFormat } from "@/features/establishment/academic-period/api/types/area-subject"
 
 interface ExportAreaSubjectsDialogProps {

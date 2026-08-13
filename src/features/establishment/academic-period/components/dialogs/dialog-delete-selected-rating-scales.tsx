@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 
-import { useDeleteRatingScalesBulk } from "@/features/establishment/api/mutations/rating-scales/delete-rating-scales-bulk"
+import { useDeleteRatingScalesBulk } from "@/features/establishment/academic-period/api/mutations/delete-rating-scales-bulk"
 
 interface DeleteSelectedRatingScalesDialogProps {
   levelCount: number

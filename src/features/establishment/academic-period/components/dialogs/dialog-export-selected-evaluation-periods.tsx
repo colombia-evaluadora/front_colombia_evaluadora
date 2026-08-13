@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 
-import { useExportSelectedEvaluationPeriods } from "@/features/establishment/api/mutations/evaluation-periods/export-selected-evaluation-periods"
+import { useExportSelectedEvaluationPeriods } from "@/features/establishment/academic-period/api/mutations/export-selected-evaluation-periods"
 import type { ExportFormat } from "@/features/establishment/academic-period/api/types/evaluation-period"
 
 interface ExportSelectedEvaluationPeriodsDialogProps {

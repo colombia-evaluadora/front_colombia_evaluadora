@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 
-import { useDeleteEvaluationPeriod } from "@/features/establishment/api/mutations/evaluation-periods/delete-evaluation-period"
+import { useDeleteEvaluationPeriod } from "@/features/establishment/academic-period/api/mutations/delete-evaluation-period"
 import type { EvaluationPeriod } from "@/features/establishment/academic-period/api/types/evaluation-period"
 
 interface DeleteEvaluationPeriodDialogProps {

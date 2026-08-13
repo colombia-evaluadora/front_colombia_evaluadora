@@ -6,7 +6,7 @@ import type {
   ExportFormat,
   ExportResult,
   RatingScalesQueryFilters,
-} from "@/features/establishment/academic-period/types/rating-scales"
+} from "@/features/establishment/academic-period/api/types/rating-scales"
 
 interface ExportRatingScalesInput {
   filters: RatingScalesQueryFilters
