@@ -76,7 +76,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                         <Select
                             id="teaching-language"
                             aria-invalid={isInvalid("additionalInfo.teachingLanguage")}
-                            value={value.teachingLanguage.id}
+                            value={value.teachingLanguage?.id ?? null}
                             onValueChange={(selectedValue) => {
                                 const option = idiomas.find((item) => item.id === selectedValue)
                                 if (option) onChange({ ...value, teachingLanguage: option })
@@ -103,7 +103,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                         <Select
                             id="establishment-calendario"
                             aria-invalid={isInvalid("additionalInfo.calendar")}
-                            value={value.calendar.id}
+                            value={value.calendar?.id ?? null}
                             onValueChange={(selectedValue) => {
                                 const option = calendarios.find((item) => item.id === selectedValue)
                                 if (option) onChange({ ...value, calendar: option })
@@ -130,7 +130,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                         <Select
                             id="cost-regime"
                             aria-invalid={isInvalid("additionalInfo.costRegime")}
-                            value={value.costRegime.id}
+                            value={value.costRegime?.id ?? null}
                             onValueChange={(selectedValue) => {
                                 const option = costRegimen.find((item) => item.id === selectedValue)
                                 if (option) onChange({ ...value, costRegime: option })
@@ -157,7 +157,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                         <Select
                             id="establishment-genero"
                             aria-invalid={isInvalid("additionalInfo.populationGender")}
-                            value={value.populationGender.id}
+                            value={value.populationGender?.id ?? null}
                             onValueChange={(selectedValue) => {
                                 const option = populationGenders.find((item) => item.id === selectedValue)
                                 if (option) onChange({ ...value, populationGender: option })
@@ -182,7 +182,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                         <Select
                             id="establishment-rango"
                             aria-invalid={isInvalid("additionalInfo.tuitionRange")}
-                            value={value.tuitionRange.id}
+                            value={value.tuitionRange?.id ?? null}
                             onValueChange={(selectedValue) => {
                                 const option = rangosTarifas.find((item) => item.id === selectedValue)
                                 if (option) onChange({ ...value, tuitionRange: option })
@@ -211,7 +211,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                         <Select
                             id="disabilities"
                             aria-invalid={isInvalid("additionalInfo.disabilityType")}
-                            value={value.disabilityType.id}
+                            value={value.disabilityType?.id ?? null}
                             onValueChange={(selectedValue) => {
                                 const option = disabilities.find((item) => item.id === selectedValue)
                                 if (option) onChange({ ...value, disabilityType: option })
@@ -240,7 +240,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                         <Select
                             id="license-status"
                             aria-invalid={isInvalid("additionalInfo.licenseStatus")}
-                            value={value.licenseStatus.id}
+                            value={value.licenseStatus?.id ?? null}
                             onValueChange={(selectedValue) => {
                                 const option = licenseStatuses.find((item) => item.id === selectedValue)
                                 if (option) onChange({ ...value, licenseStatus: option })

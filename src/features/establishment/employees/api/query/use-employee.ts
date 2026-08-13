@@ -9,14 +9,14 @@ interface EmployeeQueryResult {
   employee: Employee
 }
 
-function fetchEmployee(id: string): Promise<EmployeeQueryResult> {
+function fetchEmployee(id: number): Promise<EmployeeQueryResult> {
   return api.get(`/establishments/employees/${id}`)
 }
 
-export function useEmployeeQuery(id: string | null, enabled = true) {
+export function useEmployeeQuery(id: number | null, enabled = true) {
   return useQuery({
     queryKey: ["employees", id],
-    queryFn: () => fetchEmployee(id as string),
+    queryFn: () => fetchEmployee(id as number),
     enabled: enabled && Boolean(id),
   })
 }

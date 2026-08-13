@@ -14,13 +14,13 @@ import type { CatalogItem } from "@/features/establishment/employees/api/types/c
 import type { Employee } from "@/features/establishment/employees/api/types/employee"
 
 export interface EmployeeAdditionalInfoValue {
-  employeeClass: CatalogItem
-  educationLevel: CatalogItem
-  grade: CatalogItem
-  highestEducationLevel: CatalogItem
-  fundingSource: CatalogItem
-  functionalPosition: CatalogItem
-  employmentType: CatalogItem
+  employeeClass: CatalogItem | null
+  educationLevel: CatalogItem | null
+  grade: CatalogItem | null
+  highestEducationLevel: CatalogItem | null
+  fundingSource: CatalogItem | null
+  functionalPosition: CatalogItem | null
+  employmentType: CatalogItem | null
   address: string
 }
 
@@ -29,20 +29,9 @@ interface EmployeeAdditionalInfoFormProps {
   onChange: (value: EmployeeAdditionalInfoValue) => void
 }
 
-/**
- * Resuelve el `CatalogItem` que matchea el id. Como el `Select` solo emite
- * ids que están en las opciones, el `find` siempre devuelve algo y el
- * fallback es solo defensa para "no se rompió el componente si el padre
- * hidrata con un id que no está en el catálogo".
- */
-function pickOption(options: CatalogItem[], selectedId: string): CatalogItem {
-  const found = options.find((option) => option.id === selectedId)
-  if (found) return found
-  return {
-    id: selectedId,
-    code: selectedId,
-    name: selectedId,
-  }
+/** Resuelve el `CatalogItem` que matchea el id, o `null` si no está en el catálogo. */
+function pickOption(options: CatalogItem[], selectedId: number): CatalogItem | null {
+  return options.find((option) => option.id === selectedId) ?? null
 }
 
 export function createAdditionalInfoFromEmployee(employee: Employee): EmployeeAdditionalInfoValue {
@@ -91,12 +80,10 @@ export function EmployeeAdditionalInfoForm({ value, onChange }: EmployeeAddition
         <Select
           id="employee-class"
           items={employeeClassLabels}
-          value={value.employeeClass.id}
+          value={value.employeeClass?.id ?? null}
           onValueChange={(selectedValue) => {
-            // `selectedValue` siempre está en el catálogo; el `?? ""` queda
-            // solo para que TS no se queje de la firma de `Select.Value`.
-            const id = selectedValue ?? ""
-            patch({ employeeClass: pickOption(employeeClasses, id) })
+            if (selectedValue === null) return
+            patch({ employeeClass: pickOption(employeeClasses, selectedValue) })
           }}
         >
           <SelectTrigger size="sm">
@@ -117,10 +104,10 @@ export function EmployeeAdditionalInfoForm({ value, onChange }: EmployeeAddition
         <Select
           id="education-level"
           items={educationLevelLabels}
-          value={value.educationLevel.id}
+          value={value.educationLevel?.id ?? null}
           onValueChange={(selectedValue) => {
-            const id = selectedValue ?? ""
-            patch({ educationLevel: pickOption(educationLevels, id) })
+            if (selectedValue === null) return
+            patch({ educationLevel: pickOption(educationLevels, selectedValue) })
           }}
         >
           <SelectTrigger size="sm">
@@ -141,10 +128,10 @@ export function EmployeeAdditionalInfoForm({ value, onChange }: EmployeeAddition
         <Select
           id="employee-grade"
           items={gradeLabels}
-          value={value.grade.id}
+          value={value.grade?.id ?? null}
           onValueChange={(selectedValue) => {
-            const id = selectedValue ?? ""
-            patch({ grade: pickOption(grades, id) })
+            if (selectedValue === null) return
+            patch({ grade: pickOption(grades, selectedValue) })
           }}
         >
           <SelectTrigger size="sm">
@@ -165,10 +152,10 @@ export function EmployeeAdditionalInfoForm({ value, onChange }: EmployeeAddition
         <Select
           id="highest-education-level"
           items={educationLevelLabels}
-          value={value.highestEducationLevel.id}
+          value={value.highestEducationLevel?.id ?? null}
           onValueChange={(selectedValue) => {
-            const id = selectedValue ?? ""
-            patch({ highestEducationLevel: pickOption(educationLevels, id) })
+            if (selectedValue === null) return
+            patch({ highestEducationLevel: pickOption(educationLevels, selectedValue) })
           }}
         >
           <SelectTrigger size="sm">
@@ -189,10 +176,10 @@ export function EmployeeAdditionalInfoForm({ value, onChange }: EmployeeAddition
         <Select
           id="funding-source"
           items={fundingSourceLabels}
-          value={value.fundingSource.id}
+          value={value.fundingSource?.id ?? null}
           onValueChange={(selectedValue) => {
-            const id = selectedValue ?? ""
-            patch({ fundingSource: pickOption(fundingSources, id) })
+            if (selectedValue === null) return
+            patch({ fundingSource: pickOption(fundingSources, selectedValue) })
           }}
         >
           <SelectTrigger size="sm">
@@ -213,10 +200,10 @@ export function EmployeeAdditionalInfoForm({ value, onChange }: EmployeeAddition
         <Select
           id="functional-position"
           items={functionalPositionLabels}
-          value={value.functionalPosition.id}
+          value={value.functionalPosition?.id ?? null}
           onValueChange={(selectedValue) => {
-            const id = selectedValue ?? ""
-            patch({ functionalPosition: pickOption(functionalPositions, id) })
+            if (selectedValue === null) return
+            patch({ functionalPosition: pickOption(functionalPositions, selectedValue) })
           }}
         >
           <SelectTrigger size="sm">
@@ -237,10 +224,10 @@ export function EmployeeAdditionalInfoForm({ value, onChange }: EmployeeAddition
         <Select
           id="employment-type"
           items={employmentTypeLabels}
-          value={value.employmentType.id}
+          value={value.employmentType?.id ?? null}
           onValueChange={(selectedValue) => {
-            const id = selectedValue ?? ""
-            patch({ employmentType: pickOption(employmentTypes, id) })
+            if (selectedValue === null) return
+            patch({ employmentType: pickOption(employmentTypes, selectedValue) })
           }}
         >
           <SelectTrigger size="sm">

@@ -8,14 +8,14 @@ import { EmployeesDataTable } from "@/features/establishment/employees/component
 
 export function EmployeesPage() {
   const [editorOpen, setEditorOpen] = useState(false)
-  const [editingEmployeeId, setEditingEmployeeId] = useState<string | null>(null)
+  const [editingEmployeeId, setEditingEmployeeId] = useState<number | null>(null)
 
   function openCreateDialog() {
     setEditingEmployeeId(null)
     setEditorOpen(true)
   }
 
-  function openEditDialog(employeeId: string) {
+  function openEditDialog(employeeId: number) {
     setEditingEmployeeId(employeeId)
     setEditorOpen(true)
   }

@@ -120,7 +120,9 @@ export const academicPeriodsHandlers = [
     await delay(400)
     const body = (await request.json()) as CreateAcademicPeriodRequest
     const { config, ...periodData } = body
-    const sede = sedesLookup.find((s) => s.id === periodData.sedeId)
+    // `sedeId` viaja como string en el dominio de periodo académico; las
+    // sedes reales tienen id numérico.
+    const sede = sedesLookup.find((s) => s.id === Number(periodData.sedeId))
 
     const id =
       academicPeriodsDb.reduce((max, p) => Math.max(max, p.id), 0) + 1
@@ -176,7 +178,9 @@ export const academicPeriodsHandlers = [
     const body = (await request.json()) as UpdateAcademicPeriodRequest
     const { config, ...periodData } = body
     const id = academicPeriodsDb[index].id
-    const sede = sedesLookup.find((s) => s.id === periodData.sedeId)
+    // `sedeId` viaja como string en el dominio de periodo académico; las
+    // sedes reales tienen id numérico.
+    const sede = sedesLookup.find((s) => s.id === Number(periodData.sedeId))
 
     academicPeriodsDb[index] = {
       ...academicPeriodsDb[index],

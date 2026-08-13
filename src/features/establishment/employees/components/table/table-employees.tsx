@@ -32,7 +32,7 @@ import { SearchEmployees } from "@/features/establishment/employees/components/s
 import { useNotify } from "@/components/notice/notice-context"
 
 interface EmployeesDataTableProps {
-  onEditEmployee: (employeeId: string) => void
+  onEditEmployee: (employeeId: number) => void
   title: ReactNode
   // Acción principal de la página (ej. "Agregar"). Va en la barra de
   // herramientas, junto al buscador, no en el encabezado.
@@ -63,7 +63,9 @@ export function EmployeesDataTable({ onEditEmployee, title, action }: EmployeesD
     columns,
     data: data?.rows ?? [],
     pageCount: data?.pageCount ?? -1,
-    getRowId: (row) => row.id,
+    // `getRowId` de TanStack Table siempre devuelve string; el `id` real de
+    // la fila es number, así que se convierte solo para la selección.
+    getRowId: (row) => String(row.id),
     pageIndex,
     pageSize,
     goToPage,
@@ -74,7 +76,7 @@ export function EmployeesDataTable({ onEditEmployee, title, action }: EmployeesD
 
   const rows = data?.rows ?? []
   const selectedItems = useMemo(
-    () => rows.filter((row) => selectedIds.includes(row.id)),
+    () => rows.filter((row) => selectedIds.includes(String(row.id))),
     [rows, selectedIds],
   )
 
@@ -114,7 +116,7 @@ export function EmployeesDataTable({ onEditEmployee, title, action }: EmployeesD
             {hasSelection ? (
               <>
                 <ClearSelectionDialog resetSelection={resetSelection} />
-                <DialogBulkDelete<EmployeeListItem>
+                <DialogBulkDelete<EmployeeListItem, number>
                   items={selectedItems}
                   getItemId={(item) => item.id}
                   getItemLabel={(item) => item.name}
@@ -130,7 +132,7 @@ export function EmployeesDataTable({ onEditEmployee, title, action }: EmployeesD
                   triggerLabel={`Eliminar (${selectedIds.length})`}
                 />
                 <ExportSelectedEmployeesDialog
-                  selectedIds={selectedIds}
+                  selectedIds={selectedItems.map((item) => item.id)}
                   resetSelection={resetSelection}
                 />
               </>

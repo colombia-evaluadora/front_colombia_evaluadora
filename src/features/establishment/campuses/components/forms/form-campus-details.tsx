@@ -9,12 +9,12 @@ import {
 } from "@/components/ui/select"
 
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
-import type { Campus } from "@/features/establishment/campuses/api/types/campus"
+import type { CampusDraft } from "@/features/establishment/campuses/api/types/campus"
 
 interface CampusDetailsFormProps {
-  value: Campus
+  value: CampusDraft
   zones: CatalogItem[]
-  onChange: (next: Campus) => void
+  onChange: (next: CampusDraft) => void
   /** Mensaje de error por ruta de campo; lo llena el diálogo al guardar. */
   errors?: Record<string, string>
 }
@@ -71,17 +71,10 @@ export function CampusDetailsForm({ value, zones, onChange, errors = {} }: Campu
         <FieldLabel htmlFor="campus-zone">Zona *</FieldLabel>
         <Select
           items={zoneLabels}
-          value={value.zone.id}
+          value={value.zone?.id ?? null}
           onValueChange={(selectedValue) => {
             const option = zones.find((item) => item.id === selectedValue)
-            onChange({
-              ...value,
-              zone: option ?? {
-                id: selectedValue ?? "",
-                code: selectedValue ?? "",
-                name: selectedValue ?? "",
-              },
-            })
+            if (option) onChange({ ...value, zone: option })
           }}
         >
           <SelectTrigger id="campus-zone" size="sm" aria-invalid={Boolean(errors["zone"])}>

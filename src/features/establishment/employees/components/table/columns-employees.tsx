@@ -12,7 +12,7 @@ import type { EmployeeListItem } from "@/features/establishment/employees/api/ty
 import { DeleteEmployeeDialog } from "@/features/establishment/employees/components/dialogs/dialog-delete"
 
 interface EmployeeColumnsOptions {
-  onEdit: (employeeId: string) => void
+  onEdit: (employeeId: number) => void
 }
 
 // Cuántas sedes se listan por nombre antes de resumir el resto en un "+N".

@@ -1,8 +1,8 @@
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 
 export const FUNDING_SOURCES: CatalogItem[] = [
-  { id: "nation", code: "NATION", name: "Nación" },
-  { id: "department", code: "DEPARTMENT", name: "Departamento" },
-  { id: "municipality", code: "MUNICIPALITY", name: "Municipio" },
-  { id: "own-resources", code: "OWN_RESOURCES", name: "Recursos propios" },
+  { id: 1, code: "NATION", name: "Nación" },
+  { id: 2, code: "DEPARTMENT", name: "Departamento" },
+  { id: 3, code: "MUNICIPALITY", name: "Municipio" },
+  { id: 4, code: "OWN_RESOURCES", name: "Recursos propios" },
 ]

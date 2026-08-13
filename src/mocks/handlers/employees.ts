@@ -23,8 +23,14 @@ const EXPORT_FORMAT_LABELS: Record<ExportFormat, string> = {
   excel: "Excel",
 }
 
-function asArray(value: unknown): string[] {
+function asStringArray(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string" && item.length > 0) : []
+}
+
+function asIdArray(value: unknown): number[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is number => typeof item === "number" && Number.isFinite(item))
+    : []
 }
 
 function parseEmployeesRequest(body: Partial<EmployeesQueryRequest> | null): EmployeesQueryRequest {
@@ -34,11 +40,11 @@ function parseEmployeesRequest(body: Partial<EmployeesQueryRequest> | null): Emp
   return {
     filters: {
       search: typeof body?.filters?.search === "string" ? body.filters.search : undefined,
-      roles: asArray(body?.filters?.roles),
-      workSchedules: asArray(body?.filters?.workSchedules),
-      statuses: asArray(body?.filters?.statuses) as EmployeeStatus[],
+      roles: asStringArray(body?.filters?.roles),
+      workSchedules: asStringArray(body?.filters?.workSchedules),
+      statuses: asStringArray(body?.filters?.statuses) as EmployeeStatus[],
       campusId:
-        typeof body?.filters?.campusId === "string" && body.filters.campusId.length > 0
+        typeof body?.filters?.campusId === "number" && Number.isFinite(body.filters.campusId)
           ? body.filters.campusId
           : undefined,
     },
@@ -189,7 +195,7 @@ export const employeeHandlers = [
     await delay(600)
 
     const { ids, format } = (await request.json()) as {
-      ids: string[]
+      ids: number[]
       format: ExportFormat
     }
 
@@ -231,7 +237,8 @@ export const employeeHandlers = [
   http.get("*/api/establishments/employees/:id", async ({ params }) => {
     await delay(150)
 
-    const employee = employeesDb.find((item) => item.id === params.id)
+    const id = Number(Array.isArray(params.id) ? params.id[0] : params.id)
+    const employee = employeesDb.find((item) => item.id === id)
 
     if (!employee) {
       return HttpResponse.json(
@@ -252,13 +259,9 @@ export const employeeHandlers = [
   http.post("*/api/establishments/employees", async ({ request }) => {
     await delay(250)
 
+    // El cliente no manda `id`: lo asigna el backend (acá, `upsertEmployeeDetails`).
     const values = (await request.json()) as Employee
-    const employee: Employee = {
-      ...values,
-      id: values.id || `employee-${Date.now()}`,
-    }
-
-    const savedEmployee = upsertEmployeeDetails(employee)
+    const savedEmployee = upsertEmployeeDetails(values)
 
     return HttpResponse.json({
       status: "ok",
@@ -270,9 +273,10 @@ export const employeeHandlers = [
   http.put("*/api/establishments/employees/:id", async ({ params, request }) => {
     await delay(250)
 
-    const employeeId = Array.isArray(params.id) ? params.id[0] : params.id
+    const idParam = Array.isArray(params.id) ? params.id[0] : params.id
+    const employeeId = idParam ? Number(idParam) : NaN
 
-    if (!employeeId) {
+    if (!idParam || Number.isNaN(employeeId)) {
       return HttpResponse.json(
         {
           status: "error",
@@ -325,17 +329,17 @@ export const employeeHandlers = [
       )
     }
 
-    if (!Array.isArray(ids) || ids.some((id) => typeof id !== "string")) {
+    if (!Array.isArray(ids) || ids.some((id) => typeof id !== "number")) {
       return HttpResponse.json(
         {
           status: "error",
-          message: "Se esperaba una lista de identificadores (strings).",
+          message: "Se esperaba una lista de identificadores (números).",
         },
         { status: 400 },
       )
     }
 
-    const uniqueIds = Array.from(new Set(ids.filter((id) => id.length > 0)))
+    const uniqueIds = Array.from(new Set(asIdArray(ids)))
     deleteManyEmployeeDetails(uniqueIds)
 
     return HttpResponse.json({
@@ -348,9 +352,9 @@ export const employeeHandlers = [
   http.delete("*/api/establishments/employees/:id", async ({ params }) => {
     await delay(250)
 
-    const id = Array.isArray(params.id) ? params.id[0] : params.id
+    const idParam = Array.isArray(params.id) ? params.id[0] : params.id
 
-    if (!id || id === "bulk-delete") {
+    if (!idParam || idParam === "bulk-delete") {
       return HttpResponse.json(
         {
           status: "error",
@@ -360,6 +364,7 @@ export const employeeHandlers = [
       )
     }
 
+    const id = Number(idParam)
     const employee = employeesDb.find((item) => item.id === id)
 
     if (!employee) {
@@ -372,7 +377,7 @@ export const employeeHandlers = [
       )
     }
 
-    deleteEmployeeDetails(employee.id)
+    deleteEmployeeDetails(id)
 
     return HttpResponse.json({
       status: "ok",

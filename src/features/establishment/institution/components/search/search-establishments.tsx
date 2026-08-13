@@ -49,7 +49,7 @@ export function SearchEstablishments({
         optionsTerm(
           "estado",
           "statuses",
-          statuses.map((status) => ({ value: status.id, label: status.name })),
+          statuses.map((status) => ({ value: status.code, label: status.name })),
         ),
       ],
     }),
@@ -85,7 +85,7 @@ export function SearchEstablishments({
 
   const statusItems = [
     { value: "", label: "Todos" },
-    ...statuses.map((status) => ({ value: status.id, label: status.name })),
+    ...statuses.map((status) => ({ value: status.code, label: status.name })),
   ]
 
   return (

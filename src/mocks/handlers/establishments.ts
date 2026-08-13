@@ -22,8 +22,14 @@ const EXPORT_FORMAT_LABELS: Record<ExportFormat, string> = {
   excel: "Excel",
 }
 
-function asArray(value: unknown): string[] {
+function asStringArray(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string" && item.length > 0) : []
+}
+
+function asIdArray(value: unknown): number[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is number => typeof item === "number" && Number.isFinite(item))
+    : []
 }
 
 function parseEstablishmentsRequest(body: Partial<EstablishmentsQueryRequest> | null): EstablishmentsQueryRequest {
@@ -33,9 +39,9 @@ function parseEstablishmentsRequest(body: Partial<EstablishmentsQueryRequest> | 
   return {
     filters: {
       search: typeof body?.filters?.search === "string" ? body.filters.search : undefined,
-      status: asArray(body?.filters?.status) as EstablishmentStatus[],
-      department: asArray(body?.filters?.department),
-      municipality: asArray(body?.filters?.municipality),
+      status: asStringArray(body?.filters?.status) as EstablishmentStatus[],
+      department: asStringArray(body?.filters?.department),
+      municipality: asStringArray(body?.filters?.municipality),
     },
     sorting: Array.isArray(body?.sorting)
       ? body.sorting
@@ -165,7 +171,7 @@ export const establishmentHandlers = [
     await delay(600)
 
     const { ids, format } = (await request.json()) as {
-      ids: string[]
+      ids: number[]
       format: ExportFormat
     }
 
@@ -194,7 +200,8 @@ export const establishmentHandlers = [
   http.get("*/api/establishments/:id", async ({ params }) => {
     await delay(150)
 
-    const establishment = establishmentsDb.find((item) => item.id === params.id)
+    const id = Number(Array.isArray(params.id) ? params.id[0] : params.id)
+    const establishment = establishmentsDb.find((item) => item.id === id)
 
     if (!establishment) {
       return HttpResponse.json(
@@ -215,14 +222,10 @@ export const establishmentHandlers = [
   http.post("*/api/establishments", async ({ request }) => {
     await delay(250)
 
+    // El cliente no manda `id`: lo asigna el backend (acá, `upsertEstablishmentDetails`).
     const values = (await request.json()) as EstablishmentDetails
 
-    const establishment: EstablishmentDetails = {
-      ...values,
-      id: values.id || `establishment-${Date.now()}`,
-    }
-
-    const { details } = upsertEstablishmentDetails(establishment)
+    const { details } = upsertEstablishmentDetails(values)
 
     return HttpResponse.json({
       status: "ok",
@@ -234,9 +237,10 @@ export const establishmentHandlers = [
   http.put("*/api/establishments/:id", async ({ params, request }) => {
     await delay(250)
 
-    const establishmentId = Array.isArray(params.id) ? params.id[0] : params.id
+    const idParam = Array.isArray(params.id) ? params.id[0] : params.id
+    const establishmentId = idParam ? Number(idParam) : NaN
 
-    if (!establishmentId) {
+    if (!idParam || Number.isNaN(establishmentId)) {
       return HttpResponse.json(
         {
           status: "error",
@@ -289,17 +293,17 @@ export const establishmentHandlers = [
       )
     }
 
-    if (!Array.isArray(ids) || ids.some((id) => typeof id !== "string")) {
+    if (!Array.isArray(ids) || ids.some((id) => typeof id !== "number")) {
       return HttpResponse.json(
         {
           status: "error",
-          message: "Se esperaba una lista de identificadores (strings).",
+          message: "Se esperaba una lista de identificadores (números).",
         },
         { status: 400 },
       )
     }
 
-    const uniqueIds = Array.from(new Set(ids.filter((id) => id.length > 0)))
+    const uniqueIds = Array.from(new Set(asIdArray(ids)))
     deleteManyEstablishmentDetails(uniqueIds)
 
     return HttpResponse.json({
@@ -312,12 +316,12 @@ export const establishmentHandlers = [
   http.delete("*/api/establishments/:id", async ({ params }) => {
     await delay(250)
 
-    const id = Array.isArray(params.id) ? params.id[0] : params.id
+    const idParam = Array.isArray(params.id) ? params.id[0] : params.id
 
     // La ruta `/establishments/bulk-delete` está registrada antes para que
     // MSW no la confunda con `:id`, pero dejamos este guard por si el orden
     // cambia en el futuro.
-    if (!id || id === "bulk-delete") {
+    if (!idParam || idParam === "bulk-delete") {
       return HttpResponse.json(
         {
           status: "error",
@@ -327,6 +331,7 @@ export const establishmentHandlers = [
       )
     }
 
+    const id = Number(idParam)
     const establishment = establishmentsDb.find((item) => item.id === id)
 
     if (!establishment) {
@@ -339,7 +344,7 @@ export const establishmentHandlers = [
       )
     }
 
-    deleteEstablishmentDetails(establishment.id)
+    deleteEstablishmentDetails(id)
 
     return HttpResponse.json({
       status: "ok",

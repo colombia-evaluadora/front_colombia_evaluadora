@@ -19,26 +19,21 @@ import { useUpdate } from "@/features/establishment/campuses/api/mutations/use-u
 import { useCampusQuery } from "@/features/establishment/campuses/api/query/use-campus"
 import { useCatalogQuery } from "@/features/establishment/employees/api/query/use-catalogs"
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
-import type { Campus } from "@/features/establishment/campuses/api/types/campus"
+import type { CampusDraft } from "@/features/establishment/campuses/api/types/campus"
 import { NoticeOutlet, useNotify } from "@/components/notice/notice-context"
 
 interface ManageCampusDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   // `null`/ausente = alta; con id = edición de esa sede.
-  campusId?: string | null
+  campusId?: number | null
 }
 
-function createEmptyCatalogItem(): CatalogItem {
-  return { id: "", code: "", name: "" }
-}
-
-function createInitialCampusValues(): Campus {
+function createInitialCampusValues(): CampusDraft {
   return {
-    id: crypto.randomUUID(),
     name: "",
     dane: "",
-    zone: createEmptyCatalogItem(),
+    zone: null,
     neighborhood: "",
     commune: "",
     address: "",
@@ -54,13 +49,13 @@ function createInitialCampusValues(): Campus {
 const campusSchema = z.object({
   name: z.string().trim().min(1, "Ingresa el nombre de la sede."),
   dane: z.string().trim().min(1, "Ingresa el código DANE antiguo de la sede."),
-  zone: z.object({ id: z.string() }).refine((zone) => zone.id.trim() !== "", {
+  zone: z.object({ id: z.number() }).nullable().refine((zone) => zone !== null, {
     message: "Selecciona la zona.",
   }),
 })
 
 /** Un mensaje por campo, indexado por su ruta dentro de `Campus`. */
-function validateCampus(values: Campus): Record<string, string> {
+function validateCampus(values: CampusDraft): Record<string, string> {
   const result = campusSchema.safeParse(values)
 
   if (result.success) {
@@ -84,7 +79,7 @@ export function ManageCampusDialog({
   const { notify } = useNotify()
   const isEditMode = campusId !== null
 
-  const [formValues, setFormValues] = useState<Campus>(createInitialCampusValues)
+  const [formValues, setFormValues] = useState<CampusDraft>(createInitialCampusValues)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
   const { data: zones = [] } = useCatalogQuery<CatalogItem>(CATALOGS.ZONES)
@@ -156,7 +151,7 @@ export function ManageCampusDialog({
     if (isEditMode && campusId) {
       await updateMutation.mutateAsync({
         campusId,
-        values: formValues,
+        values: { ...formValues, id: campusId },
       })
       return
     }

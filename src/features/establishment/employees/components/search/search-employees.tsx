@@ -63,7 +63,7 @@ export function SearchEmployees({
         optionsTerm(
           "estado",
           "statuses",
-          statuses.map((status) => ({ value: status.id, label: status.name })),
+          statuses.map((status) => ({ value: status.code, label: status.name })),
         ),
       ],
     }),
@@ -114,7 +114,7 @@ export function SearchEmployees({
   ]
   const statusItems = [
     { value: "", label: "Todos" },
-    ...statuses.map((status) => ({ value: status.id, label: status.name })),
+    ...statuses.map((status) => ({ value: status.code, label: status.name })),
   ]
 
   return (

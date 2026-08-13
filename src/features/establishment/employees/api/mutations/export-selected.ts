@@ -5,7 +5,7 @@ import type { MutationConfig } from "@/lib/react-query"
 import type { ExportFormat, ExportResult } from "@/features/establishment/institution/api/types/export"
 
 interface ExportSelectedEmployeesInput {
-  ids: string[]
+  ids: number[]
   format: ExportFormat
 }
 

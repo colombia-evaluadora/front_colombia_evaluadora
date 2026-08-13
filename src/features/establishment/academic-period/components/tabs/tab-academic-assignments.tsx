@@ -38,7 +38,9 @@ export function TabAcademicAssignments({ academicPeriodId }: TabAcademicAssignme
   const { notify } = useNotify()
 
   const { data: academicPeriod } = useAcademicPeriodQuery(academicPeriodId)
-  const campusId = academicPeriod?.sedeId
+  // `sedeId` es string en el dominio de periodo académico; el filtro de
+  // funcionarios espera el id numérico real de la sede.
+  const campusId = academicPeriod?.sedeId ? Number(academicPeriod.sedeId) : undefined
 
   const queryFilters = useMemo(
     () => ({
@@ -113,7 +115,9 @@ export function TabAcademicAssignments({ academicPeriodId }: TabAcademicAssignme
     columns,
     data: data?.rows ?? [],
     pageCount: data?.pageCount ?? -1,
-    getRowId: (row) => row.id,
+    // `getRowId` de TanStack Table siempre devuelve string; el `id` real de
+    // la fila es number, así que se convierte solo para la selección.
+    getRowId: (row) => String(row.id),
     pageIndex,
     pageSize,
     goToPage,
@@ -122,14 +126,14 @@ export function TabAcademicAssignments({ academicPeriodId }: TabAcademicAssignme
     setSorting,
   })
 
-  function assign(employeeId: string, ids: string[]) {
+  function assign(employeeId: number, ids: string[]) {
     setAssignedIds((prev) => ({
       ...prev,
       [employeeId]: [...(prev[employeeId] ?? []), ...ids],
     }))
   }
 
-  function unassign(employeeId: string, ids: string[]) {
+  function unassign(employeeId: number, ids: string[]) {
     setAssignedIds((prev) => ({
       ...prev,
       [employeeId]: (prev[employeeId] ?? []).filter((id) => !ids.includes(id)),
@@ -157,7 +161,7 @@ export function TabAcademicAssignments({ academicPeriodId }: TabAcademicAssignme
         <div className="flex gap-2">
           {hasSelection ? (
             <ExportSelectedAcademicAssignmentsDialog
-              selectedIds={selectedIds}
+              selectedIds={selectedIds.map(Number)}
               resetSelection={resetSelection}
             />
           ) : (

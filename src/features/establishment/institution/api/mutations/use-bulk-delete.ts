@@ -12,7 +12,7 @@ export interface BulkDeleteEstablishmentResult {
 // El backend espera los ids en el body de un DELETE. Axios requiere
 // `api.request({ method: "DELETE", data })` para adjuntar el payload —
 // `api.delete(url, body)` no existe en la firma estándar.
-function bulkDeleteEstablishments(ids: string[]): Promise<BulkDeleteEstablishmentResult> {
+function bulkDeleteEstablishments(ids: number[]): Promise<BulkDeleteEstablishmentResult> {
   return api.request<BulkDeleteEstablishmentResult>({
     method: "DELETE",
     url: "/establishments/bulk-delete",

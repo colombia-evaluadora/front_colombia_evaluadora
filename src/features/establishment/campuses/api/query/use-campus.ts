@@ -9,14 +9,14 @@ interface CampusQueryResult {
   campus: Campus
 }
 
-function fetchCampus(id: string): Promise<CampusQueryResult> {
+function fetchCampus(id: number): Promise<CampusQueryResult> {
   return api.get(`/establishments/campuses/${id}`)
 }
 
-export function useCampusQuery(id: string | null, enabled = true) {
+export function useCampusQuery(id: number | null, enabled = true) {
   return useQuery({
     queryKey: ["campuses", id],
-    queryFn: () => fetchCampus(id as string),
+    queryFn: () => fetchCampus(id as number),
     enabled: enabled && Boolean(id),
   })
 }

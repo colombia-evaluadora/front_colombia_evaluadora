@@ -22,7 +22,6 @@ import { useCreate } from "@/features/establishment/institution/api/mutations/us
 import { useUpdate } from "@/features/establishment/institution/api/mutations/use-update"
 import type { EstablishmentDetails } from "@/features/establishment/institution/api/types/establishment"
 import { establishmentsDb } from "@/mocks/db/establishments"
-import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 import type { Person } from "@/features/establishment/employees/api/types/person"
 import { UserDetailsForm } from "@/features/establishment/employees/components/forms/form-user-datails"
 import { validateEstablishmentForm } from "@/features/establishment/institution/utils/validate-form"
@@ -43,13 +42,8 @@ const accordionTriggerClassName =
  */
 const accordionCardClassName = "py-5"
 
-function createEmptyCatalogItem(): CatalogItem {
-  return { id: "", code: "", name: "" }
-}
-
 function createEmptyPerson(): Person {
   return {
-    id: "",
     documentType: null,
     identification: "",
     firstName: "",
@@ -62,26 +56,22 @@ function createEmptyPerson(): Person {
   }
 }
 
+// Sin `id`: lo asigna el backend al crear (POST /establishments). El
+// formulario de alta arranca sin ninguno, no con uno inventado en el cliente.
 function createInitialEstablishmentValues(): EstablishmentDetails {
   return {
-    id: crypto.randomUUID(),
     basicInfo: {
       name: "",
       dane: "",
       nit: "",
-      ownershipType: createEmptyCatalogItem(),
+      ownershipType: null,
     },
     address: {
-      municipality: {
-        id: "",
-        code: "",
-        name: "",
-        department: { id: "", code: "", name: "" },
-      },
-      zone: createEmptyCatalogItem(),
-      district: createEmptyCatalogItem(),
-      commune: createEmptyCatalogItem(),
-      locality: createEmptyCatalogItem(),
+      municipality: null,
+      zone: null,
+      district: null,
+      commune: null,
+      locality: null,
       address: "",
     },
     contact: {
@@ -92,14 +82,14 @@ function createInitialEstablishmentValues(): EstablishmentDetails {
     },
     additionalInfo: {
       approvalResolution: "",
-      teachingLanguage: createEmptyCatalogItem(),
-      calendar: createEmptyCatalogItem(),
-      costRegime: createEmptyCatalogItem(),
-      populationGender: createEmptyCatalogItem(),
-      tuitionRange: createEmptyCatalogItem(),
-      disabilityType: createEmptyCatalogItem(),
+      teachingLanguage: null,
+      calendar: null,
+      costRegime: null,
+      populationGender: null,
+      tuitionRange: null,
+      disabilityType: null,
       operatingLicense: false,
-      licenseStatus: createEmptyCatalogItem(),
+      licenseStatus: null,
       licenseDate: null,
       ethnicAttention: false,
       giftedAttention: false,
@@ -114,10 +104,13 @@ export function AddEstablishmentPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const { notify } = useNotify()
-  const establishmentId = location.pathname.includes("/editar/")
+  const establishmentIdParam = location.pathname.includes("/editar/")
     ? location.pathname.split("/editar/").at(1) ?? null
     : null
-  const isEditMode = establishmentId !== null
+  // El segmento de ruta siempre llega como string; el `id` real del dominio
+  // es number, así que se convierte una sola vez acá.
+  const establishmentId = establishmentIdParam !== null ? Number(establishmentIdParam) : null
+  const isEditMode = establishmentId !== null && !Number.isNaN(establishmentId)
   const [formValues, setFormValues] = useState<EstablishmentDetails>(createInitialEstablishmentValues)
   // Mensaje por campo, indexado por ruta (`basicInfo.name`, `principal.password`, …).
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
@@ -281,7 +274,7 @@ export function AddEstablishmentPage() {
     if (isEditMode && establishmentId) {
       await updateMutation.mutateAsync({
         establishmentId,
-        values: nextValues,
+        values: { ...nextValues, id: establishmentId },
       })
       return
     }

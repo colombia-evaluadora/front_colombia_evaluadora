@@ -9,7 +9,7 @@ export interface BulkDeleteEmployeeResult {
   deletedCount: number
 }
 
-function bulkDeleteEmployees(ids: string[]): Promise<BulkDeleteEmployeeResult> {
+function bulkDeleteEmployees(ids: number[]): Promise<BulkDeleteEmployeeResult> {
   return api.request<BulkDeleteEmployeeResult>({
     method: "DELETE",
     url: "/establishments/employees/bulk-delete",
