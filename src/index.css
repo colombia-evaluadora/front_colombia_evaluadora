@@ -76,18 +76,18 @@
   --muted-foreground: #666e7a;
 
   /* ---------- COLORES ------------------------------ */
-  --red: #e40017;
-  --red-foreground: #fff8f7;
+  --red: #A30D11;
+  --red-foreground: #ffffff;
   --green: #1F9254;
-  --green-foreground: #f9fbf5;
-  --yellow: #eab300;
-  --yellow-foreground: #352600;
+  --green-foreground: #ffffff;
+  --yellow: #EABE4A;
+  --yellow-foreground: #1e1400;
   --blue: #0079b5;
   --blue-foreground: #f7fbfd;
   --purple: #7a3ec8;
   --purple-foreground: #faf7fe;
-  --orange: #e2620e;
-  --orange-foreground: #fff9f5;
+  --orange: #CD6200;
+  --orange-foreground: #ffffff;
   --navy: #0b3879;
   --navy-foreground: #f5f8fd;
 
@@ -119,25 +119,24 @@
   --secondary-stroke: #6182004d;
   --muted-stroke: #d6dbe54d;
   --blue-stroke: #0079b54d;
-  --red-stroke: #e400174d;
-  --yellow-stroke: #eab3004d;
+  --red-stroke: #A30D114d;
+  --yellow-stroke: #EABE4A4d;
   --green-stroke: #1F92544d;
   --purple-stroke: #7a3ec84d;
-  --orange-stroke: #e2620e4d;
+  --orange-stroke: #CD62004d;
   --navy-stroke: #0b38794d;
 
   /* ---------- SOFT FILLS (alpha 22%) ----------------------- */
   --foreground-22: #090d1038;
   --primary-22: #0D99FF38;
   --secondary-22: #61820038;
-  --green-22: #1F925438;
   --muted-22: #d6dbe538;
   --blue-22: #0079b538;
-  --red-22: #e4001738;
-  --yellow-22: #eab30038;
+  --red-22: #A30D1138;
+  --yellow-22: #EABE4A38;
   --green-22: #1F925438;
   --purple-22: #7a3ec838;
-  --orange-22: #e2620e38;
+  --orange-22: #CD620038;
   --navy-22: #0b387938;
 }
 
@@ -248,20 +247,20 @@
   --muted-foreground: #756161;
 
   /* ---------- COLORES ------------------------------ */
-  --red: #e40017;
-  --red-foreground: #fff8f7;
-  --green: #618200;
-  --green-foreground: #f9fbf5;
-  --yellow: #eab300;
-  --yellow-foreground: #352600;
+  --red: #A30D11;
+  --red-foreground: #ffffff;
+  --green: #1F9254;
+  --green-foreground: #ffffff;
+  --yellow: #EABE4A;
+  --yellow-foreground: #1e1400;
   --blue: #0079b5;
   --blue-foreground: #f7fbfd;
   --purple: #7a3ec8;
   --purple-foreground: #faf7fe;
-  --orange: #e2620e;
-  --orange-foreground: #fff9f5;
-  --navy: #0b3879;
-  --navy-foreground: #f5f8fd;
+  --orange: #CD6200;
+  --orange-foreground: #ffffff;
+  --navy: #650b14;
+  --navy-foreground: #fdf5f6;
 
   /* ---------- BORDES / FOCO ---------------------------------- */
   --border: #e3e7ea;
@@ -291,12 +290,12 @@
   --secondary-stroke: #3333304d;
   --muted-stroke: #dbd1d14d;
   --blue-stroke: #0079b54d;
-  --red-stroke: #e400174d;
-  --yellow-stroke: #eab3004d;
-  --green-stroke: #6182004d;
+  --red-stroke: #A30D114d;
+  --yellow-stroke: #EABE4A4d;
+  --green-stroke: #1F92544d;
   --purple-stroke: #7a3ec84d;
-  --orange-stroke: #e2620e4d;
-  --navy-stroke: #0b38794d;
+  --orange-stroke: #CD62004d;
+  --navy-stroke: #650b144d;
 
   /* ---------- SOFT FILLS (alpha 22%) ----------------------- */
   --foreground-22: #090d1038;
@@ -304,12 +303,12 @@
   --secondary-22: #33333038;
   --muted-22: #dbd1d138;
   --blue-22: #0079b538;
-  --red-22: #e4001738;
-  --yellow-22: #eab30038;
-  --green-22: #61820038;
+  --red-22: #A30D1138;
+  --yellow-22: #EABE4A38;
+  --green-22: #1F925438;
   --purple-22: #7a3ec838;
-  --orange-22: #e2620e38;
-  --navy-22: #0b387938;
+  --orange-22: #CD620038;
+  --navy-22: #650b1438;
 }
 
 .dark[data-theme="red"] {
@@ -346,9 +345,10 @@
   --orange-foreground: #2a1103;
   /* Navy no se aclara en oscuro como el resto de colores: es una superficie de
      marca (el bloque de la pantalla de login), y aclararla la vuelve un parche
-     lavanda sobre el fondo oscuro. Se queda igual en los cuatro temas. */
-  --navy: #0b3879;
-  --navy-foreground: #f5f8fd;
+     sobre el fondo oscuro. Sí cambia de familia con el acento: acá es el vino
+     del tema rojo, igual que en su variante clara. */
+  --navy: #650b14;
+  --navy-foreground: #fdf5f6;
 
   /* ---------- BORDES / FOCO ---------------------------------- */
   --border: #ffffff1a;
@@ -383,7 +383,7 @@
   --green-stroke: #84a73c4d;
   --purple-stroke: #a98bf04d;
   --orange-stroke: #ff8a4c4d;
-  --navy-stroke: #0b38794d;
+  --navy-stroke: #650b144d;
 
   /* ---------- SOFT FILLS (alpha 22%) ----------------------- */
   --foreground-22: #f2f6f838;
@@ -396,7 +396,7 @@
   --green-22: #84a73c38;
   --purple-22: #a98bf038;
   --orange-22: #ff8a4c38;
-  --navy-22: #0b387938;
+  --navy-22: #650b1438;
 }
 
 @theme inline {
