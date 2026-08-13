@@ -4,9 +4,10 @@ import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
 import type { MutationResult } from "../../types/academic-period"
 
-// Borrado en lote por ids, en una sola request atómica.
+// Borrado en lote por ids, en una sola request atómica
+// (`fn_periodo_bulk_delete`, expuesto como PUT `/periodos-academicos`).
 function deleteAcademicPeriodsBulk(ids: number[]): Promise<MutationResult> {
-  return api.post("/academic-periods/bulk-delete", { ids })
+  return api.put("/eval-col/periodos-academicos", { IDS: ids })
 }
 
 interface UseDeleteAcademicPeriodsBulkOptions {

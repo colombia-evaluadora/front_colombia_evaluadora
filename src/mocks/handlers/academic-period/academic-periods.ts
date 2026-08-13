@@ -12,7 +12,6 @@ import type {
   AcademicPeriodConfig,
   AcademicPeriodDetail,
   AcademicPeriodsQueryRequest,
-  AcademicPeriodsQueryResponse,
   CreateAcademicPeriodRequest,
   ExportFormat,
   ExportResult,
@@ -22,6 +21,47 @@ import type {
 const EXPORT_FORMAT_LABELS: Record<ExportFormat, string> = {
   pdf: "PDF",
   excel: "Excel",
+}
+
+// El front manda el body PLANO con las llaves de `fn_periodo_crear`. El mock
+// mantiene su modelo interno (periodo + config), así que aquí revertimos ese
+// shaping: llaves UPPER_SNAKE → campos del dominio, "S"/"N" → boolean y los
+// `TIME[]` paralelos → `breaks[]`.
+function fromCreateRequest(body: CreateAcademicPeriodRequest): {
+  period: Pick<
+    AcademicPeriod,
+    | "sedeId"
+    | "statusId"
+    | "previousPeriodId"
+    | "startDate"
+    | "endDate"
+    | "enrollmentDeadline"
+  >
+  config: Omit<AcademicPeriodConfig, "academicPeriodId">
+} {
+  const starts = body.DESCANSO_INICIO ?? []
+  const ends = body.DESCANSO_FIN ?? []
+  return {
+    period: {
+      sedeId: String(body.FK_SEDE),
+      statusId: body.FK_ESTADO,
+      previousPeriodId: body.FK_PERIODO_ANTERIOR,
+      startDate: body.FECHA_INICIO,
+      endDate: body.FECHA_FIN,
+      enrollmentDeadline: body.FECHA_LIMITE_MATRICULA,
+    },
+    config: {
+      jornadaId: body.FK_JORNADA,
+      reservationEnabled: body.RESERVA === "S",
+      defaultBlocksCount: body.BLOQUES_POR_DEFECTO,
+      scheduleStartTime: body.HORA_INICIO,
+      scheduleEndTime: body.HORA_FIN,
+      breaks: starts.map((startTime, i) => ({
+        startTime,
+        endTime: ends[i] ?? "",
+      })),
+    },
+  }
 }
 
 function applyFilters(
@@ -77,26 +117,67 @@ function applySorting(
 }
 
 export const academicPeriodsHandlers = [
-  http.post("/api/academic-periods/query", async ({ request }) => {
+  http.post("/api/eval-col/periodos-academicos/query", async ({ request }) => {
     await delay(250)
-    const body = (await request.json()) as AcademicPeriodsQueryRequest
-    const { filters, sorting, pageIndex, pageSize } = body
+    // Body plano UPPER_SNAKE (igual que el endpoint real); se revierte al shape
+    // interno de filtros/orden que ya usan applyFilters/applySorting.
+    const body = (await request.json()) as {
+      FK_SEDE: number | null
+      NOMBRE_SEDE: string | null
+      ANO: string | null
+      FK_ESTADO: number | null
+      FECHA_DESDE: string | null
+      FECHA_HASTA: string | null
+      PAGEINDEX: number
+      PAGESIZE: number
+      SORT_BY: string | null
+      SORT_DIR: "asc" | "desc" | null
+    }
+    const filters: AcademicPeriodsQueryRequest["filters"] = {
+      sedeName: body.NOMBRE_SEDE ?? undefined,
+      schoolYearId: body.ANO != null ? Number(body.ANO) : undefined,
+      statusId: body.FK_ESTADO != null ? [body.FK_ESTADO] : undefined,
+      startFrom: body.FECHA_DESDE ?? undefined,
+      startTo: body.FECHA_HASTA ?? undefined,
+    }
+    const sorting: AcademicPeriodsQueryRequest["sorting"] = body.SORT_BY
+      ? [{ id: body.SORT_BY, desc: body.SORT_DIR === "desc" }]
+      : []
+    const pageIndex = body.PAGEINDEX
+    const pageSize = body.PAGESIZE
 
     const filtered = applySorting(applyFilters(academicPeriodsDb, filters), sorting)
     const totalCount = filtered.length
-    const pageCount = Math.max(1, Math.ceil(totalCount / pageSize))
     const start = pageIndex * pageSize
-    // El backend resuelve el nombre del estado (TLISTA_VALOR.NOMBRE); el mock
-    // lo espeja del valor, que en el front ya es la etiqueta.
-    const rows = filtered
-      .slice(start, start + pageSize)
-      .map((row) => ({ ...row, statusName: row.status }))
-
-    return HttpResponse.json<AcademicPeriodsQueryResponse>({
-      rows,
-      pageCount,
-      totalCount,
+    // Devuelve el MISMO shape crudo que el endpoint real (snake_case, códigos y
+    // `total_count` por fila, sin envelope); el front lo mapea/enveuelve.
+    const rows = filtered.slice(start, start + pageSize).map((row) => {
+      const config = academicPeriodConfigsDb.find(
+        (c) => c.academicPeriodId === row.id
+      )
+      return {
+        id: row.id,
+        sede_id: Number(row.sedeId),
+        sede_name: row.sedeName,
+        school_year_id: row.schoolYearId,
+        school_year_name: String(row.schoolYearId),
+        status_id: row.statusId ?? null,
+        status: row.status,
+        status_name: row.statusName ?? row.status,
+        start_date: row.startDate,
+        end_date: row.endDate,
+        enrollment_deadline: row.enrollmentDeadline,
+        name: row.name,
+        jornada_id: config?.jornadaId ?? null,
+        reserva: config?.reservationEnabled ? "S" : "N",
+        default_blocks_count: config?.defaultBlocksCount ?? 0,
+        schedule_start_time: config?.scheduleStartTime ?? null,
+        schedule_end_time: config?.scheduleEndTime ?? null,
+        total_count: totalCount,
+      }
     })
+
+    return HttpResponse.json({ rows })
   }),
 
   http.post("/api/academic-periods/export", async ({ request }) => {
@@ -124,13 +205,15 @@ export const academicPeriodsHandlers = [
     })
   }),
 
-  http.post("/api/academic-periods", async ({ request }) => {
+  http.post("/api/eval-col/periodos-academicos", async ({ request }) => {
     await delay(400)
     const body = (await request.json()) as CreateAcademicPeriodRequest
-    const { config, statusId, ...periodData } = body
+    const { period: periodData, config } = fromCreateRequest(body)
     const sede = sedesLookup.find((s) => s.id === periodData.sedeId)
     // El back guarda el estado por id; resolvemos el código/etiqueta para el listado.
-    const statusOption = academicPeriodStatusesDb.find((s) => s.id === statusId)
+    const statusOption = academicPeriodStatusesDb.find(
+      (s) => s.id === periodData.statusId
+    )
     // El back DERIVA el año lectivo (del año de inicio) y el nombre.
     const schoolYearId = periodData.startDate
       ? new Date(periodData.startDate).getFullYear()
@@ -142,7 +225,6 @@ export const academicPeriodsHandlers = [
       id,
       sedeName: sede?.name ?? "—",
       status: statusOption?.key ?? "ACTIVO",
-      statusId,
       statusName: statusOption?.label,
       schoolYearId,
       name: `Año lectivo ${schoolYearId}`,
@@ -158,7 +240,24 @@ export const academicPeriodsHandlers = [
     return HttpResponse.json(newPeriod, { status: 201 })
   }),
 
-  http.get("/api/academic-periods/:id", async ({ params }) => {
+  // Candidatos a "periodo anterior" de una sede (activos, excluyendo el que se
+  // edita) — `fn_periodo_anteriores_por_sede`.
+  http.post("/api/eval-col/periodos-academicos/anterior", async ({ request }) => {
+    await delay(200)
+    const body = (await request.json()) as {
+      FK_SEDE: number
+      FK_PERIODO: number | null
+    }
+    const rows = academicPeriodsDb
+      .filter((p) => String(p.sedeId) === String(body.FK_SEDE))
+      .filter((p) =>
+        body.FK_PERIODO ? p.id !== body.FK_PERIODO : true
+      )
+      .map((p) => ({ id: p.id, name: p.name }))
+    return HttpResponse.json({ rows })
+  }),
+
+  http.get("/api/eval-col/periodos-academicos/:id", async ({ params }) => {
     await delay(250)
     const period = academicPeriodsDb.find(
       (p) => String(p.id) === String(params.id)
@@ -184,7 +283,7 @@ export const academicPeriodsHandlers = [
     return HttpResponse.json<AcademicPeriodDetail>({ ...period, config })
   }),
 
-  http.patch("/api/academic-periods/:id", async ({ params, request }) => {
+  http.patch("/api/eval-col/periodos-academicos/:id", async ({ params, request }) => {
     await delay(400)
     const index = academicPeriodsDb.findIndex(
       (p) => String(p.id) === String(params.id)
@@ -197,10 +296,12 @@ export const academicPeriodsHandlers = [
     }
 
     const body = (await request.json()) as UpdateAcademicPeriodRequest
-    const { config, statusId, ...periodData } = body
+    const { period: periodData, config } = fromCreateRequest(body)
     const id = academicPeriodsDb[index].id
     const sede = sedesLookup.find((s) => s.id === periodData.sedeId)
-    const statusOption = academicPeriodStatusesDb.find((s) => s.id === statusId)
+    const statusOption = academicPeriodStatusesDb.find(
+      (s) => s.id === periodData.statusId
+    )
     // El back re-deriva año lectivo/nombre al cambiar la fecha de inicio.
     const schoolYearId = periodData.startDate
       ? new Date(periodData.startDate).getFullYear()
@@ -211,7 +312,6 @@ export const academicPeriodsHandlers = [
       ...periodData,
       id,
       status: statusOption?.key ?? academicPeriodsDb[index].status,
-      statusId,
       statusName: statusOption?.label ?? academicPeriodsDb[index].statusName,
       schoolYearId,
       name: `Año lectivo ${schoolYearId}`,
@@ -231,10 +331,11 @@ export const academicPeriodsHandlers = [
     return HttpResponse.json({ status: "ok", message: "Periodo actualizado." })
   }),
 
-  http.post("/api/academic-periods/bulk-delete", async ({ request }) => {
+  // `fn_periodo_bulk_delete`, expuesto como PUT (no POST).
+  http.put("/api/eval-col/periodos-academicos", async ({ request }) => {
     await delay(300)
-    const { ids } = (await request.json()) as { ids: number[] }
-    const set = new Set(ids)
+    const { IDS } = (await request.json()) as { IDS: number[] }
+    const set = new Set(IDS)
     const before = academicPeriodsDb.length
     for (let i = academicPeriodsDb.length - 1; i >= 0; i--) {
       if (set.has(academicPeriodsDb[i].id)) academicPeriodsDb.splice(i, 1)
@@ -246,7 +347,8 @@ export const academicPeriodsHandlers = [
     })
   }),
 
-  http.delete("/api/academic-periods/:id", async ({ params }) => {
+  // `fn_periodo_soft_delete` es un soft delete expuesto como PUT (no DELETE).
+  http.put("/api/eval-col/periodos-academicos/:id", async ({ params }) => {
     await delay(300)
     const index = academicPeriodsDb.findIndex(
       (p) => String(p.id) === String(params.id)

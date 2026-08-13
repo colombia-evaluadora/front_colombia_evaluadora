@@ -12,7 +12,9 @@ interface DeleteEvaluationPeriodInput {
 function deleteEvaluationPeriod({
   id,
 }: DeleteEvaluationPeriodInput): Promise<MutationResult> {
-  return api.delete(`/evaluation-periods/${id}`)
+  // `fn_periodo_eval_soft_delete` es un soft delete expuesto como PUT
+  // (`PUT /periodo-evaluacion/:ID`), no como DELETE.
+  return api.put(`/eval-col/periodo-evaluacion/${id}`)
 }
 
 interface UseDeleteEvaluationPeriodOptions {

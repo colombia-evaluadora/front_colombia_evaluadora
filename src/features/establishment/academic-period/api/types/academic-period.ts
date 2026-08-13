@@ -41,6 +41,14 @@ export interface AcademicPeriodBreak {
   endTime: string
 }
 
+// Opción del select "Periodo académico anterior": el backend ya devuelve solo
+// los candidatos válidos de la sede (activos, en alcance, excluyendo el que se
+// edita), así que el front no filtra nada.
+export interface PreviousPeriodOption {
+  id: number
+  name: string
+}
+
 export interface AcademicPeriodConfig {
   academicPeriodId: number
   jornadaId: number
@@ -73,25 +81,27 @@ export interface AcademicPeriodsQueryResponse {
   totalCount: number
 }
 
-// La escritura manda solo lo que `fn_periodo_crear` recibe. El estado va por id
-// (`statusId` → `p_fk_estado`). El backend DERIVA `name` ("<año> - <jornada>") y
-// `schoolYearId` (del año de `startDate`); `minAbsences`/`weeksCount`/
-// `minFailedSubjects`/`isPrincipal` NO son parámetros de creación → no se mandan.
-export type CreateAcademicPeriodRequest = Omit<
-  AcademicPeriod,
-  | "id"
-  | "sedeName"
-  | "status"
-  | "statusId"
-  | "name"
-  | "schoolYearId"
-  | "minAbsences"
-  | "weeksCount"
-  | "minFailedSubjects"
-  | "isPrincipal"
-> & {
-  statusId: number
-  config: Omit<AcademicPeriodConfig, "academicPeriodId">
+// El body va PLANO con las llaves que espera `academico_test.fn_periodo_crear`
+// (tokens `:BODY.*` del endpoint SSO); no lleva `config` anidado. El backend
+// DERIVA `name` y `schoolYearId` (del año de `FECHA_INICIO`) y toma el usuario
+// de `:CONTEXT.USER_ID`, así que esos no se mandan.
+//   - `RESERVA` es `bool_sn` en la función → se manda "S"/"N", no boolean.
+//   - `DESCANSO_INICIO`/`DESCANSO_FIN` son `TIME[]` PARALELOS (misma longitud y
+//     orden). Siempre se envía el arreglo: `[]` = sin descansos / borrar todos.
+export interface CreateAcademicPeriodRequest {
+  FK_SEDE: number
+  FK_ESTADO: number
+  FECHA_INICIO: string
+  FECHA_FIN: string
+  FECHA_LIMITE_MATRICULA: string
+  FK_JORNADA: number
+  HORA_INICIO: string | null
+  HORA_FIN: string | null
+  RESERVA: "S" | "N"
+  BLOQUES_POR_DEFECTO: number | null
+  FK_PERIODO_ANTERIOR: number | null
+  DESCANSO_INICIO: string[]
+  DESCANSO_FIN: string[]
 }
 
 export type UpdateAcademicPeriodRequest = CreateAcademicPeriodRequest

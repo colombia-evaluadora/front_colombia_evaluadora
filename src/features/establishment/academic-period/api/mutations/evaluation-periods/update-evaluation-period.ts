@@ -2,27 +2,45 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
+
+import type { EvaluationPeriodFormValues } from "../../schema"
 import type {
   MutationResult,
   UpdateEvaluationPeriodRequest,
 } from "../../types/evaluation-period"
 
 interface UpdateEvaluationPeriodInput {
-  // PK real (path); el `codigo` de negocio va en el body dentro de `values`.
+  // PK real (path); `fn_periodo_eval_actualizar` no recibe `fk_periodo`.
   id: number
+  // El popover de creación también arma este `academicPeriodId`; se acepta
+  // para no tocar el dialog, pero la actualización no lo usa (no reasigna
+  // el periodo académico).
   academicPeriodId?: number
-  values: UpdateEvaluationPeriodRequest
+  values: EvaluationPeriodFormValues
+}
+
+function toUpdateEvaluationPeriodRequest(
+  values: EvaluationPeriodFormValues
+): UpdateEvaluationPeriodRequest {
+  return {
+    CODIGO: values.codigo,
+    NOMBRE: values.nombre,
+    ABREVIACION: values.abreviacion,
+    FECHA_INICIO: values.startDate,
+    FECHA_FIN: values.endDate,
+    FK_ESTADO: values.estadoId,
+    PORCENTAJE: values.peso,
+  }
 }
 
 function updateEvaluationPeriod({
   id,
-  academicPeriodId,
   values,
 }: UpdateEvaluationPeriodInput): Promise<MutationResult> {
-  return api.patch(`/evaluation-periods/${id}`, {
-    ...values,
-    academicPeriodId,
-  })
+  return api.put(
+    `/eval-col/periodo-evaluacion/editar/${id}`,
+    toUpdateEvaluationPeriodRequest(values)
+  )
 }
 
 interface UseUpdateEvaluationPeriodOptions {

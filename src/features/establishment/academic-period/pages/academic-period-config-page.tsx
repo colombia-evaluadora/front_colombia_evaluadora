@@ -136,6 +136,7 @@ function AcademicPeriodConfigPageContent() {
       blocksCount: values.defaultBlocksCount,
       breaks: values.breaks,
     })
+    console.log(values)
     if (academicPeriodId != null) {
       updatePeriod.mutate({ id: academicPeriodId, values })
     } else {
@@ -199,6 +200,7 @@ function AcademicPeriodConfigPageContent() {
                 onSubmit={handleSubmit}
                 onDirtyChange={setIsFormDirty}
                 savedToken={savedToken}
+                currentPeriodId={numericPeriodId}
               />
               {/* Acciones en el flujo normal, justo debajo de los campos. Al
                   editar solo aparecen si hay cambios sin guardar, para que el

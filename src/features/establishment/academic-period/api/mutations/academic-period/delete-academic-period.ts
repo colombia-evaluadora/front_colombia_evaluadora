@@ -4,8 +4,10 @@ import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
 import type { MutationResult } from "../../types/academic-period"
 
+// `fn_periodo_soft_delete` es un soft delete expuesto como PUT
+// (`PUT /periodos-academicos/:ID`), no como DELETE.
 function deleteAcademicPeriod(id: number): Promise<MutationResult> {
-  return api.delete(`/academic-periods/${id}`)
+  return api.put(`/eval-col/periodos-academicos/${id}`)
 }
 
 interface UseDeleteAcademicPeriodOptions {

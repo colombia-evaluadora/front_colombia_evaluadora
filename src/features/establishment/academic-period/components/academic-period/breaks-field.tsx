@@ -40,7 +40,7 @@ function BreakChips({ value, onRemove }: { value: Break[]; onRemove: (index: num
   const extra = sortedIndices.length - visibleIndices.length
 
   return (
-    <span className="flex min-w-0 flex-1 flex-wrap items-center gap-1">
+    <span className="pointer-events-none relative z-10 flex min-w-0 flex-1 flex-wrap items-center gap-1">
       {visibleIndices.map((originalIndex) => {
         const brk = value[originalIndex]
         return (
@@ -59,7 +59,10 @@ function BreakChips({ value, onRemove }: { value: Break[]; onRemove: (index: num
               }}
               aria-label={`Quitar descanso ${originalIndex + 1}`}
               data-icon="inline-end"
-              className="inline-flex items-center hover:text-foreground"
+              // `pointer-events-auto`: el contenedor de chips va con
+              // `pointer-events-none` para que el click atraviese al trigger y
+              // abra el menú; solo la "X" recupera el click para quitar.
+              className="pointer-events-auto inline-flex cursor-pointer items-center hover:text-foreground"
             >
               <XIcon className="size-3" />
             </button>
@@ -88,26 +91,39 @@ export function BreaksField({
 
   return (
     <Popover>
-      <PopoverTrigger
-        render={
-          <button
-            type="button"
-            className={cn(
-              inputVariants({ variant: resolvedVariant }),
-              inputTriggerVariants({ variant: resolvedVariant }),
-              "flex items-center justify-between gap-1.5 text-left",
-              value.length === 0 && "text-muted-foreground",
-            )}
-          />
-        }
-      >
-        {value.length === 0 ? (
-          <span>Agregar</span>
-        ) : (
-          <BreakChips value={value} onRemove={onRemove} />
+      {/* El contenedor es un `div`, no un `<button>`: los chips llevan su propio
+          botón de "quitar" y un botón dentro de otro es HTML inválido (rompe la
+          hidratación). Solo el área de abrir/caret es el `PopoverTrigger`. */}
+      <div
+        className={cn(
+          inputVariants({ variant: resolvedVariant }),
+          inputTriggerVariants({ variant: resolvedVariant }),
+          "relative flex items-center gap-1.5",
         )}
-        <CaretDownIcon className="text-muted-foreground size-4 shrink-0" />
-      </PopoverTrigger>
+      >
+        {/* Trigger como overlay a pantalla completa (`absolute inset-0`) DETRÁS
+            de los chips: así cualquier click en el input abre el menú, sin
+            envolver los chips (evita el `<button>` anidado que rompía la
+            hidratación). Los chips van con `pointer-events-none` para dejar
+            pasar el click; solo la "X" de cada chip lo recupera. */}
+        <PopoverTrigger
+          render={
+            <button
+              type="button"
+              aria-label="Editar descansos"
+              className="absolute inset-0 z-0 cursor-pointer bg-transparent outline-none"
+            />
+          }
+        />
+        {value.length > 0 ? (
+          <BreakChips value={value} onRemove={onRemove} />
+        ) : (
+          <span className="pointer-events-none relative z-10 flex-1 text-muted-foreground">
+            Agregar
+          </span>
+        )}
+        <CaretDownIcon className="text-muted-foreground pointer-events-none relative z-10 size-4 shrink-0" />
+      </div>
       {/* `min-w-96` y no `w-auto` a secas: el editor lleva dos horas y el botón
           en una sola fila, y con el ancho por contenido la fila se quedaba
           corta y las etiquetas se salían de la caja. */}

@@ -17,7 +17,7 @@ function updateAcademicPeriod({
   values,
 }: UpdateAcademicPeriodInput): Promise<MutationResult> {
   return api.patch(
-    `/academic-periods/${id}`,
+    `/eval-col/periodos-academicos/${id}`,
     toCreateAcademicPeriodRequest(values)
   )
 }
