@@ -259,7 +259,11 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
         <NoticeOutlet />
 
         <div className="flex min-w-0 flex-col gap-4">
-          <Field variant="outlined">
+          <div className="grid sm:grid-cols-2 gap-x-4 gap-y-4">
+          <Field
+            variant="outlined"
+            className={cn(continued ? "" : "sm:col-span-2")}
+          >
             <FieldLabel htmlFor="rating-scale-levels">Niveles de enseñanza</FieldLabel>
             <TeachingLevelsMultiSelect
               id="rating-scale-levels"
@@ -268,6 +272,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
               onChange={setTeachingLevelIds}
             />
           </Field>
+          </div>
 
           {continued && (
             <form
