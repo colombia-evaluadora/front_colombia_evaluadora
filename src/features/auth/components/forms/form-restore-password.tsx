@@ -1,8 +1,16 @@
 import { useState } from "react"
 import { useForm } from "@tanstack/react-form"
-import { EyeIcon, EyeSlashIcon, InfoIcon, LockIcon } from "@/components/ui/icons"
+import {
+  CheckCircleIcon,
+  CircleIcon,
+  EyeIcon,
+  EyeSlashIcon,
+  InfoIcon,
+  LockIcon,
+} from "@/components/ui/icons"
 
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
+import { cn } from "@/lib/utils"
 import {
   InputGroup,
   InputGroupAddon,
@@ -10,11 +18,11 @@ import {
   InputGroupInput,
 } from "@/components/ui/input-group"
 
-import { restorePasswordFormSchema, type RestorePasswordFormValues } from "../../api/schema"
+import { passwordRules, restorePasswordFormSchema } from "../../api/schema"
 
 interface RestorePasswordFormProps {
   id: string
-  onSubmit: (values: RestorePasswordFormValues) => void
+  onSubmit: (values: { password: string; confirmPassword: string }) => void
 }
 
 export function RestorePasswordForm({ id, onSubmit }: RestorePasswordFormProps) {
@@ -25,7 +33,7 @@ export function RestorePasswordForm({ id, onSubmit }: RestorePasswordFormProps) 
     defaultValues: {
       password: "",
       confirmPassword: "",
-    } as RestorePasswordFormValues,
+    },
     validators: {
       onChange: restorePasswordFormSchema,
     },
@@ -44,7 +52,6 @@ export function RestorePasswordForm({ id, onSubmit }: RestorePasswordFormProps) 
         <form.Field name="password">
           {(field) => {
             const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
-            const isStrong = !isInvalid && field.state.value.length > 0
             return (
               <Field variant="outlined" data-invalid={isInvalid}>
                 <FieldLabel htmlFor={field.name}>Nueva contraseña</FieldLabel>
@@ -62,7 +69,7 @@ export function RestorePasswordForm({ id, onSubmit }: RestorePasswordFormProps) 
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value)}
                     aria-invalid={isInvalid}
-                    aria-describedby={`${field.name}-error`}
+                    aria-describedby={`${field.name}-feedback`}
                   />
                   <InputGroupAddon align="inline-end" className="mr-2">
                     <InputGroupButton
@@ -79,12 +86,37 @@ export function RestorePasswordForm({ id, onSubmit }: RestorePasswordFormProps) 
                 {isInvalid && (
                   <FieldError id={`${field.name}-error`} errors={field.state.meta.errors} />
                 )}
-                {isStrong && (
-                  <p className="text-green flex items-center gap-1 text-sm">
-                    <InfoIcon className="size-5 shrink-0" aria-hidden="true" />
-                    Fuerte
-                  </p>
-                )}
+
+                {/* El checklist comparte la única fuente de verdad con la
+                    validación (`passwordRules`): agregar/sacar una regla
+                    actualiza la UI y el schema al mismo tiempo. `aria-live`
+                    para que el screen reader anuncie cuando una regla pasa. */}
+                <ul
+                  id={`${field.name}-feedback`}
+                  aria-live="polite"
+                  className="grid gap-1 text-sm"
+                >
+                  {passwordRules.map((rule) => {
+                    const met = rule.test(field.state.value)
+                    return (
+                      <li
+                        key={rule.label}
+                        className={cn(
+                          "flex items-center gap-1.5 transition-colors",
+                          met ? "text-green" : "text-muted-foreground",
+                        )}
+                      >
+                        {met ? (
+                          <CheckCircleIcon className="size-4 shrink-0" aria-hidden="true" />
+                        ) : (
+                          <CircleIcon className="size-4 shrink-0" aria-hidden="true" />
+                        )}
+                        <span>{rule.label}</span>
+                        <span className="sr-only">{met ? "cumplida" : "pendiente"}</span>
+                      </li>
+                    )
+                  })}
+                </ul>
               </Field>
             )
           }}

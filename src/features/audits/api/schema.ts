@@ -33,7 +33,10 @@ function refineDateRange<T extends Record<string, unknown>>(
 
 export const auditFiltersFormSchema = z.object({
   author: z.string(),
-  statuses: z.array(z.enum(SESSION_STATUSES)),
+  // Selección única (`ToggleGroup` con `multiple={false}`). El string vacío
+  // es "sin filtro". La URL/serialización siguen esperando un array
+  // (`statuses`) — la conversión se hace en `useAuditSessionFilters`.
+  status: z.string(),
   // yyyy-MM-dd, string en vez de Date para que el form/URL los serialicen igual.
   startedFrom: z.string(),
   startedTo: z.string(),

@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input"
 import { Field, FieldLabel } from "@/components/ui/field"
 
 import {
-  auditTablesFiltersFormSchema,
   type AuditTablesFiltersFormInput,
   type AuditTablesFiltersFormValues,
 } from "../../api/schema"
@@ -19,11 +18,13 @@ interface FilterAuditTablesFormProps {
 }
 
 export function FilterAuditTablesForm({ id, defaultValues, onSubmit }: FilterAuditTablesFormProps) {
+  // Este form es un "buscar al tipear" sin botón submit: el debounce vive en
+  // el `validator.onChangeAsync` del campo y dispara la consulta cuando el
+  // usuario deja de escribir. No declaramos `validators.onSubmit` ni
+  // `onSubmit` en el `useForm` porque nunca se ejecutarían — el submit real
+  // lo hace el campo, no el form.
   const form = useForm({
     defaultValues,
-    validators: {
-      onSubmit: auditTablesFiltersFormSchema,
-    },
   })
 
   return (
@@ -31,7 +32,6 @@ export function FilterAuditTablesForm({ id, defaultValues, onSubmit }: FilterAud
       id={id}
       onSubmit={(e) => {
         e.preventDefault()
-        form.handleSubmit()
       }}
       className="flex flex-col gap-2"
     >
@@ -55,12 +55,13 @@ export function FilterAuditTablesForm({ id, defaultValues, onSubmit }: FilterAud
                 name={field.name}
                 type="search"
                 variant="outlined"
+                size="sm"
                 autoComplete="off"
                 placeholder="Agregar"
                 value={field.state.value}
                 onBlur={field.handleBlur}
                 onChange={(event) => field.handleChange(event.target.value)}
-                className="h-9 rounded-md pl-8"
+                className="rounded-md pl-8"
               />
             </div>
           </Field>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { format } from "date-fns"
 
 import { DatePicker } from "@/components/date-picker"
@@ -71,14 +71,22 @@ export function UserDetailsForm({
     // —en el diálogo de usuario lo duplicaba—, así que se omite.
     const roleName = EMPLOYEE_ROLES.find((item) => item.code === role)?.name ?? null
 
-    const {data: documentTypes = []} = useCatalogQuery<CatalogItem>(CATALOGS.DOCUMENT_TYPES)
-    const {data: genders = []} = useCatalogQuery<CatalogItem>(CATALOGS.GENDERS)
-    const documentTypeItems = documentTypes.map(item => ({ value: item.id, label: item.name }))
-    const genderItems = genders.map(item => ({ value: item.id, label: item.name }))
+    const { data: documentTypes = [] } = useCatalogQuery<CatalogItem>(CATALOGS.DOCUMENT_TYPES)
+    const { data: genders = [] } = useCatalogQuery<CatalogItem>(CATALOGS.GENDERS)
+    const documentTypeLabels = Object.fromEntries(documentTypes.map((item) => [item.id, item.name]))
+    const genderLabels = Object.fromEntries(genders.map((item) => [item.id, item.name]))
     const person = value ?? createEmptyPerson()
 
     const isConfirmControlled = confirmPasswordProp !== undefined
-    const [internalConfirmPassword, setInternalConfirmPassword] = useState("")
+    // El form puede correr en dos modos:
+    // - **Controlado**: el padre pasa `confirmPassword` y `onConfirmPasswordChange`
+    //   (necesita el valor para su propia validación, ver
+    //   `validate-establishment-form.ts`). El form es un espejo.
+    // - **No controlado**: el form guarda el valor localmente. Como `confirmPassword`
+    //   no es parte del modelo `Person`, queda acá hasta el submit.
+    const [internalConfirmPassword, setInternalConfirmPassword] = useState(
+        () => person.password,
+    )
     const confirmPassword = isConfirmControlled ? confirmPasswordProp : internalConfirmPassword
 
     // Foto del usuario: estado puramente UI. Hoy no se persiste en el
@@ -86,17 +94,18 @@ export function UserDetailsForm({
     // el diálogo está montado.
     const [photo, setPhoto] = useState<File | null>(null)
 
-    // Al cargar un registro existente, sincroniza la confirmación con la
-    // contraseña persistida solo si el usuario aún no la ha tocado.
+    // Sincroniza la confirmación cuando el padre **carga otra persona** (no
+    // solo edita la actual). El `useEffect` original re-sincronizaba cada vez
+    // que el confirm quedaba vacío, pisando la edición del usuario sin razón.
+    // Ahora solo dispara cuando cambia el `id` — la "primera vez" + cada
+    // carga de un registro distinto.
+    const lastSeenId = useRef(person.id)
     useEffect(() => {
-        if (isConfirmControlled) {
-            return
-        }
-
-        if (internalConfirmPassword === "" && person.password !== "") {
-            setInternalConfirmPassword(person.password)
-        }
-    }, [isConfirmControlled, internalConfirmPassword, person.password])
+        if (isConfirmControlled) return
+        if (lastSeenId.current === person.id) return
+        lastSeenId.current = person.id
+        setInternalConfirmPassword(person.password)
+    }, [isConfirmControlled, person.id, person.password])
 
     const setConfirmPassword = (next: string) => {
         if (isConfirmControlled) {
@@ -150,21 +159,21 @@ export function UserDetailsForm({
 
                     <Select
                         id="document-type"
+                        items={documentTypeLabels}
                         aria-invalid={isInvalid(`${fieldPrefix}.documentType`)}
                         value={person.documentType.id}
                         onValueChange={(selectedValue) => {
                             const option = documentTypes.find((item) => item.id === selectedValue)
                             emitChange({ documentType: option ?? { id: selectedValue ?? "", code: selectedValue ?? "", name: selectedValue ?? "" } })
                         }}
-                        items={documentTypeItems}
                     >
-                        <SelectTrigger aria-invalid={isInvalid(`${fieldPrefix}.documentType`)}>
+                        <SelectTrigger size="sm" aria-invalid={isInvalid(`${fieldPrefix}.documentType`)}>
                             <SelectValue placeholder="Seleccionar" />
                         </SelectTrigger>
                         <SelectContent>
-                            {documentTypeItems.map((item) => (
-                                <SelectItem key={item.value} value={item.value}>
-                                    {item.label}
+                            {documentTypes.map((item) => (
+                                <SelectItem key={item.id} value={item.id}>
+                                    {item.name}
                                 </SelectItem>
                             ))}
                         </SelectContent>
@@ -176,6 +185,7 @@ export function UserDetailsForm({
                     <FieldLabel htmlFor="document-number">Número de documento*</FieldLabel>
                     <Input
                         id="document-number"
+                        size="sm"
                         placeholder="Agregar"
                         value={person.identification}
                         aria-invalid={isInvalid(`${fieldPrefix}.identification`)}
@@ -188,6 +198,7 @@ export function UserDetailsForm({
                     <FieldLabel htmlFor="user-name">Primer Nombre*</FieldLabel>
                     <Input
                         id="user-name"
+                        size="sm"
                         placeholder="Agregar"
                         value={person.firstName}
                         aria-invalid={isInvalid(`${fieldPrefix}.firstName`)}
@@ -200,6 +211,7 @@ export function UserDetailsForm({
                     <FieldLabel htmlFor="user-second-name">Segundo Nombre</FieldLabel>
                     <Input
                         id="user-second-name"
+                        size="sm"
                         placeholder="Agregar"
                         value={person.middleName ?? ""}
                         onChange={(event) => emitChange({ middleName: event.target.value })}
@@ -210,6 +222,7 @@ export function UserDetailsForm({
                     <FieldLabel htmlFor="user-last-name">Primer Apellido*</FieldLabel>
                     <Input
                         id="user-last-name"
+                        size="sm"
                         placeholder="Agregar"
                         value={person.lastName}
                         aria-invalid={isInvalid(`${fieldPrefix}.lastName`)}
@@ -222,6 +235,7 @@ export function UserDetailsForm({
                     <FieldLabel htmlFor="user-second-last-name">Segundo Apellido</FieldLabel>
                     <Input
                         id="user-second-last-name"
+                        size="sm"
                         placeholder="Agregar"
                         value={person.secondLastName ?? ""}
                         onChange={(event) => emitChange({ secondLastName: event.target.value })}
@@ -233,6 +247,7 @@ export function UserDetailsForm({
                     <FieldLabel htmlFor="user-email">Correo Electrónico</FieldLabel>
                     <Input
                         id="user-email"
+                        size="sm"
                         placeholder="Agregar"
                         value={person.email}
                         aria-invalid={isInvalid(`${fieldPrefix}.email`)}
@@ -243,6 +258,7 @@ export function UserDetailsForm({
                     <FieldLabel htmlFor="user-password">Contraseña</FieldLabel>
                     <Input
                         id="user-password"
+                        size="sm"
                         placeholder="Agregar"
                         type="password"
                         value={person.password}
@@ -255,6 +271,7 @@ export function UserDetailsForm({
                     <FieldLabel htmlFor="user-confirm-password">Confirmar Contraseña</FieldLabel>
                     <Input
                         id="user-confirm-password"
+                        size="sm"
                         placeholder="Agregar"
                         type="password"
                         value={confirmPassword}
@@ -272,6 +289,7 @@ export function UserDetailsForm({
                     <DatePicker
                         id="birth-date"
                         mode="date"
+                        size="sm"
                         value={parseDateValue(person.birthDate)}
                         aria-invalid={isInvalid(`${fieldPrefix}.birthDate`)}
                         onChange={(date) => emitChange({ birthDate: date ? format(date, DATE_VALUE_FORMAT) : "" })}
@@ -283,21 +301,21 @@ export function UserDetailsForm({
                     </FieldLabel>
                     <Select
                         id="gender-user"
+                        items={genderLabels}
                         aria-invalid={isInvalid(`${fieldPrefix}.gender`)}
                         value={person.gender.id}
                         onValueChange={(selectedValue) => {
                             const option = genders.find((item) => item.id === selectedValue)
                             emitChange({ gender: option ?? { id: selectedValue ?? "", code: selectedValue ?? "", name: selectedValue ?? "" } })
                         }}
-                        items={genderItems}
                     >
-                        <SelectTrigger aria-invalid={isInvalid(`${fieldPrefix}.gender`)}>
+                        <SelectTrigger size="sm" aria-invalid={isInvalid(`${fieldPrefix}.gender`)}>
                             <SelectValue placeholder="Seleccionar" />
                         </SelectTrigger>
                         <SelectContent>
-                            {genderItems.map((item) => (
-                                <SelectItem key={item.value} value={item.value}>
-                                    {item.label}
+                            {genders.map((item) => (
+                                <SelectItem key={item.id} value={item.id}>
+                                    {item.name}
                                 </SelectItem>
                             ))}
                         </SelectContent>
@@ -307,6 +325,7 @@ export function UserDetailsForm({
                     <FieldLabel htmlFor="user-phone">Teléfono</FieldLabel>
                     <Input
                         id="user-phone"
+                        size="sm"
                         placeholder="Agregar"
                         type="tel"
                         value={person.phone}

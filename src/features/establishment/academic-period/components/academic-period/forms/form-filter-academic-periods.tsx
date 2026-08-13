@@ -21,17 +21,16 @@ import { useAcademicPeriodStatusesQuery } from "../../../api/query/academic-peri
 import { DatePicker } from "@/components/date-picker"
 import { formatDateValue, parseDateValue } from "@/lib/date-value"
 
+// Sentinel de "sin filtro" para los selects del filtro: el string vacío no
+// distingue entre "no elegiste" y "elegiste explícitamente vacío". El `value`
+// `""` queda como "sin filtro", y la opción visible "Todos" usa este sentinel
+// solo cuando el usuario decide borrar el filtro de un click.
 const ALL_VALUE = ""
 
 const YEAR_OPTIONS = Array.from(
   { length: new Date().getFullYear() - 2020 + 1 },
   (_, i) => new Date().getFullYear() - i,
 )
-
-const yearItems: Record<string, React.ReactNode> = {
-  [ALL_VALUE]: "Todos",
-  ...Object.fromEntries(YEAR_OPTIONS.map((year) => [String(year), year])),
-}
 
 interface FilterAcademicPeriodsFormProps {
   id: string
@@ -51,19 +50,22 @@ export function FilterAcademicPeriodsForm({
     validators: {
       onSubmit: academicPeriodsFiltersFormSchema,
     },
-    onSubmit: ({ value }) => {
-      onSubmit(academicPeriodsFiltersFormSchema.parse(value))
-    },
+    onSubmit: ({ value }) => onSubmit(value),
   })
 
   const { data: statusOptions = [] } = useAcademicPeriodStatusesQuery()
 
-  const statusItems = useMemo<Record<string, React.ReactNode>>(
-    () => ({
-      [ALL_VALUE]: "Todos",
-      ...Object.fromEntries(statusOptions.map((o) => [o.key, o.label])),
-    }),
+  // `items` mapea value → label para el trigger. La opción "Todos" no se
+  // incluye acá: cuando el value es `""`, el select muestra el `placeholder`
+  // (que también es "Todos"). Así "Todos" nunca llega al form como dato.
+  const statusItems = useMemo<Record<string, string>>(
+    () => Object.fromEntries(statusOptions.map((o) => [o.key, o.label])),
     [statusOptions],
+  )
+
+  const yearItems = useMemo<Record<string, string>>(
+    () => Object.fromEntries(YEAR_OPTIONS.map((year) => [String(year), String(year)])),
+    [],
   )
 
   return (
@@ -87,12 +89,12 @@ export function FilterAcademicPeriodsForm({
                   id={field.name}
                   name={field.name}
                   type="text"
+                  size="sm"
                   autoComplete="off"
                   placeholder="Agregar"
                   value={field.state.value}
                   onBlur={field.handleBlur}
                   onChange={(event) => field.handleChange(event.target.value)}
-                  className="h-9"
                 />
               </Field>
             )}
@@ -100,57 +102,73 @@ export function FilterAcademicPeriodsForm({
         )}
 
         <form.Field name="schoolYearId">
-          {(field) => (
-            <Field orientation="vertical" variant="outlined" className="gap-2">
-              <FieldLabel htmlFor={field.name}>Año lectivo</FieldLabel>
-              <Select
-                items={yearItems}
-                value={field.state.value}
-                onValueChange={(value) => field.handleChange(value ?? "")}
+          {(field) => {
+            const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
+            return (
+              <Field
+                orientation="vertical"
+                variant="outlined"
+                className="gap-2"
+                data-invalid={isInvalid ? "true" : undefined}
               >
-                <SelectTrigger id={field.name} size="sm" className="w-full">
-                  <SelectValue placeholder="Todos" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem value={ALL_VALUE}>Todos</SelectItem>
-                    {YEAR_OPTIONS.map((year) => (
-                      <SelectItem key={year} value={String(year)}>
-                        {year}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </Field>
-          )}
+                <FieldLabel htmlFor={field.name}>Año lectivo</FieldLabel>
+                <Select
+                  items={yearItems}
+                  value={field.state.value}
+                  onValueChange={(value) => field.handleChange(value ?? "")}
+                >
+                  <SelectTrigger id={field.name} size="sm" className="w-full" aria-invalid={isInvalid}>
+                    <SelectValue placeholder="Todos" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectItem value={ALL_VALUE}>Todos</SelectItem>
+                      {YEAR_OPTIONS.map((year) => (
+                        <SelectItem key={year} value={String(year)}>
+                          {year}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </Field>
+            )
+          }}
         </form.Field>
 
         <form.Field name="status">
-          {(field) => (
-            <Field orientation="vertical" variant="outlined" className="gap-2">
-              <FieldLabel htmlFor={field.name}>Estado</FieldLabel>
-              <Select
-                items={statusItems}
-                value={field.state.value}
-                onValueChange={(value) => field.handleChange(value ?? "")}
+          {(field) => {
+            const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
+            return (
+              <Field
+                orientation="vertical"
+                variant="outlined"
+                className="gap-2"
+                data-invalid={isInvalid ? "true" : undefined}
               >
-                <SelectTrigger id={field.name} size="sm" className="w-full">
-                  <SelectValue placeholder="Todos" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem value={ALL_VALUE}>Todos</SelectItem>
-                    {statusOptions.map((option) => (
-                      <SelectItem key={option.key} value={option.key}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </Field>
-          )}
+                <FieldLabel htmlFor={field.name}>Estado</FieldLabel>
+                <Select
+                  items={statusItems}
+                  value={field.state.value}
+                  onValueChange={(value) => field.handleChange(value ?? "")}
+                >
+                  <SelectTrigger id={field.name} size="sm" className="w-full" aria-invalid={isInvalid}>
+                    <SelectValue placeholder="Todos" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectItem value={ALL_VALUE}>Todos</SelectItem>
+                      {statusOptions.map((option) => (
+                        <SelectItem key={option.key} value={option.key}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </Field>
+            )
+          }}
         </form.Field>
       </div>
 
@@ -166,27 +184,36 @@ export function FilterAcademicPeriodsForm({
                 <DatePicker
                   mode="date"
                   id={field.name}
+                  size="sm"
                   value={parseDateValue(field.state.value)}
                   onChange={(date) => field.handleChange(formatDateValue(date))}
-                  className="h-9"
                 />
               </Field>
             )}
           </form.Field>
 
           <form.Field name="startTo">
-            {(field) => (
-              <Field orientation="vertical" variant="outlined" className="gap-2">
-                <FieldLabel htmlFor={field.name}>Inicio hasta</FieldLabel>
-                <DatePicker
-                  mode="date"
-                  id={field.name}
-                  value={parseDateValue(field.state.value)}
-                  onChange={(date) => field.handleChange(formatDateValue(date))}
-                  className="h-9"
-                />
-              </Field>
-            )}
+            {(field) => {
+              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
+              return (
+                <Field
+                  orientation="vertical"
+                  variant="outlined"
+                  className="gap-2"
+                  data-invalid={isInvalid ? "true" : undefined}
+                >
+                  <FieldLabel htmlFor={field.name}>Inicio hasta</FieldLabel>
+                  <DatePicker
+                    mode="date"
+                    id={field.name}
+                    size="sm"
+                    aria-invalid={isInvalid}
+                    value={parseDateValue(field.state.value)}
+                    onChange={(date) => field.handleChange(formatDateValue(date))}
+                  />
+                </Field>
+              )
+            }}
           </form.Field>
         </div>
       </FieldSet>

@@ -34,7 +34,7 @@ export function LoginForm({ id, onSubmit }: LoginFormProps) {
       email: "",
       password: "",
       rememberMe: false,
-    } as LoginFormValues,
+    },
     validators: {
       onChange: loginFormSchema,
     },
