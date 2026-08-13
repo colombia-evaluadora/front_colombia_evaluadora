@@ -5,7 +5,7 @@ import type { MutationConfig } from "@/lib/react-query"
 import type {
   BulkCreateRatingScalesRequest,
   RatingScale,
-} from "@/features/establishment/academic-period/types/rating-scales"
+} from "@/features/establishment/academic-period/api/types/rating-scales"
 
 // Alta en lote: el backend expande por nivel de enseñanza y asigna los códigos.
 function createRatingScalesBulk(

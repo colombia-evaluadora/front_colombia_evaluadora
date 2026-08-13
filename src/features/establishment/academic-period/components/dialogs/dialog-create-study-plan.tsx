@@ -37,8 +37,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
-import { useCreateStudyPlanItem } from "@/features/establishment/api/mutations/study-plans/create-study-plan"
-import { useUpdateStudyPlanItem } from "@/features/establishment/api/mutations/study-plans/update-study-plan"
+import { useCreateStudyPlanItem } from "@/features/establishment/academic-period/api/mutations/create-study-plan"
+import { useUpdateStudyPlanItem } from "@/features/establishment/academic-period/api/mutations/update-study-plan"
 import { useSubjectsQuery } from "@/features/establishment/academic-period/api/query/use-subjects"
 import { useEvaluationCriteriaQuery } from "@/features/establishment/academic-period/api/query/use-evaluation-criteria"
 import { useEvaluationCriteriaOptionsQuery } from "@/features/establishment/academic-period/api/query/use-evaluation-criteria-options"

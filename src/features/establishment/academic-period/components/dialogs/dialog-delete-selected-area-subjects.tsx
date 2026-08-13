@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 
-import { useDeleteAreaSubjectsBulk } from "@/features/establishment/api/mutations/area-subjects/delete-area-subjects-bulk"
+import { useDeleteAreaSubjectsBulk } from "@/features/establishment/academic-period/api/mutations/delete-area-subjects-bulk"
 
 interface DeleteSelectedAreaSubjectsDialogProps {
   selectedIds: string[]

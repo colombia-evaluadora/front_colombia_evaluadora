@@ -11,7 +11,7 @@ import { Pagination } from "@/components/pagination"
 import { useDataTable } from "@/hooks/use-data-table"
 
 import { useNotify, NoticeOutlet } from "@/components/notice/notice-context"
-import { SearchAcademicAssignments } from "@/features/establishment/academic-period/components/search-academic-assignments"
+import { SearchAcademicAssignments } from "@/features/establishment/academic-period/components/search/search-academic-assignments"
 import { ExportAcademicAssignmentsDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-export-academic-assignments"
 import { ExportSelectedAcademicAssignmentsDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-export-selected-academic-assignments"
 
@@ -21,7 +21,7 @@ import type { EmployeeListItem, EmployeeStatus } from "@/features/establishment/
 import { useAssignmentSubjectsQuery } from "@/features/establishment/academic-period/api/query/use-assignment-subjects"
 import { useTeacherAssignmentsQuery } from "@/features/establishment/academic-period/api/query/use-teacher-assignments"
 import { useAcademicPeriodQuery } from "@/features/establishment/academic-period/api/query/use-academic-period"
-import { useSaveTeacherAssignments } from "@/features/establishment/api/mutations/academic-assignments/save-teacher-assignments"
+import { useSaveTeacherAssignments } from "@/features/establishment/academic-period/api/mutations/save-teacher-assignments"
 import { createAcademicAssignmentColumns } from "@/features/establishment/academic-period/components/table/columns-academic-assignments"
 import { AssignmentTransfer } from "@/features/establishment/academic-period/components/assignment-transfer"
 

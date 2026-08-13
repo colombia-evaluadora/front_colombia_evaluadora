@@ -53,7 +53,7 @@ import type { RatingScaleType } from "@/features/establishment/academic-period/a
 import { RatingSymbolSelect, RatingSymbolView } from "@/features/establishment/academic-period/components/rating-symbol"
 import { makeRatingScaleGradesSchema, parseGradingRange, type GradingRange } from "@/features/establishment/academic-period/components/grading-range"
 import { TeachingLevelsMultiSelect } from "@/features/establishment/academic-period/components/teaching-levels-multi-select"
-import { ScaleSortableHeader, compareByScaleKey, type ScaleSort } from "@/features/establishment/academic-period/components/table/scale-sort-header"
+import { ScaleSortableHeader, compareByScaleKey, type ScaleSort } from "@/features/establishment/academic-period/components/scale-sort-header"
 import { useRowEdit } from "@/features/establishment/academic-period/hooks/use-row-edit"
 
 /*

@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 
-import { useDeleteStudyPlanItem } from "@/features/establishment/api/mutations/study-plans/delete-study-plan"
+import { useDeleteStudyPlanItem } from "@/features/establishment/academic-period/api/mutations/delete-study-plan"
 import type { StudyPlanItem } from "@/features/establishment/academic-period/api/types/study-plan"
 
 interface DeleteStudyPlanDialogProps {

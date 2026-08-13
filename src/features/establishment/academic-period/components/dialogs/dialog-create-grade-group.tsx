@@ -31,8 +31,8 @@ import {
 
 import { useEmployeesQuery } from "@/features/establishment/employees/api/query/use-employees"
 
-import { useCreateGradeGroup } from "@/features/establishment/api/mutations/grades/create-grade-group"
-import { useUpdateGradeGroup } from "@/features/establishment/api/mutations/grades/update-grade-group"
+import { useCreateGradeGroup } from "@/features/establishment/academic-period/api/mutations/create-grade-group"
+import { useUpdateGradeGroup } from "@/features/establishment/academic-period/api/mutations/update-grade-group"
 import { useMetodologiasQuery } from "@/features/establishment/academic-period/api/query/use-metodologias"
 import { useAcademicPeriodQuery } from "@/features/establishment/academic-period/api/query/use-academic-period"
 import { useJornadasQuery } from "@/features/establishment/academic-period/api/query/use-jornadas"

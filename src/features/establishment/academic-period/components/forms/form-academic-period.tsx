@@ -15,13 +15,13 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
-import { BreaksField } from "@/features/establishment/academic-period/components/forms/breaks-field"
+import { BreaksField } from "@/features/establishment/academic-period/components/breaks-field"
 
 import { useCampusesOptionsQuery } from "@/features/establishment/campuses/api/query/use-campuses-options"
 
-import { useAcademicPeriodsQuery } from "@/features/establishment/academic-period/api/query/use-academic-periods-query"
-import { useAcademicPeriodStatusesQuery } from "@/features/establishment/academic-period/api/query/use-academic-period-statuses-query"
-import { useJornadasQuery } from "@/features/establishment/academic-period/api/query/use-jornadas-query"
+import { useAcademicPeriodsQuery } from "@/features/establishment/academic-period/api/query/use-academic-periods"
+import { useAcademicPeriodStatusesQuery } from "@/features/establishment/academic-period/api/query/use-academic-period-statuses"
+import { useJornadasQuery } from "@/features/establishment/academic-period/api/query/use-jornadas"
 import {
   academicPeriodFormSchema,
   type AcademicPeriodFormInput,

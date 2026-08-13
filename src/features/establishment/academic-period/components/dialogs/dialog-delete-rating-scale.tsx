@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 
-import { useDeleteRatingScale } from "@/features/establishment/api/mutations/rating-scales/delete-rating-scale"
+import { useDeleteRatingScale } from "@/features/establishment/academic-period/api/mutations/delete-rating-scale"
 import type { RatingScale } from "@/features/establishment/academic-period/api/types/rating-scales"
 
 interface DeleteRatingScaleDialogProps {

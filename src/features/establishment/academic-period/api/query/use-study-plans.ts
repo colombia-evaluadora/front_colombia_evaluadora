@@ -4,7 +4,7 @@ import { api } from "@/lib/api-client"
 import type {
   StudyPlanQueryRequest,
   StudyPlanQueryResponse,
-} from "@/features/establishment/academic-period/types/study-plan"
+} from "@/features/establishment/academic-period/api/types/study-plan"
 
 interface UseStudyPlansQueryParams {
   filters: StudyPlanQueryRequest["filters"]

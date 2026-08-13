@@ -33,10 +33,10 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
-import { useCreateEvaluationPeriod } from "@/features/establishment/api/mutations/evaluation-periods/create-evaluation-period"
-import { useUpdateEvaluationPeriod } from "@/features/establishment/api/mutations/evaluation-periods/update-evaluation-period"
+import { useCreateEvaluationPeriod } from "@/features/establishment/academic-period/api/mutations/create-evaluation-period"
+import { useUpdateEvaluationPeriod } from "@/features/establishment/academic-period/api/mutations/update-evaluation-period"
 import { useEvaluationPeriodsQuery } from "@/features/establishment/academic-period/api/query/use-evaluation-periods"
-import { useEvaluationPeriodStatusesQuery } from "@/features/establishment/api/query/evaluation-periods/use-evaluation-period-statuses-query"
+import { useEvaluationPeriodStatusesQuery } from "@/features/establishment/academic-period/api/query/use-evaluation-period-statuses"
 import { useAcademicPeriodQuery } from "@/features/establishment/academic-period/api/query/use-academic-period"
 import type { EvaluationPeriod, EvaluationPeriodStatus } from "@/features/establishment/academic-period/api/types/evaluation-period"
 import { DatePicker } from "@/components/date-picker"

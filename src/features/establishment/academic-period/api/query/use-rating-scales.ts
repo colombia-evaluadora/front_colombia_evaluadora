@@ -4,7 +4,7 @@ import { api } from "@/lib/api-client"
 import type {
   RatingScalesQueryRequest,
   RatingScalesQueryResponse,
-} from "@/features/establishment/academic-period/types/rating-scales"
+} from "@/features/establishment/academic-period/api/types/rating-scales"
 
 interface UseRatingScalesQueryParams {
   filters: RatingScalesQueryRequest["filters"]

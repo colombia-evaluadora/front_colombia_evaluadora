@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 
-import { useDeleteAcademicPeriod } from "@/features/establishment/api/mutations/academic-period/delete-academic-period"
+import { useDeleteAcademicPeriod } from "@/features/establishment/academic-period/api/mutations/delete-academic-period"
 import type { AcademicPeriod } from "@/features/establishment/academic-period/api/types/academic-period"
 
 interface DeleteAcademicPeriodDialogProps {

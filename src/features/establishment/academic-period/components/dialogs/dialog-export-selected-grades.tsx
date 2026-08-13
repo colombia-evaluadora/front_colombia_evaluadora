@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 
-import { useExportSelectedGrades } from "@/features/establishment/api/mutations/grades/export-selected-grades"
+import { useExportSelectedGrades } from "@/features/establishment/academic-period/api/mutations/export-selected-grades"
 import type { ExportFormat } from "@/features/establishment/academic-period/api/types/grade"
 
 interface ExportSelectedGradesDialogProps {

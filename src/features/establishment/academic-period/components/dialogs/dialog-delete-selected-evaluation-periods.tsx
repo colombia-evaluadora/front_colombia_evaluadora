@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 
-import { useDeleteEvaluationPeriodsBulk } from "@/features/establishment/api/mutations/evaluation-periods/delete-evaluation-periods-bulk"
+import { useDeleteEvaluationPeriodsBulk } from "@/features/establishment/academic-period/api/mutations/delete-evaluation-periods-bulk"
 
 interface DeleteSelectedEvaluationPeriodsDialogProps {
   selectedIds: string[]

@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
-import type { RatingScaleTypeOption } from "@/features/establishment/academic-period/types/rating-scales"
+import type { RatingScaleTypeOption } from "@/features/establishment/academic-period/api/types/rating-scales"
 
 function fetchRatingScaleTypes(): Promise<RatingScaleTypeOption[]> {
   return api.get("/rating-scale-types")
