@@ -15,16 +15,16 @@ import {
   TableScreenToolbar,
 } from "@/components/layout/table-screen"
 
-import { useReservationsQuery } from "../../api/query/use-reservations-query"
-import { useReservationFilters } from "../../hooks/use-reservation-filters"
+import { useReservationsQuery } from "@/features/coverage/api/query/use-reservations-query"
+import { useReservationFilters } from "@/features/coverage/hooks/use-reservation-filters"
 
-import { columns } from "./columns-reservations"
-import { SearchReservations } from "../search/search-reservations"
-import { CreateReservationSheet } from "../sheets/sheet-create-reservation"
-import { ExportReservationsDialog } from "../dialogs/dialog-export-reservations"
-import { ExportSelectedReservationsDialog } from "../dialogs/dialog-export-selected-reservations"
-import { ClearSelectionReservationsDialog } from "../dialogs/dialog-clear-selection-reservations"
-import { ReservationStatsCards } from "../stats/reservation-stats-cards"
+import { columns } from "@/features/coverage/components/table/columns-reservations"
+import { SearchReservations } from "@/features/coverage/components/search/search-reservations"
+import { CreateReservationSheet } from "@/features/coverage/components/sheets/sheet-create-reservation"
+import { ExportReservationsDialog } from "@/features/coverage/components/dialogs/dialog-export-reservations"
+import { ExportSelectedReservationsDialog } from "@/features/coverage/components/dialogs/dialog-export-selected-reservations"
+import { ClearSelectionReservationsDialog } from "@/features/coverage/components/dialogs/dialog-clear-selection-reservations"
+import { ReservationStatsCards } from "@/features/coverage/components/stats/reservation-stats-cards"
 
 interface ReservationsDataTableProps {
   title: ReactNode

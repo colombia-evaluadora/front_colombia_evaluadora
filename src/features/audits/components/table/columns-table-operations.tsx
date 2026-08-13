@@ -6,10 +6,10 @@ import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { DataTableColumnHeader } from "@/components/data-table"
 
-import { OPERATION_TYPE_BADGE } from "../../api/ui-mappings"
-import { useAuditOperationTypesQuery } from "../../api/query/use-audit-operation-types-query"
-import type { OperationType, TableOperation } from "../../api/types/audit-table"
-import { ViewOperationChangesDialog } from "../dialogs/dialog-view-operation-changes"
+import { OPERATION_TYPE_BADGE } from "@/features/audits/api/ui-mappings"
+import { useAuditOperationTypesQuery } from "@/features/audits/api/query/use-audit-operation-types-query"
+import type { OperationType, TableOperation } from "@/features/audits/api/types/audit-table"
+import { ViewOperationChangesDialog } from "@/features/audits/components/dialogs/dialog-view-operation-changes"
 
 // El label del tipo de operación lo entrega el backend (`{ key, label }`).
 // Si la query todavía no llegó, caemos al `key` como fallback para no

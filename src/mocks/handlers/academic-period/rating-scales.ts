@@ -5,8 +5,8 @@ import {
   teachingLevelsDb,
   resolveTeachingLevels,
   nextRatingScaleId,
-} from "../../db/academic-period/rating-scales"
-import { ratingSymbolsDb } from "../../db/academic-period/rating-symbols"
+} from "@/mocks/db/academic-period/rating-scales"
+import { ratingSymbolsDb } from "@/mocks/db/academic-period/rating-symbols"
 import type {
   RatingScale,
   RatingScaleRecord,

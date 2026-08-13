@@ -4,15 +4,15 @@ import type {
   Establishment,
   EstablishmentDetails,
   EstablishmentStatus,
-} from "@/features/establishment/api/types/establishment"
-import type { CatalogItem } from "@/features/establishment/api/types/catalog"
-import type { Municipality } from "@/features/establishment/api/types/location"
-import type { Person } from "@/features/establishment/api/types/person"
-import { CALENDARS, COST_REGIMEN, DISABILITIES, IDIOMAS, LEGAL_TYPES, LICENSE_STATUSES, RANGO_TARIFAS, ZONES } from "../db/catalogs/establishment"
-import { DOCUMENT_TYPES } from "../db/catalogs/document-types"
-import { GENDERS } from "../db/catalogs/genders"
-import { POPULATION_GENDERS } from "../db/catalogs/population-genders"
-import { MUNICIPALITIES } from "../db/catalogs/municipalities"
+} from "@/features/establishment/institution/api/types/establishment"
+import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
+import type { Municipality } from "@/features/establishment/institution/api/types/location"
+import type { Person } from "@/features/establishment/employees/api/types/person"
+import { CALENDARS, COST_REGIMEN, DISABILITIES, IDIOMAS, LEGAL_TYPES, LICENSE_STATUSES, RANGO_TARIFAS, ZONES } from "@/mocks/db/catalogs/establishment"
+import { DOCUMENT_TYPES } from "@/mocks/db/catalogs/document-types"
+import { GENDERS } from "@/mocks/db/catalogs/genders"
+import { POPULATION_GENDERS } from "@/mocks/db/catalogs/population-genders"
+import { MUNICIPALITIES } from "@/mocks/db/catalogs/municipalities"
 
 faker.seed(20260722)
 

@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
-import type { ReservationsQueryRequest, ReservationsQueryResponse } from "../types/reservation"
+import type { ReservationsQueryRequest, ReservationsQueryResponse } from "@/features/coverage/api/types/reservation"
 
 interface UseReservationsQueryParams {
   filters: ReservationsQueryRequest["filters"]

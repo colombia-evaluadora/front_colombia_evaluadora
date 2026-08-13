@@ -1,4 +1,4 @@
-import { AuditTablesDataTable } from "../components/table/audit-tables-grid"
+import { AuditTablesDataTable } from "@/features/audits/components/table/audit-tables-grid"
 
 export function AuditTablesPage() {
   return (

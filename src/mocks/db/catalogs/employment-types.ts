@@ -1,4 +1,4 @@
-import type { CatalogItem } from "@/features/establishment/api/types/catalog"
+import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 
 export const EMPLOYMENT_TYPES: CatalogItem[] = [
   { id: "full-time", code: "FULL_TIME", name: "Tiempo completo" },

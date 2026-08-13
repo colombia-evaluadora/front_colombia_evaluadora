@@ -1,6 +1,6 @@
 import preview from "../../../../.storybook/preview"
-import { Button } from "../button"
-import { ButtonGroup, ButtonGroupSeparator, ButtonGroupText } from "../button-group"
+import { Button } from "@/components/ui/button"
+import { ButtonGroup, ButtonGroupSeparator, ButtonGroupText } from "@/components/ui/button-group"
 
 const meta = preview.meta({
   title: "Design System/Forms/ButtonGroup",

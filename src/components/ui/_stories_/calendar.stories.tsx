@@ -1,6 +1,6 @@
 import preview from "../../../../.storybook/preview"
 import { useState } from "react"
-import { Calendar } from "../calendar"
+import { Calendar } from "@/components/ui/calendar"
 
 const meta = preview.meta({
   title: "Design System/Forms/Calendar",

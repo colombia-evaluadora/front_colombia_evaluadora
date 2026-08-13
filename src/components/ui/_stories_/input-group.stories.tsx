@@ -7,7 +7,7 @@ import {
   InputGroupInput,
   InputGroupText,
   InputGroupTextarea,
-} from "../input-group"
+} from "@/components/ui/input-group"
 
 const meta = preview.meta({
   title: "Design System/Forms/InputGroup",

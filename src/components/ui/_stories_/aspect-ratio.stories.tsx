@@ -1,5 +1,5 @@
 import preview from "../../../../.storybook/preview"
-import { AspectRatio } from "../aspect-ratio"
+import { AspectRatio } from "@/components/ui/aspect-ratio"
 
 const meta = preview.meta({
   title: "Design System/Layout/AspectRatio",

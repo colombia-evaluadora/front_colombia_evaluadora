@@ -1,9 +1,9 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query"
 import * as z from "zod"
 
-import { api, setAuthToken } from "./api-client"
-import { toAuthUserFromToken, type AuthUser } from "./auth-mapper"
-import type { MutationConfig } from "./react-query"
+import { api, setAuthToken } from "@/lib/api-client"
+import { toAuthUserFromToken, type AuthUser } from "@/lib/auth-mapper"
+import type { MutationConfig } from "@/lib/react-query"
 import type { AuthResponse } from "@/types/api"
 
 const REMEMBER_KEY = "auth_remember_me"

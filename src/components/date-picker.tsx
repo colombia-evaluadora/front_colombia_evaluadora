@@ -169,6 +169,7 @@ function DatePicker(props: DatePickerProps) {
                   <PopoverTrigger
                     render={
                       <Button
+                        size="sm"
                         type="button"
                         variant="ghost"
                         className="w-full justify-start rounded-none font-normal"

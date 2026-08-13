@@ -8,7 +8,7 @@ import {
   OFFERED_SEATS_BY_CAMPUS,
   levelForGrade,
   reservationsDb,
-} from "../db/reservations"
+} from "@/mocks/db/reservations"
 import { EDUCATION_LEVELS, SHIFTS } from "@/features/coverage/api/schema"
 import type {
   CreateReservationInput,

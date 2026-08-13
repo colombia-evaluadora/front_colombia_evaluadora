@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
 
-import type { Plan } from "../types/role-menu"
+import type { Plan } from "@/features/administration/roles-menus/api/types/role-menu"
 
 function fetchPlans(): Promise<Plan[]> {
   return api.get("/plans")

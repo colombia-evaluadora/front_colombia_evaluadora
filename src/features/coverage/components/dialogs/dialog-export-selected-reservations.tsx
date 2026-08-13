@@ -20,8 +20,8 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 
-import { useExportSelectedReservations } from "../../api/mutations/export-selected-reservations"
-import type { ExportFormat } from "../../api/types/reservation"
+import { useExportSelectedReservations } from "@/features/coverage/api/mutations/export-selected-reservations"
+import type { ExportFormat } from "@/features/coverage/api/types/reservation"
 
 interface ExportSelectedReservationsDialogProps {
   selectedIds: string[]
@@ -71,9 +71,12 @@ export function ExportSelectedReservationsDialog({
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="sm:justify-between">
-          <DialogClose render={<Button type="button" variant="ghost" />}>Cancelar</DialogClose>
+          <DialogClose render={<Button size="sm" type="button" variant="ghost" />}>
+            Cancelar
+          </DialogClose>
           <div className="flex flex-col-reverse gap-2 sm:flex-row">
             <Button
+              size="sm"
               type="button"
               variant="outline"
               disabled={exportSelected.isPending}
@@ -88,6 +91,7 @@ export function ExportSelectedReservationsDialog({
               Excel
             </Button>
             <Button
+              size="sm"
               type="button"
               color="primary"
               disabled={exportSelected.isPending}

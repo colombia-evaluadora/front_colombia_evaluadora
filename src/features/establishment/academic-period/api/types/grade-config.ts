@@ -1,4 +1,4 @@
-import type { PromotionCriteria } from "./promotion-criteria"
+import type { PromotionCriteria } from "@/features/establishment/academic-period/api/types/promotion-criteria"
 
 /** Una celda del horario, alineada al backend (fn_horario_guardar). */
 export interface ScheduleEntry {

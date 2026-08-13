@@ -251,7 +251,7 @@ export function DataTable({
             <TableRow>
               <TableCell colSpan={columnCount} className="h-24 text-center">
                 {errorMessage}{" "}
-                <Button variant="link" onClick={onRetry}>
+                <Button size="sm" variant="link" onClick={onRetry}>
                   Reintentar
                 </Button>
               </TableCell>
@@ -388,6 +388,7 @@ export function DataTableColumnHeader<TData, TValue>({
         <DropdownMenuTrigger
           render={
             <Button
+              size="sm"
               variant="ghost"
               color="neutral"
               className="-ml-3 h-8 px-3 text-sm font-bold uppercase has-data-[icon=inline-end]:pr-3 data-[state=open]:bg-accent"

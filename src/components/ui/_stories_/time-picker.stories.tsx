@@ -1,6 +1,6 @@
 import preview from "../../../../.storybook/preview"
 import { useState } from "react"
-import { TimePickerPanel } from "../time-picker"
+import { TimePickerPanel } from "@/components/ui/time-picker"
 
 const meta = preview.meta({
   title: "Design System/Forms/TimePickerPanel",

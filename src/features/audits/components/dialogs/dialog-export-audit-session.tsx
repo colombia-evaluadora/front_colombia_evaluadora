@@ -19,8 +19,8 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 
-import { useExportAudits } from "../../api/mutations/export-audits"
-import type { AuditsQueryRequest, ExportFormat } from "../../api/types/audit"
+import { useExportAudits } from "@/features/audits/api/mutations/export-audits"
+import type { AuditsQueryRequest, ExportFormat } from "@/features/audits/api/types/audit"
 import { useNotify } from "@/components/notice/notice-context"
 
 interface ExportAuditSessionDialogProps {
@@ -69,9 +69,12 @@ export function ExportAuditSessionDialog({ filters }: ExportAuditSessionDialogPr
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="sm:justify-between">
-          <DialogClose render={<Button type="button" variant="ghost" />}>Cancelar</DialogClose>
+          <DialogClose render={<Button size="sm" type="button" variant="ghost" />}>
+            Cancelar
+          </DialogClose>
           <div className="flex flex-col-reverse gap-2 sm:flex-row">
             <Button
+              size="sm"
               type="button"
               variant="outline"
               disabled={exportAll.isPending}
@@ -86,6 +89,7 @@ export function ExportAuditSessionDialog({ filters }: ExportAuditSessionDialogPr
               Excel
             </Button>
             <Button
+              size="sm"
               type="button"
               color="primary"
               disabled={exportAll.isPending}

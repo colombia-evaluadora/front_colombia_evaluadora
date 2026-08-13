@@ -7,10 +7,10 @@ import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 import { paths } from "@/config/paths"
 
-import { useAuditSessionQuery } from "../api/query/use-audit-session-query"
-import { useAuditSessionStatusesQuery } from "../api/query/use-audit-session-statuses-query"
-import { SESSION_STATUS_BADGE } from "../api/ui-mappings"
-import { SessionOperationsDataTable } from "../components/table/session-operations-table"
+import { useAuditSessionQuery } from "@/features/audits/api/query/use-audit-session-query"
+import { useAuditSessionStatusesQuery } from "@/features/audits/api/query/use-audit-session-statuses-query"
+import { SESSION_STATUS_BADGE } from "@/features/audits/api/ui-mappings"
+import { SessionOperationsDataTable } from "@/features/audits/components/table/session-operations-table"
 
 export function SessionOperationsPage() {
   const { sessionId } = useParams({ strict: false }) as { sessionId: string }

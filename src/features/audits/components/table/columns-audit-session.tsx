@@ -9,9 +9,9 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { DataTableColumnHeader } from "@/components/data-table"
 import { paths } from "@/config/paths"
 
-import { SESSION_STATUS_BADGE } from "../../api/ui-mappings"
-import { useAuditSessionStatusesQuery } from "../../api/query/use-audit-session-statuses-query"
-import type { AuditSession, SessionStatus } from "../../api/types/audit"
+import { SESSION_STATUS_BADGE } from "@/features/audits/api/ui-mappings"
+import { useAuditSessionStatusesQuery } from "@/features/audits/api/query/use-audit-session-statuses-query"
+import type { AuditSession, SessionStatus } from "@/features/audits/api/types/audit"
 
 function initials(name: string): string {
   const [first, second] = name.trim().split(/\s+/)

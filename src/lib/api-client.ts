@@ -3,7 +3,7 @@ import { toast } from "sonner"
 
 import { env } from "@/config/env"
 import { paths } from "@/config/paths"
-import { queryClient } from "./query-client"
+import { queryClient } from "@/lib/query-client"
 
 declare module "axios" {
   export interface AxiosInstance {
@@ -127,6 +127,13 @@ api.interceptors.response.use(
     return Promise.reject(error)
   },
 )
+
+// Un 404 del backend significa "este recurso no existe", no "algo falló": las
+// pantallas de detalle lo traducen a la página de "no encontrado" del router
+// en vez de mostrar un error genérico.
+export function isNotFoundError(error: unknown): boolean {
+  return Axios.isAxiosError(error) && error.response?.status === 404
+}
 
 // Queries complejas que no entran cómodo en query params (filtros anidados,
 // sorts compuestos, etc.) y por eso necesitan body. Se mandan por POST, que

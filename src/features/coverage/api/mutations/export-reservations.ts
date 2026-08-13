@@ -2,7 +2,7 @@ import { useMutation } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
-import type { ExportFormat, ExportResult, ReservationsQueryRequest } from "../types/reservation"
+import type { ExportFormat, ExportResult, ReservationsQueryRequest } from "@/features/coverage/api/types/reservation"
 
 interface ExportReservationsInput {
   filters: ReservationsQueryRequest["filters"]

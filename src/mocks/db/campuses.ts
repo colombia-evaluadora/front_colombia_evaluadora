@@ -1,9 +1,9 @@
 import { faker } from "@faker-js/faker"
 
-import type { CatalogItem } from "@/features/establishment/api/types/catalog"
-import { ZONES } from "./catalogs/establishment"
+import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
+import { ZONES } from "@/mocks/db/catalogs/establishment"
 
-import type { Campus } from "@/features/establishment/api/types/campus"
+import type { Campus } from "@/features/establishment/campuses/api/types/campus"
 
 faker.seed(20260728)
 

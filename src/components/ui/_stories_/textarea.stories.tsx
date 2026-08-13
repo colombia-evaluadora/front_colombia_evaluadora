@@ -1,5 +1,5 @@
 import preview from "../../../../.storybook/preview"
-import { Textarea } from "../textarea"
+import { Textarea } from "@/components/ui/textarea"
 
 const meta = preview.meta({
   title: "Design System/Forms/Textarea",

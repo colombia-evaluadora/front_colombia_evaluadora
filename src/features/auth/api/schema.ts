@@ -7,7 +7,12 @@ import { loginInputSchema } from "@/lib/auth"
 // servidor. La política completa vive en `passwordRules`, que solo aplica
 // donde se *crea* una contraseña.
 export const loginFormSchema = loginInputSchema.extend({
-  password: z.string().min(1, "Requerido").min(8, "Debe tener al menos 8 caracteres."),
+  // `z.string({ message: ... })` deja a Zod pintar el "Requerido" cuando el
+  // string es `undefined`; después `.min(8)` corre solo si hay valor. Encadenar
+  // dos `.min` dejaba al segundo mensaje tapando al primero en el caso vacío.
+  password: z
+    .string({ message: "Requerido" })
+    .min(8, "Debe tener al menos 8 caracteres."),
   // Sin marcar: la sesión dura lo que indique el backend (unos minutos).
   // Marcada: el backend devuelve un token de larga duración — la sesión
   // sobrevive a cerrar y reabrir el navegador.

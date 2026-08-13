@@ -5,7 +5,7 @@ import type { MutationConfig } from "@/lib/react-query"
 import type {
   RevertOperationChangeInput,
   RevertOperationChangeResponse,
-} from "../types/audit-table"
+} from "@/features/audits/api/types/audit-table"
 
 interface RevertOperationChangeVariables {
   tableSlug: string

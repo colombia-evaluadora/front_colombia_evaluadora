@@ -1,5 +1,5 @@
 import preview from "../../../../.storybook/preview"
-import { Checkbox } from "../checkbox"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Field,
   FieldContent,
@@ -10,9 +10,9 @@ import {
   FieldLegend,
   FieldSeparator,
   FieldSet,
-} from "../field"
-import { Input } from "../input"
-import { Switch } from "../switch"
+} from "@/components/ui/field"
+import { Input } from "@/components/ui/input"
+import { Switch } from "@/components/ui/switch"
 
 // Backtick literal dentro de un template literal (ver badge.stories.tsx).
 const BT = "`"

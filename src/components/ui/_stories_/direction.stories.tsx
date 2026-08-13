@@ -1,6 +1,6 @@
 import preview from "../../../../.storybook/preview"
-import { DirectionProvider } from "../direction"
-import { Slider } from "../slider"
+import { DirectionProvider } from "@/components/ui/direction"
+import { Slider } from "@/components/ui/slider"
 
 const meta = preview.meta({
   title: "Design System/Chat/Direction",

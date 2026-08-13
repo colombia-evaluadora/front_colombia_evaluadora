@@ -8,9 +8,9 @@ import { Separator } from "@/components/ui/separator"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
 import { BellIcon } from "@/components/ui/icons"
-import { AppBreadcrumb } from "./app-breadcrumb"
-import { ColorThemeToggle } from "../color-theme-toggle"
-import { ModeToggle } from "../mode-toggle"
+import { AppBreadcrumb } from "@/components/layout/app-breadcrumb"
+import { ColorThemeToggle } from "@/components/color-theme-toggle"
+import { ModeToggle } from "@/components/mode-toggle"
 
 export function ProtectedLayout() {
   return (

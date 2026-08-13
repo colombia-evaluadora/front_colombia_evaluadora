@@ -9,7 +9,7 @@ import {
   ContextMenuSubContent,
   ContextMenuSubTrigger,
   ContextMenuTrigger,
-} from "../context-menu"
+} from "@/components/ui/context-menu"
 
 const meta = preview.meta({
   title: "Design System/Overlays/ContextMenu",

@@ -21,10 +21,10 @@ import {
 import { Spinner } from "@/components/ui/spinner"
 import { paths } from "@/config/paths"
 
-import { useRestorePassword } from "../api/mutations/restore-password"
-import { usePasswordResetLink } from "../hooks/use-password-reset-link"
-import { RestorePasswordForm } from "../components/forms/form-restore-password"
-import type { RestorePasswordFormValues } from "../api/schema"
+import { useRestorePassword } from "@/features/auth/api/mutations/restore-password"
+import { usePasswordResetLink } from "@/features/auth/hooks/use-password-reset-link"
+import { RestorePasswordForm } from "@/features/auth/components/forms/form-restore-password"
+import type { RestorePasswordFormValues } from "@/features/auth/api/schema"
 
 const RESTORE_PASSWORD_FORM_ID = "restore-password-form"
 

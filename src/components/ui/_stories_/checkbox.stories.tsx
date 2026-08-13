@@ -1,7 +1,7 @@
 import preview from "../../../../.storybook/preview"
 import { useState } from "react"
-import { Checkbox } from "../checkbox"
-import { Label } from "../label"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Label } from "@/components/ui/label"
 
 const meta = preview.meta({
   title: "Design System/Forms/Checkbox",

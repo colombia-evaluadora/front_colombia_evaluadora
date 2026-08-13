@@ -1,6 +1,6 @@
-import type { AcademicPeriodStatus } from "./types/academic-period"
-import type { EvaluationPeriodStatus } from "./types/evaluation-period"
-import type { RatingScaleType } from "./types/rating-scales"
+import type { AcademicPeriodStatus } from "@/features/establishment/academic-period/api/types/academic-period"
+import type { EvaluationPeriodStatus } from "@/features/establishment/academic-period/api/types/evaluation-period"
+import type { RatingScaleType } from "@/features/establishment/academic-period/api/types/rating-scales"
 
 type BadgeColor = "primary" | "secondary" | "muted" | "destructive" | "info" | "warning" | "success"
 interface BadgeProps {

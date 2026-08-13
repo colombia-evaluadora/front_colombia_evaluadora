@@ -1,4 +1,4 @@
-import { ReservationsDataTable } from "../components/table/reservations-table"
+import { ReservationsDataTable } from "@/features/coverage/components/table/reservations-table"
 
 export function ReservationsPage() {
   return (

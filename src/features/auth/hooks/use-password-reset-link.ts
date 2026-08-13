@@ -1,5 +1,5 @@
-import { useResetTokenStatusQuery } from "../api/query/use-reset-token-status-query"
-import { useCountdown } from "./use-countdown"
+import { useResetTokenStatusQuery } from "@/features/auth/api/query/use-reset-token-status-query"
+import { useCountdown } from "@/features/auth/hooks/use-countdown"
 
 export interface PasswordResetLink {
   /** Todavía no se sabe nada del enlace. */

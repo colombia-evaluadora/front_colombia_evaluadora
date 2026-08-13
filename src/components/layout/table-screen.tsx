@@ -67,7 +67,7 @@ function TableScreenHeader({ children, className }: { children: ReactNode; class
       {/* Sin barra de herramientas el encabezado es solo el título, que ya
           cierra con su propio `border-b`: ahí el `hr` daba línea doble, así que
           se esconde cuando no hay `TableScreenToolbar` dentro. */}
-      <div className="overflow-hidden rounded-t-lg border border-b-0 border-foreground/5 bg-card text-sm text-card-foreground not-has-[[data-slot=table-screen-toolbar]]:[&>hr]:hidden">
+      <div className="overflow-hidden rounded-t-lg border border-b-0 border-border bg-card text-sm text-card-foreground not-has-[[data-slot=table-screen-toolbar]]:[&>hr]:hidden">
         {children}
         {/* Cierre del encabezado. Va acá dentro —y no como borde del cuerpo—
             para que viaje con el `sticky`: la línea se queda arriba mientras el
@@ -162,7 +162,7 @@ function TableScreenFooter({ children, className }: { children: ReactNode; class
       {/* Una sola línea arriba: la del propio contorno, que acá hace de
           separador con el cuerpo (por eso el cuerpo se monta con `border-b-0`
           cuando hay footer). */}
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-b-lg border border-foreground/5 bg-muted/10 px-(--screen-spacing) py-4 text-sm text-card-foreground">
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-b-lg border border-border bg-background px-(--screen-spacing) py-4 text-sm text-card-foreground">
         {children}
       </div>
     </footer>
@@ -181,7 +181,7 @@ function TableScreenBody({ children, className }: { children: ReactNode; classNa
   return (
     <div
       className={cn(
-        "grow overflow-visible rounded-b-lg border border-t-0 border-foreground/5 bg-card py-4 text-sm text-card-foreground",
+        "grow overflow-visible rounded-b-lg border border-t-0 border-border bg-card py-4 text-sm text-card-foreground",
         className,
       )}
     >

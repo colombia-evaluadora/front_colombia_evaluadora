@@ -1,5 +1,5 @@
 import preview from "../../../../.storybook/preview"
-import { Toggle } from "../toggle"
+import { Toggle } from "@/components/ui/toggle"
 
 const meta = preview.meta({
   title: "Design System/Forms/Toggle",

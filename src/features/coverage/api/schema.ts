@@ -39,6 +39,22 @@ export const reservationFiltersFormSchema = z.object({
   reservedTo: z.string(),
   groupBy: z.string(),
 })
+  /*
+   * Los filtros no tienen campos obligatorios —filtrar por nada es válido—, así
+   * que lo único que se valida es la coherencia del rango. La comparación es de
+   * strings porque los dos formatos que emite el DatePicker (`yyyy-MM-dd` y
+   * `yyyy-MM-dd'T'HH:mm`) son ISO, y ahí el orden lexicográfico coincide con el
+   * cronológico. El issue se ancla en "hasta", que es el campo a mover.
+   */
+  .superRefine((value, ctx) => {
+    if (value.reservedFrom && value.reservedTo && value.reservedTo < value.reservedFrom) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["reservedTo"],
+        message: "La fecha final no puede ser anterior a la inicial.",
+      })
+    }
+  })
 export type ReservationFiltersFormInput = z.input<typeof reservationFiltersFormSchema>
 export type ReservationFiltersFormValues = z.infer<typeof reservationFiltersFormSchema>
 

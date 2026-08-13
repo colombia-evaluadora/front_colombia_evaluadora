@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 
-import { useRevertOperationChange } from "../../api/mutations/revert-operation-change"
+import { useRevertOperationChange } from "@/features/audits/api/mutations/revert-operation-change"
 import { useNotify } from "@/components/notice/notice-context"
 
 interface DialogConfirmRevertChangesProps {
@@ -65,7 +65,8 @@ export function DialogConfirmRevertChanges({
         render={
           <Button
             type="button"
-            variant="outline"
+            variant="fill"
+            color="primary"
             size="sm"
             disabled={disabled}
             aria-label="Revertir todos los cambios mostrados"

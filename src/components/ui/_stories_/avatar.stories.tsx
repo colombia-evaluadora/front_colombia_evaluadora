@@ -6,7 +6,7 @@ import {
   AvatarGroup,
   AvatarGroupCount,
   AvatarImage,
-} from "../avatar"
+} from "@/components/ui/avatar"
 
 const meta = preview.meta({
   title: "Design System/Data Display/Avatar",

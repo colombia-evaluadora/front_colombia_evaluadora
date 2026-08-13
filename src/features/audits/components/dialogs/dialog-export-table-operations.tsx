@@ -19,9 +19,9 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 
-import { useExportTableOperations } from "../../api/mutations/export-table-operations"
-import type { ExportFormat } from "../../api/types/audit"
-import type { TableOperationsQueryRequest } from "../../api/types/audit-table"
+import { useExportTableOperations } from "@/features/audits/api/mutations/export-table-operations"
+import type { ExportFormat } from "@/features/audits/api/types/audit"
+import type { TableOperationsQueryRequest } from "@/features/audits/api/types/audit-table"
 import { useNotify } from "@/components/notice/notice-context"
 
 interface ExportTableOperationsDialogProps {
@@ -75,9 +75,12 @@ export function ExportTableOperationsDialog({
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="sm:justify-between">
-          <DialogClose render={<Button type="button" variant="ghost" />}>Cancelar</DialogClose>
+          <DialogClose render={<Button size="sm" type="button" variant="ghost" />}>
+            Cancelar
+          </DialogClose>
           <div className="flex flex-col-reverse gap-2 sm:flex-row">
             <Button
+              size="sm"
               type="button"
               variant="outline"
               disabled={exportAll.isPending}
@@ -92,6 +95,7 @@ export function ExportTableOperationsDialog({
               Excel
             </Button>
             <Button
+              size="sm"
               type="button"
               color="primary"
               disabled={exportAll.isPending}

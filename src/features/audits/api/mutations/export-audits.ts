@@ -2,7 +2,7 @@ import { useMutation } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
-import type { AuditsQueryRequest, ExportFormat, ExportResult } from "../types/audit"
+import type { AuditsQueryRequest, ExportFormat, ExportResult } from "@/features/audits/api/types/audit"
 
 interface ExportAuditsInput {
   filters: AuditsQueryRequest["filters"]
