@@ -49,7 +49,7 @@ function BreakChips({ value, onRemove }: { value: Break[]; onRemove: (index: num
             key={`${brk.startTime}-${brk.endTime}-${originalIndex}`}
             variant="soft"
             color="muted"
-            className="normal-case tracking-normal"
+            className="text-xs"
           >
             {formatBreakTimeCompact(brk.startTime)} → {formatBreakTimeCompact(brk.endTime)}
             <button
@@ -68,7 +68,7 @@ function BreakChips({ value, onRemove }: { value: Break[]; onRemove: (index: num
         )
       })}
       {extra > 0 && (
-        <Badge variant="soft" color="muted" className="normal-case tracking-normal">
+        <Badge variant="soft" color="muted" className="text-xs normal-case tracking-normal">
           +{extra}
         </Badge>
       )}
