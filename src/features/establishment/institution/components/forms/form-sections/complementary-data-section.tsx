@@ -79,7 +79,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                             value={value.teachingLanguage.id}
                             onValueChange={(selectedValue) => {
                                 const option = idiomas.find((item) => item.id === selectedValue)
-                                onChange({ ...value, teachingLanguage: option ?? { id: selectedValue ?? "", code: selectedValue ?? "", name: selectedValue ?? "" } })
+                                if (option) onChange({ ...value, teachingLanguage: option })
                             }}
                             items={idiomaItems}
                         >
@@ -106,7 +106,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                             value={value.calendar.id}
                             onValueChange={(selectedValue) => {
                                 const option = calendarios.find((item) => item.id === selectedValue)
-                                onChange({ ...value, calendar: option ?? { id: selectedValue ?? "", code: selectedValue ?? "", name: selectedValue ?? "" } })
+                                if (option) onChange({ ...value, calendar: option })
                             }}
                             items={calendarioItems}
                         >
@@ -133,7 +133,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                             value={value.costRegime.id}
                             onValueChange={(selectedValue) => {
                                 const option = costRegimen.find((item) => item.id === selectedValue)
-                                onChange({ ...value, costRegime: option ?? { id: selectedValue ?? "", code: selectedValue ?? "", name: selectedValue ?? "" } })
+                                if (option) onChange({ ...value, costRegime: option })
                             }}
                             items={costRegimenItems}
                         >
@@ -160,7 +160,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                             value={value.populationGender.id}
                             onValueChange={(selectedValue) => {
                                 const option = populationGenders.find((item) => item.id === selectedValue)
-                                onChange({ ...value, populationGender: option ?? { id: selectedValue ?? "", code: selectedValue ?? "", name: selectedValue ?? "" } })
+                                if (option) onChange({ ...value, populationGender: option })
                             }}
                             items={populationGenderItems}
                         >
@@ -185,7 +185,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                             value={value.tuitionRange.id}
                             onValueChange={(selectedValue) => {
                                 const option = rangosTarifas.find((item) => item.id === selectedValue)
-                                onChange({ ...value, tuitionRange: option ?? { id: selectedValue ?? "", code: selectedValue ?? "", name: selectedValue ?? "" } })
+                                if (option) onChange({ ...value, tuitionRange: option })
                             }}
                             items={rangoTarifaItems}
                         >
@@ -214,7 +214,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                             value={value.disabilityType.id}
                             onValueChange={(selectedValue) => {
                                 const option = disabilities.find((item) => item.id === selectedValue)
-                                onChange({ ...value, disabilityType: option ?? { id: selectedValue ?? "", code: selectedValue ?? "", name: selectedValue ?? "" } })
+                                if (option) onChange({ ...value, disabilityType: option })
                             }}
                             items={disabilityItems}
                         >
@@ -243,7 +243,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                             value={value.licenseStatus.id}
                             onValueChange={(selectedValue) => {
                                 const option = licenseStatuses.find((item) => item.id === selectedValue)
-                                onChange({ ...value, licenseStatus: option ?? { id: selectedValue ?? "", code: selectedValue ?? "", name: selectedValue ?? "" } })
+                                if (option) onChange({ ...value, licenseStatus: option })
                             }}
                             items={licenseStatusItems}
                         >

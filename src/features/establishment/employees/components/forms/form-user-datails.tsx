@@ -164,7 +164,7 @@ export function UserDetailsForm({
                         value={person.documentType.id}
                         onValueChange={(selectedValue) => {
                             const option = documentTypes.find((item) => item.id === selectedValue)
-                            emitChange({ documentType: option ?? { id: selectedValue ?? "", code: selectedValue ?? "", name: selectedValue ?? "" } })
+                            if (option) emitChange({ documentType: option })
                         }}
                     >
                         <SelectTrigger size="sm" aria-invalid={isInvalid(`${fieldPrefix}.documentType`)}>
@@ -306,7 +306,7 @@ export function UserDetailsForm({
                         value={person.gender.id}
                         onValueChange={(selectedValue) => {
                             const option = genders.find((item) => item.id === selectedValue)
-                            emitChange({ gender: option ?? { id: selectedValue ?? "", code: selectedValue ?? "", name: selectedValue ?? "" } })
+                            if (option) emitChange({ gender: option })
                         }}
                     >
                         <SelectTrigger size="sm" aria-invalid={isInvalid(`${fieldPrefix}.gender`)}>
