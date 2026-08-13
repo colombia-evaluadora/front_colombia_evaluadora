@@ -85,8 +85,6 @@ function AcademicPeriodConfigPageContent() {
   const { periodId } = useParams({ strict: false }) as { periodId?: string }
   const isEditing = periodId != null
   const parsedPeriodId = periodId ? Number(periodId) : undefined
-  // Un id no numérico (/periodos/abc/editar) no es un periodo que se pueda
-  // pedir: se trata igual que uno inexistente, sin gastar la petición.
   const isValidPeriodId =
     parsedPeriodId != null && Number.isInteger(parsedPeriodId)
   const numericPeriodId = isValidPeriodId ? parsedPeriodId : undefined
@@ -111,8 +109,6 @@ function AcademicPeriodConfigPageContent() {
         setCreatedPeriodId(created.id)
         setSaved(true)
         notify(SUCCESS_MESSAGES.academicPeriod.created)
-        // Tras crear, pasamos a la ruta de edición del nuevo periodo para que
-        // la URL refleje el estado real (editable, recargable, compartible).
         navigate({
           to: paths.app.periodosAcademicosEditar.getHref(created.id),
         })
@@ -127,17 +123,12 @@ function AcademicPeriodConfigPageContent() {
           notify(result.message, { variant: "error" })
           return
         }
-        // Los valores guardados pasan a ser los iniciales del formulario, así
-        // "Guardar" vuelve a ocultarse hasta que el usuario cambie algo más.
         setSavedToken((token) => token + 1)
         notify(SUCCESS_MESSAGES.academicPeriod.updated)
       },
     },
   })
 
-  // Editar un periodo que no existe no es un error de la pantalla: es una URL
-  // que no lleva a ningún lado, así que se delega en el 404 del router. Va
-  // después de los hooks para no romper su orden.
   if (isEditing && (!isValidPeriodId || isNotFoundError(detailError))) {
     throw notFound()
   }
@@ -162,8 +153,6 @@ function AcademicPeriodConfigPageContent() {
 
   const showSecondForm = saved || (isEditing && !!detail)
 
-  // Al crear, "Guardar" es el único camino para continuar; al editar solo tiene
-  // sentido si hay algo que guardar (o mientras se está guardando).
   const showSaveAction = !isEditing || isFormDirty || isSaving
 
   const configBody = (
@@ -172,12 +161,6 @@ function AcademicPeriodConfigPageContent() {
       onValueChange={(value) => setConfigOpen(value.includes("config"))}
     >
       <AccordionItem value="config" className="rounded-md border border-border">
-        {/*
-          Misma tipografía y mismo caret que los acordeones de "Agregar
-          establecimiento" (`accordionTriggerClassName`), pero sin invertir la
-          fila: acá el caret se queda a la derecha, donde lo deja el `ml-auto`
-          del componente compartido.
-        */}
         <AccordionTrigger className="items-center gap-3 px-4 py-2.5 text-lg **:data-[slot=accordion-trigger-icon]:size-5">
           Información general del periodo
         </AccordionTrigger>
@@ -225,9 +208,6 @@ function AcademicPeriodConfigPageContent() {
         </TableScreenTitle>
         <NoticeOutlet className="mx-(--screen-spacing) my-4" />
       </TableScreenHeader>
-
-      {/* Sin radio ni borde abajo: ahí se acopla la barra de acciones, que trae
-          el suyo —si no, quedan dos líneas de 1px juntas. */}
       <TableScreenBody className="rounded-b-none border-b-0">
         {configBody}
         {showSecondForm && (
