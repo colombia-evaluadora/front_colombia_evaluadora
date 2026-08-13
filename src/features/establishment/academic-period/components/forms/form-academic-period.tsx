@@ -309,7 +309,11 @@ export function AcademicPeriodForm({
                       if (!badge) return "Seleccionar"
                       const label =
                         statusOptions.find((option) => option.key === status)?.label ?? status
-                      return <Badge {...badge}>{label}</Badge>
+                      return (
+                        <Badge {...badge} className="text-xs">
+                          {label}
+                        </Badge>
+                      )
                     }}
                   </SelectValue>
                 </SelectTrigger>

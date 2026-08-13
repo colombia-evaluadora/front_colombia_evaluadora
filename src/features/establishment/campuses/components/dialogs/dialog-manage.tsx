@@ -169,7 +169,7 @@ export function ManageCampusDialog({
         if (!isPending) onOpenChange(next)
       }}
     >
-      <DialogContent className="w-[min(98vw,64rem)] max-w-none sm:max-w-256 max-h-[92vh] overflow-y-auto overflow-x-hidden">
+      <DialogContent className="w-[min(95vw,56rem)] max-w-none sm:max-w-224 max-h-[85vh] overflow-y-auto overflow-x-hidden">
         <DialogHeader>
           <DialogTitle>{isEditMode ? "Editar sede" : "Agregar sede"}</DialogTitle>
         </DialogHeader>

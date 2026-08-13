@@ -173,7 +173,14 @@ function DropdownMenuCheckboxItem({
       data-slot="dropdown-menu-checkbox-item"
       data-inset={inset}
       className={cn(
-        "relative flex cursor-pointer items-center gap-2.5 rounded-md py-2 pr-8 pl-3 text-xs font-medium tracking-wider uppercase outline-hidden transition-colors select-none focus:bg-secondary-22 focus:text-foreground focus:**:text-foreground data-inset:pl-9.5 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
+        // `data-checked` pinta el item en marca para que se note de un vistazo
+        // cuál está seleccionado, no solo el chulito de la derecha. Usamos
+        // `primary-22` (soft fill al 8%) en vez de `primary` sólido para que
+        // combine con el popover translúcido sin taparlo. Los pares
+        // `data-checked:focus:` / `data-checked:data-highlighted:` ganán sobre
+        // el focus/highlight base: si hovereás un item ya seleccionado, no
+        // salta al verde del focus sino que se queda en marca.
+        "group/dropdown-menu-checkbox-item relative flex cursor-pointer items-center gap-2.5 rounded-md py-2 pr-8 pl-3 text-xs font-medium tracking-wider uppercase outline-hidden transition-colors select-none data-inset:pl-9.5 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5 focus:bg-secondary-22 focus:text-foreground focus:**:text-foreground data-highlighted:bg-secondary-22 data-highlighted:text-foreground data-highlighted:**:text-foreground data-checked:bg-primary-22 data-checked:text-primary data-checked:**:text-primary data-checked:focus:bg-primary-22 data-checked:focus:text-primary data-checked:focus:**:text-primary data-checked:data-highlighted:bg-primary-22 data-checked:data-highlighted:text-primary data-checked:data-highlighted:**:text-primary",
         className,
       )}
       checked={checked}
@@ -216,7 +223,12 @@ function DropdownMenuRadioItem({
       data-slot="dropdown-menu-radio-item"
       data-inset={inset}
       className={cn(
-        "relative flex cursor-pointer items-center gap-2.5 rounded-md py-2 pr-8 pl-3 text-xs font-medium tracking-wider uppercase outline-hidden transition-colors select-none focus:bg-secondary-22 focus:text-foreground focus:**:text-foreground data-highlighted:bg-secondary-22 data-highlighted:text-foreground data-highlighted:**:text-foreground data-inset:pl-9.5 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
+        // Igual que en CheckboxItem: el item seleccionado se pinta en marca —
+        // fondo `primary-22` (soft fill al 8%) y texto `primary` — para que se
+        // note cuál está activo, no solo el check. Los pares con
+        // `data-checked:focus:` / `data-checked:data-highlighted:` evitan que
+        // el hover/focus pise el estado seleccionado con el verde base.
+        "group/dropdown-menu-radio-item relative flex cursor-pointer items-center gap-2.5 rounded-md py-2 pr-8 pl-3 text-xs font-medium tracking-wider uppercase outline-hidden transition-colors select-none data-inset:pl-9.5 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5 focus:bg-secondary-22 focus:text-foreground focus:**:text-foreground data-highlighted:bg-secondary-22 data-highlighted:text-foreground data-highlighted:**:text-foreground data-checked:bg-primary-22 data-checked:text-primary data-checked:**:text-primary data-checked:focus:bg-primary-22 data-checked:focus:text-primary data-checked:focus:**:text-primary data-checked:data-highlighted:bg-primary-22 data-checked:data-highlighted:text-primary data-checked:data-highlighted:**:text-primary",
         className,
       )}
       {...props}
