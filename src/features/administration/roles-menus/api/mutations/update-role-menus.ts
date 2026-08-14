@@ -11,7 +11,10 @@ interface UpdateRoleMenusInput {
   menuIds: number[]
 }
 
-function updateRoleMenus({ roleId, menuIds }: UpdateRoleMenusInput): Promise<UpdateRoleMenusResult> {
+function updateRoleMenus({
+  roleId,
+  menuIds,
+}: UpdateRoleMenusInput): Promise<UpdateRoleMenusResult> {
   return api.put(`/roles/${roleId}/menus`, { menuIds })
 }
 
