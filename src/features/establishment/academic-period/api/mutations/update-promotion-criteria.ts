@@ -44,6 +44,9 @@ async function toPromotionCriteriaRequest(
     MAX_ASIG_PROMEDIO: values.maxFailedForAverage,
     MINIMO_INASISTENCIAS: values.absencePercentage,
     MAX_ASIG_NIVELAR_PROM: values.maxLeveledSubjects,
+    // `p_obligatorias` es `BIGINT[]` (V73) — se manda el array de ids tal
+    // cual. NO comparar con SCALES en create-rating-scales-bulk.ts: ese sí
+    // es JSONB (objetos con nombre/tipoId/...) y se stringifica.
     OBLIGATORIAS: obligatorias,
   }
 }

@@ -50,7 +50,13 @@ export function createGradeGroupColumns({
       accessorKey: "jornada",
       meta: { label: "Jornada" },
       header: ({ column }) => <DataTableColumnHeader column={column} title="Jornada" />,
-      cell: ({ row }) => <span>{row.original.jornada}</span>,
+      // `jornada` es el código corto (TGRUPO.JORNADA, p.ej. "M"/"T"/"N"),
+      // `jornadaName` es el nombre resuelto por el back (TLISTA_VALOR.NOMBRE,
+      // p.ej. "Mañana"). Mostramos el nombre al usuario y caemos al código
+      // si el back todavía no lo está enviando.
+      cell: ({ row }) => (
+        <span>{row.original.jornadaName ?? row.original.jornada}</span>
+      ),
     },
     {
       id: "director",

@@ -15,12 +15,19 @@ export interface Day {
   dayId: number
 }
 
+// El catálogo DIA_SEMANA pasó a numerar Domingo=1 ... Sábado=7 (antes era
+// Lunes=1 ... Domingo=7). `dayId` es la PK de TLISTA_VALOR (la verdad del
+// back); `weekday` se mantiene para futura lógica tipo "fecha real" si hace
+// falta cruzarlo con un Date. El orden del array es lo que se ve en la grilla
+// del schedule builder (Domingo a Sábado).
 export const DAYS: Day[] = [
-  { id: "lun", label: "LUNES", weekday: 1, dayId: 272 },
-  { id: "mar", label: "MARTES", weekday: 2, dayId: 273 },
-  { id: "mie", label: "MIÉRCOLES", weekday: 3, dayId: 274 },
-  { id: "jue", label: "JUEVES", weekday: 4, dayId: 275 },
-  { id: "vie", label: "VIERNES", weekday: 5, dayId: 276 },
+  { id: "dom", label: "DOMINGO", weekday: 1, dayId: 278 },
+  { id: "lun", label: "LUNES", weekday: 2, dayId: 272 },
+  { id: "mar", label: "MARTES", weekday: 3, dayId: 273 },
+  { id: "mie", label: "MIÉRCOLES", weekday: 4, dayId: 274 },
+  { id: "jue", label: "JUEVES", weekday: 5, dayId: 275 },
+  { id: "vie", label: "VIERNES", weekday: 6, dayId: 276 },
+  { id: "sab", label: "SÁBADO", weekday: 7, dayId: 277 },
 ]
 
 export type SlotKind = "class" | "break" | "exit"

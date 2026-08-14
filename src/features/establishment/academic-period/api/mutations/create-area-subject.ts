@@ -28,7 +28,8 @@ async function createAreaSubject(
 
   if (input.subjects.length > 0) {
     await api.put(`/eval-col/areas/${areaId}/asignaturas`, {
-      ASIGNATURAS: toAsignaturasPayload(input.subjects),
+      // JSONB espera STRING, no array anidado (mismo caso que SCALES/OBLIGATORIAS).
+      ASIGNATURAS: JSON.stringify(toAsignaturasPayload(input.subjects)),
     })
   }
 

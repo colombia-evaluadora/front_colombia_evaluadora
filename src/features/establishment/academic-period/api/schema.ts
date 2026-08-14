@@ -215,9 +215,13 @@ export const evaluationCriteriaSchema = z.object({
   finalGradeCriteria: z.string().min(1, "Requerido"),
   areaGradeCriteria: z.string().min(1, "Requerido"),
   studentWithoutGradesPerformance: z.string().min(1, "Requerido"),
-  maxRecoveryGrade: z.string().min(1, "Requerido"),
+  // Rango numérico depende del formato de calificación seleccionado (0-5,
+  // 0-10, 0-100). El form valida con min=0; el rango máximo lo enforza el
+  // input via `max` según el formato. V78: ambos pasaron de selects con
+  // opciones vacías a inputs numéricos — los rangos se validan en el form.
+  maxRecoveryGrade: z.number().min(0, "Debe ser mayor o igual a 0"),
   roundingMode: z.string().min(1, "Requerido"),
-  initialGrade: z.string().min(1, "Requerido"),
+  initialGrade: z.number().min(0, "Debe ser mayor o igual a 0"),
 })
 export type EvaluationCriteriaValues = z.infer<typeof evaluationCriteriaSchema>
 

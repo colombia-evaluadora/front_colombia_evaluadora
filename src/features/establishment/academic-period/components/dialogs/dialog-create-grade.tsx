@@ -101,12 +101,12 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
   const { data: teachingLevels = [] } = useTeachingLevelsQuery()
 
   // Catálogo global GRADOS, no depende del nivel de enseñanza elegido (ver
-  // use-grados-catalog.ts).
+  // use-grados-catalog.ts). Se guarda/manda por `valor` (lo que
+  // `fn_grado_crear`/`resolveGradoSiguienteId` matchean), pero se muestra
+  // `nombre` — mostrar el `valor` crudo (el código, "1"/"2"/...) hacía que
+  // el select pareciera listar ids en vez de nombres de grado.
   const { data: gradosCatalog = [] } = useGradosCatalogQuery()
-  const gradoOptions = useMemo(
-    () => gradosCatalog.map((option) => option.valor),
-    [gradosCatalog],
-  )
+  const gradoOptions = gradosCatalog
 
   function handleChangeTeachingLevel(value: string | null) {
     if (!value) return
@@ -154,6 +154,16 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
           academicPeriodId,
         })
         setGradeId(created.id)
+        // El `<Input value={nombre}>` que toma el relevo post-create mostraría
+        // el código crudo del catálogo (p.ej. "1") si dejáramos el estado tal
+        // cual — el `<SelectItem value={option.valor}>` guarda el `valor` en
+        // `nombre`, no el nombre legible. Resolvemos a nombre para que el
+        // render inmediato del form coincida con lo que el back va a devolver
+        // en el siguiente fetch (y con lo que muestra la tabla).
+        const option = gradoOptions.find(
+          (o) => o.valor === parsed.data.nombre,
+        )
+        if (option) setNombre(option.nombre)
         notify("Grado creado. Ahora puedes configurar grupos, plan de estudio y horario.")
       } else {
         const result = await updateGrade.mutateAsync({
@@ -201,7 +211,11 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
     () =>
       (gradeGroupsData?.rows ?? []).map((g) => ({
         id: g.id,
-        label: [g.codigo, g.jornada].filter(Boolean).join(" - "),
+        // `jornadaName` es el nombre legible (TLISTA_VALOR.NOMBRE); caemos a
+        // `jornada` (código corto) si el back no lo está devolviendo.
+        label: [g.codigo, g.jornadaName ?? g.jornada]
+          .filter(Boolean)
+          .join(" - "),
       })),
     [gradeGroupsData],
   )
@@ -252,7 +266,7 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
           </>
         )}
       </DialogTrigger>
-      <DialogContent className="max-h-[90dvh] overflow-y-auto p-4 sm:max-w-4xl sm:p-6">
+      <DialogContent className="max-h-[90dvh] overflow-y-auto p-4 sm:max-w-5xl sm:p-6">
         <DialogHeader>
           <DialogTitle>{isEditing ? "Editar grado" : "Agregar grado"}</DialogTitle>
         </DialogHeader>
@@ -299,7 +313,11 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
                 onValueChange={(value) => value && setNombre(value)}
               >
                 <SelectTrigger id="grade-nombre" aria-invalid={Boolean(fieldErrors["nombre"])}>
-                  <SelectValue placeholder="Seleccionar" />
+                  <SelectValue>
+                    {(value) =>
+                      gradoOptions.find((o) => o.valor === value)?.nombre ?? "Seleccionar"
+                    }
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
@@ -309,8 +327,8 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
                       </div>
                     ) : (
                       gradoOptions.map((option) => (
-                        <SelectItem key={option} value={option}>
-                          {option}
+                        <SelectItem key={option.id} value={option.valor}>
+                          {option.nombre}
                         </SelectItem>
                       ))
                     )}
@@ -355,7 +373,11 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
                   onValueChange={(value) => value && setGradoSiguiente(value)}
                 >
                   <SelectTrigger id="grade-siguiente">
-                    <SelectValue placeholder="Seleccionar" />
+                    <SelectValue>
+                      {(value) =>
+                        gradoOptions.find((o) => o.valor === value)?.nombre ?? "Seleccionar"
+                      }
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
@@ -365,8 +387,8 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
                         </div>
                       ) : (
                         gradoOptions.map((option) => (
-                          <SelectItem key={option} value={option}>
-                            {option}
+                          <SelectItem key={option.id} value={option.valor}>
+                            {option.nombre}
                           </SelectItem>
                         ))
                       )}

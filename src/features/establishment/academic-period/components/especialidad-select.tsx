@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useMemo, useState } from "react"
 
 import {
   CaretDownIcon,
@@ -40,6 +40,35 @@ export function EspecialidadSelect({
   const resolvedVariant = useInputVariant()
 
   const { data: options = [] } = useEspecialidadesQuery(academicPeriodId)
+
+  // El back devuelve especialidades fijas y énfasis mezclados en el orden
+  // que resuelve `fn_especialidad_enfasis_listar` (sin garantía de agrupación).
+  // Para que la lista sea predecible, fijamos: primero las ESPECIALIDAD (el
+  // catálogo global, en su orden original), después los ENFASIS del
+  // establecimiento. Ambos bloques mantienen el orden interno que devolvió
+  // el back.
+  //
+  // Además, filtramos los énfasis cuyo `nombre` está vacío o es solo dígitos
+  // — son "huérfanos" creados por la lógica vieja que mandaba el id en vez
+  // del nombre (ver to-asignaturas-payload.ts:7-13). El back filtra los que
+  // matchean con una especialidad (para que el usuario no note el énfasis
+  // espejo), pero deja pasar los huérfanos porque su nombre no es texto
+  // legible — no los queremos en el popover: la fila no aporta info al
+  // usuario y los botones de editar/borrar quedan sobre una opción fantasma.
+  const sortedOptions = useMemo(() => {
+    const especialidades: typeof options = []
+    const enfasis: typeof options = []
+    for (const option of options) {
+      if (option.origen !== "ENFASIS") {
+        especialidades.push(option)
+        continue
+      }
+      const trimmed = option.label.trim()
+      if (!trimmed || /^\d+$/.test(trimmed)) continue
+      enfasis.push(option)
+    }
+    return [...especialidades, ...enfasis]
+  }, [options])
 
   const createEnfasis = useCreateEnfasis({
     mutationConfig: {
@@ -105,7 +134,7 @@ export function EspecialidadSelect({
       </PopoverTrigger>
       <PopoverContent align="start" className="w-64 p-1">
         <div className="flex flex-col">
-          {options.map((option) => {
+          {sortedOptions.map((option) => {
             const isEditing = editingId === option.id
             const isEditable = option.origen === "ENFASIS"
 
@@ -153,7 +182,7 @@ export function EspecialidadSelect({
             return (
               <div
                 key={option.id}
-                className="hover:bg-foreground/10 flex items-center justify-between gap-2 rounded-none px-2 py-1.5 text-sm"
+                className="hover:bg-foreground/10 flex items-center justify-between gap-2 rounded-none px-2 py-1 text-sm"
               >
                 <button
                   type="button"
@@ -172,7 +201,8 @@ export function EspecialidadSelect({
                       type="button"
                       variant="ghost"
                       color="neutral"
-                      size="icon-sm"
+                      size="icon-xs"
+                      className="size-5 [&_svg:not([class*='size-'])]:size-3"
                       aria-label={`Editar ${option.label}`}
                       onClick={() => startEdit(option.id, option.label)}
                     >
@@ -182,7 +212,8 @@ export function EspecialidadSelect({
                       type="button"
                       variant="ghost"
                       color="neutral"
-                      size="icon-sm"
+                      size="icon-xs"
+                      className="size-5 [&_svg:not([class*='size-'])]:size-3"
                       aria-label={`Eliminar ${option.label}`}
                       disabled={deleteEnfasis.isPending}
                       onClick={() => deleteEnfasis.mutate(option.id)}
@@ -206,11 +237,12 @@ export function EspecialidadSelect({
                 }
               }}
               placeholder="Agregar"
+              aria-label="Nuevo énfasis"
             />
             <Button
               type="button"
               color="primary"
-              size="icon-sm"
+              size="icon-xs"
               aria-label="Agregar énfasis"
               disabled={!nuevo.trim() || createEnfasis.isPending}
               onClick={agregar}

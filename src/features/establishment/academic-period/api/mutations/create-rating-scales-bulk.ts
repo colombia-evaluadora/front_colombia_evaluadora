@@ -17,16 +17,21 @@ async function createRatingScalesBulk(
   return api.post("/eval-col/escalas", {
     ACADEMIC_PERIOD_ID: input.academicPeriodId,
     TEACHING_LEVEL_IDS: input.teachingLevelIds,
-    SCALES: input.scales.map((scale, i) => ({
-      nombre: scale.nombre,
-      abreviacion: scale.abreviacion,
-      tipoId: refs[i].tipoId,
-      iconoId: refs[i].iconoId,
-      iconoCategoria: refs[i].iconoCategoria,
-      notaMaxima: scale.notaMaxima,
-      notaMinima: scale.notaMinima,
-      notaEquivalente: scale.notaEquivalente,
-    })),
+    // `CAST(:BODY.SCALES AS JSONB)` espera el valor como STRING de JSON, no
+    // como objeto anidado — confirmado contra Postman. Si se manda el array
+    // sin stringify, el binder no lo castea bien a JSONB.
+    SCALES: JSON.stringify(
+      input.scales.map((scale, i) => ({
+        nombre: scale.nombre,
+        abreviacion: scale.abreviacion,
+        tipoId: refs[i].tipoId,
+        iconoId: refs[i].iconoId,
+        iconoCategoria: refs[i].iconoCategoria,
+        notaMaxima: scale.notaMaxima,
+        notaMinima: scale.notaMinima,
+        notaEquivalente: scale.notaEquivalente,
+      }))
+    ),
   })
 }
 

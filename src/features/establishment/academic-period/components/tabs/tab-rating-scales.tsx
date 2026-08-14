@@ -428,7 +428,11 @@ function ScalesSubTable({
                     }
                   >
                     <SelectTrigger aria-label="Tipo" className="min-w-32">
-                      <SelectValue placeholder="Seleccionar" />
+                      <SelectValue>
+                        {(value) =>
+                          tipoOptions.find((o) => o.key === value)?.label ?? "Seleccionar"
+                        }
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>

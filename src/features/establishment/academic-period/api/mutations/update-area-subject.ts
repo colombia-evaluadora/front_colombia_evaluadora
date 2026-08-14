@@ -34,7 +34,8 @@ async function updateAreaSubject({
   extractWriteResultId(areaRaw)
 
   await api.put(`/eval-col/areas/${codigo}/asignaturas`, {
-    ASIGNATURAS: toAsignaturasPayload(values.subjects),
+    // JSONB espera STRING, no array anidado (mismo caso que SCALES/OBLIGATORIAS).
+    ASIGNATURAS: JSON.stringify(toAsignaturasPayload(values.subjects)),
   })
 
   return { status: "ok", message: "Área/asignatura actualizada." }

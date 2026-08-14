@@ -18,6 +18,10 @@ interface UpdateHorarioInput {
 function updateHorario({ gradeId, entries }: UpdateHorarioInput): Promise<number> {
   return api.post("/eval-col/horarios", {
     FK_GRADO: gradeId,
+    // `:BODY_RAW.ENTRIES` se castea a JSONB del lado del gateway; mandar el
+    // array crudo (no `JSON.stringify`) — verificado contra la respuesta
+    // esperada del back: array de objetos `{grupoId, planItemId, diaId,
+    // bloque}` tal cual, sin doble encoding.
     ENTRIES: entries,
   })
 }

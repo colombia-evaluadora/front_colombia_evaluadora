@@ -234,6 +234,7 @@ export const ScheduleBuilder = forwardRef<
             }
           }
         }
+        console.log("[horario save] entries", { gradeId: id, entries })
         await updateHorario.mutateAsync({ gradeId: id, entries })
       },
     }),
@@ -252,6 +253,15 @@ export const ScheduleBuilder = forwardRef<
           value={gradeGroup}
           onValueChange={(value) => value && setGradeGroup(value)}
           disabled={gradeGroups.length === 0}
+          // `items` como mapa `value -> label`: el `SelectValue` lo consume
+          // para pintar el nombre del grupo seleccionado en el trigger (en
+          // vez del id crudo, que era lo que se veía antes). Ver
+          // components/ui/select.tsx — `items` también acepta el formato
+          // nativo de Base UI, pero pasar el Record evita tener que
+          // duplicar los `SelectItem` y mantiene el trigger en sync.
+          items={Object.fromEntries(
+            gradeGroups.map((option) => [String(option.id), option.label])
+          )}
         >
           <SelectTrigger id="schedule-grade-group" className="w-full">
             <SelectValue

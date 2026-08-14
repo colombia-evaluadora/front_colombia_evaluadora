@@ -12,9 +12,11 @@ export interface UpdateEnfasisInput {
   nombre: string
 }
 
-// ⚠️ Endpoint todavía sin backend — se está armando en paralelo. Path/body
-// calcan el patrón de `fn_area_actualizar` (PUT /eval-col/areas/:ID) mientras
-// se confirma el real; ajustar cuando esté.
+// `PUT /eval-col/enfasis/:ID` (`fn_enfasis_actualizar`, id_query 103) —
+// confirmado contra la función real: `p_nombre`/`p_codigo`/`p_fk_especialidad`
+// son todos opcionales (COALESCE con el valor actual si no vienen). La UI
+// solo deja editar el nombre, así que solo se manda `NOMBRE` — `CODIGO`/
+// `FK_ESPECIALIDAD` quedan como estaban.
 async function updateEnfasis(input: UpdateEnfasisInput): Promise<number> {
   const raw: WriteResultResponse = await api.put(
     `/eval-col/enfasis/${input.id}`,
