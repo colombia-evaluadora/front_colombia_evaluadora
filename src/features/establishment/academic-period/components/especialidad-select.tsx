@@ -122,7 +122,6 @@ export function EspecialidadSelect({
                         saveEdit()
                       }
                     }}
-                    className="h-8"
                   />
                   <Button
                     type="button"
@@ -207,7 +206,6 @@ export function EspecialidadSelect({
                 }
               }}
               placeholder="Agregar"
-              className="h-8"
             />
             <Button
               type="button"
