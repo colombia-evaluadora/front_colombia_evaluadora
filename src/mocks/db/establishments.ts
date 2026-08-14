@@ -150,7 +150,10 @@ function createEstablishmentDetails(): EstablishmentDetails {
       tuitionRange: createCatalogItem(RANGO_TARIFAS),
       disabilityType: createCatalogItem(DISABILITIES),
       operatingLicense: faker.datatype.boolean(),
-      licenseStatus: createCatalogItem(LICENSE_STATUSES),
+      // Texto libre (LICENCIA_FUNCIONAMIENTO es VARCHAR en la base real), no
+      // un catálogo — se rellena con un nombre de LICENSE_STATUSES solo para
+      // que el dato de prueba luzca realista.
+      licenseStatus: faker.helpers.arrayElement(LICENSE_STATUSES).name,
       licenseDate: faker.datatype.boolean() ? faker.date.recent({ days: 365 }).toISOString() : null,
       ethnicAttention: faker.datatype.boolean(),
       giftedAttention: faker.datatype.boolean(),

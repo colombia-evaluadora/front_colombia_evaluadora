@@ -87,7 +87,6 @@ function createCampus(index: number): Campus {
     commune: faker.helpers.arrayElement(COMMUNES),
     address: faker.location.streetAddress(),
     phone: faker.phone.number({ style: "international" }),
-    approvalResolution: `RES-${faker.string.numeric({ length: 4, allowLeadingZeros: true })}`,
   }
 }
 

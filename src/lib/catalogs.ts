@@ -4,7 +4,13 @@ export const CATALOGS = {
   GENDERS: "genders",
   POPULATION_GENDERS: "population-genders",
   MUNICIPALITIES: "municipalities",
+  // "Nivel educativo de enseñanza" del funcionario (categoría real
+  // NIVEL_ENSENANZA). No confundir con HIGHEST_EDUCATION_LEVELS.
   EDUCATION_LEVELS: "education-levels",
+  // "Último nivel educativo aprobado" del funcionario (categoría real
+  // ULT_NIVEL) — antes compartía el mismo catálogo que EDUCATION_LEVELS,
+  // separado tras confirmar que son categorías distintas en la base real.
+  HIGHEST_EDUCATION_LEVELS: "highest-education-levels",
   WORK_SCHEDULES: "work-schedules",
   EMPLOYEE_CLASSES: "employee-classes",
   EMPLOYEE_GRADES: "employee-grades",

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ComponentProps } from "react"
+import { useEffect, useMemo, useRef, useState, type ComponentProps } from "react"
 import { z } from "zod"
 
 import { Badge } from "@/components/ui/badge"
@@ -42,13 +42,26 @@ import {
 import { CATALOGS } from "@/lib/catalogs"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { cn } from "@/lib/utils"
+import { env } from "@/config/env"
+import { useUser } from "@/lib/auth"
 
 import { useCreate } from "@/features/establishment/employees/api/mutations/use-create"
 import { useCreateWithPerson } from "@/features/establishment/employees/api/mutations/use-create-with-person"
 import { useUpdate } from "@/features/establishment/employees/api/mutations/use-update"
+import {
+  enlazarFuncionarioEstablecimiento,
+  registerFuncionario,
+} from "@/features/establishment/employees/api/mutations/use-register-funcionario"
+import {
+  toCrearItem,
+  updateEmployeePermissions,
+  type PermissionSyncItem,
+} from "@/features/establishment/employees/api/mutations/update-permissions"
 import { useCampusesOptionsQuery } from "@/features/establishment/campuses/api/query/use-campuses-options"
 import { useCatalogQuery } from "@/features/establishment/employees/api/query/use-catalogs"
 import { useEmployeeQuery } from "@/features/establishment/employees/api/query/use-employee"
+import { useEmployeeRolesQuery } from "@/features/establishment/employees/api/query/use-employee-roles"
+import { useEstablishmentsOptionsQuery } from "@/features/establishment/institution/api/query/use-establishments-options"
 import type { Campus } from "@/features/establishment/campuses/api/types/campus"
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 import type {
@@ -300,6 +313,15 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
   const [additionalInfoSaved, setAdditionalInfoSaved] = useState(false)
   // Estado UI: vive fuera de `Person` porque no es parte del modelo de negocio.
   const [confirmPassword, setConfirmPassword] = useState("")
+  // Solo aplica al alta (no se puede reenlazar un funcionario ya existente
+  // desde acá) — igual que `establishmentId` en el alta de sede.
+  const [establishmentId, setEstablishmentId] = useState<number | null>(null)
+  // Snapshot de los `id` (PK_TSEDE_USUARIO) que ya existían al abrir/cargar
+  // el diálogo. Real-mode-only: el guardado de permisos compara `permissions`
+  // contra este set para armar el diff crear/eliminar que espera
+  // PUT /funcionario/:ID/permisos — ver closePermissionsDialog.
+  const originalPermissionIdsRef = useRef<Set<number>>(new Set())
+  const [isSavingPermissions, setIsSavingPermissions] = useState(false)
 
   const sortedPermissions = useMemo(() => {
     if (!permissionSort) return permissions
@@ -319,10 +341,17 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
   const canOpenOptionalSections = Boolean(activeEmployeeId)
 
   const employeeQuery = useEmployeeQuery(employeeId ?? null, open && isEditMode)
-  const { data: roles = [] } = useCatalogQuery<CatalogItem>(CATALOGS.EMPLOYEE_ROLES)
+  const { data: roles = [] } = useEmployeeRolesQuery()
   const { data: workSchedules = [] } = useCatalogQuery<CatalogItem>(CATALOGS.WORK_SCHEDULES)
   const { data: entityStatuses = [] } = useCatalogQuery<CatalogItem>(CATALOGS.ENTITY_STATUSES)
   const { data: campuses = [] } = useCampusesOptionsQuery()
+  const { data: user } = useUser()
+  const isSuperAdmin = Boolean(user?.isSuperAdmin)
+  // Mismo criterio que el select de EE en el alta de sede: solo super admin,
+  // solo en alta (el enlace del funcionario a su EE es fijo una vez creado).
+  const showEstablishmentPicker = isSuperAdmin && !isEditMode
+  const { data: establishmentOptions = [] } = useEstablishmentsOptionsQuery(showEstablishmentPicker)
+  const establishmentItems = establishmentOptions.map((item) => ({ value: item.id, label: item.name }))
 
   const roleItems = roles.map((role) => ({ value: role.code, label: role.name }))
   const campusItems = campuses.map((campus) => ({ value: campus.id, label: campus.name }))
@@ -348,6 +377,8 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
       setCreatedEmployeeId(null)
       setPermissionsSaved(false)
       setAdditionalInfoSaved(false)
+      setEstablishmentId(null)
+      originalPermissionIdsRef.current = new Set()
       return
     }
 
@@ -355,6 +386,11 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
       const employee = employeeQuery.data.employee
       setPerson(employee.person)
       setPermissions(employee.permissions)
+      originalPermissionIdsRef.current = new Set(
+        employee.permissions
+          .map((permission) => permission.id)
+          .filter((id): id is number => id !== undefined),
+      )
       setAdditionalInfo(createAdditionalInfoFromEmployee(employee))
       setPermissionDraft(createPermissionDraft(employee.permissions.length + 1))
       setPermissionErrors({})
@@ -416,7 +452,16 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
       return
     }
 
-    // 1) Garantizar que la persona exista en personsDb (POST /person)
+    // Alta real: el select de EE (solo super admin, ver arriba) es
+    // obligatorio para poder enlazar al funcionario apenas se cree.
+    if (!env.ENABLE_API_MOCKING && !activeEmployeeId && showEstablishmentPicker && !establishmentId) {
+      setPersonErrors({ establishmentId: "Selecciona el establecimiento educativo." })
+      return
+    }
+
+    // 1) Garantizar que la persona exista (POST /person en mock;
+    //    POST /register/funcionario en real — ver más abajo, ese además
+    //    ya crea el TFUNCIONARIO, así que el flujo real se bifurca acá).
     let persistedPerson = draft
 
     if (!persistedPerson.id) {
@@ -435,6 +480,33 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
 
       setPersonErrors({})
 
+      if (!env.ENABLE_API_MOCKING && !activeEmployeeId) {
+        // Backend real: /register/funcionario (auth-center, Java) crea
+        // TUSUARIO + TFUNCIONARIO en un solo paso (FK_ESTABLECIMIENTO
+        // queda NULL, "pendiente"). No pasa por acá si `activeEmployeeId`
+        // ya existe (edición) — eso sigue por PUT normal más abajo.
+        try {
+          const registered = await registerFuncionario(persistedPerson)
+          persistedPerson = { ...persistedPerson, id: registered.pkFuncionario }
+          setPerson(persistedPerson)
+
+          // Siempre se llama, aunque `establishmentId` sea null: el select
+          // solo se muestra para super admin (showEstablishmentPicker) —
+          // para rector/secretaria/jefe de sistema, fn_fun_enlazar_establecimiento
+          // resuelve el EE solo (fn_resolver_establecimiento_unico, V50),
+          // asumiendo que están ligados a un único EE bajo esos roles.
+          await enlazarFuncionarioEstablecimiento(registered.pkTusuario, establishmentId)
+
+          setCreatedEmployeeId(registered.pkFuncionario)
+          notify(SUCCESS_MESSAGES.employee.created)
+        } catch (error) {
+          notify(error instanceof Error ? error.message : "No fue posible registrar el funcionario.", {
+            variant: "error",
+          })
+        }
+        return
+      }
+
       const result = await createPersonMutation.mutateAsync(persistedPerson)
 
       if (result.status === "error") {
@@ -452,6 +524,8 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
     // /employees con catálogos vacíos si el usuario no entró ni permisos
     // ni información complementaria. A partir de ese momento los botones
     // opcionales quedan disponibles sin cerrar el diálogo.
+    // (Solo mock: en real, este paso ya lo cubrió /register/funcionario
+    // arriba — no hay un POST /employees separado.)
     const payload: Employee = {
       // Sin `id` cuando todavía no existe: lo asigna el backend al crear.
       id: activeEmployeeId ?? undefined,
@@ -557,10 +631,75 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
     )
   }
 
-  function closePermissionsDialog() {
-    setPermissionsSaved(true)
-    setPermissionsDialogOpen(false)
-    notify("Permisos agregados al borrador. Pulsa Guardar para persistir el funcionario.", { variant: "info" })
+  /**
+   * En mock, los permisos siguen viajando embebidos en el payload general
+   * del empleado (comportamiento original, sin cambios) — acá solo se
+   * confirma el borrador.
+   *
+   * En real, este es el punto que la propia `fn_fun_permisos_actualizar`
+   * espera como su único caller: `fn_fun_actualizar` ya no acepta lista de
+   * permisos, así que el "Guardar" de este sub-diálogo llama directo a
+   * PUT /funcionario/:ID/permisos con el diff contra
+   * `originalPermissionIdsRef` — altas (permisos sin `id`, agregados en
+   * este borrador) y bajas (`id`s que ya no están en `permissions`). No
+   * soporta "editar" un permiso existente (mismo límite que la función
+   * SQL): si alguien cambia el orden de un permiso ya persistido sin
+   * agregarlo/quitarlo, ese cambio de orden no se sincroniza.
+   */
+  async function closePermissionsDialog() {
+    if (env.ENABLE_API_MOCKING || !activeEmployeeId) {
+      setPermissionsSaved(true)
+      setPermissionsDialogOpen(false)
+      notify("Permisos agregados al borrador. Pulsa Guardar para persistir el funcionario.", { variant: "info" })
+      return
+    }
+
+    const currentIds = new Set(
+      permissions.map((permission) => permission.id).filter((id): id is number => id !== undefined),
+    )
+    const toDelete = [...originalPermissionIdsRef.current].filter((id) => !currentIds.has(id))
+    const toCreate = permissions.filter((permission) => permission.id === undefined)
+
+    if (toDelete.length === 0 && toCreate.length === 0) {
+      setPermissionsSaved(true)
+      setPermissionsDialogOpen(false)
+      return
+    }
+
+    setIsSavingPermissions(true)
+    try {
+      const items: PermissionSyncItem[] = [
+        ...toDelete.map((id): PermissionSyncItem => ({ accion: "eliminar", id })),
+        ...toCreate.map(toCrearItem),
+      ]
+      const results = await updateEmployeePermissions(activeEmployeeId, items)
+
+      // Los `id` que la BD asignó a las altas vuelven en el mismo orden en
+      // que se mandaron los "crear" — se emparejan por posición para que el
+      // borrador ya quede con `id` y no se re-manden como altas la próxima
+      // vez que se abra "Guardar".
+      const createdIds = results.filter((row) => row.accion === "crear").map((row) => row.id)
+      let createdIndex = 0
+      setPermissions((current) =>
+        current.map((permission) => {
+          if (permission.id !== undefined) return permission
+          const id = createdIds[createdIndex]
+          createdIndex += 1
+          return id === undefined ? permission : { ...permission, id }
+        }),
+      )
+      originalPermissionIdsRef.current = new Set([...currentIds, ...createdIds])
+
+      setPermissionsSaved(true)
+      setPermissionsDialogOpen(false)
+      notify("Permisos actualizados.")
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "No fue posible actualizar los permisos.", {
+        variant: "error",
+      })
+    } finally {
+      setIsSavingPermissions(false)
+    }
   }
 
   function closeAdditionalInfoDialog() {
@@ -594,6 +733,38 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
             confirmPassword={confirmPassword}
             onConfirmPasswordChange={setConfirmPassword}
           />
+
+          {/* Mismo criterio que el select de EE en el alta de sede: solo
+              super admin, solo en alta (una vez enlazado, es fijo). */}
+          {showEstablishmentPicker && (
+            <Field
+              orientation="vertical"
+              variant="outlined"
+              className="w-full"
+              data-invalid={personErrors["establishmentId"] ? "true" : undefined}
+            >
+              <FieldLabel htmlFor="employee-establishment">Establecimiento educativo *</FieldLabel>
+              <Select
+                id="employee-establishment"
+                items={Object.fromEntries(establishmentItems.map((item) => [item.value, item.label]))}
+                value={establishmentId}
+                aria-invalid={Boolean(personErrors["establishmentId"])}
+                onValueChange={(selectedValue) => setEstablishmentId(selectedValue ?? null)}
+              >
+                <SelectTrigger id="employee-establishment" size="sm" aria-invalid={Boolean(personErrors["establishmentId"])}>
+                  <SelectValue placeholder="Seleccionar" />
+                </SelectTrigger>
+                <SelectContent>
+                  {establishmentItems.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FieldError>{personErrors["establishmentId"]}</FieldError>
+            </Field>
+          )}
 
           {/* `sm:justify-between` y no solo `justify-between`: el `DialogFooter`
               trae `sm:justify-end` propio y, al ser una clase con variante,
@@ -948,9 +1119,15 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
                 tabla no confirma nada y competía con "Agregar", que es la
                 acción real de esta pantalla. */}
             {permissions.length > 0 && (
-              <Button variant="fill" color="primary" size="sm" onClick={closePermissionsDialog}>
+              <Button
+                variant="fill"
+                color="primary"
+                size="sm"
+                onClick={() => void closePermissionsDialog()}
+                disabled={isSavingPermissions}
+              >
                 <CheckIcon data-icon="inline-start" />
-                Guardar
+                {isSavingPermissions ? "Guardando..." : "Guardar"}
               </Button>
             )}
             <Button
@@ -958,6 +1135,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
               color="neutral"
               size="sm"
               onClick={() => setPermissionsDialogOpen(false)}
+              disabled={isSavingPermissions}
             >
               <XIcon data-icon="inline-start" />
               Cancelar

@@ -140,6 +140,16 @@ function applySorting(
 }
 
 export const establishmentHandlers = [
+  // Universo completo (sin paginar) para selects — ej. el selector de EE
+  // del alta de sedes. Ver `fn_est_listar_todos` (V61) en el backend real.
+  http.get("*/api/establishments/options", async () => {
+    await delay(150)
+
+    return HttpResponse.json({
+      rows: establishmentsRowsDb.map((row) => ({ id: row.id, name: row.name })),
+    })
+  }),
+
   http.post("*/api/establishments/query", async ({ request }) => {
     await delay(250)
 

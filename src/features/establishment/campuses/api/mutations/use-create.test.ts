@@ -31,7 +31,6 @@ it("persists a new campus through the mock POST handler", async () => {
       commune: "20",
       address: "Calle 56 No. 16 - 18",
       phone: "6042690520",
-      approvalResolution: "0035",
     }),
   })
 
