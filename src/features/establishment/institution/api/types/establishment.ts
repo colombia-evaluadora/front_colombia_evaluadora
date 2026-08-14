@@ -92,7 +92,8 @@ export interface EstablishmentAdditionalInfo {
 
     operatingLicense: boolean
 
-    licenseStatus: CatalogItem | null
+    /** Texto libre (`LICENCIA_FUNCIONAMIENTO` es VARCHAR en la base, no un catálogo). */
+    licenseStatus: string
 
     licenseDate: string | null
 

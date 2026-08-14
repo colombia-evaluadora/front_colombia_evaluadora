@@ -9,8 +9,8 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import { CATALOGS } from "@/lib/catalogs"
-import type { Municipality } from "@/features/establishment/institution/api/types/location"
 import { useCatalogQuery } from "@/features/establishment/employees/api/query/use-catalogs"
+import { useMunicipalitiesQuery } from "@/features/establishment/institution/api/query/use-municipalities"
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 import type { EstablishmentDetails } from "@/features/establishment/institution/api/types/establishment"
 
@@ -27,7 +27,7 @@ export function DomicilioDataFormSection({ value, onChange, invalidFields = [], 
     const isInvalid = (field: string) => showValidation && invalidFields.includes(field)
     // Mensaje debajo del campo: solo tras el primer submit, igual que el borde rojo.
     const errorFor = (field: string) => (showValidation ? errors[field] : undefined)
-    const { data: municipalities = [] } = useCatalogQuery<Municipality>(CATALOGS.MUNICIPALITIES)
+    const { data: municipalities = [] } = useMunicipalitiesQuery()
     const { data: zones = [] } = useCatalogQuery<CatalogItem>(CATALOGS.ZONES)
     const municipalityItems = municipalities.map((municipality) => ({
         value: municipality.id,

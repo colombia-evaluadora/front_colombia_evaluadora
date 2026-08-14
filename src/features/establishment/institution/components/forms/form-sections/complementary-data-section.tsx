@@ -13,6 +13,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 import { useCatalogQuery } from "@/features/establishment/employees/api/query/use-catalogs"
+import { useDisabilityTypesQuery } from "@/features/establishment/institution/api/query/use-disability-types"
 import { CATALOGS } from "@/lib/catalogs"
 import { formatDateValue, parseDateValue } from "@/lib/date-time-value"
 import type { EstablishmentDetails } from "@/features/establishment/institution/api/types/establishment"
@@ -33,8 +34,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
     const {data: rangosTarifas = []} = useCatalogQuery<CatalogItem>(CATALOGS.RANGO_TARIFAS)
     const {data: idiomas = []} = useCatalogQuery<CatalogItem>(CATALOGS.IDIOMAS)
     const {data: costRegimen = []} = useCatalogQuery<CatalogItem>(CATALOGS.COST_REGIMEN)
-    const {data: disabilities = []} = useCatalogQuery<CatalogItem>(CATALOGS.DISABILITIES)
-    const {data: licenseStatuses = []} = useCatalogQuery<CatalogItem>(CATALOGS.LICENSE_STATUSES)
+    const {data: disabilities = []} = useDisabilityTypesQuery()
     const {data: populationGenders = []} = useCatalogQuery<CatalogItem>(CATALOGS.POPULATION_GENDERS)
 
     const idiomaItems = idiomas.map((item: CatalogItem) => ({ value: item.id, label: item.name }))
@@ -43,7 +43,6 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
     const populationGenderItems = populationGenders.map((g: CatalogItem) => ({ value: g.id, label: g.name }))
     const rangoTarifaItems = rangosTarifas.map((r: CatalogItem) => ({ value: r.id, label: r.name }))
     const disabilityItems = disabilities.map((item: CatalogItem) => ({ value: item.id, label: item.name }))
-    const licenseStatusItems = licenseStatuses.map((item: CatalogItem) => ({ value: item.id, label: item.name }))
 
     // `gap-2` puertas adentro: encabezado y filas de esta sección van al mismo
     // paso. El salto mayor entre secciones lo pone el `gap-6` del formulario.
@@ -237,28 +236,13 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                             Licencia de funcionamiento
                         </FieldLabel>
 
-                        <Select
+                        <Input
                             id="license-status"
+                            placeholder="Agregar"
+                            value={value.licenseStatus}
                             aria-invalid={isInvalid("additionalInfo.licenseStatus")}
-                            value={value.licenseStatus?.id ?? null}
-                            onValueChange={(selectedValue) => {
-                                const option = licenseStatuses.find((item) => item.id === selectedValue)
-                                if (option) onChange({ ...value, licenseStatus: option })
-                            }}
-                            items={licenseStatusItems}
-                        >
-                            <SelectTrigger aria-invalid={isInvalid("additionalInfo.licenseStatus")}>
-                                <SelectValue placeholder="Seleccionar" />
-                            </SelectTrigger>
-
-                            <SelectContent>
-                                {licenseStatusItems.map((item) => (
-                                    <SelectItem key={item.value} value={item.value}>
-                                        {item.label}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                            onChange={(event) => onChange({ ...value, licenseStatus: event.target.value })}
+                        />
                     </Field>
                 </div>
                 <div className="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2">

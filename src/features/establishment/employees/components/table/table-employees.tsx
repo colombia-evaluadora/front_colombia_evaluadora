@@ -18,6 +18,7 @@ import { CATALOGS } from "@/lib/catalogs"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 
 import { useCatalogQuery } from "@/features/establishment/employees/api/query/use-catalogs"
+import { useEmployeeRolesQuery } from "@/features/establishment/employees/api/query/use-employee-roles"
 import { useEmployeesFilters } from "@/features/establishment/employees/hooks/use-filters"
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 import type { EmployeeListItem } from "@/features/establishment/employees/api/types/employee"
@@ -46,15 +47,35 @@ export function EmployeesDataTable({ onEditEmployee, title, action }: EmployeesD
   const { filters, queryFilters, applyFilters, clearAllFilters, activeFilterCount } =
     useEmployeesFilters()
 
-  const { data: roles = [] } = useCatalogQuery<CatalogItem>(CATALOGS.EMPLOYEE_ROLES)
+  const { data: roles = [] } = useEmployeeRolesQuery()
   const { data: workSchedules = [] } = useCatalogQuery<CatalogItem>(CATALOGS.WORK_SCHEDULES)
   const { data: entityStatuses = [] } = useCatalogQuery<CatalogItem>(CATALOGS.ENTITY_STATUSES)
+
+  // El filtro viaja por código (`queryFilters.roles`/`workSchedules`, igual
+  // que en la URL), pero el backend real espera los ids — se resuelven acá
+  // porque acá ya están cargados los catálogos. Ver `useEmployeesQuery`.
+  const roleIds = useMemo(
+    () =>
+      (queryFilters.roles ?? [])
+        .map((code) => roles.find((role) => role.code === code)?.id)
+        .filter((id): id is number => id !== undefined),
+    [queryFilters.roles, roles],
+  )
+  const workScheduleIds = useMemo(
+    () =>
+      (queryFilters.workSchedules ?? [])
+        .map((code) => workSchedules.find((schedule) => schedule.code === code)?.id)
+        .filter((id): id is number => id !== undefined),
+    [queryFilters.workSchedules, workSchedules],
+  )
 
   const { data, isPending, isError, refetch } = useEmployeesQuery({
     filters: queryFilters,
     sorting,
     pageIndex,
     pageSize,
+    roleIds,
+    workScheduleIds,
   })
 
   const columns = useMemo(() => createColumns({ onEdit: onEditEmployee }), [onEditEmployee])

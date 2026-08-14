@@ -12,12 +12,14 @@ import {
 } from "@/components/ui/dialog"
 import { CATALOGS } from "@/lib/catalogs"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
+import { useUser } from "@/lib/auth"
 
 import { CampusDetailsForm } from "@/features/establishment/campuses/components/forms/form-campus-details"
 import { useCreate } from "@/features/establishment/campuses/api/mutations/use-create"
 import { useUpdate } from "@/features/establishment/campuses/api/mutations/use-update"
 import { useCampusQuery } from "@/features/establishment/campuses/api/query/use-campus"
 import { useCatalogQuery } from "@/features/establishment/employees/api/query/use-catalogs"
+import { useEstablishmentsOptionsQuery } from "@/features/establishment/institution/api/query/use-establishments-options"
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 import type { CampusDraft } from "@/features/establishment/campuses/api/types/campus"
 import { NoticeOutlet, useNotify } from "@/components/notice/notice-context"
@@ -38,25 +40,35 @@ function createInitialCampusValues(): CampusDraft {
     commune: "",
     address: "",
     phone: "",
-    approvalResolution: "",
+    establishmentId: null,
   }
 }
 
 /**
- * Solo los tres campos con asterisco. El resto de la sede (barrio, comuna,
- * dirección, teléfono, resolución) es opcional, así que no entra al esquema.
+ * Solo los tres campos con asterisco (más el establecimiento, cuando el
+ * selector está visible). El resto de la sede (barrio, comuna, dirección,
+ * teléfono, resolución) es opcional, así que no entra al esquema.
+ *
+ * `requireEstablishment`: `FK_TESTABLECIMIENTO` es obligatorio en el alta
+ * real, pero el selector solo se muestra para super admin — para el resto
+ * de roles no lo validamos acá todavía (ver nota en `CampusDetailsForm`).
  */
-const campusSchema = z.object({
-  name: z.string().trim().min(1, "Ingresa el nombre de la sede."),
-  dane: z.string().trim().min(1, "Ingresa el código DANE antiguo de la sede."),
-  zone: z.object({ id: z.number() }).nullable().refine((zone) => zone !== null, {
-    message: "Selecciona la zona.",
-  }),
-})
+function buildCampusSchema(requireEstablishment: boolean) {
+  return z.object({
+    name: z.string().trim().min(1, "Ingresa el nombre de la sede."),
+    dane: z.string().trim().min(1, "Ingresa el código DANE antiguo de la sede."),
+    zone: z.object({ id: z.number() }).nullable().refine((zone) => zone !== null, {
+      message: "Selecciona la zona.",
+    }),
+    establishmentId: requireEstablishment
+      ? z.number({ message: "Selecciona el establecimiento educativo." })
+      : z.number().nullable(),
+  })
+}
 
 /** Un mensaje por campo, indexado por su ruta dentro de `Campus`. */
-function validateCampus(values: CampusDraft): Record<string, string> {
-  const result = campusSchema.safeParse(values)
+function validateCampus(values: CampusDraft, requireEstablishment: boolean): Record<string, string> {
+  const result = buildCampusSchema(requireEstablishment).safeParse(values)
 
   if (result.success) {
     return {}
@@ -83,6 +95,13 @@ export function ManageCampusDialog({
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
   const { data: zones = [] } = useCatalogQuery<CatalogItem>(CATALOGS.ZONES)
+  const { data: user } = useUser()
+  const isSuperAdmin = Boolean(user?.isSuperAdmin)
+  // El selector de EE solo aplica al alta (FK_TESTABLECIMIENTO es inmutable
+  // después de creada la sede) y solo para super admin — el resto de roles
+  // crea sedes dentro de su propio EE (ver `CampusDetailsForm`).
+  const showEstablishmentPicker = isSuperAdmin && !isEditMode
+  const { data: establishments = [] } = useEstablishmentsOptionsQuery(showEstablishmentPicker)
   // Solo pedimos la sede cuando el diálogo está abierto en modo edición: al
   // vivir montado junto a la tabla, la query se dispararía en cada render.
   const campusQuery = useCampusQuery(campusId, isEditMode && open)
@@ -98,7 +117,8 @@ export function ManageCampusDialog({
     }
 
     if (campusQuery.data?.status === "ok") {
-      setFormValues(campusQuery.data.campus)
+      // El EE no viaja en `Campus` (es inmutable, no se pide en edición).
+      setFormValues({ ...campusQuery.data.campus, establishmentId: null })
       setFieldErrors({})
     }
   }, [campusQuery.data, isEditMode, open])
@@ -140,7 +160,7 @@ export function ManageCampusDialog({
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
-    const errors = validateCampus(formValues)
+    const errors = validateCampus(formValues, showEstablishmentPicker)
     setFieldErrors(errors)
 
     if (Object.keys(errors).length > 0) {
@@ -177,7 +197,13 @@ export function ManageCampusDialog({
         <NoticeOutlet className="mb-2" />
 
         <form id="campus-form" onSubmit={handleSubmit}>
-          <CampusDetailsForm value={formValues} onChange={setFormValues} zones={zones} errors={fieldErrors} />
+          <CampusDetailsForm
+            value={formValues}
+            onChange={setFormValues}
+            zones={zones}
+            errors={fieldErrors}
+            establishmentPicker={showEstablishmentPicker ? { establishments } : undefined}
+          />
         </form>
 
         <DialogFooter className="justify-end gap-2">

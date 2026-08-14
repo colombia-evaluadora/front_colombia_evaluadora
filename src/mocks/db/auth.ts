@@ -11,6 +11,9 @@ export const authUsers: (User & {
     password: "password",
     name: "Admin Demo",
     role: "ADMIN",
+    // Carga también el claim de super admin real del backend: así el mock
+    // deja probar los flujos que dependen de `AuthUser.isSuperAdmin`.
+    roles: ["ADMIN", "CEVAL-SUPER_ADMINISTRADOR"],
     document: "1020304050",
   },
   {
@@ -19,6 +22,7 @@ export const authUsers: (User & {
     password: "password",
     name: "Usuario Demo",
     role: "USER",
+    roles: ["USER"],
     document: "1098765432",
   },
 ]
@@ -43,7 +47,7 @@ export function createMockAccessToken(user: User): string {
   const header = base64url({ alg: "none", typ: "JWT" })
   const payload = base64url({
     sub: user.email,
-    roles: [user.role],
+    roles: user.roles,
     iat: Math.floor(Date.now() / 1000),
   })
   return `${header}.${payload}.mock-signature`

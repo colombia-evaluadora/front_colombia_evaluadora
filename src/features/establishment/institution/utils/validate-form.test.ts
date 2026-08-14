@@ -78,7 +78,7 @@ function createValues(overrides: Partial<EstablishmentDetails> = {}): Establishm
       tuitionRange: null,
       disabilityType: null,
       operatingLicense: false,
-      licenseStatus: null,
+      licenseStatus: "",
       licenseDate: null,
       ethnicAttention: false,
       giftedAttention: false,

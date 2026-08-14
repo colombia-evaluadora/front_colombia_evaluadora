@@ -14,10 +14,15 @@ import { CheckIcon } from "@/components/ui/icons"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 
 import { paths } from "@/config/paths"
+import { env } from "@/config/env"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { EstablishmentDetailsForm } from "@/features/establishment/institution/components/forms/form-establishment"
 import { ComplementaryDataFormSection } from "@/features/establishment/institution/components/forms/form-sections/complementary-data-section"
 import { useCreateWithPerson } from "@/features/establishment/employees/api/mutations/use-create-with-person"
+import {
+  enlazarFuncionarioEstablecimiento,
+  registerFuncionario,
+} from "@/features/establishment/employees/api/mutations/use-register-funcionario"
 import { useCreate } from "@/features/establishment/institution/api/mutations/use-create"
 import { useUpdate } from "@/features/establishment/institution/api/mutations/use-update"
 import type { EstablishmentDetails } from "@/features/establishment/institution/api/types/establishment"
@@ -89,7 +94,7 @@ function createInitialEstablishmentValues(): EstablishmentDetails {
       tuitionRange: null,
       disabilityType: null,
       operatingLicense: false,
-      licenseStatus: null,
+      licenseStatus: "",
       licenseDate: null,
       ethnicAttention: false,
       giftedAttention: false,
@@ -146,16 +151,11 @@ export function AddEstablishmentPage() {
     }
   }, [establishmentId, isEditMode])
 
+  // Sin `onSuccess` acá: en real hay que enlazar rector/secretaria (si se
+  // registraron de nuevo) DESPUÉS de crear el establecimiento y ANTES de
+  // navegar — `handleSubmit` orquesta todo eso a mano tras `mutateAsync`.
   const createMutation = useCreate({
     mutationConfig: {
-      onSuccess: (result) => {
-        if (result.status === "error") {
-          notify(result.message, { variant: "error" })
-          return
-        }
-        notify(SUCCESS_MESSAGES.establishment.created)
-        navigate({ to: paths.app.establishments.general.getHref() })
-      },
       onError: (error) => {
         notify(error.message || "No se pudo crear el establecimiento.", { variant: "error" })
       },
@@ -205,13 +205,54 @@ export function AddEstablishmentPage() {
     )
   }
 
+  interface PersistedPerson {
+    person: Person
+    /**
+     * PK_TUSUARIO del funcionario recién registrado — solo en real, y solo
+     * si de verdad se llamó a `/register/funcionario` acá (no si la persona
+     * ya traía `id`, aunque hoy eso no pasa: el form siempre arranca sin
+     * `id`). Es lo que necesita `enlazarFuncionarioEstablecimiento` después
+     * de crear el establecimiento. `null` en mock (ese flujo no enlaza
+     * nada aparte, el mock ya asocia todo en un solo POST).
+     */
+    pkTusuarioToEnlazar: number | null
+  }
+
+  /**
+   * Persiste rector/secretaria ANTES de crear el establecimiento (hace
+   * falta su id para `p_fk_tfuncionario_rector`/`secretaria`).
+   *
+   * - Mock: POST /person (como siempre).
+   * - Real: POST /register/funcionario (auth-center, Java) — crea
+   *   TUSUARIO + TFUNCIONARIO con FK_ESTABLECIMIENTO NULL ("pendiente").
+   *   El enlace real al EE ocurre después, una vez existe el
+   *   PK_ESTABLECIMIENTO (ver el bloque de `enlazarFuncionarioEstablecimiento`
+   *   en `handleSubmit`).
+   */
   async function persistPersonIfAny(
     person: Person | null,
     label: string,
     confirmPassword: string
-  ): Promise<Person | null> {
+  ): Promise<PersistedPerson | null> {
     if (!person || !personHasAnyData(person, confirmPassword)) {
       return null
+    }
+
+    if (!env.ENABLE_API_MOCKING) {
+      try {
+        const registered = await registerFuncionario(person)
+        notify(`${label} guardado.`)
+        return {
+          person: { ...person, id: registered.pkFuncionario },
+          pkTusuarioToEnlazar: registered.pkTusuario,
+        }
+      } catch (error) {
+        notify(
+          error instanceof Error ? error.message : `No fue posible guardar el ${label}.`,
+          { variant: "error" },
+        )
+        throw new Error(`person_persist_failed:${label}`)
+      }
     }
 
     const result = await createPersonMutation.mutateAsync(person)
@@ -222,7 +263,7 @@ export function AddEstablishmentPage() {
     }
 
     notify(`${label} guardado.`)
-    return result.person
+    return { person: result.person, pkTusuarioToEnlazar: null }
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -239,9 +280,12 @@ export function AddEstablishmentPage() {
     }
 
     // Persistimos rector/secretaria antes del establecimiento para que
-    // los `Person` queden con `id` en `personsDb`.
+    // los `Person` queden con `id` en `personsDb` (mock) o con el
+    // `pkFuncionario` que devolvió /register/funcionario (real).
     let nextPrincipal = formValues.principal
     let nextSecretary = formValues.secretary
+    let principalPkTusuario: number | null = null
+    let secretaryPkTusuario: number | null = null
 
     try {
       const persistedPrincipal = await persistPersonIfAny(
@@ -250,7 +294,8 @@ export function AddEstablishmentPage() {
         confirmPasswords["principal"] ?? ""
       )
       if (persistedPrincipal) {
-        nextPrincipal = persistedPrincipal
+        nextPrincipal = persistedPrincipal.person
+        principalPkTusuario = persistedPrincipal.pkTusuarioToEnlazar
       }
 
       const persistedSecretary = await persistPersonIfAny(
@@ -259,7 +304,8 @@ export function AddEstablishmentPage() {
         confirmPasswords["secretary"] ?? ""
       )
       if (persistedSecretary) {
-        nextSecretary = persistedSecretary
+        nextSecretary = persistedSecretary.person
+        secretaryPkTusuario = persistedSecretary.pkTusuarioToEnlazar
       }
     } catch {
       return
@@ -279,7 +325,39 @@ export function AddEstablishmentPage() {
       return
     }
 
-    await createMutation.mutateAsync(nextValues)
+    const result = await createMutation.mutateAsync(nextValues)
+
+    if (result.status === "error") {
+      notify(result.message, { variant: "error" })
+      return
+    }
+
+    // Enlazar rector/secretaria recién registrados (real, no mock) al EE
+    // que se acaba de crear. Si esto falla, el establecimiento YA existe
+    // (no se deshace) — se avisa aparte y el enlace queda pendiente de
+    // resolver a mano (mismo criterio que cualquier paso posterior a la
+    // creación que pueda fallar de forma independiente).
+    const newEstablishmentId = result.establishment.id
+    if (newEstablishmentId) {
+      try {
+        if (principalPkTusuario) {
+          await enlazarFuncionarioEstablecimiento(principalPkTusuario, newEstablishmentId)
+        }
+        if (secretaryPkTusuario) {
+          await enlazarFuncionarioEstablecimiento(secretaryPkTusuario, newEstablishmentId)
+        }
+      } catch (error) {
+        notify(
+          error instanceof Error
+            ? error.message
+            : "El establecimiento se creó, pero no fue posible enlazar a rector/secretaria.",
+          { variant: "error" },
+        )
+      }
+    }
+
+    notify(SUCCESS_MESSAGES.establishment.created)
+    navigate({ to: paths.app.establishments.general.getHref() })
   }
 
   const isPending = createMutation.isPending || updateMutation.isPending

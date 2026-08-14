@@ -57,6 +57,12 @@ function labelsMap(items: CatalogItem[]) {
 export function EmployeeAdditionalInfoForm({ value, onChange }: EmployeeAdditionalInfoFormProps) {
   const { data: employeeClasses = [] } = useCatalogQuery<CatalogItem>(CATALOGS.EMPLOYEE_CLASSES)
   const { data: educationLevels = [] } = useCatalogQuery<CatalogItem>(CATALOGS.EDUCATION_LEVELS)
+  // Categoría real distinta de `educationLevels` (ver CATALOG_CATEGORIAS en
+  // use-catalogs.ts): "nivel educativo de enseñanza" vs "último nivel
+  // educativo aprobado" no son el mismo catálogo en el backend real.
+  const { data: highestEducationLevels = [] } = useCatalogQuery<CatalogItem>(
+    CATALOGS.HIGHEST_EDUCATION_LEVELS,
+  )
   const { data: grades = [] } = useCatalogQuery<CatalogItem>(CATALOGS.EMPLOYEE_GRADES)
   const { data: fundingSources = [] } = useCatalogQuery<CatalogItem>(CATALOGS.FUNDING_SOURCES)
   const { data: functionalPositions = [] } = useCatalogQuery<CatalogItem>(CATALOGS.FUNCTIONAL_POSITIONS)
@@ -64,6 +70,7 @@ export function EmployeeAdditionalInfoForm({ value, onChange }: EmployeeAddition
 
   const employeeClassLabels = labelsMap(employeeClasses)
   const educationLevelLabels = labelsMap(educationLevels)
+  const highestEducationLevelLabels = labelsMap(highestEducationLevels)
   const gradeLabels = labelsMap(grades)
   const fundingSourceLabels = labelsMap(fundingSources)
   const functionalPositionLabels = labelsMap(functionalPositions)
@@ -151,18 +158,18 @@ export function EmployeeAdditionalInfoForm({ value, onChange }: EmployeeAddition
         <FieldLabel htmlFor="highest-education-level">Ultimo nivel educativo aprobado</FieldLabel>
         <Select
           id="highest-education-level"
-          items={educationLevelLabels}
+          items={highestEducationLevelLabels}
           value={value.highestEducationLevel?.id ?? null}
           onValueChange={(selectedValue) => {
             if (selectedValue === null) return
-            patch({ highestEducationLevel: pickOption(educationLevels, selectedValue) })
+            patch({ highestEducationLevel: pickOption(highestEducationLevels, selectedValue) })
           }}
         >
           <SelectTrigger size="sm">
             <SelectValue placeholder="Seleccionar" />
           </SelectTrigger>
           <SelectContent>
-            {educationLevels.map((item) => (
+            {highestEducationLevels.map((item) => (
               <SelectItem key={item.id} value={item.id}>
                 {item.name}
               </SelectItem>
