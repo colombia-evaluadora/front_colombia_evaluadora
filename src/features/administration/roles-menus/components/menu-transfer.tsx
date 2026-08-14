@@ -291,7 +291,9 @@ export function MenuTransfer({
 }: MenuTransferProps) {
   const [availableSearch, setAvailableSearch] = useState("")
   const [assignedSearch, setAssignedSearch] = useState("")
-  const [collapsed, setCollapsed] = useState<number[]>([])
+  // Guardamos los grupos ABIERTOS, no los cerrados: así el estado inicial
+  // (lista vacía) deja todos los acordeones plegados.
+  const [expanded, setExpanded] = useState<number[]>([])
   // "new" = alta; un menú = edición de ese menú; null = diálogo cerrado.
   const [menuBeingEdited, setMenuBeingEdited] = useState<MenuNode | "new" | null>(null)
   // Arrastre en curso: el menú agarrado y la fila sobre la que caería. Va con
@@ -439,7 +441,7 @@ export function MenuTransfer({
   }
 
   function toggleCollapsed(id: number) {
-    setCollapsed((prev) => (prev.includes(id) ? prev.filter((it) => it !== id) : [...prev, id]))
+    setExpanded((prev) => (prev.includes(id) ? prev.filter((it) => it !== id) : [...prev, id]))
   }
 
   function assignGroup(group: MenuTreeNode) {
@@ -508,7 +510,7 @@ export function MenuTransfer({
         ) : (
           <ul className="border-t border-border">
             {availableGroups.map(({ group, children }) => {
-              const isCollapsed = collapsed.includes(group.id)
+              const isCollapsed = !expanded.includes(group.id)
               const isAssigned = assigned.has(group.id)
               const visibleChildIds = children.map((child) => child.id)
               const groupDrop = dropProps(group, "available", tree, availableGroupIds)
@@ -555,7 +557,7 @@ export function MenuTransfer({
                               variant="ghost"
                               color="neutral"
                               size="icon"
-                              className="size-7"
+                              className="size-7 [&_svg:not([class*='size-'])]:size-5"
                               onClick={() => toggleCollapsed(group.id)}
                             >
                               <span className="sr-only">
@@ -674,7 +676,7 @@ export function MenuTransfer({
         ) : (
           <ul className="border-t border-border">
             {assignedGroups.map(({ group, children }) => {
-              const isCollapsed = collapsed.includes(group.id)
+              const isCollapsed = !expanded.includes(group.id)
               const visibleChildIds = children.map((child) => child.id)
               const groupDrop = dropProps(group, "assigned", tree, assignedGroupIds)
               const ghost = ghostSide(group, "assigned", assignedGroupIds)
@@ -711,7 +713,7 @@ export function MenuTransfer({
                               variant="ghost"
                               color="neutral"
                               size="icon"
-                              className="size-7"
+                              className="size-7 [&_svg:not([class*='size-'])]:size-5"
                               onClick={() => toggleCollapsed(group.id)}
                             >
                               <span className="sr-only">
