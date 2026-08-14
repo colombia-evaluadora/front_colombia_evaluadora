@@ -59,9 +59,7 @@ interface UseUpdateRatingScaleOptions {
   mutationConfig?: MutationConfig<typeof updateRatingScale>
 }
 
-export function useUpdateRatingScale({
-  mutationConfig,
-}: UseUpdateRatingScaleOptions = {}) {
+export function useUpdateRatingScale({ mutationConfig }: UseUpdateRatingScaleOptions = {}) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: updateRatingScale,

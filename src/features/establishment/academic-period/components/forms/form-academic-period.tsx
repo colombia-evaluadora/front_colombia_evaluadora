@@ -305,7 +305,7 @@ export function AcademicPeriodForm({
                       )
                       if (!option) return "Seleccionar"
                       const badge = ACADEMIC_PERIOD_STATUS_BADGE[option.key]
-                      return <Badge {...badge}>{option.label}</Badge>
+                      return <Badge {...badge} className="text-xs">{option.label}</Badge>
                     }}
                   </SelectValue>
                 </SelectTrigger>

@@ -78,10 +78,7 @@ async function fetchGrades(
   return { rows, pageCount, totalCount }
 }
 
-export const gradesQueryKey = (params: UseGradesQueryParams) => [
-  "grades",
-  params,
-]
+export const gradesQueryKey = (params: UseGradesQueryParams) => ["grades", params]
 
 export function useGradesQuery(params: UseGradesQueryParams) {
   return useQuery({

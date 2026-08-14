@@ -15,7 +15,10 @@ import { usePeriodAreaNamesQuery } from "@/features/establishment/academic-perio
 import { useCurriculumNodesQuery } from "@/features/establishment/academic-period/api/query/use-curriculum-nodes"
 import type { CurriculumNodeOption } from "@/features/establishment/academic-period/api/types/curriculum-node"
 import { SubjectsMultiSelect } from "@/features/establishment/academic-period/components/subjects-multi-select"
-import { promotionApprovalSchema, type PromotionApprovalValues } from "@/features/establishment/academic-period/api/schema"
+import {
+  promotionApprovalSchema,
+  type PromotionApprovalValues,
+} from "@/features/establishment/academic-period/api/schema"
 import { Input } from "@/components/ui/input"
 import {
   InputGroup,

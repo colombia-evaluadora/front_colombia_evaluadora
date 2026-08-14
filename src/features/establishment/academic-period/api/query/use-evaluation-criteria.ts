@@ -80,9 +80,7 @@ export const evaluationCriteriaQueryKey = (academicPeriodId: number) => [
   academicPeriodId,
 ]
 
-export function useEvaluationCriteriaQuery(
-  academicPeriodId: number | undefined
-) {
+export function useEvaluationCriteriaQuery(academicPeriodId: number | undefined) {
   return useQuery({
     queryKey: evaluationCriteriaQueryKey(academicPeriodId ?? 0),
     queryFn: () => fetchEvaluationCriteria(academicPeriodId as number),

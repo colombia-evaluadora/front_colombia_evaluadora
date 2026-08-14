@@ -15,9 +15,7 @@ interface UseDeleteAreaSubjectOptions {
   mutationConfig?: MutationConfig<typeof deleteAreaSubject>
 }
 
-export function useDeleteAreaSubject({
-  mutationConfig,
-}: UseDeleteAreaSubjectOptions = {}) {
+export function useDeleteAreaSubject({ mutationConfig }: UseDeleteAreaSubjectOptions = {}) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: deleteAreaSubject,

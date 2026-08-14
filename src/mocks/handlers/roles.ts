@@ -13,6 +13,9 @@ function toMenuNode({ roleIds: _roleIds, ...menu }: (typeof navigationMenu)[numb
   return menu
 }
 
+/** Orden del menú de cada rol: la lista de ids tal como se guardó. */
+const roleMenuOrder = new Map<number, number[]>()
+
 export const rolesHandlers = [
   http.get("/api/roles", async () => {
     await delay(150)
@@ -74,6 +77,23 @@ export const rolesHandlers = [
     return HttpResponse.json<MenuNode>(toMenuNode(menu), { status: 201 })
   }),
 
+  // Reordenamiento (arrastrar y soltar): llega el nuevo `menuOrder` de todos
+  // los menús que se corrieron de lugar.
+  http.put("/api/menus/order", async ({ request }) => {
+    await delay(200)
+    const { items } = (await request.json()) as { items: { id: number; menuOrder: number }[] }
+
+    for (const item of items) {
+      const menu = navigationMenu.find((it) => it.id === item.id)
+      if (!menu) {
+        return HttpResponse.json({ message: "El menú no existe." }, { status: 404 })
+      }
+      menu.menuOrder = item.menuOrder
+    }
+
+    return new HttpResponse(null, { status: 204 })
+  }),
+
   http.patch("/api/menus/:menuId", async ({ params, request }) => {
     await delay(200)
     const menu = navigationMenu.find((it) => it.id === Number(params.menuId))
@@ -126,13 +146,23 @@ export const rolesHandlers = [
     })
   }),
 
+  // El orden de esta lista ES el orden en que el rol ve su menú, distinto del
+  // `menuOrder` del catálogo. Se guarda aparte para no perderlo al releer.
   http.get("/api/roles/:roleId/menus", async ({ params }) => {
     await delay(150)
     const roleId = Number(params.roleId)
     const assigned = navigationMenu
       .filter((menu) => menu.roleIds.includes(roleId))
       .map((menu) => menu.id)
-    return HttpResponse.json<number[]>(assigned)
+
+    const saved = roleMenuOrder.get(roleId)
+    if (!saved) return HttpResponse.json<number[]>(assigned)
+
+    // Lo guardado manda; lo que se asignó por otra vía va al final.
+    return HttpResponse.json<number[]>([
+      ...saved.filter((id) => assigned.includes(id)),
+      ...assigned.filter((id) => !saved.includes(id)),
+    ])
   }),
 
   http.put("/api/roles/:roleId/menus", async ({ params, request }) => {
@@ -157,6 +187,8 @@ export const rolesHandlers = [
         menu.roleIds = menu.roleIds.filter((id) => id !== roleId)
       }
     }
+
+    roleMenuOrder.set(roleId, menuIds)
 
     return HttpResponse.json<UpdateRoleMenusResult>({
       status: "success",

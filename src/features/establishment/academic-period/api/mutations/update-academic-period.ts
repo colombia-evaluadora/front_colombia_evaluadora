@@ -29,9 +29,7 @@ interface UseUpdateAcademicPeriodOptions {
   mutationConfig?: MutationConfig<typeof updateAcademicPeriod>
 }
 
-export function useUpdateAcademicPeriod({
-  mutationConfig,
-}: UseUpdateAcademicPeriodOptions = {}) {
+export function useUpdateAcademicPeriod({ mutationConfig }: UseUpdateAcademicPeriodOptions = {}) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: updateAcademicPeriod,

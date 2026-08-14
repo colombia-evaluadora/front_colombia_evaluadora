@@ -81,7 +81,10 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
       className={cn(
         // `text-sm`: el encabezado usa el MISMO tamaño que las celdas del
         // cuerpo (lo hereda de `<table class="text-sm">`), no una escala menor.
-        "h-12 px-3 text-left align-middle text-sm font-medium tracking-wider whitespace-nowrap text-muted-foreground uppercase [&:has([role=checkbox])]:pr-0",
+        // `px-4` y no `px-3`: el botón del encabezado ordenable va con `-ml-3`
+        // para alinear su texto con el de las celdas, así que con `px-3` su
+        // fondo quedaba a ras del borde de la tabla en la primera columna.
+        "h-12 px-4 text-left align-middle text-sm font-medium tracking-wider whitespace-nowrap text-muted-foreground uppercase [&:has([role=checkbox])]:pr-0",
         className,
       )}
       {...props}
@@ -97,7 +100,8 @@ function TableCell({ className, ...props }: React.ComponentProps<"td">) {
         // Los badges de la base son de 10px, que dentro de una tabla quedan
         // muy por debajo del texto de las celdas. Se suben a 12px acá y no en
         // el componente para no tocar su uso fuera de tablas.
-        "p-3 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&_[data-slot=badge]]:text-xs",
+        // `py-3` aparte del `px-4` para no tocar el alto de fila.
+        "px-4 py-3 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&_[data-slot=badge]]:text-xs",
         className,
       )}
       {...props}

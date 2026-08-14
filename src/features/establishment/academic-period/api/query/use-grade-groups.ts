@@ -89,10 +89,7 @@ async function fetchGradeGroups(
   return { rows, pageCount, totalCount }
 }
 
-export const gradeGroupsQueryKey = (params: UseGradeGroupsQueryParams) => [
-  "grade-groups",
-  params,
-]
+export const gradeGroupsQueryKey = (params: UseGradeGroupsQueryParams) => ["grade-groups", params]
 
 export function useGradeGroupsQuery(params: UseGradeGroupsQueryParams) {
   return useQuery({

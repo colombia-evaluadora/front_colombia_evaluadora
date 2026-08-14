@@ -47,9 +47,7 @@ async function fetchEvaluationCriteriaOptions(): Promise<EvaluationCriteriaOptio
   return result
 }
 
-export const evaluationCriteriaOptionsQueryKey = () => [
-  "evaluation-criteria-options",
-]
+export const evaluationCriteriaOptionsQueryKey = () => ["evaluation-criteria-options"]
 
 export function useEvaluationCriteriaOptionsQuery() {
   return useQuery({

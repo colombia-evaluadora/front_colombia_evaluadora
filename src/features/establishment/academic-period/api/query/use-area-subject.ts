@@ -147,13 +147,9 @@ async function fetchAreaSubject(
   return { rows: filtered, pageCount, totalCount }
 }
 
-export const areaSubjectQueryKey = (
-  params: UseAreaSubjectQueryParams
-) => ["area-subjects", params]
+export const areaSubjectQueryKey = (params: UseAreaSubjectQueryParams) => ["area-subjects", params]
 
-export function useAreaSubjectQuery(
-  params: UseAreaSubjectQueryParams
-) {
+export function useAreaSubjectQuery(params: UseAreaSubjectQueryParams) {
   return useQuery({
     queryKey: areaSubjectQueryKey(params),
     queryFn: () => fetchAreaSubject(params),

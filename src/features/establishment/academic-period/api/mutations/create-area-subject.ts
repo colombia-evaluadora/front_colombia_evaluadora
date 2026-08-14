@@ -47,9 +47,7 @@ interface UseCreateAreaSubjectOptions {
   mutationConfig?: MutationConfig<typeof createAreaSubject>
 }
 
-export function useCreateAreaSubject({
-  mutationConfig,
-}: UseCreateAreaSubjectOptions = {}) {
+export function useCreateAreaSubject({ mutationConfig }: UseCreateAreaSubjectOptions = {}) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: createAreaSubject,

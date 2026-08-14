@@ -19,9 +19,7 @@ async function fetchEvaluationPeriodStatuses(): Promise<
   }))
 }
 
-export const evaluationPeriodStatusesQueryKey = () => [
-  "evaluation-period-statuses",
-]
+export const evaluationPeriodStatusesQueryKey = () => ["evaluation-period-statuses"]
 
 export function useEvaluationPeriodStatusesQuery() {
   return useQuery({

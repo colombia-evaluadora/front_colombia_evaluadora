@@ -21,7 +21,10 @@ import {
 import { Button } from "@/components/ui/button"
 
 import { useExportAcademicPeriods } from "@/features/establishment/academic-period/api/mutations/export-academic-periods"
-import type { AcademicPeriodsQueryFilters, ExportFormat } from "@/features/establishment/academic-period/api/types/academic-period"
+import type {
+  AcademicPeriodsQueryFilters,
+  ExportFormat,
+} from "@/features/establishment/academic-period/api/types/academic-period"
 
 interface ExportAcademicPeriodsDialogProps {
   filters: AcademicPeriodsQueryFilters

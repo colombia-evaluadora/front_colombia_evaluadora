@@ -29,10 +29,7 @@ async function fetchSubjects(academicPeriodId?: number): Promise<string[]> {
   return (raw.rows ?? []).map((row) => row.nombre_interno)
 }
 
-export const subjectsQueryKey = (academicPeriodId?: number) => [
-  "subjects",
-  academicPeriodId,
-]
+export const subjectsQueryKey = (academicPeriodId?: number) => ["subjects", academicPeriodId]
 
 export function useSubjectsQuery(academicPeriodId?: number) {
   return useQuery({

@@ -78,10 +78,7 @@ export type CreateRatingScaleRequest = RatingScale & {
 }
 
 // Una escala sin lo que asigna el backend (código y niveles resueltos).
-export type RatingScaleDraft = Omit<
-  RatingScale,
-  "codigo" | "teachingLevelIds" | "teachingLevels"
->
+export type RatingScaleDraft = Omit<RatingScale, "codigo" | "teachingLevelIds" | "teachingLevels">
 
 // Alta en lote: el backend expande por nivel (una escala independiente por
 // cada nivel × escala) y asigna los códigos.

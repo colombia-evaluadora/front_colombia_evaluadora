@@ -37,6 +37,7 @@ import {
   MdCreditCard,
   MdDarkMode,
   MdDescription,
+  MdDragIndicator,
   MdOutlineFileDownload,
   MdOutlineBorderColor,
   MdOutlineDelete,
@@ -176,6 +177,8 @@ export const CompassIcon = makeIcon(MdExplore)
 export const ControlPointIcon = makeIcon(MdOutlineControlPoint)
 export const CreditCardIcon = makeIcon(MdCreditCard)
 export const CurrencyDollarIcon = makeIcon(MdAttachMoney)
+// Manija de arrastre (los seis puntitos): marca las filas que se reordenan.
+export const DotsSixVerticalIcon = makeIcon(MdDragIndicator)
 export const DotsThreeIcon = makeIcon(MdMoreHoriz)
 export const EnvelopeIcon = makeIcon(MdOutlineEmail)
 export const EraserIcon = makeIcon(MdBackspace)

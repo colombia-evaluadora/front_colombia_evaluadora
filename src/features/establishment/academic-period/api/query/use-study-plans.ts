@@ -82,10 +82,7 @@ async function fetchStudyPlans(
   return { rows, pageCount, totalCount }
 }
 
-export const studyPlansQueryKey = (params: UseStudyPlansQueryParams) => [
-  "study-plans",
-  params,
-]
+export const studyPlansQueryKey = (params: UseStudyPlansQueryParams) => ["study-plans", params]
 
 export function useStudyPlansQuery(params: UseStudyPlansQueryParams) {
   return useQuery({

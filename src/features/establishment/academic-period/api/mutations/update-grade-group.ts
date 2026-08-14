@@ -39,9 +39,7 @@ interface UseUpdateGradeGroupOptions {
   mutationConfig?: MutationConfig<typeof updateGradeGroup>
 }
 
-export function useUpdateGradeGroup({
-  mutationConfig,
-}: UseUpdateGradeGroupOptions = {}) {
+export function useUpdateGradeGroup({ mutationConfig }: UseUpdateGradeGroupOptions = {}) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: updateGradeGroup,
