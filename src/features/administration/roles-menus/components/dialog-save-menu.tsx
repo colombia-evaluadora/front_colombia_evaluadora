@@ -76,7 +76,16 @@ function emptyDraft(): Draft {
  * Select de plan con alta al pie, igual que el de roles: crear un plan es
  * parte del mismo flujo y mandar al usuario a otra pantalla lo cortaría.
  */
-function PlanSelect({ value, onChange }: { value: string; onChange: (planId: string) => void }) {
+function PlanSelect({
+  id,
+  value,
+  onChange,
+}: {
+  /** Presente cuando el select va dentro de un `Field` con etiqueta propia. */
+  id?: string
+  value: string
+  onChange: (planId: string) => void
+}) {
   const { data: plans = [] } = usePlansQuery()
   const [newPlanName, setNewPlanName] = useState("")
   const createPlan = useCreatePlan({
@@ -90,7 +99,7 @@ function PlanSelect({ value, onChange }: { value: string; onChange: (planId: str
 
   return (
     <Select value={value} onValueChange={(next) => next && onChange(String(next))}>
-      <SelectTrigger variant="outlined" aria-label="Plan">
+      <SelectTrigger id={id} variant="outlined" aria-label="Plan">
         <SelectValue>
           {(current) => plans.find((plan) => String(plan.id) === current)?.name ?? "Seleccione"}
         </SelectValue>
@@ -179,6 +188,7 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
   const [path, setPath] = useState("")
   const [icon, setIcon] = useState("")
   const [visible, setVisible] = useState(true)
+  const [planId, setPlanId] = useState("")
   const [drafts, setDrafts] = useState<Draft[]>([])
   // Mensaje por campo del menú raíz, indexado por su nombre en el esquema.
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
@@ -190,7 +200,9 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
     setName(menu?.name ?? "")
     setPath(menu?.path ?? "")
     setIcon(menu?.icon ?? "")
-    setVisible(true)
+    // Los menús viejos no traen `visible`: se asumen visibles.
+    setVisible(menu?.visible ?? true)
+    setPlanId(menu?.planId != null ? String(menu.planId) : "")
     setDrafts([])
     setFieldErrors({})
   }, [open, menu])
@@ -243,7 +255,15 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
 
     try {
       if (isEditing) {
-        await saveMenu.mutateAsync({ id: menu.id, name, path, icon: menu.icon, idParent })
+        await saveMenu.mutateAsync({
+          id: menu.id,
+          name,
+          path,
+          icon: menu.icon,
+          idParent,
+          visible,
+          planId: planId ? Number(planId) : null,
+        })
       } else {
         // El padre primero: los submenús necesitan su id. Un menú principal no
         // tiene ruta propia —es un grupo—, así que hereda la del primer
@@ -429,6 +449,28 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
                   onChange={(event) => setPath(event.target.value)}
                 />
                 <FieldError>{fieldErrors["path"]}</FieldError>
+              </Field>
+              {/* Visible y plan son propiedades del menú como cualquier otra:
+                  se cargan al darlo de alta como submenú, así que editarlo
+                  tiene que poder corregirlas. */}
+              <Field variant="outlined">
+                <FieldLabel htmlFor="menu-edit-visible">Visible</FieldLabel>
+                <Select
+                  value={visible ? "si" : "no"}
+                  onValueChange={(value) => value && setVisible(value === "si")}
+                >
+                  <SelectTrigger id="menu-edit-visible">
+                    <SelectValue>{(value) => (value === "no" ? "No" : "Si")}</SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="si">Si</SelectItem>
+                    <SelectItem value="no">No</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field variant="outlined">
+                <FieldLabel htmlFor="menu-edit-plan">Plan</FieldLabel>
+                <PlanSelect id="menu-edit-plan" value={planId} onChange={setPlanId} />
               </Field>
             </div>
           )}
