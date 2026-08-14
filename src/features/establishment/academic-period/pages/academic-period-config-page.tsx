@@ -32,11 +32,7 @@ import type {
 import type { AcademicPeriodDetail } from "@/features/establishment/academic-period/api/types/academic-period"
 import { AcademicPeriodForm } from "@/features/establishment/academic-period/components/forms/form-academic-period"
 import { EvaluationPeriodsSection } from "@/features/establishment/academic-period/components/evaluation-periods-section"
-import {
-  NoticeOutlet,
-  NoticeProvider,
-  useNotify,
-} from "@/components/notice/notice-context"
+import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
 import {
   DEFAULT_JORNADA,
   type Jornada,
@@ -44,9 +40,7 @@ import {
 
 const FORM_ID = "academic-period-config-form"
 
-function toFormValues(
-  detail: AcademicPeriodDetail
-): Partial<AcademicPeriodFormInput> {
+function toFormValues(detail: AcademicPeriodDetail): Partial<AcademicPeriodFormInput> {
   return {
     startDate: detail.startDate,
     endDate: detail.endDate,
@@ -86,8 +80,7 @@ function AcademicPeriodConfigPageContent() {
   const { periodId } = useParams({ strict: false }) as { periodId?: string }
   const isEditing = periodId != null
   const parsedPeriodId = periodId ? Number(periodId) : undefined
-  const isValidPeriodId =
-    parsedPeriodId != null && Number.isInteger(parsedPeriodId)
+  const isValidPeriodId = parsedPeriodId != null && Number.isInteger(parsedPeriodId)
   const numericPeriodId = isValidPeriodId ? parsedPeriodId : undefined
 
   const [saved, setSaved] = useState(false)
@@ -134,7 +127,7 @@ function AcademicPeriodConfigPageContent() {
     return <NotFoundPage />
   }
 
-  const academicPeriodId = isEditing ? numericPeriodId : createdPeriodId ?? undefined
+  const academicPeriodId = isEditing ? numericPeriodId : (createdPeriodId ?? undefined)
 
   function handleSubmit(values: AcademicPeriodFormValues) {
     setJornada({
@@ -223,9 +216,7 @@ function AcademicPeriodConfigPageContent() {
 
       {showSaveAction && (
         <TableScreenFooter>
-          <p className="text-sm text-muted-foreground">
-            Complete la información antes de guardar.
-          </p>
+          <p className="text-sm text-muted-foreground">Complete la información antes de guardar.</p>
           <Button
             type="submit"
             size="sm"

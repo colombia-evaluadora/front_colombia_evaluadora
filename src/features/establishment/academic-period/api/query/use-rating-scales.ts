@@ -14,9 +14,7 @@ interface UseRatingScalesQueryParams {
   academicPeriodId?: number
 }
 
-function fetchRatingScales(
-  body: RatingScalesQueryRequest
-): Promise<RatingScalesQueryResponse> {
+function fetchRatingScales(body: RatingScalesQueryRequest): Promise<RatingScalesQueryResponse> {
   return api.query("/rating-scales/query", body)
 }
 

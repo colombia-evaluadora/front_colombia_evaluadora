@@ -15,9 +15,7 @@ interface UseCreateGradeGroupOptions {
   mutationConfig?: MutationConfig<typeof createGradeGroup>
 }
 
-export function useCreateGradeGroup({
-  mutationConfig,
-}: UseCreateGradeGroupOptions = {}) {
+export function useCreateGradeGroup({ mutationConfig }: UseCreateGradeGroupOptions = {}) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: createGradeGroup,

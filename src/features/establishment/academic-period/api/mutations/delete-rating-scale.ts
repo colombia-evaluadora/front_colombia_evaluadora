@@ -12,9 +12,7 @@ interface UseDeleteRatingScaleOptions {
   mutationConfig?: MutationConfig<typeof deleteRatingScale>
 }
 
-export function useDeleteRatingScale({
-  mutationConfig,
-}: UseDeleteRatingScaleOptions = {}) {
+export function useDeleteRatingScale({ mutationConfig }: UseDeleteRatingScaleOptions = {}) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: deleteRatingScale,

@@ -4,9 +4,7 @@ import { api } from "@/lib/api-client"
 import type { AssignmentSubject } from "@/features/establishment/academic-period/api/types/academic-assignment"
 
 // Pool de asignaturas asignables del periodo: grado × grupo × plan de estudio.
-function fetchAssignmentSubjects(
-  academicPeriodId: number
-): Promise<AssignmentSubject[]> {
+function fetchAssignmentSubjects(academicPeriodId: number): Promise<AssignmentSubject[]> {
   return api.get(`/academic-periods/${academicPeriodId}/assignment-subjects`)
 }
 

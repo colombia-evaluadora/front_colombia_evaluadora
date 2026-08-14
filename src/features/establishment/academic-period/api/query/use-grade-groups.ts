@@ -14,16 +14,11 @@ interface UseGradeGroupsQueryParams {
   gradeId?: number
 }
 
-function fetchGradeGroups(
-  body: GradeGroupsQueryRequest
-): Promise<GradeGroupsQueryResponse> {
+function fetchGradeGroups(body: GradeGroupsQueryRequest): Promise<GradeGroupsQueryResponse> {
   return api.query("/grade-groups/query", body)
 }
 
-export const gradeGroupsQueryKey = (params: UseGradeGroupsQueryParams) => [
-  "grade-groups",
-  params,
-]
+export const gradeGroupsQueryKey = (params: UseGradeGroupsQueryParams) => ["grade-groups", params]
 
 export function useGradeGroupsQuery(params: UseGradeGroupsQueryParams) {
   return useQuery({

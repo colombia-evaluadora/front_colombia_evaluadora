@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api-client"
 import type {
   AreaSubjectsQueryRequest,
-  AreaSubjectsQueryResponse
+  AreaSubjectsQueryResponse,
 } from "@/features/establishment/academic-period/api/types/area-subject"
 
 interface UseAreaSubjectQueryParams {
@@ -14,19 +14,13 @@ interface UseAreaSubjectQueryParams {
   academicPeriodId?: number
 }
 
-function fetchAreaSubject(
-  body: AreaSubjectsQueryRequest
-): Promise<AreaSubjectsQueryResponse> {
+function fetchAreaSubject(body: AreaSubjectsQueryRequest): Promise<AreaSubjectsQueryResponse> {
   return api.query("/area-subjects/query", body)
 }
 
-export const areaSubjectQueryKey = (
-  params: UseAreaSubjectQueryParams
-) => ["area-subjects", params]
+export const areaSubjectQueryKey = (params: UseAreaSubjectQueryParams) => ["area-subjects", params]
 
-export function useAreaSubjectQuery(
-  params: UseAreaSubjectQueryParams
-) {
+export function useAreaSubjectQuery(params: UseAreaSubjectQueryParams) {
   return useQuery({
     queryKey: areaSubjectQueryKey(params),
     queryFn: () => fetchAreaSubject(params),

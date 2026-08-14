@@ -15,7 +15,13 @@ import {
 
 import { useGradeConfigQuery } from "@/features/establishment/academic-period/api/query/use-grade-config"
 import { useUpdateGradeConfig } from "@/features/establishment/academic-period/api/mutations/update-grade-config"
-import { buildRuns, buildSlots, DAYS, type Jornada, type ScheduleSubject } from "@/features/establishment/academic-period/components/schedule-data"
+import {
+  buildRuns,
+  buildSlots,
+  DAYS,
+  type Jornada,
+  type ScheduleSubject,
+} from "@/features/establishment/academic-period/components/schedule-data"
 
 function subjectStyles(hex: string) {
   return {

@@ -14,14 +14,15 @@ interface UseAcademicPeriodsQueryParams {
 }
 
 function fetchAcademicPeriods(
-  body: AcademicPeriodsQueryRequest
+  body: AcademicPeriodsQueryRequest,
 ): Promise<AcademicPeriodsQueryResponse> {
   return api.query("/academic-periods/query", body)
 }
 
-export const academicPeriodsQueryKey = (
-  params: UseAcademicPeriodsQueryParams
-) => ["academic-periods", params]
+export const academicPeriodsQueryKey = (params: UseAcademicPeriodsQueryParams) => [
+  "academic-periods",
+  params,
+]
 
 export function useAcademicPeriodsQuery(params: UseAcademicPeriodsQueryParams) {
   return useQuery({

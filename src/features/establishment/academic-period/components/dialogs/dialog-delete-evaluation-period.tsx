@@ -47,9 +47,7 @@ export function DeleteEvaluationPeriodDialog({
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger
-        render={<Button variant="ghost" color="neutral" size="icon-sm" />}
-      >
+      <AlertDialogTrigger render={<Button variant="ghost" color="neutral" size="icon-sm" />}>
         <span className="sr-only">Eliminar periodo de evaluación</span>
         <TrashIcon />
       </AlertDialogTrigger>

@@ -2,7 +2,6 @@ import { z } from "zod"
 
 export const ACADEMIC_PERIOD_STATUSES = ["ACTIVO", "INACTIVO"] as const
 
-
 export const academicPeriodFormSchema = z
   .object({
     startDate: z.string().min(1, "La fecha de inicio es obligatoria"),
@@ -36,36 +35,27 @@ export const academicPeriodFormSchema = z
         .refine((b) => !b.startTime || !b.endTime || b.startTime < b.endTime, {
           message: "La hora de inicio del descanso es posterior o igual a la hora final",
           path: ["startTime"],
-        })
+        }),
     ),
+  })
+  .refine((data) => !data.startDate || !data.endDate || data.startDate < data.endDate, {
+    message: "La fecha de inicio es posterior o igual a la fecha de finalización",
+    path: ["startDate"],
   })
   .refine(
     (data) =>
-      !data.startDate || !data.endDate || data.startDate < data.endDate,
-    {
-      message: "La fecha de inicio es posterior o igual a la fecha de finalización",
-      path: ["startDate"],
-    }
-  )
-  .refine(
-    (data) =>
-      !data.startDate ||
-      !data.enrollmentDeadline ||
-      data.enrollmentDeadline >= data.startDate,
+      !data.startDate || !data.enrollmentDeadline || data.enrollmentDeadline >= data.startDate,
     {
       message: "La fecha límite de matrícula debe ser posterior o igual a la fecha de inicio",
       path: ["enrollmentDeadline"],
-    }
+    },
   )
   .refine(
-    (data) =>
-      !data.endDate ||
-      !data.enrollmentDeadline ||
-      data.enrollmentDeadline <= data.endDate,
+    (data) => !data.endDate || !data.enrollmentDeadline || data.enrollmentDeadline <= data.endDate,
     {
       message: "La fecha límite de matrícula debe ser anterior o igual a la fecha de fin",
       path: ["enrollmentDeadline"],
-    }
+    },
   )
   .refine(
     (data) =>
@@ -75,35 +65,28 @@ export const academicPeriodFormSchema = z
     {
       message: "La hora de inicio es posterior o igual a la hora final",
       path: ["scheduleStartTime"],
-    }
+    },
   )
   .refine(
     (data) =>
       data.breaks.every(
-        (b) =>
-          !b.startTime ||
-          !data.scheduleStartTime ||
-          b.startTime >= data.scheduleStartTime,
+        (b) => !b.startTime || !data.scheduleStartTime || b.startTime >= data.scheduleStartTime,
       ),
     {
       message:
         "La hora de inicio del descanso debe ser posterior o igual a la hora de inicio de la jornada",
       path: ["breaks"],
-    }
+    },
   )
   .refine(
     (data) =>
       data.breaks.every(
-        (b) =>
-          !b.endTime ||
-          !data.scheduleEndTime ||
-          b.endTime <= data.scheduleEndTime,
+        (b) => !b.endTime || !data.scheduleEndTime || b.endTime <= data.scheduleEndTime,
       ),
     {
-      message:
-        "La hora final del descanso debe ser anterior o igual a la hora final de la jornada",
+      message: "La hora final del descanso debe ser anterior o igual a la hora final de la jornada",
       path: ["breaks"],
-    }
+    },
   )
 export type AcademicPeriodFormInput = z.input<typeof academicPeriodFormSchema>
 export type AcademicPeriodFormValues = z.infer<typeof academicPeriodFormSchema>
@@ -115,12 +98,8 @@ export const academicPeriodsFiltersFormSchema = z.object({
   startFrom: z.string(),
   startTo: z.string(),
 })
-export type AcademicPeriodsFiltersFormInput = z.input<
-  typeof academicPeriodsFiltersFormSchema
->
-export type AcademicPeriodsFiltersFormValues = z.infer<
-  typeof academicPeriodsFiltersFormSchema
->
+export type AcademicPeriodsFiltersFormInput = z.input<typeof academicPeriodsFiltersFormSchema>
+export type AcademicPeriodsFiltersFormValues = z.infer<typeof academicPeriodsFiltersFormSchema>
 
 export const academicPeriodsSearchSchema = z.object({
   page: z.coerce.number().int().nonnegative().catch(0).default(0),
@@ -176,10 +155,7 @@ export type StudyPlanFormValues = z.infer<typeof studyPlanFormSchema>
 // Periodos de evaluación
 export const evaluationPeriodFormSchema = z
   .object({
-    codigo: z
-      .number()
-      .int()
-      .min(1, "El código debe ser mayor a 0"),
+    codigo: z.number().int().min(1, "El código debe ser mayor a 0"),
     nombre: z.string().min(1, "El nombre es obligatorio"),
     abreviacion: z.string().min(1, "La abreviación es obligatoria"),
     startDate: z.string().min(1, "La fecha de inicio es obligatoria"),
@@ -192,17 +168,11 @@ export const evaluationPeriodFormSchema = z
       .max(100),
     estado: z.string().min(1, "El estado es obligatorio"),
   })
-  .refine(
-    (data) => !data.startDate || !data.endDate || data.startDate < data.endDate,
-    {
-      message:
-        "La fecha de inicio es posterior o igual a la fecha de finalización",
-      path: ["startDate"],
-    }
-  )
-export type EvaluationPeriodFormValues = z.infer<
-  typeof evaluationPeriodFormSchema
->
+  .refine((data) => !data.startDate || !data.endDate || data.startDate < data.endDate, {
+    message: "La fecha de inicio es posterior o igual a la fecha de finalización",
+    path: ["startDate"],
+  })
+export type EvaluationPeriodFormValues = z.infer<typeof evaluationPeriodFormSchema>
 
 // Criterios de evaluación
 export const evaluationCriteriaSchema = z.object({
@@ -230,9 +200,7 @@ export const promotionApprovalSchema = z.object({
   applyAverageApproval: z.boolean(),
 
   basePercentage: z.number().min(0, "El valor debe ser mayor o igual a 0"),
-  minimumSubjectPercentage: z
-    .number()
-    .min(0, "El valor debe ser mayor o igual a 0"),
+  minimumSubjectPercentage: z.number().min(0, "El valor debe ser mayor o igual a 0"),
   maxFailedForAverage: z.number().min(0, "El valor debe ser mayor o igual a 0"),
 
   requiredSubjects: z.array(z.string()),
