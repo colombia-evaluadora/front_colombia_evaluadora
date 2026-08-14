@@ -527,8 +527,14 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
                   {/* Un título por columna, una sola vez arriba: los controles
                       van `outlined` y el label flotante de cada celda repetía
                       el mismo texto en cada fila. Cada control conserva su
-                      `aria-label` para el lector de pantalla. */}
-                  <div className="grid min-w-[34rem] grid-cols-[1fr_1fr_7rem_9rem_auto] gap-2 text-sm font-semibold">
+                      `aria-label` para el lector de pantalla.
+
+                      La última columna es de ancho fijo (el del botón de
+                      quitar) y no `auto`: en el encabezado esa celda es un
+                      `sr-only` que no mide nada, así que con `auto` las dos
+                      grillas repartían distinto y los títulos quedaban corridos
+                      respecto de sus campos. */}
+                  <div className="grid min-w-[34rem] grid-cols-[1fr_1fr_7rem_9rem_2.5rem] gap-2 text-sm font-semibold">
                     <span>Nombre del menú*</span>
                     <span>URL*</span>
                     <span>Visible</span>
@@ -539,7 +545,7 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
                     {drafts.map((draft) => (
                       <li
                         key={draft.key}
-                        className="grid min-w-[34rem] grid-cols-[1fr_1fr_7rem_9rem_auto] items-center gap-2"
+                        className="grid min-w-[34rem] grid-cols-[1fr_1fr_7rem_9rem_2.5rem] items-center gap-2"
                       >
                         <Input
                           variant="outlined"
