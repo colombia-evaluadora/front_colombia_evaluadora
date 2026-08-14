@@ -215,6 +215,20 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
   const hasParentChoice = parent !== ""
   const idParent = isNewRoot ? null : Number(parent)
 
+  /*
+   * Un menú principal es una CARPETA y se edita como tal: nombre, ícono y
+   * visibilidad, más los submenús que cuelgan de ella. No lleva ruta propia
+   * —la hereda del primer submenú— ni plan, que es cosa de cada ítem. Un
+   * submenú, en cambio, sí tiene ruta y plan y no tiene ícono (el del sidebar
+   * es el de su carpeta).
+   */
+  // `== null` y no `=== null`: un menú principal puede llegar con `idParent`
+  // ausente en vez de nulo, y ahí dejaría de reconocerse como carpeta.
+  const isRootMenu = isEditing ? menu.idParent == null : isNewRoot
+  // La sección de submenús: al dar de alta, apenas se elige el padre; al
+  // editar, solo si lo que se edita es una carpeta —a un ítem no le cuelga nada—.
+  const showSubmenus = isEditing ? isRootMenu : hasParentChoice
+
   const filledDrafts = drafts.filter(
     (draft) => draft.name.trim().length > 0 && draft.path.trim().length > 0,
   )
@@ -237,9 +251,10 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
     // Los datos del menú principal solo se piden cuando sus campos están a la
     // vista: colgando de un menú existente, esos datos los aportan los submenús.
     if (isNewRoot || isEditing) {
-      const parsed = isEditing
-        ? editMenuSchema.safeParse({ name, path })
-        : newRootSchema.safeParse({ name, icon })
+      // La carpeta pide nombre e ícono; el ítem, nombre y ruta.
+      const parsed = isRootMenu
+        ? newRootSchema.safeParse({ name, icon })
+        : editMenuSchema.safeParse({ name, path })
 
       if (!parsed.success) {
         const nextErrors: Record<string, string> = {}
@@ -258,12 +273,27 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
         await saveMenu.mutateAsync({
           id: menu.id,
           name,
-          path,
-          icon: menu.icon,
+          // La carpeta conserva su ruta heredada; el ícono, en cambio, es suyo
+          // y se edita. En el ítem es al revés.
+          path: isRootMenu ? path || filledDrafts[0]?.path || "" : path,
+          icon: isRootMenu ? icon : menu.icon,
           idParent,
           visible,
-          planId: planId ? Number(planId) : null,
+          // `planId` se omite en la carpeta —no tiene el campo—: mandarlo en
+          // `null` le borraría el plan que pudiera tener.
+          ...(isRootMenu ? {} : { planId: planId ? Number(planId) : null }),
         })
+        // Submenús agregados desde la edición de la carpeta.
+        for (const draft of filledDrafts) {
+          await saveMenu.mutateAsync({
+            name: draft.name,
+            path: draft.path,
+            icon: "",
+            idParent: menu.id,
+            visible: draft.visible,
+            planId: draft.planId ? Number(draft.planId) : null,
+          })
+        }
       } else {
         // El padre primero: los submenús necesitan su id. Un menú principal no
         // tiene ruta propia —es un grupo—, así que hereda la del primer
@@ -355,10 +385,8 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
             </Field>
           </div>
 
-          {/* Un menú principal es un grupo: no lleva ruta propia (la hereda de
-              su primer submenú) pero sí ícono, que es lo que se ve en el
-              sidebar. En edición, en cambio, se corrige la ruta del menú. */}
-          {isNewRoot && (
+          {/* Datos de la carpeta: al crearla y al editarla son los mismos. */}
+          {isRootMenu && (
             <div className="grid gap-x-4 gap-y-2 sm:grid-cols-[1fr_10rem_10rem]">
               <Field variant="outlined" data-invalid={fieldErrors["name"] ? "true" : undefined}>
                 <FieldLabel htmlFor="menu-name">Nombre del menú*</FieldLabel>
@@ -426,7 +454,9 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
             </div>
           )}
 
-          {isEditing && (
+          {/* Datos del submenú. Solo en edición: al darlo de alta se cargan en
+              la tabla de abajo, que permite varios de una. */}
+          {isEditing && !isRootMenu && (
             <div className="grid gap-x-4 gap-y-2 sm:grid-cols-2">
               <Field variant="outlined" data-invalid={fieldErrors["name"] ? "true" : undefined}>
                 <FieldLabel htmlFor="menu-name">Nombre*</FieldLabel>
@@ -475,7 +505,7 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
             </div>
           )}
 
-          {!isEditing && hasParentChoice && (
+          {showSubmenus && (
             <section className="rounded-lg border border-border p-4">
               <header className="flex items-center justify-between gap-2">
                 <h3 className="text-base font-semibold">Submenús</h3>

@@ -489,9 +489,9 @@ export function MenuTransfer({
       />
 
       <section className="flex flex-col rounded-lg border border-border">
-        <header className="flex min-h-16 items-center justify-between gap-2 px-3 py-3">
+        <header className="flex min-h-16 items-center justify-between gap-2 px-3 py-2">
           <h3 className="text-sm font-semibold">Menús disponibles</h3>
-          <Button type="button" size="icon" onClick={() => setMenuBeingEdited("new")}>
+          <Button type="button" size="icon-sm" onClick={() => setMenuBeingEdited("new")}>
             <span className="sr-only">Agregar menú</span>
             <ControlPointIcon />
           </Button>
@@ -659,7 +659,7 @@ export function MenuTransfer({
       <section className="flex flex-col rounded-lg border border-border">
         {/* `min-h-16` iguala el alto del encabezado de enfrente, que lo marca
             el botón de agregar: sin eso los dos paneles arrancan desfasados. */}
-        <header className="flex min-h-16 items-center gap-2 px-3 py-3">
+        <header className="flex min-h-16 items-center gap-2 px-3 py-2">
           <h3 className="text-sm font-semibold">Menús asignados</h3>
         </header>
         <div className="px-3 pb-3">
