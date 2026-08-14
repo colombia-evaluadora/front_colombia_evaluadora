@@ -6,6 +6,7 @@ import { useNotify, NoticeOutlet } from "@/components/notice/notice-context"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
+import { Input } from "@/components/ui/input"
 
 import { useEvaluationCriteriaQuery } from "@/features/establishment/academic-period/api/query/use-evaluation-criteria"
 import { useEvaluationCriteriaOptionsQuery } from "@/features/establishment/academic-period/api/query/use-evaluation-criteria-options"
@@ -21,48 +22,85 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
+// Cada campo declara su tipo de control: `select` para los basados en
+// `TLISTA_VALOR` (incluye `gradingScale` que arma sus opciones localmente),
+// `number` para los numéricos (`initialGrade`/`maxRecoveryGrade`, rango
+// dependiente del formato de calificación seleccionado). El orden es el del
+// spec: escala → formato → sin calificaciones → nota inicial → nota máxima de
+// recuperación → redondeo → elementos → criterio asignatura → criterio área →
+// criterio final.
 const FIELDS = [
   {
     name: "gradingScale",
     label: "Escala de valoración",
+    kind: "select" as const,
   },
   {
     name: "gradingFormat",
     label: "Formato de calificación",
+    kind: "select" as const,
   },
   {
     name: "studentWithoutGradesPerformance",
     label: "Sin calificaciones",
+    kind: "select" as const,
   },
   {
     name: "initialGrade",
     label: "Nota inicial para las calificaciones",
+    kind: "number" as const,
   },
   {
     name: "maxRecoveryGrade",
     label: "Nota máxima de recuperación",
+    kind: "number" as const,
   },
   {
     name: "roundingMode",
     label: "Regla de redondeo",
+    kind: "select" as const,
   },
   {
     name: "periodCalculationElements",
     label: "Elementos para calcular la nota de la asignatura",
+    kind: "select" as const,
   },
   {
     name: "subjectGradeCriteria",
     label: "Criterio para calcular la nota de la asignatura",
+    kind: "select" as const,
   },
   {
     name: "areaGradeCriteria",
     label: "Criterio para calcular la nota del área",
+    kind: "select" as const,
   },
   {
     name: "finalGradeCriteria",
     label: "Criterio para calcular la nota final",
+    kind: "select" as const,
   },
 ] as const
+
+// `initialGrade` y `maxRecoveryGrade` se renderizan como `<Input type="number">`
+// aparte del loop de selects: su rango depende del formato de calificación
+// seleccionado y el spec los pide como numéricos (no como opciones de catálogo).
+// El rango OVERALL de `initialGrade`/`maxRecoveryGrade` viene del **formato
+// de calificación** seleccionado (categoría FORMATO_CALIFICACION en
+// TLISTA_VALOR). Las escalas concretas definen sus límites como porcentajes
+// de ese rango (`fn_escala_listar` multiplica `LIMITE_INFERIOR/SUPERIOR` por
+// `(fmt.mx - fmt.mn)` y suma `fmt.mn`), pero los bounds top los pone el
+// formato. Lookup en vez de regex: más robusto si el nombre del catálogo
+// cambia (acentos, mayúsculas, abreviaciones).
+const FORMAT_MAX: Record<string, number> = {
+  "DE CERO A CINCO": 5,
+  "DE CERO A DIEZ": 10,
+  "DE CERO A CIEN": 100,
+}
+function maxForGradingFormat(format: string | undefined): number {
+  if (!format) return 100
+  return FORMAT_MAX[format.toUpperCase()] ?? 100
+}
 
 // Qué decir cuando un select se queda sin opciones. Sin esto el desplegable
 // se abría vacío —una caja en blanco sobre el campo— y no había forma de
@@ -73,16 +111,16 @@ const EMPTY_MESSAGES: Partial<Record<(typeof FIELDS)[number]["name"], string>> =
 }
 
 const EMPTY: EvaluationCriteriaValues = {
-  gradingFormat: "0 - 100",
+  gradingFormat: "",
   gradingScale: "",
-  periodCalculationElements: "Actividades + examen",
-  subjectGradeCriteria: "Promedio ponderado",
-  finalGradeCriteria: "Promedio ponderado por peso",
-  areaGradeCriteria: "Promedio de asignaturas",
-  studentWithoutGradesPerformance: "No evaluado",
-  maxRecoveryGrade: "3.0",
-  roundingMode: "Redondear al más cercano",
-  initialGrade: "1.0",
+  periodCalculationElements: "",
+  subjectGradeCriteria: "",
+  finalGradeCriteria: "",
+  areaGradeCriteria: "",
+  studentWithoutGradesPerformance: "",
+  maxRecoveryGrade: 0,
+  roundingMode: "",
+  initialGrade: 0,
 }
 
 const FORM_ID = "evaluation-criteria-form"
@@ -180,29 +218,62 @@ export function TabEvaluationCriteria({ academicPeriodId }: TabEvaluationCriteri
                     <FieldLabel htmlFor={field.name} className="flex-1">
                       {cfg.label}
                     </FieldLabel>
-                    <Select
-                      value={field.state.value}
-                      onValueChange={(value) => value && field.handleChange(value)}
-                    >
-                      <SelectTrigger id={field.name} aria-invalid={isInvalid}>
-                        <SelectValue placeholder="Seleccionar" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {fieldOptions.length === 0 ? (
-                          <p className="px-3 py-4 text-center text-sm text-muted-foreground">
-                            {EMPTY_MESSAGES[cfg.name] ?? DEFAULT_EMPTY_MESSAGE}
-                          </p>
-                        ) : (
-                          <SelectGroup>
-                            {fieldOptions.map((option) => (
-                              <SelectItem key={option.key} value={option.key}>
-                                {option.label}
-                              </SelectItem>
-                            ))}
-                          </SelectGroup>
-                        )}
-                      </SelectContent>
-                    </Select>
+                    {cfg.kind === "number" ? (
+                      <Input
+                        id={field.name}
+                        type="number"
+                        min={0}
+                        max={maxForGradingFormat(form.state.values.gradingFormat)}
+                        step={0.1}
+                        placeholder="Agregar"
+                        value={Number.isNaN(field.state.value) ? "" : field.state.value}
+                        // El atributo `max` es solo una pista visual (HTML5 no
+                        // bloquea tipeo ni submit programático). El handler
+                        // clampa al máximo activo: si el back ya tiene el
+                        // criterio guardado en otro formato y el front abre
+                        // con formato más restrictivo, el clamp evita que
+                        // quede un valor fuera de rango sin disparar el
+                        // 400 del back al guardar.
+                        onChange={(e) => {
+                          const raw = e.target.valueAsNumber
+                          const max = maxForGradingFormat(
+                            form.state.values.gradingFormat
+                          )
+                          if (Number.isFinite(raw) && raw > max) {
+                            field.handleChange(max)
+                            return
+                          }
+                          field.handleChange(raw)
+                        }}
+                        className="h-9"
+                        aria-invalid={isInvalid}
+                      />
+                    ) : (
+                      <Select
+                        items={Object.fromEntries(fieldOptions.map((o) => [o.key, o.label]))}
+                        value={field.state.value}
+                        onValueChange={(value) => value && field.handleChange(value)}
+                      >
+                        <SelectTrigger id={field.name} aria-invalid={isInvalid}>
+                          <SelectValue placeholder="Seleccionar" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {fieldOptions.length === 0 ? (
+                            <p className="px-3 py-4 text-center text-sm text-muted-foreground">
+                              {EMPTY_MESSAGES[cfg.name] ?? DEFAULT_EMPTY_MESSAGE}
+                            </p>
+                          ) : (
+                            <SelectGroup>
+                              {fieldOptions.map((option) => (
+                                <SelectItem key={option.key} value={option.key}>
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </SelectGroup>
+                          )}
+                        </SelectContent>
+                      </Select>
+                    )}
                     {isInvalid && <FieldError errors={field.state.meta.errors} />}
                   </Field>
                 )

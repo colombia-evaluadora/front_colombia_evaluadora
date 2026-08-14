@@ -35,22 +35,6 @@ async function fetchGeneralAreaNames(): Promise<Map<number, string>> {
   return new Map((raw.rows ?? []).map((row) => [row.id, row.nombre]))
 }
 
-interface EspecialidadRow {
-  id: number
-  nombre: string
-}
-interface EspecialidadesResponse {
-  rows: EspecialidadRow[]
-}
-async function fetchEspecialidadNames(
-  academicPeriodId: number
-): Promise<Map<number, string>> {
-  const raw: EspecialidadesResponse = await api.get(
-    `/eval-col/areas/${academicPeriodId}/especialidades`
-  )
-  return new Map((raw.rows ?? []).map((row) => [row.id, row.nombre]))
-}
-
 interface AreaListRow {
   id: number
   codigo: string
@@ -69,6 +53,12 @@ interface SubjectRow {
   nombre_interno: string
   asignatura_general_id: number
   enfasis_id: number | null
+  // El back ya devuelve el nombre resuelto del énfasis (no solo el FK). Antes
+  // resolvíamos nombre→id contra `GET /areas/:ID/especialidades` y mapeábamos;
+  // con este campo el front lo lee directo del payload — y muestra énfasis
+  // cuyo nombre matchea con una especialidad del catálogo (caso énfasis 143
+  // "Académico"), que el listado de especialidades filtra para no duplicar.
+  enfasis_nombre: string | null
   color: string | null
   orden_reportes: number
 }
@@ -77,8 +67,7 @@ interface SubjectsResponse {
 }
 async function fetchAreaSubjectItems(
   areaId: number,
-  generalAreaNames: Map<number, string>,
-  especialidadNames: Map<number, string>
+  generalAreaNames: Map<number, string>
 ): Promise<AreaSubjectItem[]> {
   const raw: SubjectsResponse = await api.get(
     `/eval-col/areas/${areaId}/asignaturas`
@@ -90,8 +79,11 @@ async function fetchAreaSubjectItems(
     abreviacion: row.abreviacion,
     ordenReportes: row.orden_reportes,
     color: row.color ?? undefined,
-    especialidad:
-      row.enfasis_id != null ? especialidadNames.get(row.enfasis_id) : undefined,
+    // `enfasis_nombre` puede venir null si la asignatura no tiene énfasis
+    // asignado, o string cuando sí — el EspecialidadSelect del form lo
+    // resuelve contra `useEspecialidadesQuery` para mostrar las opciones
+    // disponibles; el trigger usa este string directamente.
+    especialidad: row.enfasis_nombre ?? undefined,
   }))
 }
 
@@ -101,12 +93,12 @@ async function fetchAreaSubject(
   const { filters, sorting, pageIndex, pageSize, academicPeriodId } = params
   const [primary] = sorting
 
-  const [generalAreaNames, especialidadNames] = await Promise.all([
-    fetchGeneralAreaNames(),
-    academicPeriodId != null
-      ? fetchEspecialidadNames(academicPeriodId)
-      : Promise.resolve(new Map<number, string>()),
-  ])
+  // Solo precisamos `generalAreaNames` acá — `enfasis_nombre` ya viene
+  // resuelto en el payload de asignaturas (ver `SubjectRow.enfasis_nombre`).
+  // El `EspecialidadSelect` del form hace su propia query para mostrar las
+  // opciones disponibles, pero la resolución del nombre YA ASIGNADO sale del
+  // payload, no de un lookup paralelo.
+  const generalAreaNames = await fetchGeneralAreaNames()
 
   const raw: AreasListRawResponse = await api.query("/eval-col/areas/query", {
     FK_PERIODO: academicPeriodId ?? 0,
@@ -130,7 +122,7 @@ async function fetchAreaSubject(
       nombreInterno: row.nombre_interno,
       abreviacion: row.codigo,
       ordenReportes: row.orden_reportes,
-      subjects: await fetchAreaSubjectItems(row.id, generalAreaNames, especialidadNames),
+      subjects: await fetchAreaSubjectItems(row.id, generalAreaNames),
     }))
   )
 

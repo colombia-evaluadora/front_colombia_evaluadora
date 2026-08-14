@@ -406,7 +406,11 @@ export function CreateStudyPlanDialog({
                     onValueChange={(value) => value && field.handleChange(value)}
                   >
                     <SelectTrigger id={field.name}>
-                      <SelectValue placeholder="Seleccionar" />
+                      <SelectValue>
+                        {(value) =>
+                          formatoOptions.find((o) => o.key === value)?.label ?? "Seleccionar"
+                        }
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>
@@ -434,7 +438,11 @@ export function CreateStudyPlanDialog({
                     onValueChange={(value) => value && field.handleChange(value)}
                   >
                     <SelectTrigger id={field.name}>
-                      <SelectValue placeholder="Seleccionar" />
+                      <SelectValue>
+                        {(value) =>
+                          criterioOptions.find((o) => o.key === value)?.label ?? "Seleccionar"
+                        }
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>

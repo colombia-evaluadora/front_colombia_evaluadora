@@ -315,7 +315,11 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                           }}
                         >
                           <SelectTrigger id={field.name} aria-invalid={isInvalid}>
-                            <SelectValue placeholder="Seleccionar" />
+                            <SelectValue>
+                              {(value) =>
+                                tipoOptions.find((o) => o.key === value)?.label ?? "Seleccionar"
+                              }
+                            </SelectValue>
                           </SelectTrigger>
                           <SelectContent>
                             <SelectGroup>
@@ -631,7 +635,11 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                                 onValueChange={(value) => value && patchEditRow({ tipo: value })}
                               >
                                 <SelectTrigger aria-label="Tipo" className="min-w-32">
-                                  <SelectValue placeholder="Seleccionar" />
+                                  <SelectValue>
+                                    {(value) =>
+                                      tipoOptions.find((o) => o.key === value)?.label ?? "Seleccionar"
+                                    }
+                                  </SelectValue>
                                 </SelectTrigger>
                                 <SelectContent>
                                   <SelectGroup>

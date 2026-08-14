@@ -241,7 +241,11 @@ export function CreateGradeGroupDialog({
                   onValueChange={(value) => value && field.handleChange(value)}
                 >
                   <SelectTrigger id={field.name}>
-                    <SelectValue placeholder="Seleccionar" />
+                    <SelectValue>
+                      {(value) =>
+                        metodologiaOptions.find((o) => o.key === value)?.label ?? "Seleccionar"
+                      }
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>

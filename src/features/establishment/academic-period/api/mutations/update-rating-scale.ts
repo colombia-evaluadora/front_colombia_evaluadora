@@ -39,7 +39,8 @@ async function updateRatingScale({
   return api.post("/eval-col/escalas", {
     ACADEMIC_PERIOD_ID: academicPeriodId,
     TEACHING_LEVEL_IDS: values.teachingLevelIds,
-    SCALES: [
+    // Ver create-rating-scales-bulk.ts: JSONB espera STRING, no array anidado.
+    SCALES: JSON.stringify([
       {
         nombre: values.nombre,
         abreviacion: values.abreviacion,
@@ -50,7 +51,7 @@ async function updateRatingScale({
         notaMinima: values.notaMinima,
         notaEquivalente: values.notaEquivalente,
       },
-    ],
+    ]),
   })
 }
 

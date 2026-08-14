@@ -15,7 +15,8 @@ interface UseGradesQueryParams {
   academicPeriodId?: number
 }
 
-// Fila cruda de `GET /eval-col/grados` (`fn_grado_listar`, id_query 60).
+// Fila cruda de `POST /eval-col/grados/query/:FK_PERIODO` (`fn_grado_listar`,
+// id_query 60 — pasó de GET a POST en V75).
 interface GradeRow {
   id: number
   nombre: string
@@ -51,18 +52,20 @@ async function fetchGrades(
     return { rows: [], pageCount: 1, totalCount: 0 }
   }
   const [primary] = params.sorting
-  const query = new URLSearchParams({
-    fkPeriodo: String(params.academicPeriodId),
-    pageIndex: String(params.pageIndex),
-    pageSize: String(params.pageSize),
-  })
-  if (params.filters.nombre) query.set("filtro", params.filters.nombre)
-  if (primary) {
-    query.set("sortingId", primary.id)
-    query.set("sortingDesc", String(primary.desc))
-  }
-
-  const raw: GradesRawResponse = await api.get(`/eval-col/grados?${query.toString()}`)
+  // `POST /eval-col/grados/query/:FK_PERIODO` (`fn_grado_listar`, id_query 60
+  // — pasó de GET a POST en V75; los filtros/orden van en body, solo
+  // `FK_PERIODO` queda como path param). `SORTING_ID`/`SORTING_DESC` son
+  // TEXT (CAST en la función), no boolean — se manda como "true"/"false".
+  const raw: GradesRawResponse = await api.query(
+    `/eval-col/grados/query/${params.academicPeriodId}`,
+    {
+      FILTRO: params.filters.nombre ?? null,
+      PAGE_INDEX: params.pageIndex,
+      PAGE_SIZE: params.pageSize,
+      SORTING_ID: primary?.id ?? null,
+      SORTING_DESC: primary ? String(primary.desc) : null,
+    }
+  )
   let rows = (raw.rows ?? []).map(toGrade)
   // `fn_grado_listar` no filtra por nivel de enseñanza; se filtra en cliente.
   if (params.filters.teachingLevelIds?.length) {

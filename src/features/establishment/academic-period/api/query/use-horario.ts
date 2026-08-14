@@ -3,7 +3,9 @@ import { useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api-client"
 import type { ScheduleEntry } from "@/features/establishment/academic-period/api/types/grade-config"
 
-// Fila cruda de `GET /eval-col/horarios` (`fn_horario_listar`, id_query 80).
+// Fila cruda de `GET /eval-col/horarios/:FK_GRADO` (`fn_horario_listar`,
+// id_query 80 — V77: FK_GRADO pasó de `:QUERY.fkGrado` a `:PARAM.FK_GRADO`
+// en path, y se agregó `:QUERY.FK_GRUPO` opcional para filtrar por grupo).
 interface HorarioRow {
   id: number
   grado_id: number
@@ -36,8 +38,18 @@ function toScheduleEntry(row: HorarioRow): ScheduleEntry | null {
 }
 
 async function fetchHorario(gradeId: number): Promise<ScheduleEntry[]> {
+  // Path param `:FK_GRADO` (V77); antes iba como `?fkGrado=` en query string
+  // y bindeaba a `:QUERY.fkGrado` — el SQL nuevo lo castea desde path.
+  // `:QUERY.FK_GRUPO` queda opcional (axios omite `null`/`undefined` de la
+  // URL, así que el back recibe NULL y lista todos los grupos del grado —
+  // es lo que `ScheduleBuilder` quiere para hidratar la grilla completa).
   const raw: HorarioResponse = await api.get(
-    `/eval-col/horarios?fkGrado=${gradeId}`
+    `/eval-col/horarios/${gradeId}`,
+    {
+      params: {
+        FK_GRUPO: null,
+      },
+    }
   )
   return (raw.rows ?? [])
     .map(toScheduleEntry)

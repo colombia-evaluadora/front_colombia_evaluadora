@@ -1,17 +1,22 @@
-// Criterios de evaluación de un periodo académico.
+// Criterios de evaluación de un periodo académico. Todos los campos basados
+// en TLISTA_VALOR almacenan el FK como string (PK_LISTA_VALOR) — es lo que
+// espera `fn_criterio_eval_actualizar` (`:BODY.GRADING_FORMAT AS BIGINT`,
+// etc.). El nombre se resuelve en el render del Select vía el `items` prop,
+// que mapea FK → label del catálogo. `gradingScale` es opcional porque no
+// todas las establecimientos tienen escala creada.
 export interface EvaluationCriteria {
   gradingFormat: string
-  // Opcional: la escala de valoración se elige entre los niveles de enseñanza
-  // que tengan escalas creadas; si todavía no se creó ninguna, queda en blanco.
   gradingScale?: string
   periodCalculationElements: string
   subjectGradeCriteria: string
   finalGradeCriteria: string
   areaGradeCriteria: string
   studentWithoutGradesPerformance: string
-  maxRecoveryGrade: string
+  // Rango numérico dependiente del formato de calificación seleccionado
+  // (0-5 / 0-10 / 0-100). V78: pasaron de selects a inputs numéricos.
+  maxRecoveryGrade: number
   roundingMode: string
-  initialGrade: string
+  initialGrade: number
 }
 
 // Opción de un select de criterios: `key` es el valor que se guarda/manda,

@@ -8,7 +8,7 @@ import { useDataTable } from "@/hooks/use-data-table"
 
 import { SearchInput } from "@/features/establishment/academic-period/components/search/search-input"
 import { NoticeOutlet } from "@/components/notice/notice-context"
-import { columns } from "@/features/establishment/academic-period/components/table/columns-area-subject"
+import { createAreaSubjectColumns } from "@/features/establishment/academic-period/components/table/columns-area-subject"
 import { CreateAreaSubjectDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-create-area-subject"
 import { DeleteSelectedAreaSubjectsDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-delete-selected-area-subjects"
 import { ExportAreaSubjectsDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-export-area-subjects"
@@ -40,6 +40,11 @@ export function TabAreaSubject({ academicPeriodId }: TabAreaSubjectProps) {
     setPageSize(size)
     setPageIndex(0)
   }
+
+  const columns = useMemo(
+    () => createAreaSubjectColumns({ academicPeriodId }),
+    [academicPeriodId],
+  )
 
   const { table, selectedIds, hasSelection, resetSelection } = useDataTable({
     columns,
