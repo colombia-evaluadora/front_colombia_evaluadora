@@ -13,7 +13,7 @@ export interface Notice {
   message: string
 }
 
-export type NoticeVariant = "info" | "success" | "error" | "primary"
+export type NoticeVariant = "info" | "success" | "error"
 
 /**
  * Fondo `X-22` alineado con la variante soft del Badge: misma familia de color
