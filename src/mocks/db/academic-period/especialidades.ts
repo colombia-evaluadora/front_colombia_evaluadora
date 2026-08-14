@@ -10,3 +10,11 @@ export const especialidadesDb: EspecialidadEnfasisRow[] = [
   { id: 4, nombre: "Artística", codigo: "ART", origen: "ESPECIALIDAD" },
   { id: 5, nombre: "Deportiva", codigo: "DEP", origen: "ESPECIALIDAD" },
 ]
+
+// Los énfasis (origen ENFASIS) los crea el usuario a nivel de
+// establecimiento; se agregan al mismo array. El backend real todavía no
+// tiene el endpoint (se está armando en paralelo) — este mock simula el
+// contrato acordado.
+export function nextEnfasisId(): number {
+  return especialidadesDb.reduce((max, row) => Math.max(max, row.id), 0) + 1
+}

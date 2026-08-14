@@ -3,7 +3,8 @@ import {
   studyPlansDb,
   nextStudyPlanId,
 } from "../../db/academic-period/study-plans"
-import { areaSubjectsDb } from "../../db/academic-period/area-subject"
+import { areasDb } from "../../db/academic-period/areas"
+import { subjectsDb } from "../../db/academic-period/subjects"
 
 import type {
   StudyPlanItem,
@@ -64,8 +65,9 @@ export const studyPlansHandlers = [
 
       const scopedAreas =
         periodId == null
-          ? areaSubjectsDb
-          : areaSubjectsDb.filter((a) => a.academicPeriodId === periodId)
+          ? areasDb
+          : areasDb.filter((a) => a.academicPeriodId === periodId)
+      const scopedAreaIds = new Set(scopedAreas.map((a) => a.id))
 
       // Nombres ya presentes en el plan del grado (para excluirlos).
       const enPlan = new Set(
@@ -76,15 +78,15 @@ export const studyPlansHandlers = [
 
       const disponibles: AvailableStudyPlanSubject[] = []
       let id = 1
-      for (const area of scopedAreas) {
-        for (const subject of area.subjects) {
-          if (enPlan.has(subject.nombreInterno)) continue
-          disponibles.push({
-            id: id++,
-            nombre: subject.nombreInterno,
-            areaNombre: area.nombreInterno,
-          })
-        }
+      for (const subject of subjectsDb) {
+        if (!scopedAreaIds.has(subject.areaId)) continue
+        if (enPlan.has(subject.nombreInterno)) continue
+        const area = scopedAreas.find((a) => a.id === subject.areaId)
+        disponibles.push({
+          id: id++,
+          nombre: subject.nombreInterno,
+          areaNombre: area?.nombreInterno ?? "",
+        })
       }
 
       return HttpResponse.json<AvailableStudyPlanSubject[]>(disponibles)

@@ -687,7 +687,9 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                           <TableCell>{d.notaMaxima}</TableCell>
                           <TableCell>{d.notaMinima}</TableCell>
                           <TableCell>{d.notaEquivalente}</TableCell>
-                          <TableCell>{d.tipo}</TableCell>
+                          <TableCell>
+                            {tipoOptions.find((o) => o.key === d.tipo)?.label ?? d.tipo}
+                          </TableCell>
                           <TableCell className="text-lg">
                             <RatingSymbolView value={d.iconografia} />
                           </TableCell>

@@ -20,7 +20,7 @@ const EXPORT_FORMAT_LABELS: Record<ExportFormat, string> = {
 // (`fn_periodo_eval_crear` / `fn_periodo_eval_actualizar`).
 interface EvaluationPeriodWriteBody {
   FK_PERIODO?: number
-  CODIGO: number
+  CODIGO: string
   NOMBRE: string
   ABREVIACION: string
   FECHA_INICIO: string
@@ -29,21 +29,25 @@ interface EvaluationPeriodWriteBody {
   PORCENTAJE: number
 }
 
-// Fila cruda (snake_case + total_count) que devuelve `/periodo-evaluacion/query`
-// y `/periodo-evaluacion/detalle/:id`.
-function toRawRow(row: EvaluationPeriod, totalCount: number) {
+// Fila cruda (snake_case) que devuelve `/periodo-evaluacion/query` y
+// `/periodo-evaluacion/detalle/:id`, confirmada por ThunderClient.
+function toRawRow(
+  row: EvaluationPeriod & { academicPeriodId?: number },
+  totalCount?: number
+) {
   return {
     id: row.id,
     codigo: row.codigo,
     nombre: row.nombre,
     abreviacion: row.abreviacion,
-    fecha_inicio: row.startDate,
-    fecha_fin: row.endDate,
-    fk_estado: row.estadoId ?? null,
+    start_date: row.startDate,
+    end_date: row.endDate,
+    peso: row.peso,
+    status_id: row.estadoId ?? null,
     estado: row.estado,
     estado_name: row.estadoName ?? row.estado,
-    porcentaje: row.peso,
-    total_count: totalCount,
+    academic_period_id: row.academicPeriodId ?? 0,
+    ...(totalCount != null ? { total_count: totalCount } : {}),
   }
 }
 
@@ -125,7 +129,7 @@ export const evaluationPeriodsHandlers = [
         { status: 404 }
       )
     }
-    return HttpResponse.json(toRawRow(row, 1))
+    return HttpResponse.json({ rows: [toRawRow(row)] })
   }),
 
   http.post("/api/evaluation-periods/export", async ({ request }) => {
@@ -177,17 +181,15 @@ export const evaluationPeriodsHandlers = [
       startDate: body.FECHA_INICIO,
       endDate: body.FECHA_FIN,
       peso: body.PORCENTAJE,
-      estado: statusOption?.key ?? "NO Calificable",
+      estado: statusOption?.key ?? "2",
       estadoId: body.FK_ESTADO,
       estadoName: statusOption?.label,
       academicPeriodId: body.FK_PERIODO ?? 0,
     }
     evaluationPeriodsDb.push(record)
 
-    return HttpResponse.json({
-      status: "ok",
-      message: "Periodo de evaluación creado.",
-    })
+    // Mismo shape que la respuesta real (`{rows: [{fn_x: <id>}]}`).
+    return HttpResponse.json({ rows: [{ fn_periodo_eval_crear: id }] })
   }),
 
   // Borrado en lote por PK (atómico, una sola request).
@@ -236,9 +238,9 @@ export const evaluationPeriodsHandlers = [
       estadoId: body.FK_ESTADO,
       estadoName: statusOption?.label ?? evaluationPeriodsDb[index].estadoName,
     }
+    // Mismo shape que la respuesta real (`{rows: [{fn_x: <id>}]}`).
     return HttpResponse.json({
-      status: "ok",
-      message: "Periodo de evaluación actualizado.",
+      rows: [{ fn_periodo_eval_actualizar: evaluationPeriodsDb[index].id }],
     })
   }),
 
@@ -254,10 +256,10 @@ export const evaluationPeriodsHandlers = [
         { status: 404 }
       )
     }
-    evaluationPeriodsDb.splice(index, 1)
+    const [deleted] = evaluationPeriodsDb.splice(index, 1)
+    // Mismo shape que la respuesta real (`{rows: [{fn_x: <id>}]}`).
     return HttpResponse.json({
-      status: "ok",
-      message: "Periodo de evaluación eliminado.",
+      rows: [{ fn_periodo_eval_soft_delete: deleted.id }],
     })
   }),
 ]

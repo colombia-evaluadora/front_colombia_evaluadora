@@ -1,4 +1,8 @@
-export type EvaluationPeriodStatus = "Calificable" | "NO Calificable" | "Habilitados para algunas asignaturas" | "En Recuperaciones"
+// Código corto (VALOR de TLISTA_VALOR, categoría ESTADOPERIODOEVALUACION),
+// confirmado por ThunderClient — NO es el texto del estado.
+// 1 = Calificable, 2 = NO Calificable, 3 = Habilitados para algunas
+// asignaturas, 4 = En Recuperaciones.
+export type EvaluationPeriodStatus = "1" | "2" | "3" | "4"
 
 // Opción de estado del catálogo genérico de TLISTA_VALOR
 // (`api/eval-col/select/:CATEGORIA` → `{pk_lista_valor, nombre, valor}`):
@@ -14,8 +18,10 @@ export interface EvaluationPeriodStatusOption {
 export interface EvaluationPeriod {
   // PK real (PK_TPERIODO_EVALUACION) — identificador para rutas (PATCH/DELETE).
   id: number
-  // Código de negocio que ingresa el usuario (único dentro del periodo).
-  codigo: number
+  // Código de negocio que ingresa el usuario (único dentro del periodo). Es
+  // VARCHAR en el backend (`fn_periodo_eval_crear` espera `p_codigo` string),
+  // no un número.
+  codigo: string
   nombre: string
   abreviacion: string
   startDate: string
@@ -61,7 +67,7 @@ export interface EvaluationPeriodsQueryResponse {
 // (`fn_periodo_eval_crear`). El usuario sale de `:CONTEXT.USER_ID` → no se manda.
 export interface CreateEvaluationPeriodRequest {
   FK_PERIODO: number
-  CODIGO: number
+  CODIGO: string
   NOMBRE: string
   ABREVIACION: string
   FECHA_INICIO: string

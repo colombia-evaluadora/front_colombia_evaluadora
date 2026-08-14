@@ -43,21 +43,22 @@ function toListRequest(
 }
 
 // Fila cruda tal como la devuelve el endpoint (snake_case + `total_count`
-// repetido por fila, mismo patrón que `fn_periodo_listar`).
-// ⚠️ Nombres de columna asumidos por convención con el resto del módulo —
-// confirmar contra el `RETURNS TABLE` real de `fn_periodo_eval_listar`.
+// repetido por fila), confirmado por ThunderClient contra la respuesta real
+// de `fn_periodo_eval_listar`.
 export interface EvaluationPeriodListRow {
   id: number
-  codigo: number
+  codigo: string
   nombre: string
   abreviacion: string
-  fecha_inicio: string
-  fecha_fin: string
-  fk_estado: number
+  start_date: string
+  end_date: string
+  peso: number
+  status_id: number
   estado: string
   estado_name: string
-  porcentaje: number
-  total_count: number
+  academic_period_id: number
+  // Solo viene en el listado (window count); el detalle no lo trae.
+  total_count?: number
 }
 
 interface EvaluationPeriodsListRawResponse {
@@ -75,11 +76,11 @@ export function toEvaluationPeriod(row: EvaluationPeriodListRow): EvaluationPeri
     codigo: row.codigo,
     nombre: row.nombre,
     abreviacion: row.abreviacion,
-    startDate: toDateOnly(row.fecha_inicio),
-    endDate: toDateOnly(row.fecha_fin),
-    peso: row.porcentaje,
+    startDate: toDateOnly(row.start_date),
+    endDate: toDateOnly(row.end_date),
+    peso: row.peso,
     estado: row.estado as EvaluationPeriod["estado"],
-    estadoId: row.fk_estado,
+    estadoId: row.status_id,
     estadoName: row.estado_name,
   }
 }

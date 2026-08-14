@@ -4,10 +4,11 @@ import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
 
 import type { EvaluationPeriodFormValues } from "../schema"
-import type {
-  CreateEvaluationPeriodRequest,
-  MutationResult,
-} from "../types/evaluation-period"
+import type { CreateEvaluationPeriodRequest } from "../types/evaluation-period"
+import {
+  extractWriteResultId,
+  type WriteResultResponse,
+} from "./extract-write-result"
 
 interface CreateEvaluationPeriodInput extends EvaluationPeriodFormValues {
   academicPeriodId?: number
@@ -30,13 +31,16 @@ export function toCreateEvaluationPeriodRequest(
   }
 }
 
-function createEvaluationPeriod(
+// `fn_periodo_eval_crear` devuelve `{rows: [{fn_periodo_eval_crear: <id>}]}`
+// (confirmado por ThunderClient), no un envelope `{status, message}`.
+async function createEvaluationPeriod(
   input: CreateEvaluationPeriodInput
-): Promise<MutationResult> {
-  return api.post(
+): Promise<number> {
+  const raw: WriteResultResponse = await api.post(
     "/eval-col/periodo-evaluacion",
     toCreateEvaluationPeriodRequest(input)
   )
+  return extractWriteResultId(raw)
 }
 
 interface UseCreateEvaluationPeriodOptions {

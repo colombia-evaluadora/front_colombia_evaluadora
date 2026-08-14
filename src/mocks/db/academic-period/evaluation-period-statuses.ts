@@ -5,13 +5,10 @@ import type { EvaluationPeriodStatusOption } from "@/features/establishment/acad
 // opciones del select ni sus etiquetas.
 // `id` = PK_LISTA_VALOR (lo que el back espera como `p_fk_estado`); `key` = VALOR
 // (código estable para el badge); `label` = NOMBRE.
+// Ids/códigos confirmados por ThunderClient (`GET /eval-col/select/ESTADOPERIODOEVALUACION`).
 export const evaluationPeriodStatusesDb: EvaluationPeriodStatusOption[] = [
-  { id: 1, key: "NO Calificable", label: "NO Calificable" },
-  { id: 2, key: "Calificable", label: "Calificable" },
-  { id: 3, key: "En Recuperaciones", label: "En Recuperaciones" },
-  {
-    id: 4,
-    key: "Habilitados para algunas asignaturas",
-    label: "Habilitados para algunas asignaturas",
-  },
+  { id: 249, key: "1", label: "Calificable" },
+  { id: 250, key: "2", label: "NO Calificable" },
+  { id: 251, key: "3", label: "Habilitados para algunas asignaturas" },
+  { id: 252, key: "4", label: "En Recuperaciones" },
 ]

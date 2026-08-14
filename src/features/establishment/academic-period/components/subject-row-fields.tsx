@@ -9,6 +9,9 @@ import { SelectGeneralAreaDialog } from "@/features/establishment/academic-perio
 // Borrador de una asignatura general. `asignaturaGeneral` se elige del mismo
 // catálogo de áreas generales que el área padre.
 export type SubjectDraft = {
+  // Se conserva de `AreaSubjectItem.id` para poder diferenciar
+  // alta/edición/baja al guardar; la UI no lo lee ni lo edita.
+  id?: number
   asignaturaGeneral: string
   nombreInterno: string
   abreviacion: string
@@ -32,6 +35,7 @@ export function emptyDraft(): SubjectDraft {
 
 export function itemToDraft(item: AreaSubjectItem): SubjectDraft {
   return {
+    id: item.id,
     asignaturaGeneral: item.asignaturaGeneral,
     nombreInterno: item.nombreInterno,
     abreviacion: item.abreviacion,
@@ -44,8 +48,7 @@ export function itemToDraft(item: AreaSubjectItem): SubjectDraft {
 interface SubjectRowFieldsProps {
   draft: SubjectDraft
   onPatch: (patch: Partial<SubjectDraft>) => void
-  especialidades: string[]
-  onAddEspecialidad: (nombre: string) => void
+  academicPeriodId?: number
 }
 
 // Celdas de datos de una asignatura general (orden, asignatura general, nombre
@@ -54,8 +57,7 @@ interface SubjectRowFieldsProps {
 export function SubjectRowFields({
   draft,
   onPatch,
-  especialidades,
-  onAddEspecialidad,
+  academicPeriodId,
 }: SubjectRowFieldsProps) {
   return (
     <>
@@ -98,9 +100,8 @@ export function SubjectRowFields({
       <TableCell>
         <EspecialidadSelect
           value={draft.especialidad}
-          options={especialidades}
+          academicPeriodId={academicPeriodId}
           onChange={(value) => onPatch({ especialidad: value })}
-          onAddOption={onAddEspecialidad}
         />
       </TableCell>
     </>

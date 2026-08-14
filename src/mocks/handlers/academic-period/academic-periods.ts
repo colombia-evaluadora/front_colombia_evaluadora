@@ -224,7 +224,7 @@ export const academicPeriodsHandlers = [
     const newPeriod: AcademicPeriod = {
       id,
       sedeName: sede?.name ?? "—",
-      status: statusOption?.key ?? "ACTIVO",
+      status: statusOption?.key ?? "A",
       statusName: statusOption?.label,
       schoolYearId,
       name: `Año lectivo ${schoolYearId}`,

@@ -44,7 +44,7 @@ import { EVALUATION_PERIOD_STATUS_BADGE } from "@/features/establishment/academi
 import { evaluationPeriodFormSchema, type EvaluationPeriodFormValues } from "@/features/establishment/academic-period/api/schema"
 
 const EMPTY: EvaluationPeriodFormValues = {
-  codigo: 0,
+  codigo: "",
   nombre: "",
   abreviacion: "",
   startDate: "",
@@ -118,11 +118,10 @@ export function CreateEvaluationPeriodDialog({
 
   const updateEvaluation = useUpdateEvaluationPeriod({
     mutationConfig: {
-      onSuccess: (result) => {
-        if (result.status === "error") {
-          notify(result.message, { variant: "error" })
-          return
-        }
+      // Un error HTTP ya se reporta por el interceptor global de `api-client`
+      // (toast con el mensaje del backend); `onSuccess` solo corre si la
+      // request efectivamente resolvió bien.
+      onSuccess: () => {
         setOpen(false)
         notify(SUCCESS_MESSAGES.evaluationPeriod.updated)
       },
@@ -215,12 +214,11 @@ export function CreateEvaluationPeriodDialog({
                   <FieldLabel htmlFor={field.name}>Código*</FieldLabel>
                   <Input
                     id={field.name}
-                    type="number"
-                    min={1}
+                    type="text"
                     placeholder="Agregar"
-                    value={Number.isNaN(field.state.value) ? "" : field.state.value}
+                    value={field.state.value}
                     onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.valueAsNumber)}
+                    onChange={(e) => field.handleChange(e.target.value)}
                     aria-invalid={isInvalid}
                   />
                   {isInvalid && <FieldError errors={field.state.meta.errors} />}
@@ -458,7 +456,7 @@ export function CreateEvaluationPeriodDialog({
           <form.Subscribe selector={(state) => state.values}>
             {(values) => {
               const allRequiredFilled =
-                Number(values.codigo) > 0 &&
+                values.codigo.trim().length > 0 &&
                 values.nombre.trim().length > 0 &&
                 values.abreviacion.trim().length > 0 &&
                 values.startDate.length > 0 &&

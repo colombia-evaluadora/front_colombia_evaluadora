@@ -16,8 +16,11 @@ function updateAcademicPeriod({
   id,
   values,
 }: UpdateAcademicPeriodInput): Promise<MutationResult> {
-  return api.patch(
-    `/eval-col/periodos-academicos/${id}`,
+  // PATCH no está soportado a nivel de plataforma en el SSO (pendiente que
+  // se corrija de forma global); este endpoint expone PUT en /editar/:ID,
+  // mismo patrón que periodo-evaluacion (`fn_periodo_eval_actualizar`).
+  return api.put(
+    `/eval-col/periodos-academicos/editar/${id}`,
     toCreateAcademicPeriodRequest(values)
   )
 }

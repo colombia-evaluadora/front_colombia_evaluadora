@@ -1,6 +1,7 @@
 import { z } from "zod"
 
-export const ACADEMIC_PERIOD_STATUSES = ["ACTIVO", "INACTIVO"] as const
+// Códigos reales de ESTADOPERIODO — ver AcademicPeriodStatus en types/academic-period.ts.
+export const ACADEMIC_PERIOD_STATUSES = ["A", "C", "I", "P", "N"] as const
 
 
 export const academicPeriodFormSchema = z
@@ -179,10 +180,7 @@ export type StudyPlanFormValues = z.infer<typeof studyPlanFormSchema>
 // Periodos de evaluación
 export const evaluationPeriodFormSchema = z
   .object({
-    codigo: z
-      .number()
-      .int()
-      .min(1, "El código debe ser mayor a 0"),
+    codigo: z.string().min(1, "El código es obligatorio"),
     nombre: z.string().min(1, "El nombre es obligatorio"),
     abreviacion: z.string().min(1, "La abreviación es obligatoria"),
     startDate: z.string().min(1, "La fecha de inicio es obligatoria"),

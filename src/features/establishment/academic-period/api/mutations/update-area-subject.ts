@@ -6,17 +6,47 @@ import type {
   MutationResult,
   UpdateAreaSubjectRequest,
 } from "@/features/establishment/academic-period/api/types/area-subject"
+import {
+  extractWriteResultId,
+  type WriteResultResponse,
+} from "./extract-write-result"
+import { resolveEspecialidadId } from "./resolve-especialidad-id"
+import { toAsignaturasPayload } from "./to-asignaturas-payload"
 
 interface UpdateAreaSubjectInput {
   codigo: number
+  // Necesario para resolver el catálogo de especialidades (`FK_ENFASIS`) al
+  // guardar las asignaturas; el resto del payload no lo necesita.
+  academicPeriodId?: number
   values: UpdateAreaSubjectRequest
 }
 
-function updateAreaSubject({
+// Área y asignatura son recursos separados, pero se guardan con el mismo
+// botón: se actualiza el área y, en un solo bulk (`fn_subject_guardar_bulk`,
+// reemplazo total), se guardan todas sus asignaturas vigentes — no hay
+// alta/edición/baja de asignatura individual.
+async function updateAreaSubject({
   codigo,
+  academicPeriodId,
   values,
 }: UpdateAreaSubjectInput): Promise<MutationResult> {
-  return api.patch(`/area-subjects/${codigo}`, values)
+  const areaRaw: WriteResultResponse = await api.put(`/eval-col/areas/${codigo}`, {
+    FK_AREA_ASIGNATURA: Number(values.areaGeneral),
+    NOMBRE_INTERNO: values.nombreInterno,
+    ABREVIACION: values.abreviacion,
+    ORDEN_REPORTES: values.ordenReportes,
+  })
+  extractWriteResultId(areaRaw)
+
+  const especialidadByName = academicPeriodId
+    ? await resolveEspecialidadId(academicPeriodId)
+    : new Map<string, number>()
+
+  await api.put(`/eval-col/areas/${codigo}/asignaturas`, {
+    ASIGNATURAS: toAsignaturasPayload(values.subjects, especialidadByName),
+  })
+
+  return { status: "ok", message: "Área/asignatura actualizada." }
 }
 
 interface UseUpdateAreaSubjectOptions {

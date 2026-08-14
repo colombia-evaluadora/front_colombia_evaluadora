@@ -1,4 +1,7 @@
-export type AcademicPeriodStatus = "ACTIVO" | "INACTIVO"
+// Códigos reales de la categoría `ESTADOPERIODO` (TLISTA_VALOR.VALOR):
+// A = Abierto, C = Cerrado, I = Inscripciones, P = Promociones,
+// N = Nivelaciones. Confirmado contra la BD — no son "ACTIVO"/"INACTIVO".
+export type AcademicPeriodStatus = "A" | "C" | "I" | "P" | "N"
 
 // Opción de estado tal como la entrega el catálogo genérico de TLISTA_VALOR
 // (`api/eval-col/select/:CATEGORIA` → `{pk_lista_valor, nombre, valor}`):

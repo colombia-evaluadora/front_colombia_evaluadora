@@ -2,15 +2,37 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
-import type {
-  CreateStudyPlanItemRequest,
-  StudyPlanItem,
-} from "@/features/establishment/academic-period/api/types/study-plan"
+import type { CreateStudyPlanItemRequest } from "@/features/establishment/academic-period/api/types/study-plan"
+import {
+  extractWriteResultId,
+  type WriteResultResponse,
+} from "@/features/establishment/academic-period/api/mutations/extract-write-result"
+import { resolvePlanAsignaturaId } from "@/features/establishment/academic-period/api/mutations/resolve-plan-asignatura-id"
 
-function createStudyPlanItem(
+// Body PLANO con las llaves de `fn_plan_agregar`
+// (`POST /eval-col/grados/:ID/plan-asignaturas`, id_query 72).
+async function createStudyPlanItem(
   input: CreateStudyPlanItemRequest
-): Promise<StudyPlanItem> {
-  return api.post("/study-plans", input)
+): Promise<{ id: number }> {
+  const fkAsignatura = await resolvePlanAsignaturaId(
+    input.gradeId as number,
+    input.asignatura
+  )
+  const raw = await api.post<WriteResultResponse>(
+    `/eval-col/grados/${input.gradeId}/plan-asignaturas`,
+    {
+      FK_ASIGNATURA: fkAsignatura,
+      NUMERO_HORA: input.intensidadHoraria,
+      INFLUENCIA_AREA: input.influenciaArea,
+      NUMERO_CREDITO: input.numeroCreditos,
+      INFLUYE_DESEMPENO: input.influyeDesempeno,
+      MATRICULA_OBLIGATORIA: input.matriculaObligatoria,
+      APROBACION_OBLIGATORIA: input.aprobacionObligatoria,
+      FK_FORMATO_CALIF: input.formatoCalificacion || null,
+      FK_CRITERIO_NOTA: input.criterioNota || null,
+    }
+  )
+  return { id: extractWriteResultId(raw) }
 }
 
 interface UseCreateStudyPlanItemOptions {

@@ -62,7 +62,7 @@ export function DeleteGradeGroupDialog({ gradeGroup }: DeleteGradeGroupDialogPro
             color="destructive"
             disabled={deleteMutation.isPending}
             aria-busy={deleteMutation.isPending}
-            onClick={() => deleteMutation.mutate(gradeGroup.codigo)}
+            onClick={() => deleteMutation.mutate(gradeGroup.id)}
           >
             {deleteMutation.isPending ? (
               <SpinnerIcon data-icon="inline-start" className="animate-spin" />

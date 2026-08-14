@@ -153,6 +153,7 @@ export function CreateStudyPlanDialog({
       if (isEditing) {
         updateStudyPlanItem.mutate({
           codigo: item.codigo,
+          gradeId: gradeId as number,
           values: { ...payload, codigo: item.codigo },
         })
       } else {

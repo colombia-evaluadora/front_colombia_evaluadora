@@ -1,11 +1,15 @@
 import { http, HttpResponse, delay } from "msw"
 
 import { generalAreasDb } from "@/mocks/db/academic-period/general-areas"
-import type { GeneralArea } from "@/features/establishment/academic-period/api/types/general-area"
 
 export const generalAreasHandlers = [
-  http.get("/api/general-areas", async () => {
+  http.get("/api/eval-col/areas/general", async () => {
     await delay(150)
-    return HttpResponse.json<GeneralArea[]>(generalAreasDb)
+    const rows = generalAreasDb.map((area) => ({
+      id: area.id,
+      nombre: area.nombre,
+      especialidad_id: area.especialidadId,
+    }))
+    return HttpResponse.json({ rows })
   }),
 ]

@@ -4,10 +4,11 @@ import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
 
 import type { AcademicPeriodFormValues } from "@/features/establishment/academic-period/api/schema"
-import type {
-  AcademicPeriod,
-  CreateAcademicPeriodRequest,
-} from "@/features/establishment/academic-period/api/types/academic-period"
+import type { CreateAcademicPeriodRequest } from "@/features/establishment/academic-period/api/types/academic-period"
+import {
+  extractWriteResultId,
+  type WriteResultResponse,
+} from "@/features/establishment/academic-period/api/mutations/extract-write-result"
 
 export function toCreateAcademicPeriodRequest(
   values: AcademicPeriodFormValues
@@ -39,13 +40,19 @@ export function toCreateAcademicPeriodRequest(
   }
 }
 
-function createAcademicPeriod(
+// `fn_periodo_crear` devuelve solo el id nuevo (envuelto en `{rows:[...]}`
+// como todo lo demás en este catálogo) — antes esta función devolvía la
+// respuesta cruda sin desenvolver, tipada (incorrectamente) como
+// `AcademicPeriod` completo; `created.id` en academic-period-config-page.tsx
+// llegaba `undefined`.
+async function createAcademicPeriod(
   values: AcademicPeriodFormValues
-): Promise<AcademicPeriod> {
-  return api.post(
+): Promise<{ id: number }> {
+  const raw = await api.post<WriteResultResponse>(
     "/eval-col/periodos-academicos",
     toCreateAcademicPeriodRequest(values)
   )
+  return { id: extractWriteResultId(raw) }
 }
 
 interface UseCreateAcademicPeriodOptions {
