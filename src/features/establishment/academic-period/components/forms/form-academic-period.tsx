@@ -17,7 +17,7 @@ import {
 
 import { BreaksField } from "@/features/establishment/academic-period/components/breaks-field"
 
-import { useCampusesOptionsQuery } from "@/features/establishment/campuses/api/query/use-campuses-options"
+import { useSedeOptionsQuery } from "@/features/establishment/academic-period/api/query/use-sede-options"
 
 import { useAcademicPeriodStatusesQuery } from "@/features/establishment/academic-period/api/query/use-academic-period-statuses"
 import { useJornadasQuery } from "@/features/establishment/academic-period/api/query/use-jornadas"
@@ -76,7 +76,7 @@ export function AcademicPeriodForm({
     ...defaultValues,
   } satisfies AcademicPeriodFormInput
 
-  const { data: campuses = [] } = useCampusesOptionsQuery()
+  const { data: sedes = [] } = useSedeOptionsQuery()
   const { data: jornadas = [] } = useJornadasQuery()
   const { data: statusOptions = [] } = useAcademicPeriodStatusesQuery()
 
@@ -227,14 +227,14 @@ export function AcademicPeriodForm({
                 >
                   <SelectTrigger id={field.name} aria-invalid={isInvalid}>
                     <SelectValue>
-                      {(value) => campuses.find((c) => c.id === value)?.name ?? "Seleccionar"}
+                      {(value) => sedes.find((s) => String(s.pk_sede) === value)?.nombre ?? "Seleccionar"}
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
-                      {campuses.map((campus) => (
-                        <SelectItem key={campus.id} value={campus.id}>
-                          {campus.name}
+                      {sedes.map((sede) => (
+                        <SelectItem key={sede.pk_sede} value={String(sede.pk_sede)}>
+                          {sede.nombre}
                         </SelectItem>
                       ))}
                     </SelectGroup>
