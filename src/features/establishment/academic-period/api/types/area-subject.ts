@@ -11,7 +11,6 @@ export interface AreaSubjectItem {
   especialidad?: string
 }
 
-
 export interface AreaSubject {
   codigo: number
   areaGeneral: string

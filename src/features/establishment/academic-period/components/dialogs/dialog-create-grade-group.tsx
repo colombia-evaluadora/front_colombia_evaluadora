@@ -37,7 +37,10 @@ import { useMetodologiasQuery } from "@/features/establishment/academic-period/a
 import { useAcademicPeriodQuery } from "@/features/establishment/academic-period/api/query/use-academic-period"
 import { useJornadasQuery } from "@/features/establishment/academic-period/api/query/use-jornadas"
 import type { GradeGroup } from "@/features/establishment/academic-period/api/types/grade-group"
-import { gradeGroupFormSchema, type GradeGroupFormValues } from "@/features/establishment/academic-period/api/schema"
+import {
+  gradeGroupFormSchema,
+  type GradeGroupFormValues,
+} from "@/features/establishment/academic-period/api/schema"
 
 const EMPTY: GradeGroupFormValues = {
   codigo: "",

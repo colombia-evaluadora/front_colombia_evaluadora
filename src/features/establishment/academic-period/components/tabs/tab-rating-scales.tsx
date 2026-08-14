@@ -27,7 +27,11 @@ import { useRatingScaleTypesQuery } from "@/features/establishment/academic-peri
 import { useEvaluationCriteriaQuery } from "@/features/establishment/academic-period/api/query/use-evaluation-criteria"
 import { useUpdateRatingScale } from "@/features/establishment/academic-period/api/mutations/update-rating-scale"
 import { useCreateRatingScalesBulk } from "@/features/establishment/academic-period/api/mutations/create-rating-scales-bulk"
-import type { RatingScale, RatingScaleType, TeachingLevel } from "@/features/establishment/academic-period/api/types/rating-scales"
+import type {
+  RatingScale,
+  RatingScaleType,
+  TeachingLevel,
+} from "@/features/establishment/academic-period/api/types/rating-scales"
 import { CreateRatingScaleDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-create-rating-scale"
 import { DeleteSelectedRatingScalesDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-delete-selected-rating-scales"
 import { ExportRatingScalesDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-export-rating-scales"
@@ -39,7 +43,11 @@ import {
   toScaleDraft,
   type EditableScale,
 } from "@/features/establishment/academic-period/components/table/columns-rating-scale-detail"
-import { makeRatingScaleGradesSchema, parseGradingRange, type GradingRange } from "@/features/establishment/academic-period/components/grading-range"
+import {
+  makeRatingScaleGradesSchema,
+  parseGradingRange,
+  type GradingRange,
+} from "@/features/establishment/academic-period/components/grading-range"
 import { useRowEdit } from "@/features/establishment/academic-period/hooks/use-row-edit"
 
 interface TabRatingScalesProps {

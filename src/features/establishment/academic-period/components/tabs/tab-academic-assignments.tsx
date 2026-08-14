@@ -16,7 +16,10 @@ import { ExportAcademicAssignmentsDialog } from "@/features/establishment/academ
 import { ExportSelectedAcademicAssignmentsDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-export-selected-academic-assignments"
 
 import { useEmployeesQuery } from "@/features/establishment/employees/api/query/use-employees"
-import type { EmployeeListItem, EmployeeStatus } from "@/features/establishment/employees/api/types/employee"
+import type {
+  EmployeeListItem,
+  EmployeeStatus,
+} from "@/features/establishment/employees/api/types/employee"
 
 import { useAssignmentSubjectsQuery } from "@/features/establishment/academic-period/api/query/use-assignment-subjects"
 import { useTeacherAssignmentsQuery } from "@/features/establishment/academic-period/api/query/use-teacher-assignments"

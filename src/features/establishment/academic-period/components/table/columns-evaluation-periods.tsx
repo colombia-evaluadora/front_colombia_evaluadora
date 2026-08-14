@@ -5,7 +5,10 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { DataTableColumnHeader } from "@/components/data-table"
 
 import { EVALUATION_PERIOD_STATUS_BADGE } from "@/features/establishment/academic-period/api/ui-mappings"
-import type { EvaluationPeriod, EvaluationPeriodStatus } from "@/features/establishment/academic-period/api/types/evaluation-period"
+import type {
+  EvaluationPeriod,
+  EvaluationPeriodStatus,
+} from "@/features/establishment/academic-period/api/types/evaluation-period"
 import { DeleteEvaluationPeriodDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-delete-evaluation-period"
 import { CreateEvaluationPeriodDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-create-evaluation-period"
 

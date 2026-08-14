@@ -14,9 +14,7 @@ interface UseDeleteAcademicPeriodOptions {
   mutationConfig?: MutationConfig<typeof deleteAcademicPeriod>
 }
 
-export function useDeleteAcademicPeriod({
-  mutationConfig,
-}: UseDeleteAcademicPeriodOptions = {}) {
+export function useDeleteAcademicPeriod({ mutationConfig }: UseDeleteAcademicPeriodOptions = {}) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: deleteAcademicPeriod,

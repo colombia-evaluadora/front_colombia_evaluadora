@@ -39,9 +39,7 @@ interface UseCreateStudyPlanItemOptions {
   mutationConfig?: MutationConfig<typeof createStudyPlanItem>
 }
 
-export function useCreateStudyPlanItem({
-  mutationConfig,
-}: UseCreateStudyPlanItemOptions = {}) {
+export function useCreateStudyPlanItem({ mutationConfig }: UseCreateStudyPlanItemOptions = {}) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: createStudyPlanItem,

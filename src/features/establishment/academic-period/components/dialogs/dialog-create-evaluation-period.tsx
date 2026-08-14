@@ -41,7 +41,10 @@ import type { EvaluationPeriod } from "@/features/establishment/academic-period/
 import { DatePicker } from "@/components/date-picker"
 import { formatDateValue, parseDateValue } from "@/lib/date-value"
 import { EVALUATION_PERIOD_STATUS_BADGE } from "@/features/establishment/academic-period/api/ui-mappings"
-import { evaluationPeriodFormSchema, type EvaluationPeriodFormValues } from "@/features/establishment/academic-period/api/schema"
+import {
+  evaluationPeriodFormSchema,
+  type EvaluationPeriodFormValues,
+} from "@/features/establishment/academic-period/api/schema"
 
 const EMPTY: EvaluationPeriodFormValues = {
   codigo: "",
@@ -429,7 +432,11 @@ export function CreateEvaluationPeriodDialog({
                           )
                           if (!option) return "Seleccionar"
                           const badge = EVALUATION_PERIOD_STATUS_BADGE[option.key]
-                          return <Badge {...badge}>{option.label}</Badge>
+                          return (
+                            <Badge {...badge} className="text-xs">
+                              {option.label}
+                            </Badge>
+                          )
                         }}
                       </SelectValue>
                     </SelectTrigger>

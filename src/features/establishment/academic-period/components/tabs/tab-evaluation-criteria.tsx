@@ -12,7 +12,10 @@ import { useEvaluationCriteriaQuery } from "@/features/establishment/academic-pe
 import { useEvaluationCriteriaOptionsQuery } from "@/features/establishment/academic-period/api/query/use-evaluation-criteria-options"
 import { useRatingScalesQuery } from "@/features/establishment/academic-period/api/query/use-rating-scales"
 import { useUpdateEvaluationCriteria } from "@/features/establishment/academic-period/api/mutations/update-evaluation-criteria"
-import { evaluationCriteriaSchema, type EvaluationCriteriaValues } from "@/features/establishment/academic-period/api/schema"
+import {
+  evaluationCriteriaSchema,
+  type EvaluationCriteriaValues,
+} from "@/features/establishment/academic-period/api/schema"
 import {
   Select,
   SelectContent,
@@ -85,22 +88,11 @@ const FIELDS = [
 // `initialGrade` y `maxRecoveryGrade` se renderizan como `<Input type="number">`
 // aparte del loop de selects: su rango depende del formato de calificación
 // seleccionado y el spec los pide como numéricos (no como opciones de catálogo).
-// El rango OVERALL de `initialGrade`/`maxRecoveryGrade` viene del **formato
-// de calificación** seleccionado (categoría FORMATO_CALIFICACION en
-// TLISTA_VALOR). Las escalas concretas definen sus límites como porcentajes
-// de ese rango (`fn_escala_listar` multiplica `LIMITE_INFERIOR/SUPERIOR` por
-// `(fmt.mx - fmt.mn)` y suma `fmt.mn`), pero los bounds top los pone el
-// formato. Lookup en vez de regex: más robusto si el nombre del catálogo
-// cambia (acentos, mayúsculas, abreviaciones).
-const FORMAT_MAX: Record<string, number> = {
-  "DE CERO A CINCO": 5,
-  "DE CERO A DIEZ": 10,
-  "DE CERO A CIEN": 100,
-}
-function maxForGradingFormat(format: string | undefined): number {
-  if (!format) return 100
-  return FORMAT_MAX[format.toUpperCase()] ?? 100
-}
+// El helper `parseGradingRange` (en `grading-range.ts`) resuelve el rango
+// OVERALL — matchea tanto el patrón "X - Y" del mock como el FK del back
+// contra el catálogo `FORMATO_CALIFICACION` — y devuelve { min, max } que el
+// form aplica a los inputs.
+import { parseGradingRange } from "@/features/establishment/academic-period/components/grading-range"
 
 // Qué decir cuando un select se queda sin opciones. Sin esto el desplegable
 // se abría vacío —una caja en blanco sobre el campo— y no había forma de
@@ -223,7 +215,7 @@ export function TabEvaluationCriteria({ academicPeriodId }: TabEvaluationCriteri
                         id={field.name}
                         type="number"
                         min={0}
-                        max={maxForGradingFormat(form.state.values.gradingFormat)}
+                        max={parseGradingRange(form.state.values.gradingFormat).max}
                         step={0.1}
                         placeholder="Agregar"
                         value={Number.isNaN(field.state.value) ? "" : field.state.value}
@@ -236,9 +228,9 @@ export function TabEvaluationCriteria({ academicPeriodId }: TabEvaluationCriteri
                         // 400 del back al guardar.
                         onChange={(e) => {
                           const raw = e.target.valueAsNumber
-                          const max = maxForGradingFormat(
+                          const max = parseGradingRange(
                             form.state.values.gradingFormat
-                          )
+                          ).max
                           if (Number.isFinite(raw) && raw > max) {
                             field.handleChange(max)
                             return

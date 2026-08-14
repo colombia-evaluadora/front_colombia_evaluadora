@@ -45,9 +45,7 @@ interface UseUpdateAreaSubjectOptions {
   mutationConfig?: MutationConfig<typeof updateAreaSubject>
 }
 
-export function useUpdateAreaSubject({
-  mutationConfig,
-}: UseUpdateAreaSubjectOptions = {}) {
+export function useUpdateAreaSubject({ mutationConfig }: UseUpdateAreaSubjectOptions = {}) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: updateAreaSubject,

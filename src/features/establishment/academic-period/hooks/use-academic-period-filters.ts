@@ -37,7 +37,7 @@ export function useAcademicPeriodFilters(): AcademicPeriodFilters {
         replace: true,
       })
     },
-    [navigate]
+    [navigate],
   )
 
   const clearAllFilters = useCallback(() => {

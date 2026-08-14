@@ -49,9 +49,8 @@ export function DialogDeleteMenu({ menu, childrenCount, trigger }: DialogDeleteM
           <AlertDialogTitle>Eliminar menú</AlertDialogTitle>
           <AlertDialogDescription>
             Se eliminará permanentemente «{menu.name}»
-            {childrenCount > 0 &&
-              ` y los ${childrenCount} menús que cuelgan de él`}{" "}
-            para todos los roles. Esta acción no se puede deshacer.
+            {childrenCount > 0 && ` y los ${childrenCount} menús que cuelgan de él`} para todos los
+            roles. Esta acción no se puede deshacer.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

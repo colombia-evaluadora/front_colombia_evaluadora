@@ -43,7 +43,10 @@ import { useUpdateStudyPlanItem } from "@/features/establishment/academic-period
 import { useEvaluationCriteriaQuery } from "@/features/establishment/academic-period/api/query/use-evaluation-criteria"
 import { useEvaluationCriteriaOptionsQuery } from "@/features/establishment/academic-period/api/query/use-evaluation-criteria-options"
 import type { StudyPlanItem } from "@/features/establishment/academic-period/api/types/study-plan"
-import { studyPlanFormSchema, type StudyPlanFormValues } from "@/features/establishment/academic-period/api/schema"
+import {
+  studyPlanFormSchema,
+  type StudyPlanFormValues,
+} from "@/features/establishment/academic-period/api/schema"
 
 const EMPTY: StudyPlanFormValues = {
   asignatura: "",

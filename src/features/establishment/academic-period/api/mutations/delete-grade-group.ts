@@ -14,9 +14,7 @@ interface UseDeleteGradeGroupOptions {
   mutationConfig?: MutationConfig<typeof deleteGradeGroup>
 }
 
-export function useDeleteGradeGroup({
-  mutationConfig,
-}: UseDeleteGradeGroupOptions = {}) {
+export function useDeleteGradeGroup({ mutationConfig }: UseDeleteGradeGroupOptions = {}) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: deleteGradeGroup,

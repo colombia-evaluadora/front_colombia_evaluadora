@@ -14,9 +14,7 @@ interface UseDeleteStudyPlanItemOptions {
   mutationConfig?: MutationConfig<typeof deleteStudyPlanItem>
 }
 
-export function useDeleteStudyPlanItem({
-  mutationConfig,
-}: UseDeleteStudyPlanItemOptions = {}) {
+export function useDeleteStudyPlanItem({ mutationConfig }: UseDeleteStudyPlanItemOptions = {}) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: deleteStudyPlanItem,

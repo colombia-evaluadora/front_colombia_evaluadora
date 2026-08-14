@@ -130,9 +130,10 @@ async function fetchAcademicPeriods(
   }
 }
 
-export const academicPeriodsQueryKey = (
-  params: UseAcademicPeriodsQueryParams
-) => ["academic-periods", params]
+export const academicPeriodsQueryKey = (params: UseAcademicPeriodsQueryParams) => [
+  "academic-periods",
+  params,
+]
 
 export function useAcademicPeriodsQuery(params: UseAcademicPeriodsQueryParams) {
   return useQuery({

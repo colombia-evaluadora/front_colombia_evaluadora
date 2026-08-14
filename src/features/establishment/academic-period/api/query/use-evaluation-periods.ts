@@ -103,13 +103,12 @@ async function fetchEvaluationPeriods(
   }
 }
 
-export const evaluationPeriodsQueryKey = (
-  params: UseEvaluationPeriodsQueryParams
-) => ["evaluation-periods", params]
+export const evaluationPeriodsQueryKey = (params: UseEvaluationPeriodsQueryParams) => [
+  "evaluation-periods",
+  params,
+]
 
-export function useEvaluationPeriodsQuery(
-  params: UseEvaluationPeriodsQueryParams
-) {
+export function useEvaluationPeriodsQuery(params: UseEvaluationPeriodsQueryParams) {
   return useQuery({
     queryKey: evaluationPeriodsQueryKey(params),
     queryFn: () => fetchEvaluationPeriods(params),

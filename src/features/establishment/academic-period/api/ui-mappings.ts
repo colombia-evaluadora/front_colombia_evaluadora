@@ -1,6 +1,15 @@
 import type { AcademicPeriodStatus } from "@/features/establishment/academic-period/api/types/academic-period"
 import type { EvaluationPeriodStatus } from "@/features/establishment/academic-period/api/types/evaluation-period"
-type BadgeColor = "primary" | "secondary" | "muted" | "destructive" | "info" | "warning" | "success"
+
+type BadgeColor =
+  | "primary"
+  | "secondary"
+  | "muted"
+  | "destructive"
+  | "info"
+  | "warning"
+  | "orange"
+  | "success"
 interface BadgeProps {
   variant: "soft"
   color: BadgeColor

@@ -11,7 +11,7 @@ import {
 } from "@/features/establishment/academic-period/api/mutations/extract-write-result"
 
 export function toCreateAcademicPeriodRequest(
-  values: AcademicPeriodFormValues
+  values: AcademicPeriodFormValues,
 ): CreateAcademicPeriodRequest {
   // Body PLANO con las llaves de `fn_periodo_crear`. `name`/`schoolYearId` los
   // deriva el backend y el usuario sale de `:CONTEXT.USER_ID` → no se mandan.
@@ -59,9 +59,7 @@ interface UseCreateAcademicPeriodOptions {
   mutationConfig?: MutationConfig<typeof createAcademicPeriod>
 }
 
-export function useCreateAcademicPeriod({
-  mutationConfig,
-}: UseCreateAcademicPeriodOptions = {}) {
+export function useCreateAcademicPeriod({ mutationConfig }: UseCreateAcademicPeriodOptions = {}) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: createAcademicPeriod,
