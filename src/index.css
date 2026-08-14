@@ -126,14 +126,14 @@
   --orange-stroke: #CD62004d;
   --navy-stroke: #0b38794d;
 
-  /* ---------- SOFT FILLS (alpha 8%) ----------------------- */
+  /* ---------- SOFT FILLS (alpha 8%, excepto muted, yellow y orange en 28%) ------ */
   --foreground-22: #090d1014;
   --primary-22: #0D99FF14;
   --secondary-22: #61820014;
-  --muted-22: #d6dbe514;
+  --muted-22: #d6dbe547;
   --blue-22: #0079b514;
   --red-22: #A30D1114;
-  --yellow-22: #EABE4A14;
+  --yellow-22: #EABE4A47;
   --green-22: #1F925414;
   --purple-22: #7a3ec814;
   --orange-22: #CD620014;
@@ -213,14 +213,14 @@
   --orange-stroke: #ff8a4c4d;
   --navy-stroke: #0b38794d;
 
-  /* ---------- SOFT FILLS (alpha 8%) ----------------------- */
+  /* ---------- SOFT FILLS (alpha 8%, excepto muted, yellow y orange en 28%) ------ */
   --foreground-22: #f2f6f814;
   --primary-22: #40a1e114;
   --secondary-22: #84a73c14;
-  --muted-22: #42475214;
+  --muted-22: #42475247;
   --blue-22: #40a1e114;
   --red-22: #ff656814;
-  --yellow-22: #f69e0014;
+  --yellow-22: #f69e0047;
   --green-22: #84a73c14;
   --purple-22: #a98bf014;
   --orange-22: #ff8a4c14;
@@ -297,14 +297,14 @@
   --orange-stroke: #CD62004d;
   --navy-stroke: #650b144d;
 
-  /* ---------- SOFT FILLS (alpha 8%) ----------------------- */
+  /* ---------- SOFT FILLS (alpha 8%, excepto muted, yellow y orange en 28%) ------ */
   --foreground-22: #090d1014;
   --primary-22: #d20b1114;
   --secondary-22: #33333014;
-  --muted-22: #dbd1d114;
+  --muted-22: #dbd1d147;
   --blue-22: #0079b514;
   --red-22: #A30D1114;
-  --yellow-22: #EABE4A14;
+  --yellow-22: #EABE4A47;
   --green-22: #1F925414;
   --purple-22: #7a3ec814;
   --orange-22: #CD620014;
@@ -385,14 +385,14 @@
   --orange-stroke: #ff8a4c4d;
   --navy-stroke: #650b144d;
 
-  /* ---------- SOFT FILLS (alpha 8%) ----------------------- */
+  /* ---------- SOFT FILLS (alpha 8%, excepto muted, yellow y orange en 28%) ------ */
   --foreground-22: #f2f6f814;
   --primary-22: #f4514f14;
   --secondary-22: #aeaeab14;
-  --muted-22: #473d3d14;
+  --muted-22: #473d3d47;
   --blue-22: #40a1e114;
   --red-22: #ff656814;
-  --yellow-22: #f69e0014;
+  --yellow-22: #f69e0047;
   --green-22: #84a73c14;
   --purple-22: #a98bf014;
   --orange-22: #ff8a4c14;
@@ -469,7 +469,7 @@
   --color-orange-stroke: var(--orange-stroke);
   --color-navy-stroke: var(--navy-stroke);
 
-  /* ---------- SOFT FILLS (alpha 22%) ----------------------- */
+  /* ---------- SOFT FILLS (alpha 8%, excepto muted, yellow y orange en 28%) ------ */
   --color-foreground-22: var(--foreground-22);
   --color-primary-22: var(--primary-22);
   --color-secondary-22: var(--secondary-22);

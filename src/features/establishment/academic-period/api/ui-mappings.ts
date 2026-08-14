@@ -2,7 +2,7 @@ import type { AcademicPeriodStatus } from "@/features/establishment/academic-per
 import type { EvaluationPeriodStatus } from "@/features/establishment/academic-period/api/types/evaluation-period"
 import type { RatingScaleType } from "@/features/establishment/academic-period/api/types/rating-scales"
 
-type BadgeColor = "primary" | "secondary" | "muted" | "destructive" | "info" | "warning" | "success"
+type BadgeColor = "primary" | "secondary" | "muted" | "destructive" | "info" | "warning" | "orange" | "success"
 interface BadgeProps {
   variant: "soft"
   color: BadgeColor
@@ -29,8 +29,8 @@ export const EVALUATION_PERIOD_STATUS_BADGE: Record<
 > = {
   "NO Calificable": { variant: "soft", color: "muted" },
   "Calificable": { variant: "soft", color: "success" },
-  "En Recuperaciones": { variant: "soft", color: "warning" },
-  "Habilitados para algunas asignaturas": { variant: "soft", color: "info" },
+  "En Recuperaciones": { variant: "soft", color: "orange" },
+  "Habilitados para algunas asignaturas": { variant: "soft", color: "primary" },
 }
 
 export const RATING_SCALE_TYPE_BADGE: Record<RatingScaleType, BadgeProps> = {
