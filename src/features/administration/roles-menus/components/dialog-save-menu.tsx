@@ -367,19 +367,20 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
                     </span>
                   </SelectItem>
                   <SelectSeparator />
-                  <SelectGroup>
-                    {parentOptions.map((root) => {
-                      const Icon = getNavIcon(root.icon)
-                      return (
-                        <SelectItem key={root.id} value={String(root.id)}>
-                          <span className="flex items-center gap-2">
-                            <Icon />
-                            <span className="truncate">{root.name}</span>
-                          </span>
-                        </SelectItem>
-                      )
-                    })}
-                  </SelectGroup>
+                  {/* Sin `SelectGroup`: su `p-1.5` se suma al del popup y dejaba
+                      a los menús existentes indentados respecto del item de
+                      arriba, que cuelga directo del popup. */}
+                  {parentOptions.map((root) => {
+                    const Icon = getNavIcon(root.icon)
+                    return (
+                      <SelectItem key={root.id} value={String(root.id)}>
+                        <span className="flex items-center gap-2">
+                          <Icon />
+                          <span className="truncate">{root.name}</span>
+                        </span>
+                      </SelectItem>
+                    )
+                  })}
                 </SelectContent>
               </Select>
             </Field>
@@ -506,12 +507,14 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
           )}
 
           {showSubmenus && (
-            <section className="rounded-lg border border-border p-4">
+            <section className="rounded-lg border border-border px-4 py-2">
               <header className="flex items-center justify-between gap-2">
                 <h3 className="text-base font-semibold">Submenús</h3>
+                {/* Mismo botón que el «Agregar menú» del panel de menús
+                    disponibles: es la misma acción, un nivel más adentro. */}
                 <Button
                   type="button"
-                  size="icon"
+                  size="icon-sm"
                   onClick={() => setDrafts((prev) => [...prev, emptyDraft()])}
                 >
                   <span className="sr-only">Agregar submenú</span>
