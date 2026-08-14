@@ -10,7 +10,6 @@ import {
   extractWriteResultId,
   type WriteResultResponse,
 } from "./extract-write-result"
-import { resolveEspecialidadId } from "./resolve-especialidad-id"
 import { toAsignaturasPayload } from "./to-asignaturas-payload"
 
 async function createAreaSubject(
@@ -28,9 +27,8 @@ async function createAreaSubject(
   const areaId = extractWriteResultId(areaRaw)
 
   if (input.subjects.length > 0) {
-    const especialidadByName = await resolveEspecialidadId(academicPeriodId)
     await api.put(`/eval-col/areas/${areaId}/asignaturas`, {
-      ASIGNATURAS: toAsignaturasPayload(input.subjects, especialidadByName),
+      ASIGNATURAS: toAsignaturasPayload(input.subjects),
     })
   }
 

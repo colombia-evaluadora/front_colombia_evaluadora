@@ -16,26 +16,28 @@ import { subjectsDb } from "@/mocks/db/academic-period/subjects"
 // mock con 401 — el interceptor de `api-client.ts` trata cualquier 401 como
 // sesión vencida y desloguea. Por eso entrar a "Criterio de promoción" con
 // mocks activos mandaba directo a login.
+// V73 — `OBLIGATORIAS` es un array plano de ids; `NODO_CURRICULAR` ("AS"|"AR")
+// dice si son de TASIGNATURA o de TAREA.
 function mandatorySubjectsFor(body: PromotionCriteriaWriteBody) {
-  return body.OBLIGATORIAS.map((o, i) => {
-    if (o.asignaturaId != null) {
-      const subject = subjectsDb.find((s) => s.id === o.asignaturaId)
+  return body.OBLIGATORIAS.map((pk, i) => {
+    if (body.NODO_CURRICULAR === "AS") {
+      const subject = subjectsDb.find((s) => s.id === pk)
       return {
         id: i,
         type: "subject" as const,
-        subjectId: o.asignaturaId,
+        subjectId: pk,
         subjectName: subject?.nombreInterno ?? null,
         areaId: null,
         areaName: null,
       }
     }
-    const area = areasDb.find((a) => a.id === o.areaId)
+    const area = areasDb.find((a) => a.id === pk)
     return {
       id: i,
       type: "area" as const,
       subjectId: null,
       subjectName: null,
-      areaId: o.areaId,
+      areaId: pk,
       areaName: area?.nombreInterno ?? null,
     }
   })
