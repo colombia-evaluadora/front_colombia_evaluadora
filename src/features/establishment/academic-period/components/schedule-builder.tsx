@@ -1,7 +1,6 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useState } from "react"
 import { MinusIcon, XIcon } from "@/components/ui/icons"
 
-import { useNotify } from "@/components/notice/notice-context"
 import { cn } from "@/lib/utils"
 import { Field, FieldLabel } from "@/components/ui/field"
 import {
@@ -13,9 +12,9 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
-import { useUpdateGradeConfig } from "../api/mutations/update-grade-config"
+import { useUpdateHorario } from "../api/mutations/update-horario"
 import type { ScheduleEntry } from "../api/types/grade-config"
-import { useGradeConfigQuery } from "../api/query/use-grade-config"
+import { useHorarioQuery } from "../api/query/use-horario"
 import {
   buildRuns,
   buildSlots,
@@ -113,7 +112,6 @@ export const ScheduleBuilder = forwardRef<
   ScheduleBuilderHandle,
   ScheduleBuilderProps
 >(function ScheduleBuilder({ jornada, subjects, gradeGroups, gradeId }, ref) {
-  const { notify } = useNotify()
   const [gradeGroup, setGradeGroup] = useState("")
   const [schedulesByGroup, setSchedulesByGroup] = useState<
     Record<string, Schedule>
@@ -124,13 +122,12 @@ export const ScheduleBuilder = forwardRef<
 
   const schedule = schedulesByGroup[gradeGroup] ?? {}
 
-  const { data: gradeConfig } = useGradeConfigQuery(gradeId)
+  const { data: horarioEntries } = useHorarioQuery(gradeId)
   useEffect(() => {
-    if (!hydrated && gradeConfig) {
-      const entries = gradeConfig.schedule?.entries
-      if (entries?.length) {
+    if (!hydrated && horarioEntries) {
+      if (horarioEntries.length) {
         const byGroup: Record<string, Schedule> = {}
-        for (const e of entries) {
+        for (const e of horarioEntries) {
           const dayLocal = DAYS.find((d) => d.dayId === e.diaId)?.id
           if (!dayLocal) continue
           const groupKey = String(e.grupoId)
@@ -143,17 +140,9 @@ export const ScheduleBuilder = forwardRef<
       }
       setHydrated(true)
     }
-  }, [gradeConfig, hydrated])
+  }, [horarioEntries, hydrated])
 
-  const updateGradeConfig = useUpdateGradeConfig({
-    mutationConfig: {
-      onSuccess: (result) => {
-        if (result.status === "error") {
-          notify(result.message, { variant: "error" })
-        }
-      },
-    },
-  })
+  const updateHorario = useUpdateHorario()
 
   const subjectsById = useMemo(
     () => Object.fromEntries(subjects.map((s) => [s.id, s])),
@@ -245,13 +234,10 @@ export const ScheduleBuilder = forwardRef<
             }
           }
         }
-        await updateGradeConfig.mutateAsync({
-          gradeId: id,
-          values: { schedule: { entries } },
-        })
+        await updateHorario.mutateAsync({ gradeId: id, entries })
       },
     }),
-    [schedulesByGroup, updateGradeConfig]
+    [schedulesByGroup, updateHorario]
   )
 
   return (

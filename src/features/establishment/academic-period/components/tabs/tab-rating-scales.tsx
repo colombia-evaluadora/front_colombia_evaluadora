@@ -302,8 +302,10 @@ function ScalesSubTable({
       })
       return
     }
+    if (academicPeriodId == null) return
     updateMutation.mutate({
       codigo: scale.codigo,
+      academicPeriodId,
       values: {
         ...scale,
         ...parsed.data,

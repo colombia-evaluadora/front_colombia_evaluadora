@@ -1,4 +1,8 @@
 export interface AreaSubjectItem {
+  // PK real de la asignatura (`SubjectRecord.id`); ausente en asignaturas que
+  // todavía no se guardaron. Se usa internamente para diferenciar
+  // alta/edición/baja contra el endpoint real al guardar — no lo consume la UI.
+  id?: number
   asignaturaGeneral: string
   nombreInterno: string
   abreviacion: string

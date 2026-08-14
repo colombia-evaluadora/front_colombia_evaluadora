@@ -45,7 +45,6 @@ import {
 import { useGeneralAreasQuery } from "../../api/query/use-general-areas"
 import { useCreateAreaSubject } from "@/features/establishment/academic-period/api/mutations/create-area-subject"
 import { useUpdateAreaSubject } from "@/features/establishment/academic-period/api/mutations/update-area-subject"
-import { useEspecialidadesQuery } from "@/features/establishment/academic-period/api/query/use-especialidades"
 import type { AreaSubject, AreaSubjectItem } from "@/features/establishment/academic-period/api/types/area-subject"
 import { AreaField } from "@/features/establishment/academic-period/components/area-field"
 import { SortableHeader } from "@/features/establishment/academic-period/components/sortable-header"
@@ -90,11 +89,6 @@ export function AreaSubjectFormDialog({
     patchDraft: patchEditDraft,
     cancelEdit: cancelEditSubject,
   } = useRowEdit<SubjectDraft>()
-  const { data: backendEspecialidades = [] } = useEspecialidadesQuery(academicPeriodId)
-  // El catálogo llega como `{ key, label }`; acá la lista es de nombres libres
-  // (el `especialidad` del subject es un string), así que tomamos el `label`.
-  const backendEspecialidadNames = backendEspecialidades.map((o) => o.label)
-  const [especialidades, setEspecialidades] = useState<string[]>(backendEspecialidadNames)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [successOpen, setSuccessOpen] = useState(false)
   const [sort, setSort] = useState<SortState>(null)
@@ -136,6 +130,9 @@ export function AreaSubjectFormDialog({
       const base = areaSubjectFormSchema.parse(value)
 
       const payloadSubjects: AreaSubjectItem[] = subjects.map((subject) => ({
+        // Se conserva para poder diferenciar alta/edición/baja contra el
+        // endpoint real al guardar (asignaturas ya existentes vs. nuevas).
+        id: subject.id,
         // El backend espera el id del área general (fk_area_asignatura), no el
         // nombre. La UI/estado conserva el nombre; aquí se mapea a id.
         asignaturaGeneral: areaGeneralNameToId(subject.asignaturaGeneral),
@@ -149,6 +146,7 @@ export function AreaSubjectFormDialog({
       if (isEdit) {
         const result = await updateAreaSubject.mutateAsync({
           codigo: areaSubject.codigo,
+          academicPeriodId,
           values: {
             ...areaSubject,
             ...base,
@@ -210,7 +208,6 @@ export function AreaSubjectFormDialog({
 
     cancelEditSubject()
 
-    setEspecialidades(backendEspecialidadNames)
     setConfirmOpen(false)
     setSort(null)
     setNotice(null)
@@ -292,10 +289,6 @@ export function AreaSubjectFormDialog({
     const next = editDraft
     setSubjects((prev) => prev.map((item, i) => (i === editingIndex ? next : item)))
     cancelEditSubject()
-  }
-
-  function addEspecialidad(nombre: string) {
-    setEspecialidades((prev) => (prev.includes(nombre) ? prev : [...prev, nombre]))
   }
 
   return (
@@ -500,8 +493,7 @@ export function AreaSubjectFormDialog({
                             <SubjectRowFields
                               draft={editDraft}
                               onPatch={patchEditDraft}
-                              especialidades={especialidades}
-                              onAddEspecialidad={addEspecialidad}
+                              academicPeriodId={academicPeriodId}
                             />
                             <TableCell>
                               <div className="flex items-center justify-end gap-1">
@@ -581,8 +573,7 @@ export function AreaSubjectFormDialog({
                       <SubjectRowFields
                         draft={draft}
                         onPatch={patchDraft}
-                        especialidades={especialidades}
-                        onAddEspecialidad={addEspecialidad}
+                        academicPeriodId={academicPeriodId}
                       />
                       <TableCell>
                         <Button

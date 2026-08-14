@@ -21,6 +21,7 @@ import { useCampusesOptionsQuery } from "@/features/establishment/campuses/api/q
 
 import { useAcademicPeriodStatusesQuery } from "@/features/establishment/academic-period/api/query/use-academic-period-statuses"
 import { useJornadasQuery } from "@/features/establishment/academic-period/api/query/use-jornadas"
+import { useSedePreviousPeriodsQuery } from "@/features/establishment/academic-period/api/query/use-sede-previous-periods-query"
 import {
   academicPeriodFormSchema,
   type AcademicPeriodFormInput,

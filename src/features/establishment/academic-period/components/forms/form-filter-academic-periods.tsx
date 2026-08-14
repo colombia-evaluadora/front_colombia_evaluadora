@@ -59,7 +59,7 @@ export function FilterAcademicPeriodsForm({
   // incluye acá: cuando el value es `""`, el select muestra el `placeholder`
   // (que también es "Todos"). Así "Todos" nunca llega al form como dato.
   const statusItems = useMemo<Record<string, string>>(
-    () => Object.fromEntries(statusOptions.map((o) => [o.key, o.label])),
+    () => Object.fromEntries(statusOptions.map((o) => [String(o.id), o.label])),
     [statusOptions],
   )
 
@@ -136,7 +136,7 @@ export function FilterAcademicPeriodsForm({
           }}
         </form.Field>
 
-        <form.Field name="status">
+        <form.Field name="statusId">
           {(field) => {
             const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
             return (
@@ -159,7 +159,7 @@ export function FilterAcademicPeriodsForm({
                     <SelectGroup>
                       <SelectItem value={ALL_VALUE}>Todos</SelectItem>
                       {statusOptions.map((option) => (
-                        <SelectItem key={option.key} value={option.key}>
+                        <SelectItem key={option.id} value={String(option.id)}>
                           {option.label}
                         </SelectItem>
                       ))}

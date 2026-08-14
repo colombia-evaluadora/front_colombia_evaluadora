@@ -4,8 +4,11 @@ import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
 import type { MutationResult } from "@/features/establishment/academic-period/api/types/area-subject"
 
-function deleteAreaSubject(codigo: number): Promise<MutationResult> {
-  return api.delete(`/area-subjects/${codigo}`)
+// `fn_area_soft_delete` (id_query 37) — sin confirmar en ThunderClient
+// todavía; path/método según el contrato.
+async function deleteAreaSubject(codigo: number): Promise<MutationResult> {
+  await api.put(`/eval-col/areas/eliminar/${codigo}`)
+  return { status: "ok", message: "Área/asignatura eliminada." }
 }
 
 interface UseDeleteAreaSubjectOptions {

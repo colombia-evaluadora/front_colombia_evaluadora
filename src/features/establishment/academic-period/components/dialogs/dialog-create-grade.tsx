@@ -34,6 +34,7 @@ import { useStudyPlansQuery } from "@/features/establishment/academic-period/api
 import { useAreaSubjectQuery } from "@/features/establishment/academic-period/api/query/use-area-subject"
 import { useGradeGroupsQuery } from "@/features/establishment/academic-period/api/query/use-grade-groups"
 import { useTeachingLevelsQuery } from "@/features/establishment/academic-period/api/query/use-teaching-levels"
+import { useGradosCatalogQuery } from "@/features/establishment/academic-period/api/query/use-grados-catalog"
 import type { Grade } from "@/features/establishment/academic-period/api/types/grade"
 import { TabGradeGroups } from "@/features/establishment/academic-period/components/tabs/tab-grade-groups"
 import {
@@ -99,9 +100,12 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
 
   const { data: teachingLevels = [] } = useTeachingLevelsQuery()
 
+  // Catálogo global GRADOS, no depende del nivel de enseñanza elegido (ver
+  // use-grados-catalog.ts).
+  const { data: gradosCatalog = [] } = useGradosCatalogQuery()
   const gradoOptions = useMemo(
-    () => [...new Set(teachingLevels.flatMap((level) => level.grados))],
-    [teachingLevels],
+    () => gradosCatalog.map((option) => option.valor),
+    [gradosCatalog],
   )
 
   function handleChangeTeachingLevel(value: string | null) {

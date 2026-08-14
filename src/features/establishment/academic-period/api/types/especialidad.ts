@@ -10,10 +10,12 @@ export interface EspecialidadEnfasisRow {
   origen: EspecialidadOrigen
 }
 
-// Opción del select. El front trabaja por nombre (texto libre, permite agregar
-// nuevas → el back las resuelve/crea como énfasis vía `fn_enfasis_resolver`).
+// Opción del select. El front sigue trabajando por nombre (`key`/`label`);
+// `id` se necesita aparte para editar/borrar un énfasis puntual — las
+// especialidades fijas (`origen: "ESPECIALIDAD"`) no se pueden editar/borrar.
 export interface EspecialidadOption {
+  id: number
   key: string
   label: string
-  origen?: EspecialidadOrigen
+  origen: EspecialidadOrigen
 }

@@ -180,7 +180,8 @@ export function createRatingScaleDetailColumns({
       cell: ({ row }) => {
         const scale = row.original
         if (!isEditing(scale)) {
-          return <Badge {...RATING_SCALE_TYPE_BADGE[scale.tipo]}>{scale.tipo}</Badge>
+          const label = scale.tipoName ?? scale.tipo
+          return <Badge {...RATING_SCALE_TYPE_BADGE[label]}>{label}</Badge>
         }
         return (
           <Select

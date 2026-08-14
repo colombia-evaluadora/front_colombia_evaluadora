@@ -17,7 +17,7 @@ interface SelectCategoryResponse {
 export async function fetchSelectCategory(
   categoria: string
 ): Promise<SelectCategoryRow[]> {
-  const raw = await api.get<SelectCategoryResponse>(
+  const raw: SelectCategoryResponse = await api.get(
     `/eval-col/select/${categoria}`
   )
   return raw.rows ?? []

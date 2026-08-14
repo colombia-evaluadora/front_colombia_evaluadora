@@ -32,11 +32,9 @@ export function DeleteEvaluationPeriodDialog({
 
   const deleteMutation = useDeleteEvaluationPeriod({
     mutationConfig: {
-      onSuccess: (result) => {
-        if (result.status === "error") {
-          notify(result.message, { variant: "error" })
-          return
-        }
+      // Un error HTTP ya se reporta por el interceptor global de `api-client`;
+      // `onSuccess` solo corre si la request efectivamente resolvió bien.
+      onSuccess: () => {
         setOpen(false)
         notify(SUCCESS_MESSAGES.evaluationPeriod.deleted)
       },

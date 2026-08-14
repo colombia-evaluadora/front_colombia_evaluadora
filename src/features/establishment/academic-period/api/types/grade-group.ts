@@ -40,6 +40,9 @@ export interface GradeGroupRecord extends GradeGroup {
 
 export type CreateGradeGroupRequest = Omit<GradeGroup, "id"> & {
   gradeId?: number
+  // Necesario para resolver `director` (nombre) a `FK_TFUNCIONARIO` contra
+  // `GET /eval-col/sedes/:ID/funcionarios` — ver resolve-director-id.ts.
+  sedeId?: string
 }
 
 export type UpdateGradeGroupRequest = Omit<GradeGroup, "id">

@@ -1,4 +1,3 @@
-
 import { navigationHandlers } from "@/mocks/handlers/navigation"
 import { authHandlers } from "@/mocks/handlers/auth"
 import { auditsHandlers } from "@/mocks/handlers/audits"
@@ -11,11 +10,12 @@ import { gradesHandlers } from "@/mocks/handlers/academic-period/grades"
 import { gradeGroupsHandlers } from "@/mocks/handlers/academic-period/grade-groups"
 import { studyPlansHandlers } from "@/mocks/handlers/academic-period/study-plans"
 import { ratingScalesHandlers } from "@/mocks/handlers/academic-period/rating-scales"
+import { areasHandlers } from "@/mocks/handlers/academic-period/areas"
+import { subjectsHandlers } from "@/mocks/handlers/academic-period/subjects"
 import { areaSubjectsHandlers } from "@/mocks/handlers/academic-period/area-subject"
 import { promotionCriteriaHandlers } from "@/mocks/handlers/academic-period/promotion-criteria"
 import { evaluationCriteriaHandlers } from "@/mocks/handlers/academic-period/evaluation-criteria"
 import { generalAreasHandlers } from "@/mocks/handlers/academic-period/general-areas"
-import { gradeConfigsHandlers } from "@/mocks/handlers/academic-period/grade-configs"
 import { academicAssignmentsHandlers } from "@/mocks/handlers/academic-period/academic-assignments"
 import { metodologiasHandlers } from "@/mocks/handlers/academic-period/metodologias"
 import { ratingScaleTypesHandlers } from "@/mocks/handlers/academic-period/rating-scale-types"
@@ -42,12 +42,13 @@ export const handlers = [
   ...gradesHandlers,
   ...gradeGroupsHandlers,
   ...studyPlansHandlers,
+  ...areasHandlers,
+  ...subjectsHandlers,
   ...areaSubjectsHandlers,
   ...ratingScalesHandlers,
   ...promotionCriteriaHandlers,
   ...evaluationCriteriaHandlers,
   ...generalAreasHandlers,
-  ...gradeConfigsHandlers,
   ...academicAssignmentsHandlers,
   ...metodologiasHandlers,
   ...ratingScaleTypesHandlers,

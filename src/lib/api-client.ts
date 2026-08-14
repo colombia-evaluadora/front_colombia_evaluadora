@@ -7,6 +7,19 @@ import { queryClient } from "@/lib/query-client"
 
 declare module "axios" {
   export interface AxiosInstance {
+    // El response interceptor de abajo desenvuelve `response.data` en runtime
+    // para TODAS las llamadas a `api.*` — pero `get`/`post`/`put`/`patch`/
+    // `delete` heredados de `Axios` siguen tipados con su default
+    // (`R = AxiosResponse<T>`), así que sin esto cada call site tipaba mal
+    // (`AxiosResponse<T>` en vez de `T`) aunque funcionara bien en runtime.
+    // Se pisan acá con el mismo truco que ya usaba `query` (declararlas
+    // directo en `AxiosInstance` gana por sobre las heredadas de `Axios` en
+    // la resolución de overloads).
+    get<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<T>
+    delete<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<T>
+    post<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T>
+    put<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T>
+    patch<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T>
     // Lecturas con body (filtros anidados, sorts compuestos) que no entran
     // cómodo en query params. Va por POST; el nombre `query` marca que la
     // intención es leer, no mutar. Corre por el response interceptor que ya

@@ -1,4 +1,8 @@
-export type RatingScaleType = "Fortaleza" | "Debilidad"
+// VALOR de TLISTA_VALOR (categoría TIPO_VALORACION) — confirmado contra la
+// base real: es "1"/"2", NO el texto "Fortaleza"/"Debilidad" (eso es el
+// NOMBRE, ver `tipoName` en `RatingScale` más abajo). Opaco a propósito: no
+// hardcodear los VALOR reales, pueden variar por ambiente.
+export type RatingScaleType = string
 
 // Opción de tipo de valoración tal como la entrega el backend: `key` es el
 // valor que se guarda/manda, `label` el texto visible en el select.

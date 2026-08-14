@@ -4,8 +4,10 @@ import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
 import type { MutationResult } from "@/features/establishment/academic-period/api/types/grade-group"
 
-function deleteGradeGroup(codigo: string): Promise<MutationResult> {
-  return api.delete(`/grade-groups/${encodeURIComponent(codigo)}`)
+// `PUT /eval-col/grupos/:ID/eliminar` (`fn_grupo_soft_delete`, id_query 64 —
+// PUT desde V68). Usa el PK real, no `codigo`.
+function deleteGradeGroup(id: number): Promise<MutationResult> {
+  return api.put(`/eval-col/grupos/${id}/eliminar`)
 }
 
 interface UseDeleteGradeGroupOptions {

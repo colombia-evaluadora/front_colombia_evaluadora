@@ -8,15 +8,19 @@ import type {
 } from "@/features/establishment/academic-period/api/types/academic-assignment"
 import { teacherAssignmentsQueryKey } from "@/features/establishment/academic-period/api/query/use-teacher-assignments"
 
+// `POST /eval-col/asignaciones` (`fn_asignacion_guardar`, id_query 82) —
+// reemplaza TODAS las asignaciones del docente en el periodo (borra las
+// activas y reinserta `subjectIds`), no un diff.
 function saveTeacherAssignments({
   academicPeriodId,
   funcionarioId,
   subjectIds,
 }: SaveTeacherAssignmentsRequest): Promise<MutationResult> {
-  return api.put(
-    `/academic-periods/${academicPeriodId}/teachers/${funcionarioId}/assignments`,
-    { subjectIds }
-  )
+  return api.post("/eval-col/asignaciones", {
+    ACADEMIC_PERIOD_ID: academicPeriodId,
+    FK_FUNCIONARIO: funcionarioId,
+    SUBJECT_IDS: subjectIds,
+  })
 }
 
 interface UseSaveTeacherAssignmentsOptions {
