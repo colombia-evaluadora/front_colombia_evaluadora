@@ -3,6 +3,9 @@ import { http, HttpResponse, delay } from "msw"
 import { jornadasDb } from "../../db/academic-period/jornadas"
 import { academicPeriodStatusesDb } from "../../db/academic-period/academic-period-statuses"
 import { evaluationPeriodStatusesDb } from "../../db/academic-period/evaluation-period-statuses"
+import { ratingScaleTypesDb } from "../../db/academic-period/rating-scale-types"
+import { ratingSymbolsDb } from "../../db/academic-period/rating-symbols"
+import { metodologiasDb } from "../../db/academic-period/metodologias"
 
 // Mismo shape crudo que el catálogo genérico real
 // (`GET /eval-col/select/:CATEGORIA`): `{rows: [{pk_lista_valor, nombre, valor, accion}]}`.
@@ -33,6 +36,42 @@ const CATALOGS_BY_CATEGORIA: Record<string, () => SelectCategoryRow[]> = {
       pk_lista_valor: status.id,
       nombre: status.label,
       valor: status.key,
+      accion: null,
+    })),
+  // El pk es sintético (índice + 1) — estable mientras no cambie el orden de
+  // `ratingScaleTypesDb`/`ratingSymbolsDb`/`metodologiasDb`, y suficiente
+  // para el ida-y-vuelta id→valor que hacen `use-rating-scale-types.ts`
+  // (elige por pk) y `resolve-rating-scale-refs.ts` (re-resuelve por valor).
+  TIPO_VALORACION: () =>
+    ratingScaleTypesDb.map((option, i) => ({
+      pk_lista_valor: i + 1,
+      nombre: option.label,
+      valor: option.key,
+      accion: null,
+    })),
+  GRAFICA_CARITA: () =>
+    ratingSymbolsDb
+      .filter((symbol) => symbol.categoria === "carita")
+      .map((symbol, i) => ({
+        pk_lista_valor: i + 1,
+        nombre: symbol.label,
+        valor: symbol.valor,
+        accion: null,
+      })),
+  GRAFICA_SIMBOLO: () =>
+    ratingSymbolsDb
+      .filter((symbol) => symbol.categoria === "valoracion")
+      .map((symbol, i) => ({
+        pk_lista_valor: i + 1,
+        nombre: symbol.label,
+        valor: symbol.valor,
+        accion: null,
+      })),
+  MODELO_PEDAGOGICO: () =>
+    metodologiasDb.map((option, i) => ({
+      pk_lista_valor: i + 1,
+      nombre: option.label,
+      valor: option.key,
       accion: null,
     })),
 }

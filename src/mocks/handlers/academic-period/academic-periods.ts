@@ -7,10 +7,10 @@ import {
   sedesLookup,
 } from "../../db/academic-period/academic-periods"
 import { academicPeriodStatusesDb } from "../../db/academic-period/academic-period-statuses"
+import { jornadasDb } from "../../db/academic-period/jornadas"
 import type {
   AcademicPeriod,
   AcademicPeriodConfig,
-  AcademicPeriodDetail,
   AcademicPeriodsQueryRequest,
   CreateAcademicPeriodRequest,
   ExportFormat,
@@ -237,7 +237,11 @@ export const academicPeriodsHandlers = [
     academicPeriodsDb.push(newPeriod)
     academicPeriodConfigsDb.push({ academicPeriodId: id, ...config })
 
-    return HttpResponse.json(newPeriod, { status: 201 })
+    // Mismo shape que la respuesta real (`{rows: [{fn_periodo_crear: <id>}]}`)
+    // — `create-academic-period.ts` lo desenvuelve con `extractWriteResultId`;
+    // devolver el período completo acá (como antes) dejaba `created.id` en
+    // `NaN` y rompía la navegación a la pantalla de edición tras crear.
+    return HttpResponse.json({ rows: [{ fn_periodo_crear: id }] }, { status: 201 })
   }),
 
   // Candidatos a "periodo anterior" de una sede (activos, excluyendo el que se
@@ -279,11 +283,48 @@ export const academicPeriodsHandlers = [
         scheduleEndTime: null,
         breaks: [],
       } satisfies AcademicPeriodConfig)
+    const jornada = jornadasDb.find((j) => j.id === config.jornadaId)
 
-    return HttpResponse.json<AcademicPeriodDetail>({ ...period, config })
+    // Mismo shape que la respuesta real (`{rows: [...]}`, snake_case) — el
+    // hook (`use-academic-period.ts`) lo desenvuelve con `raw.rows?.[0]` y
+    // mapea campo por campo; devolver `AcademicPeriodDetail` plano acá (como
+    // antes) hacía que `raw.rows?.[0]` fuera `undefined` y toda la pantalla
+    // de edición cayera en el estado de error.
+    return HttpResponse.json({
+      rows: [
+        {
+          id: period.id,
+          sede_id: Number(period.sedeId),
+          sede_name: period.sedeName,
+          school_year_id: period.schoolYearId,
+          school_year_name: String(period.schoolYearId),
+          status_id: period.statusId ?? 0,
+          status: period.status,
+          status_name: period.statusName,
+          start_date: period.startDate,
+          end_date: period.endDate,
+          enrollment_deadline: period.enrollmentDeadline,
+          name: period.name,
+          jornada_id: config.jornadaId,
+          jornada: jornada?.name ?? "",
+          jornada_name: jornada?.name ?? "",
+          reserva: config.reservationEnabled ? "S" : "N",
+          default_blocks_count: config.defaultBlocksCount,
+          schedule_start_time: config.scheduleStartTime,
+          schedule_end_time: config.scheduleEndTime,
+          descansos: config.breaks,
+          previous_period_id: period.previousPeriodId,
+        },
+      ],
+    })
   }),
 
-  http.patch("/api/eval-col/periodos-academicos/:id", async ({ params, request }) => {
+  // `fn_periodo_actualizar` (id_query 105) — path/método reales (ver
+  // `update-academic-period.ts`): `PUT .../editar/:ID`, no
+  // `PATCH .../:ID`. Sin esto, guardar cambios en un periodo académico
+  // caía al mismo bug de logout que Criterio de promoción — la request no
+  // matcheaba ningún handler y pasaba de largo al backend real.
+  http.put("/api/eval-col/periodos-academicos/editar/:id", async ({ params, request }) => {
     await delay(400)
     const index = academicPeriodsDb.findIndex(
       (p) => String(p.id) === String(params.id)

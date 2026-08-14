@@ -17,8 +17,8 @@ import { promotionCriteriaHandlers } from "@/mocks/handlers/academic-period/prom
 import { evaluationCriteriaHandlers } from "@/mocks/handlers/academic-period/evaluation-criteria"
 import { generalAreasHandlers } from "@/mocks/handlers/academic-period/general-areas"
 import { academicAssignmentsHandlers } from "@/mocks/handlers/academic-period/academic-assignments"
-import { metodologiasHandlers } from "@/mocks/handlers/academic-period/metodologias"
-import { ratingScaleTypesHandlers } from "@/mocks/handlers/academic-period/rating-scale-types"
+import { funcionariosHandlers } from "@/mocks/handlers/academic-period/funcionarios"
+import { horarioHandlers } from "@/mocks/handlers/academic-period/horario"
 import { curriculumNodesHandlers } from "@/mocks/handlers/academic-period/curriculum-nodes"
 import { especialidadesHandlers } from "@/mocks/handlers/academic-period/especialidades"
 import { establishmentHandlers } from "@/mocks/handlers/establishments"
@@ -50,8 +50,8 @@ export const handlers = [
   ...evaluationCriteriaHandlers,
   ...generalAreasHandlers,
   ...academicAssignmentsHandlers,
-  ...metodologiasHandlers,
-  ...ratingScaleTypesHandlers,
+  ...funcionariosHandlers,
+  ...horarioHandlers,
   ...curriculumNodesHandlers,
   ...especialidadesHandlers,
   ...selectCatalogHandlers,

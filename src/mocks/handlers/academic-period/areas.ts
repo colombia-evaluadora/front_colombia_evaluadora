@@ -41,8 +41,13 @@ export const areasHandlers = [
     const scoped = areasDb.filter((row) => row.academicPeriodId === body.FK_PERIODO)
     const filtered = applyFilters(scoped, body.NOMBRE_INTERNO)
     const totalCount = filtered.length
-    // `PAGE_INDEX` es 1-based (confirmado por ThunderClient).
-    const start = (body.PAGE_INDEX - 1) * body.PAGE_SIZE
+    // `PAGE_INDEX` es 0-based (`fn_area_listar` real hace
+    // `OFFSET page_index * page_size`, confirmado en la octava pasada de la
+    // empalme — el front ya manda `pageIndex` directo, no `pageIndex + 1`).
+    // Este mock todavía asumía 1-based: con `PAGE_INDEX: 0` el `start`
+    // daba negativo y el `.slice()` siempre devolvía vacío, aunque el área
+    // recién creada sí estuviera en `areasDb`.
+    const start = body.PAGE_INDEX * body.PAGE_SIZE
     const rows = filtered
       .slice(start, start + body.PAGE_SIZE)
       .map((row) => toRawRow(row, totalCount))
