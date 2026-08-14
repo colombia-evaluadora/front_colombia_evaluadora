@@ -215,7 +215,7 @@ function DragHandle({ label, onMove }: { label: string; onMove: (direction: -1 |
     <Button
       type="button"
       variant="ghost"
-      color="neutral"
+      color="muted"
       size="icon"
       className="size-7 cursor-grab active:cursor-grabbing"
       onKeyDown={(event) => {
@@ -246,7 +246,7 @@ function MoveButton({
     <Button
       type="button"
       variant="ghost"
-      color="neutral"
+      color="muted"
       size="icon"
       className="size-7"
       onClick={onClick}
@@ -459,7 +459,7 @@ export function MenuTransfer({
         <Button
           type="button"
           variant="ghost"
-          color="neutral"
+          color="muted"
           size="icon"
           className="size-7"
           onClick={() => setMenuBeingEdited(node)}
@@ -471,7 +471,7 @@ export function MenuTransfer({
           menu={node}
           childrenCount={childrenCount}
           trigger={
-            <Button type="button" variant="ghost" color="neutral" size="icon" className="size-7">
+            <Button type="button" variant="ghost" color="muted" size="icon" className="size-7">
               <span className="sr-only">Eliminar {node.name}</span>
               <TrashIcon />
             </Button>
@@ -555,7 +555,7 @@ export function MenuTransfer({
                             <Button
                               type="button"
                               variant="ghost"
-                              color="neutral"
+                              color="muted"
                               size="icon"
                               className="size-7 [&_svg:not([class*='size-'])]:size-5"
                               onClick={() => toggleCollapsed(group.id)}
@@ -711,7 +711,7 @@ export function MenuTransfer({
                             <Button
                               type="button"
                               variant="ghost"
-                              color="neutral"
+                              color="muted"
                               size="icon"
                               className="size-7 [&_svg:not([class*='size-'])]:size-5"
                               onClick={() => toggleCollapsed(group.id)}
