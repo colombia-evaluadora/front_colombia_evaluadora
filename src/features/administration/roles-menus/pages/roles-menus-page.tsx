@@ -1,12 +1,13 @@
 import { useMemo, useState } from "react"
 
-import { NoticeOutlet, useNotify } from "@/components/notice/notice-context"
+import { useNotify } from "@/components/notice/notice-context"
 import { Button } from "@/components/ui/button"
 import {
   TableScreen,
   TableScreenBody,
   TableScreenHeader,
   TableScreenTitle,
+  TableScreenToolbar,
 } from "@/components/layout/table-screen"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { ControlPointIcon } from "@/components/ui/icons"
@@ -90,22 +91,21 @@ export function RolesMenusPage() {
   return (
     <TableScreen>
       <TableScreenHeader>
-        <TableScreenTitle>Configuración de roles y menús</TableScreenTitle>
-        {/* Esta pantalla no tiene barra de herramientas —no hay buscador ni
-            acciones sobre una tabla—, así que los avisos van sueltos bajo el
-            título en vez de colgar del `TableScreenToolbar`. */}
-        <NoticeOutlet className="mx-(--screen-spacing) my-4" />
-      </TableScreenHeader>
-
-      <TableScreenBody>
-        <div className="flex flex-col gap-6">
-          <Field variant="outlined" className="max-w-md">
+        <TableScreenTitle description="Administra los roles del sistema y los menús a los que tiene acceso cada rol.">
+          Configuración de roles y menús
+        </TableScreenTitle>
+        {/* El rol es el filtro de la pantalla —de él depende todo lo de
+            abajo—, así que vive en la barra de herramientas, donde el resto de
+            los listados pone su buscador. El `NoticeOutlet` lo monta la propia
+            barra. */}
+        <TableScreenToolbar>
+          <Field variant="outlined" className="w-full max-w-md">
             <FieldLabel htmlFor="role">Rol</FieldLabel>
             <Select
               value={roleId != null ? String(roleId) : ""}
               onValueChange={(value) => value && setSelectedRoleId(Number(value))}
             >
-              <SelectTrigger id="role">
+              <SelectTrigger id="role" size="sm">
                 <SelectValue>
                   {(value) =>
                     roles.find((role) => String(role.id) === value)?.name ?? "Seleccionar"
@@ -155,7 +155,11 @@ export function RolesMenusPage() {
               </SelectContent>
             </Select>
           </Field>
+        </TableScreenToolbar>
+      </TableScreenHeader>
 
+      <TableScreenBody>
+        <div className="flex flex-col gap-6">
           {isLoading ? (
             <div className="grid gap-4 lg:grid-cols-2">
               <Skeleton className="h-80" />
@@ -167,6 +171,9 @@ export function RolesMenusPage() {
               assignedIds={assignedIds}
               onAssign={handleAssign}
               onUnassign={handleUnassign}
+              // El orden del menú del rol ES el orden de su lista de menús, así
+              // que reordenar se guarda con la misma llamada que asignar.
+              onReorderAssigned={save}
               disabled={updateRoleMenus.isPending}
             />
           )}
