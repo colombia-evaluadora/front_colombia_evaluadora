@@ -172,6 +172,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
         return
       }
       setDrafts((prev) => [...prev, parsed.data])
+      notify("Escala agregada a la lista.", { variant: "info" })
       formApi.reset(makeEmptyDraft(r))
     },
   })
@@ -230,7 +231,12 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
       academicPeriodId,
     })
     const total = drafts.length * teachingLevelIds.length
-    notify(`${total} escala(s) guardada(s).`)
+    notify(
+      total === 1
+        ? "La escala de valoración se creó correctamente."
+        : `Las ${total} escalas de valoración se crearon correctamente.`,
+      { variant: "info" },
+    )
     reset()
     setOpen(false)
   }
@@ -255,8 +261,6 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
         <DialogHeader>
           <DialogTitle>Agregar escalas de valoración</DialogTitle>
         </DialogHeader>
-
-        <NoticeOutlet />
 
         <div className="flex min-w-0 flex-col gap-4">
           <div className="grid sm:grid-cols-2 gap-x-4 gap-y-4">
@@ -382,18 +386,12 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
 
               <form.Subscribe selector={(state) => draftSchema.safeParse(state.values).success}>
                 {(canSubmit) => (
-                  <div
-                    className={
-                      canSubmit
-                        ? "grid gap-x-4 gap-y-4 sm:grid-cols-4"
-                        : "grid gap-x-4 gap-y-4 sm:grid-cols-3"
-                    }
-                  >
+                  <div className="flex flex-col gap-x-4 gap-y-4 sm:flex-row sm:items-end">
                     <form.Field name="notaMaxima">
                       {(field) => {
                         const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
                         return (
-                          <Field variant="outlined" data-invalid={isInvalid}>
+                          <Field variant="outlined" data-invalid={isInvalid} className="flex-1 min-w-0">
                             <FieldLabel htmlFor={field.name}>Nota máximo*</FieldLabel>
                             <Input
                               id={field.name}
@@ -416,7 +414,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                       {(field) => {
                         const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
                         return (
-                          <Field variant="outlined" data-invalid={isInvalid}>
+                          <Field variant="outlined" data-invalid={isInvalid} className="flex-1 min-w-0">
                             <FieldLabel htmlFor={field.name}>Nota mínimo*</FieldLabel>
                             <Input
                               id={field.name}
@@ -439,7 +437,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                       {(field) => {
                         const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
                         return (
-                          <Field variant="outlined" data-invalid={isInvalid}>
+                          <Field variant="outlined" data-invalid={isInvalid} className="flex-1 min-w-0">
                             <FieldLabel htmlFor={field.name}>Nota equivalente*</FieldLabel>
                             <Input
                               id={field.name}
@@ -460,12 +458,10 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                     </form.Field>
 
                     {canSubmit && (
-                      <div className="flex items-end sm:h-full">
-                        <Button type="submit" variant="fill" size="sm" className="w-full">
-                          <ControlPointIcon data-icon="inline-start" />
-                          Agregar
-                        </Button>
-                      </div>
+                      <Button type="submit" variant="fill" size="sm">
+                        <ControlPointIcon data-icon="inline-start" />
+                        Agregar
+                      </Button>
                     )}
                   </div>
                 )}
@@ -474,9 +470,16 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
           )}
 
           {drafts.length > 0 && (
-            <div className="[&_[data-slot=input]]:bg-background [&_[data-slot=select-trigger]]:bg-background">
-              <FieldVariantContext.Provider value="outlined">
-                <Table>
+            <>
+              {/* Outlet local: muestra el aviso de "Escala agregada a la
+                  lista." mientras el diálogo sigue abierto. El aviso de
+                  Guardar se ve en el `<NoticeOutlet />` de la página, que
+                  queda arriba de la tabla de valoración una vez que el
+                  diálogo se cierra. */}
+              <NoticeOutlet />
+              <div className="[&_[data-slot=input]]:bg-background [&_[data-slot=select-trigger]]:bg-background">
+                <FieldVariantContext.Provider value="outlined">
+                  <Table>
                   <TableHeader>
                     {/* El encabezado no lleva fondo propio ni hover: comparte
                         el de la tabla en reposo, igual que una fila sin el
@@ -723,6 +726,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                 </Table>
               </FieldVariantContext.Provider>
             </div>
+            </>
           )}
         </div>
 

@@ -13,7 +13,7 @@ export interface Notice {
   message: string
 }
 
-export type NoticeVariant = "info" | "success" | "error"
+export type NoticeVariant = "info" | "success" | "error" | "primary"
 
 /**
  * Fondo `X-22` alineado con la variante soft del Badge: misma familia de color
@@ -21,16 +21,22 @@ export type NoticeVariant = "info" | "success" | "error"
  * formulario. Borde transparente que solo reserva el 1px, y el mensaje en
  * `foreground`: el texto es lo que se lee, no lo que colorea. El color de la
  * variante queda para los íconos.
+ *
+ * `info` usa `bg-primary-22` (soft fill de marca) con texto e ícono en
+ * `primary` — sigue el mismo patrón que los items marcados del dropdown y
+ * que los badges soft del formulario, así el aviso se lee como pariente de
+ * esos elementos. `success` y `error` conservan los tonos suaves porque su
+ * color ya comunica el resultado.
  */
 const VARIANT_CLASSES: Record<NoticeVariant, string> = {
-  info: "border-transparent bg-blue-22 text-foreground",
+  info: "border-transparent bg-primary-22 text-primary",
   success: "border-transparent bg-green-22 text-foreground",
   error: "border-transparent bg-red-22 text-foreground",
 }
 
 /** Los íconos —el de la variante y la X de cerrar— sí llevan el color. */
 const VARIANT_ICON_CLASSES: Record<NoticeVariant, string> = {
-  info: "text-blue",
+  info: "text-primary",
   success: "text-green",
   error: "text-red",
 }
