@@ -21,7 +21,10 @@ import {
 import { Button } from "@/components/ui/button"
 
 import { useExportGrades } from "@/features/establishment/academic-period/api/mutations/export-grades"
-import type { ExportFormat, GradesQueryFilters } from "@/features/establishment/academic-period/api/types/grade"
+import type {
+  ExportFormat,
+  GradesQueryFilters,
+} from "@/features/establishment/academic-period/api/types/grade"
 
 interface ExportGradesDialogProps {
   filters: GradesQueryFilters

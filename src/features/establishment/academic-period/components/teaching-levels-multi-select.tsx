@@ -46,28 +46,33 @@ export function TeachingLevelsMultiSelect({
   const selectedKey = selected.map((level) => level.id).join(",")
 
   const chipsRef = useRef<HTMLDivElement>(null)
+  // Fila fantasma: los mismos chips a ancho natural, fuera de flujo. Es de
+  // donde se miden los anchos. Medir los chips visibles no sirve: al colapsar,
+  // el truncado pasa a `flex-1` (se estira hasta el borde) y los de atrás a
+  // `hidden` (miden 0), así que la próxima medición ve una fila que ya no entra
+  // y vuelve a colapsar igual — el estado se realimentaba y no se recuperaba
+  // aunque el campo se ensanchara. Con la fila fantasma la medición no depende
+  // del resultado anterior.
+  const measureRef = useRef<HTMLDivElement>(null)
   // `truncatedIndex` es el chip que recibe el `truncate` visual — el último
   // que entra, dejando paso al "+N" y a los que se esconden detrás. Los chips
-  // con índice mayor se marcan `hidden` (siguen en el DOM para poder medirse
-  // en el siguiente ciclo si cambia la selección).
+  // con índice mayor se marcan `hidden`.
   const [truncatedIndex, setTruncatedIndex] = useState(-1)
   const [overflowCount, setOverflowCount] = useState(0)
 
   useLayoutEffect(() => {
     const container = chipsRef.current
-    if (!container) return
+    const ghost = measureRef.current
+    if (!container || !ghost) return
 
     const measure = () => {
       const containerWidth = container.clientWidth
-      if (containerWidth === 0) {
+      const badges = Array.from(ghost.children) as HTMLElement[]
+      if (containerWidth === 0 || badges.length === 0) {
         setTruncatedIndex(-1)
         setOverflowCount(0)
         return
       }
-
-      const badges = Array.from(
-        container.querySelectorAll<HTMLElement>("[data-badge-id]"),
-      )
 
       let accumulatedWidth = 0
       let truncatedIdx = -1
@@ -81,8 +86,7 @@ export function TeachingLevelsMultiSelect({
         // pasarnos del borde. El último chip no necesita reserva — si no
         // entra igual lo truncamos, pero no hay nadie detrás.
         const remainingChips = badges.length - i - 1
-        const reserveForN =
-          remainingChips > 0 ? OVERFLOW_CHIP_RESERVE_PX : 0
+        const reserveForN = remainingChips > 0 ? OVERFLOW_CHIP_RESERVE_PX : 0
 
         if (projected + reserveForN > containerWidth) {
           truncatedIdx = i
@@ -92,8 +96,7 @@ export function TeachingLevelsMultiSelect({
         accumulatedWidth = projected
       }
 
-      const overflow =
-        truncatedIdx >= 0 ? badges.length - truncatedIdx - 1 : 0
+      const overflow = truncatedIdx >= 0 ? badges.length - truncatedIdx - 1 : 0
       setTruncatedIndex(truncatedIdx)
       setOverflowCount(overflow)
     }
@@ -134,8 +137,26 @@ export function TeachingLevelsMultiSelect({
         */}
         <div
           ref={chipsRef}
-          className="flex flex-1 flex-nowrap gap-1.5 overflow-hidden min-w-0"
+          className="relative flex flex-1 flex-nowrap gap-1.5 overflow-hidden min-w-0"
         >
+          {/* Fila de medición: mismos chips, siempre completos y sin colapsar.
+              `absolute` la saca del flujo, `w-max` evita que el ancho del campo
+              la comprima y `invisible` la deja medible pero no visible. */}
+          <div
+            ref={measureRef}
+            aria-hidden
+            className="pointer-events-none invisible absolute top-0 left-0 flex w-max flex-nowrap gap-1.5"
+          >
+            {selected.map((level) => (
+              <Badge key={level.id} variant="soft" color="muted" className="text-xs normal-case">
+                <span>{level.nombre}</span>
+                <span data-icon="inline-end">
+                  <XIcon className="size-3" />
+                </span>
+              </Badge>
+            ))}
+          </div>
+
           {selected.length === 0 ? (
             <span className="text-muted-foreground">Seleccionar</span>
           ) : (
@@ -162,11 +183,7 @@ export function TeachingLevelsMultiSelect({
                       isHidden && "hidden",
                     )}
                   >
-                    <span
-                      className={cn(
-                        isTruncated && "min-w-0 flex-1 truncate",
-                      )}
-                    >
+                    <span className={cn(isTruncated && "min-w-0 flex-1 truncate")}>
                       {level.nombre}
                     </span>
                     {/* El chip truncado no muestra × — ya está al límite de

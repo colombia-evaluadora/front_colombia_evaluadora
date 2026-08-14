@@ -10,7 +10,7 @@ import type {
 } from "@/features/establishment/academic-period/api/types/academic-period"
 
 export function toCreateAcademicPeriodRequest(
-  values: AcademicPeriodFormValues
+  values: AcademicPeriodFormValues,
 ): CreateAcademicPeriodRequest {
   const schoolYearId = values.startDate
     ? new Date(values.startDate).getFullYear()
@@ -42,9 +42,7 @@ export function toCreateAcademicPeriodRequest(
   }
 }
 
-function createAcademicPeriod(
-  values: AcademicPeriodFormValues
-): Promise<AcademicPeriod> {
+function createAcademicPeriod(values: AcademicPeriodFormValues): Promise<AcademicPeriod> {
   return api.post("/academic-periods", toCreateAcademicPeriodRequest(values))
 }
 
@@ -52,9 +50,7 @@ interface UseCreateAcademicPeriodOptions {
   mutationConfig?: MutationConfig<typeof createAcademicPeriod>
 }
 
-export function useCreateAcademicPeriod({
-  mutationConfig,
-}: UseCreateAcademicPeriodOptions = {}) {
+export function useCreateAcademicPeriod({ mutationConfig }: UseCreateAcademicPeriodOptions = {}) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: createAcademicPeriod,

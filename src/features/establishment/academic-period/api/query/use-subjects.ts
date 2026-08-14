@@ -7,10 +7,7 @@ function fetchSubjects(academicPeriodId?: number): Promise<string[]> {
   return api.get(`/subjects${qs}`)
 }
 
-export const subjectsQueryKey = (academicPeriodId?: number) => [
-  "subjects",
-  academicPeriodId,
-]
+export const subjectsQueryKey = (academicPeriodId?: number) => ["subjects", academicPeriodId]
 
 export function useSubjectsQuery(academicPeriodId?: number) {
   return useQuery({

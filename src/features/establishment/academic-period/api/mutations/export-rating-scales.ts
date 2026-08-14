@@ -13,9 +13,7 @@ interface ExportRatingScalesInput {
   format: ExportFormat
 }
 
-function exportRatingScales(
-  input: ExportRatingScalesInput
-): Promise<ExportResult> {
+function exportRatingScales(input: ExportRatingScalesInput): Promise<ExportResult> {
   return api.post("/rating-scales/export-all", input)
 }
 
@@ -23,9 +21,7 @@ interface UseExportRatingScalesOptions {
   mutationConfig?: MutationConfig<typeof exportRatingScales>
 }
 
-export function useExportRatingScales({
-  mutationConfig,
-}: UseExportRatingScalesOptions = {}) {
+export function useExportRatingScales({ mutationConfig }: UseExportRatingScalesOptions = {}) {
   return useMutation({
     mutationFn: exportRatingScales,
     ...mutationConfig,

@@ -2,7 +2,10 @@ import { useMutation } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
-import type { ExportFormat, ExportResult } from "@/features/establishment/academic-period/api/types/evaluation-period"
+import type {
+  ExportFormat,
+  ExportResult,
+} from "@/features/establishment/academic-period/api/types/evaluation-period"
 
 interface ExportSelectedEvaluationPeriodsInput {
   ids: number[]
@@ -10,7 +13,7 @@ interface ExportSelectedEvaluationPeriodsInput {
 }
 
 function exportSelectedEvaluationPeriods(
-  input: ExportSelectedEvaluationPeriodsInput
+  input: ExportSelectedEvaluationPeriodsInput,
 ): Promise<ExportResult> {
   return api.post("/evaluation-periods/export", input)
 }

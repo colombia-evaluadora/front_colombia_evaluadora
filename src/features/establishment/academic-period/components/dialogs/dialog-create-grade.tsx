@@ -41,7 +41,10 @@ import {
   type PromotionCriteriaHandle,
 } from "@/features/establishment/academic-period/components/tabs/tab-promotion-criteria"
 import { TabStudyPlan } from "@/features/establishment/academic-period/components/tabs/tab-study-plan"
-import { ScheduleBuilder, type ScheduleBuilderHandle } from "@/features/establishment/academic-period/components/schedule-builder"
+import {
+  ScheduleBuilder,
+  type ScheduleBuilderHandle,
+} from "@/features/establishment/academic-period/components/schedule-builder"
 import {
   DEFAULT_SUBJECT_COLOR,
   type Jornada,
@@ -255,7 +258,10 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
         </div>
 
         <div className="grid gap-x-4 gap-y-2 sm:grid-cols-2 lg:grid-cols-4">
-          <Field variant="outlined" data-invalid={fieldErrors["teachingLevelId"] ? "true" : undefined}>
+          <Field
+            variant="outlined"
+            data-invalid={fieldErrors["teachingLevelId"] ? "true" : undefined}
+          >
             <FieldLabel htmlFor="grade-nivel">Nivel de enseñanza*</FieldLabel>
             <Select
               value={teachingLevelId != null ? String(teachingLevelId) : ""}

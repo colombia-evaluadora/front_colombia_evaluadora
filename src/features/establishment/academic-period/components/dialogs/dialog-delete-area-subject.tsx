@@ -43,9 +43,7 @@ export function DeleteAreaSubjectDialog({ areaSubject }: DeleteAreaSubjectDialog
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger
-        render={<Button variant="ghost" color="neutral" size="icon-sm" />}
-      >
+      <AlertDialogTrigger render={<Button variant="ghost" color="neutral" size="icon-sm" />}>
         <span className="sr-only">Eliminar área/asignatura</span>
         <TrashIcon />
       </AlertDialogTrigger>

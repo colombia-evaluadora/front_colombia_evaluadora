@@ -21,7 +21,10 @@ import {
 import { Button } from "@/components/ui/button"
 
 import { useExportRatingScales } from "@/features/establishment/academic-period/api/mutations/export-rating-scales"
-import type { ExportFormat, RatingScalesQueryFilters } from "@/features/establishment/academic-period/api/types/rating-scales"
+import type {
+  ExportFormat,
+  RatingScalesQueryFilters,
+} from "@/features/establishment/academic-period/api/types/rating-scales"
 
 interface ExportRatingScalesDialogProps {
   filters: RatingScalesQueryFilters

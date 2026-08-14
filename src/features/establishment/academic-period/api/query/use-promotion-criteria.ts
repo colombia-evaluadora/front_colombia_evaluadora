@@ -3,9 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api-client"
 import type { PromotionCriteria } from "@/features/establishment/academic-period/api/types/promotion-criteria"
 
-function fetchPromotionCriteria(
-  academicPeriodId: number
-): Promise<PromotionCriteria> {
+function fetchPromotionCriteria(academicPeriodId: number): Promise<PromotionCriteria> {
   return api.get(`/promotion-criteria/${academicPeriodId}`)
 }
 

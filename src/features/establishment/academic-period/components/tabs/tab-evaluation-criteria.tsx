@@ -11,7 +11,10 @@ import { useEvaluationCriteriaQuery } from "@/features/establishment/academic-pe
 import { useEvaluationCriteriaOptionsQuery } from "@/features/establishment/academic-period/api/query/use-evaluation-criteria-options"
 import { useRatingScalesQuery } from "@/features/establishment/academic-period/api/query/use-rating-scales"
 import { useUpdateEvaluationCriteria } from "@/features/establishment/academic-period/api/mutations/update-evaluation-criteria"
-import { evaluationCriteriaSchema, type EvaluationCriteriaValues } from "@/features/establishment/academic-period/api/schema"
+import {
+  evaluationCriteriaSchema,
+  type EvaluationCriteriaValues,
+} from "@/features/establishment/academic-period/api/schema"
 import {
   Select,
   SelectContent,

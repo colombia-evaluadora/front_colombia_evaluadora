@@ -13,9 +13,7 @@ interface ExportEvaluationPeriodsInput {
   format: ExportFormat
 }
 
-function exportEvaluationPeriods(
-  input: ExportEvaluationPeriodsInput
-): Promise<ExportResult> {
+function exportEvaluationPeriods(input: ExportEvaluationPeriodsInput): Promise<ExportResult> {
   return api.post("/evaluation-periods/export-all", input)
 }
 

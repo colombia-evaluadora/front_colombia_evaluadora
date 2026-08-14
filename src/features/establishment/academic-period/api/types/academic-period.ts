@@ -62,10 +62,7 @@ export interface AcademicPeriodsQueryResponse {
   totalCount: number
 }
 
-export type CreateAcademicPeriodRequest = Omit<
-  AcademicPeriod,
-  "id" | "sedeName"
-> & {
+export type CreateAcademicPeriodRequest = Omit<AcademicPeriod, "id" | "sedeName"> & {
   config: Omit<AcademicPeriodConfig, "academicPeriodId">
 }
 

@@ -12,10 +12,7 @@ interface UpdateAreaSubjectInput {
   values: UpdateAreaSubjectRequest
 }
 
-function updateAreaSubject({
-  codigo,
-  values,
-}: UpdateAreaSubjectInput): Promise<MutationResult> {
+function updateAreaSubject({ codigo, values }: UpdateAreaSubjectInput): Promise<MutationResult> {
   return api.patch(`/area-subjects/${codigo}`, values)
 }
 
@@ -23,9 +20,7 @@ interface UseUpdateAreaSubjectOptions {
   mutationConfig?: MutationConfig<typeof updateAreaSubject>
 }
 
-export function useUpdateAreaSubject({
-  mutationConfig,
-}: UseUpdateAreaSubjectOptions = {}) {
+export function useUpdateAreaSubject({ mutationConfig }: UseUpdateAreaSubjectOptions = {}) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: updateAreaSubject,

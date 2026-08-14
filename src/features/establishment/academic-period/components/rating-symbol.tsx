@@ -4,7 +4,10 @@ import { CaretDownIcon } from "@/components/ui/icons"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { inputTriggerVariants, inputVariants, useInputVariant } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
-import type { RatingSymbol, RatingSymbolCategory } from "@/features/establishment/academic-period/api/types/rating-scales"
+import type {
+  RatingSymbol,
+  RatingSymbolCategory,
+} from "@/features/establishment/academic-period/api/types/rating-scales"
 
 const CATEGORY_LABELS: Record<RatingSymbolCategory, string> = {
   carita: "Símbolo calificación por carita",

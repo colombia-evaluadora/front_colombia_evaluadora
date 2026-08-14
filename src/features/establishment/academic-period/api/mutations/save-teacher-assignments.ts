@@ -13,10 +13,9 @@ function saveTeacherAssignments({
   documentNumber,
   subjectIds,
 }: SaveTeacherAssignmentsRequest): Promise<MutationResult> {
-  return api.put(
-    `/academic-periods/${academicPeriodId}/teachers/${documentNumber}/assignments`,
-    { subjectIds }
-  )
+  return api.put(`/academic-periods/${academicPeriodId}/teachers/${documentNumber}/assignments`, {
+    subjectIds,
+  })
 }
 
 interface UseSaveTeacherAssignmentsOptions {
@@ -33,10 +32,7 @@ export function useSaveTeacherAssignments({
     onSuccess: (...args) => {
       const [, variables] = args
       queryClient.invalidateQueries({
-        queryKey: teacherAssignmentsQueryKey(
-          variables.academicPeriodId,
-          variables.documentNumber
-        ),
+        queryKey: teacherAssignmentsQueryKey(variables.academicPeriodId, variables.documentNumber),
       })
       mutationConfig?.onSuccess?.(...args)
     },

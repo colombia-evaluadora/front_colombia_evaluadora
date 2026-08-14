@@ -15,18 +15,17 @@ interface UseEvaluationPeriodsQueryParams {
 }
 
 function fetchEvaluationPeriods(
-  body: EvaluationPeriodsQueryRequest
+  body: EvaluationPeriodsQueryRequest,
 ): Promise<EvaluationPeriodsQueryResponse> {
   return api.query("/evaluation-periods/query", body)
 }
 
-export const evaluationPeriodsQueryKey = (
-  params: UseEvaluationPeriodsQueryParams
-) => ["evaluation-periods", params]
+export const evaluationPeriodsQueryKey = (params: UseEvaluationPeriodsQueryParams) => [
+  "evaluation-periods",
+  params,
+]
 
-export function useEvaluationPeriodsQuery(
-  params: UseEvaluationPeriodsQueryParams
-) {
+export function useEvaluationPeriodsQuery(params: UseEvaluationPeriodsQueryParams) {
   return useQuery({
     queryKey: evaluationPeriodsQueryKey(params),
     queryFn: () => fetchEvaluationPeriods(params),
