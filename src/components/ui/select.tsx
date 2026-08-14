@@ -154,6 +154,13 @@ function SelectTrigger({
   )
 }
 
+/**
+ * `alignItemWithTrigger` en `false`: con el default de Base UI el popup se
+ * posiciona para que la opción elegida quede sobre el trigger —el
+ * comportamiento del select nativo de macOS—, así que tapa el campo. Acá el
+ * desplegable cae DEBAJO del input, como el resto de los popovers de la app,
+ * y el campo se sigue viendo mientras se elige.
+ */
 function SelectContent({
   className,
   children,
@@ -161,7 +168,7 @@ function SelectContent({
   sideOffset = 4,
   align = "center",
   alignOffset = 0,
-  alignItemWithTrigger = true,
+  alignItemWithTrigger = false,
   ...props
 }: SelectPrimitive.Popup.Props &
   Pick<
