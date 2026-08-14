@@ -1,7 +1,7 @@
 // Body PLANO (UPPER_SNAKE) tal como lo manda `update-promotion-criteria.ts`
 // (`fn_criterio_prom_guardar`) — se guarda tal cual, sin traducir a
-// `PromotionCriteria`, porque `OBLIGATORIAS` ya viene resuelta a ids
-// (asignaturaId/areaId) y hace falta reconstruir los nombres al leer.
+// `PromotionCriteria`, porque `OBLIGATORIAS` ya viene resuelta a ids y hace
+// falta reconstruir los nombres al leer.
 export interface PromotionCriteriaWriteBody {
   FK_GRADO: number | null
   NODO_CURRICULAR: string
@@ -13,7 +13,9 @@ export interface PromotionCriteriaWriteBody {
   MAX_ASIG_PROMEDIO: number
   MINIMO_INASISTENCIAS: number
   MAX_ASIG_NIVELAR_PROM: number
-  OBLIGATORIAS: { asignaturaId: number | null; areaId: number | null }[]
+  // V73 — array plano de ids (BIGINT[]), no JSONB de {asignaturaId|areaId}:
+  // `NODO_CURRICULAR` ("AS"|"AR") ya dice de qué tabla son los ids.
+  OBLIGATORIAS: number[]
 }
 
 // Clave = periodo + grado (`undefined` = criterio por defecto del periodo,

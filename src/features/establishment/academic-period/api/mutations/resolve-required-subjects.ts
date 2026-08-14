@@ -8,13 +8,11 @@ interface NamedRowsResponse {
   rows: NamedRow[]
 }
 
-export interface ObligatoriaPayload {
-  asignaturaId: number | null
-  areaId: number | null
-}
-
-// `fn_criterio_prom_guardar` recibe `p_obligatorias` como JSONB de
-// `{asignaturaId|areaId}` (exactamente uno de los dos por elemento), pero el
+// `fn_criterio_prom_guardar` recibe `p_obligatorias` como `BIGINT[]` plano
+// (V73 — antes era JSONB de `{asignaturaId|areaId}`, pero el binder de
+// query-service rechaza siempre un array bajo un placeholder JSONB; como
+// `NODO_CURRICULAR` ya dice si el lote es de áreas o de asignaturas, un
+// array de ids alcanza y evita el problema de binding por completo). El
 // front elige "obligatorias" por NOMBRE (`SubjectsMultiSelect`, ver
 // tab-promotion-criteria.tsx). Se re-resuelve nombre→id contra el mismo
 // catálogo que llena el select (`useSubjectsQuery`/`usePeriodAreaNamesQuery`)
@@ -25,7 +23,7 @@ export async function resolveObligatorias(
   academicPeriodId: number,
   curriculumNode: string,
   names: string[]
-): Promise<ObligatoriaPayload[]> {
+): Promise<number[]> {
   if (names.length === 0) return []
 
   if (curriculumNode === "AR") {
@@ -44,7 +42,6 @@ export async function resolveObligatorias(
     return names
       .map((name) => idByName.get(name))
       .filter((id): id is number => id != null)
-      .map((areaId) => ({ asignaturaId: null, areaId }))
   }
 
   const raw: NamedRowsResponse = await api.query("/eval-col/areas/asignaturas", {
@@ -59,5 +56,4 @@ export async function resolveObligatorias(
   return names
     .map((name) => idByName.get(name))
     .filter((id): id is number => id != null)
-    .map((asignaturaId) => ({ asignaturaId, areaId: null }))
 }

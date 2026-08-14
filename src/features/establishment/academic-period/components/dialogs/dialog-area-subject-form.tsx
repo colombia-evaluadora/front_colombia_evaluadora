@@ -146,7 +146,6 @@ export function AreaSubjectFormDialog({
       if (isEdit) {
         const result = await updateAreaSubject.mutateAsync({
           codigo: areaSubject.codigo,
-          academicPeriodId,
           values: {
             ...areaSubject,
             ...base,

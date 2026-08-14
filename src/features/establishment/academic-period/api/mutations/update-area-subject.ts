@@ -10,14 +10,10 @@ import {
   extractWriteResultId,
   type WriteResultResponse,
 } from "./extract-write-result"
-import { resolveEspecialidadId } from "./resolve-especialidad-id"
 import { toAsignaturasPayload } from "./to-asignaturas-payload"
 
 interface UpdateAreaSubjectInput {
   codigo: number
-  // Necesario para resolver el catálogo de especialidades (`FK_ENFASIS`) al
-  // guardar las asignaturas; el resto del payload no lo necesita.
-  academicPeriodId?: number
   values: UpdateAreaSubjectRequest
 }
 
@@ -27,7 +23,6 @@ interface UpdateAreaSubjectInput {
 // alta/edición/baja de asignatura individual.
 async function updateAreaSubject({
   codigo,
-  academicPeriodId,
   values,
 }: UpdateAreaSubjectInput): Promise<MutationResult> {
   const areaRaw: WriteResultResponse = await api.put(`/eval-col/areas/${codigo}`, {
@@ -38,12 +33,8 @@ async function updateAreaSubject({
   })
   extractWriteResultId(areaRaw)
 
-  const especialidadByName = academicPeriodId
-    ? await resolveEspecialidadId(academicPeriodId)
-    : new Map<string, number>()
-
   await api.put(`/eval-col/areas/${codigo}/asignaturas`, {
-    ASIGNATURAS: toAsignaturasPayload(values.subjects, especialidadByName),
+    ASIGNATURAS: toAsignaturasPayload(values.subjects),
   })
 
   return { status: "ok", message: "Área/asignatura actualizada." }
