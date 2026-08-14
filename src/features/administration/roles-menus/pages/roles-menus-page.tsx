@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react"
 
-import { useNotify } from "@/components/notice/notice-context"
+import { NoticeProvider, useNotify } from "@/components/notice/notice-context"
 import { Button } from "@/components/ui/button"
 import {
   TableScreen,
@@ -30,7 +30,21 @@ import { useRolesQuery } from "@/features/administration/roles-menus/api/query/u
 import { buildMenuTree } from "@/features/administration/roles-menus/api/types/role-menu"
 import { MenuTransfer } from "@/features/administration/roles-menus/components/menu-transfer"
 
+/**
+ * El `NoticeProvider` va acá y no adentro del contenido: `useNotify` lee el
+ * contexto de sus ancestros, así que montarlo en el mismo componente que lo
+ * consume lo dejaría leyendo el fallback (que manda un toast suelto en vez del
+ * aviso de la barra de herramientas).
+ */
 export function RolesMenusPage() {
+  return (
+    <NoticeProvider>
+      <RolesMenusPageContent />
+    </NoticeProvider>
+  )
+}
+
+function RolesMenusPageContent() {
   const { notify } = useNotify()
   const [selectedRoleId, setSelectedRoleId] = useState<number | null>(null)
   const [newRoleName, setNewRoleName] = useState("")
