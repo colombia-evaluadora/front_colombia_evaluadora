@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/select"
 import { getNavIcon } from "@/features/navigation/api/ui-mappings"
 
+import { useDeleteMenu } from "@/features/administration/roles-menus/api/mutations/delete-menu"
 import { useSaveMenu } from "@/features/administration/roles-menus/api/mutations/save-menu"
 import {
   useCreatePlan,
@@ -60,6 +61,8 @@ const MENU_ICONS = [
 
 interface Draft {
   key: number
+  /** Presente = submenú que YA existe: se guarda con PATCH, no como alta. */
+  id?: number
   name: string
   path: string
   visible: boolean
@@ -67,9 +70,38 @@ interface Draft {
 }
 
 let draftKey = 0
-function emptyDraft(): Draft {
+function nextKey() {
   draftKey += 1
-  return { key: draftKey, name: "", path: "", visible: true, planId: "" }
+  return draftKey
+}
+
+function emptyDraft(): Draft {
+  return { key: nextKey(), name: "", path: "", visible: true, planId: "" }
+}
+
+/** Submenú existente, tal como se carga en la tabla al editar su carpeta. */
+function draftFromMenu(child: MenuNode): Draft {
+  return {
+    key: nextKey(),
+    id: child.id,
+    name: child.name,
+    path: child.path ?? "",
+    visible: child.visible ?? true,
+    planId: child.planId != null ? String(child.planId) : "",
+  }
+}
+
+/**
+ * Si la fila quedó igual que el menú del que salió. Editar una carpeta no
+ * tiene por qué disparar un PATCH por cada hijo que nadie tocó.
+ */
+function isUnchanged(draft: Draft, child: MenuNode) {
+  return (
+    draft.name === child.name &&
+    draft.path === (child.path ?? "") &&
+    draft.visible === (child.visible ?? true) &&
+    draft.planId === (child.planId != null ? String(child.planId) : "")
+  )
 }
 
 /**
@@ -165,8 +197,12 @@ interface DialogSaveMenuProps {
   onOpenChange: (open: boolean) => void
   /** Menús raíz: los candidatos a padre. */
   roots: MenuTreeNode[]
-  /** Presente = edición de ese menú; ausente = alta. */
-  menu?: MenuNode
+  /**
+   * Presente = edición de ese menú; ausente = alta. Al editar una carpeta llega
+   * el nodo del árbol —con sus `children`—, que es lo que la tabla de submenús
+   * necesita para mostrar los que ya existen.
+   */
+  menu?: MenuNode | MenuTreeNode
 }
 
 /**
@@ -203,11 +239,21 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
     // Los menús viejos no traen `visible`: se asumen visibles.
     setVisible(menu?.visible ?? true)
     setPlanId(menu?.planId != null ? String(menu.planId) : "")
-    setDrafts([])
+    // Al editar una carpeta, sus submenús se cargan en la tabla: son parte de
+    // lo que se está editando. En alta la tabla arranca vacía.
+    setDrafts(
+      menu != null && menu.idParent == null && "children" in menu
+        ? menu.children.map(draftFromMenu)
+        : [],
+    )
     setFieldErrors({})
   }, [open, menu])
 
   const saveMenu = useSaveMenu()
+  const deleteMenu = useDeleteMenu()
+
+  /** Los submenús que la carpeta ya tenía al abrir el diálogo. */
+  const existingChildren = menu != null && "children" in menu ? menu.children : []
 
   // Un menú no puede colgar de sí mismo.
   const parentOptions = roots.filter((root) => root.id !== menu?.id)
@@ -247,6 +293,16 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
     setDrafts((prev) => prev.map((it) => (it.key === key ? { ...it, ...patch } : it)))
   }
 
+  /**
+   * Quitar una fila. La que todavía no se guardó sale del formulario y ya; la
+   * que ya existe es un menú de verdad, así que se da de baja en el backend —el
+   * botón pide confirmación antes de llegar acá—.
+   */
+  function removeDraft(draft: Draft) {
+    if (draft.id != null) deleteMenu.mutate({ id: draft.id })
+    setDrafts((prev) => prev.filter((it) => it.key !== draft.key))
+  }
+
   async function handleSubmit() {
     // Los datos del menú principal solo se piden cuando sus campos están a la
     // vista: colgando de un menú existente, esos datos los aportan los submenús.
@@ -283,9 +339,13 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
           // `null` le borraría el plan que pudiera tener.
           ...(isRootMenu ? {} : { planId: planId ? Number(planId) : null }),
         })
-        // Submenús agregados desde la edición de la carpeta.
+        // Submenús de la carpeta: los que ya existían se editan (llevan `id`) y
+        // los agregados acá se dan de alta. Los que nadie tocó no se mandan.
         for (const draft of filledDrafts) {
+          const original = existingChildren.find((child) => child.id === draft.id)
+          if (original && isUnchanged(draft, original)) continue
           await saveMenu.mutateAsync({
+            id: draft.id,
             name: draft.name,
             path: draft.path,
             icon: "",
@@ -580,16 +640,18 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
                           onChange={(planId) => updateDraft(draft.key, { planId })}
                         />
                         <ConfirmRemoveButton
-                          label="Quitar submenú"
+                          label={draft.id != null ? "Eliminar submenú" : "Quitar submenú"}
                           size="icon"
+                          // La fila existente se elimina de verdad —y el borrado
+                          // del backend es en cascada—, así que el aviso lo dice.
                           description={
-                            draft.name.trim()
-                              ? `Se quitará el submenú «${draft.name}». Esta acción no se puede deshacer.`
-                              : "Se quitará el submenú. Esta acción no se puede deshacer."
+                            draft.id != null
+                              ? `Se eliminará el submenú «${draft.name}» de todos los roles que lo tengan. Esta acción no se puede deshacer.`
+                              : draft.name.trim()
+                                ? `Se quitará el submenú «${draft.name}». Esta acción no se puede deshacer.`
+                                : "Se quitará el submenú. Esta acción no se puede deshacer."
                           }
-                          onConfirm={() =>
-                            setDrafts((prev) => prev.filter((it) => it.key !== draft.key))
-                          }
+                          onConfirm={() => removeDraft(draft)}
                         />
                       </li>
                     ))}
