@@ -6,8 +6,20 @@ import type {
   UpdateRoleMenusResult,
 } from "@/features/administration/roles-menus/api/types/role-menu"
 
+import { findUserByToken } from "@/mocks/db/auth"
 import { navigationMenu } from "@/mocks/db/navigation"
 import { rolesDb } from "@/mocks/db/roles"
+
+/**
+ * El rol del token (`ADMIN`/`USER`) contra el catálogo de roles de `rolesDb`.
+ * En el backend real el puente es `public.role.name = 'CEVAL-' || trol.codigo`;
+ * acá alcanza con un mapa, pero cumple la misma función: llevar el rol que
+ * viaja en el JWT hasta la fila que tiene los menús asignados.
+ */
+const ROLE_ID_BY_TOKEN_ROLE: Record<string, number> = {
+  ADMIN: 1, // Administrador
+  USER: 3, // Docente
+}
 
 function toMenuNode({ roleIds: _roleIds, ...menu }: (typeof navigationMenu)[number]): MenuNode {
   return menu
@@ -53,11 +65,44 @@ export const rolesHandlers = [
     return rows<Role>([role], { status: 201 })
   }),
 
-  // Catálogo completo de menús: el de la pantalla de configuración, a
-  // diferencia de `/sso-admin/myMenu`, que ya viene filtrado por rol.
   http.get("/api/eval-col/menus", async () => {
     await delay(150)
     return rows<MenuNode>(navigationMenu.map(toMenuNode))
+  }),
+
+  http.get("/api/eval-col/my-menus", async ({ request }) => {
+    await delay(150)
+
+    const token = request.headers.get("Authorization")?.replace(/^Bearer /i, "") ?? ""
+    const user = findUserByToken(token)
+    const roleId = user ? ROLE_ID_BY_TOKEN_ROLE[user.role] : undefined
+
+    if (roleId === undefined) {
+      return HttpResponse.json(
+        { message: "fn_list_my_menus: no hay usuario autenticado en el token" },
+        { status: 403 },
+      )
+    }
+
+    const ids = new Set<number>()
+    for (const menu of navigationMenu) {
+      if (!menu.roleIds.includes(roleId)) continue
+      ids.add(menu.id)
+      if (menu.idParent !== null) ids.add(menu.idParent)
+    }
+
+    const roleOrder = roleMenuOrder.get(roleId)
+    return rows<MenuNode>(
+      navigationMenu
+        .filter((menu) => ids.has(menu.id))
+        .map((menu) => {
+          const position = roleOrder?.indexOf(menu.id) ?? -1
+          return {
+            ...toMenuNode(menu),
+            menuOrder: position === -1 ? menu.menuOrder : position,
+          }
+        }),
+    )
   }),
 
   http.post("/api/eval-col/menus", async ({ request }) => {
