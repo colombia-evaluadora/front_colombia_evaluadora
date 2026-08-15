@@ -54,11 +54,8 @@ export const paths = {
     // Las dos vistas del registro de actividad (por sesión y por tablas)
     // cuelgan del mismo prefijo `registro-de-actividad` para que el item del
     // menú pueda marcarse activo en cualquiera de las dos y en sus subrutas
-    // (ver `resolveNavPathname` en nav-main.tsx).
-    registroActividad: {
-      path: "registro-de-actividad",
-      getHref: () => "/app/registro-de-actividad",
-    },
+    // (ver `resolveNavPathname` en nav-main.tsx). El prefijo a secas no es una
+    // ruta: no hay pantalla que mostrar ahí.
     auditoriaSesiones: {
       path: "registro-de-actividad/sesiones",
       getHref: () => "/app/registro-de-actividad/sesiones",
@@ -129,17 +126,5 @@ export const paths = {
           getHref: () => "/app/establecimiento-educativo/periodos",
       },
   },
-    reportes: {
-      path: "reportes",
-      getHref: () => "/app/reportes",
-    },
-    usuarios: {
-      path: "usuarios",
-      getHref: () => "/app/usuarios",
-    },
-    configuracion: {
-      path: "configuracion",
-      getHref: () => "/app/configuracion",
-    },
   },
 } as const
