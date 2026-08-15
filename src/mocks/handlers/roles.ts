@@ -13,17 +13,27 @@ function toMenuNode({ roleIds: _roleIds, ...menu }: (typeof navigationMenu)[numb
   return menu
 }
 
+/**
+ * El gateway envuelve TODA respuesta de path-dispatch en `{rows, outParams}`,
+ * incluso las de una sola fila y las de una sola columna. Los mocks copian ese
+ * sobre para que el cliente (`lib/eval-col-client`) se ejercite igual en los
+ * dos modos.
+ */
+function rows<T>(data: T[], init?: ResponseInit) {
+  return HttpResponse.json({ rows: data, outParams: {} }, init)
+}
+
 /** Orden del menú de cada rol: la lista de ids tal como se guardó. */
 const roleMenuOrder = new Map<number, number[]>()
 
 export const rolesHandlers = [
-  http.get("/api/roles", async () => {
+  http.get("/api/eval-col/roles", async () => {
     await delay(150)
-    return HttpResponse.json<Role[]>(rolesDb)
+    return rows<Role>(rolesDb)
   }),
 
   // Alta rápida desde el propio select de la pantalla de configuración.
-  http.post("/api/roles", async ({ request }) => {
+  http.post("/api/eval-col/roles", async ({ request }) => {
     await delay(200)
     const { name } = (await request.json()) as { name: string }
     const trimmed = name.trim()
@@ -40,17 +50,17 @@ export const rolesHandlers = [
       name: trimmed,
     }
     rolesDb.push(role)
-    return HttpResponse.json<Role>(role, { status: 201 })
+    return rows<Role>([role], { status: 201 })
   }),
 
   // Catálogo completo de menús: el de la pantalla de configuración, a
   // diferencia de `/sso-admin/myMenu`, que ya viene filtrado por rol.
-  http.get("/api/menus", async () => {
+  http.get("/api/eval-col/menus", async () => {
     await delay(150)
-    return HttpResponse.json<MenuNode[]>(navigationMenu.map(toMenuNode))
+    return rows<MenuNode>(navigationMenu.map(toMenuNode))
   }),
 
-  http.post("/api/menus", async ({ request }) => {
+  http.post("/api/eval-col/menus", async ({ request }) => {
     await delay(200)
     const values = (await request.json()) as {
       name: string
@@ -74,12 +84,12 @@ export const rolesHandlers = [
       roleIds: [] as number[],
     }
     navigationMenu.push(menu)
-    return HttpResponse.json<MenuNode>(toMenuNode(menu), { status: 201 })
+    return rows<MenuNode>([toMenuNode(menu)], { status: 201 })
   }),
 
   // Reordenamiento (arrastrar y soltar): llega el nuevo `menuOrder` de todos
   // los menús que se corrieron de lugar.
-  http.put("/api/menus/order", async ({ request }) => {
+  http.put("/api/eval-col/menus/order", async ({ request }) => {
     await delay(200)
     const { items } = (await request.json()) as { items: { id: number; menuOrder: number }[] }
 
@@ -91,10 +101,10 @@ export const rolesHandlers = [
       menu.menuOrder = item.menuOrder
     }
 
-    return new HttpResponse(null, { status: 204 })
+    return rows<UpdateRoleMenusResult>([{ status: "success", message: "Orden actualizado." }])
   }),
 
-  http.patch("/api/menus/:menuId", async ({ params, request }) => {
+  http.patch("/api/eval-col/menus/:menuId", async ({ params, request }) => {
     await delay(200)
     const menu = navigationMenu.find((it) => it.id === Number(params.menuId))
     if (!menu) {
@@ -115,16 +125,18 @@ export const rolesHandlers = [
     menu.type = values.idParent === null ? "GROUP" : "ITEM"
     if (values.visible !== undefined) menu.visible = values.visible
     if (values.planId !== undefined) menu.planId = values.planId
-    return HttpResponse.json<MenuNode>(toMenuNode(menu))
+    return rows<MenuNode>([toMenuNode(menu)])
   }),
 
-  http.delete("/api/menus/:menuId", async ({ params }) => {
+  // Baja lógica: el backend la expone como PUT /menus/{id}/eliminar, no como
+  // DELETE. Un id que no existe es 404, no un `status: "error"` con 200.
+  http.put("/api/eval-col/menus/:menuId/eliminar", async ({ params }) => {
     await delay(200)
     const menuId = Number(params.menuId)
     const index = navigationMenu.findIndex((menu) => menu.id === menuId)
     if (index === -1) {
-      return HttpResponse.json<UpdateRoleMenusResult>(
-        { status: "error", message: "El menú no existe." },
+      return HttpResponse.json(
+        { message: `fn_delete_menu: no existe el menu con pk=${menuId}` },
         { status: 404 },
       )
     }
@@ -140,15 +152,13 @@ export const rolesHandlers = [
         1,
       )
     }
-    return HttpResponse.json<UpdateRoleMenusResult>({
-      status: "success",
-      message: "Menú eliminado.",
-    })
+    return rows<UpdateRoleMenusResult>([{ status: "success", message: "Menu eliminado" }])
   }),
 
   // El orden de esta lista ES el orden en que el rol ve su menú, distinto del
   // `menuOrder` del catálogo. Se guarda aparte para no perderlo al releer.
-  http.get("/api/roles/:roleId/menus", async ({ params }) => {
+  // Cada fila llega como `{id}`: una columna sola no colapsa a escalar.
+  http.get("/api/eval-col/roles/:roleId/menus", async ({ params }) => {
     await delay(150)
     const roleId = Number(params.roleId)
     const assigned = navigationMenu
@@ -156,23 +166,25 @@ export const rolesHandlers = [
       .map((menu) => menu.id)
 
     const saved = roleMenuOrder.get(roleId)
-    if (!saved) return HttpResponse.json<number[]>(assigned)
+    const ids = !saved
+      ? assigned
+      : // Lo guardado manda; lo que se asignó por otra vía va al final.
+        [
+          ...saved.filter((id) => assigned.includes(id)),
+          ...assigned.filter((id) => !saved.includes(id)),
+        ]
 
-    // Lo guardado manda; lo que se asignó por otra vía va al final.
-    return HttpResponse.json<number[]>([
-      ...saved.filter((id) => assigned.includes(id)),
-      ...assigned.filter((id) => !saved.includes(id)),
-    ])
+    return rows(ids.map((id) => ({ id })))
   }),
 
-  http.put("/api/roles/:roleId/menus", async ({ params, request }) => {
+  http.put("/api/eval-col/roles/:roleId/menus", async ({ params, request }) => {
     await delay(200)
     const roleId = Number(params.roleId)
     const { menuIds } = (await request.json()) as { menuIds: number[] }
 
     if (!rolesDb.some((role) => role.id === roleId)) {
-      return HttpResponse.json<UpdateRoleMenusResult>(
-        { status: "error", message: "El rol no existe." },
+      return HttpResponse.json(
+        { message: `fn_associate_menus_to_rol: no existe el rol con pk=${roleId}` },
         { status: 404 },
       )
     }
@@ -190,9 +202,8 @@ export const rolesHandlers = [
 
     roleMenuOrder.set(roleId, menuIds)
 
-    return HttpResponse.json<UpdateRoleMenusResult>({
-      status: "success",
-      message: "Menús actualizados.",
-    })
+    return rows<UpdateRoleMenusResult>([
+      { status: "success", message: "Menús actualizados." },
+    ])
   }),
 ]

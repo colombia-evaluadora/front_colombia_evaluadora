@@ -18,8 +18,10 @@ export interface Plan {
 export interface MenuNode {
   id: number
   name: string
-  icon: string
-  path: string
+  /** Los grupos sin ícono cargado llegan en `null` (26 de los 163 del catálogo real). */
+  icon: string | null
+  /** Un grupo puede no tener ruta propia: agrupa, no navega. */
+  path: string | null
   menuOrder: number
   type: string
   idParent: number | null
