@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 
-import { api } from "@/lib/api-client"
+import { evalCol } from "@/lib/eval-col-client"
 import type { MutationConfig } from "@/lib/react-query"
 
 import { roleMenusQueryKey } from "@/features/administration/roles-menus/api/query/use-role-menus-query"
@@ -15,7 +15,7 @@ function updateRoleMenus({
   roleId,
   menuIds,
 }: UpdateRoleMenusInput): Promise<UpdateRoleMenusResult> {
-  return api.put(`/roles/${roleId}/menus`, { menuIds })
+  return evalCol.putRow<UpdateRoleMenusResult>(`/roles/${roleId}/menus`, { menuIds })
 }
 
 interface UseUpdateRoleMenusOptions {

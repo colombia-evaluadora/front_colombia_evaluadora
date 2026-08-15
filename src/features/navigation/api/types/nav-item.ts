@@ -13,11 +13,13 @@ export interface NavSubItemDto {
 }
 
 // Forma cruda tal como la manda el backend: `icon` es texto
-// (ej. "Squares-Four-Icon"), todavía sin resolver a un componente.
+// (ej. "Squares-Four-Icon", o "fas fa-graduation-cap" en los menús legacy),
+// todavía sin resolver a un componente. Los menús sin ícono cargado lo traen
+// en `null`.
 export interface NavItemDto {
   title: string
   url: string
-  icon: string
+  icon: string | null
   maxLines?: NavMaxLines
   items?: NavSubItemDto[]
 }
@@ -34,8 +36,10 @@ export interface NavItem {
   items?: NavSubItem[]
 }
 
-// Forma real del backend SSO (GET /sso-admin/myMenu?app=): lista plana,
-// jerarquía vía `idParent`, ya filtrada por rol del lado del servidor.
+// Forma del registro de rutas del SSO (GET /sso-admin/myMenu?app=). El sidebar
+// ya NO lo usa —se pinta desde `GET /eval-col/menus`, que es el catálogo que
+// administra la pantalla de roles y menús—; queda porque los mocks del menú
+// están tipados con él.
 export interface RouteResponseDto {
   id: number
   name: string

@@ -276,7 +276,7 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
           // La carpeta conserva su ruta heredada; el ícono, en cambio, es suyo
           // y se edita. En el ítem es al revés.
           path: isRootMenu ? path || filledDrafts[0]?.path || "" : path,
-          icon: isRootMenu ? icon : menu.icon,
+          icon: isRootMenu ? icon : (menu.icon ?? ""),
           idParent,
           visible,
           // `planId` se omite en la carpeta —no tiene el campo—: mandarlo en
