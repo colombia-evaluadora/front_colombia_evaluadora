@@ -295,7 +295,11 @@ export function MenuTransfer({
   // (lista vacía) deja todos los acordeones plegados.
   const [expanded, setExpanded] = useState<number[]>([])
   // "new" = alta; un menú = edición de ese menú; null = diálogo cerrado.
-  const [menuBeingEdited, setMenuBeingEdited] = useState<MenuNode | "new" | null>(null)
+  // De un grupo se guarda el nodo del árbol —con sus `children`—: el diálogo
+  // los lista como los submenús de esa carpeta.
+  const [menuBeingEdited, setMenuBeingEdited] = useState<MenuNode | MenuTreeNode | "new" | null>(
+    null,
+  )
   // Arrastre en curso: el menú agarrado y la fila sobre la que caería. Va con
   // el panel del que salió porque el mismo menú está listado de los dos lados:
   // sin eso, arrastrar en uno abría el hueco también en el otro, y son dos
@@ -453,7 +457,7 @@ export function MenuTransfer({
   }
 
   /** Editar y eliminar, iguales para grupos y para ítems. */
-  function rowTools(node: MenuNode, childrenCount = 0) {
+  function rowTools(node: MenuNode | MenuTreeNode, childrenCount = 0) {
     return (
       <>
         <Button
