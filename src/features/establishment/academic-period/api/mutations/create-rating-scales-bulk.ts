@@ -8,9 +8,7 @@ import type {
 } from "@/features/establishment/academic-period/api/types/rating-scales"
 
 // Alta en lote: el backend expande por nivel de enseñanza y asigna los códigos.
-function createRatingScalesBulk(
-  input: BulkCreateRatingScalesRequest
-): Promise<RatingScale[]> {
+function createRatingScalesBulk(input: BulkCreateRatingScalesRequest): Promise<RatingScale[]> {
   return api.post("/rating-scales/bulk", input)
 }
 

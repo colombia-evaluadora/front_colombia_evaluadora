@@ -37,11 +37,17 @@ import { useUpdateEvaluationPeriod } from "@/features/establishment/academic-per
 import { useEvaluationPeriodsQuery } from "@/features/establishment/academic-period/api/query/use-evaluation-periods"
 import { useEvaluationPeriodStatusesQuery } from "@/features/establishment/academic-period/api/query/use-evaluation-period-statuses"
 import { useAcademicPeriodQuery } from "@/features/establishment/academic-period/api/query/use-academic-period"
-import type { EvaluationPeriod, EvaluationPeriodStatus } from "@/features/establishment/academic-period/api/types/evaluation-period"
+import type {
+  EvaluationPeriod,
+  EvaluationPeriodStatus,
+} from "@/features/establishment/academic-period/api/types/evaluation-period"
 import { DatePicker } from "@/components/date-picker"
 import { formatDateValue, parseDateValue } from "@/lib/date-value"
 import { EVALUATION_PERIOD_STATUS_BADGE } from "@/features/establishment/academic-period/api/ui-mappings"
-import { evaluationPeriodFormSchema, type EvaluationPeriodFormValues } from "@/features/establishment/academic-period/api/schema"
+import {
+  evaluationPeriodFormSchema,
+  type EvaluationPeriodFormValues,
+} from "@/features/establishment/academic-period/api/schema"
 
 const EMPTY: EvaluationPeriodFormValues = {
   codigo: 0,

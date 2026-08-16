@@ -29,9 +29,7 @@ export function useAcademicPeriodFilters(): AcademicPeriodFilters {
         search: (prev) => ({
           ...prev,
           sedeName: values.sedeName || undefined,
-          schoolYearId: values.schoolYearId
-            ? Number(values.schoolYearId)
-            : undefined,
+          schoolYearId: values.schoolYearId ? Number(values.schoolYearId) : undefined,
           status: (values.status as AcademicPeriodStatus) || undefined,
           startFrom: values.startFrom || undefined,
           startTo: values.startTo || undefined,
@@ -40,7 +38,7 @@ export function useAcademicPeriodFilters(): AcademicPeriodFilters {
         replace: true,
       })
     },
-    [navigate]
+    [navigate],
   )
 
   const clearAllFilters = useCallback(() => {
@@ -66,13 +64,7 @@ export function useAcademicPeriodFilters(): AcademicPeriodFilters {
       startFrom: search.startFrom,
       startTo: search.startTo,
     }),
-    [
-      search.sedeName,
-      search.schoolYearId,
-      search.status,
-      search.startFrom,
-      search.startTo,
-    ]
+    [search.sedeName, search.schoolYearId, search.status, search.startFrom, search.startTo],
   )
 
   const activeFilterCount = useMemo(() => {
@@ -82,13 +74,7 @@ export function useAcademicPeriodFilters(): AcademicPeriodFilters {
     if (search.status) n += 1
     if (search.startFrom || search.startTo) n += 1
     return n
-  }, [
-    search.sedeName,
-    search.schoolYearId,
-    search.status,
-    search.startFrom,
-    search.startTo,
-  ])
+  }, [search.sedeName, search.schoolYearId, search.status, search.startFrom, search.startTo])
 
   return {
     filters: {

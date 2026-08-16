@@ -18,10 +18,7 @@ function fetchGrades(body: GradesQueryRequest): Promise<GradesQueryResponse> {
   return api.query("/grades/query", body)
 }
 
-export const gradesQueryKey = (params: UseGradesQueryParams) => [
-  "grades",
-  params,
-]
+export const gradesQueryKey = (params: UseGradesQueryParams) => ["grades", params]
 
 export function useGradesQuery(params: UseGradesQueryParams) {
   return useQuery({

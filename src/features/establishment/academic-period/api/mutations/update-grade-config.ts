@@ -12,10 +12,7 @@ interface UpdateGradeConfigInput {
   values: GradeConfig
 }
 
-function updateGradeConfig({
-  gradeId,
-  values,
-}: UpdateGradeConfigInput): Promise<MutationResult> {
+function updateGradeConfig({ gradeId, values }: UpdateGradeConfigInput): Promise<MutationResult> {
   return api.patch(`/grades/${gradeId}/config`, values)
 }
 
@@ -23,9 +20,7 @@ interface UseUpdateGradeConfigOptions {
   mutationConfig?: MutationConfig<typeof updateGradeConfig>
 }
 
-export function useUpdateGradeConfig({
-  mutationConfig,
-}: UseUpdateGradeConfigOptions = {}) {
+export function useUpdateGradeConfig({ mutationConfig }: UseUpdateGradeConfigOptions = {}) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: updateGradeConfig,

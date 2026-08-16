@@ -7,9 +7,7 @@ import type {
   EvaluationPeriod,
 } from "@/features/establishment/academic-period/api/types/evaluation-period"
 
-function createEvaluationPeriod(
-  input: CreateEvaluationPeriodRequest
-): Promise<EvaluationPeriod> {
+function createEvaluationPeriod(input: CreateEvaluationPeriodRequest): Promise<EvaluationPeriod> {
   return api.post("/evaluation-periods", input)
 }
 

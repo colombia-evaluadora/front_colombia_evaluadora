@@ -12,10 +12,7 @@ interface UpdateGradeGroupInput {
   values: UpdateGradeGroupRequest
 }
 
-function updateGradeGroup({
-  codigo,
-  values,
-}: UpdateGradeGroupInput): Promise<MutationResult> {
+function updateGradeGroup({ codigo, values }: UpdateGradeGroupInput): Promise<MutationResult> {
   return api.patch(`/grade-groups/${encodeURIComponent(codigo)}`, values)
 }
 
@@ -23,9 +20,7 @@ interface UseUpdateGradeGroupOptions {
   mutationConfig?: MutationConfig<typeof updateGradeGroup>
 }
 
-export function useUpdateGradeGroup({
-  mutationConfig,
-}: UseUpdateGradeGroupOptions = {}) {
+export function useUpdateGradeGroup({ mutationConfig }: UseUpdateGradeGroupOptions = {}) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: updateGradeGroup,

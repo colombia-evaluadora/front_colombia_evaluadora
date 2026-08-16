@@ -7,9 +7,7 @@ function fetchEvaluationCriteriaOptions(): Promise<EvaluationCriteriaOptions> {
   return api.get("/evaluation-criteria/options")
 }
 
-export const evaluationCriteriaOptionsQueryKey = () => [
-  "evaluation-criteria-options",
-]
+export const evaluationCriteriaOptionsQueryKey = () => ["evaluation-criteria-options"]
 
 // Las opciones de los selects son un catálogo estable (no cambian por
 // periodo), así que las cacheamos indefinidamente como las demás listas.

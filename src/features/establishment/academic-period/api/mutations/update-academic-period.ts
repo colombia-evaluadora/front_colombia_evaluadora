@@ -12,23 +12,15 @@ interface UpdateAcademicPeriodInput {
   values: AcademicPeriodFormValues
 }
 
-function updateAcademicPeriod({
-  id,
-  values,
-}: UpdateAcademicPeriodInput): Promise<MutationResult> {
-  return api.patch(
-    `/academic-periods/${id}`,
-    toCreateAcademicPeriodRequest(values)
-  )
+function updateAcademicPeriod({ id, values }: UpdateAcademicPeriodInput): Promise<MutationResult> {
+  return api.patch(`/academic-periods/${id}`, toCreateAcademicPeriodRequest(values))
 }
 
 interface UseUpdateAcademicPeriodOptions {
   mutationConfig?: MutationConfig<typeof updateAcademicPeriod>
 }
 
-export function useUpdateAcademicPeriod({
-  mutationConfig,
-}: UseUpdateAcademicPeriodOptions = {}) {
+export function useUpdateAcademicPeriod({ mutationConfig }: UseUpdateAcademicPeriodOptions = {}) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: updateAcademicPeriod,

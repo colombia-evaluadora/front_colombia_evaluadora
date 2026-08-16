@@ -7,9 +7,7 @@ function fetchEvaluationPeriodStatuses(): Promise<EvaluationPeriodStatusOption[]
   return api.get("/evaluation-period-statuses")
 }
 
-export const evaluationPeriodStatusesQueryKey = () => [
-  "evaluation-period-statuses",
-]
+export const evaluationPeriodStatusesQueryKey = () => ["evaluation-period-statuses"]
 
 export function useEvaluationPeriodStatusesQuery() {
   return useQuery({

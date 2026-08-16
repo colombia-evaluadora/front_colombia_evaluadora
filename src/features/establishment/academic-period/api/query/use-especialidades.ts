@@ -3,11 +3,8 @@ import { useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api-client"
 import type { EspecialidadOption } from "@/features/establishment/academic-period/api/types/especialidad"
 
-function fetchEspecialidades(
-  academicPeriodId?: number
-): Promise<EspecialidadOption[]> {
-  const qs =
-    academicPeriodId != null ? `?academicPeriodId=${academicPeriodId}` : ""
+function fetchEspecialidades(academicPeriodId?: number): Promise<EspecialidadOption[]> {
+  const qs = academicPeriodId != null ? `?academicPeriodId=${academicPeriodId}` : ""
   return api.get(`/especialidades${qs}`)
 }
 

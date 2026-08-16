@@ -1,11 +1,11 @@
 import { useQuery } from "@tanstack/react-query"
 
-import { api } from "@/lib/api-client"
+import { evalCol } from "@/lib/eval-col-client"
 
 import type { Role } from "@/features/administration/roles-menus/api/types/role-menu"
 
 function fetchRoles(): Promise<Role[]> {
-  return api.get("/roles")
+  return evalCol.getRows<Role>("/roles")
 }
 
 export const rolesQueryKey = () => ["roles"]

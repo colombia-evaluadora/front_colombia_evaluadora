@@ -117,7 +117,12 @@ export function FilterAcademicPeriodsForm({
                   value={field.state.value}
                   onValueChange={(value) => field.handleChange(value ?? "")}
                 >
-                  <SelectTrigger id={field.name} size="sm" className="w-full" aria-invalid={isInvalid}>
+                  <SelectTrigger
+                    id={field.name}
+                    size="sm"
+                    className="w-full"
+                    aria-invalid={isInvalid}
+                  >
                     <SelectValue placeholder="Todos" />
                   </SelectTrigger>
                   <SelectContent>
@@ -152,7 +157,12 @@ export function FilterAcademicPeriodsForm({
                   value={field.state.value}
                   onValueChange={(value) => field.handleChange(value ?? "")}
                 >
-                  <SelectTrigger id={field.name} size="sm" className="w-full" aria-invalid={isInvalid}>
+                  <SelectTrigger
+                    id={field.name}
+                    size="sm"
+                    className="w-full"
+                    aria-invalid={isInvalid}
+                  >
                     <SelectValue placeholder="Todos" />
                   </SelectTrigger>
                   <SelectContent>

@@ -12,10 +12,7 @@ interface UpdateRatingScaleInput {
   values: UpdateRatingScaleRequest
 }
 
-function updateRatingScale({
-  codigo,
-  values,
-}: UpdateRatingScaleInput): Promise<MutationResult> {
+function updateRatingScale({ codigo, values }: UpdateRatingScaleInput): Promise<MutationResult> {
   return api.patch(`/rating-scales/${codigo}`, values)
 }
 
@@ -23,9 +20,7 @@ interface UseUpdateRatingScaleOptions {
   mutationConfig?: MutationConfig<typeof updateRatingScale>
 }
 
-export function useUpdateRatingScale({
-  mutationConfig,
-}: UseUpdateRatingScaleOptions = {}) {
+export function useUpdateRatingScale({ mutationConfig }: UseUpdateRatingScaleOptions = {}) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: updateRatingScale,

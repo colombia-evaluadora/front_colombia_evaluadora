@@ -23,13 +23,22 @@ import type {
   RatingSymbol,
 } from "@/features/establishment/academic-period/api/types/rating-scales"
 import type { GradingRange } from "@/features/establishment/academic-period/components/grading-range"
-import { RatingSymbolSelect, RatingSymbolView } from "@/features/establishment/academic-period/components/rating-symbol"
+import {
+  RatingSymbolSelect,
+  RatingSymbolView,
+} from "@/features/establishment/academic-period/components/rating-symbol"
 import { DeleteRatingScaleDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-delete-rating-scale"
 
 /** Los campos que la fila deja editar en línea. */
 export type EditableScale = Pick<
   RatingScale,
-  "nombre" | "abreviacion" | "notaMaxima" | "notaMinima" | "notaEquivalente" | "tipo" | "iconografia"
+  | "nombre"
+  | "abreviacion"
+  | "notaMaxima"
+  | "notaMinima"
+  | "notaEquivalente"
+  | "tipo"
+  | "iconografia"
 >
 
 export function toScaleDraft(scale: RatingScale): EditableScale {

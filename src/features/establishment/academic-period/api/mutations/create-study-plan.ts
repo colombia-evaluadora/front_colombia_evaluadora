@@ -7,9 +7,7 @@ import type {
   StudyPlanItem,
 } from "@/features/establishment/academic-period/api/types/study-plan"
 
-function createStudyPlanItem(
-  input: CreateStudyPlanItemRequest
-): Promise<StudyPlanItem> {
+function createStudyPlanItem(input: CreateStudyPlanItemRequest): Promise<StudyPlanItem> {
   return api.post("/study-plans", input)
 }
 
@@ -17,9 +15,7 @@ interface UseCreateStudyPlanItemOptions {
   mutationConfig?: MutationConfig<typeof createStudyPlanItem>
 }
 
-export function useCreateStudyPlanItem({
-  mutationConfig,
-}: UseCreateStudyPlanItemOptions = {}) {
+export function useCreateStudyPlanItem({ mutationConfig }: UseCreateStudyPlanItemOptions = {}) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: createStudyPlanItem,

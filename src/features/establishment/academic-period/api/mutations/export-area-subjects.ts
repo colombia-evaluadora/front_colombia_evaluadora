@@ -13,9 +13,7 @@ interface ExportAreaSubjectsInput {
   format: ExportFormat
 }
 
-function exportAreaSubjects(
-  input: ExportAreaSubjectsInput
-): Promise<ExportResult> {
+function exportAreaSubjects(input: ExportAreaSubjectsInput): Promise<ExportResult> {
   return api.post("/area-subjects/export-all", input)
 }
 
@@ -23,9 +21,7 @@ interface UseExportAreaSubjectsOptions {
   mutationConfig?: MutationConfig<typeof exportAreaSubjects>
 }
 
-export function useExportAreaSubjects({
-  mutationConfig,
-}: UseExportAreaSubjectsOptions = {}) {
+export function useExportAreaSubjects({ mutationConfig }: UseExportAreaSubjectsOptions = {}) {
   return useMutation({
     mutationFn: exportAreaSubjects,
     ...mutationConfig,
