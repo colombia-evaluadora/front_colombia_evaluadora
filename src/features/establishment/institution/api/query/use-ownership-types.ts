@@ -20,7 +20,7 @@ async function fetchOwnershipTypes(): Promise<CatalogItem[]> {
   if (env.ENABLE_API_MOCKING) {
     return getCatalog<CatalogItem>(CATALOGS.LEGAL_TYPES)
   }
-  const response = await fetch("/api/catalogos/propiedad-juridica")
+  const response = await fetch("/api/eval-col/catalogos/propiedad-juridica")
   if (!response.ok) {
     throw new Error("No fue posible obtener los tipos de propiedad jurídica")
   }

@@ -22,7 +22,7 @@ async function fetchEmployeeRoles(): Promise<CatalogItem[]> {
   if (env.ENABLE_API_MOCKING) {
     return getCatalog<CatalogItem>(CATALOGS.EMPLOYEE_ROLES)
   }
-  const response = await fetch("/api/catalogos/roles")
+  const response = await fetch("/api/eval-col/catalogos/roles")
   if (!response.ok) {
     throw new Error("No fue posible obtener los roles de empleado")
   }

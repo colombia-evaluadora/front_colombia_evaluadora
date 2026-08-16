@@ -18,7 +18,7 @@ async function fetchDisabilityTypes(): Promise<CatalogItem[]> {
   if (env.ENABLE_API_MOCKING) {
     return getCatalog<CatalogItem>(CATALOGS.DISABILITIES)
   }
-  const response = await fetch("/api/catalogos/discapacidades")
+  const response = await fetch("/api/eval-col/catalogos/discapacidades")
   if (!response.ok) {
     throw new Error("No fue posible obtener los tipos de discapacidad")
   }

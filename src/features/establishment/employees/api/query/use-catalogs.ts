@@ -122,7 +122,7 @@ async function getRealCatalog<T>(catalog: CatalogSlug): Promise<T[]> {
     )
   }
 
-  const response = await fetch(`/api/select/${categoria}`)
+  const response = await fetch(`/api/eval-col/select/${categoria}`)
   const friendly = catalogNames[catalog] ?? catalog
 
   if (!response.ok) {
