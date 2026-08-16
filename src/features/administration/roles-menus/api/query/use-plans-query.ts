@@ -1,12 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
-import { api } from "@/lib/api-client"
+import { evalCol } from "@/lib/eval-col-client"
 import type { MutationConfig } from "@/lib/react-query"
 
 import type { Plan } from "@/features/administration/roles-menus/api/types/role-menu"
 
 function fetchPlans(): Promise<Plan[]> {
-  return api.get("/plans")
+  return evalCol.getRows<Plan>("/plans")
 }
 
 export const plansQueryKey = () => ["plans"]
@@ -20,7 +20,7 @@ export function usePlansQuery() {
 }
 
 function createPlan({ name }: { name: string }): Promise<Plan> {
-  return api.post("/plans", { name })
+  return evalCol.postRow<Plan>("/plans", { name })
 }
 
 export function useCreatePlan({

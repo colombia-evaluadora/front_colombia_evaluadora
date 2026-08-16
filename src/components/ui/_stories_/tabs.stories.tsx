@@ -42,16 +42,16 @@ export const FolderVariant = meta.story({
         <TabsTrigger value="grades">Grados</TabsTrigger>
         <TabsTrigger value="scales">Escalas de valoración</TabsTrigger>
       </TabsList>
-      <TabsContent value="periods" className="rounded-lg border p-6">
+      <TabsContent value="periods" className="rounded-b-lg rounded-tr-lg border p-6 group-data-[tabs-filled=true]/tabs:rounded-tr-none">
         Periodos de evaluación
       </TabsContent>
-      <TabsContent value="promotion" className="rounded-lg border p-6">
+      <TabsContent value="promotion" className="rounded-b-lg rounded-tr-lg border p-6 group-data-[tabs-filled=true]/tabs:rounded-tr-none">
         Criterios de promoción
       </TabsContent>
-      <TabsContent value="grades" className="rounded-lg border p-6">
+      <TabsContent value="grades" className="rounded-b-lg rounded-tr-lg border p-6 group-data-[tabs-filled=true]/tabs:rounded-tr-none">
         Grados
       </TabsContent>
-      <TabsContent value="scales" className="rounded-lg border p-6">
+      <TabsContent value="scales" className="rounded-b-lg rounded-tr-lg border p-6 group-data-[tabs-filled=true]/tabs:rounded-tr-none">
         Escalas de valoración
       </TabsContent>
     </Tabs>

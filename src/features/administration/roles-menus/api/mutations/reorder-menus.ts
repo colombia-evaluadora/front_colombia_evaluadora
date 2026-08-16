@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 
-import { api } from "@/lib/api-client"
+import { evalCol } from "@/lib/eval-col-client"
 import type { MutationConfig } from "@/lib/react-query"
 
 import { menusQueryKey } from "@/features/administration/roles-menus/api/query/use-menus-query"
@@ -13,7 +13,7 @@ import type { MenuOrderItem } from "@/features/administration/roles-menus/api/ty
  * aplicar ante cualquier error en el medio.
  */
 function reorderMenus(items: MenuOrderItem[]): Promise<void> {
-  return api.put("/menus/order", { items })
+  return evalCol.put("/menus/order", { items })
 }
 
 interface UseReorderMenusOptions {
