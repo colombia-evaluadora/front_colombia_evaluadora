@@ -1,13 +1,18 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 
-import { api } from "@/lib/api-client"
+import { evalCol } from "@/lib/eval-col-client"
 import type { MutationConfig } from "@/lib/react-query"
 
 import { menusQueryKey } from "@/features/administration/roles-menus/api/query/use-menus-query"
 import type { UpdateRoleMenusResult } from "@/features/administration/roles-menus/api/types/role-menu"
 
+/**
+ * Baja del menú. No es un DELETE: el backend expone un soft-delete en cascada
+ * (el grupo se lleva a sus ítems) bajo `PUT /menus/{id}/eliminar`, que responde
+ * `{status, message}`. Un id inexistente da 404, no un `status: "error"`.
+ */
 function deleteMenu({ id }: { id: number }): Promise<UpdateRoleMenusResult> {
-  return api.delete(`/menus/${id}`)
+  return evalCol.putRow<UpdateRoleMenusResult>(`/menus/${id}/eliminar`)
 }
 
 interface UseDeleteMenuOptions {

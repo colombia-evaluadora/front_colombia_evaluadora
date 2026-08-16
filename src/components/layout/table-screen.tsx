@@ -9,8 +9,8 @@ import { cn } from "@/lib/utils"
  *
  * Son piezas que se COMPONEN por anidamiento, no un componente con props
  * `title`/`toolbar`/`actions`: las pantallas que se salen del molde (las de
- * auditoría llevan pestañas, roles y menús no lleva buscador) se resuelven
- * agregando o quitando piezas, sin banderas.
+ * auditoría llevan pestañas, roles y menús pone un selector en la barra en vez
+ * de un buscador) se resuelven agregando o quitando piezas, sin banderas.
  *
  * No usa `Card`: la card es una superficie genérica y acá la estructura tiene
  * significado —encabezado de la página, título de la página, contenido—, así
@@ -83,16 +83,22 @@ function TableScreenHeader({ children, className }: { children: ReactNode; class
 /**
  * Título de la pantalla. Es el `<h1>` del documento: uno solo por página.
  *
+ * `description` es la bajada opcional: una línea que explica de qué va la
+ * pantalla, para las que no se entienden solas con el título (roles y menús).
+ * Los listados que sí se explican con el título la omiten.
+ *
  * `action` es para lo que acompaña al título en su misma línea (ej. el "Volver"
  * de las operaciones de auditoría). Las acciones sobre la tabla —agregar,
  * exportar— no van acá sino en `TableScreenActions`, junto al buscador.
  */
 function TableScreenTitle({
   children,
+  description,
   action,
   className,
 }: {
   children: ReactNode
+  description?: ReactNode
   action?: ReactNode
   className?: string
 }) {
@@ -103,7 +109,12 @@ function TableScreenTitle({
         className,
       )}
     >
-      <h1 className="font-heading text-2xl font-bold">{children}</h1>
+      {/* `min-w-0` para que la bajada larga corte contra la acción en vez de
+          empujarla fuera de la fila. */}
+      <div className="min-w-0">
+        <h1 className="font-heading text-2xl font-bold">{children}</h1>
+        {description ? <p className="mt-1 text-sm text-muted-foreground">{description}</p> : null}
+      </div>
       {action}
     </div>
   )

@@ -13,9 +13,7 @@ interface UseDeleteGradesBulkOptions {
   mutationConfig?: MutationConfig<typeof deleteGradesBulk>
 }
 
-export function useDeleteGradesBulk({
-  mutationConfig,
-}: UseDeleteGradesBulkOptions = {}) {
+export function useDeleteGradesBulk({ mutationConfig }: UseDeleteGradesBulkOptions = {}) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: deleteGradesBulk,

@@ -13,7 +13,7 @@ interface ExportSelectedAcademicPeriodsInput {
 }
 
 function exportSelectedAcademicPeriods(
-  input: ExportSelectedAcademicPeriodsInput
+  input: ExportSelectedAcademicPeriodsInput,
 ): Promise<ExportResult> {
   return api.post("/academic-periods/export", input)
 }

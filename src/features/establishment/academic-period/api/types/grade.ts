@@ -36,9 +36,7 @@ export type CreateGradeRequest = Omit<Grade, "id" | "teachingLevelName"> & {
   academicPeriodId?: number
 }
 
-export type UpdateGradeRequest = Partial<
-  Omit<Grade, "id" | "teachingLevelName">
->
+export type UpdateGradeRequest = Partial<Omit<Grade, "id" | "teachingLevelName">>
 
 export interface MutationResult {
   status: "ok" | "error"

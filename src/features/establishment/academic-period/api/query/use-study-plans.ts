@@ -15,16 +15,11 @@ interface UseStudyPlansQueryParams {
   gradeId?: number
 }
 
-function fetchStudyPlans(
-  body: StudyPlanQueryRequest
-): Promise<StudyPlanQueryResponse> {
+function fetchStudyPlans(body: StudyPlanQueryRequest): Promise<StudyPlanQueryResponse> {
   return api.query("/study-plans/query", body)
 }
 
-export const studyPlansQueryKey = (params: UseStudyPlansQueryParams) => [
-  "study-plans",
-  params,
-]
+export const studyPlansQueryKey = (params: UseStudyPlansQueryParams) => ["study-plans", params]
 
 export function useStudyPlansQuery(params: UseStudyPlansQueryParams) {
   return useQuery({

@@ -13,8 +13,7 @@ function deleteEvaluationPeriod({
   academicPeriodId,
   codigo,
 }: DeleteEvaluationPeriodInput): Promise<MutationResult> {
-  const query =
-    academicPeriodId != null ? `?academicPeriodId=${academicPeriodId}` : ""
+  const query = academicPeriodId != null ? `?academicPeriodId=${academicPeriodId}` : ""
   return api.delete(`/evaluation-periods/${codigo}${query}`)
 }
 

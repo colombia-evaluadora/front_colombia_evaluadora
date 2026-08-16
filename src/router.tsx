@@ -325,16 +325,6 @@ const auditsLayoutRoute = createRoute({
   ),
 })
 
-// `/registro-de-actividad` a secas no tiene página propia: la vista por sesión
-// es la entrada del grupo.
-const registroActividadIndexRoute = createRoute({
-  getParentRoute: () => appLayoutRoute,
-  path: paths.app.registroActividad.path,
-  beforeLoad: () => {
-    throw redirect({ to: paths.app.auditoriaSesiones.getHref() })
-  },
-})
-
 export const auditoriaSesionesRoute = createRoute({
   getParentRoute: () => auditsLayoutRoute,
   path: paths.app.auditoriaSesiones.path,
@@ -491,27 +481,6 @@ export const periodosAcademicosEditarRoute = createRoute({
   component: AcademicPeriodConfigPage,
 })
 
-const reportesRoute = createRoute({
-  getParentRoute: () => appLayoutRoute,
-  path: paths.app.reportes.path,
-  staticData: { breadcrumb: [{ label: "Reportes" }] },
-  component: () => <ComingSoonPage title="Reportes" />,
-})
-
-const usuariosRoute = createRoute({
-  getParentRoute: () => appLayoutRoute,
-  path: paths.app.usuarios.path,
-  staticData: { breadcrumb: [{ label: "Usuarios" }] },
-  component: () => <ComingSoonPage title="Usuarios" />,
-})
-
-const configuracionRoute = createRoute({
-  getParentRoute: () => appLayoutRoute,
-  path: paths.app.configuracion.path,
-  staticData: { breadcrumb: [{ label: "Configuración" }] },
-  component: () => <ComingSoonPage title="Configuración" />,
-})
-
 const routeTree = rootRoute.addChildren([
   //  landingRoute,
   homeRoute,
@@ -528,7 +497,6 @@ const routeTree = rootRoute.addChildren([
     coberturaPreMatriculaRoute,
     coberturaInscritosRoute,
     coberturaMatriculaRoute,
-    registroActividadIndexRoute,
     auditsLayoutRoute.addChildren([
       auditoriaSesionesRoute,
       auditoriaTablasRoute,
@@ -551,9 +519,6 @@ const routeTree = rootRoute.addChildren([
       addEstablishmentRoute,
       editEstablishmentRoute,
     ]),
-    reportesRoute,
-    usuariosRoute,
-    configuracionRoute,
   ]),
 ])
 

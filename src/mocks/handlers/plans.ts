@@ -4,13 +4,18 @@ import type { Plan } from "@/features/administration/roles-menus/api/types/role-
 
 import { plansDb } from "@/mocks/db/plans"
 
+/** Mismo sobre `{rows, outParams}` que devuelve el gateway. */
+function rows(data: Plan[], init?: ResponseInit) {
+  return HttpResponse.json({ rows: data, outParams: {} }, init)
+}
+
 export const plansHandlers = [
-  http.get("/api/plans", async () => {
+  http.get("/api/eval-col/plans", async () => {
     await delay(150)
-    return HttpResponse.json<Plan[]>(plansDb)
+    return rows(plansDb)
   }),
 
-  http.post("/api/plans", async ({ request }) => {
+  http.post("/api/eval-col/plans", async ({ request }) => {
     await delay(200)
     const { name } = (await request.json()) as { name: string }
     const trimmed = name.trim()
@@ -24,6 +29,6 @@ export const plansHandlers = [
 
     const plan: Plan = { id: Math.max(0, ...plansDb.map((it) => it.id)) + 1, name: trimmed }
     plansDb.push(plan)
-    return HttpResponse.json<Plan>(plan, { status: 201 })
+    return rows([plan], { status: 201 })
   }),
 ]

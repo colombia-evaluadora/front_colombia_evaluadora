@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils"
 // combinaciones (ej. "outline" + color destructivo) pisando className a mano.
 //
 // Sincronizado con Figma "Design Tokens — Tailwind Sync" (Badge):
-//   - 8 colores: Primary · Secondary · Muted · Neutral · Blue · Red · Yellow · Green
+//   - 9 colores: Primary · Secondary · Muted · Neutral · Blue · Red · Yellow · Orange · Green
 //   - 3 variantes: Solid (fill) · Soft · Outline
 // Los nombres `fill / outline` se conservan por compatibilidad con la API
 // existente; `fill` ⇄ Solid y `outline` ⇄ Outline del Figma.
@@ -36,6 +36,7 @@ const badgeVariants = cva(
         destructive: "",
         info: "",
         warning: "",
+        orange: "",
         success: "",
       },
     },
@@ -79,6 +80,12 @@ const badgeVariants = cva(
         color: "warning",
         class:
           "bg-yellow text-yellow-foreground [a]:hover:bg-yellow/80 focus-visible:ring-yellow/20",
+      },
+      {
+        variant: "fill",
+        color: "orange",
+        class:
+          "bg-orange text-orange-foreground [a]:hover:bg-orange/80 focus-visible:ring-orange/20",
       },
       {
         variant: "fill",
@@ -126,6 +133,11 @@ const badgeVariants = cva(
       },
       {
         variant: "soft",
+        color: "orange",
+        class: "bg-orange-22 text-orange [a]:hover:bg-orange/30 focus-visible:ring-orange/20",
+      },
+      {
+        variant: "soft",
         color: "success",
         class: "bg-green-22 text-green [a]:hover:bg-green/30 focus-visible:ring-green/20",
       },
@@ -170,6 +182,12 @@ const badgeVariants = cva(
         color: "warning",
         class:
           "border-yellow-stroke text-yellow [a]:hover:bg-yellow/10 focus-visible:ring-yellow/20",
+      },
+      {
+        variant: "outline",
+        color: "orange",
+        class:
+          "border-orange-stroke text-orange [a]:hover:bg-orange/10 focus-visible:ring-orange/20",
       },
       {
         variant: "outline",

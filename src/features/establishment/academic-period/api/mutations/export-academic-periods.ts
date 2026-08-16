@@ -13,9 +13,7 @@ interface ExportAcademicPeriodsInput {
   format: ExportFormat
 }
 
-function exportAcademicPeriods(
-  input: ExportAcademicPeriodsInput
-): Promise<ExportResult> {
+function exportAcademicPeriods(input: ExportAcademicPeriodsInput): Promise<ExportResult> {
   return api.post("/academic-periods/export-all", input)
 }
 
@@ -23,9 +21,7 @@ interface UseExportAcademicPeriodsOptions {
   mutationConfig?: MutationConfig<typeof exportAcademicPeriods>
 }
 
-export function useExportAcademicPeriods({
-  mutationConfig,
-}: UseExportAcademicPeriodsOptions = {}) {
+export function useExportAcademicPeriods({ mutationConfig }: UseExportAcademicPeriodsOptions = {}) {
   return useMutation({
     mutationFn: exportAcademicPeriods,
     ...mutationConfig,

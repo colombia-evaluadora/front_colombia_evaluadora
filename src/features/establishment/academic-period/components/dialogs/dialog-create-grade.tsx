@@ -41,16 +41,24 @@ import {
   type PromotionCriteriaHandle,
 } from "@/features/establishment/academic-period/components/tabs/tab-promotion-criteria"
 import { TabStudyPlan } from "@/features/establishment/academic-period/components/tabs/tab-study-plan"
-import { ScheduleBuilder, type ScheduleBuilderHandle } from "@/features/establishment/academic-period/components/schedule-builder"
+import {
+  ScheduleBuilder,
+  type ScheduleBuilderHandle,
+} from "@/features/establishment/academic-period/components/schedule-builder"
 import {
   DEFAULT_SUBJECT_COLOR,
   type Jornada,
   type ScheduleSubject,
 } from "@/features/establishment/academic-period/components/schedule-data"
 
-// La card sobre la que se apoyan las pestañas tipo carpeta. Sin borde superior:
-// esa línea la dibuja el borde inferior de las pestañas, y la activa la borra.
-const PANEL = "min-w-0 rounded-b-lg border border-t-0 bg-background p-4"
+// La card sobre la que se apoyan las pestañas tipo carpeta. Lleva su borde
+// superior completo (así no queda hueco a la derecha de la última pestaña); las
+// pestañas se montan encima y la activa lo tapa con su fondo. La esquina
+// superior derecha va redondeada solo mientras las pestañas no lleguen al final
+// del contenedor; cuando lo ocupan todo (data-tabs-filled) se cuadra para
+// fundirse con la última pestaña.
+const PANEL =
+  "min-w-0 rounded-b-lg rounded-tr-lg border bg-background p-4 group-data-[tabs-filled=true]/tabs:rounded-tr-none"
 
 interface CreateGradeDialogProps {
   jornada: Jornada
@@ -255,7 +263,10 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
         </div>
 
         <div className="grid gap-x-4 gap-y-2 sm:grid-cols-2 lg:grid-cols-4">
-          <Field variant="outlined" data-invalid={fieldErrors["teachingLevelId"] ? "true" : undefined}>
+          <Field
+            variant="outlined"
+            data-invalid={fieldErrors["teachingLevelId"] ? "true" : undefined}
+          >
             <FieldLabel htmlFor="grade-nivel">Nivel de enseñanza*</FieldLabel>
             <Select
               value={teachingLevelId != null ? String(teachingLevelId) : ""}
