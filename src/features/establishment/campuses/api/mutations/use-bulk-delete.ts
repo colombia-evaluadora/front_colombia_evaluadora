@@ -24,7 +24,7 @@ function bulkDeleteCampuses(ids: number[]): Promise<BulkDeleteCampusResult> {
       data: ids,
     }) as unknown as Promise<BulkDeleteCampusResult>
   }
-  return api.put("/establecimientos/sedes/bulk-delete", { pks: ids })
+  return api.put("/eval-col/establecimientos/sedes/bulk-delete", { pks: ids })
 }
 
 interface UseBulkDeleteOptions {

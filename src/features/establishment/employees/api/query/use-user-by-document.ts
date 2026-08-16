@@ -48,7 +48,7 @@ export async function findPersonByDocument(
   // runtime (ver api-client.ts); el tipo de Axios no lo refleja, así que
   // se castea igual que en el resto de la app (p. ej. use-bulk-delete.ts).
   const response = (await api.get(
-    "/usuarios/buscar-por-documento",
+    "/eval-col/usuarios/buscar-por-documento",
     { params: { fkTlvTipoDocumento: documentTypeId, identificacion: identification } },
   )) as unknown as RealTusuarioRow[] | { rows: RealTusuarioRow[] }
   const rows = unwrapRows<RealTusuarioRow>(response)

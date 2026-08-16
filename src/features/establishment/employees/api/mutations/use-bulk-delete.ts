@@ -27,7 +27,7 @@ function bulkDeleteEmployees(ids: number[]): Promise<BulkDeleteEmployeeResult> {
       data: ids,
     }) as unknown as Promise<BulkDeleteEmployeeResult>
   }
-  return api.put("/establecimientos/funcionarios/eliminar-multiple", { pks: ids })
+  return api.put("/eval-col/establecimientos/funcionarios/eliminar-multiple", { pks: ids })
 }
 
 interface UseBulkDeleteOptions {

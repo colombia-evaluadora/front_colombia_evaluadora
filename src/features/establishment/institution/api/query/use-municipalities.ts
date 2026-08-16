@@ -22,7 +22,7 @@ async function fetchMunicipalities(): Promise<Municipality[]> {
   if (env.ENABLE_API_MOCKING) {
     return getCatalog<Municipality>(CATALOGS.MUNICIPALITIES)
   }
-  const response = await fetch("/api/catalogos/municipios")
+  const response = await fetch("/api/eval-col/catalogos/municipios")
   if (!response.ok) {
     throw new Error("No fue posible obtener los municipios")
   }

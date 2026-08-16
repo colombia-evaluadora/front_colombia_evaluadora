@@ -12,9 +12,20 @@ import { env } from "@/config/env"
  * coincidir con el backend real es la ruta que se usa *cuando no se está
  * mockeando*. Por eso esta función, no un renombre masivo de mocks.
  *
+ * `/eval-col` es el prefijo con el que el gateway del SSO enruta hacia el
+ * motor de queries (microservice `eval-col`, `requesturi: /api/eval-col/**`
+ * — confirmado contra la tabla `microservice`); TODO endpoint que resuelve
+ * en la tabla `query` necesita ese prefijo en la URL real que sale del
+ * front, aunque el `path_template` registrado ahí NO lo incluya (el gateway
+ * lo saca antes de matchear contra `path_template`). Los endpoints que no
+ * pasan por ese motor — como `/register/funcionario`, servido directo por
+ * `auth-center` — no lo llevan, así que no lo pongas a mano en un
+ * `realPath`; queda centralizado acá.
+ *
  * @param mockPath Ruta que ya intercepta el handler de MSW.
- * @param realPath Ruta tal como está registrada en la tabla `query` del SSO.
+ * @param realPath Ruta tal como está registrada en la tabla `query` del SSO,
+ *   SIN el prefijo `/eval-col` (esta función lo agrega).
  */
 export function apiPath(mockPath: string, realPath: string): string {
-  return env.ENABLE_API_MOCKING ? mockPath : realPath
+  return env.ENABLE_API_MOCKING ? mockPath : `/eval-col${realPath}`
 }

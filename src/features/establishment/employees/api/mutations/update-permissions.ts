@@ -50,7 +50,7 @@ export async function updateEmployeePermissions(
   employeeId: number,
   permisos: PermissionSyncItem[],
 ): Promise<PermissionSyncResultRow[]> {
-  const response = (await api.put(`/funcionario/${employeeId}/permisos`, { permisos })) as unknown as
+  const response = (await api.put(`/eval-col/funcionario/${employeeId}/permisos`, { permisos })) as unknown as
     | { rows: PermissionSyncResultRow[] }
     | PermissionSyncResultRow[]
   return unwrapRows<PermissionSyncResultRow>(response)

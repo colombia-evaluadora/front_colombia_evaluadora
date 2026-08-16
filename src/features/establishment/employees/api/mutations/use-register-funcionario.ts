@@ -75,12 +75,18 @@ export async function registerFuncionario(person: Person): Promise<RegisterFunci
  * función SQL resuelve el EE sola contra el solicitante
  * (`fn_resolver_establecimiento_unico`, V50) — se sigue llamando siempre,
  * nunca se omite la llamada.
+ *
+ * A diferencia de `registerFuncionario` (auth-center, Java, sin prefijo),
+ * este SÍ pasa por el motor de queries del SSO (`fn_fun_enlazar_
+ * establecimiento`, registrado en la tabla `query`) — necesita el prefijo
+ * `/eval-col` con el que el gateway lo enruta (ver `apiPath` en
+ * `lib/api-routes.ts`).
  */
 export async function enlazarFuncionarioEstablecimiento(
   fkUsuario: number,
   fkEstablecimiento: number | null,
 ): Promise<{ pkFuncionarioEnlazado: number }> {
-  return api.post("/funcionario/enlazar-establecimiento", {
+  return api.post("/eval-col/funcionario/enlazar-establecimiento", {
     fkUsuario,
     fkEstablecimiento,
   })
