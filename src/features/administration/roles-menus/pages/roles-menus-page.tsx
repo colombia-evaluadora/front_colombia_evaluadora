@@ -27,7 +27,10 @@ import { useUpdateRoleMenus } from "@/features/administration/roles-menus/api/mu
 import { useMenusQuery } from "@/features/administration/roles-menus/api/query/use-menus-query"
 import { useRoleMenusQuery } from "@/features/administration/roles-menus/api/query/use-role-menus-query"
 import { useRolesQuery } from "@/features/administration/roles-menus/api/query/use-roles-query"
-import { buildMenuTree } from "@/features/administration/roles-menus/api/types/role-menu"
+import {
+  buildMenuTree,
+  withRequiredParents,
+} from "@/features/administration/roles-menus/api/types/role-menu"
 import { MenuTransfer } from "@/features/administration/roles-menus/components/menu-transfer"
 
 /**
@@ -89,7 +92,10 @@ function RolesMenusPageContent() {
 
   function save(nextIds: number[]) {
     if (roleId == null) return
-    updateRoleMenus.mutate({ roleId, menuIds: nextIds })
+    // El backend rechaza la lista entera si trae un submenú sin su padre, y la
+    // lista puede venir así desde la base. Se completa acá, en el único punto
+    // por el que pasan asignar, quitar y reordenar.
+    updateRoleMenus.mutate({ roleId, menuIds: withRequiredParents(nextIds, tree) })
   }
 
   function handleAssign(ids: number[]) {

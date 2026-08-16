@@ -18,8 +18,10 @@ export interface Plan {
 export interface MenuNode {
   id: number
   name: string
-  icon: string
-  path: string
+  /** Los grupos sin ícono cargado llegan en `null` (26 de los 163 del catálogo real). */
+  icon: string | null
+  /** Un grupo puede no tener ruta propia: agrupa, no navega. */
+  path: string | null
   menuOrder: number
   type: string
   idParent: number | null
@@ -87,6 +89,42 @@ export function reorderSiblings(
   return next
     .map((menu, index) => ({ id: menu.id, menuOrder: index }))
     .filter(({ id, menuOrder }) => ordered.find((menu) => menu.id === id)!.menuOrder !== menuOrder)
+}
+
+/**
+ * Completa la lista de asignados con el padre de todo submenú que lo tenga
+ * ausente, respetando el orden (el padre entra justo antes de su primer hijo).
+ *
+ * El backend valida la invariante de jerarquía: `fn_associate_menus_to_rol`
+ * aborta la operación entera si `p_pk_tmenus` trae un submenú sin su padre. Y
+ * la lista puede llegar rota desde la propia base —la versión anterior de esa
+ * función era un UPSERT sin invariante, así que aceptó hijos sueltos—, con lo
+ * cual el front hereda el problema apenas vuelve a guardar (reordenar alcanza,
+ * porque reenvía el mismo conjunto que recibió).
+ *
+ * Los ids que no están en el catálogo se dejan como están: no se puede saber si
+ * son grupos o submenús, y descartarlos perdería asignaciones en silencio.
+ */
+export function withRequiredParents(assignedIds: number[], tree: MenuTreeNode[]): number[] {
+  const parentOf = new Map<number, number | null>()
+  for (const group of tree) {
+    parentOf.set(group.id, null)
+    for (const child of group.children) parentOf.set(child.id, group.id)
+  }
+
+  const next: number[] = []
+  const seen = new Set<number>()
+  for (const id of assignedIds) {
+    const parentId = parentOf.get(id)
+    if (parentId != null && !seen.has(parentId)) {
+      next.push(parentId)
+      seen.add(parentId)
+    }
+    if (seen.has(id)) continue
+    next.push(id)
+    seen.add(id)
+  }
+  return next
 }
 
 /**

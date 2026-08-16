@@ -1,4 +1,3 @@
-import { navigationHandlers } from "@/mocks/handlers/navigation"
 import { authHandlers } from "@/mocks/handlers/auth"
 import { auditsHandlers } from "@/mocks/handlers/audits"
 import { auditTablesHandlers } from "@/mocks/handlers/audit-tables"
@@ -32,7 +31,6 @@ import { plansHandlers } from "@/mocks/handlers/plans"
 
 export const handlers = [
   ...authHandlers,
-  ...navigationHandlers,
   ...auditsHandlers,
   ...auditTablesHandlers,
   ...auditSessionStatusesHandlers,

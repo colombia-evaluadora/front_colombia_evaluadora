@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 
-import { api } from "@/lib/api-client"
+import { evalCol } from "@/lib/eval-col-client"
 import type { MutationConfig } from "@/lib/react-query"
 
 import { menusQueryKey } from "@/features/administration/roles-menus/api/query/use-menus-query"
@@ -22,7 +22,9 @@ interface SaveMenuInput extends MenuFormValues {
 }
 
 function saveMenu({ id, ...values }: SaveMenuInput): Promise<MenuNode> {
-  return id == null ? api.post("/menus", values) : api.patch(`/menus/${id}`, values)
+  return id == null
+    ? evalCol.postRow<MenuNode>("/menus", values)
+    : evalCol.patchRow<MenuNode>(`/menus/${id}`, values)
 }
 
 interface UseSaveMenuOptions {
