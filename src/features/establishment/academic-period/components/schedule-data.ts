@@ -1,6 +1,10 @@
 export interface ScheduleSubject {
   id: string
   name: string
+  // Se muestra en vez de `name` dentro de la grilla del horario (celdas más
+  // angostas que el nombre completo) — el nombre completo sigue siendo el
+  // identificador real. Si no hay abreviación cargada, la grilla cae a `name`.
+  abbreviation?: string
   blocks: number
   color: string
 }

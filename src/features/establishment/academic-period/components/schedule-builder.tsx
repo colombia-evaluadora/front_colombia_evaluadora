@@ -419,8 +419,11 @@ export const ScheduleBuilder = forwardRef<
                             style={subjectStyles(subject.color).container}
                             className="group absolute inset-1 flex items-center justify-between gap-1 rounded border-2 border-transparent px-2 py-1.5"
                           >
-                            <span className="text-left text-xs leading-tight font-medium text-foreground">
-                              {subject.name}
+                            <span
+                              title={subject.name}
+                              className="text-left text-xs leading-tight font-medium text-foreground"
+                            >
+                              {subject.abbreviation || subject.name}
                             </span>
                             <div className="flex shrink-0 items-center gap-0.5 opacity-60 transition-opacity group-hover:opacity-100">
                               {info && info.rowSpan > 1 && (
