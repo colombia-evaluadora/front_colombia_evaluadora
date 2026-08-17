@@ -1,7 +1,9 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { env } from "@/config/env"
+import { api } from "@/lib/api-client"
 import { CATALOGS } from "@/lib/catalogs"
+import { unwrapRows } from "@/lib/response-envelope"
 
 import { getCatalog } from "@/features/establishment/employees/api/query/use-catalogs"
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
@@ -22,12 +24,13 @@ async function fetchEmployeeRoles(): Promise<CatalogItem[]> {
   if (env.ENABLE_API_MOCKING) {
     return getCatalog<CatalogItem>(CATALOGS.EMPLOYEE_ROLES)
   }
-  const response = await fetch("/api/eval-col/catalogos/roles")
-  if (!response.ok) {
-    throw new Error("No fue posible obtener los roles de empleado")
-  }
-  const body: { rows: RealEmployeeRoleRow[] } = await response.json()
-  return body.rows.map((row) => ({
+  // `api` (no `fetch` crudo): agrega el `Authorization: Bearer <token>` que
+  // el gateway real exige — sin eso responde 403 antes de llegar a la query.
+  const response = (await api.get("/eval-col/catalogos/roles")) as unknown as
+    | { rows: RealEmployeeRoleRow[] }
+    | RealEmployeeRoleRow[]
+  const rows = unwrapRows<RealEmployeeRoleRow>(response)
+  return rows.map((row) => ({
     id: row.pk_rol,
     code: row.codigo,
     name: row.nombre,

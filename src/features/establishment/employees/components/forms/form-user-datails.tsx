@@ -287,6 +287,7 @@ export function UserDetailsForm({
                         aria-invalid={isInvalid(`${fieldPrefix}.email`)}
                         onChange={(event) => emitChange({ email: event.target.value })}
                     />
+                    <FieldError>{errorFor(`${fieldPrefix}.email`)}</FieldError>
                 </Field>
                 <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid(`${fieldPrefix}.password`) ? "true" : undefined}>
                     <FieldLabel htmlFor="user-password">Contraseña</FieldLabel>
@@ -328,6 +329,7 @@ export function UserDetailsForm({
                         aria-invalid={isInvalid(`${fieldPrefix}.birthDate`)}
                         onChange={(date) => emitChange({ birthDate: date ? format(date, DATE_VALUE_FORMAT) : "" })}
                     />
+                    <FieldError>{errorFor(`${fieldPrefix}.birthDate`)}</FieldError>
                 </Field>
                 <Field orientation="vertical" variant="outlined" data-invalid={isInvalid(`${fieldPrefix}.gender`) ? "true" : undefined}>
                     <FieldLabel htmlFor="gender-user">
@@ -354,6 +356,7 @@ export function UserDetailsForm({
                             ))}
                         </SelectContent>
                     </Select>
+                    <FieldError>{errorFor(`${fieldPrefix}.gender`)}</FieldError>
                 </Field>
                 <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid(`${fieldPrefix}.phone`) ? "true" : undefined}>
                     <FieldLabel htmlFor="user-phone">Teléfono</FieldLabel>

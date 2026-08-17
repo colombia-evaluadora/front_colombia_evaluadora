@@ -9,6 +9,7 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import { CATALOGS } from "@/lib/catalogs"
+import { toSelectItemsMap, toSelectOptions } from "@/lib/catalog-options"
 import { useCatalogQuery } from "@/features/establishment/employees/api/query/use-catalogs"
 import { useMunicipalitiesQuery } from "@/features/establishment/institution/api/query/use-municipalities"
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
@@ -33,7 +34,7 @@ export function DomicilioDataFormSection({ value, onChange, invalidFields = [], 
         value: municipality.id,
         label: `${municipality.id} - ${municipality.name}`,
     }))
-    const zoneItems = zones.map((zone) => ({ value: zone.id, label: zone.name }))
+    const zoneItems = toSelectOptions(zones)
 
     // `gap-2` puertas adentro: encabezado y filas de esta sección van al mismo
     // paso. El salto mayor entre secciones lo pone el `gap-6` del formulario.
@@ -52,7 +53,7 @@ export function DomicilioDataFormSection({ value, onChange, invalidFields = [], 
                             const municipality = municipalities.find((item) => item.id === selectedValue)
                             if (municipality) onChange({ ...value, municipality })
                         }}
-                        items={municipalityItems}
+                        items={toSelectItemsMap(municipalityItems)}
                     >
                         <SelectTrigger aria-invalid={isInvalid("address.municipality")}>
                             <SelectValue placeholder="Seleccionar" />
@@ -77,7 +78,7 @@ export function DomicilioDataFormSection({ value, onChange, invalidFields = [], 
                             const option = zones.find((item) => item.id === selectedValue)
                             if (option) onChange({ ...value, zone: option })
                         }}
-items={zoneItems}
+                        items={toSelectItemsMap(zoneItems)}
                     >
                         <SelectTrigger>
                             <SelectValue placeholder="Seleccionar" />

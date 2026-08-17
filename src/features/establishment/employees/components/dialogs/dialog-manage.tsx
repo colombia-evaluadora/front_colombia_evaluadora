@@ -40,6 +40,7 @@ import {
   type TableSort,
 } from "@/components/table-sort-header"
 import { CATALOGS } from "@/lib/catalogs"
+import { toSelectItemsMap, toSelectOptions } from "@/lib/catalog-options"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { cn } from "@/lib/utils"
 import { env } from "@/config/env"
@@ -68,7 +69,7 @@ import type {
   Employee,
   EmployeeStatus,
 } from "@/features/establishment/employees/api/types/employee"
-import type { Permission, PermissionStatus } from "@/features/establishment/institution/api/types/permission"
+import { PERMISSION_STATUS_OPTIONS, type Permission, type PermissionStatus } from "@/features/establishment/institution/api/types/permission"
 import type { Person } from "@/features/establishment/employees/api/types/person"
 import {
   createAdditionalInfoFromEmployee,
@@ -86,9 +87,9 @@ interface ManageEmployeeDialogProps {
 
 interface PermissionDraft {
   order: string
-  roleCode: string
+  roleId: number | null
   campusId: number | null
-  workScheduleCode: string
+  workScheduleId: number | null
   status: PermissionStatus | ""
 }
 
@@ -106,13 +107,17 @@ const permissionDraftSchema = z.object({
     .refine((value) => Number.isInteger(Number(value)) && Number(value) > 0, {
       message: "El orden debe ser un número entero mayor que cero.",
     }),
-  roleCode: z.string().min(1, "Selecciona el rol."),
   // `custom` y no `number`: al validar que no es `null`, el resultado ya sale
   // tipado como `number` y el permiso se arma sin castear.
+  roleId: z.custom<number>((value) => typeof value === "number", {
+    message: "Selecciona el rol.",
+  }),
   campusId: z.custom<number>((value) => typeof value === "number", {
     message: "Selecciona la sede educativa.",
   }),
-  workScheduleCode: z.string().min(1, "Selecciona la jornada."),
+  workScheduleId: z.custom<number>((value) => typeof value === "number", {
+    message: "Selecciona la jornada.",
+  }),
   // `custom` y no `string`: al validar que no está vacío, el resultado ya sale
   // tipado como `PermissionStatus` y el permiso se arma sin castear.
   status: z.custom<PermissionStatus>((value) => typeof value === "string" && value !== "", {
@@ -235,33 +240,59 @@ function createInitialAdditionalInfo(): EmployeeAdditionalInfoValue {
   }
 }
 
+function isBlankValue(value: string | null | undefined): boolean {
+  return value == null || value.trim() === ""
+}
+
 /**
- * Datos mínimos para dar de alta a la persona: los cuatro con asterisco. Las
- * rutas coinciden con las que `UserDetailsForm` usa para ubicar el mensaje
- * debajo de cada campo, por eso van prefijadas con `employee`.
+ * Datos mínimos para dar de alta a la persona: los cuatro con asterisco, más
+ * correo, fecha de nacimiento, género y contraseña — ninguno de estos 4
+ * últimos lleva asterisco en el formulario (`UserDetailsForm` lo comparte
+ * con otras pantallas donde son opcionales), pero acá son obligatorios de
+ * verdad: `/register/funcionario` (`RegisterUsuarioRequest`, auth-center)
+ * los exige con `@NotBlank`/`@NotNull` — si faltan, Java rechaza con 400
+ * *sin* marcar nada en el front (mismo bug que tenía el alta de rector/
+ * secretaria en establecimientos, ver `validate-form.ts`). Las rutas
+ * coinciden con las que `UserDetailsForm` usa para ubicar el mensaje debajo
+ * de cada campo, por eso van prefijadas con `employee`.
  */
-const employeePersonSchema = z.object({
-  documentType: z
-    .union([
-      z.object({ id: z.number() }),
-      z.null(),
-    ])
-    .refine((item) => item !== null, {
-      message: "Selecciona el tipo de documento.",
-    }),
-  identification: z.string().trim().min(1, "Ingresa el número de documento."),
-  firstName: z.string().trim().min(1, "Ingresa el primer nombre."),
-  lastName: z.string().trim().min(1, "Ingresa el primer apellido."),
-})
+const employeePersonSchema = z
+  .object({
+    person: z.custom<Person>(),
+    confirmPassword: z.string(),
+  })
+  .superRefine(({ person, confirmPassword }, ctx) => {
+    const require = (path: string, value: string | null | undefined, message: string) => {
+      if (isBlankValue(value)) {
+        ctx.addIssue({ code: "custom", path: [path], message })
+      }
+    }
+
+    if (!person.documentType?.id) {
+      ctx.addIssue({ code: "custom", path: ["documentType"], message: "Selecciona el tipo de documento." })
+    }
+    require("identification", person.identification, "Ingresa el número de documento.")
+    require("firstName", person.firstName, "Ingresa el primer nombre.")
+    require("lastName", person.lastName, "Ingresa el primer apellido.")
+    require("email", person.email, "Ingresa el correo electrónico.")
+    require("birthDate", person.birthDate, "Ingresa la fecha de nacimiento.")
+    require("gender", person.gender?.name, "Selecciona el género.")
+    require("password", person.password, "Ingresa la contraseña.")
+    require("confirmPassword", confirmPassword, "Repite la contraseña.")
+
+    if (!isBlankValue(person.password) && !isBlankValue(confirmPassword) && person.password !== confirmPassword) {
+      ctx.addIssue({ code: "custom", path: ["confirmPassword"], message: "Las contraseñas no coinciden." })
+    }
+  })
 
 const EMPLOYEE_FIELD_PREFIX = "employee"
 
 function createPermissionDraft(nextOrder = 1): PermissionDraft {
   return {
     order: String(nextOrder),
-    roleCode: "",
+    roleId: null,
     campusId: null,
-    workScheduleCode: "",
+    workScheduleId: null,
     status: "",
   }
 }
@@ -343,7 +374,6 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
   const employeeQuery = useEmployeeQuery(employeeId ?? null, open && isEditMode)
   const { data: roles = [] } = useEmployeeRolesQuery()
   const { data: workSchedules = [] } = useCatalogQuery<CatalogItem>(CATALOGS.WORK_SCHEDULES)
-  const { data: entityStatuses = [] } = useCatalogQuery<CatalogItem>(CATALOGS.ENTITY_STATUSES)
   const { data: campuses = [] } = useCampusesOptionsQuery()
   const { data: user } = useUser()
   const isSuperAdmin = Boolean(user?.isSuperAdmin)
@@ -351,15 +381,15 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
   // solo en alta (el enlace del funcionario a su EE es fijo una vez creado).
   const showEstablishmentPicker = isSuperAdmin && !isEditMode
   const { data: establishmentOptions = [] } = useEstablishmentsOptionsQuery(showEstablishmentPicker)
-  const establishmentItems = establishmentOptions.map((item) => ({ value: item.id, label: item.name }))
+  const establishmentItems = toSelectOptions(establishmentOptions)
 
-  const roleItems = roles.map((role) => ({ value: role.code, label: role.name }))
-  const campusItems = campuses.map((campus) => ({ value: campus.id, label: campus.name }))
-  const workScheduleItems = workSchedules.map((schedule) => ({ value: schedule.code, label: schedule.name }))
-  // `status.code` (no `.id`): el permiso guarda el estado como el literal
-  // "ACTIVE"/"SUSPENDED" — el `id` de este catálogo es un correlativo interno,
-  // no el discriminador de estado.
-  const permissionStatusItems = entityStatuses.map((status: CatalogItem) => ({ value: status.code, label: status.name }))
+  const roleItems = toSelectOptions(roles)
+  const campusItems = toSelectOptions(campuses)
+  const workScheduleItems = toSelectOptions(workSchedules)
+  // Estado del permiso: dominio fijo (TSEDE_USUARIO.TLV_ESTADO, no un
+  // catálogo real), value por `.code` a propósito — ver
+  // PERMISSION_STATUS_OPTIONS en institution/api/types/permission.ts.
+  const permissionStatusItems = PERMISSION_STATUS_OPTIONS.map((status) => ({ value: status.code, label: status.name }))
 
   useEffect(() => {
     if (!open) {
@@ -452,32 +482,42 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
       return
     }
 
-    // Alta real: el select de EE (solo super admin, ver arriba) es
-    // obligatorio para poder enlazar al funcionario apenas se cree.
-    if (!env.ENABLE_API_MOCKING && !activeEmployeeId && showEstablishmentPicker && !establishmentId) {
-      setPersonErrors({ establishmentId: "Selecciona el establecimiento educativo." })
-      return
-    }
-
     // 1) Garantizar que la persona exista (POST /person en mock;
     //    POST /register/funcionario en real — ver más abajo, ese además
     //    ya crea el TFUNCIONARIO, así que el flujo real se bifurca acá).
     let persistedPerson = draft
 
+    // Las dos validaciones se juntan en un solo `nextErrors` antes de
+    // decidir si hay que frenar: si solo se corta en la primera que falla
+    // (como pasaba antes con el establecimiento), la persona nunca llega a
+    // validarse y el usuario solo ve "falta el establecimiento" aunque
+    // también le falten nombre/documento.
+    const nextErrors: Record<string, string> = {}
+
     if (!persistedPerson.id) {
-      const parsed = employeePersonSchema.safeParse(persistedPerson)
+      const parsed = employeePersonSchema.safeParse({ person: persistedPerson, confirmPassword })
 
       if (!parsed.success) {
         // Un mensaje debajo de cada campo, con la ruta que espera
         // `UserDetailsForm` (`employee.firstName`, …).
-        const nextErrors: Record<string, string> = {}
         for (const issue of parsed.error.issues) {
           nextErrors[`${EMPLOYEE_FIELD_PREFIX}.${issue.path.join(".")}`] ??= issue.message
         }
-        setPersonErrors(nextErrors)
-        return
       }
+    }
 
+    // Alta real: el select de EE (solo super admin, ver arriba) es
+    // obligatorio para poder enlazar al funcionario apenas se cree.
+    if (!env.ENABLE_API_MOCKING && !activeEmployeeId && showEstablishmentPicker && !establishmentId) {
+      nextErrors.establishmentId = "Selecciona el establecimiento educativo."
+    }
+
+    if (Object.keys(nextErrors).length > 0) {
+      setPersonErrors(nextErrors)
+      return
+    }
+
+    if (!persistedPerson.id) {
       setPersonErrors({})
 
       if (!env.ENABLE_API_MOCKING && !activeEmployeeId) {
@@ -495,7 +535,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
           // para rector/secretaria/jefe de sistema, fn_fun_enlazar_establecimiento
           // resuelve el EE solo (fn_resolver_establecimiento_unico, V50),
           // asumiendo que están ligados a un único EE bajo esos roles.
-          await enlazarFuncionarioEstablecimiento(registered.pkTusuario, establishmentId)
+          await enlazarFuncionarioEstablecimiento(registered.pkFuncionario, establishmentId)
 
           setCreatedEmployeeId(registered.pkFuncionario)
           notify(SUCCESS_MESSAGES.employee.created)
@@ -591,9 +631,9 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
     setPermissionErrors({})
     const draft = parsed.data
 
-    const role = roles.find((item) => item.code === draft.roleCode)
+    const role = roles.find((item) => item.id === draft.roleId)
     const campus = findCampusById(draft.campusId)
-    const workSchedule = workSchedules.find((item) => item.code === draft.workScheduleCode)
+    const workSchedule = workSchedules.find((item) => item.id === draft.workScheduleId)
 
     if (!role || !campus || !workSchedule) {
       notify("No fue posible resolver los datos del permiso seleccionado.", { variant: "error" })
@@ -875,18 +915,18 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
               orientation="vertical"
               variant="outlined"
               className="min-w-56 grow basis-[calc(33%-1rem)]"
-              data-invalid={permissionErrors["roleCode"] ? "true" : undefined}
+              data-invalid={permissionErrors["roleId"] ? "true" : undefined}
             >
               <FieldLabel htmlFor="permission-role">Rol*</FieldLabel>
               <Select
                 id="permission-role"
-                value={permissionDraft.roleCode}
+                value={permissionDraft.roleId}
                 onValueChange={(value) =>
-                  setPermissionDraft((prev) => ({ ...prev, roleCode: value ?? "" }))
+                  setPermissionDraft((prev) => ({ ...prev, roleId: value ?? null }))
                 }
-                items={roleItems}
+                items={toSelectItemsMap(roleItems)}
               >
-                <SelectTrigger aria-invalid={Boolean(permissionErrors["roleCode"])}>
+                <SelectTrigger aria-invalid={Boolean(permissionErrors["roleId"])}>
                   <SelectValue placeholder="Seleccionar" />
                 </SelectTrigger>
                 <SelectContent>
@@ -897,7 +937,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
                   ))}
                 </SelectContent>
               </Select>
-              <FieldError>{permissionErrors["roleCode"]}</FieldError>
+              <FieldError>{permissionErrors["roleId"]}</FieldError>
             </Field>
 
             <Field
@@ -913,7 +953,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
                 onValueChange={(value) =>
                   setPermissionDraft((prev) => ({ ...prev, campusId: value ?? null }))
                 }
-                items={campusItems}
+                items={toSelectItemsMap(campusItems)}
               >
                 <SelectTrigger aria-invalid={Boolean(permissionErrors["campusId"])}>
                   <SelectValue placeholder="Seleccionar" />
@@ -933,18 +973,18 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
               orientation="vertical"
               variant="outlined"
               className="min-w-56 grow basis-[calc(33%-1rem)]"
-              data-invalid={permissionErrors["workScheduleCode"] ? "true" : undefined}
+              data-invalid={permissionErrors["workScheduleId"] ? "true" : undefined}
             >
               <FieldLabel htmlFor="permission-schedule">Jornada*</FieldLabel>
               <Select
                 id="permission-schedule"
-                value={permissionDraft.workScheduleCode}
+                value={permissionDraft.workScheduleId}
                 onValueChange={(value) =>
-                  setPermissionDraft((prev) => ({ ...prev, workScheduleCode: value ?? "" }))
+                  setPermissionDraft((prev) => ({ ...prev, workScheduleId: value ?? null }))
                 }
-                items={workScheduleItems}
+                items={toSelectItemsMap(workScheduleItems)}
               >
-                <SelectTrigger aria-invalid={Boolean(permissionErrors["workScheduleCode"])}>
+                <SelectTrigger aria-invalid={Boolean(permissionErrors["workScheduleId"])}>
                   <SelectValue placeholder="Seleccionar" />
                 </SelectTrigger>
                 <SelectContent>
@@ -955,7 +995,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
                   ))}
                 </SelectContent>
               </Select>
-              <FieldError>{permissionErrors["workScheduleCode"]}</FieldError>
+              <FieldError>{permissionErrors["workScheduleId"]}</FieldError>
             </Field>
 
             <Field

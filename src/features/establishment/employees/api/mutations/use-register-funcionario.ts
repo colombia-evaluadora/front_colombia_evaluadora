@@ -4,11 +4,18 @@ import type { Person } from "@/features/establishment/employees/api/types/person
 
 /**
  * Contrato real de POST /register/funcionario (auth-center, Java —
- * RegisterFuncionarioRequest/RegisterUsuarioRequest/RegisterResponse en
+ * RegisterUsuarioRequest/RegisterResponse en
  * auth-center/src/main/java/com/co/eurekatic/auth/web/dto). Crea `public.users`
  * + TUSUARIO + TFUNCIONARIO (con FK_ESTABLECIMIENTO NULL, "pendiente de
  * enlazar") en una sola transacción — NO pasa por nuestro `query`, es un
  * endpoint del servicio de auth.
+ *
+ * REV: el body es `RegisterUsuarioRequest` PLANO — ya NO va envuelto en
+ * `{usuario: {...}}` ni lleva `fkTmunicipioExpedicion` (confirmado tras el
+ * merge de la rama del compañero: `RegisterFuncionarioRequest.java` se
+ * eliminó, `AuthController.registerFuncionario` ahora recibe
+ * `RegisterUsuarioRequest` directo — ver `FuncionarioRegistrationService`,
+ * comentario "V62: fk_tmunicipio_expedicion ya no se pide aquí").
  *
  * `fn_fun_crear` (SQL, V51) ya soporta que la persona sea funcionario de
  * más de un EE: si el (tipo_documento, identificación) ya existe, reusa el
@@ -26,41 +33,38 @@ export interface RegisterFuncionarioResult {
   email: string
 }
 
-/**
- * `fkTmunicipioExpedicion` iba `@NotNull` en el DTO de Java aunque ya no lo
- * es en la base (FK_TMUNICIPIO_EXPEDICION dejó de ser NOT NULL) — se le
- * olvidó sacar la validación. Se omite acá (queda `undefined` en el JSON,
- * Jackson lo trata como ausente) hasta que se corrija del lado de Java;
- * mientras tanto el registro fallará con 400 en el backend real.
- */
 function toRegisterFuncionarioRequest(person: Person) {
   const fullName = [person.firstName, person.middleName, person.lastName, person.secondLastName]
     .filter(Boolean)
     .join(" ")
 
   return {
-    usuario: {
-      email: person.email,
-      fullName,
-      password: person.password,
-      identificacion: person.identification,
-      primerNombre: person.firstName,
-      primerApellido: person.lastName,
-      fechaNacimiento: person.birthDate,
-      fkTlvTipoDocumento: person.documentType?.id ?? null,
-      fkTlvGenero: person.gender?.id ?? null,
-      segundoNombre: person.middleName || undefined,
-      segundoApellido: person.secondLastName || undefined,
-      telefono: person.phone || undefined,
-      // El front solo tiene un campo de correo; se manda igual como cuenta
-      // (login) y como dato de contacto de TUSUARIO.
-      correoElectronico: person.email || undefined,
-    },
+    email: person.email,
+    fullName,
+    password: person.password,
+    identificacion: person.identification,
+    primerNombre: person.firstName,
+    primerApellido: person.lastName,
+    fechaNacimiento: person.birthDate,
+    fkTlvTipoDocumento: person.documentType?.id ?? null,
+    fkTlvGenero: person.gender?.id ?? null,
+    segundoNombre: person.middleName || undefined,
+    segundoApellido: person.secondLastName || undefined,
+    telefono: person.phone || undefined,
+    // El front solo tiene un campo de correo; se manda igual como cuenta
+    // (login) y como dato de contacto de TUSUARIO.
+    correoElectronico: person.email || undefined,
   }
 }
 
 export async function registerFuncionario(person: Person): Promise<RegisterFuncionarioResult> {
-  return api.post("/register/funcionario", toRegisterFuncionarioRequest(person))
+  // El gateway enruta hacia auth-center por `requesturi: /api/auth/**`
+  // (tabla `microservice`) — sin el segmento `/auth` la petición no
+  // matchea ese patrón y el gateway responde 404 antes de llegar al
+  // servicio, aunque el endpoint (`/register/funcionario`) sí está
+  // registrado ahí. Confirmado probando ambas formas contra el backend
+  // real.
+  return api.post("/auth/register/funcionario", toRegisterFuncionarioRequest(person))
 }
 
 /**
@@ -69,6 +73,13 @@ export async function registerFuncionario(person: Person): Promise<RegisterFunci
  * en el select. Sí pasa por nuestro `query`
  * (fn_fun_enlazar_establecimiento, V51) — ver
  * postgres/pending/step3_new_endpoints.sql.
+ *
+ * `pkFuncionario` (REV3): identifica el TFUNCIONARIO exacto a enlazar por
+ * su PK (el que ya devuelve `registerFuncionario`), no por `fkUsuario` +
+ * "el que esté pendiente" — antes la función SQL lo buscaba así
+ * (`FK_TUSUARIO = ? AND FK_ESTABLECIMIENTO IS NULL LIMIT 1`), ambiguo si
+ * llegara a haber más de un TFUNCIONARIO pendiente a la vez para el mismo
+ * usuario.
  *
  * `fkEstablecimiento` es `number | null`: el select de EE solo se muestra
  * para super admin (el resto de roles no lo ve). Cuando es `null`, la
@@ -83,11 +94,11 @@ export async function registerFuncionario(person: Person): Promise<RegisterFunci
  * `lib/api-routes.ts`).
  */
 export async function enlazarFuncionarioEstablecimiento(
-  fkUsuario: number,
+  pkFuncionario: number,
   fkEstablecimiento: number | null,
 ): Promise<{ pkFuncionarioEnlazado: number }> {
   return api.post("/eval-col/funcionario/enlazar-establecimiento", {
-    fkUsuario,
+    pkFuncionario,
     fkEstablecimiento,
   })
 }

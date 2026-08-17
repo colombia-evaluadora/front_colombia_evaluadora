@@ -32,16 +32,22 @@ function requiredText(message: string) {
 }
 
 /**
- * Ítem de catálogo obligatorio. El `select` guarda el objeto completo, así que
- * lo que se exige es que tenga nombre; el issue queda en la ruta del ítem
- * (`basicInfo.ownershipType`) y no en `…ownershipType.name`, que es la ruta que
- * el formulario usa para marcar el campo.
+ * Ítem de catálogo obligatorio. El `select` guarda el objeto completo, así
+ * que lo que se exige es que tenga `id` — no `name`: en real, lo que carga
+ * el detalle (`use-establishment.ts`) trae el `id` resuelto pero el `name`
+ * queda vacío a propósito (la query no hace join contra el catálogo; el
+ * `<Select>` resuelve la etiqueta visible contra el catálogo ya cargado,
+ * por `id`, no leyendo `.name` del objeto). Validar por `.name` marcaba
+ * como "vacío" un campo que en pantalla se veía bien seleccionado. El issue
+ * queda en la ruta del ítem (`basicInfo.ownershipType`) y no en
+ * `…ownershipType.name`, que es la ruta que el formulario usa para marcar
+ * el campo.
  */
 function requiredCatalogItem(message: string) {
   return z
-    .object({ name: z.string().nullish() })
+    .object({ id: z.number().nullish() })
     .nullish()
-    .refine((item) => (item?.name ?? "").trim() !== "", { message })
+    .refine((item) => item?.id != null, { message })
 }
 
 const establishmentSchema = z.object({
@@ -71,6 +77,9 @@ const PERSON_LABELS: Record<string, string> = {
   identification: "número de documento",
   firstName: "primer nombre",
   lastName: "primer apellido",
+  email: "correo electrónico",
+  birthDate: "fecha de nacimiento",
+  gender: "género",
   password: "contraseña",
   confirmPassword: "confirmación de contraseña",
 }
@@ -121,6 +130,35 @@ const personSchema = z
     require("identification", person.identification, "Ingresa el número de documento.")
     require("firstName", person.firstName, "Ingresa el primer nombre.")
     require("lastName", person.lastName, "Ingresa el primer apellido.")
+
+    /**
+     * Persona SIN `id` todavía (nunca tuvo rector/secretaria enlazado, o el
+     * GET no trajo uno): al guardar va a `POST /register/funcionario`
+     * (`RegisterUsuarioRequest`, auth-center), que exige `@NotBlank/@NotNull`
+     * en `email`, `password`, `fechaNacimiento` y `fkTlvGenero` — acá esos
+     * 4 campos eran opcionales, así que un rector/secretaria nuevo con solo
+     * los 4 mínimos pasaba la validación del front pero el Java Bean
+     * Validation lo rechazaba con 400 recién al guardar (sin marcar ningún
+     * campo en el form). Persona CON `id` (ya existente) va a PATCH
+     * `fn_fun_actualizar`, que sí tolera estos campos vacíos (COALESCE) —
+     * por eso solo se exigen acá cuando todavía no existe.
+     */
+    if (!person.id) {
+      require("email", person.email, "Ingresa el correo electrónico.")
+      require("birthDate", person.birthDate, "Ingresa la fecha de nacimiento.")
+      require("gender", person.gender?.name, "Selecciona el género.")
+      require("password", person.password, "Ingresa la contraseña.")
+      require("confirmPassword", confirmPassword, "Repite la contraseña.")
+
+      if (!isBlank(person.password) && !isBlank(confirmPassword) && person.password !== confirmPassword) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["confirmPassword"],
+          message: "Las contraseñas no coinciden.",
+        })
+      }
+      return
+    }
 
     // Contraseña: sólo se valida si escribió algo (en cualquiera de los dos campos).
     const hasPassword = !isBlank(person.password)

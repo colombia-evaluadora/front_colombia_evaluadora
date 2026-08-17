@@ -1,9 +1,11 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { env } from "@/config/env"
+import { api } from "@/lib/api-client"
 import { getCatalog } from "@/features/establishment/employees/api/query/use-catalogs"
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 import { CATALOGS } from "@/lib/catalogs"
+import { unwrapRows } from "@/lib/response-envelope"
 
 interface RealDisabilityTypeRow {
   pk_discapacidad: number
@@ -18,12 +20,13 @@ async function fetchDisabilityTypes(): Promise<CatalogItem[]> {
   if (env.ENABLE_API_MOCKING) {
     return getCatalog<CatalogItem>(CATALOGS.DISABILITIES)
   }
-  const response = await fetch("/api/eval-col/catalogos/discapacidades")
-  if (!response.ok) {
-    throw new Error("No fue posible obtener los tipos de discapacidad")
-  }
-  const body: { rows: RealDisabilityTypeRow[] } = await response.json()
-  return body.rows.map((row) => ({
+  // `api` (no `fetch` crudo): agrega el `Authorization: Bearer <token>` que
+  // el gateway real exige — sin eso responde 403 antes de llegar a la query.
+  const response = (await api.get("/eval-col/catalogos/discapacidades")) as unknown as
+    | { rows: RealDisabilityTypeRow[] }
+    | RealDisabilityTypeRow[]
+  const rows = unwrapRows<RealDisabilityTypeRow>(response)
+  return rows.map((row) => ({
     id: row.pk_discapacidad,
     code: row.codigo,
     name: row.nombre,

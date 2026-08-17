@@ -6,22 +6,77 @@ import type { Employee } from "@/features/establishment/employees/api/types/empl
 
 /**
  * Adapta `Employee` al contrato del binding SQL real (`fn_fun_actualizar`,
- * PATCH parcial — ver postgres/pending/step4_funcionarios_listar_y_baja.sql,
- * item 5, todavía sin aplicar). El único ajuste real: `person.password`
- * NUNCA viaja — la contraseña definitiva la pone el usuario por correo al
- * registrarse (mismo criterio que en el alta), reenviar lo que haya en el
- * form pisaría el hash real con basura. El resto de campos (person,
- * employeeClass, educationLevel, grade, highestEducationLevel,
- * fundingSource, functionalPosition, employmentType, address, status) ya
- * viajan con la forma que la query espera — solo lee `.id` de cada
- * `CatalogItem` anidado, el resto del objeto se ignora sin problema.
- * `permissions` tampoco lo usa esta query (los permisos van aparte, ver
- * PUT /funcionario/:ID/permisos): viaja igual porque no molesta, el
- * binding solo toma las rutas `:BODY.X.Y` que necesita.
+ * PATCH parcial, `id_query=119`).
+ *
+ * El validador de placeholders de la plataforma recorre TODO el JSON del
+ * body y exige que cada leaf tenga tipo declarado — mandar un `CatalogItem`
+ * completo (`{id, code, name}`) donde la query solo declaró `…X.ID` deja
+ * `.code`/`.name` sin declarar y rechaza la petición entera (mismo motivo
+ * por el que se aplanó `zone` en sedes/establecimientos). Acá la query NO
+ * se tocó — sigue esperando `…X.ID`, así que en vez de aplanar a un número
+ * plano se manda `{ id }` a secas (sin `code`/`name`) para cada catálogo:
+ * `person.documentType`/`person.gender` (anidados) y `employeeClass`/
+ * `educationLevel`/`grade`/`highestEducationLevel`/`fundingSource`/
+ * `functionalPosition`/`employmentType` (sueltos).
+ *
+ * Nunca se manda `null` a secas donde la query espera bajar a `.ID` (mismo
+ * motivo que `toSingleSort` en `sorting`): sin selección se manda
+ * `{ id: null }`, no `null`, para que el validador pueda seguir bajando.
+ *
+ * Otros campos que se sacan del body porque no están declarados en la
+ * query: `id` (el PK va por la URL, `PARAM.ID`), `person.password` (nunca
+ * viaja — la contraseña definitiva la pone el usuario por correo) y
+ * `person.id`, y `permissions` (los permisos van aparte, ver
+ * `PUT /funcionario/:ID/permisos` en `update-permissions.ts`).
+ *
+ * `person.birthDate` no es obligatorio: si el formulario lo deja vacío
+ * (`""`), nunca se manda el string vacío tal cual — `fn_fun_actualizar`
+ * hace `CAST(:BODY.PERSON.BIRTHDATE AS DATE)` y un `''` no es una fecha
+ * válida para Postgres ("invalid input syntax for type date"). Se manda
+ * `null` en su lugar para que la columna quede sin fecha.
  */
+function toCatalogIdField(item: { id: number } | null | undefined) {
+  return { id: item?.id ?? null }
+}
+
 function toRealBackendPayload(values: Employee) {
-  const { password: _password, ...personRest } = values.person
-  return { ...values, person: personRest }
+  const {
+    id: _id,
+    person: {
+      password: _password,
+      id: _personId,
+      documentType,
+      gender,
+      birthDate,
+      ...personRest
+    },
+    employeeClass,
+    educationLevel,
+    grade,
+    highestEducationLevel,
+    fundingSource,
+    functionalPosition,
+    employmentType,
+    permissions: _permissions,
+    ...rest
+  } = values
+
+  return {
+    ...rest,
+    person: {
+      ...personRest,
+      birthDate: birthDate || null,
+      documentType: toCatalogIdField(documentType),
+      gender: toCatalogIdField(gender),
+    },
+    employeeClass: toCatalogIdField(employeeClass),
+    educationLevel: toCatalogIdField(educationLevel),
+    grade: toCatalogIdField(grade),
+    highestEducationLevel: toCatalogIdField(highestEducationLevel),
+    fundingSource: toCatalogIdField(fundingSource),
+    functionalPosition: toCatalogIdField(functionalPosition),
+    employmentType: toCatalogIdField(employmentType),
+  }
 }
 
 function toOutgoingPayload(values: Employee) {

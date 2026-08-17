@@ -11,25 +11,40 @@ export interface CreateResult {
 }
 
 /**
- * El binding SQL real (`fn_sed_crear`/`fn_sed_actualizar`) espera `COMUNE`
- * (una sola M) en el body — typo del lado del backend, confirmado contra la
- * query registrada. En vez de tocar esa query, absorbemos la diferencia acá:
- * `commune` (nuestro campo, bien escrito) sale como `comune` en el wire.
+ * El validador de placeholders de la plataforma recorre TODO el JSON del
+ * body y exige que cada leaf tenga un tipo declarado en la query — no basta
+ * con declarar `BODY.ZONE.ID`: si el objeto que se manda también trae
+ * `.code`/`.name` (como `Campus["zone"]`, un `CatalogItem` completo), esos
+ * dos leaves quedan sin declarar y la petición se rechaza entera (aunque
+ * `.id` sí esté declarado). Por eso acá NO se manda el objeto completo:
+ * `zone` sale aplanado a su `id` (`BODY.ZONE` a secas, ya no
+ * `BODY.ZONE.ID` — la query se actualizó para matchear, ver id_query 89/90).
+ *
+ * Además:
+ * - `commune` → `comune` (typo del backend, confirmado contra la query).
+ * - `establishmentId` solo tiene sentido en el alta (`fn_sed_crear` lo
+ *   necesita); en la actualización ni siquiera está declarado en la query
+ *   (`FK_TESTABLECIMIENTO` es inmutable), así que si viaja igual el
+ *   validador también lo rechaza — se saca explícitamente en `update`.
+ * - `id` tampoco se manda en la actualización: el PK ya va en la URL
+ *   (`PARAM.ID`), la query no tiene un `BODY.ID` declarado.
  */
-function toRealBackendPayload<T extends { commune: string }>(values: T) {
-  const { commune, ...rest } = values
-  return { ...rest, comune: commune }
+function toRealCreatePayload(values: CampusDraft) {
+  const { commune, zone, ...rest } = values
+  return { ...rest, comune: commune, zone: zone?.id ?? null }
 }
 
-function toOutgoingPayload<T extends { commune: string }>(values: T) {
-  return env.ENABLE_API_MOCKING ? values : toRealBackendPayload(values)
+function toRealUpdatePayload(values: Campus) {
+  const { commune, zone, id: _id, ...rest } = values as Campus & { establishmentId?: number | null }
+  const { establishmentId: _establishmentId, ...withoutEstablishment } = rest
+  return { ...withoutEstablishment, comune: commune, zone: zone?.id ?? null }
 }
 
 // El cliente no manda `id`: lo asigna el backend al crear.
 export function create(values: CampusDraft): Promise<CreateResult> {
   return api.post(
     apiPath("/establishments/campuses", "/establecimientos/sedes"),
-    toOutgoingPayload(values),
+    env.ENABLE_API_MOCKING ? values : toRealCreatePayload(values),
   )
 }
 
@@ -46,7 +61,6 @@ export function updateCampus(
     `/establishments/campuses/${campusId}`,
     `/establecimientos/sedes/${campusId}`,
   )
-  return env.ENABLE_API_MOCKING
-    ? api.put(url, toOutgoingPayload(values))
-    : api.patch(url, toOutgoingPayload(values))
+  const payload = env.ENABLE_API_MOCKING ? values : toRealUpdatePayload(values)
+  return env.ENABLE_API_MOCKING ? api.put(url, payload) : api.patch(url, payload)
 }
