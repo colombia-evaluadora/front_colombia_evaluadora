@@ -25,11 +25,13 @@ import {
 
 interface DeleteSelectedAreaSubjectsDialogProps {
   selectedIds: string[]
+  namesById: Map<number, string>
   resetSelection: () => void
 }
 
 export function DeleteSelectedAreaSubjectsDialog({
   selectedIds,
+  namesById,
   resetSelection,
 }: DeleteSelectedAreaSubjectsDialogProps) {
   const [open, setOpen] = useState(false)
@@ -55,8 +57,10 @@ export function DeleteSelectedAreaSubjectsDialog({
         notify(SUCCESS_MESSAGES.areaSubject.deletedMany(summary.succeededCount))
       } else {
         notify(
-          formatBulkDeleteError(summary, (n) =>
-            n === 1 ? "el área seleccionada" : `${n} áreas`,
+          formatBulkDeleteError(
+            summary,
+            (n) => (n === 1 ? "el área seleccionada" : `${n} áreas`),
+            (id) => namesById.get(id),
           ),
           { variant: "error" },
         )

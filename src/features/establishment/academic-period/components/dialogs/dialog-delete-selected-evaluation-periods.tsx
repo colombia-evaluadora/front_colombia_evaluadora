@@ -25,11 +25,13 @@ import {
 
 interface DeleteSelectedEvaluationPeriodsDialogProps {
   selectedIds: string[]
+  namesById: Map<number, string>
   resetSelection: () => void
 }
 
 export function DeleteSelectedEvaluationPeriodsDialog({
   selectedIds,
+  namesById,
   resetSelection,
 }: DeleteSelectedEvaluationPeriodsDialogProps) {
   const [open, setOpen] = useState(false)
@@ -55,10 +57,11 @@ export function DeleteSelectedEvaluationPeriodsDialog({
         notify(SUCCESS_MESSAGES.evaluationPeriod.deletedMany(summary.succeededCount))
       } else {
         notify(
-          formatBulkDeleteError(summary, (n) =>
-            n === 1
-              ? "el periodo de evaluación seleccionado"
-              : `${n} periodos de evaluación`,
+          formatBulkDeleteError(
+            summary,
+            (n) =>
+              n === 1 ? "el periodo de evaluación seleccionado" : `${n} periodos de evaluación`,
+            (id) => namesById.get(id),
           ),
           { variant: "error" },
         )

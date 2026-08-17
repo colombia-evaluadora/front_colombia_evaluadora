@@ -25,11 +25,15 @@ import {
 
 interface DeleteSelectedAcademicPeriodsDialogProps {
   selectedIds: string[]
+  // Nombre de cada periodo por id, para mostrarlo en el aviso de error en
+  // vez del PK crudo — la tabla ya tiene esos nombres cargados.
+  namesById: Map<number, string>
   resetSelection: () => void
 }
 
 export function DeleteSelectedAcademicPeriodsDialog({
   selectedIds,
+  namesById,
   resetSelection,
 }: DeleteSelectedAcademicPeriodsDialogProps) {
   const [open, setOpen] = useState(false)
@@ -58,8 +62,10 @@ export function DeleteSelectedAcademicPeriodsDialog({
         notify(SUCCESS_MESSAGES.academicPeriod.deletedMany(summary.succeededCount))
       } else {
         notify(
-          formatBulkDeleteError(summary, (n) =>
-            n === 1 ? "el periodo académico seleccionado" : `${n} periodos académicos`,
+          formatBulkDeleteError(
+            summary,
+            (n) => (n === 1 ? "el periodo académico seleccionado" : `${n} periodos académicos`),
+            (id) => namesById.get(id),
           ),
           { variant: "error" },
         )

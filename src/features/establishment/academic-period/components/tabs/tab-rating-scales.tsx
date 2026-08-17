@@ -138,6 +138,13 @@ export function TabRatingScales({ academicPeriodId }: TabRatingScalesProps) {
     [selectedIds],
   )
 
+  // El bulk delete de escalas falla por `teachingLevelId`, no por código de
+  // escala — el nombre que le sirve al usuario en el aviso es el del nivel.
+  const levelNamesById = useMemo(
+    () => new Map(levels.map((level) => [level.id, level.nombre])),
+    [levels],
+  )
+
   function scalesForLevel(levelId: number): RatingScale[] {
     return scales.filter((scale) => scale.teachingLevelIds.includes(levelId))
   }
@@ -153,6 +160,7 @@ export function TabRatingScales({ academicPeriodId }: TabRatingScalesProps) {
               academicPeriodId={academicPeriodId ?? 0}
               levelCount={selectedIds.length}
               teachingLevelIds={selectedTeachingLevelIds}
+              namesById={levelNamesById}
               resetSelection={resetSelection}
             />
             <ExportSelectedRatingScalesDialog
