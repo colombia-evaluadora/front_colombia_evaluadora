@@ -2,14 +2,16 @@ import type { CatalogItem } from "@/features/establishment/employees/api/types/c
 import type { Municipality } from "@/features/establishment/institution/api/types/location"
 import type { Person } from "@/features/establishment/employees/api/types/person"
 
-export type EstablishmentStatus =
-  | "ACTIVE"
-  | "SUSPENDED"
-
-export const ESTABLISHMENT_STATUSES: EstablishmentStatus[] = [
-  "ACTIVE",
-  "SUSPENDED",
-]
+/**
+ * `id` del catálogo real `ESTADO_ESTABLECIMIENTO` (`TLISTA_VALOR.PK_LISTA_
+ * VALOR`, como texto), no un enum fijo del front: el dominio real tiene 5
+ * valores (Activo, Inactivo, Suspendido, Suspensión de chat por mora,
+ * Suspendido temporalmente), no 2. Es el mismo espacio de valores que usa
+ * el filtro de estado (`<Select>` de búsqueda) — así el filtro y la fila
+ * comparan directo, sin resolver nada contra ningún catálogo. Mock: id del
+ * fixture `ENTITY_STATUSES` (1=Activo, 2=Suspendido), también como texto.
+ */
+export type EstablishmentStatus = string
 
 export interface Establishment {
   id: number
@@ -18,6 +20,9 @@ export interface Establishment {
   department: string
   municipality: string
   status: EstablishmentStatus
+  /** Nombre para mostrar (real: `estado_nombre`; mock: `ENTITY_STATUSES.name`)
+   * — `status` es el id, no es legible por sí solo. */
+  statusLabel: string
 }
 
 export interface EstablishmentDetails {

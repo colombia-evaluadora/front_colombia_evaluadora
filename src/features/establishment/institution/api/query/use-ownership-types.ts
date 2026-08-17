@@ -1,9 +1,11 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { env } from "@/config/env"
+import { api } from "@/lib/api-client"
 import { getCatalog } from "@/features/establishment/employees/api/query/use-catalogs"
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 import { CATALOGS } from "@/lib/catalogs"
+import { unwrapRows } from "@/lib/response-envelope"
 
 interface RealOwnershipTypeRow {
   pk_propiedad_juridica: number
@@ -20,12 +22,13 @@ async function fetchOwnershipTypes(): Promise<CatalogItem[]> {
   if (env.ENABLE_API_MOCKING) {
     return getCatalog<CatalogItem>(CATALOGS.LEGAL_TYPES)
   }
-  const response = await fetch("/api/eval-col/catalogos/propiedad-juridica")
-  if (!response.ok) {
-    throw new Error("No fue posible obtener los tipos de propiedad jurídica")
-  }
-  const body: { rows: RealOwnershipTypeRow[] } = await response.json()
-  return body.rows.map((row) => ({
+  // `api` (no `fetch` crudo): agrega el `Authorization: Bearer <token>` que
+  // el gateway real exige — sin eso responde 403 antes de llegar a la query.
+  const response = (await api.get("/eval-col/catalogos/propiedad-juridica")) as unknown as
+    | { rows: RealOwnershipTypeRow[] }
+    | RealOwnershipTypeRow[]
+  const rows = unwrapRows<RealOwnershipTypeRow>(response)
+  return rows.map((row) => ({
     id: row.pk_propiedad_juridica,
     code: row.codigo,
     name: row.nombre,

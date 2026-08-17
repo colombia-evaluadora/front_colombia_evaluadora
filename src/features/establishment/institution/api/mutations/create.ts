@@ -12,8 +12,7 @@ export interface CreateResult {
 
 /**
  * Adapta `EstablishmentDetails` al contrato del binding SQL real
- * (`fn_est_crear` / `fn_est_actualizar`), que difiere del modelo interno en
- * un punto:
+ * (`fn_est_crear` / `fn_est_actualizar`):
  *
  * - `principal`/`secretary`: el binding castea `:BODY.PRINCIPAL` directo a
  *   `BIGINT` (espera el id de la persona ya persistida, no el objeto
@@ -22,20 +21,53 @@ export interface CreateResult {
  *   base (`BARRIO`, `COMUNA`, `LOCALIDAD`), no catálogos — el front los
  *   modela como `CatalogItem | null` solo para reusar el `<Select>`, pero acá
  *   hay que mandar el texto (`.name`), no el objeto.
+ * - `ownershipType`, `address.zone`, `address.municipality`, y los 5 de
+ *   `additionalInfo` (calendar/teachingLanguage/costRegime/
+ *   populationGender/tuitionRange/disabilityType): son `CatalogItem | null`
+ *   en el front pero cada uno se aplana a su `id` a secas. El validador de
+ *   placeholders de la plataforma recorre TODO el JSON del body — mandar el
+ *   objeto completo (con `.code`/`.name` de más, sin tipo declarado en la
+ *   query) hace que rechace la petición entera aunque `.id` sí esté
+ *   declarado. Mismo motivo por el que se aplanó `zone` en sedes
+ *   (campuses/api/mutations/create.ts) — las queries 40/87 ya se
+ *   actualizaron para esperar `BODY.X` en vez de `BODY.X.ID`.
  *
  * `additionalInfo.licenseStatus` ya es texto libre (`string`) en el tipo de
  * dominio, así que viaja tal cual dentro de `additionalInfo` — sin mapeo.
  */
 function toRealBackendPayload(values: EstablishmentDetails) {
-  const { principal, secretary, address, ...rest } = values
+  // `id` se saca a propósito: ni la query de crear ni la de actualizar
+  // declaran `BODY.ID` (el PK de actualizar va por la URL, `PARAM.ID`) — si
+  // viaja igual, el validador de placeholders lo rechaza como el resto de
+  // los campos sin tipo declarado.
+  const { id: _id, principal, secretary, basicInfo, address, additionalInfo: fullAdditionalInfo, ...rest } = values
+  // `operatingLicense` no tiene columna real detrás (`LICENCIA_FUNCIONAMIENTO`
+  // es el VARCHAR que ya cubre `licenseStatus`) ni está declarado en la
+  // query — viaja igual si no se saca, y queda como leaf sin tipo.
+  const { operatingLicense: _operatingLicense, ...additionalInfo } = fullAdditionalInfo
 
   return {
     ...rest,
+    basicInfo: {
+      ...basicInfo,
+      ownershipType: basicInfo.ownershipType?.id ?? null,
+    },
     address: {
       ...address,
+      zone: address.zone?.id ?? null,
+      municipality: address.municipality?.id ?? null,
       district: address.district?.name ?? null,
       commune: address.commune?.name ?? null,
       locality: address.locality?.name ?? null,
+    },
+    additionalInfo: {
+      ...additionalInfo,
+      calendar: additionalInfo.calendar?.id ?? null,
+      teachingLanguage: additionalInfo.teachingLanguage?.id ?? null,
+      costRegime: additionalInfo.costRegime?.id ?? null,
+      populationGender: additionalInfo.populationGender?.id ?? null,
+      tuitionRange: additionalInfo.tuitionRange?.id ?? null,
+      disabilityType: additionalInfo.disabilityType?.id ?? null,
     },
     principal: principal?.id ?? null,
     secretary: secretary?.id ?? null,

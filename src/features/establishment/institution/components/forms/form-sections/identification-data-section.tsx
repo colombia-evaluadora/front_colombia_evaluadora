@@ -12,6 +12,7 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import { useOwnershipTypesQuery } from "@/features/establishment/institution/api/query/use-ownership-types"
+import { toSelectItemsMap, toSelectOptions } from "@/lib/catalog-options"
 import type { EstablishmentDetails } from "@/features/establishment/institution/api/types/establishment"
 
 interface IdentificationDataFormSectionProps {
@@ -28,7 +29,7 @@ export function IdentificationDataFormSection({ value, onChange, invalidFields =
     // Mensaje debajo del campo: solo tras el primer submit, igual que el borde rojo.
     const errorFor = (field: string) => (showValidation ? errors[field] : undefined)
     const { data: legalTypes = []} = useOwnershipTypesQuery()
-    const legalTypeItems = legalTypes.map(item => ({ value: item.id, label: item.name }))
+    const legalTypeItems = toSelectOptions(legalTypes)
 
     // Escudo del establecimiento: estado puramente UI, análogo a la foto
     // de la persona. No se persiste todavía en el modelo `basicInfo`, así
@@ -111,7 +112,7 @@ export function IdentificationDataFormSection({ value, onChange, invalidFields =
                             const option = legalTypes.find((item) => item.id === selectedValue)
                             if (option) onChange({ ...value, ownershipType: option })
                         }}
-                        items={legalTypeItems}
+                        items={toSelectItemsMap(legalTypeItems)}
                     >
                         <SelectTrigger aria-invalid={isInvalid("basicInfo.ownershipType")}>
                             <SelectValue placeholder="Seleccionar" />

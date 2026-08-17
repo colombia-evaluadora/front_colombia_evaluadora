@@ -1,8 +1,10 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { env } from "@/config/env"
+import { api } from "@/lib/api-client"
 import { getCatalog } from "@/features/establishment/employees/api/query/use-catalogs"
 import { CATALOGS } from "@/lib/catalogs"
+import { unwrapRows } from "@/lib/response-envelope"
 
 import type { Municipality } from "@/features/establishment/institution/api/types/location"
 
@@ -22,12 +24,13 @@ async function fetchMunicipalities(): Promise<Municipality[]> {
   if (env.ENABLE_API_MOCKING) {
     return getCatalog<Municipality>(CATALOGS.MUNICIPALITIES)
   }
-  const response = await fetch("/api/eval-col/catalogos/municipios")
-  if (!response.ok) {
-    throw new Error("No fue posible obtener los municipios")
-  }
-  const body: { rows: RealMunicipalityRow[] } = await response.json()
-  return body.rows.map((row) => ({
+  // `api` (no `fetch` crudo): agrega el `Authorization: Bearer <token>` que
+  // el gateway real exige — sin eso responde 403 antes de llegar a la query.
+  const response = (await api.get("/eval-col/catalogos/municipios")) as unknown as
+    | { rows: RealMunicipalityRow[] }
+    | RealMunicipalityRow[]
+  const rows = unwrapRows<RealMunicipalityRow>(response)
+  return rows.map((row) => ({
     id: row.pk_municipio,
     name: row.nombre,
     department: { id: row.pk_departamento, name: row.departamento_nombre },

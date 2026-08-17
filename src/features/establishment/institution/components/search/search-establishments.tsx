@@ -12,11 +12,9 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
-import type {
-  EstablishmentFiltersFormInput,
-  ESTABLISHMENT_STATUSES,
-} from "@/features/establishment/institution/api/schema"
+import type { EstablishmentFiltersFormInput } from "@/features/establishment/institution/api/schema"
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
+import { toSearchOptions, toSelectItemsMap } from "@/lib/catalog-options"
 
 // El `htmlFor` de la etiqueta necesita un id estable en el control.
 const SEARCH_INPUT_ID = "establishments-search"
@@ -46,11 +44,7 @@ export function SearchEstablishments({
       empty: { search: "", statuses: [] },
       freeText: { key: "texto", field: "search" },
       terms: [
-        optionsTerm(
-          "estado",
-          "statuses",
-          statuses.map((status) => ({ value: status.code, label: status.name })),
-        ),
+        optionsTerm("estado", "statuses", toSearchOptions(statuses)),
       ],
     }),
     [statuses],
@@ -72,7 +66,7 @@ export function SearchEstablishments({
     applyFilters({
       ...filters,
       search: freeText,
-      statuses: draftStatus ? [draftStatus as (typeof ESTABLISHMENT_STATUSES)[number]] : [],
+      statuses: draftStatus ? [draftStatus] : [],
     })
     setOpen(false)
   }
@@ -83,10 +77,7 @@ export function SearchEstablishments({
     setOpen(false)
   }
 
-  const statusItems = [
-    { value: "", label: "Todos" },
-    ...statuses.map((status) => ({ value: status.code, label: status.name })),
-  ]
+  const statusItems = [{ value: "", label: "Todos" }, ...toSearchOptions(statuses)]
 
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-2">
@@ -109,7 +100,7 @@ export function SearchEstablishments({
           <Field orientation="vertical" variant="outlined" className="gap-2">
             <FieldLabel htmlFor="establishment-status">Estado</FieldLabel>
             <Select
-              items={statusItems}
+              items={toSelectItemsMap(statusItems)}
               value={draftStatus}
               onValueChange={(value) => setDraftStatus(value ?? "")}
             >

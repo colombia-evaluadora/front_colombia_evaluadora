@@ -15,6 +15,7 @@ import type { CatalogItem } from "@/features/establishment/employees/api/types/c
 import { useCatalogQuery } from "@/features/establishment/employees/api/query/use-catalogs"
 import { useDisabilityTypesQuery } from "@/features/establishment/institution/api/query/use-disability-types"
 import { CATALOGS } from "@/lib/catalogs"
+import { toSelectItemsMap, toSelectOptions } from "@/lib/catalog-options"
 import { formatDateValue, parseDateValue } from "@/lib/date-time-value"
 import type { EstablishmentDetails } from "@/features/establishment/institution/api/types/establishment"
 
@@ -37,12 +38,12 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
     const {data: disabilities = []} = useDisabilityTypesQuery()
     const {data: populationGenders = []} = useCatalogQuery<CatalogItem>(CATALOGS.POPULATION_GENDERS)
 
-    const idiomaItems = idiomas.map((item: CatalogItem) => ({ value: item.id, label: item.name }))
-    const calendarioItems = calendarios.map((c: CatalogItem) => ({ value: c.id, label: c.name }))
-    const costRegimenItems = costRegimen.map((item: CatalogItem) => ({ value: item.id, label: item.name }))
-    const populationGenderItems = populationGenders.map((g: CatalogItem) => ({ value: g.id, label: g.name }))
-    const rangoTarifaItems = rangosTarifas.map((r: CatalogItem) => ({ value: r.id, label: r.name }))
-    const disabilityItems = disabilities.map((item: CatalogItem) => ({ value: item.id, label: item.name }))
+    const idiomaItems = toSelectOptions(idiomas)
+    const calendarioItems = toSelectOptions(calendarios)
+    const costRegimenItems = toSelectOptions(costRegimen)
+    const populationGenderItems = toSelectOptions(populationGenders)
+    const rangoTarifaItems = toSelectOptions(rangosTarifas)
+    const disabilityItems = toSelectOptions(disabilities)
 
     // `gap-2` puertas adentro: encabezado y filas de esta sección van al mismo
     // paso. El salto mayor entre secciones lo pone el `gap-6` del formulario.
@@ -80,7 +81,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                                 const option = idiomas.find((item) => item.id === selectedValue)
                                 if (option) onChange({ ...value, teachingLanguage: option })
                             }}
-                            items={idiomaItems}
+                            items={toSelectItemsMap(idiomaItems)}
                         >
                             <SelectTrigger aria-invalid={isInvalid("additionalInfo.teachingLanguage")}>
                                 <SelectValue placeholder="Seleccionar" />
@@ -107,7 +108,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                                 const option = calendarios.find((item) => item.id === selectedValue)
                                 if (option) onChange({ ...value, calendar: option })
                             }}
-                            items={calendarioItems}
+                            items={toSelectItemsMap(calendarioItems)}
                         >
                             <SelectTrigger className="w-full" aria-invalid={isInvalid("additionalInfo.calendar")}>
                                 <SelectValue placeholder="Seleccionar" />
@@ -134,7 +135,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                                 const option = costRegimen.find((item) => item.id === selectedValue)
                                 if (option) onChange({ ...value, costRegime: option })
                             }}
-                            items={costRegimenItems}
+                            items={toSelectItemsMap(costRegimenItems)}
                         >
                             <SelectTrigger aria-invalid={isInvalid("additionalInfo.costRegime")}>
                                 <SelectValue placeholder="Seleccionar" />
@@ -161,7 +162,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                                 const option = populationGenders.find((item) => item.id === selectedValue)
                                 if (option) onChange({ ...value, populationGender: option })
                             }}
-                            items={populationGenderItems}
+                            items={toSelectItemsMap(populationGenderItems)}
                         >
                             <SelectTrigger className="w-full" aria-invalid={isInvalid("additionalInfo.populationGender")}>
                                 <SelectValue placeholder="Seleccionar" />
@@ -186,7 +187,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                                 const option = rangosTarifas.find((item) => item.id === selectedValue)
                                 if (option) onChange({ ...value, tuitionRange: option })
                             }}
-                            items={rangoTarifaItems}
+                            items={toSelectItemsMap(rangoTarifaItems)}
                         >
                             <SelectTrigger className="w-full" aria-invalid={isInvalid("additionalInfo.tuitionRange")}>
                                 <SelectValue placeholder="Seleccionar" />
@@ -215,7 +216,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                                 const option = disabilities.find((item) => item.id === selectedValue)
                                 if (option) onChange({ ...value, disabilityType: option })
                             }}
-                            items={disabilityItems}
+                            items={toSelectItemsMap(disabilityItems)}
                         >
                             <SelectTrigger aria-invalid={isInvalid("additionalInfo.disabilityType")}>
                                 <SelectValue placeholder="Seleccionar" />

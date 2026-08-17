@@ -138,7 +138,15 @@ function toEmployee(row: RealEmployeeDetailRow): Employee {
   }
 }
 
-async function fetchEmployee(id: number): Promise<EmployeeQueryResult> {
+/**
+ * Exportada aparte de `useEmployeeQuery`: la usa también el formulario de
+ * establecimiento para hidratar rector/secretaria (que son TFUNCIONARIO
+ * como cualquier otro, `fk_tfuncionario_rector`/`secretaria` de
+ * `fn_est_buscar_por_pk` es el mismo `pk_empleado` que espera
+ * `fn_usu_empleado_buscar_por_pk`) fuera del ciclo de vida de un hook —
+ * se llama a mano dentro de `fetchEstablishment`, no en un componente.
+ */
+export async function fetchEmployee(id: number): Promise<EmployeeQueryResult> {
   if (env.ENABLE_API_MOCKING) {
     return api.get(`/establishments/employees/${id}`)
   }

@@ -117,11 +117,18 @@ export function ManageCampusDialog({
     }
 
     if (campusQuery.data?.status === "ok") {
-      // El EE no viaja en `Campus` (es inmutable, no se pide en edición).
-      setFormValues({ ...campusQuery.data.campus, establishmentId: null })
+      const campus = campusQuery.data.campus
+      // En real, `zone` llega solo con el id (la query no resuelve contra
+      // TLISTA_VALOR — ver use-campus.ts); se completa acá contra el
+      // catálogo ya cargado. El EE no viaja en `Campus` (es inmutable, no
+      // se pide en edición).
+      const zone = campus.zone
+        ? (zones.find((item) => item.id === campus.zone!.id) ?? campus.zone)
+        : null
+      setFormValues({ ...campus, zone, establishmentId: null })
       setFieldErrors({})
     }
-  }, [campusQuery.data, isEditMode, open])
+  }, [campusQuery.data, isEditMode, open, zones])
 
   const createMutation = useCreate({
     mutationConfig: {

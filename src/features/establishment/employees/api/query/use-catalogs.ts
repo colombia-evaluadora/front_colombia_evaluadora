@@ -1,7 +1,9 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { env } from "@/config/env"
+import { api } from "@/lib/api-client"
 import { CATALOGS } from "@/lib/catalogs"
+import { unwrapRows } from "@/lib/response-envelope"
 
 /**
  * Slug de catálogo: el *valor* de cualquier entrada de `CATALOGS`
@@ -122,19 +124,24 @@ async function getRealCatalog<T>(catalog: CatalogSlug): Promise<T[]> {
     )
   }
 
-  const response = await fetch(`/api/eval-col/select/${categoria}`)
   const friendly = catalogNames[catalog] ?? catalog
-
-  if (!response.ok) {
+  try {
+    // `api` (no `fetch` crudo): el interceptor de `api-client.ts` es el que
+    // agrega `Authorization: Bearer <token>` — sin él, el gateway real
+    // rechaza la petición con 403 antes de llegar a la query. `fetch()`
+    // directo nunca llevaba ese header.
+    const response = (await api.get(`/eval-col/select/${categoria}`)) as unknown as
+      | { rows: RealCatalogRow[] }
+      | RealCatalogRow[]
+    const rows = unwrapRows<RealCatalogRow>(response)
+    return rows.map((row) => ({
+      id: row.pk_lista_valor,
+      code: row.valor,
+      name: row.nombre,
+    })) as T[]
+  } catch {
     throw new Error(`No fue posible obtener ${friendly}`)
   }
-
-  const body: { rows: RealCatalogRow[] } = await response.json()
-  return body.rows.map((row) => ({
-    id: row.pk_lista_valor,
-    code: row.valor,
-    name: row.nombre,
-  })) as T[]
 }
 
 export function getCatalog<T>(catalog: CatalogSlug): Promise<T[]> {

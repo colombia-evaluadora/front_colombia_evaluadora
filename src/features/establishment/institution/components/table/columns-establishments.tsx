@@ -8,7 +8,7 @@ import { PencilIcon } from "@/components/ui/icons"
 import { DataTableColumnHeader } from "@/components/data-table"
 import { paths } from "@/config/paths"
 
-import { ESTABLISHMENT_STATUS_BADGE, ESTABLISHMENT_STATUS_LABELS } from "@/features/establishment/institution/api/ui-mappings"
+import { establishmentStatusBadge, establishmentStatusDisplayLabel } from "@/features/establishment/institution/api/ui-mappings"
 import type { Establishment } from "@/features/establishment/institution/api/types/establishment"
 import { DeleteEstablishmentDialog } from "@/features/establishment/institution/components/dialogs/dialog-delete"
 
@@ -75,17 +75,19 @@ export const columns: ColumnDef<Establishment>[] = [
     ),
   },
   {
-    accessorKey: "status",
+    accessorKey: "statusLabel",
     id: "status",
     meta: { label: "Estado" },
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Estado" />
     ),
+    // El nombre ya viene resuelto en la fila (`statusLabel`) — no hace
+    // falta ninguna consulta a catálogo acá, a diferencia de antes.
     cell: ({ row }) => {
-      const status = row.getValue<Establishment["status"]>("status")
+      const label = row.original.statusLabel
       return (
-        <Badge {...ESTABLISHMENT_STATUS_BADGE[status]}>
-          {ESTABLISHMENT_STATUS_LABELS[status]}
+        <Badge {...establishmentStatusBadge(label)}>
+          {establishmentStatusDisplayLabel(label)}
         </Badge>
       )
     },

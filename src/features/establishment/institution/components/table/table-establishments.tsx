@@ -51,19 +51,22 @@ export function EstablishmentsDataTable({ title, action }: EstablishmentsDataTab
    * El catálogo de estados es compartido entre features y viene con etiqueta
    * neutra ("Activo"). En esta tabla los establecimientos se filtran con
    * femenino ("Activa"), así que ajustamos solo el `name` al renderizar sin
-   * tocar el `code` (que sigue siendo "ACTIVE" para que las queries al
-   * backend y los `data.status === "ACTIVE"` del dominio sigan funcionando
-   * tal cual — el `id` de este catálogo es un correlativo interno, no el
-   * discriminador de estado).
+   * tocar el `code` (que en real es "A"/"I"/"S"/"SC"/"ST" — el código real
+   * de `ESTADO_ESTABLECIMIENTO` — y en mock sigue siendo "ACTIVE"; el `id`
+   * de este catálogo es un correlativo interno, no el discriminador de
+   * estado).
    */
   const establishmentStatuses = useMemo(
     () =>
       entityStatuses.map((status) =>
-        status.code === "ACTIVE" ? { ...status, name: "Activa" } : status,
+        status.code === "ACTIVE" || status.code === "A" ? { ...status, name: "Activa" } : status,
       ),
     [entityStatuses],
   )
 
+  // `queryFilters.status` ya trae el `id` (como texto, ver
+  // search-establishments.tsx) — `useEstablishmentsQuery` solo necesita
+  // convertirlo a número, no resolverlo contra ningún catálogo.
   const { data, isPending, isError, refetch } = useEstablishmentsQuery({
     filters: queryFilters,
     sorting,

@@ -74,7 +74,9 @@ function applyFilters(rows: Campus[], filters: CampusesQueryRequest["filters"]):
       }
     }
 
-    if (filters.zones?.length && !filters.zones.includes(row.zone?.code ?? "")) {
+    // El `<Select>` del buscador manda `String(item.id)`, no el `code` (ver
+    // search-campuses.tsx).
+    if (filters.zones?.length && !filters.zones.includes(String(row.zone?.id ?? ""))) {
       return false
     }
 

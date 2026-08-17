@@ -165,8 +165,12 @@ function createEstablishmentDetails(): EstablishmentDetails {
 }
 
 export function createEstablishmentRow(details: EstablishmentDetails): Establishment {
-  const status: EstablishmentStatus =
-    faker.number.int({ min: 1, max: 100 }) <= 85 ? "ACTIVE" : "SUSPENDED"
+  // `status`/`statusLabel` reflejan el mismo par que arma el real
+  // (`fk_estado` como texto + `estado_nombre`) — acá contra el fixture
+  // ENTITY_STATUSES (1=Activo, 2=Suspendido), no un enum propio.
+  const isActive = faker.number.int({ min: 1, max: 100 }) <= 85
+  const status: EstablishmentStatus = isActive ? "1" : "2"
+  const statusLabel = isActive ? "Activo" : "Suspendido"
 
   return {
     // `details.id` siempre está poblado acá: lo asigna `upsertEstablishmentDetails`
@@ -177,6 +181,7 @@ export function createEstablishmentRow(details: EstablishmentDetails): Establish
     department: details.address.municipality?.department.name ?? "",
     municipality: details.address.municipality?.name ?? "",
     status,
+    statusLabel,
   }
 }
 

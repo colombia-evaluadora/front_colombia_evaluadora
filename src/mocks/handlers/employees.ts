@@ -100,16 +100,18 @@ function applyFilters(rows: typeof employeesRowsDb, filters: EmployeesQueryReque
       }
     }
 
+    // El `<Select>` del buscador manda `String(item.id)`, no el `code` (ver
+    // search-employees.tsx) — mismo criterio que el backend real.
     if (
       filters.roles?.length &&
-      !row.roles.some((role) => filters.roles!.includes(role.code))
+      !row.roles.some((role) => filters.roles!.includes(String(role.id)))
     ) {
       return false
     }
 
     if (
       filters.workSchedules?.length &&
-      !row.workSchedules.some((schedule) => filters.workSchedules?.includes(schedule.code))
+      !row.workSchedules.some((schedule) => filters.workSchedules?.includes(String(schedule.id)))
     ) {
       return false
     }
