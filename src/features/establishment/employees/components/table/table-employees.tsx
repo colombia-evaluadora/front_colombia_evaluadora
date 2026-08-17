@@ -18,6 +18,8 @@ import { CATALOGS } from "@/lib/catalogs"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 
 import { useCatalogQuery } from "@/features/establishment/employees/api/query/use-catalogs"
+import { useEmployeeRolesQuery } from "@/features/establishment/employees/api/query/use-employee-roles"
+import { EMPLOYEE_STATUS_OPTIONS } from "@/features/establishment/employees/api/ui-mappings"
 import { useEmployeesFilters } from "@/features/establishment/employees/hooks/use-filters"
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 import type { EmployeeListItem } from "@/features/establishment/employees/api/types/employee"
@@ -32,7 +34,7 @@ import { SearchEmployees } from "@/features/establishment/employees/components/s
 import { useNotify } from "@/components/notice/notice-context"
 
 interface EmployeesDataTableProps {
-  onEditEmployee: (employeeId: string) => void
+  onEditEmployee: (employeeId: number) => void
   title: ReactNode
   // Acción principal de la página (ej. "Agregar"). Va en la barra de
   // herramientas, junto al buscador, no en el encabezado.
@@ -46,10 +48,12 @@ export function EmployeesDataTable({ onEditEmployee, title, action }: EmployeesD
   const { filters, queryFilters, applyFilters, clearAllFilters, activeFilterCount } =
     useEmployeesFilters()
 
-  const { data: roles = [] } = useCatalogQuery<CatalogItem>(CATALOGS.EMPLOYEE_ROLES)
+  const { data: roles = [] } = useEmployeeRolesQuery()
   const { data: workSchedules = [] } = useCatalogQuery<CatalogItem>(CATALOGS.WORK_SCHEDULES)
-  const { data: entityStatuses = [] } = useCatalogQuery<CatalogItem>(CATALOGS.ENTITY_STATUSES)
 
+  // `queryFilters.roles`/`workSchedules` ya traen el `id` (como texto, ver
+  // search-employees.tsx) — `useEmployeesQuery` solo necesita convertirlos a
+  // número, no resolverlos contra ningún catálogo.
   const { data, isPending, isError, refetch } = useEmployeesQuery({
     filters: queryFilters,
     sorting,
@@ -63,7 +67,9 @@ export function EmployeesDataTable({ onEditEmployee, title, action }: EmployeesD
     columns,
     data: data?.rows ?? [],
     pageCount: data?.pageCount ?? -1,
-    getRowId: (row) => row.id,
+    // `getRowId` de TanStack Table siempre devuelve string; el `id` real de
+    // la fila es number, así que se convierte solo para la selección.
+    getRowId: (row) => String(row.id),
     pageIndex,
     pageSize,
     goToPage,
@@ -74,7 +80,7 @@ export function EmployeesDataTable({ onEditEmployee, title, action }: EmployeesD
 
   const rows = data?.rows ?? []
   const selectedItems = useMemo(
-    () => rows.filter((row) => selectedIds.includes(row.id)),
+    () => rows.filter((row) => selectedIds.includes(String(row.id))),
     [rows, selectedIds],
   )
 
@@ -106,7 +112,7 @@ export function EmployeesDataTable({ onEditEmployee, title, action }: EmployeesD
             activeFilterCount={activeFilterCount}
             roles={roles}
             workSchedules={workSchedules}
-            statuses={entityStatuses}
+            statuses={EMPLOYEE_STATUS_OPTIONS}
           />
 
           <TableScreenActions>
@@ -114,7 +120,7 @@ export function EmployeesDataTable({ onEditEmployee, title, action }: EmployeesD
             {hasSelection ? (
               <>
                 <ClearSelectionDialog resetSelection={resetSelection} />
-                <DialogBulkDelete<EmployeeListItem>
+                <DialogBulkDelete<EmployeeListItem, number>
                   items={selectedItems}
                   getItemId={(item) => item.id}
                   getItemLabel={(item) => item.name}
@@ -130,7 +136,7 @@ export function EmployeesDataTable({ onEditEmployee, title, action }: EmployeesD
                   triggerLabel={`Eliminar (${selectedIds.length})`}
                 />
                 <ExportSelectedEmployeesDialog
-                  selectedIds={selectedIds}
+                  selectedIds={selectedItems.map((item) => item.id)}
                   resetSelection={resetSelection}
                 />
               </>

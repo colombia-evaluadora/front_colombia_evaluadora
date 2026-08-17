@@ -49,6 +49,15 @@ export const catalogHandlers = [
     return HttpResponse.json(EDUCATION_LEVELS)
   }),
 
+  // Antes compartía el catálogo de arriba con "highestEducationLevel"; el
+  // real tiene una categoría distinta para cada campo (NIVEL_ENSENANZA vs
+  // ULT_NIVEL — ver CATALOG_CATEGORIAS en use-catalogs.ts), así que acá
+  // también se separan, reusando el mismo fixture (misma data, distinto
+  // catálogo, no hay razón para que difieran en el mock).
+  http.get(`/api/catalogs/${CATALOGS.HIGHEST_EDUCATION_LEVELS}`, () => {
+    return HttpResponse.json(EDUCATION_LEVELS)
+  }),
+
   http.get(`/api/catalogs/${CATALOGS.WORK_SCHEDULES}`, () => {
     return HttpResponse.json(WORK_SCHEDULES)
   }),

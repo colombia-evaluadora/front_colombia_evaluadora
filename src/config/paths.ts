@@ -108,7 +108,7 @@ export const paths = {
 
         edit: {
           path: "establecimiento-educativo/editar/$establishmentId",
-          getHref: (establishmentId: string) => `/app/establecimiento-educativo/editar/${establishmentId}`,
+          getHref: (establishmentId: string | number) => `/app/establecimiento-educativo/editar/${establishmentId}`,
         },
 
       campuses: {

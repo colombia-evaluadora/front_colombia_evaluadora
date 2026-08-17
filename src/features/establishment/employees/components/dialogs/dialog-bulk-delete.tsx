@@ -16,11 +16,11 @@ import {
 import { Button } from "@/components/ui/button"
 import { CheckIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 
-interface DialogBulkDeleteProps<T> {
+interface DialogBulkDeleteProps<T, TId> {
   // Elementos seleccionados. Necesitamos su `id` para la mutación y la
   // descripción legible (ej. mostrar nombres en el mensaje de confirmación).
   items: T[]
-  getItemId: (item: T) => string
+  getItemId: (item: T) => TId
   getItemLabel: (item: T) => string
 
   // Encabezado corto de la confirmación (ej. "¿Eliminar las sedes
@@ -35,14 +35,14 @@ interface DialogBulkDeleteProps<T> {
 
   // Disparado al confirmar. Devuelve una promesa; mientras esté pendiente
   // el botón de acción muestra un spinner (igual que los diálogos unitarios).
-  onConfirm: (ids: string[]) => Promise<unknown>
+  onConfirm: (ids: TId[]) => Promise<unknown>
 
   // Etiqueta del trigger que abre el diálogo. El padre decide si lo pinta
   // (ej. el botón flotante de "Eliminar selección") o lo deja sin trigger.
   triggerLabel?: string
 }
 
-export function DialogBulkDelete<T>({
+export function DialogBulkDelete<T, TId>({
   items,
   getItemId,
   getItemLabel,
@@ -50,7 +50,7 @@ export function DialogBulkDelete<T>({
   buildDescription,
   onConfirm,
   triggerLabel,
-}: DialogBulkDeleteProps<T>) {
+}: DialogBulkDeleteProps<T, TId>) {
   const [open, setOpen] = useState(false)
   const [isPending, setIsPending] = useState(false)
 

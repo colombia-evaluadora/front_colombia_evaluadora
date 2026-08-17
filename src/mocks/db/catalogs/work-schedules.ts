@@ -2,17 +2,17 @@ import type { CatalogItem } from "@/features/establishment/employees/api/types/c
 
 export const WORK_SCHEDULES: CatalogItem[] = [
   {
-    id: "morning",
+    id: 1,
     code: "MORNING",
     name: "Mañana",
   },
   {
-    id: "afternoon",
+    id: 2,
     code: "AFTERNOON",
     name: "Tarde",
   },
   {
-    id: "night",
+    id: 3,
     code: "NIGHT",
     name: "Noche",
   },

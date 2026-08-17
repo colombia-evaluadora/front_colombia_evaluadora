@@ -7,17 +7,18 @@ export const EMPLOYEE_STATUSES = ["ACTIVE", "SUSPENDED"] as const
 export type EmployeeStatus = (typeof EMPLOYEE_STATUSES)[number]
 
 export interface Employee {
-  id: string
+  /** Ausente hasta que el backend lo asigna (POST /establishments/employees). */
+  id?: number
 
   person: Person
 
-  employeeClass: CatalogItem
-  educationLevel: CatalogItem
-  grade: CatalogItem
-  highestEducationLevel: CatalogItem
-  fundingSource: CatalogItem
-  functionalPosition: CatalogItem
-  employmentType: CatalogItem
+  employeeClass: CatalogItem | null
+  educationLevel: CatalogItem | null
+  grade: CatalogItem | null
+  highestEducationLevel: CatalogItem | null
+  fundingSource: CatalogItem | null
+  functionalPosition: CatalogItem | null
+  employmentType: CatalogItem | null
 
   address: string
 
@@ -27,7 +28,7 @@ export interface Employee {
 }
 
 export interface EmployeeListItem {
-  id: string
+  id: number
   documentNumber: string
   name: string
   /**
@@ -63,7 +64,7 @@ export interface EmployeesQueryFilters {
    * con este id. Se usa, por ejemplo, en la asignación académica para acotar
    * el listado de docentes a la sede del periodo.
    */
-  campusId?: string
+  campusId?: number
 }
 
 export interface EmployeesQueryRequest {

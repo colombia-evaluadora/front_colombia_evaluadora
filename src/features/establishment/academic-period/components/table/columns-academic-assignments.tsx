@@ -15,7 +15,7 @@ import type { EmployeeListItem } from "@/features/establishment/employees/api/ty
 import type { PermissionStatus } from "@/features/establishment/institution/api/types/permission"
 
 interface CreateColumnsOptions {
-  expandedId: string | null
+  expandedId: number | null
   onToggleExpand: (employee: EmployeeListItem) => void
 }
 

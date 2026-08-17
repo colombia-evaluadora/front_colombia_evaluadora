@@ -2,27 +2,27 @@ import type { CatalogItem } from "@/features/establishment/employees/api/types/c
 
 export const EDUCATION_LEVELS: CatalogItem[] = [
   {
-    id: "preschool",
+    id: 1,
     code: "PRESCHOOL",
     name: "Preescolar",
   },
   {
-    id: "primary",
+    id: 2,
     code: "PRIMARY",
     name: "Primaria",
   },
   {
-    id: "secondary",
+    id: 3,
     code: "SECONDARY",
     name: "Secundaria",
   },
   {
-    id: "high-school",
+    id: 4,
     code: "HIGH",
     name: "Media",
   },
   {
-    id: "na",
+    id: 5,
     code: "NA",
     name: "No aplica",
   },

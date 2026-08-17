@@ -2,26 +2,32 @@ import type { CatalogItem } from "@/features/establishment/employees/api/types/c
 import type { Municipality } from "@/features/establishment/institution/api/types/location"
 import type { Person } from "@/features/establishment/employees/api/types/person"
 
-export type EstablishmentStatus =
-  | "ACTIVE"
-  | "SUSPENDED"
-
-export const ESTABLISHMENT_STATUSES: EstablishmentStatus[] = [
-  "ACTIVE",
-  "SUSPENDED",
-]
+/**
+ * `id` del catálogo real `ESTADO_ESTABLECIMIENTO` (`TLISTA_VALOR.PK_LISTA_
+ * VALOR`, como texto), no un enum fijo del front: el dominio real tiene 5
+ * valores (Activo, Inactivo, Suspendido, Suspensión de chat por mora,
+ * Suspendido temporalmente), no 2. Es el mismo espacio de valores que usa
+ * el filtro de estado (`<Select>` de búsqueda) — así el filtro y la fila
+ * comparan directo, sin resolver nada contra ningún catálogo. Mock: id del
+ * fixture `ENTITY_STATUSES` (1=Activo, 2=Suspendido), también como texto.
+ */
+export type EstablishmentStatus = string
 
 export interface Establishment {
-  id: string
+  id: number
   dane: string
   name: string
   department: string
   municipality: string
   status: EstablishmentStatus
+  /** Nombre para mostrar (real: `estado_nombre`; mock: `ENTITY_STATUSES.name`)
+   * — `status` es el id, no es legible por sí solo. */
+  statusLabel: string
 }
 
 export interface EstablishmentDetails {
-    id: string
+    /** Ausente hasta que el backend lo asigna (POST /establishments). */
+    id?: number
 
     basicInfo: EstablishmentBasicInfo
 
@@ -44,20 +50,20 @@ export interface EstablishmentBasicInfo {
 
     nit: string
 
-    ownershipType: CatalogItem
+    ownershipType: CatalogItem | null
 }
 
 export interface EstablishmentAddress {
 
-    municipality: Municipality
+    municipality: Municipality | null
 
-    zone: CatalogItem
+    zone: CatalogItem | null
 
-    district: CatalogItem
+    district: CatalogItem | null
 
-    commune: CatalogItem
+    commune: CatalogItem | null
 
-    locality: CatalogItem
+    locality: CatalogItem | null
 
     address: string
 }
@@ -77,21 +83,22 @@ export interface EstablishmentAdditionalInfo {
 
     approvalResolution: string
 
-    teachingLanguage: CatalogItem
+    teachingLanguage: CatalogItem | null
 
-    calendar: CatalogItem
+    calendar: CatalogItem | null
 
-    costRegime: CatalogItem
+    costRegime: CatalogItem | null
 
-    populationGender: CatalogItem
+    populationGender: CatalogItem | null
 
-    tuitionRange: CatalogItem
+    tuitionRange: CatalogItem | null
 
-    disabilityType: CatalogItem
+    disabilityType: CatalogItem | null
 
     operatingLicense: boolean
 
-    licenseStatus: CatalogItem
+    /** Texto libre (`LICENCIA_FUNCIONAMIENTO` es VARCHAR en la base, no un catálogo). */
+    licenseStatus: string
 
     licenseDate: string | null
 

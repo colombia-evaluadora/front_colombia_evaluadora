@@ -2,12 +2,12 @@ import type { CatalogItem } from "@/features/establishment/employees/api/types/c
 
 export const GENDERS: CatalogItem[] = [
   {
-    id: "male",
+    id: 1,
     code: "M",
     name: "Masculino",
   },
   {
-    id: "female",
+    id: 2,
     code: "F",
     name: "Femenino",
   },

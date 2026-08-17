@@ -7,17 +7,17 @@ import type { CatalogItem } from "@/features/establishment/employees/api/types/c
 // femenino o mixto.
 export const POPULATION_GENDERS: CatalogItem[] = [
   {
-    id: "masculino",
+    id: 1,
     code: "MASCULINO",
     name: "Masculino",
   },
   {
-    id: "femenino",
+    id: 2,
     code: "FEMENINO",
     name: "Femenino",
   },
   {
-    id: "mixto",
+    id: 3,
     code: "MIXTO",
     name: "Mixto",
   },

@@ -75,7 +75,9 @@ export function CreateGradeGroupDialog({
     ""
 
   const { data: employeesData } = useEmployeesQuery({
-    filters: { campusId: academicPeriod?.sedeId },
+    // `sedeId` es string en el dominio de periodo académico; el filtro de
+    // funcionarios espera el id numérico real de la sede.
+    filters: { campusId: academicPeriod?.sedeId ? Number(academicPeriod.sedeId) : undefined },
     sorting: [],
     pageIndex: 0,
     pageSize: 1000,
