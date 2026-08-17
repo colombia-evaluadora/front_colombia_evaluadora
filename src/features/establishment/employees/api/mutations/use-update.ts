@@ -6,7 +6,7 @@ import { update } from "@/features/establishment/employees/api/mutations/update"
 import type { Employee } from "@/features/establishment/employees/api/types/employee"
 
 interface UpdateEmployeeInput {
-  employeeId: string
+  employeeId: number
   values: Employee
 }
 

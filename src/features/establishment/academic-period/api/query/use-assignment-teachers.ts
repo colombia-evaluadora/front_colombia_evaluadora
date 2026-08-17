@@ -48,7 +48,7 @@ function toEmployeeStatus(estado: "A" | "I"): EmployeeStatus {
 // renderizan acá, y quedan vacíos.
 function toEmployeeListItem(row: AssignmentTeacherRow): EmployeeListItem {
   return {
-    id: String(row.funcionario_id),
+    id: row.funcionario_id,
     documentNumber: row.document_number,
     name: row.nombre_completo,
     roles: [],

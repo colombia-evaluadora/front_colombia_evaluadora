@@ -5,57 +5,57 @@ import type { CatalogItem } from "@/features/establishment/employees/api/types/c
 // único que distingue una de otra — no uses el `code` como llave.
 export const DOCUMENT_TYPES: CatalogItem[] = [
   {
-    id: "cca",
+    id: 1,
     code: "CCa",
     name: "Certificado Cabildo",
   },
   {
-    id: "cc",
+    id: 2,
     code: "CC",
     name: "Cédula de Ciudadanía",
   },
   {
-    id: "cc-v2",
+    id: 3,
     code: "CC",
     name: "Cédula de Ciudadanía v2",
   },
   {
-    id: "ce",
+    id: 4,
     code: "CE",
     name: "Cédula de Extranjería ó Identificación de Extranjería",
   },
   {
-    id: "nuip",
+    id: 5,
     code: "NUIP",
     name: "Número Unico de Identificación Personal (NUIP)",
   },
   {
-    id: "nip",
+    id: 6,
     code: "NIP",
     name: "Número de Identificación Personal (NIP)",
   },
   {
-    id: "nes",
+    id: 7,
     code: "NES",
     name: "Número de Identificación establecido por la Secretaría de Educación",
   },
   {
-    id: "rc",
+    id: 8,
     code: "RC",
     name: "Registro Civil de Nacimiento",
   },
   {
-    id: "ti",
+    id: 9,
     code: "TI",
     name: "Tarjeta de Identidad",
   },
   {
-    id: "ppt",
+    id: 10,
     code: "PPT",
     name: "Permiso por Protección temporal",
   },
   {
-    id: "pep",
+    id: 11,
     code: "PEP",
     name: "Permiso Especial de Permanencia",
   },

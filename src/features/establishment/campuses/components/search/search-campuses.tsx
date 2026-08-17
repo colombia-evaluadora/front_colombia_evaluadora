@@ -14,6 +14,7 @@ import {
 
 import type { CampusFiltersFormInput } from "@/features/establishment/campuses/api/schema"
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
+import { toSearchOptions, toSelectItemsMap } from "@/lib/catalog-options"
 
 // El `htmlFor` de la etiqueta necesita un id estable en el control.
 const SEARCH_INPUT_ID = "campuses-search"
@@ -43,11 +44,7 @@ export function SearchCampuses({
       empty: { search: "", zones: [] },
       freeText: { key: "texto", field: "search" },
       terms: [
-        optionsTerm(
-          "zona",
-          "zones",
-          zones.map((zone) => ({ value: zone.code, label: zone.name })),
-        ),
+        optionsTerm("zona", "zones", toSearchOptions(zones)),
       ],
     }),
     [zones],
@@ -76,10 +73,7 @@ export function SearchCampuses({
     setOpen(false)
   }
 
-  const zoneItems = [
-    { value: "", label: "Todas" },
-    ...zones.map((zone) => ({ value: zone.code, label: zone.name })),
-  ]
+  const zoneItems = [{ value: "", label: "Todas" }, ...toSearchOptions(zones)]
 
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-2">
@@ -102,7 +96,7 @@ export function SearchCampuses({
           <Field orientation="vertical" variant="outlined" className="gap-2">
             <FieldLabel htmlFor="campus-zone">Zona</FieldLabel>
             <Select
-              items={zoneItems}
+              items={toSelectItemsMap(zoneItems)}
               value={draftZone}
               onValueChange={(value) => setDraftZone(value ?? "")}
             >

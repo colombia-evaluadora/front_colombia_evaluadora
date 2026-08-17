@@ -9,7 +9,7 @@ import type { Campus } from "@/features/establishment/campuses/api/types/campus"
 import { DeleteCampusDialog } from "@/features/establishment/campuses/components/dialogs/dialog-delete"
 
 interface CampusColumnsOptions {
-  onEdit: (campusId: string) => void
+  onEdit: (campusId: number) => void
 }
 
 export function createColumns({ onEdit }: CampusColumnsOptions): ColumnDef<Campus>[] {
@@ -66,7 +66,7 @@ export function createColumns({ onEdit }: CampusColumnsOptions): ColumnDef<Campu
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Zona" />
     ),
-    cell: ({ row }) => <p>{row.original.zone.name}</p>,
+    cell: ({ row }) => <p>{row.original.zone?.name ?? "—"}</p>,
   },
   {
     accessorKey: "address",

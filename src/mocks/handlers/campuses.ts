@@ -5,6 +5,7 @@ import {
   campusesRowsDb,
   deleteCampusDetails,
   deleteManyCampusDetails,
+  takeNextCampusId,
   upsertCampusDetails,
 } from "@/mocks/db/campuses"
 
@@ -20,8 +21,14 @@ const EXPORT_FORMAT_LABELS: Record<ExportFormat, string> = {
   excel: "Excel",
 }
 
-function asArray(value: unknown): string[] {
+function asStringArray(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string" && item.length > 0) : []
+}
+
+function asIdArray(value: unknown): number[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is number => typeof item === "number" && Number.isFinite(item))
+    : []
 }
 
 function parseCampusesRequest(body: Partial<CampusesQueryRequest> | null): CampusesQueryRequest {
@@ -31,7 +38,7 @@ function parseCampusesRequest(body: Partial<CampusesQueryRequest> | null): Campu
   return {
     filters: {
       search: typeof body?.filters?.search === "string" ? body.filters.search : undefined,
-      zones: asArray(body?.filters?.zones),
+      zones: asStringArray(body?.filters?.zones),
     },
     sorting: Array.isArray(body?.sorting)
       ? body.sorting
@@ -67,7 +74,9 @@ function applyFilters(rows: Campus[], filters: CampusesQueryRequest["filters"]):
       }
     }
 
-    if (filters.zones?.length && !filters.zones.includes(row.zone.code)) {
+    // El `<Select>` del buscador manda `String(item.id)`, no el `code` (ver
+    // search-campuses.tsx).
+    if (filters.zones?.length && !filters.zones.includes(String(row.zone?.id ?? ""))) {
       return false
     }
 
@@ -97,7 +106,10 @@ function applySorting(
       return 0
     }
 
-    return av > bv ? 1 : -1
+    // `zone` puede ordenarse por su objeto completo (`CatalogItem | null`):
+    // el `?? ""` solo evita el `TypeError` de comparar contra `null`, no
+    // pretende un orden con sentido para esa columna.
+    return (av ?? "") > (bv ?? "") ? 1 : -1
   })
 
   return desc ? sorted.reverse() : sorted
@@ -130,7 +142,7 @@ export const campusHandlers = [
     await delay(600)
 
     const { ids, format } = (await request.json()) as {
-      ids: string[]
+      ids: number[]
       format: ExportFormat
     }
 
@@ -167,7 +179,8 @@ export const campusHandlers = [
   http.get("*/api/establishments/campuses/:id", async ({ params }) => {
     await delay(150)
 
-    const campus = campusesDb.find((item) => item.id === params.id)
+    const id = Number(Array.isArray(params.id) ? params.id[0] : params.id)
+    const campus = campusesDb.find((item) => item.id === id)
 
     if (!campus) {
       return HttpResponse.json(
@@ -188,11 +201,9 @@ export const campusHandlers = [
   http.post("*/api/establishments/campuses", async ({ request }) => {
     await delay(250)
 
-    const values = (await request.json()) as Campus
-    const campus: Campus = {
-      ...values,
-      id: values.id || `campus-${Date.now()}`,
-    }
+    // El cliente no manda `id`: lo asigna el backend.
+    const values = (await request.json()) as Omit<Campus, "id">
+    const campus: Campus = { ...values, id: takeNextCampusId() }
 
     const savedCampus = upsertCampusDetails(campus)
 
@@ -206,9 +217,10 @@ export const campusHandlers = [
   http.put("*/api/establishments/campuses/:id", async ({ params, request }) => {
     await delay(250)
 
-    const campusId = Array.isArray(params.id) ? params.id[0] : params.id
+    const idParam = Array.isArray(params.id) ? params.id[0] : params.id
+    const campusId = idParam ? Number(idParam) : NaN
 
-    if (!campusId) {
+    if (!idParam || Number.isNaN(campusId)) {
       return HttpResponse.json(
         {
           status: "error",
@@ -261,17 +273,17 @@ export const campusHandlers = [
       )
     }
 
-    if (!Array.isArray(ids) || ids.some((id) => typeof id !== "string")) {
+    if (!Array.isArray(ids) || ids.some((id) => typeof id !== "number")) {
       return HttpResponse.json(
         {
           status: "error",
-          message: "Se esperaba una lista de identificadores (strings).",
+          message: "Se esperaba una lista de identificadores (números).",
         },
         { status: 400 },
       )
     }
 
-    const uniqueIds = Array.from(new Set(ids.filter((id) => id.length > 0)))
+    const uniqueIds = Array.from(new Set(asIdArray(ids)))
     deleteManyCampusDetails(uniqueIds)
 
     return HttpResponse.json({
@@ -284,12 +296,12 @@ export const campusHandlers = [
   http.delete("*/api/establishments/campuses/:id", async ({ params }) => {
     await delay(250)
 
-    const id = Array.isArray(params.id) ? params.id[0] : params.id
+    const idParam = Array.isArray(params.id) ? params.id[0] : params.id
 
     // Guard defensivo: la ruta `bulk-delete` está registrada antes para
     // que MSW no la confunda con `:id`, pero si el orden cambia seguimos
     // devolviendo 404 sin dejar pasar `id === "bulk-delete"`.
-    if (!id || id === "bulk-delete") {
+    if (!idParam || idParam === "bulk-delete") {
       return HttpResponse.json(
         {
           status: "error",
@@ -299,6 +311,7 @@ export const campusHandlers = [
       )
     }
 
+    const id = Number(idParam)
     const campus = campusesDb.find((item) => item.id === id)
 
     if (!campus) {
@@ -311,7 +324,7 @@ export const campusHandlers = [
       )
     }
 
-    deleteCampusDetails(campus.id)
+    deleteCampusDetails(id)
 
     return HttpResponse.json({
       status: "ok",

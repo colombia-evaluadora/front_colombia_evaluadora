@@ -209,7 +209,11 @@ export const academicPeriodsHandlers = [
     await delay(400)
     const body = (await request.json()) as CreateAcademicPeriodRequest
     const { period: periodData, config } = fromCreateRequest(body)
-    const sede = sedesLookup.find((s) => s.id === periodData.sedeId)
+    // `sedeId` viaja como string en el dominio de periodo académico
+    // (`fromCreateRequest` hace `String(body.FK_SEDE)`) y las sedes tienen id
+    // numérico: sin el cast la comparación nunca es cierta y `sede` queda
+    // siempre `undefined`.
+    const sede = sedesLookup.find((s) => s.id === Number(periodData.sedeId))
     // El back guarda el estado por id; resolvemos el código/etiqueta para el listado.
     const statusOption = academicPeriodStatusesDb.find(
       (s) => s.id === periodData.statusId
@@ -339,7 +343,9 @@ export const academicPeriodsHandlers = [
     const body = (await request.json()) as UpdateAcademicPeriodRequest
     const { period: periodData, config } = fromCreateRequest(body)
     const id = academicPeriodsDb[index].id
-    const sede = sedesLookup.find((s) => s.id === periodData.sedeId)
+    // Mismo cast que en el alta: `sedeId` es string y las sedes tienen id
+    // numérico, así que sin `Number(...)` la sede nunca se encuentra.
+    const sede = sedesLookup.find((s) => s.id === Number(periodData.sedeId))
     const statusOption = academicPeriodStatusesDb.find(
       (s) => s.id === periodData.statusId
     )

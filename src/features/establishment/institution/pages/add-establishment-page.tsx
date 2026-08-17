@@ -14,15 +14,21 @@ import { CheckIcon } from "@/components/ui/icons"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 
 import { paths } from "@/config/paths"
+import { env } from "@/config/env"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { EstablishmentDetailsForm } from "@/features/establishment/institution/components/forms/form-establishment"
 import { ComplementaryDataFormSection } from "@/features/establishment/institution/components/forms/form-sections/complementary-data-section"
 import { useCreateWithPerson } from "@/features/establishment/employees/api/mutations/use-create-with-person"
+import {
+  enlazarFuncionarioEstablecimiento,
+  registerFuncionario,
+} from "@/features/establishment/employees/api/mutations/use-register-funcionario"
+import { update as updateFuncionario } from "@/features/establishment/employees/api/mutations/update"
 import { useCreate } from "@/features/establishment/institution/api/mutations/use-create"
 import { useUpdate } from "@/features/establishment/institution/api/mutations/use-update"
+import { useEstablishmentQuery } from "@/features/establishment/institution/api/query/use-establishment"
 import type { EstablishmentDetails } from "@/features/establishment/institution/api/types/establishment"
-import { establishmentsDb } from "@/mocks/db/establishments"
-import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
+import type { Employee } from "@/features/establishment/employees/api/types/employee"
 import type { Person } from "@/features/establishment/employees/api/types/person"
 import { UserDetailsForm } from "@/features/establishment/employees/components/forms/form-user-datails"
 import { validateEstablishmentForm } from "@/features/establishment/institution/utils/validate-form"
@@ -43,13 +49,32 @@ const accordionTriggerClassName =
  */
 const accordionCardClassName = "py-5"
 
-function createEmptyCatalogItem(): CatalogItem {
-  return { id: "", code: "", name: "" }
+/**
+ * Fallback defensivo para `persistPersonIfAny`: solo se usa si `person.id`
+ * viene poblado (persona existente) pero `existingEmployee` es `null` — no
+ * debería pasar en la práctica (si hay `id` es porque `fetchEstablishment`
+ * lo hidrató desde `fn_usu_empleado_buscar_por_pk`), pero evita mandar
+ * `undefined` en los campos de empleo si algún día no fuera así. Catálogos
+ * en `null` + `status: "ACTIVE"` + `permissions: []` == "no cambiar nada de
+ * esto" según el COALESCE de `fn_fun_actualizar` (ver `update.ts`).
+ */
+function createEmptyEmployeeShell(): Omit<Employee, "person"> {
+  return {
+    employeeClass: null,
+    educationLevel: null,
+    grade: null,
+    highestEducationLevel: null,
+    fundingSource: null,
+    functionalPosition: null,
+    employmentType: null,
+    address: "",
+    permissions: [],
+    status: "ACTIVE",
+  }
 }
 
 function createEmptyPerson(): Person {
   return {
-    id: "",
     documentType: null,
     identification: "",
     firstName: "",
@@ -62,26 +87,22 @@ function createEmptyPerson(): Person {
   }
 }
 
+// Sin `id`: lo asigna el backend al crear (POST /establishments). El
+// formulario de alta arranca sin ninguno, no con uno inventado en el cliente.
 function createInitialEstablishmentValues(): EstablishmentDetails {
   return {
-    id: crypto.randomUUID(),
     basicInfo: {
       name: "",
       dane: "",
       nit: "",
-      ownershipType: createEmptyCatalogItem(),
+      ownershipType: null,
     },
     address: {
-      municipality: {
-        id: "",
-        code: "",
-        name: "",
-        department: { id: "", code: "", name: "" },
-      },
-      zone: createEmptyCatalogItem(),
-      district: createEmptyCatalogItem(),
-      commune: createEmptyCatalogItem(),
-      locality: createEmptyCatalogItem(),
+      municipality: null,
+      zone: null,
+      district: null,
+      commune: null,
+      locality: null,
       address: "",
     },
     contact: {
@@ -92,14 +113,14 @@ function createInitialEstablishmentValues(): EstablishmentDetails {
     },
     additionalInfo: {
       approvalResolution: "",
-      teachingLanguage: createEmptyCatalogItem(),
-      calendar: createEmptyCatalogItem(),
-      costRegime: createEmptyCatalogItem(),
-      populationGender: createEmptyCatalogItem(),
-      tuitionRange: createEmptyCatalogItem(),
-      disabilityType: createEmptyCatalogItem(),
+      teachingLanguage: null,
+      calendar: null,
+      costRegime: null,
+      populationGender: null,
+      tuitionRange: null,
+      disabilityType: null,
       operatingLicense: false,
-      licenseStatus: createEmptyCatalogItem(),
+      licenseStatus: "",
       licenseDate: null,
       ethnicAttention: false,
       giftedAttention: false,
@@ -114,10 +135,13 @@ export function AddEstablishmentPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const { notify } = useNotify()
-  const establishmentId = location.pathname.includes("/editar/")
+  const establishmentIdParam = location.pathname.includes("/editar/")
     ? location.pathname.split("/editar/").at(1) ?? null
     : null
-  const isEditMode = establishmentId !== null
+  // El segmento de ruta siempre llega como string; el `id` real del dominio
+  // es number, así que se convierte una sola vez acá.
+  const establishmentId = establishmentIdParam !== null ? Number(establishmentIdParam) : null
+  const isEditMode = establishmentId !== null && !Number.isNaN(establishmentId)
   const [formValues, setFormValues] = useState<EstablishmentDetails>(createInitialEstablishmentValues)
   // Mensaje por campo, indexado por ruta (`basicInfo.name`, `principal.password`, …).
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
@@ -128,6 +152,15 @@ export function AddEstablishmentPage() {
     principal: "",
     secretary: "",
   })
+  // Registro completo de TFUNCIONARIO (no solo `Person`) para rector y
+  // secretaria, cuando el EE ya tenía uno enlazado — se necesita al guardar
+  // para reenviar sus campos de empleo (clase, jornada, estado, dirección)
+  // tal cual vinieron, sin pisarlos con `null` (ver `persistPersonIfAny`).
+  // `null` en mock, o si el EE nunca tuvo uno asignado.
+  const [principalEmployee, setPrincipalEmployee] = useState<Employee | null>(null)
+  const [secretaryEmployee, setSecretaryEmployee] = useState<Employee | null>(null)
+
+  const establishmentQuery = useEstablishmentQuery(establishmentId, isEditMode)
 
   useEffect(() => {
     if (!isEditMode) {
@@ -136,12 +169,13 @@ export function AddEstablishmentPage() {
       setInvalidFields([])
       setHasSubmitted(false)
       setConfirmPasswords({ principal: "", secretary: "" })
+      setPrincipalEmployee(null)
+      setSecretaryEmployee(null)
       return
     }
 
-    const existing = establishmentsDb.find((item) => item.id === establishmentId)
-
-    if (existing) {
+    if (establishmentQuery.data?.status === "ok") {
+      const existing = establishmentQuery.data.establishment
       setFormValues(existing)
       setFieldErrors({})
       setInvalidFields([])
@@ -150,19 +184,16 @@ export function AddEstablishmentPage() {
         principal: existing.principal?.password ?? "",
         secretary: existing.secretary?.password ?? "",
       })
+      setPrincipalEmployee(establishmentQuery.data.principalEmployee)
+      setSecretaryEmployee(establishmentQuery.data.secretaryEmployee)
     }
-  }, [establishmentId, isEditMode])
+  }, [establishmentQuery.data, isEditMode])
 
+  // Sin `onSuccess` acá: en real hay que enlazar rector/secretaria (si se
+  // registraron de nuevo) DESPUÉS de crear el establecimiento y ANTES de
+  // navegar — `handleSubmit` orquesta todo eso a mano tras `mutateAsync`.
   const createMutation = useCreate({
     mutationConfig: {
-      onSuccess: (result) => {
-        if (result.status === "error") {
-          notify(result.message, { variant: "error" })
-          return
-        }
-        notify(SUCCESS_MESSAGES.establishment.created)
-        navigate({ to: paths.app.establishments.general.getHref() })
-      },
       onError: (error) => {
         notify(error.message || "No se pudo crear el establecimiento.", { variant: "error" })
       },
@@ -212,13 +243,85 @@ export function AddEstablishmentPage() {
     )
   }
 
+  interface PersistedPerson {
+    person: Person
+    /**
+     * PK_TFUNCIONARIO del funcionario recién REGISTRADO — solo cuando de
+     * verdad se llamó a `/register/funcionario` acá (persona sin `id`
+     * previo). Es lo que necesita `enlazarFuncionarioEstablecimiento` para
+     * enlazarlo al EE (REV3: identifica el TFUNCIONARIO exacto por su PK).
+     * `null` en mock, y también `null` cuando la persona ya existía y solo
+     * se actualizó (`updateFuncionario`) — ya está enlazada, no hace falta
+     * volver a enlazar.
+     */
+    pkFuncionarioToEnlazar: number | null
+  }
+
+  /**
+   * Persiste rector/secretaria. En alta, se llama ANTES de crear el
+   * establecimiento (hace falta su id para `p_fk_tfuncionario_rector`/
+   * `secretaria`); en edición, el EE ya existe así que el orden no importa.
+   *
+   * - Mock: POST /person (como siempre) — `upsertPerson` ya distingue alta
+   *   de actualización por la presencia de `person.id`.
+   * - Real, persona NUEVA (`person.id` ausente — nunca hubo rector/secretaria
+   *   o el GET no trajo uno): POST /register/funcionario (auth-center, Java)
+   *   — crea TUSUARIO + TFUNCIONARIO con FK_ESTABLECIMIENTO NULL
+   *   ("pendiente"). El enlace real al EE ocurre después (ver el bloque de
+   *   `enlazarFuncionarioEstablecimiento` en `handleSubmit`).
+   * - Real, persona EXISTENTE (`person.id` presente — vino del GET, ver
+   *   `principalEmployee`/`secretaryEmployee`): PATCH
+   *   `/establecimientos/funcionarios/:id` (`fn_fun_actualizar`, el mismo
+   *   que usa el módulo de funcionarios) — ya está enlazado a este EE
+   *   (`fk_tfuncionario_rector`/`secretaria` así lo confirma), no hace
+   *   falta volver a registrar ni enlazar. Se reenvía el resto del
+   *   `Employee` (`existingEmployee`) tal cual vino, para no pisar clase/
+   *   jornada/estado/dirección con `null` — el form de establecimiento solo
+   *   edita los campos de `Person`.
+   */
   async function persistPersonIfAny(
     person: Person | null,
+    existingEmployee: Employee | null,
     label: string,
     confirmPassword: string
-  ): Promise<Person | null> {
+  ): Promise<PersistedPerson | null> {
     if (!person || !personHasAnyData(person, confirmPassword)) {
       return null
+    }
+
+    if (!env.ENABLE_API_MOCKING) {
+      try {
+        if (person.id) {
+          // `fn_fun_actualizar` (id_query=119) solo devuelve el PK
+          // actualizado (`{rows:[{pk_funcionario_actualizado}]}`), no un
+          // `Employee` completo — a diferencia del tipo de retorno de
+          // `update()` (pensado para el mock, que sí devuelve `{status,
+          // message, employee}`). El módulo de funcionarios ya convive con
+          // esto (su propio `onSuccess` nunca lee `.employee`, ver
+          // `dialog-manage.tsx`); acá tampoco hay que leerlo del response —
+          // ya tenemos el `person` que se acaba de mandar, se devuelve tal
+          // cual.
+          await updateFuncionario(person.id, {
+            ...(existingEmployee ?? createEmptyEmployeeShell()),
+            person,
+          })
+          notify(`${label} actualizado.`)
+          return { person, pkFuncionarioToEnlazar: null }
+        }
+
+        const registered = await registerFuncionario(person)
+        notify(`${label} guardado.`)
+        return {
+          person: { ...person, id: registered.pkFuncionario },
+          pkFuncionarioToEnlazar: registered.pkFuncionario,
+        }
+      } catch (error) {
+        notify(
+          error instanceof Error ? error.message : `No fue posible guardar el ${label}.`,
+          { variant: "error" },
+        )
+        throw new Error(`person_persist_failed:${label}`)
+      }
     }
 
     const result = await createPersonMutation.mutateAsync(person)
@@ -229,7 +332,7 @@ export function AddEstablishmentPage() {
     }
 
     notify(`${label} guardado.`)
-    return result.person
+    return { person: result.person, pkFuncionarioToEnlazar: null }
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -246,27 +349,36 @@ export function AddEstablishmentPage() {
     }
 
     // Persistimos rector/secretaria antes del establecimiento para que
-    // los `Person` queden con `id` en `personsDb`.
+    // los `Person` queden con `id` en `personsDb` (mock) o con el
+    // `pkFuncionario` que devolvió /register/funcionario (real, solo si
+    // eran nuevos — si ya existían, `persistPersonIfAny` los actualiza en
+    // el mismo paso y no hay nada que enlazar después).
     let nextPrincipal = formValues.principal
     let nextSecretary = formValues.secretary
+    let principalPkFuncionario: number | null = null
+    let secretaryPkFuncionario: number | null = null
 
     try {
       const persistedPrincipal = await persistPersonIfAny(
         nextPrincipal,
+        principalEmployee,
         "Rector",
         confirmPasswords["principal"] ?? ""
       )
       if (persistedPrincipal) {
-        nextPrincipal = persistedPrincipal
+        nextPrincipal = persistedPrincipal.person
+        principalPkFuncionario = persistedPrincipal.pkFuncionarioToEnlazar
       }
 
       const persistedSecretary = await persistPersonIfAny(
         nextSecretary,
+        secretaryEmployee,
         "Secretaria",
         confirmPasswords["secretary"] ?? ""
       )
       if (persistedSecretary) {
-        nextSecretary = persistedSecretary
+        nextSecretary = persistedSecretary.person
+        secretaryPkFuncionario = persistedSecretary.pkFuncionarioToEnlazar
       }
     } catch {
       return
@@ -278,15 +390,59 @@ export function AddEstablishmentPage() {
       secretary: nextSecretary,
     }
 
+    /**
+     * Enlaza al EE (ya con PK, sea recién creado o el que se está editando)
+     * a cualquier rector/secretaria que se haya REGISTRADO de cero en este
+     * submit (`pkFuncionarioToEnlazar` no nulo — los que ya existían y solo
+     * se actualizaron no pasan por acá, ver `persistPersonIfAny`). Si esto
+     * falla, el establecimiento YA existe/se guardó — se avisa aparte y el
+     * enlace queda pendiente de resolver a mano.
+     */
+    async function enlazarNuevos(targetEstablishmentId: number) {
+      try {
+        if (principalPkFuncionario) {
+          await enlazarFuncionarioEstablecimiento(principalPkFuncionario, targetEstablishmentId)
+        }
+        if (secretaryPkFuncionario) {
+          await enlazarFuncionarioEstablecimiento(secretaryPkFuncionario, targetEstablishmentId)
+        }
+      } catch (error) {
+        notify(
+          error instanceof Error
+            ? error.message
+            : "El establecimiento se guardó, pero no fue posible enlazar a rector/secretaria.",
+          { variant: "error" },
+        )
+      }
+    }
+
     if (isEditMode && establishmentId) {
+      // A diferencia del alta, acá el EE ya tiene PK desde el arranque —
+      // no hace falta esperar a que el PATCH del establecimiento resuelva
+      // para enlazar a los que se acaban de registrar (evita la carrera
+      // contra el `navigate()` del `onSuccess` de `updateMutation`).
+      await enlazarNuevos(establishmentId)
       await updateMutation.mutateAsync({
         establishmentId,
-        values: nextValues,
+        values: { ...nextValues, id: establishmentId },
       })
       return
     }
 
-    await createMutation.mutateAsync(nextValues)
+    const result = await createMutation.mutateAsync(nextValues)
+
+    if (result.status === "error") {
+      notify(result.message, { variant: "error" })
+      return
+    }
+
+    const newEstablishmentId = result.establishment.id
+    if (newEstablishmentId) {
+      await enlazarNuevos(newEstablishmentId)
+    }
+
+    notify(SUCCESS_MESSAGES.establishment.created)
+    navigate({ to: paths.app.establishments.general.getHref() })
   }
 
   const isPending = createMutation.isPending || updateMutation.isPending

@@ -18,49 +18,37 @@ it("persists a new establishment through the mock POST handler", async () => {
     headers: {
       "Content-Type": "application/json",
     },
+    // Sin `id`: lo asigna el backend (mock) al crear.
     body: JSON.stringify({
-      id: "test-establishment",
       basicInfo: {
         name: "I.E. Prueba",
         dane: "12345678",
         nit: "900123456",
         ownershipType: {
-          id: "oficial",
+          id: 9,
           code: "OFFICIAL",
           name: "Oficial",
         },
       },
       address: {
         municipality: {
-          id: "11001",
+          id: 11001,
           code: "11001",
           name: "Bogotá",
           department: {
-            id: "11",
+            id: 11,
             code: "11",
             name: "Bogotá",
           },
         },
         zone: {
-          id: "urbana",
+          id: 11,
           code: "URBANA",
           name: "Urbana",
         },
-        district: {
-          id: "district-1",
-          code: "01",
-          name: "Distrito 1",
-        },
-        commune: {
-          id: "commune-1",
-          code: "01",
-          name: "Comuna 1",
-        },
-        locality: {
-          id: "locality-1",
-          code: "01",
-          name: "Localidad 1",
-        },
+        district: { id: 0, code: "01", name: "Distrito 1" },
+        commune: { id: 0, code: "01", name: "Comuna 1" },
+        locality: { id: 0, code: "01", name: "Localidad 1" },
         address: "Calle 123",
       },
       contact: {
@@ -72,32 +60,32 @@ it("persists a new establishment through the mock POST handler", async () => {
       additionalInfo: {
         approvalResolution: "RES-001",
         teachingLanguage: {
-          id: "es",
+          id: 5,
           code: "ES",
           name: "Español",
         },
         calendar: {
-          id: "cal-a",
+          id: 1,
           code: "A",
           name: "Calendario A",
         },
         costRegime: {
-          id: "libertad-vigilada",
+          id: 13,
           code: "LIBERTAD_VIGILADA",
           name: "Libertad Vigilada",
         },
         populationGender: {
-          id: "m",
-          code: "M",
+          id: 1,
+          code: "MASCULINO",
           name: "Masculino",
         },
         tuitionRange: {
-          id: "menor-06",
+          id: 3,
           code: "<0.6",
           name: "Menor de 0.6 SMLV",
         },
         disabilityType: {
-          id: "na",
+          id: 15,
           code: "NA",
           name: "No aplica",
         },

@@ -2,7 +2,8 @@ import type { CatalogItem } from "@/features/establishment/employees/api/types/c
 
 export interface Person {
 
-    id: string
+    /** Ausente hasta que el backend lo asigna (POST /person). */
+    id?: number
 
     /**
      * Catálogo referencial. Es `null` mientras la persona está sin asignar
