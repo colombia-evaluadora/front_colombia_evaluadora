@@ -353,7 +353,7 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
                       </div>
                     ) : (
                       gradoOptions.map((option) => (
-                        <SelectItem key={option.id} value={option.valor}>
+                        <SelectItem key={option.id} value={option.valor} title={option.nombre}>
                           {option.nombre}
                         </SelectItem>
                       ))
@@ -413,7 +413,7 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
                         </div>
                       ) : (
                         gradoOptions.map((option) => (
-                          <SelectItem key={option.id} value={option.valor}>
+                          <SelectItem key={option.id} value={option.valor} title={option.nombre}>
                             {option.nombre}
                           </SelectItem>
                         ))
