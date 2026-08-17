@@ -10,9 +10,9 @@ export const DEFAULT_EVALUATION_CRITERIA: EvaluationCriteria = {
   finalGradeCriteria: "Promedio ponderado por peso",
   areaGradeCriteria: "Promedio de asignaturas",
   studentWithoutGradesPerformance: "No evaluado",
-  maxRecoveryGrade: "3.0",
+  maxRecoveryGrade: 3.0,
   roundingMode: "Redondear al más cercano",
-  initialGrade: "1.0",
+  initialGrade: 1.0,
 }
 
 export const evaluationCriteriaDb: Record<number, EvaluationCriteria> = {}

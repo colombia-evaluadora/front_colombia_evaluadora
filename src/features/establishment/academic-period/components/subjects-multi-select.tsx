@@ -1,5 +1,6 @@
 import { CaretDownIcon, XIcon } from "@/components/ui/icons"
 
+import { Badge } from "@/components/ui/badge"
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -18,6 +19,11 @@ interface SubjectsMultiSelectProps {
   emptyMessage?: string
 }
 
+// Igual límite de chips visibles que `BreaksField` (los descansos del
+// período académico): más de esto se colapsa en un badge "+N" para que el
+// trigger no crezca sin control con muchas áreas/asignaturas.
+const MAX_VISIBLE_CHIPS = 3
+
 // Select de varias materias: chips en el trigger + un dropdown con checkboxes
 // al estilo de "Columnas visibles" (DataTableViewOptions).
 export function SubjectsMultiSelect({
@@ -34,50 +40,63 @@ export function SubjectsMultiSelect({
     onChange(value.includes(option) ? value.filter((v) => v !== option) : [...value, option])
   }
 
+  const visible = value.slice(0, MAX_VISIBLE_CHIPS)
+  const extra = value.length - visible.length
+
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger
-        render={
-          <button
-            id={id}
-            type="button"
-            className={cn(
-              inputVariants({ variant: resolvedVariant }),
-              inputTriggerVariants({ variant: resolvedVariant }),
-              "flex h-auto min-h-10 items-center justify-between gap-2 text-left",
-            )}
-          />
-        }
+      {/* El contenedor es un `div`, no un `<button>`: los chips llevan su
+          propio botón de "quitar" y un botón dentro de otro es HTML inválido
+          (rompe la hidratación). Mismo patrón que `BreaksField` — el trigger
+          va como overlay a pantalla completa, detrás de los chips. */}
+      <div
+        className={cn(
+          inputVariants({ variant: resolvedVariant }),
+          inputTriggerVariants({ variant: resolvedVariant }),
+          "relative flex h-auto min-h-10 items-center gap-2 text-left",
+        )}
       >
-        <div className="flex flex-1 flex-wrap gap-1.5">
+        <DropdownMenuTrigger
+          render={
+            <button
+              id={id}
+              type="button"
+              className="absolute inset-0 z-0 cursor-pointer bg-transparent outline-none"
+            />
+          }
+        />
+        <div className="pointer-events-none relative z-10 flex flex-1 flex-wrap items-center gap-1">
           {value.length === 0 ? (
             <span className="text-muted-foreground">{placeholder}</span>
           ) : (
-            value.map((subject) => (
-              <span
-                key={subject}
-                className="bg-muted flex items-center gap-1 rounded-none px-2 py-0.5 text-xs"
-              >
-                {subject}
-                <span
-                  role="button"
-                  tabIndex={-1}
-                  aria-label={`Quitar ${subject}`}
-                  className="text-muted-foreground hover:text-foreground cursor-pointer"
-                  onPointerDown={(e) => e.stopPropagation()}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    toggle(subject)
-                  }}
-                >
-                  <XIcon className="size-3" />
-                </span>
-              </span>
-            ))
+            <>
+              {visible.map((subject) => (
+                <Badge key={subject} variant="soft" color="muted" className="text-xs">
+                  {subject}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      toggle(subject)
+                    }}
+                    aria-label={`Quitar ${subject}`}
+                    data-icon="inline-end"
+                    className="pointer-events-auto inline-flex cursor-pointer items-center hover:text-foreground"
+                  >
+                    <XIcon className="size-3" />
+                  </button>
+                </Badge>
+              ))}
+              {extra > 0 && (
+                <Badge variant="soft" color="muted" className="text-xs normal-case tracking-normal">
+                  +{extra}
+                </Badge>
+              )}
+            </>
           )}
         </div>
-        <CaretDownIcon className="text-muted-foreground size-4 shrink-0" />
-      </DropdownMenuTrigger>
+        <CaretDownIcon className="text-muted-foreground pointer-events-none relative z-10 size-4 shrink-0" />
+      </div>
       <DropdownMenuContent align="start" className="min-w-64">
         {options.length === 0 ? (
           <p className="text-muted-foreground px-2 py-1.5 text-sm">{emptyMessage}</p>

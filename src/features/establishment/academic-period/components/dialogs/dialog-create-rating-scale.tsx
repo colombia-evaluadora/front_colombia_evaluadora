@@ -10,7 +10,8 @@ import {
   actionsSpacerCell,
   actionsSpacerHeadCell,
 } from "@/components/table-row-actions"
-import { useNotify, NoticeOutlet } from "@/components/notice/notice-context"
+import { useNotify } from "@/components/notice/notice-context"
+import { NoticeBanner, type NoticeVariant } from "@/components/notice/notice-banner"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -93,6 +94,23 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
   const [teachingLevelIds, setTeachingLevelIds] = useState<number[]>([])
   const [drafts, setDrafts] = useState<RatingScaleDraftValues[]>([])
   const [sort, setSort] = useState<ScaleSort>(null)
+
+  // Aviso local, propio del diálogo: mientras sigue abierto, cualquier
+  // mensaje de esta pantalla no debe pasar por el `notify()` global —ese
+  // queda para el aviso de "Guardar" que se ve en la página una vez que el
+  // diálogo se cierra— o el mismo mensaje se veía duplicado (uno acá, otro
+  // detrás del overlay).
+  const [localNotice, setLocalNotice] = useState<{
+    id: number
+    message: string
+    variant: NoticeVariant
+  } | null>(null)
+  const localNoticeIdRef = useRef(0)
+
+  function showLocalNotice(message: string, variant: NoticeVariant = "info") {
+    localNoticeIdRef.current += 1
+    setLocalNotice({ id: localNoticeIdRef.current, message, variant })
+  }
   const {
     editingKey: editingIndex,
     draft: editRow,
@@ -107,7 +125,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
   const { data: criteria } = useEvaluationCriteriaQuery(academicPeriodId)
   const createScalesBulk = useCreateRatingScalesBulk()
 
-  const range = useMemo(() => parseGradingRange(criteria?.gradingFormat), [criteria])
+  const range = useMemo(() => parseGradingRange(criteria?.gradingFormatName), [criteria])
   const rangeRef = useRef(range)
   rangeRef.current = range
   const draftSchema = useMemo(() => makeRatingScaleGradesSchema(range), [range])
@@ -122,13 +140,11 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
       const r = rangeRef.current
       const parsed = makeRatingScaleGradesSchema(r).safeParse(value)
       if (!parsed.success) {
-        notify(parsed.error.issues[0]?.message ?? "Revisa los datos.", {
-          variant: "error",
-        })
+        showLocalNotice(parsed.error.issues[0]?.message ?? "Revisa los datos.", "error")
         return
       }
       setDrafts((prev) => [...prev, parsed.data])
-      notify("Escala agregada a la lista.", { variant: "info" })
+      showLocalNotice("Escala agregada a la lista.", "info")
       formApi.reset(makeEmptyDraft(r))
     },
   })
@@ -139,6 +155,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
     setDrafts([])
     cancelEdit()
     form.reset(makeEmptyDraft(rangeRef.current))
+    setLocalNotice(null)
   }
 
   function startEdit(index: number) {
@@ -150,9 +167,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
     const r = rangeRef.current
     const parsed = makeRatingScaleGradesSchema(r).safeParse(editRow)
     if (!parsed.success) {
-      notify(parsed.error.issues[0]?.message ?? "Revisa los datos.", {
-        variant: "error",
-      })
+      showLocalNotice(parsed.error.issues[0]?.message ?? "Revisa los datos.", "error")
       return
     }
     setDrafts((prev) => prev.map((d, i) => (i === editingIndex ? parsed.data : d)))
@@ -174,11 +189,11 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
 
   async function handleSave() {
     if (teachingLevelIds.length === 0) {
-      notify("Selecciona al menos un nivel de enseñanza.", { variant: "error" })
+      showLocalNotice("Selecciona al menos un nivel de enseñanza.", "error")
       return
     }
     if (drafts.length === 0) {
-      notify("Agrega al menos una escala a la lista.", { variant: "error" })
+      showLocalNotice("Agrega al menos una escala a la lista.", "error")
       return
     }
     await createScalesBulk.mutateAsync({
@@ -219,6 +234,13 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
         </DialogHeader>
 
         <div className="flex min-w-0 flex-col gap-4">
+          <NoticeBanner
+            notice={localNotice}
+            onClose={() => setLocalNotice(null)}
+            variant={localNotice?.variant}
+            autoCloseMs={localNotice?.variant === "error" ? undefined : 4000}
+          />
+
           <div className="grid sm:grid-cols-2 gap-x-4 gap-y-4">
             <Field variant="outlined" className={cn(continued ? "" : "sm:col-span-2")}>
               <FieldLabel htmlFor="rating-scale-levels">Niveles de enseñanza</FieldLabel>
@@ -343,7 +365,14 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
 
               <form.Subscribe selector={(state) => draftSchema.safeParse(state.values).success}>
                 {(canSubmit) => (
-                  <div className="flex flex-col gap-x-4 gap-y-4 sm:flex-row sm:items-end">
+                  // `mb-8`: dentro de este `<div>`, el mensaje de error de
+                  // cada nota es `absolute` (no ocupa lugar en el flujo, para
+                  // no desalinear las tres notas entre sí cuando solo una lo
+                  // muestra — ver los `<FieldError>` de abajo). Sin este
+                  // margen, al no haber escalas todavía en la lista (nada
+                  // entre este bloque y el `DialogFooter`), el texto flotante
+                  // quedaba pisando los botones Guardar/Cancelar.
+                  <div className="mb-8 flex flex-col gap-x-4 gap-y-4 sm:flex-row sm:items-end">
                     <form.Field name="notaMaxima">
                       {(field) => {
                         const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
@@ -351,7 +380,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                           <Field
                             variant="outlined"
                             data-invalid={isInvalid}
-                            className="flex-1 min-w-0"
+                            className="relative flex-1 min-w-0"
                           >
                             <FieldLabel htmlFor={field.name}>Nota máximo*</FieldLabel>
                             <Input
@@ -363,10 +392,48 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                               placeholder="Agregar"
                               value={Number.isNaN(field.state.value) ? "" : field.state.value}
                               onBlur={field.handleBlur}
-                              onChange={(e) => field.handleChange(e.target.valueAsNumber)}
+                              onChange={(e) => {
+                                const value = e.target.valueAsNumber
+                                field.handleChange(value)
+                                if (!Number.isFinite(value)) return
+                                // Los otros dos campos siguen al máximo
+                                // cuando quedan fuera de rango: el mínimo si
+                                // ahora lo supera (min <= max siempre), y la
+                                // equivalente si queda por encima del nuevo
+                                // máximo. Sin esto, bajar el máximo dejaba el
+                                // form en un estado inválido que no se
+                                // explicaba mirando el campo recién tocado.
+                                const { notaMinima, notaEquivalente } = form.state.values
+                                const effectiveMin =
+                                  Number.isFinite(notaMinima) && notaMinima > value
+                                    ? value
+                                    : notaMinima
+                                if (effectiveMin !== notaMinima) {
+                                  form.setFieldValue("notaMinima", effectiveMin)
+                                }
+                                if (Number.isFinite(notaEquivalente) && notaEquivalente > value) {
+                                  form.setFieldValue("notaEquivalente", value)
+                                } else if (
+                                  Number.isFinite(notaEquivalente) &&
+                                  notaEquivalente < effectiveMin
+                                ) {
+                                  form.setFieldValue("notaEquivalente", effectiveMin)
+                                }
+                              }}
                               aria-invalid={isInvalid}
                             />
-                            {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                            {/* `absolute`: las tres notas comparten fila con
+                                `items-end` — si el mensaje ocupara su propio
+                                espacio en el flujo, el que lo mostrara
+                                quedaba más alto que los otros dos y
+                                desalineaba los inputs. Flotando debajo no
+                                mueve nada. */}
+                            {isInvalid && (
+                              <FieldError
+                                errors={field.state.meta.errors}
+                                className="absolute top-full left-0"
+                              />
+                            )}
                           </Field>
                         )
                       }}
@@ -378,7 +445,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                           <Field
                             variant="outlined"
                             data-invalid={isInvalid}
-                            className="flex-1 min-w-0"
+                            className="relative flex-1 min-w-0"
                           >
                             <FieldLabel htmlFor={field.name}>Nota mínimo*</FieldLabel>
                             <Input
@@ -390,10 +457,39 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                               placeholder="Agregar"
                               value={Number.isNaN(field.state.value) ? "" : field.state.value}
                               onBlur={field.handleBlur}
-                              onChange={(e) => field.handleChange(e.target.valueAsNumber)}
+                              onChange={(e) => {
+                                const value = e.target.valueAsNumber
+                                field.handleChange(value)
+                                if (!Number.isFinite(value)) return
+                                // Misma idea que en "Nota máximo": el máximo
+                                // sigue al mínimo si ahora queda por debajo, y
+                                // la equivalente si queda fuera del nuevo
+                                // rango.
+                                const { notaMaxima, notaEquivalente } = form.state.values
+                                const effectiveMax =
+                                  Number.isFinite(notaMaxima) && notaMaxima < value
+                                    ? value
+                                    : notaMaxima
+                                if (effectiveMax !== notaMaxima) {
+                                  form.setFieldValue("notaMaxima", effectiveMax)
+                                }
+                                if (Number.isFinite(notaEquivalente) && notaEquivalente < value) {
+                                  form.setFieldValue("notaEquivalente", value)
+                                } else if (
+                                  Number.isFinite(notaEquivalente) &&
+                                  notaEquivalente > effectiveMax
+                                ) {
+                                  form.setFieldValue("notaEquivalente", effectiveMax)
+                                }
+                              }}
                               aria-invalid={isInvalid}
                             />
-                            {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                            {isInvalid && (
+                              <FieldError
+                                errors={field.state.meta.errors}
+                                className="absolute top-full left-0"
+                              />
+                            )}
                           </Field>
                         )
                       }}
@@ -405,7 +501,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                           <Field
                             variant="outlined"
                             data-invalid={isInvalid}
-                            className="flex-1 min-w-0"
+                            className="relative flex-1 min-w-0"
                           >
                             <FieldLabel htmlFor={field.name}>Nota equivalente*</FieldLabel>
                             <Input
@@ -416,11 +512,32 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                               max={range.max}
                               placeholder="Agregar"
                               value={Number.isNaN(field.state.value) ? "" : field.state.value}
-                              onBlur={field.handleBlur}
+                              onBlur={() => {
+                                field.handleBlur()
+                                // Clamp al salir del campo, no en cada tecla
+                                // (si clampeara en cada `onChange`, escribir
+                                // un número de dos cifras por debajo del
+                                // mínimo de una cifra sería imposible: cada
+                                // dígito intermedio quedaría pisado por el
+                                // mínimo antes de terminar de tipear).
+                                const { notaMinima, notaMaxima } = form.state.values
+                                const value = field.state.value
+                                if (!Number.isFinite(value)) return
+                                if (Number.isFinite(notaMinima) && value < notaMinima) {
+                                  field.handleChange(notaMinima)
+                                } else if (Number.isFinite(notaMaxima) && value > notaMaxima) {
+                                  field.handleChange(notaMaxima)
+                                }
+                              }}
                               onChange={(e) => field.handleChange(e.target.valueAsNumber)}
                               aria-invalid={isInvalid}
                             />
-                            {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                            {isInvalid && (
+                              <FieldError
+                                errors={field.state.meta.errors}
+                                className="absolute top-full left-0"
+                              />
+                            )}
                           </Field>
                         )
                       }}
@@ -440,12 +557,6 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
 
           {drafts.length > 0 && (
             <>
-              {/* Outlet local: muestra el aviso de "Escala agregada a la
-                  lista." mientras el diálogo sigue abierto. El aviso de
-                  Guardar se ve en el `<NoticeOutlet />` de la página, que
-                  queda arriba de la tabla de valoración una vez que el
-                  diálogo se cierra. */}
-              <NoticeOutlet />
               <div className="[&_[data-slot=input]]:bg-background [&_[data-slot=select-trigger]]:bg-background">
                 <FieldVariantContext.Provider value="outlined">
                   <Table>
@@ -554,11 +665,21 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                                   min={range.min}
                                   max={range.max}
                                   value={Number.isNaN(editRow.notaMaxima) ? "" : editRow.notaMaxima}
-                                  onChange={(e) =>
+                                  onChange={(e) => {
+                                    const value = e.target.valueAsNumber
+                                    // La equivalente sigue al máximo/mínimo
+                                    // cuando queda fuera de rango — mismo
+                                    // criterio que en la fila de alta.
+                                    const equivalente = editRow.notaEquivalente
                                     patchEditRow({
-                                      notaMaxima: e.target.valueAsNumber,
+                                      notaMaxima: value,
+                                      ...(Number.isFinite(value) &&
+                                      Number.isFinite(equivalente) &&
+                                      equivalente > value
+                                        ? { notaEquivalente: value }
+                                        : null),
                                     })
-                                  }
+                                  }}
                                   className="w-20"
                                 />
                               </TableCell>
@@ -571,11 +692,18 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                                   min={range.min}
                                   max={range.max}
                                   value={Number.isNaN(editRow.notaMinima) ? "" : editRow.notaMinima}
-                                  onChange={(e) =>
+                                  onChange={(e) => {
+                                    const value = e.target.valueAsNumber
+                                    const equivalente = editRow.notaEquivalente
                                     patchEditRow({
-                                      notaMinima: e.target.valueAsNumber,
+                                      notaMinima: value,
+                                      ...(Number.isFinite(value) &&
+                                      Number.isFinite(equivalente) &&
+                                      equivalente < value
+                                        ? { notaEquivalente: value }
+                                        : null),
                                     })
-                                  }
+                                  }}
                                   className="w-20"
                                 />
                               </TableCell>

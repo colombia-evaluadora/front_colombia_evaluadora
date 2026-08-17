@@ -45,6 +45,7 @@ function toEvaluationCriteria(row: EvaluationCriteriaRow): EvaluationCriteria {
 
   return {
     gradingFormat: pickId(row.grading_format),
+    gradingFormatName: row.grading_format_name ?? undefined,
     gradingScale:
       row.grading_scale != null ? String(row.grading_scale) : undefined,
     periodCalculationElements: pickId(row.period_calculation_elements),

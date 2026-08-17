@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/icons"
 import { Button } from "@/components/ui/button"
 import { Input, inputTriggerVariants, inputVariants, useInputVariant } from "@/components/ui/input"
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 
@@ -182,7 +183,7 @@ export function EspecialidadSelect({
             return (
               <div
                 key={option.id}
-                className="hover:bg-foreground/10 flex items-center justify-between gap-2 rounded-none px-2 py-1 text-sm"
+                className="hover:bg-foreground/10 flex items-center justify-between gap-2 rounded-none border-b border-border px-2 py-1 text-sm last:border-b-0"
               >
                 <button
                   type="button"
@@ -226,33 +227,37 @@ export function EspecialidadSelect({
             )
           })}
 
-          <div className="mt-1 flex items-center gap-1 border-t pt-2">
-            <Input
-              value={nuevo}
-              onChange={(e) => setNuevo(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault()
-                  agregar()
-                }
-              }}
-              placeholder="Agregar"
-              aria-label="Nuevo énfasis"
-            />
-            <Button
-              type="button"
-              color="primary"
-              size="icon-xs"
-              aria-label="Agregar énfasis"
-              disabled={!nuevo.trim() || createEnfasis.isPending}
-              onClick={agregar}
-            >
-              {createEnfasis.isPending ? (
-                <SpinnerIcon className="animate-spin" />
-              ) : (
-                <PlusIcon weight="bold" />
-              )}
-            </Button>
+          <div className="px-2 pt-1">
+            <InputGroup className="h-10 rounded-md border border-input px-1 hover:border-ring has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20">
+              <InputGroupInput
+                value={nuevo}
+                onChange={(e) => setNuevo(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault()
+                    agregar()
+                  }
+                }}
+                placeholder="Agregar otro"
+                aria-label="Nuevo énfasis"
+              />
+              <InputGroupAddon align="inline-end">
+                <Button
+                  type="button"
+                  color="primary"
+                  size="icon-sm"
+                  aria-label="Agregar énfasis"
+                  disabled={!nuevo.trim() || createEnfasis.isPending}
+                  onClick={agregar}
+                >
+                  {createEnfasis.isPending ? (
+                    <SpinnerIcon className="animate-spin" />
+                  ) : (
+                    <PlusIcon weight="bold" />
+                  )}
+                </Button>
+              </InputGroupAddon>
+            </InputGroup>
           </div>
         </div>
       </PopoverContent>

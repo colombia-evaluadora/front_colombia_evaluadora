@@ -18,37 +18,56 @@ import {
 import { Button } from "@/components/ui/button"
 
 import { useDeleteRatingScalesBulk } from "@/features/establishment/academic-period/api/mutations/delete-rating-scales-bulk"
+import {
+  formatBulkDeleteError,
+  summarizeBulkDelete,
+} from "@/features/establishment/academic-period/api/mutations/bulk-delete-result"
 
 interface DeleteSelectedRatingScalesDialogProps {
+  academicPeriodId: number
   levelCount: number
-  scaleCodigos: number[]
+  teachingLevelIds: number[]
   resetSelection: () => void
 }
 
 export function DeleteSelectedRatingScalesDialog({
+  academicPeriodId,
   levelCount,
-  scaleCodigos,
+  teachingLevelIds,
   resetSelection,
 }: DeleteSelectedRatingScalesDialogProps) {
   const [open, setOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const bulkDelete = useDeleteRatingScalesBulk()
   const { notify } = useNotify()
-  const count = scaleCodigos.length
+  const count = teachingLevelIds.length
 
   async function handleDelete() {
     setSubmitting(true)
-    // Una sola request atómica: el backend borra todas las escalas por código.
+
     const result = await bulkDelete
-      .mutateAsync(scaleCodigos)
-      .catch(() => ({ status: "error" as const, message: "" }))
+      .mutateAsync({ academicPeriodId, teachingLevelIds })
+      .catch(() => null)
+
     setSubmitting(false)
 
-    if (result.status === "error") {
+    if (!result) {
       notify("No se pudieron eliminar las escalas.", { variant: "error" })
     } else {
-      notify(SUCCESS_MESSAGES.ratingScale.deletedMany(count))
+      const summary = summarizeBulkDelete(result)
+
+      if (summary.failed.length === 0) {
+        notify(SUCCESS_MESSAGES.ratingScale.deletedMany(summary.succeededCount))
+      } else {
+        notify(
+          formatBulkDeleteError(summary, (n) =>
+            n === 1 ? "la escala seleccionada" : `${n} escalas`,
+          ),
+          { variant: "error" },
+        )
+      }
     }
+
     setOpen(false)
     resetSelection()
   }
@@ -74,7 +93,7 @@ export function DeleteSelectedRatingScalesDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>Eliminar</AlertDialogTitle>
           <AlertDialogDescription>
-            Se eliminarán permanentemente {count} escala(s) de valoración de {levelCount} nivel(es)
+            Se eliminará permanentemente la escala de valoración de {count} nivel(es)
             seleccionado(s). Esta acción no se puede deshacer.
           </AlertDialogDescription>
         </AlertDialogHeader>

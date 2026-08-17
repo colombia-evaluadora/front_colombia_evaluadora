@@ -142,13 +142,21 @@ export const ratingScalesHandlers = [
     return HttpResponse.json({ status: "ok", message: "Escala de valoración eliminada." })
   }),
 
-  // Borrado en lote por ids (`fn_escala_bulk_delete`, id_query 55).
+  // Borrado en lote por nivel de enseñanza (`fn_escala_nivel_bulk_soft_delete`,
+  // id_query 55, V82) — borra la escala completa (todas sus bandas) de cada
+  // nivel seleccionado, no bandas sueltas.
   http.post("/api/eval-col/escalas/bulk-delete", async ({ request }) => {
     await delay(300)
-    const { IDS } = (await request.json()) as { IDS: number[] }
-    const set = new Set(IDS)
+    const { PERIODO_ACADEMICO_ID, IDS } = (await request.json()) as {
+      PERIODO_ACADEMICO_ID: number
+      IDS: number[]
+    }
+    const levels = new Set(IDS)
     for (let i = ratingScalesDb.length - 1; i >= 0; i--) {
-      if (set.has(ratingScalesDb[i].id)) ratingScalesDb.splice(i, 1)
+      const row = ratingScalesDb[i]
+      if (row.academicPeriodId === PERIODO_ACADEMICO_ID && levels.has(row.teachingLevelId)) {
+        ratingScalesDb.splice(i, 1)
+      }
     }
     return HttpResponse.json({ status: "ok", message: "Escalas eliminadas." })
   }),

@@ -6,6 +6,12 @@ export interface AssignmentSubject {
   // Nombre completo de la jornada resuelto por el backend (TLISTA_VALOR.NOMBRE);
   // `jornada` es solo la abreviación (inicial) para la ficha.
   jornadaName?: string
+  // Funcionario (PK_TFUNCIONARIO) que ya tiene asignado este grupo-asignatura
+  // en el periodo, si hay alguno. `undefined` = nadie la tiene. Sirve para
+  // distinguir "disponible para cualquiera" de "ya asignada a otro docente"
+  // sin ocultar del pool las asignaturas del propio docente que se está
+  // editando (que sí deben poder mostrarse en "Asignaturas actuales").
+  funcionarioId?: string
 }
 
 export interface TeacherAssignments {

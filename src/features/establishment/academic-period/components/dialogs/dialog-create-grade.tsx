@@ -3,7 +3,7 @@ import { z } from "zod"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { ControlPointIcon, PencilIcon, SpinnerIcon } from "@/components/ui/icons"
 
-import { useNotify, NoticeOutlet } from "@/components/notice/notice-context"
+import { NoticeBanner, type NoticeVariant } from "@/components/notice/notice-banner"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -80,9 +80,24 @@ const gradeSchema = z.object({
 })
 
 export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGradeDialogProps) {
-  const { notify } = useNotify()
   const [open, setOpen] = useState(false)
   const [gradeId, setGradeId] = useState<number | null>(grade?.id ?? null)
+
+  // Aviso local, propio del diálogo: nunca se cierra al guardar (pasa a modo
+  // edición con las pestañas de grupo/promoción/plan/horario), así que si el
+  // mensaje pasara por el `notify()` global se veía duplicado —una vez acá,
+  // otra detrás del overlay, en el `<NoticeOutlet />` de la página—.
+  const [notice, setNotice] = useState<{
+    id: number
+    message: string
+    variant: NoticeVariant
+  } | null>(null)
+  const noticeIdRef = useRef(0)
+
+  function notify(message: string, options?: { variant?: NoticeVariant }) {
+    noticeIdRef.current += 1
+    setNotice({ id: noticeIdRef.current, message, variant: options?.variant ?? "success" })
+  }
 
   // Una vez creado el grado (o si venimos editando uno existente) el diálogo
   // pasa a modo edición: cambia el título y las acciones. Igual que en periodo
@@ -104,6 +119,7 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
     setNombre(grade?.nombre ?? "")
     setGradoSiguiente(grade?.gradoSiguiente ?? "")
     setTieneGradoSiguiente(grade ? (grade.tieneGradoSiguiente ? "si" : "no") : "")
+    setNotice(null)
   }
 
   const { data: teachingLevels = [] } = useTeachingLevelsQuery()
@@ -274,14 +290,13 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
           </>
         )}
       </DialogTrigger>
-      <DialogContent className="max-h-[90dvh] overflow-y-auto p-4 sm:max-w-5xl sm:p-6">
+      <DialogContent
+        className="max-h-[90dvh] overflow-y-auto p-4 sm:max-w-5xl sm:p-6"
+        showCloseButton={false}
+      >
         <DialogHeader>
           <DialogTitle>{isEditing ? "Editar grado" : "Agregar grado"}</DialogTitle>
         </DialogHeader>
-
-        <div className="sticky top-0 z-10 bg-popover pb-2 empty:hidden">
-          <NoticeOutlet />
-        </div>
 
         <div className="grid gap-x-4 gap-y-2 sm:grid-cols-2 lg:grid-cols-4">
           <Field
@@ -410,6 +425,19 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
             </>
           )}
         </div>
+
+        {/* Debajo de los campos del grado, en el flujo normal (no `sticky`):
+            un aviso pegado arriba del contenedor con scroll se repintaba mal
+            en Chromium/Firefox al desplazarse por la pestaña Horario, la más
+            larga (bug conocido de `position: sticky` dentro de un ancestro
+            con `transform` — `DialogContent` se centra así). Acá el aviso
+            queda fijo en su lugar y no interactúa con el scroll. */}
+        <NoticeBanner
+          notice={notice}
+          onClose={() => setNotice(null)}
+          variant={notice?.variant}
+          autoCloseMs={notice?.variant === "error" ? undefined : 4000}
+        />
 
         {gradeId == null ? (
           <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">

@@ -304,7 +304,7 @@ export function AreaSubjectFormDialog({
           </DialogTrigger>
         )}
 
-        <DialogContent className={subjectsStarted ? "sm:max-w-5xl" : "sm:max-w-4xl"}>
+        <DialogContent className={subjectsStarted ? "sm:max-w-6xl" : "sm:max-w-5xl"}>
           <DialogHeader>
             <DialogTitle>{isEdit ? "Editar área" : "Agregar área"}</DialogTitle>
             <DialogDescription>
@@ -409,10 +409,15 @@ export function AreaSubjectFormDialog({
                   areaGeneral: state.values.areaGeneral,
                   nombreInterno: state.values.nombreInterno,
                   abreviacion: state.values.abreviacion,
+                  ordenReportes: state.values.ordenReportes,
                 })}
               >
-                {({ areaGeneral, nombreInterno, abreviacion }) =>
-                  !subjectsStarted && areaGeneral && nombreInterno && abreviacion ? (
+                {({ areaGeneral, nombreInterno, abreviacion, ordenReportes }) =>
+                  !subjectsStarted &&
+                  areaGeneral &&
+                  nombreInterno &&
+                  abreviacion &&
+                  !Number.isNaN(ordenReportes) ? (
                     <div className="flex items-end">
                       <Button
                         type="button"
@@ -424,7 +429,7 @@ export function AreaSubjectFormDialog({
                         }}
                       >
                         <ControlPointIcon data-icon="inline-start" />
-                        Añadir asignatura
+                        Añadir
                       </Button>
                     </div>
                   ) : null
@@ -627,17 +632,19 @@ export function AreaSubjectFormDialog({
           </div>
 
           <DialogFooter className="sm:justify-end">
-            <Button
-              size="sm"
-              type="submit"
-              color="primary"
-              form={FORM_ID}
-              disabled={isPending}
-              aria-busy={isPending}
-            >
-              {isPending && <SpinnerIcon data-icon="inline-start" className="animate-spin" />}
-              Guardar
-            </Button>
+            {subjectsStarted && (
+              <Button
+                size="sm"
+                type="submit"
+                color="primary"
+                form={FORM_ID}
+                disabled={isPending}
+                aria-busy={isPending}
+              >
+                {isPending && <SpinnerIcon data-icon="inline-start" className="animate-spin" />}
+                Guardar
+              </Button>
+            )}
             <DialogClose render={<Button size="sm" type="button" variant="ghost" />}>
               Cancelar
             </DialogClose>
