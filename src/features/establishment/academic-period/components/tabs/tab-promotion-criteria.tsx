@@ -10,9 +10,8 @@ import { Field, FieldLabel } from "@/components/ui/field"
 
 import { usePromotionCriteriaQuery } from "@/features/establishment/academic-period/api/query/use-promotion-criteria"
 import { useUpdatePromotionCriteria } from "@/features/establishment/academic-period/api/mutations/update-promotion-criteria"
-import { useGradeConfigQuery } from "@/features/establishment/academic-period/api/query/use-grade-config"
-import { useUpdateGradeConfig } from "@/features/establishment/academic-period/api/mutations/update-grade-config"
 import { useSubjectsQuery } from "@/features/establishment/academic-period/api/query/use-subjects"
+import { usePeriodAreaNamesQuery } from "@/features/establishment/academic-period/api/query/use-period-areas"
 import { useCurriculumNodesQuery } from "@/features/establishment/academic-period/api/query/use-curriculum-nodes"
 import type { CurriculumNodeOption } from "@/features/establishment/academic-period/api/types/curriculum-node"
 import { SubjectsMultiSelect } from "@/features/establishment/academic-period/components/subjects-multi-select"
@@ -101,23 +100,39 @@ export const TabPromotionCriteria = forwardRef<PromotionCriteriaHandle, TabPromo
     const { data: periodCriteria, isPending: periodLoading } =
       usePromotionCriteriaQuery(academicPeriodId)
 
-    const { data: gradeConfig, isPending: gradeLoading } = useGradeConfigQuery(
+    const { data: gradeCriteria, isPending: gradeLoading } = usePromotionCriteriaQuery(
+      academicPeriodId,
       isGradeScope ? gradeId : undefined,
     )
 
-    const criteria = isGradeScope
-      ? (gradeConfig?.promotionCriteria ?? periodCriteria)
-      : periodCriteria
+    // Sin override propio, el grado hereda el criterio del periodo (mismo
+    // fallback que antes vía grade-config).
+    const criteria = isGradeScope ? (gradeCriteria ?? periodCriteria) : periodCriteria
     const isLoading = isGradeScope
       ? gradeLoading || (academicPeriodId != null && periodLoading)
       : periodLoading
 
-    const { data: subjectOptions = [] } = useSubjectsQuery(academicPeriodId)
+    const { data: subjectOptions = [], isPending: isLoadingSubjects } =
+      useSubjectsQuery(academicPeriodId)
+    const { data: areaOptions = [], isPending: isLoadingAreas } =
+      usePeriodAreaNamesQuery(academicPeriodId)
 
     const { data: curriculumNodes = [], isPending: isLoadingCurriculumNodes } =
       useCurriculumNodesQuery()
 
-    if (((isGradeScope || academicPeriodId != null) && isLoading) || isLoadingCurriculumNodes) {
+    // `subjectOptions`/`areaOptions` alimentan el multi-select de "obligatorias"
+    // y su `useEffect` de limpieza (`RequiredSubjectsField`, más abajo) borra
+    // cualquier valor guardado que no esté en `options` — si el form se
+    // montaba antes de que estas dos terminaran de cargar, ese efecto corría
+    // con `options` todavía vacío y vaciaba `requiredSubjects` aunque el back
+    // sí lo hubiera devuelto (solo se veía bien la segunda vez, con las
+    // queries ya en caché). Por eso también gatean el spinner.
+    if (
+      ((isGradeScope || academicPeriodId != null) && isLoading) ||
+      isLoadingCurriculumNodes ||
+      isLoadingSubjects ||
+      isLoadingAreas
+    ) {
       return (
         <div className="flex justify-center py-10">
           <Spinner />
@@ -135,6 +150,7 @@ export const TabPromotionCriteria = forwardRef<PromotionCriteriaHandle, TabPromo
         headingLevel={headingLevel}
         initialValues={criteria ?? EMPTY}
         subjectOptions={subjectOptions}
+        areaOptions={areaOptions}
         curriculumNodes={curriculumNodes}
       />
     )
@@ -148,6 +164,7 @@ interface PromotionCriteriaFormProps {
   headingLevel: 1 | 2 | 3 | 4 | 5 | 6
   initialValues: PromotionApprovalValues
   subjectOptions: string[]
+  areaOptions: string[]
   curriculumNodes: CurriculumNodeOption[]
 }
 
@@ -160,6 +177,7 @@ const PromotionCriteriaForm = forwardRef<PromotionCriteriaHandle, PromotionCrite
       headingLevel,
       initialValues,
       subjectOptions,
+      areaOptions,
       curriculumNodes,
     },
     ref,
@@ -175,31 +193,21 @@ const PromotionCriteriaForm = forwardRef<PromotionCriteriaHandle, PromotionCrite
       [curriculumNodes],
     )
 
-    const savePeriodCriteria = useUpdatePromotionCriteria({
+    const updatePromotionCriteria = useUpdatePromotionCriteria({
       mutationConfig: {
         onSuccess: (result) => {
           if (result.status === "error") {
             notify(result.message, { variant: "error" })
             return
           }
-          notify(SUCCESS_MESSAGES.promotionCriteria.updated)
-        },
-      },
-    })
-
-    const saveGradeConfig = useUpdateGradeConfig({
-      mutationConfig: {
-        onSuccess: (result) => {
-          if (result.status === "error") {
-            notify(result.message, { variant: "error" })
-            return
+          if (!isGradeScope || !hideSubmit) {
+            notify(SUCCESS_MESSAGES.promotionCriteria.updated)
           }
-          if (!hideSubmit) notify(SUCCESS_MESSAGES.promotionCriteria.updated)
         },
       },
     })
 
-    const isSaving = isGradeScope ? saveGradeConfig.isPending : savePeriodCriteria.isPending
+    const isSaving = updatePromotionCriteria.isPending
 
     const form = useForm({
       defaultValues: initialValues,
@@ -207,16 +215,16 @@ const PromotionCriteriaForm = forwardRef<PromotionCriteriaHandle, PromotionCrite
         onSubmit: promotionApprovalSchema,
       },
       onSubmit: async ({ value, formApi }) => {
-        if (isGradeScope && gradeId != null) {
-          saveGradeConfig.mutate({ gradeId, values: { promotionCriteria: value } })
+        if (academicPeriodId == null) {
+          notify(SUCCESS_MESSAGES.promotionCriteria.updated)
           return
         }
-        if (academicPeriodId != null) {
-          await savePeriodCriteria.mutateAsync({ academicPeriodId, values: value })
-          formApi.reset(value)
-          return
-        }
-        notify(SUCCESS_MESSAGES.promotionCriteria.updated)
+        await updatePromotionCriteria.mutateAsync({
+          academicPeriodId,
+          gradeId: isGradeScope ? gradeId : undefined,
+          values: value,
+        })
+        formApi.reset(value)
       },
     })
 
@@ -224,14 +232,15 @@ const PromotionCriteriaForm = forwardRef<PromotionCriteriaHandle, PromotionCrite
       ref,
       () => ({
         save: async (id: number) => {
-          if (!form.state.isDirty) return
-          await saveGradeConfig.mutateAsync({
+          if (!form.state.isDirty || academicPeriodId == null) return
+          await updatePromotionCriteria.mutateAsync({
+            academicPeriodId,
             gradeId: id,
-            values: { promotionCriteria: form.state.values },
+            values: form.state.values,
           })
         },
       }),
-      [saveGradeConfig, form],
+      [updatePromotionCriteria, form, academicPeriodId],
     )
 
     return (
@@ -405,7 +414,19 @@ const PromotionCriteriaForm = forwardRef<PromotionCriteriaHandle, PromotionCrite
         </HeadingTag>
 
         <form.Field name="requiredSubjects">
-          {(field) => <RequiredSubjectsField field={field} subjectOptions={subjectOptions} />}
+          {(field) => (
+            // Si el nodo curricular es "AR" (área) las obligatorias se eligen
+            // entre las áreas del período; si es "AS" (asignatura), entre las
+            // asignaturas — mismo campo, distinta fuente de opciones.
+            <form.Subscribe selector={(state) => state.values.curriculumNode}>
+              {(curriculumNode) => (
+                <RequiredSubjectsField
+                  field={field}
+                  options={curriculumNode === "AR" ? areaOptions : subjectOptions}
+                />
+              )}
+            </form.Subscribe>
+          )}
         </form.Field>
 
         {!hideSubmit && (
@@ -428,23 +449,23 @@ const PromotionCriteriaForm = forwardRef<PromotionCriteriaHandle, PromotionCrite
 
 interface RequiredSubjectsFieldProps {
   field: AnyFieldApi
-  subjectOptions: string[]
+  options: string[]
 }
 
-function RequiredSubjectsField({ field, subjectOptions }: RequiredSubjectsFieldProps) {
+function RequiredSubjectsField({ field, options }: RequiredSubjectsFieldProps) {
   useEffect(() => {
     const current = field.state.value as string[]
-    const valid = current.filter((v) => subjectOptions.includes(v))
+    const valid = current.filter((v) => options.includes(v))
     if (valid.length !== current.length) {
       field.handleChange(valid)
     }
-  }, [subjectOptions, field])
+  }, [options, field])
 
   return (
     <Field variant="outlined" className="max-w-xl">
       <FieldLabel>Áreas/Asignaturas obligatorias para la aprobación</FieldLabel>
       <SubjectsMultiSelect
-        options={subjectOptions}
+        options={options}
         value={field.state.value}
         onChange={(values) => field.handleChange(values)}
       />

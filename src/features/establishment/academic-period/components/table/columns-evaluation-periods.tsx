@@ -98,6 +98,14 @@ export function createEvaluationPeriodColumns({
       header: ({ column }) => <DataTableColumnHeader column={column} title="Estado" />,
       cell: ({ row }) => {
         const estado = row.getValue<EvaluationPeriodStatus>("estado")
+        // El badge se indexa por `estado` (el código VALOR de TLISTA_VALOR,
+        // "1"/"2"/"3"/"4"), pero el texto visible tiene que ser el NOMBRE
+        // resuelto por el backend (`estadoName`) — mostrar el código crudo
+        // era el mismo bug que ya se encontró en Tipo de escalas de
+        // valoración (ver memoria del proyecto), solo que acá nunca se
+        // había mostrado nada más que el código desde que se escribió esta
+        // columna.
+        const estadoLabel = row.original.estadoName ?? estado
         return (
           // "Habilitados para algunas asignaturas" no entra en una línea. El
           // `min-w` del contenedor le reserva ancho a la columna —si no, el
@@ -109,7 +117,7 @@ export function createEvaluationPeriodColumns({
               {...EVALUATION_PERIOD_STATUS_BADGE[estado]}
               className="max-w-64 text-left whitespace-normal"
             >
-              {estado}
+              {estadoLabel}
             </Badge>
           </div>
         )
@@ -122,7 +130,7 @@ export function createEvaluationPeriodColumns({
       cell: ({ row }) => (
         <div className="flex items-center justify-end gap-1">
           <CreateEvaluationPeriodDialog period={row.original} academicPeriodId={academicPeriodId} />
-          <DeleteEvaluationPeriodDialog period={row.original} academicPeriodId={academicPeriodId} />
+          <DeleteEvaluationPeriodDialog period={row.original} />
         </div>
       ),
       enableSorting: false,

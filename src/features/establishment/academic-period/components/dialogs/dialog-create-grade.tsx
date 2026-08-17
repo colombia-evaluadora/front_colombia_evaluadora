@@ -3,7 +3,7 @@ import { z } from "zod"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { ControlPointIcon, PencilIcon, SpinnerIcon } from "@/components/ui/icons"
 
-import { useNotify, NoticeOutlet } from "@/components/notice/notice-context"
+import { NoticeBanner, type NoticeVariant } from "@/components/notice/notice-banner"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -34,6 +34,7 @@ import { useStudyPlansQuery } from "@/features/establishment/academic-period/api
 import { useAreaSubjectQuery } from "@/features/establishment/academic-period/api/query/use-area-subject"
 import { useGradeGroupsQuery } from "@/features/establishment/academic-period/api/query/use-grade-groups"
 import { useTeachingLevelsQuery } from "@/features/establishment/academic-period/api/query/use-teaching-levels"
+import { useGradosCatalogQuery } from "@/features/establishment/academic-period/api/query/use-grados-catalog"
 import type { Grade } from "@/features/establishment/academic-period/api/types/grade"
 import { TabGradeGroups } from "@/features/establishment/academic-period/components/tabs/tab-grade-groups"
 import {
@@ -79,9 +80,24 @@ const gradeSchema = z.object({
 })
 
 export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGradeDialogProps) {
-  const { notify } = useNotify()
   const [open, setOpen] = useState(false)
   const [gradeId, setGradeId] = useState<number | null>(grade?.id ?? null)
+
+  // Aviso local, propio del diálogo: nunca se cierra al guardar (pasa a modo
+  // edición con las pestañas de grupo/promoción/plan/horario), así que si el
+  // mensaje pasara por el `notify()` global se veía duplicado —una vez acá,
+  // otra detrás del overlay, en el `<NoticeOutlet />` de la página—.
+  const [notice, setNotice] = useState<{
+    id: number
+    message: string
+    variant: NoticeVariant
+  } | null>(null)
+  const noticeIdRef = useRef(0)
+
+  function notify(message: string, options?: { variant?: NoticeVariant }) {
+    noticeIdRef.current += 1
+    setNotice({ id: noticeIdRef.current, message, variant: options?.variant ?? "success" })
+  }
 
   // Una vez creado el grado (o si venimos editando uno existente) el diálogo
   // pasa a modo edición: cambia el título y las acciones. Igual que en periodo
@@ -103,14 +119,18 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
     setNombre(grade?.nombre ?? "")
     setGradoSiguiente(grade?.gradoSiguiente ?? "")
     setTieneGradoSiguiente(grade ? (grade.tieneGradoSiguiente ? "si" : "no") : "")
+    setNotice(null)
   }
 
   const { data: teachingLevels = [] } = useTeachingLevelsQuery()
 
-  const gradoOptions = useMemo(
-    () => [...new Set(teachingLevels.flatMap((level) => level.grados))],
-    [teachingLevels],
-  )
+  // Catálogo global GRADOS, no depende del nivel de enseñanza elegido (ver
+  // use-grados-catalog.ts). Se guarda/manda por `valor` (lo que
+  // `fn_grado_crear`/`resolveGradoSiguienteId` matchean), pero se muestra
+  // `nombre` — mostrar el `valor` crudo (el código, "1"/"2"/...) hacía que
+  // el select pareciera listar ids en vez de nombres de grado.
+  const { data: gradosCatalog = [] } = useGradosCatalogQuery()
+  const gradoOptions = gradosCatalog
 
   function handleChangeTeachingLevel(value: string | null) {
     if (!value) return
@@ -158,6 +178,16 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
           academicPeriodId,
         })
         setGradeId(created.id)
+        // El `<Input value={nombre}>` que toma el relevo post-create mostraría
+        // el código crudo del catálogo (p.ej. "1") si dejáramos el estado tal
+        // cual — el `<SelectItem value={option.valor}>` guarda el `valor` en
+        // `nombre`, no el nombre legible. Resolvemos a nombre para que el
+        // render inmediato del form coincida con lo que el back va a devolver
+        // en el siguiente fetch (y con lo que muestra la tabla).
+        const option = gradoOptions.find(
+          (o) => o.valor === parsed.data.nombre,
+        )
+        if (option) setNombre(option.nombre)
         notify("Grado creado. Ahora puedes configurar grupos, plan de estudio y horario.")
       } else {
         const result = await updateGrade.mutateAsync({
@@ -203,14 +233,23 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
   })
   const gradeGroupOptions = useMemo(
     () =>
-      (gradeGroupsData?.rows ?? []).map((g) => [g.codigo, g.jornada].filter(Boolean).join(" - ")),
+      (gradeGroupsData?.rows ?? []).map((g) => ({
+        id: g.id,
+        // `jornadaName` es el nombre legible (TLISTA_VALOR.NOMBRE); caemos a
+        // `jornada` (código corto) si el back no lo está devolviendo.
+        label: [g.codigo, g.jornadaName ?? g.jornada]
+          .filter(Boolean)
+          .join(" - "),
+      })),
     [gradeGroupsData],
   )
 
   const scheduleSubjects = useMemo<ScheduleSubject[]>(() => {
     const colorByName = new Map<string, string>()
+    const abbreviationByName = new Map<string, string>()
     for (const area of areaData?.rows ?? []) {
       for (const subject of area.subjects) {
+        abbreviationByName.set(subject.nombreInterno.toLowerCase(), subject.abreviacion)
         if (!subject.color) continue
         colorByName.set(subject.nombreInterno.toLowerCase(), subject.color)
         colorByName.set(subject.abreviacion.toLowerCase(), subject.color)
@@ -219,6 +258,7 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
     return (planData?.rows ?? []).map((item) => ({
       id: String(item.codigo),
       name: item.asignatura,
+      abbreviation: abbreviationByName.get(item.asignatura.toLowerCase()),
       blocks: item.intensidadHoraria,
       color: colorByName.get(item.asignatura.toLowerCase()) ?? DEFAULT_SUBJECT_COLOR,
     }))
@@ -253,14 +293,13 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
           </>
         )}
       </DialogTrigger>
-      <DialogContent className="max-h-[90dvh] overflow-y-auto p-4 sm:max-w-4xl sm:p-6">
+      <DialogContent
+        className="max-h-[90dvh] overflow-y-auto p-4 sm:max-w-5xl sm:p-6"
+        showCloseButton={false}
+      >
         <DialogHeader>
           <DialogTitle>{isEditing ? "Editar grado" : "Agregar grado"}</DialogTitle>
         </DialogHeader>
-
-        <div className="sticky top-0 z-10 bg-popover pb-2 empty:hidden">
-          <NoticeOutlet />
-        </div>
 
         <div className="grid gap-x-4 gap-y-2 sm:grid-cols-2 lg:grid-cols-4">
           <Field
@@ -303,7 +342,11 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
                 onValueChange={(value) => value && setNombre(value)}
               >
                 <SelectTrigger id="grade-nombre" aria-invalid={Boolean(fieldErrors["nombre"])}>
-                  <SelectValue placeholder="Seleccionar" />
+                  <SelectValue>
+                    {(value) =>
+                      gradoOptions.find((o) => o.valor === value)?.nombre ?? "Seleccionar"
+                    }
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
@@ -313,8 +356,8 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
                       </div>
                     ) : (
                       gradoOptions.map((option) => (
-                        <SelectItem key={option} value={option}>
-                          {option}
+                        <SelectItem key={option.id} value={option.valor} title={option.nombre}>
+                          {option.nombre}
                         </SelectItem>
                       ))
                     )}
@@ -359,7 +402,11 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
                   onValueChange={(value) => value && setGradoSiguiente(value)}
                 >
                   <SelectTrigger id="grade-siguiente">
-                    <SelectValue placeholder="Seleccionar" />
+                    <SelectValue>
+                      {(value) =>
+                        gradoOptions.find((o) => o.valor === value)?.nombre ?? "Seleccionar"
+                      }
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
@@ -369,8 +416,8 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
                         </div>
                       ) : (
                         gradoOptions.map((option) => (
-                          <SelectItem key={option} value={option}>
-                            {option}
+                          <SelectItem key={option.id} value={option.valor} title={option.nombre}>
+                            {option.nombre}
                           </SelectItem>
                         ))
                       )}
@@ -381,6 +428,19 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
             </>
           )}
         </div>
+
+        {/* Debajo de los campos del grado, en el flujo normal (no `sticky`):
+            un aviso pegado arriba del contenedor con scroll se repintaba mal
+            en Chromium/Firefox al desplazarse por la pestaña Horario, la más
+            larga (bug conocido de `position: sticky` dentro de un ancestro
+            con `transform` — `DialogContent` se centra así). Acá el aviso
+            queda fijo en su lugar y no interactúa con el scroll. */}
+        <NoticeBanner
+          notice={notice}
+          onClose={() => setNotice(null)}
+          variant={notice?.variant}
+          autoCloseMs={notice?.variant === "error" ? undefined : 4000}
+        />
 
         {gradeId == null ? (
           <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">

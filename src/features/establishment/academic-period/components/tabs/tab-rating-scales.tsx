@@ -63,13 +63,11 @@ export function TabRatingScales({ academicPeriodId }: TabRatingScalesProps) {
   } = useRatingScalesQuery({
     filters: {},
     sorting: [],
-    pageIndex: 0,
-    pageSize: 100,
     academicPeriodId,
   })
 
   const { data: criteria } = useEvaluationCriteriaQuery(academicPeriodId)
-  const range = useMemo(() => parseGradingRange(criteria?.gradingFormat), [criteria])
+  const range = useMemo(() => parseGradingRange(criteria?.gradingFormatName), [criteria])
 
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const [sorting, setSorting] = useState<SortingState>([])
@@ -135,6 +133,18 @@ export function TabRatingScales({ academicPeriodId }: TabRatingScalesProps) {
     return Array.from(codigos)
   }, [selectedIds, scales])
 
+  const selectedTeachingLevelIds = useMemo(
+    () => selectedIds.map((id) => Number(id)),
+    [selectedIds],
+  )
+
+  // El bulk delete de escalas falla por `teachingLevelId`, no por código de
+  // escala — el nombre que le sirve al usuario en el aviso es el del nivel.
+  const levelNamesById = useMemo(
+    () => new Map(levels.map((level) => [level.id, level.nombre])),
+    [levels],
+  )
+
   function scalesForLevel(levelId: number): RatingScale[] {
     return scales.filter((scale) => scale.teachingLevelIds.includes(levelId))
   }
@@ -147,8 +157,10 @@ export function TabRatingScales({ academicPeriodId }: TabRatingScalesProps) {
         {hasSelection ? (
           <>
             <DeleteSelectedRatingScalesDialog
+              academicPeriodId={academicPeriodId ?? 0}
               levelCount={selectedIds.length}
-              scaleCodigos={selectedScaleCodigos}
+              teachingLevelIds={selectedTeachingLevelIds}
+              namesById={levelNamesById}
               resetSelection={resetSelection}
             />
             <ExportSelectedRatingScalesDialog
@@ -181,12 +193,26 @@ export function TabRatingScales({ academicPeriodId }: TabRatingScalesProps) {
           const level = row.original as TeachingLevel
           if (expandedId !== level.id) return null
           return (
-            <ScalesSubTable
-              levelId={level.id}
-              scales={scalesForLevel(level.id)}
-              range={range}
-              academicPeriodId={academicPeriodId}
-            />
+            // `min-w-full max-w-0`: la celda que envuelve esta sub-fila (en
+            // el `DataTable` compartido) no tiene límite de ancho propio, así
+            // que con `table-layout: auto` (el default) su ancho se calcula a
+            // partir del contenido — la subtabla, al ser más ancha (más
+            // columnas que la tabla exterior), terminaba estirando toda la
+            // tabla de niveles en vez de scrollear ella sola. `max-w-0` hace
+            // que el algoritmo de layout de la tabla trate este wrapper como
+            // si no aportara ancho propio; `min-w-full` gana en el layout
+            // final (el `min-width` le gana al `max-width` cuando compiten),
+            // así que igual ocupa todo el ancho disponible — solo que ya no
+            // fuerza a la tabla exterior a crecer. El `overflow-x-auto` de
+            // `ScalesSubTable` (su propio `<Table>`) recién puede scrollear.
+            <div className="min-w-full max-w-0">
+              <ScalesSubTable
+                levelId={level.id}
+                scales={scalesForLevel(level.id)}
+                range={range}
+                academicPeriodId={academicPeriodId}
+              />
+            </div>
           )
         }}
       />
@@ -312,8 +338,10 @@ function ScalesSubTable({
       })
       return
     }
+    if (academicPeriodId == null) return
     updateMutation.mutate({
       codigo: scale.codigo,
+      academicPeriodId,
       values: {
         ...scale,
         ...parsed.data,
@@ -436,7 +464,11 @@ function ScalesSubTable({
                     }
                   >
                     <SelectTrigger aria-label="Tipo" className="min-w-32">
-                      <SelectValue placeholder="Seleccionar" />
+                      <SelectValue>
+                        {(value) =>
+                          tipoOptions.find((o) => o.key === value)?.label ?? "Seleccionar"
+                        }
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>

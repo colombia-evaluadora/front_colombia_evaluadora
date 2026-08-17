@@ -37,9 +37,9 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
+import { useAvailableStudyPlanSubjectsQuery } from "../../api/query/use-available-study-plan-subjects-query"
 import { useCreateStudyPlanItem } from "@/features/establishment/academic-period/api/mutations/create-study-plan"
 import { useUpdateStudyPlanItem } from "@/features/establishment/academic-period/api/mutations/update-study-plan"
-import { useSubjectsQuery } from "@/features/establishment/academic-period/api/query/use-subjects"
 import { useEvaluationCriteriaQuery } from "@/features/establishment/academic-period/api/query/use-evaluation-criteria"
 import { useEvaluationCriteriaOptionsQuery } from "@/features/establishment/academic-period/api/query/use-evaluation-criteria-options"
 import type { StudyPlanItem } from "@/features/establishment/academic-period/api/types/study-plan"
@@ -101,7 +101,20 @@ export function CreateStudyPlanDialog({
       }
     : EMPTY
 
-  const { data: asignaturaOptions = [] } = useSubjectsQuery(academicPeriodId)
+  // Solo las asignaturas del grado que aún no están en el plan. Al editar, la
+  // asignatura del renglón no viene en "disponibles", así que la agregamos para
+  // que el select pueda mostrarla como valor actual.
+  const { data: availableSubjects = [] } = useAvailableStudyPlanSubjectsQuery(
+    gradeId,
+    academicPeriodId
+  )
+  const asignaturaOptions = (() => {
+    const names = availableSubjects.map((s) => s.nombre)
+    if (item && !names.includes(item.asignatura)) {
+      return [item.asignatura, ...names]
+    }
+    return names
+  })()
 
   const formatoOptions = criteriaOptions?.gradingFormat ?? []
   const criterioOptions = criteriaOptions?.subjectGradeCriteria ?? []
@@ -143,6 +156,7 @@ export function CreateStudyPlanDialog({
       if (isEditing) {
         updateStudyPlanItem.mutate({
           codigo: item.codigo,
+          gradeId: gradeId as number,
           values: { ...payload, codigo: item.codigo },
         })
       } else {
@@ -228,7 +242,7 @@ export function CreateStudyPlanDialog({
                         <SelectGroup>
                           {asignaturaOptions.length === 0 ? (
                             <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                              No hay asignaturas en este periodo.
+                              No hay asignaturas disponibles para este grado.
                             </div>
                           ) : (
                             asignaturaOptions.map((option) => (
@@ -307,7 +321,11 @@ export function CreateStudyPlanDialog({
 
           <label className="flex w-fit items-center gap-3 text-sm font-medium">
             Personalizar
-            <Switch checked={personalizar} onCheckedChange={setPersonalizar} />
+            <Switch
+              checked={personalizar}
+              onCheckedChange={setPersonalizar}
+              className="rounded-full [&_[data-slot=switch-thumb]]:rounded-full"
+            />
           </label>
 
           <div
@@ -395,7 +413,11 @@ export function CreateStudyPlanDialog({
                     onValueChange={(value) => value && field.handleChange(value)}
                   >
                     <SelectTrigger id={field.name}>
-                      <SelectValue placeholder="Seleccionar" />
+                      <SelectValue>
+                        {(value) =>
+                          formatoOptions.find((o) => o.key === value)?.label ?? "Seleccionar"
+                        }
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>
@@ -423,7 +445,11 @@ export function CreateStudyPlanDialog({
                     onValueChange={(value) => value && field.handleChange(value)}
                   >
                     <SelectTrigger id={field.name}>
-                      <SelectValue placeholder="Seleccionar" />
+                      <SelectValue>
+                        {(value) =>
+                          criterioOptions.find((o) => o.key === value)?.label ?? "Seleccionar"
+                        }
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>

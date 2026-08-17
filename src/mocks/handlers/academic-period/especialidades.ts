@@ -1,30 +1,61 @@
 import { http, HttpResponse, delay } from "msw"
 
-import { especialidadesDb } from "@/mocks/db/academic-period/especialidades"
-import { areaSubjectsDb } from "@/mocks/db/academic-period/area-subject"
-import type { EspecialidadOption } from "@/features/establishment/academic-period/api/types/especialidad"
+import { especialidadesDb, nextEnfasisId } from "@/mocks/db/academic-period/especialidades"
 
 export const especialidadesHandlers = [
-  http.get("/api/especialidades", async ({ request }) => {
+  // `GET /eval-col/areas/:ID/especialidades` (`fn_especialidad_enfasis_listar`).
+  // El `:ID` real es el período académico (el backend resuelve el
+  // establecimiento a partir de él); el mock ignora el id y devuelve el
+  // catálogo completo, igual que haría el backend para cualquier
+  // establecimiento de prueba.
+  http.get("/api/eval-col/areas/:periodoId/especialidades", async () => {
     await delay(150)
-    const url = new URL(request.url)
-    const periodParam = url.searchParams.get("academicPeriodId")
-    const periodId = periodParam ? Number(periodParam) : null
-    const scoped =
-      periodId == null
-        ? areaSubjectsDb
-        : areaSubjectsDb.filter((row) => row.academicPeriodId === periodId)
-    const enUso = scoped.flatMap((area) =>
-      area.subjects
-        .map((subject) => subject.especialidad)
-        .filter((esp): esp is string => Boolean(esp))
+    return HttpResponse.json({ rows: especialidadesDb })
+  }),
+
+  // ⚠️ Endpoints de énfasis todavía sin backend real (se están armando en
+  // paralelo) — este mock simula el contrato acordado con el front.
+  http.post("/api/eval-col/enfasis", async ({ request }) => {
+    await delay(300)
+    const body = (await request.json()) as { NOMBRE: string }
+    const id = nextEnfasisId()
+    especialidadesDb.push({
+      id,
+      nombre: body.NOMBRE,
+      codigo: body.NOMBRE.slice(0, 3).toUpperCase(),
+      origen: "ENFASIS",
+    })
+    return HttpResponse.json({ rows: [{ fn_enfasis_crear: id }] })
+  }),
+
+  http.put("/api/eval-col/enfasis/:id", async ({ request, params }) => {
+    await delay(300)
+    const body = (await request.json()) as { NOMBRE: string }
+    const index = especialidadesDb.findIndex(
+      (row) => String(row.id) === String(params.id)
     )
-    // Fusiona el catálogo con las especialidades ya en uso, dedup por `key`.
-    const merged = new Map<string, EspecialidadOption>()
-    for (const option of especialidadesDb) merged.set(option.key, option)
-    for (const name of enUso) {
-      if (!merged.has(name)) merged.set(name, { key: name, label: name })
+    if (index === -1) {
+      return HttpResponse.json(
+        { status: "error", message: "Énfasis no encontrado." },
+        { status: 404 }
+      )
     }
-    return HttpResponse.json<EspecialidadOption[]>(Array.from(merged.values()))
+    especialidadesDb[index] = { ...especialidadesDb[index], nombre: body.NOMBRE }
+    return HttpResponse.json({ rows: [{ fn_enfasis_actualizar: especialidadesDb[index].id }] })
+  }),
+
+  http.put("/api/eval-col/enfasis/eliminar/:id", async ({ params }) => {
+    await delay(300)
+    const index = especialidadesDb.findIndex(
+      (row) => String(row.id) === String(params.id)
+    )
+    if (index === -1) {
+      return HttpResponse.json(
+        { status: "error", message: "Énfasis no encontrado." },
+        { status: 404 }
+      )
+    }
+    const [removed] = especialidadesDb.splice(index, 1)
+    return HttpResponse.json({ rows: [{ fn_enfasis_soft_delete: removed.id }] })
   }),
 ]

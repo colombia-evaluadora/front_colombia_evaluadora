@@ -1,17 +1,11 @@
-import type { PromotionCriteria } from "@/features/establishment/academic-period/api/types/promotion-criteria"
-
-export type ScheduleCells = Record<string, Record<string, string>>
-
-export interface GradeSchedule {
-  byGroup: Record<string, ScheduleCells>
-}
-
-export interface GradeConfig {
-  promotionCriteria?: PromotionCriteria
-  schedule?: GradeSchedule
-}
-
-export interface MutationResult {
-  status: "ok" | "error"
-  message: string
+/** Una celda del horario, alineada al backend (fn_horario_guardar). */
+export interface ScheduleEntry {
+  /** PK_TGRUPO */
+  grupoId: number
+  /** PK_TASIGNATURA_PLAN (subjectId de la grilla) */
+  planItemId: number
+  /** PK_LISTA_VALOR del dia (FK_TLV_DIA_SEMANA) */
+  diaId: number
+  /** Indice de bloque 0-based (0 .. BLOQUES-1) */
+  bloque: number
 }

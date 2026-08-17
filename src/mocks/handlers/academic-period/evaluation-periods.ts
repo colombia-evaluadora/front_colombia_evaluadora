@@ -1,14 +1,12 @@
 // src/features/evaluation-periods/api/mocks/evaluation-periods.handlers.ts
 
 import { http, HttpResponse, delay } from "msw"
+import { evaluationPeriodStatusesDb } from "../../db/academic-period/evaluation-period-statuses"
 import { evaluationPeriodsDb } from "@/mocks/db/academic-period/evaluation-periods"
 
 import type {
   EvaluationPeriod,
-  EvaluationPeriodsQueryRequest,
-  EvaluationPeriodsQueryResponse,
-  CreateEvaluationPeriodRequest,
-  UpdateEvaluationPeriodRequest,
+  EvaluationPeriodRecord,
   ExportFormat,
   ExportResult,
 } from "@/features/establishment/academic-period/api/types/evaluation-period"
@@ -18,85 +16,120 @@ const EXPORT_FORMAT_LABELS: Record<ExportFormat, string> = {
   excel: "Excel",
 }
 
-function applyFilters(
-  rows: EvaluationPeriod[],
-  filters: EvaluationPeriodsQueryRequest["filters"]
-): EvaluationPeriod[] {
-  return rows.filter((row) => {
-    if (
-      filters.nombre &&
-      !row.nombre.toLowerCase().includes(filters.nombre.toLowerCase())
-    ) {
-      return false
-    }
-
-    if (
-      filters.abreviacion &&
-      !row.abreviacion
-        .toLowerCase()
-        .includes(filters.abreviacion.toLowerCase())
-    ) {
-      return false
-    }
-
-    if (filters.estado?.length && !filters.estado.includes(row.estado)) {
-      return false
-    }
-
-    return true
-  })
+// Body plano UPPER_SNAKE que manda el front real para crear/editar
+// (`fn_periodo_eval_crear` / `fn_periodo_eval_actualizar`).
+interface EvaluationPeriodWriteBody {
+  FK_PERIODO?: number
+  CODIGO: string
+  NOMBRE: string
+  ABREVIACION: string
+  FECHA_INICIO: string
+  FECHA_FIN: string
+  FK_ESTADO: number
+  PORCENTAJE: number
 }
 
-function sortValue(row: EvaluationPeriod, id: string) {
-  return row[id as keyof EvaluationPeriod]
+// Fila cruda (snake_case) que devuelve `/periodo-evaluacion/query` y
+// `/periodo-evaluacion/detalle/:id`, confirmada por ThunderClient.
+function toRawRow(
+  row: EvaluationPeriod & { academicPeriodId?: number },
+  totalCount?: number
+) {
+  return {
+    id: row.id,
+    codigo: row.codigo,
+    nombre: row.nombre,
+    abreviacion: row.abreviacion,
+    start_date: row.startDate,
+    end_date: row.endDate,
+    peso: row.peso,
+    status_id: row.estadoId ?? null,
+    estado: row.estado,
+    estado_name: row.estadoName ?? row.estado,
+    academic_period_id: row.academicPeriodId ?? 0,
+    ...(totalCount != null ? { total_count: totalCount } : {}),
+  }
 }
 
-function applySorting(
+function applyFiltro(rows: EvaluationPeriod[], filtro: string | null | undefined) {
+  if (!filtro) return rows
+  const needle = filtro.toLowerCase()
+  return rows.filter(
+    (row) =>
+      row.nombre.toLowerCase().includes(needle) ||
+      row.abreviacion.toLowerCase().includes(needle)
+  )
+}
+
+// Mismo patrón que `academic-periods.ts`: `SORT_BY` todavía no existe en el
+// signature real de `fn_periodo_eval_listar`, pero se va a agregar — el mock
+// ya lo aplica para no tener que tocarlo de nuevo cuando esté.
+function applySort(
   rows: EvaluationPeriod[],
-  sorting: EvaluationPeriodsQueryRequest["sorting"]
-): EvaluationPeriod[] {
-  if (!sorting.length) return rows
-
-  const [{ id, desc }] = sorting
-
+  sortBy: string | null,
+  sortDir: "asc" | "desc" | null
+) {
+  if (!sortBy) return rows
   const sorted = [...rows].sort((a, b) => {
-    const av = sortValue(a, id)
-    const bv = sortValue(b, id)
-
+    const av = a[sortBy as keyof EvaluationPeriod]
+    const bv = b[sortBy as keyof EvaluationPeriod]
     if (av === bv) return 0
+    if (av == null) return -1
+    if (bv == null) return 1
     return av > bv ? 1 : -1
   })
-
-  return desc ? sorted.reverse() : sorted
+  return sortDir === "desc" ? sorted.reverse() : sorted
 }
 
 export const evaluationPeriodsHandlers = [
-  http.post("/api/evaluation-periods/query", async ({ request }) => {
+  http.post("/api/eval-col/periodo-evaluacion/query", async ({ request }) => {
     await delay(250)
 
-    const body = (await request.json()) as EvaluationPeriodsQueryRequest
-    const { filters, sorting, pageIndex, pageSize, academicPeriodId } = body
+    const body = (await request.json()) as {
+      FK_PERIODO: number | null
+      FILTRO: string | null
+      PAGEINDEX: number
+      PAGESIZE: number
+      SORT_BY: string | null
+      SORT_DIR: "asc" | "desc" | null
+    }
 
     const scoped =
-      academicPeriodId == null
+      body.FK_PERIODO == null
         ? evaluationPeriodsDb
         : evaluationPeriodsDb.filter(
-            (row) => row.academicPeriodId === academicPeriodId
+            (row) => row.academicPeriodId === body.FK_PERIODO
           )
 
-    const filtered = applySorting(applyFilters(scoped, filters), sorting)
-
+    const filtered = applySort(
+      applyFiltro(scoped, body.FILTRO),
+      body.SORT_BY,
+      body.SORT_DIR
+    )
     const totalCount = filtered.length
-    const pageCount = Math.max(1, Math.ceil(totalCount / pageSize))
-    const start = pageIndex * pageSize
+    const start = body.PAGEINDEX * body.PAGESIZE
 
-    const rows = filtered.slice(start, start + pageSize)
+    // Mismo shape crudo que el endpoint real (snake_case + `total_count` por
+    // fila, sin envelope); el front lo mapea/envuelve.
+    const rows = filtered
+      .slice(start, start + body.PAGESIZE)
+      .map((row) => toRawRow(row, totalCount))
 
-    return HttpResponse.json<EvaluationPeriodsQueryResponse>({
-      rows,
-      pageCount,
-      totalCount,
-    })
+    return HttpResponse.json({ rows })
+  }),
+
+  http.get("/api/eval-col/periodo-evaluacion/detalle/:id", async ({ params }) => {
+    await delay(200)
+    const row = evaluationPeriodsDb.find(
+      (p) => String(p.id) === String(params.id)
+    )
+    if (!row) {
+      return HttpResponse.json(
+        { status: "error", message: "Periodo de evaluación no encontrado." },
+        { status: 404 }
+      )
+    }
+    return HttpResponse.json({ rows: [toRawRow(row)] })
   }),
 
   http.post("/api/evaluation-periods/export", async ({ request }) => {
@@ -117,11 +150,11 @@ export const evaluationPeriodsHandlers = [
     await delay(600)
 
     const { filters, format } = (await request.json()) as {
-      filters: EvaluationPeriodsQueryRequest["filters"]
+      filters: { filtro?: string }
       format: ExportFormat
     }
 
-    const count = applyFilters(evaluationPeriodsDb, filters).length
+    const count = applyFiltro(evaluationPeriodsDb, filters.filtro).length
 
     return HttpResponse.json<ExportResult>({
       status: "ok",
@@ -129,27 +162,44 @@ export const evaluationPeriodsHandlers = [
     })
   }),
 
-  http.post("/api/evaluation-periods", async ({ request }) => {
+  http.post("/api/eval-col/periodo-evaluacion", async ({ request }) => {
     await delay(400)
 
-    const body = (await request.json()) as CreateEvaluationPeriodRequest
+    const body = (await request.json()) as EvaluationPeriodWriteBody
+    const statusOption = evaluationPeriodStatusesDb.find(
+      (s) => s.id === body.FK_ESTADO
+    )
 
-    const record = { ...body, academicPeriodId: body.academicPeriodId ?? 0 }
+    // El PK lo asigna el backend (identity); el mock lo autoincrementa.
+    const id =
+      evaluationPeriodsDb.reduce((max, p) => Math.max(max, p.id), 0) + 1
+    const record: EvaluationPeriodRecord = {
+      id,
+      codigo: body.CODIGO,
+      nombre: body.NOMBRE,
+      abreviacion: body.ABREVIACION,
+      startDate: body.FECHA_INICIO,
+      endDate: body.FECHA_FIN,
+      peso: body.PORCENTAJE,
+      estado: statusOption?.key ?? "2",
+      estadoId: body.FK_ESTADO,
+      estadoName: statusOption?.label,
+      academicPeriodId: body.FK_PERIODO ?? 0,
+    }
     evaluationPeriodsDb.push(record)
 
-    return HttpResponse.json(record, { status: 201 })
+    // Mismo shape que la respuesta real (`{rows: [{fn_x: <id>}]}`).
+    return HttpResponse.json({ rows: [{ fn_periodo_eval_crear: id }] })
   }),
 
-  // Borrado en lote por códigos (atómico, una sola request). A diferencia del
-  // borrado individual, el front no manda `academicPeriodId`, así que el match
-  // es sólo por código.
-  http.post("/api/evaluation-periods/bulk-delete", async ({ request }) => {
+  // Borrado en lote por PK (atómico, una sola request).
+  http.post("/api/eval-col/periodo-evaluacion/bulk-delete", async ({ request }) => {
     await delay(300)
-    const { ids } = (await request.json()) as { ids: number[] }
-    const set = new Set(ids.map(String))
+    const { IDS } = (await request.json()) as { IDS: number[] }
+    const set = new Set(IDS.map(String))
     const before = evaluationPeriodsDb.length
     for (let i = evaluationPeriodsDb.length - 1; i >= 0; i--) {
-      if (set.has(String(evaluationPeriodsDb[i].codigo))) {
+      if (set.has(String(evaluationPeriodsDb[i].id))) {
         evaluationPeriodsDb.splice(i, 1)
       }
     }
@@ -160,16 +210,12 @@ export const evaluationPeriodsHandlers = [
     })
   }),
 
-  http.patch("/api/evaluation-periods/:codigo", async ({ request, params }) => {
+  http.put("/api/eval-col/periodo-evaluacion/editar/:id", async ({ request, params }) => {
     await delay(400)
-    const body = (await request.json()) as UpdateEvaluationPeriodRequest
-    // El código no es único globalmente: se desambigua por academicPeriodId
-    // para no editar el registro homónimo de otro periodo académico.
+    const body = (await request.json()) as Omit<EvaluationPeriodWriteBody, "FK_PERIODO">
+    // Match por PK (único); ya no hace falta desambiguar por academicPeriodId.
     const index = evaluationPeriodsDb.findIndex(
-      (p) =>
-        String(p.codigo) === String(params.codigo) &&
-        (body.academicPeriodId == null ||
-          p.academicPeriodId === body.academicPeriodId)
+      (p) => String(p.id) === String(params.id)
     )
     if (index === -1) {
       return HttpResponse.json(
@@ -177,23 +223,32 @@ export const evaluationPeriodsHandlers = [
         { status: 404 }
       )
     }
-    evaluationPeriodsDb[index] = { ...evaluationPeriodsDb[index], ...body }
+    const statusOption = evaluationPeriodStatusesDb.find(
+      (s) => s.id === body.FK_ESTADO
+    )
+    evaluationPeriodsDb[index] = {
+      ...evaluationPeriodsDb[index],
+      codigo: body.CODIGO,
+      nombre: body.NOMBRE,
+      abreviacion: body.ABREVIACION,
+      startDate: body.FECHA_INICIO,
+      endDate: body.FECHA_FIN,
+      peso: body.PORCENTAJE,
+      estado: statusOption?.key ?? evaluationPeriodsDb[index].estado,
+      estadoId: body.FK_ESTADO,
+      estadoName: statusOption?.label ?? evaluationPeriodsDb[index].estadoName,
+    }
+    // Mismo shape que la respuesta real (`{rows: [{fn_x: <id>}]}`).
     return HttpResponse.json({
-      status: "ok",
-      message: "Periodo de evaluación actualizado.",
+      rows: [{ fn_periodo_eval_actualizar: evaluationPeriodsDb[index].id }],
     })
   }),
 
-  http.delete("/api/evaluation-periods/:codigo", async ({ params, request }) => {
+  // Soft delete expuesto como PUT (no DELETE) — `fn_periodo_eval_soft_delete`.
+  http.put("/api/eval-col/periodo-evaluacion/:id", async ({ params }) => {
     await delay(300)
-    const url = new URL(request.url)
-    const academicPeriodId = url.searchParams.get("academicPeriodId")
-    // Mismo motivo que el PATCH: el código se desambigua por academicPeriodId.
     const index = evaluationPeriodsDb.findIndex(
-      (p) =>
-        String(p.codigo) === String(params.codigo) &&
-        (academicPeriodId == null ||
-          p.academicPeriodId === Number(academicPeriodId))
+      (p) => String(p.id) === String(params.id)
     )
     if (index === -1) {
       return HttpResponse.json(
@@ -201,10 +256,10 @@ export const evaluationPeriodsHandlers = [
         { status: 404 }
       )
     }
-    evaluationPeriodsDb.splice(index, 1)
+    const [deleted] = evaluationPeriodsDb.splice(index, 1)
+    // Mismo shape que la respuesta real (`{rows: [{fn_x: <id>}]}`).
     return HttpResponse.json({
-      status: "ok",
-      message: "Periodo de evaluación eliminado.",
+      rows: [{ fn_periodo_eval_soft_delete: deleted.id }],
     })
   }),
 ]

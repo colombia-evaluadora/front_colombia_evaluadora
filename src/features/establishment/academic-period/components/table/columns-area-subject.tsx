@@ -7,7 +7,17 @@ import type { AreaSubject } from "@/features/establishment/academic-period/api/t
 import { DeleteAreaSubjectDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-delete-area-subject"
 import { EditAreaSubjectDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-edit-area-subject"
 
-export const columns: ColumnDef<AreaSubject>[] = [
+interface CreateAreaSubjectColumnsOptions {
+  // Necesario para que el `EspecialidadSelect` dentro del form de edición
+  // pueda llamar `useEspecialidadesQuery(academicPeriodId)` — sin esto la
+  // query devuelve `[]` y el select aparece vacío en el modal de editar.
+  academicPeriodId?: number
+}
+
+export function createAreaSubjectColumns({
+  academicPeriodId,
+}: CreateAreaSubjectColumnsOptions = {}): ColumnDef<AreaSubject>[] {
+  return [
   {
     id: "select",
     header: ({ table }) => (
@@ -66,7 +76,10 @@ export const columns: ColumnDef<AreaSubject>[] = [
     header: () => <span className="sr-only">Acciones</span>,
     cell: ({ row }) => (
       <div className="flex items-center justify-end gap-1">
-        <EditAreaSubjectDialog areaSubject={row.original} />
+        <EditAreaSubjectDialog
+          areaSubject={row.original}
+          academicPeriodId={academicPeriodId}
+        />
         <DeleteAreaSubjectDialog areaSubject={row.original} />
       </div>
     ),
@@ -75,5 +88,6 @@ export const columns: ColumnDef<AreaSubject>[] = [
     size: 96,
   },
 ]
+}
 
 export type AreaSubjectTable = Table<AreaSubject>

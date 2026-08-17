@@ -1,6 +1,6 @@
 "use no memo"
 
-import type { ReactNode } from "react"
+import { useMemo, type ReactNode } from "react"
 
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
@@ -57,6 +57,19 @@ export function AcademicPeriodsDataTable({ title, action }: AcademicPeriodsDataT
     setSorting,
   })
 
+  // Año lectivo + sede en vez del `name`: dos periodos de la misma sede se
+  // llaman igual (el nombre no distingue), así que solo el nombre no alcanza
+  // para identificar cuál falló. Solo alcanza los de la página cargada — si
+  // el back rechaza un id seleccionado en otra página, el aviso cae al
+  // motivo sin nombre (ver `formatBulkDeleteError`), no rompe nada.
+  const namesById = useMemo(
+    () =>
+      new Map(
+        (data?.rows ?? []).map((row) => [row.id, `${row.schoolYearId} - ${row.sedeName}`]),
+      ),
+    [data],
+  )
+
   return (
     <TableScreen>
       <TableScreenHeader>
@@ -76,6 +89,7 @@ export function AcademicPeriodsDataTable({ title, action }: AcademicPeriodsDataT
                 <ClearSelectionAcademicPeriodsDialog resetSelection={resetSelection} />
                 <DeleteSelectedAcademicPeriodsDialog
                   selectedIds={selectedIds}
+                  namesById={namesById}
                   resetSelection={resetSelection}
                 />
                 <ExportSelectedAcademicPeriodsDialog

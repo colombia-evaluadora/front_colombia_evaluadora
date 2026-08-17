@@ -1,4 +1,8 @@
-export type RatingScaleType = "Fortaleza" | "Debilidad"
+// VALOR de TLISTA_VALOR (categoría TIPO_VALORACION) — confirmado contra la
+// base real: es "1"/"2", NO el texto "Fortaleza"/"Debilidad" (eso es el
+// NOMBRE, ver `tipoName` en `RatingScale` más abajo). Opaco a propósito: no
+// hardcodear los VALOR reales, pueden variar por ambiente.
+export type RatingScaleType = string
 
 // Opción de tipo de valoración tal como la entrega el backend: `key` es el
 // valor que se guarda/manda, `label` el texto visible en el select.
@@ -37,6 +41,9 @@ export interface RatingScale {
   nombre: string
   abreviacion: string
   tipo: RatingScaleType
+  // Nombre del tipo resuelto por el backend (TLISTA_VALOR.NOMBRE); adicional al
+  // valor `tipo`.
+  tipoName?: string
   iconografia: string
   notaMaxima: number
   notaMinima: number
@@ -52,8 +59,9 @@ export interface RatingScalesQueryFilters {
 export interface RatingScalesQueryRequest {
   filters: RatingScalesQueryFilters
   sorting: { id: string; desc: boolean }[]
-  pageIndex: number
-  pageSize: number
+  // Sin paginación: `fn_escala_listar` devuelve todas las bandas del periodo
+  // (la tabla arma niveles/subtablas en cliente). Filtro opcional por nivel.
+  teachingLevelId?: number
   academicPeriodId?: number
 }
 
@@ -63,8 +71,6 @@ export interface RatingScaleRecord extends RatingScale {
 
 export interface RatingScalesQueryResponse {
   rows: RatingScale[]
-  pageCount: number
-  totalCount: number
 }
 
 export type CreateRatingScaleRequest = RatingScale & {

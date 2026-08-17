@@ -17,18 +17,17 @@ import {
 
 import { BreaksField } from "@/features/establishment/academic-period/components/breaks-field"
 
-import { useCampusesOptionsQuery } from "@/features/establishment/campuses/api/query/use-campuses-options"
+import { useSedeOptionsQuery } from "@/features/establishment/academic-period/api/query/use-sede-options"
 
-import { useAcademicPeriodsQuery } from "@/features/establishment/academic-period/api/query/use-academic-periods"
 import { useAcademicPeriodStatusesQuery } from "@/features/establishment/academic-period/api/query/use-academic-period-statuses"
 import { useJornadasQuery } from "@/features/establishment/academic-period/api/query/use-jornadas"
+import { useSedePreviousPeriodsQuery } from "@/features/establishment/academic-period/api/query/use-sede-previous-periods-query"
 import {
   academicPeriodFormSchema,
   type AcademicPeriodFormInput,
   type AcademicPeriodFormValues,
-} from "@/features/establishment/academic-period/api/schema"
-import type { AcademicPeriodStatus } from "@/features/establishment/academic-period/api/types/academic-period"
-import { ACADEMIC_PERIOD_STATUS_BADGE } from "@/features/establishment/academic-period/api/ui-mappings"
+} from "../../api/schema"
+import { ACADEMIC_PERIOD_STATUS_BADGE } from "../../api/ui-mappings"
 import { DatePicker } from "@/components/date-picker"
 import { formatDateValue, parseDateValue } from "@/lib/date-value"
 
@@ -42,6 +41,9 @@ interface AcademicPeriodFormProps {
   /** Cada vez que cambia, los valores actuales pasan a ser los iniciales
    *  (se usa tras guardar con éxito, para volver a ocultar "Guardar"). */
   savedToken?: number
+  /** Id del periodo en edición: se excluye de las opciones de "periodo
+   *  anterior" (un periodo no puede ser su propio anterior). */
+  currentPeriodId?: number
 }
 
 const EMPTY_VALUES: AcademicPeriodFormInput = {
@@ -50,7 +52,7 @@ const EMPTY_VALUES: AcademicPeriodFormInput = {
   enrollmentDeadline: "",
   sedeId: "",
   previousPeriodId: null,
-  status: "ACTIVO",
+  statusId: 0,
   jornadaId: 0,
   reservationEnabled: true,
   defaultBlocksCount: null,
@@ -67,13 +69,14 @@ export function AcademicPeriodForm({
   onSubmit,
   onDirtyChange,
   savedToken = 0,
+  currentPeriodId,
 }: AcademicPeriodFormProps) {
   const initialValues = {
     ...EMPTY_VALUES,
     ...defaultValues,
   } satisfies AcademicPeriodFormInput
 
-  const { data: campuses = [] } = useCampusesOptionsQuery()
+  const { data: sedes = [] } = useSedeOptionsQuery()
   const { data: jornadas = [] } = useJornadasQuery()
   const { data: statusOptions = [] } = useAcademicPeriodStatusesQuery()
 
@@ -103,13 +106,14 @@ export function AcademicPeriodForm({
     form.reset(form.state.values)
   }, [form, savedToken])
 
-  const { data: periodsData } = useAcademicPeriodsQuery({
-    filters: {},
-    sorting: [],
-    pageIndex: 0,
-    pageSize: 100,
-  })
-  const previousPeriodOptions = periodsData?.rows ?? []
+  // Las opciones de "periodo anterior" dependen de la sede elegida; el hook se
+  // dispara cuando hay sede y trae solo los candidatos válidos (el backend ya
+  // filtra por sede/alcance y excluye el periodo en edición).
+  const selectedSedeId = useStore(form.store, (state) => state.values.sedeId)
+  const { data: previousPeriodOptions = [] } = useSedePreviousPeriodsQuery(
+    selectedSedeId || undefined,
+    currentPeriodId
+  )
 
   return (
     <form
@@ -223,14 +227,14 @@ export function AcademicPeriodForm({
                 >
                   <SelectTrigger id={field.name} aria-invalid={isInvalid}>
                     <SelectValue>
-                      {(value) => campuses.find((c) => c.id === value)?.name ?? "Seleccionar"}
+                      {(value) => sedes.find((s) => String(s.pk_sede) === value)?.nombre ?? "Seleccionar"}
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
-                      {campuses.map((campus) => (
-                        <SelectItem key={campus.id} value={campus.id}>
-                          {campus.name}
+                      {sedes.map((sede) => (
+                        <SelectItem key={sede.pk_sede} value={String(sede.pk_sede)}>
+                          {sede.nombre}
                         </SelectItem>
                       ))}
                     </SelectGroup>
@@ -242,60 +246,52 @@ export function AcademicPeriodForm({
           }}
         </form.Field>
 
-        {/* Periodo anterior: se consulta por la sede seleccionada e incluye
-            siempre la opción "No tiene" (equivale a null). El form maneja
-            `sedeId` como string, igual que `AcademicPeriod.sedeId` y
-            `Campus.id`. */}
-        <form.Subscribe selector={(state) => state.values.sedeId}>
-          {(sedeId) => {
-            const optionsForSede = previousPeriodOptions.filter((p) => p.sedeId === sedeId)
-            return (
-              <form.Field name="previousPeriodId">
-                {(field) => (
-                  <Field variant="outlined">
-                    <FieldLabel htmlFor={field.name}>Periodo académico anterior</FieldLabel>
-                    <Select
-                      value={field.state.value ? String(field.state.value) : NO_PREVIOUS_PERIOD}
-                      onValueChange={(value) =>
-                        field.handleChange(
-                          value && value !== NO_PREVIOUS_PERIOD ? Number(value) : null,
-                        )
-                      }
-                    >
-                      <SelectTrigger id={field.name}>
-                        <SelectValue>
-                          {(value) => {
-                            const p = optionsForSede.find((o) => String(o.id) === value)
-                            return p ? `${p.name} — ${p.sedeName}` : "No tiene"
-                          }}
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectGroup>
-                          <SelectItem value={NO_PREVIOUS_PERIOD}>No tiene</SelectItem>
-                          {optionsForSede.map((period) => (
-                            <SelectItem key={period.id} value={String(period.id)}>
-                              {period.name} — {period.sedeName}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                  </Field>
-                )}
-              </form.Field>
-            )
-          }}
-        </form.Subscribe>
+        {/* Periodo anterior: opciones de la sede seleccionada (las trae el hook
+            ya filtradas por el backend) más la opción "No tiene" (equivale a
+            null). */}
+        <form.Field name="previousPeriodId">
+          {(field) => (
+            <Field variant="outlined">
+              <FieldLabel htmlFor={field.name}>Periodo académico anterior</FieldLabel>
+              <Select
+                value={field.state.value ? String(field.state.value) : NO_PREVIOUS_PERIOD}
+                onValueChange={(value) =>
+                  field.handleChange(
+                    value && value !== NO_PREVIOUS_PERIOD ? Number(value) : null,
+                  )
+                }
+              >
+                <SelectTrigger id={field.name}>
+                  <SelectValue>
+                    {(value) => {
+                      const p = previousPeriodOptions.find((o) => String(o.id) === value)
+                      return p ? p.name : "No tiene"
+                    }}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem value={NO_PREVIOUS_PERIOD}>No tiene</SelectItem>
+                    {previousPeriodOptions.map((period) => (
+                      <SelectItem key={period.id} value={String(period.id)}>
+                        {period.name}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </Field>
+          )}
+        </form.Field>
 
-        <form.Field name="status">
+        <form.Field name="statusId">
           {(field) => (
             <Field variant="outlined">
               <FieldLabel htmlFor={field.name}>Estado*</FieldLabel>
               <Select
-                value={field.state.value}
+                value={field.state.value ? String(field.state.value) : ""}
                 onValueChange={(value) =>
-                  value && field.handleChange(value as AcademicPeriodStatus)
+                  value && field.handleChange(Number(value))
                 }
               >
                 <SelectTrigger id={field.name}>
@@ -304,23 +300,19 @@ export function AcademicPeriodForm({
                       lea igual en el formulario y en el listado. */}
                   <SelectValue>
                     {(value) => {
-                      const status = value as AcademicPeriodStatus
-                      const badge = ACADEMIC_PERIOD_STATUS_BADGE[status]
-                      if (!badge) return "Seleccionar"
-                      const label =
-                        statusOptions.find((option) => option.key === status)?.label ?? status
-                      return (
-                        <Badge {...badge} className="text-xs">
-                          {label}
-                        </Badge>
+                      const option = statusOptions.find(
+                        (o) => String(o.id) === value
                       )
+                      if (!option) return "Seleccionar"
+                      const badge = ACADEMIC_PERIOD_STATUS_BADGE[option.key]
+                      return <Badge {...badge} className="text-xs">{option.label}</Badge>
                     }}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
                     {statusOptions.map((option) => (
-                      <SelectItem key={option.key} value={option.key}>
+                      <SelectItem key={option.id} value={String(option.id)}>
                         {option.label}
                       </SelectItem>
                     ))}

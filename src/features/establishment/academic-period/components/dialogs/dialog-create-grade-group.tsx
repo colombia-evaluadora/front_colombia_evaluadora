@@ -29,7 +29,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
-import { useEmployeesQuery } from "@/features/establishment/employees/api/query/use-employees"
+import { useSedeFuncionariosQuery } from "@/features/establishment/academic-period/api/query/use-sede-funcionarios"
 
 import { useCreateGradeGroup } from "@/features/establishment/academic-period/api/mutations/create-grade-group"
 import { useUpdateGradeGroup } from "@/features/establishment/academic-period/api/mutations/update-grade-group"
@@ -74,17 +74,10 @@ export function CreateGradeGroupDialog({
     gradeGroup?.jornada ??
     ""
 
-  const { data: employeesData } = useEmployeesQuery({
-    // `sedeId` es string en el dominio de periodo académico; el filtro de
-    // funcionarios espera el id numérico real de la sede.
-    filters: { campusId: academicPeriod?.sedeId ? Number(academicPeriod.sedeId) : undefined },
-    sorting: [],
-    pageIndex: 0,
-    pageSize: 1000,
-  })
+  const { data: sedeFuncionarios = [] } = useSedeFuncionariosQuery(academicPeriod?.sedeId)
   const teacherNames = useMemo(
-    () => (employeesData?.rows ?? []).map((e) => e.name),
-    [employeesData],
+    () => sedeFuncionarios.map((f) => f.nombre),
+    [sedeFuncionarios],
   )
 
   const defaultValues: GradeGroupFormValues = gradeGroup
@@ -127,9 +120,13 @@ export function CreateGradeGroupDialog({
     onSubmit: ({ value }) => {
       const values = { ...gradeGroupFormSchema.parse(value), jornada: jornadaName }
       if (isEditing) {
-        updateGradeGroup.mutate({ codigo: gradeGroup.codigo, values })
+        updateGradeGroup.mutate({
+          id: gradeGroup.id,
+          sedeId: academicPeriod?.sedeId,
+          values,
+        })
       } else {
-        createGradeGroup.mutate({ ...values, gradeId })
+        createGradeGroup.mutate({ ...values, gradeId, sedeId: academicPeriod?.sedeId })
       }
     },
   })
@@ -247,7 +244,11 @@ export function CreateGradeGroupDialog({
                   onValueChange={(value) => value && field.handleChange(value)}
                 >
                   <SelectTrigger id={field.name}>
-                    <SelectValue placeholder="Seleccionar" />
+                    <SelectValue>
+                      {(value) =>
+                        metodologiaOptions.find((o) => o.key === value)?.label ?? "Seleccionar"
+                      }
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
