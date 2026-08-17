@@ -22,23 +22,19 @@ import type { EvaluationPeriod } from "@/features/establishment/academic-period/
 
 interface DeleteEvaluationPeriodDialogProps {
   period: EvaluationPeriod
-  academicPeriodId?: number
 }
 
 export function DeleteEvaluationPeriodDialog({
   period,
-  academicPeriodId,
 }: DeleteEvaluationPeriodDialogProps) {
   const [open, setOpen] = useState(false)
   const { notify } = useNotify()
 
   const deleteMutation = useDeleteEvaluationPeriod({
     mutationConfig: {
-      onSuccess: (result) => {
-        if (result.status === "error") {
-          notify(result.message, { variant: "error" })
-          return
-        }
+      // Un error HTTP ya se reporta por el interceptor global de `api-client`;
+      // `onSuccess` solo corre si la request efectivamente resolvió bien.
+      onSuccess: () => {
         setOpen(false)
         notify(SUCCESS_MESSAGES.evaluationPeriod.deleted)
       },
@@ -66,8 +62,7 @@ export function DeleteEvaluationPeriodDialog({
             aria-busy={deleteMutation.isPending}
             onClick={() =>
               deleteMutation.mutate({
-                academicPeriodId,
-                codigo: period.codigo,
+                id: period.id,
               })
             }
           >

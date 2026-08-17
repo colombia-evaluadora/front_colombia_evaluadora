@@ -7,6 +7,19 @@ import { queryClient } from "@/lib/query-client"
 
 declare module "axios" {
   export interface AxiosInstance {
+    // El response interceptor de abajo desenvuelve `response.data` en runtime
+    // para TODAS las llamadas a `api.*` — pero `get`/`post`/`put`/`patch`/
+    // `delete` heredados de `Axios` siguen tipados con su default
+    // (`R = AxiosResponse<T>`), así que sin esto cada call site tipaba mal
+    // (`AxiosResponse<T>` en vez de `T`) aunque funcionara bien en runtime.
+    // Se pisan acá con el mismo truco que ya usaba `query` (declararlas
+    // directo en `AxiosInstance` gana por sobre las heredadas de `Axios` en
+    // la resolución de overloads).
+    get<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<T>
+    delete<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<T>
+    post<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T>
+    put<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T>
+    patch<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T>
     // Lecturas con body (filtros anidados, sorts compuestos) que no entran
     // cómodo en query params. Va por POST; el nombre `query` marca que la
     // intención es leer, no mutar. Corre por el response interceptor que ya
@@ -77,6 +90,20 @@ const PUBLIC_ENDPOINTS = [
 // es el resultado de una acción que el usuario disparó.
 const PROBE_ENDPOINTS = ["/auth/refresh", "/sso-admin/resetTokenStatus"]
 
+// Los errores de constraint (`RAISE EXCEPTION` en las funciones PL/pgSQL)
+// llegan con todo el contexto crudo de Postgres, p.ej.:
+//   "Conflict: ERROR: No se puede eliminar el grado 3725: existen horarios
+//   configurados\nWhere: PL/pgSQL function academico_test.fn_grado_soft_delete
+//   (bigint,bigint) line 20 at RAISE"
+// Al usuario solo le sirve la oración real ("No se puede eliminar..."); el
+// resto (prefijo HTTP, "ERROR:", el "Where:" con la función/línea) es ruido
+// de implementación. Nos quedamos con la primera línea y le sacamos el
+// prefijo tipo "Conflict: ERROR: " si vino.
+export function cleanErrorMessage(message: string): string {
+  const firstLine = message.split(/\r?\n/)[0]?.trim() ?? message
+  return firstLine.replace(/^[A-Za-z ]+:\s*ERROR:\s*/i, "").trim() || firstLine
+}
+
 export const api = Axios.create({
   baseURL: env.API_URL,
 })
@@ -113,7 +140,7 @@ api.interceptors.response.use(
 
     if (!isProbe) {
       const message = error.response?.data?.message || error.message
-      toast.error(message)
+      toast.error(cleanErrorMessage(message))
     }
 
     if (isExpiredSession) {

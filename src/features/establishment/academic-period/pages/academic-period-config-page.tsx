@@ -47,7 +47,7 @@ function toFormValues(detail: AcademicPeriodDetail): Partial<AcademicPeriodFormI
     enrollmentDeadline: detail.enrollmentDeadline,
     sedeId: detail.sedeId,
     previousPeriodId: detail.previousPeriodId,
-    status: detail.status,
+    statusId: detail.statusId ?? 0,
     jornadaId: detail.config.jornadaId,
     reservationEnabled: detail.config.reservationEnabled,
     defaultBlocksCount: detail.config.defaultBlocksCount,
@@ -136,6 +136,7 @@ function AcademicPeriodConfigPageContent() {
       blocksCount: values.defaultBlocksCount,
       breaks: values.breaks,
     })
+    console.log(values)
     if (academicPeriodId != null) {
       updatePeriod.mutate({ id: academicPeriodId, values })
     } else {
@@ -175,6 +176,7 @@ function AcademicPeriodConfigPageContent() {
               onSubmit={handleSubmit}
               onDirtyChange={setIsFormDirty}
               savedToken={savedToken}
+              currentPeriodId={numericPeriodId}
             />
           )}
         </AccordionContent>

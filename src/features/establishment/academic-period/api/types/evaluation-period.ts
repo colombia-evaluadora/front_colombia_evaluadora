@@ -1,34 +1,52 @@
-export type EvaluationPeriodStatus =
-  | "Calificable"
-  | "NO Calificable"
-  | "Habilitados para algunas asignaturas"
-  | "En Recuperaciones"
+// Código corto (VALOR de TLISTA_VALOR, categoría ESTADOPERIODOEVALUACION),
+// confirmado por ThunderClient — NO es el texto del estado.
+// 1 = Calificable, 2 = NO Calificable, 3 = Habilitados para algunas
+// asignaturas, 4 = En Recuperaciones.
+export type EvaluationPeriodStatus = "1" | "2" | "3" | "4"
 
-// Opción de estado tal como la entrega el backend: `key` es el valor que se
-// guarda/manda, `label` el texto visible en el select.
+// Opción de estado del catálogo genérico de TLISTA_VALOR
+// (`api/eval-col/select/:CATEGORIA` → `{pk_lista_valor, nombre, valor}`):
+//   id  = pk_lista_valor (se manda al backend como `p_fk_estado`)
+//   key = valor          (código estable, para el color del badge)
+//   label = nombre       (texto visible)
 export interface EvaluationPeriodStatusOption {
+  id: number
   key: EvaluationPeriodStatus
   label: string
 }
 
 export interface EvaluationPeriod {
-  codigo: number
+  // PK real (PK_TPERIODO_EVALUACION) — identificador para rutas (PATCH/DELETE).
+  id: number
+  // Código de negocio que ingresa el usuario (único dentro del periodo). Es
+  // VARCHAR en el backend (`fn_periodo_eval_crear` espera `p_codigo` string),
+  // no un número.
+  codigo: string
   nombre: string
   abreviacion: string
   startDate: string
   endDate: string
   peso: number
+  // Código del estado (VALOR de TLISTA_VALOR) — para el badge y el filtro.
   estado: EvaluationPeriodStatus
+  // Id del estado (PK_LISTA_VALOR) — para preseleccionar al editar y para la escritura.
+  estadoId?: number
+  // Nombre del estado resuelto por el backend (TLISTA_VALOR.NOMBRE).
+  estadoName?: string
 }
 
 export interface EvaluationPeriodsQueryFilters {
-  nombre?: string
-  abreviacion?: string
-  estado?: EvaluationPeriodStatus[]
+  // `fn_periodo_eval_listar` expone un solo `p_filtro` de texto libre (no hay
+  // filtros separados por nombre/abreviación/estado del lado del backend);
+  // ver [[shaping-front-vs-backend]] — el front decide qué manda acá.
+  filtro?: string
 }
 
 export interface EvaluationPeriodsQueryRequest {
   filters: EvaluationPeriodsQueryFilters
+  // `fn_periodo_eval_listar` todavía no recibe orden en el signature que
+  // probamos por Thunder Client, pero se va a agregar (mismo patrón
+  // SORT_BY/SORT_DIR que `fn_periodo_listar`) — se deja wireado desde ya.
   sorting: { id: string; desc: boolean }[]
   pageIndex: number
   pageSize: number
@@ -45,13 +63,26 @@ export interface EvaluationPeriodsQueryResponse {
   totalCount: number
 }
 
-export type CreateEvaluationPeriodRequest = EvaluationPeriod & {
-  academicPeriodId?: number
+// Body PLANO (UPPER_SNAKE) que espera `POST /periodo-evaluacion`
+// (`fn_periodo_eval_crear`). El usuario sale de `:CONTEXT.USER_ID` → no se manda.
+export interface CreateEvaluationPeriodRequest {
+  FK_PERIODO: number
+  CODIGO: string
+  NOMBRE: string
+  ABREVIACION: string
+  FECHA_INICIO: string
+  FECHA_FIN: string
+  FK_ESTADO: number
+  PORCENTAJE: number
 }
 
-export type UpdateEvaluationPeriodRequest = EvaluationPeriod & {
-  academicPeriodId?: number
-}
+// `fn_periodo_eval_actualizar` no recibe `fk_periodo` (no se reasigna el
+// periodo académico al editar) ni `id` (va en el path, `PUT
+// /periodo-evaluacion/editar/:ID`).
+export type UpdateEvaluationPeriodRequest = Omit<
+  CreateEvaluationPeriodRequest,
+  "FK_PERIODO"
+>
 
 export interface MutationResult {
   status: "ok" | "error"

@@ -3,8 +3,17 @@ import { useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api-client"
 import type { CurriculumNodeOption } from "@/features/establishment/academic-period/api/types/curriculum-node"
 
-function fetchCurriculumNodes(): Promise<CurriculumNodeOption[]> {
-  return api.get("/curriculum-nodes")
+interface CurriculumNodesResponse {
+  rows: CurriculumNodeOption[]
+}
+
+// `GET /eval-col/catalogos/nodos-curriculares` (confirmado): solo dos nodos,
+// `{key: "AS", label: "Asignatura"}` / `{key: "AR", label: "Area"}`.
+async function fetchCurriculumNodes(): Promise<CurriculumNodeOption[]> {
+  const raw: CurriculumNodesResponse = await api.get(
+    "/eval-col/catalogos/nodos-curriculares"
+  )
+  return raw.rows ?? []
 }
 
 export const curriculumNodesQueryKey = () => ["curriculum-nodes"]

@@ -3,8 +3,23 @@ import { useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api-client"
 import type { GeneralArea } from "@/features/establishment/academic-period/api/types/general-area"
 
-function fetchGeneralAreas(): Promise<GeneralArea[]> {
-  return api.get("/general-areas")
+interface GeneralAreaRow {
+  id: number
+  nombre: string
+  especialidad_id: number
+}
+
+interface GeneralAreasResponse {
+  rows: GeneralAreaRow[]
+}
+
+async function fetchGeneralAreas(): Promise<GeneralArea[]> {
+  const raw: GeneralAreasResponse = await api.get("/eval-col/areas/general")
+  return (raw.rows ?? []).map((row) => ({
+    id: row.id,
+    nombre: row.nombre,
+    especialidadId: row.especialidad_id,
+  }))
 }
 
 export const generalAreasQueryKey = () => ["general-areas"]

@@ -189,7 +189,8 @@ export function createRatingScaleDetailColumns({
       cell: ({ row }) => {
         const scale = row.original
         if (!isEditing(scale)) {
-          return <Badge {...RATING_SCALE_TYPE_BADGE[scale.tipo]}>{scale.tipo}</Badge>
+          const label = scale.tipoName ?? scale.tipo
+          return <Badge {...RATING_SCALE_TYPE_BADGE[label]}>{label}</Badge>
         }
         return (
           <Select
@@ -197,7 +198,9 @@ export function createRatingScaleDetailColumns({
             onValueChange={(value) => value && patchDraft({ tipo: value as RatingScaleType })}
           >
             <SelectTrigger aria-label="Tipo" className="min-w-32">
-              <SelectValue placeholder="Seleccionar" />
+              <SelectValue>
+                {(value) => tipoOptions.find((o) => o.key === value)?.label ?? "Seleccionar"}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>

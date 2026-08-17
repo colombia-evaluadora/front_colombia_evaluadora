@@ -49,13 +49,10 @@ import {
   TableRow,
 } from "@/components/ui/table"
 
+import { useGeneralAreasQuery } from "../../api/query/use-general-areas"
 import { useCreateAreaSubject } from "@/features/establishment/academic-period/api/mutations/create-area-subject"
 import { useUpdateAreaSubject } from "@/features/establishment/academic-period/api/mutations/update-area-subject"
-import { useEspecialidadesQuery } from "@/features/establishment/academic-period/api/query/use-especialidades"
-import type {
-  AreaSubject,
-  AreaSubjectItem,
-} from "@/features/establishment/academic-period/api/types/area-subject"
+import type { AreaSubject, AreaSubjectItem } from "@/features/establishment/academic-period/api/types/area-subject"
 import { AreaField } from "@/features/establishment/academic-period/components/area-field"
 import { TableSortableHeader, sortBySortKey, type TableSort } from "@/components/table-sort-header"
 import {
@@ -111,11 +108,6 @@ export function AreaSubjectFormDialog({
     patchDraft: patchEditDraft,
     cancelEdit: cancelEditSubject,
   } = useRowEdit<SubjectDraft>()
-  const { data: backendEspecialidades = [] } = useEspecialidadesQuery(academicPeriodId)
-  // El catálogo llega como `{ key, label }`; acá la lista es de nombres libres
-  // (el `especialidad` del subject es un string), así que tomamos el `label`.
-  const backendEspecialidadNames = backendEspecialidades.map((o) => o.label)
-  const [especialidades, setEspecialidades] = useState<string[]>(backendEspecialidadNames)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [successOpen, setSuccessOpen] = useState(false)
   const [sort, setSort] = useState<SortState>(null)
@@ -141,6 +133,15 @@ export function AreaSubjectFormDialog({
   const updateAreaSubject = useUpdateAreaSubject()
   const isPending = createAreaSubject.isPending || updateAreaSubject.isPending
 
+  // Catálogo de áreas generales para mapear el nombre (que usa la UI) al id
+  // (fk_area_asignatura) que el backend espera en el bulk. La UI sigue con
+  // nombres; solo el payload viaja como id.
+  const { data: generalAreas = [] } = useGeneralAreasQuery()
+  const areaGeneralNameToId = (nombre: string): string => {
+    const match = generalAreas.find((a) => a.nombre === nombre)
+    return match ? String(match.id) : ""
+  }
+
   const form = useForm({
     defaultValues: areaDefaults,
     validators: { onSubmit: areaSubjectFormSchema },
@@ -148,7 +149,12 @@ export function AreaSubjectFormDialog({
       const base = areaSubjectFormSchema.parse(value)
 
       const payloadSubjects: AreaSubjectItem[] = subjects.map((subject) => ({
-        asignaturaGeneral: subject.asignaturaGeneral,
+        // Se conserva para poder diferenciar alta/edición/baja contra el
+        // endpoint real al guardar (asignaturas ya existentes vs. nuevas).
+        id: subject.id,
+        // El backend espera el id del área general (fk_area_asignatura), no el
+        // nombre. La UI/estado conserva el nombre; aquí se mapea a id.
+        asignaturaGeneral: areaGeneralNameToId(subject.asignaturaGeneral),
         nombreInterno: subject.nombreInterno || subject.asignaturaGeneral,
         abreviacion: subject.abreviacion,
         ordenReportes: subject.ordenReportes,
@@ -162,6 +168,9 @@ export function AreaSubjectFormDialog({
           values: {
             ...areaSubject,
             ...base,
+            // El backend espera el id del área general (fk_area_asignatura), no
+            // el nombre. La UI conserva el nombre; aquí se manda como id.
+            areaGeneral: areaGeneralNameToId(base.areaGeneral),
             subjects: payloadSubjects,
           },
         })
@@ -177,7 +186,8 @@ export function AreaSubjectFormDialog({
       }
 
       await createAreaSubject.mutateAsync({
-        areaGeneral: base.areaGeneral,
+        // Id del área general (fk_area_asignatura); la UI lo maneja por nombre.
+        areaGeneral: areaGeneralNameToId(base.areaGeneral),
         nombreInterno: base.nombreInterno,
         abreviacion: base.abreviacion,
         ordenReportes: base.ordenReportes,
@@ -216,7 +226,6 @@ export function AreaSubjectFormDialog({
 
     cancelEditSubject()
 
-    setEspecialidades(backendEspecialidadNames)
     setConfirmOpen(false)
     setSort(null)
     setNotice(null)
@@ -280,10 +289,6 @@ export function AreaSubjectFormDialog({
     cancelEditSubject()
   }
 
-  function addEspecialidad(nombre: string) {
-    setEspecialidades((prev) => (prev.includes(nombre) ? prev : [...prev, nombre]))
-  }
-
   return (
     <>
       <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -299,7 +304,7 @@ export function AreaSubjectFormDialog({
           </DialogTrigger>
         )}
 
-        <DialogContent className={subjectsStarted ? "sm:max-w-5xl" : "sm:max-w-4xl"}>
+        <DialogContent className={subjectsStarted ? "sm:max-w-6xl" : "sm:max-w-5xl"}>
           <DialogHeader>
             <DialogTitle>{isEdit ? "Editar área" : "Agregar área"}</DialogTitle>
             <DialogDescription>
@@ -404,10 +409,15 @@ export function AreaSubjectFormDialog({
                   areaGeneral: state.values.areaGeneral,
                   nombreInterno: state.values.nombreInterno,
                   abreviacion: state.values.abreviacion,
+                  ordenReportes: state.values.ordenReportes,
                 })}
               >
-                {({ areaGeneral, nombreInterno, abreviacion }) =>
-                  !subjectsStarted && areaGeneral && nombreInterno && abreviacion ? (
+                {({ areaGeneral, nombreInterno, abreviacion, ordenReportes }) =>
+                  !subjectsStarted &&
+                  areaGeneral &&
+                  nombreInterno &&
+                  abreviacion &&
+                  !Number.isNaN(ordenReportes) ? (
                     <div className="flex items-end">
                       <Button
                         type="button"
@@ -419,7 +429,7 @@ export function AreaSubjectFormDialog({
                         }}
                       >
                         <ControlPointIcon data-icon="inline-start" />
-                        Añadir asignatura
+                        Añadir
                       </Button>
                     </div>
                   ) : null
@@ -512,8 +522,7 @@ export function AreaSubjectFormDialog({
                               <SubjectRowFields
                                 draft={editDraft}
                                 onPatch={patchEditDraft}
-                                especialidades={especialidades}
-                                onAddEspecialidad={addEspecialidad}
+                                academicPeriodId={academicPeriodId}
                               />
                               {actionsSpacerCell}
                               <TableCell className={ACTIONS_CELL_CLASS}>
@@ -596,8 +605,7 @@ export function AreaSubjectFormDialog({
                         <SubjectRowFields
                           draft={draft}
                           onPatch={patchDraft}
-                          especialidades={especialidades}
-                          onAddEspecialidad={addEspecialidad}
+                          academicPeriodId={academicPeriodId}
                         />
                         {actionsSpacerCell}
                         <TableCell className={ACTIONS_CELL_CLASS}>
@@ -624,17 +632,19 @@ export function AreaSubjectFormDialog({
           </div>
 
           <DialogFooter className="sm:justify-end">
-            <Button
-              size="sm"
-              type="submit"
-              color="primary"
-              form={FORM_ID}
-              disabled={isPending}
-              aria-busy={isPending}
-            >
-              {isPending && <SpinnerIcon data-icon="inline-start" className="animate-spin" />}
-              Guardar
-            </Button>
+            {subjectsStarted && (
+              <Button
+                size="sm"
+                type="submit"
+                color="primary"
+                form={FORM_ID}
+                disabled={isPending}
+                aria-busy={isPending}
+              >
+                {isPending && <SpinnerIcon data-icon="inline-start" className="animate-spin" />}
+                Guardar
+              </Button>
+            )}
             <DialogClose render={<Button size="sm" type="button" variant="ghost" />}>
               Cancelar
             </DialogClose>

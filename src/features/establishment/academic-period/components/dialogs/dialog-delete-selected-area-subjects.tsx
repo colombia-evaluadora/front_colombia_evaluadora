@@ -18,14 +18,20 @@ import {
 import { Button } from "@/components/ui/button"
 
 import { useDeleteAreaSubjectsBulk } from "@/features/establishment/academic-period/api/mutations/delete-area-subjects-bulk"
+import {
+  formatBulkDeleteError,
+  summarizeBulkDelete,
+} from "@/features/establishment/academic-period/api/mutations/bulk-delete-result"
 
 interface DeleteSelectedAreaSubjectsDialogProps {
   selectedIds: string[]
+  namesById: Map<number, string>
   resetSelection: () => void
 }
 
 export function DeleteSelectedAreaSubjectsDialog({
   selectedIds,
+  namesById,
   resetSelection,
 }: DeleteSelectedAreaSubjectsDialogProps) {
   const [open, setOpen] = useState(false)
@@ -37,18 +43,28 @@ export function DeleteSelectedAreaSubjectsDialog({
   async function handleDelete() {
     setSubmitting(true)
     const codigos = selectedIds.map((id) => Number(id)).filter(Number.isFinite)
-    // Una sola request atómica.
-    const result = await bulkDelete
-      .mutateAsync(codigos)
-      .catch(() => ({ status: "error" as const, message: "" }))
+    const result = await bulkDelete.mutateAsync(codigos).catch(() => null)
     setSubmitting(false)
 
-    if (result.status === "error") {
+    if (!result) {
       notify("No se pudieron eliminar las áreas seleccionadas.", {
         variant: "error",
       })
     } else {
-      notify(SUCCESS_MESSAGES.areaSubject.deletedMany(codigos.length))
+      const summary = summarizeBulkDelete(result)
+
+      if (summary.failed.length === 0) {
+        notify(SUCCESS_MESSAGES.areaSubject.deletedMany(summary.succeededCount))
+      } else {
+        notify(
+          formatBulkDeleteError(
+            summary,
+            (n) => (n === 1 ? "el área seleccionada" : `${n} áreas`),
+            (id) => namesById.get(id),
+          ),
+          { variant: "error" },
+        )
+      }
     }
     setOpen(false)
     resetSelection()

@@ -6,14 +6,27 @@ import type {
   MutationResult,
   UpdateGradeRequest,
 } from "@/features/establishment/academic-period/api/types/grade"
+import { resolveGradoSiguienteId } from "@/features/establishment/academic-period/api/mutations/resolve-grado-siguiente"
 
 interface UpdateGradeInput {
   id: number
   values: UpdateGradeRequest
 }
 
-function updateGrade({ id, values }: UpdateGradeInput): Promise<MutationResult> {
-  return api.patch(`/grades/${id}`, values)
+// `PUT /eval-col/grados/:ID` (`fn_grado_actualizar`, id_query 58 — PUT desde
+// V67, no PATCH). El código (`grado`) no se puede editar (lo fija
+// `fn_grado_crear` al crear), así que no viaja.
+async function updateGrade({ id, values }: UpdateGradeInput): Promise<MutationResult> {
+  const fkGradoSiguiente =
+    values.tieneGradoSiguiente === false
+      ? null
+      : await resolveGradoSiguienteId(values.gradoSiguiente)
+  return api.put(`/eval-col/grados/${id}`, {
+    FK_NIVEL: values.teachingLevelId,
+    NOMBRE: values.nombre,
+    FK_GRADO_SIGUIENTE: fkGradoSiguiente,
+    TIENE_GRADO_SIGUIENTE: values.tieneGradoSiguiente,
+  })
 }
 
 interface UseUpdateGradeOptions {
