@@ -60,6 +60,11 @@ export function TabGrades({ jornada, academicPeriodId }: TabGradesProps) {
 
   const selectedGradeIds = useMemo(() => selectedIds.map(Number), [selectedIds])
 
+  const namesById = useMemo(
+    () => new Map((data?.rows ?? []).map((row) => [row.id, row.nombre])),
+    [data],
+  )
+
   return (
     <>
       {/* El `border-b` cierra la barra de acciones igual que el `hr` de
@@ -67,7 +72,11 @@ export function TabGrades({ jornada, academicPeriodId }: TabGradesProps) {
       <div className="mb-2 flex items-center justify-end gap-2 border-b border-border pb-2">
         {hasSelection ? (
           <>
-            <DeleteSelectedGradesDialog selectedIds={selectedIds} resetSelection={resetSelection} />
+            <DeleteSelectedGradesDialog
+              selectedIds={selectedIds}
+              namesById={namesById}
+              resetSelection={resetSelection}
+            />
             <ExportSelectedGradesDialog
               selectedIds={selectedGradeIds}
               resetSelection={resetSelection}
