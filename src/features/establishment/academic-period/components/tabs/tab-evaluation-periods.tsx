@@ -60,6 +60,11 @@ export function TabEvaluationPeriods({ academicPeriodId }: TabEvaluationPeriodsP
   // evaluation period son `number`, así que convertimos antes de mandar al back.
   const selectedCodigos = useMemo(() => selectedIds.map(Number), [selectedIds])
 
+  const namesById = useMemo(
+    () => new Map((data?.rows ?? []).map((row) => [row.id, row.nombre])),
+    [data],
+  )
+
   return (
     <>
       {/* El `border-b` cierra la barra de acciones igual que el `hr` de
@@ -69,6 +74,7 @@ export function TabEvaluationPeriods({ academicPeriodId }: TabEvaluationPeriodsP
           <>
             <DeleteSelectedEvaluationPeriodsDialog
               selectedIds={selectedIds}
+              namesById={namesById}
               resetSelection={resetSelection}
             />
             <ExportSelectedEvaluationPeriodsDialog

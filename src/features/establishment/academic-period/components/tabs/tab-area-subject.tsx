@@ -59,6 +59,11 @@ export function TabAreaSubject({ academicPeriodId }: TabAreaSubjectProps) {
     setSorting,
   })
 
+  const namesById = useMemo(
+    () => new Map((data?.rows ?? []).map((row) => [row.codigo, row.nombreInterno])),
+    [data],
+  )
+
   return (
     <>
       {/* El `border-b` cierra la barra de acciones igual que el `hr` de
@@ -78,6 +83,7 @@ export function TabAreaSubject({ academicPeriodId }: TabAreaSubjectProps) {
           {hasSelection && (
             <DeleteSelectedAreaSubjectsDialog
               selectedIds={selectedIds}
+              namesById={namesById}
               resetSelection={resetSelection}
             />
           )}

@@ -27,6 +27,8 @@ interface DeleteSelectedRatingScalesDialogProps {
   academicPeriodId: number
   levelCount: number
   teachingLevelIds: number[]
+  // El bulk delete falla por `teachingLevelId`, no por código de escala.
+  namesById: Map<number, string>
   resetSelection: () => void
 }
 
@@ -34,6 +36,7 @@ export function DeleteSelectedRatingScalesDialog({
   academicPeriodId,
   levelCount,
   teachingLevelIds,
+  namesById,
   resetSelection,
 }: DeleteSelectedRatingScalesDialogProps) {
   const [open, setOpen] = useState(false)
@@ -60,8 +63,10 @@ export function DeleteSelectedRatingScalesDialog({
         notify(SUCCESS_MESSAGES.ratingScale.deletedMany(summary.succeededCount))
       } else {
         notify(
-          formatBulkDeleteError(summary, (n) =>
-            n === 1 ? "la escala seleccionada" : `${n} escalas`,
+          formatBulkDeleteError(
+            summary,
+            (n) => (n === 1 ? "la escala seleccionada" : `${n} escalas`),
+            (id) => namesById.get(id),
           ),
           { variant: "error" },
         )

@@ -25,11 +25,13 @@ import {
 
 interface DeleteSelectedGradesDialogProps {
   selectedIds: string[]
+  namesById: Map<number, string>
   resetSelection: () => void
 }
 
 export function DeleteSelectedGradesDialog({
   selectedIds,
+  namesById,
   resetSelection,
 }: DeleteSelectedGradesDialogProps) {
   const [open, setOpen] = useState(false)
@@ -55,8 +57,10 @@ export function DeleteSelectedGradesDialog({
         notify(SUCCESS_MESSAGES.grade.deletedMany(summary.succeededCount))
       } else {
         notify(
-          formatBulkDeleteError(summary, (n) =>
-            n === 1 ? "el grado seleccionado" : `${n} grados`,
+          formatBulkDeleteError(
+            summary,
+            (n) => (n === 1 ? "el grado seleccionado" : `${n} grados`),
+            (id) => namesById.get(id),
           ),
           { variant: "error" },
         )
