@@ -1,6 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 
+import { env } from "@/config/env"
 import { api } from "@/lib/api-client"
+import { apiPath } from "@/lib/api-routes"
 import type { MutationConfig } from "@/lib/react-query"
 
 export interface DeleteEstablishmentResult {
@@ -8,8 +10,13 @@ export interface DeleteEstablishmentResult {
   message: string
 }
 
-function deleteEstablishment(id: string): Promise<DeleteEstablishmentResult> {
-  return api.delete(`/establishments/${id}`)
+/**
+ * PUT, no DELETE: no es un borrado real, es `fn_est_soft_delete` (ACTIVE=
+ * FALSE) — el SSO real lo registra como `PUT /establecimientos/:ID`.
+ */
+function deleteEstablishment(id: number): Promise<DeleteEstablishmentResult> {
+  const url = apiPath(`/establishments/${id}`, `/establecimientos/${id}`)
+  return env.ENABLE_API_MOCKING ? api.delete(url) : api.put(url)
 }
 
 interface UseDeleteOptions {

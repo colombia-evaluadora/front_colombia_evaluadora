@@ -1,11 +1,11 @@
 export interface Department {
-    id: string
+    id: number
     code?: string
     name: string
 }
 
 export interface Municipality {
-    id: string
+    id: number
     code?: string
     name: string
     department: Department

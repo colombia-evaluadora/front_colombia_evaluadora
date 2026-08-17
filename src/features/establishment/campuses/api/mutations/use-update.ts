@@ -6,7 +6,7 @@ import { updateCampus } from "@/features/establishment/campuses/api/mutations/cr
 import type { Campus } from "@/features/establishment/campuses/api/types/campus"
 
 interface UpdateCampusInput {
-  campusId: string
+  campusId: number
   values: Campus
 }
 
