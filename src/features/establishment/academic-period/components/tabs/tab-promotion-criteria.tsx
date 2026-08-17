@@ -112,13 +112,27 @@ export const TabPromotionCriteria = forwardRef<PromotionCriteriaHandle, TabPromo
       ? gradeLoading || (academicPeriodId != null && periodLoading)
       : periodLoading
 
-    const { data: subjectOptions = [] } = useSubjectsQuery(academicPeriodId)
-    const { data: areaOptions = [] } = usePeriodAreaNamesQuery(academicPeriodId)
+    const { data: subjectOptions = [], isPending: isLoadingSubjects } =
+      useSubjectsQuery(academicPeriodId)
+    const { data: areaOptions = [], isPending: isLoadingAreas } =
+      usePeriodAreaNamesQuery(academicPeriodId)
 
     const { data: curriculumNodes = [], isPending: isLoadingCurriculumNodes } =
       useCurriculumNodesQuery()
 
-    if (((isGradeScope || academicPeriodId != null) && isLoading) || isLoadingCurriculumNodes) {
+    // `subjectOptions`/`areaOptions` alimentan el multi-select de "obligatorias"
+    // y su `useEffect` de limpieza (`RequiredSubjectsField`, más abajo) borra
+    // cualquier valor guardado que no esté en `options` — si el form se
+    // montaba antes de que estas dos terminaran de cargar, ese efecto corría
+    // con `options` todavía vacío y vaciaba `requiredSubjects` aunque el back
+    // sí lo hubiera devuelto (solo se veía bien la segunda vez, con las
+    // queries ya en caché). Por eso también gatean el spinner.
+    if (
+      ((isGradeScope || academicPeriodId != null) && isLoading) ||
+      isLoadingCurriculumNodes ||
+      isLoadingSubjects ||
+      isLoadingAreas
+    ) {
       return (
         <div className="flex justify-center py-10">
           <Spinner />

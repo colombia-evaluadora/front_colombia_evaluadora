@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react"
+import { useMemo } from "react"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { useForm } from "@tanstack/react-form"
 
@@ -122,7 +122,6 @@ interface TabEvaluationCriteriaProps {
 }
 
 export function TabEvaluationCriteria({ academicPeriodId }: TabEvaluationCriteriaProps) {
-  const { notify } = useNotify()
   const { data: criteria, isPending: isLoading } = useEvaluationCriteriaQuery(academicPeriodId)
 
   const { data: options, isPending: isLoadingOptions } = useEvaluationCriteriaOptionsQuery()
@@ -132,6 +131,50 @@ export function TabEvaluationCriteria({ academicPeriodId }: TabEvaluationCriteri
     sorting: [],
     academicPeriodId,
   })
+
+  if ((academicPeriodId != null && isLoading) || isLoadingOptions || isLoadingRatingScales) {
+    return (
+      <div className="flex justify-center py-10">
+        <Spinner />
+      </div>
+    )
+  }
+
+  return (
+    <EvaluationCriteriaForm
+      // Fuerza a remontar el form (y por lo tanto sus `defaultValues`) si
+      // se navega a otro periodo mientras el componente sigue montado.
+      key={academicPeriodId ?? "new"}
+      academicPeriodId={academicPeriodId}
+      initialValues={criteria ?? EMPTY}
+      options={options}
+      ratingScalesData={ratingScalesData}
+    />
+  )
+}
+
+interface EvaluationCriteriaFormProps {
+  academicPeriodId?: number
+  initialValues: EvaluationCriteriaValues
+  options: ReturnType<typeof useEvaluationCriteriaOptionsQuery>["data"]
+  ratingScalesData: ReturnType<typeof useRatingScalesQuery>["data"]
+}
+
+function EvaluationCriteriaForm({
+  academicPeriodId,
+  initialValues,
+  options,
+  ratingScalesData,
+}: EvaluationCriteriaFormProps) {
+  const { notify } = useNotify()
+
+  // `form.state.values.gradingFormat` es el FK (id) seleccionado en el
+  // select — `parseGradingRange` necesita el nombre ("De cero a cinco") para
+  // resolver el rango, no el id (que nunca matchea `FORMAT_MAX_BY_NAME` y
+  // caía siempre al default 0-100 sin importar el formato elegido).
+  function gradingFormatLabel(id: string): string | undefined {
+    return options?.gradingFormat.find((o) => o.key === id)?.label
+  }
 
   // La escala de valoración se elige entre los niveles de enseñanza que
   // tengan al menos una escala creada. Si todavía no se creó ninguna, la
@@ -163,8 +206,16 @@ export function TabEvaluationCriteria({ academicPeriodId }: TabEvaluationCriteri
     },
   })
 
+  // `defaultValues` toma los criterios ya cargados directo (en vez de
+  // arrancar en `EMPTY` y hacer `form.reset()` en un efecto post-montaje):
+  // ese `reset()` actualizaba el estado interno del form correctamente
+  // —confirmado viendo los criterios correctos en el log— pero los
+  // `<Select>` no reflejaban el cambio la primera vez que se montaba el
+  // componente (sí en montajes posteriores, con los datos ya en caché).
+  // Montar el form directo con los valores correctos evita depender de ese
+  // reset después del primer render.
   const form = useForm({
-    defaultValues: EMPTY,
+    defaultValues: initialValues,
     validators: { onSubmit: evaluationCriteriaSchema },
     onSubmit: ({ value }) => {
       if (academicPeriodId != null) {
@@ -174,19 +225,6 @@ export function TabEvaluationCriteria({ academicPeriodId }: TabEvaluationCriteri
       notify(SUCCESS_MESSAGES.evaluationCriteria.updated)
     },
   })
-
-  // Al cargar los criterios del periodo, prellenamos el formulario con ellos.
-  useEffect(() => {
-    if (criteria) form.reset(criteria)
-  }, [criteria, form])
-
-  if ((academicPeriodId != null && isLoading) || isLoadingOptions || isLoadingRatingScales) {
-    return (
-      <div className="flex justify-center py-10">
-        <Spinner />
-      </div>
-    )
-  }
 
   return (
     <>
@@ -205,6 +243,12 @@ export function TabEvaluationCriteria({ academicPeriodId }: TabEvaluationCriteri
                 const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
                 const fieldOptions =
                   cfg.name === "gradingScale" ? gradingScaleOptions : (options?.[cfg.name] ?? [])
+                // No todos los establecimientos tienen una escala de
+                // valoración creada todavía (ver comentario en
+                // use-evaluation-criteria.ts) — a diferencia de los demás
+                // campos, este puede quedar sin seleccionar, así que
+                // necesita una forma explícita de volver a "ninguna".
+                const isClearable = cfg.name === "gradingScale"
                 return (
                   <Field variant="outlined" data-invalid={isInvalid}>
                     <FieldLabel htmlFor={field.name} className="flex-1">
@@ -215,7 +259,7 @@ export function TabEvaluationCriteria({ academicPeriodId }: TabEvaluationCriteri
                         id={field.name}
                         type="number"
                         min={0}
-                        max={parseGradingRange(form.state.values.gradingFormat).max}
+                        max={parseGradingRange(gradingFormatLabel(form.state.values.gradingFormat)).max}
                         step={0.1}
                         placeholder="Agregar"
                         value={Number.isNaN(field.state.value) ? "" : field.state.value}
@@ -229,7 +273,7 @@ export function TabEvaluationCriteria({ academicPeriodId }: TabEvaluationCriteri
                         onChange={(e) => {
                           const raw = e.target.valueAsNumber
                           const max = parseGradingRange(
-                            form.state.values.gradingFormat
+                            gradingFormatLabel(form.state.values.gradingFormat)
                           ).max
                           if (Number.isFinite(raw) && raw > max) {
                             field.handleChange(max)
@@ -242,25 +286,40 @@ export function TabEvaluationCriteria({ academicPeriodId }: TabEvaluationCriteri
                       />
                     ) : (
                       <Select
-                        items={Object.fromEntries(fieldOptions.map((o) => [o.key, o.label]))}
-                        value={field.state.value}
-                        onValueChange={(value) => value && field.handleChange(value)}
+                        items={Object.fromEntries([
+                          ...(isClearable ? [["", "Ninguna"]] : []),
+                          ...fieldOptions.map((o) => [o.key, o.label]),
+                        ])}
+                        // `field.state.value` se infiere como la unión de
+                        // todos los campos de `FIELDS` (incluye los `number`
+                        // de arriba) porque `cfg.name` no es un literal acá
+                        // — en este branch (`cfg.kind !== "number"`) siempre
+                        // es el `string` de un campo de catálogo.
+                        value={field.state.value as string}
+                        onValueChange={(value) => value != null && field.handleChange(value)}
                       >
                         <SelectTrigger id={field.name} aria-invalid={isInvalid}>
                           <SelectValue placeholder="Seleccionar" />
                         </SelectTrigger>
                         <SelectContent>
-                          {fieldOptions.length === 0 ? (
+                          {!isClearable && fieldOptions.length === 0 ? (
                             <p className="px-3 py-4 text-center text-sm text-muted-foreground">
                               {EMPTY_MESSAGES[cfg.name] ?? DEFAULT_EMPTY_MESSAGE}
                             </p>
                           ) : (
                             <SelectGroup>
-                              {fieldOptions.map((option) => (
-                                <SelectItem key={option.key} value={option.key}>
-                                  {option.label}
-                                </SelectItem>
-                              ))}
+                              {isClearable && <SelectItem value="">Ninguna</SelectItem>}
+                              {isClearable && fieldOptions.length === 0 ? (
+                                <p className="px-3 py-4 text-center text-sm text-muted-foreground">
+                                  {EMPTY_MESSAGES[cfg.name] ?? DEFAULT_EMPTY_MESSAGE}
+                                </p>
+                              ) : (
+                                fieldOptions.map((option) => (
+                                  <SelectItem key={option.key} value={option.key}>
+                                    {option.label}
+                                  </SelectItem>
+                                ))
+                              )}
                             </SelectGroup>
                           )}
                         </SelectContent>

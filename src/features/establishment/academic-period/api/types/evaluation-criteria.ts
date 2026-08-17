@@ -6,6 +6,11 @@
 // todas las establecimientos tienen escala creada.
 export interface EvaluationCriteria {
   gradingFormat: string
+  // Nombre del formato (TLISTA_VALOR.NOMBRE, ej. "De cero a cinco") — a
+  // diferencia de `gradingFormat` (el FK, lo que se guarda/manda), esto es
+  // lo que necesita `parseGradingRange` para resolver el rango de notas: el
+  // FK es un id arbitrario que nunca matchea contra `FORMAT_MAX_BY_NAME`.
+  gradingFormatName?: string
   gradingScale?: string
   periodCalculationElements: string
   subjectGradeCriteria: string
@@ -27,7 +32,7 @@ export interface CriteriaOption {
 }
 
 export type EvaluationCriteriaOptions = Record<
-  Exclude<keyof EvaluationCriteria, "gradingScale">,
+  Exclude<keyof EvaluationCriteria, "gradingScale" | "gradingFormatName">,
   CriteriaOption[]
 >
 

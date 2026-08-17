@@ -90,6 +90,20 @@ const PUBLIC_ENDPOINTS = [
 // es el resultado de una acción que el usuario disparó.
 const PROBE_ENDPOINTS = ["/auth/refresh", "/sso-admin/resetTokenStatus"]
 
+// Los errores de constraint (`RAISE EXCEPTION` en las funciones PL/pgSQL)
+// llegan con todo el contexto crudo de Postgres, p.ej.:
+//   "Conflict: ERROR: No se puede eliminar el grado 3725: existen horarios
+//   configurados\nWhere: PL/pgSQL function academico_test.fn_grado_soft_delete
+//   (bigint,bigint) line 20 at RAISE"
+// Al usuario solo le sirve la oración real ("No se puede eliminar..."); el
+// resto (prefijo HTTP, "ERROR:", el "Where:" con la función/línea) es ruido
+// de implementación. Nos quedamos con la primera línea y le sacamos el
+// prefijo tipo "Conflict: ERROR: " si vino.
+export function cleanErrorMessage(message: string): string {
+  const firstLine = message.split(/\r?\n/)[0]?.trim() ?? message
+  return firstLine.replace(/^[A-Za-z ]+:\s*ERROR:\s*/i, "").trim() || firstLine
+}
+
 export const api = Axios.create({
   baseURL: env.API_URL,
 })
@@ -126,7 +140,7 @@ api.interceptors.response.use(
 
     if (!isProbe) {
       const message = error.response?.data?.message || error.message
-      toast.error(message)
+      toast.error(cleanErrorMessage(message))
     }
 
     if (isExpiredSession) {

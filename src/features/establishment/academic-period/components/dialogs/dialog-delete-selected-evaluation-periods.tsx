@@ -18,6 +18,10 @@ import {
 import { Button } from "@/components/ui/button"
 
 import { useDeleteEvaluationPeriodsBulk } from "@/features/establishment/academic-period/api/mutations/delete-evaluation-periods-bulk"
+import {
+  formatBulkDeleteError,
+  summarizeBulkDelete,
+} from "@/features/establishment/academic-period/api/mutations/bulk-delete-result"
 
 interface DeleteSelectedEvaluationPeriodsDialogProps {
   selectedIds: string[]
@@ -37,17 +41,28 @@ export function DeleteSelectedEvaluationPeriodsDialog({
   async function handleDelete() {
     setSubmitting(true)
     const codigos = selectedIds.map((id) => Number(id)).filter(Number.isFinite)
-    const result = await bulkDelete
-      .mutateAsync(codigos)
-      .catch(() => ({ status: "error" as const, message: "" }))
+    const result = await bulkDelete.mutateAsync(codigos).catch(() => null)
     setSubmitting(false)
 
-    if (result.status === "error") {
+    if (!result) {
       notify("No se pudieron eliminar los periodos de evaluación seleccionados.", {
         variant: "error",
       })
     } else {
-      notify(SUCCESS_MESSAGES.evaluationPeriod.deletedMany(codigos.length))
+      const summary = summarizeBulkDelete(result)
+
+      if (summary.failed.length === 0) {
+        notify(SUCCESS_MESSAGES.evaluationPeriod.deletedMany(summary.succeededCount))
+      } else {
+        notify(
+          formatBulkDeleteError(summary, (n) =>
+            n === 1
+              ? "el periodo de evaluación seleccionado"
+              : `${n} periodos de evaluación`,
+          ),
+          { variant: "error" },
+        )
+      }
     }
     setOpen(false)
     resetSelection()

@@ -321,7 +321,11 @@ export function CreateStudyPlanDialog({
 
           <label className="flex w-fit items-center gap-3 text-sm font-medium">
             Personalizar
-            <Switch checked={personalizar} onCheckedChange={setPersonalizar} />
+            <Switch
+              checked={personalizar}
+              onCheckedChange={setPersonalizar}
+              className="rounded-full [&_[data-slot=switch-thumb]]:rounded-full"
+            />
           </label>
 
           <div

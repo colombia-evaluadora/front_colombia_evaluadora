@@ -18,6 +18,10 @@ import {
 import { Button } from "@/components/ui/button"
 
 import { useDeleteGradesBulk } from "@/features/establishment/academic-period/api/mutations/delete-grades-bulk"
+import {
+  formatBulkDeleteError,
+  summarizeBulkDelete,
+} from "@/features/establishment/academic-period/api/mutations/bulk-delete-result"
 
 interface DeleteSelectedGradesDialogProps {
   selectedIds: string[]
@@ -37,17 +41,26 @@ export function DeleteSelectedGradesDialog({
   async function handleDelete() {
     setSubmitting(true)
     const ids = selectedIds.map((id) => Number(id)).filter(Number.isFinite)
-    const result = await bulkDelete
-      .mutateAsync(ids)
-      .catch(() => ({ status: "error" as const, message: "" }))
+    const result = await bulkDelete.mutateAsync(ids).catch(() => null)
     setSubmitting(false)
 
-    if (result.status === "error") {
+    if (!result) {
       notify("No se pudieron eliminar los grados seleccionados.", {
         variant: "error",
       })
     } else {
-      notify(SUCCESS_MESSAGES.grade.deletedMany(ids.length))
+      const summary = summarizeBulkDelete(result)
+
+      if (summary.failed.length === 0) {
+        notify(SUCCESS_MESSAGES.grade.deletedMany(summary.succeededCount))
+      } else {
+        notify(
+          formatBulkDeleteError(summary, (n) =>
+            n === 1 ? "el grado seleccionado" : `${n} grados`,
+          ),
+          { variant: "error" },
+        )
+      }
     }
     setOpen(false)
     resetSelection()

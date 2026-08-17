@@ -18,6 +18,10 @@ import {
 import { Button } from "@/components/ui/button"
 
 import { useDeleteAcademicPeriodsBulk } from "@/features/establishment/academic-period/api/mutations/delete-academic-periods-bulk"
+import {
+  formatBulkDeleteError,
+  summarizeBulkDelete,
+} from "@/features/establishment/academic-period/api/mutations/bulk-delete-result"
 
 interface DeleteSelectedAcademicPeriodsDialogProps {
   selectedIds: string[]
@@ -37,18 +41,29 @@ export function DeleteSelectedAcademicPeriodsDialog({
   async function handleDelete() {
     setSubmitting(true)
     const ids = selectedIds.map((id) => Number(id)).filter(Number.isFinite)
-    // Una sola request atómica.
-    const result = await bulkDelete
-      .mutateAsync(ids)
-      .catch(() => ({ status: "error" as const, message: "" }))
+    // Una sola request atómica a nivel HTTP, pero `fn_periodo_bulk_delete`
+    // borra lo que puede y reporta el resto: cada fila trae su propio
+    // `eliminado`/`error_mensaje`, no hay un único status para todo el lote.
+    const result = await bulkDelete.mutateAsync(ids).catch(() => null)
     setSubmitting(false)
 
-    if (result.status === "error") {
+    if (!result) {
       notify("No se pudieron eliminar los periodos seleccionados.", {
         variant: "error",
       })
     } else {
-      notify(SUCCESS_MESSAGES.academicPeriod.deletedMany(ids.length))
+      const summary = summarizeBulkDelete(result)
+
+      if (summary.failed.length === 0) {
+        notify(SUCCESS_MESSAGES.academicPeriod.deletedMany(summary.succeededCount))
+      } else {
+        notify(
+          formatBulkDeleteError(summary, (n) =>
+            n === 1 ? "el periodo académico seleccionado" : `${n} periodos académicos`,
+          ),
+          { variant: "error" },
+        )
+      }
     }
     setOpen(false)
     resetSelection()

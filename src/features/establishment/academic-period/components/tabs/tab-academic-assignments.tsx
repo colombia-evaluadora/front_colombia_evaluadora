@@ -15,7 +15,7 @@ import { SearchAcademicAssignments } from "@/features/establishment/academic-per
 import { ExportAcademicAssignmentsDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-export-academic-assignments"
 import { ExportSelectedAcademicAssignmentsDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-export-selected-academic-assignments"
 
-import { useEmployeesQuery } from "@/features/establishment/employees/api/query/use-employees"
+import { useAssignmentTeachersQuery } from "@/features/establishment/academic-period/api/query/use-assignment-teachers"
 import type {
   EmployeeListItem,
   EmployeeStatus,
@@ -76,8 +76,16 @@ export function TabAcademicAssignments({ academicPeriodId }: TabAcademicAssignme
     },
   })
 
-  const { data, isPending, isError, refetch } = useEmployeesQuery({
-    filters: queryFilters,
+  // `useAssignmentTeachersQuery` (fn_asignacion_docente_listar, V83) ya
+  // filtra por rol Docente y por la sede del periodo en el backend — a
+  // diferencia de `useEmployeesQuery` (módulo legacy de empleados), que
+  // traía cualquier funcionario con permisos en la sede. `queryFilters`
+  // sigue viva para los diálogos de exportación, que todavía hablan con el
+  // endpoint legacy.
+  const { data, isPending, isError, refetch } = useAssignmentTeachersQuery({
+    academicPeriodId,
+    search: queryFilters.search,
+    status,
     sorting,
     pageIndex,
     pageSize,
@@ -181,10 +189,20 @@ export function TabAcademicAssignments({ academicPeriodId }: TabAcademicAssignme
         renderSubRow={(row) => {
           const employee = row.original as EmployeeListItem
           if (expanded?.id !== employee.id) return null
-          // Disponibles/asignadas derivadas del pool según los IDs asignados.
+          // Asignadas: las que este docente tiene en su borrador (ids
+          // guardados + cambios locales sin guardar). Disponibles: el resto
+          // del pool que no está en el borrador — libres, o del propio
+          // docente (el `pool` no se refetchea al tocar flechas, así que si
+          // se saca una materia ya guardada de "asignadas" su `funcionarioId`
+          // en el pool sigue siendo el de este docente hasta el próximo
+          // guardado; sin el `|| funcionarioId === employee.id` desaparecía
+          // de las dos listas en vez de volver a "disponibles"). Una materia
+          // de OTRO docente sí queda afuera.
           const ids = new Set(assignedIds[employee.id] ?? [])
           const assigned = pool.filter((s) => ids.has(s.id))
-          const available = pool.filter((s) => !ids.has(s.id))
+          const available = pool.filter(
+            (s) => !ids.has(s.id) && (s.funcionarioId == null || s.funcionarioId === employee.id),
+          )
           return (
             <div className="-m-4 flex flex-col gap-4 bg-background p-4">
               <AssignmentTransfer

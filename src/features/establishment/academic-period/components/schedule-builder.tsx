@@ -27,8 +27,6 @@ function subjectStyles(hex: string) {
   return {
     container: {
       backgroundColor: `${hex}1f`,
-      borderColor: `${hex}80`,
-      color: hex,
     } as React.CSSProperties,
     count: { backgroundColor: hex, color: "#fff" } as React.CSSProperties,
   }
@@ -318,14 +316,14 @@ export const ScheduleBuilder = forwardRef<
                   }}
                   style={styles.container}
                   className={cn(
-                    "flex cursor-grab items-center gap-2 border px-2.5 py-1 text-xs font-medium select-none active:cursor-grabbing",
+                    "flex cursor-grab items-center gap-2 rounded border-2 border-transparent px-2.5 py-1 text-xs font-medium text-foreground select-none active:cursor-grabbing",
                     draggingId === subject.id && "opacity-50"
                   )}
                 >
                   <span>{subject.name}</span>
                   <span
                     style={styles.count}
-                    className="px-1.5 py-0.5 text-[10px] leading-none font-bold"
+                    className="rounded border-2 border-transparent px-0.5 text-xs leading-none font-bold"
                   >
                     {remaining}H
                   </span>
@@ -375,7 +373,7 @@ export const ScheduleBuilder = forwardRef<
                     </td>
                     <td
                       colSpan={DAYS.length}
-                      className="bg-muted/30 p-3 text-center text-sm font-semibold tracking-[0.4em] text-muted-foreground/40 select-none"
+                      className="bg-muted/30 p-3 text-center text-2xl font-semibold tracking-[0.4em] text-muted-foreground/40 select-none"
                     >
                       {spaced(slot.label ?? "")}
                     </td>
@@ -419,9 +417,9 @@ export const ScheduleBuilder = forwardRef<
                         {subject ? (
                           <div
                             style={subjectStyles(subject.color).container}
-                            className="group absolute inset-1 flex items-center justify-between gap-1 border-2 rounded px-2 py-1.5"
+                            className="group absolute inset-1 flex items-center justify-between gap-1 rounded border-2 border-transparent px-2 py-1.5"
                           >
-                            <span className="text-left text-xs leading-tight font-medium">
+                            <span className="text-left text-xs leading-tight font-medium text-foreground">
                               {subject.name}
                             </span>
                             <div className="flex shrink-0 items-center gap-0.5 opacity-60 transition-opacity group-hover:opacity-100">

@@ -17,6 +17,11 @@ function toRow(academicPeriodId: number, criteria: EvaluationCriteria) {
   return {
     academic_period_id: academicPeriodId,
     grading_format: Number(criteria.gradingFormat) || 0,
+    // Sin catálogo FORMATO_CALIFICACION mockeado en select-catalog.ts
+    // (ninguna de las categorías de criterios de evaluación lo está todavía),
+    // no hay de dónde resolver el nombre acá — se deja `null`, igual que
+    // devolvería el back para un FK que no matchea ningún TLISTA_VALOR.
+    grading_format_name: null,
     grading_scale: criteria.gradingScale ? Number(criteria.gradingScale) : null,
     period_calculation_elements: Number(criteria.periodCalculationElements) || 0,
     subject_grade_criteria: Number(criteria.subjectGradeCriteria) || 0,
@@ -54,7 +59,7 @@ export const evaluationCriteriaHandlers = [
         AREA_GRADE_CRITERIA: string
         STUDENT_WO_GRADES: string
         ROUNDING_MODE: string
-        INITIAL_GRADE: string
+        INITIAL_GRADE: number
       }
       evaluationCriteriaDb[academicPeriodId] = {
         gradingFormat: body.GRADING_FORMAT,
@@ -64,7 +69,7 @@ export const evaluationCriteriaHandlers = [
         finalGradeCriteria: body.FINAL_GRADE_CRITERIA,
         areaGradeCriteria: body.AREA_GRADE_CRITERIA,
         studentWithoutGradesPerformance: body.STUDENT_WO_GRADES,
-        maxRecoveryGrade: "",
+        maxRecoveryGrade: 0,
         roundingMode: body.ROUNDING_MODE,
         initialGrade: body.INITIAL_GRADE,
       }
