@@ -24,7 +24,7 @@ import { useExportSelected } from "@/features/establishment/employees/api/mutati
 import type { ExportFormat } from "@/features/establishment/institution/api/types/export"
 
 interface ExportSelectedAcademicAssignmentsDialogProps {
-  selectedIds: string[]
+  selectedIds: number[]
   resetSelection: () => void
 }
 

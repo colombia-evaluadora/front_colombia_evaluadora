@@ -24,7 +24,7 @@ import type { ExportFormat } from "@/features/establishment/institution/api/type
 import { useNotify } from "@/components/notice/notice-context"
 
 interface ExportSelectedEstablishmentsDialogProps {
-  selectedIds: string[]
+  selectedIds: number[]
   resetSelection: () => void
 }
 

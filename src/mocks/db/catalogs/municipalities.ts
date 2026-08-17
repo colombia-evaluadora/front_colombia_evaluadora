@@ -2,26 +2,26 @@ import type { Municipality } from "@/features/establishment/institution/api/type
 
 export const MUNICIPALITIES: Municipality[] = [
   {
-    id: "13001",
+    id: 13001,
     name: "Cartagena",
     department: {
-      id: "13",
+      id: 13,
       name: "Bolívar",
     },
   },
   {
-    id: "08001",
+    id: 8001,
     name: "Barranquilla",
     department: {
-      id: "08",
+      id: 8,
       name: "Atlántico",
     },
   },
   {
-    id: "11001",
+    id: 11001,
     name: "Bogotá",
     department: {
-      id: "11",
+      id: 11,
       name: "Bogotá D.C.",
     },
   },

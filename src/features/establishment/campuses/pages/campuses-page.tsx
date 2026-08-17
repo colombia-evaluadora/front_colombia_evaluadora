@@ -8,14 +8,14 @@ import { CampusesDataTable } from "@/features/establishment/campuses/components/
 
 export function CampusesPage() {
   const [editorOpen, setEditorOpen] = useState(false)
-  const [editingCampusId, setEditingCampusId] = useState<string | null>(null)
+  const [editingCampusId, setEditingCampusId] = useState<number | null>(null)
 
   function openCreateDialog() {
     setEditingCampusId(null)
     setEditorOpen(true)
   }
 
-  function openEditDialog(campusId: string) {
+  function openEditDialog(campusId: number) {
     setEditingCampusId(campusId)
     setEditorOpen(true)
   }

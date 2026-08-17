@@ -13,7 +13,9 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 import { useCatalogQuery } from "@/features/establishment/employees/api/query/use-catalogs"
+import { useDisabilityTypesQuery } from "@/features/establishment/institution/api/query/use-disability-types"
 import { CATALOGS } from "@/lib/catalogs"
+import { toSelectItemsMap, toSelectOptions } from "@/lib/catalog-options"
 import { formatDateValue, parseDateValue } from "@/lib/date-time-value"
 import type { EstablishmentDetails } from "@/features/establishment/institution/api/types/establishment"
 
@@ -33,17 +35,15 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
     const {data: rangosTarifas = []} = useCatalogQuery<CatalogItem>(CATALOGS.RANGO_TARIFAS)
     const {data: idiomas = []} = useCatalogQuery<CatalogItem>(CATALOGS.IDIOMAS)
     const {data: costRegimen = []} = useCatalogQuery<CatalogItem>(CATALOGS.COST_REGIMEN)
-    const {data: disabilities = []} = useCatalogQuery<CatalogItem>(CATALOGS.DISABILITIES)
-    const {data: licenseStatuses = []} = useCatalogQuery<CatalogItem>(CATALOGS.LICENSE_STATUSES)
+    const {data: disabilities = []} = useDisabilityTypesQuery()
     const {data: populationGenders = []} = useCatalogQuery<CatalogItem>(CATALOGS.POPULATION_GENDERS)
 
-    const idiomaItems = idiomas.map((item: CatalogItem) => ({ value: item.id, label: item.name }))
-    const calendarioItems = calendarios.map((c: CatalogItem) => ({ value: c.id, label: c.name }))
-    const costRegimenItems = costRegimen.map((item: CatalogItem) => ({ value: item.id, label: item.name }))
-    const populationGenderItems = populationGenders.map((g: CatalogItem) => ({ value: g.id, label: g.name }))
-    const rangoTarifaItems = rangosTarifas.map((r: CatalogItem) => ({ value: r.id, label: r.name }))
-    const disabilityItems = disabilities.map((item: CatalogItem) => ({ value: item.id, label: item.name }))
-    const licenseStatusItems = licenseStatuses.map((item: CatalogItem) => ({ value: item.id, label: item.name }))
+    const idiomaItems = toSelectOptions(idiomas)
+    const calendarioItems = toSelectOptions(calendarios)
+    const costRegimenItems = toSelectOptions(costRegimen)
+    const populationGenderItems = toSelectOptions(populationGenders)
+    const rangoTarifaItems = toSelectOptions(rangosTarifas)
+    const disabilityItems = toSelectOptions(disabilities)
 
     // `gap-2` puertas adentro: encabezado y filas de esta sección van al mismo
     // paso. El salto mayor entre secciones lo pone el `gap-6` del formulario.
@@ -76,12 +76,12 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                         <Select
                             id="teaching-language"
                             aria-invalid={isInvalid("additionalInfo.teachingLanguage")}
-                            value={value.teachingLanguage.id}
+                            value={value.teachingLanguage?.id ?? null}
                             onValueChange={(selectedValue) => {
                                 const option = idiomas.find((item) => item.id === selectedValue)
                                 if (option) onChange({ ...value, teachingLanguage: option })
                             }}
-                            items={idiomaItems}
+                            items={toSelectItemsMap(idiomaItems)}
                         >
                             <SelectTrigger aria-invalid={isInvalid("additionalInfo.teachingLanguage")}>
                                 <SelectValue placeholder="Seleccionar" />
@@ -103,12 +103,12 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                         <Select
                             id="establishment-calendario"
                             aria-invalid={isInvalid("additionalInfo.calendar")}
-                            value={value.calendar.id}
+                            value={value.calendar?.id ?? null}
                             onValueChange={(selectedValue) => {
                                 const option = calendarios.find((item) => item.id === selectedValue)
                                 if (option) onChange({ ...value, calendar: option })
                             }}
-                            items={calendarioItems}
+                            items={toSelectItemsMap(calendarioItems)}
                         >
                             <SelectTrigger className="w-full" aria-invalid={isInvalid("additionalInfo.calendar")}>
                                 <SelectValue placeholder="Seleccionar" />
@@ -130,12 +130,12 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                         <Select
                             id="cost-regime"
                             aria-invalid={isInvalid("additionalInfo.costRegime")}
-                            value={value.costRegime.id}
+                            value={value.costRegime?.id ?? null}
                             onValueChange={(selectedValue) => {
                                 const option = costRegimen.find((item) => item.id === selectedValue)
                                 if (option) onChange({ ...value, costRegime: option })
                             }}
-                            items={costRegimenItems}
+                            items={toSelectItemsMap(costRegimenItems)}
                         >
                             <SelectTrigger aria-invalid={isInvalid("additionalInfo.costRegime")}>
                                 <SelectValue placeholder="Seleccionar" />
@@ -157,12 +157,12 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                         <Select
                             id="establishment-genero"
                             aria-invalid={isInvalid("additionalInfo.populationGender")}
-                            value={value.populationGender.id}
+                            value={value.populationGender?.id ?? null}
                             onValueChange={(selectedValue) => {
                                 const option = populationGenders.find((item) => item.id === selectedValue)
                                 if (option) onChange({ ...value, populationGender: option })
                             }}
-                            items={populationGenderItems}
+                            items={toSelectItemsMap(populationGenderItems)}
                         >
                             <SelectTrigger className="w-full" aria-invalid={isInvalid("additionalInfo.populationGender")}>
                                 <SelectValue placeholder="Seleccionar" />
@@ -182,12 +182,12 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                         <Select
                             id="establishment-rango"
                             aria-invalid={isInvalid("additionalInfo.tuitionRange")}
-                            value={value.tuitionRange.id}
+                            value={value.tuitionRange?.id ?? null}
                             onValueChange={(selectedValue) => {
                                 const option = rangosTarifas.find((item) => item.id === selectedValue)
                                 if (option) onChange({ ...value, tuitionRange: option })
                             }}
-                            items={rangoTarifaItems}
+                            items={toSelectItemsMap(rangoTarifaItems)}
                         >
                             <SelectTrigger className="w-full" aria-invalid={isInvalid("additionalInfo.tuitionRange")}>
                                 <SelectValue placeholder="Seleccionar" />
@@ -211,12 +211,12 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                         <Select
                             id="disabilities"
                             aria-invalid={isInvalid("additionalInfo.disabilityType")}
-                            value={value.disabilityType.id}
+                            value={value.disabilityType?.id ?? null}
                             onValueChange={(selectedValue) => {
                                 const option = disabilities.find((item) => item.id === selectedValue)
                                 if (option) onChange({ ...value, disabilityType: option })
                             }}
-                            items={disabilityItems}
+                            items={toSelectItemsMap(disabilityItems)}
                         >
                             <SelectTrigger aria-invalid={isInvalid("additionalInfo.disabilityType")}>
                                 <SelectValue placeholder="Seleccionar" />
@@ -237,28 +237,13 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                             Licencia de funcionamiento
                         </FieldLabel>
 
-                        <Select
+                        <Input
                             id="license-status"
+                            placeholder="Agregar"
+                            value={value.licenseStatus}
                             aria-invalid={isInvalid("additionalInfo.licenseStatus")}
-                            value={value.licenseStatus.id}
-                            onValueChange={(selectedValue) => {
-                                const option = licenseStatuses.find((item) => item.id === selectedValue)
-                                if (option) onChange({ ...value, licenseStatus: option })
-                            }}
-                            items={licenseStatusItems}
-                        >
-                            <SelectTrigger aria-invalid={isInvalid("additionalInfo.licenseStatus")}>
-                                <SelectValue placeholder="Seleccionar" />
-                            </SelectTrigger>
-
-                            <SelectContent>
-                                {licenseStatusItems.map((item) => (
-                                    <SelectItem key={item.value} value={item.value}>
-                                        {item.label}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                            onChange={(event) => onChange({ ...value, licenseStatus: event.target.value })}
+                        />
                     </Field>
                 </div>
                 <div className="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2">

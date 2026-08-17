@@ -18,12 +18,12 @@ it("persists a new campus through the mock POST handler", async () => {
     headers: {
       "Content-Type": "application/json",
     },
+    // Sin `id`: lo asigna el backend (mock) al crear.
     body: JSON.stringify({
-      id: "test-campus",
       name: "I.E. San Francisco de Asís Sede Principal",
       dane: "27921853",
       zone: {
-        id: "urbana",
+        id: 11,
         code: "URBANA",
         name: "Urbana",
       },
@@ -31,7 +31,6 @@ it("persists a new campus through the mock POST handler", async () => {
       commune: "20",
       address: "Calle 56 No. 16 - 18",
       phone: "6042690520",
-      approvalResolution: "0035",
     }),
   })
 

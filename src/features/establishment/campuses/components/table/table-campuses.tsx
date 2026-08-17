@@ -32,7 +32,7 @@ import { SearchCampuses } from "@/features/establishment/campuses/components/sea
 import { useNotify } from "@/components/notice/notice-context"
 
 interface CampusesDataTableProps {
-  onEditCampus: (campusId: string) => void
+  onEditCampus: (campusId: number) => void
   title: ReactNode
   // Acción principal de la página (ej. "Agregar"). Va en la barra de
   // herramientas, junto al buscador, no en el encabezado.
@@ -61,7 +61,9 @@ export function CampusesDataTable({ onEditCampus, title, action }: CampusesDataT
     columns,
     data: data?.rows ?? [],
     pageCount: data?.pageCount ?? -1,
-    getRowId: (row) => row.id,
+    // `getRowId` de TanStack Table siempre devuelve string; el `id` real de
+    // la fila es number, así que se convierte solo para la selección.
+    getRowId: (row) => String(row.id),
     pageIndex,
     pageSize,
     goToPage,
@@ -72,7 +74,7 @@ export function CampusesDataTable({ onEditCampus, title, action }: CampusesDataT
 
   const rows = data?.rows ?? []
   const selectedItems = useMemo(
-    () => rows.filter((row) => selectedIds.includes(row.id)),
+    () => rows.filter((row) => selectedIds.includes(String(row.id))),
     [rows, selectedIds],
   )
 
@@ -110,7 +112,7 @@ export function CampusesDataTable({ onEditCampus, title, action }: CampusesDataT
             {hasSelection ? (
               <>
                 <ClearSelectionDialog resetSelection={resetSelection} />
-                <DialogBulkDelete<Campus>
+                <DialogBulkDelete<Campus, number>
                   items={selectedItems}
                   getItemId={(item) => item.id}
                   getItemLabel={(item) => item.name}
@@ -126,7 +128,7 @@ export function CampusesDataTable({ onEditCampus, title, action }: CampusesDataT
                   triggerLabel={`Eliminar (${selectedIds.length})`}
                 />
                 <ExportSelectedCampusesDialog
-                  selectedIds={selectedIds}
+                  selectedIds={selectedItems.map((item) => item.id)}
                   resetSelection={resetSelection}
                 />
               </>

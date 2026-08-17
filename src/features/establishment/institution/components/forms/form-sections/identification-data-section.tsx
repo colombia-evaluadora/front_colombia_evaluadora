@@ -11,9 +11,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
-import { CATALOGS } from "@/lib/catalogs"
-import { useCatalogQuery } from "@/features/establishment/employees/api/query/use-catalogs"
-import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
+import { useOwnershipTypesQuery } from "@/features/establishment/institution/api/query/use-ownership-types"
+import { toSelectItemsMap, toSelectOptions } from "@/lib/catalog-options"
 import type { EstablishmentDetails } from "@/features/establishment/institution/api/types/establishment"
 
 interface IdentificationDataFormSectionProps {
@@ -29,8 +28,8 @@ export function IdentificationDataFormSection({ value, onChange, invalidFields =
     const isInvalid = (field: string) => showValidation && invalidFields.includes(field)
     // Mensaje debajo del campo: solo tras el primer submit, igual que el borde rojo.
     const errorFor = (field: string) => (showValidation ? errors[field] : undefined)
-    const { data: legalTypes = []} = useCatalogQuery<CatalogItem>(CATALOGS.LEGAL_TYPES)
-    const legalTypeItems = legalTypes.map(item => ({ value: item.id, label: item.name }))
+    const { data: legalTypes = []} = useOwnershipTypesQuery()
+    const legalTypeItems = toSelectOptions(legalTypes)
 
     // Escudo del establecimiento: estado puramente UI, análogo a la foto
     // de la persona. No se persiste todavía en el modelo `basicInfo`, así
@@ -108,15 +107,12 @@ export function IdentificationDataFormSection({ value, onChange, invalidFields =
                     <Select
                         id="establishment-legal-type"
                         aria-invalid={isInvalid("basicInfo.ownershipType")}
-                        value={value.ownershipType.id}
+                        value={value.ownershipType?.id ?? null}
                         onValueChange={(selectedValue) => {
                             const option = legalTypes.find((item) => item.id === selectedValue)
-                            onChange({
-                                ...value,
-                                ownershipType: option ?? { id: selectedValue ?? "", code: selectedValue ?? "", name: selectedValue ?? "" },
-                            })
+                            if (option) onChange({ ...value, ownershipType: option })
                         }}
-                        items={legalTypeItems}
+                        items={toSelectItemsMap(legalTypeItems)}
                     >
                         <SelectTrigger aria-invalid={isInvalid("basicInfo.ownershipType")}>
                             <SelectValue placeholder="Seleccionar" />

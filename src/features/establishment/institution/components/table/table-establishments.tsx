@@ -51,17 +51,22 @@ export function EstablishmentsDataTable({ title, action }: EstablishmentsDataTab
    * El catálogo de estados es compartido entre features y viene con etiqueta
    * neutra ("Activo"). En esta tabla los establecimientos se filtran con
    * femenino ("Activa"), así que ajustamos solo el `name` al renderizar sin
-   * tocar el `id` (que sigue siendo "ACTIVE" para que las queries al backend
-   * y los `data.status === "ACTIVE"` del dominio sigan funcionando tal cual).
+   * tocar el `code` (que en real es "A"/"I"/"S"/"SC"/"ST" — el código real
+   * de `ESTADO_ESTABLECIMIENTO` — y en mock sigue siendo "ACTIVE"; el `id`
+   * de este catálogo es un correlativo interno, no el discriminador de
+   * estado).
    */
   const establishmentStatuses = useMemo(
     () =>
       entityStatuses.map((status) =>
-        status.id === "ACTIVE" ? { ...status, name: "Activa" } : status,
+        status.code === "ACTIVE" || status.code === "A" ? { ...status, name: "Activa" } : status,
       ),
     [entityStatuses],
   )
 
+  // `queryFilters.status` ya trae el `id` (como texto, ver
+  // search-establishments.tsx) — `useEstablishmentsQuery` solo necesita
+  // convertirlo a número, no resolverlo contra ningún catálogo.
   const { data, isPending, isError, refetch } = useEstablishmentsQuery({
     filters: queryFilters,
     sorting,
@@ -73,7 +78,9 @@ export function EstablishmentsDataTable({ title, action }: EstablishmentsDataTab
     columns,
     data: data?.rows ?? [],
     pageCount: data?.pageCount ?? -1,
-    getRowId: (row) => row.id,
+    // `getRowId` de TanStack Table siempre devuelve string; el `id` real de
+    // la fila es number, así que se convierte solo para la selección.
+    getRowId: (row) => String(row.id),
     pageIndex,
     pageSize,
     goToPage,
@@ -84,7 +91,7 @@ export function EstablishmentsDataTable({ title, action }: EstablishmentsDataTab
 
   const rows = data?.rows ?? []
   const selectedItems = useMemo(
-    () => rows.filter((row) => selectedIds.includes(row.id)),
+    () => rows.filter((row) => selectedIds.includes(String(row.id))),
     [rows, selectedIds],
   )
 
@@ -122,7 +129,7 @@ export function EstablishmentsDataTable({ title, action }: EstablishmentsDataTab
             {hasSelection ? (
               <>
                 <ClearSelectionDialog resetSelection={resetSelection} />
-                <DialogBulkDelete<Establishment>
+                <DialogBulkDelete<Establishment, number>
                   items={selectedItems}
                   getItemId={(item) => item.id}
                   getItemLabel={(item) => item.name}
@@ -138,7 +145,7 @@ export function EstablishmentsDataTable({ title, action }: EstablishmentsDataTab
                   triggerLabel={`Eliminar (${selectedIds.length})`}
                 />
                 <ExportSelectedEstablishmentsDialog
-                  selectedIds={selectedIds}
+                  selectedIds={selectedItems.map((item) => item.id)}
                   resetSelection={resetSelection}
                 />
               </>

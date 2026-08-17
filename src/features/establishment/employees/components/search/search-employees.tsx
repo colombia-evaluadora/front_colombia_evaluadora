@@ -15,6 +15,7 @@ import {
 import type { EmployeeFiltersFormInput } from "@/features/establishment/employees/api/schema"
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 import type { EmployeeStatus } from "@/features/establishment/employees/api/types/employee"
+import { toSearchOptions, toSelectItemsMap } from "@/lib/catalog-options"
 
 // El `htmlFor` de la etiqueta necesita un id estable en el control.
 const SEARCH_INPUT_ID = "employees-search"
@@ -26,7 +27,9 @@ interface SearchEmployeesProps {
   activeFilterCount: number
   roles: CatalogItem[]
   workSchedules: CatalogItem[]
-  statuses: CatalogItem[]
+  // No es `CatalogItem[]`: no sale de un catálogo real (ver
+  // EMPLOYEE_STATUS_OPTIONS en ui-mappings.ts), así que no lleva `id`.
+  statuses: { code: string; name: string }[]
 }
 
 export function SearchEmployees({
@@ -50,20 +53,12 @@ export function SearchEmployees({
       empty: { search: "", roles: [], workSchedules: [], statuses: [] },
       freeText: { key: "texto", field: "search" },
       terms: [
-        optionsTerm(
-          "rol",
-          "roles",
-          roles.map((role) => ({ value: role.code, label: role.name })),
-        ),
-        optionsTerm(
-          "jornada",
-          "workSchedules",
-          workSchedules.map((schedule) => ({ value: schedule.code, label: schedule.name })),
-        ),
+        optionsTerm("rol", "roles", toSearchOptions(roles)),
+        optionsTerm("jornada", "workSchedules", toSearchOptions(workSchedules)),
         optionsTerm(
           "estado",
           "statuses",
-          statuses.map((status) => ({ value: status.id, label: status.name })),
+          statuses.map((status) => ({ value: status.code, label: status.name })),
         ),
       ],
     }),
@@ -104,17 +99,11 @@ export function SearchEmployees({
     setOpen(false)
   }
 
-  const roleItems = [
-    { value: "", label: "Todos" },
-    ...roles.map((role) => ({ value: role.code, label: role.name })),
-  ]
-  const scheduleItems = [
-    { value: "", label: "Todas" },
-    ...workSchedules.map((schedule) => ({ value: schedule.code, label: schedule.name })),
-  ]
+  const roleItems = [{ value: "", label: "Todos" }, ...toSearchOptions(roles)]
+  const scheduleItems = [{ value: "", label: "Todas" }, ...toSearchOptions(workSchedules)]
   const statusItems = [
     { value: "", label: "Todos" },
-    ...statuses.map((status) => ({ value: status.id, label: status.name })),
+    ...statuses.map((status) => ({ value: status.code, label: status.name })),
   ]
 
   return (
@@ -139,7 +128,7 @@ export function SearchEmployees({
             <Field orientation="vertical" variant="outlined" className="gap-2">
               <FieldLabel htmlFor="employee-role">Rol</FieldLabel>
               <Select
-                items={roleItems}
+                items={toSelectItemsMap(roleItems)}
                 value={draftRole}
                 onValueChange={(value) => setDraftRole(value ?? "")}
               >
@@ -159,7 +148,7 @@ export function SearchEmployees({
             <Field orientation="vertical" variant="outlined" className="gap-2">
               <FieldLabel htmlFor="employee-schedule">Jornada</FieldLabel>
               <Select
-                items={scheduleItems}
+                items={toSelectItemsMap(scheduleItems)}
                 value={draftSchedule}
                 onValueChange={(value) => setDraftSchedule(value ?? "")}
               >
@@ -179,7 +168,7 @@ export function SearchEmployees({
             <Field orientation="vertical" variant="outlined" className="gap-2">
               <FieldLabel htmlFor="employee-status">Estado</FieldLabel>
               <Select
-                items={statusItems}
+                items={toSelectItemsMap(statusItems)}
                 value={draftStatus}
                 onValueChange={(value) => setDraftStatus(value ?? "")}
               >

@@ -9,23 +9,68 @@ import {
 } from "@/components/ui/select"
 
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
-import type { Campus } from "@/features/establishment/campuses/api/types/campus"
+import type { CampusDraft, EstablishmentOption } from "@/features/establishment/campuses/api/types/campus"
 
 interface CampusDetailsFormProps {
-  value: Campus
+  value: CampusDraft
   zones: CatalogItem[]
-  onChange: (next: Campus) => void
+  onChange: (next: CampusDraft) => void
   /** Mensaje de error por ruta de campo; lo llena el diálogo al guardar. */
   errors?: Record<string, string>
+  /**
+   * `FK_TESTABLECIMIENTO` es obligatorio al crear e inmutable después — el
+   * selector solo tiene sentido en alta, así que el diálogo no lo pasa en
+   * edición.
+   */
+  establishmentPicker?: {
+    establishments: EstablishmentOption[]
+  }
 }
 
-export function CampusDetailsForm({ value, zones, onChange, errors = {} }: CampusDetailsFormProps) {
+export function CampusDetailsForm({
+  value,
+  zones,
+  onChange,
+  errors = {},
+  establishmentPicker,
+}: CampusDetailsFormProps) {
   const zoneLabels = Object.fromEntries(zones.map((zone) => [zone.id, zone.name]))
+  const establishmentLabels = establishmentPicker
+    ? Object.fromEntries(establishmentPicker.establishments.map((item) => [item.id, item.name]))
+    : {}
 
   return (
     // `gap-x-4 gap-y-2`: mismo ritmo que los formularios de establecimiento —
     // aire entre columnas, filas pegadas.
     <div className="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-3">
+      {establishmentPicker && (
+        <Field
+          orientation="vertical"
+          variant="outlined"
+          className="w-full"
+          data-invalid={errors["establishmentId"] ? "true" : undefined}
+        >
+          <FieldLabel htmlFor="campus-establishment">Establecimiento educativo *</FieldLabel>
+          <Select
+            items={establishmentLabels}
+            value={value.establishmentId}
+            onValueChange={(selectedValue) => onChange({ ...value, establishmentId: selectedValue ?? null })}
+          >
+            <SelectTrigger id="campus-establishment" size="sm" aria-invalid={Boolean(errors["establishmentId"])}>
+              <SelectValue placeholder="Seleccionar" />
+            </SelectTrigger>
+            <SelectContent>
+              {establishmentPicker.establishments.map((item) => (
+                <SelectItem key={item.id} value={item.id}>
+                  {item.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <FieldError>{errors["establishmentId"]}</FieldError>
+        </Field>
+      )}
+
       <Field
         orientation="vertical"
         variant="outlined"
@@ -71,17 +116,10 @@ export function CampusDetailsForm({ value, zones, onChange, errors = {} }: Campu
         <FieldLabel htmlFor="campus-zone">Zona *</FieldLabel>
         <Select
           items={zoneLabels}
-          value={value.zone.id}
+          value={value.zone?.id ?? null}
           onValueChange={(selectedValue) => {
             const option = zones.find((item) => item.id === selectedValue)
-            onChange({
-              ...value,
-              zone: option ?? {
-                id: selectedValue ?? "",
-                code: selectedValue ?? "",
-                name: selectedValue ?? "",
-              },
-            })
+            if (option) onChange({ ...value, zone: option })
           }}
         >
           <SelectTrigger id="campus-zone" size="sm" aria-invalid={Boolean(errors["zone"])}>
@@ -138,17 +176,6 @@ export function CampusDetailsForm({ value, zones, onChange, errors = {} }: Campu
           size="sm"
           value={value.phone}
           onChange={(event) => onChange({ ...value, phone: event.target.value })}
-          placeholder="Agregar"
-        />
-      </Field>
-
-      <Field orientation="vertical" variant="outlined" className="w-full">
-        <FieldLabel htmlFor="campus-approval-resolution">Resolución de aprobación</FieldLabel>
-        <Input
-          id="campus-approval-resolution"
-          size="sm"
-          value={value.approvalResolution}
-          onChange={(event) => onChange({ ...value, approvalResolution: event.target.value })}
           placeholder="Agregar"
         />
       </Field>

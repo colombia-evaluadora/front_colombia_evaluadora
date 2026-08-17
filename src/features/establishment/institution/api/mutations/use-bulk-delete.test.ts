@@ -40,7 +40,7 @@ it("removes multiple establishments through the bulk-delete mock handler", async
   }
 })
 
-it("rejects bulk-delete when the body is not a list of strings", async () => {
+it("rejects bulk-delete when the body is not a list of numbers", async () => {
   const response = await fetch("http://localhost/api/establishments/bulk-delete", {
     method: "DELETE",
     headers: {

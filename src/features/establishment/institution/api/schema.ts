@@ -1,17 +1,16 @@
 import { z } from "zod"
 
-export const ESTABLISHMENT_STATUSES = [
-  "ACTIVE",
-  "SUSPENDED",
-] as const
-
 /**
  * Schema del formulario de filtros.
  * Representa exactamente el estado del form.
+ *
+ * `statuses` ya no es un enum fijo: son códigos del catálogo real
+ * `ESTADO_ESTABLECIMIENTO` (5 valores, no 2 — ver `EstablishmentStatus` en
+ * api/types/establishment.ts), así que se valida solo como texto.
  */
 export const establishmentFiltersFormSchema = z.object({
   search: z.string(),
-  statuses: z.array(z.enum(ESTABLISHMENT_STATUSES)),
+  statuses: z.array(z.string()),
 })
 
 export type EstablishmentFiltersFormInput = z.input<
@@ -38,7 +37,7 @@ export const establishmentsSearchSchema = z.object({
   search: z.string().optional().catch(undefined),
 
   statuses: z
-    .array(z.enum(ESTABLISHMENT_STATUSES))
+    .array(z.string())
     .optional()
     .catch(undefined),
 })

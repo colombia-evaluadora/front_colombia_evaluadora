@@ -40,13 +40,13 @@ it("removes multiple employees through the bulk-delete mock handler", async () =
   }
 })
 
-it("rejects bulk-delete when the body is not a list of strings", async () => {
+it("rejects bulk-delete when the body is not a list of numbers", async () => {
   const response = await fetch("http://localhost/api/establishments/employees/bulk-delete", {
     method: "DELETE",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(["valid-id", 123]),
+    body: JSON.stringify([123, "not-a-number"]),
   })
 
   expect(response.status).toBe(400)

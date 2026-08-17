@@ -18,6 +18,7 @@ import { CATALOGS } from "@/lib/catalogs"
 import { DATE_VALUE_FORMAT, parseDateValue } from "@/lib/date-time-value"
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 import { useCatalogQuery } from "@/features/establishment/employees/api/query/use-catalogs"
+import { findPersonByDocument } from "@/features/establishment/employees/api/query/use-user-by-document"
 import type { Person } from "@/features/establishment/employees/api/types/person"
 
 type EmployeeRoleCode = (typeof EMPLOYEE_ROLES)[number]["code"]
@@ -43,7 +44,6 @@ interface UserFormProps {
 
 function createEmptyPerson(): Person {
     return {
-        id: "",
         documentType: null,
         identification: "",
         firstName: "",
@@ -123,6 +123,40 @@ export function UserDetailsForm({
     const emitChange = (patch: Partial<Person>) => {
         onChange({ ...person, ...patch })
     }
+
+    // Autocompletado: cuando hay tipo + número de documento, busca un
+    // TUSUARIO existente y vuelca sus datos sobre el form (nunca pisa
+    // `password`, que no existe en TUSUARIO). Debounced para no pegarle al
+    // backend en cada tecla; se ignora la respuesta si el documento
+    // cambió mientras la búsqueda estaba en vuelo (evita pisar el form con
+    // datos de una búsqueda vieja).
+    const documentTypeId = person.documentType?.id ?? null
+    const identification = person.identification
+    useEffect(() => {
+        if (!documentTypeId || !identification.trim()) return
+
+        let cancelled = false
+        const timer = setTimeout(() => {
+            findPersonByDocument(documentTypeId, identification)
+                .then((found) => {
+                    if (cancelled || !found) return
+                    emitChange(found)
+                })
+                .catch(() => {
+                    // Búsqueda opcional: si falla, el usuario sigue
+                    // llenando el form a mano — no se interrumpe con un
+                    // toast por algo que no bloquea el flujo.
+                })
+        }, 500)
+
+        return () => {
+            cancelled = true
+            clearTimeout(timer)
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- solo debe
+        // re-disparar cuando cambia el documento, no en cada cambio de `person`
+        // (si no, el autofill de esta misma búsqueda la volvería a disparar).
+    }, [documentTypeId, identification])
 
     return (
         <div className="grid grid-cols-1 gap-2">
@@ -253,6 +287,7 @@ export function UserDetailsForm({
                         aria-invalid={isInvalid(`${fieldPrefix}.email`)}
                         onChange={(event) => emitChange({ email: event.target.value })}
                     />
+                    <FieldError>{errorFor(`${fieldPrefix}.email`)}</FieldError>
                 </Field>
                 <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid(`${fieldPrefix}.password`) ? "true" : undefined}>
                     <FieldLabel htmlFor="user-password">Contraseña</FieldLabel>
@@ -294,6 +329,7 @@ export function UserDetailsForm({
                         aria-invalid={isInvalid(`${fieldPrefix}.birthDate`)}
                         onChange={(date) => emitChange({ birthDate: date ? format(date, DATE_VALUE_FORMAT) : "" })}
                     />
+                    <FieldError>{errorFor(`${fieldPrefix}.birthDate`)}</FieldError>
                 </Field>
                 <Field orientation="vertical" variant="outlined" data-invalid={isInvalid(`${fieldPrefix}.gender`) ? "true" : undefined}>
                     <FieldLabel htmlFor="gender-user">
@@ -320,6 +356,7 @@ export function UserDetailsForm({
                             ))}
                         </SelectContent>
                     </Select>
+                    <FieldError>{errorFor(`${fieldPrefix}.gender`)}</FieldError>
                 </Field>
                 <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid(`${fieldPrefix}.phone`) ? "true" : undefined}>
                     <FieldLabel htmlFor="user-phone">Teléfono</FieldLabel>

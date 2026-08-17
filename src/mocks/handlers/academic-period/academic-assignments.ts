@@ -92,7 +92,9 @@ export const academicAssignmentsHandlers = [
     const sortDir = url.searchParams.get("sortDir")
 
     const period = academicPeriodsDb.find((p) => p.id === academicPeriodId)
-    const sedeId = period?.sedeId != null ? String(period.sedeId) : null
+    // `sedeId` es string en el periodo académico y numérico en la sede del
+    // permiso: se compara del lado numérico, como en el resto del merge.
+    const sedeId = period?.sedeId != null ? Number(period.sedeId) : null
 
     let rows = employeesRowsDb.filter((row) => {
       const employee = employeesDb.find((item) => item.id === row.id)

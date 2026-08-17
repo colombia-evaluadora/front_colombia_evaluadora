@@ -79,7 +79,7 @@ function createCampus(index: number): Campus {
   const zone = createCatalogItem(ZONES)
 
   return {
-    id: `campus-${index}`,
+    id: index,
     name: `${baseName} ${suffix}`,
     dane: generateDane(index),
     zone,
@@ -87,7 +87,6 @@ function createCampus(index: number): Campus {
     commune: faker.helpers.arrayElement(COMMUNES),
     address: faker.location.streetAddress(),
     phone: faker.phone.number({ style: "international" }),
-    approvalResolution: `RES-${faker.string.numeric({ length: 4, allowLeadingZeros: true })}`,
   }
 }
 
@@ -96,6 +95,15 @@ export const campusesDb: Campus[] = Array.from({ length: 9 }, (_, index) =>
 )
 
 export const campusesRowsDb: Campus[] = [...campusesDb]
+
+// Autoincremental simulado, continúa después de los 9 sembrados arriba. Lo
+// consume el handler de `POST /establishments/campuses`, que es quien decide
+// el id de una sede nueva — acá solo se persiste el `Campus` ya completo.
+let nextCampusId = campusesDb.length + 1
+
+export function takeNextCampusId(): number {
+  return nextCampusId++
+}
 
 export function upsertCampusDetails(campus: Campus) {
   const detailsIndex = campusesDb.findIndex((item) => item.id === campus.id)
@@ -116,7 +124,7 @@ export function upsertCampusDetails(campus: Campus) {
   return campus
 }
 
-export function deleteCampusDetails(id: string) {
+export function deleteCampusDetails(id: number) {
   const detailsIndex = campusesDb.findIndex((item) => item.id === id)
   const rowIndex = campusesRowsDb.findIndex((item) => item.id === id)
 
@@ -129,7 +137,7 @@ export function deleteCampusDetails(id: string) {
   }
 }
 
-export function deleteManyCampusDetails(ids: string[]) {
+export function deleteManyCampusDetails(ids: number[]) {
   const idSet = new Set(ids)
 
   for (let index = campusesDb.length - 1; index >= 0; index -= 1) {
