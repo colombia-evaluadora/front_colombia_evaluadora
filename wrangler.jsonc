@@ -15,9 +15,18 @@
     "run_worker_first": ["/api/*"],
   },
   "vars": {
-    // Mismo destino que `VITE_APP_API_PROXY_TARGET` usa en dev. Va acá y no en
-    // el bundle porque lo resuelve el Worker en el servidor: el navegador nunca
-    // ve esta URL (es HTTP plano, y el sitio es HTTPS).
-    "API_PROXY_TARGET": "http://172.233.184.248:8080",
+    // Mismo servidor que `VITE_APP_API_PROXY_TARGET` usa en dev, pero POR
+    // NOMBRE y no por IP: un `fetch` de un Worker a una IP pelada lo rechaza
+    // Cloudflare con "error code: 1003" (Direct IP Access Not Allowed), así que
+    // `http://172.233.184.248:8080` devolvía 403 en todas las llamadas.
+    //
+    // Este hostname es el rDNS que Linode le da a la máquina. Funciona hoy, pero
+    // queda atado a la IP: si el servidor se muda, cambia. Lo correcto a futuro
+    // es un subdominio propio (api-test.colombiaevaluadora.com) apuntando acá.
+    //
+    // Va en el Worker y no en el bundle porque se resuelve del lado del
+    // servidor: el navegador nunca ve esta URL (es HTTP plano y el sitio es
+    // HTTPS, así que desde el navegador sería mixed content).
+    "API_PROXY_TARGET": "http://172-233-184-248.ip.linodeusercontent.com:8080",
   },
 }
