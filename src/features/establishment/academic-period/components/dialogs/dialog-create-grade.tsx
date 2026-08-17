@@ -246,8 +246,10 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
 
   const scheduleSubjects = useMemo<ScheduleSubject[]>(() => {
     const colorByName = new Map<string, string>()
+    const abbreviationByName = new Map<string, string>()
     for (const area of areaData?.rows ?? []) {
       for (const subject of area.subjects) {
+        abbreviationByName.set(subject.nombreInterno.toLowerCase(), subject.abreviacion)
         if (!subject.color) continue
         colorByName.set(subject.nombreInterno.toLowerCase(), subject.color)
         colorByName.set(subject.abreviacion.toLowerCase(), subject.color)
@@ -256,6 +258,7 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
     return (planData?.rows ?? []).map((item) => ({
       id: String(item.codigo),
       name: item.asignatura,
+      abbreviation: abbreviationByName.get(item.asignatura.toLowerCase()),
       blocks: item.intensidadHoraria,
       color: colorByName.get(item.asignatura.toLowerCase()) ?? DEFAULT_SUBJECT_COLOR,
     }))
