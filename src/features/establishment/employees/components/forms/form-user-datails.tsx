@@ -40,6 +40,14 @@ interface UserFormProps {
      */
     confirmPassword?: string
     onConfirmPasswordChange?: (value: string) => void
+    /**
+     * Foto recién elegida, todavía sin subir. Igual que el escudo del
+     * establecimiento, vive en el padre: es él quien la manda como
+     * `fkTarchivoFoto` del multipart al registrar o actualizar. Sin estas dos
+     * props el campo sigue funcionando, pero la foto no se persiste.
+     */
+    photo?: File | null
+    onPhotoChange?: (file: File | null) => void
 }
 
 function createEmptyPerson(): Person {
@@ -65,6 +73,8 @@ export function UserDetailsForm({
     showValidation = false,
     confirmPassword: confirmPasswordProp,
     onConfirmPasswordChange,
+    photo: photoProp,
+    onPhotoChange,
 }: UserFormProps) {
     // El encabezado solo nombra el rol de la persona (Rector, Secretaria). Sin
     // `role` no hay nada que anunciar y el contenedor ya pone su propio título
@@ -89,10 +99,21 @@ export function UserDetailsForm({
     )
     const confirmPassword = isConfirmControlled ? confirmPasswordProp : internalConfirmPassword
 
-    // Foto del usuario: estado puramente UI. Hoy no se persiste en el
-    // modelo `Person`, así que solo mantenemos el archivo vivo mientras
-    // el diálogo está montado.
-    const [photo, setPhoto] = useState<File | null>(null)
+    // Foto del usuario, con el mismo doble modo que la confirmación de
+    // contraseña: si el padre pasa `photo`/`onPhotoChange` la manda él al
+    // backend; si no, queda acá y solo vive mientras el form está montado.
+    // No es parte de `Person` porque el modelo guarda el `pk_tarchivo` que
+    // devuelve el backend, no el `File` que el usuario acaba de elegir.
+    const isPhotoControlled = photoProp !== undefined
+    const [internalPhoto, setInternalPhoto] = useState<File | null>(null)
+    const photo = isPhotoControlled ? photoProp : internalPhoto
+    const setPhoto = (next: File | null) => {
+        if (isPhotoControlled) {
+            onPhotoChange?.(next)
+            return
+        }
+        setInternalPhoto(next)
+    }
 
     // Sincroniza la confirmación cuando el padre **carga otra persona** (no
     // solo edita la actual). El `useEffect` original re-sincronizaba cada vez

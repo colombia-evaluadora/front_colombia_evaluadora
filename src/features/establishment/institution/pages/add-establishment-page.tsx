@@ -157,6 +157,13 @@ export function AddEstablishmentPage() {
     principal: "",
     secretary: "",
   })
+  // Mismo criterio que `shield`, pero por persona: la foto de rector y
+  // secretaria se manda como `fkTarchivoFoto` del multipart de SU propio
+  // registro/actualización de funcionario, no del establecimiento.
+  const [photos, setPhotos] = useState<Record<string, File | null>>({
+    principal: null,
+    secretary: null,
+  })
   // Registro completo de TFUNCIONARIO (no solo `Person`) para rector y
   // secretaria, cuando el EE ya tenía uno enlazado — se necesita al guardar
   // para reenviar sus campos de empleo (clase, jornada, estado, dirección)
@@ -288,7 +295,9 @@ export function AddEstablishmentPage() {
     person: Person | null,
     existingEmployee: Employee | null,
     label: string,
-    confirmPassword: string
+    confirmPassword: string,
+    /** Foto recién elegida; `null` en edición = conservar la guardada. */
+    foto: File | null
   ): Promise<PersistedPerson | null> {
     if (!person || !personHasAnyData(person, confirmPassword)) {
       return null
@@ -306,15 +315,19 @@ export function AddEstablishmentPage() {
           // `dialog-manage.tsx`); acá tampoco hay que leerlo del response —
           // ya tenemos el `person` que se acaba de mandar, se devuelve tal
           // cual.
-          await updateFuncionario(person.id, {
-            ...(existingEmployee ?? createEmptyEmployeeShell()),
-            person,
-          })
+          await updateFuncionario(
+            person.id,
+            {
+              ...(existingEmployee ?? createEmptyEmployeeShell()),
+              person,
+            },
+            foto,
+          )
           notify(`${label} actualizado.`)
           return { person, pkFuncionarioToEnlazar: null }
         }
 
-        const registered = await registerFuncionario(person)
+        const registered = await registerFuncionario(person, foto)
         notify(`${label} guardado.`)
         return {
           person: { ...person, id: registered.pkFuncionario },
@@ -368,7 +381,8 @@ export function AddEstablishmentPage() {
         nextPrincipal,
         principalEmployee,
         "Rector",
-        confirmPasswords["principal"] ?? ""
+        confirmPasswords["principal"] ?? "",
+        photos["principal"] ?? null
       )
       if (persistedPrincipal) {
         nextPrincipal = persistedPrincipal.person
@@ -379,7 +393,8 @@ export function AddEstablishmentPage() {
         nextSecretary,
         secretaryEmployee,
         "Secretaria",
-        confirmPasswords["secretary"] ?? ""
+        confirmPasswords["secretary"] ?? "",
+        photos["secretary"] ?? null
       )
       if (persistedSecretary) {
         nextSecretary = persistedSecretary.person
@@ -544,6 +559,10 @@ export function AddEstablishmentPage() {
                         onConfirmPasswordChange={(value) =>
                           setConfirmPasswords((current) => ({ ...current, principal: value }))
                         }
+                        photo={photos["principal"] ?? null}
+                        onPhotoChange={(file) =>
+                          setPhotos((current) => ({ ...current, principal: file }))
+                        }
                       />
                     </CardContent>
                   </Card>
@@ -560,6 +579,10 @@ export function AddEstablishmentPage() {
                         confirmPassword={confirmPasswords["secretary"] ?? ""}
                         onConfirmPasswordChange={(value) =>
                           setConfirmPasswords((current) => ({ ...current, secretary: value }))
+                        }
+                        photo={photos["secretary"] ?? null}
+                        onPhotoChange={(file) =>
+                          setPhotos((current) => ({ ...current, secretary: file }))
                         }
                       />
                     </CardContent>

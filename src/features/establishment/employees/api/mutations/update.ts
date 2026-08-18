@@ -1,6 +1,7 @@
 import { env } from "@/config/env"
 import { api } from "@/lib/api-client"
 import { apiPath } from "@/lib/api-routes"
+import { patchMultipart } from "@/lib/files"
 
 import type { Employee } from "@/features/establishment/employees/api/types/employee"
 
@@ -87,13 +88,30 @@ function toOutgoingPayload(values: Employee) {
  * PATCH, no PUT: `PUT /establecimientos/funcionarios/:ID` ya es la baja
  * lógica (`fn_fun_baja_establecimiento`, ver use-delete.ts) — el PATCH es
  * el update integral de campos.
+ *
+ * `foto` (opcional) reemplaza la foto de perfil, y es el mismo PATCH parcial
+ * de siempre solo que multipart — igual que el escudo en
+ * `institution/api/mutations/create.ts`. Viaja como `fkTarchivoFoto`, el
+ * nombre que `param_types` declara `FILE:perfilUsuario`; con cualquier otro,
+ * `file-service` responde 400 antes de tocar S3.
+ *
+ * Sin foto nueva se manda el JSON plano de siempre: no se pasa por
+ * `file-service` al pedo, y así tampoco se pisa la foto ya guardada.
  */
 export function update(
   employeeId: number,
   values: Employee,
+  foto?: File | null,
 ): Promise<{ status: "ok" | "error"; message: string; employee: Employee }> {
   const url = apiPath(`/establishments/employees/${employeeId}`, `/establecimientos/funcionarios/${employeeId}`)
-  return env.ENABLE_API_MOCKING
-    ? api.put(url, toOutgoingPayload(values))
-    : api.patch(url, toOutgoingPayload(values))
+
+  if (env.ENABLE_API_MOCKING) return api.put(url, toOutgoingPayload(values))
+
+  if (foto) {
+    return patchMultipart(`/eval-col/establecimientos/funcionarios/${employeeId}`, toOutgoingPayload(values), {
+      fkTarchivoFoto: foto,
+    })
+  }
+
+  return api.patch(url, toOutgoingPayload(values))
 }

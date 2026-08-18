@@ -8,10 +8,12 @@ import type { Employee } from "@/features/establishment/employees/api/types/empl
 interface UpdateEmployeeInput {
   employeeId: number
   values: Employee
+  /** Foto nueva a subir en el mismo PATCH; omitida, la guardada no se toca. */
+  foto?: File | null
 }
 
-function updateMutation({ employeeId, values }: UpdateEmployeeInput) {
-  return update(employeeId, values)
+function updateMutation({ employeeId, values, foto }: UpdateEmployeeInput) {
+  return update(employeeId, values, foto)
 }
 
 interface UseUpdateOptions {
