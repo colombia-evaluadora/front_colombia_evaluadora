@@ -23,6 +23,16 @@ interface ImageUploadFieldProps {
     hint?: ReactNode
     /** Etiqueta accesible del botón de borrado. */
     deleteLabel?: string
+    /**
+     * Imagen YA guardada en el servidor, para el modo edición. Se muestra
+     * dentro del dropzone mientras no se elija un archivo nuevo, de forma que
+     * el área siga sirviendo para reemplazarla.
+     *
+     * Llega como nodo y no como id/URL para que este componente siga siendo
+     * genérico: quién sabe resolver un `pk_tarchivo` es la capa de features,
+     * no `components/`.
+     */
+    existingPreview?: ReactNode
     className?: string
 }
 
@@ -39,6 +49,7 @@ export function ImageUploadField({
     description,
     hint = "JPG, PNG o SVG · Máximo 2 MB",
     deleteLabel = "Eliminar imagen",
+    existingPreview,
     className,
 }: ImageUploadFieldProps) {
     // La vista previa necesita una URL: se revoca al cambiar de archivo o al
@@ -112,7 +123,12 @@ export function ImageUploadField({
                 // la fila del grid, no el dropzone, así que si el espacio queda
                 // justo el contenido se recorta en vez de estirar la fila.
                 <FileUploadDropzone className="h-full w-full gap-1 overflow-hidden rounded-lg bg-muted/20 px-3 py-3">
-                    <ImageIcon className="size-8 shrink-0 text-muted-foreground" />
+                    {/* Con imagen ya guardada, ella ocupa el lugar del ícono: el
+                        dropzone sigue activo, así que el mismo click que antes
+                        cargaba ahora reemplaza. */}
+                    {existingPreview ?? (
+                        <ImageIcon className="size-8 shrink-0 text-muted-foreground" />
+                    )}
                     {/*
                         Los tres textos van en un bloque propio: el `gap` del
                         dropzone separa el ícono del texto, y acá adentro no va
