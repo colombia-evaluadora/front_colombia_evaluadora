@@ -307,9 +307,33 @@ export function AreaSubjectFormDialog({
     )
   }
 
+  // Espeja `fn_subject_guardar_bulk` (backend): nombre y abreviación deben
+  // ser únicos dentro del área — sin este check, el duplicado solo se
+  // atrapaba en el toast genérico del interceptor HTTP, después de enviar
+  // el lote completo.
+  const norm = (s: string) => s.trim().toLowerCase()
+  function findDuplicateSubjectField(
+    value: SubjectDraft,
+    excludeIndex: number | null,
+  ): string | null {
+    const others = subjects.filter((_, i) => i !== excludeIndex)
+    if (others.some((s) => norm(s.nombreInterno) === norm(value.nombreInterno))) {
+      return `Ya existe una asignatura con el nombre "${value.nombreInterno}" en esta área.`
+    }
+    if (others.some((s) => norm(s.abreviacion) === norm(value.abreviacion))) {
+      return `Ya existe una asignatura con la abreviación "${value.abreviacion}" en esta área.`
+    }
+    return null
+  }
+
   function commitDraft() {
     if (!draft.asignaturaGeneral.trim() && !draft.nombreInterno.trim()) {
       notify("Elige una asignatura general o completa el nombre interno.", { variant: "error" })
+      return
+    }
+    const duplicateMessage = findDuplicateSubjectField(draft, null)
+    if (duplicateMessage) {
+      notify(duplicateMessage, { variant: "error" })
       return
     }
     setSubjects((prev) => [...prev, draft])
@@ -372,6 +396,11 @@ export function AreaSubjectFormDialog({
     if (editingIndex === null || !editDraft) return
     if (!editDraft.asignaturaGeneral.trim() && !editDraft.nombreInterno.trim()) {
       notify("Elige una asignatura general o completa el nombre interno.", { variant: "error" })
+      return
+    }
+    const duplicateMessage = findDuplicateSubjectField(editDraft, editingIndex)
+    if (duplicateMessage) {
+      notify(duplicateMessage, { variant: "error" })
       return
     }
     const next = editDraft

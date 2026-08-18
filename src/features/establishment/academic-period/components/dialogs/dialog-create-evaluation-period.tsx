@@ -114,6 +114,24 @@ export function CreateEvaluationPeriodDialog({
     return otherPeriods.some((p) => start <= p.endDate && p.startDate <= end)
   }
 
+  // Espeja la validación de unicidad de `fn_periodo_eval_validar` (backend):
+  // sin este check, un código/nombre/abreviación repetido solo se atrapaba
+  // en el toast genérico del interceptor HTTP, con texto distinto al resto
+  // de validaciones de este diálogo (que sí usan el banner local).
+  function findDuplicateField(values: EvaluationPeriodFormValues): string | null {
+    const norm = (s: string) => s.trim().toLowerCase()
+    if (otherPeriods.some((p) => norm(p.codigo) === norm(values.codigo))) {
+      return `Ya existe un período de evaluación con el código "${values.codigo}" en este período académico.`
+    }
+    if (otherPeriods.some((p) => norm(p.nombre) === norm(values.nombre))) {
+      return `Ya existe un período de evaluación con el nombre "${values.nombre}" en este período académico.`
+    }
+    if (otherPeriods.some((p) => norm(p.abreviacion) === norm(values.abreviacion))) {
+      return `Ya existe un período de evaluación con la abreviación "${values.abreviacion}" en este período académico.`
+    }
+    return null
+  }
+
   const defaultValues: EvaluationPeriodFormValues = period
     ? {
         codigo: period.codigo,
@@ -158,14 +176,25 @@ export function CreateEvaluationPeriodDialog({
     },
     onSubmit: ({ value }) => {
       const values = evaluationPeriodFormSchema.parse(value)
+      const duplicateMessage = findDuplicateField(values)
+      if (duplicateMessage) {
+        notifyInDialog(duplicateMessage)
+        return
+      }
       if (hasOverlap(values.startDate, values.endDate)) {
-        notifyInDialog(
-          "El período coincide con otro período de evaluación existente. Revisa las fechas.",
-        )
+        // Mismo texto que `fn_periodo_eval_validar` (backend) para el mismo
+        // caso, así no se ve una redacción distinta según cuál validación
+        // dispare primero.
+        notifyInDialog("El periodo de evaluación se solapa con otro existente.")
         return
       }
       if (values.peso > pesoDisponible) {
-        notifyInDialog(`El peso porcentual supera el 100 %. Disponible: ${pesoDisponible} %.`)
+        // Mismo mensaje base que `fn_periodo_eval_validar` ("La suma de
+        // pesos supera el 100%"), con el disponible agregado — dato que el
+        // backend no calcula pero sí es útil para corregir sin adivinar.
+        notifyInDialog(
+          `La suma de pesos supera el 100%. Disponible: ${pesoDisponible} %.`,
+        )
         return
       }
       const payload = { ...values }
@@ -398,7 +427,7 @@ export function CreateEvaluationPeriodDialog({
               onChange: ({ value }) =>
                 value > pesoDisponible
                   ? {
-                      message: `El peso supera el 100 %. Disponible: ${pesoDisponible} %.`,
+                      message: `La suma de pesos supera el 100%. Disponible: ${pesoDisponible} %.`,
                     }
                   : undefined,
             }}
