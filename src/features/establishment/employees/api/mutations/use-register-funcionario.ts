@@ -1,4 +1,5 @@
 import { api } from "@/lib/api-client"
+import { postMultipart } from "@/lib/files"
 
 import type { Person } from "@/features/establishment/employees/api/types/person"
 
@@ -57,14 +58,37 @@ function toRegisterFuncionarioRequest(person: Person) {
   }
 }
 
-export async function registerFuncionario(person: Person): Promise<RegisterFuncionarioResult> {
+/**
+ * `foto` (opcional) viaja como `fkTarchivoFoto`, el ÚNICO nombre declarado
+ * `FILE:perfilUsuario` en `param_types`; cualquier otro lo rechaza
+ * `file-service` con 400 antes de tocar S3.
+ *
+ * Con foto la petición va por `file-service` (`/files/register/funcionario`),
+ * que sube el binario, lo registra en `TARCHIVO` y sustituye el campo por su
+ * `pk_tarchivo` antes de reenviar a auth-center. Ojo con la URL: este destino
+ * es un `endpoint` de auth-center, no una `query`, así que **no lleva prefijo
+ * de microservicio** — ni `/auth` ni `/eval-col`, a diferencia de la ruta
+ * directa de abajo.
+ */
+export async function registerFuncionario(
+  person: Person,
+  foto?: File | null,
+): Promise<RegisterFuncionarioResult> {
+  const body = toRegisterFuncionarioRequest(person)
+
+  if (foto) {
+    return postMultipart<RegisterFuncionarioResult>("/register/funcionario", body, {
+      fkTarchivoFoto: foto,
+    })
+  }
+
   // El gateway enruta hacia auth-center por `requesturi: /api/auth/**`
   // (tabla `microservice`) — sin el segmento `/auth` la petición no
   // matchea ese patrón y el gateway responde 404 antes de llegar al
   // servicio, aunque el endpoint (`/register/funcionario`) sí está
   // registrado ahí. Confirmado probando ambas formas contra el backend
   // real.
-  return api.post("/auth/register/funcionario", toRegisterFuncionarioRequest(person))
+  return api.post("/auth/register/funcionario", body)
 }
 
 /**

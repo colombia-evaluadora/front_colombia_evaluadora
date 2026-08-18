@@ -429,7 +429,7 @@ export function AddEstablishmentPage() {
       return
     }
 
-    const result = await createMutation.mutateAsync(nextValues)
+    const result = await createMutation.mutateAsync({ values: nextValues })
 
     if (result.status === "error") {
       notify(result.message, { variant: "error" })

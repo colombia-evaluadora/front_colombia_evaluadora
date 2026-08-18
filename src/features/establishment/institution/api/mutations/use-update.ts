@@ -8,13 +8,16 @@ import type { EstablishmentDetails } from "@/features/establishment/institution/
 interface UpdateEstablishmentInput {
   establishmentId: number
   values: EstablishmentDetails
+  /** Escudo nuevo. Ausente = se conserva el que ya tenía. */
+  logo?: File | null
 }
 
 function updateEstablishmentMutation({
   establishmentId,
   values,
+  logo,
 }: UpdateEstablishmentInput) {
-  return updateEstablishment(establishmentId, values)
+  return updateEstablishment(establishmentId, values, logo)
 }
 
 interface UseUpdateOptions {
