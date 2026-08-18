@@ -166,11 +166,14 @@ export function RestorePasswordPage() {
               )}
             </Button>
 
+            {/* Mismo tratamiento que en "Olvidaste tu contraseña": es el mismo
+                botón del mismo flujo, así que no puede cambiar de estilo según
+                la pantalla. */}
             <Button
               render={<Link to={paths.auth.login.path} />}
               nativeButton={false}
-              variant="link"
-              color="secondary"
+              variant="ghost"
+              color="primary"
             >
               <ArrowLeftIcon data-icon="inline-start" />
               Volver a iniciar sesión
