@@ -24,9 +24,9 @@ interface ImageUploadFieldProps {
     /** Etiqueta accesible del botón de borrado. */
     deleteLabel?: string
     /**
-     * Imagen YA guardada en el servidor, para el modo edición. Se muestra
-     * dentro del dropzone mientras no se elija un archivo nuevo, de forma que
-     * el área siga sirviendo para reemplazarla.
+     * Imagen YA guardada en el servidor, para el modo edición. Ocupa la caja
+     * entera mientras no se elija un archivo nuevo —igual que la vista previa
+     * de uno recién cargado—, y el área sigue sirviendo para reemplazarla.
      *
      * Llega como nodo y no como id/URL para que este componente siga siendo
      * genérico: quién sabe resolver un `pk_tarchivo` es la capa de features,
@@ -74,7 +74,10 @@ export function ImageUploadField({
             accept={accept}
             maxFiles={1}
             maxSize={maxSize}
-            className={cn("h-full w-full", className)}
+            // `overflow-hidden` + `min-h-0`: pase lo que pase adentro (imagen
+            // enorme, skeleton, texto), el campo se queda del tamaño que le dé
+            // la celda en vez de estirarla.
+            className={cn("h-full min-h-0 w-full overflow-hidden", className)}
         >
             {value ? (
                 // La tarjeta llena la misma caja que ocupaba el dropzone en vez
@@ -114,6 +117,21 @@ export function ImageUploadField({
                         </AttachmentAction>
                     </AttachmentActions>
                 </Attachment>
+            ) : existingPreview ? (
+                // Con imagen ya guardada se ve igual que la vista previa de un
+                // archivo recién elegido —la imagen sola, contenida, sin ícono
+                // ni textos—, pero encima sigue siendo el dropzone: el mismo
+                // click que antes cargaba, ahora reemplaza.
+                <FileUploadDropzone className="h-full w-full overflow-hidden rounded-lg border-solid bg-muted/20 p-2">
+                    {/*
+                        Absoluto y con la imagen forzada a `size-full
+                        object-contain`: el tamaño natural del archivo no
+                        interviene, así que ni empuja la caja ni se recorta.
+                    */}
+                    <div className="absolute inset-2 *:size-full *:object-contain">
+                        {existingPreview}
+                    </div>
+                </FileUploadDropzone>
             ) : (
                 // El área completa dispara el selector de archivos (el propio
                 // `FileUploadDropzone` maneja click, drop y Enter/Espacio), así
@@ -123,12 +141,7 @@ export function ImageUploadField({
                 // la fila del grid, no el dropzone, así que si el espacio queda
                 // justo el contenido se recorta en vez de estirar la fila.
                 <FileUploadDropzone className="h-full w-full gap-1 overflow-hidden rounded-lg bg-muted/20 px-3 py-3">
-                    {/* Con imagen ya guardada, ella ocupa el lugar del ícono: el
-                        dropzone sigue activo, así que el mismo click que antes
-                        cargaba ahora reemplaza. */}
-                    {existingPreview ?? (
-                        <ImageIcon className="size-8 shrink-0 text-muted-foreground" />
-                    )}
+                    <ImageIcon className="size-8 shrink-0 text-muted-foreground" />
                     {/*
                         Los tres textos van en un bloque propio: el `gap` del
                         dropzone separa el ícono del texto, y acá adentro no va
