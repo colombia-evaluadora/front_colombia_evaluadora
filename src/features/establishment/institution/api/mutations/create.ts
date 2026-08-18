@@ -1,6 +1,7 @@
 import { env } from "@/config/env"
 import { api } from "@/lib/api-client"
 import { apiPath } from "@/lib/api-routes"
+import { patchMultipart, postMultipart } from "@/lib/files"
 import { unwrapRow } from "@/lib/response-envelope"
 import type { EstablishmentDetails } from "@/features/establishment/institution/api/types/establishment"
 
@@ -40,7 +41,12 @@ function toRealBackendPayload(values: EstablishmentDetails) {
   // declaran `BODY.ID` (el PK de actualizar va por la URL, `PARAM.ID`) — si
   // viaja igual, el validador de placeholders lo rechaza como el resto de
   // los campos sin tipo declarado.
-  const { id: _id, principal, secretary, basicInfo, address, additionalInfo: fullAdditionalInfo, ...rest } = values
+  const { id: _id, principal, secretary, basicInfo: fullBasicInfo, address, additionalInfo: fullAdditionalInfo, ...rest } = values
+  // `logoArchivoId` es de lectura: lo llena el detalle para poder PINTAR el
+  // escudo, pero no está declarado en la query y el validador de placeholders
+  // recorre todo el body — si viaja, rechaza la petición entera. Quien escribe
+  // esa columna es `file-service`, a partir del archivo `logo` del multipart.
+  const { logoArchivoId: _logoArchivoId, ...basicInfo } = fullBasicInfo
   // `operatingLicense` no tiene columna real detrás (`LICENCIA_FUNCIONAMIENTO`
   // es el VARCHAR que ya cubre `licenseStatus`) ni está declarado en la
   // query — viaja igual si no se saca, y queda como leaf sin tipo.
@@ -94,14 +100,33 @@ interface RealCreateRow {
   pk_establecimiento_creado: number
 }
 
-export async function create(values: EstablishmentDetails): Promise<CreateResult> {
+/**
+ * Con escudo el alta va por `file-service` (`/files/eval-col/...`) como
+ * multipart: el binario sube a S3, queda registrado en `TARCHIVO` con
+ * clasificación `escudo` y el campo `logo` se sustituye por su `pk_tarchivo`
+ * antes de llegar a `fn_est_crear`. Sin escudo se manda el JSON de siempre —
+ * no tiene sentido pagar el rodeo por un campo opcional ausente.
+ *
+ * El nombre `logo` no es decorativo: es el único declarado como
+ * `FILE:escudo` en `param_types`, y cualquier otro se rechaza con 400.
+ */
+export async function create(
+  values: EstablishmentDetails,
+  logo?: File | null,
+): Promise<CreateResult> {
   // El response interceptor de `api` ya desenvuelve `response.data` en
   // runtime; el tipo de Axios no lo refleja (ver use-user-by-document.ts
   // para el mismo patrón).
-  const response = (await api.post(
-    apiPath("/establishments", "/establecimientos"),
-    toOutgoingPayload(values),
-  )) as unknown as CreateResult | RealCreateRow | { rows: RealCreateRow[] }
+  const payload = toOutgoingPayload(values)
+  const response = (
+    logo && !env.ENABLE_API_MOCKING
+      ? await postMultipart<RealCreateRow | { rows: RealCreateRow[] }>(
+          "/eval-col/establecimientos",
+          payload,
+          { logo },
+        )
+      : await api.post(apiPath("/establishments", "/establecimientos"), payload)
+  ) as unknown as CreateResult | RealCreateRow | { rows: RealCreateRow[] }
 
   if (env.ENABLE_API_MOCKING) return response as CreateResult
 
@@ -121,10 +146,18 @@ export async function create(values: EstablishmentDetails): Promise<CreateResult
  */
 export function updateEstablishment(
   establishmentId: number,
-  values: EstablishmentDetails
+  values: EstablishmentDetails,
+  logo?: File | null,
 ): Promise<CreateResult> {
   const url = apiPath(`/establishments/${establishmentId}`, `/establecimientos/${establishmentId}`)
-  return env.ENABLE_API_MOCKING
-    ? api.put(url, toOutgoingPayload(values))
-    : api.patch(url, toOutgoingPayload(values))
+  const payload = toOutgoingPayload(values)
+
+  if (env.ENABLE_API_MOCKING) return api.put(url, payload)
+
+  // Reemplazar el escudo es el mismo PATCH parcial, solo que multipart:
+  // `fn_est_actualizar` únicamente toca las columnas cuyo parámetro llegó
+  // no-NULL, así que mandar el resto del establecimiento no lo pisa.
+  return logo
+    ? patchMultipart(`/eval-col/establecimientos/${establishmentId}`, payload, { logo })
+    : api.patch(url, payload)
 }
