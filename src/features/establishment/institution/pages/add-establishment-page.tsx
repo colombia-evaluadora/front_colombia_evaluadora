@@ -144,6 +144,11 @@ export function AddEstablishmentPage() {
   const isEditMode = establishmentId !== null && !Number.isNaN(establishmentId)
   const [formValues, setFormValues] = useState<EstablishmentDetails>(createInitialEstablishmentValues)
   // Mensaje por campo, indexado por ruta (`basicInfo.name`, `principal.password`, …).
+  // Escudo elegido en el dropzone. Vive acá y no en la sección del formulario
+  // porque es esta página la que guarda: se manda como el archivo `logo` del
+  // multipart, aparte del JSON. `null` = no se eligió ninguno, y en edición
+  // eso significa conservar el que ya tiene.
+  const [shield, setShield] = useState<File | null>(null)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [invalidFields, setInvalidFields] = useState<string[]>([])
   const [hasSubmitted, setHasSubmitted] = useState(false)
@@ -425,11 +430,12 @@ export function AddEstablishmentPage() {
       await updateMutation.mutateAsync({
         establishmentId,
         values: { ...nextValues, id: establishmentId },
+        logo: shield,
       })
       return
     }
 
-    const result = await createMutation.mutateAsync({ values: nextValues })
+    const result = await createMutation.mutateAsync({ values: nextValues, logo: shield })
 
     if (result.status === "error") {
       notify(result.message, { variant: "error" })
@@ -496,6 +502,8 @@ export function AddEstablishmentPage() {
                         invalidFields={invalidFields}
                         errors={fieldErrors}
                         showValidation={hasSubmitted}
+                        shield={shield}
+                        onShieldChange={setShield}
                       />
                     </CardContent>
                   </Card>
