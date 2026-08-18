@@ -2,6 +2,8 @@ import { useMemo, useRef, useState } from "react"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { useForm } from "@tanstack/react-form"
 import {
+  CaretLeftIcon,
+  CheckCircleIcon,
   CheckIcon,
   ControlPointIcon,
   PencilIcon,
@@ -276,13 +278,13 @@ export function AreaSubjectFormDialog({
     setDraft(
       useAreaInfo
         ? {
-            asignaturaGeneral: area.areaGeneral,
-            nombreInterno: area.nombreInterno,
-            abreviacion: area.abreviacion,
-            ordenReportes: 1,
-            color: "",
-            especialidad: "",
-          }
+          asignaturaGeneral: area.areaGeneral,
+          nombreInterno: area.nombreInterno,
+          abreviacion: area.abreviacion,
+          ordenReportes: 1,
+          color: "",
+          especialidad: "",
+        }
         : emptyDraft(),
     )
     setSubjectsStarted(true)
@@ -502,15 +504,19 @@ export function AreaSubjectFormDialog({
               >
                 {({ areaGeneral, nombreInterno, abreviacion, ordenReportes }) =>
                   !subjectsStarted &&
-                  areaGeneral &&
-                  nombreInterno &&
-                  abreviacion &&
-                  !Number.isNaN(ordenReportes) ? (
+                    areaGeneral &&
+                    nombreInterno &&
+                    abreviacion &&
+                    !Number.isNaN(ordenReportes) ? (
                     <div className="flex items-end">
                       <Button
                         type="button"
                         color="primary"
                         size="sm"
+                        // `h-10`: los 4 inputs de al lado son `h-10` (el
+                        // default de `Input`); el botón en `size="sm"` es
+                        // `h-9` y quedaba 4px más bajo pese al `items-end`.
+                        className="h-10"
                         onClick={() => {
                           setSubjectsStarted(true)
                           setConfirmOpen(true)
@@ -827,19 +833,23 @@ export function AreaSubjectFormDialog({
       </Dialog>
       {/* Prompt: precargar los datos del área o rellenar a mano. */}
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="sm:max-w-5xl">
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              ¿Desea agregar una asignatura general utilizando la misma información de esta área?
+            <AlertDialogTitle className="text-center">
+              ¿DESEA AGREGAR UNA ASIGNATURA UTILIZANDO LA MISMA INFORMACIÓN DE ESTA ÁREA?
             </AlertDialogTitle>
           </AlertDialogHeader>
           <AlertDialogFooter className="sm:justify-center">
-            <AlertDialogAction onClick={() => startSubject(true)}>Sí</AlertDialogAction>
+            <AlertDialogAction onClick={() => startSubject(true)}>
+              <CheckIcon data-icon="inline-start" />
+              Sí
+            </AlertDialogAction>
             <AlertDialogAction
               color="neutral"
               variant="outline"
               onClick={() => startSubject(false)}
             >
+              <XIcon data-icon="inline-start" />
               No
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -848,29 +858,32 @@ export function AreaSubjectFormDialog({
       <AlertDialog open={successOpen} onOpenChange={setSuccessOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              El área y sus asignaturas fueron guardadas exitosamente.
+            <AlertDialogTitle className="text-center">
+              Los datos se han guardado exitosamente.
             </AlertDialogTitle>
           </AlertDialogHeader>
 
           <AlertDialogFooter>
             <AlertDialogAction
               variant="fill"
-              color="neutral"
+              color="primary"
               onClick={() => {
                 setSuccessOpen(false)
                 setOpen(false)
               }}
             >
+              <CaretLeftIcon data-icon="inline-start" />
               Regresar al listado
             </AlertDialogAction>
 
             <AlertDialogAction
+              color="primary"
               onClick={() => {
                 setSuccessOpen(false)
                 resetCreateForm()
               }}
             >
+              <CheckCircleIcon data-icon="inline-start" />
               Continuar agregando
             </AlertDialogAction>
           </AlertDialogFooter>
