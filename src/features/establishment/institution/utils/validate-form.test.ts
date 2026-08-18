@@ -104,8 +104,19 @@ const defaultConfirmPasswords = {
 }
 
 describe("validateEstablishmentForm", () => {
-  it("acepta un establecimiento vacío cuando rector y secretaria no fueron asignados", () => {
+  it("rechaza un establecimiento sin rector: es obligatorio (a diferencia de la secretaria)", () => {
     const values = createValues()
+
+    const { errors, invalidFields } = validateEstablishmentForm(values, defaultConfirmPasswords)
+
+    expect(errors).toContain("Rector: tipo de documento")
+    expect(invalidFields).toContain("principal.documentType")
+  })
+
+  it("acepta un establecimiento con rector completo y secretaria sin asignar", () => {
+    const values = createValues({
+      principal: createPerson(),
+    })
 
     const { errors } = validateEstablishmentForm(values, defaultConfirmPasswords)
 
