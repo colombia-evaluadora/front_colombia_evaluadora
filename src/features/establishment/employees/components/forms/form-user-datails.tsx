@@ -34,6 +34,13 @@ interface UserFormProps {
     errors?: Record<string, string>
     showValidation?: boolean
     /**
+     * ¿Los 4 mínimos (tipo/número de documento, primer nombre, primer
+     * apellido) llevan asterisco? `true` por defecto — el único caso hoy
+     * donde la persona entera es opcional (puede no existir) es la
+     * secretaria del establecimiento, que pasa `false` acá.
+     */
+    required?: boolean
+    /**
      * Estado UI para la confirmación de contraseña. Vive fuera de la entidad
      * `Person` porque es un dato de formulario, no un atributo de negocio.
      * Si se provee, el form se vuelve controlado en ese campo; si no, lo
@@ -72,6 +79,7 @@ export function UserDetailsForm({
     onChange,
     invalidFields = [], errors = {},
     showValidation = false,
+    required = true,
     confirmPassword: confirmPasswordProp,
     onConfirmPasswordChange,
     photo: photoProp,
@@ -212,7 +220,7 @@ export function UserDetailsForm({
 
                 <Field orientation="vertical" variant="outlined" data-invalid={isInvalid(`${fieldPrefix}.documentType`) ? "true" : undefined}>
                     <FieldLabel htmlFor="document-type">
-                        Tipo de documento*
+                        Tipo de documento{required ? "*" : ""}
                     </FieldLabel>
 
                     <Select
@@ -240,7 +248,7 @@ export function UserDetailsForm({
                 </Field>
 
                 <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid(`${fieldPrefix}.identification`) ? "true" : undefined}>
-                    <FieldLabel htmlFor="document-number">Número de documento*</FieldLabel>
+                    <FieldLabel htmlFor="document-number">Número de documento{required ? "*" : ""}</FieldLabel>
                     <Input
                         id="document-number"
                         size="sm"
@@ -253,7 +261,7 @@ export function UserDetailsForm({
                 </Field>
 
                 <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid(`${fieldPrefix}.firstName`) ? "true" : undefined}>
-                    <FieldLabel htmlFor="user-name">Primer Nombre*</FieldLabel>
+                    <FieldLabel htmlFor="user-name">Primer Nombre{required ? "*" : ""}</FieldLabel>
                     <Input
                         id="user-name"
                         size="sm"
@@ -277,7 +285,7 @@ export function UserDetailsForm({
                 </Field>
 
                 <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid(`${fieldPrefix}.lastName`) ? "true" : undefined}>
-                    <FieldLabel htmlFor="user-last-name">Primer Apellido*</FieldLabel>
+                    <FieldLabel htmlFor="user-last-name">Primer Apellido{required ? "*" : ""}</FieldLabel>
                     <Input
                         id="user-last-name"
                         size="sm"
@@ -320,6 +328,19 @@ export function UserDetailsForm({
                         size="sm"
                         placeholder="Agregar"
                         type="password"
+                        // El backend nunca devuelve el hash, así que este
+                        // campo siempre arranca vacío al editar — pero el
+                        // navegador no lo sabe: al ver un `type="password"`
+                        // sin pista, Chrome/el gestor de contraseñas lo
+                        // autocompletaba con la contraseña guardada de esa
+                        // cuenta (sin tocar "Confirmar", que sí quedaba
+                        // vacío), disparando "las contraseñas no coinciden"
+                        // sin que el usuario escribiera nada.
+                        // `autoComplete="new-password"` es la señal estándar
+                        // para "esto no es un login, es un campo para poner
+                        // una contraseña nueva" — ningún navegador debería
+                        // autorellenarlo con una guardada.
+                        autoComplete="new-password"
                         value={person.password}
                         aria-invalid={isInvalid(`${fieldPrefix}.password`)}
                         onChange={(event) => emitChange({ password: event.target.value })}
@@ -333,6 +354,11 @@ export function UserDetailsForm({
                         size="sm"
                         placeholder="Agregar"
                         type="password"
+                        // Mismo motivo que "user-password": sin esto el
+                        // navegador podía autocompletar uno de los dos
+                        // campos (no necesariamente el mismo) y producir un
+                        // mismatch fantasma.
+                        autoComplete="new-password"
                         value={confirmPassword}
                         aria-invalid={isInvalid(`${fieldPrefix}.confirmPassword`)}
                         onChange={(event) => setConfirmPassword(event.target.value)}

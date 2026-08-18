@@ -246,15 +246,17 @@ function isBlankValue(value: string | null | undefined): boolean {
 
 /**
  * Datos mínimos para dar de alta a la persona: los cuatro con asterisco, más
- * correo, fecha de nacimiento, género y contraseña — ninguno de estos 4
- * últimos lleva asterisco en el formulario (`UserDetailsForm` lo comparte
- * con otras pantallas donde son opcionales), pero acá son obligatorios de
- * verdad: `/register/funcionario` (`RegisterUsuarioRequest`, auth-center)
- * los exige con `@NotBlank`/`@NotNull` — si faltan, Java rechaza con 400
- * *sin* marcar nada en el front (mismo bug que tenía el alta de rector/
- * secretaria en establecimientos, ver `validate-form.ts`). Las rutas
- * coinciden con las que `UserDetailsForm` usa para ubicar el mensaje debajo
- * de cada campo, por eso van prefijadas con `employee`.
+ * correo y contraseña — no llevan asterisco en el formulario
+ * (`UserDetailsForm` lo comparte con otras pantallas donde son opcionales),
+ * pero acá son obligatorios de verdad: `/register/funcionario`
+ * (`RegisterUsuarioRequest`, auth-center) y `fn_usu_crear` (SQL) los exigen
+ * — son la cuenta y el login del funcionario, no hay forma de omitirlos.
+ * Fecha de nacimiento y género, en cambio, NO se validan acá: son columnas
+ * nullable de verdad (ni la base ni Java los exigen), volvieron a ser
+ * opcionales igual que en el alta de rector/secretaria (ver
+ * `validate-form.ts`). Las rutas coinciden con las que `UserDetailsForm`
+ * usa para ubicar el mensaje debajo de cada campo, por eso van prefijadas
+ * con `employee`.
  */
 const employeePersonSchema = z
   .object({
@@ -275,8 +277,6 @@ const employeePersonSchema = z
     require("firstName", person.firstName, "Ingresa el primer nombre.")
     require("lastName", person.lastName, "Ingresa el primer apellido.")
     require("email", person.email, "Ingresa el correo electrónico.")
-    require("birthDate", person.birthDate, "Ingresa la fecha de nacimiento.")
-    require("gender", person.gender?.name, "Selecciona el género.")
     require("password", person.password, "Ingresa la contraseña.")
     require("confirmPassword", confirmPassword, "Repite la contraseña.")
 
