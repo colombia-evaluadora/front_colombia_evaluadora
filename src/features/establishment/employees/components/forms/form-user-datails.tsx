@@ -4,6 +4,7 @@ import { format } from "date-fns"
 import { DatePicker } from "@/components/date-picker"
 import { FormSectionHeading } from "@/components/form-section-heading"
 import { ImageUploadField } from "@/components/image-upload-field"
+import { ArchivoImage } from "@/features/files/components/archivo-image"
 import { EMPLOYEE_ROLES } from "@/mocks/db/catalogs/employee-roles"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
@@ -198,6 +199,14 @@ export function UserDetailsForm({
                     description="para cargar la foto del usuario"
                     deleteLabel="Eliminar foto"
                     className="md:row-span-3"
+                    existingPreview={
+                        person.photoArchivoId == null ? undefined : (
+                            <ArchivoImage
+                                archivoId={person.photoArchivoId}
+                                alt="Foto de perfil"
+                            />
+                        )
+                    }
                 />
                 {/* Formulario */}
 

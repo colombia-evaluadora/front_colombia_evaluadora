@@ -70,6 +70,8 @@ interface RealEmployeeDetailRow {
   fk_tlv_tipo_vinculacion: number | null
   tipo_vinculacion_nombre: string | null
   direccion: string | null
+  /** `TUSUARIO.FK_TARCHIVO` — REV2 de `fn_usu_empleado_buscar_por_pk`. */
+  fk_tarchivo_foto: number | null
   permisos: RealPermissionRow[]
 }
 
@@ -124,6 +126,7 @@ function toEmployee(row: RealEmployeeDetailRow): Employee {
       // El backend nunca devuelve el hash (ver comentario de la función);
       // se deja vacío, igual que en el resto de formularios de edición.
       password: "",
+      photoArchivoId: row.fk_tarchivo_foto,
     },
     employeeClass: toCatalogItem(row.fk_tlv_clase_funcionario, row.clase_funcionario_nombre),
     educationLevel: toCatalogItem(row.fk_tlv_nivel_esenanza, row.nivel_esenanza_nombre),
