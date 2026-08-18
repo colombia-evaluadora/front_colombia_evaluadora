@@ -47,35 +47,25 @@ export function IdentificationDataFormSection({ value, onChange, invalidFields =
             <div className="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-3">
                 {/*
                     El escudo ocupa una sola columna y se estira a lo alto de las
-                    dos filas de campos que tiene al lado, de ahí el `row-span-2`
-                    más el `h-full` que lo propaga hasta el dropzone.
+                    dos filas de campos que tiene al lado, de ahí el `row-span-2`.
+                    El campo no aporta altura propia (ver `ImageUploadField`), así
+                    que esas dos filas las siguen midiendo solo los inputs.
                 */}
-                {/*
-                    El contenido va absoluto en todos los tamaños: así la celda
-                    nunca aporta altura propia —ni siquiera con una imagen
-                    grande cargada— y las dos filas del grid las miden solo los
-                    campos. El alto lo pone la celda (`min-h` en móvil, las dos
-                    filas en `md`) y el escudo se estira a ese alto exacto en
-                    vez de empujar las filas y abrir hueco entre los inputs.
-                */}
-                <div className="relative min-h-28 md:row-span-2">
-                    <div className="absolute inset-0">
-                        <ImageUploadField
-                            value={shield}
-                            onValueChange={onShieldChange}
-                            description="para cargar el escudo o logo del establecimiento"
-                            deleteLabel="Eliminar escudo"
-                            existingPreview={
-                                value.logoArchivoId == null ? undefined : (
-                                    <ArchivoImage
-                                        archivoId={value.logoArchivoId}
-                                        alt="Escudo del establecimiento"
-                                    />
-                                )
-                            }
-                        />
-                    </div>
-                </div>
+                <ImageUploadField
+                    value={shield}
+                    onValueChange={onShieldChange}
+                    description="para cargar el escudo o logo del establecimiento"
+                    deleteLabel="Eliminar escudo"
+                    className="md:row-span-2"
+                    existingPreview={
+                        value.logoArchivoId == null ? undefined : (
+                            <ArchivoImage
+                                archivoId={value.logoArchivoId}
+                                alt="Escudo del establecimiento"
+                            />
+                        )
+                    }
+                />
                 <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid("basicInfo.name") ? "true" : undefined}>
                     <FieldLabel htmlFor="establishment-name">Nombre del establecimiento*</FieldLabel>
                     <Input
