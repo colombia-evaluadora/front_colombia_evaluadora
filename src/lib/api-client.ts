@@ -99,7 +99,37 @@ const PROBE_ENDPOINTS = ["/auth/refresh", "/sso-admin/resetTokenStatus"]
 // resto (prefijo HTTP, "ERROR:", el "Where:" con la función/línea) es ruido
 // de implementación. Nos quedamos con la primera línea y le sacamos el
 // prefijo tipo "Conflict: ERROR: " si vino.
+/**
+ * Violaciones de UNIQUE traducidas a algo accionable.
+ *
+ * Un `RAISE EXCEPTION` de una función PL/pgSQL trae un texto escrito para el
+ * usuario, así que alcanza con recortarlo. Un choque de constraint, en cambio,
+ * llega crudo del motor —"duplicate key value violates unique constraint
+ * «u_testablecimiento_1»"— y no le dice a nadie QUÉ campo repitió. Peor: el
+ * nombre de la constraint no se parece al del campo en pantalla
+ * (`u_testablecimiento_1` es `UNIQUE (codigo)`, que en el formulario es el
+ * código DANE), así que quien lo lee suele buscar el problema donde no está.
+ *
+ * Solo las que un usuario puede provocar desde la app; el resto cae al mensaje
+ * genérico de abajo.
+ */
+const CONSTRAINT_MESSAGES: Record<string, string> = {
+  u_testablecimiento_1: "Ya existe un establecimiento con ese código DANE.",
+  u_trol_1: "Ya existe un rol con ese nombre.",
+  u_tmenu_1: "Ya existe un menú con ese nombre.",
+  u_trol_menu_1: "Ese menú ya está asignado al rol.",
+  u_tlista_valor_1: "Ya existe un registro con ese valor.",
+}
+
 export function cleanErrorMessage(message: string): string {
+  const constraint = message.match(/unique constraint "([^"]+)"/i)?.[1]
+  if (constraint) {
+    return (
+      CONSTRAINT_MESSAGES[constraint.toLowerCase()] ??
+      "Ya existe un registro con esos datos: hay un campo que no puede repetirse."
+    )
+  }
+
   const firstLine = message.split(/\r?\n/)[0]?.trim() ?? message
   return firstLine.replace(/^[A-Za-z ]+:\s*ERROR:\s*/i, "").trim() || firstLine
 }
