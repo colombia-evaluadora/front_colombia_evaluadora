@@ -55,21 +55,25 @@ export function createAreaSubjectColumns({
     accessorKey: "nombreInterno",
     meta: { label: "Nombre del área" },
     header: ({ column }) => <DataTableColumnHeader column={column} title="Nombre del área" />,
-    cell: ({ row }) => <span className="font-medium">{row.original.nombreInterno}</span>,
+    cell: ({ row }) => <span className="font-bold">{row.original.nombreInterno}</span>,
   },
   {
     id: "abreviacion",
     accessorKey: "abreviacion",
     meta: { label: "Abreviación" },
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Abreviación" />,
-    cell: ({ row }) => <span className="font-semibold">{row.original.abreviacion}</span>,
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Abreviación del área" />,
+    cell: ({ row }) => <span className="font-bold">{row.original.abreviacion}</span>,
   },
   {
     id: "ordenReportes",
     accessorKey: "ordenReportes",
     meta: { label: "Orden de reporte" },
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Orden de reporte" />,
-    cell: ({ row }) => <span>{row.original.ordenReportes}</span>,
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Orden de reporte" className="justify-center" />
+    ),
+    cell: ({ row }) => (
+      <span className="block text-center">{row.original.ordenReportes}</span>
+    ),
   },
   {
     id: "actions",

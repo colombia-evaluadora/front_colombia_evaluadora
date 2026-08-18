@@ -233,7 +233,11 @@ export function AcademicPeriodForm({
                   <SelectContent>
                     <SelectGroup>
                       {sedes.map((sede) => (
-                        <SelectItem key={sede.pk_sede} value={String(sede.pk_sede)}>
+                        <SelectItem
+                          key={sede.pk_sede}
+                          value={String(sede.pk_sede)}
+                          title={sede.nombre}
+                        >
                           {sede.nombre}
                         </SelectItem>
                       ))}

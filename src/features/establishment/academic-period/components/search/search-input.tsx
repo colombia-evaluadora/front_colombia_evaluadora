@@ -38,7 +38,10 @@ export function SearchInput({
 
       <InputGroupInput
         id={id}
-        type="search"
+        // `type="search"` en Chrome/Edge agrega su propia "x" de limpiar
+        // nativa —con texto cargado quedaban dos, la del navegador y la de
+        // abajo—. `text` deja una sola, la de este componente.
+        type="text"
         autoComplete="off"
         placeholder={placeholder}
         aria-label={label}

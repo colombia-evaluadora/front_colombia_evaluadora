@@ -26,9 +26,12 @@ import type { Employee } from "@/features/establishment/employees/api/types/empl
  *
  * Otros campos que se sacan del body porque no están declarados en la
  * query: `id` (el PK va por la URL, `PARAM.ID`), `person.password` (nunca
- * viaja — la contraseña definitiva la pone el usuario por correo) y
- * `person.id`, y `permissions` (los permisos van aparte, ver
- * `PUT /funcionario/:ID/permisos` en `update-permissions.ts`).
+ * viaja — la contraseña definitiva la pone el usuario por correo),
+ * `person.id`, `person.photoArchivoId` (de solo lectura — lo llena el GET
+ * para poder pintar la foto ya guardada; la foto NUEVA a subir viaja
+ * aparte, ver el parámetro `foto` de `update()`), y `permissions` (los
+ * permisos van aparte, ver `PUT /funcionario/:ID/permisos` en
+ * `update-permissions.ts`).
  *
  * `person.birthDate` no es obligatorio: si el formulario lo deja vacío
  * (`""`), nunca se manda el string vacío tal cual — `fn_fun_actualizar`
@@ -46,6 +49,7 @@ function toRealBackendPayload(values: Employee) {
     person: {
       password: _password,
       id: _personId,
+      photoArchivoId: _photoArchivoId,
       documentType,
       gender,
       birthDate,

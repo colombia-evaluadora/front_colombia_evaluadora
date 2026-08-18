@@ -77,6 +77,7 @@ export function TabAreaSubject({ academicPeriodId }: TabAreaSubjectProps) {
             setSearch(value)
             setPageIndex(0)
           }}
+          className="sm:w-96"
         />
 
         <div className="flex gap-2">
@@ -108,8 +109,8 @@ export function TabAreaSubject({ academicPeriodId }: TabAreaSubjectProps) {
         isPending={isPending}
         isError={isError}
         onRetry={refetch}
-        emptyMessage="Aún no hay periodos de evaluación."
-        errorMessage="Ocurrió un error al cargar los periodos de evaluación."
+        emptyMessage="Aún no hay áreas/asignaturas."
+        errorMessage="Ocurrió un error al cargar las áreas/asignaturas."
       />
       {data && (
         <Pagination
