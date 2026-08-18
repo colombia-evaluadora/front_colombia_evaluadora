@@ -77,6 +77,7 @@ export function TabAreaSubject({ academicPeriodId }: TabAreaSubjectProps) {
             setSearch(value)
             setPageIndex(0)
           }}
+          className="sm:w-96"
         />
 
         <div className="flex gap-2">
