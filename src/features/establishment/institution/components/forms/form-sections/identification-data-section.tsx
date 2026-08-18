@@ -51,13 +51,15 @@ export function IdentificationDataFormSection({ value, onChange, invalidFields =
                     más el `h-full` que lo propaga hasta el dropzone.
                 */}
                 {/*
-                    En `md` el contenido va absoluto: así la celda no aporta
-                    altura propia y las dos filas del grid las miden solo los
-                    campos. El escudo se estira a ese alto exacto en vez de
-                    empujar las filas y abrir hueco entre los inputs.
+                    El contenido va absoluto en todos los tamaños: así la celda
+                    nunca aporta altura propia —ni siquiera con una imagen
+                    grande cargada— y las dos filas del grid las miden solo los
+                    campos. El alto lo pone la celda (`min-h` en móvil, las dos
+                    filas en `md`) y el escudo se estira a ese alto exacto en
+                    vez de empujar las filas y abrir hueco entre los inputs.
                 */}
-                <div className="relative md:row-span-2">
-                    <div className="md:absolute md:inset-0">
+                <div className="relative min-h-28 md:row-span-2">
+                    <div className="absolute inset-0">
                         <ImageUploadField
                             value={shield}
                             onValueChange={onShieldChange}
@@ -68,7 +70,6 @@ export function IdentificationDataFormSection({ value, onChange, invalidFields =
                                     <ArchivoImage
                                         archivoId={value.logoArchivoId}
                                         alt="Escudo del establecimiento"
-                                        className="max-h-16 w-auto"
                                     />
                                 )
                             }
