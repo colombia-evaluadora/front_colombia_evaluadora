@@ -32,4 +32,13 @@ export interface Person {
     phone: string
 
     password: string
+
+    /**
+     * `pk_tarchivo` de la foto de perfil ya guardada — `undefined`/`null` si
+     * nunca se subió una. Solo de lectura (la llena el GET); nunca viaja de
+     * vuelta al backend en un create/update, igual que `logoArchivoId` en
+     * `EstablishmentDetails.basicInfo` — la foto NUEVA a subir es un `File`
+     * aparte (`photo`/`onPhotoChange` en `UserDetailsForm`), no este campo.
+     */
+    photoArchivoId?: number | null
 }
