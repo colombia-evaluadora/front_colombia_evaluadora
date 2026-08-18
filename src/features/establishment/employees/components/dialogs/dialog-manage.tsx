@@ -344,6 +344,9 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
   const [additionalInfoSaved, setAdditionalInfoSaved] = useState(false)
   // Estado UI: vive fuera de `Person` porque no es parte del modelo de negocio.
   const [confirmPassword, setConfirmPassword] = useState("")
+  // Foto elegida en el form, todavía sin subir: viaja como `fkTarchivoFoto`
+  // del multipart, tanto en el alta (/register/funcionario) como en el PATCH.
+  const [photo, setPhoto] = useState<File | null>(null)
   // Solo aplica al alta (no se puede reenlazar un funcionario ya existente
   // desde acá) — igual que `establishmentId` en el alta de sede.
   const [establishmentId, setEstablishmentId] = useState<number | null>(null)
@@ -404,6 +407,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
       setPermissionErrors({})
       setPersonErrors({})
       setConfirmPassword("")
+      setPhoto(null)
       setCreatedEmployeeId(null)
       setPermissionsSaved(false)
       setAdditionalInfoSaved(false)
@@ -426,6 +430,9 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
       setPermissionErrors({})
       setPersonErrors({})
       setConfirmPassword(employee.person.password)
+      // La foto guardada no vuelve como `File`: se arranca sin nada elegido y
+      // solo se manda si el usuario carga una nueva.
+      setPhoto(null)
       // En edición lo que llega del backend ya está guardado: los botones
       // arrancan con el ícono de editar, sin pedir un Guardar que no aplica.
       setPermissionsSaved(employee.permissions.length > 0)
@@ -526,7 +533,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
         // queda NULL, "pendiente"). No pasa por acá si `activeEmployeeId`
         // ya existe (edición) — eso sigue por PUT normal más abajo.
         try {
-          const registered = await registerFuncionario(persistedPerson)
+          const registered = await registerFuncionario(persistedPerson, photo)
           persistedPerson = { ...persistedPerson, id: registered.pkFuncionario }
           setPerson(persistedPerson)
 
@@ -606,6 +613,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
     await updateMutation.mutateAsync({
       employeeId: activeEmployeeId,
       values: payload,
+      foto: photo,
     })
   }
 
@@ -772,6 +780,8 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
             showValidation
             confirmPassword={confirmPassword}
             onConfirmPasswordChange={setConfirmPassword}
+            photo={photo}
+            onPhotoChange={setPhoto}
           />
 
           {/* Mismo criterio que el select de EE en el alta de sede: solo
