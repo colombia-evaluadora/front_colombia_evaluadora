@@ -10,6 +10,9 @@ interface EstablishmentDetailsFormProps {
     /** Mensaje de error por ruta de campo (`basicInfo.name`, …). */
     errors?: Record<string, string>
     showValidation?: boolean
+    /** Escudo elegido y todavía sin subir; lo manda la página al guardar. */
+    shield: File | null
+    onShieldChange: (file: File | null) => void
 }
 
 /**
@@ -18,7 +21,7 @@ interface EstablishmentDetailsFormProps {
  * complementaria es un bloque aparte —la monta la página en su propia card,
  * igual que rector y secretaria— y por eso no se arma acá.
  */
-export function EstablishmentDetailsForm({ value, onChange, invalidFields = [], errors = {}, showValidation = false }: EstablishmentDetailsFormProps) {
+export function EstablishmentDetailsForm({ value, onChange, invalidFields = [], errors = {}, showValidation = false, shield, onShieldChange }: EstablishmentDetailsFormProps) {
     // Dos escalas: dentro de una sección las filas van a `gap-2`, y entre
     // secciones el salto es `gap-6`, para que cada encabezado se lea como el
     // arranque de un bloque nuevo y no como una fila más.
@@ -30,6 +33,8 @@ export function EstablishmentDetailsForm({ value, onChange, invalidFields = [], 
                 invalidFields={invalidFields}
                 errors={errors}
                 showValidation={showValidation}
+                shield={shield}
+                onShieldChange={onShieldChange}
             />
             <DomicilioDataFormSection
                 value={value.address}

@@ -1,7 +1,6 @@
-import { useState } from "react"
-
 import { FormSectionHeading } from "@/components/form-section-heading"
 import { ImageUploadField } from "@/components/image-upload-field"
+import { ArchivoImage } from "@/features/files/components/archivo-image"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
@@ -22,19 +21,21 @@ interface IdentificationDataFormSectionProps {
     /** Mensaje de error por ruta de campo. */
     errors?: Record<string, string>
     showValidation?: boolean
+    /**
+     * Escudo recién elegido, todavía sin subir. Vive en la página porque es
+     * ella la que lo manda como el archivo `logo` del multipart al guardar.
+     */
+    shield: File | null
+    onShieldChange: (file: File | null) => void
 }
 
-export function IdentificationDataFormSection({ value, onChange, invalidFields = [], errors = {}, showValidation = false }: IdentificationDataFormSectionProps) {
+export function IdentificationDataFormSection({ value, onChange, invalidFields = [], errors = {}, showValidation = false, shield, onShieldChange }: IdentificationDataFormSectionProps) {
     const isInvalid = (field: string) => showValidation && invalidFields.includes(field)
     // Mensaje debajo del campo: solo tras el primer submit, igual que el borde rojo.
     const errorFor = (field: string) => (showValidation ? errors[field] : undefined)
     const { data: legalTypes = []} = useOwnershipTypesQuery()
     const legalTypeItems = toSelectOptions(legalTypes)
 
-    // Escudo del establecimiento: estado puramente UI, análogo a la foto
-    // de la persona. No se persiste todavía en el modelo `basicInfo`, así
-    // que solo mantenemos el archivo vivo mientras la sección está montada.
-    const [shield, setShield] = useState<File | null>(null)
 
     // `gap-2` puertas adentro: encabezado y filas de esta sección van al mismo
     // paso. El salto mayor entre secciones lo pone el `gap-6` del formulario.
@@ -59,9 +60,18 @@ export function IdentificationDataFormSection({ value, onChange, invalidFields =
                     <div className="md:absolute md:inset-0">
                         <ImageUploadField
                             value={shield}
-                            onValueChange={setShield}
+                            onValueChange={onShieldChange}
                             description="para cargar el escudo o logo del establecimiento"
                             deleteLabel="Eliminar escudo"
+                            existingPreview={
+                                value.logoArchivoId == null ? undefined : (
+                                    <ArchivoImage
+                                        archivoId={value.logoArchivoId}
+                                        alt="Escudo del establecimiento"
+                                        className="max-h-16 w-auto"
+                                    />
+                                )
+                            }
                         />
                     </div>
                 </div>
