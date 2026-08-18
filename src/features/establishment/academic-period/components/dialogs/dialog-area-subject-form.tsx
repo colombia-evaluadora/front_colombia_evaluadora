@@ -10,6 +10,7 @@ import {
   XIcon,
 } from "@/components/ui/icons"
 import { useNotify, NoticeOutlet } from "@/components/notice/notice-context"
+import { Pagination } from "@/components/pagination"
 
 import {
   AlertDialog,
@@ -24,13 +25,13 @@ import {
   Dialog,
   DialogClose,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { Checkbox } from "@/components/ui/checkbox"
 import { ConfirmRemoveButton } from "@/components/confirm-remove-button"
 import {
   ACTIONS_CELL_CLASS,
@@ -101,6 +102,7 @@ export function AreaSubjectFormDialog({
     () => areaSubject?.subjects.map(itemToDraft) ?? [],
   )
   const [draft, setDraft] = useState<SubjectDraft>(emptyDraft())
+  const [selectedIndexes, setSelectedIndexes] = useState<Set<number>>(new Set())
   const {
     editingKey: editingIndex,
     draft: editDraft,
@@ -204,17 +206,28 @@ export function AreaSubjectFormDialog({
   function handleOpenChange(next: boolean) {
     setOpen(next)
 
-    if (!next) return
-
+    // Se resetea tanto al abrir como al cerrar: si el usuario cierra sin
+    // guardar (Cancelar, click afuera, Esc), los cambios sin persistir no
+    // deben sobrevivir — ni mientras el diálogo queda cerrado (por si algo
+    // más lee ese estado) ni la próxima vez que se abra.
     if (isEdit) {
-      form.reset()
-      setSubjects(areaSubject?.subjects.map(itemToDraft) ?? [])
-      setSubjectsStarted(true)
-      setNotice(null)
-      nombreInternoEditedRef.current = false
+      resetEditForm()
     } else {
       resetCreateForm()
     }
+  }
+
+  function resetEditForm() {
+    form.reset()
+    setSubjects(areaSubject?.subjects.map(itemToDraft) ?? [])
+    setSubjectsStarted(true)
+    setDraft(emptyDraft())
+    setSelectedIndexes(new Set())
+    cancelEditSubject()
+    setSort(null)
+    setNotice(null)
+    setPageIndex(0)
+    nombreInternoEditedRef.current = false
   }
 
   function resetCreateForm() {
@@ -223,18 +236,40 @@ export function AreaSubjectFormDialog({
     setSubjects([])
     setSubjectsStarted(false)
     setDraft(emptyDraft())
+    setSelectedIndexes(new Set())
 
     cancelEditSubject()
 
     setConfirmOpen(false)
     setSort(null)
     setNotice(null)
+    setPageIndex(0)
     nombreInternoEditedRef.current = false
   }
 
   // El orden lo resuelve el mismo helper que la tabla de escalas de valoración,
   // así las dos ordenan igual y no hay dos comparadores que mantener.
   const sortedSubjects = useMemo(() => sortBySortKey(subjects, sort), [subjects, sort])
+
+  // Paginación client-side: la lista completa ya vive en memoria (viene con
+  // el área), así que no hay ida al backend por página — mismo diseño
+  // (`Pagination`) que usan las tablas que sí paginan contra el servidor.
+  const [pageIndex, setPageIndex] = useState(0)
+  const [pageSize, setPageSize] = useState(10)
+  const pageCount = Math.max(1, Math.ceil(sortedSubjects.length / pageSize))
+  const clampedPageIndex = Math.min(pageIndex, pageCount - 1)
+  const pagedSubjects = useMemo(
+    () =>
+      sortedSubjects.slice(
+        clampedPageIndex * pageSize,
+        clampedPageIndex * pageSize + pageSize,
+      ),
+    [sortedSubjects, clampedPageIndex, pageSize],
+  )
+  function changePageSize(size: number) {
+    setPageSize(size)
+    setPageIndex(0)
+  }
 
   function startSubject(useAreaInfo: boolean) {
     const area = form.state.values
@@ -258,6 +293,18 @@ export function AreaSubjectFormDialog({
     setDraft((prev) => ({ ...prev, ...patch }))
   }
 
+  // Todos los campos del borrador completos salvo `especialidad`, la única
+  // opcional — el botón de agregar recién aparece cuando esto se cumple.
+  function isDraftComplete(value: SubjectDraft): boolean {
+    return (
+      value.asignaturaGeneral.trim() !== "" &&
+      value.nombreInterno.trim() !== "" &&
+      value.abreviacion.trim() !== "" &&
+      Number.isFinite(value.ordenReportes) &&
+      value.color.trim() !== ""
+    )
+  }
+
   function commitDraft() {
     if (!draft.asignaturaGeneral.trim() && !draft.nombreInterno.trim()) {
       notify("Elige una asignatura general o completa el nombre interno.", { variant: "error" })
@@ -268,10 +315,51 @@ export function AreaSubjectFormDialog({
     showNotice("Asignatura agregada exitosamente.")
   }
 
+  // El índice de cada fila corre con el arreglo: al sacar una asignatura, los
+  // índices seleccionados que quedaban después se recorren uno hacia atrás.
+  // Sin este ajuste, la selección terminaba apuntando a otra fila distinta a
+  // la que el usuario había marcado.
+  function shiftSelectionAfterRemoval(removedIndexes: number[]) {
+    const removed = new Set(removedIndexes)
+    setSelectedIndexes((prev) => {
+      const next = new Set<number>()
+      for (const index of prev) {
+        if (removed.has(index)) continue
+        const shift = removedIndexes.filter((r) => r < index).length
+        next.add(index - shift)
+      }
+      return next
+    })
+  }
+
   function removeSubject(index: number) {
     setSubjects((prev) => prev.filter((_, i) => i !== index))
+    shiftSelectionAfterRemoval([index])
     cancelEditSubject()
     showNotice("Asignatura eliminada exitosamente.")
+  }
+
+  function toggleSelectSubject(index: number, checked: boolean) {
+    setSelectedIndexes((prev) => {
+      const next = new Set(prev)
+      if (checked) next.add(index)
+      else next.delete(index)
+      return next
+    })
+  }
+
+  function toggleSelectAllSubjects(checked: boolean) {
+    setSelectedIndexes(checked ? new Set(subjects.map((_, i) => i)) : new Set())
+  }
+
+  function removeSelectedSubjects() {
+    const count = selectedIndexes.size
+    setSubjects((prev) => prev.filter((_, i) => !selectedIndexes.has(i)))
+    setSelectedIndexes(new Set())
+    cancelEditSubject()
+    showNotice(
+      count === 1 ? "Asignatura eliminada exitosamente." : `${count} asignaturas eliminadas exitosamente.`,
+    )
   }
 
   function startEditSubject(index: number) {
@@ -304,12 +392,12 @@ export function AreaSubjectFormDialog({
           </DialogTrigger>
         )}
 
-        <DialogContent className={subjectsStarted ? "sm:max-w-6xl" : "sm:max-w-5xl"}>
+        <DialogContent
+          className={subjectsStarted ? "sm:max-w-6xl" : "sm:max-w-5xl"}
+          showCloseButton={false}
+        >
           <DialogHeader>
-            <DialogTitle>{isEdit ? "Editar área" : "Agregar área"}</DialogTitle>
-            <DialogDescription>
-              Completa los datos del área y asigna sus asignaturas generales.
-            </DialogDescription>
+            <DialogTitle>{isEdit ? "Editar área/asignatura" : "Agregar área/asignatura"}</DialogTitle>
           </DialogHeader>
 
           {/* `min-w-0`: los ítems del grid de `DialogContent` arrancan con
@@ -441,6 +529,24 @@ export function AreaSubjectFormDialog({
 
             {subjectsStarted && (
               <div className="[&_[data-slot=input]]:bg-background [&_[data-slot=select-trigger]]:bg-background">
+                {selectedIndexes.size > 0 && (
+                  <div className="mb-2 flex items-center justify-between rounded-md border border-border bg-muted/30 px-3 py-2 text-sm">
+                    <span>
+                      {selectedIndexes.size === 1
+                        ? "1 asignatura seleccionada"
+                        : `${selectedIndexes.size} asignaturas seleccionadas`}
+                    </span>
+                    <ConfirmRemoveButton
+                      label="Quitar seleccionadas"
+                      description={
+                        selectedIndexes.size === 1
+                          ? "Se quitará la asignatura seleccionada. Esta acción no se puede deshacer."
+                          : `Se quitarán las ${selectedIndexes.size} asignaturas seleccionadas. Esta acción no se puede deshacer.`
+                      }
+                      onConfirm={removeSelectedSubjects}
+                    />
+                  </div>
+                )}
                 <FieldVariantContext.Provider value="outlined">
                   <Table>
                     <TableHeader>
@@ -449,14 +555,24 @@ export function AreaSubjectFormDialog({
                         rato en que un menú de orden está abierto— y los títulos
                         en `text-foreground`. */}
                       <TableRow className="hover:bg-transparent has-aria-expanded:bg-transparent">
-                        <TableHead className="text-foreground">
-                          <TableSortableHeader
-                            title="Orden"
-                            sortKey="ordenReportes"
-                            sort={sort}
-                            onSortChange={setSort}
+                        <TableHead className="w-px text-foreground">
+                          <Checkbox
+                            aria-label="Seleccionar todas las asignaturas"
+                            className="translate-y-0.5"
+                            checked={
+                              subjects.length > 0 && selectedIndexes.size === subjects.length
+                            }
+                            indeterminate={
+                              selectedIndexes.size > 0 && selectedIndexes.size < subjects.length
+                            }
+                            disabled={subjects.length === 0}
+                            onCheckedChange={(value) => toggleSelectAllSubjects(!!value)}
                           />
                         </TableHead>
+                        {/* Sin `TableSortableHeader`: es el orden manual que
+                          el usuario define fila por fila, no tiene sentido
+                          reordenar la tabla por este valor. */}
+                        <TableHead className="text-foreground">#</TableHead>
                         <TableHead className="text-foreground">
                           <TableSortableHeader
                             title="Asignatura general"
@@ -511,7 +627,10 @@ export function AreaSubjectFormDialog({
                     </TableHeader>
                     <TableBody>
                       {/* Asignaturas generales ya agregadas. */}
-                      {sortedSubjects.map((subject, index) => {
+                      {pagedSubjects.map((subject, indexInPage) => {
+                        // Para las etiquetas ("asignatura N"): la posición
+                        // real en la lista completa, no en la página.
+                        const index = clampedPageIndex * pageSize + indexInPage
                         // Editamos contra el índice real del arreglo (no el ordenado).
                         const realIndex = subjects.indexOf(subject)
                         const isEditing = editingIndex === realIndex && editDraft !== null
@@ -519,6 +638,16 @@ export function AreaSubjectFormDialog({
                         if (isEditing && editDraft) {
                           return (
                             <TableRow key={realIndex} className="group/row">
+                              <TableCell>
+                                <Checkbox
+                                  aria-label={`Seleccionar asignatura ${index + 1}`}
+                                  className="translate-y-0.5"
+                                  checked={selectedIndexes.has(realIndex)}
+                                  onCheckedChange={(value) =>
+                                    toggleSelectSubject(realIndex, !!value)
+                                  }
+                                />
+                              </TableCell>
                               <SubjectRowFields
                                 draft={editDraft}
                                 onPatch={patchEditDraft}
@@ -536,16 +665,17 @@ export function AreaSubjectFormDialog({
                                     aria-label="Guardar cambios"
                                     onClick={saveEditSubject}
                                   >
-                                    <CheckIcon />
+                                    <CheckIcon className="size-3" />
                                   </Button>
                                   <Button
                                     type="button"
-                                    variant="outline"
+                                    variant="fill"
+                                    color="neutral"
                                     size="icon-sm"
                                     aria-label="Cancelar edición"
                                     onClick={cancelEditSubject}
                                   >
-                                    <XIcon />
+                                    <XIcon className="size-3" />
                                   </Button>
                                 </div>
                               </TableCell>
@@ -555,9 +685,29 @@ export function AreaSubjectFormDialog({
 
                         return (
                           <TableRow key={realIndex} className="group/row">
+                            <TableCell>
+                              <Checkbox
+                                aria-label={`Seleccionar asignatura ${index + 1}`}
+                                className="translate-y-0.5"
+                                checked={selectedIndexes.has(realIndex)}
+                                onCheckedChange={(value) =>
+                                  toggleSelectSubject(realIndex, !!value)
+                                }
+                              />
+                            </TableCell>
                             <TableCell>{subject.ordenReportes}</TableCell>
-                            <TableCell>{subject.asignaturaGeneral || "—"}</TableCell>
-                            <TableCell>{subject.nombreInterno || "—"}</TableCell>
+                            <TableCell
+                              className="max-w-40 truncate font-bold"
+                              title={subject.asignaturaGeneral || undefined}
+                            >
+                              {subject.asignaturaGeneral || "—"}
+                            </TableCell>
+                            <TableCell
+                              className="max-w-40 truncate font-bold"
+                              title={subject.nombreInterno || undefined}
+                            >
+                              {subject.nombreInterno || "—"}
+                            </TableCell>
                             <TableCell>{subject.abreviacion || "—"}</TableCell>
                             <TableCell>
                               {subject.color ? (
@@ -602,6 +752,9 @@ export function AreaSubjectFormDialog({
 
                       {/* Fila de carga para agregar otra asignatura general. */}
                       <TableRow className="group/row">
+                        {/* Todavía no es una fila guardada: nada que
+                          seleccionar. */}
+                        <TableCell />
                         <SubjectRowFields
                           draft={draft}
                           onPatch={patchDraft}
@@ -610,23 +763,37 @@ export function AreaSubjectFormDialog({
                         {actionsSpacerCell}
                         <TableCell className={ACTIONS_CELL_CLASS}>
                           {/* Fijo: el botón de agregar es la acción principal de
-                            la fila, no puede depender del hover. */}
-                          <div className={actionsOverlayClass(true)}>
-                            <Button
-                              type="button"
-                              color="primary"
-                              size="icon-sm"
-                              aria-label="Agregar asignatura a la lista"
-                              onClick={commitDraft}
-                            >
-                              <PlusIcon weight="bold" />
-                            </Button>
-                          </div>
+                            la fila, no puede depender del hover. Solo aparece
+                            con todos los campos completos —especialidad
+                            queda afuera, es la única opcional del borrador. */}
+                          {isDraftComplete(draft) && (
+                            <div className={actionsOverlayClass(true)}>
+                              <Button
+                                type="button"
+                                color="primary"
+                                size="icon-sm"
+                                aria-label="Agregar asignatura a la lista"
+                                onClick={commitDraft}
+                              >
+                                <PlusIcon weight="bold" />
+                              </Button>
+                            </div>
+                          )}
                         </TableCell>
                       </TableRow>
                     </TableBody>
                   </Table>
                 </FieldVariantContext.Provider>
+                <Pagination
+                  pageIndex={clampedPageIndex}
+                  pageCount={pageCount}
+                  canPrev={clampedPageIndex > 0}
+                  canNext={clampedPageIndex < pageCount - 1}
+                  totalCount={sortedSubjects.length}
+                  pageSize={pageSize}
+                  onPageChange={setPageIndex}
+                  onPageSizeChange={changePageSize}
+                />
               </div>
             )}
           </div>
@@ -641,11 +808,18 @@ export function AreaSubjectFormDialog({
                 disabled={isPending}
                 aria-busy={isPending}
               >
-                {isPending && <SpinnerIcon data-icon="inline-start" className="animate-spin" />}
+                {isPending ? (
+                  <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+                ) : (
+                  <CheckIcon data-icon="inline-start" />
+                )}
                 Guardar
               </Button>
             )}
-            <DialogClose render={<Button size="sm" type="button" variant="ghost" />}>
+            <DialogClose
+              render={<Button size="sm" type="button" variant="fill" color="neutral" />}
+            >
+              <XIcon data-icon="inline-start" />
               Cancelar
             </DialogClose>
           </DialogFooter>
@@ -681,7 +855,7 @@ export function AreaSubjectFormDialog({
 
           <AlertDialogFooter>
             <AlertDialogAction
-              variant="outline"
+              variant="fill"
               color="neutral"
               onClick={() => {
                 setSuccessOpen(false)

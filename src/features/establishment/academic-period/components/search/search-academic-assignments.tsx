@@ -98,6 +98,7 @@ export function SearchAcademicAssignments({
         // salida que en el resto de los buscadores.
         onApply={() => setOpen(false)}
         size="sm"
+        className="sm:w-[28rem]"
       >
         {/* Un solo control: sin `FieldSet`, porque el título de la sección
             repetiría la etiqueta del campo. */}

@@ -444,7 +444,7 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
 
         {gradeId == null ? (
           <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-            Guarda el grado para configurar sus grupos, plan de estudio y horario.
+            Crea el grado para configurar sus grupos, plan de estudio y horario.
           </p>
         ) : (
           <Tabs defaultValue="grupo" className="w-full min-w-0">
@@ -496,7 +496,9 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
             {saving && <SpinnerIcon data-icon="inline-start" className="animate-spin" />}
             {gradeId == null ? "Crear" : "Guardar"}
           </Button>
-          <DialogClose render={<Button size="sm" type="button" variant="outline" />}>
+          <DialogClose
+            render={<Button size="sm" type="button" variant="fill" color="neutral" />}
+          >
             Cerrar
           </DialogClose>
         </DialogFooter>
