@@ -45,6 +45,12 @@ interface RealEstablishmentDetailRow {
   fax: string | null
   pagina_web: string | null
   fk_tpropiedad_juridica: number | null
+  /**
+   * `pk_tarchivo` del escudo. `fn_est_buscar_por_pk` es HOY la única query que
+   * lo expone, así que este es el único camino para pintar el escudo: con este
+   * id se acuña el token de vista (ver `ArchivoImage`).
+   */
+  fk_tarchivo: number | null
   resolucion_aprobacion: string | null
   licencia_funcionamiento: string | null
   fecha_licencia: string | null
@@ -88,6 +94,7 @@ function toEstablishmentDetails(
       dane: row.codigo,
       nit: row.nit,
       ownershipType: toStub(row.fk_tpropiedad_juridica),
+      logoArchivoId: row.fk_tarchivo ?? null,
     },
     address: {
       // `{id, name:"", department:{id:0,name:""}}`: mismo criterio que

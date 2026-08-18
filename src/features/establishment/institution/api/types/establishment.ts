@@ -51,6 +51,15 @@ export interface EstablishmentBasicInfo {
     nit: string
 
     ownershipType: CatalogItem | null
+
+    /**
+     * `pk_tarchivo` del escudo ya cargado (`TESTABLECIMIENTO.FK_TARCHIVO`).
+     * Solo de LECTURA: para verlo se pasa a `ArchivoImage`, que resuelve el
+     * token de vista. Al guardar no viaja en el JSON — el escudo se manda como
+     * el archivo `logo` del multipart y es `file-service` quien escribe esta
+     * columna. Ausente en alta, y `null` si el EE no tiene escudo.
+     */
+    logoArchivoId?: number | null
 }
 
 export interface EstablishmentAddress {
