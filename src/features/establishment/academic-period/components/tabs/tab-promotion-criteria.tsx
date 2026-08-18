@@ -62,7 +62,7 @@ const FORM_ID = "approval-parameters-form"
  */
 function PercentInput({ value, onChange }: { value: number; onChange: (value: number) => void }) {
   return (
-    <InputGroup className="h-9 rounded-md border border-input px-3 hover:border-ring has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20 has-[[data-slot][aria-invalid=true]]:border-red">
+    <InputGroup className="h-10 rounded-md border border-input px-3 hover:border-ring has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20 has-[[data-slot][aria-invalid=true]]:border-red">
       <InputGroupInput
         type="number"
         min={0}
@@ -294,7 +294,7 @@ const PromotionCriteriaForm = forwardRef<PromotionCriteriaHandle, PromotionCrite
                   placeholder="Agregar"
                   value={field.state.value}
                   onChange={(e) => field.handleChange(Number(e.target.value))}
-                  className="h-9"
+                  className="h-10"
                 />
               </Field>
             )}
@@ -328,7 +328,7 @@ const PromotionCriteriaForm = forwardRef<PromotionCriteriaHandle, PromotionCrite
                   placeholder="Agregar"
                   value={field.state.value}
                   onChange={(e) => field.handleChange(Number(e.target.value))}
-                  className="h-9"
+                  className="h-10"
                 />
               </Field>
             )}
@@ -348,13 +348,17 @@ const PromotionCriteriaForm = forwardRef<PromotionCriteriaHandle, PromotionCrite
                   value={field.state.value ? "si" : "no"}
                   onValueChange={(value) => field.handleChange(value === "si")}
                 >
+                  {/* `data-checked:bg-primary`: por default el círculo
+                      seleccionado solo lleva un puntito adentro (el resto
+                      queda transparente); esto lo llena completo del color
+                      cuando está marcado, sin tocar el componente base. */}
                   <label className="flex items-center gap-2">
-                    <RadioGroupItem value="si" />
+                    <RadioGroupItem value="si" className="data-checked:bg-primary" />
                     Sí
                   </label>
 
                   <label className="flex items-center gap-2">
-                    <RadioGroupItem value="no" />
+                    <RadioGroupItem value="no" className="data-checked:bg-primary" />
                     No
                   </label>
                 </RadioGroup>
@@ -402,7 +406,7 @@ const PromotionCriteriaForm = forwardRef<PromotionCriteriaHandle, PromotionCrite
                   placeholder="Agregar"
                   value={field.state.value}
                   onChange={(e) => field.handleChange(Number(e.target.value))}
-                  className="h-9"
+                  className="h-10"
                 />
               </Field>
             )}

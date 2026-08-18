@@ -315,7 +315,11 @@ function EvaluationCriteriaForm({
                                 </p>
                               ) : (
                                 fieldOptions.map((option) => (
-                                  <SelectItem key={option.key} value={option.key}>
+                                  <SelectItem
+                                    key={option.key}
+                                    value={option.key}
+                                    title={option.label}
+                                  >
                                     {option.label}
                                   </SelectItem>
                                 ))
