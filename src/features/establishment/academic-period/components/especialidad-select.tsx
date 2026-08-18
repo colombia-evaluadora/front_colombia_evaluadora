@@ -135,129 +135,145 @@ export function EspecialidadSelect({
       </PopoverTrigger>
       <PopoverContent align="start" className="w-64 p-1">
         <div className="flex flex-col">
-          {sortedOptions.map((option) => {
-            const isEditing = editingId === option.id
-            const isEditable = option.origen === "ENFASIS"
+          {/* `max-h-64 overflow-y-auto`: solo la lista de opciones scrollea
+              — el buscador/"Agregar otro" queda afuera, siempre visible al
+              final, no se lo lleva el scroll. */}
+          <div className="max-h-64 overflow-y-auto">
+            {sortedOptions.map((option) => {
+              const isEditing = editingId === option.id
+              const isEditable = option.origen === "ENFASIS"
 
-            if (isEditing) {
+              if (isEditing) {
+                return (
+                  <div
+                    key={option.id}
+                    // Misma fila que las demás opciones (mismo padding/borde),
+                    // así editar no le cambia el ancho ni el alto al popover
+                    // — antes el input sin `min-w-0` se salía del `w-64`.
+                    className="flex items-center gap-1 border-b border-border px-2 py-1 last:border-b-0"
+                  >
+                    <Input
+                      autoFocus
+                      value={editingName}
+                      onChange={(e) => setEditingName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault()
+                          saveEdit()
+                        }
+                      }}
+                      className="h-7 min-w-0 flex-1 px-2 text-sm"
+                    />
+                    <Button
+                      type="button"
+                      color="primary"
+                      size="icon-xs"
+                      className="size-5 [&_svg:not([class*='size-'])]:size-3"
+                      aria-label="Guardar cambios"
+                      disabled={updateEnfasis.isPending || !editingName.trim()}
+                      onClick={saveEdit}
+                    >
+                      {updateEnfasis.isPending ? (
+                        <SpinnerIcon className="animate-spin" />
+                      ) : (
+                        <CheckIcon />
+                      )}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon-xs"
+                      className="size-5 [&_svg:not([class*='size-'])]:size-3"
+                      aria-label="Cancelar edición"
+                      onClick={() => setEditingId(null)}
+                    >
+                      <XIcon />
+                    </Button>
+                  </div>
+                )
+              }
+
               return (
-                <div key={option.id} className="flex items-center gap-1 px-1 py-1">
-                  <Input
-                    autoFocus
-                    value={editingName}
-                    onChange={(e) => setEditingName(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault()
-                        saveEdit()
-                      }
+                <div
+                  key={option.id}
+                  className="hover:bg-foreground/10 flex items-center justify-between gap-2 rounded-none border-b border-border px-2 py-1 text-sm last:border-b-0"
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onChange(option.label)
+                      setOpen(false)
                     }}
-                  />
+                    className="flex flex-1 items-center gap-2 text-left"
+                  >
+                    <span className="flex-1 truncate">{option.label}</span>
+                    {option.label === value && <CheckIcon className="size-4 shrink-0" />}
+                  </button>
+                  {isEditable && (
+                    <div className="flex items-center gap-0.5">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        color="neutral"
+                        size="icon-xs"
+                        className="size-5 [&_svg:not([class*='size-'])]:size-3"
+                        aria-label={`Editar ${option.label}`}
+                        onClick={() => startEdit(option.id, option.label)}
+                      >
+                        <PencilIcon />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        color="neutral"
+                        size="icon-xs"
+                        className="size-5 [&_svg:not([class*='size-'])]:size-3"
+                        aria-label={`Eliminar ${option.label}`}
+                        disabled={deleteEnfasis.isPending}
+                        onClick={() => deleteEnfasis.mutate(option.id)}
+                      >
+                        <TrashIcon />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+
+            {/* Última opción del scroll, no un pie aparte — se agrega y baja
+                de la lista igual que cualquier otra fila. */}
+            <div className="px-1 py-1">
+              <InputGroup className="h-10 rounded-md border border-input px-1 hover:border-ring has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20">
+                <InputGroupInput
+                  value={nuevo}
+                  onChange={(e) => setNuevo(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault()
+                      agregar()
+                    }
+                  }}
+                  placeholder="Agregar otro"
+                  aria-label="Nuevo énfasis"
+                />
+                <InputGroupAddon align="inline-end">
                   <Button
                     type="button"
                     color="primary"
                     size="icon-sm"
-                    aria-label="Guardar cambios"
-                    disabled={updateEnfasis.isPending || !editingName.trim()}
-                    onClick={saveEdit}
+                    aria-label="Agregar énfasis"
+                    disabled={!nuevo.trim() || createEnfasis.isPending}
+                    onClick={agregar}
                   >
-                    {updateEnfasis.isPending ? (
+                    {createEnfasis.isPending ? (
                       <SpinnerIcon className="animate-spin" />
                     ) : (
-                      <CheckIcon />
+                      <PlusIcon weight="bold" />
                     )}
                   </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon-sm"
-                    aria-label="Cancelar edición"
-                    onClick={() => setEditingId(null)}
-                  >
-                    <XIcon />
-                  </Button>
-                </div>
-              )
-            }
-
-            return (
-              <div
-                key={option.id}
-                className="hover:bg-foreground/10 flex items-center justify-between gap-2 rounded-none border-b border-border px-2 py-1 text-sm last:border-b-0"
-              >
-                <button
-                  type="button"
-                  onClick={() => {
-                    onChange(option.label)
-                    setOpen(false)
-                  }}
-                  className="flex flex-1 items-center gap-2 text-left"
-                >
-                  <span className="flex-1 truncate">{option.label}</span>
-                  {option.label === value && <CheckIcon className="size-4 shrink-0" />}
-                </button>
-                {isEditable && (
-                  <div className="flex items-center gap-0.5">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      color="neutral"
-                      size="icon-xs"
-                      className="size-5 [&_svg:not([class*='size-'])]:size-3"
-                      aria-label={`Editar ${option.label}`}
-                      onClick={() => startEdit(option.id, option.label)}
-                    >
-                      <PencilIcon />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      color="neutral"
-                      size="icon-xs"
-                      className="size-5 [&_svg:not([class*='size-'])]:size-3"
-                      aria-label={`Eliminar ${option.label}`}
-                      disabled={deleteEnfasis.isPending}
-                      onClick={() => deleteEnfasis.mutate(option.id)}
-                    >
-                      <TrashIcon />
-                    </Button>
-                  </div>
-                )}
-              </div>
-            )
-          })}
-
-          <div className="px-2 pt-1">
-            <InputGroup className="h-10 rounded-md border border-input px-1 hover:border-ring has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20">
-              <InputGroupInput
-                value={nuevo}
-                onChange={(e) => setNuevo(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault()
-                    agregar()
-                  }
-                }}
-                placeholder="Agregar otro"
-                aria-label="Nuevo énfasis"
-              />
-              <InputGroupAddon align="inline-end">
-                <Button
-                  type="button"
-                  color="primary"
-                  size="icon-sm"
-                  aria-label="Agregar énfasis"
-                  disabled={!nuevo.trim() || createEnfasis.isPending}
-                  onClick={agregar}
-                >
-                  {createEnfasis.isPending ? (
-                    <SpinnerIcon className="animate-spin" />
-                  ) : (
-                    <PlusIcon weight="bold" />
-                  )}
-                </Button>
-              </InputGroupAddon>
-            </InputGroup>
+                </InputGroupAddon>
+              </InputGroup>
+            </div>
           </div>
         </div>
       </PopoverContent>

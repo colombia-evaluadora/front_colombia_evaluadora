@@ -25,9 +25,9 @@ export function emptyDraft(): SubjectDraft {
     asignaturaGeneral: "",
     nombreInterno: "",
     abreviacion: "",
-    // El orden de reporte de la asignatura es independiente del orden del área,
-    // por eso arranca en 1.
-    ordenReportes: 1,
+    // Sin valor por defecto al crear: que el usuario lo complete a mano, no
+    // que arranque en un "1" que después hay que notar y corregir.
+    ordenReportes: NaN,
     color: "",
     especialidad: "",
   }
@@ -66,7 +66,7 @@ export function SubjectRowFields({
           aria-label="Orden en los reportes"
           type="number"
           min={0}
-          placeholder="Agregar"
+          placeholder="#"
           className="w-20"
           value={Number.isNaN(draft.ordenReportes) ? "" : draft.ordenReportes}
           onChange={(e) => onPatch({ ordenReportes: e.target.valueAsNumber })}
@@ -82,8 +82,12 @@ export function SubjectRowFields({
         <Input
           aria-label="Nombre interno"
           placeholder="Agregar"
+          // El valor que se guarda (y se manda a la DB) ya va en mayúscula
+          // — `uppercase` en la clase es solo para que no se vea un
+          // parpadeo en minúscula mientras se tipea cada letra.
+          className="uppercase placeholder:normal-case"
           value={draft.nombreInterno}
-          onChange={(e) => onPatch({ nombreInterno: e.target.value })}
+          onChange={(e) => onPatch({ nombreInterno: e.target.value.toUpperCase() })}
         />
       </TableCell>
       <TableCell>
