@@ -143,6 +143,13 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
         showLocalNotice(parsed.error.issues[0]?.message ?? "Revisa los datos.", "error")
         return
       }
+      // Espeja `fn_escala_guardar_bulk` (backend): "El lote trae valoraciones
+      // con nombre repetido" — sin este check, el duplicado solo se atrapaba
+      // después de enviar todo el lote.
+      if (drafts.some((d) => d.nombre.trim().toLowerCase() === parsed.data.nombre.trim().toLowerCase())) {
+        showLocalNotice(`Ya agregaste una valoración con el nombre "${parsed.data.nombre}".`, "error")
+        return
+      }
       setDrafts((prev) => [...prev, parsed.data])
       showLocalNotice("Escala agregada a la lista.", "info")
       formApi.reset(makeEmptyDraft(r))
@@ -168,6 +175,16 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
     const parsed = makeRatingScaleGradesSchema(r).safeParse(editRow)
     if (!parsed.success) {
       showLocalNotice(parsed.error.issues[0]?.message ?? "Revisa los datos.", "error")
+      return
+    }
+    if (
+      drafts.some(
+        (d, i) =>
+          i !== editingIndex &&
+          d.nombre.trim().toLowerCase() === parsed.data.nombre.trim().toLowerCase(),
+      )
+    ) {
+      showLocalNotice(`Ya existe una valoración con el nombre "${parsed.data.nombre}" en la lista.`, "error")
       return
     }
     setDrafts((prev) => prev.map((d, i) => (i === editingIndex ? parsed.data : d)))
