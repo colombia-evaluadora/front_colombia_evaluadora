@@ -576,6 +576,7 @@ export function AddEstablishmentPage() {
                         invalidFields={invalidFields}
                         errors={fieldErrors}
                         showValidation={hasSubmitted}
+                        required={false}
                         confirmPassword={confirmPasswords["secretary"] ?? ""}
                         onConfirmPasswordChange={(value) =>
                           setConfirmPasswords((current) => ({ ...current, secretary: value }))

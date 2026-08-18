@@ -71,15 +71,20 @@ const ESTABLISHMENT_LABELS: Record<string, string> = {
   "address.municipality": "Municipio",
 }
 
-/** Etiqueta para el resumen, por campo de persona (se prefija con el rol). */
+/**
+ * Etiqueta para el resumen, por campo de persona (se prefija con el rol).
+ * Fecha de nacimiento y género ya NO se validan acá — vuelven a ser
+ * opcionales tanto para rector/secretaria como para funcionarios regulares
+ * (`fn_usu_crear` no los exige a nivel de base, son columnas nullable; solo
+ * correo/contraseña sí lo son de verdad — `CUENTA`/`CONTRASENA` son la
+ * cuenta y el login del funcionario).
+ */
 const PERSON_LABELS: Record<string, string> = {
   documentType: "tipo de documento",
   identification: "número de documento",
   firstName: "primer nombre",
   lastName: "primer apellido",
   email: "correo electrónico",
-  birthDate: "fecha de nacimiento",
-  gender: "género",
   password: "contraseña",
   confirmPassword: "confirmación de contraseña",
 }
@@ -107,78 +112,93 @@ function isPersonEmpty(person: Person | null): boolean {
 
 /**
  * Persona con reglas condicionales, por eso va en un `superRefine` y no en un
- * `object` plano: los 4 mínimos solo se exigen si la persona fue tocada, y la
- * contraseña solo si se escribió en alguno de los dos campos.
+ * `object` plano. `required` decide si la persona puede estar completamente
+ * vacía (secretaria: puede no existir) o no (rector: obligatorio, sus 4
+ * mínimos se exigen aunque el usuario no haya tocado nada).
  */
-const personSchema = z
-  .object({
-    person: z.custom<Person | null>(),
-    confirmPassword: z.string(),
-  })
-  .superRefine(({ person, confirmPassword }, ctx) => {
-    if (!person || isPersonEmpty(person)) {
-      return
-    }
-
-    const require = (path: string, value: string | null | undefined, message: string) => {
-      if (isBlank(value)) {
-        ctx.addIssue({ code: "custom", path: [path], message })
+function makePersonSchema(required: boolean) {
+  return z
+    .object({
+      person: z.custom<Person | null>(),
+      confirmPassword: z.string(),
+    })
+    .superRefine(({ person, confirmPassword }, ctx) => {
+      if (!required && (!person || isPersonEmpty(person))) {
+        return
       }
-    }
 
-    require("documentType", person.documentType?.name, "Selecciona el tipo de documento.")
-    require("identification", person.identification, "Ingresa el número de documento.")
-    require("firstName", person.firstName, "Ingresa el primer nombre.")
-    require("lastName", person.lastName, "Ingresa el primer apellido.")
+      // Rector obligatorio pero sin persona todavía (o vacía del todo):
+      // se valida contra un objeto en blanco para que salgan los 4
+      // mensajes de "obligatorio", en vez de no marcar nada.
+      const p: Person = person ?? {
+        documentType: null,
+        identification: "",
+        firstName: "",
+        lastName: "",
+        birthDate: "",
+        gender: null,
+        email: "",
+        phone: "",
+        password: "",
+      }
 
-    /**
-     * Persona SIN `id` todavía (nunca tuvo rector/secretaria enlazado, o el
-     * GET no trajo uno): al guardar va a `POST /register/funcionario`
-     * (`RegisterUsuarioRequest`, auth-center), que exige `@NotBlank/@NotNull`
-     * en `email`, `password`, `fechaNacimiento` y `fkTlvGenero` — acá esos
-     * 4 campos eran opcionales, así que un rector/secretaria nuevo con solo
-     * los 4 mínimos pasaba la validación del front pero el Java Bean
-     * Validation lo rechazaba con 400 recién al guardar (sin marcar ningún
-     * campo en el form). Persona CON `id` (ya existente) va a PATCH
-     * `fn_fun_actualizar`, que sí tolera estos campos vacíos (COALESCE) —
-     * por eso solo se exigen acá cuando todavía no existe.
-     */
-    if (!person.id) {
-      require("email", person.email, "Ingresa el correo electrónico.")
-      require("birthDate", person.birthDate, "Ingresa la fecha de nacimiento.")
-      require("gender", person.gender?.name, "Selecciona el género.")
-      require("password", person.password, "Ingresa la contraseña.")
+      const require = (path: string, value: string | null | undefined, message: string) => {
+        if (isBlank(value)) {
+          ctx.addIssue({ code: "custom", path: [path], message })
+        }
+      }
+
+      require("documentType", p.documentType?.name, "Selecciona el tipo de documento.")
+      require("identification", p.identification, "Ingresa el número de documento.")
+      require("firstName", p.firstName, "Ingresa el primer nombre.")
+      require("lastName", p.lastName, "Ingresa el primer apellido.")
+
+      /**
+       * Persona SIN `id` todavía (nunca tuvo rector/secretaria enlazado, o
+       * el GET no trajo uno): al guardar va a `POST /register/funcionario`
+       * (`RegisterUsuarioRequest`, auth-center), que exige `@NotBlank` en
+       * `email` y `password` — son la cuenta y el login del funcionario,
+       * no hay forma de omitirlos (a diferencia de fecha de nacimiento y
+       * género, que sí son opcionales de verdad). Persona CON `id` (ya
+       * existente) va a PATCH `fn_fun_actualizar`, que tolera estos campos
+       * vacíos (COALESCE, nunca resetea la contraseña) — por eso solo se
+       * exigen acá cuando todavía no existe.
+       */
+      if (!p.id) {
+        require("email", p.email, "Ingresa el correo electrónico.")
+        require("password", p.password, "Ingresa la contraseña.")
+        require("confirmPassword", confirmPassword, "Repite la contraseña.")
+
+        if (!isBlank(p.password) && !isBlank(confirmPassword) && p.password !== confirmPassword) {
+          ctx.addIssue({
+            code: "custom",
+            path: ["confirmPassword"],
+            message: "Las contraseñas no coinciden.",
+          })
+        }
+        return
+      }
+
+      // Contraseña: sólo se valida si escribió algo (en cualquiera de los dos campos).
+      const hasPassword = !isBlank(p.password)
+      const hasConfirm = !isBlank(confirmPassword)
+
+      if (!hasPassword && !hasConfirm) {
+        return
+      }
+
+      require("password", p.password, "Ingresa la contraseña.")
       require("confirmPassword", confirmPassword, "Repite la contraseña.")
 
-      if (!isBlank(person.password) && !isBlank(confirmPassword) && person.password !== confirmPassword) {
+      if (hasPassword && hasConfirm && p.password !== confirmPassword) {
         ctx.addIssue({
           code: "custom",
           path: ["confirmPassword"],
           message: "Las contraseñas no coinciden.",
         })
       }
-      return
-    }
-
-    // Contraseña: sólo se valida si escribió algo (en cualquiera de los dos campos).
-    const hasPassword = !isBlank(person.password)
-    const hasConfirm = !isBlank(confirmPassword)
-
-    if (!hasPassword && !hasConfirm) {
-      return
-    }
-
-    require("password", person.password, "Ingresa la contraseña.")
-    require("confirmPassword", confirmPassword, "Repite la contraseña.")
-
-    if (hasPassword && hasConfirm && person.password !== confirmPassword) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["confirmPassword"],
-        message: "Las contraseñas no coinciden.",
-      })
-    }
-  })
+    })
+}
 
 export function validateEstablishmentForm(
   values: EstablishmentDetails,
@@ -210,12 +230,12 @@ export function validateEstablishmentForm(
     }
   }
 
-  for (const [fieldPrefix, label] of [
-    ["principal", "Rector"],
-    ["secretary", "Secretaria"],
+  for (const [fieldPrefix, label, required] of [
+    ["principal", "Rector", true],
+    ["secretary", "Secretaria", false],
   ] as const) {
     const person = values[fieldPrefix]
-    const result = personSchema.safeParse({
+    const result = makePersonSchema(required).safeParse({
       person,
       confirmPassword: confirmPasswords[fieldPrefix] ?? "",
     })
