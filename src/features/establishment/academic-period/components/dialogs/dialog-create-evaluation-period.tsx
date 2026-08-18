@@ -1,9 +1,10 @@
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { useForm } from "@tanstack/react-form"
 import { CheckIcon, ControlPointIcon, PencilIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 
 import { useNotify } from "@/components/notice/notice-context"
+import { NoticeBanner, type NoticeVariant } from "@/components/notice/notice-banner"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -70,6 +71,22 @@ export function CreateEvaluationPeriodDialog({
   const isEditing = period != null
   const [open, setOpen] = useState(false)
   const { notify } = useNotify()
+
+  // Aviso local para los errores de validación propios del diálogo (solape
+  // de fechas, peso excedido): si usaran el `notify()` global se pintaban en
+  // el `NoticeOutlet` de la pestaña, detrás del overlay del modal, en vez de
+  // dentro del propio formulario.
+  const [notice, setNotice] = useState<{
+    id: number
+    message: string
+    variant: NoticeVariant
+  } | null>(null)
+  const noticeIdRef = useRef(0)
+
+  function notifyInDialog(message: string, options?: { variant?: NoticeVariant }) {
+    noticeIdRef.current += 1
+    setNotice({ id: noticeIdRef.current, message, variant: options?.variant ?? "error" })
+  }
 
   const { data: periodsData } = useEvaluationPeriodsQuery({
     filters: {},
@@ -142,15 +159,13 @@ export function CreateEvaluationPeriodDialog({
     onSubmit: ({ value }) => {
       const values = evaluationPeriodFormSchema.parse(value)
       if (hasOverlap(values.startDate, values.endDate)) {
-        notify("El período coincide con otro período de evaluación existente. Revisa las fechas.", {
-          variant: "error",
-        })
+        notifyInDialog(
+          "El período coincide con otro período de evaluación existente. Revisa las fechas.",
+        )
         return
       }
       if (values.peso > pesoDisponible) {
-        notify(`El peso porcentual supera el 100 %. Disponible: ${pesoDisponible} %.`, {
-          variant: "error",
-        })
+        notifyInDialog(`El peso porcentual supera el 100 %. Disponible: ${pesoDisponible} %.`)
         return
       }
       const payload = { ...values }
@@ -168,6 +183,7 @@ export function CreateEvaluationPeriodDialog({
 
   function handleOpenChange(next: boolean) {
     if (next) form.reset(defaultValues)
+    setNotice(null)
     setOpen(next)
   }
 
@@ -197,9 +213,16 @@ export function CreateEvaluationPeriodDialog({
       <DialogContent className="sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>
-            {isEditing ? "Editar periodo de evaluación" : "Agregar periodo de evaluación"}
+            {isEditing ? "Editar periodo de evaluación" : "Agregar periodos de evaluación"}
           </DialogTitle>
         </DialogHeader>
+
+        <NoticeBanner
+          notice={notice}
+          onClose={() => setNotice(null)}
+          variant={notice?.variant}
+          autoCloseMs={notice?.variant === "error" ? undefined : 4000}
+        />
 
         <form
           id={FORM_ID}
@@ -443,7 +466,11 @@ export function CreateEvaluationPeriodDialog({
                     <SelectContent>
                       <SelectGroup>
                         {statusOptions.map((option) => (
-                          <SelectItem key={option.id} value={String(option.id)}>
+                          <SelectItem
+                            key={option.id}
+                            value={String(option.id)}
+                            title={option.label}
+                          >
                             {option.label}
                           </SelectItem>
                         ))}

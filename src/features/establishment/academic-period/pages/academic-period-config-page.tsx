@@ -211,6 +211,7 @@ function AcademicPeriodConfigPageContent() {
             <EvaluationPeriodsSection
               academicPeriodId={academicPeriodId}
               jornada={saved || !detail ? jornada : toJornada(detail)}
+              accordionOpen={configOpen}
             />
           </div>
         )}
