@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select"
 import { CATALOGS } from "@/lib/catalogs"
 import { DATE_VALUE_FORMAT, parseDateValue } from "@/lib/date-time-value"
+import { toDigitsOnly } from "@/lib/text-input"
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 import { useCatalogQuery } from "@/features/establishment/employees/api/query/use-catalogs"
 import { findPersonByDocument } from "@/features/establishment/employees/api/query/use-user-by-document"
@@ -253,9 +254,16 @@ export function UserDetailsForm({
                         id="document-number"
                         size="sm"
                         placeholder="Agregar"
+                        // TUSUARIO.IDENTIFICACION es VARCHAR(30) puramente
+                        // numérico (RegisterUsuarioRequest la valida igual,
+                        // @Size(max=30)) — solo dígitos, sin letras.
+                        inputMode="numeric"
+                        maxLength={30}
                         value={person.identification}
                         aria-invalid={isInvalid(`${fieldPrefix}.identification`)}
-                        onChange={(event) => emitChange({ identification: event.target.value })}
+                        onChange={(event) =>
+                            emitChange({ identification: toDigitsOnly(event.target.value, 30) })
+                        }
                     />
                     <FieldError>{errorFor(`${fieldPrefix}.identification`)}</FieldError>
                 </Field>

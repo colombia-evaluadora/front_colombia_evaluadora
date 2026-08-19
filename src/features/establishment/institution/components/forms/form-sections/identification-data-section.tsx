@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/select"
 import { useOwnershipTypesQuery } from "@/features/establishment/institution/api/query/use-ownership-types"
 import { toSelectItemsMap, toSelectOptions } from "@/lib/catalog-options"
+import { toDigitsOnly } from "@/lib/text-input"
 import type { EstablishmentDetails } from "@/features/establishment/institution/api/types/establishment"
 
 interface IdentificationDataFormSectionProps {
@@ -95,9 +96,15 @@ export function IdentificationDataFormSection({ value, onChange, invalidFields =
                     <Input
                         id="establishment-nit"
                         placeholder="Agregar"
+                        // TESTABLECIMIENTO.NIT es VARCHAR(30) en el DDL pero
+                        // el negocio pidió acotarlo a 12 dígitos puros acá
+                        // (un NIT colombiano completo, con verificador,
+                        // nunca pasa de eso) — solo números, sin letras.
+                        inputMode="numeric"
+                        maxLength={12}
                         value={value.nit}
                         aria-invalid={isInvalid("basicInfo.nit")}
-                        onChange={(event) => onChange({ ...value, nit: event.target.value })}
+                        onChange={(event) => onChange({ ...value, nit: toDigitsOnly(event.target.value, 12) })}
                     />
                     <FieldError>{errorFor("basicInfo.nit")}</FieldError>
                 </Field>
