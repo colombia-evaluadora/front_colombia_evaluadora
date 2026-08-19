@@ -280,6 +280,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                         <FieldLabel htmlFor={field.name}>Nombre*</FieldLabel>
                         <Input
                           id={field.name}
+                          maxLength={130}
                           placeholder="Agregar"
                           value={field.state.value}
                           onBlur={field.handleBlur}
@@ -338,6 +339,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                         <FieldLabel htmlFor={field.name}>Abreviación*</FieldLabel>
                         <Input
                           id={field.name}
+                          maxLength={30}
                           placeholder="Agregar"
                           value={field.state.value}
                           onBlur={field.handleBlur}

@@ -70,13 +70,34 @@ function compareCaritaRank(a: RatingSymbol, b: RatingSymbol): number {
   return ra[0] - rb[0] || ra[1] - rb[1] || ra[2] - rb[2]
 }
 
+const SIMBOLO_ACCION_ORDER = [
+  "CELESTE_ALTO",
+  "MORADO_ACEPTABLE",
+  "ROSADO_INSUFICIENTE",
+  "AMARILLO_SUPERIOR",
+  "NARANJA_SOBRESALIENTE",
+  "ROJO_DEFICIENTE",
+  "VERDE_EXCELENTE",
+  "ROSADO_BASICO",
+  "ROJO_BAJO",
+]
+
+function simboloRank(symbol: RatingSymbol): number {
+  if (!symbol.color) return SIMBOLO_ACCION_ORDER.length
+  const index = SIMBOLO_ACCION_ORDER.indexOf(symbol.color)
+  return index === -1 ? SIMBOLO_ACCION_ORDER.length : index
+}
+
 async function fetchRatingSymbols(): Promise<RatingSymbol[]> {
   const [caritas, simbolos] = await Promise.all([
     fetchSelectCategory("GRAFICA_CARITA"),
     fetchSelectCategory("GRAFICA_SIMBOLO"),
   ])
   const caritaSymbols = toSymbols(caritas, "carita").sort(compareCaritaRank)
-  return [...caritaSymbols, ...toSymbols(simbolos, "valoracion")]
+  const simboloSymbols = toSymbols(simbolos, "valoracion").sort(
+    (a, b) => simboloRank(a) - simboloRank(b),
+  )
+  return [...caritaSymbols, ...simboloSymbols]
 }
 
 export const ratingSymbolsQueryKey = () => ["rating-symbols"]

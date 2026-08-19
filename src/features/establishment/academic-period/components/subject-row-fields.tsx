@@ -51,9 +51,6 @@ interface SubjectRowFieldsProps {
   academicPeriodId?: number
 }
 
-// Celdas de datos de una asignatura general (orden, asignatura general, nombre
-// interno, abreviación, color, especialidad). Las comparten la fila de alta y
-// la de edición inline; cada fila agrega aparte su propia celda de acciones.
 export function SubjectRowFields({
   draft,
   onPatch,
@@ -66,6 +63,7 @@ export function SubjectRowFields({
           aria-label="Orden en los reportes"
           type="number"
           min={0}
+          max={9999}
           placeholder="#"
           className="w-20"
           value={Number.isNaN(draft.ordenReportes) ? "" : draft.ordenReportes}
@@ -82,9 +80,7 @@ export function SubjectRowFields({
         <Input
           aria-label="Nombre interno"
           placeholder="Agregar"
-          // El valor que se guarda (y se manda a la DB) ya va en mayúscula
-          // — `uppercase` en la clase es solo para que no se vea un
-          // parpadeo en minúscula mientras se tipea cada letra.
+          maxLength={130}
           className="uppercase placeholder:normal-case"
           value={draft.nombreInterno}
           onChange={(e) => onPatch({ nombreInterno: e.target.value.toUpperCase() })}
@@ -94,6 +90,7 @@ export function SubjectRowFields({
         <Input
           aria-label="Abreviación"
           placeholder="Agregar"
+          maxLength={30}
           value={draft.abreviacion}
           onChange={(e) => onPatch({ abreviacion: e.target.value })}
         />

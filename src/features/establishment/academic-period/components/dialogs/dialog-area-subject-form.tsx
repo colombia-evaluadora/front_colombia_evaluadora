@@ -147,9 +147,6 @@ export function AreaSubjectFormDialog({
   const updateAreaSubject = useUpdateAreaSubject()
   const isPending = createAreaSubject.isPending || updateAreaSubject.isPending
 
-  // Catálogo de áreas generales para mapear el nombre (que usa la UI) al id
-  // (fk_area_asignatura) que el backend espera en el bulk. La UI sigue con
-  // nombres; solo el payload viaja como id.
   const { data: generalAreas = [] } = useGeneralAreasQuery()
   const areaGeneralNameToId = (nombre: string): string => {
     const match = generalAreas.find((a) => a.nombre === nombre)
@@ -163,11 +160,7 @@ export function AreaSubjectFormDialog({
       const base = areaSubjectFormSchema.parse(value)
 
       const payloadSubjects: AreaSubjectItem[] = subjects.map((subject) => ({
-        // Se conserva para poder diferenciar alta/edición/baja contra el
-        // endpoint real al guardar (asignaturas ya existentes vs. nuevas).
         id: subject.id,
-        // El backend espera el id del área general (fk_area_asignatura), no el
-        // nombre. La UI/estado conserva el nombre; aquí se mapea a id.
         asignaturaGeneral: areaGeneralNameToId(subject.asignaturaGeneral),
         nombreInterno: subject.nombreInterno || subject.asignaturaGeneral,
         abreviacion: subject.abreviacion,
@@ -182,8 +175,6 @@ export function AreaSubjectFormDialog({
           values: {
             ...areaSubject,
             ...base,
-            // El backend espera el id del área general (fk_area_asignatura), no
-            // el nombre. La UI conserva el nombre; aquí se manda como id.
             areaGeneral: areaGeneralNameToId(base.areaGeneral),
             subjects: payloadSubjects,
           },
@@ -200,7 +191,6 @@ export function AreaSubjectFormDialog({
       }
 
       await createAreaSubject.mutateAsync({
-        // Id del área general (fk_area_asignatura); la UI lo maneja por nombre.
         areaGeneral: areaGeneralNameToId(base.areaGeneral),
         nombreInterno: base.nombreInterno,
         abreviacion: base.abreviacion,
@@ -217,11 +207,6 @@ export function AreaSubjectFormDialog({
 
   function handleOpenChange(next: boolean) {
     setOpen(next)
-
-    // Se resetea tanto al abrir como al cerrar: si el usuario cierra sin
-    // guardar (Cancelar, click afuera, Esc), los cambios sin persistir no
-    // deben sobrevivir — ni mientras el diálogo queda cerrado (por si algo
-    // más lee ese estado) ni la próxima vez que se abra.
     if (isEdit) {
       resetEditForm()
     } else {
@@ -440,6 +425,7 @@ export function AreaSubjectFormDialog({
                     {(isInvalid) => (
                       <Input
                         id={field.name}
+                        maxLength={130}
                         placeholder="Agregar"
                         value={field.state.value}
                         onBlur={field.handleBlur}
@@ -460,6 +446,7 @@ export function AreaSubjectFormDialog({
                     {(isInvalid) => (
                       <Input
                         id={field.name}
+                        maxLength={30}
                         placeholder="Agregar"
                         value={field.state.value}
                         onBlur={field.handleBlur}
@@ -479,6 +466,7 @@ export function AreaSubjectFormDialog({
                         id={field.name}
                         type="number"
                         min={0}
+                        max={9999}
                         placeholder="Agregar"
                         value={Number.isNaN(field.state.value) ? "" : field.state.value}
                         onBlur={field.handleBlur}

@@ -69,7 +69,11 @@ const gradeSchema = z.object({
   teachingLevelId: z
     .number({ error: "Selecciona el nivel de enseñanza." })
     .int("Selecciona el nivel de enseñanza."),
-  nombre: z.string().trim().min(1, "Selecciona el nombre del grado."),
+  nombre: z
+    .string()
+    .trim()
+    .min(1, "Selecciona el nombre del grado.")
+    .max(130, "El nombre no puede superar los 130 caracteres."),
 })
 
 export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGradeDialogProps) {
@@ -350,6 +354,7 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
             ) : (
               <Input
                 id="grade-nombre"
+                maxLength={130}
                 placeholder="Agregar"
                 value={nombre}
                 aria-invalid={Boolean(fieldErrors["nombre"])}
