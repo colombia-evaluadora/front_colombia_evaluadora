@@ -37,6 +37,7 @@ import {
 import { useCreateEvaluationPeriod } from "@/features/establishment/academic-period/api/mutations/create-evaluation-period"
 import { useUpdateEvaluationPeriod } from "@/features/establishment/academic-period/api/mutations/update-evaluation-period"
 import { useEvaluationPeriodStatusesQuery } from "@/features/establishment/academic-period/api/query/use-evaluation-period-statuses"
+import { useEvaluationPeriodsQuery } from "@/features/establishment/academic-period/api/query/use-evaluation-periods"
 import { useAcademicPeriodQuery } from "@/features/establishment/academic-period/api/query/use-academic-period"
 import type { EvaluationPeriod } from "@/features/establishment/academic-period/api/types/evaluation-period"
 import { DatePicker } from "@/components/date-picker"
@@ -89,6 +90,18 @@ export function CreateEvaluationPeriodDialog({
   const { data: academicPeriod } = useAcademicPeriodQuery(academicPeriodId)
   const academicPeriodStart = academicPeriod?.startDate ?? ""
   const academicPeriodEnd = academicPeriod?.endDate ?? ""
+
+  const { data: allPeriodsData } = useEvaluationPeriodsQuery({
+    filters: {},
+    sorting: [],
+    pageIndex: 0,
+    pageSize: 1000,
+    academicPeriodId,
+  })
+  const otherPeriodsWeightSum = (allPeriodsData?.rows ?? [])
+    .filter((row) => !isEditing || row.id !== period.id)
+    .reduce((sum, row) => sum + (row.peso ?? 0), 0)
+  const maxAllowedWeight = Math.max(0, 100 - otherPeriodsWeightSum)
 
   const defaultValues: EvaluationPeriodFormValues = period
     ? {
@@ -210,6 +223,7 @@ export function CreateEvaluationPeriodDialog({
                   <Input
                     id={field.name}
                     type="text"
+                    maxLength={30}
                     placeholder="Agregar"
                     value={field.state.value}
                     onBlur={field.handleBlur}
@@ -230,6 +244,7 @@ export function CreateEvaluationPeriodDialog({
                   <FieldLabel htmlFor={field.name}>Nombre*</FieldLabel>
                   <Input
                     id={field.name}
+                    maxLength={130}
                     placeholder="Agregar"
                     value={field.state.value}
                     onBlur={field.handleBlur}
@@ -250,6 +265,7 @@ export function CreateEvaluationPeriodDialog({
                   <FieldLabel htmlFor={field.name}>Abreviación*</FieldLabel>
                   <Input
                     id={field.name}
+                    maxLength={30}
                     placeholder="Agregar"
                     value={field.state.value}
                     onBlur={field.handleBlur}
@@ -361,7 +377,20 @@ export function CreateEvaluationPeriodDialog({
             }}
           </form.Field>
 
-          <form.Field name="peso">
+          <form.Field
+            name="peso"
+            validators={{
+              onChange: ({ value }) => {
+                if (Number.isNaN(value)) return undefined
+                if (value > maxAllowedWeight) {
+                  return {
+                    message: `La suma de los pesos no puede superar el 100%. Disponible: ${maxAllowedWeight}%.`,
+                  }
+                }
+                return undefined
+              },
+            }}
+          >
             {(field) => {
               const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
               return (
@@ -374,7 +403,7 @@ export function CreateEvaluationPeriodDialog({
                       id={field.name}
                       type="number"
                       min={0}
-                      max={100}
+                      max={maxAllowedWeight}
                       placeholder="Agregar"
                       className="px-0"
                       value={Number.isNaN(field.state.value) ? "" : field.state.value}
@@ -386,7 +415,14 @@ export function CreateEvaluationPeriodDialog({
                       <InputGroupText>%</InputGroupText>
                     </InputGroupAddon>
                   </InputGroup>
-                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                  {isInvalid ? (
+                    <FieldError errors={field.state.meta.errors} />
+                  ) : (
+                    <p className="text-muted-foreground text-xs">
+                      Disponible: {maxAllowedWeight}% (suma de los demás periodos:{" "}
+                      {otherPeriodsWeightSum}%)
+                    </p>
+                  )}
                 </Field>
               )
             }}
@@ -442,9 +478,6 @@ export function CreateEvaluationPeriodDialog({
             }}
           </form.Field>
         </form>
-
-        {/* Ambas acciones a la derecha; "Cancelar" va última y sólida en
-            neutral, para que el peso visual no compita con el envío. */}
         <DialogFooter>
           <form.Subscribe selector={(state) => state.values}>
             {(values) => {
@@ -455,6 +488,7 @@ export function CreateEvaluationPeriodDialog({
                 values.startDate.length > 0 &&
                 values.endDate.length > 0 &&
                 !Number.isNaN(values.peso) &&
+                values.peso <= maxAllowedWeight &&
                 values.estadoId > 0
               const datesWithinAcademicPeriod =
                 (!academicPeriodStart || values.startDate >= academicPeriodStart) &&
