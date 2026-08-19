@@ -5,6 +5,7 @@ import { CheckIcon, ControlPointIcon, PencilIcon, SpinnerIcon, XIcon } from "@/c
 
 import { useNotify } from "@/components/notice/notice-context"
 import { NoticeBanner, type NoticeVariant } from "@/components/notice/notice-banner"
+import { getErrorMessage } from "@/lib/api-client"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -35,7 +36,6 @@ import {
 
 import { useCreateEvaluationPeriod } from "@/features/establishment/academic-period/api/mutations/create-evaluation-period"
 import { useUpdateEvaluationPeriod } from "@/features/establishment/academic-period/api/mutations/update-evaluation-period"
-import { useEvaluationPeriodsQuery } from "@/features/establishment/academic-period/api/query/use-evaluation-periods"
 import { useEvaluationPeriodStatusesQuery } from "@/features/establishment/academic-period/api/query/use-evaluation-period-statuses"
 import { useAcademicPeriodQuery } from "@/features/establishment/academic-period/api/query/use-academic-period"
 import type { EvaluationPeriod } from "@/features/establishment/academic-period/api/types/evaluation-period"
@@ -72,10 +72,6 @@ export function CreateEvaluationPeriodDialog({
   const [open, setOpen] = useState(false)
   const { notify } = useNotify()
 
-  // Aviso local para los errores de validación propios del diálogo (solape
-  // de fechas, peso excedido): si usaran el `notify()` global se pintaban en
-  // el `NoticeOutlet` de la pestaña, detrás del overlay del modal, en vez de
-  // dentro del propio formulario.
   const [notice, setNotice] = useState<{
     id: number
     message: string
@@ -88,49 +84,11 @@ export function CreateEvaluationPeriodDialog({
     setNotice({ id: noticeIdRef.current, message, variant: options?.variant ?? "error" })
   }
 
-  const { data: periodsData } = useEvaluationPeriodsQuery({
-    filters: {},
-    sorting: [],
-    pageIndex: 0,
-    pageSize: 100,
-    academicPeriodId,
-  })
-  const otherPeriods = (periodsData?.rows ?? []).filter(
-    (p) => period == null || p.id !== period.id,
-  )
-  const pesoUsado = otherPeriods.reduce((sum, p) => sum + (p.peso ?? 0), 0)
-  const pesoDisponible = Math.max(0, 100 - pesoUsado)
-
   const { data: statusOptions = [] } = useEvaluationPeriodStatusesQuery()
 
-  // Fechas del periodo académico: se usan para limitar (no solo avisar)
-  // el rango del periodo de evaluación que se está creando/editando.
   const { data: academicPeriod } = useAcademicPeriodQuery(academicPeriodId)
   const academicPeriodStart = academicPeriod?.startDate ?? ""
   const academicPeriodEnd = academicPeriod?.endDate ?? ""
-
-  function hasOverlap(start: string, end: string): boolean {
-    if (!start || !end) return false
-    return otherPeriods.some((p) => start <= p.endDate && p.startDate <= end)
-  }
-
-  // Espeja la validación de unicidad de `fn_periodo_eval_validar` (backend):
-  // sin este check, un código/nombre/abreviación repetido solo se atrapaba
-  // en el toast genérico del interceptor HTTP, con texto distinto al resto
-  // de validaciones de este diálogo (que sí usan el banner local).
-  function findDuplicateField(values: EvaluationPeriodFormValues): string | null {
-    const norm = (s: string) => s.trim().toLowerCase()
-    if (otherPeriods.some((p) => norm(p.codigo) === norm(values.codigo))) {
-      return `Ya existe un período de evaluación con el código "${values.codigo}" en este período académico.`
-    }
-    if (otherPeriods.some((p) => norm(p.nombre) === norm(values.nombre))) {
-      return `Ya existe un período de evaluación con el nombre "${values.nombre}" en este período académico.`
-    }
-    if (otherPeriods.some((p) => norm(p.abreviacion) === norm(values.abreviacion))) {
-      return `Ya existe un período de evaluación con la abreviación "${values.abreviacion}" en este período académico.`
-    }
-    return null
-  }
 
   const defaultValues: EvaluationPeriodFormValues = period
     ? {
@@ -151,17 +109,20 @@ export function CreateEvaluationPeriodDialog({
         setOpen(false)
         notify(SUCCESS_MESSAGES.evaluationPeriod.created)
       },
+      onError: (error) => {
+        notifyInDialog(getErrorMessage(error))
+      },
     },
   })
 
   const updateEvaluation = useUpdateEvaluationPeriod({
     mutationConfig: {
-      // Un error HTTP ya se reporta por el interceptor global de `api-client`
-      // (toast con el mensaje del backend); `onSuccess` solo corre si la
-      // request efectivamente resolvió bien.
       onSuccess: () => {
         setOpen(false)
         notify(SUCCESS_MESSAGES.evaluationPeriod.updated)
+      },
+      onError: (error) => {
+        notifyInDialog(getErrorMessage(error))
       },
     },
   })
@@ -176,27 +137,6 @@ export function CreateEvaluationPeriodDialog({
     },
     onSubmit: ({ value }) => {
       const values = evaluationPeriodFormSchema.parse(value)
-      const duplicateMessage = findDuplicateField(values)
-      if (duplicateMessage) {
-        notifyInDialog(duplicateMessage)
-        return
-      }
-      if (hasOverlap(values.startDate, values.endDate)) {
-        // Mismo texto que `fn_periodo_eval_validar` (backend) para el mismo
-        // caso, así no se ve una redacción distinta según cuál validación
-        // dispare primero.
-        notifyInDialog("El periodo de evaluación se solapa con otro existente.")
-        return
-      }
-      if (values.peso > pesoDisponible) {
-        // Mismo mensaje base que `fn_periodo_eval_validar` ("La suma de
-        // pesos supera el 100%"), con el disponible agregado — dato que el
-        // backend no calcula pero sí es útil para corregir sin adivinar.
-        notifyInDialog(
-          `La suma de pesos supera el 100%. Disponible: ${pesoDisponible} %.`,
-        )
-        return
-      }
       const payload = { ...values }
       if (isEditing) {
         updateEvaluation.mutate({
@@ -421,17 +361,7 @@ export function CreateEvaluationPeriodDialog({
             }}
           </form.Field>
 
-          <form.Field
-            name="peso"
-            validators={{
-              onChange: ({ value }) =>
-                value > pesoDisponible
-                  ? {
-                      message: `La suma de pesos supera el 100%. Disponible: ${pesoDisponible} %.`,
-                    }
-                  : undefined,
-            }}
-          >
+          <form.Field name="peso">
             {(field) => {
               const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
               return (
@@ -526,9 +456,6 @@ export function CreateEvaluationPeriodDialog({
                 values.endDate.length > 0 &&
                 !Number.isNaN(values.peso) &&
                 values.estadoId > 0
-              // Las fechas deben caer dentro del rango del periodo académico
-              // (cuando este existe). Si no, se deshabilita el submit además
-              // del FieldError que muestra el form al tocar el campo.
               const datesWithinAcademicPeriod =
                 (!academicPeriodStart || values.startDate >= academicPeriodStart) &&
                 (!academicPeriodEnd || values.startDate <= academicPeriodEnd) &&

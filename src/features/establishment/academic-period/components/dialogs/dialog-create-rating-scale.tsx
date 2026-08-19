@@ -12,6 +12,7 @@ import {
 } from "@/components/table-row-actions"
 import { useNotify } from "@/components/notice/notice-context"
 import { NoticeBanner, type NoticeVariant } from "@/components/notice/notice-banner"
+import { getErrorMessage } from "@/lib/api-client"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -143,13 +144,6 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
         showLocalNotice(parsed.error.issues[0]?.message ?? "Revisa los datos.", "error")
         return
       }
-      // Espeja `fn_escala_guardar_bulk` (backend): "El lote trae valoraciones
-      // con nombre repetido" — sin este check, el duplicado solo se atrapaba
-      // después de enviar todo el lote.
-      if (drafts.some((d) => d.nombre.trim().toLowerCase() === parsed.data.nombre.trim().toLowerCase())) {
-        showLocalNotice(`Ya agregaste una valoración con el nombre "${parsed.data.nombre}".`, "error")
-        return
-      }
       setDrafts((prev) => [...prev, parsed.data])
       showLocalNotice("Escala agregada a la lista.", "info")
       formApi.reset(makeEmptyDraft(r))
@@ -175,16 +169,6 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
     const parsed = makeRatingScaleGradesSchema(r).safeParse(editRow)
     if (!parsed.success) {
       showLocalNotice(parsed.error.issues[0]?.message ?? "Revisa los datos.", "error")
-      return
-    }
-    if (
-      drafts.some(
-        (d, i) =>
-          i !== editingIndex &&
-          d.nombre.trim().toLowerCase() === parsed.data.nombre.trim().toLowerCase(),
-      )
-    ) {
-      showLocalNotice(`Ya existe una valoración con el nombre "${parsed.data.nombre}" en la lista.`, "error")
       return
     }
     setDrafts((prev) => prev.map((d, i) => (i === editingIndex ? parsed.data : d)))
@@ -213,11 +197,19 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
       showLocalNotice("Agrega al menos una escala a la lista.", "error")
       return
     }
-    await createScalesBulk.mutateAsync({
-      teachingLevelIds,
-      scales: drafts.map((d) => ({ ...d, tipo: d.tipo as RatingScaleType })),
-      academicPeriodId,
-    })
+    try {
+      await createScalesBulk.mutateAsync({
+        teachingLevelIds,
+        scales: drafts.map((d) => ({ ...d, tipo: d.tipo as RatingScaleType })),
+        academicPeriodId,
+      })
+    } catch (error) {
+      // El interceptor global también tostea el error; acá además lo
+      // mostramos en el banner del diálogo, que no queda detrás del overlay
+      // del modal.
+      showLocalNotice(getErrorMessage(error), "error")
+      return
+    }
     const total = drafts.length * teachingLevelIds.length
     notify(
       total === 1

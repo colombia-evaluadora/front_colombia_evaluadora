@@ -146,7 +146,10 @@ export type GradeGroupFormValues = z.infer<typeof gradeGroupFormSchema>
 export const studyPlanFormSchema = z.object({
   asignatura: z.string().min(1, "La asignatura es obligatoria"),
   intensidadHoraria: z.number().min(0),
-  influenciaArea: z.number().min(0).max(100),
+  influenciaArea: z
+    .number()
+    .min(0, "La influencia en el área no puede ser negativa.")
+    .max(100, "La influencia en el área no puede superar el 100%."),
   numeroCreditos: z.number().min(0),
   influyeDesempeno: z.boolean(),
   matriculaObligatoria: z.boolean(),
@@ -168,8 +171,8 @@ export const evaluationPeriodFormSchema = z
       .number({
         error: "El peso porcentual es obligatorio.",
       })
-      .min(0)
-      .max(100),
+      .min(0, "El peso porcentual no puede ser negativo.")
+      .max(100, "El peso porcentual no puede superar el 100%."),
     // Id del estado (PK_LISTA_VALOR); el código/etiqueta se resuelven por catálogo.
     estadoId: z.number().int().positive("El estado es obligatorio"),
   })
@@ -188,10 +191,6 @@ export const evaluationCriteriaSchema = z.object({
   finalGradeCriteria: z.string().min(1, "Requerido"),
   areaGradeCriteria: z.string().min(1, "Requerido"),
   studentWithoutGradesPerformance: z.string().min(1, "Requerido"),
-  // Rango numérico depende del formato de calificación seleccionado (0-5,
-  // 0-10, 0-100). El form valida con min=0; el rango máximo lo enforza el
-  // input via `max` según el formato. V78: ambos pasaron de selects con
-  // opciones vacías a inputs numéricos — los rangos se validan en el form.
   maxRecoveryGrade: z.number().min(0, "Debe ser mayor o igual a 0"),
   roundingMode: z.string().min(1, "Requerido"),
   initialGrade: z.number().min(0, "Debe ser mayor o igual a 0"),
