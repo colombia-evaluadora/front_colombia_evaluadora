@@ -73,11 +73,12 @@ const ESTABLISHMENT_LABELS: Record<string, string> = {
 
 /**
  * Etiqueta para el resumen, por campo de persona (se prefija con el rol).
- * Fecha de nacimiento y género ya NO se validan acá — vuelven a ser
- * opcionales tanto para rector/secretaria como para funcionarios regulares
- * (`fn_usu_crear` no los exige a nivel de base, son columnas nullable; solo
- * correo/contraseña sí lo son de verdad — `CUENTA`/`CONTRASENA` son la
- * cuenta y el login del funcionario).
+ * Fecha de nacimiento sigue sin validarse acá (columna nullable de verdad,
+ * ni la base ni Java la exigen). Género SÍ vuelve a ser obligatorio al
+ * crear (REV: se había sacado, el negocio cambió de opinión) — coincide
+ * con que ni `fn_usu_crear` ni `RegisterUsuarioRequest` (Java) dejaron de
+ * exigirlo nunca en el backend, así que esto solo estaba desalineado del
+ * lado del front.
  */
 const PERSON_LABELS: Record<string, string> = {
   documentType: "tipo de documento",
@@ -85,6 +86,7 @@ const PERSON_LABELS: Record<string, string> = {
   firstName: "primer nombre",
   lastName: "primer apellido",
   email: "correo electrónico",
+  gender: "género",
   password: "contraseña",
   confirmPassword: "confirmación de contraseña",
 }
@@ -166,6 +168,7 @@ function makePersonSchema(required: boolean) {
        */
       if (!p.id) {
         require("email", p.email, "Ingresa el correo electrónico.")
+        require("gender", p.gender?.name, "Selecciona el género.")
         require("password", p.password, "Ingresa la contraseña.")
         require("confirmPassword", confirmPassword, "Repite la contraseña.")
 
