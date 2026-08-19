@@ -271,6 +271,21 @@ function ScalesSubTable({
     },
   })
 
+  // Todos los campos completos antes de mostrar el botón de alta — mismo
+  // criterio que ya usa el diálogo de escalas en lote (`canSubmit` ahí) y el
+  // de área/asignatura (`isDraftComplete`).
+  function isAddDraftComplete(value: ScaleDraft): boolean {
+    return (
+      value.nombre.trim() !== "" &&
+      value.abreviacion.trim() !== "" &&
+      value.tipo.trim() !== "" &&
+      value.iconografia.trim() !== "" &&
+      Number.isFinite(value.notaMaxima) &&
+      Number.isFinite(value.notaMinima) &&
+      Number.isFinite(value.notaEquivalente)
+    )
+  }
+
   function commitDraft() {
     // Mismas reglas que el alta desde el diÃ¡logo: notas dentro del rango del
     // periodo (y mÃ­nima â‰¤ mÃ¡xima).
@@ -491,6 +506,7 @@ function ScalesSubTable({
                 {spacer}
                 <TableCell className={actionsCellClassName}>
                   <div className={actionsOverlayClassName}>
+                    {isAddDraftComplete(addDraft) && (
                     <Button
                       type="button"
                       color="primary"
@@ -506,6 +522,7 @@ function ScalesSubTable({
                         <PlusIcon weight="bold" />
                       )}
                     </Button>
+                    )}
                   </div>
                 </TableCell>
               </>
