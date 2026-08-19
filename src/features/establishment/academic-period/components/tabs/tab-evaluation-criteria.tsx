@@ -234,7 +234,10 @@ function EvaluationCriteriaForm({
       : initialValues.gradingScale
 
   const form = useForm({
-    defaultValues: { ...initialValues, gradingScale: reconciledGradingScale },
+    defaultValues: {
+      ...initialValues,
+      gradingScale: reconciledGradingScale,
+    } as EvaluationCriteriaValues,
     validators: { onSubmit: evaluationCriteriaSchema },
     onSubmit: ({ value }) => {
       if (academicPeriodId != null) {
