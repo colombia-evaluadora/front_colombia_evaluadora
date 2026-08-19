@@ -29,38 +29,17 @@ export function summarizeBulkDelete(result: BulkDeleteResult): BulkDeleteSummary
   }
 }
 
-// Las funciones `fn_*_soft_delete` arman `error_mensaje` como
-// "No se puede eliminar el <entidad> <pk>: <motivo>" — el PK no le sirve al
-// usuario (es un id interno, no algo que él haya escrito), así que nos
-// quedamos solo con el `<motivo>` desde el primer "N°:" que aparezca.
-const ENTITY_PREFIX_RE = /^no se puede eliminar\s+.*?\d+\s*:\s*/i
+const ENTITY_PREFIX_RE = /^no se puede eliminar\s+.*?:\s*/i
 
 function extractReason(message: string): string {
   return cleanErrorMessage(message).replace(ENTITY_PREFIX_RE, "").trim()
 }
 
-/**
- * Arma el mensaje de error a partir de las razones que trajo el back
- * (`error_mensaje` por fila, sin el PK — ver `extractReason`), con un
- * prefijo genérico cuando no viene ninguna. `describeFailed` recibe el
- * conteo de fallos y resuelve su propio singular/plural (p.ej.
- * `n === 1 ? "el periodo académico" : \`${n} periodos académicos\``).
- *
- * `getLabel`, si se pasa, resuelve el `id` de cada fila fallida al nombre
- * legible que el usuario reconoce (el que ve en la tabla) — quien llama ya
- * tiene esos nombres cargados (son las filas seleccionadas), así que no hace
- * falta pedirlos de nuevo. Sin `getLabel` el detalle queda solo con el
- * motivo, como antes.
- */
 export function formatBulkDeleteError(
   summary: BulkDeleteSummary,
   describeFailed: (failedCount: number) => string,
   getLabel?: (id: number) => string | undefined,
 ): string {
-  // `Set`: varias filas suelen fallar por el mismo motivo y, sin `getLabel`,
-  // repetirlo una vez por PK no aporta nada, solo alarga el aviso. Con
-  // `getLabel` cada detalle ya es distinto (trae el nombre), así que el
-  // `Set` no dedupea nada extra pero tampoco molesta.
   const details = Array.from(
     new Set(
       summary.failed
@@ -74,7 +53,7 @@ export function formatBulkDeleteError(
     ),
   )
 
-  const countLabel = `No se pudo${summary.failed.length === 1 ? "" : "n"} eliminar ${describeFailed(summary.failed.length)}`
+  const countLabel = `No se pud${summary.failed.length === 1 ? "o" : "ieron"} eliminar ${describeFailed(summary.failed.length)}`
   const prefix =
     summary.succeededCount === 0
       ? `${countLabel}.`
