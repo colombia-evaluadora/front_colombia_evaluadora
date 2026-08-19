@@ -28,7 +28,61 @@ function toSymbols(
     kind: isImageValue(row.valor) ? "imagen" : "emoji",
     valor: row.valor,
     label: row.nombre,
+    // ACCION guarda "<COLOR>_<NIVEL>_<N>" (ver migración V94 en SSO), p.ej.
+    // "AMARILLO_ALTO_1" — se parsea en `parseAccion` para ordenar el picker
+    // sin hardcodear ids.
+    color: row.accion ?? undefined,
   }))
+}
+
+// Nivel de desempeño que codifica cada carita — define el orden de columnas
+// dentro de cada fila (una fila = un color). Mismo orden que ya se veía en
+// el picker real antes de tener ACCION poblado.
+const NIVEL_ORDER = ["SUPERIOR", "ALTO", "BASICO", "BAJO"]
+
+// Orden de colores — una fila por color en el picker.
+const COLOR_ORDER = ["AMARILLO", "VERDE", "CELESTE", "NARANJA", "ROJO"]
+
+interface ParsedAccion {
+  color?: string
+  nivel?: string
+  n?: number
+}
+
+// "AMARILLO_ALTO_1" -> { color: "AMARILLO", nivel: "ALTO", n: 1 }. Tolera
+// valores incompletos (p.ej. los símbolos de letra, que no llevan "_N" por
+// no tener dos caritas del mismo nivel/color).
+function parseAccion(accion: string | undefined): ParsedAccion {
+  if (!accion) return {}
+  const parts = accion.split("_")
+  const last = parts[parts.length - 1]
+  const hasSuffix = parts.length > 1 && /^\d+$/.test(last)
+  const n = hasSuffix ? Number(last) : undefined
+  const nivelParts = hasSuffix ? parts.slice(1, -1) : parts.slice(1)
+  return {
+    color: parts[0],
+    nivel: nivelParts.length > 0 ? nivelParts.join("_") : undefined,
+    n,
+  }
+}
+
+function rank(order: string[], value: string | undefined): number {
+  if (!value) return order.length
+  const index = order.indexOf(value)
+  return index === -1 ? order.length : index
+}
+
+// Orden del picker: fila por color, y dentro de cada fila cada nivel junto a
+// su par (SUPERIOR_1, SUPERIOR_2, ALTO_1, ALTO_2, ...).
+function caritaRank(symbol: RatingSymbol): [number, number, number] {
+  const { color, nivel, n } = parseAccion(symbol.color)
+  return [rank(COLOR_ORDER, color), rank(NIVEL_ORDER, nivel), n ?? Number.POSITIVE_INFINITY]
+}
+
+function compareCaritaRank(a: RatingSymbol, b: RatingSymbol): number {
+  const ra = caritaRank(a)
+  const rb = caritaRank(b)
+  return ra[0] - rb[0] || ra[1] - rb[1] || ra[2] - rb[2]
 }
 
 // Catálogo genérico de TLISTA_VALOR: dos categorías separadas en la base
@@ -41,7 +95,11 @@ async function fetchRatingSymbols(): Promise<RatingSymbol[]> {
     fetchSelectCategory("GRAFICA_CARITA"),
     fetchSelectCategory("GRAFICA_SIMBOLO"),
   ])
-  return [...toSymbols(caritas, "carita"), ...toSymbols(simbolos, "valoracion")]
+  // Se ordena parseando ACCION (color + nivel + consecutivo) para que el
+  // picker pinte cada color en su propia fila, en vez del orden crudo del
+  // catálogo.
+  const caritaSymbols = toSymbols(caritas, "carita").sort(compareCaritaRank)
+  return [...caritaSymbols, ...toSymbols(simbolos, "valoracion")]
 }
 
 export const ratingSymbolsQueryKey = () => ["rating-symbols"]
