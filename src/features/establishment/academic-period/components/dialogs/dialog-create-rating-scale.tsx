@@ -12,6 +12,7 @@ import {
 } from "@/components/table-row-actions"
 import { useNotify } from "@/components/notice/notice-context"
 import { NoticeBanner, type NoticeVariant } from "@/components/notice/notice-banner"
+import { getErrorMessage } from "@/lib/api-client"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -196,11 +197,19 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
       showLocalNotice("Agrega al menos una escala a la lista.", "error")
       return
     }
-    await createScalesBulk.mutateAsync({
-      teachingLevelIds,
-      scales: drafts.map((d) => ({ ...d, tipo: d.tipo as RatingScaleType })),
-      academicPeriodId,
-    })
+    try {
+      await createScalesBulk.mutateAsync({
+        teachingLevelIds,
+        scales: drafts.map((d) => ({ ...d, tipo: d.tipo as RatingScaleType })),
+        academicPeriodId,
+      })
+    } catch (error) {
+      // El interceptor global también tostea el error; acá además lo
+      // mostramos en el banner del diálogo, que no queda detrás del overlay
+      // del modal.
+      showLocalNotice(getErrorMessage(error), "error")
+      return
+    }
     const total = drafts.length * teachingLevelIds.length
     notify(
       total === 1
@@ -271,6 +280,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                         <FieldLabel htmlFor={field.name}>Nombre*</FieldLabel>
                         <Input
                           id={field.name}
+                          maxLength={130}
                           placeholder="Agregar"
                           value={field.state.value}
                           onBlur={field.handleBlur}
@@ -329,6 +339,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                         <FieldLabel htmlFor={field.name}>Abreviación*</FieldLabel>
                         <Input
                           id={field.name}
+                          maxLength={30}
                           placeholder="Agregar"
                           value={field.state.value}
                           onBlur={field.handleBlur}

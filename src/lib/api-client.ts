@@ -192,6 +192,19 @@ export function isNotFoundError(error: unknown): boolean {
   return Axios.isAxiosError(error) && error.response?.status === 404
 }
 
+// Mismo mensaje que ya muestra el toast global del interceptor (arriba),
+// pero para diálogos que quieren mostrarlo en su propio banner en vez de (o
+// además de) el toast — p.ej. para que no quede detrás del overlay del
+// modal. Reusa `cleanErrorMessage` para recortar el ruido de Postgres.
+export function getErrorMessage(error: unknown): string {
+  if (Axios.isAxiosError(error)) {
+    const message = error.response?.data?.message || error.message
+    return cleanErrorMessage(message)
+  }
+  if (error instanceof Error) return cleanErrorMessage(error.message)
+  return "No fue posible completar la operación."
+}
+
 // Queries complejas que no entran cómodo en query params (filtros anidados,
 // sorts compuestos, etc.) y por eso necesitan body. Se mandan por POST, que
 // es lo que soporta el gateway. Como el response interceptor ya desenvuelve

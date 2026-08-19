@@ -8,14 +8,8 @@ export const academicPeriodFormSchema = z
     startDate: z.string().min(1, "La fecha de inicio es obligatoria"),
     endDate: z.string().min(1, "La fecha de finalización es obligatoria"),
     enrollmentDeadline: z.string().min(1, "La fecha límite de matrícula es obligatoria"),
-    // El backend de establecimientos devuelve `Campus.id` como string; el form
-    // lo recibe como string y lo mantiene así hasta el submit.
     sedeId: z.string().min(1, "La sede es obligatoria"),
-    // Derivado: el periodo anterior se resuelve por sede, no lo captura el
-    // usuario. Puede ser null cuando la sede no tiene periodos previos.
     previousPeriodId: z.number().int().positive().nullable(),
-    // Id del estado (PK_LISTA_VALOR). El select del form trabaja con el id; el
-    // código/etiqueta se resuelven vía el catálogo de estados.
     statusId: z.number().int().positive("El estado es obligatorio"),
     jornadaId: z.number().int().positive("La jornada es obligatoria"),
     reservationEnabled: z.boolean(),
@@ -91,13 +85,26 @@ export const academicPeriodFormSchema = z
       path: ["breaks"],
     },
   )
+  .refine(
+    (data) =>
+      data.breaks.every((b, i) => {
+        if (!b.startTime || !b.endTime) return true
+        return data.breaks.every((other, j) => {
+          if (j >= i || !other.startTime || !other.endTime) return true
+          return b.startTime >= other.endTime || b.endTime <= other.startTime
+        })
+      }),
+    {
+      message: "Los descansos no pueden traslaparse entre sí",
+      path: ["breaks"],
+    },
+  )
 export type AcademicPeriodFormInput = z.input<typeof academicPeriodFormSchema>
 export type AcademicPeriodFormValues = z.infer<typeof academicPeriodFormSchema>
 
 export const academicPeriodsFiltersFormSchema = z.object({
   sedeName: z.string(),
   schoolYearId: z.string(),
-  // Id del estado como string ("" = Todos); se manda como statusId (no código).
   statusId: z.string(),
   startFrom: z.string(),
   startTo: z.string(),
@@ -118,35 +125,49 @@ export const academicPeriodsSearchSchema = z.object({
 })
 export type AcademicPeriodsSearch = z.infer<typeof academicPeriodsSearchSchema>
 
-// ───────────────────────────────────────────────────────────────────────────
-// Schemas de forms de los tabs de configuración.
-// (rating-scales queda en `rating-scales/grading-range.ts`: es una factory
-//  atada al rango dinámico del periodo.)
-// ───────────────────────────────────────────────────────────────────────────
-
 // Área / Asignaturas
 export const areaSubjectFormSchema = z.object({
   areaGeneral: z.string().min(1, "El área general es obligatoria"),
-  nombreInterno: z.string().min(1, "El nombre interno es obligatorio"),
-  abreviacion: z.string().min(1, "La abreviación es obligatoria"),
-  ordenReportes: z.number().int().nonnegative(),
+  nombreInterno: z
+    .string()
+    .min(1, "El nombre interno es obligatorio")
+    .max(130, "El nombre no puede superar los 130 caracteres"),
+  abreviacion: z
+    .string()
+    .min(1, "La abreviación es obligatoria")
+    .max(30, "La abreviación no puede superar los 30 caracteres"),
+  ordenReportes: z.number().int().nonnegative().max(9999, "No puede superar 9999"),
 })
 export type AreaSubjectFormValues = z.infer<typeof areaSubjectFormSchema>
 
 // Grupos (grade-group)
+// `codigo` viaja como NOMBRE del grupo (ver create/update-grade-group.ts) — el
+// límite de 130 es el de TGRUPO.NOMBRE, no el de TGRUPO.CODIGO (30, sin usar).
 export const gradeGroupFormSchema = z.object({
-  codigo: z.string().min(1, "El grupo es obligatorio"),
+  codigo: z
+    .string()
+    .min(1, "El grupo es obligatorio")
+    .max(130, "El nombre del grupo no puede superar los 130 caracteres"),
   director: z.string(),
   metodologia: z.string(),
-  cupo: z.number().min(0),
+  cupo: z
+    .number()
+    .min(1, "El cupo debe ser mayor a 0")
+    .max(99, "El cupo no puede superar 99"),
 })
 export type GradeGroupFormValues = z.infer<typeof gradeGroupFormSchema>
 
 // Plan de estudio
 export const studyPlanFormSchema = z.object({
   asignatura: z.string().min(1, "La asignatura es obligatoria"),
-  intensidadHoraria: z.number().min(0),
-  influenciaArea: z.number().min(0).max(100),
+  intensidadHoraria: z
+    .number()
+    .min(1, "La intensidad horaria debe ser mayor a 0")
+    .max(99, "La intensidad horaria no puede superar 99"),
+  influenciaArea: z
+    .number()
+    .min(0, "La influencia en el área no puede ser negativa.")
+    .max(100, "La influencia en el área no puede superar el 100%."),
   numeroCreditos: z.number().min(0),
   influyeDesempeno: z.boolean(),
   matriculaObligatoria: z.boolean(),
@@ -159,17 +180,26 @@ export type StudyPlanFormValues = z.infer<typeof studyPlanFormSchema>
 // Periodos de evaluación
 export const evaluationPeriodFormSchema = z
   .object({
-    codigo: z.string().min(1, "El código es obligatorio"),
-    nombre: z.string().min(1, "El nombre es obligatorio"),
-    abreviacion: z.string().min(1, "La abreviación es obligatoria"),
+    codigo: z
+      .string()
+      .min(1, "El código es obligatorio")
+      .max(30, "El código no puede superar los 30 caracteres"),
+    nombre: z
+      .string()
+      .min(1, "El nombre es obligatorio")
+      .max(130, "El nombre no puede superar los 130 caracteres"),
+    abreviacion: z
+      .string()
+      .min(1, "La abreviación es obligatoria")
+      .max(30, "La abreviación no puede superar los 30 caracteres"),
     startDate: z.string().min(1, "La fecha de inicio es obligatoria"),
     endDate: z.string().min(1, "La fecha de fin es obligatoria"),
     peso: z
       .number({
         error: "El peso porcentual es obligatorio.",
       })
-      .min(0)
-      .max(100),
+      .min(0, "El peso porcentual no puede ser negativo.")
+      .max(100, "El peso porcentual no puede superar el 100%."),
     // Id del estado (PK_LISTA_VALOR); el código/etiqueta se resuelven por catálogo.
     estadoId: z.number().int().positive("El estado es obligatorio"),
   })
@@ -188,10 +218,6 @@ export const evaluationCriteriaSchema = z.object({
   finalGradeCriteria: z.string().min(1, "Requerido"),
   areaGradeCriteria: z.string().min(1, "Requerido"),
   studentWithoutGradesPerformance: z.string().min(1, "Requerido"),
-  // Rango numérico depende del formato de calificación seleccionado (0-5,
-  // 0-10, 0-100). El form valida con min=0; el rango máximo lo enforza el
-  // input via `max` según el formato. V78: ambos pasaron de selects con
-  // opciones vacías a inputs numéricos — los rangos se validan en el form.
   maxRecoveryGrade: z.number().min(0, "Debe ser mayor o igual a 0"),
   roundingMode: z.string().min(1, "Requerido"),
   initialGrade: z.number().min(0, "Debe ser mayor o igual a 0"),
@@ -202,15 +228,27 @@ export type EvaluationCriteriaValues = z.infer<typeof evaluationCriteriaSchema>
 export const promotionApprovalSchema = z.object({
   curriculumNode: z.string().min(1, "Requerido"),
 
-  maxFailedRecovery: z.number().min(0, "El valor debe ser mayor o igual a 0"),
-  absencePercentage: z.number().min(0, "El valor debe ser mayor o igual a 0"),
-  maxLeveledSubjects: z.number().min(0, "El valor debe ser mayor o igual a 0"),
+  maxFailedRecovery: z
+    .number()
+    .min(0, "El valor debe ser mayor o igual a 0")
+    .max(99, "El valor no puede superar 99"),
+  absencePercentage: z
+    .number()
+    .min(0, "El valor debe ser mayor o igual a 0")
+    .max(100, "El valor no puede superar 100"),
+  maxLeveledSubjects: z
+    .number()
+    .min(0, "El valor debe ser mayor o igual a 0")
+    .max(999, "El valor no puede superar 999"),
 
   applyAverageApproval: z.boolean(),
 
   basePercentage: z.number().min(0, "El valor debe ser mayor o igual a 0"),
   minimumSubjectPercentage: z.number().min(0, "El valor debe ser mayor o igual a 0"),
-  maxFailedForAverage: z.number().min(0, "El valor debe ser mayor o igual a 0"),
+  maxFailedForAverage: z
+    .number()
+    .min(0, "El valor debe ser mayor o igual a 0")
+    .max(99, "El valor no puede superar 99"),
 
   requiredSubjects: z.array(z.string()),
 })

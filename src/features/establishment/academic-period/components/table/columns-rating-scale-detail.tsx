@@ -151,6 +151,7 @@ export function createRatingScaleDetailColumns({
           <Input
             aria-label="Nombre"
             placeholder="Agregar"
+            maxLength={130}
             value={draft!.nombre}
             onChange={(e) => patchDraft({ nombre: e.target.value })}
             className="min-w-32"
@@ -171,6 +172,7 @@ export function createRatingScaleDetailColumns({
           <Input
             aria-label="Abreviación"
             placeholder="Agregar"
+            maxLength={30}
             value={draft!.abreviacion}
             onChange={(e) => patchDraft({ abreviacion: e.target.value })}
             className="min-w-24"
@@ -260,7 +262,8 @@ export function createRatingScaleDetailColumns({
               </Button>
               <Button
                 type="button"
-                variant="outline"
+                variant="fill"
+                color="neutral"
                 size="icon-sm"
                 aria-label="Cancelar edición"
                 disabled={isSaving}

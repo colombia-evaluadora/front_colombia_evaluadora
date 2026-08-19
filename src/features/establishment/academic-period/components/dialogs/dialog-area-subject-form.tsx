@@ -12,6 +12,7 @@ import {
   XIcon,
 } from "@/components/ui/icons"
 import { useNotify, NoticeOutlet } from "@/components/notice/notice-context"
+import { getErrorMessage } from "@/lib/api-client"
 import { Pagination } from "@/components/pagination"
 
 import {
@@ -133,13 +134,19 @@ export function AreaSubjectFormDialog({
     ordenReportes: areaSubject?.ordenReportes ?? 0,
   }
 
-  const createAreaSubject = useCreateAreaSubject()
+  const createAreaSubject = useCreateAreaSubject({
+    mutationConfig: {
+      // El interceptor global también tostea el error; acá además lo
+      // mostramos en el `NoticeOutlet` propio del diálogo (línea de abajo),
+      // que no queda detrás del overlay del modal.
+      onError: (error) => {
+        notify(getErrorMessage(error), { variant: "error" })
+      },
+    },
+  })
   const updateAreaSubject = useUpdateAreaSubject()
   const isPending = createAreaSubject.isPending || updateAreaSubject.isPending
 
-  // Catálogo de áreas generales para mapear el nombre (que usa la UI) al id
-  // (fk_area_asignatura) que el backend espera en el bulk. La UI sigue con
-  // nombres; solo el payload viaja como id.
   const { data: generalAreas = [] } = useGeneralAreasQuery()
   const areaGeneralNameToId = (nombre: string): string => {
     const match = generalAreas.find((a) => a.nombre === nombre)
@@ -153,11 +160,7 @@ export function AreaSubjectFormDialog({
       const base = areaSubjectFormSchema.parse(value)
 
       const payloadSubjects: AreaSubjectItem[] = subjects.map((subject) => ({
-        // Se conserva para poder diferenciar alta/edición/baja contra el
-        // endpoint real al guardar (asignaturas ya existentes vs. nuevas).
         id: subject.id,
-        // El backend espera el id del área general (fk_area_asignatura), no el
-        // nombre. La UI/estado conserva el nombre; aquí se mapea a id.
         asignaturaGeneral: areaGeneralNameToId(subject.asignaturaGeneral),
         nombreInterno: subject.nombreInterno || subject.asignaturaGeneral,
         abreviacion: subject.abreviacion,
@@ -172,8 +175,6 @@ export function AreaSubjectFormDialog({
           values: {
             ...areaSubject,
             ...base,
-            // El backend espera el id del área general (fk_area_asignatura), no
-            // el nombre. La UI conserva el nombre; aquí se manda como id.
             areaGeneral: areaGeneralNameToId(base.areaGeneral),
             subjects: payloadSubjects,
           },
@@ -190,7 +191,6 @@ export function AreaSubjectFormDialog({
       }
 
       await createAreaSubject.mutateAsync({
-        // Id del área general (fk_area_asignatura); la UI lo maneja por nombre.
         areaGeneral: areaGeneralNameToId(base.areaGeneral),
         nombreInterno: base.nombreInterno,
         abreviacion: base.abreviacion,
@@ -207,11 +207,6 @@ export function AreaSubjectFormDialog({
 
   function handleOpenChange(next: boolean) {
     setOpen(next)
-
-    // Se resetea tanto al abrir como al cerrar: si el usuario cierra sin
-    // guardar (Cancelar, click afuera, Esc), los cambios sin persistir no
-    // deben sobrevivir — ni mientras el diálogo queda cerrado (por si algo
-    // más lee ese estado) ni la próxima vez que se abra.
     if (isEdit) {
       resetEditForm()
     } else {
@@ -249,13 +244,8 @@ export function AreaSubjectFormDialog({
     nombreInternoEditedRef.current = false
   }
 
-  // El orden lo resuelve el mismo helper que la tabla de escalas de valoración,
-  // así las dos ordenan igual y no hay dos comparadores que mantener.
-  const sortedSubjects = useMemo(() => sortBySortKey(subjects, sort), [subjects, sort])
 
-  // Paginación client-side: la lista completa ya vive en memoria (viene con
-  // el área), así que no hay ida al backend por página — mismo diseño
-  // (`Pagination`) que usan las tablas que sí paginan contra el servidor.
+  const sortedSubjects = useMemo(() => sortBySortKey(subjects, sort), [subjects, sort])
   const [pageIndex, setPageIndex] = useState(0)
   const [pageSize, setPageSize] = useState(10)
   const pageCount = Math.max(1, Math.ceil(sortedSubjects.length / pageSize))
@@ -317,10 +307,6 @@ export function AreaSubjectFormDialog({
     showNotice("Asignatura agregada exitosamente.")
   }
 
-  // El índice de cada fila corre con el arreglo: al sacar una asignatura, los
-  // índices seleccionados que quedaban después se recorren uno hacia atrás.
-  // Sin este ajuste, la selección terminaba apuntando a otra fila distinta a
-  // la que el usuario había marcado.
   function shiftSelectionAfterRemoval(removedIndexes: number[]) {
     const removed = new Set(removedIndexes)
     setSelectedIndexes((prev) => {
@@ -402,11 +388,6 @@ export function AreaSubjectFormDialog({
             <DialogTitle>{isEdit ? "Editar área/asignatura" : "Agregar área/asignatura"}</DialogTitle>
           </DialogHeader>
 
-          {/* `min-w-0`: los ítems del grid de `DialogContent` arrancan con
-              `min-width: auto`, así que el min-content de la tabla —celdas
-              `nowrap`, aunque su contenedor scrollee— estiraba la columna por
-              fuera del popup y se llevaba puesto al form y al footer. Mismo
-              envoltorio que el diálogo de escalas de valoración. */}
           <div className="flex min-w-0 flex-col gap-6">
             <NoticeOutlet />
 
@@ -444,6 +425,7 @@ export function AreaSubjectFormDialog({
                     {(isInvalid) => (
                       <Input
                         id={field.name}
+                        maxLength={130}
                         placeholder="Agregar"
                         value={field.state.value}
                         onBlur={field.handleBlur}
@@ -464,6 +446,7 @@ export function AreaSubjectFormDialog({
                     {(isInvalid) => (
                       <Input
                         id={field.name}
+                        maxLength={30}
                         placeholder="Agregar"
                         value={field.state.value}
                         onBlur={field.handleBlur}
@@ -483,6 +466,7 @@ export function AreaSubjectFormDialog({
                         id={field.name}
                         type="number"
                         min={0}
+                        max={9999}
                         placeholder="Agregar"
                         value={Number.isNaN(field.state.value) ? "" : field.state.value}
                         onBlur={field.handleBlur}
@@ -513,9 +497,6 @@ export function AreaSubjectFormDialog({
                         type="button"
                         color="primary"
                         size="sm"
-                        // `h-10`: los 4 inputs de al lado son `h-10` (el
-                        // default de `Input`); el botón en `size="sm"` es
-                        // `h-9` y quedaba 4px más bajo pese al `items-end`.
                         className="h-10"
                         onClick={() => {
                           setSubjectsStarted(true)
@@ -556,10 +537,6 @@ export function AreaSubjectFormDialog({
                 <FieldVariantContext.Provider value="outlined">
                   <Table>
                     <TableHeader>
-                      {/* Mismo encabezado que la tabla de escalas de valoración:
-                        sin fondo propio ni hover —`has-aria-expanded` cubre el
-                        rato en que un menú de orden está abierto— y los títulos
-                        en `text-foreground`. */}
                       <TableRow className="hover:bg-transparent has-aria-expanded:bg-transparent">
                         <TableHead className="w-px text-foreground">
                           <Checkbox
@@ -575,9 +552,6 @@ export function AreaSubjectFormDialog({
                             onCheckedChange={(value) => toggleSelectAllSubjects(!!value)}
                           />
                         </TableHead>
-                        {/* Sin `TableSortableHeader`: es el orden manual que
-                          el usuario define fila por fila, no tiene sentido
-                          reordenar la tabla por este valor. */}
                         <TableHead className="text-foreground">#</TableHead>
                         <TableHead className="text-foreground">
                           <TableSortableHeader
@@ -603,9 +577,6 @@ export function AreaSubjectFormDialog({
                             onSortChange={setSort}
                           />
                         </TableHead>
-                        {/* Ordena por el valor del color (el hex): no es un orden
-                          con significado propio, pero agrupa los repetidos, que
-                          es para lo que se ordena esta columna. */}
                         <TableHead className="text-foreground">
                           <TableSortableHeader
                             title="Color"
@@ -622,9 +593,6 @@ export function AreaSubjectFormDialog({
                             onSortChange={setSort}
                           />
                         </TableHead>
-                        {/* La columna de acciones no rotula: el título queda para
-                          lectores de pantalla. El ancho lo reserva el spacer
-                          que va justo antes; la celda en sí es `sticky`. */}
                         {actionsSpacerHeadCell}
                         <TableHead className={cn(ACTIONS_CELL_CLASS, "text-foreground")}>
                           <span className="sr-only">Acciones</span>
@@ -632,12 +600,8 @@ export function AreaSubjectFormDialog({
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {/* Asignaturas generales ya agregadas. */}
                       {pagedSubjects.map((subject, indexInPage) => {
-                        // Para las etiquetas ("asignatura N"): la posición
-                        // real en la lista completa, no en la página.
                         const index = clampedPageIndex * pageSize + indexInPage
-                        // Editamos contra el índice real del arreglo (no el ordenado).
                         const realIndex = subjects.indexOf(subject)
                         const isEditing = editingIndex === realIndex && editDraft !== null
 
@@ -661,8 +625,6 @@ export function AreaSubjectFormDialog({
                               />
                               {actionsSpacerCell}
                               <TableCell className={ACTIONS_CELL_CLASS}>
-                                {/* `true`: la fila en edición mantiene el bloque
-                                  fijo, no sujeto al hover. */}
                                 <div className={actionsOverlayClass(true)}>
                                   <Button
                                     type="button"
@@ -755,11 +717,7 @@ export function AreaSubjectFormDialog({
                           </TableRow>
                         )
                       })}
-
-                      {/* Fila de carga para agregar otra asignatura general. */}
                       <TableRow className="group/row">
-                        {/* Todavía no es una fila guardada: nada que
-                          seleccionar. */}
                         <TableCell />
                         <SubjectRowFields
                           draft={draft}
@@ -768,10 +726,6 @@ export function AreaSubjectFormDialog({
                         />
                         {actionsSpacerCell}
                         <TableCell className={ACTIONS_CELL_CLASS}>
-                          {/* Fijo: el botón de agregar es la acción principal de
-                            la fila, no puede depender del hover. Solo aparece
-                            con todos los campos completos —especialidad
-                            queda afuera, es la única opcional del borrador. */}
                           {isDraftComplete(draft) && (
                             <div className={actionsOverlayClass(true)}>
                               <Button

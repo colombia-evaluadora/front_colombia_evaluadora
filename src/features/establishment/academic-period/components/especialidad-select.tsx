@@ -41,21 +41,6 @@ export function EspecialidadSelect({
   const resolvedVariant = useInputVariant()
 
   const { data: options = [] } = useEspecialidadesQuery(academicPeriodId)
-
-  // El back devuelve especialidades fijas y énfasis mezclados en el orden
-  // que resuelve `fn_especialidad_enfasis_listar` (sin garantía de agrupación).
-  // Para que la lista sea predecible, fijamos: primero las ESPECIALIDAD (el
-  // catálogo global, en su orden original), después los ENFASIS del
-  // establecimiento. Ambos bloques mantienen el orden interno que devolvió
-  // el back.
-  //
-  // Además, filtramos los énfasis cuyo `nombre` está vacío o es solo dígitos
-  // — son "huérfanos" creados por la lógica vieja que mandaba el id en vez
-  // del nombre (ver to-asignaturas-payload.ts:7-13). El back filtra los que
-  // matchean con una especialidad (para que el usuario no note el énfasis
-  // espejo), pero deja pasar los huérfanos porque su nombre no es texto
-  // legible — no los queremos en el popover: la fila no aporta info al
-  // usuario y los botones de editar/borrar quedan sobre una opción fantasma.
   const sortedOptions = useMemo(() => {
     const especialidades: typeof options = []
     const enfasis: typeof options = []
@@ -135,9 +120,6 @@ export function EspecialidadSelect({
       </PopoverTrigger>
       <PopoverContent align="start" className="w-64 p-1">
         <div className="flex flex-col">
-          {/* `max-h-64 overflow-y-auto`: solo la lista de opciones scrollea
-              — el buscador/"Agregar otro" queda afuera, siempre visible al
-              final, no se lo lleva el scroll. */}
           <div className="max-h-64 overflow-y-auto">
             {sortedOptions.map((option) => {
               const isEditing = editingId === option.id
@@ -147,13 +129,11 @@ export function EspecialidadSelect({
                 return (
                   <div
                     key={option.id}
-                    // Misma fila que las demás opciones (mismo padding/borde),
-                    // así editar no le cambia el ancho ni el alto al popover
-                    // — antes el input sin `min-w-0` se salía del `w-64`.
                     className="flex items-center gap-1 border-b border-border px-2 py-1 last:border-b-0"
                   >
                     <Input
                       autoFocus
+                      maxLength={130}
                       value={editingName}
                       onChange={(e) => setEditingName(e.target.value)}
                       onKeyDown={(e) => {
@@ -240,12 +220,11 @@ export function EspecialidadSelect({
               )
             })}
 
-            {/* Última opción del scroll, no un pie aparte — se agrega y baja
-                de la lista igual que cualquier otra fila. */}
             <div className="px-1 py-1">
               <InputGroup className="h-10 rounded-md border border-input px-1 hover:border-ring has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20">
                 <InputGroupInput
                   value={nuevo}
+                  maxLength={130}
                   onChange={(e) => setNuevo(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {

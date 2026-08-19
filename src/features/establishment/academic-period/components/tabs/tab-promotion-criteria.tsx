@@ -54,12 +54,6 @@ const EMPTY: PromotionApprovalValues = {
 
 const FORM_ID = "approval-parameters-form"
 
-/**
- * Input numérico con el sufijo "%" pegado al final, para los campos que se
- * expresan en porcentaje: sin la unidad el valor se lee como un número suelto.
- * El borde y el foco los dibuja el `InputGroup` —el control interno va sin
- * padding lateral— para que el "%" quede dentro de la misma caja.
- */
 function PercentInput({ value, onChange }: { value: number; onChange: (value: number) => void }) {
   return (
     <InputGroup className="h-10 rounded-md border border-input px-3 hover:border-ring has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20 has-[[data-slot][aria-invalid=true]]:border-red">
@@ -105,8 +99,6 @@ export const TabPromotionCriteria = forwardRef<PromotionCriteriaHandle, TabPromo
       isGradeScope ? gradeId : undefined,
     )
 
-    // Sin override propio, el grado hereda el criterio del periodo (mismo
-    // fallback que antes vía grade-config).
     const criteria = isGradeScope ? (gradeCriteria ?? periodCriteria) : periodCriteria
     const isLoading = isGradeScope
       ? gradeLoading || (academicPeriodId != null && periodLoading)
@@ -120,13 +112,6 @@ export const TabPromotionCriteria = forwardRef<PromotionCriteriaHandle, TabPromo
     const { data: curriculumNodes = [], isPending: isLoadingCurriculumNodes } =
       useCurriculumNodesQuery()
 
-    // `subjectOptions`/`areaOptions` alimentan el multi-select de "obligatorias"
-    // y su `useEffect` de limpieza (`RequiredSubjectsField`, más abajo) borra
-    // cualquier valor guardado que no esté en `options` — si el form se
-    // montaba antes de que estas dos terminaran de cargar, ese efecto corría
-    // con `options` todavía vacío y vaciaba `requiredSubjects` aunque el back
-    // sí lo hubiera devuelto (solo se veía bien la segunda vez, con las
-    // queries ya en caché). Por eso también gatean el spinner.
     if (
       ((isGradeScope || academicPeriodId != null) && isLoading) ||
       isLoadingCurriculumNodes ||
@@ -291,6 +276,7 @@ const PromotionCriteriaForm = forwardRef<PromotionCriteriaHandle, PromotionCrite
                 <Input
                   type="number"
                   min={0}
+                  max={99}
                   placeholder="Agregar"
                   value={field.state.value}
                   onChange={(e) => field.handleChange(Number(e.target.value))}
@@ -325,6 +311,7 @@ const PromotionCriteriaForm = forwardRef<PromotionCriteriaHandle, PromotionCrite
                 <Input
                   type="number"
                   min={0}
+                  max={999}
                   placeholder="Agregar"
                   value={field.state.value}
                   onChange={(e) => field.handleChange(Number(e.target.value))}
@@ -403,6 +390,7 @@ const PromotionCriteriaForm = forwardRef<PromotionCriteriaHandle, PromotionCrite
                 <Input
                   type="number"
                   min={0}
+                  max={99}
                   placeholder="Agregar"
                   value={field.state.value}
                   onChange={(e) => field.handleChange(Number(e.target.value))}
