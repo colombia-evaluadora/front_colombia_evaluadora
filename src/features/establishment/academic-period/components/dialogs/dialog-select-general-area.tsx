@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react"
-import { CaretDownIcon, CheckIcon, MagnifyingGlassIcon } from "@/components/ui/icons"
+import { CaretDownIcon, CheckIcon, MagnifyingGlassIcon, XIcon } from "@/components/ui/icons"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -16,7 +16,9 @@ import { Input, inputTriggerVariants, inputVariants, useInputVariant } from "@/c
 import {
   Pagination as UIPagination,
   PaginationContent,
+  PaginationEllipsis,
   PaginationItem,
+  PaginationLink,
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination"
@@ -29,6 +31,21 @@ import type { GeneralArea } from "@/features/establishment/academic-period/api/t
 const COLUMNS = 3
 const ROWS = 15
 const PAGE_SIZE = COLUMNS * ROWS
+
+// Mismo cálculo de ventana de páginas que `components/pagination.tsx` (no se
+// puede reusar directo: ese componente asume paginación server-side con
+// selector de "Entradas", que acá no aplica).
+function buildPageRange(current: number, total: number): (number | "ellipsis")[] {
+  const window = new Set<number>([1, total, current - 1, current, current + 1])
+  const items: (number | "ellipsis")[] = []
+  let last = 0
+  for (const p of [...window].filter((n) => n >= 1 && n <= total).sort((a, b) => a - b)) {
+    if (last && p - last > 1) items.push("ellipsis")
+    items.push(p)
+    last = p
+  }
+  return items
+}
 
 // Parte las áreas de la página en filas de 3 columnas.
 function chunkRows(areas: GeneralArea[]): GeneralArea[][] {
@@ -115,9 +132,9 @@ export function SelectGeneralAreaDialog({
         <CaretDownIcon className="size-3.5 shrink-0 text-muted-foreground" />
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="sm:max-w-4xl" showCloseButton={false}>
         <DialogHeader>
-          <DialogTitle>Seleccionar área general</DialogTitle>
+          <DialogTitle>Agregar área</DialogTitle>
         </DialogHeader>
 
         {/* Buscador */}
@@ -134,7 +151,7 @@ export function SelectGeneralAreaDialog({
 
         {/* Grilla de áreas: 3 columnas, estilo tabla de áreas. */}
         <div className="min-w-0">
-          <Table>
+          <Table className="table-fixed">
             <TableBody>
               {grid.length === 0 ? (
                 <TableRow className="hover:bg-transparent">
@@ -155,14 +172,15 @@ export function SelectGeneralAreaDialog({
                         <TableCell key={c} className="border-r p-0 last:border-r-0">
                           <button
                             type="button"
+                            title={area.nombre}
                             onClick={() => handleSelect(area.nombre)}
                             className={cn(
-                              "flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm transition-colors hover:bg-muted/50",
+                              "flex w-full min-w-0 items-center gap-2 px-3 py-2.5 text-left text-sm transition-colors hover:bg-muted/50",
                               selected && "bg-muted font-medium text-primary hover:bg-muted",
                             )}
                           >
                             {selected && <CheckIcon className="size-4 shrink-0" />}
-                            <span className="truncate">{area.nombre}</span>
+                            <span className="min-w-0 flex-1 truncate">{area.nombre}</span>
                           </button>
                         </TableCell>
                       )
@@ -174,15 +192,17 @@ export function SelectGeneralAreaDialog({
           </Table>
         </div>
 
-        {/* Paginación (3 × 15 = 45 áreas por página) */}
-        <div className="flex items-center justify-between gap-2">
-          <p className="shrink-0 text-sm text-muted-foreground">{filtered.length} área(s)</p>
-          <UIPagination className="mx-0 w-auto justify-end">
+        {/* Paginación (3 × 15 = 45 áreas por página) — mismo diseño que la
+            paginación compartida (números de página, elipsis, activa en
+            fill primario), pero sin selector de "Entradas" (el tamaño de
+            página es fijo acá) y con Atrás/Siguiente solo ícono. */}
+        <div className="flex items-center justify-center gap-2">
+          <UIPagination className="mx-0 w-auto justify-center">
             <PaginationContent>
               <PaginationItem>
                 <PaginationPrevious
                   href={page > 0 ? "#" : undefined}
-                  text="Atrás"
+                  text=""
                   aria-label="Página anterior"
                   className={page === 0 ? "pointer-events-none opacity-50" : ""}
                   onClick={(e) => {
@@ -191,15 +211,36 @@ export function SelectGeneralAreaDialog({
                   }}
                 />
               </PaginationItem>
-              <PaginationItem>
-                <span className="px-2 text-sm text-muted-foreground">
-                  {page + 1}/{pageCount}
-                </span>
-              </PaginationItem>
+
+              {buildPageRange(page + 1, pageCount).map((item, i) =>
+                item === "ellipsis" ? (
+                  <PaginationItem key={`e-${i}`}>
+                    <PaginationEllipsis />
+                  </PaginationItem>
+                ) : (
+                  <PaginationItem key={item}>
+                    <PaginationLink
+                      href="#"
+                      isActive={item === page + 1}
+                      className={cn(
+                        item === page + 1 &&
+                          "data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:border-primary",
+                      )}
+                      onClick={(e) => {
+                        e.preventDefault()
+                        setPageIndex(item - 1)
+                      }}
+                    >
+                      {item}
+                    </PaginationLink>
+                  </PaginationItem>
+                ),
+              )}
+
               <PaginationItem>
                 <PaginationNext
                   href={page < pageCount - 1 ? "#" : undefined}
-                  text="Sig."
+                  text=""
                   aria-label="Página siguiente"
                   className={page >= pageCount - 1 ? "pointer-events-none opacity-50" : ""}
                   onClick={(e) => {
@@ -213,7 +254,10 @@ export function SelectGeneralAreaDialog({
         </div>
 
         <DialogFooter>
-          <DialogClose render={<Button size="sm" type="button" variant="outline" />}>
+          <DialogClose
+            render={<Button size="sm" type="button" variant="fill" color="neutral" />}
+          >
+            <XIcon data-icon="inline-start" />
             Cancelar
           </DialogClose>
         </DialogFooter>

@@ -1,6 +1,8 @@
 import { useMemo, useRef, useState } from "react"
+import Axios from "axios"
 import { z } from "zod"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
+import { cleanErrorMessage } from "@/lib/api-client"
 import { ControlPointIcon, PencilIcon, SpinnerIcon } from "@/components/ui/icons"
 
 import { NoticeBanner, type NoticeVariant } from "@/components/notice/notice-banner"
@@ -34,7 +36,10 @@ import { useStudyPlansQuery } from "@/features/establishment/academic-period/api
 import { useAreaSubjectQuery } from "@/features/establishment/academic-period/api/query/use-area-subject"
 import { useGradeGroupsQuery } from "@/features/establishment/academic-period/api/query/use-grade-groups"
 import { useTeachingLevelsQuery } from "@/features/establishment/academic-period/api/query/use-teaching-levels"
-import { useGradosCatalogQuery } from "@/features/establishment/academic-period/api/query/use-grados-catalog"
+import {
+  useGradosCatalogQuery,
+  type GradoCatalogOption,
+} from "@/features/establishment/academic-period/api/query/use-grados-catalog"
 import type { Grade } from "@/features/establishment/academic-period/api/types/grade"
 import { TabGradeGroups } from "@/features/establishment/academic-period/components/tabs/tab-grade-groups"
 import {
@@ -78,6 +83,17 @@ const gradeSchema = z.object({
     .int("Selecciona el nivel de enseñanza."),
   nombre: z.string().trim().min(1, "Selecciona el nombre del grado."),
 })
+
+// `fn_grado_crear` responde "Ya existe un grado con el codigo <valor> en
+// este periodo" — `<valor>` es el crudo del catálogo GRADOS (p.ej. "-1"),
+// que no le dice nada al usuario. Lo resolvemos al nombre legible del mismo
+// catálogo que ya usa el select de "Nombre".
+function humanizeGradeCodeError(message: string, gradoOptions: GradoCatalogOption[]): string {
+  return message.replace(/con el codigo\s+(-?\d+)\s+en este periodo/i, (match, codigo) => {
+    const nombre = gradoOptions.find((o) => o.valor === codigo)?.nombre
+    return nombre ? `de nombre "${nombre}" en este periodo` : match
+  })
+}
 
 export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGradeDialogProps) {
   const [open, setOpen] = useState(false)
@@ -195,15 +211,25 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
           values: payload,
         })
         if (result.status === "error") {
-          notify(result.message, { variant: "error" })
+          notify(humanizeGradeCodeError(cleanErrorMessage(result.message), gradoOptions), {
+            variant: "error",
+          })
           return
         }
         await promotionRef.current?.save(gradeId)
         await scheduleRef.current?.save(gradeId)
         notify(SUCCESS_MESSAGES.grade.updated)
       }
-    } catch {
-      notify("Ocurrió un error al guardar el grado.", { variant: "error" })
+    } catch (error) {
+      // Mismo mensaje real que ya mostraba el toast global, en vez de un
+      // genérico que no dice nada de por qué falló.
+      const message = Axios.isAxiosError(error)
+        ? humanizeGradeCodeError(
+            cleanErrorMessage(error.response?.data?.message || error.message),
+            gradoOptions,
+          )
+        : "Ocurrió un error al guardar el grado."
+      notify(message, { variant: "error" })
     } finally {
       setSaving(false)
     }
@@ -444,7 +470,7 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
 
         {gradeId == null ? (
           <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-            Guarda el grado para configurar sus grupos, plan de estudio y horario.
+            Crea el grado para configurar sus grupos, plan de estudio y horario.
           </p>
         ) : (
           <Tabs defaultValue="grupo" className="w-full min-w-0">
@@ -485,18 +511,31 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
         )}
 
         <DialogFooter>
-          <Button
-            size="sm"
-            type="button"
-            color="primary"
-            onClick={handleSaveGrade}
-            disabled={saving}
-            aria-busy={saving}
+          {/* Al crear, el botón recién aparece con los campos obligatorios
+              completos (nivel, nombre, "tiene grado siguiente" y, si esa
+              respuesta es "sí", también el grado siguiente en sí) — en
+              edición siempre se muestra ("Guardar" no depende de llenar
+              nada de nuevo). */}
+          {(gradeId != null ||
+            (teachingLevelId != null &&
+              nombre.trim() !== "" &&
+              tieneGradoSiguiente !== "" &&
+              (!hasNextGrade || gradoSiguiente.trim() !== ""))) && (
+            <Button
+              size="sm"
+              type="button"
+              color="primary"
+              onClick={handleSaveGrade}
+              disabled={saving}
+              aria-busy={saving}
+            >
+              {saving && <SpinnerIcon data-icon="inline-start" className="animate-spin" />}
+              {gradeId == null ? "Crear" : "Guardar"}
+            </Button>
+          )}
+          <DialogClose
+            render={<Button size="sm" type="button" variant="fill" color="neutral" />}
           >
-            {saving && <SpinnerIcon data-icon="inline-start" className="animate-spin" />}
-            {gradeId == null ? "Crear" : "Guardar"}
-          </Button>
-          <DialogClose render={<Button size="sm" type="button" variant="outline" />}>
             Cerrar
           </DialogClose>
         </DialogFooter>
