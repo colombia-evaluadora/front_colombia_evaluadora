@@ -111,11 +111,13 @@ export function ForgotUsernamePage() {
                 <ArrowRightIcon data-icon="inline-end" />
               )}
             </Button>
+            {/* Mismo tratamiento que en las otras dos pantallas de
+                recuperación: el botón es el mismo, el estilo también. */}
             <Button
               render={<Link to={paths.auth.login.path} />}
               nativeButton={false}
-              variant="link"
-              color="secondary"
+              variant="ghost"
+              color="primary"
             >
               <ArrowLeftIcon data-icon="inline-start" />
               Volver a iniciar sesión
