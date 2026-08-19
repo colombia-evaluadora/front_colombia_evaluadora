@@ -257,6 +257,12 @@ function isBlankValue(value: string | null | undefined): boolean {
  * es columna nullable de verdad. Las rutas coinciden con las que
  * `UserDetailsForm` usa para ubicar el mensaje debajo de cada campo, por
  * eso van prefijadas con `employee`.
+ *
+ * `person.accountExists` (autocompletado por documento, ver
+ * `use-user-by-document.ts`): ya hay una cuenta real detrás de ese
+ * documento — el backend la reconoce y reutiliza sin tocarle la
+ * contraseña (`FuncionarioRegistrationService`, V71), así que acá tampoco
+ * se exige (el campo queda bloqueado en el form).
  */
 const employeePersonSchema = z
   .object({
@@ -278,6 +284,11 @@ const employeePersonSchema = z
     require("lastName", person.lastName, "Ingresa el primer apellido.")
     require("email", person.email, "Ingresa el correo electrónico.")
     require("gender", person.gender?.name, "Selecciona el género.")
+
+    if (person.accountExists) {
+      return
+    }
+
     require("password", person.password, "Ingresa la contraseña.")
     require("confirmPassword", confirmPassword, "Repite la contraseña.")
 

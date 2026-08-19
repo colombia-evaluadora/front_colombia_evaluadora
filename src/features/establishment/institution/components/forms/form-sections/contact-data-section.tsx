@@ -27,6 +27,8 @@ export function ContactDataFormSection({ value, onChange, invalidFields = [], sh
                     <Input
                         id="establishment-email"
                         placeholder="Agregar"
+                        // TESTABLECIMIENTO.CORREO_ELECTRONICO es VARCHAR(130).
+                        maxLength={130}
                         value={value.email}
                         aria-invalid={isInvalid("contact.email")}
                         onChange={(event) => onChange({ ...value, email: event.target.value })}
@@ -58,6 +60,8 @@ export function ContactDataFormSection({ value, onChange, invalidFields = [], sh
                     <Input
                         id="establishment-fax"
                         placeholder="Agregar"
+                        // TESTABLECIMIENTO.FAX es VARCHAR(130).
+                        maxLength={130}
                         value={value.fax ?? ""}
                         onChange={(event) => onChange({ ...value, fax: event.target.value })}
                     />
