@@ -260,7 +260,8 @@ export function createRatingScaleDetailColumns({
               </Button>
               <Button
                 type="button"
-                variant="outline"
+                variant="fill"
+                color="neutral"
                 size="icon-sm"
                 aria-label="Cancelar edición"
                 disabled={isSaving}
