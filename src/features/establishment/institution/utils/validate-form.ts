@@ -160,24 +160,36 @@ function makePersonSchema(required: boolean) {
        * el GET no trajo uno): al guardar va a `POST /register/funcionario`
        * (`RegisterUsuarioRequest`, auth-center), que exige `@NotBlank` en
        * `email` y `password` — son la cuenta y el login del funcionario,
-       * no hay forma de omitirlos (a diferencia de fecha de nacimiento y
-       * género, que sí son opcionales de verdad). Persona CON `id` (ya
-       * existente) va a PATCH `fn_fun_actualizar`, que tolera estos campos
-       * vacíos (COALESCE, nunca resetea la contraseña) — por eso solo se
-       * exigen acá cuando todavía no existe.
+       * no hay forma de omitirlos (a diferencia de fecha de nacimiento,
+       * que sí es opcional de verdad). Persona CON `id` (ya existente) va
+       * a PATCH `fn_fun_actualizar`, que tolera estos campos vacíos
+       * (COALESCE, nunca resetea la contraseña) — por eso solo se exigen
+       * acá cuando todavía no existe.
+       *
+       * `accountExists` (autocompletado por documento, ver
+       * `use-user-by-document.ts`/`UserDetailsForm`): la persona no tiene
+       * `id` (no hay un `TFUNCIONARIO` conocido para ESTE establecimiento
+       * todavía), pero SÍ tiene una cuenta real — el backend la reconoce y
+       * reutiliza por documento/correo (`FuncionarioRegistrationService`,
+       * V71) sin tocarle la contraseña, así que acá tampoco hace falta
+       * pedirla (el campo queda bloqueado en el form, ver
+       * `UserDetailsForm`).
        */
       if (!p.id) {
         require("email", p.email, "Ingresa el correo electrónico.")
         require("gender", p.gender?.name, "Selecciona el género.")
-        require("password", p.password, "Ingresa la contraseña.")
-        require("confirmPassword", confirmPassword, "Repite la contraseña.")
 
-        if (!isBlank(p.password) && !isBlank(confirmPassword) && p.password !== confirmPassword) {
-          ctx.addIssue({
-            code: "custom",
-            path: ["confirmPassword"],
-            message: "Las contraseñas no coinciden.",
-          })
+        if (!p.accountExists) {
+          require("password", p.password, "Ingresa la contraseña.")
+          require("confirmPassword", confirmPassword, "Repite la contraseña.")
+
+          if (!isBlank(p.password) && !isBlank(confirmPassword) && p.password !== confirmPassword) {
+            ctx.addIssue({
+              code: "custom",
+              path: ["confirmPassword"],
+              message: "Las contraseñas no coinciden.",
+            })
+          }
         }
         return
       }

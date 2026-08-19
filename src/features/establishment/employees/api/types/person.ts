@@ -41,4 +41,19 @@ export interface Person {
      * aparte (`photo`/`onPhotoChange` en `UserDetailsForm`), no este campo.
      */
     photoArchivoId?: number | null
+
+    /**
+     * `true` cuando el autocompletado por documento (`findPersonByDocument`)
+     * encontró un `TUSUARIO` ya existente con ese tipo+número de documento.
+     * A propósito NO es lo mismo que `id`: `id` en este tipo representa el
+     * `PK_TFUNCIONARIO` (para decidir crear vs. actualizar un funcionario
+     * puntual), pero el autocompletado solo confirma que existe la CUENTA
+     * (`TUSUARIO`) — no hay forma de saber, solo con el documento, cuál
+     * `TFUNCIONARIO` (si alguno) le corresponde a este establecimiento en
+     * particular. Se usa exclusivamente para bloquear/eximir el campo de
+     * contraseña en el formulario (ver `UserDetailsForm`): al guardar, el
+     * backend igual reconoce y reutiliza la cuenta por documento/correo, así
+     * que no hace falta (ni tiene sentido) pedir una contraseña nueva.
+     */
+    accountExists?: boolean
 }
