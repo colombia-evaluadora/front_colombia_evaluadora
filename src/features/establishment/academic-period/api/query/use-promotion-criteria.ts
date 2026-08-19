@@ -55,18 +55,10 @@ export function toPromotionCriteria(row: PromotionCriteriaRow): PromotionCriteri
   }
 }
 
-// `gradeId` pide el override del grado (`fn_criterio_prom_obtener` filtra
-// por `FK_GRADO` cuando viene, devolviendo la fila del grado o NULL si no
-// hay override y ese grado hereda el del periodo); sin `gradeId` trae el
-// criterio por defecto del periodo (filas con `FK_GRADO` NULL).
 async function fetchPromotionCriteria(
   academicPeriodId: number,
   gradeId?: number
-): Promise<PromotionCriteria | undefined> {
-  // `FK_GRADO` (uppercase) matchea `:QUERY.FK_GRADO` del SQL — antes iba como
-  // `fkGrado` camelCase y no resolvía; el binder del query-service matchea
-  // case-sensitive. Axios omite `null`/`undefined` de la URL, así que cuando
-  // no hay gradeId el back recibe NULL y devuelve el criterio por defecto.
+): Promise<PromotionCriteria | null> {
   const raw: PromotionCriteriaResponse = await api.get(
     `/eval-col/periodos/${academicPeriodId}/criterio-promocion`,
     {
@@ -76,10 +68,7 @@ async function fetchPromotionCriteria(
     }
   )
   const row = raw.rows?.[0]
-  // Sin fila = todavía no se configuró el criterio (por defecto del periodo,
-  // o el grado no tiene override propio); el form arranca de `EMPTY` (ver
-  // tab-promotion-criteria.tsx), no es error.
-  return row ? toPromotionCriteria(row) : undefined
+  return row ? toPromotionCriteria(row) : null
 }
 
 export const promotionCriteriaQueryKey = (

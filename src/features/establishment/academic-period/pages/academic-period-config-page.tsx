@@ -3,7 +3,7 @@ import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { CheckIcon, SpinnerIcon } from "@/components/ui/icons"
 import { Link, useNavigate, useParams } from "@tanstack/react-router"
 
-import { isNotFoundError } from "@/lib/api-client"
+import { getErrorMessage, isNotFoundError } from "@/lib/api-client"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -106,6 +106,9 @@ function AcademicPeriodConfigPageContent() {
         navigate({
           to: paths.app.periodosAcademicosEditar.getHref(created.id),
         })
+      },
+      onError: (error) => {
+        notify(getErrorMessage(error), { variant: "error" })
       },
     },
   })

@@ -267,7 +267,8 @@ export function CreateStudyPlanDialog({
                   <Input
                     id={field.name}
                     type="number"
-                    min={0}
+                    min={1}
+                    max={99}
                     placeholder="Agregar"
                     value={Number.isNaN(field.state.value) ? "" : field.state.value}
                     onBlur={field.handleBlur}
