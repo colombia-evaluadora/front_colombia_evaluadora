@@ -173,10 +173,14 @@ export function UserDetailsForm({
     // pisar el form con datos de una búsqueda vieja).
     const documentTypeId = person.documentType?.id ?? null
     const identification = person.identification
+    // Solo gobierna el toast, NO si la búsqueda corre: la búsqueda tiene que
+    // correr también al abrir "editar" (para que el password quede con el
+    // placeholder + bloqueado si la persona ya tiene cuenta, igual que en
+    // alta) — lo que no queremos ahí es el aviso de "cuenta encontrada",
+    // porque nadie tecleó nada, solo se cargó un registro que ya la tenía.
     const isUserEditingDocument = useRef(false)
     useEffect(() => {
         if (!documentTypeId || !identification.trim()) return
-        if (!isUserEditingDocument.current) return
 
         // Reset optimista: en cuanto el documento cambia, ya no se puede
         // asumir que sigue siendo la cuenta que encontró la búsqueda
@@ -209,7 +213,9 @@ export function UserDetailsForm({
                     // valor decorativo de la contraseña, nunca una real.
                     emitChange({ ...found, password: PASSWORD_PLACEHOLDER })
                     setConfirmPassword(PASSWORD_PLACEHOLDER)
-                    toast.success("Ya existe una cuenta con este documento: se completaron sus datos automáticamente.")
+                    if (isUserEditingDocument.current) {
+                        toast.success("Ya existe una cuenta con este documento: se completaron sus datos automáticamente.")
+                    }
                 })
                 .catch(() => {
                     // Búsqueda opcional: si falla, el usuario sigue

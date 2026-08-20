@@ -7,6 +7,7 @@ import {
   ComboboxFieldTrigger,
   ComboboxFieldValue,
 } from "@/components/ui/combobox"
+import { toDigitsOnly } from "@/lib/text-input"
 
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 import type { CampusDraft, EstablishmentOption } from "@/features/establishment/campuses/api/types/campus"
@@ -99,9 +100,13 @@ export function CampusDetailsForm({
         <Input
           id="campus-dane"
           size="sm"
+          // Mismo criterio que el DANE del establecimiento: solo números, sin
+          // letras, máximo 12 caracteres.
+          inputMode="numeric"
+          maxLength={12}
           value={value.dane}
           aria-invalid={Boolean(errors["dane"])}
-          onChange={(event) => onChange({ ...value, dane: event.target.value })}
+          onChange={(event) => onChange({ ...value, dane: toDigitsOnly(event.target.value, 12) })}
           placeholder="Agregar"
         />
         <FieldError>{errors["dane"]}</FieldError>
@@ -174,8 +179,9 @@ export function CampusDetailsForm({
         <Input
           id="campus-phone"
           size="sm"
+          inputMode="numeric"
           value={value.phone}
-          onChange={(event) => onChange({ ...value, phone: event.target.value })}
+          onChange={(event) => onChange({ ...value, phone: toDigitsOnly(event.target.value) })}
           placeholder="Agregar"
         />
       </Field>
