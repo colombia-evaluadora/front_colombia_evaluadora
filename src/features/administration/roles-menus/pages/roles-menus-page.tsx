@@ -29,6 +29,7 @@ import { useRoleMenusQuery } from "@/features/administration/roles-menus/api/que
 import { useRolesQuery } from "@/features/administration/roles-menus/api/query/use-roles-query"
 import {
   buildMenuTree,
+  partitionKnownMenus,
   withRequiredParents,
 } from "@/features/administration/roles-menus/api/types/role-menu"
 import { MenuTransfer } from "@/features/administration/roles-menus/components/menu-transfer"
@@ -92,10 +93,28 @@ function RolesMenusPageContent() {
 
   function save(nextIds: number[]) {
     if (roleId == null) return
+    // Sin catálogo no hay con qué resolver la jerarquía, y todo id parecería
+    // huérfano: guardar acá vaciaría el rol. No debería pasar (la pantalla no
+    // monta el transfer mientras carga), pero el costo de equivocarse es alto.
+    if (tree.length === 0) return
+
+    // Los fantasmas —asignados cuyo padre fue dado de baja, así que el catálogo
+    // ya no los ubica— viajaban en cada guardado y el backend rechazaba la
+    // operación entera por la invariante de jerarquía. No se pueden ver ni
+    // quitar desde la pantalla, así que se descartan acá y se avisa: es la
+    // única forma de que el rol vuelva a ser editable.
+    const { known, unknown } = partitionKnownMenus(nextIds, tree)
+    if (unknown.length > 0) {
+      notify(
+        `Se descartaron ${unknown.length} menú(s) asignados cuyo menú padre ya no existe (${unknown.join(", ")}).`,
+        { variant: "info" },
+      )
+    }
+
     // El backend rechaza la lista entera si trae un submenú sin su padre, y la
     // lista puede venir así desde la base. Se completa acá, en el único punto
     // por el que pasan asignar, quitar y reordenar.
-    updateRoleMenus.mutate({ roleId, menuIds: withRequiredParents(nextIds, tree) })
+    updateRoleMenus.mutate({ roleId, menuIds: withRequiredParents(known, tree) })
   }
 
   function handleAssign(ids: number[]) {
