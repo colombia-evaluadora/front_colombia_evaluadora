@@ -15,7 +15,6 @@ import {
 import {
   TableScreen,
   TableScreenBody,
-  TableScreenFooter,
   TableScreenHeader,
   TableScreenTitle,
 } from "@/components/layout/table-screen"
@@ -88,6 +87,7 @@ function AcademicPeriodConfigPageContent() {
   const [jornada, setJornada] = useState<Jornada>(DEFAULT_JORNADA)
   const [configOpen, setConfigOpen] = useState(true)
   const [isFormDirty, setIsFormDirty] = useState(false)
+  const [isFormValid, setIsFormValid] = useState(false)
   const [savedToken, setSavedToken] = useState(0)
 
   const {
@@ -151,7 +151,10 @@ function AcademicPeriodConfigPageContent() {
 
   const showSecondForm = saved || (isEditing && !!detail)
 
-  const showSaveAction = !isEditing || isFormDirty || isSaving
+  // Al crear, "Guardar" solo aparece cuando ya se completaron todos los
+  // campos obligatorios (no basta con haber tocado el form). Al editar, sigue
+  // el criterio anterior: aparece con cualquier cambio respecto a lo guardado.
+  const showSaveAction = isEditing ? isFormDirty || isSaving : isFormValid || isSaving
 
   const configBody = (
     <Accordion
@@ -173,14 +176,43 @@ function AcademicPeriodConfigPageContent() {
               Ocurrió un error al cargar el periodo académico.
             </p>
           ) : (
-            <AcademicPeriodForm
-              id={FORM_ID}
-              defaultValues={detail ? toFormValues(detail) : undefined}
-              onSubmit={handleSubmit}
-              onDirtyChange={setIsFormDirty}
-              savedToken={savedToken}
-              currentPeriodId={numericPeriodId}
-            />
+            <>
+              <AcademicPeriodForm
+                id={FORM_ID}
+                defaultValues={detail ? toFormValues(detail) : undefined}
+                onSubmit={handleSubmit}
+                onDirtyChange={setIsFormDirty}
+                onValidChange={setIsFormValid}
+                savedToken={savedToken}
+                currentPeriodId={numericPeriodId}
+              />
+              {showSaveAction && (
+                <div className="mt-6 flex justify-end">
+                  <Button
+                    type="submit"
+                    size="sm"
+                    variant="fill"
+                    color="primary"
+                    form={FORM_ID}
+                    disabled={isSaving}
+                    aria-busy={isSaving}
+                  >
+                    {isSaving ? (
+                      <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+                    ) : (
+                      <CheckIcon data-icon="inline-start" />
+                    )}
+                    {isEditing
+                      ? isSaving
+                        ? "Guardando..."
+                        : "Guardar"
+                      : isSaving
+                        ? "Agregando..."
+                        : "Agregar periodo"}
+                  </Button>
+                </div>
+              )}
+            </>
           )}
         </AccordionContent>
       </AccordionItem>
@@ -206,7 +238,7 @@ function AcademicPeriodConfigPageContent() {
           {isEditing ? "Editar periodo académico" : "Agregar periodo académico"}
         </TableScreenTitle>
       </TableScreenHeader>
-      <TableScreenBody className="rounded-b-none border-b-0">
+      <TableScreenBody>
         <NoticeOutlet className="mb-4" />
         {configBody}
         {showSecondForm && (
@@ -219,28 +251,6 @@ function AcademicPeriodConfigPageContent() {
           </div>
         )}
       </TableScreenBody>
-
-      {showSaveAction && (
-        <TableScreenFooter>
-          <p className="text-sm text-muted-foreground">Complete la información antes de guardar.</p>
-          <Button
-            type="submit"
-            size="sm"
-            variant="fill"
-            color="primary"
-            form={FORM_ID}
-            disabled={isSaving}
-            aria-busy={isSaving}
-          >
-            {isSaving ? (
-              <SpinnerIcon data-icon="inline-start" className="animate-spin" />
-            ) : (
-              <CheckIcon data-icon="inline-start" />
-            )}
-            {isSaving ? "Guardando..." : "Guardar"}
-          </Button>
-        </TableScreenFooter>
-      )}
     </TableScreen>
   )
 }
