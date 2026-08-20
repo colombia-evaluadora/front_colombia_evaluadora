@@ -4,12 +4,12 @@ import { ArchivoImage } from "@/features/files/components/archivo-image"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select"
+  ComboboxField,
+  ComboboxFieldContent,
+  ComboboxFieldItem,
+  ComboboxFieldTrigger,
+  ComboboxFieldValue,
+} from "@/components/ui/combobox"
 import { useOwnershipTypesQuery } from "@/features/establishment/institution/api/query/use-ownership-types"
 import { toSelectItemsMap, toSelectOptions } from "@/lib/catalog-options"
 import { toDigitsOnly, toNitInput } from "@/lib/text-input"
@@ -118,7 +118,7 @@ export function IdentificationDataFormSection({ value, onChange, invalidFields =
                     <FieldLabel htmlFor="establishment-legal-type">
                         Propiedad jurídica*
                     </FieldLabel>
-                    <Select
+                    <ComboboxField
                         id="establishment-legal-type"
                         aria-invalid={isInvalid("basicInfo.ownershipType")}
                         value={value.ownershipType?.id ?? null}
@@ -128,18 +128,18 @@ export function IdentificationDataFormSection({ value, onChange, invalidFields =
                         }}
                         items={toSelectItemsMap(legalTypeItems)}
                     >
-                        <SelectTrigger aria-invalid={isInvalid("basicInfo.ownershipType")}>
-                            <SelectValue placeholder="Seleccionar" />
-                        </SelectTrigger>
+                        <ComboboxFieldTrigger aria-invalid={isInvalid("basicInfo.ownershipType")}>
+                            <ComboboxFieldValue placeholder="Seleccionar" />
+                        </ComboboxFieldTrigger>
 
-                        <SelectContent>
+                        <ComboboxFieldContent>
                             {legalTypeItems.map((item) => (
-                                <SelectItem key={item.value} value={item.value}>
+                                <ComboboxFieldItem key={item.value} value={item.value}>
                                     {item.label}
-                                </SelectItem>
+                                </ComboboxFieldItem>
                             ))}
-                        </SelectContent>
-                    </Select>
+                        </ComboboxFieldContent>
+                    </ComboboxField>
                     <FieldError>{errorFor("basicInfo.ownershipType")}</FieldError>
                 </Field>
             </div>

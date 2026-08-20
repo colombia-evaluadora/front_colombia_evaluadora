@@ -29,13 +29,13 @@ import { Input } from "@/components/ui/input"
 import { FieldVariantContext } from "@/hooks/use-field-variant"
 import { cn } from "@/lib/utils"
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+  ComboboxField,
+  ComboboxFieldContent,
+  ComboboxFieldItem,
+  ComboboxFieldTrigger,
+  ComboboxFieldValue,
+  ComboboxGroup,
+} from "@/components/ui/combobox"
 import {
   Table,
   TableBody,
@@ -299,30 +299,30 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                     return (
                       <Field variant="outlined" data-invalid={isInvalid}>
                         <FieldLabel htmlFor={field.name}>Tipo de valoración*</FieldLabel>
-                        <Select
+                        <ComboboxField
                           value={field.state.value}
                           onValueChange={(value) => {
                             if (value) field.handleChange(value)
                             field.handleBlur()
                           }}
                         >
-                          <SelectTrigger id={field.name} aria-invalid={isInvalid}>
-                            <SelectValue>
+                          <ComboboxFieldTrigger id={field.name} aria-invalid={isInvalid}>
+                            <ComboboxFieldValue>
                               {(value) =>
                                 tipoOptions.find((o) => o.key === value)?.label ?? "Seleccionar"
                               }
-                            </SelectValue>
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectGroup>
+                            </ComboboxFieldValue>
+                          </ComboboxFieldTrigger>
+                          <ComboboxFieldContent>
+                            <ComboboxGroup>
                               {tipoOptions.map((option) => (
-                                <SelectItem key={option.key} value={option.key}>
+                                <ComboboxFieldItem key={option.key} value={option.key}>
                                   {option.label}
-                                </SelectItem>
+                                </ComboboxFieldItem>
                               ))}
-                            </SelectGroup>
-                          </SelectContent>
-                        </Select>
+                            </ComboboxGroup>
+                          </ComboboxFieldContent>
+                        </ComboboxField>
                         {isInvalid && <FieldError errors={field.state.meta.errors} />}
                       </Field>
                     )
@@ -761,23 +761,23 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                                 />
                               </TableCell>
                               <TableCell>
-                                <Select
+                                <ComboboxField
                                   value={editRow.tipo}
                                   onValueChange={(value) => value && patchEditRow({ tipo: value })}
                                 >
-                                  <SelectTrigger aria-label="Tipo" className="min-w-32">
-                                    <SelectValue placeholder="Seleccionar" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectGroup>
+                                  <ComboboxFieldTrigger aria-label="Tipo" className="min-w-32">
+                                    <ComboboxFieldValue placeholder="Seleccionar" />
+                                  </ComboboxFieldTrigger>
+                                  <ComboboxFieldContent>
+                                    <ComboboxGroup>
                                       {tipoOptions.map((option) => (
-                                        <SelectItem key={option.key} value={option.key}>
+                                        <ComboboxFieldItem key={option.key} value={option.key}>
                                           {option.label}
-                                        </SelectItem>
+                                        </ComboboxFieldItem>
                                       ))}
-                                    </SelectGroup>
-                                  </SelectContent>
-                                </Select>
+                                    </ComboboxGroup>
+                                  </ComboboxFieldContent>
+                                </ComboboxField>
                               </TableCell>
                               <TableCell>
                                 <RatingSymbolSelect

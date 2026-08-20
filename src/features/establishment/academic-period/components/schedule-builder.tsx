@@ -4,13 +4,13 @@ import { MinusIcon, XIcon } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
 import { Field, FieldLabel } from "@/components/ui/field"
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+  ComboboxField,
+  ComboboxFieldContent,
+  ComboboxFieldItem,
+  ComboboxFieldTrigger,
+  ComboboxFieldValue,
+  ComboboxGroup,
+} from "@/components/ui/combobox"
 
 import { useUpdateHorario } from "../api/mutations/update-horario"
 import type { ScheduleEntry } from "../api/types/grade-config"
@@ -247,39 +247,39 @@ export const ScheduleBuilder = forwardRef<
         className="w-full gap-2 sm:w-72"
       >
         <FieldLabel htmlFor="schedule-grade-group">Grado/Grupo</FieldLabel>
-        <Select
+        <ComboboxField
           value={gradeGroup}
           onValueChange={(value) => value && setGradeGroup(value)}
           disabled={gradeGroups.length === 0}
-          // `items` como mapa `value -> label`: el `SelectValue` lo consume
+          // `items` como mapa `value -> label`: el `ComboboxFieldValue` lo consume
           // para pintar el nombre del grupo seleccionado en el trigger (en
           // vez del id crudo, que era lo que se veía antes). Ver
           // components/ui/select.tsx — `items` también acepta el formato
           // nativo de Base UI, pero pasar el Record evita tener que
-          // duplicar los `SelectItem` y mantiene el trigger en sync.
+          // duplicar los `ComboboxFieldItem` y mantiene el trigger en sync.
           items={Object.fromEntries(
             gradeGroups.map((option) => [String(option.id), option.label])
           )}
         >
-          <SelectTrigger id="schedule-grade-group" className="w-full">
-            <SelectValue
+          <ComboboxFieldTrigger id="schedule-grade-group" className="w-full">
+            <ComboboxFieldValue
               placeholder={
                 gradeGroups.length === 0
                   ? "Sin grupos: agregá uno en la pestaña Grupo"
                   : "Seleccionar"
               }
             />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
+          </ComboboxFieldTrigger>
+          <ComboboxFieldContent>
+            <ComboboxGroup>
               {gradeGroups.map((option) => (
-                <SelectItem key={option.id} value={String(option.id)}>
+                <ComboboxFieldItem key={option.id} value={String(option.id)}>
                   {option.label}
-                </SelectItem>
+                </ComboboxFieldItem>
               ))}
-            </SelectGroup>
-          </SelectContent>
-        </Select>
+            </ComboboxGroup>
+          </ComboboxFieldContent>
+        </ComboboxField>
       </Field>
 
       <div className="flex flex-wrap gap-2">

@@ -7,6 +7,14 @@ import { Input, inputVariants } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { cn } from "@/lib/utils"
 import {
+  ComboboxField,
+  ComboboxFieldContent,
+  ComboboxFieldItem,
+  ComboboxFieldTrigger,
+  ComboboxFieldValue,
+  ComboboxGroup,
+} from "@/components/ui/combobox"
+import {
   Select,
   SelectContent,
   SelectGroup,
@@ -231,29 +239,29 @@ export function AcademicPeriodForm({
             return (
               <Field variant="outlined" data-invalid={isInvalid}>
                 <FieldLabel htmlFor={field.name}>Sede*</FieldLabel>
-                <Select
+                <ComboboxField
                   value={field.state.value || ""}
                   onValueChange={(value) => value && field.handleChange(value)}
                 >
-                  <SelectTrigger id={field.name} aria-invalid={isInvalid}>
-                    <SelectValue>
+                  <ComboboxFieldTrigger id={field.name} aria-invalid={isInvalid}>
+                    <ComboboxFieldValue>
                       {(value) => sedes.find((s) => String(s.pk_sede) === value)?.nombre ?? "Seleccionar"}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
+                    </ComboboxFieldValue>
+                  </ComboboxFieldTrigger>
+                  <ComboboxFieldContent>
+                    <ComboboxGroup>
                       {sedes.map((sede) => (
-                        <SelectItem
+                        <ComboboxFieldItem
                           key={sede.pk_sede}
                           value={String(sede.pk_sede)}
                           title={sede.nombre}
                         >
                           {sede.nombre}
-                        </SelectItem>
+                        </ComboboxFieldItem>
                       ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
+                    </ComboboxGroup>
+                  </ComboboxFieldContent>
+                </ComboboxField>
                 {isInvalid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             )
@@ -267,7 +275,7 @@ export function AcademicPeriodForm({
           {(field) => (
             <Field variant="outlined">
               <FieldLabel htmlFor={field.name}>Periodo académico anterior</FieldLabel>
-              <Select
+              <ComboboxField
                 value={field.state.value ? String(field.state.value) : NO_PREVIOUS_PERIOD}
                 onValueChange={(value) =>
                   field.handleChange(
@@ -275,25 +283,25 @@ export function AcademicPeriodForm({
                   )
                 }
               >
-                <SelectTrigger id={field.name}>
-                  <SelectValue>
+                <ComboboxFieldTrigger id={field.name}>
+                  <ComboboxFieldValue>
                     {(value) => {
                       const p = previousPeriodOptions.find((o) => String(o.id) === value)
                       return p ? p.name : "No tiene"
                     }}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem value={NO_PREVIOUS_PERIOD}>No tiene</SelectItem>
+                  </ComboboxFieldValue>
+                </ComboboxFieldTrigger>
+                <ComboboxFieldContent>
+                  <ComboboxGroup>
+                    <ComboboxFieldItem value={NO_PREVIOUS_PERIOD}>No tiene</ComboboxFieldItem>
                     {previousPeriodOptions.map((period) => (
-                      <SelectItem key={period.id} value={String(period.id)}>
+                      <ComboboxFieldItem key={period.id} value={String(period.id)}>
                         {period.name}
-                      </SelectItem>
+                      </ComboboxFieldItem>
                     ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+                  </ComboboxGroup>
+                </ComboboxFieldContent>
+              </ComboboxField>
             </Field>
           )}
         </form.Field>
@@ -343,27 +351,27 @@ export function AcademicPeriodForm({
             return (
               <Field variant="outlined" data-invalid={isInvalid}>
                 <FieldLabel htmlFor={field.name}>Jornada*</FieldLabel>
-                <Select
+                <ComboboxField
                   value={field.state.value ? String(field.state.value) : ""}
                   onValueChange={(value) => value && field.handleChange(Number(value))}
                 >
-                  <SelectTrigger id={field.name} aria-invalid={isInvalid}>
-                    <SelectValue>
+                  <ComboboxFieldTrigger id={field.name} aria-invalid={isInvalid}>
+                    <ComboboxFieldValue>
                       {(value) =>
                         jornadas.find((j) => String(j.id) === value)?.name ?? "Seleccionar"
                       }
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
+                    </ComboboxFieldValue>
+                  </ComboboxFieldTrigger>
+                  <ComboboxFieldContent>
+                    <ComboboxGroup>
                       {jornadas.map((jornada) => (
-                        <SelectItem key={jornada.id} value={String(jornada.id)}>
+                        <ComboboxFieldItem key={jornada.id} value={String(jornada.id)}>
                           {jornada.name}
-                        </SelectItem>
+                        </ComboboxFieldItem>
                       ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
+                    </ComboboxGroup>
+                  </ComboboxFieldContent>
+                </ComboboxField>
                 {isInvalid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             )

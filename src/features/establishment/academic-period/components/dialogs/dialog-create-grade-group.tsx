@@ -21,13 +21,13 @@ import {
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+  ComboboxField,
+  ComboboxFieldContent,
+  ComboboxFieldItem,
+  ComboboxFieldTrigger,
+  ComboboxFieldValue,
+  ComboboxGroup,
+} from "@/components/ui/combobox"
 
 import { useSedeFuncionariosQuery } from "@/features/establishment/academic-period/api/query/use-sede-funcionarios"
 
@@ -215,23 +215,23 @@ export function CreateGradeGroupDialog({
             {(field) => (
               <Field variant="outlined">
                 <FieldLabel htmlFor={field.name}>Director de grupo*</FieldLabel>
-                <Select
+                <ComboboxField
                   value={field.state.value}
                   onValueChange={(value) => value && field.handleChange(value as string)}
                 >
-                  <SelectTrigger id={field.name}>
-                    <SelectValue placeholder="Seleccionar" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
+                  <ComboboxFieldTrigger id={field.name}>
+                    <ComboboxFieldValue placeholder="Seleccionar" />
+                  </ComboboxFieldTrigger>
+                  <ComboboxFieldContent>
+                    <ComboboxGroup>
                       {teacherNames.map((name) => (
-                        <SelectItem key={name} value={name}>
+                        <ComboboxFieldItem key={name} value={name}>
                           {name}
-                        </SelectItem>
+                        </ComboboxFieldItem>
                       ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
+                    </ComboboxGroup>
+                  </ComboboxFieldContent>
+                </ComboboxField>
               </Field>
             )}
           </form.Field>
@@ -240,27 +240,27 @@ export function CreateGradeGroupDialog({
             {(field) => (
               <Field variant="outlined">
                 <FieldLabel htmlFor={field.name}>Metodología*</FieldLabel>
-                <Select
+                <ComboboxField
                   value={field.state.value}
                   onValueChange={(value) => value && field.handleChange(value)}
                 >
-                  <SelectTrigger id={field.name}>
-                    <SelectValue>
+                  <ComboboxFieldTrigger id={field.name}>
+                    <ComboboxFieldValue>
                       {(value) =>
                         metodologiaOptions.find((o) => o.key === value)?.label ?? "Seleccionar"
                       }
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
+                    </ComboboxFieldValue>
+                  </ComboboxFieldTrigger>
+                  <ComboboxFieldContent>
+                    <ComboboxGroup>
                       {metodologiaOptions.map((option) => (
-                        <SelectItem key={option.key} value={option.key}>
+                        <ComboboxFieldItem key={option.key} value={option.key}>
                           {option.label}
-                        </SelectItem>
+                        </ComboboxFieldItem>
                       ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
+                    </ComboboxGroup>
+                  </ComboboxFieldContent>
+                </ComboboxField>
               </Field>
             )}
           </form.Field>

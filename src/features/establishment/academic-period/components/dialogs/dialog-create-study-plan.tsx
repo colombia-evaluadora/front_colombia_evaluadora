@@ -29,13 +29,13 @@ import {
 import { Switch } from "@/components/ui/switch"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+  ComboboxField,
+  ComboboxFieldContent,
+  ComboboxFieldItem,
+  ComboboxFieldTrigger,
+  ComboboxFieldValue,
+  ComboboxGroup,
+} from "@/components/ui/combobox"
 
 import { useAvailableStudyPlanSubjectsQuery } from "../../api/query/use-available-study-plan-subjects-query"
 import { useCreateStudyPlanItem } from "@/features/establishment/academic-period/api/mutations/create-study-plan"
@@ -231,29 +231,29 @@ export function CreateStudyPlanDialog({
                 return (
                   <Field variant="outlined" data-invalid={isInvalid}>
                     <FieldLabel htmlFor={field.name}>Asignaturas*</FieldLabel>
-                    <Select
+                    <ComboboxField
                       value={field.state.value}
                       onValueChange={(value) => value && field.handleChange(value)}
                     >
-                      <SelectTrigger id={field.name} aria-invalid={isInvalid}>
-                        <SelectValue placeholder="Seleccionar" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectGroup>
+                      <ComboboxFieldTrigger id={field.name} aria-invalid={isInvalid}>
+                        <ComboboxFieldValue placeholder="Seleccionar" />
+                      </ComboboxFieldTrigger>
+                      <ComboboxFieldContent>
+                        <ComboboxGroup>
                           {asignaturaOptions.length === 0 ? (
                             <div className="px-2 py-1.5 text-sm text-muted-foreground">
                               No hay asignaturas disponibles para este grado.
                             </div>
                           ) : (
                             asignaturaOptions.map((option) => (
-                              <SelectItem key={option} value={option}>
+                              <ComboboxFieldItem key={option} value={option}>
                                 {option}
-                              </SelectItem>
+                              </ComboboxFieldItem>
                             ))
                           )}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
+                        </ComboboxGroup>
+                      </ComboboxFieldContent>
+                    </ComboboxField>
                     {isInvalid && <FieldError errors={field.state.meta.errors} />}
                   </Field>
                 )
@@ -441,28 +441,28 @@ export function CreateStudyPlanDialog({
               {(field) => (
                 <Field variant="outlined">
                   <FieldLabel htmlFor={field.name}>Formato de calificación</FieldLabel>
-                  <Select
+                  <ComboboxField
                     value={personalizar ? field.state.value : formatoHeredado}
                     disabled={!personalizar}
                     onValueChange={(value) => value && field.handleChange(value)}
                   >
-                    <SelectTrigger id={field.name}>
-                      <SelectValue>
+                    <ComboboxFieldTrigger id={field.name}>
+                      <ComboboxFieldValue>
                         {(value) =>
                           formatoOptions.find((o) => o.key === value)?.label ?? "Seleccionar"
                         }
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
+                      </ComboboxFieldValue>
+                    </ComboboxFieldTrigger>
+                    <ComboboxFieldContent>
+                      <ComboboxGroup>
                         {formatoOptions.map((option) => (
-                          <SelectItem key={option.key} value={option.key}>
+                          <ComboboxFieldItem key={option.key} value={option.key}>
                             {option.label}
-                          </SelectItem>
+                          </ComboboxFieldItem>
                         ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
+                      </ComboboxGroup>
+                    </ComboboxFieldContent>
+                  </ComboboxField>
                 </Field>
               )}
             </form.Field>
@@ -473,28 +473,28 @@ export function CreateStudyPlanDialog({
                   <FieldLabel htmlFor={field.name}>
                     Criterio para calcular la nota de la asignatura
                   </FieldLabel>
-                  <Select
+                  <ComboboxField
                     value={personalizar ? field.state.value : criterioHeredado}
                     disabled={!personalizar}
                     onValueChange={(value) => value && field.handleChange(value)}
                   >
-                    <SelectTrigger id={field.name}>
-                      <SelectValue>
+                    <ComboboxFieldTrigger id={field.name}>
+                      <ComboboxFieldValue>
                         {(value) =>
                           criterioOptions.find((o) => o.key === value)?.label ?? "Seleccionar"
                         }
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
+                      </ComboboxFieldValue>
+                    </ComboboxFieldTrigger>
+                    <ComboboxFieldContent>
+                      <ComboboxGroup>
                         {criterioOptions.map((option) => (
-                          <SelectItem key={option.key} value={option.key}>
+                          <ComboboxFieldItem key={option.key} value={option.key}>
                             {option.label}
-                          </SelectItem>
+                          </ComboboxFieldItem>
                         ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
+                      </ComboboxGroup>
+                    </ComboboxFieldContent>
+                  </ComboboxField>
                 </Field>
               )}
             </form.Field>

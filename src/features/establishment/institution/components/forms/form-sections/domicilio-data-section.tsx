@@ -2,12 +2,12 @@ import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { FormSectionHeading } from "@/components/form-section-heading"
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select"
+  ComboboxField,
+  ComboboxFieldContent,
+  ComboboxFieldItem,
+  ComboboxFieldTrigger,
+  ComboboxFieldValue,
+} from "@/components/ui/combobox"
 import { CATALOGS } from "@/lib/catalogs"
 import { toSelectItemsMap, toSelectOptions } from "@/lib/catalog-options"
 import { useCatalogQuery } from "@/features/establishment/employees/api/query/use-catalogs"
@@ -46,7 +46,7 @@ export function DomicilioDataFormSection({ value, onChange, invalidFields = [], 
             <div className="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-3">
                 <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid("address.municipality") ? "true" : undefined}>
                     <FieldLabel htmlFor="establishment-municipio">Municipio*</FieldLabel>
-                    <Select
+                    <ComboboxField
                         value={value.municipality?.id ?? null}
                         aria-invalid={isInvalid("address.municipality")}
                         onValueChange={(selectedValue) => {
@@ -55,24 +55,24 @@ export function DomicilioDataFormSection({ value, onChange, invalidFields = [], 
                         }}
                         items={toSelectItemsMap(municipalityItems)}
                     >
-                        <SelectTrigger aria-invalid={isInvalid("address.municipality")}>
-                            <SelectValue placeholder="Seleccionar" />
-                        </SelectTrigger>
+                        <ComboboxFieldTrigger aria-invalid={isInvalid("address.municipality")}>
+                            <ComboboxFieldValue placeholder="Seleccionar" />
+                        </ComboboxFieldTrigger>
 
-                        <SelectContent>
+                        <ComboboxFieldContent>
                             {municipalityItems.map((item) => (
-                                <SelectItem key={item.value} value={item.value}>
+                                <ComboboxFieldItem key={item.value} value={item.value}>
                                     {item.label}
-                                </SelectItem>
+                                </ComboboxFieldItem>
                             ))}
-                        </SelectContent>
-                    </Select>
+                        </ComboboxFieldContent>
+                    </ComboboxField>
                     <FieldError>{errorFor("address.municipality")}</FieldError>
                 </Field>
 
                 <Field orientation="vertical" variant="outlined" className="w-full">
                     <FieldLabel htmlFor="establishment-zone">Zona</FieldLabel>
-                    <Select
+                    <ComboboxField
                         value={value.zone?.id ?? null}
                         onValueChange={(selectedValue) => {
                             const option = zones.find((item) => item.id === selectedValue)
@@ -80,18 +80,18 @@ export function DomicilioDataFormSection({ value, onChange, invalidFields = [], 
                         }}
                         items={toSelectItemsMap(zoneItems)}
                     >
-                        <SelectTrigger>
-                            <SelectValue placeholder="Seleccionar" />
-                        </SelectTrigger>
+                        <ComboboxFieldTrigger>
+                            <ComboboxFieldValue placeholder="Seleccionar" />
+                        </ComboboxFieldTrigger>
 
-                        <SelectContent>
+                        <ComboboxFieldContent>
                             {zoneItems.map((item) => (
-                                <SelectItem key={item.value} value={item.value}>
+                                <ComboboxFieldItem key={item.value} value={item.value}>
                                     {item.label}
-                                </SelectItem>
+                                </ComboboxFieldItem>
                             ))}
-                        </SelectContent>
-                    </Select>
+                        </ComboboxFieldContent>
+                    </ComboboxField>
                 </Field>
 
                 <Field orientation="vertical" variant="outlined" className="w-full">

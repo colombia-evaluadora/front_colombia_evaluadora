@@ -5,12 +5,12 @@ import { optionsTerm, type QuerySyntax } from "@/components/search/query-syntax"
 import { useQuerySearch } from "@/components/search/use-query-search"
 import { Field, FieldLabel } from "@/components/ui/field"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+  ComboboxField,
+  ComboboxFieldContent,
+  ComboboxFieldItem,
+  ComboboxFieldTrigger,
+  ComboboxFieldValue,
+} from "@/components/ui/combobox"
 
 import type { CampusFiltersFormInput } from "@/features/establishment/campuses/api/schema"
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
@@ -95,22 +95,22 @@ export function SearchCampuses({
         <div className="px-4">
           <Field orientation="vertical" variant="outlined" className="gap-2">
             <FieldLabel htmlFor="campus-zone">Zona</FieldLabel>
-            <Select
+            <ComboboxField
               items={toSelectItemsMap(zoneItems)}
               value={draftZone}
               onValueChange={(value) => setDraftZone(value ?? "")}
             >
-              <SelectTrigger id="campus-zone" size="sm" className="w-full">
-                <SelectValue placeholder="Todas" />
-              </SelectTrigger>
-              <SelectContent>
+              <ComboboxFieldTrigger id="campus-zone" size="sm" className="w-full">
+                <ComboboxFieldValue placeholder="Todas" />
+              </ComboboxFieldTrigger>
+              <ComboboxFieldContent>
                 {zoneItems.map((item) => (
-                  <SelectItem key={item.value} value={item.value}>
+                  <ComboboxFieldItem key={item.value} value={item.value}>
                     {item.label}
-                  </SelectItem>
+                  </ComboboxFieldItem>
                 ))}
-              </SelectContent>
-            </Select>
+              </ComboboxFieldContent>
+            </ComboboxField>
           </Field>
         </div>
       </SearchQueryBar>
