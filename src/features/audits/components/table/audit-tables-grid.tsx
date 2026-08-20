@@ -58,7 +58,7 @@ export function AuditTablesDataTable() {
             </nav>
           </TableScreenTabs>
           <TableScreenToolbar>
-            <Skeleton className="h-9 w-72" />
+            <Skeleton className="h-10 w-72" />
           </TableScreenToolbar>
         </TableScreenHeader>
 

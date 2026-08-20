@@ -56,7 +56,7 @@ const FORM_ID = "approval-parameters-form"
 
 function PercentInput({ value, onChange }: { value: number; onChange: (value: number) => void }) {
   return (
-    <InputGroup className="h-10 rounded-md border border-input px-3 hover:border-ring has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20 has-[[data-slot][aria-invalid=true]]:border-red">
+    <InputGroup className="h-11 rounded-md border border-input px-3 hover:border-ring has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20 has-[[data-slot][aria-invalid=true]]:border-red">
       <InputGroupInput
         type="number"
         min={0}
@@ -297,7 +297,7 @@ const PromotionCriteriaForm = forwardRef<PromotionCriteriaHandle, PromotionCrite
                     const parsed = Number(raw)
                     if (raw === "" || !Number.isNaN(parsed)) field.handleChange(parsed)
                   }}
-                  className="h-10"
+                  className="h-11"
                 />
               </Field>
             )}
@@ -340,7 +340,7 @@ const PromotionCriteriaForm = forwardRef<PromotionCriteriaHandle, PromotionCrite
                     const parsed = Number(raw)
                     if (raw === "" || !Number.isNaN(parsed)) field.handleChange(parsed)
                   }}
-                  className="h-10"
+                  className="h-11"
                 />
               </Field>
             )}
@@ -356,7 +356,7 @@ const PromotionCriteriaForm = forwardRef<PromotionCriteriaHandle, PromotionCrite
                 <FieldLabel>¿Aplica la aprobación por promedio?*</FieldLabel>
 
                 <RadioGroup
-                  className="flex min-h-10 items-center gap-6 rounded-md border border-input px-3"
+                  className="flex min-h-11 items-center gap-6 rounded-md border border-input px-3"
                   value={field.state.value ? "si" : "no"}
                   onValueChange={(value) => field.handleChange(value === "si")}
                 >
@@ -427,7 +427,7 @@ const PromotionCriteriaForm = forwardRef<PromotionCriteriaHandle, PromotionCrite
                     const parsed = Number(raw)
                     if (raw === "" || !Number.isNaN(parsed)) field.handleChange(parsed)
                   }}
-                  className="h-10"
+                  className="h-11"
                 />
               </Field>
             )}

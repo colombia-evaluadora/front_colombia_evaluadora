@@ -152,7 +152,7 @@ function RolesMenusPageContent() {
                   <Input
                     aria-label="Nombre del nuevo rol"
                     placeholder="Agregar"
-                    className="h-9"
+                    className="h-10"
                     value={newRoleName}
                     onChange={(event) => setNewRoleName(event.target.value)}
                     onKeyDown={(event) => {

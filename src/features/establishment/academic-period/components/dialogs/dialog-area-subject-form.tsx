@@ -510,7 +510,7 @@ export function AreaSubjectFormDialog({
                         type="button"
                         color="primary"
                         size="sm"
-                        className="h-10"
+                        className="h-11"
                         onClick={() => {
                           setSubjectsStarted(true)
                           setConfirmOpen(true)

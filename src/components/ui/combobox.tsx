@@ -491,9 +491,9 @@ function ComboboxFieldValue({
 const comboboxOverlayVariants = cva("absolute inset-0 flex items-center pr-7", {
   variants: {
     variant: {
-      standard: "px-0 py-1",
-      outlined: "px-3 py-1",
-      filled: "px-3 pt-6 pb-1",
+      standard: "px-0 py-2",
+      outlined: "px-3 py-2",
+      filled: "px-3 pt-6 pb-2",
     },
   },
   defaultVariants: { variant: "standard" },

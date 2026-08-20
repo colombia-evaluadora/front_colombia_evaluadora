@@ -302,7 +302,7 @@ function EvaluationCriteriaForm({
                           }
                           field.handleChange(raw)
                         }}
-                        className="h-9"
+                        className="h-10"
                         aria-invalid={isInvalid}
                       />
                     ) : (
