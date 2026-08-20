@@ -21,13 +21,13 @@ import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+  ComboboxField,
+  ComboboxFieldContent,
+  ComboboxFieldItem,
+  ComboboxFieldTrigger,
+  ComboboxFieldValue,
+  ComboboxGroup,
+} from "@/components/ui/combobox"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 import { useCreateGrade } from "@/features/establishment/academic-period/api/mutations/create-grade"
@@ -196,7 +196,7 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
         setGradeId(created.id)
         // El `<Input value={nombre}>` que toma el relevo post-create mostraría
         // el código crudo del catálogo (p.ej. "1") si dejáramos el estado tal
-        // cual — el `<SelectItem value={option.valor}>` guarda el `valor` en
+        // cual — el `<ComboboxFieldItem value={option.valor}>` guarda el `valor` en
         // `nombre`, no el nombre legible. Resolvemos a nombre para que el
         // render inmediato del form coincida con lo que el back va a devolver
         // en el siguiente fetch (y con lo que muestra la tabla).
@@ -333,63 +333,63 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
             data-invalid={fieldErrors["teachingLevelId"] ? "true" : undefined}
           >
             <FieldLabel htmlFor="grade-nivel">Nivel de enseñanza*</FieldLabel>
-            <Select
+            <ComboboxField
               value={teachingLevelId != null ? String(teachingLevelId) : ""}
               onValueChange={handleChangeTeachingLevel}
             >
-              <SelectTrigger
+              <ComboboxFieldTrigger
                 id="grade-nivel"
                 aria-invalid={Boolean(fieldErrors["teachingLevelId"])}
               >
-                <SelectValue>
+                <ComboboxFieldValue>
                   {(value) =>
                     teachingLevels.find((l) => String(l.id) === value)?.nombre ?? "Seleccionar"
                   }
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
+                </ComboboxFieldValue>
+              </ComboboxFieldTrigger>
+              <ComboboxFieldContent>
+                <ComboboxGroup>
                   {teachingLevels.map((level) => (
-                    <SelectItem key={level.id} value={String(level.id)}>
+                    <ComboboxFieldItem key={level.id} value={String(level.id)}>
                       {level.nombre}
-                    </SelectItem>
+                    </ComboboxFieldItem>
                   ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
+                </ComboboxGroup>
+              </ComboboxFieldContent>
+            </ComboboxField>
             <FieldError>{fieldErrors["teachingLevelId"]}</FieldError>
           </Field>
 
           <Field variant="outlined" data-invalid={fieldErrors["nombre"] ? "true" : undefined}>
             <FieldLabel htmlFor="grade-nombre">Nombre*</FieldLabel>
             {gradeId == null ? (
-              <Select
+              <ComboboxField
                 value={nombre || undefined}
                 onValueChange={(value) => value && setNombre(value)}
               >
-                <SelectTrigger id="grade-nombre" aria-invalid={Boolean(fieldErrors["nombre"])}>
-                  <SelectValue>
+                <ComboboxFieldTrigger id="grade-nombre" aria-invalid={Boolean(fieldErrors["nombre"])}>
+                  <ComboboxFieldValue>
                     {(value) =>
                       gradoOptions.find((o) => o.valor === value)?.nombre ?? "Seleccionar"
                     }
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
+                  </ComboboxFieldValue>
+                </ComboboxFieldTrigger>
+                <ComboboxFieldContent>
+                  <ComboboxGroup>
                     {gradoOptions.length === 0 ? (
                       <div className="px-2 py-1.5 text-sm text-muted-foreground">
                         No hay grados cargados.
                       </div>
                     ) : (
                       gradoOptions.map((option) => (
-                        <SelectItem key={option.id} value={option.valor} title={option.nombre}>
+                        <ComboboxFieldItem key={option.id} value={option.valor} title={option.nombre}>
                           {option.nombre}
-                        </SelectItem>
+                        </ComboboxFieldItem>
                       ))
                     )}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+                  </ComboboxGroup>
+                </ComboboxFieldContent>
+              </ComboboxField>
             ) : (
               <Input
                 id="grade-nombre"
@@ -423,33 +423,33 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
             <>
               <Field variant="outlined">
                 <FieldLabel htmlFor="grade-siguiente">Grado siguiente</FieldLabel>
-                <Select
+                <ComboboxField
                   value={gradoSiguiente || undefined}
                   onValueChange={(value) => value && setGradoSiguiente(value)}
                 >
-                  <SelectTrigger id="grade-siguiente">
-                    <SelectValue>
+                  <ComboboxFieldTrigger id="grade-siguiente">
+                    <ComboboxFieldValue>
                       {(value) =>
                         gradoOptions.find((o) => o.valor === value)?.nombre ?? "Seleccionar"
                       }
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
+                    </ComboboxFieldValue>
+                  </ComboboxFieldTrigger>
+                  <ComboboxFieldContent>
+                    <ComboboxGroup>
                       {gradoOptions.length === 0 ? (
                         <div className="px-2 py-1.5 text-sm text-muted-foreground">
                           No hay grados cargados.
                         </div>
                       ) : (
                         gradoOptions.map((option) => (
-                          <SelectItem key={option.id} value={option.valor} title={option.nombre}>
+                          <ComboboxFieldItem key={option.id} value={option.valor} title={option.nombre}>
                             {option.nombre}
-                          </SelectItem>
+                          </ComboboxFieldItem>
                         ))
                       )}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
+                    </ComboboxGroup>
+                  </ComboboxFieldContent>
+                </ComboboxField>
               </Field>
             </>
           )}

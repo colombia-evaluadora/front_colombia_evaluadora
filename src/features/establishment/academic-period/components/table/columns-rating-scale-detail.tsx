@@ -7,13 +7,13 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { DataTableColumnHeader } from "@/components/data-table"
 import { Input } from "@/components/ui/input"
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+  ComboboxField,
+  ComboboxFieldContent,
+  ComboboxFieldItem,
+  ComboboxFieldTrigger,
+  ComboboxFieldValue,
+  ComboboxGroup,
+} from "@/components/ui/combobox"
 
 import { RATING_SCALE_TYPE_BADGE } from "@/features/establishment/academic-period/api/ui-mappings"
 import type {
@@ -193,25 +193,25 @@ export function createRatingScaleDetailColumns({
           return <Badge {...RATING_SCALE_TYPE_BADGE[label]}>{label}</Badge>
         }
         return (
-          <Select
+          <ComboboxField
             value={draft!.tipo}
             onValueChange={(value) => value && patchDraft({ tipo: value as RatingScaleType })}
           >
-            <SelectTrigger aria-label="Tipo" className="min-w-32">
-              <SelectValue>
+            <ComboboxFieldTrigger aria-label="Tipo" className="min-w-32">
+              <ComboboxFieldValue>
                 {(value) => tipoOptions.find((o) => o.key === value)?.label ?? "Seleccionar"}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
+              </ComboboxFieldValue>
+            </ComboboxFieldTrigger>
+            <ComboboxFieldContent>
+              <ComboboxGroup>
                 {tipoOptions.map((option) => (
-                  <SelectItem key={option.key} value={option.key}>
+                  <ComboboxFieldItem key={option.key} value={option.key}>
                     {option.label}
-                  </SelectItem>
+                  </ComboboxFieldItem>
                 ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
+              </ComboboxGroup>
+            </ComboboxFieldContent>
+          </ComboboxField>
         )
       },
     },
