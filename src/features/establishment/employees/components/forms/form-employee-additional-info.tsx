@@ -98,7 +98,7 @@ export function EmployeeAdditionalInfoForm({ value, onChange }: EmployeeAddition
           </ComboboxFieldTrigger>
           <ComboboxFieldContent>
             {employeeClasses.map((item) => (
-              <ComboboxFieldItem key={item.id} value={item.id}>
+              <ComboboxFieldItem key={item.id} value={item.id} title={item.name}>
                 {item.name}
               </ComboboxFieldItem>
             ))}
@@ -146,7 +146,7 @@ export function EmployeeAdditionalInfoForm({ value, onChange }: EmployeeAddition
           </ComboboxFieldTrigger>
           <ComboboxFieldContent>
             {grades.map((item) => (
-              <ComboboxFieldItem key={item.id} value={item.id}>
+              <ComboboxFieldItem key={item.id} value={item.id} title={item.name}>
                 {item.name}
               </ComboboxFieldItem>
             ))}
@@ -170,7 +170,7 @@ export function EmployeeAdditionalInfoForm({ value, onChange }: EmployeeAddition
           </ComboboxFieldTrigger>
           <ComboboxFieldContent>
             {highestEducationLevels.map((item) => (
-              <ComboboxFieldItem key={item.id} value={item.id}>
+              <ComboboxFieldItem key={item.id} value={item.id} title={item.name}>
                 {item.name}
               </ComboboxFieldItem>
             ))}
@@ -218,7 +218,7 @@ export function EmployeeAdditionalInfoForm({ value, onChange }: EmployeeAddition
           </ComboboxFieldTrigger>
           <ComboboxFieldContent>
             {functionalPositions.map((item) => (
-              <ComboboxFieldItem key={item.id} value={item.id}>
+              <ComboboxFieldItem key={item.id} value={item.id} title={item.name}>
                 {item.name}
               </ComboboxFieldItem>
             ))}
@@ -242,7 +242,7 @@ export function EmployeeAdditionalInfoForm({ value, onChange }: EmployeeAddition
           </ComboboxFieldTrigger>
           <ComboboxFieldContent>
             {employmentTypes.map((item) => (
-              <ComboboxFieldItem key={item.id} value={item.id}>
+              <ComboboxFieldItem key={item.id} value={item.id} title={item.name}>
                 {item.name}
               </ComboboxFieldItem>
             ))}
