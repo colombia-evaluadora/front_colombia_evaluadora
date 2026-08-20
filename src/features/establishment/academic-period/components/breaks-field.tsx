@@ -99,11 +99,11 @@ export function BreaksField({
         className={cn(
           inputVariants({ variant: resolvedVariant }),
           inputTriggerVariants({ variant: resolvedVariant }),
-          // `h-auto min-h-10` pisa el `h-10` fijo de `inputVariants`: los chips
+          // `h-auto min-h-11` pisa el `h-11` fijo de `inputVariants`: los chips
           // van en `flex-wrap`, así que con dos descansos la segunda fila se
           // salía de la caja y se encimaba con la etiqueta. Mismo tratamiento
           // que `SubjectsMultiSelect`, que comparte este patrón de chips.
-          "relative flex h-auto min-h-10 items-center gap-1.5",
+          "relative flex h-auto min-h-11 items-center gap-1.5",
         )}
       >
         {/* Trigger como overlay a pantalla completa (`absolute inset-0`) DETRÁS

@@ -374,7 +374,7 @@ function FieldFilterSection({ availableFields }: FieldFilterSectionProps) {
             onClick={handleAdd}
             disabled={!composerReady}
             aria-disabled={!composerReady}
-            className="h-9"
+            className="h-10"
           >
             <ControlPointIcon data-icon="inline-start" />
             Agregar
