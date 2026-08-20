@@ -29,13 +29,13 @@ import {
 import { Switch } from "@/components/ui/switch"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+  ComboboxField,
+  ComboboxFieldContent,
+  ComboboxFieldItem,
+  ComboboxFieldTrigger,
+  ComboboxFieldValue,
+  ComboboxGroup,
+} from "@/components/ui/combobox"
 
 import { useAvailableStudyPlanSubjectsQuery } from "../../api/query/use-available-study-plan-subjects-query"
 import { useCreateStudyPlanItem } from "@/features/establishment/academic-period/api/mutations/create-study-plan"
@@ -231,29 +231,29 @@ export function CreateStudyPlanDialog({
                 return (
                   <Field variant="outlined" data-invalid={isInvalid}>
                     <FieldLabel htmlFor={field.name}>Asignaturas*</FieldLabel>
-                    <Select
+                    <ComboboxField
                       value={field.state.value}
                       onValueChange={(value) => value && field.handleChange(value)}
                     >
-                      <SelectTrigger id={field.name} aria-invalid={isInvalid}>
-                        <SelectValue placeholder="Seleccionar" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectGroup>
+                      <ComboboxFieldTrigger id={field.name} aria-invalid={isInvalid}>
+                        <ComboboxFieldValue placeholder="Seleccionar" />
+                      </ComboboxFieldTrigger>
+                      <ComboboxFieldContent>
+                        <ComboboxGroup>
                           {asignaturaOptions.length === 0 ? (
                             <div className="px-2 py-1.5 text-sm text-muted-foreground">
                               No hay asignaturas disponibles para este grado.
                             </div>
                           ) : (
                             asignaturaOptions.map((option) => (
-                              <SelectItem key={option} value={option}>
+                              <ComboboxFieldItem key={option} value={option}>
                                 {option}
-                              </SelectItem>
+                              </ComboboxFieldItem>
                             ))
                           )}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
+                        </ComboboxGroup>
+                      </ComboboxFieldContent>
+                    </ComboboxField>
                     {isInvalid && <FieldError errors={field.state.meta.errors} />}
                   </Field>
                 )
@@ -267,11 +267,23 @@ export function CreateStudyPlanDialog({
                   <Input
                     id={field.name}
                     type="number"
-                    min={0}
+                    min={1}
+                    max={99}
+                    step={1}
                     placeholder="Agregar"
                     value={Number.isNaN(field.state.value) ? "" : field.state.value}
                     onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.valueAsNumber)}
+                    onKeyDown={(e) => {
+                      if (["-", "+", ".", ",", "e", "E"].includes(e.key)) {
+                        e.preventDefault()
+                      }
+                    }}
+                    onChange={(e) => {
+                      const value = e.target.valueAsNumber
+                      if (e.target.value === "" || !Number.isNaN(value)) {
+                        field.handleChange(value)
+                      }
+                    }}
                   />
                 </Field>
               )}
@@ -281,7 +293,7 @@ export function CreateStudyPlanDialog({
               {(field) => (
                 <Field variant="outlined">
                   <FieldLabel htmlFor={field.name}>Influencia área*</FieldLabel>
-                  <InputGroup className="h-10 rounded-md border border-input px-3 hover:border-ring has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20 has-[[data-slot][aria-invalid=true]]:border-red">
+                  <InputGroup className="h-11 rounded-md border border-input px-3 hover:border-ring has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20 has-[[data-slot][aria-invalid=true]]:border-red">
                     <InputGroupInput
                       id={field.name}
                       type="number"
@@ -291,7 +303,17 @@ export function CreateStudyPlanDialog({
                       className="px-0"
                       value={Number.isNaN(field.state.value) ? "" : field.state.value}
                       onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.valueAsNumber)}
+                      // INFLUENCIA_AREA admite decimales (NUMERIC(5,2)), solo
+                      // se bloquea signo/notación científica.
+                      onKeyDown={(e) => {
+                        if (["-", "+", "e", "E"].includes(e.key)) e.preventDefault()
+                      }}
+                      onChange={(e) => {
+                        const value = e.target.valueAsNumber
+                        if (e.target.value === "" || !Number.isNaN(value)) {
+                          field.handleChange(value)
+                        }
+                      }}
                     />
                     <InputGroupAddon align="inline-end">
                       <InputGroupText>%</InputGroupText>
@@ -309,10 +331,22 @@ export function CreateStudyPlanDialog({
                     id={field.name}
                     type="number"
                     min={0}
+                    step={1}
                     placeholder="Agregar"
                     value={Number.isNaN(field.state.value) ? "" : field.state.value}
                     onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.valueAsNumber)}
+                    // NUMERO_CREDITO es entero, sin decimales ni negativos.
+                    onKeyDown={(e) => {
+                      if (["-", "+", ".", ",", "e", "E"].includes(e.key)) {
+                        e.preventDefault()
+                      }
+                    }}
+                    onChange={(e) => {
+                      const value = e.target.valueAsNumber
+                      if (e.target.value === "" || !Number.isNaN(value)) {
+                        field.handleChange(value)
+                      }
+                    }}
                   />
                 </Field>
               )}
@@ -407,28 +441,28 @@ export function CreateStudyPlanDialog({
               {(field) => (
                 <Field variant="outlined">
                   <FieldLabel htmlFor={field.name}>Formato de calificación</FieldLabel>
-                  <Select
+                  <ComboboxField
                     value={personalizar ? field.state.value : formatoHeredado}
                     disabled={!personalizar}
                     onValueChange={(value) => value && field.handleChange(value)}
                   >
-                    <SelectTrigger id={field.name}>
-                      <SelectValue>
+                    <ComboboxFieldTrigger id={field.name}>
+                      <ComboboxFieldValue>
                         {(value) =>
                           formatoOptions.find((o) => o.key === value)?.label ?? "Seleccionar"
                         }
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
+                      </ComboboxFieldValue>
+                    </ComboboxFieldTrigger>
+                    <ComboboxFieldContent>
+                      <ComboboxGroup>
                         {formatoOptions.map((option) => (
-                          <SelectItem key={option.key} value={option.key}>
+                          <ComboboxFieldItem key={option.key} value={option.key}>
                             {option.label}
-                          </SelectItem>
+                          </ComboboxFieldItem>
                         ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
+                      </ComboboxGroup>
+                    </ComboboxFieldContent>
+                  </ComboboxField>
                 </Field>
               )}
             </form.Field>
@@ -439,28 +473,28 @@ export function CreateStudyPlanDialog({
                   <FieldLabel htmlFor={field.name}>
                     Criterio para calcular la nota de la asignatura
                   </FieldLabel>
-                  <Select
+                  <ComboboxField
                     value={personalizar ? field.state.value : criterioHeredado}
                     disabled={!personalizar}
                     onValueChange={(value) => value && field.handleChange(value)}
                   >
-                    <SelectTrigger id={field.name}>
-                      <SelectValue>
+                    <ComboboxFieldTrigger id={field.name}>
+                      <ComboboxFieldValue>
                         {(value) =>
                           criterioOptions.find((o) => o.key === value)?.label ?? "Seleccionar"
                         }
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
+                      </ComboboxFieldValue>
+                    </ComboboxFieldTrigger>
+                    <ComboboxFieldContent>
+                      <ComboboxGroup>
                         {criterioOptions.map((option) => (
-                          <SelectItem key={option.key} value={option.key}>
+                          <ComboboxFieldItem key={option.key} value={option.key}>
                             {option.label}
-                          </SelectItem>
+                          </ComboboxFieldItem>
                         ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
+                      </ComboboxGroup>
+                    </ComboboxFieldContent>
+                  </ComboboxField>
                 </Field>
               )}
             </form.Field>

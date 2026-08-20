@@ -4,13 +4,13 @@ import { useForm } from "@tanstack/react-form"
 import { Field, FieldLabel, FieldLegend, FieldSet } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+  ComboboxField,
+  ComboboxFieldContent,
+  ComboboxFieldItem,
+  ComboboxFieldTrigger,
+  ComboboxFieldValue,
+  ComboboxGroup,
+} from "@/components/ui/combobox"
 
 import {
   academicPeriodsFiltersFormSchema,
@@ -112,30 +112,30 @@ export function FilterAcademicPeriodsForm({
                 data-invalid={isInvalid ? "true" : undefined}
               >
                 <FieldLabel htmlFor={field.name}>Año lectivo</FieldLabel>
-                <Select
+                <ComboboxField
                   items={yearItems}
                   value={field.state.value}
                   onValueChange={(value) => field.handleChange(value ?? "")}
                 >
-                  <SelectTrigger
+                  <ComboboxFieldTrigger
                     id={field.name}
                     size="sm"
                     className="w-full"
                     aria-invalid={isInvalid}
                   >
-                    <SelectValue placeholder="Todos" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectItem value={ALL_VALUE}>Todos</SelectItem>
+                    <ComboboxFieldValue placeholder="Todos" />
+                  </ComboboxFieldTrigger>
+                  <ComboboxFieldContent>
+                    <ComboboxGroup>
+                      <ComboboxFieldItem value={ALL_VALUE}>Todos</ComboboxFieldItem>
                       {YEAR_OPTIONS.map((year) => (
-                        <SelectItem key={year} value={String(year)}>
+                        <ComboboxFieldItem key={year} value={String(year)}>
                           {year}
-                        </SelectItem>
+                        </ComboboxFieldItem>
                       ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
+                    </ComboboxGroup>
+                  </ComboboxFieldContent>
+                </ComboboxField>
               </Field>
             )
           }}
@@ -152,30 +152,30 @@ export function FilterAcademicPeriodsForm({
                 data-invalid={isInvalid ? "true" : undefined}
               >
                 <FieldLabel htmlFor={field.name}>Estado</FieldLabel>
-                <Select
+                <ComboboxField
                   items={statusItems}
                   value={field.state.value}
                   onValueChange={(value) => field.handleChange(value ?? "")}
                 >
-                  <SelectTrigger
+                  <ComboboxFieldTrigger
                     id={field.name}
                     size="sm"
                     className="w-full"
                     aria-invalid={isInvalid}
                   >
-                    <SelectValue placeholder="Todos" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectItem value={ALL_VALUE}>Todos</SelectItem>
+                    <ComboboxFieldValue placeholder="Todos" />
+                  </ComboboxFieldTrigger>
+                  <ComboboxFieldContent>
+                    <ComboboxGroup>
+                      <ComboboxFieldItem value={ALL_VALUE}>Todos</ComboboxFieldItem>
                       {statusOptions.map((option) => (
-                        <SelectItem key={option.id} value={String(option.id)}>
+                        <ComboboxFieldItem key={option.id} value={String(option.id)}>
                           {option.label}
-                        </SelectItem>
+                        </ComboboxFieldItem>
                       ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
+                    </ComboboxGroup>
+                  </ComboboxFieldContent>
+                </ComboboxField>
               </Field>
             )
           }}

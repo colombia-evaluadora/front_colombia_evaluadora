@@ -10,13 +10,13 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { FieldVariantContext } from "@/hooks/use-field-variant"
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+  ComboboxField,
+  ComboboxFieldContent,
+  ComboboxFieldItem,
+  ComboboxFieldTrigger,
+  ComboboxFieldValue,
+  ComboboxGroup,
+} from "@/components/ui/combobox"
 import { DataTable } from "@/components/data-table"
 import { TableCell } from "@/components/ui/table"
 import { useDataTable } from "@/hooks/use-data-table"
@@ -34,6 +34,7 @@ import type {
 } from "@/features/establishment/academic-period/api/types/rating-scales"
 import { CreateRatingScaleDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-create-rating-scale"
 import { DeleteSelectedRatingScalesDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-delete-selected-rating-scales"
+import { DeleteSelectedRatingScaleValoracionesDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-delete-selected-rating-scale-valoraciones"
 import { ExportRatingScalesDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-export-rating-scales"
 import { ExportSelectedRatingScalesDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-export-selected-rating-scales"
 import { RatingSymbolSelect } from "@/features/establishment/academic-period/components/rating-symbol"
@@ -271,6 +272,21 @@ function ScalesSubTable({
     },
   })
 
+  // Todos los campos completos antes de mostrar el botón de alta — mismo
+  // criterio que ya usa el diálogo de escalas en lote (`canSubmit` ahí) y el
+  // de área/asignatura (`isDraftComplete`).
+  function isAddDraftComplete(value: ScaleDraft): boolean {
+    return (
+      value.nombre.trim() !== "" &&
+      value.abreviacion.trim() !== "" &&
+      value.tipo.trim() !== "" &&
+      value.iconografia.trim() !== "" &&
+      Number.isFinite(value.notaMaxima) &&
+      Number.isFinite(value.notaMinima) &&
+      Number.isFinite(value.notaEquivalente)
+    )
+  }
+
   function commitDraft() {
     // Mismas reglas que el alta desde el diÃ¡logo: notas dentro del rango del
     // periodo (y mÃ­nima â‰¤ mÃ¡xima).
@@ -367,7 +383,7 @@ function ScalesSubTable({
   })
 
   // Sin paginaciÃ³n: el nivel trae todas sus escalas de una.
-  const { table } = useDataTable({
+  const { table, selectedIds, hasSelection, resetSelection } = useDataTable({
     columns,
     data: sortedScales,
     pageCount: 1,
@@ -380,8 +396,36 @@ function ScalesSubTable({
     setSorting,
   })
 
+  const selectedValoracionIds = useMemo(() => selectedIds.map((id) => Number(id)), [selectedIds])
+
+  // El bulk delete de valoraciones falla por PK de banda — el nombre que le
+  // sirve al usuario en el aviso es el de la banda misma (ver `nombre` de
+  // `RatingScale`, no confundir con el nombre del nivel de enseÃ±anza).
+  const valoracionNamesById = useMemo(
+    () => new Map(scales.map((scale) => [scale.codigo, scale.nombre])),
+    [scales],
+  )
+
   return (
     <div className="-m-4 bg-background p-4">
+      {/* Banner de selección: mismo estilo que la tabla de asignaturas del
+          alta de área/asignatura (`dialog-area-subject-form.tsx`) — conteo a
+          la izquierda, papelera de confirmación a la derecha. */}
+      {hasSelection && (
+        <div className="mb-2 flex items-center justify-between rounded-md border border-border bg-muted/30 px-3 py-1 text-sm">
+          <span>
+            {selectedIds.length === 1
+              ? "1 valoración seleccionada"
+              : `${selectedIds.length} valoraciones seleccionadas`}
+          </span>
+          <DeleteSelectedRatingScaleValoracionesDialog
+            valoracionCount={selectedIds.length}
+            valoracionIds={selectedValoracionIds}
+            namesById={valoracionNamesById}
+            resetSelection={resetSelection}
+          />
+        </div>
+      )}
       {/* Los controles de la fila en ediciÃ³n usan la variante `outlined`: cada
           input queda recuadrado y se distingue del hover de la fila. */}
       <FieldVariantContext.Provider value="outlined">
@@ -426,7 +470,15 @@ function ScalesSubTable({
                     min={range.min}
                     max={range.max}
                     value={Number.isNaN(addDraft.notaMaxima) ? "" : addDraft.notaMaxima}
-                    onChange={(e) => patchAddDraft({ notaMaxima: e.target.valueAsNumber })}
+                    onKeyDown={(e) => {
+                      if (["-", "+", "e", "E"].includes(e.key)) e.preventDefault()
+                    }}
+                    onChange={(e) => {
+                      const value = e.target.valueAsNumber
+                      if (e.target.value === "" || !Number.isNaN(value)) {
+                        patchAddDraft({ notaMaxima: value })
+                      }
+                    }}
                     className="w-20"
                   />
                 </TableCell>
@@ -439,7 +491,15 @@ function ScalesSubTable({
                     min={range.min}
                     max={range.max}
                     value={Number.isNaN(addDraft.notaMinima) ? "" : addDraft.notaMinima}
-                    onChange={(e) => patchAddDraft({ notaMinima: e.target.valueAsNumber })}
+                    onKeyDown={(e) => {
+                      if (["-", "+", "e", "E"].includes(e.key)) e.preventDefault()
+                    }}
+                    onChange={(e) => {
+                      const value = e.target.valueAsNumber
+                      if (e.target.value === "" || !Number.isNaN(value)) {
+                        patchAddDraft({ notaMinima: value })
+                      }
+                    }}
                     className="w-20"
                   />
                 </TableCell>
@@ -452,34 +512,42 @@ function ScalesSubTable({
                     min={range.min}
                     max={range.max}
                     value={Number.isNaN(addDraft.notaEquivalente) ? "" : addDraft.notaEquivalente}
-                    onChange={(e) => patchAddDraft({ notaEquivalente: e.target.valueAsNumber })}
+                    onKeyDown={(e) => {
+                      if (["-", "+", "e", "E"].includes(e.key)) e.preventDefault()
+                    }}
+                    onChange={(e) => {
+                      const value = e.target.valueAsNumber
+                      if (e.target.value === "" || !Number.isNaN(value)) {
+                        patchAddDraft({ notaEquivalente: value })
+                      }
+                    }}
                     className="w-20"
                   />
                 </TableCell>
                 <TableCell>
-                  <Select
+                  <ComboboxField
                     value={addDraft.tipo}
                     onValueChange={(value) =>
                       value && patchAddDraft({ tipo: value as RatingScaleType })
                     }
                   >
-                    <SelectTrigger aria-label="Tipo" className="min-w-32">
-                      <SelectValue>
+                    <ComboboxFieldTrigger aria-label="Tipo" className="min-w-32">
+                      <ComboboxFieldValue>
                         {(value) =>
                           tipoOptions.find((o) => o.key === value)?.label ?? "Seleccionar"
                         }
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
+                      </ComboboxFieldValue>
+                    </ComboboxFieldTrigger>
+                    <ComboboxFieldContent>
+                      <ComboboxGroup>
                         {tipoOptions.map((option) => (
-                          <SelectItem key={option.key} value={option.key}>
+                          <ComboboxFieldItem key={option.key} value={option.key}>
                             {option.label}
-                          </SelectItem>
+                          </ComboboxFieldItem>
                         ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
+                      </ComboboxGroup>
+                    </ComboboxFieldContent>
+                  </ComboboxField>
                 </TableCell>
                 <TableCell>
                   <RatingSymbolSelect
@@ -491,6 +559,7 @@ function ScalesSubTable({
                 {spacer}
                 <TableCell className={actionsCellClassName}>
                   <div className={actionsOverlayClassName}>
+                    {isAddDraftComplete(addDraft) && (
                     <Button
                       type="button"
                       color="primary"
@@ -506,6 +575,7 @@ function ScalesSubTable({
                         <PlusIcon weight="bold" />
                       )}
                     </Button>
+                    )}
                   </div>
                 </TableCell>
               </>
