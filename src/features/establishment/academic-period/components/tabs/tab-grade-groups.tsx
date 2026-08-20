@@ -10,6 +10,9 @@ import { useDataTable } from "@/hooks/use-data-table"
 import { useGradeGroupsQuery } from "@/features/establishment/academic-period/api/query/use-grade-groups"
 import { createGradeGroupColumns } from "@/features/establishment/academic-period/components/table/columns-grade-groups"
 import { CreateGradeGroupDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-create-grade-group"
+import { DeleteSelectedGradeGroupsDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-delete-selected-grade-groups"
+import { ExportSelectedGradeGroupsDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-export-selected-grade-groups"
+import { ExportGradeGroupsDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-export-grade-groups"
 
 interface TabGradeGroupsProps {
   gradeId?: number
@@ -37,7 +40,7 @@ export function TabGradeGroups({ gradeId, academicPeriodId }: TabGradeGroupsProp
     setPageIndex(0)
   }
 
-  const { table } = useDataTable({
+  const { table, selectedIds, hasSelection, resetSelection } = useDataTable({
     columns,
     data: data?.rows ?? [],
     pageCount: data?.pageCount ?? -1,
@@ -50,12 +53,50 @@ export function TabGradeGroups({ gradeId, academicPeriodId }: TabGradeGroupsProp
     setSorting,
   })
 
+  // `getRowId` usa `codigo` (el nombre visible del grupo, no el PK — ver
+  // `dialog-create-grade-group.tsx`), así que hay que resolverlo de vuelta al
+  // `id` real (`PK_TGRUPO`) para el bulk delete, igual que ya hace cada fila
+  // individual (`DeleteGradeGroupDialog` recibe `row.original` completo).
+  const idByCodigo = useMemo(
+    () => new Map((data?.rows ?? []).map((row) => [row.codigo, row.id])),
+    [data],
+  )
+  const namesById = useMemo(
+    () => new Map((data?.rows ?? []).map((row) => [row.id, row.codigo])),
+    [data],
+  )
+  const selectedGroupIds = useMemo(
+    () =>
+      selectedIds
+        .map((codigo) => idByCodigo.get(codigo))
+        .filter((id): id is number => id != null),
+    [selectedIds, idByCodigo],
+  )
+
   return (
     <>
-      {/* El `border-b` cierra la barra de acciones igual que el `hr` de
-          `TableScreenHeader` en las pantallas de listado. */}
-      <div className="mb-2 flex justify-end gap-2 border-b border-border pb-2">
-        <CreateGradeGroupDialog gradeId={gradeId} academicPeriodId={academicPeriodId} />
+      {/* Mismo diseño que la tabla de grados: botón rojo "Eliminar (n)" +
+          exportar con selección; agregar + exportar sin selección. */}
+      <div className="mb-2 flex items-center justify-end gap-2 border-b border-border pb-2">
+        {hasSelection ? (
+          <>
+            <DeleteSelectedGradeGroupsDialog
+              groupCount={selectedIds.length}
+              groupIds={selectedGroupIds}
+              namesById={namesById}
+              resetSelection={resetSelection}
+            />
+            <ExportSelectedGradeGroupsDialog
+              selectedIds={selectedGroupIds}
+              resetSelection={resetSelection}
+            />
+          </>
+        ) : (
+          <>
+            <CreateGradeGroupDialog gradeId={gradeId} academicPeriodId={academicPeriodId} />
+            <ExportGradeGroupsDialog filters={{}} />
+          </>
+        )}
       </div>
 
       <DataTable
