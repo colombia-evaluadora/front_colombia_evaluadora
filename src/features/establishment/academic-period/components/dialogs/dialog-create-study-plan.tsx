@@ -269,10 +269,21 @@ export function CreateStudyPlanDialog({
                     type="number"
                     min={1}
                     max={99}
+                    step={1}
                     placeholder="Agregar"
                     value={Number.isNaN(field.state.value) ? "" : field.state.value}
                     onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.valueAsNumber)}
+                    onKeyDown={(e) => {
+                      if (["-", "+", ".", ",", "e", "E"].includes(e.key)) {
+                        e.preventDefault()
+                      }
+                    }}
+                    onChange={(e) => {
+                      const value = e.target.valueAsNumber
+                      if (e.target.value === "" || !Number.isNaN(value)) {
+                        field.handleChange(value)
+                      }
+                    }}
                   />
                 </Field>
               )}
@@ -292,7 +303,17 @@ export function CreateStudyPlanDialog({
                       className="px-0"
                       value={Number.isNaN(field.state.value) ? "" : field.state.value}
                       onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.valueAsNumber)}
+                      // INFLUENCIA_AREA admite decimales (NUMERIC(5,2)), solo
+                      // se bloquea signo/notación científica.
+                      onKeyDown={(e) => {
+                        if (["-", "+", "e", "E"].includes(e.key)) e.preventDefault()
+                      }}
+                      onChange={(e) => {
+                        const value = e.target.valueAsNumber
+                        if (e.target.value === "" || !Number.isNaN(value)) {
+                          field.handleChange(value)
+                        }
+                      }}
                     />
                     <InputGroupAddon align="inline-end">
                       <InputGroupText>%</InputGroupText>
@@ -310,10 +331,22 @@ export function CreateStudyPlanDialog({
                     id={field.name}
                     type="number"
                     min={0}
+                    step={1}
                     placeholder="Agregar"
                     value={Number.isNaN(field.state.value) ? "" : field.state.value}
                     onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.valueAsNumber)}
+                    // NUMERO_CREDITO es entero, sin decimales ni negativos.
+                    onKeyDown={(e) => {
+                      if (["-", "+", ".", ",", "e", "E"].includes(e.key)) {
+                        e.preventDefault()
+                      }
+                    }}
+                    onChange={(e) => {
+                      const value = e.target.valueAsNumber
+                      if (e.target.value === "" || !Number.isNaN(value)) {
+                        field.handleChange(value)
+                      }
+                    }}
                   />
                 </Field>
               )}

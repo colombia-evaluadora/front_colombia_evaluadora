@@ -274,10 +274,22 @@ export function CreateGradeGroupDialog({
                   type="number"
                   min={1}
                   max={99}
+                  step={1}
                   placeholder="Agregar"
                   value={Number.isNaN(field.state.value) ? "" : field.state.value}
                   onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.valueAsNumber)}
+                  // CAPACIDAD es NUMERIC(2,0) — entero, sin decimales ni negativos.
+                  onKeyDown={(e) => {
+                    if (["-", "+", ".", ",", "e", "E"].includes(e.key)) {
+                      e.preventDefault()
+                    }
+                  }}
+                  onChange={(e) => {
+                    const value = e.target.valueAsNumber
+                    if (e.target.value === "" || !Number.isNaN(value)) {
+                      field.handleChange(value)
+                    }
+                  }}
                 />
               </Field>
             )}

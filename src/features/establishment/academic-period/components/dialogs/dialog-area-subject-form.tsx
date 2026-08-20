@@ -467,10 +467,23 @@ export function AreaSubjectFormDialog({
                         type="number"
                         min={0}
                         max={9999}
+                        step={1}
                         placeholder="Agregar"
                         value={Number.isNaN(field.state.value) ? "" : field.state.value}
                         onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.valueAsNumber)}
+                        // ORDEN_REPORTE es NUMERIC(4,0) — entero, sin
+                        // decimales ni negativos.
+                        onKeyDown={(e) => {
+                          if (["-", "+", ".", ",", "e", "E"].includes(e.key)) {
+                            e.preventDefault()
+                          }
+                        }}
+                        onChange={(e) => {
+                          const value = e.target.valueAsNumber
+                          if (e.target.value === "" || !Number.isNaN(value)) {
+                            field.handleChange(value)
+                          }
+                        }}
                         aria-invalid={isInvalid}
                       />
                     )}

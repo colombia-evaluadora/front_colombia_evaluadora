@@ -441,7 +441,15 @@ function ScalesSubTable({
                     min={range.min}
                     max={range.max}
                     value={Number.isNaN(addDraft.notaMaxima) ? "" : addDraft.notaMaxima}
-                    onChange={(e) => patchAddDraft({ notaMaxima: e.target.valueAsNumber })}
+                    onKeyDown={(e) => {
+                      if (["-", "+", "e", "E"].includes(e.key)) e.preventDefault()
+                    }}
+                    onChange={(e) => {
+                      const value = e.target.valueAsNumber
+                      if (e.target.value === "" || !Number.isNaN(value)) {
+                        patchAddDraft({ notaMaxima: value })
+                      }
+                    }}
                     className="w-20"
                   />
                 </TableCell>
@@ -454,7 +462,15 @@ function ScalesSubTable({
                     min={range.min}
                     max={range.max}
                     value={Number.isNaN(addDraft.notaMinima) ? "" : addDraft.notaMinima}
-                    onChange={(e) => patchAddDraft({ notaMinima: e.target.valueAsNumber })}
+                    onKeyDown={(e) => {
+                      if (["-", "+", "e", "E"].includes(e.key)) e.preventDefault()
+                    }}
+                    onChange={(e) => {
+                      const value = e.target.valueAsNumber
+                      if (e.target.value === "" || !Number.isNaN(value)) {
+                        patchAddDraft({ notaMinima: value })
+                      }
+                    }}
                     className="w-20"
                   />
                 </TableCell>
@@ -467,7 +483,15 @@ function ScalesSubTable({
                     min={range.min}
                     max={range.max}
                     value={Number.isNaN(addDraft.notaEquivalente) ? "" : addDraft.notaEquivalente}
-                    onChange={(e) => patchAddDraft({ notaEquivalente: e.target.valueAsNumber })}
+                    onKeyDown={(e) => {
+                      if (["-", "+", "e", "E"].includes(e.key)) e.preventDefault()
+                    }}
+                    onChange={(e) => {
+                      const value = e.target.valueAsNumber
+                      if (e.target.value === "" || !Number.isNaN(value)) {
+                        patchAddDraft({ notaEquivalente: value })
+                      }
+                    }}
                     className="w-20"
                   />
                 </TableCell>

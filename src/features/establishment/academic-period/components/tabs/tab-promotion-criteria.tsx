@@ -64,7 +64,16 @@ function PercentInput({ value, onChange }: { value: number; onChange: (value: nu
         placeholder="Agregar"
         className="px-0"
         value={Number.isNaN(value) ? "" : value}
-        onChange={(event) => onChange(Number(event.target.value))}
+        onKeyDown={(event) => {
+          if (["-", "+", "e", "E"].includes(event.key)) {
+            event.preventDefault()
+          }
+        }}
+        onChange={(event) => {
+          const raw = event.target.value
+          const parsed = Number(raw)
+          if (raw === "" || !Number.isNaN(parsed)) onChange(parsed)
+        }}
       />
       <InputGroupAddon align="inline-end">
         <InputGroupText>%</InputGroupText>
@@ -277,9 +286,17 @@ const PromotionCriteriaForm = forwardRef<PromotionCriteriaHandle, PromotionCrite
                   type="number"
                   min={0}
                   max={99}
+                  step={1}
                   placeholder="Agregar"
                   value={field.state.value}
-                  onChange={(e) => field.handleChange(Number(e.target.value))}
+                  onKeyDown={(e) => {
+                    if (["-", "+", ".", ",", "e", "E"].includes(e.key)) e.preventDefault()
+                  }}
+                  onChange={(e) => {
+                    const raw = e.target.value
+                    const parsed = Number(raw)
+                    if (raw === "" || !Number.isNaN(parsed)) field.handleChange(parsed)
+                  }}
                   className="h-10"
                 />
               </Field>
@@ -312,9 +329,17 @@ const PromotionCriteriaForm = forwardRef<PromotionCriteriaHandle, PromotionCrite
                   type="number"
                   min={0}
                   max={999}
+                  step={1}
                   placeholder="Agregar"
                   value={field.state.value}
-                  onChange={(e) => field.handleChange(Number(e.target.value))}
+                  onKeyDown={(e) => {
+                    if (["-", "+", ".", ",", "e", "E"].includes(e.key)) e.preventDefault()
+                  }}
+                  onChange={(e) => {
+                    const raw = e.target.value
+                    const parsed = Number(raw)
+                    if (raw === "" || !Number.isNaN(parsed)) field.handleChange(parsed)
+                  }}
                   className="h-10"
                 />
               </Field>
@@ -391,9 +416,17 @@ const PromotionCriteriaForm = forwardRef<PromotionCriteriaHandle, PromotionCrite
                   type="number"
                   min={0}
                   max={99}
+                  step={1}
                   placeholder="Agregar"
                   value={field.state.value}
-                  onChange={(e) => field.handleChange(Number(e.target.value))}
+                  onKeyDown={(e) => {
+                    if (["-", "+", ".", ",", "e", "E"].includes(e.key)) e.preventDefault()
+                  }}
+                  onChange={(e) => {
+                    const raw = e.target.value
+                    const parsed = Number(raw)
+                    if (raw === "" || !Number.isNaN(parsed)) field.handleChange(parsed)
+                  }}
                   className="h-10"
                 />
               </Field>
