@@ -246,17 +246,23 @@ function isBlankValue(value: string | null | undefined): boolean {
 
 /**
  * Datos mínimos para dar de alta a la persona: los cuatro con asterisco, más
- * correo y contraseña — no llevan asterisco en el formulario
+ * correo, género y contraseña — no llevan asterisco en el formulario
  * (`UserDetailsForm` lo comparte con otras pantallas donde son opcionales),
  * pero acá son obligatorios de verdad: `/register/funcionario`
  * (`RegisterUsuarioRequest`, auth-center) y `fn_usu_crear` (SQL) los exigen
- * — son la cuenta y el login del funcionario, no hay forma de omitirlos.
- * Fecha de nacimiento y género, en cambio, NO se validan acá: son columnas
- * nullable de verdad (ni la base ni Java los exigen), volvieron a ser
- * opcionales igual que en el alta de rector/secretaria (ver
- * `validate-form.ts`). Las rutas coinciden con las que `UserDetailsForm`
- * usa para ubicar el mensaje debajo de cada campo, por eso van prefijadas
- * con `employee`.
+ * — correo/contraseña son la cuenta y el login del funcionario, y género
+ * (REV: se había sacado, el negocio volvió a pedirlo) nunca dejó de ser
+ * `@NotNull`/obligatorio en el backend, esto solo estaba desalineado del
+ * lado del front. Fecha de nacimiento, en cambio, sigue sin validarse acá:
+ * es columna nullable de verdad. Las rutas coinciden con las que
+ * `UserDetailsForm` usa para ubicar el mensaje debajo de cada campo, por
+ * eso van prefijadas con `employee`.
+ *
+ * `person.accountExists` (autocompletado por documento, ver
+ * `use-user-by-document.ts`): ya hay una cuenta real detrás de ese
+ * documento — el backend la reconoce y reutiliza sin tocarle la
+ * contraseña (`FuncionarioRegistrationService`, V71), así que acá tampoco
+ * se exige (el campo queda bloqueado en el form).
  */
 const employeePersonSchema = z
   .object({
@@ -277,6 +283,12 @@ const employeePersonSchema = z
     require("firstName", person.firstName, "Ingresa el primer nombre.")
     require("lastName", person.lastName, "Ingresa el primer apellido.")
     require("email", person.email, "Ingresa el correo electrónico.")
+    require("gender", person.gender?.name, "Selecciona el género.")
+
+    if (person.accountExists) {
+      return
+    }
+
     require("password", person.password, "Ingresa la contraseña.")
     require("confirmPassword", confirmPassword, "Repite la contraseña.")
 
@@ -918,7 +930,14 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
                   setPermissionDraft((prev) => ({ ...prev, order: event.target.value }))
                 }
               />
-              <FieldError>{permissionErrors["order"]}</FieldError>
+              {/* `min-h-5` reserva el alto de una línea de error aunque no
+                  haya mensaje: sin esto, los campos sin error quedaban más
+                  bajos que los campos vecinos con error (la fila usa
+                  `items-end`, así que un campo más corto se corre hacia
+                  abajo para alinear su base con el resto). */}
+              <div className="min-h-5">
+                <FieldError>{permissionErrors["order"]}</FieldError>
+              </div>
             </Field>
 
             <Field
@@ -947,7 +966,9 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
                   ))}
                 </SelectContent>
               </Select>
-              <FieldError>{permissionErrors["roleId"]}</FieldError>
+              <div className="min-h-5">
+                <FieldError>{permissionErrors["roleId"]}</FieldError>
+              </div>
             </Field>
 
             <Field
@@ -976,7 +997,9 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
                   ))}
                 </SelectContent>
               </Select>
-              <FieldError>{permissionErrors["campusId"]}</FieldError>
+              <div className="min-h-5">
+                <FieldError>{permissionErrors["campusId"]}</FieldError>
+              </div>
             </Field>
 
             <Field
@@ -1005,7 +1028,9 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
                   ))}
                 </SelectContent>
               </Select>
-              <FieldError>{permissionErrors["workScheduleId"]}</FieldError>
+              <div className="min-h-5">
+                <FieldError>{permissionErrors["workScheduleId"]}</FieldError>
+              </div>
             </Field>
 
             <Field
@@ -1051,7 +1076,9 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
                   ))}
                 </SelectContent>
               </Select>
-              <FieldError>{permissionErrors["status"]}</FieldError>
+              <div className="min-h-5">
+                <FieldError>{permissionErrors["status"]}</FieldError>
+              </div>
             </Field>
 
             <div className="flex w-full items-end sm:w-auto">

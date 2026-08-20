@@ -29,9 +29,12 @@ import type { Employee } from "@/features/establishment/employees/api/types/empl
  * viaja — la contraseña definitiva la pone el usuario por correo),
  * `person.id`, `person.photoArchivoId` (de solo lectura — lo llena el GET
  * para poder pintar la foto ya guardada; la foto NUEVA a subir viaja
- * aparte, ver el parámetro `foto` de `update()`), y `permissions` (los
- * permisos van aparte, ver `PUT /funcionario/:ID/permisos` en
- * `update-permissions.ts`).
+ * aparte, ver el parámetro `foto` de `update()`), `person.accountExists`
+ * (bandera de solo-front que arma el autocompletado por documento —
+ * `use-user-by-document.ts` — para bloquear el campo de contraseña; nunca
+ * existió como columna, no tiene nada que hacer en el body), y
+ * `permissions` (los permisos van aparte, ver `PUT /funcionario/:ID/permisos`
+ * en `update-permissions.ts`).
  *
  * `person.birthDate` no es obligatorio: si el formulario lo deja vacío
  * (`""`), nunca se manda el string vacío tal cual — `fn_fun_actualizar`
@@ -50,6 +53,7 @@ function toRealBackendPayload(values: Employee) {
       password: _password,
       id: _personId,
       photoArchivoId: _photoArchivoId,
+      accountExists: _accountExists,
       documentType,
       gender,
       birthDate,

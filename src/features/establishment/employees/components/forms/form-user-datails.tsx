@@ -17,12 +17,22 @@ import {
 } from "@/components/ui/select"
 import { CATALOGS } from "@/lib/catalogs"
 import { DATE_VALUE_FORMAT, parseDateValue } from "@/lib/date-time-value"
+import { toDigitsOnly } from "@/lib/text-input"
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 import { useCatalogQuery } from "@/features/establishment/employees/api/query/use-catalogs"
 import { findPersonByDocument } from "@/features/establishment/employees/api/query/use-user-by-document"
 import type { Person } from "@/features/establishment/employees/api/types/person"
 
 type EmployeeRoleCode = (typeof EMPLOYEE_ROLES)[number]["code"]
+
+/**
+ * Valor decorativo que se muestra (y se manda) cuando `person.accountExists`
+ * es `true` — nunca es una contraseña real ni se usa como tal: el backend
+ * (`FuncionarioRegistrationService`, REV V71) reutiliza la cuenta existente
+ * por documento/correo y jamás toca su contraseña en ese camino. Solo tiene
+ * que ser una cadena no vacía para no chocar con `@NotBlank` del lado Java.
+ */
+const PASSWORD_PLACEHOLDER = "••••••••"
 
 interface UserFormProps {
     role?: EmployeeRoleCode
@@ -156,21 +166,35 @@ export function UserDetailsForm({
 
     // Autocompletado: cuando hay tipo + número de documento, busca un
     // TUSUARIO existente y vuelca sus datos sobre el form (nunca pisa
-    // `password`, que no existe en TUSUARIO). Debounced para no pegarle al
-    // backend en cada tecla; se ignora la respuesta si el documento
-    // cambió mientras la búsqueda estaba en vuelo (evita pisar el form con
-    // datos de una búsqueda vieja).
+    // `password` con datos reales, que no existe en TUSUARIO). Debounced
+    // para no pegarle al backend en cada tecla; se ignora la respuesta si
+    // el documento cambió mientras la búsqueda estaba en vuelo (evita
+    // pisar el form con datos de una búsqueda vieja).
     const documentTypeId = person.documentType?.id ?? null
     const identification = person.identification
     useEffect(() => {
         if (!documentTypeId || !identification.trim()) return
+
+        // Reset optimista: en cuanto el documento cambia, ya no se puede
+        // asumir que sigue siendo la cuenta que encontró la búsqueda
+        // anterior — se desbloquea la contraseña, y el lookup de abajo la
+        // vuelve a bloquear solo si el documento nuevo también coincide
+        // con una cuenta real.
+        if (person.accountExists) {
+            emitChange({ accountExists: false, password: "" })
+            setConfirmPassword("")
+        }
 
         let cancelled = false
         const timer = setTimeout(() => {
             findPersonByDocument(documentTypeId, identification)
                 .then((found) => {
                     if (cancelled || !found) return
-                    emitChange(found)
+                    // `found.accountExists` ya viene en `true` (ver
+                    // use-user-by-document.ts) — acá solo se agrega el
+                    // valor decorativo de la contraseña, nunca una real.
+                    emitChange({ ...found, password: PASSWORD_PLACEHOLDER })
+                    setConfirmPassword(PASSWORD_PLACEHOLDER)
                 })
                 .catch(() => {
                     // Búsqueda opcional: si falla, el usuario sigue
@@ -253,9 +277,16 @@ export function UserDetailsForm({
                         id="document-number"
                         size="sm"
                         placeholder="Agregar"
+                        // TUSUARIO.IDENTIFICACION es VARCHAR(30) puramente
+                        // numérico (RegisterUsuarioRequest la valida igual,
+                        // @Size(max=30)) — solo dígitos, sin letras.
+                        inputMode="numeric"
+                        maxLength={30}
                         value={person.identification}
                         aria-invalid={isInvalid(`${fieldPrefix}.identification`)}
-                        onChange={(event) => emitChange({ identification: event.target.value })}
+                        onChange={(event) =>
+                            emitChange({ identification: toDigitsOnly(event.target.value, 30) })
+                        }
                     />
                     <FieldError>{errorFor(`${fieldPrefix}.identification`)}</FieldError>
                 </Field>
@@ -322,7 +353,10 @@ export function UserDetailsForm({
                     <FieldError>{errorFor(`${fieldPrefix}.email`)}</FieldError>
                 </Field>
                 <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid(`${fieldPrefix}.password`) ? "true" : undefined}>
-                    <FieldLabel htmlFor="user-password">Contraseña</FieldLabel>
+                    <FieldLabel htmlFor="user-password">
+                        Contraseña
+                        {person.accountExists ? " (cuenta existente)" : ""}
+                    </FieldLabel>
                     <Input
                         id="user-password"
                         size="sm"
@@ -341,6 +375,12 @@ export function UserDetailsForm({
                         // una contraseña nueva" — ningún navegador debería
                         // autorellenarlo con una guardada.
                         autoComplete="new-password"
+                        // `accountExists`: el autocompletado por documento
+                        // encontró una cuenta real — se bloquea el campo (con
+                        // el valor decorativo `PASSWORD_PLACEHOLDER`) para
+                        // que quede claro que la persona se liga siendo la
+                        // misma, sin poder cambiarle la contraseña desde acá.
+                        disabled={person.accountExists}
                         value={person.password}
                         aria-invalid={isInvalid(`${fieldPrefix}.password`)}
                         onChange={(event) => emitChange({ password: event.target.value })}
@@ -359,6 +399,7 @@ export function UserDetailsForm({
                         // campos (no necesariamente el mismo) y producir un
                         // mismatch fantasma.
                         autoComplete="new-password"
+                        disabled={person.accountExists}
                         value={confirmPassword}
                         aria-invalid={isInvalid(`${fieldPrefix}.confirmPassword`)}
                         onChange={(event) => setConfirmPassword(event.target.value)}
@@ -415,6 +456,12 @@ export function UserDetailsForm({
                         size="sm"
                         placeholder="Agregar"
                         type="tel"
+                        // TUSUARIO.TELEFONO / RegisterUsuarioRequest.telefono
+                        // son VARCHAR(30)/@Size(max=30) — sin restringir a
+                        // solo dígitos (a diferencia de NIT/DANE), un
+                        // teléfono legítimamente puede traer "+", espacios o
+                        // una extensión.
+                        maxLength={30}
                         value={person.phone}
                         aria-invalid={isInvalid(`${fieldPrefix}.phone`)}
                         onChange={(event) => emitChange({ phone: event.target.value })}
