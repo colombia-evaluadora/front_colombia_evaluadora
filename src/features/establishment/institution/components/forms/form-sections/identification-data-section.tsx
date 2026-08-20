@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/select"
 import { useOwnershipTypesQuery } from "@/features/establishment/institution/api/query/use-ownership-types"
 import { toSelectItemsMap, toSelectOptions } from "@/lib/catalog-options"
+import { toDigitsOnly, toNitInput } from "@/lib/text-input"
 import type { EstablishmentDetails } from "@/features/establishment/institution/api/types/establishment"
 
 interface IdentificationDataFormSectionProps {
@@ -83,9 +84,14 @@ export function IdentificationDataFormSection({ value, onChange, invalidFields =
                     <Input
                         id="establishment-dane"
                         placeholder="Agregar"
+                        // Mismo criterio que tenía el NIT antes de acotarse a
+                        // 10 dígitos con guión: solo números, sin letras,
+                        // máximo 12 caracteres.
+                        inputMode="numeric"
+                        maxLength={12}
                         value={value.dane}
                         aria-invalid={isInvalid("basicInfo.dane")}
-                        onChange={(event) => onChange({ ...value, dane: event.target.value })}
+                        onChange={(event) => onChange({ ...value, dane: toDigitsOnly(event.target.value, 12) })}
                     />
                     <FieldError>{errorFor("basicInfo.dane")}</FieldError>
                 </Field>
@@ -95,9 +101,16 @@ export function IdentificationDataFormSection({ value, onChange, invalidFields =
                     <Input
                         id="establishment-nit"
                         placeholder="Agregar"
+                        // REV: ya no son 12 dígitos planos — un NIT
+                        // colombiano son 9 dígitos + 1 de verificación (10
+                        // en total), con un guión que se inserta solo antes
+                        // del último a medida que se escribe ("900123456-7").
+                        // `maxLength` cuenta el guión aparte de los 10 dígitos.
+                        inputMode="numeric"
+                        maxLength={11}
                         value={value.nit}
                         aria-invalid={isInvalid("basicInfo.nit")}
-                        onChange={(event) => onChange({ ...value, nit: event.target.value })}
+                        onChange={(event) => onChange({ ...value, nit: toNitInput(event.target.value) })}
                     />
                     <FieldError>{errorFor("basicInfo.nit")}</FieldError>
                 </Field>
