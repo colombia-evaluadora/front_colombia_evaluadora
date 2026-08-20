@@ -26,14 +26,18 @@ interface RealTusuarioRow {
  * para poder buscar) ni `password` (nunca viaja de vuelta, ni existe en
  * TUSUARIO).
  *
- * OJO: que la persona ya exista como TUSUARIO no la hace automáticamente
- * "creable" vía /register/funcionario con cualquier correo — ese endpoint
- * crea un `public.users` nuevo y falla con 409 si el correo ya está tomado
- * ahí (chequeo en Java, ver use-register-funcionario.ts). Si el correo que
- * se manda es distinto al que ya tiene, sí funciona de punta a punta:
- * `fn_fun_crear` (SQL) reusa el TUSUARIO por documento y solo crea el
- * TFUNCIONARIO nuevo. Este autocompletado es sobre todo para evitar
- * retipear datos ya conocidos.
+ * REV: el patch trae `accountExists: true` — es la señal que usa
+ * `UserDetailsForm` para bloquear el campo de contraseña (con puntitos, sin
+ * poder tocarlo) en vez de seguir pidiéndola como si la persona fuera
+ * nueva. Antes esto no se distinguía de un alta genuina, así que el form
+ * exigía una contraseña igual, aunque el backend (`FuncionarioRegistration
+ * Service`, REV V71) ya reconoce y reutiliza la cuenta existente por
+ * documento/correo sin necesitar ninguna contraseña nueva — el usuario
+ * queda ligado siendo el mismo, no se le cambia el login.
+ *
+ * `fn_fun_crear` (SQL) reusa el TUSUARIO por documento (o por correo) y
+ * solo crea el TFUNCIONARIO nuevo, así que ya no hace falta preocuparse
+ * por el 409 de correo duplicado que existía antes de V71.
  *
  * Solo corre contra el backend real: no hay endpoint de mock equivalente.
  */
@@ -63,5 +67,6 @@ export async function findPersonByDocument(
     birthDate: row.fecha_nacimiento ?? "",
     phone: row.telefono ?? "",
     email: row.correo_electronico ?? "",
+    accountExists: true,
   }
 }
