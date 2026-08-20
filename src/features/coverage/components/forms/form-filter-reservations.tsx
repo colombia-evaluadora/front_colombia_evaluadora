@@ -4,12 +4,12 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { DatePicker } from "@/components/date-picker"
 import { Input } from "@/components/ui/input"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+  ComboboxField,
+  ComboboxFieldContent,
+  ComboboxFieldItem,
+  ComboboxFieldTrigger,
+  ComboboxFieldValue,
+} from "@/components/ui/combobox"
 import {
   Field,
   FieldError,
@@ -52,7 +52,7 @@ interface FilterReservationsFormProps {
 
 // El "sin filtro" necesita un valor propio (el string vacío no distingue de
 // "sin elegir"); usamos un centinela y lo traducimos a "" al guardar. El
-// trigger nunca lo muestra: cuando el value es `ANY`, el `SelectValue`
+// trigger nunca lo muestra: cuando el value es `ANY`, el `ComboboxFieldValue`
 // resuelve el label desde `items` y el form lo guarda como "".
 const ANY = "__any__"
 
@@ -299,23 +299,23 @@ function SelectFilter({
   return (
     <Field orientation="vertical" variant="outlined" className="gap-2">
       <FieldLabel htmlFor={field.name}>{label}</FieldLabel>
-      <Select
+      <ComboboxField
         items={itemsMap}
         value={currentValue}
         onValueChange={(next) => field.handleChange(next === ANY ? "" : (next ?? ""))}
       >
-        <SelectTrigger id={field.name} size="sm" className="w-full">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value={ANY}>{anyLabel}</SelectItem>
+        <ComboboxFieldTrigger id={field.name} size="sm" className="w-full">
+          <ComboboxFieldValue />
+        </ComboboxFieldTrigger>
+        <ComboboxFieldContent>
+          <ComboboxFieldItem value={ANY}>{anyLabel}</ComboboxFieldItem>
           {options.map((option) => (
-            <SelectItem key={option} value={option}>
+            <ComboboxFieldItem key={option} value={option}>
               {renderOption(option)}
-            </SelectItem>
+            </ComboboxFieldItem>
           ))}
-        </SelectContent>
-      </Select>
+        </ComboboxFieldContent>
+      </ComboboxField>
     </Field>
   )
 }

@@ -3,12 +3,12 @@ import { Input } from "@/components/ui/input"
 import { FormSectionHeading } from "@/components/form-section-heading"
 import { DatePicker } from "@/components/date-picker"
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select"
+  ComboboxField,
+  ComboboxFieldContent,
+  ComboboxFieldItem,
+  ComboboxFieldTrigger,
+  ComboboxFieldValue,
+} from "@/components/ui/combobox"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
@@ -73,7 +73,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                             Idioma de enseñanza
                         </FieldLabel>
 
-                        <Select
+                        <ComboboxField
                             id="teaching-language"
                             aria-invalid={isInvalid("additionalInfo.teachingLanguage")}
                             value={value.teachingLanguage?.id ?? null}
@@ -83,24 +83,24 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                             }}
                             items={toSelectItemsMap(idiomaItems)}
                         >
-                            <SelectTrigger aria-invalid={isInvalid("additionalInfo.teachingLanguage")}>
-                                <SelectValue placeholder="Seleccionar" />
-                            </SelectTrigger>
+                            <ComboboxFieldTrigger aria-invalid={isInvalid("additionalInfo.teachingLanguage")}>
+                                <ComboboxFieldValue placeholder="Seleccionar" />
+                            </ComboboxFieldTrigger>
 
-                            <SelectContent>
+                            <ComboboxFieldContent>
                                 {idiomaItems.map((item) => (
-                                    <SelectItem key={item.value} value={item.value}>
+                                    <ComboboxFieldItem key={item.value} value={item.value}>
                                         {item.label}
-                                    </SelectItem>
+                                    </ComboboxFieldItem>
                                 ))}
-                            </SelectContent>
-                        </Select>
+                            </ComboboxFieldContent>
+                        </ComboboxField>
                     </Field>
                 </div>
                 <div className="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2">
                     <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid("additionalInfo.calendar") ? "true" : undefined}>
                         <FieldLabel htmlFor="establishment-calendario">Calendario</FieldLabel>
-                        <Select
+                        <ComboboxField
                             id="establishment-calendario"
                             aria-invalid={isInvalid("additionalInfo.calendar")}
                             value={value.calendar?.id ?? null}
@@ -110,24 +110,24 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                             }}
                             items={toSelectItemsMap(calendarioItems)}
                         >
-                            <SelectTrigger className="w-full" aria-invalid={isInvalid("additionalInfo.calendar")}>
-                                <SelectValue placeholder="Seleccionar" />
-                            </SelectTrigger>
-                            <SelectContent>
+                            <ComboboxFieldTrigger className="w-full" aria-invalid={isInvalid("additionalInfo.calendar")}>
+                                <ComboboxFieldValue placeholder="Seleccionar" />
+                            </ComboboxFieldTrigger>
+                            <ComboboxFieldContent>
                                 {calendarioItems.map((item) => (
-                                    <SelectItem key={item.value} value={item.value}>
+                                    <ComboboxFieldItem key={item.value} value={item.value}>
                                         {item.label}
-                                    </SelectItem>
+                                    </ComboboxFieldItem>
                                 ))}
-                            </SelectContent>
-                        </Select>
+                            </ComboboxFieldContent>
+                        </ComboboxField>
                     </Field>
                     <Field orientation="vertical" variant="outlined" data-invalid={isInvalid("additionalInfo.costRegime") ? "true" : undefined}>
                         <FieldLabel htmlFor="cost-regime">
                             Régimen de costo
                         </FieldLabel>
 
-                        <Select
+                        <ComboboxField
                             id="cost-regime"
                             aria-invalid={isInvalid("additionalInfo.costRegime")}
                             value={value.costRegime?.id ?? null}
@@ -137,24 +137,24 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                             }}
                             items={toSelectItemsMap(costRegimenItems)}
                         >
-                            <SelectTrigger aria-invalid={isInvalid("additionalInfo.costRegime")}>
-                                <SelectValue placeholder="Seleccionar" />
-                            </SelectTrigger>
+                            <ComboboxFieldTrigger aria-invalid={isInvalid("additionalInfo.costRegime")}>
+                                <ComboboxFieldValue placeholder="Seleccionar" />
+                            </ComboboxFieldTrigger>
 
-                            <SelectContent>
+                            <ComboboxFieldContent>
                                 {costRegimenItems.map((item) => (
-                                    <SelectItem key={item.value} value={item.value}>
+                                    <ComboboxFieldItem key={item.value} value={item.value}>
                                         {item.label}
-                                    </SelectItem>
+                                    </ComboboxFieldItem>
                                 ))}
-                            </SelectContent>
-                        </Select>
+                            </ComboboxFieldContent>
+                        </ComboboxField>
                     </Field>
                 </div>
                 <div className="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2">
                     <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid("additionalInfo.populationGender") ? "true" : undefined}>
                         <FieldLabel htmlFor="establishment-genero">Género de la población atendida</FieldLabel>
-                        <Select
+                        <ComboboxField
                             id="establishment-genero"
                             aria-invalid={isInvalid("additionalInfo.populationGender")}
                             value={value.populationGender?.id ?? null}
@@ -164,22 +164,22 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                             }}
                             items={toSelectItemsMap(populationGenderItems)}
                         >
-                            <SelectTrigger className="w-full" aria-invalid={isInvalid("additionalInfo.populationGender")}>
-                                <SelectValue placeholder="Seleccionar" />
-                            </SelectTrigger>
-                            <SelectContent>
+                            <ComboboxFieldTrigger className="w-full" aria-invalid={isInvalid("additionalInfo.populationGender")}>
+                                <ComboboxFieldValue placeholder="Seleccionar" />
+                            </ComboboxFieldTrigger>
+                            <ComboboxFieldContent>
                                 {populationGenderItems.map((item) => (
-                                    <SelectItem key={item.value} value={item.value}>
+                                    <ComboboxFieldItem key={item.value} value={item.value}>
                                         {item.label}
-                                    </SelectItem>
+                                    </ComboboxFieldItem>
                                 ))}
-                            </SelectContent>
-                        </Select>
+                            </ComboboxFieldContent>
+                        </ComboboxField>
                     </Field>
 
                     <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid("additionalInfo.tuitionRange") ? "true" : undefined}>
                         <FieldLabel htmlFor="establishment-rango">Rango tarifas</FieldLabel>
-                        <Select
+                        <ComboboxField
                             id="establishment-rango"
                             aria-invalid={isInvalid("additionalInfo.tuitionRange")}
                             value={value.tuitionRange?.id ?? null}
@@ -189,17 +189,17 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                             }}
                             items={toSelectItemsMap(rangoTarifaItems)}
                         >
-                            <SelectTrigger className="w-full" aria-invalid={isInvalid("additionalInfo.tuitionRange")}>
-                                <SelectValue placeholder="Seleccionar" />
-                            </SelectTrigger>
-                            <SelectContent>
+                            <ComboboxFieldTrigger className="w-full" aria-invalid={isInvalid("additionalInfo.tuitionRange")}>
+                                <ComboboxFieldValue placeholder="Seleccionar" />
+                            </ComboboxFieldTrigger>
+                            <ComboboxFieldContent>
                                 {rangoTarifaItems.map((item) => (
-                                    <SelectItem key={item.value} value={item.value}>
+                                    <ComboboxFieldItem key={item.value} value={item.value}>
                                         {item.label}
-                                    </SelectItem>
+                                    </ComboboxFieldItem>
                                 ))}
-                            </SelectContent>
-                        </Select>
+                            </ComboboxFieldContent>
+                        </ComboboxField>
                     </Field>
                 </div>
                 <div className="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2">
@@ -208,7 +208,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                             Discapacidades atendidas
                         </FieldLabel>
 
-                        <Select
+                        <ComboboxField
                             id="disabilities"
                             aria-invalid={isInvalid("additionalInfo.disabilityType")}
                             value={value.disabilityType?.id ?? null}
@@ -218,18 +218,18 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                             }}
                             items={toSelectItemsMap(disabilityItems)}
                         >
-                            <SelectTrigger aria-invalid={isInvalid("additionalInfo.disabilityType")}>
-                                <SelectValue placeholder="Seleccionar" />
-                            </SelectTrigger>
+                            <ComboboxFieldTrigger aria-invalid={isInvalid("additionalInfo.disabilityType")}>
+                                <ComboboxFieldValue placeholder="Seleccionar" />
+                            </ComboboxFieldTrigger>
 
-                            <SelectContent>
+                            <ComboboxFieldContent>
                                 {disabilityItems.map((item) => (
-                                    <SelectItem key={item.value} value={item.value}>
+                                    <ComboboxFieldItem key={item.value} value={item.value}>
                                         {item.label}
-                                    </SelectItem>
+                                    </ComboboxFieldItem>
                                 ))}
-                            </SelectContent>
-                        </Select>
+                            </ComboboxFieldContent>
+                        </ComboboxField>
                     </Field>
 
                     <Field orientation="vertical" variant="outlined" data-invalid={isInvalid("additionalInfo.licenseStatus") ? "true" : undefined}>

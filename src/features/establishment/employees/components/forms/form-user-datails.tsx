@@ -9,12 +9,12 @@ import { EMPLOYEE_ROLES } from "@/mocks/db/catalogs/employee-roles"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select"
+  ComboboxField,
+  ComboboxFieldContent,
+  ComboboxFieldItem,
+  ComboboxFieldTrigger,
+  ComboboxFieldValue,
+} from "@/components/ui/combobox"
 import { CATALOGS } from "@/lib/catalogs"
 import { DATE_VALUE_FORMAT, parseDateValue } from "@/lib/date-time-value"
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
@@ -223,7 +223,7 @@ export function UserDetailsForm({
                         Tipo de documento{required ? "*" : ""}
                     </FieldLabel>
 
-                    <Select
+                    <ComboboxField
                         id="document-type"
                         items={documentTypeLabels}
                         aria-invalid={isInvalid(`${fieldPrefix}.documentType`)}
@@ -233,17 +233,17 @@ export function UserDetailsForm({
                             if (option) emitChange({ documentType: option })
                         }}
                     >
-                        <SelectTrigger size="sm" aria-invalid={isInvalid(`${fieldPrefix}.documentType`)}>
-                            <SelectValue placeholder="Seleccionar" />
-                        </SelectTrigger>
-                        <SelectContent>
+                        <ComboboxFieldTrigger size="sm" aria-invalid={isInvalid(`${fieldPrefix}.documentType`)}>
+                            <ComboboxFieldValue placeholder="Seleccionar" />
+                        </ComboboxFieldTrigger>
+                        <ComboboxFieldContent>
                             {documentTypes.map((item) => (
-                                <SelectItem key={item.id} value={item.id}>
+                                <ComboboxFieldItem key={item.id} value={item.id}>
                                     {item.name}
-                                </SelectItem>
+                                </ComboboxFieldItem>
                             ))}
-                        </SelectContent>
-                    </Select>
+                        </ComboboxFieldContent>
+                    </ComboboxField>
                     <FieldError>{errorFor(`${fieldPrefix}.documentType`)}</FieldError>
                 </Field>
 
@@ -385,7 +385,7 @@ export function UserDetailsForm({
                     <FieldLabel htmlFor="gender-user">
                         Género
                     </FieldLabel>
-                    <Select
+                    <ComboboxField
                         id="gender-user"
                         items={genderLabels}
                         aria-invalid={isInvalid(`${fieldPrefix}.gender`)}
@@ -395,17 +395,17 @@ export function UserDetailsForm({
                             if (option) emitChange({ gender: option })
                         }}
                     >
-                        <SelectTrigger size="sm" aria-invalid={isInvalid(`${fieldPrefix}.gender`)}>
-                            <SelectValue placeholder="Seleccionar" />
-                        </SelectTrigger>
-                        <SelectContent>
+                        <ComboboxFieldTrigger size="sm" aria-invalid={isInvalid(`${fieldPrefix}.gender`)}>
+                            <ComboboxFieldValue placeholder="Seleccionar" />
+                        </ComboboxFieldTrigger>
+                        <ComboboxFieldContent>
                             {genders.map((item) => (
-                                <SelectItem key={item.id} value={item.id}>
+                                <ComboboxFieldItem key={item.id} value={item.id}>
                                     {item.name}
-                                </SelectItem>
+                                </ComboboxFieldItem>
                             ))}
-                        </SelectContent>
-                    </Select>
+                        </ComboboxFieldContent>
+                    </ComboboxField>
                     <FieldError>{errorFor(`${fieldPrefix}.gender`)}</FieldError>
                 </Field>
                 <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid(`${fieldPrefix}.phone`) ? "true" : undefined}>

@@ -1,12 +1,12 @@
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+  ComboboxField,
+  ComboboxFieldContent,
+  ComboboxFieldItem,
+  ComboboxFieldTrigger,
+  ComboboxFieldValue,
+} from "@/components/ui/combobox"
 
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 import type { CampusDraft, EstablishmentOption } from "@/features/establishment/campuses/api/types/campus"
@@ -51,22 +51,22 @@ export function CampusDetailsForm({
           data-invalid={errors["establishmentId"] ? "true" : undefined}
         >
           <FieldLabel htmlFor="campus-establishment">Establecimiento educativo *</FieldLabel>
-          <Select
+          <ComboboxField
             items={establishmentLabels}
             value={value.establishmentId}
             onValueChange={(selectedValue) => onChange({ ...value, establishmentId: selectedValue ?? null })}
           >
-            <SelectTrigger id="campus-establishment" size="sm" aria-invalid={Boolean(errors["establishmentId"])}>
-              <SelectValue placeholder="Seleccionar" />
-            </SelectTrigger>
-            <SelectContent>
+            <ComboboxFieldTrigger id="campus-establishment" size="sm" aria-invalid={Boolean(errors["establishmentId"])}>
+              <ComboboxFieldValue placeholder="Seleccionar" />
+            </ComboboxFieldTrigger>
+            <ComboboxFieldContent>
               {establishmentPicker.establishments.map((item) => (
-                <SelectItem key={item.id} value={item.id}>
+                <ComboboxFieldItem key={item.id} value={item.id}>
                   {item.name}
-                </SelectItem>
+                </ComboboxFieldItem>
               ))}
-            </SelectContent>
-          </Select>
+            </ComboboxFieldContent>
+          </ComboboxField>
           <FieldError>{errors["establishmentId"]}</FieldError>
         </Field>
       )}
@@ -114,7 +114,7 @@ export function CampusDetailsForm({
         data-invalid={errors["zone"] ? "true" : undefined}
       >
         <FieldLabel htmlFor="campus-zone">Zona *</FieldLabel>
-        <Select
+        <ComboboxField
           items={zoneLabels}
           value={value.zone?.id ?? null}
           onValueChange={(selectedValue) => {
@@ -122,17 +122,17 @@ export function CampusDetailsForm({
             if (option) onChange({ ...value, zone: option })
           }}
         >
-          <SelectTrigger id="campus-zone" size="sm" aria-invalid={Boolean(errors["zone"])}>
-            <SelectValue placeholder="Seleccionar" />
-          </SelectTrigger>
-          <SelectContent>
+          <ComboboxFieldTrigger id="campus-zone" size="sm" aria-invalid={Boolean(errors["zone"])}>
+            <ComboboxFieldValue placeholder="Seleccionar" />
+          </ComboboxFieldTrigger>
+          <ComboboxFieldContent>
             {zones.map((item) => (
-              <SelectItem key={item.id} value={item.id}>
+              <ComboboxFieldItem key={item.id} value={item.id}>
                 {item.name}
-              </SelectItem>
+              </ComboboxFieldItem>
             ))}
-          </SelectContent>
-        </Select>
+          </ComboboxFieldContent>
+        </ComboboxField>
         <FieldError>{errors["zone"]}</FieldError>
       </Field>
 

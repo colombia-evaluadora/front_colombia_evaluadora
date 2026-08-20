@@ -27,13 +27,13 @@ import {
   InputGroupText,
 } from "@/components/ui/input-group"
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+  ComboboxField,
+  ComboboxFieldContent,
+  ComboboxFieldItem,
+  ComboboxFieldTrigger,
+  ComboboxFieldValue,
+  ComboboxGroup,
+} from "@/components/ui/combobox"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
 const EMPTY: PromotionApprovalValues = {
@@ -186,7 +186,7 @@ const PromotionCriteriaForm = forwardRef<PromotionCriteriaHandle, PromotionCrite
     const isGradeScope = gradeId != null
     const { notify } = useNotify()
 
-    // `items` mapea cada `value` al label que `SelectValue` renderiza solo. Se
+    // `items` mapea cada `value` al label que `ComboboxFieldValue` renderiza solo. Se
     // arma desde las opciones del back (`key` → `label`).
     const curriculumNodeItems = useMemo<Record<string, string>>(
       () => Object.fromEntries(curriculumNodes.map((o) => [o.key, o.label])),
@@ -260,25 +260,25 @@ const PromotionCriteriaForm = forwardRef<PromotionCriteriaHandle, PromotionCrite
               <Field variant="outlined">
                 <FieldLabel className="flex-1">Nodo curricular*</FieldLabel>
 
-                <Select
+                <ComboboxField
                   items={curriculumNodeItems}
                   value={field.state.value}
                   onValueChange={(value) => value && field.handleChange(value)}
                 >
-                  <SelectTrigger size="sm">
-                    <SelectValue placeholder="Seleccionar" />
-                  </SelectTrigger>
+                  <ComboboxFieldTrigger size="sm">
+                    <ComboboxFieldValue placeholder="Seleccionar" />
+                  </ComboboxFieldTrigger>
 
-                  <SelectContent>
-                    <SelectGroup>
+                  <ComboboxFieldContent>
+                    <ComboboxGroup>
                       {curriculumNodes.map((option) => (
-                        <SelectItem key={option.key} value={option.key}>
+                        <ComboboxFieldItem key={option.key} value={option.key}>
                           {option.label}
-                        </SelectItem>
+                        </ComboboxFieldItem>
                       ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
+                    </ComboboxGroup>
+                  </ComboboxFieldContent>
+                </ComboboxField>
               </Field>
             )}
           </form.Field>
