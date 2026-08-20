@@ -53,7 +53,7 @@ export function SubjectsMultiSelect({
         className={cn(
           inputVariants({ variant: resolvedVariant }),
           inputTriggerVariants({ variant: resolvedVariant }),
-          "relative flex h-auto min-h-10 items-center gap-2 text-left",
+          "relative flex h-auto min-h-11 items-center gap-2 text-left",
         )}
       >
         <DropdownMenuTrigger

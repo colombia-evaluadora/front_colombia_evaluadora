@@ -255,7 +255,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                         <RadioGroup
                             value={value.ethnicAttention ? "si" : "no"}
                             onValueChange={(selectedValue) => onChange({ ...value, ethnicAttention: selectedValue === "si" })}
-                            className="flex min-h-10 items-center gap-6 rounded-md border border-input px-3"
+                            className="flex min-h-11 items-center gap-6 rounded-md border border-input px-3"
                         >
                             <label className="flex items-center gap-2">
                                 <RadioGroupItem value="si" id="etnias-si" />
@@ -289,7 +289,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                         <RadioGroup
                             value={value.giftedAttention ? "si" : "no"}
                             onValueChange={(selectedValue) => onChange({ ...value, giftedAttention: selectedValue === "si" })}
-                            className="flex min-h-10 items-center gap-6 rounded-md border border-input px-3"
+                            className="flex min-h-11 items-center gap-6 rounded-md border border-input px-3"
                         >
 
                             <label className="flex items-center gap-2">
@@ -309,7 +309,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                         <RadioGroup
                             value={value.subsidy ? "si" : "no"}
                             onValueChange={(selectedValue) => onChange({ ...value, subsidy: selectedValue === "si" })}
-                            className="flex min-h-10 items-center gap-6 rounded-md border border-input px-3"
+                            className="flex min-h-11 items-center gap-6 rounded-md border border-input px-3"
                         >
                             <label className="flex items-center gap-2">
                                 <RadioGroupItem value="si" id="subsidio-si" />

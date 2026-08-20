@@ -162,7 +162,7 @@ function PlanSelect({
             variant="outlined"
             aria-label="Nombre del nuevo plan"
             placeholder="Agregar"
-            className="h-9"
+            className="h-10"
             value={newPlanName}
             onChange={(event) => setNewPlanName(event.target.value)}
             onKeyDown={(event) => {

@@ -40,19 +40,19 @@ const buttonVariants = cva(
       },
       size: {
         default:
-          "h-10 gap-1.5 px-6 has-data-[icon=inline-end]:pr-4 has-data-[icon=inline-start]:pl-4",
+          "h-11 gap-1.5 px-6 has-data-[icon=inline-end]:pr-4 has-data-[icon=inline-start]:pl-4",
         xs: "h-7 gap-1 px-3 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2 [&_svg:not([class*='size-'])]:size-3",
-        sm: "h-9 gap-1 px-4 has-data-[icon=inline-end]:pr-3 has-data-[icon=inline-start]:pl-3",
-        lg: "h-11 gap-1.5 px-8 has-data-[icon=inline-end]:pr-5 has-data-[icon=inline-start]:pl-5",
-        icon: "size-10",
+        sm: "h-10 gap-1 px-4 has-data-[icon=inline-end]:pr-3 has-data-[icon=inline-start]:pl-3",
+        lg: "h-12 gap-1.5 px-8 has-data-[icon=inline-end]:pr-5 has-data-[icon=inline-start]:pl-5",
+        icon: "size-11",
         "icon-xs": "size-7 [&_svg:not([class*='size-'])]:size-3",
         // El glifo va a size-5 y no al size-3.5 de la base: es el tamaño de los
         // botones de acción (editar/eliminar) de las filas de tabla, donde el
         // icono ES el control —no acompaña a un texto— y a 14px no se leía.
         // Repite el `:not([class*='size-'])` de la base a propósito: con un
         // `[&_svg]:size-5` a secas pierde por especificidad y no aplica nada.
-        "icon-sm": "size-9 [&_svg:not([class*='size-'])]:size-5",
-        "icon-lg": "size-11",
+        "icon-sm": "size-10 [&_svg:not([class*='size-'])]:size-5",
+        "icon-lg": "size-12",
       },
     },
     compoundVariants: [
