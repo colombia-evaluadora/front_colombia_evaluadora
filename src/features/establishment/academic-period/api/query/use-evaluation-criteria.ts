@@ -29,6 +29,10 @@ interface EvaluationCriteriaRow {
   rounding_mode: number | null
   rounding_mode_name: string | null
   initial_grade: number | string
+  // `p_max_recovery_grade` ya existe en `fn_criterio_eval_actualizar` (guarda
+  // en PORCENTAJE_MAXIMO_RECUPERACION) — antes se leía por error del mismo
+  // campo que `initial_grade`, por lo que nunca reflejaba lo guardado.
+  max_recovery_grade: number | string | null
 }
 
 interface EvaluationCriteriaResponse {
@@ -59,7 +63,7 @@ function toEvaluationCriteria(row: EvaluationCriteriaRow): EvaluationCriteria {
     // un número siempre (el schema exige `min(0)`). `gradingScale` es la
     // única excepción que puede quedar `undefined` (no todas las
     // establecimientos tienen escala creada — ver tab-evaluation-criteria.tsx).
-    maxRecoveryGrade: Number(row.initial_grade) || 0,
+    maxRecoveryGrade: Number(row.max_recovery_grade) || 0,
     roundingMode: pickId(row.rounding_mode),
     initialGrade: Number(row.initial_grade) || 0,
   }

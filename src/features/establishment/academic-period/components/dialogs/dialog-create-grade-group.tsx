@@ -184,9 +184,10 @@ export function CreateGradeGroupDialog({
               const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
               return (
                 <Field variant="outlined" data-invalid={isInvalid}>
-                  <FieldLabel htmlFor={field.name}>Grupo</FieldLabel>
+                  <FieldLabel htmlFor={field.name}>Grupo*</FieldLabel>
                   <Input
                     id={field.name}
+                    maxLength={130}
                     placeholder="Agregar"
                     value={field.state.value}
                     onBlur={field.handleBlur}
@@ -200,7 +201,7 @@ export function CreateGradeGroupDialog({
           </form.Field>
 
           <Field variant="outlined">
-            <FieldLabel htmlFor="grade-group-jornada">Jornada</FieldLabel>
+            <FieldLabel htmlFor="grade-group-jornada">Jornada*</FieldLabel>
             <Input
               id="grade-group-jornada"
               readOnly
@@ -213,7 +214,7 @@ export function CreateGradeGroupDialog({
           <form.Field name="director">
             {(field) => (
               <Field variant="outlined">
-                <FieldLabel htmlFor={field.name}>Director de grupo</FieldLabel>
+                <FieldLabel htmlFor={field.name}>Director de grupo*</FieldLabel>
                 <ComboboxField
                   value={field.state.value}
                   onValueChange={(value) => value && field.handleChange(value as string)}
@@ -238,7 +239,7 @@ export function CreateGradeGroupDialog({
           <form.Field name="metodologia">
             {(field) => (
               <Field variant="outlined">
-                <FieldLabel htmlFor={field.name}>Metodología</FieldLabel>
+                <FieldLabel htmlFor={field.name}>Metodología*</FieldLabel>
                 <ComboboxField
                   value={field.state.value}
                   onValueChange={(value) => value && field.handleChange(value)}
@@ -267,15 +268,28 @@ export function CreateGradeGroupDialog({
           <form.Field name="cupo">
             {(field) => (
               <Field variant="outlined">
-                <FieldLabel htmlFor={field.name}>Cupo</FieldLabel>
+                <FieldLabel htmlFor={field.name}>Cupo*</FieldLabel>
                 <Input
                   id={field.name}
                   type="number"
-                  min={0}
+                  min={1}
+                  max={99}
+                  step={1}
                   placeholder="Agregar"
                   value={Number.isNaN(field.state.value) ? "" : field.state.value}
                   onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.valueAsNumber)}
+                  // CAPACIDAD es NUMERIC(2,0) — entero, sin decimales ni negativos.
+                  onKeyDown={(e) => {
+                    if (["-", "+", ".", ",", "e", "E"].includes(e.key)) {
+                      e.preventDefault()
+                    }
+                  }}
+                  onChange={(e) => {
+                    const value = e.target.valueAsNumber
+                    if (e.target.value === "" || !Number.isNaN(value)) {
+                      field.handleChange(value)
+                    }
+                  }}
                 />
               </Field>
             )}

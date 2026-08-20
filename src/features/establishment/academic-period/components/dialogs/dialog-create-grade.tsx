@@ -38,7 +38,6 @@ import { useGradeGroupsQuery } from "@/features/establishment/academic-period/ap
 import { useTeachingLevelsQuery } from "@/features/establishment/academic-period/api/query/use-teaching-levels"
 import {
   useGradosCatalogQuery,
-  type GradoCatalogOption,
 } from "@/features/establishment/academic-period/api/query/use-grados-catalog"
 import type { Grade } from "@/features/establishment/academic-period/api/types/grade"
 import { TabGradeGroups } from "@/features/establishment/academic-period/components/tabs/tab-grade-groups"
@@ -57,12 +56,6 @@ import {
   type ScheduleSubject,
 } from "@/features/establishment/academic-period/components/schedule-data"
 
-// La card sobre la que se apoyan las pestañas tipo carpeta. Lleva su borde
-// superior completo (así no queda hueco a la derecha de la última pestaña); las
-// pestañas se montan encima y la activa lo tapa con su fondo. La esquina
-// superior derecha va redondeada solo mientras las pestañas no lleguen al final
-// del contenedor; cuando lo ocupan todo (data-tabs-filled) se cuadra para
-// fundirse con la última pestaña.
 const PANEL =
   "min-w-0 rounded-b-lg rounded-tr-lg border bg-background p-4 group-data-[tabs-filled=true]/tabs:rounded-tr-none"
 
@@ -72,37 +65,20 @@ interface CreateGradeDialogProps {
   grade?: Grade
 }
 
-/**
- * Los dos campos con asterisco. El nivel llega como `number | null` del
- * select, y el nombre como texto tanto si es select (alta) como input
- * (edición).
- */
 const gradeSchema = z.object({
   teachingLevelId: z
     .number({ error: "Selecciona el nivel de enseñanza." })
     .int("Selecciona el nivel de enseñanza."),
-  nombre: z.string().trim().min(1, "Selecciona el nombre del grado."),
+  nombre: z
+    .string()
+    .trim()
+    .min(1, "Selecciona el nombre del grado.")
+    .max(130, "El nombre no puede superar los 130 caracteres."),
 })
-
-// `fn_grado_crear` responde "Ya existe un grado con el codigo <valor> en
-// este periodo" — `<valor>` es el crudo del catálogo GRADOS (p.ej. "-1"),
-// que no le dice nada al usuario. Lo resolvemos al nombre legible del mismo
-// catálogo que ya usa el select de "Nombre".
-function humanizeGradeCodeError(message: string, gradoOptions: GradoCatalogOption[]): string {
-  return message.replace(/con el codigo\s+(-?\d+)\s+en este periodo/i, (match, codigo) => {
-    const nombre = gradoOptions.find((o) => o.valor === codigo)?.nombre
-    return nombre ? `de nombre "${nombre}" en este periodo` : match
-  })
-}
 
 export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGradeDialogProps) {
   const [open, setOpen] = useState(false)
   const [gradeId, setGradeId] = useState<number | null>(grade?.id ?? null)
-
-  // Aviso local, propio del diálogo: nunca se cierra al guardar (pasa a modo
-  // edición con las pestañas de grupo/promoción/plan/horario), así que si el
-  // mensaje pasara por el `notify()` global se veía duplicado —una vez acá,
-  // otra detrás del overlay, en el `<NoticeOutlet />` de la página—.
   const [notice, setNotice] = useState<{
     id: number
     message: string
@@ -211,9 +187,7 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
           values: payload,
         })
         if (result.status === "error") {
-          notify(humanizeGradeCodeError(cleanErrorMessage(result.message), gradoOptions), {
-            variant: "error",
-          })
+          notify(cleanErrorMessage(result.message), { variant: "error" })
           return
         }
         await promotionRef.current?.save(gradeId)
@@ -221,13 +195,8 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
         notify(SUCCESS_MESSAGES.grade.updated)
       }
     } catch (error) {
-      // Mismo mensaje real que ya mostraba el toast global, en vez de un
-      // genérico que no dice nada de por qué falló.
       const message = Axios.isAxiosError(error)
-        ? humanizeGradeCodeError(
-            cleanErrorMessage(error.response?.data?.message || error.message),
-            gradoOptions,
-          )
+        ? cleanErrorMessage(error.response?.data?.message || error.message)
         : "Ocurrió un error al guardar el grado."
       notify(message, { variant: "error" })
     } finally {
@@ -261,8 +230,6 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
     () =>
       (gradeGroupsData?.rows ?? []).map((g) => ({
         id: g.id,
-        // `jornadaName` es el nombre legible (TLISTA_VALOR.NOMBRE); caemos a
-        // `jornada` (código corto) si el back no lo está devolviendo.
         label: [g.codigo, g.jornadaName ?? g.jornada]
           .filter(Boolean)
           .join(" - "),
@@ -393,6 +360,7 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
             ) : (
               <Input
                 id="grade-nombre"
+                maxLength={130}
                 placeholder="Agregar"
                 value={nombre}
                 aria-invalid={Boolean(fieldErrors["nombre"])}
@@ -511,11 +479,6 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
         )}
 
         <DialogFooter>
-          {/* Al crear, el botón recién aparece con los campos obligatorios
-              completos (nivel, nombre, "tiene grado siguiente" y, si esa
-              respuesta es "sí", también el grado siguiente en sí) — en
-              edición siempre se muestra ("Guardar" no depende de llenar
-              nada de nuevo). */}
           {(gradeId != null ||
             (teachingLevelId != null &&
               nombre.trim() !== "" &&

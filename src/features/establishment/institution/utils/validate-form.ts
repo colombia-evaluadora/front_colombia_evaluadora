@@ -1,5 +1,6 @@
 import { z } from "zod"
 
+import { passwordRules } from "@/features/auth/api/schema"
 import type { EstablishmentDetails } from "@/features/establishment/institution/api/types/establishment"
 import type { Person } from "@/features/establishment/employees/api/types/person"
 
@@ -73,11 +74,12 @@ const ESTABLISHMENT_LABELS: Record<string, string> = {
 
 /**
  * Etiqueta para el resumen, por campo de persona (se prefija con el rol).
- * Fecha de nacimiento y género ya NO se validan acá — vuelven a ser
- * opcionales tanto para rector/secretaria como para funcionarios regulares
- * (`fn_usu_crear` no los exige a nivel de base, son columnas nullable; solo
- * correo/contraseña sí lo son de verdad — `CUENTA`/`CONTRASENA` son la
- * cuenta y el login del funcionario).
+ * Fecha de nacimiento sigue sin validarse acá (columna nullable de verdad,
+ * ni la base ni Java la exigen). Género SÍ vuelve a ser obligatorio al
+ * crear (REV: se había sacado, el negocio cambió de opinión) — coincide
+ * con que ni `fn_usu_crear` ni `RegisterUsuarioRequest` (Java) dejaron de
+ * exigirlo nunca en el backend, así que esto solo estaba desalineado del
+ * lado del front.
  */
 const PERSON_LABELS: Record<string, string> = {
   documentType: "tipo de documento",
@@ -85,6 +87,7 @@ const PERSON_LABELS: Record<string, string> = {
   firstName: "primer nombre",
   lastName: "primer apellido",
   email: "correo electrónico",
+  gender: "género",
   password: "contraseña",
   confirmPassword: "confirmación de contraseña",
 }
@@ -148,6 +151,18 @@ function makePersonSchema(required: boolean) {
         }
       }
 
+      const requirePasswordStrength = (value: string | null | undefined) => {
+        if (isBlank(value)) {
+          return
+        }
+
+        for (const rule of passwordRules) {
+          if (!rule.test(value as string)) {
+            ctx.addIssue({ code: "custom", path: ["password"], message: rule.message })
+          }
+        }
+      }
+
       require("documentType", p.documentType?.name, "Selecciona el tipo de documento.")
       require("identification", p.identification, "Ingresa el número de documento.")
       require("firstName", p.firstName, "Ingresa el primer nombre.")
@@ -158,23 +173,37 @@ function makePersonSchema(required: boolean) {
        * el GET no trajo uno): al guardar va a `POST /register/funcionario`
        * (`RegisterUsuarioRequest`, auth-center), que exige `@NotBlank` en
        * `email` y `password` — son la cuenta y el login del funcionario,
-       * no hay forma de omitirlos (a diferencia de fecha de nacimiento y
-       * género, que sí son opcionales de verdad). Persona CON `id` (ya
-       * existente) va a PATCH `fn_fun_actualizar`, que tolera estos campos
-       * vacíos (COALESCE, nunca resetea la contraseña) — por eso solo se
-       * exigen acá cuando todavía no existe.
+       * no hay forma de omitirlos (a diferencia de fecha de nacimiento,
+       * que sí es opcional de verdad). Persona CON `id` (ya existente) va
+       * a PATCH `fn_fun_actualizar`, que tolera estos campos vacíos
+       * (COALESCE, nunca resetea la contraseña) — por eso solo se exigen
+       * acá cuando todavía no existe.
+       *
+       * `accountExists` (autocompletado por documento, ver
+       * `use-user-by-document.ts`/`UserDetailsForm`): la persona no tiene
+       * `id` (no hay un `TFUNCIONARIO` conocido para ESTE establecimiento
+       * todavía), pero SÍ tiene una cuenta real — el backend la reconoce y
+       * reutiliza por documento/correo (`FuncionarioRegistrationService`,
+       * V71) sin tocarle la contraseña, así que acá tampoco hace falta
+       * pedirla (el campo queda bloqueado en el form, ver
+       * `UserDetailsForm`).
        */
       if (!p.id) {
         require("email", p.email, "Ingresa el correo electrónico.")
-        require("password", p.password, "Ingresa la contraseña.")
-        require("confirmPassword", confirmPassword, "Repite la contraseña.")
+        require("gender", p.gender?.name, "Selecciona el género.")
 
-        if (!isBlank(p.password) && !isBlank(confirmPassword) && p.password !== confirmPassword) {
-          ctx.addIssue({
-            code: "custom",
-            path: ["confirmPassword"],
-            message: "Las contraseñas no coinciden.",
-          })
+        if (!p.accountExists) {
+          require("password", p.password, "Ingresa la contraseña.")
+          require("confirmPassword", confirmPassword, "Repite la contraseña.")
+          requirePasswordStrength(p.password)
+
+          if (!isBlank(p.password) && !isBlank(confirmPassword) && p.password !== confirmPassword) {
+            ctx.addIssue({
+              code: "custom",
+              path: ["confirmPassword"],
+              message: "Las contraseñas no coinciden.",
+            })
+          }
         }
         return
       }
@@ -189,6 +218,7 @@ function makePersonSchema(required: boolean) {
 
       require("password", p.password, "Ingresa la contraseña.")
       require("confirmPassword", confirmPassword, "Repite la contraseña.")
+      requirePasswordStrength(p.password)
 
       if (hasPassword && hasConfirm && p.password !== confirmPassword) {
         ctx.addIssue({

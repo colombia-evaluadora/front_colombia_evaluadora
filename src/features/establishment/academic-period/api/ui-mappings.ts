@@ -23,10 +23,10 @@ interface BadgeProps {
 // N = Nivelaciones.
 export const ACADEMIC_PERIOD_STATUS_BADGE: Record<AcademicPeriodStatus, BadgeProps> = {
   A: { variant: "soft", color: "success" },
-  C: { variant: "soft", color: "secondary" },
+  N: { variant: "soft", color: "secondary" },
   I: { variant: "soft", color: "info" },
   P: { variant: "soft", color: "warning" },
-  N: { variant: "soft", color: "destructive" },
+  C: { variant: "soft", color: "destructive" },
 }
 
 export const EVALUATION_PERIOD_STATUSES: EvaluationPeriodStatus[] = [
