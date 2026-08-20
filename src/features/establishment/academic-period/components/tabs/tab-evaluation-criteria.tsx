@@ -17,13 +17,13 @@ import {
   type EvaluationCriteriaValues,
 } from "@/features/establishment/academic-period/api/schema"
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+  ComboboxField,
+  ComboboxFieldContent,
+  ComboboxFieldItem,
+  ComboboxFieldTrigger,
+  ComboboxFieldValue,
+  ComboboxGroup,
+} from "@/components/ui/combobox"
 
 // Cada campo declara su tipo de control: `select` para los basados en
 // `TLISTA_VALOR` (incluye `gradingScale` que arma sus opciones localmente),
@@ -217,7 +217,7 @@ function EvaluationCriteriaForm({
   // arrancar en `EMPTY` y hacer `form.reset()` en un efecto post-montaje):
   // ese `reset()` actualizaba el estado interno del form correctamente
   // —confirmado viendo los criterios correctos en el log— pero los
-  // `<Select>` no reflejaban el cambio la primera vez que se montaba el
+  // `<ComboboxField>` no reflejaban el cambio la primera vez que se montaba el
   // componente (sí en montajes posteriores, con los datos ya en caché).
   // Montar el form directo con los valores correctos evita depender de ese
   // reset después del primer render.
@@ -306,7 +306,7 @@ function EvaluationCriteriaForm({
                         aria-invalid={isInvalid}
                       />
                     ) : (
-                      <Select
+                      <ComboboxField
                         items={Object.fromEntries([
                           ...(isClearable ? [["", "Ninguna"]] : []),
                           ...fieldOptions.map((o) => [o.key, o.label]),
@@ -342,10 +342,10 @@ function EvaluationCriteriaForm({
                           field.handleChange(value)
                         }}
                       >
-                        <SelectTrigger id={field.name} aria-invalid={isInvalid}>
-                          <SelectValue placeholder="Seleccionar" />
-                        </SelectTrigger>
-                        <SelectContent>
+                        <ComboboxFieldTrigger id={field.name} aria-invalid={isInvalid}>
+                          <ComboboxFieldValue placeholder="Seleccionar" />
+                        </ComboboxFieldTrigger>
+                        <ComboboxFieldContent>
                           {fieldOptions.length === 0 ? (
                             // Sin opciones no tiene sentido ofrecer "Ninguna"
                             // (no hay nada que limpiar) — solo el mensaje de
@@ -354,21 +354,21 @@ function EvaluationCriteriaForm({
                               {EMPTY_MESSAGES[cfg.name] ?? DEFAULT_EMPTY_MESSAGE}
                             </p>
                           ) : (
-                            <SelectGroup>
-                              {isClearable && <SelectItem value="">Ninguna</SelectItem>}
+                            <ComboboxGroup>
+                              {isClearable && <ComboboxFieldItem value="">Ninguna</ComboboxFieldItem>}
                               {fieldOptions.map((option) => (
-                                <SelectItem
+                                <ComboboxFieldItem
                                   key={option.key}
                                   value={option.key}
                                   title={option.label}
                                 >
                                   {option.label}
-                                </SelectItem>
+                                </ComboboxFieldItem>
                               ))}
-                            </SelectGroup>
+                            </ComboboxGroup>
                           )}
-                        </SelectContent>
-                      </Select>
+                        </ComboboxFieldContent>
+                      </ComboboxField>
                     )}
                     {isInvalid && <FieldError errors={field.state.meta.errors} />}
                   </Field>

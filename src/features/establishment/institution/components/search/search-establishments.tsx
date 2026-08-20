@@ -5,12 +5,12 @@ import { optionsTerm, type QuerySyntax } from "@/components/search/query-syntax"
 import { useQuerySearch } from "@/components/search/use-query-search"
 import { Field, FieldLabel } from "@/components/ui/field"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+  ComboboxField,
+  ComboboxFieldContent,
+  ComboboxFieldItem,
+  ComboboxFieldTrigger,
+  ComboboxFieldValue,
+} from "@/components/ui/combobox"
 
 import type { EstablishmentFiltersFormInput } from "@/features/establishment/institution/api/schema"
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
@@ -99,22 +99,22 @@ export function SearchEstablishments({
         <div className="px-4">
           <Field orientation="vertical" variant="outlined" className="gap-2">
             <FieldLabel htmlFor="establishment-status">Estado</FieldLabel>
-            <Select
+            <ComboboxField
               items={toSelectItemsMap(statusItems)}
               value={draftStatus}
               onValueChange={(value) => setDraftStatus(value ?? "")}
             >
-              <SelectTrigger id="establishment-status" size="sm" className="w-full">
-                <SelectValue placeholder="Todos" />
-              </SelectTrigger>
-              <SelectContent>
+              <ComboboxFieldTrigger id="establishment-status" size="sm" className="w-full">
+                <ComboboxFieldValue placeholder="Todos" />
+              </ComboboxFieldTrigger>
+              <ComboboxFieldContent>
                 {statusItems.map((item) => (
-                  <SelectItem key={item.value} value={item.value}>
+                  <ComboboxFieldItem key={item.value} value={item.value}>
                     {item.label}
-                  </SelectItem>
+                  </ComboboxFieldItem>
                 ))}
-              </SelectContent>
-            </Select>
+              </ComboboxFieldContent>
+            </ComboboxField>
           </Field>
         </div>
       </SearchQueryBar>

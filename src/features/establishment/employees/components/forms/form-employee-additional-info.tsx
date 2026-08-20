@@ -1,12 +1,12 @@
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+  ComboboxField,
+  ComboboxFieldContent,
+  ComboboxFieldItem,
+  ComboboxFieldTrigger,
+  ComboboxFieldValue,
+} from "@/components/ui/combobox"
 import { CATALOGS } from "@/lib/catalogs"
 
 import { useCatalogQuery } from "@/features/establishment/employees/api/query/use-catalogs"
@@ -47,8 +47,8 @@ export function createAdditionalInfoFromEmployee(employee: Employee): EmployeeAd
   }
 }
 
-// Convierte `CatalogItem[]` al `Record<id, name>` que `Select` consume vía
-// `items`. El `SelectItem` sigue iterando el array original para mantener el
+// Convierte `CatalogItem[]` al `Record<id, name>` que `ComboboxField` consume vía
+// `items`. El `ComboboxFieldItem` sigue iterando el array original para mantener el
 // orden del backend; `items` solo resuelve el label del trigger.
 function labelsMap(items: CatalogItem[]) {
   return Object.fromEntries(items.map((item) => [item.id, item.name]))
@@ -84,7 +84,7 @@ export function EmployeeAdditionalInfoForm({ value, onChange }: EmployeeAddition
     <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
       <Field orientation="vertical" variant="outlined">
         <FieldLabel htmlFor="employee-class">Clase de funcionario</FieldLabel>
-        <Select
+        <ComboboxField
           id="employee-class"
           items={employeeClassLabels}
           value={value.employeeClass?.id ?? null}
@@ -93,22 +93,22 @@ export function EmployeeAdditionalInfoForm({ value, onChange }: EmployeeAddition
             patch({ employeeClass: pickOption(employeeClasses, selectedValue) })
           }}
         >
-          <SelectTrigger size="sm">
-            <SelectValue placeholder="Seleccionar" />
-          </SelectTrigger>
-          <SelectContent>
+          <ComboboxFieldTrigger size="sm">
+            <ComboboxFieldValue placeholder="Seleccionar" />
+          </ComboboxFieldTrigger>
+          <ComboboxFieldContent>
             {employeeClasses.map((item) => (
-              <SelectItem key={item.id} value={item.id}>
+              <ComboboxFieldItem key={item.id} value={item.id}>
                 {item.name}
-              </SelectItem>
+              </ComboboxFieldItem>
             ))}
-          </SelectContent>
-        </Select>
+          </ComboboxFieldContent>
+        </ComboboxField>
       </Field>
 
       <Field orientation="vertical" variant="outlined">
         <FieldLabel htmlFor="education-level">Nivel educativo de enseñanza</FieldLabel>
-        <Select
+        <ComboboxField
           id="education-level"
           items={educationLevelLabels}
           value={value.educationLevel?.id ?? null}
@@ -117,22 +117,22 @@ export function EmployeeAdditionalInfoForm({ value, onChange }: EmployeeAddition
             patch({ educationLevel: pickOption(educationLevels, selectedValue) })
           }}
         >
-          <SelectTrigger size="sm">
-            <SelectValue placeholder="Seleccionar" />
-          </SelectTrigger>
-          <SelectContent>
+          <ComboboxFieldTrigger size="sm">
+            <ComboboxFieldValue placeholder="Seleccionar" />
+          </ComboboxFieldTrigger>
+          <ComboboxFieldContent>
             {educationLevels.map((item) => (
-              <SelectItem key={item.id} value={item.id}>
+              <ComboboxFieldItem key={item.id} value={item.id}>
                 {item.name}
-              </SelectItem>
+              </ComboboxFieldItem>
             ))}
-          </SelectContent>
-        </Select>
+          </ComboboxFieldContent>
+        </ComboboxField>
       </Field>
 
       <Field orientation="vertical" variant="outlined">
         <FieldLabel htmlFor="employee-grade">Grado escalafón</FieldLabel>
-        <Select
+        <ComboboxField
           id="employee-grade"
           items={gradeLabels}
           value={value.grade?.id ?? null}
@@ -141,22 +141,22 @@ export function EmployeeAdditionalInfoForm({ value, onChange }: EmployeeAddition
             patch({ grade: pickOption(grades, selectedValue) })
           }}
         >
-          <SelectTrigger size="sm">
-            <SelectValue placeholder="Seleccionar" />
-          </SelectTrigger>
-          <SelectContent>
+          <ComboboxFieldTrigger size="sm">
+            <ComboboxFieldValue placeholder="Seleccionar" />
+          </ComboboxFieldTrigger>
+          <ComboboxFieldContent>
             {grades.map((item) => (
-              <SelectItem key={item.id} value={item.id}>
+              <ComboboxFieldItem key={item.id} value={item.id}>
                 {item.name}
-              </SelectItem>
+              </ComboboxFieldItem>
             ))}
-          </SelectContent>
-        </Select>
+          </ComboboxFieldContent>
+        </ComboboxField>
       </Field>
 
       <Field orientation="vertical" variant="outlined">
         <FieldLabel htmlFor="highest-education-level">Ultimo nivel educativo aprobado</FieldLabel>
-        <Select
+        <ComboboxField
           id="highest-education-level"
           items={highestEducationLevelLabels}
           value={value.highestEducationLevel?.id ?? null}
@@ -165,22 +165,22 @@ export function EmployeeAdditionalInfoForm({ value, onChange }: EmployeeAddition
             patch({ highestEducationLevel: pickOption(highestEducationLevels, selectedValue) })
           }}
         >
-          <SelectTrigger size="sm">
-            <SelectValue placeholder="Seleccionar" />
-          </SelectTrigger>
-          <SelectContent>
+          <ComboboxFieldTrigger size="sm">
+            <ComboboxFieldValue placeholder="Seleccionar" />
+          </ComboboxFieldTrigger>
+          <ComboboxFieldContent>
             {highestEducationLevels.map((item) => (
-              <SelectItem key={item.id} value={item.id}>
+              <ComboboxFieldItem key={item.id} value={item.id}>
                 {item.name}
-              </SelectItem>
+              </ComboboxFieldItem>
             ))}
-          </SelectContent>
-        </Select>
+          </ComboboxFieldContent>
+        </ComboboxField>
       </Field>
 
       <Field orientation="vertical" variant="outlined">
         <FieldLabel htmlFor="funding-source">Fuente de recursos</FieldLabel>
-        <Select
+        <ComboboxField
           id="funding-source"
           items={fundingSourceLabels}
           value={value.fundingSource?.id ?? null}
@@ -189,22 +189,22 @@ export function EmployeeAdditionalInfoForm({ value, onChange }: EmployeeAddition
             patch({ fundingSource: pickOption(fundingSources, selectedValue) })
           }}
         >
-          <SelectTrigger size="sm">
-            <SelectValue placeholder="Seleccionar" />
-          </SelectTrigger>
-          <SelectContent>
+          <ComboboxFieldTrigger size="sm">
+            <ComboboxFieldValue placeholder="Seleccionar" />
+          </ComboboxFieldTrigger>
+          <ComboboxFieldContent>
             {fundingSources.map((item) => (
-              <SelectItem key={item.id} value={item.id}>
+              <ComboboxFieldItem key={item.id} value={item.id}>
                 {item.name}
-              </SelectItem>
+              </ComboboxFieldItem>
             ))}
-          </SelectContent>
-        </Select>
+          </ComboboxFieldContent>
+        </ComboboxField>
       </Field>
 
       <Field orientation="vertical" variant="outlined">
         <FieldLabel htmlFor="functional-position">Cargo funcional</FieldLabel>
-        <Select
+        <ComboboxField
           id="functional-position"
           items={functionalPositionLabels}
           value={value.functionalPosition?.id ?? null}
@@ -213,22 +213,22 @@ export function EmployeeAdditionalInfoForm({ value, onChange }: EmployeeAddition
             patch({ functionalPosition: pickOption(functionalPositions, selectedValue) })
           }}
         >
-          <SelectTrigger size="sm">
-            <SelectValue placeholder="Seleccionar" />
-          </SelectTrigger>
-          <SelectContent>
+          <ComboboxFieldTrigger size="sm">
+            <ComboboxFieldValue placeholder="Seleccionar" />
+          </ComboboxFieldTrigger>
+          <ComboboxFieldContent>
             {functionalPositions.map((item) => (
-              <SelectItem key={item.id} value={item.id}>
+              <ComboboxFieldItem key={item.id} value={item.id}>
                 {item.name}
-              </SelectItem>
+              </ComboboxFieldItem>
             ))}
-          </SelectContent>
-        </Select>
+          </ComboboxFieldContent>
+        </ComboboxField>
       </Field>
 
       <Field orientation="vertical" variant="outlined">
         <FieldLabel htmlFor="employment-type">Tipo de vinculación</FieldLabel>
-        <Select
+        <ComboboxField
           id="employment-type"
           items={employmentTypeLabels}
           value={value.employmentType?.id ?? null}
@@ -237,17 +237,17 @@ export function EmployeeAdditionalInfoForm({ value, onChange }: EmployeeAddition
             patch({ employmentType: pickOption(employmentTypes, selectedValue) })
           }}
         >
-          <SelectTrigger size="sm">
-            <SelectValue placeholder="Seleccionar" />
-          </SelectTrigger>
-          <SelectContent>
+          <ComboboxFieldTrigger size="sm">
+            <ComboboxFieldValue placeholder="Seleccionar" />
+          </ComboboxFieldTrigger>
+          <ComboboxFieldContent>
             {employmentTypes.map((item) => (
-              <SelectItem key={item.id} value={item.id}>
+              <ComboboxFieldItem key={item.id} value={item.id}>
                 {item.name}
-              </SelectItem>
+              </ComboboxFieldItem>
             ))}
-          </SelectContent>
-        </Select>
+          </ComboboxFieldContent>
+        </ComboboxField>
       </Field>
 
       <Field orientation="vertical" variant="outlined">

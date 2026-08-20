@@ -5,12 +5,12 @@ import { optionsTerm, type QuerySyntax } from "@/components/search/query-syntax"
 import { useQuerySearch } from "@/components/search/use-query-search"
 import { Field, FieldLabel } from "@/components/ui/field"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+  ComboboxField,
+  ComboboxFieldContent,
+  ComboboxFieldItem,
+  ComboboxFieldTrigger,
+  ComboboxFieldValue,
+} from "@/components/ui/combobox"
 
 import type { EmployeeFiltersFormInput } from "@/features/establishment/employees/api/schema"
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
@@ -127,62 +127,62 @@ export function SearchEmployees({
           <div className="grid grid-cols-3 gap-3">
             <Field orientation="vertical" variant="outlined" className="gap-2">
               <FieldLabel htmlFor="employee-role">Rol</FieldLabel>
-              <Select
+              <ComboboxField
                 items={toSelectItemsMap(roleItems)}
                 value={draftRole}
                 onValueChange={(value) => setDraftRole(value ?? "")}
               >
-                <SelectTrigger id="employee-role" size="sm" className="w-full">
-                  <SelectValue placeholder="Todos" />
-                </SelectTrigger>
-                <SelectContent>
+                <ComboboxFieldTrigger id="employee-role" size="sm" className="w-full">
+                  <ComboboxFieldValue placeholder="Todos" />
+                </ComboboxFieldTrigger>
+                <ComboboxFieldContent>
                   {roleItems.map((item) => (
-                    <SelectItem key={item.value} value={item.value}>
+                    <ComboboxFieldItem key={item.value} value={item.value}>
                       {item.label}
-                    </SelectItem>
+                    </ComboboxFieldItem>
                   ))}
-                </SelectContent>
-              </Select>
+                </ComboboxFieldContent>
+              </ComboboxField>
             </Field>
 
             <Field orientation="vertical" variant="outlined" className="gap-2">
               <FieldLabel htmlFor="employee-schedule">Jornada</FieldLabel>
-              <Select
+              <ComboboxField
                 items={toSelectItemsMap(scheduleItems)}
                 value={draftSchedule}
                 onValueChange={(value) => setDraftSchedule(value ?? "")}
               >
-                <SelectTrigger id="employee-schedule" size="sm" className="w-full">
-                  <SelectValue placeholder="Todas" />
-                </SelectTrigger>
-                <SelectContent>
+                <ComboboxFieldTrigger id="employee-schedule" size="sm" className="w-full">
+                  <ComboboxFieldValue placeholder="Todas" />
+                </ComboboxFieldTrigger>
+                <ComboboxFieldContent>
                   {scheduleItems.map((item) => (
-                    <SelectItem key={item.value} value={item.value}>
+                    <ComboboxFieldItem key={item.value} value={item.value}>
                       {item.label}
-                    </SelectItem>
+                    </ComboboxFieldItem>
                   ))}
-                </SelectContent>
-              </Select>
+                </ComboboxFieldContent>
+              </ComboboxField>
             </Field>
 
             <Field orientation="vertical" variant="outlined" className="gap-2">
               <FieldLabel htmlFor="employee-status">Estado</FieldLabel>
-              <Select
+              <ComboboxField
                 items={toSelectItemsMap(statusItems)}
                 value={draftStatus}
                 onValueChange={(value) => setDraftStatus(value ?? "")}
               >
-                <SelectTrigger id="employee-status" size="sm" className="w-full">
-                  <SelectValue placeholder="Todos" />
-                </SelectTrigger>
-                <SelectContent>
+                <ComboboxFieldTrigger id="employee-status" size="sm" className="w-full">
+                  <ComboboxFieldValue placeholder="Todos" />
+                </ComboboxFieldTrigger>
+                <ComboboxFieldContent>
                   {statusItems.map((item) => (
-                    <SelectItem key={item.value} value={item.value}>
+                    <ComboboxFieldItem key={item.value} value={item.value}>
                       {item.label}
-                    </SelectItem>
+                    </ComboboxFieldItem>
                   ))}
-                </SelectContent>
-              </Select>
+                </ComboboxFieldContent>
+              </ComboboxField>
             </Field>
           </div>
         </div>

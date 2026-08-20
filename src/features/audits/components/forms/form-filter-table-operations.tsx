@@ -16,12 +16,12 @@ import { DatePicker } from "@/components/date-picker"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+  ComboboxField,
+  ComboboxFieldContent,
+  ComboboxFieldItem,
+  ComboboxFieldTrigger,
+  ComboboxFieldValue,
+} from "@/components/ui/combobox"
 import {
   Field,
   FieldError,
@@ -318,23 +318,23 @@ function FieldFilterSection({ availableFields }: FieldFilterSectionProps) {
         <div className="grid grid-cols-[1fr_1fr_1fr_auto] items-end gap-3">
           <Field variant="outlined" className="gap-2">
             <FieldLabel htmlFor="field-filter-field">Campo</FieldLabel>
-            <Select value={composerField} onValueChange={(value) => setComposerField(value ?? "")}>
-              <SelectTrigger id="field-filter-field" size="sm" className="w-full">
-                <SelectValue placeholder="Seleccionar" />
-              </SelectTrigger>
-              <SelectContent>
+            <ComboboxField value={composerField} onValueChange={(value) => setComposerField(value ?? "")}>
+              <ComboboxFieldTrigger id="field-filter-field" size="sm" className="w-full">
+                <ComboboxFieldValue placeholder="Seleccionar" />
+              </ComboboxFieldTrigger>
+              <ComboboxFieldContent>
                 {availableFields.map((option) => (
-                  <SelectItem key={option} value={option}>
+                  <ComboboxFieldItem key={option} value={option}>
                     {option}
-                  </SelectItem>
+                  </ComboboxFieldItem>
                 ))}
-              </SelectContent>
-            </Select>
+              </ComboboxFieldContent>
+            </ComboboxField>
           </Field>
 
           <Field orientation="vertical" variant="outlined" className="gap-2">
             <FieldLabel htmlFor="field-filter-condition">Condición</FieldLabel>
-            <Select
+            <ComboboxField
               // `items` mapea el value del enum a su label ("startsWith" →
               // "Empieza con") para que el trigger no muestre la clave cruda.
               items={FIELD_FILTER_CONDITION_LABELS}
@@ -343,17 +343,17 @@ function FieldFilterSection({ availableFields }: FieldFilterSectionProps) {
                 setComposerCondition((value ?? "") as FieldFilterCondition | "")
               }
             >
-              <SelectTrigger id="field-filter-condition" size="sm" className="w-full">
-                <SelectValue placeholder="Seleccionar" />
-              </SelectTrigger>
-              <SelectContent>
+              <ComboboxFieldTrigger id="field-filter-condition" size="sm" className="w-full">
+                <ComboboxFieldValue placeholder="Seleccionar" />
+              </ComboboxFieldTrigger>
+              <ComboboxFieldContent>
                 {FIELD_FILTER_CONDITIONS.map((option) => (
-                  <SelectItem key={option} value={option}>
+                  <ComboboxFieldItem key={option} value={option}>
                     {FIELD_FILTER_CONDITION_LABELS[option]}
-                  </SelectItem>
+                  </ComboboxFieldItem>
                 ))}
-              </SelectContent>
-            </Select>
+              </ComboboxFieldContent>
+            </ComboboxField>
           </Field>
 
           <Field orientation="vertical" variant="outlined" className="gap-2">

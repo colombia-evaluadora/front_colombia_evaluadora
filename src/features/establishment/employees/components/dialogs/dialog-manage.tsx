@@ -20,6 +20,13 @@ import {
 } from "@/components/ui/icons"
 import { ConfirmRemoveButton } from "@/components/confirm-remove-button"
 import {
+  ComboboxField,
+  ComboboxFieldContent,
+  ComboboxFieldItem,
+  ComboboxFieldTrigger,
+  ComboboxFieldValue,
+} from "@/components/ui/combobox"
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -806,24 +813,24 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
               data-invalid={personErrors["establishmentId"] ? "true" : undefined}
             >
               <FieldLabel htmlFor="employee-establishment">Establecimiento educativo *</FieldLabel>
-              <Select
+              <ComboboxField
                 id="employee-establishment"
                 items={Object.fromEntries(establishmentItems.map((item) => [item.value, item.label]))}
                 value={establishmentId}
                 aria-invalid={Boolean(personErrors["establishmentId"])}
                 onValueChange={(selectedValue) => setEstablishmentId(selectedValue ?? null)}
               >
-                <SelectTrigger id="employee-establishment" size="sm" aria-invalid={Boolean(personErrors["establishmentId"])}>
-                  <SelectValue placeholder="Seleccionar" />
-                </SelectTrigger>
-                <SelectContent>
+                <ComboboxFieldTrigger id="employee-establishment" size="sm" aria-invalid={Boolean(personErrors["establishmentId"])}>
+                  <ComboboxFieldValue placeholder="Seleccionar" />
+                </ComboboxFieldTrigger>
+                <ComboboxFieldContent>
                   {establishmentItems.map((item) => (
-                    <SelectItem key={item.value} value={item.value}>
+                    <ComboboxFieldItem key={item.value} value={item.value}>
                       {item.label}
-                    </SelectItem>
+                    </ComboboxFieldItem>
                   ))}
-                </SelectContent>
-              </Select>
+                </ComboboxFieldContent>
+              </ComboboxField>
               <FieldError>{personErrors["establishmentId"]}</FieldError>
             </Field>
           )}
@@ -947,7 +954,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
               data-invalid={permissionErrors["roleId"] ? "true" : undefined}
             >
               <FieldLabel htmlFor="permission-role">Rol*</FieldLabel>
-              <Select
+              <ComboboxField
                 id="permission-role"
                 value={permissionDraft.roleId}
                 onValueChange={(value) =>
@@ -955,17 +962,17 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
                 }
                 items={toSelectItemsMap(roleItems)}
               >
-                <SelectTrigger aria-invalid={Boolean(permissionErrors["roleId"])}>
-                  <SelectValue placeholder="Seleccionar" />
-                </SelectTrigger>
-                <SelectContent>
+                <ComboboxFieldTrigger aria-invalid={Boolean(permissionErrors["roleId"])}>
+                  <ComboboxFieldValue placeholder="Seleccionar" />
+                </ComboboxFieldTrigger>
+                <ComboboxFieldContent>
                   {roleItems.map((item) => (
-                    <SelectItem key={item.value} value={item.value}>
+                    <ComboboxFieldItem key={item.value} value={item.value}>
                       {item.label}
-                    </SelectItem>
+                    </ComboboxFieldItem>
                   ))}
-                </SelectContent>
-              </Select>
+                </ComboboxFieldContent>
+              </ComboboxField>
               <div className="min-h-5">
                 <FieldError>{permissionErrors["roleId"]}</FieldError>
               </div>
@@ -978,7 +985,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
               data-invalid={permissionErrors["campusId"] ? "true" : undefined}
             >
               <FieldLabel htmlFor="permission-campus">Sede educativa*</FieldLabel>
-              <Select
+              <ComboboxField
                 id="permission-campus"
                 value={permissionDraft.campusId}
                 onValueChange={(value) =>
@@ -986,17 +993,17 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
                 }
                 items={toSelectItemsMap(campusItems)}
               >
-                <SelectTrigger aria-invalid={Boolean(permissionErrors["campusId"])}>
-                  <SelectValue placeholder="Seleccionar" />
-                </SelectTrigger>
-                <SelectContent>
+                <ComboboxFieldTrigger aria-invalid={Boolean(permissionErrors["campusId"])}>
+                  <ComboboxFieldValue placeholder="Seleccionar" />
+                </ComboboxFieldTrigger>
+                <ComboboxFieldContent>
                   {campusItems.map((item) => (
-                    <SelectItem key={item.value} value={item.value}>
+                    <ComboboxFieldItem key={item.value} value={item.value}>
                       {item.label}
-                    </SelectItem>
+                    </ComboboxFieldItem>
                   ))}
-                </SelectContent>
-              </Select>
+                </ComboboxFieldContent>
+              </ComboboxField>
               <div className="min-h-5">
                 <FieldError>{permissionErrors["campusId"]}</FieldError>
               </div>
@@ -1009,7 +1016,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
               data-invalid={permissionErrors["workScheduleId"] ? "true" : undefined}
             >
               <FieldLabel htmlFor="permission-schedule">Jornada*</FieldLabel>
-              <Select
+              <ComboboxField
                 id="permission-schedule"
                 value={permissionDraft.workScheduleId}
                 onValueChange={(value) =>
@@ -1017,17 +1024,17 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
                 }
                 items={toSelectItemsMap(workScheduleItems)}
               >
-                <SelectTrigger aria-invalid={Boolean(permissionErrors["workScheduleId"])}>
-                  <SelectValue placeholder="Seleccionar" />
-                </SelectTrigger>
-                <SelectContent>
+                <ComboboxFieldTrigger aria-invalid={Boolean(permissionErrors["workScheduleId"])}>
+                  <ComboboxFieldValue placeholder="Seleccionar" />
+                </ComboboxFieldTrigger>
+                <ComboboxFieldContent>
                   {workScheduleItems.map((item) => (
-                    <SelectItem key={item.value} value={item.value}>
+                    <ComboboxFieldItem key={item.value} value={item.value}>
                       {item.label}
-                    </SelectItem>
+                    </ComboboxFieldItem>
                   ))}
-                </SelectContent>
-              </Select>
+                </ComboboxFieldContent>
+              </ComboboxField>
               <div className="min-h-5">
                 <FieldError>{permissionErrors["workScheduleId"]}</FieldError>
               </div>

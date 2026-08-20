@@ -10,13 +10,13 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { FieldVariantContext } from "@/hooks/use-field-variant"
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+  ComboboxField,
+  ComboboxFieldContent,
+  ComboboxFieldItem,
+  ComboboxFieldTrigger,
+  ComboboxFieldValue,
+  ComboboxGroup,
+} from "@/components/ui/combobox"
 import { DataTable } from "@/components/data-table"
 import { TableCell } from "@/components/ui/table"
 import { useDataTable } from "@/hooks/use-data-table"
@@ -525,29 +525,29 @@ function ScalesSubTable({
                   />
                 </TableCell>
                 <TableCell>
-                  <Select
+                  <ComboboxField
                     value={addDraft.tipo}
                     onValueChange={(value) =>
                       value && patchAddDraft({ tipo: value as RatingScaleType })
                     }
                   >
-                    <SelectTrigger aria-label="Tipo" className="min-w-32">
-                      <SelectValue>
+                    <ComboboxFieldTrigger aria-label="Tipo" className="min-w-32">
+                      <ComboboxFieldValue>
                         {(value) =>
                           tipoOptions.find((o) => o.key === value)?.label ?? "Seleccionar"
                         }
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
+                      </ComboboxFieldValue>
+                    </ComboboxFieldTrigger>
+                    <ComboboxFieldContent>
+                      <ComboboxGroup>
                         {tipoOptions.map((option) => (
-                          <SelectItem key={option.key} value={option.key}>
+                          <ComboboxFieldItem key={option.key} value={option.key}>
                             {option.label}
-                          </SelectItem>
+                          </ComboboxFieldItem>
                         ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
+                      </ComboboxGroup>
+                    </ComboboxFieldContent>
+                  </ComboboxField>
                 </TableCell>
                 <TableCell>
                   <RatingSymbolSelect
