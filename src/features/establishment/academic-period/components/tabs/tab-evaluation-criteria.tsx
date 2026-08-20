@@ -285,15 +285,14 @@ function EvaluationCriteriaForm({
                         step={0.1}
                         placeholder="Agregar"
                         value={Number.isNaN(field.state.value) ? "" : field.state.value}
-                        // El atributo `max` es solo una pista visual (HTML5 no
-                        // bloquea tipeo ni submit programático). El handler
-                        // clampa al máximo activo: si el back ya tiene el
-                        // criterio guardado en otro formato y el front abre
-                        // con formato más restrictivo, el clamp evita que
-                        // quede un valor fuera de rango sin disparar el
-                        // 400 del back al guardar.
+                        onKeyDown={(e) => {
+                          if (["-", "+", "e", "E"].includes(e.key)) {
+                            e.preventDefault()
+                          }
+                        }}
                         onChange={(e) => {
                           const raw = e.target.valueAsNumber
+                          if (e.target.value !== "" && Number.isNaN(raw)) return
                           const max = parseGradingRange(
                             gradingFormatLabel(form.state.values.gradingFormat)
                           ).max

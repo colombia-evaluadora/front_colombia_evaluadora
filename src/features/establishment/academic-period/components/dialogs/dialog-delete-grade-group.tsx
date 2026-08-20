@@ -12,6 +12,8 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
+  AlertDialogOverlay,
+  AlertDialogPortal,
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
@@ -47,6 +49,12 @@ export function DeleteGradeGroupDialog({ gradeGroup }: DeleteGradeGroupDialogPro
         <span className="sr-only">Eliminar grupo</span>
         <TrashIcon />
       </AlertDialogTrigger>
+      {/* `forceRender`: este AlertDialog se abre anidado dentro del Dialog de
+          crear/editar grado (ya abierto) — sin forzar su propio overlay, no
+          bloquea el fondo (mismo fix que dialog-select-general-area.tsx). */}
+      <AlertDialogPortal>
+        <AlertDialogOverlay forceRender className="bg-black/30" />
+      </AlertDialogPortal>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Eliminar</AlertDialogTitle>

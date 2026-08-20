@@ -404,11 +404,22 @@ export function CreateEvaluationPeriodDialog({
                       type="number"
                       min={0}
                       max={maxAllowedWeight}
+                      step={1}
                       placeholder="Agregar"
                       className="px-0"
                       value={Number.isNaN(field.state.value) ? "" : field.state.value}
                       onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.valueAsNumber)}
+                      onKeyDown={(e) => {
+                        if (["-", "+", ".", ",", "e", "E"].includes(e.key)) {
+                          e.preventDefault()
+                        }
+                      }}
+                      onChange={(e) => {
+                        const value = e.target.valueAsNumber
+                        if (e.target.value === "" || !Number.isNaN(value)) {
+                          field.handleChange(value)
+                        }
+                      }}
                       aria-invalid={isInvalid}
                     />
                     <InputGroupAddon align="inline-end">
@@ -418,10 +429,7 @@ export function CreateEvaluationPeriodDialog({
                   {isInvalid ? (
                     <FieldError errors={field.state.meta.errors} />
                   ) : (
-                    <p className="text-muted-foreground text-xs">
-                      Disponible: {maxAllowedWeight}% (suma de los demás periodos:{" "}
-                      {otherPeriodsWeightSum}%)
-                    </p>
+                    <p className="text-muted-foreground text-xs"></p>
                   )}
                 </Field>
               )
