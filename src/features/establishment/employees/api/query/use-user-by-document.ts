@@ -2,11 +2,14 @@ import { env } from "@/config/env"
 import { api } from "@/lib/api-client"
 import { unwrapRows } from "@/lib/response-envelope"
 
+import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 import type { Person } from "@/features/establishment/employees/api/types/person"
 
-/** Fila cruda de TUSUARIO tal como la devuelve `fn_usu_buscar_por_documento`
- * (GET /usuarios/buscar-por-documento, SELECT * — sin alias). */
-interface RealTusuarioRow {
+/** Fila de `fn_usu_autocompletar_por_documento` (GET
+ * /usuarios/autocompletar-por-documento, V51). Cada catálogo llega como
+ * `fk_x` + `x_nombre` sueltos, mismo patrón que `fn_usu_empleado_buscar_por_pk`
+ * (ver `use-employee.ts`) — no anidado. */
+interface RealAutocompletarRow {
   pk_tusuario: number
   identificacion: string
   primer_nombre: string
@@ -14,8 +17,20 @@ interface RealTusuarioRow {
   primer_apellido: string
   segundo_apellido: string | null
   fecha_nacimiento: string | null
+  fk_tlv_genero: number | null
+  genero_nombre: string | null
   telefono: string | null
   correo_electronico: string | null
+  pk_tfuncionario_activo: number | null
+}
+
+/** Mismo criterio que `toCatalogItem` en `use-employee.ts`: el backend no
+ * manda un `CatalogItem` anidado, así que se arma acá con el `code` que
+ * usa el resto del real-mode para catálogos resueltos por PK (el número
+ * como string — no hay una columna `codigo` separada que traer). */
+function toGenderCatalogItem(id: number | null, name: string | null): CatalogItem | null {
+  if (id === null || name === null) return null
+  return { id, code: String(id), name }
 }
 
 /**
@@ -39,6 +54,28 @@ interface RealTusuarioRow {
  * solo crea el TFUNCIONARIO nuevo, así que ya no hace falta preocuparse
  * por el 409 de correo duplicado que existía antes de V71.
  *
+ * REV2 (cambio de modelo, V51 REV5): con TFUNCIONARIO como una fila por
+ * persona (no por establecimiento), un TUSUARIO existente tiene a lo sumo
+ * UN TFUNCIONARIO activo — ya no es ambiguo saber "cuál le corresponde". Si
+ * existe, el patch trae `id: pkFuncionarioActivo` (el mismo campo que usa
+ * el resto del código para decidir crear vs. actualizar un funcionario
+ * puntual) — el caller ya sabe tratar esto como "editar a este
+ * funcionario" en vez de "crear uno nuevo" sin ningún cambio extra (ver
+ * `persistPersonIfAny` en `add-establishment-page.tsx`, o el efecto de
+ * carga en `dialog-manage.tsx`).
+ *
+ * REV3: antes esto eran DOS llamadas (`fn_usu_buscar_por_documento` +
+ * `fn_fun_activo_por_usuario`, esta última aparte) — se consolidaron en
+ * `fn_usu_autocompletar_por_documento` (una sola query, un solo round
+ * trip). De paso corrige un bug real: la fila de `fn_usu_buscar_por_documento`
+ * SÍ traía `FK_TLV_GENERO`, pero esta interfaz nunca lo declaraba/leía, así
+ * que el género quedaba en blanco después de autocompletar aunque la
+ * persona sí lo tuviera cargado — no era un problema de cómo se renderizaba,
+ * el dato nunca llegaba a `Person.gender`. La función nueva trae
+ * `fk_tlv_genero` + `genero_nombre` (JOIN a TLISTA_VALOR, mismo patrón que
+ * `fn_usu_empleado_buscar_por_pk` en `use-employee.ts`) para poder armar un
+ * `CatalogItem` completo, no solo el `id`.
+ *
  * Solo corre contra el backend real: no hay endpoint de mock equivalente.
  */
 export async function findPersonByDocument(
@@ -52,10 +89,10 @@ export async function findPersonByDocument(
   // runtime (ver api-client.ts); el tipo de Axios no lo refleja, así que
   // se castea igual que en el resto de la app (p. ej. use-bulk-delete.ts).
   const response = (await api.get(
-    "/eval-col/usuarios/buscar-por-documento",
+    "/eval-col/usuarios/autocompletar-por-documento",
     { params: { fkTlvTipoDocumento: documentTypeId, identificacion: identification } },
-  )) as unknown as RealTusuarioRow[] | { rows: RealTusuarioRow[] }
-  const rows = unwrapRows<RealTusuarioRow>(response)
+  )) as unknown as RealAutocompletarRow[] | { rows: RealAutocompletarRow[] }
+  const rows = unwrapRows<RealAutocompletarRow>(response)
   const row = rows[0]
   if (!row) return null
 
@@ -65,8 +102,10 @@ export async function findPersonByDocument(
     lastName: row.primer_apellido,
     secondLastName: row.segundo_apellido ?? undefined,
     birthDate: row.fecha_nacimiento ?? "",
+    gender: toGenderCatalogItem(row.fk_tlv_genero, row.genero_nombre),
     phone: row.telefono ?? "",
     email: row.correo_electronico ?? "",
     accountExists: true,
+    ...(row.pk_tfuncionario_activo ? { id: row.pk_tfuncionario_activo } : {}),
   }
 }
