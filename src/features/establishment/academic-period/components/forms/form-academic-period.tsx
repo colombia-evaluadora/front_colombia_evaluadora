@@ -43,11 +43,8 @@ interface AcademicPeriodFormProps {
   id: string
   defaultValues?: Partial<AcademicPeriodFormInput>
   onSubmit: (values: AcademicPeriodFormValues) => void
-  /** Avisa si los valores actuales difieren de los iniciales, para que quien
-   *  renderiza las acciones solo muestre "Guardar" cuando haya cambios. */
   onDirtyChange?: (isDirty: boolean) => void
-  /** Cada vez que cambia, los valores actuales pasan a ser los iniciales
-   *  (se usa tras guardar con éxito, para volver a ocultar "Guardar"). */
+  onValidChange?: (isValid: boolean) => void
   savedToken?: number
   /** Id del periodo en edición: se excluye de las opciones de "periodo
    *  anterior" (un periodo no puede ser su propio anterior). */
@@ -76,6 +73,7 @@ export function AcademicPeriodForm({
   defaultValues,
   onSubmit,
   onDirtyChange,
+  onValidChange,
   savedToken = 0,
   currentPeriodId,
 }: AcademicPeriodFormProps) {
@@ -106,6 +104,18 @@ export function AcademicPeriodForm({
   useEffect(() => {
     onDirtyChange?.(!isDefaultValue)
   }, [isDefaultValue, onDirtyChange])
+
+  // Recalcula contra el schema completo (no solo los campos tocados) para que
+  // "Guardar" no aparezca en creación hasta que todos los obligatorios estén
+  // completos, incluso si el usuario nunca llegó a tocar alguno de ellos.
+  const isFormValid = useStore(
+    form.store,
+    (state) => academicPeriodFormSchema.safeParse(state.values).success,
+  )
+
+  useEffect(() => {
+    onValidChange?.(isFormValid)
+  }, [isFormValid, onValidChange])
 
   const lastSavedToken = useRef(savedToken)
   useEffect(() => {
@@ -297,42 +307,41 @@ export function AcademicPeriodForm({
         </form.Field>
 
         <form.Field name="statusId">
-          {(field) => (
-            <Field variant="outlined">
-              <FieldLabel htmlFor={field.name}>Estado*</FieldLabel>
-              <Select
-                value={field.state.value ? String(field.state.value) : ""}
-                onValueChange={(value) =>
-                  value && field.handleChange(Number(value))
-                }
-              >
-                <SelectTrigger id={field.name}>
-                  {/* El valor elegido se muestra como el mismo badge soft que
-                      usa la columna Estado de la tabla, para que el estado se
-                      lea igual en el formulario y en el listado. */}
-                  <SelectValue>
-                    {(value) => {
-                      const option = statusOptions.find(
-                        (o) => String(o.id) === value
-                      )
-                      if (!option) return "Seleccionar"
-                      const badge = ACADEMIC_PERIOD_STATUS_BADGE[option.key]
-                      return <Badge {...badge} className="text-xs">{option.label}</Badge>
-                    }}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    {statusOptions.map((option) => (
-                      <SelectItem key={option.id} value={String(option.id)}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </Field>
-          )}
+          {(field) => {
+            const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
+            return (
+              <Field variant="outlined" data-invalid={isInvalid}>
+                <FieldLabel htmlFor={field.name}>Estado*</FieldLabel>
+                <Select
+                  value={field.state.value ? String(field.state.value) : ""}
+                  onValueChange={(value) => value && field.handleChange(Number(value))}
+                >
+                  <SelectTrigger id={field.name} aria-invalid={isInvalid} onBlur={field.handleBlur}>
+                    <SelectValue>
+                      {(value) => {
+                        const option = statusOptions.find(
+                          (o) => String(o.id) === value
+                        )
+                        if (!option) return "Seleccionar"
+                        const badge = ACADEMIC_PERIOD_STATUS_BADGE[option.key]
+                        return <Badge {...badge} className="text-xs">{option.label}</Badge>
+                      }}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      {statusOptions.map((option) => (
+                        <SelectItem key={option.id} value={String(option.id)}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
+              </Field>
+            )
+          }}
         </form.Field>
 
         {/* Fila 3: jornada, hora inicio, hora final */}
@@ -441,10 +450,21 @@ export function AcademicPeriodForm({
                   name={field.name}
                   type="number"
                   min={1}
+                  step={1}
                   placeholder="Agregar"
                   value={field.state.value ?? ""}
                   onBlur={field.handleBlur}
                   aria-invalid={isInvalid}
+                  // El input number nativo deja escribir "-", "." y "e" aunque
+                  // el valor resultante no sea válido (son teclas que el
+                  // navegador permite para números negativos/decimales en
+                  // notación científica) — acá solo se acepta una cantidad
+                  // entera positiva de bloques.
+                  onKeyDown={(e) => {
+                    if (["-", "+", ".", ",", "e", "E"].includes(e.key)) {
+                      e.preventDefault()
+                    }
+                  }}
                   onChange={(e) =>
                     field.handleChange(
                       Number.isNaN(e.target.valueAsNumber) ? null : e.target.valueAsNumber,

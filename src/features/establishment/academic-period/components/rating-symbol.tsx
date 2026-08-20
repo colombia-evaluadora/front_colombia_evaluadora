@@ -4,6 +4,7 @@ import { CaretDownIcon } from "@/components/ui/icons"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { inputTriggerVariants, inputVariants, useInputVariant } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
+import { env } from "@/config/env"
 import type {
   RatingSymbol,
   RatingSymbolCategory,
@@ -27,6 +28,22 @@ function isImageValue(value: string): boolean {
     value.startsWith("/") ||
     /\.(png|jpe?g|svg|webp|gif|avif)$/i.test(value)
   )
+}
+
+// El catálogo (GRAFICA_CARITA/GRAFICA_SIMBOLO en TLISTA_VALOR) guarda la ruta
+// relativa del ícono dentro del bucket, p.ej.
+// "ACADEMICO_VALLEDUPAR/graficaCarita/489905.png" — se sirve sin auth por
+// `GET {API_URL}/files/public/<ruta>`. Un data URI o una URL ya absoluta
+// (http(s)/protocol-relative/raíz del sitio) se usa tal cual.
+function resolveSymbolImageSrc(value: string): string {
+  if (
+    /^data:image\//i.test(value) ||
+    /^(https?:)?\/\//.test(value) ||
+    value.startsWith("/")
+  ) {
+    return value
+  }
+  return `${env.API_URL}/files/public/${value}`
 }
 
 export function RatingSymbolView({
@@ -63,7 +80,7 @@ export function RatingSymbolView({
 
     return (
       <img
-        src={value}
+        src={resolveSymbolImageSrc(value)}
         alt={label ?? ""}
         onError={() => setFailed(true)}
         className={cn("inline-block size-6 object-contain", className)}

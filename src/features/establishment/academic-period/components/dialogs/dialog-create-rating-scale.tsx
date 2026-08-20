@@ -12,6 +12,7 @@ import {
 } from "@/components/table-row-actions"
 import { useNotify } from "@/components/notice/notice-context"
 import { NoticeBanner, type NoticeVariant } from "@/components/notice/notice-banner"
+import { getErrorMessage } from "@/lib/api-client"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -196,11 +197,19 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
       showLocalNotice("Agrega al menos una escala a la lista.", "error")
       return
     }
-    await createScalesBulk.mutateAsync({
-      teachingLevelIds,
-      scales: drafts.map((d) => ({ ...d, tipo: d.tipo as RatingScaleType })),
-      academicPeriodId,
-    })
+    try {
+      await createScalesBulk.mutateAsync({
+        teachingLevelIds,
+        scales: drafts.map((d) => ({ ...d, tipo: d.tipo as RatingScaleType })),
+        academicPeriodId,
+      })
+    } catch (error) {
+      // El interceptor global también tostea el error; acá además lo
+      // mostramos en el banner del diálogo, que no queda detrás del overlay
+      // del modal.
+      showLocalNotice(getErrorMessage(error), "error")
+      return
+    }
     const total = drafts.length * teachingLevelIds.length
     notify(
       total === 1
@@ -271,6 +280,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                         <FieldLabel htmlFor={field.name}>Nombre*</FieldLabel>
                         <Input
                           id={field.name}
+                          maxLength={130}
                           placeholder="Agregar"
                           value={field.state.value}
                           onBlur={field.handleBlur}
@@ -329,6 +339,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                         <FieldLabel htmlFor={field.name}>Abreviación*</FieldLabel>
                         <Input
                           id={field.name}
+                          maxLength={30}
                           placeholder="Agregar"
                           value={field.state.value}
                           onBlur={field.handleBlur}
@@ -392,17 +403,14 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                               placeholder="Agregar"
                               value={Number.isNaN(field.state.value) ? "" : field.state.value}
                               onBlur={field.handleBlur}
+                              onKeyDown={(e) => {
+                                if (["-", "+", "e", "E"].includes(e.key)) e.preventDefault()
+                              }}
                               onChange={(e) => {
                                 const value = e.target.valueAsNumber
+                                if (e.target.value !== "" && Number.isNaN(value)) return
                                 field.handleChange(value)
                                 if (!Number.isFinite(value)) return
-                                // Los otros dos campos siguen al máximo
-                                // cuando quedan fuera de rango: el mínimo si
-                                // ahora lo supera (min <= max siempre), y la
-                                // equivalente si queda por encima del nuevo
-                                // máximo. Sin esto, bajar el máximo dejaba el
-                                // form en un estado inválido que no se
-                                // explicaba mirando el campo recién tocado.
                                 const { notaMinima, notaEquivalente } = form.state.values
                                 const effectiveMin =
                                   Number.isFinite(notaMinima) && notaMinima > value
@@ -457,8 +465,12 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                               placeholder="Agregar"
                               value={Number.isNaN(field.state.value) ? "" : field.state.value}
                               onBlur={field.handleBlur}
+                              onKeyDown={(e) => {
+                                if (["-", "+", "e", "E"].includes(e.key)) e.preventDefault()
+                              }}
                               onChange={(e) => {
                                 const value = e.target.valueAsNumber
+                                if (e.target.value !== "" && Number.isNaN(value)) return
                                 field.handleChange(value)
                                 if (!Number.isFinite(value)) return
                                 // Misma idea que en "Nota máximo": el máximo
@@ -512,6 +524,9 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                               max={range.max}
                               placeholder="Agregar"
                               value={Number.isNaN(field.state.value) ? "" : field.state.value}
+                              onKeyDown={(e) => {
+                                if (["-", "+", "e", "E"].includes(e.key)) e.preventDefault()
+                              }}
                               onBlur={() => {
                                 field.handleBlur()
                                 // Clamp al salir del campo, no en cada tecla
@@ -529,7 +544,12 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                                   field.handleChange(notaMaxima)
                                 }
                               }}
-                              onChange={(e) => field.handleChange(e.target.valueAsNumber)}
+                              onChange={(e) => {
+                                const value = e.target.valueAsNumber
+                                if (e.target.value === "" || !Number.isNaN(value)) {
+                                  field.handleChange(value)
+                                }
+                              }}
                               aria-invalid={isInvalid}
                             />
                             {isInvalid && (
@@ -665,8 +685,12 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                                   min={range.min}
                                   max={range.max}
                                   value={Number.isNaN(editRow.notaMaxima) ? "" : editRow.notaMaxima}
+                                  onKeyDown={(e) => {
+                                    if (["-", "+", "e", "E"].includes(e.key)) e.preventDefault()
+                                  }}
                                   onChange={(e) => {
                                     const value = e.target.valueAsNumber
+                                    if (e.target.value !== "" && Number.isNaN(value)) return
                                     // La equivalente sigue al máximo/mínimo
                                     // cuando queda fuera de rango — mismo
                                     // criterio que en la fila de alta.
@@ -692,8 +716,12 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                                   min={range.min}
                                   max={range.max}
                                   value={Number.isNaN(editRow.notaMinima) ? "" : editRow.notaMinima}
+                                  onKeyDown={(e) => {
+                                    if (["-", "+", "e", "E"].includes(e.key)) e.preventDefault()
+                                  }}
                                   onChange={(e) => {
                                     const value = e.target.valueAsNumber
+                                    if (e.target.value !== "" && Number.isNaN(value)) return
                                     const equivalente = editRow.notaEquivalente
                                     patchEditRow({
                                       notaMinima: value,
@@ -720,11 +748,15 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                                       ? ""
                                       : editRow.notaEquivalente
                                   }
-                                  onChange={(e) =>
-                                    patchEditRow({
-                                      notaEquivalente: e.target.valueAsNumber,
-                                    })
-                                  }
+                                  onKeyDown={(e) => {
+                                    if (["-", "+", "e", "E"].includes(e.key)) e.preventDefault()
+                                  }}
+                                  onChange={(e) => {
+                                    const value = e.target.valueAsNumber
+                                    if (e.target.value === "" || !Number.isNaN(value)) {
+                                      patchEditRow({ notaEquivalente: value })
+                                    }
+                                  }}
                                   className="w-20"
                                 />
                               </TableCell>

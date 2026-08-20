@@ -22,9 +22,9 @@ interface NoticeDispatch {
 }
 
 const DEFAULT_AUTO_CLOSE: Record<NoticeVariant, number> = {
-  info: 4000,
-  success: 4000,
-  error: 6000,
+  info: 7000,
+  success: 7000,
+  error: 12000,
 }
 
 const FALLBACK: NoticeDispatch = {

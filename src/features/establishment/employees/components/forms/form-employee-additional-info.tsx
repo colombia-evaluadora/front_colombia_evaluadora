@@ -250,7 +250,7 @@ export function EmployeeAdditionalInfoForm({ value, onChange }: EmployeeAddition
         </ComboboxField>
       </Field>
 
-      <Field orientation="vertical" variant="outlined" className="md:col-span-2">
+      <Field orientation="vertical" variant="outlined">
         <FieldLabel htmlFor="employee-address">Dirección</FieldLabel>
         <Input
           id="employee-address"
