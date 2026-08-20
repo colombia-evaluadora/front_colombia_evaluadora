@@ -107,7 +107,15 @@ export function createRatingScaleDetailColumns({
             min={range.min}
             max={range.max}
             value={numberValue(draft![id])}
-            onChange={(e) => patchDraft({ [id]: e.target.valueAsNumber })}
+            onKeyDown={(e) => {
+              if (["-", "+", "e", "E"].includes(e.key)) e.preventDefault()
+            }}
+            onChange={(e) => {
+              const value = e.target.valueAsNumber
+              if (e.target.value === "" || !Number.isNaN(value)) {
+                patchDraft({ [id]: value })
+              }
+            }}
             className="w-20"
           />
         )
