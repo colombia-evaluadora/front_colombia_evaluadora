@@ -184,7 +184,7 @@ export function CreateGradeGroupDialog({
               const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
               return (
                 <Field variant="outlined" data-invalid={isInvalid}>
-                  <FieldLabel htmlFor={field.name}>Grupo</FieldLabel>
+                  <FieldLabel htmlFor={field.name}>Grupo*</FieldLabel>
                   <Input
                     id={field.name}
                     maxLength={130}
@@ -201,7 +201,7 @@ export function CreateGradeGroupDialog({
           </form.Field>
 
           <Field variant="outlined">
-            <FieldLabel htmlFor="grade-group-jornada">Jornada</FieldLabel>
+            <FieldLabel htmlFor="grade-group-jornada">Jornada*</FieldLabel>
             <Input
               id="grade-group-jornada"
               readOnly
@@ -214,7 +214,7 @@ export function CreateGradeGroupDialog({
           <form.Field name="director">
             {(field) => (
               <Field variant="outlined">
-                <FieldLabel htmlFor={field.name}>Director de grupo</FieldLabel>
+                <FieldLabel htmlFor={field.name}>Director de grupo*</FieldLabel>
                 <Select
                   value={field.state.value}
                   onValueChange={(value) => value && field.handleChange(value as string)}
@@ -239,7 +239,7 @@ export function CreateGradeGroupDialog({
           <form.Field name="metodologia">
             {(field) => (
               <Field variant="outlined">
-                <FieldLabel htmlFor={field.name}>Metodología</FieldLabel>
+                <FieldLabel htmlFor={field.name}>Metodología*</FieldLabel>
                 <Select
                   value={field.state.value}
                   onValueChange={(value) => value && field.handleChange(value)}
@@ -268,7 +268,7 @@ export function CreateGradeGroupDialog({
           <form.Field name="cupo">
             {(field) => (
               <Field variant="outlined">
-                <FieldLabel htmlFor={field.name}>Cupo</FieldLabel>
+                <FieldLabel htmlFor={field.name}>Cupo*</FieldLabel>
                 <Input
                   id={field.name}
                   type="number"

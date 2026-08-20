@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { format } from "date-fns"
+import { toast } from "sonner"
 
 import { DatePicker } from "@/components/date-picker"
 import { FormSectionHeading } from "@/components/form-section-heading"
@@ -177,11 +178,22 @@ export function UserDetailsForm({
 
         // Reset optimista: en cuanto el documento cambia, ya no se puede
         // asumir que sigue siendo la cuenta que encontró la búsqueda
-        // anterior — se desbloquea la contraseña, y el lookup de abajo la
-        // vuelve a bloquear solo si el documento nuevo también coincide
-        // con una cuenta real.
+        // anterior — se desbloquea la contraseña y se limpian los demás
+        // campos que vinieron de ese autocompletado (nombre, correo, etc.),
+        // y el lookup de abajo los vuelve a llenar solo si el documento
+        // nuevo también coincide con una cuenta real.
         if (person.accountExists) {
-            emitChange({ accountExists: false, password: "" })
+            emitChange({
+                accountExists: false,
+                password: "",
+                firstName: "",
+                middleName: "",
+                lastName: "",
+                secondLastName: "",
+                birthDate: "",
+                email: "",
+                phone: "",
+            })
             setConfirmPassword("")
         }
 
@@ -195,6 +207,7 @@ export function UserDetailsForm({
                     // valor decorativo de la contraseña, nunca una real.
                     emitChange({ ...found, password: PASSWORD_PLACEHOLDER })
                     setConfirmPassword(PASSWORD_PLACEHOLDER)
+                    toast.success("Ya existe una cuenta con este documento: se completaron sus datos automáticamente.")
                 })
                 .catch(() => {
                     // Búsqueda opcional: si falla, el usuario sigue

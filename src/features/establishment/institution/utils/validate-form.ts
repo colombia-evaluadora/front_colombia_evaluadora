@@ -1,5 +1,6 @@
 import { z } from "zod"
 
+import { passwordRules } from "@/features/auth/api/schema"
 import type { EstablishmentDetails } from "@/features/establishment/institution/api/types/establishment"
 import type { Person } from "@/features/establishment/employees/api/types/person"
 
@@ -150,6 +151,18 @@ function makePersonSchema(required: boolean) {
         }
       }
 
+      const requirePasswordStrength = (value: string | null | undefined) => {
+        if (isBlank(value)) {
+          return
+        }
+
+        for (const rule of passwordRules) {
+          if (!rule.test(value as string)) {
+            ctx.addIssue({ code: "custom", path: ["password"], message: rule.message })
+          }
+        }
+      }
+
       require("documentType", p.documentType?.name, "Selecciona el tipo de documento.")
       require("identification", p.identification, "Ingresa el número de documento.")
       require("firstName", p.firstName, "Ingresa el primer nombre.")
@@ -182,6 +195,7 @@ function makePersonSchema(required: boolean) {
         if (!p.accountExists) {
           require("password", p.password, "Ingresa la contraseña.")
           require("confirmPassword", confirmPassword, "Repite la contraseña.")
+          requirePasswordStrength(p.password)
 
           if (!isBlank(p.password) && !isBlank(confirmPassword) && p.password !== confirmPassword) {
             ctx.addIssue({
@@ -204,6 +218,7 @@ function makePersonSchema(required: boolean) {
 
       require("password", p.password, "Ingresa la contraseña.")
       require("confirmPassword", confirmPassword, "Repite la contraseña.")
+      requirePasswordStrength(p.password)
 
       if (hasPassword && hasConfirm && p.password !== confirmPassword) {
         ctx.addIssue({
