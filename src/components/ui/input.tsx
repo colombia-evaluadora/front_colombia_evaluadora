@@ -16,24 +16,24 @@ const inputVariants = cva(
     variants: {
       variant: {
         standard:
-          "rounded-none border border-transparent border-b-input px-0 py-1 focus-visible:border-b-ring aria-invalid:border-b-red dark:aria-invalid:border-b-red/50",
+          "rounded-none border border-transparent border-b-input px-0 py-2 focus-visible:border-b-ring aria-invalid:border-b-red dark:aria-invalid:border-b-red/50",
         outlined:
-          "rounded-md border border-input px-3 py-1 hover:border-ring focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/20 aria-invalid:border-red aria-invalid:focus-visible:border-red aria-invalid:focus-visible:ring-red/20",
+          "rounded-md border border-input px-3 py-2 hover:border-ring focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/20 aria-invalid:border-red aria-invalid:focus-visible:border-red aria-invalid:focus-visible:ring-red/20",
         filled:
-          "rounded-t-md border-0 border-b border-b-input bg-muted/40 px-3 pt-6 pb-1 hover:bg-muted/55 focus-visible:border-b-ring focus-visible:bg-muted/50 aria-invalid:border-b-red",
+          "rounded-t-md border-0 border-b border-b-input bg-muted/40 px-3 pt-6 pb-2 hover:bg-muted/55 focus-visible:border-b-ring focus-visible:bg-muted/50 aria-invalid:border-b-red",
       },
       // `size` controla la altura. Vive en una variante aparte (no en el
       // `variant`) para que `Input` y `Select` queden alineados: ambos
       // comparten `inputVariants`, así que `sm` se hereda gratis al trigger.
       size: {
-        default: "h-10",
-        sm: "h-9",
+        default: "h-11",
+        sm: "h-10",
       },
     },
     // `filled` reserva más alto para que el label flotante no le pise el
     // contenido. El resto de variantes usa la altura default del `size`.
     compoundVariants: [
-      { variant: "filled", size: "default", class: "h-14" },
+      { variant: "filled", size: "default", class: "h-15" },
     ],
     defaultVariants: {
       variant: "standard",

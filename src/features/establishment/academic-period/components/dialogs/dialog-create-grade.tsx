@@ -372,7 +372,7 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
           <Field variant="outlined">
             <FieldLabel>Tiene grado siguiente</FieldLabel>
             <RadioGroup
-              className="flex min-h-10 items-center gap-6 rounded-md border border-input px-3"
+              className="flex min-h-11 items-center gap-6 rounded-md border border-input px-3"
               value={tieneGradoSiguiente}
               onValueChange={(value) => value && setTieneGradoSiguiente(value)}
             >

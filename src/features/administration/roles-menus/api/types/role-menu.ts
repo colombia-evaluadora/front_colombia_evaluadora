@@ -105,6 +105,36 @@ export function reorderSiblings(
  * Los ids que no están en el catálogo se dejan como están: no se puede saber si
  * son grupos o submenús, y descartarlos perdería asignaciones en silencio.
  */
+/**
+ * Separa los asignados en los que el catálogo sabe ubicar y los que no.
+ *
+ * Un id queda "huérfano" cuando no aparece en el árbol: pasa cuando su menú
+ * padre fue dado de baja (`active = false`) y el catálogo ya no lo devuelve, o
+ * cuando la jerarquía tiene más de dos niveles y `buildMenuTree` no lo alcanza.
+ * Esos ids son fantasmas: `MenuTransfer` no los pinta —se dibuja desde el
+ * árbol—, así que no se pueden ver ni quitar desde la pantalla, pero viajan en
+ * cada guardado y hacen que el backend rechace la operación entera por la
+ * invariante de jerarquía.
+ *
+ * `withRequiredParents` no puede rescatarlos: no hay forma de saber cuál era el
+ * padre. Se separan para dejarlos fuera del envío y avisarle a quien guarda, en
+ * vez de mandar una lista que el backend va a rechazar.
+ */
+export function partitionKnownMenus(
+  assignedIds: number[],
+  tree: MenuTreeNode[],
+): { known: number[]; unknown: number[] } {
+  const inTree = new Set<number>()
+  for (const group of tree) {
+    inTree.add(group.id)
+    for (const child of group.children) inTree.add(child.id)
+  }
+
+  const known: number[] = []
+  const unknown: number[] = []
+  for (const id of assignedIds) (inTree.has(id) ? known : unknown).push(id)
+  return { known, unknown }
+}
 export function withRequiredParents(assignedIds: number[], tree: MenuTreeNode[]): number[] {
   const parentOf = new Map<number, number | null>()
   for (const group of tree) {
