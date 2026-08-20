@@ -120,6 +120,7 @@ export function createRatingScaleDetailColumns({
           />
         )
       },
+      enableHiding: false,
     }
   }
 
@@ -187,6 +188,7 @@ export function createRatingScaleDetailColumns({
           />
         )
       },
+      enableHiding: false,
     },
     gradeColumn("notaMaxima", "Nota máximo"),
     gradeColumn("notaMinima", "Nota mínimo"),
@@ -224,6 +226,7 @@ export function createRatingScaleDetailColumns({
           </Select>
         )
       },
+      enableHiding: false,
     },
     {
       id: "iconografia",
@@ -244,6 +247,7 @@ export function createRatingScaleDetailColumns({
         )
       },
       enableSorting: false,
+      enableHiding: false,
     },
     {
       id: "actions",

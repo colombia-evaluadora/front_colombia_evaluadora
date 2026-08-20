@@ -103,8 +103,9 @@ export function SubjectRowFields({
           aria-label="Abreviación"
           placeholder="Agregar"
           maxLength={30}
+          className="uppercase placeholder:normal-case"
           value={draft.abreviacion}
-          onChange={(e) => onPatch({ abreviacion: e.target.value })}
+          onChange={(e) => onPatch({ abreviacion: e.target.value.toUpperCase() })}
         />
       </TableCell>
       <TableCell>
