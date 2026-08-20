@@ -61,7 +61,7 @@ export function CampusDetailsForm({
             </ComboboxFieldTrigger>
             <ComboboxFieldContent>
               {establishmentPicker.establishments.map((item) => (
-                <ComboboxFieldItem key={item.id} value={item.id}>
+                <ComboboxFieldItem key={item.id} value={item.id} title={item.name}>
                   {item.name}
                 </ComboboxFieldItem>
               ))}

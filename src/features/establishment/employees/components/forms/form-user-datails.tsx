@@ -173,8 +173,10 @@ export function UserDetailsForm({
     // pisar el form con datos de una búsqueda vieja).
     const documentTypeId = person.documentType?.id ?? null
     const identification = person.identification
+    const isUserEditingDocument = useRef(false)
     useEffect(() => {
         if (!documentTypeId || !identification.trim()) return
+        if (!isUserEditingDocument.current) return
 
         // Reset optimista: en cuanto el documento cambia, ya no se puede
         // asumir que sigue siendo la cuenta que encontró la búsqueda
@@ -267,7 +269,10 @@ export function UserDetailsForm({
                         value={person.documentType?.id ?? null}
                         onValueChange={(selectedValue) => {
                             const option = documentTypes.find((item) => item.id === selectedValue)
-                            if (option) emitChange({ documentType: option })
+                            if (option) {
+                                isUserEditingDocument.current = true
+                                emitChange({ documentType: option })
+                            }
                         }}
                     >
                         <ComboboxFieldTrigger size="sm" aria-invalid={isInvalid(`${fieldPrefix}.documentType`)}>
@@ -275,7 +280,7 @@ export function UserDetailsForm({
                         </ComboboxFieldTrigger>
                         <ComboboxFieldContent>
                             {documentTypes.map((item) => (
-                                <ComboboxFieldItem key={item.id} value={item.id}>
+                                <ComboboxFieldItem key={item.id} value={item.id} title={item.name}>
                                     {item.name}
                                 </ComboboxFieldItem>
                             ))}
@@ -297,9 +302,10 @@ export function UserDetailsForm({
                         maxLength={30}
                         value={person.identification}
                         aria-invalid={isInvalid(`${fieldPrefix}.identification`)}
-                        onChange={(event) =>
+                        onChange={(event) => {
+                            isUserEditingDocument.current = true
                             emitChange({ identification: toDigitsOnly(event.target.value, 30) })
-                        }
+                        }}
                     />
                     <FieldError>{errorFor(`${fieldPrefix}.identification`)}</FieldError>
                 </Field>
@@ -437,7 +443,7 @@ export function UserDetailsForm({
                 </Field>
                 <Field orientation="vertical" variant="outlined" data-invalid={isInvalid(`${fieldPrefix}.gender`) ? "true" : undefined}>
                     <FieldLabel htmlFor="gender-user">
-                        Género
+                        Género*
                     </FieldLabel>
                     <ComboboxField
                         id="gender-user"
