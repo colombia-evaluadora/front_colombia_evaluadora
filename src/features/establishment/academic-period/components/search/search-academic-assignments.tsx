@@ -5,13 +5,13 @@ import { optionTerm, type QuerySyntax } from "@/components/search/query-syntax"
 import { useQuerySearch } from "@/components/search/use-query-search"
 import { Field, FieldLabel } from "@/components/ui/field"
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+  ComboboxField,
+  ComboboxFieldContent,
+  ComboboxFieldItem,
+  ComboboxFieldTrigger,
+  ComboboxFieldValue,
+  ComboboxGroup,
+} from "@/components/ui/combobox"
 
 import { EMPLOYEE_STATUS_LABELS } from "@/features/establishment/employees/api/ui-mappings"
 import {
@@ -105,26 +105,26 @@ export function SearchAcademicAssignments({
         <div className="px-4">
           <Field orientation="vertical" variant="outlined" className="gap-2">
             <FieldLabel htmlFor="academic-assignments-status">Estado</FieldLabel>
-            <Select
+            <ComboboxField
               value={status}
               onValueChange={(value) => onStatusChange((value as EmployeeStatus | null) ?? "")}
             >
-              <SelectTrigger id="academic-assignments-status" size="sm" className="w-full">
-                <SelectValue placeholder="Todos">
+              <ComboboxFieldTrigger id="academic-assignments-status" size="sm" className="w-full">
+                <ComboboxFieldValue placeholder="Todos">
                   {(value) => EMPLOYEE_STATUS_LABELS[value as EmployeeStatus] ?? "Todos"}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectItem value={ALL_VALUE}>Todos</SelectItem>
+                </ComboboxFieldValue>
+              </ComboboxFieldTrigger>
+              <ComboboxFieldContent>
+                <ComboboxGroup>
+                  <ComboboxFieldItem value={ALL_VALUE}>Todos</ComboboxFieldItem>
                   {EMPLOYEE_STATUSES.map((value) => (
-                    <SelectItem key={value} value={value}>
+                    <ComboboxFieldItem key={value} value={value}>
                       {EMPLOYEE_STATUS_LABELS[value]}
-                    </SelectItem>
+                    </ComboboxFieldItem>
                   ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
+                </ComboboxGroup>
+              </ComboboxFieldContent>
+            </ComboboxField>
           </Field>
         </div>
       </SearchQueryBar>

@@ -6,9 +6,6 @@ import {
   type SelectCategoryRow,
 } from "@/features/establishment/academic-period/api/query/fetch-select-category"
 
-// Igual chequeo que `isImageValue` en components/rating-symbol.tsx (duplicado
-// a propósito: api/ no importa de components/, ver convención del resto de
-// hooks de este módulo) — VALOR es imagen (URL/data URI) o texto (emoji).
 function isImageValue(value: string): boolean {
   return (
     /^data:image\//i.test(value) ||
@@ -28,20 +25,79 @@ function toSymbols(
     kind: isImageValue(row.valor) ? "imagen" : "emoji",
     valor: row.valor,
     label: row.nombre,
+    color: row.accion ?? undefined,
   }))
 }
 
-// Catálogo genérico de TLISTA_VALOR: dos categorías separadas en la base
-// (`GRAFICA_CARITA`, `GRAFICA_SIMBOLO`) que el front combina en una sola
-// lista — `fn_escala_guardar_bulk` necesita saber de cuál de las dos vino el
-// VALOR elegido (`iconoCategoria`), por eso se guarda `categoria` por símbolo
-// (ver resolve-rating-scale-refs.ts).
+const NIVEL_ORDER = ["SUPERIOR", "ALTO", "BASICO", "BAJO"]
+
+const COLOR_ORDER = ["AMARILLO", "VERDE", "CELESTE", "NARANJA", "ROJO"]
+
+interface ParsedAccion {
+  color?: string
+  nivel?: string
+  n?: number
+}
+
+function parseAccion(accion: string | undefined): ParsedAccion {
+  if (!accion) return {}
+  const parts = accion.split("_")
+  const last = parts[parts.length - 1]
+  const hasSuffix = parts.length > 1 && /^\d+$/.test(last)
+  const n = hasSuffix ? Number(last) : undefined
+  const nivelParts = hasSuffix ? parts.slice(1, -1) : parts.slice(1)
+  return {
+    color: parts[0],
+    nivel: nivelParts.length > 0 ? nivelParts.join("_") : undefined,
+    n,
+  }
+}
+
+function rank(order: string[], value: string | undefined): number {
+  if (!value) return order.length
+  const index = order.indexOf(value)
+  return index === -1 ? order.length : index
+}
+
+function caritaRank(symbol: RatingSymbol): [number, number, number] {
+  const { color, nivel, n } = parseAccion(symbol.color)
+  return [rank(COLOR_ORDER, color), rank(NIVEL_ORDER, nivel), n ?? Number.POSITIVE_INFINITY]
+}
+
+function compareCaritaRank(a: RatingSymbol, b: RatingSymbol): number {
+  const ra = caritaRank(a)
+  const rb = caritaRank(b)
+  return ra[0] - rb[0] || ra[1] - rb[1] || ra[2] - rb[2]
+}
+
+const SIMBOLO_ACCION_ORDER = [
+  "CELESTE_ALTO",
+  "MORADO_ACEPTABLE",
+  "ROSADO_INSUFICIENTE",
+  "AMARILLO_SUPERIOR",
+  "NARANJA_SOBRESALIENTE",
+  "ROJO_DEFICIENTE",
+  "VERDE_EXCELENTE",
+  "ROSADO_BASICO",
+  "ROJO_BAJO",
+]
+
+function simboloRank(symbol: RatingSymbol): number {
+  if (!symbol.color) return SIMBOLO_ACCION_ORDER.length
+  const index = SIMBOLO_ACCION_ORDER.indexOf(symbol.color)
+  return index === -1 ? SIMBOLO_ACCION_ORDER.length : index
+}
+
 async function fetchRatingSymbols(): Promise<RatingSymbol[]> {
   const [caritas, simbolos] = await Promise.all([
     fetchSelectCategory("GRAFICA_CARITA"),
     fetchSelectCategory("GRAFICA_SIMBOLO"),
   ])
-  return [...toSymbols(caritas, "carita"), ...toSymbols(simbolos, "valoracion")]
+  const caritaSymbols = toSymbols(caritas, "carita").sort(compareCaritaRank)
+  const simboloSymbols = toSymbols(simbolos, "valoracion").sort(
+    (a, b) => simboloRank(a) - simboloRank(b),
+  )
+  return [...caritaSymbols, ...simboloSymbols]
 }
 
 export const ratingSymbolsQueryKey = () => ["rating-symbols"]

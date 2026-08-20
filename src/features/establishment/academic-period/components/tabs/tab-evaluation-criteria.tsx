@@ -17,13 +17,13 @@ import {
   type EvaluationCriteriaValues,
 } from "@/features/establishment/academic-period/api/schema"
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+  ComboboxField,
+  ComboboxFieldContent,
+  ComboboxFieldItem,
+  ComboboxFieldTrigger,
+  ComboboxFieldValue,
+  ComboboxGroup,
+} from "@/components/ui/combobox"
 
 // Cada campo declara su tipo de control: `select` para los basados en
 // `TLISTA_VALOR` (incluye `gradingScale` que arma sus opciones localmente),
@@ -180,16 +180,23 @@ function EvaluationCriteriaForm({
   // tengan al menos una escala creada. Si todavía no se creó ninguna, la
   // lista queda vacía y el select se muestra en blanco.
   // Misma forma `{ key, label }` que las opciones del backend, para que el
-  // render del select sea uniforme. El valor guardado es el nombre del nivel.
+  // render del select sea uniforme. `GRADING_SCALE` es BIGINT en el back y
+  // referencia la escala en sí (`RatingScale.codigo`, la PK que ya usan
+  // update-rating-scale.ts/delete-rating-scale.ts) — NO el id del nivel de
+  // enseñanza. Mandar `lvl.id` ahí es lo que disparaba "la escala de
+  // valoración 1 no existe o está inactiva" (1 era el id de Preescolar, no
+  // el de ninguna escala). Se dedupea por nivel (un nivel puede tener más
+  // de una escala — bandas repetidas por tipo/nombre — pero acá solo hace
+  // falta una referencia válida por nivel), quedándose con la primera.
   const gradingScaleOptions = useMemo(() => {
-    const map = new Map<number, string>()
+    const map = new Map<number, { codigo: number; nombre: string }>()
     for (const scale of ratingScalesData?.rows ?? []) {
       for (const lvl of scale.teachingLevels) {
-        map.set(lvl.id, lvl.nombre)
+        if (!map.has(lvl.id)) map.set(lvl.id, { codigo: scale.codigo, nombre: lvl.nombre })
       }
     }
-    return Array.from(map.values()).map((nombre) => ({
-      key: nombre,
+    return Array.from(map.values()).map(({ codigo, nombre }) => ({
+      key: String(codigo),
       label: nombre,
     }))
   }, [ratingScalesData])
@@ -210,12 +217,27 @@ function EvaluationCriteriaForm({
   // arrancar en `EMPTY` y hacer `form.reset()` en un efecto post-montaje):
   // ese `reset()` actualizaba el estado interno del form correctamente
   // —confirmado viendo los criterios correctos en el log— pero los
-  // `<Select>` no reflejaban el cambio la primera vez que se montaba el
+  // `<ComboboxField>` no reflejaban el cambio la primera vez que se montaba el
   // componente (sí en montajes posteriores, con los datos ya en caché).
   // Montar el form directo con los valores correctos evita depender de ese
   // reset después del primer render.
+  // Si la escala guardada en el criterio ya no existe (se borró después de
+  // guardarla), `gradingScale` sigue trayendo su id viejo — reenviarlo tal
+  // cual revienta el guardado con "La escala de valoracion % no existe o
+  // esta inactiva" sin que el usuario haya tocado el campo. Se reconcilia acá
+  // contra las opciones vigentes: si el id guardado no aparece, el select
+  // arranca en "Ninguna" en vez de mandar una referencia muerta.
+  const reconciledGradingScale =
+    initialValues.gradingScale &&
+    !gradingScaleOptions.some((option) => option.key === initialValues.gradingScale)
+      ? ""
+      : initialValues.gradingScale
+
   const form = useForm({
-    defaultValues: initialValues,
+    defaultValues: {
+      ...initialValues,
+      gradingScale: reconciledGradingScale,
+    } as EvaluationCriteriaValues,
     validators: { onSubmit: evaluationCriteriaSchema },
     onSubmit: ({ value }) => {
       if (academicPeriodId != null) {
@@ -263,15 +285,14 @@ function EvaluationCriteriaForm({
                         step={0.1}
                         placeholder="Agregar"
                         value={Number.isNaN(field.state.value) ? "" : field.state.value}
-                        // El atributo `max` es solo una pista visual (HTML5 no
-                        // bloquea tipeo ni submit programático). El handler
-                        // clampa al máximo activo: si el back ya tiene el
-                        // criterio guardado en otro formato y el front abre
-                        // con formato más restrictivo, el clamp evita que
-                        // quede un valor fuera de rango sin disparar el
-                        // 400 del back al guardar.
+                        onKeyDown={(e) => {
+                          if (["-", "+", "e", "E"].includes(e.key)) {
+                            e.preventDefault()
+                          }
+                        }}
                         onChange={(e) => {
                           const raw = e.target.valueAsNumber
+                          if (e.target.value !== "" && Number.isNaN(raw)) return
                           const max = parseGradingRange(
                             gradingFormatLabel(form.state.values.gradingFormat)
                           ).max
@@ -281,11 +302,11 @@ function EvaluationCriteriaForm({
                           }
                           field.handleChange(raw)
                         }}
-                        className="h-9"
+                        className="h-10"
                         aria-invalid={isInvalid}
                       />
                     ) : (
-                      <Select
+                      <ComboboxField
                         items={Object.fromEntries([
                           ...(isClearable ? [["", "Ninguna"]] : []),
                           ...fieldOptions.map((o) => [o.key, o.label]),
@@ -296,38 +317,58 @@ function EvaluationCriteriaForm({
                         // — en este branch (`cfg.kind !== "number"`) siempre
                         // es el `string` de un campo de catálogo.
                         value={field.state.value as string}
-                        onValueChange={(value) => value != null && field.handleChange(value)}
+                        onValueChange={(value) => {
+                          if (value == null) return
+                          // Nota inicial y nota máxima de recuperación viven
+                          // en la escala del formato (igual que las bandas de
+                          // escala de valoración) — al cambiar el formato acá
+                          // mismo, sin esperar a guardar, se reescalan en
+                          // proporción al nuevo rango para que el usuario no
+                          // vea un "5" que ya no tiene sentido en un formato
+                          // 0-100 recién elegido.
+                          if (cfg.name === "gradingFormat") {
+                            const oldMax = parseGradingRange(gradingFormatLabel(field.state.value as string)).max
+                            const newMax = parseGradingRange(gradingFormatLabel(value)).max
+                            if (oldMax !== newMax) {
+                              const rescale = (n: number) =>
+                                Number.isFinite(n) ? Math.round((n / oldMax) * newMax * 10) / 10 : n
+                              form.setFieldValue("initialGrade", rescale(form.state.values.initialGrade))
+                              form.setFieldValue(
+                                "maxRecoveryGrade",
+                                rescale(form.state.values.maxRecoveryGrade),
+                              )
+                            }
+                          }
+                          field.handleChange(value)
+                        }}
                       >
-                        <SelectTrigger id={field.name} aria-invalid={isInvalid}>
-                          <SelectValue placeholder="Seleccionar" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {!isClearable && fieldOptions.length === 0 ? (
+                        <ComboboxFieldTrigger id={field.name} aria-invalid={isInvalid}>
+                          <ComboboxFieldValue placeholder="Seleccionar" />
+                        </ComboboxFieldTrigger>
+                        <ComboboxFieldContent>
+                          {fieldOptions.length === 0 ? (
+                            // Sin opciones no tiene sentido ofrecer "Ninguna"
+                            // (no hay nada que limpiar) — solo el mensaje de
+                            // por qué está vacío.
                             <p className="px-3 py-4 text-center text-sm text-muted-foreground">
                               {EMPTY_MESSAGES[cfg.name] ?? DEFAULT_EMPTY_MESSAGE}
                             </p>
                           ) : (
-                            <SelectGroup>
-                              {isClearable && <SelectItem value="">Ninguna</SelectItem>}
-                              {isClearable && fieldOptions.length === 0 ? (
-                                <p className="px-3 py-4 text-center text-sm text-muted-foreground">
-                                  {EMPTY_MESSAGES[cfg.name] ?? DEFAULT_EMPTY_MESSAGE}
-                                </p>
-                              ) : (
-                                fieldOptions.map((option) => (
-                                  <SelectItem
-                                    key={option.key}
-                                    value={option.key}
-                                    title={option.label}
-                                  >
-                                    {option.label}
-                                  </SelectItem>
-                                ))
-                              )}
-                            </SelectGroup>
+                            <ComboboxGroup>
+                              {isClearable && <ComboboxFieldItem value="">Ninguna</ComboboxFieldItem>}
+                              {fieldOptions.map((option) => (
+                                <ComboboxFieldItem
+                                  key={option.key}
+                                  value={option.key}
+                                  title={option.label}
+                                >
+                                  {option.label}
+                                </ComboboxFieldItem>
+                              ))}
+                            </ComboboxGroup>
                           )}
-                        </SelectContent>
-                      </Select>
+                        </ComboboxFieldContent>
+                      </ComboboxField>
                     )}
                     {isInvalid && <FieldError errors={field.state.meta.errors} />}
                   </Field>

@@ -21,13 +21,13 @@ import {
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+  ComboboxField,
+  ComboboxFieldContent,
+  ComboboxFieldItem,
+  ComboboxFieldTrigger,
+  ComboboxFieldValue,
+  ComboboxGroup,
+} from "@/components/ui/combobox"
 
 import { useSedeFuncionariosQuery } from "@/features/establishment/academic-period/api/query/use-sede-funcionarios"
 
@@ -184,9 +184,10 @@ export function CreateGradeGroupDialog({
               const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
               return (
                 <Field variant="outlined" data-invalid={isInvalid}>
-                  <FieldLabel htmlFor={field.name}>Grupo</FieldLabel>
+                  <FieldLabel htmlFor={field.name}>Grupo*</FieldLabel>
                   <Input
                     id={field.name}
+                    maxLength={130}
                     placeholder="Agregar"
                     value={field.state.value}
                     onBlur={field.handleBlur}
@@ -200,7 +201,7 @@ export function CreateGradeGroupDialog({
           </form.Field>
 
           <Field variant="outlined">
-            <FieldLabel htmlFor="grade-group-jornada">Jornada</FieldLabel>
+            <FieldLabel htmlFor="grade-group-jornada">Jornada*</FieldLabel>
             <Input
               id="grade-group-jornada"
               readOnly
@@ -213,24 +214,24 @@ export function CreateGradeGroupDialog({
           <form.Field name="director">
             {(field) => (
               <Field variant="outlined">
-                <FieldLabel htmlFor={field.name}>Director de grupo</FieldLabel>
-                <Select
+                <FieldLabel htmlFor={field.name}>Director de grupo*</FieldLabel>
+                <ComboboxField
                   value={field.state.value}
                   onValueChange={(value) => value && field.handleChange(value as string)}
                 >
-                  <SelectTrigger id={field.name}>
-                    <SelectValue placeholder="Seleccionar" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
+                  <ComboboxFieldTrigger id={field.name}>
+                    <ComboboxFieldValue placeholder="Seleccionar" />
+                  </ComboboxFieldTrigger>
+                  <ComboboxFieldContent>
+                    <ComboboxGroup>
                       {teacherNames.map((name) => (
-                        <SelectItem key={name} value={name}>
+                        <ComboboxFieldItem key={name} value={name}>
                           {name}
-                        </SelectItem>
+                        </ComboboxFieldItem>
                       ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
+                    </ComboboxGroup>
+                  </ComboboxFieldContent>
+                </ComboboxField>
               </Field>
             )}
           </form.Field>
@@ -238,28 +239,28 @@ export function CreateGradeGroupDialog({
           <form.Field name="metodologia">
             {(field) => (
               <Field variant="outlined">
-                <FieldLabel htmlFor={field.name}>Metodología</FieldLabel>
-                <Select
+                <FieldLabel htmlFor={field.name}>Metodología*</FieldLabel>
+                <ComboboxField
                   value={field.state.value}
                   onValueChange={(value) => value && field.handleChange(value)}
                 >
-                  <SelectTrigger id={field.name}>
-                    <SelectValue>
+                  <ComboboxFieldTrigger id={field.name}>
+                    <ComboboxFieldValue>
                       {(value) =>
                         metodologiaOptions.find((o) => o.key === value)?.label ?? "Seleccionar"
                       }
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
+                    </ComboboxFieldValue>
+                  </ComboboxFieldTrigger>
+                  <ComboboxFieldContent>
+                    <ComboboxGroup>
                       {metodologiaOptions.map((option) => (
-                        <SelectItem key={option.key} value={option.key}>
+                        <ComboboxFieldItem key={option.key} value={option.key}>
                           {option.label}
-                        </SelectItem>
+                        </ComboboxFieldItem>
                       ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
+                    </ComboboxGroup>
+                  </ComboboxFieldContent>
+                </ComboboxField>
               </Field>
             )}
           </form.Field>
@@ -267,15 +268,28 @@ export function CreateGradeGroupDialog({
           <form.Field name="cupo">
             {(field) => (
               <Field variant="outlined">
-                <FieldLabel htmlFor={field.name}>Cupo</FieldLabel>
+                <FieldLabel htmlFor={field.name}>Cupo*</FieldLabel>
                 <Input
                   id={field.name}
                   type="number"
-                  min={0}
+                  min={1}
+                  max={99}
+                  step={1}
                   placeholder="Agregar"
                   value={Number.isNaN(field.state.value) ? "" : field.state.value}
                   onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.valueAsNumber)}
+                  // CAPACIDAD es NUMERIC(2,0) — entero, sin decimales ni negativos.
+                  onKeyDown={(e) => {
+                    if (["-", "+", ".", ",", "e", "E"].includes(e.key)) {
+                      e.preventDefault()
+                    }
+                  }}
+                  onChange={(e) => {
+                    const value = e.target.valueAsNumber
+                    if (e.target.value === "" || !Number.isNaN(value)) {
+                      field.handleChange(value)
+                    }
+                  }}
                 />
               </Field>
             )}

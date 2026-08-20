@@ -7,6 +7,14 @@ import { Input, inputVariants } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { cn } from "@/lib/utils"
 import {
+  ComboboxField,
+  ComboboxFieldContent,
+  ComboboxFieldItem,
+  ComboboxFieldTrigger,
+  ComboboxFieldValue,
+  ComboboxGroup,
+} from "@/components/ui/combobox"
+import {
   Select,
   SelectContent,
   SelectGroup,
@@ -35,11 +43,8 @@ interface AcademicPeriodFormProps {
   id: string
   defaultValues?: Partial<AcademicPeriodFormInput>
   onSubmit: (values: AcademicPeriodFormValues) => void
-  /** Avisa si los valores actuales difieren de los iniciales, para que quien
-   *  renderiza las acciones solo muestre "Guardar" cuando haya cambios. */
   onDirtyChange?: (isDirty: boolean) => void
-  /** Cada vez que cambia, los valores actuales pasan a ser los iniciales
-   *  (se usa tras guardar con éxito, para volver a ocultar "Guardar"). */
+  onValidChange?: (isValid: boolean) => void
   savedToken?: number
   /** Id del periodo en edición: se excluye de las opciones de "periodo
    *  anterior" (un periodo no puede ser su propio anterior). */
@@ -68,6 +73,7 @@ export function AcademicPeriodForm({
   defaultValues,
   onSubmit,
   onDirtyChange,
+  onValidChange,
   savedToken = 0,
   currentPeriodId,
 }: AcademicPeriodFormProps) {
@@ -98,6 +104,18 @@ export function AcademicPeriodForm({
   useEffect(() => {
     onDirtyChange?.(!isDefaultValue)
   }, [isDefaultValue, onDirtyChange])
+
+  // Recalcula contra el schema completo (no solo los campos tocados) para que
+  // "Guardar" no aparezca en creación hasta que todos los obligatorios estén
+  // completos, incluso si el usuario nunca llegó a tocar alguno de ellos.
+  const isFormValid = useStore(
+    form.store,
+    (state) => academicPeriodFormSchema.safeParse(state.values).success,
+  )
+
+  useEffect(() => {
+    onValidChange?.(isFormValid)
+  }, [isFormValid, onValidChange])
 
   const lastSavedToken = useRef(savedToken)
   useEffect(() => {
@@ -221,29 +239,29 @@ export function AcademicPeriodForm({
             return (
               <Field variant="outlined" data-invalid={isInvalid}>
                 <FieldLabel htmlFor={field.name}>Sede*</FieldLabel>
-                <Select
+                <ComboboxField
                   value={field.state.value || ""}
                   onValueChange={(value) => value && field.handleChange(value)}
                 >
-                  <SelectTrigger id={field.name} aria-invalid={isInvalid}>
-                    <SelectValue>
+                  <ComboboxFieldTrigger id={field.name} aria-invalid={isInvalid}>
+                    <ComboboxFieldValue>
                       {(value) => sedes.find((s) => String(s.pk_sede) === value)?.nombre ?? "Seleccionar"}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
+                    </ComboboxFieldValue>
+                  </ComboboxFieldTrigger>
+                  <ComboboxFieldContent>
+                    <ComboboxGroup>
                       {sedes.map((sede) => (
-                        <SelectItem
+                        <ComboboxFieldItem
                           key={sede.pk_sede}
                           value={String(sede.pk_sede)}
                           title={sede.nombre}
                         >
                           {sede.nombre}
-                        </SelectItem>
+                        </ComboboxFieldItem>
                       ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
+                    </ComboboxGroup>
+                  </ComboboxFieldContent>
+                </ComboboxField>
                 {isInvalid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             )
@@ -257,7 +275,7 @@ export function AcademicPeriodForm({
           {(field) => (
             <Field variant="outlined">
               <FieldLabel htmlFor={field.name}>Periodo académico anterior</FieldLabel>
-              <Select
+              <ComboboxField
                 value={field.state.value ? String(field.state.value) : NO_PREVIOUS_PERIOD}
                 onValueChange={(value) =>
                   field.handleChange(
@@ -265,66 +283,65 @@ export function AcademicPeriodForm({
                   )
                 }
               >
-                <SelectTrigger id={field.name}>
-                  <SelectValue>
+                <ComboboxFieldTrigger id={field.name}>
+                  <ComboboxFieldValue>
                     {(value) => {
                       const p = previousPeriodOptions.find((o) => String(o.id) === value)
                       return p ? p.name : "No tiene"
                     }}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem value={NO_PREVIOUS_PERIOD}>No tiene</SelectItem>
+                  </ComboboxFieldValue>
+                </ComboboxFieldTrigger>
+                <ComboboxFieldContent>
+                  <ComboboxGroup>
+                    <ComboboxFieldItem value={NO_PREVIOUS_PERIOD}>No tiene</ComboboxFieldItem>
                     {previousPeriodOptions.map((period) => (
-                      <SelectItem key={period.id} value={String(period.id)}>
+                      <ComboboxFieldItem key={period.id} value={String(period.id)}>
                         {period.name}
-                      </SelectItem>
+                      </ComboboxFieldItem>
                     ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+                  </ComboboxGroup>
+                </ComboboxFieldContent>
+              </ComboboxField>
             </Field>
           )}
         </form.Field>
 
         <form.Field name="statusId">
-          {(field) => (
-            <Field variant="outlined">
-              <FieldLabel htmlFor={field.name}>Estado*</FieldLabel>
-              <Select
-                value={field.state.value ? String(field.state.value) : ""}
-                onValueChange={(value) =>
-                  value && field.handleChange(Number(value))
-                }
-              >
-                <SelectTrigger id={field.name}>
-                  {/* El valor elegido se muestra como el mismo badge soft que
-                      usa la columna Estado de la tabla, para que el estado se
-                      lea igual en el formulario y en el listado. */}
-                  <SelectValue>
-                    {(value) => {
-                      const option = statusOptions.find(
-                        (o) => String(o.id) === value
-                      )
-                      if (!option) return "Seleccionar"
-                      const badge = ACADEMIC_PERIOD_STATUS_BADGE[option.key]
-                      return <Badge {...badge} className="text-xs">{option.label}</Badge>
-                    }}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    {statusOptions.map((option) => (
-                      <SelectItem key={option.id} value={String(option.id)}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </Field>
-          )}
+          {(field) => {
+            const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
+            return (
+              <Field variant="outlined" data-invalid={isInvalid}>
+                <FieldLabel htmlFor={field.name}>Estado*</FieldLabel>
+                <Select
+                  value={field.state.value ? String(field.state.value) : ""}
+                  onValueChange={(value) => value && field.handleChange(Number(value))}
+                >
+                  <SelectTrigger id={field.name} aria-invalid={isInvalid} onBlur={field.handleBlur}>
+                    <SelectValue>
+                      {(value) => {
+                        const option = statusOptions.find(
+                          (o) => String(o.id) === value
+                        )
+                        if (!option) return "Seleccionar"
+                        const badge = ACADEMIC_PERIOD_STATUS_BADGE[option.key]
+                        return <Badge {...badge} className="text-xs">{option.label}</Badge>
+                      }}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      {statusOptions.map((option) => (
+                        <SelectItem key={option.id} value={String(option.id)}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
+              </Field>
+            )
+          }}
         </form.Field>
 
         {/* Fila 3: jornada, hora inicio, hora final */}
@@ -334,27 +351,27 @@ export function AcademicPeriodForm({
             return (
               <Field variant="outlined" data-invalid={isInvalid}>
                 <FieldLabel htmlFor={field.name}>Jornada*</FieldLabel>
-                <Select
+                <ComboboxField
                   value={field.state.value ? String(field.state.value) : ""}
                   onValueChange={(value) => value && field.handleChange(Number(value))}
                 >
-                  <SelectTrigger id={field.name} aria-invalid={isInvalid}>
-                    <SelectValue>
+                  <ComboboxFieldTrigger id={field.name} aria-invalid={isInvalid}>
+                    <ComboboxFieldValue>
                       {(value) =>
                         jornadas.find((j) => String(j.id) === value)?.name ?? "Seleccionar"
                       }
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
+                    </ComboboxFieldValue>
+                  </ComboboxFieldTrigger>
+                  <ComboboxFieldContent>
+                    <ComboboxGroup>
                       {jornadas.map((jornada) => (
-                        <SelectItem key={jornada.id} value={String(jornada.id)}>
+                        <ComboboxFieldItem key={jornada.id} value={String(jornada.id)}>
                           {jornada.name}
-                        </SelectItem>
+                        </ComboboxFieldItem>
                       ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
+                    </ComboboxGroup>
+                  </ComboboxFieldContent>
+                </ComboboxField>
                 {isInvalid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             )
@@ -433,10 +450,21 @@ export function AcademicPeriodForm({
                   name={field.name}
                   type="number"
                   min={1}
+                  step={1}
                   placeholder="Agregar"
                   value={field.state.value ?? ""}
                   onBlur={field.handleBlur}
                   aria-invalid={isInvalid}
+                  // El input number nativo deja escribir "-", "." y "e" aunque
+                  // el valor resultante no sea válido (son teclas que el
+                  // navegador permite para números negativos/decimales en
+                  // notación científica) — acá solo se acepta una cantidad
+                  // entera positiva de bloques.
+                  onKeyDown={(e) => {
+                    if (["-", "+", ".", ",", "e", "E"].includes(e.key)) {
+                      e.preventDefault()
+                    }
+                  }}
                   onChange={(e) =>
                     field.handleChange(
                       Number.isNaN(e.target.valueAsNumber) ? null : e.target.valueAsNumber,

@@ -16,11 +16,18 @@ import { ControlPointIcon, SpinnerIcon } from "@/components/ui/icons"
 import { ConfirmRemoveButton } from "@/components/confirm-remove-button"
 import { Input } from "@/components/ui/input"
 import {
+  ComboboxField,
+  ComboboxFieldContent,
+  ComboboxFieldItem,
+  ComboboxFieldTrigger,
+  ComboboxFieldValue,
+  ComboboxSeparator,
+} from "@/components/ui/combobox"
+import {
   Select,
   SelectContent,
   SelectGroup,
   SelectItem,
-  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
@@ -155,7 +162,7 @@ function PlanSelect({
             variant="outlined"
             aria-label="Nombre del nuevo plan"
             placeholder="Agregar"
-            className="h-9"
+            className="h-10"
             value={newPlanName}
             onChange={(event) => setNewPlanName(event.target.value)}
             onKeyDown={(event) => {
@@ -404,45 +411,45 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
           <div className="grid gap-x-4 gap-y-4 sm:grid-cols-2">
             <Field variant="outlined" className={hasParentChoice ? "" : "sm:col-span-2"}>
               <FieldLabel htmlFor="menu-parent">Menú padre</FieldLabel>
-              <Select value={parent} onValueChange={(value) => value && setParent(String(value))}>
-                <SelectTrigger id="menu-parent">
-                  <SelectValue>
+              <ComboboxField value={parent} onValueChange={(value) => value && setParent(String(value))}>
+                <ComboboxFieldTrigger id="menu-parent">
+                  <ComboboxFieldValue>
                     {(value) =>
                       value === ROOT
                         ? "Crear nuevo menú principal"
                         : (parentOptions.find((root) => String(root.id) === value)?.name ??
                           "Seleccionar")
                     }
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
+                  </ComboboxFieldValue>
+                </ComboboxFieldTrigger>
+                <ComboboxFieldContent>
                   {/* El contenido del item vive dentro de un `ItemText` en
                       display:block —para que el texto largo termine en "…"—, así
                       que el ícono necesita su propio flex o cae a la línea de
                       arriba. */}
-                  <SelectItem value={ROOT}>
+                  <ComboboxFieldItem value={ROOT}>
                     <span className="flex items-center gap-2">
                       <ControlPointIcon />
                       Crear nuevo menú principal
                     </span>
-                  </SelectItem>
-                  <SelectSeparator />
-                  {/* Sin `SelectGroup`: su `p-1.5` se suma al del popup y dejaba
+                  </ComboboxFieldItem>
+                  <ComboboxSeparator />
+                  {/* Sin `ComboboxGroup`: su `p-1.5` se suma al del popup y dejaba
                       a los menús existentes indentados respecto del item de
                       arriba, que cuelga directo del popup. */}
                   {parentOptions.map((root) => {
                     const Icon = getNavIcon(root.icon)
                     return (
-                      <SelectItem key={root.id} value={String(root.id)}>
+                      <ComboboxFieldItem key={root.id} value={String(root.id)}>
                         <span className="flex items-center gap-2">
                           <Icon />
                           <span className="truncate">{root.name}</span>
                         </span>
-                      </SelectItem>
+                      </ComboboxFieldItem>
                     )
                   })}
-                </SelectContent>
-              </Select>
+                </ComboboxFieldContent>
+              </ComboboxField>
             </Field>
           </div>
 
@@ -462,12 +469,12 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
               </Field>
               <Field variant="outlined" data-invalid={fieldErrors["icon"] ? "true" : undefined}>
                 <FieldLabel htmlFor="menu-icon">Icono*</FieldLabel>
-                <Select value={icon} onValueChange={(value) => value && setIcon(String(value))}>
-                  <SelectTrigger id="menu-icon" aria-invalid={Boolean(fieldErrors["icon"])}>
+                <ComboboxField value={icon} onValueChange={(value) => value && setIcon(String(value))}>
+                  <ComboboxFieldTrigger id="menu-icon" aria-invalid={Boolean(fieldErrors["icon"])}>
                     {/* Lo elegido se muestra con su ícono, igual que en la
                         lista: el nombre solo no dice cuál se eligió, y el ícono
                         es justamente lo que se va a ver en el sidebar. */}
-                    <SelectValue>
+                    <ComboboxFieldValue>
                       {(value) => {
                         const option = MENU_ICONS.find((it) => it.value === value)
                         if (!option) return "Seleccione"
@@ -479,38 +486,38 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
                           </span>
                         )
                       }}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
+                    </ComboboxFieldValue>
+                  </ComboboxFieldTrigger>
+                  <ComboboxFieldContent>
                     {MENU_ICONS.map((option) => {
                       const Icon = getNavIcon(option.value)
                       return (
-                        <SelectItem key={option.value} value={option.value}>
+                        <ComboboxFieldItem key={option.value} value={option.value}>
                           <span className="flex items-center gap-2">
                             <Icon />
                             <span className="truncate">{option.label}</span>
                           </span>
-                        </SelectItem>
+                        </ComboboxFieldItem>
                       )
                     })}
-                  </SelectContent>
-                </Select>
+                  </ComboboxFieldContent>
+                </ComboboxField>
                 <FieldError>{fieldErrors["icon"]}</FieldError>
               </Field>
               <Field variant="outlined">
                 <FieldLabel htmlFor="menu-visible">Visible</FieldLabel>
-                <Select
+                <ComboboxField
                   value={visible ? "si" : "no"}
                   onValueChange={(value) => value && setVisible(value === "si")}
                 >
-                  <SelectTrigger id="menu-visible">
-                    <SelectValue>{(value) => (value === "no" ? "No" : "Si")}</SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="si">Si</SelectItem>
-                    <SelectItem value="no">No</SelectItem>
-                  </SelectContent>
-                </Select>
+                  <ComboboxFieldTrigger id="menu-visible">
+                    <ComboboxFieldValue>{(value) => (value === "no" ? "No" : "Si")}</ComboboxFieldValue>
+                  </ComboboxFieldTrigger>
+                  <ComboboxFieldContent>
+                    <ComboboxFieldItem value="si">Si</ComboboxFieldItem>
+                    <ComboboxFieldItem value="no">No</ComboboxFieldItem>
+                  </ComboboxFieldContent>
+                </ComboboxField>
               </Field>
             </div>
           )}
@@ -546,18 +553,18 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
                   tiene que poder corregirlas. */}
               <Field variant="outlined">
                 <FieldLabel htmlFor="menu-edit-visible">Visible</FieldLabel>
-                <Select
+                <ComboboxField
                   value={visible ? "si" : "no"}
                   onValueChange={(value) => value && setVisible(value === "si")}
                 >
-                  <SelectTrigger id="menu-edit-visible">
-                    <SelectValue>{(value) => (value === "no" ? "No" : "Si")}</SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="si">Si</SelectItem>
-                    <SelectItem value="no">No</SelectItem>
-                  </SelectContent>
-                </Select>
+                  <ComboboxFieldTrigger id="menu-edit-visible">
+                    <ComboboxFieldValue>{(value) => (value === "no" ? "No" : "Si")}</ComboboxFieldValue>
+                  </ComboboxFieldTrigger>
+                  <ComboboxFieldContent>
+                    <ComboboxFieldItem value="si">Si</ComboboxFieldItem>
+                    <ComboboxFieldItem value="no">No</ComboboxFieldItem>
+                  </ComboboxFieldContent>
+                </ComboboxField>
               </Field>
               <Field variant="outlined">
                 <FieldLabel htmlFor="menu-edit-plan">Plan</FieldLabel>
@@ -621,20 +628,20 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
                           value={draft.path}
                           onChange={(event) => updateDraft(draft.key, { path: event.target.value })}
                         />
-                        <Select
+                        <ComboboxField
                           value={draft.visible ? "si" : "no"}
                           onValueChange={(value) =>
                             value && updateDraft(draft.key, { visible: value === "si" })
                           }
                         >
-                          <SelectTrigger variant="outlined" aria-label="Visible">
-                            <SelectValue>{(value) => (value === "no" ? "No" : "Si")}</SelectValue>
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="si">Si</SelectItem>
-                            <SelectItem value="no">No</SelectItem>
-                          </SelectContent>
-                        </Select>
+                          <ComboboxFieldTrigger variant="outlined" aria-label="Visible">
+                            <ComboboxFieldValue>{(value) => (value === "no" ? "No" : "Si")}</ComboboxFieldValue>
+                          </ComboboxFieldTrigger>
+                          <ComboboxFieldContent>
+                            <ComboboxFieldItem value="si">Si</ComboboxFieldItem>
+                            <ComboboxFieldItem value="no">No</ComboboxFieldItem>
+                          </ComboboxFieldContent>
+                        </ComboboxField>
                         <PlanSelect
                           value={draft.planId}
                           onChange={(planId) => updateDraft(draft.key, { planId })}

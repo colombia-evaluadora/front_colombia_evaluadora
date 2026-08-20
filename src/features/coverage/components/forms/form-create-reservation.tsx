@@ -3,12 +3,12 @@ import { useForm } from "@tanstack/react-form"
 import { Input } from "@/components/ui/input"
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+  ComboboxField,
+  ComboboxFieldContent,
+  ComboboxFieldItem,
+  ComboboxFieldTrigger,
+  ComboboxFieldValue,
+} from "@/components/ui/combobox"
 
 import {
   EDUCATION_LEVELS,
@@ -34,7 +34,7 @@ const EMPTY = {
   campus: "",
   grade: "",
   group: "",
-  // El schema exige un enum; el placeholder del Select cubre el estado vacío
+  // El schema exige un enum; el placeholder del ComboboxField cubre el estado vacío
   // y el submit falla con "Requerido." si el usuario no elige. `""` no es
   // un `Shift` válido, pero el schema lo rechaza en `onSubmit` antes de que
   // llegue al backend — usar el cast explícito es la forma honesta de decir
@@ -145,21 +145,21 @@ export function CreateReservationForm({ id, onSubmit, catalogs }: CreateReservat
             return (
               <Field variant="outlined" data-invalid={isInvalid ? "true" : undefined} className="gap-2">
                 <FieldLabel htmlFor={field.name}>Institución educativa</FieldLabel>
-                <Select
+                <ComboboxField
                   value={field.state.value}
                   onValueChange={(value) => field.handleChange(value ?? "")}
                 >
-                  <SelectTrigger id={field.name} size="sm" className="w-full" aria-invalid={isInvalid}>
-                    <SelectValue placeholder="Seleccionar" />
-                  </SelectTrigger>
-                  <SelectContent>
+                  <ComboboxFieldTrigger id={field.name} size="sm" className="w-full" aria-invalid={isInvalid}>
+                    <ComboboxFieldValue placeholder="Seleccionar" />
+                  </ComboboxFieldTrigger>
+                  <ComboboxFieldContent>
                     {catalogs?.institutions.map((option) => (
-                      <SelectItem key={option} value={option}>
+                      <ComboboxFieldItem key={option} value={option}>
                         {option}
-                      </SelectItem>
+                      </ComboboxFieldItem>
                     ))}
-                  </SelectContent>
-                </Select>
+                  </ComboboxFieldContent>
+                </ComboboxField>
                 {isInvalid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             )
@@ -173,21 +173,21 @@ export function CreateReservationForm({ id, onSubmit, catalogs }: CreateReservat
             return (
               <Field variant="outlined" data-invalid={isInvalid ? "true" : undefined} className="gap-2">
                 <FieldLabel htmlFor={field.name}>Sede</FieldLabel>
-                <Select
+                <ComboboxField
                   value={field.state.value}
                   onValueChange={(value) => field.handleChange(value ?? "")}
                 >
-                  <SelectTrigger id={field.name} size="sm" className="w-full" aria-invalid={isInvalid}>
-                    <SelectValue placeholder="Seleccionar" />
-                  </SelectTrigger>
-                  <SelectContent>
+                  <ComboboxFieldTrigger id={field.name} size="sm" className="w-full" aria-invalid={isInvalid}>
+                    <ComboboxFieldValue placeholder="Seleccionar" />
+                  </ComboboxFieldTrigger>
+                  <ComboboxFieldContent>
                     {catalogs?.campuses.map((option) => (
-                      <SelectItem key={option} value={option}>
+                      <ComboboxFieldItem key={option} value={option}>
                         {option}
-                      </SelectItem>
+                      </ComboboxFieldItem>
                     ))}
-                  </SelectContent>
-                </Select>
+                  </ComboboxFieldContent>
+                </ComboboxField>
                 {isInvalid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             )
@@ -205,22 +205,22 @@ export function CreateReservationForm({ id, onSubmit, catalogs }: CreateReservat
               return (
                 <Field variant="outlined" data-invalid={isInvalid ? "true" : undefined} className="gap-2">
                   <FieldLabel htmlFor={field.name}>Grado</FieldLabel>
-                  <Select
+                  <ComboboxField
                     items={gradeItems}
                     value={field.state.value}
                     onValueChange={(value) => field.handleChange(value ?? "")}
                   >
-                    <SelectTrigger id={field.name} size="sm" className="w-full" aria-invalid={isInvalid}>
-                      <SelectValue placeholder="Grado" />
-                    </SelectTrigger>
-                    <SelectContent>
+                    <ComboboxFieldTrigger id={field.name} size="sm" className="w-full" aria-invalid={isInvalid}>
+                      <ComboboxFieldValue placeholder="Grado" />
+                    </ComboboxFieldTrigger>
+                    <ComboboxFieldContent>
                       {catalogs?.grades.map((option) => (
-                        <SelectItem key={option} value={String(option)}>
+                        <ComboboxFieldItem key={option} value={String(option)}>
                           {formatGrade(option)}
-                        </SelectItem>
+                        </ComboboxFieldItem>
                       ))}
-                    </SelectContent>
-                  </Select>
+                    </ComboboxFieldContent>
+                  </ComboboxField>
                   {isInvalid && <FieldError errors={field.state.meta.errors} />}
                 </Field>
               )
@@ -234,21 +234,21 @@ export function CreateReservationForm({ id, onSubmit, catalogs }: CreateReservat
               return (
                 <Field variant="outlined" data-invalid={isInvalid ? "true" : undefined} className="gap-2">
                   <FieldLabel htmlFor={field.name}>Grupo</FieldLabel>
-                  <Select
+                  <ComboboxField
                     value={field.state.value}
                     onValueChange={(value) => field.handleChange(value ?? "")}
                   >
-                    <SelectTrigger id={field.name} size="sm" className="w-full" aria-invalid={isInvalid}>
-                      <SelectValue placeholder="Seleccionar" />
-                    </SelectTrigger>
-                    <SelectContent>
+                    <ComboboxFieldTrigger id={field.name} size="sm" className="w-full" aria-invalid={isInvalid}>
+                      <ComboboxFieldValue placeholder="Seleccionar" />
+                    </ComboboxFieldTrigger>
+                    <ComboboxFieldContent>
                       {catalogs?.groups.map((option) => (
-                        <SelectItem key={option} value={option}>
+                        <ComboboxFieldItem key={option} value={option}>
                           {option}
-                        </SelectItem>
+                        </ComboboxFieldItem>
                       ))}
-                    </SelectContent>
-                  </Select>
+                    </ComboboxFieldContent>
+                  </ComboboxField>
                   {isInvalid && <FieldError errors={field.state.meta.errors} />}
                 </Field>
               )
@@ -263,22 +263,22 @@ export function CreateReservationForm({ id, onSubmit, catalogs }: CreateReservat
             return (
               <Field variant="outlined" data-invalid={isInvalid ? "true" : undefined} className="gap-2">
                 <FieldLabel htmlFor={field.name}>Jornada</FieldLabel>
-                <Select
+                <ComboboxField
                   items={SHIFT_LABELS as Record<string, string>}
                   value={field.state.value}
                   onValueChange={(value) => field.handleChange(value as Shift)}
                 >
-                  <SelectTrigger id={field.name} size="sm" className="w-full" aria-invalid={isInvalid}>
-                    <SelectValue placeholder="Elige una jornada" />
-                  </SelectTrigger>
-                  <SelectContent>
+                  <ComboboxFieldTrigger id={field.name} size="sm" className="w-full" aria-invalid={isInvalid}>
+                    <ComboboxFieldValue placeholder="Elige una jornada" />
+                  </ComboboxFieldTrigger>
+                  <ComboboxFieldContent>
                     {SHIFTS.map((option) => (
-                      <SelectItem key={option} value={option}>
+                      <ComboboxFieldItem key={option} value={option}>
                         {SHIFT_LABELS[option]}
-                      </SelectItem>
+                      </ComboboxFieldItem>
                     ))}
-                  </SelectContent>
-                </Select>
+                  </ComboboxFieldContent>
+                </ComboboxField>
                 {isInvalid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             )
@@ -295,22 +295,22 @@ export function CreateReservationForm({ id, onSubmit, catalogs }: CreateReservat
             return (
               <Field variant="outlined" data-invalid={isInvalid ? "true" : undefined} className="gap-2">
                 <FieldLabel htmlFor={field.name}>Nivel educativo</FieldLabel>
-                <Select
+                <ComboboxField
                   items={EDUCATION_LEVEL_LABELS as Record<string, string>}
                   value={field.state.value}
                   onValueChange={(value) => field.handleChange(value as EducationLevel)}
                 >
-                  <SelectTrigger id={field.name} size="sm" className="w-full" aria-invalid={isInvalid}>
-                    <SelectValue placeholder="Elige un nivel" />
-                  </SelectTrigger>
-                  <SelectContent>
+                  <ComboboxFieldTrigger id={field.name} size="sm" className="w-full" aria-invalid={isInvalid}>
+                    <ComboboxFieldValue placeholder="Elige un nivel" />
+                  </ComboboxFieldTrigger>
+                  <ComboboxFieldContent>
                     {EDUCATION_LEVELS.map((option) => (
-                      <SelectItem key={option} value={option}>
+                      <ComboboxFieldItem key={option} value={option}>
                         {EDUCATION_LEVEL_LABELS[option]}
-                      </SelectItem>
+                      </ComboboxFieldItem>
                     ))}
-                  </SelectContent>
-                </Select>
+                  </ComboboxFieldContent>
+                </ComboboxField>
                 {isInvalid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             )

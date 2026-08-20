@@ -7,13 +7,13 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { DataTableColumnHeader } from "@/components/data-table"
 import { Input } from "@/components/ui/input"
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+  ComboboxField,
+  ComboboxFieldContent,
+  ComboboxFieldItem,
+  ComboboxFieldTrigger,
+  ComboboxFieldValue,
+  ComboboxGroup,
+} from "@/components/ui/combobox"
 
 import { RATING_SCALE_TYPE_BADGE } from "@/features/establishment/academic-period/api/ui-mappings"
 import type {
@@ -107,11 +107,20 @@ export function createRatingScaleDetailColumns({
             min={range.min}
             max={range.max}
             value={numberValue(draft![id])}
-            onChange={(e) => patchDraft({ [id]: e.target.valueAsNumber })}
+            onKeyDown={(e) => {
+              if (["-", "+", "e", "E"].includes(e.key)) e.preventDefault()
+            }}
+            onChange={(e) => {
+              const value = e.target.valueAsNumber
+              if (e.target.value === "" || !Number.isNaN(value)) {
+                patchDraft({ [id]: value })
+              }
+            }}
             className="w-20"
           />
         )
       },
+      enableHiding: false,
     }
   }
 
@@ -151,6 +160,7 @@ export function createRatingScaleDetailColumns({
           <Input
             aria-label="Nombre"
             placeholder="Agregar"
+            maxLength={130}
             value={draft!.nombre}
             onChange={(e) => patchDraft({ nombre: e.target.value })}
             className="min-w-32"
@@ -171,12 +181,14 @@ export function createRatingScaleDetailColumns({
           <Input
             aria-label="Abreviación"
             placeholder="Agregar"
+            maxLength={30}
             value={draft!.abreviacion}
             onChange={(e) => patchDraft({ abreviacion: e.target.value })}
             className="min-w-24"
           />
         )
       },
+      enableHiding: false,
     },
     gradeColumn("notaMaxima", "Nota máximo"),
     gradeColumn("notaMinima", "Nota mínimo"),
@@ -193,27 +205,28 @@ export function createRatingScaleDetailColumns({
           return <Badge {...RATING_SCALE_TYPE_BADGE[label]}>{label}</Badge>
         }
         return (
-          <Select
+          <ComboboxField
             value={draft!.tipo}
             onValueChange={(value) => value && patchDraft({ tipo: value as RatingScaleType })}
           >
-            <SelectTrigger aria-label="Tipo" className="min-w-32">
-              <SelectValue>
+            <ComboboxFieldTrigger aria-label="Tipo" className="min-w-32">
+              <ComboboxFieldValue>
                 {(value) => tipoOptions.find((o) => o.key === value)?.label ?? "Seleccionar"}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
+              </ComboboxFieldValue>
+            </ComboboxFieldTrigger>
+            <ComboboxFieldContent>
+              <ComboboxGroup>
                 {tipoOptions.map((option) => (
-                  <SelectItem key={option.key} value={option.key}>
+                  <ComboboxFieldItem key={option.key} value={option.key}>
                     {option.label}
-                  </SelectItem>
+                  </ComboboxFieldItem>
                 ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
+              </ComboboxGroup>
+            </ComboboxFieldContent>
+          </ComboboxField>
         )
       },
+      enableHiding: false,
     },
     {
       id: "iconografia",
@@ -234,6 +247,7 @@ export function createRatingScaleDetailColumns({
         )
       },
       enableSorting: false,
+      enableHiding: false,
     },
     {
       id: "actions",
@@ -260,7 +274,8 @@ export function createRatingScaleDetailColumns({
               </Button>
               <Button
                 type="button"
-                variant="outline"
+                variant="fill"
+                color="neutral"
                 size="icon-sm"
                 aria-label="Cancelar edición"
                 disabled={isSaving}
