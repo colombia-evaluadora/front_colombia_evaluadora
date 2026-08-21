@@ -49,7 +49,11 @@ function toAcademicPeriodDetail(row: AcademicPeriodDetailRow): AcademicPeriodDet
     id: row.id,
     sedeId: String(row.sede_id),
     sedeName: row.sede_name,
-    previousPeriodId: row.previous_period_id,
+    // `?? null`: si el backend omite la llave en vez de mandar `null`
+    // explícito (pasa cuando el periodo no tiene anterior), esto llegaba
+    // `undefined` — el schema del form acepta `number | null` pero no
+    // `undefined`, así que bloqueaba "Guardar" en silencio.
+    previousPeriodId: row.previous_period_id ?? null,
     schoolYearId: row.school_year_id,
     status: row.status as AcademicPeriodStatus,
     statusId: row.status_id,

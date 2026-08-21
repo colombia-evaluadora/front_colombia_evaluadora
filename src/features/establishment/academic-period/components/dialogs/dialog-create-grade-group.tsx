@@ -243,7 +243,7 @@ export function CreateGradeGroupDialog({
           <form.Field name="director">
             {(field) => (
               <Field variant="outlined">
-                <FieldLabel htmlFor={field.name}>Director de grupo*</FieldLabel>
+                <FieldLabel htmlFor={field.name}>Director de grupo</FieldLabel>
                 <ComboboxField
                   value={field.state.value}
                   onValueChange={(value) => value && field.handleChange(value as string)}
