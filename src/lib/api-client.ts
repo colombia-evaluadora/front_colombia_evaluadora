@@ -43,18 +43,33 @@ let authToken: string | null = localStorage.getItem(REMEMBER_KEY)
   ? localStorage.getItem(TOKEN_STORAGE_KEY)
   : null
 
+/**
+ * Declara si la sesión debe sobrevivir al cierre de la pestaña. Tiene que
+ * llamarse ANTES de `setAuthToken`: es la preferencia la que decide si el
+ * token se persiste, así que al revés el token del login se quedaba solo en
+ * memoria y "Mantener sesión iniciada" no recordaba nada.
+ *
+ * Al desmarcarla se borra también el token guardado: si no, quedaba uno viejo
+ * en storage esperando a que alguien volviera a marcar "recordar".
+ */
+export function setRememberSession(value: boolean) {
+  if (value) {
+    localStorage.setItem(REMEMBER_KEY, "true")
+  } else {
+    localStorage.removeItem(REMEMBER_KEY)
+    localStorage.removeItem(TOKEN_STORAGE_KEY)
+  }
+}
+
 export function setAuthToken(token: string | null) {
-  authToken = token
   // El token en memoria siempre se actualiza para que la pestaña actual
   // funcione; el storage solo se toca si el usuario pidió "recordar".
+  authToken = token
   if (token === null) {
     localStorage.removeItem(TOKEN_STORAGE_KEY)
     localStorage.removeItem(REMEMBER_KEY)
-  } else {
-    authToken = token
-    if (localStorage.getItem(REMEMBER_KEY)) {
-      localStorage.setItem(TOKEN_STORAGE_KEY, token)
-    }
+  } else if (localStorage.getItem(REMEMBER_KEY)) {
+    localStorage.setItem(TOKEN_STORAGE_KEY, token)
   }
 }
 
