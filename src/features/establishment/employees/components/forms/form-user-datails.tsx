@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react"
 import { format } from "date-fns"
-import { toast } from "sonner"
 
 import { DatePicker } from "@/components/date-picker"
 import { FormSectionHeading } from "@/components/form-section-heading"
+import { NoticeBanner } from "@/components/notice/notice-banner"
 import { ImageUploadField } from "@/components/image-upload-field"
 import { ArchivoImage } from "@/features/files/components/archivo-image"
 import { EMPLOYEE_ROLES } from "@/mocks/db/catalogs/employee-roles"
@@ -115,6 +115,15 @@ export function UserDetailsForm({
     // —en el diálogo de usuario lo duplicaba—, así que se omite.
     const roleName = EMPLOYEE_ROLES.find((item) => item.code === role)?.name ?? null
 
+    // Local a esta instancia (no el `notify()` compartido de la página):
+    // rector y secretaria son dos `UserDetailsForm` separados en la misma
+    // pantalla, así que el aviso de "cuenta encontrada" tiene que quedar
+    // pegado a la sección que lo disparó, no a un outlet único compartido.
+    const [accountNotice, setAccountNotice] = useState<{ id: number; message: string } | null>(
+        null,
+    )
+    const accountNoticeIdRef = useRef(0)
+
     const { data: documentTypes = [] } = useCatalogQuery<CatalogItem>(CATALOGS.DOCUMENT_TYPES)
     const { data: genders = [] } = useCatalogQuery<CatalogItem>(CATALOGS.GENDERS)
     const documentTypeLabels = Object.fromEntries(documentTypes.map((item) => [item.id, item.name]))
@@ -208,6 +217,7 @@ export function UserDetailsForm({
             emitChange({ accountExists: false, password: "", id: undefined, photoArchivoId: null })
             setConfirmPassword("")
             onMatched?.(null)
+            setAccountNotice(null)
         }
 
         let cancelled = false
@@ -225,7 +235,12 @@ export function UserDetailsForm({
                     emitChange({ ...found, password: PASSWORD_PLACEHOLDER })
                     setConfirmPassword(PASSWORD_PLACEHOLDER)
                     if (isUserEditingDocument.current) {
-                        toast.success("Ya existe una cuenta con este documento: se completaron sus datos automáticamente.")
+                        accountNoticeIdRef.current += 1
+                        setAccountNotice({
+                            id: accountNoticeIdRef.current,
+                            message:
+                                "Ya existe una cuenta con este documento: se completaron sus datos automáticamente.",
+                        })
                     }
                 })
                 .catch(() => {
@@ -247,6 +262,12 @@ export function UserDetailsForm({
     return (
         <div className="grid grid-cols-1 gap-2">
 
+            <NoticeBanner
+                notice={accountNotice}
+                onClose={() => setAccountNotice(null)}
+                variant="success"
+                autoCloseMs={7000}
+            />
             {roleName ? <FormSectionHeading>{roleName}</FormSectionHeading> : null}
             <div className="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-3">
                 {/* Foto */}

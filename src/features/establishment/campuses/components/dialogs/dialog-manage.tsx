@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog"
 import { CATALOGS } from "@/lib/catalogs"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
+import { getErrorMessage } from "@/lib/api-client"
 import { useUser } from "@/lib/auth"
 
 import { CampusDetailsForm } from "@/features/establishment/campuses/components/forms/form-campus-details"
@@ -162,7 +163,7 @@ export function ManageCampusDialog({
         onOpenChange(false)
       },
       onError: (error) => {
-        notifyInDialog(error.message || "No fue posible guardar la sede.")
+        notifyInDialog(getErrorMessage(error) || "No fue posible guardar la sede.")
       },
     },
   })
@@ -179,7 +180,7 @@ export function ManageCampusDialog({
         onOpenChange(false)
       },
       onError: (error) => {
-        notifyInDialog(error.message || "No fue posible actualizar la sede.")
+        notifyInDialog(getErrorMessage(error) || "No fue posible actualizar la sede.")
       },
     },
   })

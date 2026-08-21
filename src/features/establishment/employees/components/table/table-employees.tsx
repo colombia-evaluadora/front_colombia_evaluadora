@@ -16,6 +16,7 @@ import {
 } from "@/components/layout/table-screen"
 import { CATALOGS } from "@/lib/catalogs"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
+import { getErrorMessage } from "@/lib/api-client"
 
 import { useCatalogQuery } from "@/features/establishment/employees/api/query/use-catalogs"
 import { useEmployeeRolesQuery } from "@/features/establishment/employees/api/query/use-employee-roles"
@@ -95,7 +96,7 @@ export function EmployeesDataTable({ onEditEmployee, title, action }: EmployeesD
         resetSelection()
       },
       onError: (error) => {
-        notify(error.message, { variant: "error" })
+        notify(getErrorMessage(error), { variant: "error" })
       },
     },
   })

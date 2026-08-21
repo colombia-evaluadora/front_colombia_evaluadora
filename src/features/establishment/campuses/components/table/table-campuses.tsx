@@ -6,6 +6,7 @@ import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
 import { useDataTable } from "@/hooks/use-data-table"
 import { useTablePagination } from "@/hooks/use-table-pagination"
+import { getErrorMessage } from "@/lib/api-client"
 import {
   TableScreen,
   TableScreenActions,
@@ -89,7 +90,7 @@ export function CampusesDataTable({ onEditCampus, title, action }: CampusesDataT
         resetSelection()
       },
       onError: (error) => {
-        notify(error.message, { variant: "error" })
+        notify(getErrorMessage(error), { variant: "error" })
       },
     },
   })

@@ -54,6 +54,7 @@ import {
 } from "@/components/ui/table"
 
 import { useGeneralAreasQuery } from "../../api/query/use-general-areas"
+import { findGradeUsingSubject } from "@/features/establishment/academic-period/api/mutations/find-subject-usage"
 import { useCreateAreaSubject } from "@/features/establishment/academic-period/api/mutations/create-area-subject"
 import { useUpdateAreaSubject } from "@/features/establishment/academic-period/api/mutations/update-area-subject"
 import type { AreaSubject, AreaSubjectItem } from "@/features/establishment/academic-period/api/types/area-subject"
@@ -120,9 +121,9 @@ export function AreaSubjectFormDialog({
   const [notice, setNotice] = useState<SubjectNotice | null>(null)
   const noticeIdRef = useRef(0)
 
-  function showNotice(message: string) {
+  function showNotice(message: string, options?: { variant?: SubjectNotice["variant"] }) {
     noticeIdRef.current += 1
-    setNotice({ id: noticeIdRef.current, message })
+    setNotice({ id: noticeIdRef.current, message, variant: options?.variant ?? "info" })
   }
 
   const nombreInternoEditedRef = useRef(false)
@@ -299,7 +300,9 @@ export function AreaSubjectFormDialog({
 
   function commitDraft() {
     if (!draft.asignaturaGeneral.trim() && !draft.nombreInterno.trim()) {
-      notify("Elige una asignatura general o completa el nombre interno.", { variant: "error" })
+      showNotice("Elige una asignatura general o completa el nombre interno.", {
+        variant: "error",
+      })
       return
     }
     setSubjects((prev) => [...prev, draft])
@@ -320,11 +323,26 @@ export function AreaSubjectFormDialog({
     })
   }
 
-  function removeSubject(index: number) {
+  async function removeSubject(index: number): Promise<boolean> {
+    const subject = subjects[index]
+    // Solo tiene sentido consultar si la asignatura ya existe en el
+    // backend (tiene `id`) — una agregada en este mismo borrador no puede
+    // estar todavía en ningún plan de estudio.
+    if (isEdit && academicPeriodId != null && subject?.id != null) {
+      const gradeName = await findGradeUsingSubject(academicPeriodId, subject.nombreInterno)
+      if (gradeName) {
+        showNotice(
+          `No se puede quitar «${subject.nombreInterno}»: está en el plan de estudio del grado "${gradeName}".`,
+          { variant: "error" },
+        )
+        return false
+      }
+    }
     setSubjects((prev) => prev.filter((_, i) => i !== index))
     shiftSelectionAfterRemoval([index])
     cancelEditSubject()
     showNotice("Asignatura eliminada exitosamente.")
+    return true
   }
 
   function toggleSelectSubject(index: number, checked: boolean) {
@@ -340,14 +358,41 @@ export function AreaSubjectFormDialog({
     setSelectedIndexes(checked ? new Set(subjects.map((_, i) => i)) : new Set())
   }
 
-  function removeSelectedSubjects() {
+  async function removeSelectedSubjects(): Promise<boolean> {
     const count = selectedIndexes.size
+
+    if (isEdit && academicPeriodId != null) {
+      const toCheck = subjects
+        .map((subject, index) => ({ subject, index }))
+        .filter(({ subject, index }) => selectedIndexes.has(index) && subject.id != null)
+
+      const checks = await Promise.all(
+        toCheck.map(async ({ subject }) => ({
+          subject,
+          gradeName: await findGradeUsingSubject(academicPeriodId, subject.nombreInterno),
+        })),
+      )
+      const blocked = checks.filter((c) => c.gradeName != null)
+      if (blocked.length > 0) {
+        showNotice(
+          blocked.length === 1
+            ? `No se puede quitar «${blocked[0].subject.nombreInterno}»: está en el plan de estudio del grado "${blocked[0].gradeName}".`
+            : `No se pueden quitar ${blocked.length} asignaturas: siguen en un plan de estudio (${blocked
+                .map((b) => `«${b.subject.nombreInterno}»`)
+                .join(", ")}).`,
+          { variant: "error" },
+        )
+        return false
+      }
+    }
+
     setSubjects((prev) => prev.filter((_, i) => !selectedIndexes.has(i)))
     setSelectedIndexes(new Set())
     cancelEditSubject()
     showNotice(
       count === 1 ? "Asignatura eliminada exitosamente." : `${count} asignaturas eliminadas exitosamente.`,
     )
+    return true
   }
 
   function startEditSubject(index: number) {
@@ -357,7 +402,9 @@ export function AreaSubjectFormDialog({
   function saveEditSubject() {
     if (editingIndex === null || !editDraft) return
     if (!editDraft.asignaturaGeneral.trim() && !editDraft.nombreInterno.trim()) {
-      notify("Elige una asignatura general o completa el nombre interno.", { variant: "error" })
+      showNotice("Elige una asignatura general o completa el nombre interno.", {
+        variant: "error",
+      })
       return
     }
     const next = editDraft

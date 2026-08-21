@@ -2,6 +2,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -10,6 +11,7 @@ import {
 import { toast } from "sonner"
 
 import { NoticeBanner, type Notice, type NoticeVariant } from "@/components/notice/notice-banner"
+import { setSuppressGlobalErrorToast } from "@/lib/api-client"
 
 interface NotifyOptions {
   variant?: NoticeVariant
@@ -47,9 +49,20 @@ export function useNotify(): NoticeDispatch {
   return useContext(NoticeDispatchContext)
 }
 
+let activeNoticeProviders = 0
+
 export function NoticeProvider({ children }: { children: ReactNode }) {
   const [notice, setNotice] = useState<ActiveNotice | null>(null)
   const idRef = useRef(0)
+
+  useEffect(() => {
+    activeNoticeProviders += 1
+    setSuppressGlobalErrorToast(true)
+    return () => {
+      activeNoticeProviders -= 1
+      if (activeNoticeProviders === 0) setSuppressGlobalErrorToast(false)
+    }
+  }, [])
 
   const notify = useCallback((message: string, options?: NotifyOptions) => {
     const variant = options?.variant ?? "success"
