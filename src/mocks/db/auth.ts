@@ -62,15 +62,25 @@ function base64url(json: unknown): string {
   return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "")
 }
 
+/**
+ * Vida del access token del mock. El real vence de verdad (el gateway
+ * responde `401 invalid_token` con "JWT expired ... ago"), así que el mock
+ * también emite `exp`: sin él, el front nunca ejercitaba el camino de token
+ * vencido y el bug solo aparecía contra el backend real.
+ */
+const ACCESS_TOKEN_TTL_SECONDS = 60 * 60
+
 export function createMockAccessToken(user: User): string {
   const header = base64url({ alg: "none", typ: "JWT" })
+  const issuedAt = Math.floor(Date.now() / 1000)
   const payload = base64url({
     sub: user.email,
     // El backend real trae el nombre en el token; sin este claim la barra
     // lateral muestra el prefijo del correo en vez del nombre de la persona.
     name: user.name,
     roles: user.roles,
-    iat: Math.floor(Date.now() / 1000),
+    iat: issuedAt,
+    exp: issuedAt + ACCESS_TOKEN_TTL_SECONDS,
   })
   return `${header}.${payload}.mock-signature`
 }

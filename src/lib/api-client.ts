@@ -37,46 +37,60 @@ declare module "axios" {
 // 401 `invalid_token`. Con una sola clave compartida, cambiar
 // ENABLE_API_MOCKING dejaba el token del modo anterior en storage y el front
 // se lo mandaba al backend equivocado.
-const TOKEN_STORAGE_KEY = env.ENABLE_API_MOCKING ? "mock_auth_token" : "auth_token"
-const REMEMBER_KEY = "auth_remember_me"
-let authToken: string | null = localStorage.getItem(REMEMBER_KEY)
-  ? localStorage.getItem(TOKEN_STORAGE_KEY)
-  : null
-
 /**
- * Declara si la sesión debe sobrevivir al cierre de la pestaña. Tiene que
- * llamarse ANTES de `setAuthToken`: es la preferencia la que decide si el
- * token se persiste, así que al revés el token del login se quedaba solo en
- * memoria y "Mantener sesión iniciada" no recordaba nada.
+ * El access token vive SOLO en memoria — nunca en `localStorage`.
  *
- * Al desmarcarla se borra también el token guardado: si no, quedaba uno viejo
- * en storage esperando a que alguien volviera a marcar "recordar".
+ * Guardarlo en storage lo deja al alcance de cualquier script inyectado: un
+ * XSS se lleva la sesión entera y no hay forma de revocarla desde el cliente.
+ * El backend ya resuelve la persistencia bien: al hacer login emite la cookie
+ * `sso_refresh` con `HttpOnly` + `SameSite=Strict` + `Secure` (ver
+ * `JsonLoginFilter` en auth-center, cuyo propio comentario dice que es para no
+ * tener el refresh en "JS-accessible storage"). Duplicar eso en
+ * `localStorage` no agregaba nada y anulaba la defensa.
+ *
+ * Consecuencia: al recargar la página el token en memoria se pierde, y la
+ * sesión se restaura con `POST /auth/refresh`, que se autentica con la cookie
+ * —no con el Bearer—. Eso es exactamente lo que ya hace `getUser()` en
+ * `lib/auth.ts`, así que "Mantener sesión iniciada" sigue funcionando: lo que
+ * decide cuánto dura es el `Max-Age` de la cookie, no el navegador del
+ * usuario.
  */
-export function setRememberSession(value: boolean) {
-  if (value) {
-    localStorage.setItem(REMEMBER_KEY, "true")
-  } else {
-    localStorage.removeItem(REMEMBER_KEY)
-    localStorage.removeItem(TOKEN_STORAGE_KEY)
-  }
-}
+let authToken: string | null = null
 
 export function setAuthToken(token: string | null) {
-  // El token en memoria siempre se actualiza para que la pestaña actual
-  // funcione; el storage solo se toca si el usuario pidió "recordar".
   authToken = token
-  if (token === null) {
-    localStorage.removeItem(TOKEN_STORAGE_KEY)
-    localStorage.removeItem(REMEMBER_KEY)
-  } else if (localStorage.getItem(REMEMBER_KEY)) {
-    localStorage.setItem(TOKEN_STORAGE_KEY, token)
-  }
 }
+
+/**
+ * Endpoints que NO deben llevar `Authorization`.
+ *
+ * El gateway valida el Bearer en un filtro, antes de mirar qué endpoint es: si
+ * el token está vencido responde 401 `invalid_token` y nunca llega a procesar
+ * la petición. Mandarle un token viejo a `/auth/login` volvía el login
+ * imposible —"JWT expired ... ago"— y como el 401 en la pantalla de login no
+ * limpia nada (ver el interceptor de respuesta), la única salida era borrar
+ * localStorage a mano. Loguearse es justamente lo que se hace cuando NO se
+ * tiene una credencial válida; el header sobra.
+ *
+ * `/auth/refresh` no está acá: en el mock es el Bearer lo que identifica al
+ * usuario (no hay cookie que mandar).
+ */
+const UNAUTHENTICATED_ENDPOINTS = [
+  "/auth/login",
+  "/sso-admin/forgotPassword",
+  "/sso-admin/forgotUsername",
+  "/sso-admin/restorePassword",
+  "/sso-admin/resetTokenStatus",
+]
 
 function authRequestInterceptor(config: InternalAxiosRequestConfig) {
   if (config.headers) {
     config.headers.Accept = "application/json"
-    if (authToken) {
+    const url = config.url ?? ""
+    const sendsCredentials = !UNAUTHENTICATED_ENDPOINTS.some((endpoint) =>
+      url.startsWith(endpoint),
+    )
+    if (authToken && sendsCredentials) {
       config.headers.Authorization = `Bearer ${authToken}`
     }
   }
@@ -172,6 +186,17 @@ api.interceptors.response.use(
     // reintentaría redirigir a /login en loop infinito.
     const onLoginPage = window.location.pathname === paths.auth.login.path
     const isExpiredSession = isUnauthorized && !onLoginPage && !isPublicEndpoint
+
+    // El backend dice explícitamente que el token no sirve (vencido, mal
+    // firmado, revocado). Hay que soltarlo SIEMPRE, incluso en la pantalla de
+    // login y en los endpoints públicos: son justo los casos que el guard de
+    // arriba excluye del manejo de "sesión vencida", y por eso un token
+    // vencido en storage podía dejar el login trabado en bucle —cada intento
+    // volvía a mandarlo y el gateway volvía a rechazarlo— sin más salida que
+    // borrar localStorage a mano.
+    if (isUnauthorized && error.response?.data?.error === "invalid_token") {
+      setAuthToken(null)
+    }
 
     // Una sesión caída hace fallar *todas* las queries en vuelo a la vez.
     // Sin este latch salía un toast y un `window.location.href` por cada

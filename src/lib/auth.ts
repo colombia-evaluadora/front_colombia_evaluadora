@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query"
 import * as z from "zod"
 
-import { api, setAuthToken, setRememberSession } from "@/lib/api-client"
+import { api, setAuthToken } from "@/lib/api-client"
 import { toAuthUserFromToken, type AuthUser } from "@/lib/auth-mapper"
 import type { MutationConfig } from "@/lib/react-query"
 import type { AuthResponse } from "@/types/api"
@@ -68,12 +68,10 @@ export function useLogin({
     mutationFn: loginWithEmailAndPassword,
     ...mutationConfig,
     onSuccess: (data, variables, ...rest) => {
-      // La preferencia va PRIMERO: `setAuthToken` la consulta para decidir
-      // si persiste el token. Sin marcar "recordar", el token igual queda en
-      // memoria —la pestaña actual necesita mandarlo en cada request— y se
-      // pierde al cerrarla; lo que se limpia es el storage, para que no
-      // quede una sesión fantasma de un login anterior.
-      setRememberSession(variables.rememberMe)
+      // Solo memoria. La persistencia de la sesión la resuelve la cookie
+      // `sso_refresh` que el backend emitió en esta misma respuesta: su
+      // `Max-Age` sale del header `x-remember-me` que mandó el login, así que
+      // "Mantener sesión iniciada" ya quedó decidido del lado del servidor.
       setAuthToken(data.token)
       queryClient.setQueryData(USER_QUERY_KEY, toAuthUserFromToken(data.token))
       mutationConfig?.onSuccess?.(data, variables, ...rest)
