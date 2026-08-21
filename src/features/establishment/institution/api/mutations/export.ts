@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query"
 
-import { api } from "@/lib/api-client"
+import { downloadReport } from "@/lib/report-client"
 import type { MutationConfig } from "@/lib/react-query"
 import type { EstablishmentsQueryRequest } from "@/features/establishment/institution/api/types/establishment"
 import type { ExportFormat, ExportResult } from "@/features/establishment/institution/api/types/export"
@@ -11,7 +11,12 @@ interface ExportEstablishmentsInput {
 }
 
 function exportEstablishments(input: ExportEstablishmentsInput): Promise<ExportResult> {
-  return api.post("/establishments/export-all", input)
+  // El reporte lo genera reporting-service con la MISMA funcion PL/pgSQL
+  // que alimenta esta tabla, sin paginar: los filtros que no se mandan
+  // llegan NULL y la funcion los ignora, o sea que sin filtros sale todo.
+  // `downloadReport` dispara la descarga y devuelve el {status, message}
+  // que este dialogo ya sabia consumir.
+  return downloadReport("establecimientos", input)
 }
 
 interface UseExportOptions {
