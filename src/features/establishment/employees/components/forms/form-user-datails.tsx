@@ -198,12 +198,14 @@ export function UserDetailsForm({
 
         // Reset optimista: en cuanto el documento cambia, ya no se puede
         // asumir que sigue siendo la cuenta (ni, si la había, el
-        // TFUNCIONARIO) que encontró la búsqueda anterior — se desbloquea
-        // la contraseña y se limpia el `id` heredado del match previo, y el
-        // lookup de abajo los vuelve a completar solo si el documento nuevo
-        // también coincide con una cuenta real.
+        // TFUNCIONARIO ni la foto) que encontró la búsqueda anterior — se
+        // desbloquea la contraseña y se limpia el `id`/`photoArchivoId`
+        // heredados del match previo, y el lookup de abajo los vuelve a
+        // completar solo si el documento nuevo también coincide con una
+        // cuenta real. Sin este reset, cambiar de documento hacia una
+        // persona SIN foto seguía mostrando la foto de la persona anterior.
         if (person.accountExists) {
-            emitChange({ accountExists: false, password: "", id: undefined })
+            emitChange({ accountExists: false, password: "", id: undefined, photoArchivoId: null })
             setConfirmPassword("")
             onMatched?.(null)
         }
