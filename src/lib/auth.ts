@@ -1,12 +1,10 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query"
 import * as z from "zod"
 
-import { api, setAuthToken } from "@/lib/api-client"
+import { api, setAuthToken, setRememberSession } from "@/lib/api-client"
 import { toAuthUserFromToken, type AuthUser } from "@/lib/auth-mapper"
 import type { MutationConfig } from "@/lib/react-query"
 import type { AuthResponse } from "@/types/api"
-
-const REMEMBER_KEY = "auth_remember_me"
 
 const USER_QUERY_KEY = ["auth-user"]
 
@@ -49,11 +47,6 @@ const loginWithEmailAndPassword = (data: LoginInputWithRemember): Promise<AuthRe
   })
 }
 
-function setRememberPreference(value: boolean) {
-  if (value) localStorage.setItem(REMEMBER_KEY, "true")
-  else localStorage.removeItem(REMEMBER_KEY)
-}
-
 // Los flujos de recuperación (contraseña y usuario) viven en
 // features/auth/api — acá queda solo lo que hace a la sesión, que usa toda
 // la app (router, layouts protegidos, menú).
@@ -75,15 +68,13 @@ export function useLogin({
     mutationFn: loginWithEmailAndPassword,
     ...mutationConfig,
     onSuccess: (data, variables, ...rest) => {
-      // Persistencia según `rememberMe`: si no se marcó, limpiamos
-      // cualquier token persistido de antes para que la próxima vez que se
-      // recargue la pestaña no quede sesión fantasma.
-      if (!variables.rememberMe) {
-        setAuthToken(null)
-      } else {
-        setAuthToken(data.token)
-      }
-      setRememberPreference(variables.rememberMe)
+      // La preferencia va PRIMERO: `setAuthToken` la consulta para decidir
+      // si persiste el token. Sin marcar "recordar", el token igual queda en
+      // memoria —la pestaña actual necesita mandarlo en cada request— y se
+      // pierde al cerrarla; lo que se limpia es el storage, para que no
+      // quede una sesión fantasma de un login anterior.
+      setRememberSession(variables.rememberMe)
+      setAuthToken(data.token)
       queryClient.setQueryData(USER_QUERY_KEY, toAuthUserFromToken(data.token))
       mutationConfig?.onSuccess?.(data, variables, ...rest)
     },

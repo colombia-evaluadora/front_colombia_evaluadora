@@ -8,12 +8,14 @@ import {
   takeNextCampusId,
   upsertCampusDetails,
 } from "@/mocks/db/campuses"
+import { establishmentsRowsDb } from "@/mocks/db/establishments"
 
 import type {
   Campus,
   CampusesQueryRequest,
   CampusesQueryResponse,
 } from "@/features/establishment/campuses/api/types/campus"
+import type { SedesOptionsResponse } from "@/features/establishment/academic-period/api/types/sede-option"
 import type { ExportFormat, ExportResult } from "@/features/establishment/institution/api/types/export"
 
 const EXPORT_FORMAT_LABELS: Record<ExportFormat, string> = {
@@ -173,6 +175,37 @@ export const campusHandlers = [
 
     return HttpResponse.json({
       rows: campusesDb,
+    })
+  }),
+
+  // El mismo catálogo de sedes, pero con la ruta y el DTO del backend real
+  // (`fn_sed_listar_todos`, columnas de TSEDE en crudo). No es un duplicado
+  // por gusto: `useSedeOptionsQuery` —el select de Sede del periodo
+  // académico— pega derecho acá sin pasar por `apiPath`, así que sin este
+  // handler la pantalla se quedaba sin sedes en modo mock (y el 401 del
+  // request sin interceptar tumbaba la sesión entera). El handler legacy de
+  // arriba sigue sirviendo al diálogo de permisos de funcionarios, que
+  // todavía consume la forma `Campus`.
+  http.get("*/api/eval-col/establecimientos/sedes/opciones", async () => {
+    await delay(150)
+
+    return HttpResponse.json<SedesOptionsResponse>({
+      rows: campusesDb.map((campus, index) => ({
+        pk_sede: campus.id,
+        codigo: campus.dane,
+        nombre: campus.name,
+        fk_tlv_zona: campus.zone?.id ?? 0,
+        zona_nombre: campus.zone?.name ?? "",
+        barrio: campus.neighborhood,
+        comuna: campus.commune,
+        direccion: campus.address,
+        telefono: campus.phone,
+        // `Campus` no guarda a qué establecimiento pertenece; se reparten en
+        // orden sobre los sembrados para que la relación sea estable entre
+        // recargas y cada establecimiento tenga al menos una sede.
+        fk_establecimiento:
+          establishmentsRowsDb[index % establishmentsRowsDb.length]?.id ?? 0,
+      })),
     })
   }),
 
