@@ -217,6 +217,13 @@ export function AddEstablishmentPage() {
     }
   }, [establishmentQuery.data, isEditMode])
 
+  useEffect(() => {
+    if (!hasSubmitted) return
+    const validation = validateEstablishmentForm(formValues, confirmPasswords)
+    setFieldErrors(validation.fieldErrors)
+    setInvalidFields(validation.invalidFields)
+  }, [formValues, confirmPasswords, hasSubmitted])
+
   // Sin `onSuccess` acá: en real hay que enlazar rector/secretaria (si se
   // registraron de nuevo) DESPUÉS de crear el establecimiento y ANTES de
   // navegar — `handleSubmit` orquesta todo eso a mano tras `mutateAsync`.

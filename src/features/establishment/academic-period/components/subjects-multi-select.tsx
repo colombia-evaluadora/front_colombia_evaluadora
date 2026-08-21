@@ -19,9 +19,6 @@ interface SubjectsMultiSelectProps {
   emptyMessage?: string
 }
 
-// Igual límite de chips visibles que `BreaksField` (los descansos del
-// período académico): más de esto se colapsa en un badge "+N" para que el
-// trigger no crezca sin control con muchas áreas/asignaturas.
 const MAX_VISIBLE_CHIPS = 3
 
 // Select de varias materias: chips en el trigger + un dropdown con checkboxes
@@ -45,10 +42,6 @@ export function SubjectsMultiSelect({
 
   return (
     <DropdownMenu>
-      {/* El contenedor es un `div`, no un `<button>`: los chips llevan su
-          propio botón de "quitar" y un botón dentro de otro es HTML inválido
-          (rompe la hidratación). Mismo patrón que `BreaksField` — el trigger
-          va como overlay a pantalla completa, detrás de los chips. */}
       <div
         className={cn(
           inputVariants({ variant: resolvedVariant }),

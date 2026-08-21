@@ -360,10 +360,6 @@ const PromotionCriteriaForm = forwardRef<PromotionCriteriaHandle, PromotionCrite
                   value={field.state.value ? "si" : "no"}
                   onValueChange={(value) => field.handleChange(value === "si")}
                 >
-                  {/* `data-checked:bg-primary`: por default el círculo
-                      seleccionado solo lleva un puntito adentro (el resto
-                      queda transparente); esto lo llena completo del color
-                      cuando está marcado, sin tocar el componente base. */}
                   <label className="flex items-center gap-2">
                     <RadioGroupItem value="si" className="data-checked:bg-primary" />
                     Sí

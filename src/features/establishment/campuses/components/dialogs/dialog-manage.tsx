@@ -58,9 +58,15 @@ function buildCampusSchema(requireEstablishment: boolean) {
   return z.object({
     name: z.string().trim().min(1, "Ingresa el nombre de la sede."),
     dane: z.string().trim().min(1, "Ingresa el código DANE antiguo de la sede."),
-    zone: z.object({ id: z.number() }).nullable().refine((zone) => zone !== null, {
-      message: "Selecciona la zona.",
-    }),
+    // Mismo criterio que `requiredCatalogItem` en
+    // `institution/utils/validate-form.ts`: `.nullish()` + chequear
+    // `.id != null` en vez de `z.object({ id: z.number() }).nullable()` —
+    // así un `{ id: undefined }` cae en el mensaje amigable en vez de
+    // reventar con el error genérico de Zod por forma inválida.
+    zone: z
+      .object({ id: z.number().nullish() })
+      .nullish()
+      .refine((zone) => zone?.id != null, { message: "Selecciona la zona." }),
     establishmentId: requireEstablishment
       ? z.number({ message: "Selecciona el establecimiento educativo." })
       : z.number().nullable(),
@@ -188,6 +194,18 @@ export function ManageCampusDialog({
     },
   })
 
+  // Después de un intento de guardar fallido, cada cambio vuelve a validar
+  // para que el mensaje/borde rojo de un campo desaparezca apenas se
+  // completa, en vez de quedar pegado hasta el siguiente submit (antes
+  // `fieldErrors` solo se recalculaba al enviar el form).
+  function handleFormChange(next: CampusDraft) {
+    setFormValues(next)
+
+    if (Object.keys(fieldErrors).length > 0) {
+      setFieldErrors(validateCampus(next, showEstablishmentPicker))
+    }
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
@@ -220,7 +238,10 @@ export function ManageCampusDialog({
         if (!isPending) onOpenChange(next)
       }}
     >
-      <DialogContent className="w-[min(95vw,56rem)] max-w-none sm:max-w-224 max-h-[85vh] overflow-y-auto overflow-x-hidden">
+      <DialogContent
+        className="w-[min(95vw,56rem)] max-w-none sm:max-w-224 max-h-[85vh] overflow-y-auto overflow-x-hidden"
+        showCloseButton={false}
+      >
         <DialogHeader>
           <DialogTitle>{isEditMode ? "Editar sede" : "Agregar sede"}</DialogTitle>
         </DialogHeader>
@@ -236,7 +257,7 @@ export function ManageCampusDialog({
         <form id="campus-form" onSubmit={handleSubmit}>
           <CampusDetailsForm
             value={formValues}
-            onChange={setFormValues}
+            onChange={handleFormChange}
             zones={zones}
             errors={fieldErrors}
             establishmentPicker={showEstablishmentPicker ? { establishments } : undefined}
