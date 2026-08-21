@@ -118,9 +118,15 @@ function guardar(blob: Blob, nombre: string) {
   document.body.appendChild(enlace)
   enlace.click()
   enlace.remove()
-  // Sin el revoke, el blob queda retenido hasta que se cierre la pestaña — y
-  // un reporte grande son varios MB por cada exportación.
-  URL.revokeObjectURL(url)
+
+  // El revoke va DIFERIDO, no en la misma vuelta del event loop. `.click()`
+  // solo encola la descarga: el navegador todavía no leyó el blob. Revocar el
+  // object URL inmediatamente después le saca el contenido de abajo y la
+  // descarga se cancela en silencio — sin error, sin archivo, y con el aviso
+  // de éxito igual en pantalla. Revocarlo hace falta (si no, el blob queda
+  // retenido hasta cerrar la pestaña, y un reporte son varios MB), pero
+  // después de que la descarga arrancó.
+  setTimeout(() => URL.revokeObjectURL(url), 60_000)
 }
 
 /**
