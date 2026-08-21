@@ -53,10 +53,6 @@ export function TabGradeGroups({ gradeId, academicPeriodId }: TabGradeGroupsProp
     setSorting,
   })
 
-  // `getRowId` usa `codigo` (el nombre visible del grupo, no el PK — ver
-  // `dialog-create-grade-group.tsx`), así que hay que resolverlo de vuelta al
-  // `id` real (`PK_TGRUPO`) para el bulk delete, igual que ya hace cada fila
-  // individual (`DeleteGradeGroupDialog` recibe `row.original` completo).
   const idByCodigo = useMemo(
     () => new Map((data?.rows ?? []).map((row) => [row.codigo, row.id])),
     [data],
@@ -75,8 +71,6 @@ export function TabGradeGroups({ gradeId, academicPeriodId }: TabGradeGroupsProp
 
   return (
     <>
-      {/* Mismo diseño que la tabla de grados: botón rojo "Eliminar (n)" +
-          exportar con selección; agregar + exportar sin selección. */}
       <div className="mb-2 flex items-center justify-end gap-2 border-b border-border pb-2">
         {hasSelection ? (
           <>

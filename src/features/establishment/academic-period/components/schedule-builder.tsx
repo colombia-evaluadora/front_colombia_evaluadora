@@ -251,12 +251,6 @@ export const ScheduleBuilder = forwardRef<
           value={gradeGroup}
           onValueChange={(value) => value && setGradeGroup(value)}
           disabled={gradeGroups.length === 0}
-          // `items` como mapa `value -> label`: el `ComboboxFieldValue` lo consume
-          // para pintar el nombre del grupo seleccionado en el trigger (en
-          // vez del id crudo, que era lo que se veía antes). Ver
-          // components/ui/select.tsx — `items` también acepta el formato
-          // nativo de Base UI, pero pasar el Record evita tener que
-          // duplicar los `ComboboxFieldItem` y mantiene el trigger en sync.
           items={Object.fromEntries(
             gradeGroups.map((option) => [String(option.id), option.label])
           )}

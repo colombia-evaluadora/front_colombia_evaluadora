@@ -59,8 +59,6 @@ export function TabAcademicAssignments({ academicPeriodId }: TabAcademicAssignme
 
   const { data: pool = [] } = useAssignmentSubjectsQuery(academicPeriodId)
 
-  // `EmployeeListItem.id` es numérico, pero el id del funcionario viaja como
-  // string en el dominio de asignaciones (va en el path del endpoint).
   const { data: savedIds } = useTeacherAssignmentsQuery(
     academicPeriodId,
     expanded == null ? undefined : String(expanded.id),
@@ -83,12 +81,7 @@ export function TabAcademicAssignments({ academicPeriodId }: TabAcademicAssignme
     },
   })
 
-  // `useAssignmentTeachersQuery` (fn_asignacion_docente_listar, V83) ya
-  // filtra por rol Docente y por la sede del periodo en el backend — a
-  // diferencia de `useEmployeesQuery` (módulo legacy de empleados), que
-  // traía cualquier funcionario con permisos en la sede. `queryFilters`
-  // sigue viva para los diálogos de exportación, que todavía hablan con el
-  // endpoint legacy.
+
   const { data, isPending, isError, refetch } = useAssignmentTeachersQuery({
     academicPeriodId,
     search: queryFilters.search,
@@ -131,8 +124,6 @@ export function TabAcademicAssignments({ academicPeriodId }: TabAcademicAssignme
     columns,
     data: data?.rows ?? [],
     pageCount: data?.pageCount ?? -1,
-    // `getRowId` de TanStack Table siempre devuelve string; el `id` real de
-    // la fila es number, así que se convierte solo para la selección.
     getRowId: (row) => String(row.id),
     pageIndex,
     pageSize,
@@ -158,8 +149,6 @@ export function TabAcademicAssignments({ academicPeriodId }: TabAcademicAssignme
 
   return (
     <div className="flex flex-col gap-4">
-      {/* El `border-b` cierra la barra de acciones igual que el `hr` de
-          `TableScreenHeader` en las pantallas de listado. */}
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-4">
         <SearchAcademicAssignments
           search={search}
@@ -198,15 +187,6 @@ export function TabAcademicAssignments({ academicPeriodId }: TabAcademicAssignme
         renderSubRow={(row) => {
           const employee = row.original as EmployeeListItem
           if (expanded?.id !== employee.id) return null
-          // Asignadas: las que este docente tiene en su borrador (ids
-          // guardados + cambios locales sin guardar). Disponibles: el resto
-          // del pool que no está en el borrador — libres, o del propio
-          // docente (el `pool` no se refetchea al tocar flechas, así que si
-          // se saca una materia ya guardada de "asignadas" su `funcionarioId`
-          // en el pool sigue siendo el de este docente hasta el próximo
-          // guardado; sin el `|| funcionarioId === employee.id` desaparecía
-          // de las dos listas en vez de volver a "disponibles"). Una materia
-          // de OTRO docente sí queda afuera.
           const ids = new Set(assignedIds[employee.id] ?? [])
           const assigned = pool.filter((s) => ids.has(s.id))
           const available = pool.filter(

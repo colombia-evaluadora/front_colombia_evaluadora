@@ -99,6 +99,8 @@ export function DomicilioDataFormSection({ value, onChange, invalidFields = [], 
                     <Input
                         id="establishment-barrio"
                         placeholder="Agregar"
+                        // TESTABLECIMIENTO.BARRIO es VARCHAR(130).
+                        maxLength={130}
                         value={value.district?.name ?? ""}
                         // No es un catálogo real: es texto libre con la forma de
                         // `CatalogItem` para reusar el tipo de `address`. El `id`
@@ -114,6 +116,8 @@ export function DomicilioDataFormSection({ value, onChange, invalidFields = [], 
                     <Input
                         id="establishment-address"
                         placeholder="Agregar"
+                        // TESTABLECIMIENTO.DIRECCION es VARCHAR(130).
+                        maxLength={130}
                         value={value.address}
                         onChange={(event) => onChange({ ...value, address: event.target.value })}
                     />
@@ -124,6 +128,8 @@ export function DomicilioDataFormSection({ value, onChange, invalidFields = [], 
                     <Input
                         id="establishment-comuna"
                         placeholder="Agregar"
+                        // TESTABLECIMIENTO.COMUNA es VARCHAR(130).
+                        maxLength={130}
                         value={value.commune?.name ?? ""}
                         onChange={(event) => onChange({ ...value, commune: { id: 0, code: event.target.value, name: event.target.value } })}
                     />
@@ -134,6 +140,8 @@ export function DomicilioDataFormSection({ value, onChange, invalidFields = [], 
                     <Input
                         id="establishment-localidad"
                         placeholder="Agregar"
+                        // TESTABLECIMIENTO.LOCALIDAD es VARCHAR(130).
+                        maxLength={130}
                         value={value.locality?.name ?? ""}
                         onChange={(event) => onChange({ ...value, locality: { id: 0, code: event.target.value, name: event.target.value } })}
                     />

@@ -9,10 +9,6 @@ export interface RowEdit<T> {
   isEditing: (key: number) => boolean
 }
 
-// Máquina de estado para editar una fila "inline": qué fila se edita (por
-// índice o código) + una copia borrador que se parchea mientras se edita. El
-// guardado queda en el componente porque varía por caso (mutation al backend
-// vs. actualizar un arreglo local).
 export function useRowEdit<T extends object>(): RowEdit<T> {
   const [editingKey, setEditingKey] = useState<number | null>(null)
   const [draft, setDraft] = useState<T | null>(null)
