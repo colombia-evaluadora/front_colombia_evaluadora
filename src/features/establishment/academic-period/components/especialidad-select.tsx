@@ -26,9 +26,6 @@ interface EspecialidadSelectProps {
   onChange: (value: string) => void
 }
 
-// Especialidad (fija) vs énfasis (lo crea el usuario a nivel de
-// establecimiento): mismo select, pero solo el énfasis se puede editar/borrar
-// — se distinguen por `origen`.
 export function EspecialidadSelect({
   value,
   academicPeriodId,

@@ -60,9 +60,6 @@ function BreakChips({ value, onRemove }: { value: Break[]; onRemove: (index: num
               }}
               aria-label={`Quitar descanso ${originalIndex + 1}`}
               data-icon="inline-end"
-              // `pointer-events-auto`: el contenedor de chips va con
-              // `pointer-events-none` para que el click atraviese al trigger y
-              // abra el menú; solo la "X" recupera el click para quitar.
               className="pointer-events-auto inline-flex cursor-pointer items-center hover:text-foreground"
             >
               <XIcon className="size-3" />
@@ -92,25 +89,13 @@ export function BreaksField({
 
   return (
     <Popover>
-      {/* El contenedor es un `div`, no un `<button>`: los chips llevan su propio
-          botón de "quitar" y un botón dentro de otro es HTML inválido (rompe la
-          hidratación). Solo el área de abrir/caret es el `PopoverTrigger`. */}
       <div
         className={cn(
           inputVariants({ variant: resolvedVariant }),
           inputTriggerVariants({ variant: resolvedVariant }),
-          // `h-auto min-h-11` pisa el `h-11` fijo de `inputVariants`: los chips
-          // van en `flex-wrap`, así que con dos descansos la segunda fila se
-          // salía de la caja y se encimaba con la etiqueta. Mismo tratamiento
-          // que `SubjectsMultiSelect`, que comparte este patrón de chips.
           "relative flex h-auto min-h-11 items-center gap-1.5",
         )}
       >
-        {/* Trigger como overlay a pantalla completa (`absolute inset-0`) DETRÁS
-            de los chips: así cualquier click en el input abre el menú, sin
-            envolver los chips (evita el `<button>` anidado que rompía la
-            hidratación). Los chips van con `pointer-events-none` para dejar
-            pasar el click; solo la "X" de cada chip lo recupera. */}
         <PopoverTrigger
           render={
             <button
@@ -129,9 +114,6 @@ export function BreaksField({
         )}
         <CaretDownIcon className="text-muted-foreground pointer-events-none relative z-10 size-4 shrink-0" />
       </div>
-      {/* `min-w-96` y no `w-auto` a secas: el editor lleva dos horas y el botón
-          en una sola fila, y con el ancho por contenido la fila se quedaba
-          corta y las etiquetas se salían de la caja. */}
       <PopoverContent align="start" className="w-auto min-w-96">
         <div className="flex flex-col gap-2">
           <BreakEditor onAdd={onAdd} />
@@ -213,9 +195,6 @@ function BreakTimeTrigger({
           <button
             type="button"
             className={cn(
-              // `truncate` y no `whitespace-nowrap`: si la fila se queda
-              // corta el texto se recorta dentro de la caja en vez de
-              // desbordarse por debajo del botón de agregar.
               "min-w-0 flex-1 truncate text-left text-sm outline-none",
               value ? "text-foreground font-medium" : "text-muted-foreground",
             )}

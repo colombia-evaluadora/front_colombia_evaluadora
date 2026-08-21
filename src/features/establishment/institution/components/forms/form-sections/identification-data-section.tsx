@@ -72,6 +72,8 @@ export function IdentificationDataFormSection({ value, onChange, invalidFields =
                     <Input
                         id="establishment-name"
                         placeholder="Agregar"
+                        // TESTABLECIMIENTO.NOMBRE es VARCHAR(130).
+                        maxLength={130}
                         value={value.name}
                         aria-invalid={isInvalid("basicInfo.name")}
                         onChange={(event) => onChange({ ...value, name: event.target.value })}

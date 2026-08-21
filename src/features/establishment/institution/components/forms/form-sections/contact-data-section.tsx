@@ -1,6 +1,7 @@
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { FormSectionHeading } from "@/components/form-section-heading";
+import { toDigitsOnly } from "@/lib/text-input"
 import type { EstablishmentDetails } from "@/features/establishment/institution/api/types/establishment"
 
 interface ContactDataFormSectionProps {
@@ -40,6 +41,8 @@ export function ContactDataFormSection({ value, onChange, invalidFields = [], sh
                     <Input
                         id="establishment-website"
                         placeholder="Agregar"
+                        // TESTABLECIMIENTO.PAGINA_WEB es VARCHAR(130).
+                        maxLength={130}
                         value={value.website}
                         onChange={(event) => onChange({ ...value, website: event.target.value })}
                     />
@@ -50,9 +53,14 @@ export function ContactDataFormSection({ value, onChange, invalidFields = [], sh
                     <Input
                         id="establishment-phone"
                         placeholder="Agregar"
+                        // Mismo criterio que el teléfono de sede: solo
+                        // números, sin letras. TESTABLECIMIENTO.TELEFONO es
+                        // VARCHAR(130).
+                        inputMode="numeric"
+                        maxLength={130}
                         value={value.phone}
                         aria-invalid={isInvalid("contact.phone")}
-                        onChange={(event) => onChange({ ...value, phone: event.target.value })}
+                        onChange={(event) => onChange({ ...value, phone: toDigitsOnly(event.target.value, 130) })}
                     />
                 </Field>
                 <Field orientation="vertical" variant="outlined" className="w-full">
@@ -60,10 +68,13 @@ export function ContactDataFormSection({ value, onChange, invalidFields = [], sh
                     <Input
                         id="establishment-fax"
                         placeholder="Agregar"
-                        // TESTABLECIMIENTO.FAX es VARCHAR(130).
+                        // TESTABLECIMIENTO.FAX es VARCHAR(130), pero es un
+                        // número de fax: mismo criterio que teléfono, solo
+                        // dígitos.
+                        inputMode="numeric"
                         maxLength={130}
                         value={value.fax ?? ""}
-                        onChange={(event) => onChange({ ...value, fax: event.target.value })}
+                        onChange={(event) => onChange({ ...value, fax: toDigitsOnly(event.target.value, 130) })}
                     />
                 </Field>
 
