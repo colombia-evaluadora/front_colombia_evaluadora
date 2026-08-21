@@ -67,6 +67,19 @@ interface UserFormProps {
      */
     photo?: File | null
     onPhotoChange?: (file: File | null) => void
+    /**
+     * Se dispara con el patch crudo que devolvió `findPersonByDocument`
+     * (antes de mezclarlo con `PASSWORD_PLACEHOLDER`) cada vez que el
+     * autocompletado encuentra o pierde una coincidencia — `null` cuando el
+     * documento cambia y se resetea el match anterior. El padre lo usa para
+     * dos cosas que este form no puede decidir por sí solo: (1) si el match
+     * ya trae `id` (ya es funcionario activo), tratar el alta como edición
+     * de ese `id` desde ya; (2) si no trae `id` (solo existe la cuenta),
+     * guardar el snapshot para poder detectar más tarde si el usuario editó
+     * algún campo antes de guardar y encadenar un PATCH además del alta
+     * (ver `personDataChangedSinceMatch`, `person.ts`).
+     */
+    onMatched?: (found: Partial<Person> | null) => void
 }
 
 function createEmptyPerson(): Person {
@@ -95,6 +108,7 @@ export function UserDetailsForm({
     onConfirmPasswordChange,
     photo: photoProp,
     onPhotoChange,
+    onMatched,
 }: UserFormProps) {
     // El encabezado solo nombra el rol de la persona (Rector, Secretaria). Sin
     // `role` no hay nada que anunciar y el contenedor ya pone su propio título
@@ -183,24 +197,17 @@ export function UserDetailsForm({
         if (!documentTypeId || !identification.trim()) return
 
         // Reset optimista: en cuanto el documento cambia, ya no se puede
-        // asumir que sigue siendo la cuenta que encontró la búsqueda
-        // anterior — se desbloquea la contraseña y se limpian los demás
-        // campos que vinieron de ese autocompletado (nombre, correo, etc.),
-        // y el lookup de abajo los vuelve a llenar solo si el documento
-        // nuevo también coincide con una cuenta real.
+        // asumir que sigue siendo la cuenta (ni, si la había, el
+        // TFUNCIONARIO ni la foto) que encontró la búsqueda anterior — se
+        // desbloquea la contraseña y se limpia el `id`/`photoArchivoId`
+        // heredados del match previo, y el lookup de abajo los vuelve a
+        // completar solo si el documento nuevo también coincide con una
+        // cuenta real. Sin este reset, cambiar de documento hacia una
+        // persona SIN foto seguía mostrando la foto de la persona anterior.
         if (person.accountExists) {
-            emitChange({
-                accountExists: false,
-                password: "",
-                firstName: "",
-                middleName: "",
-                lastName: "",
-                secondLastName: "",
-                birthDate: "",
-                email: "",
-                phone: "",
-            })
+            emitChange({ accountExists: false, password: "", id: undefined, photoArchivoId: null })
             setConfirmPassword("")
+            onMatched?.(null)
         }
 
         let cancelled = false
@@ -211,6 +218,10 @@ export function UserDetailsForm({
                     // `found.accountExists` ya viene en `true` (ver
                     // use-user-by-document.ts) — acá solo se agrega el
                     // valor decorativo de la contraseña, nunca una real.
+                    // `onMatched` viaja ANTES de mezclar el placeholder: el
+                    // padre necesita el patch crudo tal cual vino del
+                    // backend, no la contraseña decorativa.
+                    onMatched?.(found)
                     emitChange({ ...found, password: PASSWORD_PLACEHOLDER })
                     setConfirmPassword(PASSWORD_PLACEHOLDER)
                     if (isUserEditingDocument.current) {
