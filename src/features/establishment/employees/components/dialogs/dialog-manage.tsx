@@ -1034,7 +1034,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
                 </ComboboxFieldTrigger>
                 <ComboboxFieldContent>
                   {campusItems.map((item) => (
-                    <ComboboxFieldItem key={item.value} value={item.value}>
+                    <ComboboxFieldItem key={item.value} value={item.value} title={item.label}>
                       {item.label}
                     </ComboboxFieldItem>
                   ))}
@@ -1124,17 +1124,18 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
               </div>
             </Field>
 
-            <div className="flex w-full items-end sm:w-auto">
+            <div className="flex w-full flex-col gap-1.5 sm:w-auto">
+              <FieldLabel className="invisible">Agregar</FieldLabel>
               <Button
                 variant="fill"
                 color="primary"
-                size="sm"
                 onClick={addPermission}
                 className="w-full sm:w-auto"
               >
                 <ControlPointIcon data-icon="inline-start" />
                 Agregar
               </Button>
+              <div className="min-h-5" />
             </div>
           </div>
 

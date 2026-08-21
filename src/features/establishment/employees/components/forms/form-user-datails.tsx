@@ -187,6 +187,12 @@ export function UserDetailsForm({
     // pisar el form con datos de una búsqueda vieja).
     const documentTypeId = person.documentType?.id ?? null
     const identification = person.identification
+    // Solo gobierna el toast, NO si la búsqueda corre: la búsqueda tiene que
+    // correr también al abrir "editar" (para que el password quede con el
+    // placeholder + bloqueado si la persona ya tiene cuenta, igual que en
+    // alta) — lo que no queremos ahí es el aviso de "cuenta encontrada",
+    // porque nadie tecleó nada, solo se cargó un registro que ya la tenía.
+    const isUserEditingDocument = useRef(false)
     useEffect(() => {
         if (!documentTypeId || !identification.trim()) return
 
@@ -216,7 +222,9 @@ export function UserDetailsForm({
                     onMatched?.(found)
                     emitChange({ ...found, password: PASSWORD_PLACEHOLDER })
                     setConfirmPassword(PASSWORD_PLACEHOLDER)
-                    toast.success("Ya existe una cuenta con este documento: se completaron sus datos automáticamente.")
+                    if (isUserEditingDocument.current) {
+                        toast.success("Ya existe una cuenta con este documento: se completaron sus datos automáticamente.")
+                    }
                 })
                 .catch(() => {
                     // Búsqueda opcional: si falla, el usuario sigue
@@ -276,7 +284,10 @@ export function UserDetailsForm({
                         value={person.documentType?.id ?? null}
                         onValueChange={(selectedValue) => {
                             const option = documentTypes.find((item) => item.id === selectedValue)
-                            if (option) emitChange({ documentType: option })
+                            if (option) {
+                                isUserEditingDocument.current = true
+                                emitChange({ documentType: option })
+                            }
                         }}
                     >
                         <ComboboxFieldTrigger size="sm" aria-invalid={isInvalid(`${fieldPrefix}.documentType`)}>
@@ -284,7 +295,7 @@ export function UserDetailsForm({
                         </ComboboxFieldTrigger>
                         <ComboboxFieldContent>
                             {documentTypes.map((item) => (
-                                <ComboboxFieldItem key={item.id} value={item.id}>
+                                <ComboboxFieldItem key={item.id} value={item.id} title={item.name}>
                                     {item.name}
                                 </ComboboxFieldItem>
                             ))}
@@ -306,9 +317,10 @@ export function UserDetailsForm({
                         maxLength={30}
                         value={person.identification}
                         aria-invalid={isInvalid(`${fieldPrefix}.identification`)}
-                        onChange={(event) =>
+                        onChange={(event) => {
+                            isUserEditingDocument.current = true
                             emitChange({ identification: toDigitsOnly(event.target.value, 30) })
-                        }
+                        }}
                     />
                     <FieldError>{errorFor(`${fieldPrefix}.identification`)}</FieldError>
                 </Field>
@@ -446,7 +458,7 @@ export function UserDetailsForm({
                 </Field>
                 <Field orientation="vertical" variant="outlined" data-invalid={isInvalid(`${fieldPrefix}.gender`) ? "true" : undefined}>
                     <FieldLabel htmlFor="gender-user">
-                        Género
+                        Género*
                     </FieldLabel>
                     <ComboboxField
                         id="gender-user"
