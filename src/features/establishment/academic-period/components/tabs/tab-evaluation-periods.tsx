@@ -56,8 +56,7 @@ export function TabEvaluationPeriods({ academicPeriodId }: TabEvaluationPeriodsP
     setSorting,
   })
 
-  // `selectedIds` viene como string[] (los ids de la tabla); los codigos de
-  // evaluation period son `number`, así que convertimos antes de mandar al back.
+
   const selectedCodigos = useMemo(() => selectedIds.map(Number), [selectedIds])
 
   const namesById = useMemo(
@@ -67,8 +66,6 @@ export function TabEvaluationPeriods({ academicPeriodId }: TabEvaluationPeriodsP
 
   return (
     <>
-      {/* El `border-b` cierra la barra de acciones igual que el `hr` de
-          `TableScreenHeader` en las pantallas de listado. */}
       <div className="mb-2 flex items-center justify-end gap-2 border-b border-border pb-2">
         {hasSelection ? (
           <>

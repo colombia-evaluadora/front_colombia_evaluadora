@@ -148,12 +148,7 @@ function AcademicPeriodConfigPageContent() {
   }
 
   const isSaving = createPeriod.isPending || updatePeriod.isPending
-
   const showSecondForm = saved || (isEditing && !!detail)
-
-  // Al crear, "Guardar" solo aparece cuando ya se completaron todos los
-  // campos obligatorios (no basta con haber tocado el form). Al editar, sigue
-  // el criterio anterior: aparece con cualquier cambio respecto a lo guardado.
   const showSaveAction = isEditing ? isFormDirty || isSaving : isFormValid || isSaving
 
   const configBody = (

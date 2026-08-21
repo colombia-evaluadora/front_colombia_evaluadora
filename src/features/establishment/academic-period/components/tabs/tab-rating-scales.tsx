@@ -194,18 +194,6 @@ export function TabRatingScales({ academicPeriodId }: TabRatingScalesProps) {
           const level = row.original as TeachingLevel
           if (expandedId !== level.id) return null
           return (
-            // `min-w-full max-w-0`: la celda que envuelve esta sub-fila (en
-            // el `DataTable` compartido) no tiene límite de ancho propio, así
-            // que con `table-layout: auto` (el default) su ancho se calcula a
-            // partir del contenido — la subtabla, al ser más ancha (más
-            // columnas que la tabla exterior), terminaba estirando toda la
-            // tabla de niveles en vez de scrollear ella sola. `max-w-0` hace
-            // que el algoritmo de layout de la tabla trate este wrapper como
-            // si no aportara ancho propio; `min-w-full` gana en el layout
-            // final (el `min-width` le gana al `max-width` cuando compiten),
-            // así que igual ocupa todo el ancho disponible — solo que ya no
-            // fuerza a la tabla exterior a crecer. El `overflow-x-auto` de
-            // `ScalesSubTable` (su propio `<Table>`) recién puede scrollear.
             <div className="min-w-full max-w-0">
               <ScalesSubTable
                 levelId={level.id}
