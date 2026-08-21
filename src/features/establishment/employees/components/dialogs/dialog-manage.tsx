@@ -49,6 +49,7 @@ import {
 import { CATALOGS } from "@/lib/catalogs"
 import { toSelectItemsMap, toSelectOptions } from "@/lib/catalog-options"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
+import { getErrorMessage } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
 import { env } from "@/config/env"
 
@@ -567,7 +568,9 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
   const createPersonMutation = useCreateWithPerson({
     mutationConfig: {
       onError: (error) => {
-        notify(error.message || "No fue posible guardar el usuario.", { variant: "error" })
+        notify(getErrorMessage(error) || "No fue posible guardar el usuario.", {
+          variant: "error",
+        })
       },
     },
   })
@@ -575,7 +578,9 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
   const createMutation = useCreate({
     mutationConfig: {
       onError: (error) => {
-        notify(error.message || "No fue posible crear el funcionario.", { variant: "error" })
+        notify(getErrorMessage(error) || "No fue posible crear el funcionario.", {
+          variant: "error",
+        })
       },
     },
   })
@@ -595,7 +600,9 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
         onOpenChange(false)
       },
       onError: (error) => {
-        notify(error.message || "No fue posible actualizar el funcionario.", { variant: "error" })
+        notify(getErrorMessage(error) || "No fue posible actualizar el funcionario.", {
+          variant: "error",
+        })
       },
     },
   })

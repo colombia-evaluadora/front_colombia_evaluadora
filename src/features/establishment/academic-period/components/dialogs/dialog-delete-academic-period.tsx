@@ -3,6 +3,7 @@ import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 
 import { CheckIcon, SpinnerIcon, TrashIcon, XIcon } from "@/components/ui/icons"
 import { useNotify } from "@/components/notice/notice-context"
+import { getErrorMessage } from "@/lib/api-client"
 
 import {
   AlertDialog,
@@ -31,12 +32,16 @@ export function DeleteAcademicPeriodDialog({ period }: DeleteAcademicPeriodDialo
   const deleteMutation = useDeleteAcademicPeriod({
     mutationConfig: {
       onSuccess: (result) => {
+        setOpen(false)
         if (result.status === "error") {
           notify(result.message, { variant: "error" })
           return
         }
         notify(SUCCESS_MESSAGES.academicPeriod.deleted)
+      },
+      onError: (error) => {
         setOpen(false)
+        notify(getErrorMessage(error), { variant: "error" })
       },
     },
   })

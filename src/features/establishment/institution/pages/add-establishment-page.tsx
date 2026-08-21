@@ -16,6 +16,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { paths } from "@/config/paths"
 import { env } from "@/config/env"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
+import { getErrorMessage } from "@/lib/api-client"
 import { EstablishmentDetailsForm } from "@/features/establishment/institution/components/forms/form-establishment"
 import { ComplementaryDataFormSection } from "@/features/establishment/institution/components/forms/form-sections/complementary-data-section"
 import { useCreateWithPerson } from "@/features/establishment/employees/api/mutations/use-create-with-person"
@@ -230,7 +231,9 @@ export function AddEstablishmentPage() {
   const createMutation = useCreate({
     mutationConfig: {
       onError: (error) => {
-        notify(error.message || "No se pudo crear el establecimiento.", { variant: "error" })
+        notify(getErrorMessage(error) || "No se pudo crear el establecimiento.", {
+          variant: "error",
+        })
       },
     },
   })
@@ -246,7 +249,9 @@ export function AddEstablishmentPage() {
         navigate({ to: paths.app.establishments.general.getHref() })
       },
       onError: (error) => {
-        notify(error.message || "No se pudo actualizar el establecimiento.", { variant: "error" })
+        notify(getErrorMessage(error) || "No se pudo actualizar el establecimiento.", {
+          variant: "error",
+        })
       },
     },
   })
