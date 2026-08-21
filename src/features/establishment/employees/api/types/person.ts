@@ -57,3 +57,36 @@ export interface Person {
      */
     accountExists?: boolean
 }
+
+/**
+ * ¿Cambió algo de `current` respecto al `original` que trajo el
+ * autocompletado por documento? Se usa en el alta (rector/secretaria en
+ * `add-establishment-page.tsx`, funcionario regular en `dialog-manage.tsx`)
+ * cuando `accountExists` era `true` pero la persona todavía no tenía
+ * `TFUNCIONARIO`: `registerFuncionario` solo crea el `TFUNCIONARIO` (reusa
+ * el `TUSUARIO` tal cual estaba, ver `fn_fun_crear`/V71) — si el usuario
+ * corrigió algún dato de la persona en el form antes de guardar, esa
+ * corrección nunca llega al backend a menos que se encadene un PATCH
+ * (`update()`) aparte con el `pkFuncionario` recién creado.
+ *
+ * Solo compara los campos que vive en `TUSUARIO` y que el form deja
+ * editar tras el autocompletado (documento/tipo son la clave del match,
+ * no se comparan; `password` es decorativo mientras `accountExists`).
+ */
+export function personDataChangedSinceMatch(
+    original: Partial<Person>,
+    current: Person,
+): boolean {
+    const sameText = (a?: string | null, b?: string | null) => (a ?? "").trim() === (b ?? "").trim()
+
+    return (
+        !sameText(original.firstName, current.firstName) ||
+        !sameText(original.middleName, current.middleName) ||
+        !sameText(original.lastName, current.lastName) ||
+        !sameText(original.secondLastName, current.secondLastName) ||
+        !sameText(original.birthDate, current.birthDate) ||
+        !sameText(original.phone, current.phone) ||
+        !sameText(original.email, current.email) ||
+        (original.gender?.id ?? null) !== (current.gender?.id ?? null)
+    )
+}

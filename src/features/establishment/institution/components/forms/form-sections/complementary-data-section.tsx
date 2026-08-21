@@ -62,6 +62,8 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                         <Input
                             id="approval-resolution"
                             placeholder="Agregar"
+                            // TESTABLECIMIENTO.RESOLUCION_APROBACION es VARCHAR(130).
+                            maxLength={130}
                             value={value.approvalResolution}
                             aria-invalid={isInvalid("additionalInfo.approvalResolution")}
                             onChange={(event) => onChange({ ...value, approvalResolution: event.target.value })}
@@ -240,6 +242,8 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
                         <Input
                             id="license-status"
                             placeholder="Agregar"
+                            // TESTABLECIMIENTO.LICENCIA_FUNCIONAMIENTO es VARCHAR(130).
+                            maxLength={130}
                             value={value.licenseStatus}
                             aria-invalid={isInvalid("additionalInfo.licenseStatus")}
                             onChange={(event) => onChange({ ...value, licenseStatus: event.target.value })}
