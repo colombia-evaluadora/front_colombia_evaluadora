@@ -82,6 +82,8 @@ export function CampusDetailsForm({
         <Input
           id="campus-name"
           size="sm"
+          // TSEDE.NOMBRE es VARCHAR(130).
+          maxLength={130}
           value={value.name}
           aria-invalid={Boolean(errors["name"])}
           onChange={(event) => onChange({ ...value, name: event.target.value })}
@@ -146,6 +148,8 @@ export function CampusDetailsForm({
         <Input
           id="campus-neighborhood"
           size="sm"
+          // TSEDE.BARRIO es VARCHAR(130).
+          maxLength={130}
           value={value.neighborhood}
           onChange={(event) => onChange({ ...value, neighborhood: event.target.value })}
           placeholder="Agregar"
@@ -157,6 +161,8 @@ export function CampusDetailsForm({
         <Input
           id="campus-commune"
           size="sm"
+          // TSEDE.COMUNA es VARCHAR(130).
+          maxLength={130}
           value={value.commune}
           onChange={(event) => onChange({ ...value, commune: event.target.value })}
           placeholder="Agregar"
@@ -168,6 +174,8 @@ export function CampusDetailsForm({
         <Input
           id="campus-address"
           size="sm"
+          // TSEDE.DIRECCION es VARCHAR(130).
+          maxLength={130}
           value={value.address}
           onChange={(event) => onChange({ ...value, address: event.target.value })}
           placeholder="Agregar"
@@ -179,9 +187,11 @@ export function CampusDetailsForm({
         <Input
           id="campus-phone"
           size="sm"
+          // TSEDE.TELEFONO es VARCHAR(60).
           inputMode="numeric"
+          maxLength={60}
           value={value.phone}
-          onChange={(event) => onChange({ ...value, phone: toDigitsOnly(event.target.value) })}
+          onChange={(event) => onChange({ ...value, phone: toDigitsOnly(event.target.value, 60) })}
           placeholder="Agregar"
         />
       </Field>

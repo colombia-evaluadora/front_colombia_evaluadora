@@ -5,12 +5,6 @@ import {
   type TableSort,
 } from "@/components/table-sort-header"
 
-/**
- * El encabezado ordenable genérico, atado a las columnas de la tabla de
- * escalas. La mecánica (menú Asc/Desc, iconos, estilo) vive en
- * `@/components/table-sort-header`, compartida con las demás tablas que se
- * arman a mano dentro de un diálogo.
- */
 export type ScaleSortKey =
   | "nombre"
   | "abreviacion"

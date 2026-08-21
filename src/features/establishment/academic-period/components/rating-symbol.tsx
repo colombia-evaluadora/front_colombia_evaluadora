@@ -17,10 +17,6 @@ const CATEGORY_LABELS: Record<RatingSymbolCategory, string> = {
 
 const CATEGORY_ORDER: RatingSymbolCategory[] = ["carita", "valoracion"]
 
-// Un símbolo es imagen si su valor es un data URI, apunta a una URL/ruta o
-// termina en una extensión de imagen; si no, se trata como emoji (texto). Así
-// el mismo componente sirve para los emojis de hoy y las imágenes reales del
-// futuro (el backend devuelve base64 en `data:image/...`).
 function isImageValue(value: string): boolean {
   return (
     /^data:image\//i.test(value) ||
@@ -30,11 +26,6 @@ function isImageValue(value: string): boolean {
   )
 }
 
-// El catálogo (GRAFICA_CARITA/GRAFICA_SIMBOLO en TLISTA_VALOR) guarda la ruta
-// relativa del ícono dentro del bucket, p.ej.
-// "ACADEMICO_VALLEDUPAR/graficaCarita/489905.png" — se sirve sin auth por
-// `GET {API_URL}/files/public/<ruta>`. Un data URI o una URL ya absoluta
-// (http(s)/protocol-relative/raíz del sitio) se usa tal cual.
 function resolveSymbolImageSrc(value: string): string {
   if (
     /^data:image\//i.test(value) ||
