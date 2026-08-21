@@ -12,7 +12,6 @@ import {
 } from "@/components/ui/dialog"
 import { CATALOGS } from "@/lib/catalogs"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
-import { useUser } from "@/lib/auth"
 
 import { CampusDetailsForm } from "@/features/establishment/campuses/components/forms/form-campus-details"
 import { useCreate } from "@/features/establishment/campuses/api/mutations/use-create"
@@ -51,8 +50,9 @@ function createInitialCampusValues(): CampusDraft {
  * teléfono, resolución) es opcional, así que no entra al esquema.
  *
  * `requireEstablishment`: `FK_TESTABLECIMIENTO` es obligatorio en el alta
- * real, pero el selector solo se muestra para super admin — para el resto
- * de roles no lo validamos acá todavía (ver nota en `CampusDetailsForm`).
+ * real. El selector ahora se muestra para cualquier rol en el alta (ver
+ * `showEstablishmentPicker` más abajo), así que esto también aplica para
+ * cualquier rol — ya no es un caso especial de super admin.
  */
 function buildCampusSchema(requireEstablishment: boolean) {
   return z.object({
@@ -109,12 +109,22 @@ export function ManageCampusDialog({
   }
 
   const { data: zones = [] } = useCatalogQuery<CatalogItem>(CATALOGS.ZONES)
-  const { data: user } = useUser()
-  const isSuperAdmin = Boolean(user?.isSuperAdmin)
   // El selector de EE solo aplica al alta (FK_TESTABLECIMIENTO es inmutable
-  // después de creada la sede) y solo para super admin — el resto de roles
-  // crea sedes dentro de su propio EE (ver `CampusDetailsForm`).
-  const showEstablishmentPicker = isSuperAdmin && !isEditMode
+  // después de creada la sede) — REV: antes solo se mostraba para super
+  // admin (el resto de roles dependía de que el backend resolviera "el
+  // único EE" al que pertenecían, vía fn_resolver_establecimiento_unico).
+  // Eso se rompía si la persona administraba más de un EE a la vez (rector/
+  // secretaria/jefe de sistema de 2+ establecimientos, algo que dejó de ser
+  // raro con el cambio de modelo de TFUNCIONARIO — ver V51 REV5/REV6): el
+  // backend no podía adivinar cuál, y `fn_sed_crear` rechazaba con 42501.
+  // Ahora el select se muestra SIEMPRE en el alta, para cualquier rol —
+  // aunque solo tenga una opción, el usuario la elige explícitamente y el
+  // front manda el EE sin ambigüedad. `useEstablishmentsOptionsQuery` ya
+  // resuelve del lado del backend qué EE le corresponden a quien pide
+  // (`fn_est_listar_todos`: todos para super admin, solo los suyos —
+  // rector/secretaria/jefe de sistema— para el resto), así que no hace
+  // falta ninguna otra condición acá.
+  const showEstablishmentPicker = !isEditMode
   const { data: establishments = [] } = useEstablishmentsOptionsQuery(showEstablishmentPicker)
   // Solo pedimos la sede cuando el diálogo está abierto en modo edición: al
   // vivir montado junto a la tabla, la query se dispararía en cada render.
