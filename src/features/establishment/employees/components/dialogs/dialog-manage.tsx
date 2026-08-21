@@ -74,6 +74,7 @@ import type {
 } from "@/features/establishment/employees/api/types/employee"
 import { PERMISSION_STATUS_OPTIONS, type Permission, type PermissionStatus } from "@/features/establishment/institution/api/types/permission"
 import { personDataChangedSinceMatch, type Person } from "@/features/establishment/employees/api/types/person"
+import { passwordRules } from "@/features/auth/api/schema"
 import {
   createAdditionalInfoFromEmployee,
   EmployeeAdditionalInfoForm,
@@ -279,26 +280,91 @@ const employeePersonSchema = z
       }
     }
 
+    // Mismas reglas de fortaleza que el password de restablecer/crear
+    // cuenta en auth (`passwordRules`) y que rector/secretaria en
+    // `institution/utils/validate-form.ts` — ver ese archivo para el
+    // detalle de cada regla.
+    const requirePasswordStrength = (value: string | null | undefined) => {
+      if (isBlankValue(value)) {
+        return
+      }
+
+      for (const rule of passwordRules) {
+        if (!rule.test(value as string)) {
+          ctx.addIssue({ code: "custom", path: ["password"], message: rule.message })
+        }
+      }
+    }
+
     if (!person.documentType?.id) {
       ctx.addIssue({ code: "custom", path: ["documentType"], message: "Selecciona el tipo de documento." })
     }
     require("identification", person.identification, "Ingresa el número de documento.")
     require("firstName", person.firstName, "Ingresa el primer nombre.")
     require("lastName", person.lastName, "Ingresa el primer apellido.")
-    require("email", person.email, "Ingresa el correo electrónico.")
-    require("gender", person.gender?.name, "Selecciona el género.")
 
+    // Persona SIN `id` todavía: va a `POST /register/funcionario`, que
+    // exige `@NotBlank` en email/password (mismo criterio que rector/
+    // secretaria en `makePersonSchema`, ver ese archivo). Persona CON `id`
+    // va a PUT (tolera estos campos vacíos, nunca resetea la contraseña),
+    // así que acá solo se exigen al crear.
+    if (!person.id) {
+      require("email", person.email, "Ingresa el correo electrónico.")
+      require("gender", person.gender?.name, "Selecciona el género.")
+
+      if (!person.accountExists) {
+        require("password", person.password, "Ingresa la contraseña.")
+        require("confirmPassword", confirmPassword, "Repite la contraseña.")
+        requirePasswordStrength(person.password)
+
+        if (!isBlankValue(person.password) && !isBlankValue(confirmPassword) && person.password !== confirmPassword) {
+          ctx.addIssue({ code: "custom", path: ["confirmPassword"], message: "Las contraseñas no coinciden." })
+        }
+      }
+      return
+    }
+
+    // `accountExists`: el autocompletado por documento confirmó que sigue
+    // siendo la misma cuenta y puso el valor decorativo con el campo
+    // bloqueado — no es una contraseña real que haya que validar.
     if (person.accountExists) {
+      return
+    }
+
+    // Persona existente editando password: solo se valida si escribió algo
+    // (en cualquiera de los dos campos) — igual que rector/secretaria.
+    const hasPassword = !isBlankValue(person.password)
+    const hasConfirm = !isBlankValue(confirmPassword)
+
+    if (!hasPassword && !hasConfirm) {
       return
     }
 
     require("password", person.password, "Ingresa la contraseña.")
     require("confirmPassword", confirmPassword, "Repite la contraseña.")
+    requirePasswordStrength(person.password)
 
-    if (!isBlankValue(person.password) && !isBlankValue(confirmPassword) && person.password !== confirmPassword) {
+    if (hasPassword && hasConfirm && person.password !== confirmPassword) {
       ctx.addIssue({ code: "custom", path: ["confirmPassword"], message: "Las contraseñas no coinciden." })
     }
   })
+
+function computePersonErrors(person: Person | null, confirmPassword: string): Record<string, string> {
+  const nextErrors: Record<string, string> = {}
+
+  if (!person) {
+    return nextErrors
+  }
+
+  const parsed = employeePersonSchema.safeParse({ person, confirmPassword })
+  if (!parsed.success) {
+    for (const issue of parsed.error.issues) {
+      nextErrors[`${EMPLOYEE_FIELD_PREFIX}.${issue.path.join(".")}`] ??= issue.message
+    }
+  }
+
+  return nextErrors
+}
 
 const EMPLOYEE_FIELD_PREFIX = "employee"
 
@@ -318,10 +384,6 @@ function buildEmployeeStatus(permissions: Permission[]): EmployeeStatus {
     : "SUSPENDED"
 }
 
-// Comparte el `NoticeProvider` del padre (la tabla) para que el aviso de
-// guardado exitoso siga visible en la vista general tras cerrar el diálogo,
-// igual que ocurre con el borrado. Solo los mensajes de los sub-diálogos de
-// permisos/información complementaria se ven mientras el diálogo sigue abierto.
 export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageEmployeeDialogProps) {
   const { notify } = useNotify()
   const isEditMode = Boolean(employeeId)
@@ -414,6 +476,14 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
   // catálogo real), value por `.code` a propósito — ver
   // PERMISSION_STATUS_OPTIONS en institution/api/types/permission.ts.
   const permissionStatusItems = PERMISSION_STATUS_OPTIONS.map((status) => ({ value: status.code, label: status.name }))
+
+  // Revalida en cada cambio tras un intento de guardar fallido, para que el
+  // borde rojo desaparezca apenas el campo queda completo.
+  useEffect(() => {
+    if (Object.keys(personErrors).length === 0) return
+    setPersonErrors(computePersonErrors(person, confirmPassword))
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `personErrors` es guard, no dep.
+  }, [person, confirmPassword])
 
   /**
    * Vuelca un `Employee` completo sobre todo el estado del diálogo — lo
@@ -548,24 +618,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
     //    ya crea el TFUNCIONARIO, así que el flujo real se bifurca acá).
     let persistedPerson = draft
 
-    // Las dos validaciones se juntan en un solo `nextErrors` antes de
-    // decidir si hay que frenar: si solo se corta en la primera que falla
-    // (como pasaba antes con el establecimiento), la persona nunca llega a
-    // validarse y el usuario solo ve "falta el establecimiento" aunque
-    // también le falten nombre/documento.
-    const nextErrors: Record<string, string> = {}
-
-    if (!persistedPerson.id) {
-      const parsed = employeePersonSchema.safeParse({ person: persistedPerson, confirmPassword })
-
-      if (!parsed.success) {
-        // Un mensaje debajo de cada campo, con la ruta que espera
-        // `UserDetailsForm` (`employee.firstName`, …).
-        for (const issue of parsed.error.issues) {
-          nextErrors[`${EMPLOYEE_FIELD_PREFIX}.${issue.path.join(".")}`] ??= issue.message
-        }
-      }
-    }
+    const nextErrors = computePersonErrors(persistedPerson, confirmPassword)
 
     if (Object.keys(nextErrors).length > 0) {
       setPersonErrors(nextErrors)

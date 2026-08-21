@@ -1,9 +1,6 @@
 export interface ScheduleSubject {
   id: string
   name: string
-  // Se muestra en vez de `name` dentro de la grilla del horario (celdas más
-  // angostas que el nombre completo) — el nombre completo sigue siendo el
-  // identificador real. Si no hay abreviación cargada, la grilla cae a `name`.
   abbreviation?: string
   blocks: number
   color: string
@@ -15,15 +12,9 @@ export interface Day {
   id: string
   label: string
   weekday: number
-  /** PK_LISTA_VALOR del dia en el catalogo TLISTA_VALOR (backend). */
   dayId: number
 }
 
-// El catálogo DIA_SEMANA pasó a numerar Domingo=1 ... Sábado=7 (antes era
-// Lunes=1 ... Domingo=7). `dayId` es la PK de TLISTA_VALOR (la verdad del
-// back); `weekday` se mantiene para futura lógica tipo "fecha real" si hace
-// falta cruzarlo con un Date. El orden del array es lo que se ve en la grilla
-// del schedule builder (Domingo a Sábado).
 export const DAYS: Day[] = [
   { id: "dom", label: "DOMINGO", weekday: 1, dayId: 278 },
   { id: "lun", label: "LUNES", weekday: 2, dayId: 272 },

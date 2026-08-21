@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react"
-import { useForm, useStore } from "@tanstack/react-form"
+import { useForm, useSelector } from "@tanstack/react-form"
 
 import { Badge } from "@/components/ui/badge"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
@@ -97,18 +97,14 @@ export function AcademicPeriodForm({
     },
   })
 
-  // `isDefaultValue` vuelve a ser true si el usuario deshace sus cambios, así
-  // el botón desaparece igual que si nunca hubiera tocado el formulario.
-  const isDefaultValue = useStore(form.store, (state) => state.isDefaultValue)
+  const isDefaultValue = useSelector(form.store, (state) => state.isDefaultValue)
 
   useEffect(() => {
     onDirtyChange?.(!isDefaultValue)
   }, [isDefaultValue, onDirtyChange])
 
-  // Recalcula contra el schema completo (no solo los campos tocados) para que
-  // "Guardar" no aparezca en creación hasta que todos los obligatorios estén
-  // completos, incluso si el usuario nunca llegó a tocar alguno de ellos.
-  const isFormValid = useStore(
+
+  const isFormValid = useSelector(
     form.store,
     (state) => academicPeriodFormSchema.safeParse(state.values).success,
   )
@@ -124,10 +120,7 @@ export function AcademicPeriodForm({
     form.reset(form.state.values)
   }, [form, savedToken])
 
-  // Las opciones de "periodo anterior" dependen de la sede elegida; el hook se
-  // dispara cuando hay sede y trae solo los candidatos válidos (el backend ya
-  // filtra por sede/alcance y excluye el periodo en edición).
-  const selectedSedeId = useStore(form.store, (state) => state.values.sedeId)
+  const selectedSedeId = useSelector(form.store, (state) => state.values.sedeId)
   const { data: previousPeriodOptions = [] } = useSedePreviousPeriodsQuery(
     selectedSedeId || undefined,
     currentPeriodId
@@ -267,10 +260,6 @@ export function AcademicPeriodForm({
             )
           }}
         </form.Field>
-
-        {/* Periodo anterior: opciones de la sede seleccionada (las trae el hook
-            ya filtradas por el backend) más la opción "No tiene" (equivale a
-            null). */}
         <form.Field name="previousPeriodId">
           {(field) => (
             <Field variant="outlined">
@@ -315,8 +304,17 @@ export function AcademicPeriodForm({
                 <Select
                   value={field.state.value ? String(field.state.value) : ""}
                   onValueChange={(value) => value && field.handleChange(Number(value))}
+                  // `onBlur` en el trigger disparaba `handleBlur` apenas se
+                  // abría el popup (el foco se mueve a la lista), marcando
+                  // `isTouched` — y por lo tanto el borde/mensaje en rojo—
+                  // mientras el usuario todavía estaba eligiendo una opción.
+                  // Acá se marca "tocado" recién al cerrarse el popup, sea
+                  // porque se eligió algo o porque se hizo click afuera.
+                  onOpenChange={(nextOpen) => {
+                    if (!nextOpen) field.handleBlur()
+                  }}
                 >
-                  <SelectTrigger id={field.name} aria-invalid={isInvalid} onBlur={field.handleBlur}>
+                  <SelectTrigger id={field.name} aria-invalid={isInvalid}>
                     <SelectValue>
                       {(value) => {
                         const option = statusOptions.find(
@@ -455,11 +453,6 @@ export function AcademicPeriodForm({
                   value={field.state.value ?? ""}
                   onBlur={field.handleBlur}
                   aria-invalid={isInvalid}
-                  // El input number nativo deja escribir "-", "." y "e" aunque
-                  // el valor resultante no sea válido (son teclas que el
-                  // navegador permite para números negativos/decimales en
-                  // notación científica) — acá solo se acepta una cantidad
-                  // entera positiva de bloques.
                   onKeyDown={(e) => {
                     if (["-", "+", ".", ",", "e", "E"].includes(e.key)) {
                       e.preventDefault()

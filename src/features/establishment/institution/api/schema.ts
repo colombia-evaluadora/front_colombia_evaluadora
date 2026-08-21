@@ -1,13 +1,6 @@
 import { z } from "zod"
 
-/**
- * Schema del formulario de filtros.
- * Representa exactamente el estado del form.
- *
- * `statuses` ya no es un enum fijo: son códigos del catálogo real
- * `ESTADO_ESTABLECIMIENTO` (5 valores, no 2 — ver `EstablishmentStatus` en
- * api/types/establishment.ts), así que se valida solo como texto.
- */
+
 export const establishmentFiltersFormSchema = z.object({
   search: z.string(),
   statuses: z.array(z.string()),
