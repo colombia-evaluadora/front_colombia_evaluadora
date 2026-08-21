@@ -91,38 +91,32 @@ export async function registerFuncionario(
   return api.post("/auth/register/funcionario", body)
 }
 
+// `enlazarFuncionarioEstablecimiento` (POST /funcionario/enlazar-establecimiento,
+// fn_fun_enlazar_establecimiento V51) se retiró del front: con el cambio de
+// modelo (TFUNCIONARIO pasó a ser una fila por persona, no por
+// establecimiento, ver V51 REV5) ya no tiene sentido "enlazar" un
+// funcionario a un EE en un paso aparte -- rector/secretaria se referencian
+// directo vía TESTABLECIMIENTO.FK_TFUNCIONARIO_RECTOR/SECRETARIA dentro del
+// propio fn_est_crear/fn_est_actualizar, y un funcionario regular ya no
+// pertenece a un EE en particular. La función SQL sigue existiendo en la
+// base (no se tocó), simplemente ningún caller del front la usa más.
+
 /**
- * Segundo paso del alta real: enlaza el TFUNCIONARIO pendiente (recién
- * creado por `registerFuncionario`, FK_ESTABLECIMIENTO NULL) al EE elegido
- * en el select. Sí pasa por nuestro `query`
- * (fn_fun_enlazar_establecimiento, V51) — ver
- * postgres/pending/step3_new_endpoints.sql.
+ * Deshace un `registerFuncionario` cuyo paso siguiente falló — el caso que
+ * motivó esto: `add-establishment-page.tsx` registra al rector/secretaria
+ * PRIMERO (necesita su `pkFuncionario` para `fn_est_crear`), y si crear o
+ * enlazar el establecimiento falla DESPUÉS, ese `TFUNCIONARIO` quedaba
+ * huérfano para siempre (`FK_ESTABLECIMIENTO` nunca se llenaba, y no había
+ * forma de cancelarlo desde el front) — confirmado en datos reales
+ * (`fn_fun_cancelar_pendiente`, V51 REV4).
  *
- * `pkFuncionario` (REV3): identifica el TFUNCIONARIO exacto a enlazar por
- * su PK (el que ya devuelve `registerFuncionario`), no por `fkUsuario` +
- * "el que esté pendiente" — antes la función SQL lo buscaba así
- * (`FK_TUSUARIO = ? AND FK_ESTABLECIMIENTO IS NULL LIMIT 1`), ambiguo si
- * llegara a haber más de un TFUNCIONARIO pendiente a la vez para el mismo
- * usuario.
- *
- * `fkEstablecimiento` es `number | null`: el select de EE solo se muestra
- * para super admin (el resto de roles no lo ve). Cuando es `null`, la
- * función SQL resuelve el EE sola contra el solicitante
- * (`fn_resolver_establecimiento_unico`, V50) — se sigue llamando siempre,
- * nunca se omite la llamada.
- *
- * A diferencia de `registerFuncionario` (auth-center, Java, sin prefijo),
- * este SÍ pasa por el motor de queries del SSO (`fn_fun_enlazar_
- * establecimiento`, registrado en la tabla `query`) — necesita el prefijo
- * `/eval-col` con el que el gateway lo enruta (ver `apiPath` en
- * `lib/api-routes.ts`).
+ * Solo cancela pendientes de verdad: si el `TFUNCIONARIO` ya está enlazado
+ * a un EE, la función SQL lo rechaza (22023) — nunca puede usarse para dar
+ * de baja a alguien real ya asignado. Idempotente: cancelar dos veces no
+ * es un error.
  */
-export async function enlazarFuncionarioEstablecimiento(
+export async function cancelarFuncionarioPendiente(
   pkFuncionario: number,
-  fkEstablecimiento: number | null,
-): Promise<{ pkFuncionarioEnlazado: number }> {
-  return api.post("/eval-col/funcionario/enlazar-establecimiento", {
-    pkFuncionario,
-    fkEstablecimiento,
-  })
+): Promise<{ pkFuncionarioCancelado: number }> {
+  return api.post("/eval-col/funcionario/cancelar-pendiente", { pkFuncionario })
 }

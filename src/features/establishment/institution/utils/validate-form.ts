@@ -207,6 +207,10 @@ function makePersonSchema(required: boolean) {
         }
         return
       }
+      
+      if (p.accountExists) {
+        return
+      }
 
       if (p.accountExists) {
         return
