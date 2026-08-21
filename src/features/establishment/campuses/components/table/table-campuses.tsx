@@ -18,7 +18,10 @@ import {
 
 import { useCampusesFilters } from "@/features/establishment/campuses/hooks/use-filters"
 import { useCampusesQuery } from "@/features/establishment/campuses/api/query/use-campuses"
-import { useBulkDelete } from "@/features/establishment/campuses/api/mutations/use-bulk-delete"
+import {
+  useBulkDelete,
+  summarizeCampusBulkDelete,
+} from "@/features/establishment/campuses/api/mutations/use-bulk-delete"
 import { createColumns } from "@/features/establishment/campuses/components/table/columns-campuses"
 import { useCatalogQuery } from "@/features/establishment/employees/api/query/use-catalogs"
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
@@ -78,15 +81,29 @@ export function CampusesDataTable({ onEditCampus, title, action }: CampusesDataT
     () => rows.filter((row) => selectedIds.includes(String(row.id))),
     [rows, selectedIds],
   )
+  const namesById = useMemo(
+    () => new Map(rows.map((row) => [String(row.id), row.name])),
+    [rows],
+  )
 
   const bulkDelete = useBulkDelete({
     mutationConfig: {
       onSuccess: (result) => {
-        if (result.status === "error") {
-          notify(result.message, { variant: "error" })
+        const summary = summarizeCampusBulkDelete(result)
+        if (summary.failed.length === 0) {
+          notify(SUCCESS_MESSAGES.campus.deletedMany(summary.succeededCount))
+          resetSelection()
           return
         }
-        notify(SUCCESS_MESSAGES.campus.deletedMany(selectedIds.length))
+        const failedNames = summary.failed
+          .map(({ id, reason }) => `${namesById.get(id) ?? id} (${reason})`)
+          .join(", ")
+        notify(
+          summary.succeededCount > 0
+            ? `Se eliminaron ${summary.succeededCount} sede(s). No se pudo con: ${failedNames}.`
+            : `No se pudo eliminar: ${failedNames}.`,
+          { variant: "error" },
+        )
         resetSelection()
       },
       onError: (error) => {
