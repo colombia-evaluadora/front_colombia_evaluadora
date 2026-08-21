@@ -123,6 +123,9 @@ function AcademicPeriodConfigPageContent() {
         setSavedToken((token) => token + 1)
         notify(SUCCESS_MESSAGES.academicPeriod.updated)
       },
+      onError: (error) => {
+        notify(getErrorMessage(error), { variant: "error" })
+      },
     },
   })
 

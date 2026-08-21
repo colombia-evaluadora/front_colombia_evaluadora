@@ -38,6 +38,17 @@ export interface RatingScale {
   codigo: number
   teachingLevelIds: number[]
   teachingLevels: TeachingLevel[]
+  // Paralelos a `teachingLevelIds` (mismo índice = mismo nivel): el PK real
+  // de la banda (`codigo`) y de la escala contenedora (`FK_TESCALA`) EN ESE
+  // nivel puntual — cada nivel tiene su propia TESCALA, `codigo` a secas
+  // solo guarda la del primer nivel visto al agrupar (ver `groupRatingScales`
+  // en use-rating-scales.ts), así que no sirve para resolver "la escala de
+  // este nivel específico". Usados por el selector de "Escala de valoración"
+  // en criterio de evaluación (ver [[V95]]/[[V123]] en postgres/migrations)
+  // para traducir nivel <-> escala <-> banda sin mezclar los tres espacios
+  // de id.
+  bandaIdsByLevel: number[]
+  escalaIdsByLevel: number[]
   nombre: string
   abreviacion: string
   tipo: RatingScaleType
@@ -78,7 +89,10 @@ export type CreateRatingScaleRequest = RatingScale & {
 }
 
 // Una escala sin lo que asigna el backend (código y niveles resueltos).
-export type RatingScaleDraft = Omit<RatingScale, "codigo" | "teachingLevelIds" | "teachingLevels">
+export type RatingScaleDraft = Omit<
+  RatingScale,
+  "codigo" | "teachingLevelIds" | "teachingLevels" | "bandaIdsByLevel" | "escalaIdsByLevel"
+>
 
 // Alta en lote: el backend expande por nivel (una escala independiente por
 // cada nivel × escala) y asigna los códigos.
