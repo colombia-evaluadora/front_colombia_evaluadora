@@ -21,10 +21,6 @@ import { useAcademicPeriodStatusesQuery } from "@/features/establishment/academi
 import { DatePicker } from "@/components/date-picker"
 import { formatDateValue, parseDateValue } from "@/lib/date-value"
 
-// Sentinel de "sin filtro" para los selects del filtro: el string vacío no
-// distingue entre "no elegiste" y "elegiste explícitamente vacío". El `value`
-// `""` queda como "sin filtro", y la opción visible "Todos" usa este sentinel
-// solo cuando el usuario decide borrar el filtro de un click.
 const ALL_VALUE = ""
 
 const YEAR_OPTIONS = Array.from(
@@ -55,9 +51,6 @@ export function FilterAcademicPeriodsForm({
 
   const { data: statusOptions = [] } = useAcademicPeriodStatusesQuery()
 
-  // `items` mapea value → label para el trigger. La opción "Todos" no se
-  // incluye acá: cuando el value es `""`, el select muestra el `placeholder`
-  // (que también es "Todos"). Así "Todos" nunca llega al form como dato.
   const statusItems = useMemo<Record<string, string>>(
     () => Object.fromEntries(statusOptions.map((o) => [String(o.id), o.label])),
     [statusOptions],
@@ -77,8 +70,6 @@ export function FilterAcademicPeriodsForm({
       }}
       className="flex flex-1 flex-col gap-5 px-4"
     >
-      {/* Sede, año y estado se explican solos: van en rejilla, sin una leyenda
-          que les invente una categoría. */}
       <div className="grid grid-cols-2 gap-3">
         {!hideSede && (
           <form.Field name="sedeName">
@@ -181,9 +172,6 @@ export function FilterAcademicPeriodsForm({
           }}
         </form.Field>
       </div>
-
-      {/* Acá la leyenda sí aporta: "Inicio desde" y "Inicio hasta" se leen como
-          un intervalo, no como dos filtros sueltos. */}
       <FieldSet>
         <FieldLegend variant="label">Rango de inicio</FieldLegend>
         <div className="grid grid-cols-2 gap-3">

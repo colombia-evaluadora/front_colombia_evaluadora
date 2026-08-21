@@ -207,6 +207,14 @@ function makePersonSchema(required: boolean) {
         }
         return
       }
+      
+      if (p.accountExists) {
+        return
+      }
+
+      if (p.accountExists) {
+        return
+      }
 
       // Contraseña: sólo se valida si escribió algo (en cualquiera de los dos campos).
       const hasPassword = !isBlank(p.password)

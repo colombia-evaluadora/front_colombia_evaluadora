@@ -51,15 +51,12 @@ import { toSelectItemsMap, toSelectOptions } from "@/lib/catalog-options"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { cn } from "@/lib/utils"
 import { env } from "@/config/env"
-import { useUser } from "@/lib/auth"
 
 import { useCreate } from "@/features/establishment/employees/api/mutations/use-create"
 import { useCreateWithPerson } from "@/features/establishment/employees/api/mutations/use-create-with-person"
+import { update as updateFuncionario } from "@/features/establishment/employees/api/mutations/update"
 import { useUpdate } from "@/features/establishment/employees/api/mutations/use-update"
-import {
-  enlazarFuncionarioEstablecimiento,
-  registerFuncionario,
-} from "@/features/establishment/employees/api/mutations/use-register-funcionario"
+import { registerFuncionario } from "@/features/establishment/employees/api/mutations/use-register-funcionario"
 import {
   toCrearItem,
   updateEmployeePermissions,
@@ -69,7 +66,6 @@ import { useCampusesOptionsQuery } from "@/features/establishment/campuses/api/q
 import { useCatalogQuery } from "@/features/establishment/employees/api/query/use-catalogs"
 import { useEmployeeQuery } from "@/features/establishment/employees/api/query/use-employee"
 import { useEmployeeRolesQuery } from "@/features/establishment/employees/api/query/use-employee-roles"
-import { useEstablishmentsOptionsQuery } from "@/features/establishment/institution/api/query/use-establishments-options"
 import type { Campus } from "@/features/establishment/campuses/api/types/campus"
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 import type {
@@ -77,7 +73,8 @@ import type {
   EmployeeStatus,
 } from "@/features/establishment/employees/api/types/employee"
 import { PERMISSION_STATUS_OPTIONS, type Permission, type PermissionStatus } from "@/features/establishment/institution/api/types/permission"
-import type { Person } from "@/features/establishment/employees/api/types/person"
+import { personDataChangedSinceMatch, type Person } from "@/features/establishment/employees/api/types/person"
+import { passwordRules } from "@/features/auth/api/schema"
 import {
   createAdditionalInfoFromEmployee,
   EmployeeAdditionalInfoForm,
@@ -283,26 +280,91 @@ const employeePersonSchema = z
       }
     }
 
+    // Mismas reglas de fortaleza que el password de restablecer/crear
+    // cuenta en auth (`passwordRules`) y que rector/secretaria en
+    // `institution/utils/validate-form.ts` — ver ese archivo para el
+    // detalle de cada regla.
+    const requirePasswordStrength = (value: string | null | undefined) => {
+      if (isBlankValue(value)) {
+        return
+      }
+
+      for (const rule of passwordRules) {
+        if (!rule.test(value as string)) {
+          ctx.addIssue({ code: "custom", path: ["password"], message: rule.message })
+        }
+      }
+    }
+
     if (!person.documentType?.id) {
       ctx.addIssue({ code: "custom", path: ["documentType"], message: "Selecciona el tipo de documento." })
     }
     require("identification", person.identification, "Ingresa el número de documento.")
     require("firstName", person.firstName, "Ingresa el primer nombre.")
     require("lastName", person.lastName, "Ingresa el primer apellido.")
-    require("email", person.email, "Ingresa el correo electrónico.")
-    require("gender", person.gender?.name, "Selecciona el género.")
 
+    // Persona SIN `id` todavía: va a `POST /register/funcionario`, que
+    // exige `@NotBlank` en email/password (mismo criterio que rector/
+    // secretaria en `makePersonSchema`, ver ese archivo). Persona CON `id`
+    // va a PUT (tolera estos campos vacíos, nunca resetea la contraseña),
+    // así que acá solo se exigen al crear.
+    if (!person.id) {
+      require("email", person.email, "Ingresa el correo electrónico.")
+      require("gender", person.gender?.name, "Selecciona el género.")
+
+      if (!person.accountExists) {
+        require("password", person.password, "Ingresa la contraseña.")
+        require("confirmPassword", confirmPassword, "Repite la contraseña.")
+        requirePasswordStrength(person.password)
+
+        if (!isBlankValue(person.password) && !isBlankValue(confirmPassword) && person.password !== confirmPassword) {
+          ctx.addIssue({ code: "custom", path: ["confirmPassword"], message: "Las contraseñas no coinciden." })
+        }
+      }
+      return
+    }
+
+    // `accountExists`: el autocompletado por documento confirmó que sigue
+    // siendo la misma cuenta y puso el valor decorativo con el campo
+    // bloqueado — no es una contraseña real que haya que validar.
     if (person.accountExists) {
+      return
+    }
+
+    // Persona existente editando password: solo se valida si escribió algo
+    // (en cualquiera de los dos campos) — igual que rector/secretaria.
+    const hasPassword = !isBlankValue(person.password)
+    const hasConfirm = !isBlankValue(confirmPassword)
+
+    if (!hasPassword && !hasConfirm) {
       return
     }
 
     require("password", person.password, "Ingresa la contraseña.")
     require("confirmPassword", confirmPassword, "Repite la contraseña.")
+    requirePasswordStrength(person.password)
 
-    if (!isBlankValue(person.password) && !isBlankValue(confirmPassword) && person.password !== confirmPassword) {
+    if (hasPassword && hasConfirm && person.password !== confirmPassword) {
       ctx.addIssue({ code: "custom", path: ["confirmPassword"], message: "Las contraseñas no coinciden." })
     }
   })
+
+function computePersonErrors(person: Person | null, confirmPassword: string): Record<string, string> {
+  const nextErrors: Record<string, string> = {}
+
+  if (!person) {
+    return nextErrors
+  }
+
+  const parsed = employeePersonSchema.safeParse({ person, confirmPassword })
+  if (!parsed.success) {
+    for (const issue of parsed.error.issues) {
+      nextErrors[`${EMPLOYEE_FIELD_PREFIX}.${issue.path.join(".")}`] ??= issue.message
+    }
+  }
+
+  return nextErrors
+}
 
 const EMPLOYEE_FIELD_PREFIX = "employee"
 
@@ -322,10 +384,6 @@ function buildEmployeeStatus(permissions: Permission[]): EmployeeStatus {
     : "SUSPENDED"
 }
 
-// Comparte el `NoticeProvider` del padre (la tabla) para que el aviso de
-// guardado exitoso siga visible en la vista general tras cerrar el diálogo,
-// igual que ocurre con el borrado. Solo los mensajes de los sub-diálogos de
-// permisos/información complementaria se ven mientras el diálogo sigue abierto.
 export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageEmployeeDialogProps) {
   const { notify } = useNotify()
   const isEditMode = Boolean(employeeId)
@@ -366,9 +424,23 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
   // Foto elegida en el form, todavía sin subir: viaja como `fkTarchivoFoto`
   // del multipart, tanto en el alta (/register/funcionario) como en el PATCH.
   const [photo, setPhoto] = useState<File | null>(null)
-  // Solo aplica al alta (no se puede reenlazar un funcionario ya existente
-  // desde acá) — igual que `establishmentId` en el alta de sede.
-  const [establishmentId, setEstablishmentId] = useState<number | null>(null)
+  // PK_TFUNCIONARIO que devolvió el autocompletado por documento cuando la
+  // persona YA es funcionario activo (`fn_fun_activo_por_usuario`, V51 REV5
+  // — ver `use-user-by-document.ts`). Dispara el efecto de abajo, que carga
+  // el registro completo y trata el resto del diálogo como edición desde
+  // ya (habilita Permisos/Información complementaria sin esperar al primer
+  // Guardar) — con TFUNCIONARIO como una fila por persona, si ya existe uno
+  // activo, dar de alta ES editarlo, sea cual sea el establecimiento en el
+  // que se lo esté buscando.
+  const [matchedFuncionarioId, setMatchedFuncionarioId] = useState<number | null>(null)
+  // Snapshot crudo del autocompletado (antes del placeholder de
+  // contraseña) cuando SÍ existe la cuenta pero todavía NO hay
+  // TFUNCIONARIO (`matchedFuncionarioId` se queda en null en ese caso).
+  // `fn_fun_crear` reusa el TUSUARIO tal cual estaba: si el usuario corrige
+  // algo del form antes de guardar, `handleMainSave` compara contra esto
+  // para saber si hace falta encadenar un PATCH además del alta (ver
+  // `personDataChangedSinceMatch`).
+  const personMatchSnapshotRef = useRef<Partial<Person> | null>(null)
   // Snapshot de los `id` (PK_TSEDE_USUARIO) que ya existían al abrir/cargar
   // el diálogo. Real-mode-only: el guardado de permisos compara `permissions`
   // contra este set para armar el diff crear/eliminar que espera
@@ -397,14 +469,6 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
   const { data: roles = [] } = useEmployeeRolesQuery()
   const { data: workSchedules = [] } = useCatalogQuery<CatalogItem>(CATALOGS.WORK_SCHEDULES)
   const { data: campuses = [] } = useCampusesOptionsQuery()
-  const { data: user } = useUser()
-  const isSuperAdmin = Boolean(user?.isSuperAdmin)
-  // Mismo criterio que el select de EE en el alta de sede: solo super admin,
-  // solo en alta (el enlace del funcionario a su EE es fijo una vez creado).
-  const showEstablishmentPicker = isSuperAdmin && !isEditMode
-  const { data: establishmentOptions = [] } = useEstablishmentsOptionsQuery(showEstablishmentPicker)
-  const establishmentItems = toSelectOptions(establishmentOptions)
-
   const roleItems = toSelectOptions(roles)
   const campusItems = toSelectOptions(campuses)
   const workScheduleItems = toSelectOptions(workSchedules)
@@ -412,6 +476,43 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
   // catálogo real), value por `.code` a propósito — ver
   // PERMISSION_STATUS_OPTIONS en institution/api/types/permission.ts.
   const permissionStatusItems = PERMISSION_STATUS_OPTIONS.map((status) => ({ value: status.code, label: status.name }))
+
+  // Revalida en cada cambio tras un intento de guardar fallido, para que el
+  // borde rojo desaparezca apenas el campo queda completo.
+  useEffect(() => {
+    if (Object.keys(personErrors).length === 0) return
+    setPersonErrors(computePersonErrors(person, confirmPassword))
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `personErrors` es guard, no dep.
+  }, [person, confirmPassword])
+
+  /**
+   * Vuelca un `Employee` completo sobre todo el estado del diálogo — lo
+   * comparten el efecto de edición normal (`employeeQuery`) y el de "ya es
+   * funcionario activo" (`matchedEmployeeQuery`, ver más abajo): en ambos
+   * casos el diálogo termina mostrando exactamente lo mismo, solo cambia
+   * cómo se llegó al `id`.
+   */
+  function applyLoadedEmployee(employee: Employee) {
+    setPerson(employee.person)
+    setPermissions(employee.permissions)
+    originalPermissionIdsRef.current = new Set(
+      employee.permissions
+        .map((permission) => permission.id)
+        .filter((id): id is number => id !== undefined),
+    )
+    setAdditionalInfo(createAdditionalInfoFromEmployee(employee))
+    setPermissionDraft(createPermissionDraft(employee.permissions.length + 1))
+    setPermissionErrors({})
+    setPersonErrors({})
+    setConfirmPassword(employee.person.password)
+    // La foto guardada no vuelve como `File`: se arranca sin nada elegido y
+    // solo se manda si el usuario carga una nueva.
+    setPhoto(null)
+    // Lo que llega del backend ya está guardado: los botones arrancan con
+    // el ícono de editar, sin pedir un Guardar que no aplica.
+    setPermissionsSaved(employee.permissions.length > 0)
+    setAdditionalInfoSaved(hasAdditionalInfoData(createAdditionalInfoFromEmployee(employee)))
+  }
 
   useEffect(() => {
     if (!open) {
@@ -430,34 +531,38 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
       setCreatedEmployeeId(null)
       setPermissionsSaved(false)
       setAdditionalInfoSaved(false)
-      setEstablishmentId(null)
+      setMatchedFuncionarioId(null)
+      personMatchSnapshotRef.current = null
       originalPermissionIdsRef.current = new Set()
       return
     }
 
     if (employeeQuery.data?.status === "ok") {
-      const employee = employeeQuery.data.employee
-      setPerson(employee.person)
-      setPermissions(employee.permissions)
-      originalPermissionIdsRef.current = new Set(
-        employee.permissions
-          .map((permission) => permission.id)
-          .filter((id): id is number => id !== undefined),
-      )
-      setAdditionalInfo(createAdditionalInfoFromEmployee(employee))
-      setPermissionDraft(createPermissionDraft(employee.permissions.length + 1))
-      setPermissionErrors({})
-      setPersonErrors({})
-      setConfirmPassword(employee.person.password)
-      // La foto guardada no vuelve como `File`: se arranca sin nada elegido y
-      // solo se manda si el usuario carga una nueva.
-      setPhoto(null)
-      // En edición lo que llega del backend ya está guardado: los botones
-      // arrancan con el ícono de editar, sin pedir un Guardar que no aplica.
-      setPermissionsSaved(employee.permissions.length > 0)
-      setAdditionalInfoSaved(hasAdditionalInfoData(createAdditionalInfoFromEmployee(employee)))
+      applyLoadedEmployee(employeeQuery.data.employee)
     }
   }, [employeeQuery.data, isEditMode, open])
+
+  // El autocompletado por documento (`UserDetailsForm`, `onMatched` más
+  // abajo) puede encontrar que la persona YA es funcionario activo
+  // (`found.id`, ver `use-user-by-document.ts`/V51 REV5) — en ese caso el
+  // alta se trata como edición de ese registro desde ya: se carga completo
+  // y se habilitan Permisos/Información complementaria sin esperar al
+  // primer Guardar (mismo criterio que pide el negocio: si ya sabemos que
+  // se va a asignar permisos/editar info de alguien que ya existe, no tiene
+  // sentido fingir que es un alta nueva).
+  const matchedEmployeeQuery = useEmployeeQuery(
+    matchedFuncionarioId,
+    open && !isEditMode && matchedFuncionarioId !== null,
+  )
+
+  useEffect(() => {
+    if (!open || isEditMode || matchedFuncionarioId === null) return
+
+    if (matchedEmployeeQuery.data?.status === "ok") {
+      applyLoadedEmployee(matchedEmployeeQuery.data.employee)
+      setCreatedEmployeeId(matchedFuncionarioId)
+    }
+  }, [matchedEmployeeQuery.data, isEditMode, open, matchedFuncionarioId])
 
   const createPersonMutation = useCreateWithPerson({
     mutationConfig: {
@@ -513,30 +618,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
     //    ya crea el TFUNCIONARIO, así que el flujo real se bifurca acá).
     let persistedPerson = draft
 
-    // Las dos validaciones se juntan en un solo `nextErrors` antes de
-    // decidir si hay que frenar: si solo se corta en la primera que falla
-    // (como pasaba antes con el establecimiento), la persona nunca llega a
-    // validarse y el usuario solo ve "falta el establecimiento" aunque
-    // también le falten nombre/documento.
-    const nextErrors: Record<string, string> = {}
-
-    if (!persistedPerson.id) {
-      const parsed = employeePersonSchema.safeParse({ person: persistedPerson, confirmPassword })
-
-      if (!parsed.success) {
-        // Un mensaje debajo de cada campo, con la ruta que espera
-        // `UserDetailsForm` (`employee.firstName`, …).
-        for (const issue of parsed.error.issues) {
-          nextErrors[`${EMPLOYEE_FIELD_PREFIX}.${issue.path.join(".")}`] ??= issue.message
-        }
-      }
-    }
-
-    // Alta real: el select de EE (solo super admin, ver arriba) es
-    // obligatorio para poder enlazar al funcionario apenas se cree.
-    if (!env.ENABLE_API_MOCKING && !activeEmployeeId && showEstablishmentPicker && !establishmentId) {
-      nextErrors.establishmentId = "Selecciona el establecimiento educativo."
-    }
+    const nextErrors = computePersonErrors(persistedPerson, confirmPassword)
 
     if (Object.keys(nextErrors).length > 0) {
       setPersonErrors(nextErrors)
@@ -548,21 +630,44 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
 
       if (!env.ENABLE_API_MOCKING && !activeEmployeeId) {
         // Backend real: /register/funcionario (auth-center, Java) crea
-        // TUSUARIO + TFUNCIONARIO en un solo paso (FK_ESTABLECIMIENTO
-        // queda NULL, "pendiente"). No pasa por acá si `activeEmployeeId`
-        // ya existe (edición) — eso sigue por PUT normal más abajo.
+        // TUSUARIO + TFUNCIONARIO (`fn_fun_crear` reusa el TUSUARIO si
+        // `accountExists` era `true`). TFUNCIONARIO ya no es una fila por
+        // establecimiento, así que no hace falta indicar a cuál pertenece
+        // ni enlazarlo después — el select de EE y el paso de "enlazar"
+        // (`fn_fun_enlazar_establecimiento`) quedaron obsoletos con este
+        // cambio de modelo (ver V51 REV5).
         try {
           const registered = await registerFuncionario(persistedPerson, photo)
           persistedPerson = { ...persistedPerson, id: registered.pkFuncionario }
+
+          // `fn_fun_crear` reusó el TUSUARIO tal cual estaba cuando
+          // `accountExists` era `true` — si el usuario corrigió algo del
+          // form respecto a lo que trajo el autocompletado antes de
+          // guardar, esa corrección todavía no llegó al backend. Se
+          // encadena un PATCH aparte solo si de verdad cambió algo.
+          const snapshot = personMatchSnapshotRef.current
+          if (snapshot && personDataChangedSinceMatch(snapshot, persistedPerson)) {
+            await updateFuncionario(
+              registered.pkFuncionario,
+              {
+                id: registered.pkFuncionario,
+                person: persistedPerson,
+                employeeClass: additionalInfo.employeeClass,
+                educationLevel: additionalInfo.educationLevel,
+                grade: additionalInfo.grade,
+                highestEducationLevel: additionalInfo.highestEducationLevel,
+                fundingSource: additionalInfo.fundingSource,
+                functionalPosition: additionalInfo.functionalPosition,
+                employmentType: additionalInfo.employmentType,
+                address: additionalInfo.address,
+                permissions,
+                status: buildEmployeeStatus(permissions),
+              },
+              photo,
+            )
+          }
+
           setPerson(persistedPerson)
-
-          // Siempre se llama, aunque `establishmentId` sea null: el select
-          // solo se muestra para super admin (showEstablishmentPicker) —
-          // para rector/secretaria/jefe de sistema, fn_fun_enlazar_establecimiento
-          // resuelve el EE solo (fn_resolver_establecimiento_unico, V50),
-          // asumiendo que están ligados a un único EE bajo esos roles.
-          await enlazarFuncionarioEstablecimiento(registered.pkFuncionario, establishmentId)
-
           setCreatedEmployeeId(registered.pkFuncionario)
           notify(SUCCESS_MESSAGES.employee.created)
         } catch (error) {
@@ -801,39 +906,23 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
             onConfirmPasswordChange={setConfirmPassword}
             photo={photo}
             onPhotoChange={setPhoto}
+            onMatched={(found) => {
+              if (found?.id) {
+                // Ya es funcionario activo -- el efecto de arriba
+                // (`matchedEmployeeQuery`) lo carga completo y trata el
+                // resto del diálogo como edición.
+                setMatchedFuncionarioId(found.id)
+                personMatchSnapshotRef.current = null
+              } else {
+                // Solo existe la cuenta (o no hay match): guarda el
+                // snapshot para poder detectar ediciones antes de guardar
+                // (ver el bloque de `personDataChangedSinceMatch` en
+                // `handleMainSave`), y limpia cualquier carga anterior.
+                personMatchSnapshotRef.current = found ?? null
+                setMatchedFuncionarioId(null)
+              }
+            }}
           />
-
-          {/* Mismo criterio que el select de EE en el alta de sede: solo
-              super admin, solo en alta (una vez enlazado, es fijo). */}
-          {showEstablishmentPicker && (
-            <Field
-              orientation="vertical"
-              variant="outlined"
-              className="w-full"
-              data-invalid={personErrors["establishmentId"] ? "true" : undefined}
-            >
-              <FieldLabel htmlFor="employee-establishment">Establecimiento educativo *</FieldLabel>
-              <ComboboxField
-                id="employee-establishment"
-                items={Object.fromEntries(establishmentItems.map((item) => [item.value, item.label]))}
-                value={establishmentId}
-                aria-invalid={Boolean(personErrors["establishmentId"])}
-                onValueChange={(selectedValue) => setEstablishmentId(selectedValue ?? null)}
-              >
-                <ComboboxFieldTrigger id="employee-establishment" size="sm" aria-invalid={Boolean(personErrors["establishmentId"])}>
-                  <ComboboxFieldValue placeholder="Seleccionar" />
-                </ComboboxFieldTrigger>
-                <ComboboxFieldContent>
-                  {establishmentItems.map((item) => (
-                    <ComboboxFieldItem key={item.value} value={item.value}>
-                      {item.label}
-                    </ComboboxFieldItem>
-                  ))}
-                </ComboboxFieldContent>
-              </ComboboxField>
-              <FieldError>{personErrors["establishmentId"]}</FieldError>
-            </Field>
-          )}
 
           {/* `sm:justify-between` y no solo `justify-between`: el `DialogFooter`
               trae `sm:justify-end` propio y, al ser una clase con variante,
@@ -998,7 +1087,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
                 </ComboboxFieldTrigger>
                 <ComboboxFieldContent>
                   {campusItems.map((item) => (
-                    <ComboboxFieldItem key={item.value} value={item.value}>
+                    <ComboboxFieldItem key={item.value} value={item.value} title={item.label}>
                       {item.label}
                     </ComboboxFieldItem>
                   ))}
@@ -1088,17 +1177,18 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
               </div>
             </Field>
 
-            <div className="flex w-full items-end sm:w-auto">
+            <div className="flex w-full flex-col gap-1.5 sm:w-auto">
+              <FieldLabel className="invisible">Agregar</FieldLabel>
               <Button
                 variant="fill"
                 color="primary"
-                size="sm"
                 onClick={addPermission}
                 className="w-full sm:w-auto"
               >
                 <ControlPointIcon data-icon="inline-start" />
                 Agregar
               </Button>
+              <div className="min-h-5" />
             </div>
           </div>
 

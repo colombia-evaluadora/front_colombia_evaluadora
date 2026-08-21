@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react"
+import { useEffect, useRef, useState, type FormEvent } from "react"
 import { z } from "zod"
 
 import { Button } from "@/components/ui/button"
@@ -22,7 +22,8 @@ import { useCatalogQuery } from "@/features/establishment/employees/api/query/us
 import { useEstablishmentsOptionsQuery } from "@/features/establishment/institution/api/query/use-establishments-options"
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 import type { CampusDraft } from "@/features/establishment/campuses/api/types/campus"
-import { NoticeOutlet, useNotify } from "@/components/notice/notice-context"
+import { useNotify } from "@/components/notice/notice-context"
+import { NoticeBanner, type NoticeVariant } from "@/components/notice/notice-banner"
 
 interface ManageCampusDialogProps {
   open: boolean
@@ -57,9 +58,15 @@ function buildCampusSchema(requireEstablishment: boolean) {
   return z.object({
     name: z.string().trim().min(1, "Ingresa el nombre de la sede."),
     dane: z.string().trim().min(1, "Ingresa el código DANE antiguo de la sede."),
-    zone: z.object({ id: z.number() }).nullable().refine((zone) => zone !== null, {
-      message: "Selecciona la zona.",
-    }),
+    // Mismo criterio que `requiredCatalogItem` en
+    // `institution/utils/validate-form.ts`: `.nullish()` + chequear
+    // `.id != null` en vez de `z.object({ id: z.number() }).nullable()` —
+    // así un `{ id: undefined }` cae en el mensaje amigable en vez de
+    // reventar con el error genérico de Zod por forma inválida.
+    zone: z
+      .object({ id: z.number().nullish() })
+      .nullish()
+      .refine((zone) => zone?.id != null, { message: "Selecciona la zona." }),
     establishmentId: requireEstablishment
       ? z.number({ message: "Selecciona el establecimiento educativo." })
       : z.number().nullable(),
@@ -93,6 +100,19 @@ export function ManageCampusDialog({
 
   const [formValues, setFormValues] = useState<CampusDraft>(createInitialCampusValues)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+
+  // Aviso local, propio del diálogo: mientras sigue abierto, cualquier
+  // mensaje de esta pantalla pasa por acá y no por el `notify()` global —ese
+  // queda para el aviso de "Guardar" que se ve en la página una vez que el
+  // diálogo se cierra— o el mismo mensaje se veía duplicado (uno detrás del
+  // overlay, otro acá).
+  const [notice, setNotice] = useState<{ id: number; message: string; variant: NoticeVariant } | null>(null)
+  const noticeIdRef = useRef(0)
+
+  function notifyInDialog(message: string, variant: NoticeVariant = "error") {
+    noticeIdRef.current += 1
+    setNotice({ id: noticeIdRef.current, message, variant })
+  }
 
   const { data: zones = [] } = useCatalogQuery<CatalogItem>(CATALOGS.ZONES)
   const { data: user } = useUser()
@@ -134,7 +154,7 @@ export function ManageCampusDialog({
     mutationConfig: {
       onSuccess: (result) => {
         if (result.status === "error") {
-          notify(result.message, { variant: "error" })
+          notifyInDialog(result.message)
           return
         }
 
@@ -142,7 +162,7 @@ export function ManageCampusDialog({
         onOpenChange(false)
       },
       onError: (error) => {
-        notify(error.message || "No fue posible guardar la sede.", { variant: "error" })
+        notifyInDialog(error.message || "No fue posible guardar la sede.")
       },
     },
   })
@@ -151,7 +171,7 @@ export function ManageCampusDialog({
     mutationConfig: {
       onSuccess: (result) => {
         if (result.status === "error") {
-          notify(result.message, { variant: "error" })
+          notifyInDialog(result.message)
           return
         }
 
@@ -159,10 +179,22 @@ export function ManageCampusDialog({
         onOpenChange(false)
       },
       onError: (error) => {
-        notify(error.message || "No fue posible actualizar la sede.", { variant: "error" })
+        notifyInDialog(error.message || "No fue posible actualizar la sede.")
       },
     },
   })
+
+  // Después de un intento de guardar fallido, cada cambio vuelve a validar
+  // para que el mensaje/borde rojo de un campo desaparezca apenas se
+  // completa, en vez de quedar pegado hasta el siguiente submit (antes
+  // `fieldErrors` solo se recalculaba al enviar el form).
+  function handleFormChange(next: CampusDraft) {
+    setFormValues(next)
+
+    if (Object.keys(fieldErrors).length > 0) {
+      setFieldErrors(validateCampus(next, showEstablishmentPicker))
+    }
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -171,7 +203,7 @@ export function ManageCampusDialog({
     setFieldErrors(errors)
 
     if (Object.keys(errors).length > 0) {
-      notify("Completa los campos obligatorios antes de guardar.", { variant: "error" })
+      notifyInDialog("Completa los campos obligatorios antes de guardar.")
       return
     }
 
@@ -196,17 +228,26 @@ export function ManageCampusDialog({
         if (!isPending) onOpenChange(next)
       }}
     >
-      <DialogContent className="w-[min(95vw,56rem)] max-w-none sm:max-w-224 max-h-[85vh] overflow-y-auto overflow-x-hidden">
+      <DialogContent
+        className="w-[min(95vw,56rem)] max-w-none sm:max-w-224 max-h-[85vh] overflow-y-auto overflow-x-hidden"
+        showCloseButton={false}
+      >
         <DialogHeader>
           <DialogTitle>{isEditMode ? "Editar sede" : "Agregar sede"}</DialogTitle>
         </DialogHeader>
 
-        <NoticeOutlet className="mb-2" />
+        <NoticeBanner
+          notice={notice}
+          onClose={() => setNotice(null)}
+          variant={notice?.variant}
+          autoCloseMs={notice?.variant === "error" ? undefined : 4000}
+          className="mb-2"
+        />
 
         <form id="campus-form" onSubmit={handleSubmit}>
           <CampusDetailsForm
             value={formValues}
-            onChange={setFormValues}
+            onChange={handleFormChange}
             zones={zones}
             errors={fieldErrors}
             establishmentPicker={showEstablishmentPicker ? { establishments } : undefined}
