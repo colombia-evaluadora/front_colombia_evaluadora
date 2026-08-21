@@ -6,6 +6,7 @@ import type { SortingState } from "@tanstack/react-table"
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
 import { useDataTable } from "@/hooks/use-data-table"
+import { NoticeOutlet } from "@/components/notice/notice-context"
 
 import { useGradeGroupsQuery } from "@/features/establishment/academic-period/api/query/use-grade-groups"
 import { createGradeGroupColumns } from "@/features/establishment/academic-period/components/table/columns-grade-groups"
@@ -92,6 +93,8 @@ export function TabGradeGroups({ gradeId, academicPeriodId }: TabGradeGroupsProp
           </>
         )}
       </div>
+
+      <NoticeOutlet className="mb-2" />
 
       <DataTable
         table={table}

@@ -1,9 +1,11 @@
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { useForm } from "@tanstack/react-form"
 import { ControlPointIcon, PencilIcon, SpinnerIcon } from "@/components/ui/icons"
 
-import { useNotify, NoticeOutlet } from "@/components/notice/notice-context"
+import { useNotify } from "@/components/notice/notice-context"
+import { NoticeBanner, type NoticeVariant } from "@/components/notice/notice-banner"
+import { getErrorMessage } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
@@ -77,6 +79,19 @@ export function CreateStudyPlanDialog({
 
   const { notify } = useNotify()
   const [open, setOpen] = useState(false)
+
+  const [notice, setNotice] = useState<{
+    id: number
+    message: string
+    variant: NoticeVariant
+  } | null>(null)
+  const noticeIdRef = useRef(0)
+
+  function notifyInDialog(message: string, options?: { variant?: NoticeVariant }) {
+    noticeIdRef.current += 1
+    setNotice({ id: noticeIdRef.current, message, variant: options?.variant ?? "error" })
+  }
+
   const tienePersonalizacion =
     item != null && (item.formatoCalificacion != null || item.criterioNota != null)
   const [personalizar, setPersonalizar] = useState(tienePersonalizacion)
@@ -122,10 +137,17 @@ export function CreateStudyPlanDialog({
   const createStudyPlanItem = useCreateStudyPlanItem({
     mutationConfig: {
       onSuccess: () => {
+        // La tabla del tab "Plan de estudio" vive en el mismo
+        // `NoticeProvider` anidado que este diálogo (ver
+        // `dialog-create-grade.tsx`), así que el aviso compartido cae ahí —
+        // no en la página de atrás.
         notify("Asignatura agregada al plan de estudio.")
         form.reset()
         setPersonalizar(false)
         setOpen(false)
+      },
+      onError: (error) => {
+        notifyInDialog(getErrorMessage(error))
       },
     },
   })
@@ -134,11 +156,14 @@ export function CreateStudyPlanDialog({
     mutationConfig: {
       onSuccess: (result) => {
         if (result.status === "error") {
-          notify(result.message, { variant: "error" })
+          notifyInDialog(result.message)
           return
         }
         notify(SUCCESS_MESSAGES.studyPlan.updated)
         setOpen(false)
+      },
+      onError: (error) => {
+        notifyInDialog(getErrorMessage(error))
       },
     },
   })
@@ -174,6 +199,7 @@ export function CreateStudyPlanDialog({
       open={open}
       onOpenChange={(next) => {
         setOpen(next)
+        setNotice(null)
         if (!next) {
           form.reset()
           setPersonalizar(tienePersonalizacion)
@@ -214,7 +240,12 @@ export function CreateStudyPlanDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <NoticeOutlet />
+        <NoticeBanner
+          notice={notice}
+          onClose={() => setNotice(null)}
+          variant={notice?.variant}
+          autoCloseMs={notice?.variant === "error" ? undefined : 4000}
+        />
 
         <form
           id={FORM_ID}

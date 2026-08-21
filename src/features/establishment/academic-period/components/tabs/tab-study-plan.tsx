@@ -6,6 +6,7 @@ import type { SortingState } from "@tanstack/react-table"
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
 import { useDataTable } from "@/hooks/use-data-table"
+import { NoticeOutlet } from "@/components/notice/notice-context"
 
 import { useStudyPlansQuery } from "@/features/establishment/academic-period/api/query/use-study-plans"
 import { createStudyPlanColumns } from "@/features/establishment/academic-period/components/table/columns-study-plan"
@@ -88,6 +89,8 @@ export function TabStudyPlan({ academicPeriodId, gradeId }: TabStudyPlanProps) {
           </>
         )}
       </div>
+
+      <NoticeOutlet className="mb-2" />
 
       <DataTable
         table={table}
