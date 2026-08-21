@@ -4,6 +4,7 @@ import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { CheckIcon, SpinnerIcon, TrashIcon, XIcon } from "@/components/ui/icons"
 
 import { useNotify } from "@/components/notice/notice-context"
+import { getErrorMessage } from "@/lib/api-client"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,11 +33,13 @@ export function DeleteEvaluationPeriodDialog({
 
   const deleteMutation = useDeleteEvaluationPeriod({
     mutationConfig: {
-      // Un error HTTP ya se reporta por el interceptor global de `api-client`;
-      // `onSuccess` solo corre si la request efectivamente resolvió bien.
       onSuccess: () => {
         setOpen(false)
         notify(SUCCESS_MESSAGES.evaluationPeriod.deleted)
+      },
+      onError: (error) => {
+        setOpen(false)
+        notify(getErrorMessage(error), { variant: "error" })
       },
     },
   })

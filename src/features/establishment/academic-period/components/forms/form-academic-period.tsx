@@ -98,6 +98,13 @@ export function AcademicPeriodForm({
   })
 
   const isDefaultValue = useSelector(form.store, (state) => state.isDefaultValue)
+  // Sin esto, un campo que nunca se tocó (p.ej. cargado de un periodo
+  // existente con un valor que ya no pasa el schema) bloqueaba "Guardar" en
+  // silencio: `isInvalid` solo miraba `isTouched`, así que ni el borde rojo
+  // ni el mensaje aparecían — el click no hacía nada y no había forma de
+  // saber por qué. Tras un intento de submit, se muestran los errores de
+  // todos los campos, se hayan tocado o no.
+  const submissionAttempts = useSelector(form.store, (state) => state.submissionAttempts)
 
   useEffect(() => {
     onDirtyChange?.(!isDefaultValue)
@@ -138,7 +145,7 @@ export function AcademicPeriodForm({
         {/* Fila 1: fechas */}
         <form.Field name="startDate">
           {(field) => {
-            const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
+            const isInvalid = (field.state.meta.isTouched || submissionAttempts > 0) && !field.state.meta.isValid
             return (
               <Field variant="outlined" data-invalid={isInvalid}>
                 <FieldLabel htmlFor={field.name}>Inicio del período académico*</FieldLabel>
@@ -160,7 +167,7 @@ export function AcademicPeriodForm({
 
         <form.Field name="endDate">
           {(field) => {
-            const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
+            const isInvalid = (field.state.meta.isTouched || submissionAttempts > 0) && !field.state.meta.isValid
             return (
               <Field variant="outlined" data-invalid={isInvalid}>
                 <FieldLabel htmlFor={field.name}>Fin del período académico*</FieldLabel>
@@ -182,7 +189,7 @@ export function AcademicPeriodForm({
 
         <form.Field name="enrollmentDeadline">
           {(field) => {
-            const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
+            const isInvalid = (field.state.meta.isTouched || submissionAttempts > 0) && !field.state.meta.isValid
             return (
               <form.Subscribe
                 selector={(state) => ({
@@ -228,7 +235,7 @@ export function AcademicPeriodForm({
         {/* Fila 2: sede, periodo anterior, estado */}
         <form.Field name="sedeId">
           {(field) => {
-            const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
+            const isInvalid = (field.state.meta.isTouched || submissionAttempts > 0) && !field.state.meta.isValid
             return (
               <Field variant="outlined" data-invalid={isInvalid}>
                 <FieldLabel htmlFor={field.name}>Sede*</FieldLabel>
@@ -261,43 +268,48 @@ export function AcademicPeriodForm({
           }}
         </form.Field>
         <form.Field name="previousPeriodId">
-          {(field) => (
-            <Field variant="outlined">
-              <FieldLabel htmlFor={field.name}>Periodo académico anterior</FieldLabel>
-              <ComboboxField
-                value={field.state.value ? String(field.state.value) : NO_PREVIOUS_PERIOD}
-                onValueChange={(value) =>
-                  field.handleChange(
-                    value && value !== NO_PREVIOUS_PERIOD ? Number(value) : null,
-                  )
-                }
-              >
-                <ComboboxFieldTrigger id={field.name}>
-                  <ComboboxFieldValue>
-                    {(value) => {
-                      const p = previousPeriodOptions.find((o) => String(o.id) === value)
-                      return p ? p.name : "No tiene"
-                    }}
-                  </ComboboxFieldValue>
-                </ComboboxFieldTrigger>
-                <ComboboxFieldContent>
-                  <ComboboxGroup>
-                    <ComboboxFieldItem value={NO_PREVIOUS_PERIOD}>No tiene</ComboboxFieldItem>
-                    {previousPeriodOptions.map((period) => (
-                      <ComboboxFieldItem key={period.id} value={String(period.id)}>
-                        {period.name}
-                      </ComboboxFieldItem>
-                    ))}
-                  </ComboboxGroup>
-                </ComboboxFieldContent>
-              </ComboboxField>
-            </Field>
-          )}
+          {(field) => {
+            const isInvalid =
+              (field.state.meta.isTouched || submissionAttempts > 0) && !field.state.meta.isValid
+            return (
+              <Field variant="outlined" data-invalid={isInvalid}>
+                <FieldLabel htmlFor={field.name}>Periodo académico anterior</FieldLabel>
+                <ComboboxField
+                  value={field.state.value ? String(field.state.value) : NO_PREVIOUS_PERIOD}
+                  onValueChange={(value) =>
+                    field.handleChange(
+                      value && value !== NO_PREVIOUS_PERIOD ? Number(value) : null,
+                    )
+                  }
+                >
+                  <ComboboxFieldTrigger id={field.name} aria-invalid={isInvalid}>
+                    <ComboboxFieldValue>
+                      {(value) => {
+                        const p = previousPeriodOptions.find((o) => String(o.id) === value)
+                        return p ? p.name : "No tiene"
+                      }}
+                    </ComboboxFieldValue>
+                  </ComboboxFieldTrigger>
+                  <ComboboxFieldContent>
+                    <ComboboxGroup>
+                      <ComboboxFieldItem value={NO_PREVIOUS_PERIOD}>No tiene</ComboboxFieldItem>
+                      {previousPeriodOptions.map((period) => (
+                        <ComboboxFieldItem key={period.id} value={String(period.id)}>
+                          {period.name}
+                        </ComboboxFieldItem>
+                      ))}
+                    </ComboboxGroup>
+                  </ComboboxFieldContent>
+                </ComboboxField>
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
+              </Field>
+            )
+          }}
         </form.Field>
 
         <form.Field name="statusId">
           {(field) => {
-            const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
+            const isInvalid = (field.state.meta.isTouched || submissionAttempts > 0) && !field.state.meta.isValid
             return (
               <Field variant="outlined" data-invalid={isInvalid}>
                 <FieldLabel htmlFor={field.name}>Estado*</FieldLabel>
@@ -345,7 +357,7 @@ export function AcademicPeriodForm({
         {/* Fila 3: jornada, hora inicio, hora final */}
         <form.Field name="jornadaId">
           {(field) => {
-            const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
+            const isInvalid = (field.state.meta.isTouched || submissionAttempts > 0) && !field.state.meta.isValid
             return (
               <Field variant="outlined" data-invalid={isInvalid}>
                 <FieldLabel htmlFor={field.name}>Jornada*</FieldLabel>
@@ -378,7 +390,7 @@ export function AcademicPeriodForm({
 
         <form.Field name="scheduleStartTime">
           {(field) => {
-            const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
+            const isInvalid = (field.state.meta.isTouched || submissionAttempts > 0) && !field.state.meta.isValid
             return (
               <form.Subscribe selector={(state) => state.values.scheduleEndTime}>
                 {(scheduleEndTime) => {
@@ -415,7 +427,7 @@ export function AcademicPeriodForm({
 
         <form.Field name="scheduleEndTime">
           {(field) => {
-            const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
+            const isInvalid = (field.state.meta.isTouched || submissionAttempts > 0) && !field.state.meta.isValid
             return (
               <Field variant="outlined" data-invalid={isInvalid}>
                 <FieldLabel htmlFor={field.name}>Hora final*</FieldLabel>
@@ -439,7 +451,7 @@ export function AcademicPeriodForm({
         {/* Fila 4: bloques, descansos, reserva */}
         <form.Field name="defaultBlocksCount">
           {(field) => {
-            const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
+            const isInvalid = (field.state.meta.isTouched || submissionAttempts > 0) && !field.state.meta.isValid
             return (
               <Field variant="outlined" data-invalid={isInvalid}>
                 <FieldLabel htmlFor={field.name}>Número de bloques de la jornada*</FieldLabel>
@@ -488,7 +500,7 @@ export function AcademicPeriodForm({
                     (scheduleStartTime && b.startTime < scheduleStartTime) ||
                     (scheduleEndTime && b.endTime > scheduleEndTime),
                 )
-                const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
+                const isInvalid = (field.state.meta.isTouched || submissionAttempts > 0) && !field.state.meta.isValid
                 return (
                   <Field variant="outlined" data-invalid={isInvalid}>
                     <FieldLabel>Cantidad y horarios de descanso</FieldLabel>
