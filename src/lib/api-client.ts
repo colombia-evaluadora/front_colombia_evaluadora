@@ -83,7 +83,13 @@ const UNAUTHENTICATED_ENDPOINTS = [
   "/sso-admin/resetTokenStatus",
 ]
 
-function authRequestInterceptor(config: InternalAxiosRequestConfig) {
+/**
+ * Se exporta para `report-client`: los reportes necesitan una instancia de
+ * axios propia —la de `api` desenvuelve `response.data` y ahi se pierden las
+ * cabeceras que traen el nombre del archivo y el conteo de filas—, pero tiene
+ * que mandar el mismo Bearer que el resto de la app.
+ */
+export function authRequestInterceptor(config: InternalAxiosRequestConfig) {
   if (config.headers) {
     config.headers.Accept = "application/json"
     const url = config.url ?? ""
