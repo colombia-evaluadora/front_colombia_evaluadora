@@ -4,6 +4,7 @@ import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { CheckIcon, SpinnerIcon, TrashIcon, XIcon } from "@/components/ui/icons"
 
 import { useNotify } from "@/components/notice/notice-context"
+import { getErrorMessage } from "@/lib/api-client"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,6 +38,10 @@ export function DeleteAreaSubjectDialog({ areaSubject }: DeleteAreaSubjectDialog
         }
         setOpen(false)
         notify(SUCCESS_MESSAGES.areaSubject.deleted)
+      },
+      onError: (error) => {
+        setOpen(false)
+        notify(getErrorMessage(error), { variant: "error" })
       },
     },
   })

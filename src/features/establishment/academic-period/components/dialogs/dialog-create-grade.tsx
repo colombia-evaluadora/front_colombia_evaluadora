@@ -6,6 +6,7 @@ import { cleanErrorMessage } from "@/lib/api-client"
 import { ControlPointIcon, PencilIcon, SpinnerIcon } from "@/components/ui/icons"
 
 import { NoticeBanner, type NoticeVariant } from "@/components/notice/notice-banner"
+import { NoticeProvider } from "@/components/notice/notice-context"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -441,41 +442,47 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
             Crea el grado para configurar sus grupos, plan de estudio y horario.
           </p>
         ) : (
-          <Tabs defaultValue="grupo" className="w-full min-w-0">
-            <TabsList variant="folder">
-              <TabsTrigger value="grupo">Grupo</TabsTrigger>
-              <TabsTrigger value="promocion">Criterios de promoción</TabsTrigger>
-              <TabsTrigger value="plan">Plan de estudio</TabsTrigger>
-              <TabsTrigger value="horario">Horario</TabsTrigger>
-            </TabsList>
+          // Provider propio: los diálogos de crear/eliminar de cada pestaña
+          // (grupo, plan de estudio) usan `useNotify()` y, sin esto,
+          // resolvían al provider de la página de atrás — el aviso aparecía
+          // detrás de "Editar grado" en vez de en la tabla de la pestaña.
+          <NoticeProvider>
+            <Tabs defaultValue="grupo" className="w-full min-w-0">
+              <TabsList variant="folder">
+                <TabsTrigger value="grupo">Grupo</TabsTrigger>
+                <TabsTrigger value="promocion">Criterios de promoción</TabsTrigger>
+                <TabsTrigger value="plan">Plan de estudio</TabsTrigger>
+                <TabsTrigger value="horario">Horario</TabsTrigger>
+              </TabsList>
 
-            <TabsContent value="grupo" className={PANEL}>
-              <TabGradeGroups gradeId={gradeId} academicPeriodId={academicPeriodId} />
-            </TabsContent>
+              <TabsContent value="grupo" className={PANEL}>
+                <TabGradeGroups gradeId={gradeId} academicPeriodId={academicPeriodId} />
+              </TabsContent>
 
-            <TabsContent value="promocion" keepMounted className={PANEL}>
-              <TabPromotionCriteria
-                ref={promotionRef}
-                hideSubmit
-                gradeId={gradeId}
-                academicPeriodId={academicPeriodId}
-              />
-            </TabsContent>
+              <TabsContent value="promocion" keepMounted className={PANEL}>
+                <TabPromotionCriteria
+                  ref={promotionRef}
+                  hideSubmit
+                  gradeId={gradeId}
+                  academicPeriodId={academicPeriodId}
+                />
+              </TabsContent>
 
-            <TabsContent value="plan" className={PANEL}>
-              <TabStudyPlan academicPeriodId={academicPeriodId} gradeId={gradeId} />
-            </TabsContent>
+              <TabsContent value="plan" className={PANEL}>
+                <TabStudyPlan academicPeriodId={academicPeriodId} gradeId={gradeId} />
+              </TabsContent>
 
-            <TabsContent value="horario" keepMounted className={PANEL}>
-              <ScheduleBuilder
-                ref={scheduleRef}
-                jornada={jornada}
-                subjects={scheduleSubjects}
-                gradeGroups={gradeGroupOptions}
-                gradeId={gradeId}
-              />
-            </TabsContent>
-          </Tabs>
+              <TabsContent value="horario" keepMounted className={PANEL}>
+                <ScheduleBuilder
+                  ref={scheduleRef}
+                  jornada={jornada}
+                  subjects={scheduleSubjects}
+                  gradeGroups={gradeGroupOptions}
+                  gradeId={gradeId}
+                />
+              </TabsContent>
+            </Tabs>
+          </NoticeProvider>
         )}
 
         <DialogFooter>

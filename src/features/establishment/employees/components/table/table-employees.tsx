@@ -16,6 +16,7 @@ import {
 } from "@/components/layout/table-screen"
 import { CATALOGS } from "@/lib/catalogs"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
+import { getErrorMessage } from "@/lib/api-client"
 
 import { useCatalogQuery } from "@/features/establishment/employees/api/query/use-catalogs"
 import { useEmployeeRolesQuery } from "@/features/establishment/employees/api/query/use-employee-roles"
@@ -24,7 +25,10 @@ import { useEmployeesFilters } from "@/features/establishment/employees/hooks/us
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 import type { EmployeeListItem } from "@/features/establishment/employees/api/types/employee"
 import { useEmployeesQuery } from "@/features/establishment/employees/api/query/use-employees"
-import { useBulkDelete } from "@/features/establishment/employees/api/mutations/use-bulk-delete"
+import {
+  useBulkDelete,
+  summarizeEmployeeBulkDelete,
+} from "@/features/establishment/employees/api/mutations/use-bulk-delete"
 import { createColumns } from "@/features/establishment/employees/components/table/columns-employees"
 import { DialogBulkDelete } from "@/features/establishment/employees/components/dialogs/dialog-bulk-delete"
 import { ClearSelectionDialog } from "@/features/establishment/employees/components/dialogs/dialog-clear-selection"
@@ -83,19 +87,33 @@ export function EmployeesDataTable({ onEditEmployee, title, action }: EmployeesD
     () => rows.filter((row) => selectedIds.includes(String(row.id))),
     [rows, selectedIds],
   )
+  const namesById = useMemo(
+    () => new Map(rows.map((row) => [String(row.id), row.name])),
+    [rows],
+  )
 
   const bulkDelete = useBulkDelete({
     mutationConfig: {
       onSuccess: (result) => {
-        if (result.status === "error") {
-          notify(result.message, { variant: "error" })
+        const summary = summarizeEmployeeBulkDelete(result)
+        if (summary.failed.length === 0) {
+          notify(SUCCESS_MESSAGES.employee.deletedMany(summary.succeededCount))
+          resetSelection()
           return
         }
-        notify(SUCCESS_MESSAGES.employee.deletedMany(selectedIds.length))
+        const failedNames = summary.failed
+          .map(({ id, reason }) => `${namesById.get(id) ?? id} (${reason})`)
+          .join(", ")
+        notify(
+          summary.succeededCount > 0
+            ? `Se eliminaron ${summary.succeededCount} funcionario(s). No se pudo con: ${failedNames}.`
+            : `No se pudo eliminar: ${failedNames}.`,
+          { variant: "error" },
+        )
         resetSelection()
       },
       onError: (error) => {
-        notify(error.message, { variant: "error" })
+        notify(getErrorMessage(error), { variant: "error" })
       },
     },
   })

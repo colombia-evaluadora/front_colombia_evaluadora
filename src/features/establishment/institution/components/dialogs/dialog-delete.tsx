@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
+import { getErrorMessage } from "@/lib/api-client"
 import { establishmentsRoute } from "@/router"
 
 import { useDelete } from "@/features/establishment/institution/api/mutations/delete"
@@ -51,7 +52,7 @@ export function DeleteEstablishmentDialog({
         })
       },
       onError: (error) => {
-        notify(error.message, { variant: "error" })
+        notify(getErrorMessage(error), { variant: "error" })
       },
     },
   })
