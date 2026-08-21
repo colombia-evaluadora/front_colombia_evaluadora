@@ -21,6 +21,7 @@ interface RealAutocompletarRow {
   genero_nombre: string | null
   telefono: string | null
   correo_electronico: string | null
+  fk_tarchivo_foto: number | null
   pk_tfuncionario_activo: number | null
 }
 
@@ -76,6 +77,19 @@ function toGenderCatalogItem(id: number | null, name: string | null): CatalogIte
  * `fn_usu_empleado_buscar_por_pk` en `use-employee.ts`) para poder armar un
  * `CatalogItem` completo, no solo el `id`.
  *
+ * REV4: mismo problema con `photoArchivoId` — nunca se traía. En el
+ * diálogo de funcionario (`dialog-manage.tsx`) esto quedaba tapado porque,
+ * cuando el match ya trae `id` (funcionario activo), se dispara además un
+ * GET completo por PK que sí incluye la foto y pisa todo el estado. Pero en
+ * el alta de establecimiento (`add-establishment-page.tsx`), que solo lee
+ * este patch, la foto quedaba vacía aunque la persona tuviera una guardada
+ * — y peor, si el usuario autocompletaba a alguien, luego cambiaba el
+ * documento y autocompletaba a otra persona SIN foto, seguía mostrando la
+ * foto de la primera (nada la limpiaba). `fk_tarchivo_foto` viaja siempre
+ * en el patch (incluso `null`) para que el merge (`{...person, ...found}`
+ * en `UserDetailsForm`) también pueda BORRAR una foto que ya no aplica, no
+ * solo agregar una nueva.
+ *
  * Solo corre contra el backend real: no hay endpoint de mock equivalente.
  */
 export async function findPersonByDocument(
@@ -105,6 +119,7 @@ export async function findPersonByDocument(
     gender: toGenderCatalogItem(row.fk_tlv_genero, row.genero_nombre),
     phone: row.telefono ?? "",
     email: row.correo_electronico ?? "",
+    photoArchivoId: row.fk_tarchivo_foto,
     accountExists: true,
     ...(row.pk_tfuncionario_activo ? { id: row.pk_tfuncionario_activo } : {}),
   }
