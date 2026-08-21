@@ -6,8 +6,6 @@ import { toAuthUserFromToken, type AuthUser } from "@/lib/auth-mapper"
 import type { MutationConfig } from "@/lib/react-query"
 import type { AuthResponse } from "@/types/api"
 
-const REMEMBER_KEY = "auth_remember_me"
-
 const USER_QUERY_KEY = ["auth-user"]
 
 // El backend no expone un "/auth/me": la sesión se restaura pidiendo un
@@ -49,11 +47,6 @@ const loginWithEmailAndPassword = (data: LoginInputWithRemember): Promise<AuthRe
   })
 }
 
-function setRememberPreference(value: boolean) {
-  if (value) localStorage.setItem(REMEMBER_KEY, "true")
-  else localStorage.removeItem(REMEMBER_KEY)
-}
-
 // Los flujos de recuperación (contraseña y usuario) viven en
 // features/auth/api — acá queda solo lo que hace a la sesión, que usa toda
 // la app (router, layouts protegidos, menú).
@@ -75,15 +68,11 @@ export function useLogin({
     mutationFn: loginWithEmailAndPassword,
     ...mutationConfig,
     onSuccess: (data, variables, ...rest) => {
-      // Persistencia según `rememberMe`: si no se marcó, limpiamos
-      // cualquier token persistido de antes para que la próxima vez que se
-      // recargue la pestaña no quede sesión fantasma.
-      if (!variables.rememberMe) {
-        setAuthToken(null)
-      } else {
-        setAuthToken(data.token)
-      }
-      setRememberPreference(variables.rememberMe)
+      // Solo memoria. La persistencia de la sesión la resuelve la cookie
+      // `sso_refresh` que el backend emitió en esta misma respuesta: su
+      // `Max-Age` sale del header `x-remember-me` que mandó el login, así que
+      // "Mantener sesión iniciada" ya quedó decidido del lado del servidor.
+      setAuthToken(data.token)
       queryClient.setQueryData(USER_QUERY_KEY, toAuthUserFromToken(data.token))
       mutationConfig?.onSuccess?.(data, variables, ...rest)
     },

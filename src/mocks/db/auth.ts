@@ -17,6 +17,19 @@ export const authUsers: (User & {
     document: "1020304050",
   },
   {
+    // Cuenta espejo de la que existe en el backend real: mismas credenciales
+    // acá para poder recorrer la app entera en modo mock sin cambiar de
+    // usuario. Superadmin, así que ve todos los menús y pasa los chequeos de
+    // `AuthUser.isSuperAdmin`.
+    id: "3",
+    email: "laura.martinez.1786561207@example.com",
+    password: "LauraSuper2026!",
+    name: "Laura Martínez",
+    role: "ADMIN",
+    roles: ["ADMIN", "CEVAL-SUPER_ADMINISTRADOR"],
+    document: "1786561207",
+  },
+  {
     id: "2",
     email: "user@example.com",
     password: "password",
@@ -40,22 +53,47 @@ export function findUserByCredentials(email: string, password: string) {
 // el front lo decodifique con el mismo mapper que usa contra el backend
 // real: ver lib/auth-mapper.ts `toAuthUserFromToken` (claims `sub`/`roles`).
 function base64url(json: unknown): string {
-  return btoa(JSON.stringify(json)).replace(/\+/g, "-").replace(/\//g, "_")
+  // Un JWT real codifica el payload en UTF-8 antes del base64. `btoa` solo
+  // acepta latin-1, así que un nombre con tilde ("Laura Martínez") saldría
+  // mal —o rompería— sin este paso. El front hace el camino inverso al
+  // decodificar (ver `decodeAccessToken` en lib/auth-mapper.ts).
+  const utf8 = new TextEncoder().encode(JSON.stringify(json))
+  const binary = String.fromCharCode(...utf8)
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "")
 }
+
+/**
+ * Vida del access token del mock. El real vence de verdad (el gateway
+ * responde `401 invalid_token` con "JWT expired ... ago"), así que el mock
+ * también emite `exp`: sin él, el front nunca ejercitaba el camino de token
+ * vencido y el bug solo aparecía contra el backend real.
+ */
+const ACCESS_TOKEN_TTL_SECONDS = 60 * 60
 
 export function createMockAccessToken(user: User): string {
   const header = base64url({ alg: "none", typ: "JWT" })
+  const issuedAt = Math.floor(Date.now() / 1000)
   const payload = base64url({
     sub: user.email,
+    // El backend real trae el nombre en el token; sin este claim la barra
+    // lateral muestra el prefijo del correo en vez del nombre de la persona.
+    name: user.name,
     roles: user.roles,
-    iat: Math.floor(Date.now() / 1000),
+    iat: issuedAt,
+    exp: issuedAt + ACCESS_TOKEN_TTL_SECONDS,
   })
   return `${header}.${payload}.mock-signature`
 }
 
+/** Inversa de `base64url`: base64url -> bytes -> texto UTF-8. */
+function decodeBase64Url(segment: string): string {
+  const binary = atob(segment.replace(/-/g, "+").replace(/_/g, "/"))
+  return new TextDecoder().decode(Uint8Array.from(binary, (char) => char.charCodeAt(0)))
+}
+
 export function findUserByToken(token: string) {
   try {
-    const payload = JSON.parse(atob(token.split(".")[1])) as { sub?: string }
+    const payload = JSON.parse(decodeBase64Url(token.split(".")[1])) as { sub?: string }
     return payload.sub ? findUserByEmail(payload.sub) : undefined
   } catch {
     return undefined
