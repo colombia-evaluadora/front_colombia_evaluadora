@@ -18,7 +18,10 @@ import {
 
 import { useEstablishmentsFilters } from "@/features/establishment/institution/hooks/use-filters"
 import { useEstablishmentsQuery } from "@/features/establishment/institution/api/query/use-establishments"
-import { useBulkDelete } from "@/features/establishment/institution/api/mutations/use-bulk-delete"
+import {
+  useBulkDelete,
+  summarizeEstablishmentBulkDelete,
+} from "@/features/establishment/institution/api/mutations/use-bulk-delete"
 import { useCatalogQuery } from "@/features/establishment/employees/api/query/use-catalogs"
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 import { CATALOGS } from "@/lib/catalogs"
@@ -95,15 +98,29 @@ export function EstablishmentsDataTable({ title, action }: EstablishmentsDataTab
     () => rows.filter((row) => selectedIds.includes(String(row.id))),
     [rows, selectedIds],
   )
+  const namesById = useMemo(
+    () => new Map(rows.map((row) => [String(row.id), row.name])),
+    [rows],
+  )
 
   const bulkDelete = useBulkDelete({
     mutationConfig: {
       onSuccess: (result) => {
-        if (result.status === "error") {
-          notify(result.message, { variant: "error" })
+        const summary = summarizeEstablishmentBulkDelete(result)
+        if (summary.failed.length === 0) {
+          notify(SUCCESS_MESSAGES.establishment.deletedMany(summary.succeededCount))
+          resetSelection()
           return
         }
-        notify(SUCCESS_MESSAGES.establishment.deletedMany(selectedIds.length))
+        const failedNames = summary.failed
+          .map(({ id, reason }) => `${namesById.get(id) ?? id} (${reason})`)
+          .join(", ")
+        notify(
+          summary.succeededCount > 0
+            ? `Se eliminaron ${summary.succeededCount} establecimiento(s). No se pudo con: ${failedNames}.`
+            : `No se pudo eliminar: ${failedNames}.`,
+          { variant: "error" },
+        )
         resetSelection()
       },
       onError: (error) => {
