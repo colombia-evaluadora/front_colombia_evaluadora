@@ -7,21 +7,53 @@ import {
   expirePasswordResetToken,
   findUserByCredentials,
   findUserByDocument,
-  findUserByToken,
+  findUserByEmail,
   getPasswordResetTokenStatus,
   setUserPassword,
 } from "@/mocks/db/auth"
-
-function getBearerToken(request: Request): string | null {
-  const header = request.headers.get("authorization") ?? ""
-  return header.startsWith("Bearer ") ? header.slice("Bearer ".length) : null
-}
 
 // Sin "recordar" el token muere al cerrar la pestaña. Con "recordar" dura
 // 30 días: tiempo suficiente para no obligar a re-loguear seguido y
 // acotado para que un token robado no sea eterno.
 const SHORT_SESSION_SECONDS = 60 * 60
 const LONG_SESSION_SECONDS = 30 * 24 * 60 * 60
+
+/**
+ * Cookie de refresh, igual que el backend real (`JsonLoginFilter`
+ * en auth-center): nombre `sso_refresh`, `Path=/` para que viaje tanto a
+ * `/auth/refresh` como a `/api/auth/refresh`, y `SameSite=Strict`.
+ *
+ * Es la credencial de larga vida de la sesión, y a propósito NO se guarda en
+ * `localStorage`: el refresh vive en la cookie —fuera del alcance de
+ * JavaScript en el backend real, gracias a `HttpOnly`— y el access token vive
+ * solo en memoria. Así un XSS no puede llevarse la sesión.
+ *
+ * Salvedad honesta del mock: MSW responde desde el propio navegador, así que
+ * la cookie que escribe NO puede ser realmente `HttpOnly` (JS no puede crear
+ * una cookie que JS no pueda leer). El atributo va igual para que el contrato
+ * se lea idéntico al real, pero la protección de verdad la da el backend.
+ */
+const REFRESH_COOKIE_NAME = "sso_refresh"
+
+function buildRefreshCookie(value: string, maxAgeSeconds: number): string {
+  return [
+    `${REFRESH_COOKIE_NAME}=${value}`,
+    "Path=/",
+    `Max-Age=${maxAgeSeconds}`,
+    "HttpOnly",
+    "SameSite=Strict",
+  ].join("; ")
+}
+
+function clearRefreshCookie(): string {
+  return `${REFRESH_COOKIE_NAME}=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict`
+}
+
+/** El valor de la cookie es `mock-refresh-<email>`: de ahí sale el usuario. */
+function emailFromRefreshCookie(value: string | undefined): string | undefined {
+  if (!value?.startsWith("mock-refresh-")) return undefined
+  return value.slice("mock-refresh-".length)
+}
 
 export const authHandlers = [
   http.post("/api/auth/login", async ({ request }) => {
@@ -37,40 +69,51 @@ export const authHandlers = [
       return HttpResponse.json({ message: "Email o contraseña incorrectos." }, { status: 401 })
     }
 
+    // Sin "recordar", `Max-Age` corto: la cookie muere pronto y la sesión no
+    // sobrevive de un día para otro.
+    const maxAge = rememberMe ? LONG_SESSION_SECONDS : SHORT_SESSION_SECONDS
+
     // Mismo contrato que el backend real: solo token/refreshToken/expiresIn,
-    // sin objeto "user" — el front lo deriva del propio JWT.
-    return HttpResponse.json({
-      token: createMockAccessToken(user),
-      refreshToken: `mock-refresh-${user.id}`,
-      expiresIn: rememberMe ? LONG_SESSION_SECONDS : SHORT_SESSION_SECONDS,
-    })
+    // sin objeto "user" — el front lo deriva del propio JWT. El refresh viaja
+    // ADEMÁS en la cookie, que es lo que después restaura la sesión.
+    return HttpResponse.json(
+      {
+        token: createMockAccessToken(user),
+        refreshToken: `mock-refresh-${user.email}`,
+        expiresIn: maxAge,
+      },
+      { headers: { "Set-Cookie": buildRefreshCookie(`mock-refresh-${user.email}`, maxAge) } },
+    )
   }),
 
-  // El backend real no tiene /auth/me: la sesión se restaura pidiendo un
-  // token nuevo acá (normalmente vía cookie de refresh; en el mock, como no
-  // hay cookie, se re-emite a partir del Bearer todavía vigente).
-  http.post("/api/auth/refresh", ({ request }) => {
-    const token = getBearerToken(request)
-    const user = token ? findUserByToken(token) : undefined
+  // El backend real no tiene /auth/me: la sesión se restaura pidiendo un token
+  // nuevo acá. La credencial es la COOKIE, no el Bearer — igual que
+  // `RefreshController` en auth-center, que es `permitAll()` justamente
+  // porque "the cookie itself is the auth". Por eso este endpoint sigue
+  // funcionando aunque el access token en memoria se haya perdido al recargar.
+  http.post("/api/auth/refresh", ({ cookies }) => {
+    const email = emailFromRefreshCookie(cookies[REFRESH_COOKIE_NAME])
+    const user = email ? findUserByEmail(email) : undefined
 
     if (!user) {
-      return HttpResponse.json({ message: "No autenticado." }, { status: 401 })
+      return HttpResponse.json({ error: "no_refresh_cookie" }, { status: 401 })
     }
-
-    // El refresh respeta la elección del login original: si la sesión era
-    // persistente, se mantiene.
-    const rememberMe = localStorage.getItem("auth_remember_me") === "true"
 
     return HttpResponse.json({
       token: createMockAccessToken(user),
-      refreshToken: `mock-refresh-${user.id}`,
-      expiresIn: rememberMe ? LONG_SESSION_SECONDS : SHORT_SESSION_SECONDS,
+      refreshToken: `mock-refresh-${user.email}`,
+      expiresIn: SHORT_SESSION_SECONDS,
     })
   }),
 
   http.post("/api/auth/logout", async () => {
     await delay(150)
-    return HttpResponse.json({ message: "Sesión cerrada." })
+    // Cerrar sesión = matar la cookie. Si no, el próximo refresh la
+    // encontraría y devolvería al usuario adentro.
+    return HttpResponse.json(
+      { message: "Sesión cerrada." },
+      { headers: { "Set-Cookie": clearRefreshCookie() } },
+    )
   }),
 
   // Mismo contrato que el backend real (GET /sso-admin/forgotPassword?email=):
