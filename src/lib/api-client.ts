@@ -125,6 +125,18 @@ const PUBLIC_ENDPOINTS = [
 // es el resultado de una acción que el usuario disparó.
 const PROBE_ENDPOINTS = ["/auth/refresh", "/sso-admin/resetTokenStatus"]
 
+// El módulo de periodos académicos ya muestra sus propios avisos (banner
+// inline en el diálogo o `notify()`/NoticeOutlet de página) para cada
+// mutación — el toast global duplicaba el mismo mensaje de error. En vez de
+// mantener una lista de endpoints (se desactualiza apenas cambia una ruta),
+// el propio módulo prende/apaga este flag al montarse/desmontarse
+// (ver `useSuppressGlobalErrorToast` en el layout del módulo).
+let suppressGlobalErrorToast = false
+
+export function setSuppressGlobalErrorToast(value: boolean) {
+  suppressGlobalErrorToast = value
+}
+
 // Los errores de constraint (`RAISE EXCEPTION` en las funciones PL/pgSQL)
 // llegan con todo el contexto crudo de Postgres, p.ej.:
 //   "Conflict: ERROR: No se puede eliminar el grado 3725: existen horarios
@@ -214,7 +226,7 @@ api.interceptors.response.use(
 
     const isProbe = PROBE_ENDPOINTS.some((endpoint) => requestUrl.startsWith(endpoint))
 
-    if (!isProbe) {
+    if (!isProbe && !suppressGlobalErrorToast) {
       const message = error.response?.data?.message || error.message
       toast.error(cleanErrorMessage(message))
     }

@@ -35,7 +35,11 @@ export function EvaluationPeriodsSection({
   academicPeriodId,
   accordionOpen = false,
 }: EvaluationPeriodsSectionProps) {
-  const panel = cn(PANEL_BASE, accordionOpen ? "max-h-[42vh]" : "max-h-[60vh]")
+  // Antes 42vh/60vh dejaban espacio libre sin usar debajo de la tabla en la
+  // mayoría de pantallas, obligando a scrollear antes de tiempo. Sigue
+  // habiendo un tope (con contenido largo el scroll interno se mantiene),
+  // pero ahora aprovecha más alto antes de necesitarlo.
+  const panel = cn(PANEL_BASE, accordionOpen ? "max-h-[58vh]" : "max-h-[78vh]")
 
   return (
     <Tabs defaultValue="evaluacion">

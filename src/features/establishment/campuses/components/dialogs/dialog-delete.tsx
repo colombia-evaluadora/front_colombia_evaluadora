@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
+import { getErrorMessage } from "@/lib/api-client"
 import { campusesRoute } from "@/router"
 
 import { useDelete } from "@/features/establishment/campuses/api/mutations/delete"
@@ -49,7 +50,7 @@ export function DeleteCampusDialog({ campus }: DeleteCampusDialogProps) {
         })
       },
       onError: (error) => {
-        notify(error.message, { variant: "error" })
+        notify(getErrorMessage(error), { variant: "error" })
       },
     },
   })

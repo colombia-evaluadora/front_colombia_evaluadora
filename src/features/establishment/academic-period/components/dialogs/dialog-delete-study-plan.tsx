@@ -3,6 +3,7 @@ import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 
 import { CheckIcon, SpinnerIcon, TrashIcon, XIcon } from "@/components/ui/icons"
 import { useNotify } from "@/components/notice/notice-context"
+import { getErrorMessage } from "@/lib/api-client"
 
 import {
   AlertDialog,
@@ -39,6 +40,10 @@ export function DeleteStudyPlanDialog({ item }: DeleteStudyPlanDialogProps) {
         }
         notify(SUCCESS_MESSAGES.studyPlan.deleted)
         setOpen(false)
+      },
+      onError: (error) => {
+        setOpen(false)
+        notify(getErrorMessage(error), { variant: "error" })
       },
     },
   })

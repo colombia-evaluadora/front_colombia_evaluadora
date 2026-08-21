@@ -1,9 +1,11 @@
-import { useMemo, useState } from "react"
+import { useMemo, useRef, useState } from "react"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { useForm } from "@tanstack/react-form"
 import { ControlPointIcon, PencilIcon, SpinnerIcon } from "@/components/ui/icons"
 
-import { useNotify, NoticeOutlet } from "@/components/notice/notice-context"
+import { useNotify } from "@/components/notice/notice-context"
+import { NoticeBanner, type NoticeVariant } from "@/components/notice/notice-banner"
+import { getErrorMessage } from "@/lib/api-client"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -66,6 +68,18 @@ export function CreateGradeGroupDialog({
   const [open, setOpen] = useState(false)
   const { notify } = useNotify()
 
+  const [notice, setNotice] = useState<{
+    id: number
+    message: string
+    variant: NoticeVariant
+  } | null>(null)
+  const noticeIdRef = useRef(0)
+
+  function notifyInDialog(message: string, options?: { variant?: NoticeVariant }) {
+    noticeIdRef.current += 1
+    setNotice({ id: noticeIdRef.current, message, variant: options?.variant ?? "error" })
+  }
+
   const { data: academicPeriod } = useAcademicPeriodQuery(academicPeriodId)
   const { data: metodologiaOptions = [] } = useMetodologiasQuery()
   const { data: jornadas = [] } = useJornadasQuery()
@@ -92,9 +106,15 @@ export function CreateGradeGroupDialog({
   const createGradeGroup = useCreateGradeGroup({
     mutationConfig: {
       onSuccess: () => {
+        // La tabla del tab "Grupo" vive en el mismo `NoticeProvider` anidado
+        // que este diálogo (ver `dialog-create-grade.tsx`), así que el
+        // aviso compartido cae ahí — no en la página de atrás.
         notify(SUCCESS_MESSAGES.gradeGroup.created)
         form.reset()
         setOpen(false)
+      },
+      onError: (error) => {
+        notifyInDialog(getErrorMessage(error))
       },
     },
   })
@@ -103,11 +123,14 @@ export function CreateGradeGroupDialog({
     mutationConfig: {
       onSuccess: (result) => {
         if (result.status === "error") {
-          notify(result.message, { variant: "error" })
+          notifyInDialog(result.message)
           return
         }
         notify(SUCCESS_MESSAGES.gradeGroup.updated)
         setOpen(false)
+      },
+      onError: (error) => {
+        notifyInDialog(getErrorMessage(error))
       },
     },
   })
@@ -136,6 +159,7 @@ export function CreateGradeGroupDialog({
       open={open}
       onOpenChange={(next) => {
         setOpen(next)
+        setNotice(null)
         if (!next) form.reset()
       }}
     >
@@ -169,7 +193,12 @@ export function CreateGradeGroupDialog({
           <DialogDescription>Completa los datos del grupo.</DialogDescription>
         </DialogHeader>
 
-        <NoticeOutlet />
+        <NoticeBanner
+          notice={notice}
+          onClose={() => setNotice(null)}
+          variant={notice?.variant}
+          autoCloseMs={notice?.variant === "error" ? undefined : 4000}
+        />
 
         <form
           id={FORM_ID}
@@ -214,7 +243,7 @@ export function CreateGradeGroupDialog({
           <form.Field name="director">
             {(field) => (
               <Field variant="outlined">
-                <FieldLabel htmlFor={field.name}>Director de grupo*</FieldLabel>
+                <FieldLabel htmlFor={field.name}>Director de grupo</FieldLabel>
                 <ComboboxField
                   value={field.state.value}
                   onValueChange={(value) => value && field.handleChange(value as string)}

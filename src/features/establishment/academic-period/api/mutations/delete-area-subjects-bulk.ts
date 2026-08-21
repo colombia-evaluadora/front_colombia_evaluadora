@@ -7,19 +7,18 @@ import type {
   BulkDeleteResult,
   BulkDeleteRow,
 } from "@/features/establishment/academic-period/api/mutations/bulk-delete-result"
+import type { MutationResult } from "@/features/establishment/academic-period/api/types/area-subject"
 
-// `fn_area_bulk_delete` no tiene `id_query` asignado todavía en `public.query`
-// (sin endpoint real de baja masiva) — mientras tanto se hace secuencial
-// contra el soft-delete individual (`fn_area_soft_delete`). Cada id se
-// intenta por su cuenta (uno que falla no aborta el resto) y se arma el
-// mismo `{ rows }` que devuelven los endpoints de baja masiva reales, para
-// que el diálogo pueda mostrar éxitos/fallos parciales igual que ahí.
 async function deleteAreaSubjectsBulk(ids: number[]): Promise<BulkDeleteResult> {
   const rows: BulkDeleteRow[] = []
   for (const id of ids) {
     try {
-      await api.put(`/eval-col/areas/eliminar/${id}`)
-      rows.push({ id, eliminado: true })
+      const result = await api.put<MutationResult>(`/eval-col/areas/eliminar/${id}`)
+      if (result.status === "error") {
+        rows.push({ id, eliminado: false, error_mensaje: result.message })
+      } else {
+        rows.push({ id, eliminado: true })
+      }
     } catch (error) {
       const error_mensaje = Axios.isAxiosError(error)
         ? (error.response?.data?.message ?? error.message)
