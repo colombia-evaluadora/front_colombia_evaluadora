@@ -175,6 +175,8 @@ export function optionTerm<F extends object>(
     toValues: (filters) => {
       const value = String(record(filters)[field] ?? "")
       if (!value) return []
+      // Catálogo todavía sin cargar: ver la nota en `optionsTerm`.
+      if (options.length === 0) return []
       return [labelOf(options, value)]
     },
     fromValue: (value) => {
@@ -192,7 +194,20 @@ export function optionsTerm<F extends object>(
 ): QueryTerm<F> {
   return {
     key,
-    toValues: (filters) => valuesOf(filters, field).map((value) => labelOf(options, value)),
+    toValues: (filters) =>
+      // Con el catálogo vacío no se omite por prolijidad: es que todavía no
+      // se SABE la etiqueta. Caer al valor crudo acá pinta el id en el input
+      // (`estado:(533)`) y encima se queda pegado — cuando el catálogo llega,
+      // la guarda de `useQuerySearch` ve que ese texto significa lo mismo que
+      // los filtros (matchOption también matchea por `value`) y no lo
+      // reescribe nunca. El término aparece solo, ya con su etiqueta, apenas
+      // carga el catálogo.
+      //
+      // Distinto del caso de abajo (`labelOf`): ahí el catálogo SÍ está y el
+      // valor no figura, que es un dato real y conviene mostrarlo.
+      options.length === 0
+        ? []
+        : valuesOf(filters, field).map((value) => labelOf(options, value)),
     fromValue: (value, draft) => {
       const option = matchOption(options, value)
       if (!option) return undefined
