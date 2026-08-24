@@ -1,6 +1,6 @@
 "use no memo"
 
-import type { ReactNode } from "react"
+import { useMemo, type ReactNode } from "react"
 
 import { DataTable, DataTableViewOptions } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
@@ -46,7 +46,19 @@ export function TableOperationsDataTable({ title, action }: TableOperationsDataT
     pageSize,
   })
   const { data: auditTable } = useAuditTableQuery({ tableSlug })
-  const availableFields = auditTable?.fields ?? []
+  // El backend real no tiene catálogo de campos legibles por tabla (V85 lo
+  // deja explícito como pendiente), así que `fields` viene vacío. En ese caso
+  // se derivan de las columnas que realmente trae el snapshot de las
+  // operaciones cargadas: son los nombres crudos de Postgres, pero permiten
+  // que los filtros por campo del sheet sigan siendo utilizables.
+  const availableFields = useMemo(() => {
+    if (auditTable?.fields?.length) return auditTable.fields
+    const fields = new Set<string>()
+    for (const row of data?.rows ?? []) {
+      for (const field of Object.keys(row.entityFields ?? {})) fields.add(field)
+    }
+    return [...fields].sort()
+  }, [auditTable?.fields, data?.rows])
 
   const { table, selectedIds, hasSelection, resetSelection } = useDataTable({
     columns,

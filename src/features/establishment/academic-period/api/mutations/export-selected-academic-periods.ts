@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query"
 
-import { api } from "@/lib/api-client"
+import { downloadReport } from "@/lib/report-client"
 import type { MutationConfig } from "@/lib/react-query"
 import type {
   ExportFormat,
@@ -15,7 +15,13 @@ interface ExportSelectedAcademicPeriodsInput {
 function exportSelectedAcademicPeriods(
   input: ExportSelectedAcademicPeriodsInput,
 ): Promise<ExportResult> {
-  return api.post("/academic-periods/export", input)
+  // Exportar los seleccionados es el mismo reporte con el filtro `ids`.
+  // Van a número porque el bind está declarado BIGINT[]: mandarlos como
+  // texto lo rechaza el query-service.
+  return downloadReport("periodos-academicos", {
+    format: input.format,
+    filters: { ids: input.ids.map(Number) },
+  })
 }
 
 interface UseExportSelectedAcademicPeriodsOptions {

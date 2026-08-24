@@ -32,7 +32,12 @@ reportApi.interceptors.request.use(authRequestInterceptor)
  * (`reporting.reports.*` de su `application.yml`). Cada una corresponde a una
  * fila `…/reporte` en `public.query`.
  */
-export type ReportKey = "funcionarios" | "establecimientos" | "sedes"
+export type ReportKey =
+  | "funcionarios"
+  | "establecimientos"
+  | "sedes"
+  | "periodos-academicos"
+  | "periodos-evaluacion"
 
 interface ReportInput {
   format: ExportFormat
