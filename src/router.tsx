@@ -20,7 +20,11 @@ import {
   loginSearchSchema,
   restorePasswordSearchSchema,
 } from "@/features/auth/api/schema"
-import { reservationsSearchSchema, preMatriculaSearchSchema } from "@/features/coverage/api/schema"
+import {
+  reservationsSearchSchema,
+  preMatriculaSearchSchema,
+  enrollmentsSearchSchema,
+} from "@/features/coverage/api/schema"
 import {
   auditsSearchSchema,
   auditTablesSearchSchema,
@@ -304,11 +308,35 @@ export const coberturaPreMatriculaRoute = createRoute({
   component: PreMatriculaPage,
 })
 
-const coberturaInscritosRoute = createRoute({
+const EnrollmentsPage = lazyRouteComponent(
+  () => import("@/features/coverage/pages/enrollments-page"),
+  "EnrollmentsPage",
+)
+
+export const coberturaInscritosRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.coberturaInscritos.path,
+  validateSearch: enrollmentsSearchSchema,
   staticData: { breadcrumb: [COBERTURA_CRUMB, { label: "Inscritos" }] },
-  component: () => <ComingSoonPage title="Inscritos" />,
+  component: EnrollmentsPage,
+})
+
+const EnrollmentDetailPage = lazyRouteComponent(
+  () => import("@/features/coverage/pages/enrollment-detail-page"),
+  "EnrollmentDetailPage",
+)
+
+export const coberturaInscritoDetalleRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.coberturaInscritoDetalle.path,
+  staticData: {
+    breadcrumb: () => [
+      COBERTURA_CRUMB,
+      { label: "Inscritos", to: paths.app.coberturaInscritos.getHref() },
+      { label: "Detalle" },
+    ],
+  },
+  component: EnrollmentDetailPage,
 })
 
 const coberturaMatriculaRoute = createRoute({
@@ -502,6 +530,7 @@ const routeTree = rootRoute.addChildren([
     coberturaReservaCupoRoute,
     coberturaPreMatriculaRoute,
     coberturaInscritosRoute,
+    coberturaInscritoDetalleRoute,
     coberturaMatriculaRoute,
     auditsLayoutRoute.addChildren([
       auditoriaSesionesRoute,
