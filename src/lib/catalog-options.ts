@@ -1,8 +1,15 @@
 /**
- * Convención única para pasar una respuesta de catálogo a un `<Select>`: el
- * `value` es el `id` — lo que de verdad identifica la fila en la base —, el
- * `label` es el `name`. Nunca el `code`: ese es solo un dato más del
- * catálogo, no un identificador para mandar de vuelta al backend.
+ * Dos convenciones, según a dónde va el valor elegido.
+ *
+ * En los FORMULARIOS (`toSelectOptions`) el `value` es el `id`: ahí se está
+ * creando o editando una entidad y la referencia al catálogo se guarda por
+ * llave primaria.
+ *
+ * En los FILTROS (`toSearchOptions`) el `value` es el `code`. El id es interno
+ * y no tiene por qué ser parte del contrato con el cliente: atarlo obliga a
+ * que cualquier consumidor conozca las llaves de la base, y encima se filtra
+ * en la URL y en el buscador, donde `estado:(533)` no le dice nada a nadie.
+ * Con el código se lee `estado:(A)` y el backend resuelve el id (ver V116).
  *
  * El parámetro pide solo `{id, name}` (no `CatalogItem` completo) para que
  * sirva también con formas más chicas que comparten esas dos claves —
@@ -20,20 +27,26 @@ interface IdNamed {
   name: string
 }
 
+interface CodeNamed {
+  code: string
+  name: string
+}
+
 /** Para un `<Select>` de formulario normal — `value` numérico. */
 export function toSelectOptions(items: IdNamed[]): SelectOption<number>[] {
   return items.map((item) => ({ value: item.id, label: item.name }))
 }
 
 /**
- * Para los filtros de la barra de búsqueda (`optionsTerm`/`QueryOption`):
- * esa sintaxis solo admite valores de texto (viven en el input como
- * `clave:(valor)`), así que acá el `id` va como string. El texto que
- * termina viéndose en la barra sigue siendo el `label` — `optionsTerm` lo
- * resuelve solo, no hace falta nada más para que sea legible.
+ * Para los filtros: barra de búsqueda (`optionsTerm`/`QueryOption`) y los
+ * `<Select>` del popover de filtros avanzados, que alimentan el mismo estado.
+ *
+ * Pide `{code, name}` y no `{id, name}` a propósito: el tipo es lo que impide
+ * que un catálogo sin código se cuele en un filtro y termine mandando
+ * `undefined` al backend.
  */
-export function toSearchOptions(items: IdNamed[]): SelectOption<string>[] {
-  return items.map((item) => ({ value: String(item.id), label: item.name }))
+export function toSearchOptions(items: CodeNamed[]): SelectOption<string>[] {
+  return items.map((item) => ({ value: item.code, label: item.name }))
 }
 
 /**

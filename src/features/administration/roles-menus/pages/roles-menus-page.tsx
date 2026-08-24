@@ -106,7 +106,12 @@ function RolesMenusPageContent() {
     const { known, unknown } = partitionKnownMenus(nextIds, tree)
     if (unknown.length > 0) {
       notify(
-        `Se descartaron ${unknown.length} menú(s) asignados cuyo menú padre ya no existe (${unknown.join(", ")}).`,
+        // Antes decía "cuyo menú padre ya no existe", y eso mandaba a buscar el
+        // problema donde no estaba: el padre normalmente SÍ existe, solo que
+        // dado de baja (`active = false`), así que el catálogo no lo devuelve.
+        // El único hecho que esta pantalla puede afirmar es que no supo dónde
+        // ubicarlos; el porqué se decide en la base.
+        `Se descartaron ${unknown.length} menú(s) asignados que el catálogo ya no ubica (${unknown.join(", ")}): su menú padre está dado de baja o quedó fuera del árbol.`,
         { variant: "info" },
       )
     }

@@ -220,10 +220,10 @@ export function AddEstablishmentPage() {
 
   useEffect(() => {
     if (!hasSubmitted) return
-    const validation = validateEstablishmentForm(formValues, confirmPasswords)
+    const validation = validateEstablishmentForm(formValues, confirmPasswords, { logo: shield, photos })
     setFieldErrors(validation.fieldErrors)
     setInvalidFields(validation.invalidFields)
-  }, [formValues, confirmPasswords, hasSubmitted])
+  }, [formValues, confirmPasswords, shield, photos, hasSubmitted])
 
   // Sin `onSuccess` acá: en real hay que enlazar rector/secretaria (si se
   // registraron de nuevo) DESPUÉS de crear el establecimiento y ANTES de
@@ -416,7 +416,7 @@ export function AddEstablishmentPage() {
     event.preventDefault()
     setHasSubmitted(true)
 
-    const validation = validateEstablishmentForm(formValues, confirmPasswords)
+    const validation = validateEstablishmentForm(formValues, confirmPasswords, { logo: shield, photos })
     setFieldErrors(validation.fieldErrors)
     setInvalidFields(validation.invalidFields)
 

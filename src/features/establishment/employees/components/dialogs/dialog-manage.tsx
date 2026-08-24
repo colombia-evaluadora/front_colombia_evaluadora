@@ -50,6 +50,7 @@ import {
 import { toSelectItemsMap, toSelectOptions } from "@/lib/catalog-options"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { getErrorMessage } from "@/lib/api-client"
+import { optionalImageFile } from "@/lib/image-file"
 import { cn } from "@/lib/utils"
 import { env } from "@/config/env"
 
@@ -353,8 +354,21 @@ const employeePersonSchema = z
     }
   })
 
-function computePersonErrors(person: Person | null, confirmPassword: string): Record<string, string> {
+function computePersonErrors(
+  person: Person | null,
+  confirmPassword: string,
+  // La foto es estado aparte (viaja como binario del multipart, no como JSON),
+  // pero se valida en el mismo paso: es el último punto antes de armar el
+  // envío, y sin esto un archivo fuera de regla llegaba entero al gateway.
+  photo?: File | null
+): Record<string, string> {
   const nextErrors: Record<string, string> = {}
+
+  const parsedPhoto = optionalImageFile.safeParse(photo)
+  if (!parsedPhoto.success) {
+    nextErrors[`${EMPLOYEE_FIELD_PREFIX}.photo`] =
+      parsedPhoto.error.issues[0]?.message ?? "Archivo no válido."
+  }
 
   if (!person) {
     return nextErrors
@@ -521,9 +535,9 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
   // borde rojo desaparezca apenas el campo queda completo.
   useEffect(() => {
     if (Object.keys(personErrors).length === 0) return
-    setPersonErrors(computePersonErrors(person, confirmPassword))
+    setPersonErrors(computePersonErrors(person, confirmPassword, photo))
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `personErrors` es guard, no dep.
-  }, [person, confirmPassword])
+  }, [person, confirmPassword, photo])
 
   /**
    * Vuelca un `Employee` completo sobre todo el estado del diálogo — lo
@@ -718,7 +732,7 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
     //    ya crea el TFUNCIONARIO, así que el flujo real se bifurca acá).
     let persistedPerson = draft
 
-    const nextErrors = computePersonErrors(persistedPerson, confirmPassword)
+    const nextErrors = computePersonErrors(persistedPerson, confirmPassword, photo)
 
     if (Object.keys(nextErrors).length > 0) {
       setPersonErrors(nextErrors)
