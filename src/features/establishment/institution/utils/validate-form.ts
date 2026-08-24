@@ -1,6 +1,7 @@
 import { z } from "zod"
 
 import { passwordRules } from "@/features/auth/api/schema"
+import { optionalImageFile } from "@/lib/image-file"
 import type { EstablishmentDetails } from "@/features/establishment/institution/api/types/establishment"
 import type { Person } from "@/features/establishment/employees/api/types/person"
 
@@ -62,6 +63,20 @@ const establishmentSchema = z.object({
     municipality: requiredCatalogItem("Selecciona el municipio."),
   }),
 })
+
+/**
+ * Archivos del formulario. No viven en `EstablishmentDetails` —son estado
+ * aparte de la página, porque viajan como binarios del multipart y no como
+ * JSON—, así que se validan por separado pero con el mismo `collect`: para
+ * quien consume el resultado son campos como cualquier otro, con su ruta y
+ * su mensaje.
+ */
+export interface EstablishmentFormFiles {
+  /** Escudo elegido en el dropzone. `null` = ninguno (o, editando, conservar el actual). */
+  logo?: File | null
+  /** Foto elegida, por `fieldPrefix` de persona (`principal`, `secretary`). */
+  photos?: Record<string, File | null>
+}
 
 /** Etiqueta para el resumen, por ruta de campo del establecimiento. */
 const ESTABLISHMENT_LABELS: Record<string, string> = {
@@ -240,7 +255,8 @@ function makePersonSchema(required: boolean) {
 
 export function validateEstablishmentForm(
   values: EstablishmentDetails,
-  confirmPasswords: EstablishmentFormConfirmPasswords = {}
+  confirmPasswords: EstablishmentFormConfirmPasswords = {},
+  files: EstablishmentFormFiles = {}
 ): EstablishmentFormValidationResult {
   const errors: string[] = []
   const fieldErrors: Record<string, string> = {}
@@ -268,11 +284,33 @@ export function validateEstablishmentForm(
     }
   }
 
+  // El escudo se valida acá y no solo en el dropzone: es lo último antes de
+  // armar el multipart, y es el único punto por el que pasan TODOS los
+  // caminos que pueden dejar un `File` en el estado.
+  const logo = optionalImageFile.safeParse(files.logo)
+  if (!logo.success) {
+    collect(
+      "basicInfo.logo",
+      logo.error.issues[0]?.message ?? "Archivo no válido.",
+      "Escudo del establecimiento"
+    )
+  }
+
   for (const [fieldPrefix, label, required] of [
     ["principal", "Rector", true],
     ["secretary", "Secretaria", false],
   ] as const) {
     const person = values[fieldPrefix]
+
+    const photo = optionalImageFile.safeParse(files.photos?.[fieldPrefix])
+    if (!photo.success) {
+      collect(
+        `${fieldPrefix}.photo`,
+        photo.error.issues[0]?.message ?? "Archivo no válido.",
+        `${label}: Foto`
+      )
+    }
+
     const result = makePersonSchema(required).safeParse({
       person,
       confirmPassword: confirmPasswords[fieldPrefix] ?? "",
