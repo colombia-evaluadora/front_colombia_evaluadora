@@ -43,7 +43,7 @@ export function levelForGrade(grade: number): EducationLevel {
 
 // La jornada nocturna solo aplica a media/secundaria — un niño de transición
 // en jornada nocturna sería ruido en los gráficos.
-function pickShift(level: EducationLevel): Shift {
+export function pickShift(level: EducationLevel): Shift {
   const pool: Shift[] =
     level === "MEDIA" || level === "BASICA_SECUNDARIA"
       ? ["MANANA", "TARDE", "UNICA", "COMPLETA", "NOCTURNA"]
