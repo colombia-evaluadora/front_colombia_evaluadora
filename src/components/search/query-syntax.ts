@@ -73,11 +73,18 @@ export function buildQuery<F extends object>(syntax: QuerySyntax<F>, filters: F)
   }
   if (syntax.wildcard) terms.push(...syntax.wildcard.toTerms(filters))
 
-  // La búsqueda libre también se escribe con clave, para que la consulta se
-  // lea entera como una lista de términos y no quede un fragmento suelto cuyo
-  // significado hay que adivinar. Va al final: es lo que más se reescribe.
+  // La búsqueda libre va SUELTA, sin clave. Escribirla como `texto:(...)`
+  // hacía que el buscador se contestara a sí mismo: quien tecleaba "colegio"
+  // veía aparecer `texto:(colegio)` sin haberlo pedido, y peor, cualquier
+  // término que no resolviera terminaba envuelto ahí — `texto:(rol:(Auxiliar))`
+  // —, convirtiendo un filtro en una búsqueda literal de esa cadena.
+  //
+  // Sigue aceptándose `texto:(...)` al PARSEAR: quien ya lo tenía escrito o
+  // guardado no pierde nada. Solo dejó de generarse.
+  //
+  // Va al final: es lo que más se reescribe.
   const free = String(record(filters)[syntax.freeText.field] ?? "").trim()
-  if (free) terms.push(`${syntax.freeText.key}:(${free})`)
+  if (free) terms.push(free)
 
   return terms.join(" ")
 }
@@ -99,13 +106,24 @@ export function parseQuery<F extends object>(syntax: QuerySyntax<F>, query: stri
     }
 
     const term = syntax.terms.find((candidate) => normalizeKey(candidate.key) === key)
-    // Un término que no resuelve a nada conocido se deja como texto: mientras
-    // el usuario escribe, `estado:(Act` todavía no es válido y descartarlo
-    // silenciosamente borraría lo que acaba de teclear.
     const patch = term
       ? term.fromValue(value, draft)
       : syntax.wildcard?.fromTerm(rawKey, value, draft)
-    if (!patch) return match
+
+    if (!patch) {
+      // La clave EXISTE pero el valor todavía no resuelve — se está tecleando,
+      // o el catálogo de opciones no cargó. Se consume igual: no aporta filtro,
+      // pero tampoco debe caer a la búsqueda libre. Si cayera, `rol:(Auxiliar)`
+      // pasaría a buscar esa cadena literal en los nombres, que no es lo que
+      // pidió nadie, y al reescribirse quedaría anidado dentro del texto.
+      //
+      // Lo tecleado no se pierde: el input es estado propio, esto solo decide
+      // qué filtros salen de él.
+      if (term) return ""
+      // Clave desconocida: sí es texto libre — alguien escribió algo con dos
+      // puntos que no es un término de este buscador.
+      return match
+    }
 
     draft = patched(draft, patch)
     return ""
