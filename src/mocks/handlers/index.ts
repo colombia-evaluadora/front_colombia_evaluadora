@@ -28,9 +28,12 @@ import { catalogHandlers } from "@/mocks/handlers/catalog"
 import { reservationsHandlers } from "@/mocks/handlers/reservations"
 import { rolesHandlers } from "@/mocks/handlers/roles"
 import { plansHandlers } from "@/mocks/handlers/plans"
+import { reportesHandlers } from "@/mocks/handlers/reportes"
+import { preMatriculaHandlers } from "@/mocks/handlers/pre-matricula"
 
 export const handlers = [
   ...authHandlers,
+  ...reportesHandlers,
   ...auditsHandlers,
   ...auditTablesHandlers,
   ...auditSessionStatusesHandlers,
@@ -60,4 +63,5 @@ export const handlers = [
   ...catalogHandlers,
   ...rolesHandlers,
   ...plansHandlers,
+  ...preMatriculaHandlers,
 ]
