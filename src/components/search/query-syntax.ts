@@ -180,8 +180,11 @@ export function optionTerm<F extends object>(
       return [labelOf(options, value)]
     },
     fromValue: (value) => {
-      const option = matchOption(options, value)
-      return option ? ({ [field]: option.value } as Partial<F>) : undefined
+      // Campo de un solo valor: una parcial ambigua ("Aux" con dos roles que
+      // empiezan igual) no se puede resolver sin elegir por el usuario, así
+      // que no se filtra hasta que lo escrito identifique una sola opción.
+      const matches = matchOptions(options, value)
+      return matches.length === 1 ? ({ [field]: matches[0]!.value } as Partial<F>) : undefined
     },
   }
 }
@@ -209,11 +212,12 @@ export function optionsTerm<F extends object>(
         ? []
         : valuesOf(filters, field).map((value) => labelOf(options, value)),
     fromValue: (value, draft) => {
-      const option = matchOption(options, value)
-      if (!option) return undefined
+      const matches = matchOptions(options, value)
+      if (matches.length === 0) return undefined
       const current = valuesOf(draft, field)
-      if (current.includes(option.value)) return {}
-      return { [field]: [...current, option.value] } as Partial<F>
+      const nuevos = matches.map((o) => o.value).filter((v) => !current.includes(v))
+      if (nuevos.length === 0) return {}
+      return { [field]: [...current, ...nuevos] } as Partial<F>
     },
   }
 }
@@ -230,12 +234,34 @@ function normalizeKey(key: string): string {
     .replace(/\p{Diacritic}/gu, "")
 }
 
-// El usuario escribe la etiqueta ("Activo"), no la clave ("ACTIVE"); se acepta
-// cualquiera de las dos, sin distinguir mayúsculas ni tildes.
-function matchOption(options: QueryOption[], value: string): QueryOption | undefined {
+/**
+ * Qué opciones corresponden a lo que se escribió.
+ *
+ * El usuario escribe la etiqueta ("Activo"), no la clave ("A"); se acepta
+ * cualquiera de las dos, sin distinguir mayúsculas ni tildes.
+ *
+ * Y acepta escribir de menos: `rol:(Auxiliar)` trae "Auxiliar administrativo".
+ * Escribir el nombre completo de cada opción para filtrar por ella es un
+ * requisito que nadie cumple — se tipea un pedazo y se espera que aparezca lo
+ * que coincida, como en cualquier buscador.
+ *
+ * El orden importa: si lo escrito coincide EXACTO con alguna opción, esa gana
+ * sola. Sin esa precedencia, un catálogo con "Activo" y "Activo temporal"
+ * haría que escribir "Activo" filtrara por las dos y no hubiera forma de pedir
+ * solo la primera.
+ */
+function matchOptions(options: QueryOption[], value: string): QueryOption[] {
   const needle = normalizeKey(value)
-  return options.find(
+  if (!needle) return []
+
+  const exactas = options.filter(
     (option) => normalizeKey(option.label) === needle || normalizeKey(option.value) === needle,
+  )
+  if (exactas.length > 0) return exactas
+
+  return options.filter(
+    (option) =>
+      normalizeKey(option.label).includes(needle) || normalizeKey(option.value).includes(needle),
   )
 }
 
