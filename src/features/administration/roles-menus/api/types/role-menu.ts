@@ -209,7 +209,22 @@ export function reorderAssignedMenus(
   return [...next, ...assignedIds.filter((id) => !next.includes(id))]
 }
 
-/** Arma el árbol de dos niveles (grupo → ítems) que pinta la pantalla. */
+/**
+ * Arma el árbol de dos niveles (grupo → ítems) que pinta la pantalla.
+ *
+ * Dos niveles NO es una limitación a corregir: es la invariante del backend.
+ * `fn_upsert_menu` rechaza explícitamente crear un tercer nivel (ERRCODE
+ * `22023`, "el padre pk=% ... no es un menu raiz"), tanto al crear como al
+ * reparentar. Volver esto recursivo aceptaría estructuras que el backend no
+ * deja construir.
+ *
+ * Lo que sí existía era data legacy más profunda, anterior a esa restricción
+ * (el menú 299 colgado de 267): esos nodos caían acá como "huérfanos". La
+ * migración V115 del SSO los desactiva y evita que vuelvan a aparecer —
+ * `fn_list_available_menus` ahora solo devuelve menús con la cadena de
+ * ancestros activa—. `partitionKnownMenus` los sigue filtrando igual, como red
+ * de seguridad.
+ */
 export function buildMenuTree(menus: MenuNode[]): MenuTreeNode[] {
   const byOrder = (a: MenuNode, b: MenuNode) => a.menuOrder - b.menuOrder
 

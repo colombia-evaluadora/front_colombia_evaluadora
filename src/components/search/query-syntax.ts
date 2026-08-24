@@ -73,11 +73,18 @@ export function buildQuery<F extends object>(syntax: QuerySyntax<F>, filters: F)
   }
   if (syntax.wildcard) terms.push(...syntax.wildcard.toTerms(filters))
 
-  // La búsqueda libre también se escribe con clave, para que la consulta se
-  // lea entera como una lista de términos y no quede un fragmento suelto cuyo
-  // significado hay que adivinar. Va al final: es lo que más se reescribe.
+  // La búsqueda libre va SUELTA, sin clave. Escribirla como `texto:(...)`
+  // hacía que el buscador se contestara a sí mismo: quien tecleaba "colegio"
+  // veía aparecer `texto:(colegio)` sin haberlo pedido, y peor, cualquier
+  // término que no resolviera terminaba envuelto ahí — `texto:(rol:(Auxiliar))`
+  // —, convirtiendo un filtro en una búsqueda literal de esa cadena.
+  //
+  // Sigue aceptándose `texto:(...)` al PARSEAR: quien ya lo tenía escrito o
+  // guardado no pierde nada. Solo dejó de generarse.
+  //
+  // Va al final: es lo que más se reescribe.
   const free = String(record(filters)[syntax.freeText.field] ?? "").trim()
-  if (free) terms.push(`${syntax.freeText.key}:(${free})`)
+  if (free) terms.push(free)
 
   return terms.join(" ")
 }
@@ -99,13 +106,24 @@ export function parseQuery<F extends object>(syntax: QuerySyntax<F>, query: stri
     }
 
     const term = syntax.terms.find((candidate) => normalizeKey(candidate.key) === key)
-    // Un término que no resuelve a nada conocido se deja como texto: mientras
-    // el usuario escribe, `estado:(Act` todavía no es válido y descartarlo
-    // silenciosamente borraría lo que acaba de teclear.
     const patch = term
       ? term.fromValue(value, draft)
       : syntax.wildcard?.fromTerm(rawKey, value, draft)
-    if (!patch) return match
+
+    if (!patch) {
+      // La clave EXISTE pero el valor todavía no resuelve — se está tecleando,
+      // o el catálogo de opciones no cargó. Se consume igual: no aporta filtro,
+      // pero tampoco debe caer a la búsqueda libre. Si cayera, `rol:(Auxiliar)`
+      // pasaría a buscar esa cadena literal en los nombres, que no es lo que
+      // pidió nadie, y al reescribirse quedaría anidado dentro del texto.
+      //
+      // Lo tecleado no se pierde: el input es estado propio, esto solo decide
+      // qué filtros salen de él.
+      if (term) return ""
+      // Clave desconocida: sí es texto libre — alguien escribió algo con dos
+      // puntos que no es un término de este buscador.
+      return match
+    }
 
     draft = patched(draft, patch)
     return ""
@@ -175,11 +193,16 @@ export function optionTerm<F extends object>(
     toValues: (filters) => {
       const value = String(record(filters)[field] ?? "")
       if (!value) return []
+      // Catálogo todavía sin cargar: ver la nota en `optionsTerm`.
+      if (options.length === 0) return []
       return [labelOf(options, value)]
     },
     fromValue: (value) => {
-      const option = matchOption(options, value)
-      return option ? ({ [field]: option.value } as Partial<F>) : undefined
+      // Campo de un solo valor: una parcial ambigua ("Aux" con dos roles que
+      // empiezan igual) no se puede resolver sin elegir por el usuario, así
+      // que no se filtra hasta que lo escrito identifique una sola opción.
+      const matches = matchOptions(options, value)
+      return matches.length === 1 ? ({ [field]: matches[0]!.value } as Partial<F>) : undefined
     },
   }
 }
@@ -192,13 +215,27 @@ export function optionsTerm<F extends object>(
 ): QueryTerm<F> {
   return {
     key,
-    toValues: (filters) => valuesOf(filters, field).map((value) => labelOf(options, value)),
+    toValues: (filters) =>
+      // Con el catálogo vacío no se omite por prolijidad: es que todavía no
+      // se SABE la etiqueta. Caer al valor crudo acá pinta el id en el input
+      // (`estado:(533)`) y encima se queda pegado — cuando el catálogo llega,
+      // la guarda de `useQuerySearch` ve que ese texto significa lo mismo que
+      // los filtros (matchOption también matchea por `value`) y no lo
+      // reescribe nunca. El término aparece solo, ya con su etiqueta, apenas
+      // carga el catálogo.
+      //
+      // Distinto del caso de abajo (`labelOf`): ahí el catálogo SÍ está y el
+      // valor no figura, que es un dato real y conviene mostrarlo.
+      options.length === 0
+        ? []
+        : valuesOf(filters, field).map((value) => labelOf(options, value)),
     fromValue: (value, draft) => {
-      const option = matchOption(options, value)
-      if (!option) return undefined
+      const matches = matchOptions(options, value)
+      if (matches.length === 0) return undefined
       const current = valuesOf(draft, field)
-      if (current.includes(option.value)) return {}
-      return { [field]: [...current, option.value] } as Partial<F>
+      const nuevos = matches.map((o) => o.value).filter((v) => !current.includes(v))
+      if (nuevos.length === 0) return {}
+      return { [field]: [...current, ...nuevos] } as Partial<F>
     },
   }
 }
@@ -215,12 +252,34 @@ function normalizeKey(key: string): string {
     .replace(/\p{Diacritic}/gu, "")
 }
 
-// El usuario escribe la etiqueta ("Activo"), no la clave ("ACTIVE"); se acepta
-// cualquiera de las dos, sin distinguir mayúsculas ni tildes.
-function matchOption(options: QueryOption[], value: string): QueryOption | undefined {
+/**
+ * Qué opciones corresponden a lo que se escribió.
+ *
+ * El usuario escribe la etiqueta ("Activo"), no la clave ("A"); se acepta
+ * cualquiera de las dos, sin distinguir mayúsculas ni tildes.
+ *
+ * Y acepta escribir de menos: `rol:(Auxiliar)` trae "Auxiliar administrativo".
+ * Escribir el nombre completo de cada opción para filtrar por ella es un
+ * requisito que nadie cumple — se tipea un pedazo y se espera que aparezca lo
+ * que coincida, como en cualquier buscador.
+ *
+ * El orden importa: si lo escrito coincide EXACTO con alguna opción, esa gana
+ * sola. Sin esa precedencia, un catálogo con "Activo" y "Activo temporal"
+ * haría que escribir "Activo" filtrara por las dos y no hubiera forma de pedir
+ * solo la primera.
+ */
+function matchOptions(options: QueryOption[], value: string): QueryOption[] {
   const needle = normalizeKey(value)
-  return options.find(
+  if (!needle) return []
+
+  const exactas = options.filter(
     (option) => normalizeKey(option.label) === needle || normalizeKey(option.value) === needle,
+  )
+  if (exactas.length > 0) return exactas
+
+  return options.filter(
+    (option) =>
+      normalizeKey(option.label).includes(needle) || normalizeKey(option.value).includes(needle),
   )
 }
 

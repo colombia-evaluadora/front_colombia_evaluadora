@@ -289,6 +289,7 @@ export function UserDetailsForm({
                     onValueChange={setPhoto}
                     description="para cargar la foto del usuario"
                     deleteLabel="Eliminar foto"
+                    error={errorFor(`${fieldPrefix}.photo`)}
                     className="md:row-span-3"
                     existingPreview={
                         person.photoArchivoId == null ? undefined : (

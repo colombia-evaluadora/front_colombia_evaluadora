@@ -12,6 +12,25 @@ import type {
   CampusesQueryResponse,
 } from "@/features/establishment/campuses/api/types/campus"
 
+/**
+ * Normaliza los filtros de la UI a lo que espera el backend.
+ *
+ * Los `<Select>` del buscador mandan el id como TEXTO (`String(item.id)`),
+ * pero los binds del catálogo están declarados `BIGINT[]` y el query-service
+ * valida el tipo de cada elemento: un `["1"]` donde espera `[1]` se rechaza
+ * con 400.
+ *
+ * Se exporta —y no queda embebido en el body de la consulta— porque la
+ * exportación manda EXACTAMENTE los mismos filtros y tiene que aplicar la
+ * misma conversión. Cuando esto vivía solo dentro del hook de listado, la
+ * tabla funcionaba y el reporte fallaba con 400 sobre los mismos filtros.
+ */
+export function toCampusesQueryFilters(filters: CampusesQueryRequest["filters"]) {
+  // `zones` viaja tal cual: desde V116 el backend filtra por CÓDIGO de zona,
+  // no por id, así que convertir a número rompería el bind (VARCHAR[]).
+  return { ...filters, zones: filters.zones ?? [] }
+}
+
 interface UseCampusesQueryParams {
   filters: CampusesQueryRequest["filters"]
   sorting: CampusesQueryRequest["sorting"]
@@ -58,13 +77,10 @@ async function fetchCampuses(params: CampusesQueryRequest): Promise<CampusesQuer
   }
 
   // El mock espera `sorting` como array tal cual; el backend real espera un
-  // único objeto (o null) — ver `toSingleSort`. `filters.zones` ya trae el
-  // `id` como texto (el `<Select>` del buscador manda `String(item.id)`, no
-  // el `code` — ver search-campuses.tsx), así que acá solo hace falta
-  // convertirlo a número.
+  // único objeto (o null) — ver `toSingleSort`.
   const body = {
     ...params,
-    filters: { ...params.filters, zones: (params.filters.zones ?? []).map(Number) },
+    filters: toCampusesQueryFilters(params.filters),
     sorting: toSingleSort(params.sorting),
   }
   const response = await api.query(

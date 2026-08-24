@@ -57,6 +57,7 @@ export function IdentificationDataFormSection({ value, onChange, invalidFields =
                     onValueChange={onShieldChange}
                     description="para cargar el escudo o logo del establecimiento"
                     deleteLabel="Eliminar escudo"
+                    error={errorFor("basicInfo.logo")}
                     className="md:row-span-2"
                     existingPreview={
                         value.logoArchivoId == null ? undefined : (
