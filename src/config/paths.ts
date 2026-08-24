@@ -47,6 +47,11 @@ export const paths = {
       path: "cobertura/inscritos",
       getHref: () => "/app/cobertura/inscritos",
     },
+    coberturaInscritoDetalle: {
+      path: "cobertura/inscritos/$enrollmentId",
+      getHref: (enrollmentId: string) =>
+        `/app/cobertura/inscritos/${enrollmentId}`,
+    },
     coberturaMatricula: {
       path: "cobertura/matricula",
       getHref: () => "/app/cobertura/matricula",
