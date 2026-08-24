@@ -26,7 +26,9 @@ import type {
  * tabla funcionaba y el reporte fallaba con 400 sobre los mismos filtros.
  */
 export function toCampusesQueryFilters(filters: CampusesQueryRequest["filters"]) {
-  return { ...filters, zones: (filters.zones ?? []).map(Number) }
+  // `zones` viaja tal cual: desde V116 el backend filtra por CÓDIGO de zona,
+  // no por id, así que convertir a número rompería el bind (VARCHAR[]).
+  return { ...filters, zones: filters.zones ?? [] }
 }
 
 interface UseCampusesQueryParams {
