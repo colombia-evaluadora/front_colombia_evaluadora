@@ -79,6 +79,10 @@ export const reservationsSearchSchema = z.object({
 })
 export type ReservationsSearch = z.infer<typeof reservationsSearchSchema>
 
+// Pre-matrícula: mismos filtros que reservaciones (misma lógica de búsqueda).
+export const preMatriculaSearchSchema = reservationsSearchSchema
+export type PreMatriculaSearch = ReservationsSearch
+
 // Alta de reserva ("Realizar reserva"). Acá sí validamos de verdad: el
 // formulario lo usa como `onSubmit` validator de TanStack Form.
 export const createReservationFormSchema = z.object({
