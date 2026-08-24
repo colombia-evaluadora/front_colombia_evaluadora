@@ -23,6 +23,7 @@ import type { CatalogItem } from "@/features/establishment/employees/api/types/c
 import { useCatalogQuery } from "@/features/establishment/employees/api/query/use-catalogs"
 import { findPersonByDocument } from "@/features/establishment/employees/api/query/use-user-by-document"
 import type { Person } from "@/features/establishment/employees/api/types/person"
+import { passwordRules } from "@/features/auth/api/schema"
 
 type EmployeeRoleCode = (typeof EMPLOYEE_ROLES)[number]["code"]
 
@@ -183,6 +184,10 @@ export function UserDetailsForm({
     const isInvalid = (field: string) => showValidation && invalidFields.includes(field)
     // Mensaje debajo del campo: solo tras el primer submit, igual que el borde rojo.
     const errorFor = (field: string) => (showValidation ? errors[field] : undefined)
+    const passwordHint =
+        !person.accountExists && person.password.length > 0
+            ? passwordRules.find((rule) => !rule.test(person.password))?.message
+            : undefined
 
     const emitChange = (patch: Partial<Person>) => {
         onChange({ ...person, ...patch })
@@ -204,6 +209,7 @@ export function UserDetailsForm({
     const isUserEditingDocument = useRef(false)
     useEffect(() => {
         if (!documentTypeId || !identification.trim()) return
+        if (person.accountExists && !isUserEditingDocument.current) return
 
         // Reset optimista: en cuanto el documento cambia, ya no se puede
         // asumir que sigue siendo la cuenta (ni, si la había, el
@@ -335,14 +341,16 @@ export function UserDetailsForm({
                         placeholder="Agregar"
                         // TUSUARIO.IDENTIFICACION es VARCHAR(30) puramente
                         // numérico (RegisterUsuarioRequest la valida igual,
-                        // @Size(max=30)) — solo dígitos, sin letras.
+                        // @Size(max=30)) — solo dígitos, sin letras. Acotado
+                        // a 11 acá: ningún documento colombiano (CC, TI, CE,
+                        // NIT de persona) supera esa longitud.
                         inputMode="numeric"
-                        maxLength={30}
+                        maxLength={11}
                         value={person.identification}
                         aria-invalid={isInvalid(`${fieldPrefix}.identification`)}
                         onChange={(event) => {
                             isUserEditingDocument.current = true
-                            emitChange({ identification: toDigitsOnly(event.target.value, 30) })
+                            emitChange({ identification: toDigitsOnly(event.target.value, 11) })
                         }}
                     />
                     <FieldError>{errorFor(`${fieldPrefix}.identification`)}</FieldError>
@@ -356,7 +364,7 @@ export function UserDetailsForm({
                         placeholder="Agregar"
                         value={person.firstName}
                         aria-invalid={isInvalid(`${fieldPrefix}.firstName`)}
-                        onChange={(event) => emitChange({ firstName: event.target.value })}
+                        onChange={(event) => emitChange({ firstName: event.target.value.toUpperCase() })}
                     />
                     <FieldError>{errorFor(`${fieldPrefix}.firstName`)}</FieldError>
                 </Field>
@@ -368,7 +376,7 @@ export function UserDetailsForm({
                         size="sm"
                         placeholder="Agregar"
                         value={person.middleName ?? ""}
-                        onChange={(event) => emitChange({ middleName: event.target.value })}
+                        onChange={(event) => emitChange({ middleName: event.target.value.toUpperCase() })}
                     />
                 </Field>
 
@@ -380,7 +388,7 @@ export function UserDetailsForm({
                         placeholder="Agregar"
                         value={person.lastName}
                         aria-invalid={isInvalid(`${fieldPrefix}.lastName`)}
-                        onChange={(event) => emitChange({ lastName: event.target.value })}
+                        onChange={(event) => emitChange({ lastName: event.target.value.toUpperCase() })}
                     />
                     <FieldError>{errorFor(`${fieldPrefix}.lastName`)}</FieldError>
                 </Field>
@@ -392,7 +400,7 @@ export function UserDetailsForm({
                         size="sm"
                         placeholder="Agregar"
                         value={person.secondLastName ?? ""}
-                        onChange={(event) => emitChange({ secondLastName: event.target.value })}
+                        onChange={(event) => emitChange({ secondLastName: event.target.value.toUpperCase() })}
                     />
                 </Field>
             </div>
@@ -442,7 +450,7 @@ export function UserDetailsForm({
                         aria-invalid={isInvalid(`${fieldPrefix}.password`)}
                         onChange={(event) => emitChange({ password: event.target.value })}
                     />
-                    <FieldError>{errorFor(`${fieldPrefix}.password`)}</FieldError>
+                    <FieldError>{errorFor(`${fieldPrefix}.password`) ?? passwordHint}</FieldError>
                 </Field>
                 <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid(`${fieldPrefix}.confirmPassword`) ? "true" : undefined}>
                     <FieldLabel htmlFor="user-confirm-password">Confirmar Contraseña</FieldLabel>
