@@ -81,7 +81,7 @@ import {
   EmployeeAdditionalInfoForm,
   type EmployeeAdditionalInfoValue,
 } from "@/features/establishment/employees/components/forms/form-employee-additional-info"
-import { UserDetailsForm } from "@/features/establishment/employees/components/forms/form-user-datails"
+import { PASSWORD_PLACEHOLDER, UserDetailsForm } from "@/features/establishment/employees/components/forms/form-user-datails"
 import { NoticeOutlet, useNotify } from "@/components/notice/notice-context"
 
 interface ManageEmployeeDialogProps {
@@ -494,7 +494,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
    * cómo se llegó al `id`.
    */
   function applyLoadedEmployee(employee: Employee) {
-    setPerson(employee.person)
+    setPerson({ ...employee.person, accountExists: true, password: PASSWORD_PLACEHOLDER })
     setPermissions(employee.permissions)
     originalPermissionIdsRef.current = new Set(
       employee.permissions
@@ -505,7 +505,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
     setPermissionDraft(createPermissionDraft(employee.permissions.length + 1))
     setPermissionErrors({})
     setPersonErrors({})
-    setConfirmPassword(employee.person.password)
+    setConfirmPassword(PASSWORD_PLACEHOLDER)
     // La foto guardada no vuelve como `File`: se arranca sin nada elegido y
     // solo se manda si el usuario carga una nueva.
     setPhoto(null)
@@ -515,26 +515,38 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
     setAdditionalInfoSaved(hasAdditionalInfoData(createAdditionalInfoFromEmployee(employee)))
   }
 
+
+  function resetDraft() {
+    setPerson(createEmptyPerson())
+    setPermissions([])
+    setAdditionalInfo(createInitialAdditionalInfo())
+    setPermissionDraft(createPermissionDraft())
+    setPermissionErrors({})
+    setPersonErrors({})
+    setConfirmPassword("")
+    setPhoto(null)
+    setCreatedEmployeeId(null)
+    setPermissionsSaved(false)
+    setAdditionalInfoSaved(false)
+    setMatchedFuncionarioId(null)
+    personMatchSnapshotRef.current = null
+    originalPermissionIdsRef.current = new Set()
+  }
+
+  function handleOpenChange(nextOpen: boolean) {
+    if (!nextOpen && !isEditMode) {
+      resetDraft()
+    }
+    onOpenChange(nextOpen)
+  }
+
   useEffect(() => {
     if (!open) {
       return
     }
 
     if (!isEditMode) {
-      setPerson(createEmptyPerson())
-      setPermissions([])
-      setAdditionalInfo(createInitialAdditionalInfo())
-      setPermissionDraft(createPermissionDraft())
-      setPermissionErrors({})
-      setPersonErrors({})
-      setConfirmPassword("")
-      setPhoto(null)
-      setCreatedEmployeeId(null)
-      setPermissionsSaved(false)
-      setAdditionalInfoSaved(false)
-      setMatchedFuncionarioId(null)
-      personMatchSnapshotRef.current = null
-      originalPermissionIdsRef.current = new Set()
+      resetDraft()
       return
     }
 
@@ -891,7 +903,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent
           className="w-[min(95vw,56rem)] max-w-none sm:max-w-224 max-h-[85vh] overflow-y-auto overflow-x-hidden"
           showCloseButton={false}
@@ -993,7 +1005,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
                 variant="fill"
                 color="neutral"
                 size="sm"
-                onClick={() => onOpenChange(false)}
+                onClick={() => handleOpenChange(false)}
                 disabled={isSavingMain}
               >
                 <XIcon data-icon="inline-start" />
