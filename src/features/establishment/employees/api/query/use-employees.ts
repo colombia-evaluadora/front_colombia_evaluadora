@@ -26,10 +26,13 @@ import type {
  * tabla funcionaba y el reporte fallaba con 400 sobre los mismos filtros.
  */
 export function toEmployeesQueryFilters(filters: EmployeesQueryRequest["filters"]) {
+  // Viajan tal cual: desde V116 el backend filtra por CÓDIGO de rol y de
+  // jornada, no por id, así que convertirlos a número rompería los binds
+  // (VARCHAR[]).
   return {
     ...filters,
-    roles: (filters.roles ?? []).map(Number),
-    workSchedules: (filters.workSchedules ?? []).map(Number),
+    roles: filters.roles ?? [],
+    workSchedules: filters.workSchedules ?? [],
   }
 }
 

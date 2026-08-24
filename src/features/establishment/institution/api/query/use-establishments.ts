@@ -26,7 +26,10 @@ import type {
  * tabla funcionaba y el reporte fallaba con 400 sobre los mismos filtros.
  */
 export function toEstablishmentsQueryFilters(filters: EstablishmentsQueryRequest["filters"]) {
-    return { ...filters, status: (filters.status ?? []).map(Number) }
+    // `status` viaja tal cual: desde V116 el backend filtra por CÓDIGO de
+    // estado (A, I, S, SC, ST), no por id, así que convertirlo a número
+    // rompería el bind (VARCHAR[]).
+    return { ...filters, status: filters.status ?? [] }
 }
 
 interface UseEstablishmentsQueryParams {
