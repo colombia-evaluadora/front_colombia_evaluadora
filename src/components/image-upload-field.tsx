@@ -8,14 +8,19 @@ import {
 } from "@/components/ui/attachment"
 import { FileUpload, FileUploadDropzone } from "@/components/ui/file-upload"
 import { ImageIcon, XIcon } from "@/components/ui/icons"
+import { IMAGE_ACCEPT, IMAGE_HINT, IMAGE_MAX_SIZE, validateImageFile } from "@/lib/image-file"
 import { cn } from "@/lib/utils"
 
 interface ImageUploadFieldProps {
     value: File | null
     onValueChange: (file: File | null) => void
-    /** MIME types aceptados; debe coincidir con lo que diga `hint`. */
+    /**
+     * MIME types aceptados. Por defecto los de `IMAGE_MIME_TYPES`, que es lo
+     * que valida el esquema y lo que dice el `hint`: si se cambia acá, hay
+     * que cambiar los tres.
+     */
     accept?: string
-    /** Tamaño máximo en bytes; debe coincidir con lo que diga `hint`. */
+    /** Tamaño máximo en bytes. Por defecto `IMAGE_MAX_SIZE`. */
     maxSize?: number
     /** Segunda línea del dropzone: qué se está cargando. */
     description: ReactNode
@@ -23,6 +28,13 @@ interface ImageUploadFieldProps {
     hint?: ReactNode
     /** Etiqueta accesible del botón de borrado. */
     deleteLabel?: string
+    /**
+     * Error de validación que viene de afuera (el del submit). El del propio
+     * dropzone —formato o peso del archivo que se acaba de soltar— lo maneja
+     * el componente solo; se muestran en el mismo lugar y gana el interno,
+     * que siempre es el más reciente.
+     */
+    error?: ReactNode
     /**
      * Imagen YA guardada en el servidor, para el modo edición. Ocupa la caja
      * entera mientras no se elija un archivo nuevo —igual que la vista previa
@@ -51,11 +63,12 @@ interface ImageUploadFieldProps {
 export function ImageUploadField({
     value,
     onValueChange,
-    accept = "image/jpeg,image/png,image/svg+xml",
-    maxSize = 2 * 1024 * 1024,
+    accept = IMAGE_ACCEPT,
+    maxSize = IMAGE_MAX_SIZE,
     description,
-    hint = "JPG, PNG o SVG · Máximo 2 MB",
+    hint = IMAGE_HINT,
     deleteLabel = "Eliminar imagen",
+    error,
     existingPreview,
     className,
 }: ImageUploadFieldProps) {
@@ -74,6 +87,25 @@ export function ImageUploadField({
         return () => URL.revokeObjectURL(url)
     }, [value])
 
+    // Motivo por el que se descartó el último archivo soltado. Antes esto se
+    // perdía: el dropzone solo parpadea en rojo dos segundos, así que soltar
+    // una imagen de 8 MB se veía como que "no pasó nada". Solo se limpia
+    // cuando entra un archivo válido (o se borra el que había), porque un
+    // rechazo no cambia `value` y el mensaje tiene que sobrevivir al parpadeo.
+    const [rejection, setRejection] = useState<string | null>(null)
+    useEffect(() => {
+        setRejection(null)
+    }, [value])
+
+    // Las reglas se derivan de las props para que el `accept` del input y lo
+    // que valida el esquema no puedan discrepar.
+    const rules = {
+        maxSize,
+        types: accept.split(",").map((type) => type.trim()),
+    }
+
+    const message = rejection ?? error
+
     return (
         // Esta caja es lo único que mide: se estira al alto que le dé quien la
         // ponga (una celda con `row-span`, por ejemplo) y, si no le dan
@@ -86,6 +118,13 @@ export function ImageUploadField({
                 accept={accept}
                 maxFiles={1}
                 maxSize={maxSize}
+                // La validación real la hace el esquema de `image-file`, no el
+                // `accept`/`maxSize` del dropzone: es el mismo que corre en el
+                // submit, así que el mensaje que ve el usuario al soltar el
+                // archivo es idéntico al que vería al guardar.
+                onFileValidate={(file) => validateImageFile(file, rules)}
+                onFileReject={(_file, reason) => setRejection(reason)}
+                invalid={Boolean(message)}
                 // `overflow-hidden`: lo que no quepa se recorta en vez de
                 // desbordarse sobre los campos vecinos.
                 className="absolute inset-0 overflow-hidden"
@@ -175,6 +214,21 @@ export function ImageUploadField({
                     </FileUploadDropzone>
                 )}
             </FileUpload>
+            {/*
+                El mensaje va posicionado sobre el borde inferior de la caja,
+                no debajo: el campo no puede crecer con su contenido (ver el
+                comentario de arriba), así que un error de dos líneas no
+                estira la fila del grid donde esté. `pointer-events-none`
+                para que el área siga siendo toda dropzone por debajo.
+            */}
+            {message ? (
+                <p
+                    role="alert"
+                    className="pointer-events-none absolute inset-x-0 bottom-0 m-0! rounded-b-lg bg-red/10 px-2 py-1 text-center text-[11px] leading-snug font-medium text-balance text-red"
+                >
+                    {message}
+                </p>
+            ) : null}
         </div>
     )
 }

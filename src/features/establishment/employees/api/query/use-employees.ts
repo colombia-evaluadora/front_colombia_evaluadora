@@ -12,6 +12,27 @@ import type {
   EmployeesQueryResponse,
 } from "@/features/establishment/employees/api/types/employee"
 
+/**
+ * Normaliza los filtros de la UI a lo que espera el backend.
+ *
+ * Los `<Select>` del buscador mandan el id como TEXTO (`String(item.id)`),
+ * pero los binds del catálogo están declarados `BIGINT[]` y el query-service
+ * valida el tipo de cada elemento: un `["1"]` donde espera `[1]` se rechaza
+ * con 400.
+ *
+ * Se exporta —y no queda embebido en el body de la consulta— porque la
+ * exportación manda EXACTAMENTE los mismos filtros y tiene que aplicar la
+ * misma conversión. Cuando esto vivía solo dentro del hook de listado, la
+ * tabla funcionaba y el reporte fallaba con 400 sobre los mismos filtros.
+ */
+export function toEmployeesQueryFilters(filters: EmployeesQueryRequest["filters"]) {
+  return {
+    ...filters,
+    roles: (filters.roles ?? []).map(Number),
+    workSchedules: (filters.workSchedules ?? []).map(Number),
+  }
+}
+
 interface UseEmployeesQueryParams {
   filters: EmployeesQueryRequest["filters"]
   sorting: EmployeesQueryRequest["sorting"]
@@ -58,17 +79,9 @@ async function fetchEmployees(params: EmployeesQueryRequest): Promise<EmployeesQ
   }
 
   // El mock espera `sorting` como array tal cual; el backend real espera un
-  // único objeto (o null) — ver `toSingleSort`. `filters.roles`/
-  // `workSchedules` ya traen el `id` como texto (el `<Select>` del buscador
-  // manda `String(item.id)`, no el `code` — ver search-employees.tsx), así
-  // que acá solo hace falta convertirlos a número, sin resolver nada contra
-  // ningún catálogo.
+  // único objeto (o null) — ver `toSingleSort`.
   const body = {
-    filters: {
-      ...params.filters,
-      roles: (params.filters.roles ?? []).map(Number),
-      workSchedules: (params.filters.workSchedules ?? []).map(Number),
-    },
+    filters: toEmployeesQueryFilters(params.filters),
     sorting: toSingleSort(params.sorting),
     pageIndex: params.pageIndex,
     pageSize: params.pageSize,
