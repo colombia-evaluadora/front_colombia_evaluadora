@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query"
 
-import { api } from "@/lib/api-client"
+import { downloadReport } from "@/lib/report-client"
 import type { MutationConfig } from "@/lib/react-query"
 import type {
   ExportFormat,
@@ -15,7 +15,12 @@ interface ExportSelectedEvaluationPeriodsInput {
 function exportSelectedEvaluationPeriods(
   input: ExportSelectedEvaluationPeriodsInput,
 ): Promise<ExportResult> {
-  return api.post("/evaluation-periods/export", input)
+  // El filtro `ids` alcanza: identifica filas concretas, así que no hace
+  // falta acotar además por periodo académico.
+  return downloadReport("periodos-evaluacion", {
+    format: input.format,
+    filters: { ids: input.ids },
+  })
 }
 
 interface UseExportSelectedEvaluationPeriodsOptions {
