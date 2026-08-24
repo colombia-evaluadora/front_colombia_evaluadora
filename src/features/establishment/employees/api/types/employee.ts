@@ -64,9 +64,14 @@ export interface EmployeesQueryFilters {
    * con este id. Se usa, por ejemplo, en la asignación académica para acotar
    * el listado de docentes a la sede del periodo.
    */
-  /** Código de la sede, no su id — ver V116. Ojo: el código de sede NO es
-   *  único, así que este filtro puede abarcar más de una sede. */
-  campusId?: string
+  /**
+   * Id de la sede — SIGUE siendo la llave, no el código, a diferencia del
+   * resto de los filtros (V116). No es un filtro que el usuario escriba: sale
+   * de `academicPeriod.sedeId` y apunta a UNA sede concreta. El código de
+   * sede no es único (223 sedes comparten 211 códigos), así que filtrar por
+   * él traería docentes de otras sedes que casualmente lo comparten.
+   */
+  campusId?: number
 }
 
 export interface EmployeesQueryRequest {
