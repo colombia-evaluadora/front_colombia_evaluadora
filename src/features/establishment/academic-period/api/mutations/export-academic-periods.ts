@@ -1,6 +1,7 @@
 import { useMutation } from "@tanstack/react-query"
 
-import { api } from "@/lib/api-client"
+import { downloadReport } from "@/lib/report-client"
+import { toAcademicPeriodsFilters } from "@/features/establishment/academic-period/api/query/use-academic-periods"
 import type { MutationConfig } from "@/lib/react-query"
 import type {
   AcademicPeriodsQueryFilters,
@@ -14,7 +15,13 @@ interface ExportAcademicPeriodsInput {
 }
 
 function exportAcademicPeriods(input: ExportAcademicPeriodsInput): Promise<ExportResult> {
-  return api.post("/academic-periods/export-all", input)
+  // Los MISMOS filtros que manda la tabla: `toAcademicPeriodsFilters` es la
+  // conversión que usa el listado, así que el reporte no puede filtrar
+  // distinto de lo que el usuario está viendo.
+  return downloadReport("periodos-academicos", {
+    format: input.format,
+    filters: toAcademicPeriodsFilters({ filters: input.filters, sorting: [] }),
+  })
 }
 
 interface UseExportAcademicPeriodsOptions {

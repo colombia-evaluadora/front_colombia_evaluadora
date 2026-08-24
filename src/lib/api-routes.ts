@@ -22,10 +22,22 @@ import { env } from "@/config/env"
  * `auth-center` — no lo llevan, así que no lo pongas a mano en un
  * `realPath`; queda centralizado acá.
  *
+ * `/eval-col` no es el único prefijo posible: cada instancia del motor de
+ * queries se registra con su propio `requesturi`. La auditoría corre en una
+ * instancia aparte —`audit-clickhouse`, `requesturi: /api/audit-ch/**`
+ * (V84), de SOLO LECTURA sobre ClickHouse— así que sus endpoints llevan
+ * `/audit-ch`. De ahí el tercer parámetro; el default sigue siendo
+ * `/eval-col` para no tocar los call sites que ya existen.
+ *
  * @param mockPath Ruta que ya intercepta el handler de MSW.
  * @param realPath Ruta tal como está registrada en la tabla `query` del SSO,
- *   SIN el prefijo `/eval-col` (esta función lo agrega).
+ *   SIN el prefijo del microservicio (esta función lo agrega).
+ * @param prefix Prefijo con el que el gateway rutea hacia la instancia que
+ *   sirve ese endpoint. Ver `public.microservice.requesturi`.
  */
-export function apiPath(mockPath: string, realPath: string): string {
-  return env.ENABLE_API_MOCKING ? mockPath : `/eval-col${realPath}`
+export function apiPath(mockPath: string, realPath: string, prefix = "/eval-col"): string {
+  return env.ENABLE_API_MOCKING ? mockPath : `${prefix}${realPath}`
 }
+
+/** Prefijo de la instancia query-service dedicada a auditoría (V84). */
+export const AUDIT_API_PREFIX = "/audit-ch"
