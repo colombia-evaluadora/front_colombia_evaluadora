@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query"
 
-import { api } from "@/lib/api-client"
+import { downloadReport } from "@/lib/report-client"
 import type { MutationConfig } from "@/lib/react-query"
 import type { ExportFormat, ExportResult } from "@/features/establishment/institution/api/types/export"
 
@@ -10,7 +10,12 @@ interface ExportSelectedEstablishmentsInput {
 }
 
 function exportSelectedEstablishments(input: ExportSelectedEstablishmentsInput): Promise<ExportResult> {
-  return api.post("/establishments/export", input)
+  // Exportar los seleccionados NO es otro endpoint: es el mismo reporte con
+  // un filtro mas. `ids` viaja entre los filtros y el SQL de la fila
+  // …/reporte lo aplica DESPUES de que la funcion PL/pgSQL corrio su gate,
+  // asi que mandar el id de algo que este usuario no puede ver no lo revela
+  // — simplemente no aparece.
+  return downloadReport("establecimientos", { format: input.format, filters: { ids: input.ids } })
 }
 
 interface UseExportSelectedOptions {

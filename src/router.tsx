@@ -20,7 +20,7 @@ import {
   loginSearchSchema,
   restorePasswordSearchSchema,
 } from "@/features/auth/api/schema"
-import { reservationsSearchSchema } from "@/features/coverage/api/schema"
+import { reservationsSearchSchema, preMatriculaSearchSchema } from "@/features/coverage/api/schema"
 import {
   auditsSearchSchema,
   auditTablesSearchSchema,
@@ -291,11 +291,17 @@ export const coberturaReservaCupoRoute = createRoute({
   component: ReservationsPage,
 })
 
-const coberturaPreMatriculaRoute = createRoute({
+const PreMatriculaPage = lazyRouteComponent(
+  () => import("@/features/coverage/pages/pre-matricula-page"),
+  "PreMatriculaPage"
+)
+
+export const coberturaPreMatriculaRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.coberturaPreMatricula.path,
+  validateSearch: preMatriculaSearchSchema,
   staticData: { breadcrumb: [COBERTURA_CRUMB, { label: "Pre-Matrícula" }] },
-  component: () => <ComingSoonPage title="Pre-Matrícula" />,
+  component: PreMatriculaPage,
 })
 
 const coberturaInscritosRoute = createRoute({
