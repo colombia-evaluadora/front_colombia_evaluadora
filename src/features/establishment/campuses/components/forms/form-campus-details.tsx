@@ -86,7 +86,7 @@ export function CampusDetailsForm({
           maxLength={130}
           value={value.name}
           aria-invalid={Boolean(errors["name"])}
-          onChange={(event) => onChange({ ...value, name: event.target.value })}
+          onChange={(event) => onChange({ ...value, name: event.target.value.toUpperCase() })}
           placeholder="Agregar"
         />
         <FieldError>{errors["name"]}</FieldError>
