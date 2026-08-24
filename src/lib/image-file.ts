@@ -25,8 +25,20 @@ export const IMAGE_MIME_TYPES = ["image/jpeg", "image/png", "image/svg+xml"] as 
 /** Valor listo para el atributo `accept` de un `<input type="file">`. */
 export const IMAGE_ACCEPT = IMAGE_MIME_TYPES.join(",")
 
+/**
+ * Tope por lado, en píxeles. Es un límite distinto del peso y no redundante
+ * con él: un PNG de plano —pocos colores, mucha superficie— entra en 1,5 MB
+ * comprimido y ocupa `ancho × alto × 4` bytes al descomprimirse. 10000×10000
+ * son 400 MB de RAM en la pestaña; ahí no falla el envío, se muere el
+ * navegador al pintar la vista previa.
+ *
+ * 4000 px de lado (64 MB descomprimidos en el peor caso) es de sobra para un
+ * escudo o una foto de perfil, que se muestran a menos de 300 px.
+ */
+export const IMAGE_MAX_DIMENSION = 4000
+
 /** Texto de ayuda: tiene que decir lo mismo que validan las reglas de acá. */
-export const IMAGE_HINT = "JPG, PNG o SVG · Máximo 2 MB"
+export const IMAGE_HINT = "JPG, PNG o SVG · Máximo 2 MB y 4000 × 4000 px"
 
 /** Solo para los mensajes de error: 2 MB, 1,5 MB, 800 KB. */
 export function formatBytes(bytes: number): string {
