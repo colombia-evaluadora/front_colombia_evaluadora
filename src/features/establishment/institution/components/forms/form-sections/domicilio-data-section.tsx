@@ -32,7 +32,7 @@ export function DomicilioDataFormSection({ value, onChange, invalidFields = [], 
     const { data: zones = [] } = useCatalogQuery<CatalogItem>(CATALOGS.ZONES)
     const municipalityItems = municipalities.map((municipality) => ({
         value: municipality.id,
-        label: `${municipality.id} - ${municipality.name}`,
+        label: `${municipality.code} - ${municipality.department.name} - ${municipality.name}`,
     }))
     const zoneItems = toSelectOptions(zones)
 
