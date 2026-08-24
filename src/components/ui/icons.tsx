@@ -13,6 +13,7 @@ import {
   MdArrowForward,
   MdArrowUpward,
   MdAssignment,
+  MdAssignmentAdd,
   MdAssignmentTurnedIn,
   MdAttachFile,
   MdAttachMoney,
@@ -57,6 +58,7 @@ import {
   MdFormatUnderlined,
   MdGavel,
   MdGroup,
+  MdGroupAdd,
   MdGroups,
   MdHelpOutline,
   MdHome,
@@ -166,6 +168,7 @@ export const CircleDashedIcon = makeIcon(MdRadioButtonUnchecked)
 export const CircleHalfIcon = makeIcon(MdContrast)
 export const CircleIcon = makeIcon(MdCircle)
 export const CirclesThreeIcon = makeIcon(MdBubbleChart)
+export const ClipboardAddIcon = makeIcon(MdAssignmentAdd)
 export const ClipboardCheckIcon = makeIcon(MdAssignmentTurnedIn)
 export const ClipboardTextIcon = makeIcon(MdAssignment)
 export const ClockCountdownIcon = makeIcon(MdTimelapse)
@@ -245,6 +248,7 @@ export const TrophyIcon = makeIcon(MdEmojiEvents)
 export const VideoIcon = makeIcon(MdOutlineSmartDisplay)
 export const PersonIcon = makeIcon(MdPersonOutline)
 export const UserCircleIcon = makeIcon(MdAccountCircle)
+export const UserGroupAddIcon = makeIcon(MdGroupAdd)
 export const UserIcon = makeIcon(MdPersonOutline)
 export const UsersIcon = makeIcon(MdGroup)
 export const UsersFourIcon = makeIcon(MdPeople)
