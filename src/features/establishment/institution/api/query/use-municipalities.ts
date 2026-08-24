@@ -9,9 +9,12 @@ import { unwrapRows } from "@/lib/response-envelope"
 import type { Municipality } from "@/features/establishment/institution/api/types/location"
 
 /** Forma real de cada fila de GET /catalogos/municipios (V58, con el
- * departamento anidado ya resuelto — ver fn_cat_municipios_listar REV2). */
+ * departamento anidado ya resuelto — ver fn_cat_municipios_listar REV2 —
+ * y el código DANE real en `codigo`, REV3: no confundir con `pk_municipio`,
+ * que es solo la PK interna autoincremental). */
 interface RealMunicipalityRow {
   pk_municipio: number
+  codigo: string
   nombre: string
   pk_departamento: number
   departamento_nombre: string
@@ -32,6 +35,7 @@ async function fetchMunicipalities(): Promise<Municipality[]> {
   const rows = unwrapRows<RealMunicipalityRow>(response)
   return rows.map((row) => ({
     id: row.pk_municipio,
+    code: row.codigo,
     name: row.nombre,
     department: { id: row.pk_departamento, name: row.departamento_nombre },
   }))
