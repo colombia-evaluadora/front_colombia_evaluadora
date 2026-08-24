@@ -4,10 +4,20 @@ import { env } from "@/config/env"
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
 
+// Misma familia que `fn_fun_baja_establecimiento_bulk` (funcionarios,
+// confirmado contra el backend real: no hay envelope `{status, message,
+// deletedCount}`, cada id trae su propia fila). Se asume el mismo contrato
+// acá (`fn_est_soft_delete_bulk`) por la misma convención de nombres/ruta —
+// pendiente confirmar contra una respuesta real (ver
+// `summarizeEmployeeBulkDelete` en `employees/api/mutations/use-bulk-delete.ts`
+// para el caso ya confirmado).
+export interface BulkDeleteEstablishmentRow {
+  pk_establecimiento: string
+  status: string
+}
+
 export interface BulkDeleteEstablishmentResult {
-  status: "ok" | "error"
-  message: string
-  deletedCount: number
+  rows: BulkDeleteEstablishmentRow[]
 }
 
 /**
@@ -27,6 +37,29 @@ function bulkDeleteEstablishments(ids: number[]): Promise<BulkDeleteEstablishmen
     }) as unknown as Promise<BulkDeleteEstablishmentResult>
   }
   return api.post("/eval-col/establecimientos/bulk-delete", { pks: ids })
+}
+
+export interface BulkDeleteEstablishmentSummary {
+  succeededCount: number
+  failed: { id: string; reason: string }[]
+}
+
+export function summarizeEstablishmentBulkDelete(
+  result: BulkDeleteEstablishmentResult
+): BulkDeleteEstablishmentSummary {
+  const failed: BulkDeleteEstablishmentSummary["failed"] = []
+  let succeededCount = 0
+  for (const row of result.rows) {
+    if (row.status === "eliminado") {
+      succeededCount += 1
+    } else {
+      const reason = row.status.startsWith("error:")
+        ? row.status.slice("error:".length)
+        : row.status
+      failed.push({ id: row.pk_establecimiento, reason })
+    }
+  }
+  return { succeededCount, failed }
 }
 
 interface UseBulkDeleteOptions {
