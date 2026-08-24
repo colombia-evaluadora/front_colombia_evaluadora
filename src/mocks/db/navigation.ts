@@ -24,7 +24,7 @@ export const navigationMenu: MockMenu[] = [
     id: 13,
     name: "Inscripciones",
     icon: "",
-    path: "/app/cobertura/inscripciones",
+    path: "/app/cobertura/inscritos",
     menuOrder: 0,
     type: "ITEM",
     idParent: 12,

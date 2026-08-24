@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ComponentProps } from "react"
+import { useQueryClient } from "@tanstack/react-query"
 import { z } from "zod"
 
 import { Badge } from "@/components/ui/badge"
@@ -46,7 +47,6 @@ import {
   compareBySortKey,
   type TableSort,
 } from "@/components/table-sort-header"
-import { CATALOGS } from "@/lib/catalogs"
 import { toSelectItemsMap, toSelectOptions } from "@/lib/catalog-options"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { getErrorMessage } from "@/lib/api-client"
@@ -65,7 +65,10 @@ import {
   type PermissionSyncItem,
 } from "@/features/establishment/employees/api/mutations/update-permissions"
 import { useCampusesOptionsQuery } from "@/features/establishment/campuses/api/query/use-campuses-options"
-import { useCatalogQuery } from "@/features/establishment/employees/api/query/use-catalogs"
+import {
+  useSedeJornadasActivasQuery,
+  useSedeTienePeriodosQuery,
+} from "@/features/establishment/employees/api/query/use-sede-jornadas"
 import { useEmployeeQuery } from "@/features/establishment/employees/api/query/use-employee"
 import { useEmployeeRolesQuery } from "@/features/establishment/employees/api/query/use-employee-roles"
 import type { Campus } from "@/features/establishment/campuses/api/types/campus"
@@ -82,8 +85,8 @@ import {
   EmployeeAdditionalInfoForm,
   type EmployeeAdditionalInfoValue,
 } from "@/features/establishment/employees/components/forms/form-employee-additional-info"
-import { UserDetailsForm } from "@/features/establishment/employees/components/forms/form-user-datails"
-import { NoticeOutlet, useNotify } from "@/components/notice/notice-context"
+import { PASSWORD_PLACEHOLDER, UserDetailsForm } from "@/features/establishment/employees/components/forms/form-user-datails"
+import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
 
 interface ManageEmployeeDialogProps {
   open: boolean
@@ -393,14 +396,32 @@ function createPermissionDraft(nextOrder = 1): PermissionDraft {
   }
 }
 
+function buildDraftSnapshot(
+  person: Person,
+  additionalInfo: EmployeeAdditionalInfoValue,
+  permissions: Permission[],
+): string {
+  const { password: _password, accountExists: _accountExists, ...personRest } = person
+  return JSON.stringify({ person: personRest, additionalInfo, permissions })
+}
+
 function buildEmployeeStatus(permissions: Permission[]): EmployeeStatus {
   return permissions.some((permission) => permission.status === "ACTIVE")
     ? "ACTIVE"
     : "SUSPENDED"
 }
 
-export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageEmployeeDialogProps) {
+export function ManageEmployeeDialog(props: ManageEmployeeDialogProps) {
+  return (
+    <NoticeProvider>
+      <ManageEmployeeDialogContent {...props} />
+    </NoticeProvider>
+  )
+}
+
+function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageEmployeeDialogProps) {
   const { notify } = useNotify()
+  const queryClient = useQueryClient()
   const isEditMode = Boolean(employeeId)
   /**
    * id del empleado recién creado en esta sesión. Mientras está vacío no
@@ -462,6 +483,9 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
   // PUT /funcionario/:ID/permisos — ver closePermissionsDialog.
   const originalPermissionIdsRef = useRef<Set<number>>(new Set())
   const [isSavingPermissions, setIsSavingPermissions] = useState(false)
+  const cleanSnapshotRef = useRef<string | null>(null)
+  const permissionsSnapshotRef = useRef<string>(JSON.stringify([]))
+  const additionalInfoSnapshotRef = useRef<string>(JSON.stringify(createInitialAdditionalInfo()))
 
   const sortedPermissions = useMemo(() => {
     if (!permissionSort) return permissions
@@ -482,11 +506,26 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
 
   const employeeQuery = useEmployeeQuery(employeeId ?? null, open && isEditMode)
   const { data: roles = [] } = useEmployeeRolesQuery()
-  const { data: workSchedules = [] } = useCatalogQuery<CatalogItem>(CATALOGS.WORK_SCHEDULES)
   const { data: campuses = [] } = useCampusesOptionsQuery()
   const roleItems = toSelectOptions(roles)
   const campusItems = toSelectOptions(campuses)
+  const {
+    data: sedeJornadas = [],
+    isPending: isLoadingSedeJornadas,
+  } = useSedeJornadasActivasQuery(permissionDraft.campusId)
+  const { data: sedeTienePeriodos } = useSedeTienePeriodosQuery(permissionDraft.campusId)
+  const workSchedules: CatalogItem[] = sedeJornadas.map((j) => ({
+    id: j.id,
+    code: String(j.id),
+    name: j.nombre,
+  }))
   const workScheduleItems = toSelectOptions(workSchedules)
+  const workScheduleEmptyMessage =
+    permissionDraft.campusId == null
+      ? "Elige primero la sede educativa."
+      : sedeTienePeriodos === false
+        ? "Esta sede todavía no tiene ningún periodo académico creado. Crea uno primero."
+        : "Esta sede no tiene un periodo académico activo con jornada configurada."
   // Estado del permiso: dominio fijo (TSEDE_USUARIO.TLV_ESTADO, no un
   // catálogo real), value por `.code` a propósito — ver
   // PERMISSION_STATUS_OPTIONS en institution/api/types/permission.ts.
@@ -508,25 +547,59 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
    * cómo se llegó al `id`.
    */
   function applyLoadedEmployee(employee: Employee) {
-    setPerson(employee.person)
+    const loadedPerson = { ...employee.person, accountExists: true, password: PASSWORD_PLACEHOLDER }
+    const loadedAdditionalInfo = createAdditionalInfoFromEmployee(employee)
+
+    setPerson(loadedPerson)
     setPermissions(employee.permissions)
     originalPermissionIdsRef.current = new Set(
       employee.permissions
         .map((permission) => permission.id)
         .filter((id): id is number => id !== undefined),
     )
-    setAdditionalInfo(createAdditionalInfoFromEmployee(employee))
+    setAdditionalInfo(loadedAdditionalInfo)
     setPermissionDraft(createPermissionDraft(employee.permissions.length + 1))
     setPermissionErrors({})
     setPersonErrors({})
-    setConfirmPassword(employee.person.password)
+    setConfirmPassword(PASSWORD_PLACEHOLDER)
     // La foto guardada no vuelve como `File`: se arranca sin nada elegido y
     // solo se manda si el usuario carga una nueva.
     setPhoto(null)
     // Lo que llega del backend ya está guardado: los botones arrancan con
     // el ícono de editar, sin pedir un Guardar que no aplica.
     setPermissionsSaved(employee.permissions.length > 0)
-    setAdditionalInfoSaved(hasAdditionalInfoData(createAdditionalInfoFromEmployee(employee)))
+    setAdditionalInfoSaved(hasAdditionalInfoData(loadedAdditionalInfo))
+    cleanSnapshotRef.current = buildDraftSnapshot(loadedPerson, loadedAdditionalInfo, employee.permissions)
+    permissionsSnapshotRef.current = JSON.stringify(employee.permissions)
+    additionalInfoSnapshotRef.current = JSON.stringify(loadedAdditionalInfo)
+  }
+
+
+  function resetDraft() {
+    setPerson(createEmptyPerson())
+    setPermissions([])
+    setAdditionalInfo(createInitialAdditionalInfo())
+    setPermissionDraft(createPermissionDraft())
+    setPermissionErrors({})
+    setPersonErrors({})
+    setConfirmPassword("")
+    setPhoto(null)
+    setCreatedEmployeeId(null)
+    setPermissionsSaved(false)
+    setAdditionalInfoSaved(false)
+    setMatchedFuncionarioId(null)
+    personMatchSnapshotRef.current = null
+    originalPermissionIdsRef.current = new Set()
+    cleanSnapshotRef.current = null
+    permissionsSnapshotRef.current = JSON.stringify([])
+    additionalInfoSnapshotRef.current = JSON.stringify(createInitialAdditionalInfo())
+  }
+
+  function handleOpenChange(nextOpen: boolean) {
+    if (!nextOpen && !isEditMode) {
+      resetDraft()
+    }
+    onOpenChange(nextOpen)
   }
 
   useEffect(() => {
@@ -535,20 +608,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
     }
 
     if (!isEditMode) {
-      setPerson(createEmptyPerson())
-      setPermissions([])
-      setAdditionalInfo(createInitialAdditionalInfo())
-      setPermissionDraft(createPermissionDraft())
-      setPermissionErrors({})
-      setPersonErrors({})
-      setConfirmPassword("")
-      setPhoto(null)
-      setCreatedEmployeeId(null)
-      setPermissionsSaved(false)
-      setAdditionalInfoSaved(false)
-      setMatchedFuncionarioId(null)
-      personMatchSnapshotRef.current = null
-      originalPermissionIdsRef.current = new Set()
+      resetDraft()
       return
     }
 
@@ -621,10 +681,43 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
     },
   })
 
+  const updateAdditionalInfoMutation = useUpdate({
+    mutationConfig: {
+      onSuccess: (result) => {
+        if (result.status === "error") {
+          notify(result.message, { variant: "error" })
+          return
+        }
+
+        notify("Información complementaria actualizada.")
+        additionalInfoSnapshotRef.current = JSON.stringify(additionalInfo)
+        if (person) {
+          cleanSnapshotRef.current = buildDraftSnapshot(person, additionalInfo, permissions)
+        }
+        setAdditionalInfoSaved(true)
+        setAdditionalInfoDialogOpen(false)
+      },
+      onError: (error) => {
+        notify(getErrorMessage(error) || "No fue posible actualizar la información complementaria.", {
+          variant: "error",
+        })
+      },
+    },
+  })
+
   const isSavingMain =
     createPersonMutation.isPending ||
     createMutation.isPending ||
     updateMutation.isPending
+
+  const hasUnsavedChanges =
+    !isEditMode ||
+    cleanSnapshotRef.current === null ||
+    photo !== null ||
+    (person !== null && buildDraftSnapshot(person, additionalInfo, permissions) !== cleanSnapshotRef.current)
+
+  const hasPermissionsChanges = JSON.stringify(permissions) !== permissionsSnapshotRef.current
+  const hasAdditionalInfoChanges = JSON.stringify(additionalInfo) !== additionalInfoSnapshotRef.current
 
   async function handleMainSave() {
     const draft = person as Person | null
@@ -843,6 +936,8 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
     if (env.ENABLE_API_MOCKING || !activeEmployeeId) {
       setPermissionsSaved(true)
       setPermissionsDialogOpen(false)
+      permissionsSnapshotRef.current = JSON.stringify(permissions)
+      if (person) cleanSnapshotRef.current = buildDraftSnapshot(person, additionalInfo, permissions)
       notify("Permisos agregados al borrador. Pulsa Guardar para persistir el funcionario.", { variant: "info" })
       return
     }
@@ -856,6 +951,8 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
     if (toDelete.length === 0 && toCreate.length === 0) {
       setPermissionsSaved(true)
       setPermissionsDialogOpen(false)
+      permissionsSnapshotRef.current = JSON.stringify(permissions)
+      if (person) cleanSnapshotRef.current = buildDraftSnapshot(person, additionalInfo, permissions)
       return
     }
 
@@ -873,15 +970,17 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
       // vez que se abra "Guardar".
       const createdIds = results.filter((row) => row.accion === "crear").map((row) => row.id)
       let createdIndex = 0
-      setPermissions((current) =>
-        current.map((permission) => {
-          if (permission.id !== undefined) return permission
-          const id = createdIds[createdIndex]
-          createdIndex += 1
-          return id === undefined ? permission : { ...permission, id }
-        }),
-      )
+      const nextPermissions = permissions.map((permission) => {
+        if (permission.id !== undefined) return permission
+        const id = createdIds[createdIndex]
+        createdIndex += 1
+        return id === undefined ? permission : { ...permission, id }
+      })
+      setPermissions(nextPermissions)
       originalPermissionIdsRef.current = new Set([...currentIds, ...createdIds])
+      permissionsSnapshotRef.current = JSON.stringify(nextPermissions)
+      if (person) cleanSnapshotRef.current = buildDraftSnapshot(person, additionalInfo, nextPermissions)
+      void queryClient.invalidateQueries({ queryKey: ["employees"] })
 
       setPermissionsSaved(true)
       setPermissionsDialogOpen(false)
@@ -895,17 +994,57 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
     }
   }
 
-  function closeAdditionalInfoDialog() {
-    setAdditionalInfoSaved(true)
-    setAdditionalInfoDialogOpen(false)
-    notify("Información complementaria agregada al borrador. Pulsa Guardar para persistir el funcionario.", { variant: "info" })
+  function handlePermissionsDialogOpenChange(nextOpen: boolean) {
+    if (!nextOpen) {
+      const savedPermissions: Permission[] = JSON.parse(permissionsSnapshotRef.current)
+      setPermissions(savedPermissions)
+      setPermissionDraft(createPermissionDraft(savedPermissions.length + 1))
+      setPermissionErrors({})
+    }
+    setPermissionsDialogOpen(nextOpen)
+  }
+
+  async function closeAdditionalInfoDialog() {
+    if (env.ENABLE_API_MOCKING || !activeEmployeeId || !person) {
+      setAdditionalInfoSaved(true)
+      setAdditionalInfoDialogOpen(false)
+      additionalInfoSnapshotRef.current = JSON.stringify(additionalInfo)
+      notify("Información complementaria agregada al borrador. Pulsa Guardar para persistir el funcionario.", { variant: "info" })
+      return
+    }
+
+    await updateAdditionalInfoMutation.mutateAsync({
+      employeeId: activeEmployeeId,
+      values: {
+        id: activeEmployeeId,
+        person,
+        employeeClass: additionalInfo.employeeClass,
+        educationLevel: additionalInfo.educationLevel,
+        grade: additionalInfo.grade,
+        highestEducationLevel: additionalInfo.highestEducationLevel,
+        fundingSource: additionalInfo.fundingSource,
+        functionalPosition: additionalInfo.functionalPosition,
+        employmentType: additionalInfo.employmentType,
+        address: additionalInfo.address,
+        permissions,
+        status: buildEmployeeStatus(permissions),
+      },
+      foto: null,
+    })
+  }
+
+  function handleAdditionalInfoDialogOpenChange(nextOpen: boolean) {
+    if (!nextOpen) {
+      setAdditionalInfo(JSON.parse(additionalInfoSnapshotRef.current))
+    }
+    setAdditionalInfoDialogOpen(nextOpen)
   }
 
   const mainTitle = isEditMode ? "Editar usuario" : "Agregar usuario"
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent
           className="w-[min(95vw,56rem)] max-w-none sm:max-w-224 max-h-[85vh] overflow-y-auto overflow-x-hidden"
           showCloseButton={false}
@@ -993,21 +1132,23 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
             </div>
 
             <div className="flex items-center gap-2">
-              <Button
-                variant="fill"
-                color="primary"
-                size="sm"
-                onClick={() => void handleMainSave()}
-                disabled={isSavingMain}
-              >
-                <CheckIcon data-icon="inline-start" />
-                {isSavingMain ? "Guardando..." : "Guardar"}
-              </Button>
+              {hasUnsavedChanges && !permissionsDialogOpen && !additionalInfoDialogOpen && (
+                <Button
+                  variant="fill"
+                  color="primary"
+                  size="sm"
+                  onClick={() => void handleMainSave()}
+                  disabled={isSavingMain}
+                >
+                  <CheckIcon data-icon="inline-start" />
+                  {isSavingMain ? "Guardando..." : "Guardar"}
+                </Button>
+              )}
               <Button
                 variant="fill"
                 color="neutral"
                 size="sm"
-                onClick={() => onOpenChange(false)}
+                onClick={() => handleOpenChange(false)}
                 disabled={isSavingMain}
               >
                 <XIcon data-icon="inline-start" />
@@ -1018,7 +1159,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
         </DialogContent>
       </Dialog>
 
-      <Dialog open={permissionsDialogOpen} onOpenChange={setPermissionsDialogOpen}>
+      <Dialog open={permissionsDialogOpen} onOpenChange={handlePermissionsDialogOpenChange}>
         <DialogContent
           className="w-[min(95vw,56rem)] max-w-none sm:max-w-224 max-h-[85vh] overflow-y-auto overflow-x-hidden"
           showCloseButton={false}
@@ -1099,7 +1240,11 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
                 id="permission-campus"
                 value={permissionDraft.campusId}
                 onValueChange={(value) =>
-                  setPermissionDraft((prev) => ({ ...prev, campusId: value ?? null }))
+                  setPermissionDraft((prev) => ({
+                    ...prev,
+                    campusId: value ?? null,
+                    workScheduleId: null,
+                  }))
                 }
                 items={toSelectItemsMap(campusItems)}
               >
@@ -1133,20 +1278,35 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
                   setPermissionDraft((prev) => ({ ...prev, workScheduleId: value ?? null }))
                 }
                 items={toSelectItemsMap(workScheduleItems)}
+                disabled={
+                  permissionDraft.campusId == null || isLoadingSedeJornadas || workScheduleItems.length === 0
+                }
               >
                 <ComboboxFieldTrigger aria-invalid={Boolean(permissionErrors["workScheduleId"])}>
-                  <ComboboxFieldValue placeholder="Seleccionar" />
+                  <ComboboxFieldValue
+                    placeholder={isLoadingSedeJornadas ? "Cargando..." : "Seleccionar"}
+                  />
                 </ComboboxFieldTrigger>
                 <ComboboxFieldContent>
-                  {workScheduleItems.map((item) => (
-                    <ComboboxFieldItem key={item.value} value={item.value}>
-                      {item.label}
-                    </ComboboxFieldItem>
-                  ))}
+                  {workScheduleItems.length === 0 ? (
+                    <p className="px-3 py-4 text-center text-sm text-muted-foreground">
+                      {workScheduleEmptyMessage}
+                    </p>
+                  ) : (
+                    workScheduleItems.map((item) => (
+                      <ComboboxFieldItem key={item.value} value={item.value}>
+                        {item.label}
+                      </ComboboxFieldItem>
+                    ))
+                  )}
                 </ComboboxFieldContent>
               </ComboboxField>
-              <div className="min-h-5">
-                <FieldError>{permissionErrors["workScheduleId"]}</FieldError>
+              <div className="min-h-9">
+                {permissionDraft.campusId != null && workScheduleItems.length === 0 && !isLoadingSedeJornadas ? (
+                  <p className="line-clamp-2 text-xs text-muted-foreground">{workScheduleEmptyMessage}</p>
+                ) : (
+                  <FieldError>{permissionErrors["workScheduleId"]}</FieldError>
+                )}
               </div>
             </Field>
 
@@ -1193,7 +1353,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
                   ))}
                 </SelectContent>
               </Select>
-              <div className="min-h-5">
+              <div className="min-h-9">
                 <FieldError>{permissionErrors["status"]}</FieldError>
               </div>
             </Field>
@@ -1209,7 +1369,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
                 <ControlPointIcon data-icon="inline-start" />
                 Agregar
               </Button>
-              <div className="min-h-5" />
+              <div className="min-h-9" />
             </div>
           </div>
 
@@ -1310,10 +1470,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
           )}
 
           <DialogFooter className="justify-end sm:justify-end">
-            {/* "Guardar" solo cuando hay algo que guardar: sin permisos en la
-                tabla no confirma nada y competía con "Agregar", que es la
-                acción real de esta pantalla. */}
-            {permissions.length > 0 && (
+            {hasPermissionsChanges && (
               <Button
                 variant="fill"
                 color="primary"
@@ -1329,7 +1486,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
               variant="fill"
               color="neutral"
               size="sm"
-              onClick={() => setPermissionsDialogOpen(false)}
+              onClick={() => handlePermissionsDialogOpenChange(false)}
               disabled={isSavingPermissions}
             >
               <XIcon data-icon="inline-start" />
@@ -1339,7 +1496,7 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
         </DialogContent>
       </Dialog>
 
-      <Dialog open={additionalInfoDialogOpen} onOpenChange={setAdditionalInfoDialogOpen}>
+      <Dialog open={additionalInfoDialogOpen} onOpenChange={handleAdditionalInfoDialogOpenChange}>
         <DialogContent
           className="w-[min(95vw,56rem)] max-w-none sm:max-w-224 max-h-[85vh] overflow-y-auto overflow-x-hidden"
           showCloseButton={false}
@@ -1356,15 +1513,24 @@ export function ManageEmployeeDialog({ open, onOpenChange, employeeId }: ManageE
           />
 
           <DialogFooter className="justify-end sm:justify-end">
-            <Button variant="fill" color="primary" size="sm" onClick={closeAdditionalInfoDialog}>
-              <CheckIcon data-icon="inline-start" />
-              Guardar
-            </Button>
+            {hasAdditionalInfoChanges && (
+              <Button
+                variant="fill"
+                color="primary"
+                size="sm"
+                onClick={() => void closeAdditionalInfoDialog()}
+                disabled={updateAdditionalInfoMutation.isPending}
+              >
+                <CheckIcon data-icon="inline-start" />
+                {updateAdditionalInfoMutation.isPending ? "Guardando..." : "Guardar"}
+              </Button>
+            )}
             <Button
               variant="fill"
               color="neutral"
               size="sm"
-              onClick={() => setAdditionalInfoDialogOpen(false)}
+              onClick={() => handleAdditionalInfoDialogOpenChange(false)}
+              disabled={updateAdditionalInfoMutation.isPending}
             >
               <XIcon data-icon="inline-start" />
               Cancelar
