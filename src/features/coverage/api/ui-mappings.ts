@@ -5,8 +5,8 @@ import type {
   Shift,
 } from "@/features/coverage/api/types/reservation"
 
-type BadgeColor = "primary" | "secondary" | "destructive" | "info" | "warning" | "success"
-interface BadgeProps {
+export type BadgeColor = "primary" | "secondary" | "destructive" | "info" | "warning" | "success"
+export interface BadgeProps {
   variant: "soft"
   color: BadgeColor
 }
