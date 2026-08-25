@@ -407,7 +407,7 @@ export function UserDetailsForm({
             </div>
             <div className="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-3">
                 <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid(`${fieldPrefix}.email`) ? "true" : undefined}>
-                    <FieldLabel htmlFor="user-email">Correo Electrónico</FieldLabel>
+                    <FieldLabel htmlFor="user-email">Correo Electrónico*</FieldLabel>
                     <Input
                         id="user-email"
                         size="sm"
