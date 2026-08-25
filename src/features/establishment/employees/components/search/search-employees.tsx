@@ -137,7 +137,7 @@ export function SearchEmployees({
                 </ComboboxFieldTrigger>
                 <ComboboxFieldContent>
                   {roleItems.map((item) => (
-                    <ComboboxFieldItem key={item.value} value={item.value}>
+                    <ComboboxFieldItem key={item.value} value={item.value} title={item.label}>
                       {item.label}
                     </ComboboxFieldItem>
                   ))}
