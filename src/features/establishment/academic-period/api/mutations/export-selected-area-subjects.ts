@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query"
 
-import { api } from "@/lib/api-client"
+import { downloadReport } from "@/lib/report-client"
 import type { MutationConfig } from "@/lib/react-query"
 import type {
   ExportFormat,
@@ -13,7 +13,10 @@ interface ExportSelectedAreaSubjectsInput {
 }
 
 function exportSelectedAreaSubjects(input: ExportSelectedAreaSubjectsInput): Promise<ExportResult> {
-  return api.post("/area-subjects/export", input)
+  return downloadReport("areas", {
+    format: input.format,
+    filters: { ids: input.ids },
+  })
 }
 
 interface UseExportSelectedAreaSubjectsOptions {

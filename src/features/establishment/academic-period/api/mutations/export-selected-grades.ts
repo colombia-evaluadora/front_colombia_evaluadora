@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query"
 
-import { api } from "@/lib/api-client"
+import { downloadReport } from "@/lib/report-client"
 import type { MutationConfig } from "@/lib/react-query"
 import type {
   ExportFormat,
@@ -13,7 +13,13 @@ interface ExportSelectedGradesInput {
 }
 
 function exportSelectedGrades(input: ExportSelectedGradesInput): Promise<ExportResult> {
-  return api.post("/grades/export", input)
+  // Ver `export-selected-area-subjects.ts`: la fila pendiente
+  // `/grados/reporte` del back (con `BODY.FILTERS.IDS`) acepta la lista de
+  // ids y filtra DESPUES del gate de autorizacion.
+  return downloadReport("grados", {
+    format: input.format,
+    filters: { ids: input.ids },
+  })
 }
 
 interface UseExportSelectedGradesOptions {

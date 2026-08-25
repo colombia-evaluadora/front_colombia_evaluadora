@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query"
 
-import { api } from "@/lib/api-client"
+import { downloadReport } from "@/lib/report-client"
 import type { MutationConfig } from "@/lib/react-query"
 import type {
   ExportFormat,
@@ -12,13 +12,17 @@ interface ExportSelectedGradeGroupsInput {
   format: ExportFormat
 }
 
-// Sin endpoint real en el contrato todavía — mismo caso que
-// escalas/grados/área-asignatura (ver comentario en `area-subject.ts` de los
-// mocks): el export no tiene función en el backend, solo el stub del front.
 function exportSelectedGradeGroups(
   input: ExportSelectedGradeGroupsInput,
 ): Promise<ExportResult> {
-  return api.post("/grade-groups/export", input)
+  // El front todavía no llama a esta clave (`asignaciones` reusa la misma
+  // ruta que el reporte de periodos académicos — ver el dialog que llama a
+  // `useExportAcademicAssignmentReport`). Queda alineado con el resto por
+  // consistencia: misma forma, misma clave que el `export-all`.
+  return downloadReport("asignaciones", {
+    format: input.format,
+    filters: { ids: input.ids },
+  })
 }
 
 interface UseExportSelectedGradeGroupsOptions {
