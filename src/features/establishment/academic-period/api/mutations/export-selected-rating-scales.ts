@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query"
 
-import { api } from "@/lib/api-client"
+import { downloadReport } from "@/lib/report-client"
 import type { MutationConfig } from "@/lib/react-query"
 import type {
   ExportFormat,
@@ -13,7 +13,12 @@ interface ExportSelectedRatingScalesInput {
 }
 
 function exportSelectedRatingScales(input: ExportSelectedRatingScalesInput): Promise<ExportResult> {
-  return api.post("/rating-scales/export", input)
+  // Ver `export-selected-area-subjects.ts`: mismo patrón V69 sobre la fila
+  // pendiente `/escalas/reporte` del back.
+  return downloadReport("escalas", {
+    format: input.format,
+    filters: { ids: input.ids },
+  })
 }
 
 interface UseExportSelectedRatingScalesOptions {
