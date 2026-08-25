@@ -9,6 +9,7 @@ import {
   levelForGrade,
   reservationsDb,
 } from "@/mocks/db/reservations"
+import { academicPeriodsDb } from "@/mocks/db/academic-period/academic-periods"
 import { EDUCATION_LEVELS, SHIFTS } from "@/features/coverage/api/schema"
 import type {
   CreateReservationInput,
@@ -177,6 +178,21 @@ export const reservationsHandlers = [
   http.post("/api/coverage/reservations", async ({ request }) => {
     await delay(500)
     const input = (await request.json()) as CreateReservationInput
+
+    // Regla de la HU "Desactivar periodo de reserva de cupos": si ningún
+    // periodo académico tiene `reservationEnabled === true`, no se permite
+    // crear nuevas reservas (los usuarios verían el botón deshabilitado en
+    // otras pantallas; el back lo rechaza como segunda línea de defensa).
+    const hasActivePeriod = academicPeriodsDb.some((p) => p.reservationEnabled)
+    if (!hasActivePeriod) {
+      return HttpResponse.json(
+        {
+          message:
+            "No hay periodos académicos con reserva de cupos activa. Contacta al administrador.",
+        },
+        { status: 409 },
+      )
+    }
 
     // Una identificación no puede tener dos reservas activas.
     const duplicate = reservationsDb.find(

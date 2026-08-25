@@ -236,6 +236,9 @@ export const academicPeriodsHandlers = [
       weeksCount: null,
       minFailedSubjects: null,
       isPrincipal: true,
+      // Deriva de la config recién creada; mantenerlo sincronizado con el
+      // toggle de la tabla.
+      reservationEnabled: config.reservationEnabled,
       ...periodData,
     }
     academicPeriodsDb.push(newPeriod)
@@ -342,6 +345,24 @@ export const academicPeriodsHandlers = [
 
     const body = (await request.json()) as UpdateAcademicPeriodRequest
     const { period: periodData, config } = fromCreateRequest(body)
+
+    // Regla de la HU: "desactivar reserva solo si está activo". El back real
+    // debería rechazar `RESERVA: "N"` cuando la fila ya está en "N"; el mock
+    // lo aplica acá para que la pantalla no pueda togglear dos veces sin
+    // pasar por activar de nuevo.
+    if (
+      body.RESERVA === "N" &&
+      academicPeriodsDb[index].reservationEnabled === false
+    ) {
+      return HttpResponse.json(
+        {
+          status: "error",
+          message:
+            "El periodo de reservas ya se encuentra inactivo.",
+        },
+        { status: 409 },
+      )
+    }
     const id = academicPeriodsDb[index].id
     // Mismo cast que en el alta: `sedeId` es string y las sedes tienen id
     // numérico, así que sin `Number(...)` la sede nunca se encuentra.
@@ -363,6 +384,9 @@ export const academicPeriodsHandlers = [
       schoolYearId,
       name: `Año lectivo ${schoolYearId}`,
       sedeName: sede?.name ?? academicPeriodsDb[index].sedeName,
+      // Mantiene `reservationEnabled` en sync con la config persistida para
+      // que el toggle de la tabla no muestre estado stale.
+      reservationEnabled: config.reservationEnabled,
     }
 
     const configIndex = academicPeriodConfigsDb.findIndex(
