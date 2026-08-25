@@ -38,6 +38,11 @@ export type ReportKey =
   | "sedes"
   | "periodos-academicos"
   | "periodos-evaluacion"
+  | "plan-estudio"
+  | "grados"
+  | "areas"
+  | "escalas"
+  | "asignaciones"
 
 interface ReportInput {
   format: ExportFormat

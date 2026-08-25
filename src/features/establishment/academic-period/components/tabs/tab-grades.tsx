@@ -83,7 +83,7 @@ export function TabGrades({ jornada, academicPeriodId }: TabGradesProps) {
         ) : (
           <>
             <CreateGradeDialog jornada={jornada} academicPeriodId={academicPeriodId} />
-            <ExportGradesDialog filters={{}} />
+            <ExportGradesDialog academicPeriodId={academicPeriodId} />
           </>
         )}
       </div>

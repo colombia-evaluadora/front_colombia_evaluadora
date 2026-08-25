@@ -27,6 +27,15 @@ export interface StudyPlanQueryFilters {
   asignatura?: string
 }
 
+// Filtros del reporte "Plan de estudio" (cruza TODOS los grados del periodo,
+// a diferencia de la pestaña de edición que está scopeada a un solo grado).
+export interface StudyPlanReportFilters {
+  academicPeriodId?: number
+  gradeIds?: number[]
+  subjectIds?: number[]
+  specialtyIds?: number[]
+}
+
 export interface StudyPlanQueryRequest {
   filters: StudyPlanQueryFilters
   sorting: { id: string; desc: boolean }[]

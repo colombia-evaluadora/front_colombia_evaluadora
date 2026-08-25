@@ -170,7 +170,7 @@ export function TabAcademicAssignments({ academicPeriodId }: TabAcademicAssignme
               resetSelection={resetSelection}
             />
           ) : (
-            <ExportAcademicAssignmentsDialog filters={queryFilters} />
+            <ExportAcademicAssignmentsDialog academicPeriodId={academicPeriodId} />
           )}
         </div>
       </div>

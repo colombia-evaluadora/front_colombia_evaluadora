@@ -21,16 +21,13 @@ import {
 import { Button } from "@/components/ui/button"
 
 import { useExportGrades } from "@/features/establishment/academic-period/api/mutations/export-grades"
-import type {
-  ExportFormat,
-  GradesQueryFilters,
-} from "@/features/establishment/academic-period/api/types/grade"
+import type { ExportFormat } from "@/features/establishment/academic-period/api/types/grade"
 
 interface ExportGradesDialogProps {
-  filters: GradesQueryFilters
+  academicPeriodId?: number
 }
 
-export function ExportGradesDialog({ filters }: ExportGradesDialogProps) {
+export function ExportGradesDialog({ academicPeriodId }: ExportGradesDialogProps) {
   const [open, setOpen] = useState(false)
   const { notify } = useNotify()
 
@@ -48,7 +45,7 @@ export function ExportGradesDialog({ filters }: ExportGradesDialogProps) {
   })
 
   function handleExport(format: ExportFormat) {
-    exportAll.mutate({ filters, format })
+    exportAll.mutate({ academicPeriodId, format })
   }
 
   const pendingFormat = exportAll.isPending ? exportAll.variables?.format : undefined
@@ -57,7 +54,12 @@ export function ExportGradesDialog({ filters }: ExportGradesDialogProps) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
         render={
-          <Button variant="outline" color="muted" size="icon-sm" aria-label="Exportar grados" />
+          <Button
+            variant="outline"
+            color="muted"
+            size="icon-sm"
+            aria-label="Exportar grados y grupos"
+          />
         }
       >
         <FileDownloadOutlinedIcon />
@@ -65,7 +67,9 @@ export function ExportGradesDialog({ filters }: ExportGradesDialogProps) {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
-          <DialogDescription>Elige un formato para exportar todos los grados.</DialogDescription>
+          <DialogDescription>
+            Elige un formato para exportar los grados y grupos de este periodo.
+          </DialogDescription>
         </DialogHeader>
         <DialogFooter className="sm:justify-between">
           <DialogClose render={<Button size="sm" type="button" variant="ghost" />}>
