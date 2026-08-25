@@ -2,15 +2,19 @@
 
 import { useState, useMemo } from "react"
 
-import { InfoIcon, FolderOpenIcon, ClipboardAddIcon, CheckIcon, XIcon, UserGroupAddIcon, FileDownloadOutlinedIcon } from "@/components/ui/icons"
-import { AsignarCupoDialog } from "@/features/coverage/components/dialogs/dialog-asignar-cupo"
-import { Button } from "@/components/ui/button"
 import {
-  Empty,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty"
+  InfoIcon,
+  FolderOpenIcon,
+  ClipboardAddIcon,
+  CheckIcon,
+  XIcon,
+  UserGroupAddIcon,
+} from "@/components/ui/icons"
+import { AsignarCupoDialog } from "@/features/coverage/components/dialogs/dialog-asignar-cupo"
+import { ExportReservationsDialog } from "@/features/coverage/components/dialogs/dialog-export-reservations"
+import { ExportSelectedReservationsDialog } from "@/features/coverage/components/dialogs/dialog-export-selected-reservations"
+import { Button } from "@/components/ui/button"
+import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
 import {
   TableScreen,
   TableScreenHeader,
@@ -101,7 +105,6 @@ export function PreMatriculaPage() {
     return data.rows.filter((r) => selectedIds.includes(r.id) && r.failed)
   }, [data?.rows, selectedIds])
 
-
   function handleConfirmarPreMatricula() {
     setHasPreMatricula(true)
   }
@@ -120,11 +123,7 @@ export function PreMatriculaPage() {
           <TableScreenActions>
             {hasSelection ? (
               <>
-                <Button
-                  size="sm"
-                  color="primary"
-                  onClick={() => setOpenAsignar(true)}
-                >
+                <Button size="sm" color="primary" onClick={() => setOpenAsignar(true)}>
                   <UserGroupAddIcon data-icon="inline-start" />
                   Asignar cupo
                 </Button>
@@ -144,24 +143,31 @@ export function PreMatriculaPage() {
               </>
             ) : (
               <Dialog open={open} onOpenChange={setOpen}>
-                <DialogTrigger
-                  render={
-                    <Button size="sm" color="primary" />
-                  }
-                >
+                <DialogTrigger render={<Button size="sm" color="primary" />}>
                   <ClipboardAddIcon data-icon="inline-start" />
                   Pre-matricular
                 </DialogTrigger>
                 <DialogContent showCloseButton={false}>
                   <DialogHeader className="sm:text-center sm:place-items-center">
-                    <DialogTitle>¿Está seguro de que desea continuar con la prematrícula?</DialogTitle>
+                    <DialogTitle>
+                      ¿Está seguro de que desea continuar con la prematrícula?
+                    </DialogTitle>
                     <DialogDescription>
-                      Esta acción asignará automáticamente a todos los estudiantes al grado siguiente
-                      y generará un registro con la fecha, hora y usuario responsable. Además, se enviará una notificación a los acudientes para que confirmen la prematrícula
+                      Esta acción asignará automáticamente a todos los estudiantes al grado
+                      siguiente y generará un registro con la fecha, hora y usuario responsable.
+                      Además, se enviará una notificación a los acudientes para que confirmen la
+                      prematrícula
                     </DialogDescription>
                   </DialogHeader>
                   <DialogFooter className="sm:justify-center">
-                    <Button size="sm" color="primary" onClick={() => { handleConfirmarPreMatricula(); setOpen(false) }}>
+                    <Button
+                      size="sm"
+                      color="primary"
+                      onClick={() => {
+                        handleConfirmarPreMatricula()
+                        setOpen(false)
+                      }}
+                    >
                       <CheckIcon data-icon="inline-start" />
                       Continuar con la prematrícula
                     </Button>
@@ -174,11 +180,15 @@ export function PreMatriculaPage() {
               </Dialog>
             )}
 
-            {hasPreMatricula && (
-              <Button size="icon-sm" variant="outline" color="muted" aria-label="Exportar" onClick={() => console.log("Exportar")}>
-                <FileDownloadOutlinedIcon />
-              </Button>
-            )}
+            {hasPreMatricula &&
+              (hasSelection ? (
+                <ExportSelectedReservationsDialog
+                  selectedIds={selectedIds}
+                  resetSelection={resetSelection}
+                />
+              ) : (
+                <ExportReservationsDialog filters={queryFilters} />
+              ))}
           </TableScreenActions>
         </TableScreenToolbar>
       </TableScreenHeader>
@@ -212,7 +222,10 @@ export function PreMatriculaPage() {
             <div className="flex items-start gap-3 rounded-md border border-blue-stroke bg-blue-22 px-4 py-3 text-sm text-foreground">
               <InfoIcon className="size-5 shrink-0 text-blue" />
               <p className="leading-relaxed">
-                Aún no se han realizado prematrículas. Al iniciar el proceso, se tomarán los estudiantes matriculados en el periodo académico <strong className="font-semibold">2025</strong> para realizar la prematrícula del periodo académico <strong className="font-semibold">2026</strong>.
+                Aún no se han realizado prematrículas. Al iniciar el proceso, se tomarán los
+                estudiantes matriculados en el periodo académico{" "}
+                <strong className="font-semibold">2025</strong> para realizar la prematrícula del
+                periodo académico <strong className="font-semibold">2026</strong>.
               </p>
             </div>
 
@@ -221,7 +234,9 @@ export function PreMatriculaPage() {
                 <EmptyMedia variant="icon" className="bg-transparent text-muted-foreground">
                   <FolderOpenIcon className="size-12 opacity-50" />
                 </EmptyMedia>
-                <EmptyTitle className="text-muted-foreground font-normal normal-case">Sin datos</EmptyTitle>
+                <EmptyTitle className="text-muted-foreground font-normal normal-case">
+                  Sin datos
+                </EmptyTitle>
               </EmptyHeader>
             </Empty>
           </div>

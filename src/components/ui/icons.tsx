@@ -20,6 +20,7 @@ import {
   MdAutorenew,
   MdBackspace,
   MdBadge,
+  MdBlock,
   MdBolt,
   MdBarChart,
   MdBubbleChart,
@@ -30,6 +31,7 @@ import {
   MdChat,
   MdChatBubbleOutline,
   MdCheck,
+  MdCheckCircle,
   MdCircle,
   MdClose,
   MdContacts,
@@ -163,6 +165,8 @@ export const CaretUpIcon = makeIcon(MdKeyboardArrowUp)
 export const ChatCircleDotsIcon = makeIcon(MdChatBubbleOutline)
 export const ChatCircleTextIcon = makeIcon(MdChat)
 export const CheckCircleIcon = makeIcon(MdCheckCircleOutline)
+export const CheckCircleFillIcon = makeIcon(MdCheckCircle)
+export const ProhibitIcon = makeIcon(MdBlock)
 export const CheckIcon = makeIcon(MdCheck)
 export const CircleDashedIcon = makeIcon(MdRadioButtonUnchecked)
 export const CircleHalfIcon = makeIcon(MdContrast)
