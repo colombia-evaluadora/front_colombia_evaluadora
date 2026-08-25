@@ -5,12 +5,16 @@ import { Button } from "@/components/ui/button"
 import { paths } from "@/config/paths"
 
 import type { AcademicPeriod } from "@/features/establishment/academic-period/api/types/academic-period"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 interface EditAcademicPeriodButtonProps {
   period: AcademicPeriod
 }
 
 export function EditAcademicPeriodButton({ period }: EditAcademicPeriodButtonProps) {
+  const { puedeEditar } = useMenuPermission("PERIODOS_ACADEMICOS")
+  if (!puedeEditar) return null
+
   return (
     <Button
       variant="ghost"

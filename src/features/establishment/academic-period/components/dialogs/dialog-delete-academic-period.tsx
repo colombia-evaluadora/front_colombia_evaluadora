@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button"
 
 import { useDeleteAcademicPeriod } from "@/features/establishment/academic-period/api/mutations/delete-academic-period"
 import type { AcademicPeriod } from "@/features/establishment/academic-period/api/types/academic-period"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 interface DeleteAcademicPeriodDialogProps {
   period: AcademicPeriod
@@ -28,6 +29,7 @@ interface DeleteAcademicPeriodDialogProps {
 export function DeleteAcademicPeriodDialog({ period }: DeleteAcademicPeriodDialogProps) {
   const [open, setOpen] = useState(false)
   const { notify } = useNotify()
+  const { puedeEliminar } = useMenuPermission("PERIODOS_ACADEMICOS")
 
   const deleteMutation = useDeleteAcademicPeriod({
     mutationConfig: {
@@ -45,6 +47,8 @@ export function DeleteAcademicPeriodDialog({ period }: DeleteAcademicPeriodDialo
       },
     },
   })
+
+  if (!puedeEliminar) return null
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>

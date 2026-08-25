@@ -15,16 +15,11 @@ interface UseAssignmentTeachersQueryParams {
   pageSize: number
 }
 
-// Fila cruda de `GET /eval-col/asignaciones/docentes/:PERIODO_ACADEMICO_ID`
-// (`fn_asignacion_docente_listar`, id_query nuevo — V83/V84/V85). `estado`
-// viene en el dominio `estado_ai` de TUSUARIO ('A'/'I'), no en el de
-// `EmployeeStatus`/`PermissionStatus` ("ACTIVE"/"SUSPENDED") que usan las
-// columnas compartidas del módulo de empleados — se mapea abajo.
 interface AssignmentTeacherRow {
   funcionario_id: number
   document_number: string
   nombre_completo: string
-  estado: "A" | "I"
+  estado: string
   total_count: number
 }
 interface AssignmentTeachersRawResponse {
@@ -37,8 +32,8 @@ interface AssignmentTeachersResponse {
   totalCount: number
 }
 
-function toEmployeeStatus(estado: "A" | "I"): EmployeeStatus {
-  return estado === "A" ? "ACTIVE" : "SUSPENDED"
+function toEmployeeStatus(estado: string): EmployeeStatus {
+  return estado === "ACTIVO" ? "ACTIVE" : "SUSPENDED"
 }
 
 // Shapea la fila del docente como `EmployeeListItem` para reusar las mismas

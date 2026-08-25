@@ -313,9 +313,13 @@ export function UserDetailsForm({
                         aria-invalid={isInvalid(`${fieldPrefix}.documentType`)}
                         value={person.documentType?.id ?? null}
                         onValueChange={(selectedValue) => {
+                            isUserEditingDocument.current = true
+                            if (selectedValue === null) {
+                                emitChange({ documentType: null })
+                                return
+                            }
                             const option = documentTypes.find((item) => item.id === selectedValue)
                             if (option) {
-                                isUserEditingDocument.current = true
                                 emitChange({ documentType: option })
                             }
                         }}
@@ -324,6 +328,7 @@ export function UserDetailsForm({
                             <ComboboxFieldValue placeholder="Seleccionar" />
                         </ComboboxFieldTrigger>
                         <ComboboxFieldContent>
+                            <ComboboxFieldItem value={null}>Ninguno</ComboboxFieldItem>
                             {documentTypes.map((item) => (
                                 <ComboboxFieldItem key={item.id} value={item.id} title={item.name}>
                                     {item.name}
@@ -407,7 +412,7 @@ export function UserDetailsForm({
             </div>
             <div className="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-3">
                 <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid(`${fieldPrefix}.email`) ? "true" : undefined}>
-                    <FieldLabel htmlFor="user-email">Correo Electrónico</FieldLabel>
+                    <FieldLabel htmlFor="user-email">Correo Electrónico{required ? "*" : ""}</FieldLabel>
                     <Input
                         id="user-email"
                         size="sm"
@@ -420,7 +425,7 @@ export function UserDetailsForm({
                 </Field>
                 <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid(`${fieldPrefix}.password`) ? "true" : undefined}>
                     <FieldLabel htmlFor="user-password">
-                        Contraseña
+                        Contraseña{required ? "*" : ""}
                         {person.accountExists ? " (cuenta existente)" : ""}
                     </FieldLabel>
                     <Input
@@ -454,7 +459,7 @@ export function UserDetailsForm({
                     <FieldError>{errorFor(`${fieldPrefix}.password`) ?? passwordHint}</FieldError>
                 </Field>
                 <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid(`${fieldPrefix}.confirmPassword`) ? "true" : undefined}>
-                    <FieldLabel htmlFor="user-confirm-password">Confirmar Contraseña</FieldLabel>
+                    <FieldLabel htmlFor="user-confirm-password">Confirmar Contraseña{required ? "*" : ""}</FieldLabel>
                     <Input
                         id="user-confirm-password"
                         size="sm"
@@ -490,7 +495,7 @@ export function UserDetailsForm({
                 </Field>
                 <Field orientation="vertical" variant="outlined" data-invalid={isInvalid(`${fieldPrefix}.gender`) ? "true" : undefined}>
                     <FieldLabel htmlFor="gender-user">
-                        Género*
+                        Género{required ? "*" : ""}
                     </FieldLabel>
                     <ComboboxField
                         id="gender-user"

@@ -22,6 +22,7 @@ import {
   formatBulkDeleteError,
   summarizeBulkDelete,
 } from "@/features/establishment/academic-period/api/mutations/bulk-delete-result"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 interface DeleteSelectedAcademicPeriodsDialogProps {
   selectedIds: string[]
@@ -40,6 +41,7 @@ export function DeleteSelectedAcademicPeriodsDialog({
   const [submitting, setSubmitting] = useState(false)
   const bulkDelete = useDeleteAcademicPeriodsBulk()
   const { notify } = useNotify()
+  const { puedeEliminar } = useMenuPermission("PERIODOS_ACADEMICOS")
   const count = selectedIds.length
 
   async function handleDelete() {
@@ -74,6 +76,8 @@ export function DeleteSelectedAcademicPeriodsDialog({
     setOpen(false)
     resetSelection()
   }
+
+  if (!puedeEliminar) return null
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>

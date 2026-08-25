@@ -283,7 +283,7 @@ export function CreateGradeGroupDialog({
                   <ComboboxFieldContent>
                     <ComboboxGroup>
                       {metodologiaOptions.map((option) => (
-                        <ComboboxFieldItem key={option.key} value={option.key}>
+                        <ComboboxFieldItem key={option.key} value={option.key} title={option.label}>
                           {option.label}
                         </ComboboxFieldItem>
                       ))}
