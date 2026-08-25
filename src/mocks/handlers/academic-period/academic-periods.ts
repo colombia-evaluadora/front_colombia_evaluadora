@@ -8,6 +8,8 @@ import {
 } from "../../db/academic-period/academic-periods"
 import { academicPeriodStatusesDb } from "../../db/academic-period/academic-period-statuses"
 import { jornadasDb } from "../../db/academic-period/jornadas"
+import { tableOperationChangesDb, tableOperationsDb } from "@/mocks/db/table-operations"
+import type { OperationChange, TableOperation } from "@/features/audits/api/types/audit-table"
 import type {
   AcademicPeriod,
   AcademicPeriodConfig,
@@ -357,6 +359,17 @@ export const academicPeriodsHandlers = [
 
     const body = (await request.json()) as UpdateAcademicPeriodRequest
     const { period: periodData, config } = fromCreateRequest(body)
+    const previousReservationEnabled = academicPeriodsDb[index].reservationEnabled
+
+    if (body.RESERVA === "S" && (!body.FECHA_INICIO || !body.FECHA_FIN)) {
+      return HttpResponse.json(
+        {
+          status: "error",
+          message: "Define una fecha de inicio y una fecha de finalización antes de activar el periodo.",
+        },
+        { status: 409 },
+      )
+    }
 
     // Regla de la HU: "desactivar reserva solo si está activo". El back real
     // debería rechazar `RESERVA: "N"` cuando la fila ya está en "N"; el mock
@@ -409,6 +422,44 @@ export const academicPeriodsHandlers = [
       academicPeriodConfigsDb.push(nextConfig)
     } else {
       academicPeriodConfigsDb[configIndex] = nextConfig
+    }
+
+    if (previousReservationEnabled !== config.reservationEnabled) {
+      const operationId = `tperiodo-reservation-${id}-${Date.now()}`
+      const statusLabel = config.reservationEnabled ? "Activo" : "Inactivo"
+      const previousStatusLabel = previousReservationEnabled ? "Activo" : "Inactivo"
+      const entityFields = {
+        Código: String(id),
+        Nombre: academicPeriodsDb[index].name,
+        Estado: statusLabel,
+        Descripción: "Estado de reserva de cupos",
+      }
+      const operation: TableOperation = {
+        id: operationId,
+        operation: "UPDATE",
+        authorName: "Usuario del sistema",
+        authorAvatarUrl: null,
+        authorVerified: false,
+        ip: "127.0.0.1",
+        entityName: academicPeriodsDb[index].name,
+        entityId: String(id),
+        occurredAt: new Date().toISOString(),
+        entityFields,
+      }
+      const changes: OperationChange[] = [
+        {
+          fieldIndex: 2,
+          field: "Estado",
+          before: previousStatusLabel,
+          after: statusLabel,
+          current: statusLabel,
+        },
+      ]
+      const operations = tableOperationsDb.tperiodo ?? []
+      operations.unshift(operation)
+      tableOperationsDb.tperiodo = operations
+      tableOperationChangesDb.tperiodo ??= {}
+      tableOperationChangesDb.tperiodo[operationId] = changes
     }
 
     return HttpResponse.json({ status: "ok", message: "Periodo actualizado." })
