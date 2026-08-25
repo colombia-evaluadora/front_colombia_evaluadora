@@ -20,6 +20,7 @@ import { getErrorMessage } from "@/lib/api-client"
 import { useDelete } from "@/features/establishment/employees/api/mutations/use-delete"
 import type { EmployeeListItem } from "@/features/establishment/employees/api/types/employee"
 import { useNotify } from "@/components/notice/notice-context"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 interface DeleteEmployeeDialogProps {
   employee: EmployeeListItem
@@ -28,23 +29,27 @@ interface DeleteEmployeeDialogProps {
 export function DeleteEmployeeDialog({ employee }: DeleteEmployeeDialogProps) {
   const [open, setOpen] = useState(false)
   const { notify } = useNotify()
+  const { puedeEliminar } = useMenuPermission("FUNCIONARIOS")
 
   const deleteMutation = useDelete({
     mutationConfig: {
       onSuccess: (result) => {
+        setOpen(false)
         if (result.status === "error") {
           notify(result.message, { variant: "error" })
           return
         }
 
         notify(SUCCESS_MESSAGES.employee.deleted)
-        setOpen(false)
       },
       onError: (error) => {
+        setOpen(false)
         notify(getErrorMessage(error), { variant: "error" })
       },
     },
   })
+
+  if (!puedeEliminar) return null
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>

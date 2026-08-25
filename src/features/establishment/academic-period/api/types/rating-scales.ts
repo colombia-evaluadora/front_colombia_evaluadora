@@ -61,6 +61,16 @@ export interface RatingScale {
   notaEquivalente: number
 }
 
+// El PK real de la banda de `scale` PARA `levelId` — no `scale.codigo`, que
+// según el comentario de arriba solo guarda la del primer nivel visto al
+// agrupar. Usar esto en cualquier acción (editar/eliminar) disparada desde la
+// subtabla de un nivel específico; si `levelId` no está en `teachingLevelIds`
+// (no debería pasar) cae a `codigo` como último recurso.
+export function bandaIdForLevel(scale: RatingScale, levelId: number): number {
+  const index = scale.teachingLevelIds.indexOf(levelId)
+  return index === -1 ? scale.codigo : scale.bandaIdsByLevel[index]
+}
+
 export interface RatingScalesQueryFilters {
   nombre?: string
   abreviacion?: string

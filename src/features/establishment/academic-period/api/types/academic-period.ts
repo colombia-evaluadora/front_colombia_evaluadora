@@ -52,6 +52,11 @@ export interface PreviousPeriodOption {
   name: string
 }
 
+export interface SchoolYearOption {
+  id: number
+  name: string
+}
+
 export interface AcademicPeriodConfig {
   academicPeriodId: number
   jornadaId: number

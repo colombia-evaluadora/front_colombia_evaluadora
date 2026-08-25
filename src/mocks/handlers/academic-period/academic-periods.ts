@@ -265,6 +265,18 @@ export const academicPeriodsHandlers = [
     return HttpResponse.json({ rows })
   }),
 
+  // Años lectivos con al menos un periodo académico activo —
+  // `fn_periodo_anos_lectivos_listar`. Alimenta el combobox "Año lectivo" del
+  // filtro con datos reales en vez de un rango fijo.
+  http.post("/api/eval-col/periodos-academicos/anos-lectivos", async () => {
+    await delay(150)
+    const years = Array.from(
+      new Set(academicPeriodsDb.map((p) => p.schoolYearId))
+    ).sort((a, b) => b - a)
+    const rows = years.map((year) => ({ id: year, name: String(year) }))
+    return HttpResponse.json({ rows })
+  }),
+
   http.get("/api/eval-col/periodos-academicos/:id", async ({ params }) => {
     await delay(250)
     const period = academicPeriodsDb.find(
