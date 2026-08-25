@@ -38,13 +38,13 @@ export function DeleteEstablishmentDialog({
   const deleteMutation = useDelete({
     mutationConfig: {
       onSuccess: (result) => {
+        setOpen(false)
         if (result.status === "error") {
           notify(result.message, { variant: "error" })
           return
         }
 
         notify(SUCCESS_MESSAGES.establishment.deleted)
-        setOpen(false)
         navigate({
           search: (prev) => ({
             ...prev,
@@ -54,6 +54,7 @@ export function DeleteEstablishmentDialog({
         })
       },
       onError: (error) => {
+        setOpen(false)
         notify(getErrorMessage(error), { variant: "error" })
       },
     },

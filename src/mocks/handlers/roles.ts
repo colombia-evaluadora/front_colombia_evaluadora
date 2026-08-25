@@ -48,7 +48,7 @@ const MENU_CODIGO_BY_ID: Record<number, string> = {
   16: "MATRICULA",
   22: "PERIODOS_ACADEMICOS",
   19: "ESTABLECIMIENTO",
-  20: "SEDES",
+  20: "SEDES_EDUCATIVAS",
 }
 
 function menuCodigo(menu: MockMenu): string {

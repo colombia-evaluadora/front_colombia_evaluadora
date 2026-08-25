@@ -34,15 +34,16 @@ export function DeleteEmployeeDialog({ employee }: DeleteEmployeeDialogProps) {
   const deleteMutation = useDelete({
     mutationConfig: {
       onSuccess: (result) => {
+        setOpen(false)
         if (result.status === "error") {
           notify(result.message, { variant: "error" })
           return
         }
 
         notify(SUCCESS_MESSAGES.employee.deleted)
-        setOpen(false)
       },
       onError: (error) => {
+        setOpen(false)
         notify(getErrorMessage(error), { variant: "error" })
       },
     },
