@@ -78,6 +78,7 @@ export function TabGrades({ jornada, academicPeriodId }: TabGradesProps) {
             <ExportSelectedGradesDialog
               selectedIds={selectedGradeIds}
               resetSelection={resetSelection}
+              academicPeriodId={academicPeriodId}
             />
           </>
         ) : (

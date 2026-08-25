@@ -30,12 +30,15 @@ interface ExportSelectedRatingScalesDialogProps {
   /** Códigos de escala a exportar (los niveles se expanden a sus escalas). */
   scaleCodigos: number[]
   resetSelection: () => void
+  /** Acota el reporte al periodo que se está viendo: sin esto sale vacío. */
+  academicPeriodId?: number
 }
 
 export function ExportSelectedRatingScalesDialog({
   levelCount,
   scaleCodigos,
   resetSelection,
+  academicPeriodId,
 }: ExportSelectedRatingScalesDialogProps) {
   const [open, setOpen] = useState(false)
   const { notify } = useNotify()
@@ -56,7 +59,7 @@ export function ExportSelectedRatingScalesDialog({
   })
 
   function handleExport(format: ExportFormat) {
-    exportSelected.mutate({ ids: scaleCodigos, format })
+    exportSelected.mutate({ ids: scaleCodigos, format, academicPeriodId })
   }
 
   const pendingFormat = exportSelected.isPending ? exportSelected.variables?.format : undefined

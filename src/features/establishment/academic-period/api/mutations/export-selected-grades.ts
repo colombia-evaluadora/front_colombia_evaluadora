@@ -10,15 +10,17 @@ import type {
 interface ExportSelectedGradesInput {
   ids: number[]
   format: ExportFormat
+  /** Sin esto el reporte sale vacío — ver `export-selected-area-subjects.ts`. */
+  academicPeriodId?: number
 }
 
 function exportSelectedGrades(input: ExportSelectedGradesInput): Promise<ExportResult> {
-  // Ver `export-selected-area-subjects.ts`: la fila pendiente
-  // `/grados/reporte` del back (con `BODY.FILTERS.IDS`) acepta la lista de
-  // ids y filtra DESPUES del gate de autorizacion.
+  // `ids` son ids de GRADO: el `WHERE` de V135 para este reporte compara
+  // contra `grado_id`, así que la fila de cada grupo del grado seleccionado
+  // entra al reporte (una fila por grupo, que es lo que muestra la tabla).
   return downloadReport("grados", {
     format: input.format,
-    filters: { ids: input.ids },
+    filters: { FK_PERIODO: input.academicPeriodId ?? null, ids: input.ids },
   })
 }
 

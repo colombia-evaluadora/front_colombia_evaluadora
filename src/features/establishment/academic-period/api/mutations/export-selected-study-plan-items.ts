@@ -10,16 +10,18 @@ import type {
 interface ExportSelectedStudyPlanItemsInput {
   ids: number[]
   format: ExportFormat
+  /** Sin esto el reporte sale vacío — ver `export-selected-area-subjects.ts`. */
+  academicPeriodId?: number
 }
 
 function exportSelectedStudyPlanItems(
   input: ExportSelectedStudyPlanItemsInput,
 ): Promise<ExportResult> {
-  // Ver `export-selected-area-subjects.ts`: la fila pendiente
-  // `/plan-estudio/reporte` del back toma `ids` igual que V69.
+  // `FK_PERIODO` acota (lo exige `fn_plan_reporte_listar`), `ids` recorta la
+  // selección — mismo patrón V69 que el resto del módulo.
   return downloadReport("plan-estudio", {
     format: input.format,
-    filters: { ids: input.ids },
+    filters: { FK_PERIODO: input.academicPeriodId ?? null, ids: input.ids },
   })
 }
 

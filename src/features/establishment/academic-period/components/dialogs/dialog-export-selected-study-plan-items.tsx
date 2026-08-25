@@ -56,7 +56,7 @@ export function ExportSelectedStudyPlanItemsDialog({
   })
 
   function handleExport(format: ExportFormat) {
-    exportSelected.mutate({ ids: selectedIds, format })
+    exportSelected.mutate({ ids: selectedIds, format, academicPeriodId })
   }
 
   const pendingFormat = exportSelected.isPending ? exportSelected.variables?.format : undefined
