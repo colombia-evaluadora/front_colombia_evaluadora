@@ -20,19 +20,23 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 
-import { useExport } from "@/features/establishment/employees/api/mutations/export"
-import type { EmployeesQueryFilters } from "@/features/establishment/employees/api/types/employee"
+import { useExportAcademicAssignmentReport } from "@/features/establishment/academic-period/api/mutations/export-academic-assignment-report"
 import type { ExportFormat } from "@/features/establishment/institution/api/types/export"
 
 interface ExportAcademicAssignmentsDialogProps {
-  filters: EmployeesQueryFilters
+  academicPeriodId?: number
 }
 
-export function ExportAcademicAssignmentsDialog({ filters }: ExportAcademicAssignmentsDialogProps) {
+// Reporte dedicado de asignación académica (`fn_asignacion_reporte_listar`):
+// una fila por asignación docente+grado+grupo+asignatura+jornada, para TODO
+// el periodo. Sin filtros, igual que periodo académico/evaluación.
+export function ExportAcademicAssignmentsDialog({
+  academicPeriodId,
+}: ExportAcademicAssignmentsDialogProps) {
   const [open, setOpen] = useState(false)
   const { notify } = useNotify()
 
-  const exportAll = useExport({
+  const exportAll = useExportAcademicAssignmentReport({
     mutationConfig: {
       onSuccess: (result) => {
         if (result.status === "error") {
@@ -46,7 +50,7 @@ export function ExportAcademicAssignmentsDialog({ filters }: ExportAcademicAssig
   })
 
   function handleExport(format: ExportFormat) {
-    exportAll.mutate({ filters, format })
+    exportAll.mutate({ format, filters: { academicPeriodId } })
   }
 
   const pendingFormat = exportAll.isPending ? exportAll.variables?.format : undefined
@@ -59,7 +63,7 @@ export function ExportAcademicAssignmentsDialog({ filters }: ExportAcademicAssig
             variant="outline"
             color="muted"
             size="icon-sm"
-            aria-label="Exportar docentes filtrados"
+            aria-label="Exportar asignación académica"
           />
         }
       >
@@ -69,7 +73,7 @@ export function ExportAcademicAssignmentsDialog({ filters }: ExportAcademicAssig
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>
-            Elige un formato para exportar todos los docentes que coincidan con la búsqueda activa.
+            Elige un formato para exportar la asignación académica del periodo.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="sm:justify-between">

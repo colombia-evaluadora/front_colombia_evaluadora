@@ -1,5 +1,8 @@
 export interface StudyPlanItem {
   codigo: number
+  asignaturaId: number
+  // Etiqueta para mostrar (incluye el énfasis cuando la asignatura lo tiene,
+  // ver toStudyPlanItem en use-study-plans.ts) — no es identidad, solo display.
   asignatura: string
   intensidadHoraria: number
   influenciaArea: number
@@ -14,11 +17,12 @@ export interface StudyPlanItem {
 
 // Asignatura del periodo del grado que aún NO está en su plan de estudio
 // (backend: `fn_plan_asignaturas_disponibles_listar` → `[{id, nombre, area_id,
-// area_nombre}]`). El front hoy referencia la asignatura por nombre; `id`/`areaId`
-// quedan disponibles para cuando el guardado migre a id.
+// area_nombre, enfasis_nombre}]`). Selección por `id` — el nombre puede
+// repetirse entre asignaturas de distinto énfasis, así que `label` incluye el
+// énfasis para diferenciarlas en el combobox.
 export interface AvailableStudyPlanSubject {
   id: number
-  nombre: string
+  label: string
   areaId?: number
   areaNombre: string
 }
@@ -47,12 +51,15 @@ export interface StudyPlanRecord extends StudyPlanItem {
   gradeId: number
 }
 
-export type CreateStudyPlanItemRequest = Omit<StudyPlanItem, "codigo"> & {
+// Los requests de guardado se derivan del form (`StudyPlanFormValues`, ver
+// schema.ts), no de `StudyPlanItem`: el form solo conoce `asignaturaId`, la
+// etiqueta `asignatura` es un campo de solo lectura que llega del listado.
+export type CreateStudyPlanItemRequest = Omit<StudyPlanItem, "codigo" | "asignatura"> & {
   academicPeriodId?: number
   gradeId?: number
 }
 
-export type UpdateStudyPlanItemRequest = StudyPlanItem
+export type UpdateStudyPlanItemRequest = Omit<StudyPlanItem, "asignatura">
 
 export interface MutationResult {
   status: "ok" | "error"

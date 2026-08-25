@@ -6,7 +6,6 @@ import type {
   MutationResult,
   PromotionCriteria,
 } from "@/features/establishment/academic-period/api/types/promotion-criteria"
-import { resolveObligatorias } from "@/features/establishment/academic-period/api/mutations/resolve-required-subjects"
 
 interface UpdatePromotionCriteriaInput {
   academicPeriodId: number
@@ -23,31 +22,23 @@ interface UpdatePromotionCriteriaInput {
 // (`PUT /eval-col/periodos/:ID/criterio-promocion`, id_query 47 — ya
 // registrada como PUT, no PATCH). `ASIGNATURA_OBLIGATORIA` no tiene campo en
 // el form: se deriva de si `requiredSubjects` no está vacío.
-async function toPromotionCriteriaRequest(
-  academicPeriodId: number,
-  gradeId: number | undefined,
-  values: PromotionCriteria
-) {
-  const obligatorias = await resolveObligatorias(
-    academicPeriodId,
-    values.curriculumNode,
-    values.requiredSubjects
-  )
+function toPromotionCriteriaRequest(gradeId: number | undefined, values: PromotionCriteria) {
   return {
     FK_GRADO: gradeId,
     NODO_CURRICULAR: values.curriculumNode,
     CANTIDAD_NIVELAR: values.maxFailedRecovery,
-    ASIGNATURA_OBLIGATORIA: obligatorias.length > 0 ? "S" : "N",
+    ASIGNATURA_OBLIGATORIA: values.requiredSubjects.length > 0 ? "S" : "N",
     APROBACION_PROMEDIO: values.applyAverageApproval ? "S" : "N",
     DESEMPENHO_MIN_GENERAL: values.basePercentage,
     DESEMPENHO_MINIMO: values.minimumSubjectPercentage,
     MAX_ASIG_PROMEDIO: values.maxFailedForAverage,
     MINIMO_INASISTENCIAS: values.absencePercentage,
     MAX_ASIG_NIVELAR_PROM: values.maxLeveledSubjects,
-    // `p_obligatorias` es `BIGINT[]` (V73) — se manda el array de ids tal
+    // `p_obligatorias` es `BIGINT[]` (V73) — el select ya trabaja por id
+    // (RequiredSubjectsField/SubjectsMultiSelect), así que se manda tal
     // cual. NO comparar con SCALES en create-rating-scales-bulk.ts: ese sí
     // es JSONB (objetos con nombre/tipoId/...) y se stringifica.
-    OBLIGATORIAS: obligatorias,
+    OBLIGATORIAS: values.requiredSubjects,
   }
 }
 
@@ -56,7 +47,7 @@ async function updatePromotionCriteria({
   gradeId,
   values,
 }: UpdatePromotionCriteriaInput): Promise<MutationResult> {
-  const body = await toPromotionCriteriaRequest(academicPeriodId, gradeId, values)
+  const body = toPromotionCriteriaRequest(gradeId, values)
   return api.put(
     `/eval-col/periodos/${academicPeriodId}/criterio-promocion`,
     body

@@ -96,7 +96,7 @@ export function TabAreaSubject({ academicPeriodId }: TabAreaSubjectProps) {
           ) : (
             <>
               <CreateAreaSubjectDialog academicPeriodId={academicPeriodId} />
-              <ExportAreaSubjectsDialog filters={queryFilters} />
+              <ExportAreaSubjectsDialog academicPeriodId={academicPeriodId} />
             </>
           )}
         </div>

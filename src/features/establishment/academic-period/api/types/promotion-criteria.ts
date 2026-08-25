@@ -7,7 +7,7 @@ export interface PromotionCriteria {
   basePercentage: number
   minimumSubjectPercentage: number
   maxFailedForAverage: number
-  requiredSubjects: string[]
+  requiredSubjects: number[]
 }
 
 export interface MutationResult {

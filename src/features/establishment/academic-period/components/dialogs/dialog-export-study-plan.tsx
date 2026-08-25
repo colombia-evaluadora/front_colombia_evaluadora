@@ -23,16 +23,17 @@ import {
 import { Button } from "@/components/ui/button"
 
 import { useExportStudyPlan } from "@/features/establishment/academic-period/api/mutations/export-study-plan"
-import type {
-  ExportFormat,
-  StudyPlanQueryFilters,
-} from "@/features/establishment/academic-period/api/types/study-plan"
+import type { ExportFormat } from "@/features/establishment/academic-period/api/types/study-plan"
 
 interface ExportStudyPlanDialogProps {
-  filters: StudyPlanQueryFilters
+  academicPeriodId?: number
 }
 
-export function ExportStudyPlanDialog({ filters }: ExportStudyPlanDialogProps) {
+// Reusa la MISMA función del listado (`fn_plan_reporte_listar`, sin paginar)
+// que alimenta esta pantalla, pero cruzando TODOS los grados del periodo —
+// no solo el grado que se está editando. Sin filtros, igual que periodo
+// académico/evaluación.
+export function ExportStudyPlanDialog({ academicPeriodId }: ExportStudyPlanDialogProps) {
   const [open, setOpen] = useState(false)
   const { notify } = useNotify()
 
@@ -46,14 +47,11 @@ export function ExportStudyPlanDialog({ filters }: ExportStudyPlanDialogProps) {
         notify(result.message)
         setOpen(false)
       },
-      onError: () => {
-        notify("No se pudo exportar: todavía no hay endpoint para esto.", { variant: "error" })
-      },
     },
   })
 
   function handleExport(format: ExportFormat) {
-    exportAll.mutate({ filters, format })
+    exportAll.mutate({ format, filters: { academicPeriodId } })
   }
 
   const pendingFormat = exportAll.isPending ? exportAll.variables?.format : undefined
@@ -82,7 +80,7 @@ export function ExportStudyPlanDialog({ filters }: ExportStudyPlanDialogProps) {
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>
-            Elige un formato para exportar todo el plan de estudio.
+            Elige un formato para exportar todo el plan de estudio del periodo.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="sm:justify-between">

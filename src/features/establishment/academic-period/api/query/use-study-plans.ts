@@ -22,7 +22,9 @@ interface UseStudyPlansQueryParams {
 // periodo); `personalizado` dice cuál de los dos es.
 interface StudyPlanRow {
   codigo: number
+  asignatura_id: number
   asignatura: string
+  enfasis_nombre: string | null
   intensidad_horaria: number
   influencia_area: number
   numero_creditos: number
@@ -41,7 +43,8 @@ interface StudyPlanRawResponse {
 function toStudyPlanItem(row: StudyPlanRow): StudyPlanItem {
   return {
     codigo: row.codigo,
-    asignatura: row.asignatura,
+    asignaturaId: row.asignatura_id,
+    asignatura: row.enfasis_nombre ? `${row.asignatura} (${row.enfasis_nombre})` : row.asignatura,
     intensidadHoraria: row.intensidad_horaria,
     influenciaArea: row.influencia_area,
     numeroCreditos: row.numero_creditos,

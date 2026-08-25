@@ -21,16 +21,16 @@ import {
 import { Button } from "@/components/ui/button"
 
 import { useExportAreaSubjects } from "@/features/establishment/academic-period/api/mutations/export-area-subjects"
-import type {
-  AreaSubjectsQueryFilters,
-  ExportFormat,
-} from "@/features/establishment/academic-period/api/types/area-subject"
+import type { ExportFormat } from "@/features/establishment/academic-period/api/types/area-subject"
 
 interface ExportAreaSubjectsDialogProps {
-  filters: AreaSubjectsQueryFilters
+  academicPeriodId?: number
 }
 
-export function ExportAreaSubjectsDialog({ filters }: ExportAreaSubjectsDialogProps) {
+// Reusa la MISMA función del listado (`fn_area_subject_reporte_listar`, sin
+// paginar), cruzando TODAS las áreas del periodo. Sin filtros, igual que
+// periodo académico/evaluación.
+export function ExportAreaSubjectsDialog({ academicPeriodId }: ExportAreaSubjectsDialogProps) {
   const [open, setOpen] = useState(false)
   const { notify } = useNotify()
 
@@ -48,7 +48,7 @@ export function ExportAreaSubjectsDialog({ filters }: ExportAreaSubjectsDialogPr
   })
 
   function handleExport(format: ExportFormat) {
-    exportAll.mutate({ filters, format })
+    exportAll.mutate({ format, filters: { academicPeriodId } })
   }
 
   const pendingFormat = exportAll.isPending ? exportAll.variables?.format : undefined
@@ -61,7 +61,7 @@ export function ExportAreaSubjectsDialog({ filters }: ExportAreaSubjectsDialogPr
             variant="outline"
             color="muted"
             size="icon-sm"
-            aria-label="Exportar áreas/asignaturas filtradas"
+            aria-label="Exportar áreas, asignaturas y especialidades"
           />
         }
       >
@@ -71,8 +71,7 @@ export function ExportAreaSubjectsDialog({ filters }: ExportAreaSubjectsDialogPr
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>
-            Elige un formato para exportar todas las áreas/asignaturas que coincidan con la búsqueda
-            activa.
+            Elige un formato para exportar áreas, asignaturas y especialidades del periodo.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="sm:justify-between">

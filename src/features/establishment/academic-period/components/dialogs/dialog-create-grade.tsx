@@ -239,22 +239,24 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
   )
 
   const scheduleSubjects = useMemo<ScheduleSubject[]>(() => {
-    const colorByName = new Map<string, string>()
-    const abbreviationByName = new Map<string, string>()
+    // Por `id` de asignatura, no por nombre: el nombre puede repetirse entre
+    // distinto énfasis (y `item.asignatura` ya viene como "Nombre (Énfasis)"
+    // desde `toStudyPlanItem`, así que un lookup por nombre nunca matchearía).
+    const abbreviationById = new Map<number, string>()
+    const colorById = new Map<number, string>()
     for (const area of areaData?.rows ?? []) {
       for (const subject of area.subjects) {
-        abbreviationByName.set(subject.nombreInterno.toLowerCase(), subject.abreviacion)
-        if (!subject.color) continue
-        colorByName.set(subject.nombreInterno.toLowerCase(), subject.color)
-        colorByName.set(subject.abreviacion.toLowerCase(), subject.color)
+        if (subject.id == null) continue
+        abbreviationById.set(subject.id, subject.abreviacion)
+        if (subject.color) colorById.set(subject.id, subject.color)
       }
     }
     return (planData?.rows ?? []).map((item) => ({
       id: String(item.codigo),
       name: item.asignatura,
-      abbreviation: abbreviationByName.get(item.asignatura.toLowerCase()),
+      abbreviation: abbreviationById.get(item.asignaturaId),
       blocks: item.intensidadHoraria,
-      color: colorByName.get(item.asignatura.toLowerCase()) ?? DEFAULT_SUBJECT_COLOR,
+      color: colorById.get(item.asignaturaId) ?? DEFAULT_SUBJECT_COLOR,
     }))
   }, [planData, areaData])
 

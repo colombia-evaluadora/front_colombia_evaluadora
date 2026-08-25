@@ -7,21 +7,16 @@ import {
   extractWriteResultId,
   type WriteResultResponse,
 } from "@/features/establishment/academic-period/api/mutations/extract-write-result"
-import { resolvePlanAsignaturaId } from "@/features/establishment/academic-period/api/mutations/resolve-plan-asignatura-id"
 
 // Body PLANO con las llaves de `fn_plan_agregar`
 // (`POST /eval-col/grados/:ID/plan-asignaturas`, id_query 72).
 async function createStudyPlanItem(
   input: CreateStudyPlanItemRequest
 ): Promise<{ id: number }> {
-  const fkAsignatura = await resolvePlanAsignaturaId(
-    input.gradeId as number,
-    input.asignatura
-  )
   const raw = await api.post<WriteResultResponse>(
     `/eval-col/grados/${input.gradeId}/plan-asignaturas`,
     {
-      FK_ASIGNATURA: fkAsignatura,
+      FK_ASIGNATURA: input.asignaturaId,
       NUMERO_HORA: input.intensidadHoraria,
       INFLUENCIA_AREA: input.influenciaArea,
       NUMERO_CREDITO: input.numeroCreditos,
