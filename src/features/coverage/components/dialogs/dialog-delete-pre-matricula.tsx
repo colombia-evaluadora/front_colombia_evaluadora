@@ -1,6 +1,6 @@
 import { useState } from "react"
 
-import { CheckIcon, SpinnerIcon, TrashIcon, XIcon } from "@/components/ui/icons"
+import { SpinnerIcon, TrashIcon } from "@/components/ui/icons"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,6 +27,15 @@ export function DeletePreMatriculaDialog({ preMatricula }: DeletePreMatriculaDia
   const [open, setOpen] = useState(false)
   const { notify } = useNotify()
 
+  const fullName = [
+    preMatricula.firstName,
+    preMatricula.secondName,
+    preMatricula.lastName,
+    preMatricula.secondLastName,
+  ]
+    .filter(Boolean)
+    .join(" ")
+
   const deleteMutation = useDeletePreMatricula({
     mutationConfig: {
       onSuccess: (result) => {
@@ -52,39 +61,43 @@ export function DeletePreMatriculaDialog({ preMatricula }: DeletePreMatriculaDia
             variant="ghost"
             color="neutral"
             size="icon-sm"
-            aria-label={`Eliminar registro de ${preMatricula.firstName} ${preMatricula.lastName}`}
+            aria-label={`Eliminar registro de ${fullName}`}
           />
         }
       >
         <TrashIcon />
       </AlertDialogTrigger>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Eliminar</AlertDialogTitle>
+      <AlertDialogContent className="sm:max-w-sm">
+        <AlertDialogHeader className="sm:text-center">
+          <AlertDialogTitle>
+            ¿Deseas eliminar la Pre-Matricula de
+            <br />
+            {fullName}?
+          </AlertDialogTitle>
           <AlertDialogDescription>
-            Se eliminará permanentemente el registro de prematrícula de{" "}
-            <strong>
-              {preMatricula.firstName} {preMatricula.lastName}
-            </strong>
-            . Esta acción no se puede deshacer.
+            Una vez confirmes, esta acción no se podrá deshacer y la reserva quedará eliminada de
+            forma definitiva.
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <AlertDialogFooter>
+        <AlertDialogFooter className="sm:justify-center">
           <AlertDialogAction
+            className="w-20"
             color="destructive"
             disabled={deleteMutation.isPending}
             aria-busy={deleteMutation.isPending}
             onClick={() => deleteMutation.mutate(preMatricula.id)}
           >
-            {deleteMutation.isPending ? (
+            {deleteMutation.isPending && (
               <SpinnerIcon data-icon="inline-start" className="animate-spin" />
-            ) : (
-              <CheckIcon data-icon="inline-start" />
             )}
             Si
           </AlertDialogAction>
-          <AlertDialogCancel variant="fill" color="neutral" disabled={deleteMutation.isPending}>
-            <XIcon data-icon="inline-start" />
+          <AlertDialogCancel
+            className="w-20"
+            variant="fill"
+            color="neutral"
+            disabled={deleteMutation.isPending}
+          >
             No
           </AlertDialogCancel>
         </AlertDialogFooter>

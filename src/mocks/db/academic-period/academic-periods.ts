@@ -34,6 +34,7 @@ function seedPeriod(
   startDate: string,
   endDate: string,
   enrollmentDeadline: string,
+  reservationEnabled = true,
 ): AcademicPeriod {
   const sede = campusesDb[sedeIndex % campusesDb.length]
   const status = academicPeriodStatusesDb.find((item) => item.id === statusId)!
@@ -54,13 +55,21 @@ function seedPeriod(
     minFailedSubjects: null,
     name: `Año lectivo ${schoolYearId}`,
     isPrincipal: true,
+    // Por defecto los periodos sembrados aceptan reserva de cupos; el toggle
+    // del listado lo apaga. Alinear seed con el dominio evita undefined en la
+    // columna de badge "Inactivo"/"Activo".
+    reservationEnabled,
   }
 }
 
 export const academicPeriodsDb: AcademicPeriod[] = [
   seedPeriod(1, 0, 2026, 1, "2026-01-26", "2026-11-27", "2026-02-27"),
   seedPeriod(2, 1, 2026, 3, "2026-02-02", "2026-12-04", "2026-03-06"),
-  seedPeriod(3, 2, 2025, 2, "2025-01-27", "2025-11-28", "2025-02-28"),
+  // El tercer periodo arranca inactivo — así se ve cómo el badge muestra
+  // "Inactivo" y el botón de la columna Acciones cambia al "activar" (✓)
+  // en lugar del "desactivar" (X). El toggle del listado igual funciona
+  // contra los otros dos.
+  seedPeriod(3, 2, 2025, 2, "2025-01-27", "2025-11-28", "2025-02-28", false),
 ]
 
 function seedConfig(
@@ -68,11 +77,12 @@ function seedConfig(
   jornadaId: number,
   scheduleStartTime: string,
   scheduleEndTime: string,
+  reservationEnabled = true,
 ): AcademicPeriodConfig {
   return {
     academicPeriodId,
     jornadaId: jornadasDb.find((item) => item.id === jornadaId)!.id,
-    reservationEnabled: true,
+    reservationEnabled,
     defaultBlocksCount: 6,
     scheduleStartTime,
     scheduleEndTime,
@@ -85,5 +95,9 @@ function seedConfig(
 export const academicPeriodConfigsDb: AcademicPeriodConfig[] = [
   seedConfig(1, 1, "06:30", "12:30"),
   seedConfig(2, 2, "12:30", "18:30"),
-  seedConfig(3, 1, "06:30", "12:30"),
+  // El tercer periodo arranca con la config de reserva inactiva — para que
+  // el listado muestre el badge "Inactivo" y el botón de la columna
+  // Acciones cambie al "activar" (✓). El toggle del listado funciona
+  // contra los otros dos.
+  seedConfig(3, 1, "06:30", "12:30", false),
 ]

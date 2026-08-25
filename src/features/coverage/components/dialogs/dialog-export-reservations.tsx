@@ -21,7 +21,10 @@ import {
 import { Button } from "@/components/ui/button"
 
 import { useExportReservations } from "@/features/coverage/api/mutations/export-reservations"
-import type { ExportFormat, ReservationsQueryFilters } from "@/features/coverage/api/types/reservation"
+import type {
+  ExportFormat,
+  ReservationsQueryFilters,
+} from "@/features/coverage/api/types/reservation"
 
 interface ExportReservationsDialogProps {
   filters: ReservationsQueryFilters
@@ -54,11 +57,17 @@ export function ExportReservationsDialog({ filters }: ExportReservationsDialogPr
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
-        render={<Button variant="outline" size="sm" aria-label="Exportar reservas filtradas" />}
-      >
-        <FileDownloadOutlinedIcon data-icon="inline-start" />
-        <span className="sr-only md:not-sr-only">Exportar</span>
-      </DialogTrigger>
+        render={
+          <Button
+            variant="outline"
+            color="muted"
+            size="icon-sm"
+            aria-label="Exportar reservas filtradas"
+          >
+            <FileDownloadOutlinedIcon />
+          </Button>
+        }
+      />
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>

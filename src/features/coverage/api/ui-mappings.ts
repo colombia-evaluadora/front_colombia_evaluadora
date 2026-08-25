@@ -60,3 +60,41 @@ export const RESERVATION_GROUP_BY_LABELS: Record<ReservationGroupBy, string> = {
 export function formatGrade(grade: number): string {
   return `${grade}°`
 }
+
+// ── Catálogos de Pre-Matrícula ────────────────────────────────────────────────
+// Se comparten entre los formularios/dialogs y los mocks de MSW para que las
+// opciones mostradas coincidan siempre con los datos generados.
+
+export const DOCUMENT_TYPE_OPTIONS = [
+  "CC Cédula de Ciudadanía",
+  "TI Tarjeta de Identidad",
+  "CE Cédula de Extranjería",
+  "RC Registro Civil",
+]
+
+export const GENDER_OPTIONS = ["Masculino", "Femenino"]
+
+export const RESIDENCE_OPTIONS = [
+  "Bogotá",
+  "Medellín",
+  "Cali",
+  "Cartagena",
+  "Barranquilla",
+  "Bucaramanga",
+  "Manizales",
+  "Pereira",
+  "Santa Marta",
+  "Ibagué",
+]
+
+export const RELATIONSHIP_OPTIONS = [
+  "Padre",
+  "Madre",
+  "Abuelo/a",
+  "Tío/a",
+  "Hermano/a",
+  "Tutor legal",
+]
+
+/** Grados posibles: 0 (transición) a 11. */
+export const GRADE_OPTIONS = Array.from({ length: 12 }, (_, grade) => grade)
