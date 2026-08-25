@@ -77,6 +77,7 @@ export function TabEvaluationPeriods({ academicPeriodId }: TabEvaluationPeriodsP
             <ExportSelectedEvaluationPeriodsDialog
               selectedIds={selectedCodigos}
               resetSelection={resetSelection}
+              academicPeriodId={academicPeriodId}
             />
           </>
         ) : (
