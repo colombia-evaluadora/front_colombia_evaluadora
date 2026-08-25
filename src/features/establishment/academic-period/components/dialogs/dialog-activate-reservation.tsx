@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button"
 
 import { useUpdateAcademicPeriodReservation } from "@/features/establishment/academic-period/api/mutations/update-academic-period-reservation"
 import { useAcademicPeriodQuery } from "@/features/establishment/academic-period/api/query/use-academic-period"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 import type { AcademicPeriod, CreateAcademicPeriodRequest } from "@/features/establishment/academic-period/api/types/academic-period"
 
 interface ActivateReservationDialogProps {
@@ -55,9 +56,10 @@ export function ActivateReservationDialog({ period }: ActivateReservationDialogP
   const { data: detail, isFetching, isError, error } = useAcademicPeriodQuery(
     shouldFetch ? period.id : undefined,
   )
+  const { puedeEditar } = useMenuPermission("PERIODOS_ACADEMICOS")
 
-  // Espejo del `DeactivateReservationDialog`: solo aplica si está inactivo.
-  const canActivate = !period.reservationEnabled
+  const hasDateRange = Boolean(period.startDate && period.endDate)
+  const canActivate = !period.reservationEnabled && hasDateRange && puedeEditar
 
   useEffect(() => {
     if (open) setShouldFetch(true)
@@ -106,11 +108,17 @@ export function ActivateReservationDialog({ period }: ActivateReservationDialogP
         <AlertDialogHeader>
           <AlertDialogTitle>Activar reserva de cupos</AlertDialogTitle>
           <AlertDialogDescription>
-            Se volverá a permitir el periodo de reservas del periodo{" "}
-            <strong>{period.name}</strong>. Los usuarios podrán realizar
-            solicitudes de cupo nuevamente y el periodo volverá a aparecer en el
-            listado de establecimientos con cupos disponibles para reserva. La
-            acción quedará registrada en el historial del sistema.
+            {hasDateRange ? (
+              <>
+                Se volverá a permitir el periodo de reservas del periodo{" "}
+                <strong>{period.name}</strong>. Los usuarios podrán realizar
+                solicitudes de cupo nuevamente y el periodo volverá a aparecer en el
+                listado de establecimientos con cupos disponibles para reserva. La
+                acción quedará registrada en el historial del sistema.
+              </>
+            ) : (
+              "Define una fecha de inicio y una fecha de finalización antes de activar el periodo de reservas."
+            )}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
