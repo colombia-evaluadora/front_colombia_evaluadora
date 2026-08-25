@@ -82,7 +82,7 @@ export function TabEvaluationPeriods({ academicPeriodId }: TabEvaluationPeriodsP
         ) : (
           <>
             <CreateEvaluationPeriodDialog academicPeriodId={academicPeriodId} />
-            <ExportEvaluationPeriodsDialog filters={{}} />
+            <ExportEvaluationPeriodsDialog filters={{}} academicPeriodId={academicPeriodId} />
           </>
         )}
       </div>

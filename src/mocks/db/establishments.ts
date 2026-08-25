@@ -90,7 +90,7 @@ function createMunicipality(): Municipality {
 
   return {
     id: municipality.id,
-    code: String(municipality.id),
+    code: municipality.code,
     name: municipality.name,
     department: {
       id: municipality.department.id,
