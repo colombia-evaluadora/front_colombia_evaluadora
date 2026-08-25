@@ -1,14 +1,14 @@
 import type { ColumnDef } from "@tanstack/react-table"
 
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { DataTableColumnHeader } from "@/components/data-table"
 import { Checkbox } from "@/components/ui/checkbox"
-import { EyeIcon, PencilIcon, CheckCircleIcon, XCircleIcon } from "@/components/ui/icons"
+import { CheckCircleFillIcon, ProhibitIcon } from "@/components/ui/icons"
 
 import { formatGrade } from "@/features/coverage/api/ui-mappings"
 import type { PreMatricula, PreMatriculaStatus } from "@/features/coverage/api/types/pre-matricula"
 import { DeletePreMatriculaDialog } from "@/features/coverage/components/dialogs/dialog-delete-pre-matricula"
+import { DetailPreMatriculaDialog } from "@/features/coverage/components/dialogs/dialog-detail-pre-matricula"
 
 const PRE_MATRICULA_STATUS_LABEL: Record<PreMatriculaStatus, string> = {
   con_cupo: "Con cupo",
@@ -102,9 +102,9 @@ export const columnsPreMatricula: ColumnDef<PreMatricula>[] = [
         <span className="flex items-center gap-1.5 tabular-nums">
           {formatGrade(effectiveTargetGrade)}
           {approved ? (
-            <CheckCircleIcon className="size-4 text-green" />
+            <CheckCircleFillIcon className="size-4 text-green" />
           ) : (
-            <XCircleIcon className="size-4 text-red" />
+            <ProhibitIcon className="size-4 text-red" />
           )}
         </span>
       )
@@ -127,30 +127,8 @@ export const columnsPreMatricula: ColumnDef<PreMatricula>[] = [
     header: () => <span className="sr-only">Acciones</span>,
     cell: ({ row }) => (
       <div className="flex items-center justify-end gap-1">
-        <Button
-          type="button"
-          variant="ghost"
-          color="neutral"
-          size="icon-sm"
-          aria-label={`Ver detalle de ${row.original.firstName} ${row.original.lastName}`}
-          onClick={() => {
-            // TODO: abrir sheet/dialog de detalle
-          }}
-        >
-          <EyeIcon />
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          color="neutral"
-          size="icon-sm"
-          aria-label={`Editar ${row.original.firstName} ${row.original.lastName}`}
-          onClick={() => {
-            // TODO: abrir sheet/dialog de edición
-          }}
-        >
-          <PencilIcon />
-        </Button>
+        <DetailPreMatriculaDialog preMatricula={row.original} />
+        <DetailPreMatriculaDialog preMatricula={row.original} variant="pencil" />
         <DeletePreMatriculaDialog preMatricula={row.original} />
       </div>
     ),

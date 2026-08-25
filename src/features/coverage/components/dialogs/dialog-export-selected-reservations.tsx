@@ -57,12 +57,18 @@ export function ExportSelectedReservationsDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
-        render={<Button color="primary" size="sm" aria-label="Exportar reservas seleccionadas" />}
-      >
-        <FileDownloadOutlinedIcon data-icon="inline-start" />
-        <span className="sr-only md:not-sr-only">Exportar selección</span>
-        <span>· {selectedIds.length}</span>
-      </DialogTrigger>
+        render={
+          <Button
+            variant="outline"
+            color="muted"
+            size="sm"
+            aria-label={`Exportar ${selectedIds.length} reservas seleccionadas`}
+          >
+            <FileDownloadOutlinedIcon data-icon="inline-start" />
+            <span className="tabular-nums">({selectedIds.length})</span>
+          </Button>
+        }
+      />
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>

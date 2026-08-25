@@ -29,6 +29,17 @@ export const ACADEMIC_PERIOD_STATUS_BADGE: Record<AcademicPeriodStatus, BadgePro
   C: { variant: "soft", color: "destructive" },
 }
 
+// Estado del flag `reservationEnabled` (período de reserva de cupos). Es
+// independiente del `ESTADOPERIODO` de arriba: "Activo" significa "el periodo
+// actualmente permite nuevas solicitudes de cupo"; "Inactivo" lo contrario.
+export const RESERVATION_STATUS_BADGE: Record<
+  "active" | "inactive",
+  BadgeProps
+> = {
+  active: { variant: "soft", color: "success" },
+  inactive: { variant: "soft", color: "muted" },
+}
+
 export const EVALUATION_PERIOD_STATUSES: EvaluationPeriodStatus[] = [
   "1",
   "2",

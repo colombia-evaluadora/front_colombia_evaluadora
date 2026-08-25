@@ -15,6 +15,9 @@ interface EntityMessages {
   deleted: string
   /** Borrado múltiple desde la barra de herramientas de la tabla. */
   deletedMany?: (count: number) => string
+  /** Mensaje específico cuando una acción puntual no encaja en
+   *  created/updated/deleted (p. ej. "desactivar reserva de cupos"). */
+  deactivated?: string
 }
 
 export const SUCCESS_MESSAGES = {
@@ -53,6 +56,10 @@ export const SUCCESS_MESSAGES = {
       count === 1
         ? "El periodo académico se eliminó correctamente."
         : `Los ${count} periodos académicos se eliminaron correctamente.`,
+    // Confirmación del toggle que desactiva el periodo de reserva de cupos.
+    // Se expone por separado de `updated` porque el usuario lo dispara sin
+    // editar el resto de la configuración.
+    deactivated: "El periodo de reserva de cupos se desactivó correctamente.",
   },
   evaluationPeriod: {
     created: "El periodo de evaluación se creó correctamente.",
@@ -119,5 +126,10 @@ export const SUCCESS_MESSAGES = {
     created: "El horario se guardó correctamente.",
     updated: "El horario se guardó correctamente.",
     deleted: "El horario se eliminó correctamente.",
+  },
+  enrollment: {
+    created: "La inscripción se registró correctamente.",
+    updated: "La inscripción se actualizó correctamente.",
+    deleted: "La inscripción se eliminó correctamente.",
   },
 } satisfies Record<string, EntityMessages>
