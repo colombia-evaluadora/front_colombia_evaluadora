@@ -66,6 +66,7 @@ function toAcademicPeriodDetail(row: AcademicPeriodDetailRow): AcademicPeriodDet
     minFailedSubjects: null,
     name: row.name,
     isPrincipal: false,
+    reservationEnabled: row.reserva === "S",
     config: {
       academicPeriodId: row.id,
       jornadaId: row.jornada_id,
