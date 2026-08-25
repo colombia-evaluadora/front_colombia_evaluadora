@@ -1,42 +1,16 @@
 import type { ColumnDef, Table } from "@tanstack/react-table"
 import { CaretDownIcon, CaretRightIcon } from "@/components/ui/icons"
 
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { DataTableColumnHeader } from "@/components/data-table"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
-import {
-  EMPLOYEE_STATUS_BADGE,
-  EMPLOYEE_STATUS_LABELS,
-} from "@/features/establishment/employees/api/ui-mappings"
+import { renderStatusCell } from "@/features/establishment/employees/components/table/columns-employees"
 import type { EmployeeListItem } from "@/features/establishment/employees/api/types/employee"
-import type { PermissionStatus } from "@/features/establishment/institution/api/types/permission"
 
 interface CreateColumnsOptions {
   expandedId: number | null
   onToggleExpand: (employee: EmployeeListItem) => void
-}
-
-/**
- * Une las etiquetas legibles de los estados del funcionario con comas.
- * Vacío cuando el funcionario aún no tiene permisos asociados. Replica
- * el patrón del módulo de establecimiento para mantener la misma UX.
- */
-function formatStatusLabels(statuses: EmployeeListItem["statuses"]) {
-  if (statuses.length === 0) {
-    return "—"
-  }
-  return statuses.map((status) => EMPLOYEE_STATUS_LABELS[status]).join(", ")
-}
-
-/**
- * Color del badge cuando hay varios estados mezclados: si alguno es
- * `SUSPENDED` mostramos destructive; si todos son `ACTIVE`, success.
- */
-function pickStatusColor(statuses: EmployeeListItem["statuses"]): "success" | "destructive" {
-  return statuses.includes("SUSPENDED" satisfies PermissionStatus) ? "destructive" : "success"
 }
 
 export function createAcademicAssignmentColumns({
@@ -107,42 +81,9 @@ export function createAcademicAssignmentColumns({
       accessorKey: "status",
       meta: { label: "Estado" },
       header: ({ column }) => <DataTableColumnHeader column={column} title="Estado" />,
-      cell: ({ row }) => {
-        const statuses = row.original.statuses
-        const fullText = formatStatusLabels(statuses)
-
-        if (statuses.length === 0) {
-          return (
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <Badge variant="soft" color="neutral" className="font-normal">
-                    {fullText}
-                  </Badge>
-                }
-              />
-              <TooltipContent>Sin permisos asignados</TooltipContent>
-            </Tooltip>
-          )
-        }
-
-        return (
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <Badge
-                  {...EMPLOYEE_STATUS_BADGE[statuses[0]]}
-                  color={pickStatusColor(statuses)}
-                  className="max-w-[14rem] truncate font-normal"
-                >
-                  {fullText}
-                </Badge>
-              }
-            />
-            <TooltipContent>{fullText}</TooltipContent>
-          </Tooltip>
-        )
-      },
+      cell: ({ row }) => (
+        <span className="text-sm text-foreground">{renderStatusCell(row.original.statuses)}</span>
+      ),
     },
   ]
 }

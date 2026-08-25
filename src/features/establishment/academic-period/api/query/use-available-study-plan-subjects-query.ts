@@ -8,6 +8,7 @@ interface AvailableStudyPlanSubjectRow {
   nombre: string
   area_id: number
   area_nombre: string
+  enfasis_nombre: string | null
 }
 interface AvailableStudyPlanSubjectsResponse {
   rows: AvailableStudyPlanSubjectRow[]
@@ -24,7 +25,7 @@ async function fetchAvailableStudyPlanSubjects(
   )
   return (raw.rows ?? []).map((row) => ({
     id: row.id,
-    nombre: row.nombre,
+    label: row.enfasis_nombre ? `${row.nombre} (${row.enfasis_nombre})` : row.nombre,
     areaId: row.area_id,
     areaNombre: row.area_nombre,
   }))

@@ -23,7 +23,11 @@ interface StudyPlanWriteBody {
 function toRawRow(row: StudyPlanRecord, totalCount?: number) {
   return {
     codigo: row.codigo,
+    asignatura_id: row.asignaturaId,
     asignatura: row.asignatura,
+    // No hay tabla mock de énfasis (solo `enfasisId` en subjectsDb, sin
+    // nombre) — real en el backend, se deja null acá.
+    enfasis_nombre: null,
     intensidad_horaria: row.intensidadHoraria,
     influencia_area: row.influenciaArea,
     numero_creditos: row.numeroCreditos,
@@ -58,18 +62,26 @@ export const studyPlansHandlers = [
     const gradeId = Number(params.gradeId)
 
     const enPlan = new Set(
-      studyPlansDb.filter((p) => p.gradeId === gradeId).map((p) => p.asignatura)
+      studyPlansDb.filter((p) => p.gradeId === gradeId).map((p) => p.asignaturaId)
     )
 
-    const disponibles: { id: number; nombre: string; area_id: number; area_nombre: string }[] = []
+    const disponibles: {
+      id: number
+      nombre: string
+      area_id: number
+      area_nombre: string
+      enfasis_nombre: string | null
+    }[] = []
     for (const subject of subjectsDb) {
-      if (enPlan.has(subject.nombreInterno)) continue
+      if (enPlan.has(subject.id)) continue
       const area = areasDb.find((a) => a.id === subject.areaId)
       disponibles.push({
         id: subject.id,
         nombre: subject.nombreInterno,
         area_id: subject.areaId,
         area_nombre: area?.nombreInterno ?? "",
+        // No hay tabla mock de énfasis con nombre resuelto — real en el backend.
+        enfasis_nombre: null,
       })
     }
 
@@ -102,6 +114,7 @@ export const studyPlansHandlers = [
     const codigo = nextStudyPlanId()
     const record: StudyPlanRecord = {
       codigo,
+      asignaturaId: body.FK_ASIGNATURA ?? 0,
       asignatura: subjectName(body.FK_ASIGNATURA),
       intensidadHoraria: body.NUMERO_HORA,
       influenciaArea: body.INFLUENCIA_AREA,
@@ -133,6 +146,7 @@ export const studyPlansHandlers = [
     }
     studyPlansDb[index] = {
       ...studyPlansDb[index],
+      asignaturaId: body.FK_ASIGNATURA ?? studyPlansDb[index].asignaturaId,
       asignatura: body.FK_ASIGNATURA != null ? subjectName(body.FK_ASIGNATURA) : studyPlansDb[index].asignatura,
       intensidadHoraria: body.NUMERO_HORA,
       influenciaArea: body.INFLUENCIA_AREA,

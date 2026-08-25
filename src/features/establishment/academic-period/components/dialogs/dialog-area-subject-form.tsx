@@ -298,9 +298,29 @@ export function AreaSubjectFormDialog({
     )
   }
 
+  // El backend (`fn_subject_guardar_bulk`) rechaza abreviaciones repetidas
+  // dentro de la misma área — se valida acá también para avisar antes de
+  // guardar, no solo cuando falle el submit.
+  function findDuplicateAbreviacion(
+    abreviacion: string,
+    excludeIndex?: number,
+  ): SubjectDraft | undefined {
+    const needle = abreviacion.trim().toUpperCase()
+    if (!needle) return undefined
+    return subjects.find(
+      (item, i) => i !== excludeIndex && item.abreviacion.trim().toUpperCase() === needle,
+    )
+  }
+
   function commitDraft() {
     if (!draft.asignaturaGeneral.trim() && !draft.nombreInterno.trim()) {
       showNotice("Elige una asignatura general o completa el nombre interno.", {
+        variant: "error",
+      })
+      return
+    }
+    if (findDuplicateAbreviacion(draft.abreviacion)) {
+      showNotice(`Ya existe una asignatura con la abreviación "${draft.abreviacion}" en esta área.`, {
         variant: "error",
       })
       return
@@ -405,6 +425,13 @@ export function AreaSubjectFormDialog({
       showNotice("Elige una asignatura general o completa el nombre interno.", {
         variant: "error",
       })
+      return
+    }
+    if (findDuplicateAbreviacion(editDraft.abreviacion, editingIndex)) {
+      showNotice(
+        `Ya existe una asignatura con la abreviación "${editDraft.abreviacion}" en esta área.`,
+        { variant: "error" },
+      )
       return
     }
     const next = editDraft

@@ -6,8 +6,6 @@ import type {
   MutationResult,
   UpdateStudyPlanItemRequest,
 } from "@/features/establishment/academic-period/api/types/study-plan"
-import { resolvePlanAsignaturaId } from "@/features/establishment/academic-period/api/mutations/resolve-plan-asignatura-id"
-
 interface UpdateStudyPlanItemInput {
   codigo: number
   gradeId: number
@@ -20,12 +18,10 @@ interface UpdateStudyPlanItemInput {
 // que es justo lo que significa `personalizar = false` en el diálogo.
 async function updateStudyPlanItem({
   codigo,
-  gradeId,
   values,
 }: UpdateStudyPlanItemInput): Promise<MutationResult> {
-  const fkAsignatura = await resolvePlanAsignaturaId(gradeId, values.asignatura)
   return api.put(`/eval-col/plan-asignaturas/${codigo}`, {
-    FK_ASIGNATURA: fkAsignatura,
+    FK_ASIGNATURA: values.asignaturaId,
     NUMERO_HORA: values.intensidadHoraria,
     INFLUENCIA_AREA: values.influenciaArea,
     NUMERO_CREDITO: values.numeroCreditos,

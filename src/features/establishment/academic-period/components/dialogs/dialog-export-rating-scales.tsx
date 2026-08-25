@@ -19,38 +19,19 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Field, FieldLabel } from "@/components/ui/field"
-import {
-  ComboboxField,
-  ComboboxFieldContent,
-  ComboboxFieldItem,
-  ComboboxFieldTrigger,
-  ComboboxFieldValue,
-  ComboboxGroup,
-} from "@/components/ui/combobox"
 
 import { useExportRatingScales } from "@/features/establishment/academic-period/api/mutations/export-rating-scales"
-import { useTeachingLevelsQuery } from "@/features/establishment/academic-period/api/query/use-teaching-levels"
-import { useRatingScaleTypesQuery } from "@/features/establishment/academic-period/api/query/use-rating-scale-types"
 import type { ExportFormat } from "@/features/establishment/academic-period/api/types/rating-scales"
 
 interface ExportRatingScalesDialogProps {
   academicPeriodId?: number
 }
 
-const ALL_VALUE = ""
-
-// Reusa la MISMA función del listado (`fn_escala_listar`, V139), que ya trae
-// todo el periodo sin paginar — con nivel de enseñanza y tipo como filtros
-// opcionales antes de exportar.
+// Reusa la MISMA función del listado (`fn_escala_listar`), que ya trae todo
+// el periodo sin paginar. Sin filtros, igual que periodo académico/evaluación.
 export function ExportRatingScalesDialog({ academicPeriodId }: ExportRatingScalesDialogProps) {
   const [open, setOpen] = useState(false)
-  const [teachingLevelId, setTeachingLevelId] = useState("")
-  const [tipo, setTipo] = useState("")
   const { notify } = useNotify()
-
-  const { data: teachingLevels = [] } = useTeachingLevelsQuery()
-  const { data: tipoOptions = [] } = useRatingScaleTypesQuery()
 
   const exportAll = useExportRatingScales({
     mutationConfig: {
@@ -66,14 +47,7 @@ export function ExportRatingScalesDialog({ academicPeriodId }: ExportRatingScale
   })
 
   function handleExport(format: ExportFormat) {
-    exportAll.mutate({
-      format,
-      filters: {
-        academicPeriodId,
-        teachingLevelId: teachingLevelId ? Number(teachingLevelId) : undefined,
-        tipo: tipo || undefined,
-      },
-    })
+    exportAll.mutate({ format, filters: { academicPeriodId } })
   }
 
   const pendingFormat = exportAll.isPending ? exportAll.variables?.format : undefined
@@ -96,50 +70,9 @@ export function ExportRatingScalesDialog({ academicPeriodId }: ExportRatingScale
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>
-            Filtra (opcional) y elige un formato para exportar las escalas de valoración del
-            periodo.
+            Elige un formato para exportar las escalas de valoración del periodo.
           </DialogDescription>
         </DialogHeader>
-
-        <div className="flex flex-col gap-3">
-          <Field orientation="vertical" variant="outlined" className="gap-2">
-            <FieldLabel>Nivel de enseñanza</FieldLabel>
-            <ComboboxField value={teachingLevelId} onValueChange={(v) => setTeachingLevelId(v ?? "")}>
-              <ComboboxFieldTrigger size="sm" className="w-full">
-                <ComboboxFieldValue placeholder="Todos" />
-              </ComboboxFieldTrigger>
-              <ComboboxFieldContent>
-                <ComboboxGroup>
-                  <ComboboxFieldItem value={ALL_VALUE}>Todos</ComboboxFieldItem>
-                  {teachingLevels.map((level) => (
-                    <ComboboxFieldItem key={level.id} value={String(level.id)}>
-                      {level.nombre}
-                    </ComboboxFieldItem>
-                  ))}
-                </ComboboxGroup>
-              </ComboboxFieldContent>
-            </ComboboxField>
-          </Field>
-          <Field orientation="vertical" variant="outlined" className="gap-2">
-            <FieldLabel>Tipo de desempeño</FieldLabel>
-            <ComboboxField value={tipo} onValueChange={(v) => setTipo(v ?? "")}>
-              <ComboboxFieldTrigger size="sm" className="w-full">
-                <ComboboxFieldValue placeholder="Todos" />
-              </ComboboxFieldTrigger>
-              <ComboboxFieldContent>
-                <ComboboxGroup>
-                  <ComboboxFieldItem value={ALL_VALUE}>Todos</ComboboxFieldItem>
-                  {tipoOptions.map((option) => (
-                    <ComboboxFieldItem key={option.key} value={option.key}>
-                      {option.label}
-                    </ComboboxFieldItem>
-                  ))}
-                </ComboboxGroup>
-              </ComboboxFieldContent>
-            </ComboboxField>
-          </Field>
-        </div>
-
         <DialogFooter className="sm:justify-between">
           <DialogClose render={<Button size="sm" type="button" variant="ghost" />}>
             Cancelar

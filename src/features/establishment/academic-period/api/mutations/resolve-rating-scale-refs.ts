@@ -14,7 +14,7 @@ export interface RatingScaleRefs {
 // existe"): `tipoId` nunca llegaba en el body, así que crear/editar escalas
 // de valoración estaba completamente roto. Se re-resuelve justo antes de
 // guardar, catálogos compartidos entre todas las escalas del lote (no un
-// fetch por escala), mismo patrón que resolve-required-subjects.ts.
+// fetch por escala).
 export async function resolveRatingScaleRefs(
   scales: { tipo: string; iconografia: string }[]
 ): Promise<RatingScaleRefs[]> {

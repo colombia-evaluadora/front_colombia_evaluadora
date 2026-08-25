@@ -26,16 +26,6 @@ export interface AreaSubjectsQueryFilters {
   abreviacion?: string
 }
 
-// Filtros del reporte "Áreas, asignaturas y especialidades" (cruza TODAS las
-// áreas del periodo, a diferencia de la pestaña de edición que pagina).
-export interface AreaSubjectReportFilters {
-  academicPeriodId?: number
-  areaIds?: number[]
-  subjectIds?: number[]
-  specialtyIds?: number[]
-  includeInactive?: boolean
-}
-
 export interface AreaSubjectsQueryRequest {
   filters: AreaSubjectsQueryFilters
   sorting: { id: string; desc: boolean }[]

@@ -75,6 +75,8 @@ export async function downloadReport(
     // desenvuelve nada — así que sin el genérico el resultado quedaba
     // `unknown`. Pidiendo `AxiosResponse<Blob>` el tipo vuelve a coincidir
     // con lo que realmente llega en runtime.
+    console.log(`[reportApi] POST ${env.API_URL}/reportes/${key}`, { format, filters, sorting })
+
     const response = await reportApi.post<AxiosResponse<Blob>>(`/reportes/${key}`, {
       format,
       filters,

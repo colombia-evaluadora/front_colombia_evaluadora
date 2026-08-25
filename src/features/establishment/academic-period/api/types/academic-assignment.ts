@@ -31,15 +31,3 @@ export interface MutationResult {
   status: "ok" | "error"
   message: string
 }
-
-// Filtros del reporte "Asignación académica" (una fila por asignación
-// docente+grado+grupo+asignatura, cruza TODO el periodo — no solo la página
-// de docentes que se está viendo).
-export interface AcademicAssignmentReportFilters {
-  academicPeriodId?: number
-  teacherIds?: number[]
-  gradeIds?: number[]
-  subjectIds?: number[]
-  jornadaIds?: number[]
-  estado?: string
-}
