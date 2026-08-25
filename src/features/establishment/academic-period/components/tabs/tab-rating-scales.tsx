@@ -174,7 +174,7 @@ export function TabRatingScales({ academicPeriodId }: TabRatingScalesProps) {
         ) : (
           <>
             <CreateRatingScaleDialog academicPeriodId={academicPeriodId} />
-            <ExportRatingScalesDialog filters={{}} />
+            <ExportRatingScalesDialog academicPeriodId={academicPeriodId} />
           </>
         )}
       </div>

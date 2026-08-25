@@ -1,20 +1,27 @@
 import { useMutation } from "@tanstack/react-query"
 
-import { api } from "@/lib/api-client"
+import { downloadReport } from "@/lib/report-client"
 import type { MutationConfig } from "@/lib/react-query"
 import type {
   ExportFormat,
   ExportResult,
-  RatingScalesQueryFilters,
+  RatingScaleReportFilters,
 } from "@/features/establishment/academic-period/api/types/rating-scales"
 
 interface ExportRatingScalesInput {
-  filters: RatingScalesQueryFilters
+  filters: RatingScaleReportFilters
   format: ExportFormat
 }
 
 function exportRatingScales(input: ExportRatingScalesInput): Promise<ExportResult> {
-  return api.post("/rating-scales/export-all", input)
+  return downloadReport("escalas", {
+    format: input.format,
+    filters: {
+      FK_PERIODO: input.filters.academicPeriodId ?? null,
+      FK_NIVEL: input.filters.teachingLevelId ?? null,
+      TIPO: input.filters.tipo ?? null,
+    },
+  })
 }
 
 interface UseExportRatingScalesOptions {

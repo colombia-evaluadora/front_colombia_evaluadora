@@ -77,6 +77,15 @@ export interface RatingScalesQueryFilters {
   tipo?: RatingScaleType[]
 }
 
+// Filtros del reporte de escalas de valoración: `fn_escala_listar` ya trae
+// TODO el periodo sin paginar, con nivel de enseñanza y tipo como filtros
+// opcionales (V139 agregó el de tipo).
+export interface RatingScaleReportFilters {
+  academicPeriodId?: number
+  teachingLevelId?: number
+  tipo?: RatingScaleType
+}
+
 export interface RatingScalesQueryRequest {
   filters: RatingScalesQueryFilters
   sorting: { id: string; desc: boolean }[]
