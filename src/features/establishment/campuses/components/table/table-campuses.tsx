@@ -46,7 +46,7 @@ interface CampusesDataTableProps {
 
 export function CampusesDataTable({ onEditCampus, title, action }: CampusesDataTableProps) {
   const { notify } = useNotify()
-  const { puedeEliminar } = useMenuPermission("SEDES")
+  const { puedeEliminar } = useMenuPermission("SEDES_EDUCATIVAS")
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
 
   const { filters, queryFilters, applyFilters, clearAllFilters, activeFilterCount } =

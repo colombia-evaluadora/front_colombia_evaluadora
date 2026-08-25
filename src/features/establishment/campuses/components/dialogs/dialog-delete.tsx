@@ -31,18 +31,18 @@ export function DeleteCampusDialog({ campus }: DeleteCampusDialogProps) {
   const [open, setOpen] = useState(false)
   const navigate = campusesRoute.useNavigate()
   const { notify } = useNotify()
-  const { puedeEliminar } = useMenuPermission("SEDES")
+  const { puedeEliminar } = useMenuPermission("SEDES_EDUCATIVAS")
 
   const deleteMutation = useDelete({
     mutationConfig: {
       onSuccess: (result) => {
+        setOpen(false)
         if (result.status === "error") {
           notify(result.message, { variant: "error" })
           return
         }
 
         notify(SUCCESS_MESSAGES.campus.deleted)
-        setOpen(false)
         navigate({
           search: (prev) => ({
             ...prev,
@@ -52,6 +52,7 @@ export function DeleteCampusDialog({ campus }: DeleteCampusDialogProps) {
         })
       },
       onError: (error) => {
+        setOpen(false)
         notify(getErrorMessage(error), { variant: "error" })
       },
     },
