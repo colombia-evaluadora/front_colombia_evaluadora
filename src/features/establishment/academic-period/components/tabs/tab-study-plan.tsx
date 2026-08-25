@@ -80,6 +80,7 @@ export function TabStudyPlan({ academicPeriodId, gradeId }: TabStudyPlanProps) {
             <ExportSelectedStudyPlanItemsDialog
               selectedIds={selectedItemIds}
               resetSelection={resetSelection}
+              academicPeriodId={academicPeriodId}
             />
           </>
         ) : (

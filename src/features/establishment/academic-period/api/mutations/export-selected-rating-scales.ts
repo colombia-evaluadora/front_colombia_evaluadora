@@ -10,14 +10,16 @@ import type {
 interface ExportSelectedRatingScalesInput {
   ids: number[]
   format: ExportFormat
+  /** Sin esto el reporte sale vacío — ver `export-selected-area-subjects.ts`. */
+  academicPeriodId?: number
 }
 
 function exportSelectedRatingScales(input: ExportSelectedRatingScalesInput): Promise<ExportResult> {
-  // Ver `export-selected-area-subjects.ts`: mismo patrón V69 sobre la fila
-  // pendiente `/escalas/reporte` del back.
+  // Mismo patrón V69 que el resto: `FK_PERIODO` acota (lo exige
+  // `fn_escala_listar`) e `ids` recorta la selección.
   return downloadReport("escalas", {
     format: input.format,
-    filters: { ids: input.ids },
+    filters: { FK_PERIODO: input.academicPeriodId ?? null, ids: input.ids },
   })
 }
 
