@@ -31,6 +31,27 @@ interface AcademicPeriodsListRequest {
   SORT_DIR: "asc" | "desc" | null
 }
 
+/**
+ * Los filtros del listado, listos para mandar al backend.
+ *
+ * Se exporta para que la EXPORTACIÓN mande exactamente lo mismo que la
+ * tabla. Si cada una armara su propio objeto, el reporte terminaría
+ * filtrando distinto de lo que el usuario está viendo — y peor, la
+ * diferencia solo se notaría comparando el PDF contra la pantalla.
+ *
+ * La paginación no entra: el reporte no pagina.
+ */
+export function toAcademicPeriodsFilters(
+  params: Omit<UseAcademicPeriodsQueryParams, "pageIndex" | "pageSize">,
+) {
+  const { PAGEINDEX: _i, PAGESIZE: _s, SORT_BY: _b, SORT_DIR: _d, ...filtros } = toListRequest({
+    ...params,
+    pageIndex: 0,
+    pageSize: 0,
+  })
+  return filtros
+}
+
 function toListRequest(
   params: UseAcademicPeriodsQueryParams
 ): AcademicPeriodsListRequest {

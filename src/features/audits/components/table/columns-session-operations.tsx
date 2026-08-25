@@ -2,6 +2,7 @@ import type { ColumnDef, Table } from "@tanstack/react-table"
 
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
+import { DataTableColumnHeader } from "@/components/data-table"
 
 import { OPERATION_TYPE_BADGE } from "@/features/audits/api/ui-mappings"
 import { useAuditOperationTypesQuery } from "@/features/audits/api/query/use-audit-operation-types-query"
@@ -49,7 +50,7 @@ export const columns: ColumnDef<SessionOperation>[] = [
     id: "tableSlug",
     accessorKey: "tableSlug",
     meta: { label: "Tabla" },
-    header: () => <span className="text-xs font-medium">Tabla</span>,
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Tabla" />,
     cell: ({ row }) => (
       <Badge variant="soft" color="muted">
         {row.original.tableSlug}
@@ -60,7 +61,7 @@ export const columns: ColumnDef<SessionOperation>[] = [
     id: "operation",
     accessorKey: "operation",
     meta: { label: "Operación" },
-    header: () => <span className="text-xs font-medium">Operación</span>,
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Operación" />,
     cell: ({ row }) => {
       const operation = row.getValue<OperationType>("operation")
       return <OperationBadgeCell operation={operation} />
@@ -70,7 +71,7 @@ export const columns: ColumnDef<SessionOperation>[] = [
     id: "detail",
     accessorKey: "entityName",
     meta: { label: "Detalle" },
-    header: () => <span className="text-xs font-medium">Detalle</span>,
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Detalle" />,
     cell: ({ row }) => {
       const op = row.original
       return (
@@ -85,7 +86,7 @@ export const columns: ColumnDef<SessionOperation>[] = [
     id: "occurredAt",
     accessorKey: "occurredAt",
     meta: { label: "Fecha" },
-    header: () => <span className="text-xs font-medium">Fecha</span>,
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Fecha" />,
     cell: ({ row }) => {
       const occurredAt = new Date(row.getValue<string>("occurredAt"))
       return (

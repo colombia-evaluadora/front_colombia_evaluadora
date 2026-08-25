@@ -28,9 +28,14 @@ import type {
 
 interface ExportEvaluationPeriodsDialogProps {
   filters: EvaluationPeriodsQueryFilters
+  /** Acota el reporte al periodo que se está viendo. */
+  academicPeriodId?: number
 }
 
-export function ExportEvaluationPeriodsDialog({ filters }: ExportEvaluationPeriodsDialogProps) {
+export function ExportEvaluationPeriodsDialog({
+  filters,
+  academicPeriodId,
+}: ExportEvaluationPeriodsDialogProps) {
   const [open, setOpen] = useState(false)
   const { notify } = useNotify()
 
@@ -48,7 +53,7 @@ export function ExportEvaluationPeriodsDialog({ filters }: ExportEvaluationPerio
   })
 
   function handleExport(format: ExportFormat) {
-    exportAll.mutate({ filters, format })
+    exportAll.mutate({ filters, format, academicPeriodId })
   }
 
   const pendingFormat = exportAll.isPending ? exportAll.variables?.format : undefined
