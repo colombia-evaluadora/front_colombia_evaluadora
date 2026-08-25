@@ -7,9 +7,32 @@ import { DataTableColumnHeader } from "@/components/data-table"
 
 import type { Campus } from "@/features/establishment/campuses/api/types/campus"
 import { DeleteCampusDialog } from "@/features/establishment/campuses/components/dialogs/dialog-delete"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 interface CampusColumnsOptions {
   onEdit: (campusId: number) => void
+}
+
+function ActionsCell({ campus, onEdit }: { campus: Campus; onEdit: (id: number) => void }) {
+  const { puedeEditar } = useMenuPermission("SEDES")
+
+  return (
+    <div className="flex items-center justify-end gap-1">
+      {puedeEditar ? (
+        <Button
+          type="button"
+          variant="ghost"
+          color="neutral"
+          size="icon-sm"
+          aria-label="Editar sede"
+          onClick={() => onEdit(campus.id)}
+        >
+          <PencilIcon />
+        </Button>
+      ) : null}
+      <DeleteCampusDialog campus={campus} />
+    </div>
+  )
 }
 
 export function createColumns({ onEdit }: CampusColumnsOptions): ColumnDef<Campus>[] {
@@ -90,21 +113,7 @@ export function createColumns({ onEdit }: CampusColumnsOptions): ColumnDef<Campu
   {
     id: "actions",
     header: () => <span className="sr-only">Acciones</span>,
-    cell: ({ row }) => (
-      <div className="flex items-center justify-end gap-1">
-        <Button
-          type="button"
-          variant="ghost"
-          color="neutral"
-          size="icon-sm"
-          aria-label="Editar sede"
-          onClick={() => onEdit(row.original.id)}
-        >
-          <PencilIcon />
-        </Button>
-        <DeleteCampusDialog campus={row.original} />
-      </div>
-    ),
+    cell: ({ row }) => <ActionsCell campus={row.original} onEdit={onEdit} />,
     enableSorting: false,
     enableHiding: false,
     size: 96,

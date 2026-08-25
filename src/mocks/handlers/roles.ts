@@ -5,9 +5,10 @@ import type {
   Role,
   UpdateRoleMenusResult,
 } from "@/features/administration/roles-menus/api/types/role-menu"
+import type { MenuPermission } from "@/features/navigation/api/types/menu-permission"
 
 import { findUserByToken } from "@/mocks/db/auth"
-import { navigationMenu } from "@/mocks/db/navigation"
+import { navigationMenu, type MockMenu } from "@/mocks/db/navigation"
 import { rolesDb } from "@/mocks/db/roles"
 
 /**
@@ -37,6 +38,30 @@ function rows<T>(data: T[], init?: ResponseInit) {
 
 /** Orden del menú de cada rol: la lista de ids tal como se guardó. */
 const roleMenuOrder = new Map<number, number[]>()
+
+// Códigos confirmados contra `{{baseUrl}}/eval-col/usuarios/permisos-menu`
+// real; el resto del catálogo mock no los tiene todavía, así que se derivan
+// del nombre solo para que el mock tenga algo consistente que devolver.
+const MENU_CODIGO_BY_ID: Record<number, string> = {
+  21: "FUNCIONARIOS",
+  13: "INSCRITOS",
+  16: "MATRICULA",
+  22: "PERIODOS_ACADEMICOS",
+  19: "ESTABLECIMIENTO",
+  20: "SEDES",
+}
+
+function menuCodigo(menu: MockMenu): string {
+  return (
+    MENU_CODIGO_BY_ID[menu.id] ??
+    menu.name
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "")
+      .toUpperCase()
+      .replace(/[^A-Z0-9]+/g, "_")
+      .replace(/^_+|_+$/g, "")
+  )
+}
 
 export const rolesHandlers = [
   http.get("/api/eval-col/roles", async () => {
@@ -102,6 +127,36 @@ export const rolesHandlers = [
             menuOrder: position === -1 ? menu.menuOrder : position,
           }
         }),
+    )
+  }),
+
+  http.get("/api/eval-col/usuarios/permisos-menu", async ({ request }) => {
+    await delay(150)
+
+    const token = request.headers.get("Authorization")?.replace(/^Bearer /i, "") ?? ""
+    const user = findUserByToken(token)
+    const roleId = user ? ROLE_ID_BY_TOKEN_ROLE[user.role] : undefined
+
+    if (roleId === undefined) {
+      return HttpResponse.json(
+        { message: "fn_list_menu_permisos: no hay usuario autenticado en el token" },
+        { status: 403 },
+      )
+    }
+
+    return rows<MenuPermission>(
+      navigationMenu
+        .filter((menu) => menu.roleIds.includes(roleId) && menu.path)
+        .map((menu) => ({
+          pk_tmenu: menu.id,
+          codigo: menuCodigo(menu),
+          nombre: menu.name,
+          path: menu.path!,
+          puede_crear: true,
+          puede_editar: true,
+          puede_eliminar: true,
+          puede_ver: true,
+        })),
     )
   }),
 

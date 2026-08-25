@@ -16,11 +16,12 @@ import {
 } from "@/components/ui/combobox"
 
 import { RATING_SCALE_TYPE_BADGE } from "@/features/establishment/academic-period/api/ui-mappings"
-import type {
-  RatingScale,
-  RatingScaleType,
-  RatingScaleTypeOption,
-  RatingSymbol,
+import {
+  bandaIdForLevel,
+  type RatingScale,
+  type RatingScaleType,
+  type RatingScaleTypeOption,
+  type RatingSymbol,
 } from "@/features/establishment/academic-period/api/types/rating-scales"
 import type { GradingRange } from "@/features/establishment/academic-period/components/grading-range"
 import {
@@ -57,6 +58,10 @@ interface CreateColumnsOptions {
   range: GradingRange
   symbols: RatingSymbol[]
   tipoOptions: RatingScaleTypeOption[]
+  /** Nivel de enseñanza de esta subtabla — resuelve el PK de banda correcto
+   *  para acciones (eliminar) cuando la fila viene de una escala agrupada
+   *  entre varios niveles (ver `bandaIdForLevel`). */
+  levelId: number
   /** Código de la escala en edición, o `null` si no hay ninguna. */
   editingCodigo: number | null
   draft: EditableScale | null
@@ -76,6 +81,7 @@ export function createRatingScaleDetailColumns({
   range,
   symbols,
   tipoOptions,
+  levelId,
   editingCodigo,
   draft,
   patchDraft,
@@ -300,7 +306,7 @@ export function createRatingScaleDetailColumns({
             >
               <PencilIcon />
             </Button>
-            <DeleteRatingScaleDialog scale={scale} />
+            <DeleteRatingScaleDialog scale={{ ...scale, codigo: bandaIdForLevel(scale, levelId) }} />
           </>
         )
       },

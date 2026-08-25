@@ -34,6 +34,7 @@ import { ExportCampusesDialog } from "@/features/establishment/campuses/componen
 import { ExportSelectedCampusesDialog } from "@/features/establishment/campuses/components/dialogs/dialog-export-selected"
 import { SearchCampuses } from "@/features/establishment/campuses/components/search/search-campuses"
 import { useNotify } from "@/components/notice/notice-context"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 interface CampusesDataTableProps {
   onEditCampus: (campusId: number) => void
@@ -45,6 +46,7 @@ interface CampusesDataTableProps {
 
 export function CampusesDataTable({ onEditCampus, title, action }: CampusesDataTableProps) {
   const { notify } = useNotify()
+  const { puedeEliminar } = useMenuPermission("SEDES")
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
 
   const { filters, queryFilters, applyFilters, clearAllFilters, activeFilterCount } =
@@ -130,21 +132,23 @@ export function CampusesDataTable({ onEditCampus, title, action }: CampusesDataT
             {hasSelection ? (
               <>
                 <ClearSelectionDialog resetSelection={resetSelection} />
-                <DialogBulkDelete<Campus, number>
-                  items={selectedItems}
-                  getItemId={(item) => item.id}
-                  getItemLabel={(item) => item.name}
-                  title="Eliminar"
-                  buildDescription={(count, sample) => {
-                    const list = sample.join(", ")
-                    const suffix = count > sample.length ? ` y ${count - sample.length} más` : ""
-                    return `Se eliminarán permanentemente las sedes educativas ${list}${suffix} (${count} en total). Esta acción no se puede deshacer.`
-                  }}
-                  onConfirm={async (ids) => {
-                    await bulkDelete.mutateAsync(ids)
-                  }}
-                  triggerLabel={`Eliminar (${selectedIds.length})`}
-                />
+                {puedeEliminar ? (
+                  <DialogBulkDelete<Campus, number>
+                    items={selectedItems}
+                    getItemId={(item) => item.id}
+                    getItemLabel={(item) => item.name}
+                    title="Eliminar"
+                    buildDescription={(count, sample) => {
+                      const list = sample.join(", ")
+                      const suffix = count > sample.length ? ` y ${count - sample.length} más` : ""
+                      return `Se eliminarán permanentemente las sedes educativas ${list}${suffix} (${count} en total). Esta acción no se puede deshacer.`
+                    }}
+                    onConfirm={async (ids) => {
+                      await bulkDelete.mutateAsync(ids)
+                    }}
+                    triggerLabel={`Eliminar (${selectedIds.length})`}
+                  />
+                ) : null}
                 <ExportSelectedCampusesDialog
                   selectedIds={selectedItems.map((item) => item.id)}
                   resetSelection={resetSelection}
