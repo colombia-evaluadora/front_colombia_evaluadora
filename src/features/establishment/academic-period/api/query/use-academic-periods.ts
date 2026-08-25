@@ -109,6 +109,9 @@ function toAcademicPeriod(row: AcademicPeriodListRow): AcademicPeriod {
     minFailedSubjects: null,
     name: row.name,
     isPrincipal: false,
+    // El backend ya manda `reserva` en la fila cruda del listado; lo mapeamos
+    // acá para no tener que ir al detalle cuando solo se necesita el flag.
+    reservationEnabled: row.reserva === "S",
   }
 }
 

@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { DataTableColumnHeader } from "@/components/data-table"
 
-import { ACADEMIC_PERIOD_STATUS_BADGE } from "@/features/establishment/academic-period/api/ui-mappings"
+import { ACADEMIC_PERIOD_STATUS_BADGE, RESERVATION_STATUS_BADGE } from "@/features/establishment/academic-period/api/ui-mappings"
 import type {
   AcademicPeriod,
   AcademicPeriodStatus,
@@ -12,11 +12,24 @@ import type {
 import { useAcademicPeriodStatusesQuery } from "@/features/establishment/academic-period/api/query/use-academic-period-statuses"
 import { DeleteAcademicPeriodDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-delete-academic-period"
 import { EditAcademicPeriodButton } from "@/features/establishment/academic-period/components/edit-academic-period-button"
+import { DeactivateReservationDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-deactivate-reservation"
+import { ActivateReservationDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-activate-reservation"
+import { Authorization } from "@/lib/authorization"
 
 function StatusCell({ status }: { status: AcademicPeriodStatus }) {
   const { data: statusOptions = [] } = useAcademicPeriodStatusesQuery()
   const label = statusOptions.find((o) => o.key === status)?.label ?? status
   return <Badge {...ACADEMIC_PERIOD_STATUS_BADGE[status]}>{label}</Badge>
+}
+
+function ReservationStatusCell({ enabled }: { enabled: boolean }) {
+  // Badge dedicado (no reutiliza el de estado de periodo) porque "Activo"/
+  // "Inactivo" se refiere al flag de reserva de cupos, no al `ESTADOPERIODO`.
+  return (
+    <Badge {...RESERVATION_STATUS_BADGE[enabled ? "active" : "inactive"]}>
+      {enabled ? "Activo" : "Inactivo"}
+    </Badge>
+  )
 }
 
 function formatDate(value: string): string {
@@ -73,6 +86,18 @@ export const columns: ColumnDef<AcademicPeriod>[] = [
     cell: ({ row }) => <StatusCell status={row.getValue<AcademicPeriodStatus>("status")} />,
   },
   {
+    // Estado del periodo de reserva de cupos (independiente del `status`
+    // general del periodo académico). Lo entrega el backend mapeado de
+    // `RESERVA: "S"|"N"` en `use-academic-periods.ts`.
+    id: "reservationEnabled",
+    accessorKey: "reservationEnabled",
+    meta: { label: "Reserva de cupos" },
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Reserva de cupos" />,
+    cell: ({ row }) => (
+      <ReservationStatusCell enabled={row.getValue<boolean>("reservationEnabled")} />
+    ),
+  },
+  {
     id: "startDate",
     accessorKey: "startDate",
     meta: { label: "Fecha inicio" },
@@ -92,12 +117,19 @@ export const columns: ColumnDef<AcademicPeriod>[] = [
     cell: ({ row }) => (
       <div className="flex items-center justify-end gap-1">
         <EditAcademicPeriodButton period={row.original} />
+        <Authorization allowedRoles={["ADMIN"]}>
+          {row.original.reservationEnabled ? (
+            <DeactivateReservationDialog period={row.original} />
+          ) : (
+            <ActivateReservationDialog period={row.original} />
+          )}
+        </Authorization>
         <DeleteAcademicPeriodDialog period={row.original} />
       </div>
     ),
     enableSorting: false,
     enableHiding: false,
-    size: 96,
+    size: 128,
   },
 ]
 

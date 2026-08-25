@@ -37,6 +37,11 @@ export interface AcademicPeriod {
   minFailedSubjects: number | null
   name: string
   isPrincipal: boolean
+  // Indicador de "reserva de cupos" activa/inactiva. Lo entrega el backend en
+  // el listado y en el detalle (deriva de `RESERVA: "S"|"N"` de la config).
+  // Cuando es `false`, el periodo NO acepta nuevas reservas y desaparece del
+  // listado de establecimientos con cupos disponibles para reserva.
+  reservationEnabled: boolean
 }
 
 export interface AcademicPeriodBreak {
