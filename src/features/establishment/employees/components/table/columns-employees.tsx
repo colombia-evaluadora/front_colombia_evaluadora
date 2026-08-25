@@ -10,6 +10,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { EMPLOYEE_STATUS_BADGE, EMPLOYEE_STATUS_LABELS } from "@/features/establishment/employees/api/ui-mappings"
 import type { EmployeeListItem } from "@/features/establishment/employees/api/types/employee"
 import { DeleteEmployeeDialog } from "@/features/establishment/employees/components/dialogs/dialog-delete"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 interface EmployeeColumnsOptions {
   onEdit: (employeeId: number) => void
@@ -56,6 +57,28 @@ function renderStatusCell(statuses: EmployeeListItem["statuses"]) {
           {EMPLOYEE_STATUS_LABELS[status]}
         </Badge>
       ))}
+    </div>
+  )
+}
+
+function ActionsCell({ employee, onEdit }: { employee: EmployeeListItem; onEdit: (id: number) => void }) {
+  const { puedeEditar } = useMenuPermission("FUNCIONARIOS")
+
+  return (
+    <div className="flex items-center justify-end gap-1">
+      {puedeEditar ? (
+        <Button
+          type="button"
+          variant="ghost"
+          color="neutral"
+          size="icon-sm"
+          aria-label="Editar funcionario"
+          onClick={() => onEdit(employee.id)}
+        >
+          <PencilIcon />
+        </Button>
+      ) : null}
+      <DeleteEmployeeDialog employee={employee} />
     </div>
   )
 }
@@ -214,21 +237,7 @@ export function createColumns({ onEdit }: EmployeeColumnsOptions): ColumnDef<Emp
   {
     id: "actions",
     header: () => <span className="sr-only">Acciones</span>,
-    cell: ({ row }) => (
-      <div className="flex items-center justify-end gap-1">
-        <Button
-          type="button"
-          variant="ghost"
-          color="neutral"
-          size="icon-sm"
-          aria-label="Editar funcionario"
-          onClick={() => onEdit(row.original.id)}
-        >
-          <PencilIcon />
-        </Button>
-        <DeleteEmployeeDialog employee={row.original} />
-      </div>
-    ),
+    cell: ({ row }) => <ActionsCell employee={row.original} onEdit={onEdit} />,
     enableSorting: false,
     enableHiding: false,
     size: 96,

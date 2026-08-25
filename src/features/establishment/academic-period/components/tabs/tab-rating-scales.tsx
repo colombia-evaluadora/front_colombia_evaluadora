@@ -27,10 +27,11 @@ import { useRatingScaleTypesQuery } from "@/features/establishment/academic-peri
 import { useEvaluationCriteriaQuery } from "@/features/establishment/academic-period/api/query/use-evaluation-criteria"
 import { useUpdateRatingScale } from "@/features/establishment/academic-period/api/mutations/update-rating-scale"
 import { useCreateRatingScalesBulk } from "@/features/establishment/academic-period/api/mutations/create-rating-scales-bulk"
-import type {
-  RatingScale,
-  RatingScaleType,
-  TeachingLevel,
+import {
+  bandaIdForLevel,
+  type RatingScale,
+  type RatingScaleType,
+  type TeachingLevel,
 } from "@/features/establishment/academic-period/api/types/rating-scales"
 import { CreateRatingScaleDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-create-rating-scale"
 import { DeleteSelectedRatingScalesDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-delete-selected-rating-scales"
@@ -344,7 +345,11 @@ function ScalesSubTable({
     }
     if (academicPeriodId == null) return
     updateMutation.mutate({
-      codigo: scale.codigo,
+      // `scale.codigo` solo guarda la banda del primer nivel visto al
+      // agrupar (ver comentario de `RatingScale.bandaIdsByLevel`) — acá hay
+      // que resolver la banda de ESTE nivel, o se termina editando la banda
+      // de otro nivel de enseñanza.
+      codigo: bandaIdForLevel(scale, levelId),
       academicPeriodId,
       values: {
         ...scale,
@@ -361,6 +366,7 @@ function ScalesSubTable({
     range,
     symbols,
     tipoOptions,
+    levelId,
     editingCodigo,
     draft,
     patchDraft,
@@ -384,14 +390,25 @@ function ScalesSubTable({
     setSorting,
   })
 
-  const selectedValoracionIds = useMemo(() => selectedIds.map((id) => Number(id)), [selectedIds])
+  // `getRowId` de esta subtabla usa `scale.codigo` (identidad de fila dentro
+  // del nivel), pero el PK a mandar al backend es el de la banda de ESTE
+  // nivel puntual (`bandaIdForLevel`) — no siempre coinciden (ver comentario
+  // de `RatingScale.bandaIdsByLevel`).
+  const selectedValoracionIds = useMemo(
+    () =>
+      selectedIds
+        .map((id) => scales.find((scale) => String(scale.codigo) === id))
+        .filter((scale): scale is RatingScale => scale != null)
+        .map((scale) => bandaIdForLevel(scale, levelId)),
+    [selectedIds, scales, levelId],
+  )
 
   // El bulk delete de valoraciones falla por PK de banda — el nombre que le
   // sirve al usuario en el aviso es el de la banda misma (ver `nombre` de
   // `RatingScale`, no confundir con el nombre del nivel de enseÃ±anza).
   const valoracionNamesById = useMemo(
-    () => new Map(scales.map((scale) => [scale.codigo, scale.nombre])),
-    [scales],
+    () => new Map(scales.map((scale) => [bandaIdForLevel(scale, levelId), scale.nombre])),
+    [scales, levelId],
   )
 
   return (

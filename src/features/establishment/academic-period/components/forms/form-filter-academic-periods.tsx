@@ -18,15 +18,11 @@ import {
   type AcademicPeriodsFiltersFormValues,
 } from "@/features/establishment/academic-period/api/schema"
 import { useAcademicPeriodStatusesQuery } from "@/features/establishment/academic-period/api/query/use-academic-period-statuses"
+import { useSchoolYearsQuery } from "@/features/establishment/academic-period/api/query/use-school-years"
 import { DatePicker } from "@/components/date-picker"
 import { formatDateValue, parseDateValue } from "@/lib/date-value"
 
 const ALL_VALUE = ""
-
-const YEAR_OPTIONS = Array.from(
-  { length: new Date().getFullYear() - 2020 + 1 },
-  (_, i) => new Date().getFullYear() - i,
-)
 
 interface FilterAcademicPeriodsFormProps {
   id: string
@@ -50,6 +46,7 @@ export function FilterAcademicPeriodsForm({
   })
 
   const { data: statusOptions = [] } = useAcademicPeriodStatusesQuery()
+  const { data: schoolYearOptions = [] } = useSchoolYearsQuery()
 
   const statusItems = useMemo<Record<string, string>>(
     () => Object.fromEntries(statusOptions.map((o) => [String(o.id), o.label])),
@@ -57,8 +54,9 @@ export function FilterAcademicPeriodsForm({
   )
 
   const yearItems = useMemo<Record<string, string>>(
-    () => Object.fromEntries(YEAR_OPTIONS.map((year) => [String(year), String(year)])),
-    [],
+    () =>
+      Object.fromEntries(schoolYearOptions.map((year) => [year.name, year.name])),
+    [schoolYearOptions],
   )
 
   return (
@@ -119,9 +117,9 @@ export function FilterAcademicPeriodsForm({
                   <ComboboxFieldContent>
                     <ComboboxGroup>
                       <ComboboxFieldItem value={ALL_VALUE}>Todos</ComboboxFieldItem>
-                      {YEAR_OPTIONS.map((year) => (
-                        <ComboboxFieldItem key={year} value={String(year)}>
-                          {year}
+                      {schoolYearOptions.map((year) => (
+                        <ComboboxFieldItem key={year.id} value={year.name}>
+                          {year.name}
                         </ComboboxFieldItem>
                       ))}
                     </ComboboxGroup>

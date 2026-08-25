@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react"
+import { useEffect, useMemo, useRef } from "react"
 import { useForm, useSelector } from "@tanstack/react-form"
 
 import { Badge } from "@/components/ui/badge"
@@ -30,6 +30,7 @@ import { useSedeOptionsQuery } from "@/features/establishment/academic-period/ap
 import { useAcademicPeriodStatusesQuery } from "@/features/establishment/academic-period/api/query/use-academic-period-statuses"
 import { useJornadasQuery } from "@/features/establishment/academic-period/api/query/use-jornadas"
 import { useSedePreviousPeriodsQuery } from "@/features/establishment/academic-period/api/query/use-sede-previous-periods-query"
+import { useAcademicPeriodQuery } from "@/features/establishment/academic-period/api/query/use-academic-period"
 import {
   academicPeriodFormSchema,
   type AcademicPeriodFormInput,
@@ -132,6 +133,27 @@ export function AcademicPeriodForm({
     selectedSedeId || undefined,
     currentPeriodId
   )
+
+  // El backend solo devuelve candidatos "válidos para elegir ahora" (activos,
+  // en alcance). Si el periodo ya guardado como anterior dejó de cumplir esas
+  // condiciones (p.ej. pasó a inactivo), desaparece de la lista aunque el PK
+  // siga guardado en el form — el combobox no encontraba su nombre y mostraba
+  // "No tiene" pese a tener un valor real seleccionado. Se completa acá con
+  // una consulta puntual, solo para mostrar la etiqueta.
+  const selectedPreviousPeriodId = useSelector(
+    form.store,
+    (state) => state.values.previousPeriodId,
+  )
+  const previousPeriodMissing =
+    selectedPreviousPeriodId != null &&
+    !previousPeriodOptions.some((option) => option.id === selectedPreviousPeriodId)
+  const { data: missingPreviousPeriod } = useAcademicPeriodQuery(
+    previousPeriodMissing ? selectedPreviousPeriodId : undefined,
+  )
+  const previousPeriodOptionsWithSelected = useMemo(() => {
+    if (!missingPreviousPeriod) return previousPeriodOptions
+    return [...previousPeriodOptions, { id: missingPreviousPeriod.id, name: missingPreviousPeriod.name }]
+  }, [previousPeriodOptions, missingPreviousPeriod])
 
   return (
     <form
@@ -285,7 +307,9 @@ export function AcademicPeriodForm({
                   <ComboboxFieldTrigger id={field.name} aria-invalid={isInvalid}>
                     <ComboboxFieldValue>
                       {(value) => {
-                        const p = previousPeriodOptions.find((o) => String(o.id) === value)
+                        const p = previousPeriodOptionsWithSelected.find(
+                          (o) => String(o.id) === value,
+                        )
                         return p ? p.name : "No tiene"
                       }}
                     </ComboboxFieldValue>
@@ -293,7 +317,7 @@ export function AcademicPeriodForm({
                   <ComboboxFieldContent>
                     <ComboboxGroup>
                       <ComboboxFieldItem value={NO_PREVIOUS_PERIOD}>No tiene</ComboboxFieldItem>
-                      {previousPeriodOptions.map((period) => (
+                      {previousPeriodOptionsWithSelected.map((period) => (
                         <ComboboxFieldItem key={period.id} value={String(period.id)}>
                           {period.name}
                         </ComboboxFieldItem>

@@ -21,6 +21,7 @@ import { campusesRoute } from "@/router"
 import { useDelete } from "@/features/establishment/campuses/api/mutations/delete"
 import type { Campus } from "@/features/establishment/campuses/api/types/campus"
 import { useNotify } from "@/components/notice/notice-context"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 
 interface DeleteCampusDialogProps {
   campus: Campus
@@ -30,6 +31,7 @@ export function DeleteCampusDialog({ campus }: DeleteCampusDialogProps) {
   const [open, setOpen] = useState(false)
   const navigate = campusesRoute.useNavigate()
   const { notify } = useNotify()
+  const { puedeEliminar } = useMenuPermission("SEDES")
 
   const deleteMutation = useDelete({
     mutationConfig: {
@@ -54,6 +56,8 @@ export function DeleteCampusDialog({ campus }: DeleteCampusDialogProps) {
       },
     },
   })
+
+  if (!puedeEliminar) return null
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
