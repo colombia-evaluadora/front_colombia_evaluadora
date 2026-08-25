@@ -45,7 +45,7 @@ function formatCatalogNames(items: EmployeeListItem["roles"]) {
  * rojo). Separados, cada uno lleva su color —verde activo, rojo suspendido—
  * y la mezcla se lee sola.
  */
-function renderStatusCell(statuses: EmployeeListItem["statuses"]) {
+export function renderStatusCell(statuses: EmployeeListItem["statuses"]) {
   if (statuses.length === 0) {
     return "—"
   }

@@ -10,8 +10,8 @@ import { Field, FieldLabel } from "@/components/ui/field"
 
 import { usePromotionCriteriaQuery } from "@/features/establishment/academic-period/api/query/use-promotion-criteria"
 import { useUpdatePromotionCriteria } from "@/features/establishment/academic-period/api/mutations/update-promotion-criteria"
-import { useSubjectsQuery } from "@/features/establishment/academic-period/api/query/use-subjects"
-import { usePeriodAreaNamesQuery } from "@/features/establishment/academic-period/api/query/use-period-areas"
+import { useSubjectsQuery, type SubjectOption } from "@/features/establishment/academic-period/api/query/use-subjects"
+import { usePeriodAreasQuery, type AreaOption } from "@/features/establishment/academic-period/api/query/use-period-areas"
 import { useCurriculumNodesQuery } from "@/features/establishment/academic-period/api/query/use-curriculum-nodes"
 import type { CurriculumNodeOption } from "@/features/establishment/academic-period/api/types/curriculum-node"
 import { SubjectsMultiSelect } from "@/features/establishment/academic-period/components/subjects-multi-select"
@@ -116,7 +116,7 @@ export const TabPromotionCriteria = forwardRef<PromotionCriteriaHandle, TabPromo
     const { data: subjectOptions = [], isPending: isLoadingSubjects } =
       useSubjectsQuery(academicPeriodId)
     const { data: areaOptions = [], isPending: isLoadingAreas } =
-      usePeriodAreaNamesQuery(academicPeriodId)
+      usePeriodAreasQuery(academicPeriodId)
 
     const { data: curriculumNodes = [], isPending: isLoadingCurriculumNodes } =
       useCurriculumNodesQuery()
@@ -157,8 +157,8 @@ interface PromotionCriteriaFormProps {
   gradeId?: number
   headingLevel: 1 | 2 | 3 | 4 | 5 | 6
   initialValues: PromotionApprovalValues
-  subjectOptions: string[]
-  areaOptions: string[]
+  subjectOptions: SubjectOption[]
+  areaOptions: AreaOption[]
   curriculumNodes: CurriculumNodeOption[]
 }
 
@@ -470,13 +470,14 @@ const PromotionCriteriaForm = forwardRef<PromotionCriteriaHandle, PromotionCrite
 
 interface RequiredSubjectsFieldProps {
   field: AnyFieldApi
-  options: string[]
+  options: SubjectOption[] | AreaOption[]
 }
 
 function RequiredSubjectsField({ field, options }: RequiredSubjectsFieldProps) {
   useEffect(() => {
-    const current = field.state.value as string[]
-    const valid = current.filter((v) => options.includes(v))
+    const validIds = new Set(options.map((o) => o.id))
+    const current = field.state.value as number[]
+    const valid = current.filter((id) => validIds.has(id))
     if (valid.length !== current.length) {
       field.handleChange(valid)
     }

@@ -21,16 +21,15 @@ import {
 import { Button } from "@/components/ui/button"
 
 import { useExportRatingScales } from "@/features/establishment/academic-period/api/mutations/export-rating-scales"
-import type {
-  ExportFormat,
-  RatingScalesQueryFilters,
-} from "@/features/establishment/academic-period/api/types/rating-scales"
+import type { ExportFormat } from "@/features/establishment/academic-period/api/types/rating-scales"
 
 interface ExportRatingScalesDialogProps {
-  filters: RatingScalesQueryFilters
+  academicPeriodId?: number
 }
 
-export function ExportRatingScalesDialog({ filters }: ExportRatingScalesDialogProps) {
+// Reusa la MISMA función del listado (`fn_escala_listar`), que ya trae todo
+// el periodo sin paginar. Sin filtros, igual que periodo académico/evaluación.
+export function ExportRatingScalesDialog({ academicPeriodId }: ExportRatingScalesDialogProps) {
   const [open, setOpen] = useState(false)
   const { notify } = useNotify()
 
@@ -48,7 +47,7 @@ export function ExportRatingScalesDialog({ filters }: ExportRatingScalesDialogPr
   })
 
   function handleExport(format: ExportFormat) {
-    exportAll.mutate({ filters, format })
+    exportAll.mutate({ format, filters: { academicPeriodId } })
   }
 
   const pendingFormat = exportAll.isPending ? exportAll.variables?.format : undefined
@@ -71,7 +70,7 @@ export function ExportRatingScalesDialog({ filters }: ExportRatingScalesDialogPr
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>
-            Elige un formato para exportar todas las escalas de valoración.
+            Elige un formato para exportar las escalas de valoración del periodo.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="sm:justify-between">

@@ -5,17 +5,23 @@ import { api } from "@/lib/api-client"
 interface SubjectRow {
   id: number
   nombre_interno: string
+  enfasis_nombre: string | null
 }
 interface SubjectsResponse {
   rows: SubjectRow[]
 }
 
+export interface SubjectOption {
+  id: number
+  label: string
+}
+
 // `POST /eval-col/areas/asignaturas` (`fn_subject_periodo_listar`, id_query
 // 100) — listado de asignaturas de todo el período (para el nodo curricular
-// "AS" de criterios de promoción). Se descartan `id` acá porque el
-// multi-select trabaja por nombre; `resolve-required-subjects.ts` vuelve a
-// pedir esta misma lista para resolver nombre→id al guardar.
-async function fetchSubjects(academicPeriodId?: number): Promise<string[]> {
+// "AS" de criterios de promoción). Se selecciona por `id`, no por nombre: el
+// nombre puede repetirse entre asignaturas de distinto énfasis (ver V143 en
+// SSO), así que la etiqueta incluye el énfasis para diferenciarlas.
+async function fetchSubjects(academicPeriodId?: number): Promise<SubjectOption[]> {
   if (academicPeriodId == null) return []
   const raw: SubjectsResponse = await api.query("/eval-col/areas/asignaturas", {
     FK_PERIODO: academicPeriodId,
@@ -26,7 +32,12 @@ async function fetchSubjects(academicPeriodId?: number): Promise<string[]> {
     SORT_BY: null,
     SORT_DIR: null,
   })
-  return (raw.rows ?? []).map((row) => row.nombre_interno)
+  return (raw.rows ?? []).map((row) => ({
+    id: row.id,
+    label: row.enfasis_nombre
+      ? `${row.nombre_interno} (${row.enfasis_nombre})`
+      : row.nombre_interno,
+  }))
 }
 
 export const subjectsQueryKey = (academicPeriodId?: number) => ["subjects", academicPeriodId]

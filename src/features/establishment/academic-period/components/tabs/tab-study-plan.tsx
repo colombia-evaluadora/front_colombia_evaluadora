@@ -85,7 +85,7 @@ export function TabStudyPlan({ academicPeriodId, gradeId }: TabStudyPlanProps) {
         ) : (
           <>
             <CreateStudyPlanDialog academicPeriodId={academicPeriodId} gradeId={gradeId} />
-            <ExportStudyPlanDialog filters={{}} />
+            <ExportStudyPlanDialog academicPeriodId={academicPeriodId} />
           </>
         )}
       </div>

@@ -38,8 +38,11 @@ export function EvaluationPeriodsSection({
   // Antes 42vh/60vh dejaban espacio libre sin usar debajo de la tabla en la
   // mayoría de pantallas, obligando a scrollear antes de tiempo. Sigue
   // habiendo un tope (con contenido largo el scroll interno se mantiene),
-  // pero ahora aprovecha más alto antes de necesitarlo.
-  const panel = cn(PANEL_BASE, accordionOpen ? "max-h-[58vh]" : "max-h-[78vh]")
+  // pero ahora aprovecha más alto antes de necesitarlo. Con el acordeón
+  // cerrado, 78vh sobrepasaba el alto real disponible bajo la barra
+  // colapsada + el propio scroll interno del panel, forzando un doble scroll
+  // (el de la página y el de `overflow-y-auto` acá abajo) — se baja a 64vh.
+  const panel = cn(PANEL_BASE, accordionOpen ? "max-h-[58vh]" : "max-h-[64vh]")
 
   return (
     <Tabs defaultValue="evaluacion">
