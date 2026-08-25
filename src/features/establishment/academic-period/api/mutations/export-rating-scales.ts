@@ -5,11 +5,10 @@ import type { MutationConfig } from "@/lib/react-query"
 import type {
   ExportFormat,
   ExportResult,
-  RatingScaleReportFilters,
 } from "@/features/establishment/academic-period/api/types/rating-scales"
 
 interface ExportRatingScalesInput {
-  filters: RatingScaleReportFilters
+  filters: { academicPeriodId?: number }
   format: ExportFormat
 }
 
@@ -18,8 +17,8 @@ function exportRatingScales(input: ExportRatingScalesInput): Promise<ExportResul
     format: input.format,
     filters: {
       FK_PERIODO: input.filters.academicPeriodId ?? null,
-      FK_NIVEL: input.filters.teachingLevelId ?? null,
-      TIPO: input.filters.tipo ?? null,
+      FK_NIVEL: null,
+      TIPO: null,
     },
   })
 }

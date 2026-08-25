@@ -10,11 +10,16 @@ import {
 import { inputTriggerVariants, inputVariants, useInputVariant } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 
+interface SubjectOptionLike {
+  id: number
+  label: string
+}
+
 interface SubjectsMultiSelectProps {
   id?: string
-  options: string[]
-  value: string[]
-  onChange: (values: string[]) => void
+  options: SubjectOptionLike[]
+  value: number[]
+  onChange: (values: number[]) => void
   placeholder?: string
   emptyMessage?: string
 }
@@ -22,7 +27,9 @@ interface SubjectsMultiSelectProps {
 const MAX_VISIBLE_CHIPS = 3
 
 // Select de varias materias: chips en el trigger + un dropdown con checkboxes
-// al estilo de "Columnas visibles" (DataTableViewOptions).
+// al estilo de "Columnas visibles" (DataTableViewOptions). Selecciona por
+// `id` — el label (nombre, o nombre + énfasis si el nombre se repite) es
+// solo para mostrar.
 export function SubjectsMultiSelect({
   id,
   options,
@@ -32,9 +39,10 @@ export function SubjectsMultiSelect({
   emptyMessage = "No hay áreas/asignaturas en este periodo.",
 }: SubjectsMultiSelectProps) {
   const resolvedVariant = useInputVariant()
+  const labelById = new Map(options.map((o) => [o.id, o.label]))
 
-  function toggle(option: string) {
-    onChange(value.includes(option) ? value.filter((v) => v !== option) : [...value, option])
+  function toggle(optionId: number) {
+    onChange(value.includes(optionId) ? value.filter((v) => v !== optionId) : [...value, optionId])
   }
 
   const visible = value.slice(0, MAX_VISIBLE_CHIPS)
@@ -63,16 +71,22 @@ export function SubjectsMultiSelect({
             <span className="text-muted-foreground">{placeholder}</span>
           ) : (
             <>
-              {visible.map((subject) => (
-                <Badge key={subject} variant="soft" color="muted" className="text-xs">
-                  {subject}
+              {visible.map((optionId) => (
+                <Badge
+                  key={optionId}
+                  variant="soft"
+                  color="muted"
+                  className="text-xs"
+                  title={labelById.get(optionId)}
+                >
+                  {labelById.get(optionId) ?? optionId}
                   <button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation()
-                      toggle(subject)
+                      toggle(optionId)
                     }}
-                    aria-label={`Quitar ${subject}`}
+                    aria-label={`Quitar ${labelById.get(optionId) ?? optionId}`}
                     data-icon="inline-end"
                     className="pointer-events-auto inline-flex cursor-pointer items-center hover:text-foreground"
                   >
@@ -96,12 +110,13 @@ export function SubjectsMultiSelect({
         ) : (
           options.map((option) => (
             <DropdownMenuCheckboxItem
-              key={option}
-              checked={value.includes(option)}
-              onCheckedChange={() => toggle(option)}
+              key={option.id}
+              checked={value.includes(option.id)}
+              onCheckedChange={() => toggle(option.id)}
               className="capitalize"
+              title={option.label}
             >
-              {option}
+              {option.label}
             </DropdownMenuCheckboxItem>
           ))
         )}

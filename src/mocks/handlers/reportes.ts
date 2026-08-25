@@ -27,6 +27,13 @@ const NOMBRE_POR_CLAVE: Record<string, string> = {
   funcionarios: "funcionarios",
   establecimientos: "establecimientos",
   sedes: "sedes",
+  "periodos-academicos": "periodos-academicos",
+  "periodos-evaluacion": "periodos-evaluacion",
+  "plan-estudio": "plan-estudio",
+  grados: "grados",
+  areas: "areas",
+  escalas: "escalas",
+  asignaciones: "asignaciones",
 }
 
 function fecha() {

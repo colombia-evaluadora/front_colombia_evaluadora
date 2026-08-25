@@ -50,8 +50,8 @@ export function toPromotionCriteria(row: PromotionCriteriaRow): PromotionCriteri
     minimumSubjectPercentage: row.minimum_subject_percentage,
     maxFailedForAverage: row.max_failed_for_average,
     requiredSubjects: (row.mandatory_subjects ?? [])
-      .map((o) => (o.type === "subject" ? o.subjectName : o.areaName))
-      .filter((name): name is string => name != null),
+      .map((o) => (o.type === "subject" ? o.subjectId : o.areaId))
+      .filter((id): id is number => id != null),
   }
 }
 

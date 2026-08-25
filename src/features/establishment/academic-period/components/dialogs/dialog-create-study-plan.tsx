@@ -12,7 +12,6 @@ import {
   Dialog,
   DialogClose,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogOverlay,
@@ -51,13 +50,13 @@ import {
 } from "@/features/establishment/academic-period/api/schema"
 
 const EMPTY: StudyPlanFormValues = {
-  asignatura: "",
+  asignaturaId: 0,
   intensidadHoraria: 0,
   influenciaArea: 0,
   numeroCreditos: 0,
   influyeDesempeno: true,
-  matriculaObligatoria: false,
-  aprobacionObligatoria: false,
+  matriculaObligatoria: true,
+  aprobacionObligatoria: true,
   formatoCalificacion: "",
   criterioNota: "",
 }
@@ -104,7 +103,7 @@ export function CreateStudyPlanDialog({
 
   const defaultValues: StudyPlanFormValues = item
     ? {
-        asignatura: item.asignatura,
+        asignaturaId: item.asignaturaId,
         intensidadHoraria: item.intensidadHoraria,
         influenciaArea: item.influenciaArea,
         numeroCreditos: item.numeroCreditos,
@@ -117,18 +116,18 @@ export function CreateStudyPlanDialog({
     : EMPTY
 
   // Solo las asignaturas del grado que aún no están en el plan. Al editar, la
-  // asignatura del renglón no viene en "disponibles", así que la agregamos para
-  // que el select pueda mostrarla como valor actual.
+  // asignatura del renglón no viene en "disponibles" (la consulta la excluye
+  // porque ya está asignada), así que la agregamos por `id` para que el
+  // select pueda mostrarla como valor actual.
   const { data: availableSubjects = [] } = useAvailableStudyPlanSubjectsQuery(
     gradeId,
     academicPeriodId
   )
   const asignaturaOptions = (() => {
-    const names = availableSubjects.map((s) => s.nombre)
-    if (item && !names.includes(item.asignatura)) {
-      return [item.asignatura, ...names]
+    if (item && !availableSubjects.some((s) => s.id === item.asignaturaId)) {
+      return [{ id: item.asignaturaId, label: item.asignatura }, ...availableSubjects]
     }
-    return names
+    return availableSubjects
   })()
 
   const formatoOptions = criteriaOptions?.gradingFormat ?? []
@@ -235,9 +234,6 @@ export function CreateStudyPlanDialog({
           <DialogTitle>
             {isEditing ? "Editar plan de estudio" : "Agregar plan de estudio"}
           </DialogTitle>
-          <DialogDescription>
-            Completa los datos de la asignatura del plan de estudio.
-          </DialogDescription>
         </DialogHeader>
 
         <NoticeBanner
@@ -256,18 +252,23 @@ export function CreateStudyPlanDialog({
           className="flex flex-col gap-4"
         >
           <div className="grid gap-4 sm:grid-cols-3">
-            <form.Field name="asignatura">
+            <form.Field name="asignaturaId">
               {(field) => {
                 const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
                 return (
                   <Field variant="outlined" data-invalid={isInvalid}>
                     <FieldLabel htmlFor={field.name}>Asignaturas*</FieldLabel>
                     <ComboboxField
-                      value={field.state.value}
-                      onValueChange={(value) => value && field.handleChange(value)}
+                      value={field.state.value ? String(field.state.value) : ""}
+                      onValueChange={(value) => value && field.handleChange(Number(value))}
                     >
                       <ComboboxFieldTrigger id={field.name} aria-invalid={isInvalid}>
-                        <ComboboxFieldValue placeholder="Seleccionar" />
+                        <ComboboxFieldValue placeholder="Seleccionar">
+                          {(value) =>
+                            asignaturaOptions.find((o) => String(o.id) === value)?.label ??
+                            "Seleccionar"
+                          }
+                        </ComboboxFieldValue>
                       </ComboboxFieldTrigger>
                       <ComboboxFieldContent>
                         <ComboboxGroup>
@@ -277,8 +278,12 @@ export function CreateStudyPlanDialog({
                             </div>
                           ) : (
                             asignaturaOptions.map((option) => (
-                              <ComboboxFieldItem key={option} value={option}>
-                                {option}
+                              <ComboboxFieldItem
+                                key={option.id}
+                                value={String(option.id)}
+                                title={option.label}
+                              >
+                                {option.label}
                               </ComboboxFieldItem>
                             ))
                           )}
@@ -384,7 +389,7 @@ export function CreateStudyPlanDialog({
             </form.Field>
           </div>
 
-          <label className="flex w-fit items-center gap-3 text-sm font-medium">
+          <label className="my-2 flex w-fit items-center gap-3 text-sm font-medium">
             Personalizar
             <Switch
               checked={personalizar}
@@ -401,10 +406,10 @@ export function CreateStudyPlanDialog({
           >
             <form.Field name="influyeDesempeno">
               {(field) => (
-                <Field>
+                <Field variant="outlined">
                   <FieldLabel>Influye en el desempeño académico (S/N)</FieldLabel>
                   <RadioGroup
-                    className="flex gap-6 pt-2"
+                    className="flex min-h-11 items-center gap-6 rounded-md border border-input px-3"
                     disabled={!personalizar}
                     value={field.state.value ? "si" : "no"}
                     onValueChange={(value) => field.handleChange(value === "si")}
@@ -424,10 +429,10 @@ export function CreateStudyPlanDialog({
 
             <form.Field name="matriculaObligatoria">
               {(field) => (
-                <Field>
+                <Field variant="outlined">
                   <FieldLabel>Matrícula obligatoria (S/N)</FieldLabel>
                   <RadioGroup
-                    className="flex gap-6 pt-2"
+                    className="flex min-h-11 items-center gap-6 rounded-md border border-input px-3"
                     disabled={!personalizar}
                     value={field.state.value ? "si" : "no"}
                     onValueChange={(value) => field.handleChange(value === "si")}
@@ -447,10 +452,10 @@ export function CreateStudyPlanDialog({
 
             <form.Field name="aprobacionObligatoria">
               {(field) => (
-                <Field>
+                <Field variant="outlined">
                   <FieldLabel>Aprobación obligatoria (S/N)</FieldLabel>
                   <RadioGroup
-                    className="flex gap-6 pt-2"
+                    className="flex min-h-11 items-center gap-6 rounded-md border border-input px-3"
                     disabled={!personalizar}
                     value={field.state.value ? "si" : "no"}
                     onValueChange={(value) => field.handleChange(value === "si")}

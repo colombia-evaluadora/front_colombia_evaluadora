@@ -159,7 +159,7 @@ export type GradeGroupFormValues = z.infer<typeof gradeGroupFormSchema>
 
 // Plan de estudio
 export const studyPlanFormSchema = z.object({
-  asignatura: z.string().min(1, "La asignatura es obligatoria"),
+  asignaturaId: z.number().min(1, "La asignatura es obligatoria"),
   intensidadHoraria: z
     .number()
     .min(1, "La intensidad horaria debe ser mayor a 0")
@@ -250,6 +250,6 @@ export const promotionApprovalSchema = z.object({
     .min(0, "El valor debe ser mayor o igual a 0")
     .max(99, "El valor no puede superar 99"),
 
-  requiredSubjects: z.array(z.string()),
+  requiredSubjects: z.array(z.number()),
 })
 export type PromotionApprovalValues = z.infer<typeof promotionApprovalSchema>

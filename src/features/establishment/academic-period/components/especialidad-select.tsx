@@ -14,6 +14,7 @@ import { Input, inputTriggerVariants, inputVariants, useInputVariant } from "@/c
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
+import { getErrorMessage } from "@/lib/api-client"
 
 import { useEspecialidadesQuery } from "@/features/establishment/academic-period/api/query/use-especialidades"
 import { useCreateEnfasis } from "@/features/establishment/academic-period/api/mutations/create-enfasis"
@@ -35,6 +36,11 @@ export function EspecialidadSelect({
   const [nuevo, setNuevo] = useState("")
   const [editingId, setEditingId] = useState<number | null>(null)
   const [editingName, setEditingName] = useState("")
+  // Mensaje inline propio: este popover no tiene acceso al `NoticeOutlet` del
+  // diálogo que lo contiene, así que no puede depender del toast global (ver
+  // fn_enfasis_soft_delete: "No se puede eliminar el enfasis %: existen
+  // asignaturas asociadas").
+  const [error, setError] = useState<string | null>(null)
   const resolvedVariant = useInputVariant()
 
   const { data: options = [] } = useEspecialidadesQuery(academicPeriodId)
@@ -56,27 +62,33 @@ export function EspecialidadSelect({
   const createEnfasis = useCreateEnfasis({
     mutationConfig: {
       onSuccess: () => {
+        setError(null)
         onChange(nuevo.trim())
         setNuevo("")
       },
+      onError: (err) => setError(getErrorMessage(err)),
     },
   })
   const updateEnfasis = useUpdateEnfasis({
     mutationConfig: {
       onSuccess: (_id, variables) => {
+        setError(null)
         if (value === options.find((o) => o.id === editingId)?.label) {
           onChange(variables.nombre)
         }
         setEditingId(null)
       },
+      onError: (err) => setError(getErrorMessage(err)),
     },
   })
   const deleteEnfasis = useDeleteEnfasis({
     mutationConfig: {
       onSuccess: (_result, id) => {
+        setError(null)
         const removed = options.find((o) => o.id === id)
         if (removed && value === removed.label) onChange("")
       },
+      onError: (err) => setError(getErrorMessage(err)),
     },
   })
 
@@ -87,6 +99,7 @@ export function EspecialidadSelect({
   }
 
   function startEdit(id: number, currentName: string) {
+    setError(null)
     setEditingId(id)
     setEditingName(currentName)
   }
@@ -97,7 +110,13 @@ export function EspecialidadSelect({
   }
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next)
+        if (!next) setError(null)
+      }}
+    >
       <PopoverTrigger
         render={
           <button
@@ -117,6 +136,9 @@ export function EspecialidadSelect({
       </PopoverTrigger>
       <PopoverContent align="start" className="w-64 p-1">
         <div className="flex flex-col">
+          {error && (
+            <p className="border-b border-border px-2 py-1.5 text-xs text-red">{error}</p>
+          )}
           <div className="max-h-64 overflow-y-auto">
             {sortedOptions.map((option) => {
               const isEditing = editingId === option.id
