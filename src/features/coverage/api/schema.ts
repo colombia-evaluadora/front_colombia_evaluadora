@@ -106,3 +106,32 @@ export const createReservationFormSchema = z.object({
 })
 export type CreateReservationFormInput = z.input<typeof createReservationFormSchema>
 export type CreateReservationFormValues = z.infer<typeof createReservationFormSchema>
+
+// ── Matrícula ────────────────────────────────────────────────────────────────
+
+export const MATRICULA_STATUSES = ["activo", "retirado", "trasladado"] as const
+
+// Filtros del buscador: mismo criterio que `establishmentFiltersFormSchema`
+// (texto libre + estado, todo string/array para que el form y la URL
+// serialicen igual).
+export const matriculaFiltersFormSchema = z.object({
+  search: z.string(),
+  statuses: z.array(z.enum(MATRICULA_STATUSES)),
+})
+export type MatriculaFiltersFormInput = z.input<typeof matriculaFiltersFormSchema>
+export type MatriculaFiltersFormValues = z.infer<typeof matriculaFiltersFormSchema>
+
+export const matriculaSearchSchema = z.object({
+  page: z.coerce.number().int().nonnegative().catch(0).default(0),
+  pageSize: z.coerce.number().int().positive().catch(10).default(10),
+  sortBy: z.string().optional().catch(undefined),
+  sortDir: z.enum(["asc", "desc"]).optional().catch(undefined),
+  search: z.string().optional().catch(undefined),
+  statuses: z.array(z.enum(MATRICULA_STATUSES)).optional().catch(undefined),
+})
+export type MatriculaSearch = z.infer<typeof matriculaSearchSchema>
+
+// El alta de estudiante ("Agregar estudiante") no usa este schema: son
+// demasiados campos (~70) para validar uno a uno con Zod/TanStack Form, así
+// que sigue el mismo criterio que el detalle de pre-matrícula (estado plano
+// + validación mínima a mano). Ver `add-matricula-page.tsx`.
