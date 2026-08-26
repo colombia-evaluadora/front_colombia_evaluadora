@@ -1,11 +1,11 @@
 import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { CheckCircleFillIcon, CheckIcon, XIcon } from "@/components/ui/icons"
 
@@ -33,46 +33,53 @@ export function HomologationMatriculaDialog({
   const fullName = `${matricula.firstName} ${matricula.lastName}`
 
   return (
-    <AlertDialog open>
-      <AlertDialogContent className="sm:max-w-md">
-        <AlertDialogHeader className="items-center sm:text-center">
-          <CheckCircleFillIcon className="size-12 text-green" />
-          <AlertDialogTitle>Registro realizado</AlertDialogTitle>
-          <AlertDialogDescription>
-            El estudiante {fullName} ha sido registrado correctamente en el grado{" "}
-            {formatGrade(matricula.grade)}.
-          </AlertDialogDescription>
-          <AlertDialogDescription>
-            Sin embargo, el sistema detectó que el estudiante cursó este mismo grado en la sede{" "}
-            {homologation.previousCampus} y cuenta con calificaciones registradas.
-          </AlertDialogDescription>
-          <AlertDialogDescription className="font-medium text-foreground">
-            ¿Desea homologar las calificaciones previas del estudiante?
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter className="sm:flex-col">
+    <Dialog open>
+      <DialogContent showCloseButton={false} className="sm:max-w-xl">
+        <DialogHeader>
+          <div className="flex items-center gap-2">
+            <CheckCircleFillIcon className="size-6 shrink-0 text-green" />
+            <DialogTitle>Registro realizado</DialogTitle>
+          </div>
+          <DialogDescription>
+            El estudiante <span className="font-semibold text-foreground">{fullName}</span> ha sido
+            registrado correctamente en el grado{" "}
+            <span className="font-semibold text-foreground">{formatGrade(matricula.grade)}</span>.
+          </DialogDescription>
+          <DialogDescription>
+            Sin embargo, el sistema detectó que el estudiante cursó este{" "}
+            <span className="font-semibold text-foreground">mismo grado</span> en la sede{" "}
+            {homologation.previousCampus} y cuenta con{" "}
+            <span className="font-semibold text-foreground">calificaciones registradas</span>.
+          </DialogDescription>
+        </DialogHeader>
+        <p className="-mt-3 text-center text-base font-semibold text-foreground">
+          ¿Desea homologar las calificaciones previas del estudiante?
+        </p>
+        <DialogFooter className="-mt-3 flex-row">
           <Button
+            size="sm"
             type="button"
             variant="fill"
             color="primary"
-            className="w-full"
+            className="flex-1"
             onClick={() => onChoice(true)}
           >
             <CheckIcon data-icon="inline-start" />
             Sí, homologar las calificaciones
           </Button>
           <Button
+            size="sm"
             type="button"
-            variant="outline"
+            variant="fill"
             color="neutral"
-            className="w-full"
+            className="flex-1"
             onClick={() => onChoice(false)}
           >
             <XIcon data-icon="inline-start" />
             No, no homologar ahora
           </Button>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

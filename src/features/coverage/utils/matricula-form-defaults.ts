@@ -122,6 +122,8 @@ export const REQUIRED_MATRICULA_FIELD_LABELS: Record<string, string> = {
  * `files` es opcional porque en edición no se vuelven a pedir los documentos
  * de soporte (esos se gestionan aparte, desde el botón "Archivos").
  */
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
 export function validateMatricula(values: CreateMatriculaInput, files?: MatriculaSupportFiles): string[] {
   const missing: string[] = []
   if (!values.academic.campus) missing.push("matricula-campus")
@@ -135,6 +137,12 @@ export function validateMatricula(values: CreateMatriculaInput, files?: Matricul
   if (!values.student.gender) missing.push("student-gender")
   if (!values.guardian.relationship) missing.push("guardian-relationship")
   if (!values.guardian.documentType) missing.push("guardian-document-type")
+  if (values.studentContact.email.trim() && !EMAIL_REGEX.test(values.studentContact.email.trim())) {
+    missing.push("student-contact-email")
+  }
+  if (values.guardianContact.email.trim() && !EMAIL_REGEX.test(values.guardianContact.email.trim())) {
+    missing.push("guardian-contact-email")
+  }
   if (files) {
     if (files.studentIdDocument.length === 0) missing.push("studentIdDocument")
     if (files.previousYearCertificate.length === 0) missing.push("previousYearCertificate")

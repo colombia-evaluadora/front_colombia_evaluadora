@@ -2,6 +2,7 @@ import { useState, type ReactNode } from "react"
 
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { DatePicker } from "@/components/date-picker"
 import {
   ComboboxField,
   ComboboxFieldContent,
@@ -33,6 +34,7 @@ import { FileUpload, FileUploadTrigger } from "@/components/ui/file-upload"
 import { FormSectionHeading } from "@/components/form-section-heading"
 
 import { SHIFT_LABELS, formatGrade } from "@/features/coverage/api/ui-mappings"
+import { formatDateValue, parseDateValue } from "@/lib/date-time-value"
 import { MATRICULA_STATUSES } from "@/features/coverage/api/schema"
 import {
   CONFLICT_VICTIM_POPULATION_OPTIONS,
@@ -104,6 +106,8 @@ interface TextFieldProps {
   required?: boolean
   /** Rojo en el label y el borde del input — campo obligatorio sin llenar. */
   invalid?: boolean
+  /** Sólo dígitos — filtra cualquier carácter no numérico al tipear/pegar. */
+  numeric?: boolean
 }
 
 export function MatriculaTextField({
@@ -114,6 +118,7 @@ export function MatriculaTextField({
   type = "text",
   required,
   invalid,
+  numeric,
 }: TextFieldProps) {
   return (
     <Field
@@ -135,7 +140,46 @@ export function MatriculaTextField({
         placeholder="Agregar"
         value={value}
         aria-invalid={invalid}
-        onChange={(event) => onChange(event.target.value)}
+        inputMode={numeric ? "numeric" : undefined}
+        onChange={(event) => {
+          const nextValue = numeric ? event.target.value.replace(/\D/g, "") : event.target.value
+          onChange(nextValue)
+        }}
+      />
+    </Field>
+  )
+}
+
+interface DateFieldProps {
+  id: string
+  label: string
+  /** `yyyy-MM-dd`, igual que el resto del formulario (mismo shape que un
+   * `<input type="date">` nativo). */
+  value: string
+  onChange: (value: string) => void
+  required?: boolean
+  invalid?: boolean
+}
+
+/** Mismo `DatePicker` que usa Establecimiento, con el label flotante del resto de campos del alta. */
+export function MatriculaDateField({ id, label, value, onChange, required, invalid }: DateFieldProps) {
+  return (
+    <Field
+      orientation="vertical"
+      variant="outlined"
+      className="w-full gap-2"
+      data-invalid={invalid ? "true" : undefined}
+    >
+      <FieldLabel htmlFor={id}>
+        {label}
+        {required ? "*" : ""}
+      </FieldLabel>
+      <DatePicker
+        id={id}
+        mode="date"
+        value={parseDateValue(value)}
+        aria-invalid={invalid}
+        onChange={(date) => onChange(formatDateValue(date) ?? "")}
       />
     </Field>
   )
@@ -359,6 +403,7 @@ export function MatriculaStudentSection({
         label="Documento estudiante"
         invalid={invalidFields.includes("student-document-number")}
         value={value.documentNumber}
+        numeric
         onChange={(documentNumber) => onChange({ ...value, documentNumber })}
       />
       <MatriculaTextField
@@ -395,10 +440,9 @@ export function MatriculaStudentSection({
         departments={departments}
         onChange={(documentExpedition) => onChange({ ...value, documentExpedition })}
       />
-      <MatriculaTextField
+      <MatriculaDateField
         id="student-birth-date"
         label="Fecha de nacimiento"
-        type="date"
         value={value.birthDate}
         onChange={(birthDate) => onChange({ ...value, birthDate })}
       />
@@ -478,6 +522,7 @@ interface ContactSectionProps {
   emailLabel: string
   value: MatriculaContact
   onChange: (value: MatriculaContact) => void
+  invalidFields?: string[]
 }
 
 export function MatriculaContactSection({
@@ -487,6 +532,7 @@ export function MatriculaContactSection({
   emailLabel,
   value,
   onChange,
+  invalidFields = [],
 }: ContactSectionProps) {
   return (
     <MatriculaFormSection title={title}>
@@ -495,6 +541,7 @@ export function MatriculaContactSection({
         label={phoneLabel}
         type="tel"
         value={value.phone}
+        numeric
         onChange={(phone) => onChange({ ...value, phone })}
       />
       <MatriculaTextField
@@ -502,6 +549,7 @@ export function MatriculaContactSection({
         label={emailLabel}
         type="email"
         value={value.email}
+        invalid={invalidFields.includes(`${idPrefix}-email`)}
         onChange={(email) => onChange({ ...value, email })}
       />
     </MatriculaFormSection>
@@ -768,6 +816,7 @@ export function MatriculaGuardianSection({
         id="guardian-document-number"
         label="Documento acudiente"
         value={value.documentNumber}
+        numeric
         onChange={(documentNumber) => onChange({ ...value, documentNumber })}
       />
       <DeptMunicipioFields
@@ -810,9 +859,10 @@ export function MatriculaGuardianEmploymentSection({ value, onChange }: Guardian
       />
       <MatriculaTextField
         id="guardian-employment-entity-phone"
-        label="Teléfono de acudiente"
+        label="Teléfono de la entidad acudiente"
         type="tel"
         value={value.entityPhone}
+        numeric
         onChange={(entityPhone) => onChange({ ...value, entityPhone })}
       />
       <MatriculaTextField
@@ -869,6 +919,10 @@ function FileTypeIcon({ file }: { file: File }) {
   return <FileTextIcon className="size-4 shrink-0 text-blue" />
 }
 
+function previewFile(file: File) {
+  window.open(URL.createObjectURL(file), "_blank", "noopener,noreferrer")
+}
+
 function downloadFile(file: File) {
   const url = URL.createObjectURL(file)
   const link = document.createElement("a")
@@ -878,10 +932,6 @@ function downloadFile(file: File) {
   link.click()
   link.remove()
   setTimeout(() => URL.revokeObjectURL(url), 60_000)
-}
-
-function previewFile(file: File) {
-  window.open(URL.createObjectURL(file), "_blank", "noopener,noreferrer")
 }
 
 // Misma fila en el sheet y en la grilla del formulario — afuera solo se le
@@ -903,19 +953,21 @@ function SupportFileEmptyRow({ invalid }: { invalid?: boolean }) {
 
 interface SupportFileRowProps {
   file: File
-  /** El sheet agrega "Eliminar"; afuera solo se ve/descarga. */
+  /** El sheet agrega "Eliminar"; afuera solo se ve. */
   onRemove?: (file: File) => void
+  /** El sheet además ofrece "Descargar"; afuera (grilla del formulario) no. */
+  showDownload?: boolean
 }
 
-function SupportFileRow({ file, onRemove }: SupportFileRowProps) {
+function SupportFileRow({ file, onRemove, showDownload = false }: SupportFileRowProps) {
   return (
     <div className="flex items-center justify-between gap-2 border-b border-border pb-1.5 text-sm">
       <span className="flex min-w-0 items-center gap-2">
         <FileTypeIcon file={file} />
         <span className="truncate">{file.name}</span>
       </span>
-      <span className="flex shrink-0 items-center gap-1">
-        <span className="text-xs text-muted-foreground">{formatFileSize(file.size)}</span>
+      <span className="flex shrink-0 items-center gap-0.5">
+        <span className="mr-1 text-xs text-muted-foreground">{formatFileSize(file.size)}</span>
         <Button
           type="button"
           variant="ghost"
@@ -926,16 +978,18 @@ function SupportFileRow({ file, onRemove }: SupportFileRowProps) {
         >
           <EyeIcon />
         </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          color="neutral"
-          size="icon-sm"
-          aria-label={`Descargar ${file.name}`}
-          onClick={() => downloadFile(file)}
-        >
-          <FileDownloadOutlinedIcon />
-        </Button>
+        {showDownload && (
+          <Button
+            type="button"
+            variant="ghost"
+            color="neutral"
+            size="icon-sm"
+            aria-label={`Descargar ${file.name}`}
+            onClick={() => downloadFile(file)}
+          >
+            <FileDownloadOutlinedIcon />
+          </Button>
+        )}
         {onRemove && (
           <Button
             type="button"
@@ -971,19 +1025,21 @@ function SupportFilesSheetField({ config, value, onChange }: SupportFilesSheetFi
           {config.label}
           {config.required ? "*" : ""}
         </span>
-        <FileUploadTrigger
-          render={
-            <Button
-              type="button"
-              variant="ghost"
-              color="primary"
-              size="icon-sm"
-              aria-label={`Adjuntar ${config.label}`}
-            />
-          }
-        >
-          <PaperclipIcon />
-        </FileUploadTrigger>
+        {(config.multiple || value.length === 0) && (
+          <FileUploadTrigger
+            render={
+              <Button
+                type="button"
+                variant="ghost"
+                color="primary"
+                size="icon-sm"
+                aria-label={`Adjuntar ${config.label}`}
+              />
+            }
+          >
+            <PaperclipIcon />
+          </FileUploadTrigger>
+        )}
       </div>
 
       {value.length === 0 ? (
@@ -991,7 +1047,7 @@ function SupportFilesSheetField({ config, value, onChange }: SupportFilesSheetFi
       ) : (
         <div className="flex flex-col gap-2">
           {value.map((file) => (
-            <SupportFileRow key={fileKey(file)} file={file} onRemove={removeFile} />
+            <SupportFileRow key={fileKey(file)} file={file} onRemove={removeFile} showDownload />
           ))}
         </div>
       )}
@@ -1009,7 +1065,7 @@ interface SupportFilesSheetProps {
 export function SupportFilesSheet({ open, onOpenChange, value, onChange }: SupportFilesSheetProps) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full gap-0 data-[side=right]:sm:max-w-2xl">
+      <SheetContent className="w-full gap-0 data-[side=right]:sm:max-w-lg">
         <SheetHeader>
           <SheetTitle>Archivos de soporte</SheetTitle>
           <SheetDescription>
@@ -1065,16 +1121,18 @@ export function MatriculaSupportFilesSection({
                 {field.label}
                 {field.required ? "*" : ""}
               </span>
-              <Button
-                type="button"
-                variant="ghost"
-                color="primary"
-                size="icon-sm"
-                aria-label={`Adjuntar ${field.label}`}
-                onClick={() => setOpen(true)}
-              >
-                <PaperclipIcon />
-              </Button>
+              {(field.multiple || files.length === 0) && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  color="primary"
+                  size="icon-sm"
+                  aria-label={`Adjuntar ${field.label}`}
+                  onClick={() => setOpen(true)}
+                >
+                  <PaperclipIcon />
+                </Button>
+              )}
             </div>
 
             {files.length === 0 ? (

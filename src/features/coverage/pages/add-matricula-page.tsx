@@ -23,6 +23,7 @@ import type {
   MatriculaHomologationInfo,
 } from "@/features/coverage/api/types/matricula"
 import { HomologationMatriculaDialog } from "@/features/coverage/components/dialogs/dialog-homologation-matricula"
+import { TransferGradesDialog } from "@/features/coverage/components/dialogs/dialog-transfer-grades-matricula"
 import { StudentAlreadyMatriculatedDialog } from "@/features/coverage/components/dialogs/dialog-student-already-matriculated"
 import {
   MatriculaSupportFilesSection,
@@ -38,6 +39,40 @@ import {
 } from "@/features/coverage/utils/matricula-form-defaults"
 
 const ADD_MATRICULA_FORM_ID = "create-matricula-form"
+
+// Mock — el backend real va a devolver los periodos del colegio de origen y
+// los de la institución actual junto con `MatriculaHomologationInfo`; acá se
+// simulan con listas de largo variable a propósito, para no asumir que
+// siempre son 4 y 2 respectivamente.
+const MOCK_ORIGIN_PERIODS = [
+  { id: "origin-1", label: "1° periodo", startDate: "01/02/2024", endDate: "30/04/2024" },
+  { id: "origin-2", label: "2° periodo", startDate: "02/05/2024", endDate: "12/07/2024" },
+  { id: "origin-3", label: "3° periodo", startDate: "05/08/2024", endDate: "11/10/2024" },
+  { id: "origin-4", label: "4° periodo", startDate: "21/10/2024", endDate: "20/12/2024" },
+]
+
+const MOCK_INSTITUTION_PERIODS = [
+  { id: 1, abbreviation: "P1", name: "Primer periodo" },
+  { id: 2, abbreviation: "P2", name: "Segundo periodo" },
+]
+
+// Mock del paso 2 (Asignaturas) — el backend real todavía no expone el cruce
+// automático entre asignaturas del colegio de origen y las de la institución.
+const MOCK_GRADE_PERIOD_LABELS = ["P1", "P2", "P3", "P4"]
+
+const MOCK_SUBJECT_MATCHES = [
+  { id: "s1", originSubject: "Matemáticas", institutionSubject: "Matemáticas", grades: ["4.2", "4.0", null, null] },
+  { id: "s2", originSubject: "Lengua Castellana", institutionSubject: "Español", grades: ["4.5", "4.3", null, null] },
+  { id: "s3", originSubject: "Ciencias Naturales", institutionSubject: "Educación Ambiental", grades: ["4.1", "4.2", null, null] },
+  { id: "s4", originSubject: "Ciencias Sociales", institutionSubject: "Ciencias Sociales", grades: ["3.9", "4.1", null, null] },
+  { id: "s5", originSubject: "Inglés", institutionSubject: "Lengua Extranjera", grades: ["4.6", "4.4", null, null] },
+  { id: "s6", originSubject: "Educación Física", institutionSubject: "Recreación y Deportes", grades: ["4.3", "4.5", null, null] },
+  { id: "s7", originSubject: "Educación Artística", institutionSubject: "Artística", grades: ["4.7", "4.6", null, null] },
+  { id: "s8", originSubject: "Informática", institutionSubject: "Tecnología y Sistemas", grades: ["4.4", "4.3", null, null] },
+  { id: "s9", originSubject: "Emprendimiento", institutionSubject: null, grades: ["4.4", "4.3", null, null] },
+  { id: "s10", originSubject: null, institutionSubject: "Educación Financiera", grades: [null, null, null, null] },
+  { id: "s11", originSubject: null, institutionSubject: "Innovación y Creatividad", grades: [null, null, null, null] },
+]
 
 export function AddMatriculaPage() {
   return (
@@ -63,6 +98,10 @@ function AddMatriculaPageContent() {
     info: MatriculaHomologationInfo
     mode: "again" | "close"
   } | null>(null)
+  // Se activa cuando el usuario elige "Sí, homologar" — reemplaza el diálogo
+  // de confirmación por el wizard de traslado de calificaciones (mismo
+  // `pendingHomologation` de fondo, todavía sin cerrar el alta).
+  const [showTransferGrades, setShowTransferGrades] = useState(false)
 
   // Se llena cuando `checkMatriculaByDocument` encuentra una matrícula
   // "activo" con el mismo documento — bloquea el guardado hasta que el
@@ -191,15 +230,21 @@ function AddMatriculaPageContent() {
 
   function handleHomologationChoice(homologate: boolean) {
     if (!pendingHomologation) return
+    if (homologate) {
+      setShowTransferGrades(true)
+      return
+    }
     const { matricula, mode } = pendingHomologation
     setPendingHomologation(null)
-    finishSave(
-      matricula,
-      mode,
-      homologate
-        ? "Las calificaciones previas se homologaron correctamente."
-        : "No se homologaron las calificaciones previas.",
-    )
+    finishSave(matricula, mode, "No se homologaron las calificaciones previas.")
+  }
+
+  function handleTransferGradesCancel() {
+    if (!pendingHomologation) return
+    const { matricula, mode } = pendingHomologation
+    setShowTransferGrades(false)
+    setPendingHomologation(null)
+    finishSave(matricula, mode, "Las calificaciones previas se homologaron correctamente.")
   }
 
   return (
@@ -278,11 +323,22 @@ function AddMatriculaPageContent() {
         </TableScreenFooter>
       )}
 
-      {pendingHomologation && (
+      {pendingHomologation && !showTransferGrades && (
         <HomologationMatriculaDialog
           matricula={pendingHomologation.matricula}
           homologation={pendingHomologation.info}
           onChoice={handleHomologationChoice}
+        />
+      )}
+
+      {pendingHomologation && showTransferGrades && (
+        <TransferGradesDialog
+          lastUpdated="15/04/2024"
+          originPeriods={MOCK_ORIGIN_PERIODS}
+          institutionPeriods={MOCK_INSTITUTION_PERIODS}
+          subjectMatches={MOCK_SUBJECT_MATCHES}
+          gradePeriodLabels={MOCK_GRADE_PERIOD_LABELS}
+          onCancel={handleTransferGradesCancel}
         />
       )}
 
