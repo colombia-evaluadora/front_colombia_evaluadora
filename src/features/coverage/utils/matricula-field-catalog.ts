@@ -167,7 +167,7 @@ export const MATRICULA_FIELD_CATALOG: MatriculaFieldCatalogSection[] = [
       { id: "guardian-employment-profession", label: "Profesión acudiente" },
       { id: "guardian-employment-entity-name", label: "Nombre de la entidad acudiente" },
       { id: "guardian-employment-entity-address", label: "Dirección de la entidad acudiente" },
-      { id: "guardian-employment-entity-phone", label: "Teléfono de acudiente" },
+      { id: "guardian-employment-entity-phone", label: "Teléfono de la entidad acudiente" },
       { id: "guardian-employment-entity-position", label: "Cargo entidad acudiente" },
     ],
   },
