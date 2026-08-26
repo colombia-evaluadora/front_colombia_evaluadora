@@ -19,7 +19,7 @@ interface StudentAlreadyMatriculatedDialogProps {
 
 /**
  * Se abre sola cuando `checkMatriculaByDocument` (ver `add-matricula-page.tsx`)
- * encuentra una matrícula "activo" con el mismo documento — bloquea el alta
+ * encuentra una matrícula "cursando" con el mismo documento — bloquea el alta
  * en vez de dejar crear un duplicado. Solo tiene un botón: no hay nada que
  * "confirmar", el usuario tiene que corregir el documento o cerrar el
  * formulario.

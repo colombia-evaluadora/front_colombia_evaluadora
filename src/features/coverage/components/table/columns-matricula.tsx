@@ -1,7 +1,6 @@
 import { Link } from "@tanstack/react-router"
 import type { ColumnDef } from "@tanstack/react-table"
 
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { DataTableColumnHeader } from "@/components/data-table"
@@ -9,11 +8,12 @@ import { EyeIcon, PencilIcon } from "@/components/ui/icons"
 
 import { paths } from "@/config/paths"
 import { formatGrade, SHIFT_LABELS, EDUCATION_LEVEL_LABELS } from "@/features/coverage/api/ui-mappings"
-import { MATRICULA_STATUS_BADGE, MATRICULA_STATUS_LABELS } from "@/features/coverage/api/ui-mappings-matricula"
+import { MATRICULA_STATUS_LABELS } from "@/features/coverage/api/ui-mappings-matricula"
 import type { Matricula } from "@/features/coverage/api/types/matricula"
 import { DeleteMatriculaDialog } from "@/features/coverage/components/dialogs/dialog-delete-matricula"
 import { FilesMatriculaDialog } from "@/features/coverage/components/dialogs/dialog-files-matricula"
 import { RetirarMatriculaDialog } from "@/features/coverage/components/dialogs/dialog-retirar-matricula"
+import { ReingresarMatriculaDialog } from "@/features/coverage/components/dialogs/dialog-reingresar-matricula"
 
 function formatEnrollmentDate(iso: string): string {
   return new Date(iso).toLocaleDateString("es-CO", { year: "numeric", month: "2-digit", day: "2-digit" })
@@ -127,10 +127,9 @@ export const columnsMatricula: ColumnDef<Matricula>[] = [
     accessorKey: "status",
     meta: { label: "Estado" },
     header: ({ column }) => <DataTableColumnHeader column={column} title="Estado" />,
-    cell: ({ row }) => {
-      const status = row.original.status
-      return <Badge {...MATRICULA_STATUS_BADGE[status]}>{MATRICULA_STATUS_LABELS[status]}</Badge>
-    },
+    cell: ({ row }) => (
+      <span className="text-sm text-foreground">{MATRICULA_STATUS_LABELS[row.original.status]}</span>
+    ),
   },
   {
     id: "actions",
@@ -161,6 +160,7 @@ export const columnsMatricula: ColumnDef<Matricula>[] = [
         </Button>
         <FilesMatriculaDialog matricula={row.original} />
         <RetirarMatriculaDialog matricula={row.original} />
+        <ReingresarMatriculaDialog matricula={row.original} />
         <DeleteMatriculaDialog matricula={row.original} />
       </div>
     ),

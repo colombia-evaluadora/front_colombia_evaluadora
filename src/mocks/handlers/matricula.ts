@@ -9,14 +9,20 @@ import {
   updateMatriculaDetails,
   updateMatriculaRow,
 } from "@/mocks/db/matricula"
-import { matriculaFieldConfigDb, updateMatriculaFieldConfig } from "@/mocks/db/matricula-field-config"
-import { CAMPUSES } from "@/mocks/db/reservations"
+import {
+  matriculaFieldConfigDb,
+  updateMatriculaFieldConfig,
+} from "@/mocks/db/matricula-field-config"
+import { CAMPUSES, GROUPS } from "@/mocks/db/reservations"
+import { SHIFTS } from "@/features/coverage/api/schema"
 import type {
   CreateMatriculaInput,
   CreateMatriculaResult,
   ExportFormat,
   ExportResult,
   Matricula,
+  MatriculaDependentCatalogsRequest,
+  MatriculaDependentCatalogsResponse,
   MatriculaDetailResult,
   MatriculaDocumentCheckResult,
   MatriculaFieldConfigMap,
@@ -27,6 +33,17 @@ import type {
   MatriculaQueryRequest,
   MatriculaQueryResponse,
 } from "@/features/coverage/api/types/matricula"
+
+// Hash determinista y estable (no criptográfico) — solo para variar
+// "aleatoriamente" pero siempre igual el resultado según el string de
+// entrada, sin depender de `Math.random()`.
+function hashString(value: string): number {
+  let hash = 0
+  for (let i = 0; i < value.length; i++) {
+    hash = (hash * 31 + value.charCodeAt(i)) | 0
+  }
+  return Math.abs(hash)
+}
 
 const EXPORT_FORMAT_LABELS: Record<ExportFormat, string> = {
   pdf: "PDF",
@@ -75,10 +92,42 @@ function applySorting(rows: Matricula[], sorting: MatriculaQueryRequest["sorting
 }
 
 export const matriculaHandlers = [
+  // Jornadas por Sede, grupos por Grado — datos ficticios pero deterministas
+  // (ver `hashString`). El contrato ya queda listo para el endpoint real de
+  // oferta académica; solo hay que reemplazar este handler.
+  http.post("*/api/coverage/matricula/catalogos-dependientes", async ({ request }) => {
+    await delay(150)
+
+    const { campus, grade } = (await request.json()) as MatriculaDependentCatalogsRequest
+
+    let shifts = [...SHIFTS]
+    if (campus && shifts.length > 1) {
+      // Simula que no todas las sedes ofrecen todas las jornadas, sin dejar
+      // la lista vacía.
+      const dropIndex = hashString(campus) % shifts.length
+      shifts = shifts.filter((_, index) => index !== dropIndex)
+    }
+
+    let groups = [...GROUPS]
+    if (grade != null) {
+      // No es solo un slice por cantidad (eso repite "01","02" siempre) —
+      // se arma un subconjunto distinto por grado, rotando el punto de
+      // partida antes de recortar, para que el CONTENIDO cambie, no solo el
+      // tamaño.
+      const seed = hashString(`grade-${grade}`)
+      const count = 1 + (seed % GROUPS.length)
+      const offset = seed % GROUPS.length
+      groups = Array.from({ length: count }, (_, i) => GROUPS[(offset + i) % GROUPS.length]).sort()
+    }
+
+    return HttpResponse.json<MatriculaDependentCatalogsResponse>({ shifts, groups })
+  }),
+
   http.post("*/api/coverage/matricula/query", async ({ request }) => {
     await delay(250)
 
-    const { filters, sorting, pageIndex, pageSize } = (await request.json()) as MatriculaQueryRequest
+    const { filters, sorting, pageIndex, pageSize } =
+      (await request.json()) as MatriculaQueryRequest
 
     const filtered = applySorting(applyFilters(matriculaDb, filters), sorting)
 
@@ -240,6 +289,26 @@ export const matriculaHandlers = [
     return HttpResponse.json<MatriculaMutationResult>({
       status: "ok",
       message: "Estudiante retirado.",
+      matricula: updated,
+    })
+  }),
+
+  http.post("*/api/coverage/matricula/:id/reingresar", async ({ params }) => {
+    await delay(250)
+
+    const idParam = Array.isArray(params.id) ? params.id[0] : params.id
+    const updated = idParam ? updateMatriculaRow(idParam, { status: "cursando" }) : null
+
+    if (!updated) {
+      return HttpResponse.json<MatriculaMutationResult>(
+        { status: "error", message: "Estudiante no encontrado.", matricula: null },
+        { status: 404 },
+      )
+    }
+
+    return HttpResponse.json<MatriculaMutationResult>({
+      status: "ok",
+      message: "Estudiante reingresado.",
       matricula: updated,
     })
   }),

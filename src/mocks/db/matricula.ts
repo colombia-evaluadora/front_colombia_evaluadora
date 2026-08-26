@@ -11,9 +11,12 @@ import { RELATIONSHIP_OPTIONS } from "@/features/coverage/api/ui-mappings"
 
 function pickStatus(): MatriculaStatus {
   return faker.helpers.weightedArrayElement([
-    { value: "activo", weight: 80 },
-    { value: "retirado", weight: 12 },
-    { value: "trasladado", weight: 8 },
+    { value: "cursando", weight: 70 },
+    { value: "retirado", weight: 10 },
+    { value: "aprobado", weight: 8 },
+    { value: "reprobado", weight: 4 },
+    { value: "promovido", weight: 5 },
+    { value: "reubicado", weight: 3 },
   ])
 }
 
@@ -80,7 +83,7 @@ export function createMatriculaRow(id: string, details: MatriculaDetails): Matri
 
 export function insertMatricula(input: CreateMatriculaInput): Matricula {
   const id = crypto.randomUUID()
-  const details: MatriculaDetails = { ...input, status: input.academic.status || "activo" }
+  const details: MatriculaDetails = { ...input, status: input.academic.status || "cursando" }
   const row = createMatriculaRow(id, details)
 
   matriculaDetailsDb.set(id, details)
@@ -207,7 +210,7 @@ export function getMatriculaDetails(id: string): { matricula: Matricula; details
 }
 
 /**
- * Matrícula "activo" ya existente para ese documento — la misma idea que el
+ * Matrícula "cursando" ya existente para ese documento — la misma idea que el
  * autocompletado por documento de funcionarios/rector, pero acá el hallazgo
  * BLOQUEA el alta en vez de autocompletarla: dos matrículas activas del
  * mismo estudiante en el mismo año lectivo no tienen sentido.
@@ -215,7 +218,7 @@ export function getMatriculaDetails(id: string): { matricula: Matricula; details
 export function findActiveMatriculaByDocument(documentNumber: string): Matricula | null {
   const needle = documentNumber.trim()
   if (!needle) return null
-  return matriculaDb.find((item) => item.documentNumber === needle && item.status === "activo") ?? null
+  return matriculaDb.find((item) => item.documentNumber === needle && item.status === "cursando") ?? null
 }
 
 export function deleteMatriculaById(id: string) {

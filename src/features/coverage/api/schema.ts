@@ -109,7 +109,14 @@ export type CreateReservationFormValues = z.infer<typeof createReservationFormSc
 
 // ── Matrícula ────────────────────────────────────────────────────────────────
 
-export const MATRICULA_STATUSES = ["activo", "retirado", "trasladado"] as const
+export const MATRICULA_STATUSES = [
+  "cursando",
+  "aprobado",
+  "reprobado",
+  "promovido",
+  "reubicado",
+  "retirado",
+] as const
 
 // Filtros del buscador: mismo criterio que `establishmentFiltersFormSchema`
 // (texto libre + estado, todo string/array para que el form y la URL

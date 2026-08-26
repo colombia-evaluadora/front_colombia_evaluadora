@@ -21,6 +21,7 @@ import { columnsMatricula } from "@/features/coverage/components/table/columns-m
 import { SearchMatricula } from "@/features/coverage/components/search/search-matricula"
 import { ExportMatriculaDialog } from "@/features/coverage/components/dialogs/dialog-export-matricula"
 import { ExportSelectedMatriculaDialog } from "@/features/coverage/components/dialogs/dialog-export-selected-matricula"
+import { ModificarMatriculaDialog } from "@/features/coverage/components/dialogs/dialog-modificar-matricula"
 import { ClearSelectionDialog } from "@/features/establishment/employees/components/dialogs/dialog-clear-selection"
 
 interface MatriculaDataTableProps {
@@ -65,6 +66,14 @@ export function MatriculaDataTable({ title, action, titleAction }: MatriculaData
     () => rows.filter((row) => selectedIds.includes(row.id)).map((row) => row.id),
     [rows, selectedIds],
   )
+  const selectedRows = useMemo(
+    () => rows.filter((row) => selectedIds.includes(row.id)),
+    [rows, selectedIds],
+  )
+
+  function deselectRow(id: string) {
+    table.getRow(id)?.toggleSelected(false)
+  }
 
   return (
     <TableScreen>
@@ -79,9 +88,13 @@ export function MatriculaDataTable({ title, action, titleAction }: MatriculaData
           />
 
           <TableScreenActions>
-            {action}
             {hasSelection ? (
               <>
+                <ModificarMatriculaDialog
+                  selected={selectedRows}
+                  onRemove={deselectRow}
+                  resetSelection={resetSelection}
+                />
                 <ClearSelectionDialog resetSelection={resetSelection} />
                 <ExportSelectedMatriculaDialog
                   selectedIds={selectedRowIds}
@@ -89,7 +102,10 @@ export function MatriculaDataTable({ title, action, titleAction }: MatriculaData
                 />
               </>
             ) : (
-              <ExportMatriculaDialog filters={queryFilters} />
+              <>
+                {action}
+                <ExportMatriculaDialog filters={queryFilters} />
+              </>
             )}
           </TableScreenActions>
         </TableScreenToolbar>
