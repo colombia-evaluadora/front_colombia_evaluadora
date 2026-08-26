@@ -198,6 +198,8 @@ interface SelectFieldProps {
   labelFor?: (option: string) => string
   /** Rojo en el label y el borde del combobox — campo obligatorio sin elegir. */
   invalid?: boolean
+  /** Solo lectura: el valor se muestra pero no se puede cambiar desde acá. */
+  disabled?: boolean
 }
 
 export function MatriculaSelectField({
@@ -210,6 +212,7 @@ export function MatriculaSelectField({
   placeholder = "Seleccionar",
   labelFor = (option) => option,
   invalid,
+  disabled,
 }: SelectFieldProps) {
   const items = Object.fromEntries(options.map((option) => [option, labelFor(option)]))
   return (
@@ -223,7 +226,12 @@ export function MatriculaSelectField({
         {label}
         {required ? "*" : ""}
       </FieldLabel>
-      <ComboboxField items={items} value={value} onValueChange={(next) => onChange(next ?? "")}>
+      <ComboboxField
+        items={items}
+        value={value}
+        onValueChange={(next) => onChange(next ?? "")}
+        disabled={disabled}
+      >
         <ComboboxFieldTrigger id={id} size="sm" className="w-full" aria-invalid={invalid}>
           <ComboboxFieldValue placeholder={placeholder} />
         </ComboboxFieldTrigger>
@@ -297,8 +305,11 @@ interface AcademicSectionProps {
   catalogs?: ReservationCatalogs
   /** Ids de campos obligatorios sin llenar (ver `validateMatricula`). */
   invalidFields?: string[]
-  /** El alta no lo pide — toda matrícula nueva arranca "activo" — así que
-   * solo se muestra en detalle/edición. */
+  /** El alta no lo pide — toda matrícula nueva arranca "cursando" — así que
+   * solo se muestra en detalle/edición. Siempre de solo lectura: el estado no
+   * se edita desde el formulario, solo cambia vía "Retirar"/"Reingreso"
+   * (ver MatriculaToolbar) — se muestra acá para que el valor actual quede a
+   * la vista mientras se edita el resto de la matrícula. */
   showStatus?: boolean
 }
 
@@ -351,6 +362,13 @@ export function MatriculaAcademicSection({
         invalid={invalidFields.includes("matricula-group")}
         onChange={(group) => onChange({ ...value, group })}
       />
+      <MatriculaSelectField
+        id="matricula-specialty"
+        label="Carácter/Especialidad/Énfasis"
+        value={value.specialty}
+        options={SPECIALTY_OPTIONS}
+        onChange={(specialty) => onChange({ ...value, specialty })}
+      />
       {showStatus && (
         <MatriculaSelectField
           id="matricula-status"
@@ -361,15 +379,9 @@ export function MatriculaAcademicSection({
             const entry = MATRICULA_STATUSES.find((status) => MATRICULA_STATUS_LABELS[status] === label)
             onChange({ ...value, status: entry ?? "" })
           }}
+          disabled
         />
       )}
-      <MatriculaSelectField
-        id="matricula-specialty"
-        label="Carácter/Especialidad/Énfasis"
-        value={value.specialty}
-        options={SPECIALTY_OPTIONS}
-        onChange={(specialty) => onChange({ ...value, specialty })}
-      />
     </MatriculaFormSection>
   )
 }

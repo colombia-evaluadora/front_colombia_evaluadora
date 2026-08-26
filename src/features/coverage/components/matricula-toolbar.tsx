@@ -7,6 +7,7 @@ import { paths } from "@/config/paths"
 import { DeleteMatriculaDialog } from "@/features/coverage/components/dialogs/dialog-delete-matricula"
 import { FilesMatriculaDialog } from "@/features/coverage/components/dialogs/dialog-files-matricula"
 import { RetirarMatriculaDialog } from "@/features/coverage/components/dialogs/dialog-retirar-matricula"
+import { ReingresarMatriculaDialog } from "@/features/coverage/components/dialogs/dialog-reingresar-matricula"
 import type { Matricula } from "@/features/coverage/api/types/matricula"
 
 interface MatriculaToolbarProps {
@@ -45,6 +46,7 @@ export function MatriculaToolbar({ matricula, showModificar = true }: MatriculaT
         Asignaturas
       </Button>
       <RetirarMatriculaDialog matricula={matricula} trigger="button" />
+      <ReingresarMatriculaDialog matricula={matricula} trigger="button" />
       <FilesMatriculaDialog matricula={matricula} trigger="button" />
       <DeleteMatriculaDialog
         matricula={matricula}

@@ -1,9 +1,35 @@
 import type { EducationLevel, Shift } from "@/features/coverage/api/types/reservation"
 import type { MatriculaFieldSetting } from "@/features/coverage/utils/matricula-field-catalog"
 
-export type MatriculaStatus = "activo" | "retirado" | "trasladado"
+// Estados del estudiante (ver resumen de reglas de transición): "cursando"
+// es el único que puede pasar a "retirado" (y viceversa, "reingreso"). Los
+// demás ("aprobado"/"reprobado"/"promovido"/"reubicado") son estados finales
+// de fin de año o de cambio de grado — de momento no hay UI que los dispare,
+// solo se modela el valor.
+export type MatriculaStatus =
+  | "cursando"
+  | "aprobado"
+  | "reprobado"
+  | "promovido"
+  | "reubicado"
+  | "retirado"
 
 /** Fila de la tabla de matrícula (columnas del listado). */
+// ── Catálogos dependientes (Jornada por Sede+Grado, Grupo por Grado) ───────
+// El mock (`mocks/handlers/matricula.ts`) devuelve datos ficticios pero
+// deterministas — el contrato (request/response) ya queda listo para cuando
+// exista el endpoint real de oferta académica por sede: solo hay que cambiar
+// el handler, no el front.
+export interface MatriculaDependentCatalogsRequest {
+  campus?: string
+  grade?: number
+}
+
+export interface MatriculaDependentCatalogsResponse {
+  shifts: Shift[]
+  groups: string[]
+}
+
 export interface Matricula {
   id: string
   /** Número de identificación del estudiante (columna "ID" de la tabla). */
@@ -113,7 +139,7 @@ export interface MatriculaAcademicInfo {
   grade: string
   group: string
   /** "" mientras no se elige — el alta lo deja así y el backend asume
-   * "activo"; edición/detalle sí lo traen resuelto. */
+   * "cursando"; edición/detalle sí lo traen resuelto. */
   status: MatriculaStatus | ""
   specialty: string
 }
@@ -219,7 +245,7 @@ export interface MatriculaFieldConfigResult {
 // ── Detección de matrícula activa por documento ────────────────────────────
 // Se consulta desde el alta apenas el usuario termina de escribir el
 // documento del estudiante (ver `add-matricula-page.tsx`): si ya hay una
-// matrícula "activo" con ese número, el alta se bloquea en vez de crear un
+// matrícula "cursando" con ese número, el alta se bloquea en vez de crear un
 // duplicado.
 
 export interface MatriculaDocumentCheckResult {

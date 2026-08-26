@@ -13,87 +13,96 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
-import { PersonRemoveIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
+import { PersonAddIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 
-import { useRetireMatricula } from "@/features/coverage/api/mutations/retire-matricula"
+import { useReingresarMatricula } from "@/features/coverage/api/mutations/reingresar-matricula"
 import type { Matricula } from "@/features/coverage/api/types/matricula"
 
-interface RetirarMatriculaDialogProps {
+interface ReingresarMatriculaDialogProps {
   matricula: Matricula
   /** "icon" (fila de la tabla) o "button" (barra de detalle/edición). */
   trigger?: "icon" | "button"
 }
 
-export function RetirarMatriculaDialog({ matricula, trigger = "icon" }: RetirarMatriculaDialogProps) {
+export function ReingresarMatriculaDialog({
+  matricula,
+  trigger = "icon",
+}: ReingresarMatriculaDialogProps) {
   const [open, setOpen] = useState(false)
   const fullName = `${matricula.firstName} ${matricula.lastName}`
 
-  const retireMutation = useRetireMatricula({
+  const reingresarMutation = useReingresarMatricula({
     mutationConfig: {
       onSuccess: (result) => {
         if (result.status === "error") {
           toast.error(result.message)
           return
         }
-        toast.success(`El estudiante ${fullName} quedó en estado retirado.`)
+        toast.success(`El estudiante ${fullName} quedó en estado cursando.`)
         setOpen(false)
       },
       onError: () => {
-        toast.error("No se pudo retirar al estudiante.")
+        toast.error("No se pudo reingresar al estudiante.")
       },
     },
   })
 
   // El estado de la matrícula solo cambia vía "Retirar"/"Reingreso" — este
-  // botón únicamente tiene sentido mientras el estudiante está cursando.
-  if (matricula.status !== "cursando") return null
+  // botón únicamente tiene sentido cuando ya está retirado.
+  if (matricula.status !== "retirado") return null
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger
         render={
           trigger === "button" ? (
-            <Button type="button" variant="outline" color="primary" size="sm" aria-label={`Retirar a ${fullName}`} />
+            <Button
+              type="button"
+              variant="outline"
+              color="primary"
+              size="sm"
+              aria-label={`Reingresar a ${fullName}`}
+            />
           ) : (
             <Button
               type="button"
               variant="ghost"
               color="neutral"
               size="icon-sm"
-              aria-label={`Retirar a ${fullName}`}
+              aria-label={`Reingresar a ${fullName}`}
             />
           )
         }
       >
-        <PersonRemoveIcon data-icon={trigger === "button" ? "inline-start" : undefined} />
-        {trigger === "button" && "Retirar"}
+        <PersonAddIcon data-icon={trigger === "button" ? "inline-start" : undefined} />
+        {trigger === "button" && "Reingreso"}
       </AlertDialogTrigger>
       <AlertDialogContent className="sm:max-w-md">
         <AlertDialogHeader>
-          <AlertDialogTitle>Confirmación de retiro</AlertDialogTitle>
+          <AlertDialogTitle>Confirmación de reingreso</AlertDialogTitle>
           <AlertDialogDescription>
-            ¿Está seguro de que desea retirar al estudiante <strong>{fullName}</strong>?
+            ¿Está seguro de que desea reingresar al estudiante <strong>{fullName}</strong>?
           </AlertDialogDescription>
           <AlertDialogDescription>
-            Al confirmar, el estudiante quedará en estado <strong>retirado</strong> y esta acción
+            Al confirmar, el estudiante quedará en estado <strong>cursando</strong> y esta acción
             quedará registrada en su historial de matrícula.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogAction
             color="primary"
-            disabled={retireMutation.isPending}
-            aria-busy={retireMutation.isPending}
-            onClick={() => retireMutation.mutate(matricula.id)}
+            disabled={reingresarMutation.isPending}
+            aria-busy={reingresarMutation.isPending}
+            onClick={() => reingresarMutation.mutate(matricula.id)}
           >
-            {retireMutation.isPending ? (
+            {reingresarMutation.isPending ? (
               <SpinnerIcon data-icon="inline-start" className="animate-spin" />
             ) : (
-              <PersonRemoveIcon data-icon="inline-start" />
+              <PersonAddIcon data-icon="inline-start" />
             )}
-            Retirar estudiante
+            Reingresar estudiante
           </AlertDialogAction>
-          <AlertDialogCancel variant="fill" color="neutral" disabled={retireMutation.isPending}>
+          <AlertDialogCancel variant="fill" color="neutral" disabled={reingresarMutation.isPending}>
             <XIcon data-icon="inline-start" />
             Cancelar
           </AlertDialogCancel>

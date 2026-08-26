@@ -25,7 +25,7 @@ interface MatriculaFormBodyProps {
    * disabled>` nativo apaga inputs y botones (los `ComboboxFieldTrigger`
    * son `<button>`) sin tener que pasar `disabled` a cada sección. */
   disabled?: boolean
-  /** El alta no lo pide (toda matrícula nueva arranca "activo"); detalle y
+  /** El alta no lo pide (toda matrícula nueva arranca "cursando"); detalle y
    * edición sí lo muestran. */
   showStatus?: boolean
 }

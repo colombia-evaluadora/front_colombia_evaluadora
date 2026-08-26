@@ -1,16 +1,12 @@
-import type { BadgeProps } from "@/features/coverage/api/ui-mappings"
 import type { MatriculaStatus } from "@/features/coverage/api/types/matricula"
 
 export const MATRICULA_STATUS_LABELS: Record<MatriculaStatus, string> = {
-  activo: "Activo",
+  cursando: "Cursando",
+  aprobado: "Aprobado",
+  reprobado: "Reprobado",
+  promovido: "Promovido",
+  reubicado: "Reubicado",
   retirado: "Retirado",
-  trasladado: "Trasladado",
-}
-
-export const MATRICULA_STATUS_BADGE: Record<MatriculaStatus, BadgeProps> = {
-  activo: { variant: "soft", color: "success" },
-  retirado: { variant: "soft", color: "destructive" },
-  trasladado: { variant: "soft", color: "warning" },
 }
 
 // ── Catálogos del formulario de alta ("Agregar estudiante") ───────────────

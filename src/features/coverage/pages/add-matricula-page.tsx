@@ -104,7 +104,7 @@ function AddMatriculaPageContent() {
   const [showTransferGrades, setShowTransferGrades] = useState(false)
 
   // Se llena cuando `checkMatriculaByDocument` encuentra una matrícula
-  // "activo" con el mismo documento — bloquea el guardado hasta que el
+  // "cursando" con el mismo documento — bloquea el guardado hasta que el
   // usuario corrija el documento (ver el `useEffect` con debounce, abajo).
   const [existingMatricula, setExistingMatricula] = useState<Matricula | null>(null)
   // Cerrar el modal ("Entendido") solo lo saca de pantalla — el guardado
