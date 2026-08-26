@@ -1073,7 +1073,7 @@ export function SupportFilesSheet({ open, onOpenChange, value, onChange }: Suppo
             estudiante.
           </SheetDescription>
         </SheetHeader>
-        <div className="flex flex-col gap-5 overflow-y-auto px-8 pb-8">
+        <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-8 pb-8">
           {SUPPORT_FILE_FIELDS.map((field) => (
             <SupportFilesSheetField
               key={field.key}
