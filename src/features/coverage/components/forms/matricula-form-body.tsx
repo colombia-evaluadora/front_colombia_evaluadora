@@ -80,6 +80,7 @@ export function MatriculaFormBody({
         emailLabel="Email estudiante"
         value={values.studentContact}
         onChange={(studentContact) => onChange({ ...values, studentContact })}
+        invalidFields={invalidFields}
       />
 
       <MatriculaPreviousYearSection
@@ -132,6 +133,7 @@ export function MatriculaFormBody({
         emailLabel="Email acudiente"
         value={values.guardianContact}
         onChange={(guardianContact) => onChange({ ...values, guardianContact })}
+        invalidFields={invalidFields}
       />
 
       <MatriculaGuardianEmploymentSection
