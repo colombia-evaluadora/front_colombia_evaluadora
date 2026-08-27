@@ -26,11 +26,14 @@ import type { ExportFormat } from "@/features/establishment/academic-period/api/
 interface ExportSelectedGradesDialogProps {
   selectedIds: number[]
   resetSelection: () => void
+  /** Acota el reporte al periodo que se esta viendo: sin esto sale vacio. */
+  academicPeriodId?: number
 }
 
 export function ExportSelectedGradesDialog({
   selectedIds,
   resetSelection,
+  academicPeriodId,
 }: ExportSelectedGradesDialogProps) {
   const [open, setOpen] = useState(false)
   const { notify } = useNotify()
@@ -51,7 +54,7 @@ export function ExportSelectedGradesDialog({
   })
 
   function handleExport(format: ExportFormat) {
-    exportSelected.mutate({ ids: selectedIds, format })
+    exportSelected.mutate({ ids: selectedIds, format, academicPeriodId })
   }
 
   const pendingFormat = exportSelected.isPending ? exportSelected.variables?.format : undefined

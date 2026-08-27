@@ -4,7 +4,7 @@ import type {
   OperationChange,
   OperationType,
   TableOperation,
-} from "@/features/audits/api/types/audit-table"
+} from "@/features/administration/audits/api/types/audit-table"
 import { auditTablesDb, getTableFields } from "@/mocks/db/audit-tables"
 
 const ENTITY_NAMES_BY_TABLE: Record<string, string[]> = {

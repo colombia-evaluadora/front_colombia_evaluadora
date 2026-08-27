@@ -1,5 +1,5 @@
 import { faker } from "@faker-js/faker"
-import type { AuditSession, SessionStatus } from "@/features/audits/api/types/audit"
+import type { AuditSession, SessionStatus } from "@/features/administration/audits/api/types/audit"
 
 function startOfToday(): Date {
   const now = new Date()

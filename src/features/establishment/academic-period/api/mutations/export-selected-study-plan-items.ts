@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query"
 
-import { api } from "@/lib/api-client"
+import { downloadReport } from "@/lib/report-client"
 import type { MutationConfig } from "@/lib/react-query"
 import type {
   ExportFormat,
@@ -10,15 +10,19 @@ import type {
 interface ExportSelectedStudyPlanItemsInput {
   ids: number[]
   format: ExportFormat
+  /** Sin esto el reporte sale vacío — ver `export-selected-area-subjects.ts`. */
+  academicPeriodId?: number
 }
 
-// Sin endpoint real en el contrato todavía — mismo caso que
-// escalas/grados/área-asignatura (ver comentario en `area-subject.ts` de los
-// mocks): el export no tiene función en el backend, solo el stub del front.
 function exportSelectedStudyPlanItems(
   input: ExportSelectedStudyPlanItemsInput,
 ): Promise<ExportResult> {
-  return api.post("/study-plan/export", input)
+  // `FK_PERIODO` acota (lo exige `fn_plan_reporte_listar`), `ids` recorta la
+  // selección — mismo patrón V69 que el resto del módulo.
+  return downloadReport("plan-estudio", {
+    format: input.format,
+    filters: { FK_PERIODO: input.academicPeriodId ?? null, ids: input.ids },
+  })
 }
 
 interface UseExportSelectedStudyPlanItemsOptions {

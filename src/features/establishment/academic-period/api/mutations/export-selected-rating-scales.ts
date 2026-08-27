@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query"
 
-import { api } from "@/lib/api-client"
+import { downloadReport } from "@/lib/report-client"
 import type { MutationConfig } from "@/lib/react-query"
 import type {
   ExportFormat,
@@ -10,10 +10,17 @@ import type {
 interface ExportSelectedRatingScalesInput {
   ids: number[]
   format: ExportFormat
+  /** Sin esto el reporte sale vacío — ver `export-selected-area-subjects.ts`. */
+  academicPeriodId?: number
 }
 
 function exportSelectedRatingScales(input: ExportSelectedRatingScalesInput): Promise<ExportResult> {
-  return api.post("/rating-scales/export", input)
+  // Mismo patrón V69 que el resto: `FK_PERIODO` acota (lo exige
+  // `fn_escala_listar`) e `ids` recorta la selección.
+  return downloadReport("escalas", {
+    format: input.format,
+    filters: { FK_PERIODO: input.academicPeriodId ?? null, ids: input.ids },
+  })
 }
 
 interface UseExportSelectedRatingScalesOptions {

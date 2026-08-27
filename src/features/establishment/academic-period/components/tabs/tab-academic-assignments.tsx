@@ -168,6 +168,7 @@ export function TabAcademicAssignments({ academicPeriodId }: TabAcademicAssignme
             <ExportSelectedAcademicAssignmentsDialog
               selectedIds={selectedIds.map(Number)}
               resetSelection={resetSelection}
+              academicPeriodId={academicPeriodId}
             />
           ) : (
             <ExportAcademicAssignmentsDialog academicPeriodId={academicPeriodId} />

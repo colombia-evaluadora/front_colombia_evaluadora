@@ -1,4 +1,4 @@
-import type { SessionStatusOption } from "@/features/audits/api/types/audit"
+import type { SessionStatusOption } from "@/features/administration/audits/api/types/audit"
 
 // Catálogo de estados de sesión de auditoría. Simula lo que en producción
 // entrega el backend (`key` + `label`), de modo que el front no hardcodee

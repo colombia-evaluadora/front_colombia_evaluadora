@@ -10,16 +10,29 @@ import type {
 interface ExportSelectedEvaluationPeriodsInput {
   ids: number[]
   format: ExportFormat
+  /**
+   * OBLIGATORIO en la práctica, aunque el tipo lo deje opcional.
+   *
+   * `fn_periodo_eval_listar` filtra con
+   * `WHERE pe.FK_TPERIODO_ACADEMICO = p_fk_periodo`, y `columna = NULL` nunca
+   * es verdadero: sin este dato la función devuelve CERO filas y el `ids` de
+   * abajo no tiene nada que recortar. El PDF sale con el encabezado y el
+   * texto "No hay registros que coincidan con los filtros aplicados", que
+   * parece un problema de datos pero es este bind faltante.
+   *
+   * A diferencia de `/periodos-academicos/reporte` —donde `fn_periodo_listar`
+   * tiene TODOS sus filtros opcionales y por eso `ids` solo sí alcanza—, acá
+   * el periodo padre es obligatorio.
+   */
+  academicPeriodId?: number
 }
 
 function exportSelectedEvaluationPeriods(
   input: ExportSelectedEvaluationPeriodsInput,
 ): Promise<ExportResult> {
-  // El filtro `ids` alcanza: identifica filas concretas, así que no hace
-  // falta acotar además por periodo académico.
   return downloadReport("periodos-evaluacion", {
     format: input.format,
-    filters: { ids: input.ids },
+    filters: { FK_PERIODO: input.academicPeriodId ?? null, ids: input.ids },
   })
 }
 

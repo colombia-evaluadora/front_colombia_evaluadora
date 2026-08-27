@@ -43,6 +43,8 @@ export function useUpdateAcademicPeriodReservation({
       // (ej. listado de establecimientos con cupos disponibles para
       // reserva) tiene que reconsultar al cambiar el flag.
       queryClient.invalidateQueries({ queryKey: ["reservations"] })
+      queryClient.invalidateQueries({ queryKey: ["pre-matricula"] })
+      queryClient.invalidateQueries({ queryKey: ["enrollments"] })
       mutationConfig?.onSuccess?.(...args)
     },
   })
