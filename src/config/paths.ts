@@ -56,6 +56,26 @@ export const paths = {
       path: "cobertura/matricula",
       getHref: () => "/app/cobertura/matricula",
     },
+    coberturaMatriculaAgregar: {
+      path: "cobertura/matricula/agregar",
+      getHref: () => "/app/cobertura/matricula/agregar",
+    },
+    coberturaMatriculaConfiguracion: {
+      path: "cobertura/matricula/configuracion",
+      getHref: () => "/app/cobertura/matricula/configuracion",
+    },
+    // Bajo `detalle/`, no `matricula/$matriculaId` a secas: un dinámico de un
+    // solo segmento ahí colisionaría con los estáticos de al lado (`agregar`,
+    // `configuracion`) — mismo motivo por el que establecimiento cuelga su
+    // edición de `editar/$id`, no de `$id` suelto.
+    coberturaMatriculaDetalle: {
+      path: "cobertura/matricula/detalle/$matriculaId",
+      getHref: (matriculaId: string) => `/app/cobertura/matricula/detalle/${matriculaId}`,
+    },
+    coberturaMatriculaEditar: {
+      path: "cobertura/matricula/detalle/$matriculaId/editar",
+      getHref: (matriculaId: string) => `/app/cobertura/matricula/detalle/${matriculaId}/editar`,
+    },
     // Las dos vistas del registro de actividad (por sesión y por tablas)
     // cuelgan del mismo prefijo `registro-de-actividad` para que el item del
     // menú pueda marcarse activo en cualquiera de las dos y en sus subrutas

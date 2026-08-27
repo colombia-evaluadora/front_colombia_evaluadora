@@ -80,16 +80,23 @@ export const academicAssignmentsHandlers = [
   // de la sede del periodo (rol TEACHER con permiso en esa sede), no
   // cualquier funcionario como devolvía `/api/establishments/employees/query`.
   // `PERIODO_ACADEMICO_ID` va por path param desde V85.
-  http.get("/api/eval-col/asignaciones/docentes/:academicPeriodId", async ({ params, request }) => {
+  http.post("/api/eval-col/asignaciones/docentes/:academicPeriodId", async ({ params, request }) => {
     await delay(250)
-    const url = new URL(request.url)
+    const body = (await request.json()) as {
+      FILTRO?: string
+      ESTADO?: EmployeeStatus
+      PAGE_INDEX?: string | number
+      PAGE_SIZE?: string | number
+      SORT_BY?: string
+      SORT_DIR?: string
+    }
     const academicPeriodId = Number(params.academicPeriodId)
-    const filtro = url.searchParams.get("filtro")?.toLowerCase()
-    const estado = url.searchParams.get("estado") as EmployeeStatus | null
-    const pageIndex = Number(url.searchParams.get("pageIndex") ?? 0)
-    const pageSize = Number(url.searchParams.get("pageSize") ?? 10)
-    const sortBy = url.searchParams.get("sortBy")
-    const sortDir = url.searchParams.get("sortDir")
+    const filtro = body.FILTRO?.toLowerCase()
+    const estado = body.ESTADO ?? null
+    const pageIndex = Number(body.PAGE_INDEX ?? 0)
+    const pageSize = Number(body.PAGE_SIZE ?? 10)
+    const sortBy = body.SORT_BY
+    const sortDir = body.SORT_DIR
 
     const period = academicPeriodsDb.find((p) => p.id === academicPeriodId)
     // `sedeId` es string en el periodo académico y numérico en la sede del

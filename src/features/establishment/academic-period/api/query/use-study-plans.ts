@@ -66,18 +66,23 @@ async function fetchStudyPlans(
 ): Promise<StudyPlanQueryResponse> {
   if (params.gradeId == null) return { rows: [], pageCount: 1, totalCount: 0 }
   const [primary] = params.sorting
-  const query = new URLSearchParams({
-    pageIndex: String(params.pageIndex),
-    pageSize: String(params.pageSize),
-  })
-  if (params.filters.asignatura) query.set("filtro", params.filters.asignatura)
+  // Nombres en UPPER_SNAKE: el backend matchea los tokens `:BODY.*` contra
+  // la llave literal del body (ver `fn_plan_listar` / use-assignment-teachers.ts).
+  const body: Record<string, string> = {
+    PAGE_INDEX: String(params.pageIndex),
+    PAGE_SIZE: String(params.pageSize),
+  }
+  if (params.filters.asignatura) body.FILTRO = params.filters.asignatura
   if (primary) {
-    query.set("sortingId", primary.id)
-    query.set("sortingDesc", String(primary.desc))
+    body.SORTING_ID = primary.id
+    body.SORTING_DESC = String(primary.desc)
   }
 
-  const raw: StudyPlanRawResponse = await api.get(
-    `/eval-col/grados/${params.gradeId}/plan-asignaturas?${query.toString()}`
+  // `/query` porque `POST /grados/:ID/plan-asignaturas` (sin sufijo) ya está
+  // tomado por la creación de ítem (create-study-plan.ts).
+  const raw: StudyPlanRawResponse = await api.post(
+    `/eval-col/grados/${params.gradeId}/plan-asignaturas/query`,
+    body,
   )
   const rows = (raw.rows ?? []).map(toStudyPlanItem)
   const totalCount = raw.rows?.[0]?.total_count ?? 0
