@@ -169,6 +169,7 @@ export function TabRatingScales({ academicPeriodId }: TabRatingScalesProps) {
               levelCount={selectedIds.length}
               scaleCodigos={selectedScaleCodigos}
               resetSelection={resetSelection}
+              academicPeriodId={academicPeriodId}
             />
           </>
         ) : (

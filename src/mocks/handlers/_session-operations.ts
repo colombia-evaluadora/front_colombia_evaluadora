@@ -1,8 +1,8 @@
 import { faker } from "@faker-js/faker"
 
 import { auditTablesDb, getTableFields } from "@/mocks/db/audit-tables"
-import type { SessionOperation, AuditSession } from "@/features/audits/api/types/audit"
-import type { OperationChange, OperationType } from "@/features/audits/api/types/audit-table"
+import type { SessionOperation, AuditSession } from "@/features/administration/audits/api/types/audit"
+import type { OperationChange, OperationType } from "@/features/administration/audits/api/types/audit-table"
 
 // Caché de operaciones por sesión. La generación es determinística
 // (faker con el mismo seed produce los mismos valores), pero queremos

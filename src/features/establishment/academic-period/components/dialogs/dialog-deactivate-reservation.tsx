@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button"
 
 import { useUpdateAcademicPeriodReservation } from "@/features/establishment/academic-period/api/mutations/update-academic-period-reservation"
 import { useAcademicPeriodQuery } from "@/features/establishment/academic-period/api/query/use-academic-period"
+import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 import type { AcademicPeriod } from "@/features/establishment/academic-period/api/types/academic-period"
 import type { CreateAcademicPeriodRequest } from "@/features/establishment/academic-period/api/types/academic-period"
 
@@ -66,11 +67,12 @@ export function DeactivateReservationDialog({ period }: DeactivateReservationDia
   const { data: detail, isFetching, isError, error } = useAcademicPeriodQuery(
     shouldFetch ? period.id : undefined,
   )
+  const { puedeEditar } = useMenuPermission("PERIODOS_ACADEMICOS")
 
   // Solo se puede desactivar si el flag está activo. La regla "solo si está
   // activo" se aplica también en el botón (no se renderiza cuando ya está
   // inactivo); este guard es defensivo.
-  const canDeactivate = period.reservationEnabled
+  const canDeactivate = period.reservationEnabled && puedeEditar
 
   useEffect(() => {
     if (open) setShouldFetch(true)

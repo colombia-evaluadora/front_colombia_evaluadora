@@ -30,12 +30,16 @@ import {
   auditTablesSearchSchema,
   sessionOperationsSearchSchema,
   tableOperationsSearchSchema,
-} from "@/features/audits/api/schema"
+} from "@/features/administration/audits/api/schema"
 import { academicPeriodsSearchSchema } from "@/features/establishment/academic-period/api/schema"
 import { establishmentsSearchSchema } from "@/features/establishment/institution/api/schema"
 import { campusesSearchSchema } from "@/features/establishment/campuses/api/schema"
 import { employeesSearchSchema } from "@/features/establishment/employees/api/schema"
 import { NoticeProvider } from "@/components/notice/notice-context"
+import {
+  getFirstNavUrl,
+  navItemsQueryOptions,
+} from "@/features/navigation/api/query/use-nav-items-query"
 
 /*const LandingPage = lazyRouteComponent(
   () => import("@/features/landing/pages/landing-page"),
@@ -64,15 +68,15 @@ const ProtectedLayout = lazyRouteComponent(
   "ProtectedLayout",
 )
 const AuditSessionPage = lazyRouteComponent(
-  () => import("@/features/audits/pages/audit-session-page"),
+  () => import("@/features/administration/audits/pages/audit-session-page"),
   "AuditSessionPage",
 )
 const AuditTablesPage = lazyRouteComponent(
-  () => import("@/features/audits/pages/audit-tables-page"),
+  () => import("@/features/administration/audits/pages/audit-tables-page"),
   "AuditTablesPage",
 )
 const TableOperationsPage = lazyRouteComponent(
-  () => import("@/features/audits/pages/table-operations-page"),
+  () => import("@/features/administration/audits/pages/table-operations-page"),
   "TableOperationsPage",
 )
 const ReservationsPage = lazyRouteComponent(
@@ -80,7 +84,7 @@ const ReservationsPage = lazyRouteComponent(
   "ReservationsPage",
 )
 const SessionOperationsPage = lazyRouteComponent(
-  () => import("@/features/audits/pages/session-operations-page"),
+  () => import("@/features/administration/audits/pages/session-operations-page"),
   "SessionOperationsPage",
 )
 const AcademicPeriodsPage = lazyRouteComponent(
@@ -303,12 +307,24 @@ const PERIODOS_CRUMB = {
   to: paths.app.periodosAcademicos.getHref(),
 }
 
-// `/app` no tiene página propia: manda a la primera pantalla del menú.
+// `/app` no tiene página propia: manda a la primera pantalla del menú del
+// usuario (el primer item del sidebar), no a una ruta fija — hay roles sin
+// Cobertura asignada, que caían en una pantalla que no les corresponde.
+// Si el menú viene vacío o falla la llamada, Cobertura queda como último
+// recurso: el layout protegido ya se encarga de la sesión.
 const appIndexRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: "/",
-  beforeLoad: () => {
-    throw redirect({ to: paths.app.coberturaReservaCupo.getHref() })
+  beforeLoad: async ({ context }) => {
+    let firstUrl: string | null = null
+    try {
+      const items = await context.queryClient.ensureQueryData(navItemsQueryOptions)
+      firstUrl = getFirstNavUrl(items)
+    } catch {
+      firstUrl = null
+    }
+
+    throw redirect({ to: firstUrl ?? paths.app.coberturaReservaCupo.getHref() })
   },
 })
 

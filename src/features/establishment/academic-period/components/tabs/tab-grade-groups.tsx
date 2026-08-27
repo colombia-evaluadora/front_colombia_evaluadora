@@ -84,6 +84,7 @@ export function TabGradeGroups({ gradeId, academicPeriodId }: TabGradeGroupsProp
             <ExportSelectedGradeGroupsDialog
               selectedIds={selectedGroupIds}
               resetSelection={resetSelection}
+              academicPeriodId={academicPeriodId}
             />
           </>
         ) : (

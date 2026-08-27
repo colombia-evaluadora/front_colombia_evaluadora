@@ -1,4 +1,4 @@
-import type { AuditTable } from "@/features/audits/api/types/audit-table"
+import type { AuditTable } from "@/features/administration/audits/api/types/audit-table"
 
 // Fields por tabla: las opciones que ve el usuario en el dropdown "Campo"
 // del filtro por campo del sheet. Compartido con `table-operations.ts`

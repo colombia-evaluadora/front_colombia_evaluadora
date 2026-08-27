@@ -92,6 +92,7 @@ export function TabAreaSubject({ academicPeriodId }: TabAreaSubjectProps) {
             <ExportSelectedAreaSubjectsDialog
               selectedIds={selectedIds.map(Number)}
               resetSelection={resetSelection}
+              academicPeriodId={academicPeriodId}
             />
           ) : (
             <>

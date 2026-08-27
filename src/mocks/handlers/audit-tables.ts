@@ -9,7 +9,7 @@ import {
 import { auditsDb } from "@/mocks/db/audits"
 import { auditTablesDb } from "@/mocks/db/audit-tables"
 import { tableOperationChangesDb, tableOperationsDb } from "@/mocks/db/table-operations"
-import type { FieldFilter } from "@/features/audits/api/schema"
+import type { FieldFilter } from "@/features/administration/audits/api/schema"
 import type {
   AuditTable,
   AuditTablesQueryFilters,
@@ -24,8 +24,8 @@ import type {
   TableOperationsQueryResponse,
   TableOperationsStats,
   TableOperationsStatsRequest,
-} from "@/features/audits/api/types/audit-table"
-import type { ExportFormat, ExportResult } from "@/features/audits/api/types/audit"
+} from "@/features/administration/audits/api/types/audit-table"
+import type { ExportFormat, ExportResult } from "@/features/administration/audits/api/types/audit"
 
 const EXPORT_FORMAT_LABELS: Record<ExportFormat, string> = {
   pdf: "PDF",

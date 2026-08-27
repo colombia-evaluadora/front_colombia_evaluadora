@@ -20,23 +20,26 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 
-import { useExportSelected } from "@/features/establishment/employees/api/mutations/export-selected"
+import { useExportSelectedAcademicAssignments } from "@/features/establishment/academic-period/api/mutations/export-selected-academic-assignments"
 import type { ExportFormat } from "@/features/establishment/institution/api/types/export"
 
 interface ExportSelectedAcademicAssignmentsDialogProps {
   selectedIds: number[]
   resetSelection: () => void
+  /** Acota el reporte al periodo: sin esto sale vacio. */
+  academicPeriodId?: number
 }
 
 export function ExportSelectedAcademicAssignmentsDialog({
   selectedIds,
   resetSelection,
+  academicPeriodId,
 }: ExportSelectedAcademicAssignmentsDialogProps) {
   const [open, setOpen] = useState(false)
   const { notify } = useNotify()
   const count = selectedIds.length
 
-  const exportSelected = useExportSelected({
+  const exportSelected = useExportSelectedAcademicAssignments({
     mutationConfig: {
       onSuccess: (result) => {
         if (result.status === "error") {
@@ -51,7 +54,7 @@ export function ExportSelectedAcademicAssignmentsDialog({
   })
 
   function handleExport(format: ExportFormat) {
-    exportSelected.mutate({ ids: selectedIds, format })
+    exportSelected.mutate({ ids: selectedIds, format, academicPeriodId })
   }
 
   const pendingFormat = exportSelected.isPending ? exportSelected.variables?.format : undefined
