@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query"
+import { queryOptions, useQuery } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
 import { toNavItemDtos } from "@/features/navigation/api/menu-mapper"
@@ -36,10 +36,25 @@ async function fetchNavItems(): Promise<NavItem[]> {
   }))
 }
 
+export const navItemsQueryOptions = queryOptions({
+  queryKey: ["navigation", "menu"],
+  queryFn: fetchNavItems,
+  staleTime: Infinity,
+})
+
 export function useNavItemsQuery() {
-  return useQuery({
-    queryKey: ["navigation", "menu"],
-    queryFn: fetchNavItems,
-    staleTime: Infinity,
-  })
+  return useQuery(navItemsQueryOptions)
+}
+
+/**
+ * Primera pantalla a la que puede entrar el usuario: la del primer item del
+ * sidebar, en el mismo orden en que se pinta. Sirve para resolver `/app`, que
+ * no tiene página propia — mandarlo a una ruta fija (antes, Cobertura) dejaba
+ * fuera a los roles que no tienen ese menú asignado.
+ *
+ * Los grupos ya heredan la ruta de su primer hijo en `toNavItemDtos`, así que
+ * el `url` del primer item siempre es navegable. `null` si el menú vino vacío.
+ */
+export function getFirstNavUrl(items: NavItem[]): string | null {
+  return items[0]?.url ?? null
 }
