@@ -1,11 +1,14 @@
 /**
  * Catálogo de campos del formulario de matrícula (sin "Archivo de soporte" —
- * eso no se parametriza acá). Mismos ids que usa cada sección de
- * `form-create-matricula.tsx`; se reutiliza para armar la pantalla de
- * "Configuración de parámetros requeridos", donde cada fila es un campo con
- * dos switches (Requerido/Visible) en vez del control real.
+ * eso no se parametriza acá). El catálogo REAL de "Configuración de
+ * parámetros requeridos" lo devuelve el backend (`fn_matricula_config_
+ * obtener`, ver `use-matricula-field-config-query.ts`) — esto queda solo
+ * como fixture para el mock (`mocks/db/matricula-field-config.ts`), armado
+ * con las mismas 13 secciones que documenta la colección Postman de
+ * referencia para que MSW se vea igual de real.
  */
 export interface MatriculaFieldCatalogEntry {
+  /** Solo se usa para fabricar `fkCampo` en el mock — no viaja al backend. */
   id: string
   label: string
   /** No se puede des-requerir ni ocultar desde "Configuración de parámetros
@@ -49,7 +52,11 @@ export const MATRICULA_FIELD_CATALOG: MatriculaFieldCatalogSection[] = [
         id: "student-document-expedition-municipality",
         label: "Lugar expedición documento estudiante municipio",
       },
-      { id: "student-birth-date", label: "Fecha de nacimiento" },
+      // `locked` aunque el catálogo real lo mande editable: el formulario
+      // (`MatriculaStudentSection`) siempre lo valida como obligatorio sin
+      // mirar la configuración — se fija acá para que el toggle de la
+      // pantalla de configuración no prometa algo que el alta no respeta.
+      { id: "student-birth-date", label: "Fecha de nacimiento", locked: true },
       { id: "student-birth-place-department", label: "Lugar de nacimiento departamento" },
       { id: "student-birth-place-municipality", label: "Lugar de nacimiento municipio" },
       { id: "student-gender", label: "Género del estudiante", locked: true },
@@ -172,20 +179,3 @@ export const MATRICULA_FIELD_CATALOG: MatriculaFieldCatalogSection[] = [
     ],
   },
 ]
-
-export interface MatriculaFieldSetting {
-  required: boolean
-  visible: boolean
-}
-
-/** Los mismos 11 campos `locked` (ver el catálogo arriba) arrancan
- * `required: true` — el resto arranca opcional pero visible. */
-export function createDefaultMatriculaFieldConfig(): Record<string, MatriculaFieldSetting> {
-  const config: Record<string, MatriculaFieldSetting> = {}
-  for (const section of MATRICULA_FIELD_CATALOG) {
-    for (const field of section.fields) {
-      config[field.id] = { required: Boolean(field.locked), visible: true }
-    }
-  }
-  return config
-}

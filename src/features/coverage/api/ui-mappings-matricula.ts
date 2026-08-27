@@ -4,9 +4,14 @@ export const MATRICULA_STATUS_LABELS: Record<MatriculaStatus, string> = {
   cursando: "Cursando",
   aprobado: "Aprobado",
   reprobado: "Reprobado",
-  promovido: "Promovido",
-  reubicado: "Reubicado",
   retirado: "Retirado",
+  graduado: "Graduado",
+  promovido_anticipadamente: "Promovido Anticipadamente",
+  trasladado: "Trasladado",
+  sin_definir: "Sin definir",
+  desertor: "Desertor",
+  esperando_aprobacion: "Esperando Aprobación",
+  rechazado: "Rechazado",
 }
 
 // ── Catálogos del formulario de alta ("Agregar estudiante") ───────────────
@@ -57,6 +62,10 @@ export const CONFLICT_VICTIM_POPULATION_OPTIONS = [
 ]
 
 export const SOCIOECONOMIC_STRATUM_OPTIONS = ["1", "2", "3", "4", "5", "6"]
+
+// Grupos de clasificación Sisbén IV (A/B/C/D) — igual que el resto de estos
+// catálogos, lista fija hasta que exista el catálogo real detrás.
+export const SISBEN_OPTIONS = ["No aplica", "Grupo A", "Grupo B", "Grupo C", "Grupo D"]
 
 export const SPECIAL_CONDITIONS_OPTIONS = [
   "Ninguna",
