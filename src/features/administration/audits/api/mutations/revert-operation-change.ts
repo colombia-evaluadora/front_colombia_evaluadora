@@ -54,22 +54,36 @@ async function revertOperationChange({
   // El revert real NO vive en la instancia de auditoría (ClickHouse es de
   // solo lectura por diseño): es `AuditRevertController` en sso-admin, que
   // escribe contra Postgres. Identifica el cambio por `(lsn, seq)` — el
-  // mismo par que compone el `operationId` de ClickHouse — y hoy es FASE 1:
-  // solo revierte el patrón soft-delete/soft-restore (toggle de `active`).
-  // No acepta elegir qué campos revertir, así que `fieldIndexes` no viaja;
-  // si la operación no es un UPDATE sobre `active`, el backend responde con
-  // un error explicando por qué (409/400), que el interceptor ya tostea.
-  const [lsn, seq] = operationId.split("-")
+  // mismo par que compone el `operationId` que arma ClickHouse
+  // (`concat(toString(lsn), '-', toString(seq))`, ver V85 §1.3 y V90 §2.4).
+  // Hoy cubre INSERT (revertido como soft-delete) y UPDATE genérico; el
+  // DELETE físico lo rechaza. `fieldIndexes` no viaja: el backend decide qué
+  // columnas restaura, no el caller.
+  const [lsnRaw, seqRaw] = operationId.split("-")
+  const lsn = Number(lsnRaw)
+  const seq = Number(seqRaw)
+
+  // Sin esta guarda, un id con otro formato mandaba `NaN` — que
+  // `JSON.stringify` convierte en `null` — y el backend contestaba con un
+  // error de validación sobre un campo nulo, que no le dice nada a nadie. El
+  // problema es acá, así que el mensaje se escribe acá.
+  if (!Number.isInteger(lsn) || !Number.isInteger(seq)) {
+    throw new Error(
+      `No se puede revertir esta operación: su identificador ("${operationId}") no tiene el formato "lsn-seq" que espera el servidor.`,
+    )
+  }
+
   const response = await api.post<RealAuditRevertResponse>("/sso-admin/audit/revert", {
-    lsn: Number(lsn),
-    seq: Number(seq),
+    lsn,
+    seq,
     dryRun: false,
   })
 
   return {
     status: response.applied ? "ok" : "error",
     message: response.message,
-    // El backend revierte exactamente un campo (`active`) cuando aplica.
+    // El backend no dice cuántas columnas tocó: `applied` es un sí/no sobre
+    // la fila entera.
     revertedFields: response.applied ? 1 : 0,
   }
 }
