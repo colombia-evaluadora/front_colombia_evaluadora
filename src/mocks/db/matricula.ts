@@ -9,8 +9,16 @@ import type {
   MatriculaDetails,
   MatriculaStatus,
 } from "@/features/coverage/api/types/matricula"
-import { CAMPUSES, GRADES, GROUPS, INSTITUTIONS, levelForGrade, pickShift } from "@/mocks/db/reservations"
+import { CAMPUSES, GRADES, GROUPS, INSTITUTIONS, levelForGrade } from "@/mocks/db/reservations"
+import { jornadasDb } from "@/mocks/db/academic-period/jornadas"
 import { RELATIONSHIP_OPTIONS } from "@/features/coverage/api/ui-mappings"
+
+// La Jornada de matrícula sale del catálogo real de `TLISTA_VALOR`
+// (`jornadasDb`, el mismo que usa Períodos Académicos) — no del `Shift` fijo
+// de reservas/cupos. Ver `docs/matricula-listado-endpoint-contract.md`.
+function pickJornada(): string {
+  return faker.helpers.arrayElement(jornadasDb).name
+}
 
 function pickStatus(): MatriculaStatus {
   return faker.helpers.weightedArrayElement([
@@ -18,8 +26,13 @@ function pickStatus(): MatriculaStatus {
     { value: "retirado", weight: 10 },
     { value: "aprobado", weight: 8 },
     { value: "reprobado", weight: 4 },
-    { value: "promovido", weight: 5 },
-    { value: "reubicado", weight: 3 },
+    { value: "promovido_anticipadamente", weight: 3 },
+    { value: "graduado", weight: 2 },
+    { value: "trasladado", weight: 1 },
+    { value: "desertor", weight: 1 },
+    { value: "esperando_aprobacion", weight: 1 },
+    { value: "sin_definir", weight: 1 },
+    { value: "rechazado", weight: 1 },
   ])
 }
 
@@ -38,7 +51,7 @@ function createMatricula(): Matricula {
     lastName: `${faker.person.lastName()} ${faker.person.lastName()}`.toUpperCase(),
     institution: faker.helpers.arrayElement(INSTITUTIONS),
     campus: faker.helpers.arrayElement(CAMPUSES),
-    shift: pickShift(educationLevel),
+    shift: pickJornada(),
     educationLevel,
     grade,
     group: faker.helpers.arrayElement(GROUPS),
@@ -78,7 +91,7 @@ export function createMatriculaRow(id: string, details: MatriculaDetails): Matri
     // actual — acá se simula con la primera del fixture de reservas.
     institution: INSTITUTIONS[0],
     campus: details.academic.campus,
-    shift: details.academic.shift || "UNICA",
+    shift: details.academic.shift || jornadasDb[0].name,
     educationLevel: levelForGrade(grade),
     grade,
     group: details.academic.group,

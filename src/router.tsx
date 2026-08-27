@@ -306,6 +306,10 @@ const PERIODOS_CRUMB = {
   label: "Periodos académicos",
   to: paths.app.periodosAcademicos.getHref(),
 }
+const GESTION_ACADEMICA_CRUMB = {
+  label: "Gestión académica",
+  to: paths.app.gestionAcademicaAreaAsignatura.getHref(),
+}
 
 // `/app` no tiene página propia: manda a la primera pantalla del menú del
 // usuario (el primer item del sidebar), no a una ruta fija — hay roles sin
@@ -615,6 +619,51 @@ export const periodosAcademicosEditarRoute = createRoute({
   component: AcademicPeriodConfigPage,
 })
 
+const AreaSubjectPage = lazyRouteComponent(
+  () => import("@/features/academic-management/pages/area-subject-page"),
+  "AreaSubjectPage",
+)
+const StudyPlansPage = lazyRouteComponent(
+  () => import("@/features/academic-management/pages/study-plans-page"),
+  "StudyPlansPage",
+)
+const PlannerPage = lazyRouteComponent(
+  () => import("@/features/academic-management/pages/planner-page"),
+  "PlannerPage",
+)
+const ReportsPage = lazyRouteComponent(
+  () => import("@/features/academic-management/pages/reports-page"),
+  "ReportsPage",
+)
+
+export const gestionAcademicaAreaAsignaturaRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.gestionAcademicaAreaAsignatura.path,
+  staticData: { breadcrumb: [GESTION_ACADEMICA_CRUMB, { label: "Área | Asignatura" }] },
+  component: AreaSubjectPage,
+})
+
+export const gestionAcademicaPlanesEstudioRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.gestionAcademicaPlanesEstudio.path,
+  staticData: { breadcrumb: [GESTION_ACADEMICA_CRUMB, { label: "Planes de estudio" }] },
+  component: StudyPlansPage,
+})
+
+export const gestionAcademicaPlaneadorRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.gestionAcademicaPlaneador.path,
+  staticData: { breadcrumb: [GESTION_ACADEMICA_CRUMB, { label: "Planeador" }] },
+  component: PlannerPage,
+})
+
+export const gestionAcademicaInformesRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.gestionAcademicaInformes.path,
+  staticData: { breadcrumb: [GESTION_ACADEMICA_CRUMB, { label: "Informes" }] },
+  component: ReportsPage,
+})
+
 const routeTree = rootRoute.addChildren([
   //  landingRoute,
   homeRoute,
@@ -651,6 +700,10 @@ const routeTree = rootRoute.addChildren([
     employeesRoute,
     addEstablishmentRoute,
     editEstablishmentRoute,
+    gestionAcademicaAreaAsignaturaRoute,
+    gestionAcademicaPlanesEstudioRoute,
+    gestionAcademicaPlaneadorRoute,
+    gestionAcademicaInformesRoute,
     establishmentLayoutRoute.addChildren([
       establishmentsRoute,
       campusesRoute,

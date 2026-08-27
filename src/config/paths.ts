@@ -151,5 +151,22 @@ export const paths = {
           getHref: () => "/app/establecimiento-educativo/periodos",
       },
   },
+
+    gestionAcademicaAreaAsignatura: {
+      path: "gestion-academica/area-asignatura",
+      getHref: () => "/app/gestion-academica/area-asignatura",
+    },
+    gestionAcademicaPlanesEstudio: {
+      path: "gestion-academica/planes-de-estudio",
+      getHref: () => "/app/gestion-academica/planes-de-estudio",
+    },
+    gestionAcademicaPlaneador: {
+      path: "gestion-academica/planeador",
+      getHref: () => "/app/gestion-academica/planeador",
+    },
+    gestionAcademicaInformes: {
+      path: "gestion-academica/informes",
+      getHref: () => "/app/gestion-academica/informes",
+    },
   },
 } as const

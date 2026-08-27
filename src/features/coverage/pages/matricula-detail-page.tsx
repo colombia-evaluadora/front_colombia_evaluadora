@@ -12,17 +12,21 @@ import { SpinnerIcon } from "@/components/ui/icons"
 import { paths } from "@/config/paths"
 import { coberturaMatriculaDetalleRoute } from "@/router"
 import { useMatriculaDetailQuery } from "@/features/coverage/api/query/use-matricula-detail-query"
+import { useMatriculaFieldConfigQuery } from "@/features/coverage/api/query/use-matricula-field-config-query"
 import { useReservationCatalogsQuery } from "@/features/coverage/api/query/use-reservation-catalogs-query"
 import { useMunicipalitiesQuery } from "@/features/establishment/institution/api/query/use-municipalities"
 import { MatriculaFormBody } from "@/features/coverage/components/forms/matricula-form-body"
 import { MatriculaToolbar } from "@/features/coverage/components/matricula-toolbar"
 import type { DepartmentOption } from "@/features/coverage/components/forms/form-create-matricula"
+import { buildMatriculaFieldSettings } from "@/features/coverage/utils/matricula-field-settings"
 
 export function MatriculaDetailPage() {
   const { matriculaId } = coberturaMatriculaDetalleRoute.useParams()
   const { data, isPending, isError } = useMatriculaDetailQuery(matriculaId)
   const { data: catalogs } = useReservationCatalogsQuery()
   const { data: municipalities = [] } = useMunicipalitiesQuery()
+  const { data: fieldConfig } = useMatriculaFieldConfigQuery()
+  const fieldSettings = fieldConfig ? buildMatriculaFieldSettings(fieldConfig) : undefined
 
   const departments: DepartmentOption[] = (() => {
     const byName = new Map<string, Set<string>>()
@@ -80,6 +84,7 @@ export function MatriculaDetailPage() {
               catalogs={catalogs}
               departments={departments}
               disabled
+              fieldSettings={fieldSettings}
             />
           </div>
         </TableScreenBody>

@@ -7,7 +7,7 @@ import { DataTableColumnHeader } from "@/components/data-table"
 import { EyeIcon, PencilIcon } from "@/components/ui/icons"
 
 import { paths } from "@/config/paths"
-import { formatGrade, SHIFT_LABELS, EDUCATION_LEVEL_LABELS } from "@/features/coverage/api/ui-mappings"
+import { formatGrade, EDUCATION_LEVEL_LABELS } from "@/features/coverage/api/ui-mappings"
 import { MATRICULA_STATUS_LABELS } from "@/features/coverage/api/ui-mappings-matricula"
 import type { Matricula } from "@/features/coverage/api/types/matricula"
 import { DeleteMatriculaDialog } from "@/features/coverage/components/dialogs/dialog-delete-matricula"
@@ -83,7 +83,9 @@ export const columnsMatricula: ColumnDef<Matricula>[] = [
     accessorKey: "shift",
     meta: { label: "Jornada" },
     header: ({ column }) => <DataTableColumnHeader column={column} title="Jornada" />,
-    cell: ({ row }) => <span>{SHIFT_LABELS[row.original.shift]}</span>,
+    // Ya viene como nombre legible del catálogo de `TLISTA_VALOR` — no es el
+    // `Shift` fijo de reservas, no necesita mapeo de labels.
+    cell: ({ row }) => <span>{row.original.shift}</span>,
   },
   {
     id: "educationLevel",

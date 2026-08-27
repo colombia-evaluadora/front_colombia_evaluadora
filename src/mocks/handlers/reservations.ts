@@ -1,8 +1,6 @@
 import { http, HttpResponse, delay } from "msw"
 
 import {
-  CAMPUSES,
-  GRADES,
   GROUPS,
   INSTITUTIONS,
   OFFERED_SEATS_BY_CAMPUS,
@@ -16,7 +14,6 @@ import type {
   ExportFormat,
   ExportResult,
   Reservation,
-  ReservationCatalogs,
   ReservationsQueryFilters,
   ReservationsQueryRequest,
   ReservationsQueryResponse,
@@ -165,13 +162,15 @@ export const reservationsHandlers = [
     return HttpResponse.json<ReservationsStats>(computeStats(scoped))
   }),
 
+  // `campuses`/`grades` ya no salen de acá — `use-reservation-catalogs-
+  // query.ts` los pega directo a los endpoints reales (sedes del rector y
+  // TLISTA_VALOR GRADOS). Institutions/groups todavía no tienen equivalente
+  // real, así que se quedan acá.
   http.get("/api/coverage/reservations/catalogs", async () => {
     await delay(150)
-    return HttpResponse.json<ReservationCatalogs>({
+    return HttpResponse.json({
       institutions: [...INSTITUTIONS],
-      campuses: [...CAMPUSES],
       groups: [...GROUPS],
-      grades: [...GRADES],
     })
   }),
 
