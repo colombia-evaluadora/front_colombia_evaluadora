@@ -24,11 +24,12 @@ import {
 } from "./schedule-data"
 
 function subjectStyles(hex: string) {
+  const normalized = hex.startsWith("#") ? hex : `#${hex}`
   return {
     container: {
-      backgroundColor: `${hex}1f`,
+      backgroundColor: `${normalized}1f`,
     } as React.CSSProperties,
-    count: { backgroundColor: hex, color: "#fff" } as React.CSSProperties,
+    count: { backgroundColor: normalized, color: "#fff" } as React.CSSProperties,
   }
 }
 

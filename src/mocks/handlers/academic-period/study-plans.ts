@@ -90,14 +90,19 @@ export const studyPlansHandlers = [
 
   // `fn_plan_listar` (id_query 76) — path/params reales (ver
   // `use-study-plans.ts`), no el `/api/study-plans/query` viejo. Mismo bug
-  // que Criterio de promoción sin esto.
-  http.get("/api/eval-col/grados/:gradeId/plan-asignaturas", async ({ params, request }) => {
+  // que Criterio de promoción sin esto. `/query` porque el POST sin sufijo
+  // en esta misma ruta ya es la creación de ítem del plan.
+  http.post("/api/eval-col/grados/:gradeId/plan-asignaturas/query", async ({ params, request }) => {
     await delay(250)
     const gradeId = Number(params.gradeId)
-    const url = new URL(request.url)
-    const filtro = url.searchParams.get("filtro")
-    const pageIndex = Number(url.searchParams.get("pageIndex") ?? 0)
-    const pageSize = Number(url.searchParams.get("pageSize") ?? 10)
+    const body = (await request.json()) as {
+      FILTRO?: string
+      PAGE_INDEX?: string | number
+      PAGE_SIZE?: string | number
+    }
+    const filtro = body.FILTRO ?? null
+    const pageIndex = Number(body.PAGE_INDEX ?? 0)
+    const pageSize = Number(body.PAGE_SIZE ?? 10)
 
     const scoped = studyPlansDb.filter((row) => row.gradeId === gradeId)
     const filtered = applyFilters(scoped, filtro)

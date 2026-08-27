@@ -31,13 +31,26 @@ import {
 } from "@/features/coverage/components/dialogs/dialog-grade-change-summary"
 import { CambioSedeMatriculaDialog } from "@/features/coverage/components/dialogs/dialog-cambio-sede-matricula"
 import type { DepartmentOption } from "@/features/coverage/components/forms/form-create-matricula"
-import type { CreateMatriculaInput } from "@/features/coverage/api/types/matricula"
+import type {
+  BulkGroupChangeClassification,
+  CreateMatriculaInput,
+} from "@/features/coverage/api/types/matricula"
 import {
   REQUIRED_MATRICULA_FIELD_LABELS,
   validateMatricula,
 } from "@/features/coverage/utils/matricula-form-defaults"
 
 const EDIT_MATRICULA_FORM_ID = "edit-matricula-form"
+
+const GRADE_KIND_LABELS: Record<GradeChangeResult["kind"], string> = {
+  promocion: "Promoción anticipada",
+  correccion: "Corrección de matrícula",
+}
+
+const SEDE_CLASSIFICATION_LABELS: Record<BulkGroupChangeClassification, string> = {
+  cambioGrado: "Reubicación de sede",
+  correccion: "Corrección de matrícula",
+}
 
 export function MatriculaEditPage() {
   return (
@@ -194,8 +207,10 @@ function MatriculaEditPageContent() {
     performSave(() => {
       setGradeChangeSummary({
         studentName,
-        kind: result.kind,
-        campus: values.academic.campus,
+        movementKind: "grado",
+        movementLabel: GRADE_KIND_LABELS[result.kind],
+        fromCampus: values.academic.campus,
+        toCampus: values.academic.campus,
         fromGrade: currentGradeChange.from,
         toGrade: currentGradeChange.to,
         group: values.academic.group,
@@ -218,9 +233,31 @@ function MatriculaEditPageContent() {
     setSedeChange(null)
   }
 
-  function handleSedeChangeConfirm() {
+  function handleSedeChangeConfirm(classification: BulkGroupChangeClassification) {
+    if (!sedeChange || !values || !data?.matricula) {
+      setSedeChange(null)
+      return
+    }
+    const currentSedeChange = sedeChange
+    const studentName = `${data.matricula.firstName} ${data.matricula.lastName}`
     setSedeChange(null)
-    performSave()
+    performSave(() => {
+      setGradeChangeSummary({
+        studentName,
+        movementKind: "sede",
+        movementLabel: SEDE_CLASSIFICATION_LABELS[classification],
+        fromCampus: currentSedeChange.fromSede,
+        toCampus: currentSedeChange.toSede,
+        fromGrade: currentSedeChange.fromGrade,
+        toGrade: currentSedeChange.toGrade,
+        group: values.academic.group,
+        // El cambio de sede no pregunta por calificaciones (ver
+        // `dialog-cambio-sede-matricula.tsx`).
+        gradesAction: null,
+        date: new Date(),
+        userName: user?.name ?? "",
+      })
+    })
   }
 
   function handleSave() {
@@ -361,6 +398,8 @@ function MatriculaEditPageContent() {
           toGrade={sedeChange.toGrade}
           fromGroup={sedeChange.fromGroup}
           toGroup={sedeChange.toGroup}
+          gradeWillChange={sedeChange.fromGrade !== sedeChange.toGrade}
+          sameOrigin
           onConfirm={handleSedeChangeConfirm}
           onClose={handleSedeChangeCancel}
         />

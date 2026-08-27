@@ -1,5 +1,4 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { cn } from "@/lib/utils"
 
 import { NoticeProvider } from "@/components/notice/notice-context"
 import { TabEvaluationPeriods } from "@/features/establishment/academic-period/components/tabs/tab-evaluation-periods"
@@ -22,7 +21,7 @@ const TABS: { value: string; label: string }[] = [
 ]
 
 const PANEL_BASE =
-  "overflow-y-auto rounded-b-lg rounded-tr-lg border bg-background p-4 group-data-[tabs-filled=true]/tabs:rounded-tr-none"
+  "rounded-b-lg rounded-tr-lg border bg-background p-4 group-data-[tabs-filled=true]/tabs:rounded-tr-none"
 
 interface EvaluationPeriodsSectionProps {
   jornada: Jornada
@@ -35,14 +34,13 @@ export function EvaluationPeriodsSection({
   academicPeriodId,
   accordionOpen = false,
 }: EvaluationPeriodsSectionProps) {
-  // Antes 42vh/60vh dejaban espacio libre sin usar debajo de la tabla en la
-  // mayoría de pantallas, obligando a scrollear antes de tiempo. Sigue
-  // habiendo un tope (con contenido largo el scroll interno se mantiene),
-  // pero ahora aprovecha más alto antes de necesitarlo. Con el acordeón
-  // cerrado, 78vh sobrepasaba el alto real disponible bajo la barra
-  // colapsada + el propio scroll interno del panel, forzando un doble scroll
-  // (el de la página y el de `overflow-y-auto` acá abajo) — se baja a 64vh.
-  const panel = cn(PANEL_BASE, accordionOpen ? "max-h-[58vh]" : "max-h-[64vh]")
+  // TEMPORAL: se saca el `overflow-y-auto max-h-[…vh]` propio del panel para
+  // probar si el "scroll fantasma" reportado (documentElement.scrollHeight
+  // mucho mayor que el contenido real, ver conversación) desaparece dejando
+  // que la página scrollee entera en vez de crear su propio contenedor de
+  // scroll acá. Si se confirma, falta decidir un reemplazo definitivo (capar
+  // por otro lado o rediseñar el layout) — esto no es la solución final.
+  const panel = PANEL_BASE
 
   return (
     <Tabs defaultValue="evaluacion">
