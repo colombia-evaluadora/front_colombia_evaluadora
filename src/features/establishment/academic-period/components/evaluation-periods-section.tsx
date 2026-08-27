@@ -32,7 +32,6 @@ interface EvaluationPeriodsSectionProps {
 export function EvaluationPeriodsSection({
   jornada,
   academicPeriodId,
-  accordionOpen = false,
 }: EvaluationPeriodsSectionProps) {
   // TEMPORAL: se saca el `overflow-y-auto max-h-[…vh]` propio del panel para
   // probar si el "scroll fantasma" reportado (documentElement.scrollHeight
