@@ -9,7 +9,7 @@ import {
 import { academicPeriodStatusesDb } from "../../db/academic-period/academic-period-statuses"
 import { jornadasDb } from "../../db/academic-period/jornadas"
 import { tableOperationChangesDb, tableOperationsDb } from "@/mocks/db/table-operations"
-import type { OperationChange, TableOperation } from "@/features/audits/api/types/audit-table"
+import type { OperationChange, TableOperation } from "@/features/administration/audits/api/types/audit-table"
 import type {
   AcademicPeriod,
   AcademicPeriodConfig,

@@ -15,7 +15,7 @@ import type {
   SessionOperationsFilters,
   SessionOperationsQueryRequest,
   SessionOperationsResponse,
-} from "@/features/audits/api/types/audit"
+} from "@/features/administration/audits/api/types/audit"
 
 const EXPORT_FORMAT_LABELS: Record<ExportFormat, string> = {
   pdf: "PDF",
