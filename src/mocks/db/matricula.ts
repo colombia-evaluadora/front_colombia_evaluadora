@@ -1,0 +1,309 @@
+import { faker } from "@faker-js/faker"
+
+import type {
+  BulkMatriculaChangeRequest,
+  BulkMatriculaChangeResult,
+  BulkMatriculaChangeStudentResult,
+  CreateMatriculaInput,
+  Matricula,
+  MatriculaDetails,
+  MatriculaStatus,
+} from "@/features/coverage/api/types/matricula"
+import { CAMPUSES, GRADES, GROUPS, INSTITUTIONS, levelForGrade, pickShift } from "@/mocks/db/reservations"
+import { RELATIONSHIP_OPTIONS } from "@/features/coverage/api/ui-mappings"
+
+function pickStatus(): MatriculaStatus {
+  return faker.helpers.weightedArrayElement([
+    { value: "cursando", weight: 70 },
+    { value: "retirado", weight: 10 },
+    { value: "aprobado", weight: 8 },
+    { value: "reprobado", weight: 4 },
+    { value: "promovido", weight: 5 },
+    { value: "reubicado", weight: 3 },
+  ])
+}
+
+function createGuardianName(): string {
+  return `${faker.person.firstName()} ${faker.person.lastName()}`.toUpperCase()
+}
+
+function createMatricula(): Matricula {
+  const grade = faker.helpers.arrayElement(GRADES)
+  const educationLevel = levelForGrade(grade)
+
+  return {
+    id: faker.string.uuid(),
+    documentNumber: faker.string.numeric({ length: 10, allowLeadingZeros: false }),
+    firstName: `${faker.person.firstName()} ${faker.person.middleName()}`.toUpperCase(),
+    lastName: `${faker.person.lastName()} ${faker.person.lastName()}`.toUpperCase(),
+    institution: faker.helpers.arrayElement(INSTITUTIONS),
+    campus: faker.helpers.arrayElement(CAMPUSES),
+    shift: pickShift(educationLevel),
+    educationLevel,
+    grade,
+    group: faker.helpers.arrayElement(GROUPS),
+    enrollmentDate: faker.date.recent({ days: 90 }).toISOString(),
+    guardian: `${createGuardianName()} (${faker.helpers.arrayElement(RELATIONSHIP_OPTIONS)})`,
+    status: pickStatus(),
+    hasGrades: faker.datatype.boolean({ probability: 0.4 }),
+  }
+}
+
+faker.seed(20260825)
+
+export const matriculaDb: Matricula[] = Array.from({ length: 260 }, createMatricula)
+
+/**
+ * Ficha completa por id — solo se llena para las matrículas creadas desde
+ * "Agregar estudiante" en esta sesión de mock. Las 260 filas semilla no
+ * tienen una (se generaron directo como fila resumen); `getMatriculaDetails`
+ * arma una ficha mínima a partir de la fila para esos casos.
+ */
+const matriculaDetailsDb = new Map<string, MatriculaDetails>()
+
+/** Deriva la fila resumen de la tabla a partir de la ficha completa del alta.
+ * `hasGrades` no viene del formulario de alta — se conserva el que ya tenía
+ * la fila (si existía) para no perder la marca al re-guardar la edición. */
+export function createMatriculaRow(id: string, details: MatriculaDetails): Matricula {
+  const grade = Number(details.academic.grade)
+  const guardianName = [details.guardian.firstName, details.guardian.lastName].filter(Boolean).join(" ")
+  const existing = matriculaDb.find((item) => item.id === id)
+
+  return {
+    id,
+    documentNumber: details.student.documentNumber,
+    firstName: [details.student.firstName, details.student.secondName].filter(Boolean).join(" "),
+    lastName: [details.student.lastName, details.student.secondLastName].filter(Boolean).join(" "),
+    // El alta no pide institución: se matricula siempre en la institución
+    // actual — acá se simula con la primera del fixture de reservas.
+    institution: INSTITUTIONS[0],
+    campus: details.academic.campus,
+    shift: details.academic.shift || "UNICA",
+    educationLevel: levelForGrade(grade),
+    grade,
+    group: details.academic.group,
+    enrollmentDate: new Date().toISOString(),
+    guardian: details.guardian.relationship ? `${guardianName} (${details.guardian.relationship})` : guardianName,
+    status: details.status,
+    hasGrades: existing?.hasGrades ?? false,
+  }
+}
+
+export function insertMatricula(input: CreateMatriculaInput): Matricula {
+  const id = crypto.randomUUID()
+  const details: MatriculaDetails = { ...input, status: input.academic.status || "cursando" }
+  const row = createMatriculaRow(id, details)
+
+  matriculaDetailsDb.set(id, details)
+  matriculaDb.unshift(row)
+  return row
+}
+
+export function updateMatriculaDetails(id: string, input: CreateMatriculaInput): Matricula | null {
+  const index = matriculaDb.findIndex((item) => item.id === id)
+  if (index < 0) return null
+
+  // "Estado de la matrícula" ya es un campo del formulario (sección
+  // "Información de matrícula") — si no se tocó, se conserva el que ya
+  // tenía la fila.
+  const details: MatriculaDetails = {
+    ...input,
+    status: input.academic.status || matriculaDb[index].status,
+  }
+  const row = createMatriculaRow(id, details)
+
+  matriculaDetailsDb.set(id, details)
+  matriculaDb[index] = row
+  return row
+}
+
+function createEmptyMatriculaDetails(): CreateMatriculaInput {
+  return {
+    academic: { campus: "", shift: "", grade: "", group: "", status: "", specialty: "" },
+    student: {
+      documentType: "",
+      documentNumber: "",
+      firstName: "",
+      secondName: "",
+      lastName: "",
+      secondLastName: "",
+      documentExpedition: { department: "", municipality: "" },
+      birthDate: "",
+      birthPlace: { department: "", municipality: "" },
+      gender: "",
+      ethnicity: "",
+    },
+    studentAddress: { department: "", municipality: "", address: "" },
+    studentContact: { phone: "", email: "" },
+    previousYear: { situation: "", condition: "", previousInstitution: "", welfareInstitution: "" },
+    originSector: { fromPrivateSector: "", fromAnotherMunicipality: "", whichMunicipality: "" },
+    conflictVictim: { population: "", lastExpellingMunicipality: "" },
+    complementary: {
+      socioeconomicStratum: "",
+      sisben: "",
+      eps: "",
+      ars: "",
+      specialConditions: "",
+      talent: "",
+    },
+    benefits: {
+      subsidized: "",
+      fundingSource: "",
+      headOfHouseholdStudent: "",
+      headOfHouseholdChildren: "",
+      publicForceVeteran: "",
+      nationalHeroes: "",
+    },
+    guardian: {
+      relationship: "",
+      firstName: "",
+      secondName: "",
+      lastName: "",
+      secondLastName: "",
+      documentType: "",
+      documentNumber: "",
+      documentExpedition: { department: "", municipality: "" },
+    },
+    guardianAddress: { department: "", municipality: "", address: "" },
+    guardianContact: { phone: "", email: "" },
+    guardianEmployment: {
+      profession: "",
+      entityName: "",
+      entityAddress: "",
+      entityPhone: "",
+      entityPosition: "",
+    },
+  }
+}
+
+/** Ficha mínima a partir de la fila resumen — usada cuando la matrícula no
+ * tiene una ficha completa guardada (las 260 filas semilla). */
+function synthesizeMatriculaDetails(row: Matricula): MatriculaDetails {
+  const [firstName = "", secondName = ""] = row.firstName.split(" ")
+  const [lastName = "", secondLastName = ""] = row.lastName.split(" ")
+  const [guardianName = ""] = row.guardian.split(" (")
+
+  return {
+    ...createEmptyMatriculaDetails(),
+    academic: {
+      campus: row.campus,
+      shift: row.shift,
+      grade: String(row.grade),
+      group: row.group,
+      status: row.status,
+      specialty: "",
+    },
+    student: {
+      ...createEmptyMatriculaDetails().student,
+      documentNumber: row.documentNumber,
+      firstName,
+      secondName,
+      lastName,
+      secondLastName,
+    },
+    guardian: {
+      ...createEmptyMatriculaDetails().guardian,
+      firstName: guardianName,
+    },
+    status: row.status,
+  }
+}
+
+export function getMatriculaDetails(id: string): { matricula: Matricula; details: MatriculaDetails } | null {
+  const row = matriculaDb.find((item) => item.id === id)
+  if (!row) return null
+
+  const details = matriculaDetailsDb.get(id) ?? synthesizeMatriculaDetails(row)
+  return { matricula: row, details }
+}
+
+/**
+ * Matrícula "cursando" ya existente para ese documento — la misma idea que el
+ * autocompletado por documento de funcionarios/rector, pero acá el hallazgo
+ * BLOQUEA el alta en vez de autocompletarla: dos matrículas activas del
+ * mismo estudiante en el mismo año lectivo no tienen sentido.
+ */
+export function findActiveMatriculaByDocument(documentNumber: string): Matricula | null {
+  const needle = documentNumber.trim()
+  if (!needle) return null
+  return matriculaDb.find((item) => item.documentNumber === needle && item.status === "cursando") ?? null
+}
+
+export function deleteMatriculaById(id: string) {
+  const index = matriculaDb.findIndex((item) => item.id === id)
+  if (index >= 0) {
+    matriculaDb.splice(index, 1)
+  }
+  matriculaDetailsDb.delete(id)
+}
+
+export function updateMatriculaRow(id: string, patch: Partial<Matricula>): Matricula | null {
+  const index = matriculaDb.findIndex((item) => item.id === id)
+  if (index < 0) return null
+
+  const updated = { ...matriculaDb[index], ...patch }
+  matriculaDb[index] = updated
+
+  const details = matriculaDetailsDb.get(id)
+  if (details && patch.status) {
+    matriculaDetailsDb.set(id, {
+      ...details,
+      status: patch.status,
+      academic: { ...details.academic, status: patch.status },
+    })
+  }
+
+  return updated
+}
+
+/**
+ * Aplica un "Cambio de matrícula masivo" (E01HU33) a todas las filas de
+ * `request.ids`. `campus`/`grade`/`group` solo pisan lo que el usuario
+ * llenó en "Modificar" — sin valor, la fila conserva lo que tenía. La
+ * decisión sobre las calificaciones (`gradeChange.gradesAction` — el cambio
+ * de grupo solo no las toca) apaga `hasGrades` salvo que se haya elegido
+ * explícitamente "no trasladar" (no hay backend real de calificaciones —
+ * solo se simula que ya no quedan pendientes de decisión).
+ */
+export function applyBulkMatriculaChange(request: BulkMatriculaChangeRequest): BulkMatriculaChangeResult {
+  const students: BulkMatriculaChangeStudentResult[] = []
+  const gradesAction = request.gradeChange?.gradesAction
+
+  for (const id of request.ids) {
+    const index = matriculaDb.findIndex((item) => item.id === id)
+    if (index < 0) continue
+
+    const before = matriculaDb[index]
+    const toCampus = request.campus || before.campus
+    const toGrade = request.grade ?? before.grade
+    const toGroup = request.group || before.group
+
+    const updated: Matricula = {
+      ...before,
+      campus: toCampus,
+      shift: request.shift || before.shift,
+      grade: toGrade,
+      educationLevel: levelForGrade(toGrade),
+      group: toGroup,
+      hasGrades: gradesAction === undefined || gradesAction === "noTrasladar" ? before.hasGrades : false,
+    }
+    matriculaDb[index] = updated
+
+    students.push({
+      id,
+      name: `${before.firstName} ${before.lastName}`,
+      fromCampus: before.campus,
+      toCampus,
+      fromGrade: before.grade,
+      toGrade,
+      fromGroup: before.group,
+      toGroup,
+    })
+  }
+
+  return {
+    status: "ok",
+    message: "Matrícula actualizada.",
+    students,
+  }
+}
