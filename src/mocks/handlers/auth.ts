@@ -117,7 +117,7 @@ export const authHandlers = [
   }),
 
   // Mismo contrato que el backend real (GET /sso-admin/forgotPassword?email=):
-  // nunca revela si el email existe, siempre resuelve 200. Diferencia con el
+  // un correo desconocido responde 404 y no manda nada. Diferencia con el
   // real: acá devolvemos el token en el body, porque en un mock no hay correo
   // que abrir — es lo que le permite a /check-email mostrar el vencimiento
   // real y llegar a /restore-password. El front trata el body como opcional.
@@ -125,8 +125,16 @@ export const authHandlers = [
     await delay(300)
     const email = new URL(request.url).searchParams.get("email") ?? ""
 
-    // El token se emite exista o no el usuario: si no existe, el reseteo
-    // después no cambia nada, pero la respuesta no delata la diferencia.
+    // Decirle al usuario que esa dirección no está registrada es una decisión
+    // explícita del equipo, no un descuido: el precio es que el endpoint
+    // sirve para enumerar cuentas. Ver `UserAdminService#forgotPassword`.
+    if (!findUserByEmail(email)) {
+      return HttpResponse.json(
+        { message: "No encontramos una cuenta con ese correo electrónico." },
+        { status: 404 },
+      )
+    }
+
     const { token, expiresIn } = createPasswordResetToken(email)
 
     console.info(`[mock] Link de reseteo para ${email}: /restore-password?token=${token}`)
