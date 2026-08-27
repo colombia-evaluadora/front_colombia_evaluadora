@@ -1,6 +1,7 @@
 import { http, HttpResponse, delay } from "msw"
 
 import {
+  applyBulkMatriculaChange,
   deleteMatriculaById,
   findActiveMatriculaByDocument,
   getMatriculaDetails,
@@ -13,9 +14,11 @@ import {
   matriculaFieldConfigDb,
   updateMatriculaFieldConfig,
 } from "@/mocks/db/matricula-field-config"
-import { CAMPUSES, GROUPS } from "@/mocks/db/reservations"
+import { CAMPUSES, GRADES, GROUPS } from "@/mocks/db/reservations"
 import { SHIFTS } from "@/features/coverage/api/schema"
 import type {
+  BulkMatriculaChangeRequest,
+  BulkMatriculaChangeResult,
   CreateMatriculaInput,
   CreateMatriculaResult,
   ExportFormat,
@@ -45,6 +48,14 @@ function hashString(value: string): number {
   return Math.abs(hash)
 }
 
+function mixHash(value: number): number {
+  let x = value
+  x = Math.imul(x ^ (x >>> 16), 0x45d9f3b)
+  x = Math.imul(x ^ (x >>> 16), 0x45d9f3b)
+  x = x ^ (x >>> 16)
+  return Math.abs(x)
+}
+
 const EXPORT_FORMAT_LABELS: Record<ExportFormat, string> = {
   pdf: "PDF",
   excel: "Excel",
@@ -71,6 +82,11 @@ function applyFilters(rows: Matricula[], filters: MatriculaQueryFilters): Matric
       return false
     }
 
+    if (filters.campus && row.campus !== filters.campus) return false
+    if (filters.shift && row.shift !== filters.shift) return false
+    if (filters.grade != null && row.grade !== filters.grade) return false
+    if (filters.group && row.group !== filters.group) return false
+
     return true
   })
 }
@@ -92,20 +108,32 @@ function applySorting(rows: Matricula[], sorting: MatriculaQueryRequest["sorting
 }
 
 export const matriculaHandlers = [
-  // Jornadas por Sede, grupos por Grado — datos ficticios pero deterministas
-  // (ver `hashString`). El contrato ya queda listo para el endpoint real de
+  // Sede → Jornada → Grado → Grupo — datos ficticios pero deterministas (ver
+  // `hashString`). El contrato ya queda listo para el endpoint real de
   // oferta académica; solo hay que reemplazar este handler.
   http.post("*/api/coverage/matricula/catalogos-dependientes", async ({ request }) => {
     await delay(150)
 
-    const { campus, grade } = (await request.json()) as MatriculaDependentCatalogsRequest
+    const { campus, shift, grade } = (await request.json()) as MatriculaDependentCatalogsRequest
 
     let shifts = [...SHIFTS]
     if (campus && shifts.length > 1) {
       // Simula que no todas las sedes ofrecen todas las jornadas, sin dejar
       // la lista vacía.
-      const dropIndex = hashString(campus) % shifts.length
+      const dropIndex = mixHash(hashString(campus)) % shifts.length
       shifts = shifts.filter((_, index) => index !== dropIndex)
+    }
+
+    let grades: number[] = [...GRADES]
+    if (shift) {
+      // Mismo criterio que arriba: rota el punto de partida para que el
+      // subconjunto cambie de verdad entre jornadas, no solo el tamaño.
+      const seed = mixHash(hashString(`shift-${shift}`))
+      const count = 1 + (seed % GRADES.length)
+      const offset = seed % GRADES.length
+      grades = Array.from({ length: count }, (_, i) => GRADES[(offset + i) % GRADES.length]).sort(
+        (a, b) => a - b,
+      )
     }
 
     let groups = [...GROUPS]
@@ -114,13 +142,13 @@ export const matriculaHandlers = [
       // se arma un subconjunto distinto por grado, rotando el punto de
       // partida antes de recortar, para que el CONTENIDO cambie, no solo el
       // tamaño.
-      const seed = hashString(`grade-${grade}`)
+      const seed = mixHash(hashString(`grade-${grade}`))
       const count = 1 + (seed % GROUPS.length)
       const offset = seed % GROUPS.length
       groups = Array.from({ length: count }, (_, i) => GROUPS[(offset + i) % GROUPS.length]).sort()
     }
 
-    return HttpResponse.json<MatriculaDependentCatalogsResponse>({ shifts, groups })
+    return HttpResponse.json<MatriculaDependentCatalogsResponse>({ shifts, grades, groups })
   }),
 
   http.post("*/api/coverage/matricula/query", async ({ request }) => {
@@ -141,6 +169,18 @@ export const matriculaHandlers = [
       pageCount,
       totalCount,
     })
+  }),
+
+  // "Cambio de matrícula masivo" (E01HU33) — Sede/Grado/Grupo son cambios
+  // independientes, detectados en el front por los campos que el usuario
+  // llenó (ver `dialog-modificar-matricula.tsx`).
+  http.post("*/api/coverage/matricula/cambio-masivo", async ({ request }) => {
+    await delay(400)
+
+    const body = (await request.json()) as BulkMatriculaChangeRequest
+    const result = applyBulkMatriculaChange(body)
+
+    return HttpResponse.json<BulkMatriculaChangeResult>(result)
   }),
 
   http.post("*/api/coverage/matricula/export", async ({ request }) => {

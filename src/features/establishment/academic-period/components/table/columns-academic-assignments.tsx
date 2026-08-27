@@ -40,11 +40,15 @@ export function createAcademicAssignmentColumns({
       size: 40,
     },
     {
+      // `-ml-4` en ambos checkboxes: pega la casilla contra el chevron de
+      // "expandir", cancelando el `px-4` que trae la celda por defecto (así
+      // no depende de que `cellClassName` a nivel tabla logre pisar ese
+      // padding vía twMerge, que no estaba surtiendo efecto acá).
       id: "select",
       header: ({ table }) => (
         <Checkbox
           aria-label="Seleccionar página"
-          className="translate-y-0.5"
+          className="-ml-7 translate-y-0.5"
           checked={table.getIsAllPageRowsSelected()}
           indeterminate={!table.getIsAllPageRowsSelected() && table.getIsSomePageRowsSelected()}
           onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
@@ -53,7 +57,7 @@ export function createAcademicAssignmentColumns({
       cell: ({ row }) => (
         <Checkbox
           aria-label={`Seleccionar ${row.original.name}`}
-          className="translate-y-0.5"
+          className="-ml-7 translate-y-0.5"
           checked={row.getIsSelected()}
           onCheckedChange={(value) => row.toggleSelected(!!value)}
         />

@@ -60,21 +60,22 @@ async function fetchAssignmentTeachers(
     return { rows: [], pageCount: 1, totalCount: 0 }
   }
   const [primary] = params.sorting
-  const query = new URLSearchParams({
-    pageIndex: String(params.pageIndex),
-    pageSize: String(params.pageSize),
-  })
-  if (params.search) query.set("filtro", params.search)
-  if (params.status) query.set("estado", params.status === "ACTIVE" ? "A" : "I")
+  const body: Record<string, string> = {
+    PAGE_INDEX: String(params.pageIndex),
+    PAGE_SIZE: String(params.pageSize),
+  }
+  if (params.search) body.FILTRO = params.search
+  if (params.status) body.ESTADO = params.status === "ACTIVE" ? "A" : "I"
   if (primary) {
-    query.set("sortBy", primary.id)
-    query.set("sortDir", primary.desc ? "desc" : "asc")
+    body.SORT_BY = primary.id
+    body.SORT_DIR = primary.desc ? "desc" : "asc"
   }
 
   // `PERIODO_ACADEMICO_ID` va por path param (V85) — identifica el recurso
   // que se lista, no un filtro sobre él.
-  const raw: AssignmentTeachersRawResponse = await api.get(
-    `/eval-col/asignaciones/docentes/${params.academicPeriodId}?${query}`,
+  const raw: AssignmentTeachersRawResponse = await api.post(
+    `/eval-col/asignaciones/docentes/${params.academicPeriodId}`,
+    body,
   )
   const rows = (raw.rows ?? []).map(toEmployeeListItem)
   const totalCount = raw.rows?.[0]?.total_count ?? 0

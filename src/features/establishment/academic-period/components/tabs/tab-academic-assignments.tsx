@@ -195,7 +195,18 @@ export function TabAcademicAssignments({ academicPeriodId }: TabAcademicAssignme
               (s.funcionarioId == null || s.funcionarioId === String(employee.id)),
           )
           return (
-            <div className="-m-4 flex flex-col gap-4 bg-background p-4">
+            // Sin límite propio, este subrow + las 10 filas de la página
+            // (>10 docentes) exceden el `max-h-[64vh]`/`[58vh]` del panel de
+            // la tab (evaluation-periods-section.tsx) y el excedente se
+            // arrastra como scroll de la página en vez de quedar contenido
+            // en la tabla — reproducible solo acá porque ningún otro tab
+            // anida un `renderSubRow` así de alto. El tope acá (45vh) tiene
+            // que quedar POR DEBAJO del más chico de los dos del panel
+            // (58vh con el acordeón abierto): si el subrow puede crecer más
+            // que el panel que lo contiene, el `overflow-y-auto` del panel
+            // no alcanza a contenerlo con docentes que tienen muchas
+            // materias en el pool (confirmado con un pool de 38 ítems).
+            <div className="-m-4 flex max-h-[45vh] flex-col gap-4 overflow-y-auto bg-background p-4">
               <AssignmentTransfer
                 available={available}
                 assigned={assigned}

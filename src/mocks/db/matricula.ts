@@ -1,6 +1,9 @@
 import { faker } from "@faker-js/faker"
 
 import type {
+  BulkMatriculaChangeRequest,
+  BulkMatriculaChangeResult,
+  BulkMatriculaChangeStudentResult,
   CreateMatriculaInput,
   Matricula,
   MatriculaDetails,
@@ -42,6 +45,7 @@ function createMatricula(): Matricula {
     enrollmentDate: faker.date.recent({ days: 90 }).toISOString(),
     guardian: `${createGuardianName()} (${faker.helpers.arrayElement(RELATIONSHIP_OPTIONS)})`,
     status: pickStatus(),
+    hasGrades: faker.datatype.boolean({ probability: 0.4 }),
   }
 }
 
@@ -57,10 +61,13 @@ export const matriculaDb: Matricula[] = Array.from({ length: 260 }, createMatric
  */
 const matriculaDetailsDb = new Map<string, MatriculaDetails>()
 
-/** Deriva la fila resumen de la tabla a partir de la ficha completa del alta. */
+/** Deriva la fila resumen de la tabla a partir de la ficha completa del alta.
+ * `hasGrades` no viene del formulario de alta — se conserva el que ya tenía
+ * la fila (si existía) para no perder la marca al re-guardar la edición. */
 export function createMatriculaRow(id: string, details: MatriculaDetails): Matricula {
   const grade = Number(details.academic.grade)
   const guardianName = [details.guardian.firstName, details.guardian.lastName].filter(Boolean).join(" ")
+  const existing = matriculaDb.find((item) => item.id === id)
 
   return {
     id,
@@ -78,6 +85,7 @@ export function createMatriculaRow(id: string, details: MatriculaDetails): Matri
     enrollmentDate: new Date().toISOString(),
     guardian: details.guardian.relationship ? `${guardianName} (${details.guardian.relationship})` : guardianName,
     status: details.status,
+    hasGrades: existing?.hasGrades ?? false,
   }
 }
 
@@ -246,4 +254,56 @@ export function updateMatriculaRow(id: string, patch: Partial<Matricula>): Matri
   }
 
   return updated
+}
+
+/**
+ * Aplica un "Cambio de matrícula masivo" (E01HU33) a todas las filas de
+ * `request.ids`. `campus`/`grade`/`group` solo pisan lo que el usuario
+ * llenó en "Modificar" — sin valor, la fila conserva lo que tenía. La
+ * decisión sobre las calificaciones (`gradeChange.gradesAction` — el cambio
+ * de grupo solo no las toca) apaga `hasGrades` salvo que se haya elegido
+ * explícitamente "no trasladar" (no hay backend real de calificaciones —
+ * solo se simula que ya no quedan pendientes de decisión).
+ */
+export function applyBulkMatriculaChange(request: BulkMatriculaChangeRequest): BulkMatriculaChangeResult {
+  const students: BulkMatriculaChangeStudentResult[] = []
+  const gradesAction = request.gradeChange?.gradesAction
+
+  for (const id of request.ids) {
+    const index = matriculaDb.findIndex((item) => item.id === id)
+    if (index < 0) continue
+
+    const before = matriculaDb[index]
+    const toCampus = request.campus || before.campus
+    const toGrade = request.grade ?? before.grade
+    const toGroup = request.group || before.group
+
+    const updated: Matricula = {
+      ...before,
+      campus: toCampus,
+      shift: request.shift || before.shift,
+      grade: toGrade,
+      educationLevel: levelForGrade(toGrade),
+      group: toGroup,
+      hasGrades: gradesAction === undefined || gradesAction === "noTrasladar" ? before.hasGrades : false,
+    }
+    matriculaDb[index] = updated
+
+    students.push({
+      id,
+      name: `${before.firstName} ${before.lastName}`,
+      fromCampus: before.campus,
+      toCampus,
+      fromGrade: before.grade,
+      toGrade,
+      fromGroup: before.group,
+      toGroup,
+    })
+  }
+
+  return {
+    status: "ok",
+    message: "Matrícula actualizada.",
+    students,
+  }
 }

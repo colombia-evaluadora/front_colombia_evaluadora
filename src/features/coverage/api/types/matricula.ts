@@ -14,22 +14,24 @@ export type MatriculaStatus =
   | "reubicado"
   | "retirado"
 
-/** Fila de la tabla de matrícula (columnas del listado). */
-// ── Catálogos dependientes (Jornada por Sede+Grado, Grupo por Grado) ───────
+// ── Catálogos dependientes (Sede → Jornada → Grado → Grupo) ────────────────
 // El mock (`mocks/handlers/matricula.ts`) devuelve datos ficticios pero
 // deterministas — el contrato (request/response) ya queda listo para cuando
 // exista el endpoint real de oferta académica por sede: solo hay que cambiar
 // el handler, no el front.
 export interface MatriculaDependentCatalogsRequest {
   campus?: string
+  shift?: Shift
   grade?: number
 }
 
 export interface MatriculaDependentCatalogsResponse {
   shifts: Shift[]
+  grades: number[]
   groups: string[]
 }
 
+/** Fila de la tabla de matrícula (columnas del listado). */
 export interface Matricula {
   id: string
   /** Número de identificación del estudiante (columna "ID" de la tabla). */
@@ -47,11 +49,18 @@ export interface Matricula {
   /** Nombre completo del acudiente. */
   guardian: string
   status: MatriculaStatus
+  /** Si tiene calificaciones registradas en el grupo/grado actual — define
+   * si el "Cambio de matrícula masivo" pregunta qué hacer con ellas. */
+  hasGrades: boolean
 }
 
 export interface MatriculaQueryFilters {
   search?: string
   statuses?: MatriculaStatus[]
+  campus?: string
+  shift?: Shift
+  grade?: number
+  group?: string
 }
 
 export interface MatriculaQueryRequest {
@@ -251,4 +260,67 @@ export interface MatriculaFieldConfigResult {
 export interface MatriculaDocumentCheckResult {
   exists: boolean
   matricula: Matricula | null
+}
+
+// ── Cambio de matrícula masivo (E01HU33) ───────────────────────────────────
+// Sede/Grado/Grupo son cambios independientes que se detectan por los
+// campos que el usuario llenó en "Modificar" — no hay un selector de "tipo
+// de cambio" (ver `dialog-modificar-matricula.tsx`). `gradeChange` solo
+// viaja si el Grado cambió; `groupChange` solo si el Grupo cambió.
+
+/** "reubicacion" solo es válido cuando el nuevo grado es inferior al de
+ * origen; "promocion" cuando es superior. Ambas requieren que todos los
+ * seleccionados compartan el mismo grado de origen — si no, la única opción
+ * válida es "correccion" (ver `dialog-cambio-grado-matricula.tsx`). */
+export type BulkGradeChangeSubKind = "promocion" | "correccion" | "reubicacion"
+
+/** "eliminar" solo aplica al pasar a un grado inferior. */
+export type BulkGradesAction = "trasladar" | "noTrasladar" | "eliminar"
+
+export interface BulkGradeChange {
+  subKind: BulkGradeChangeSubKind
+  reason?: string
+  hasSupport?: boolean
+  gradesAction: BulkGradesAction
+}
+
+/** Cómo queda clasificado el movimiento en el historial: "cambioGrado"
+ * cuando el grupo va de la mano de un cambio de grado ya confirmado (o el
+ * usuario lo marca así igual); "correccion" cuando es un ajuste de grupo
+ * solo, sin cambio de grado. Lo elige el usuario en
+ * `dialog-cambio-grupo-matricula.tsx` — no se infiere solo.
+ *
+ * El cambio de grupo no pregunta por calificaciones (a diferencia del
+ * cambio de grado) — un grupo nuevo dentro del mismo grado no las afecta. */
+export type BulkGroupChangeClassification = "cambioGrado" | "correccion"
+
+export interface BulkGroupChange {
+  classification: BulkGroupChangeClassification
+}
+
+export interface BulkMatriculaChangeRequest {
+  ids: string[]
+  campus?: string
+  shift?: Shift
+  grade?: number
+  group?: string
+  gradeChange?: BulkGradeChange
+  groupChange?: BulkGroupChange
+}
+
+export interface BulkMatriculaChangeStudentResult {
+  id: string
+  name: string
+  fromCampus: string
+  toCampus: string
+  fromGrade: number
+  toGrade: number
+  fromGroup: string
+  toGroup: string
+}
+
+export interface BulkMatriculaChangeResult {
+  status: "ok" | "error"
+  message: string
+  students: BulkMatriculaChangeStudentResult[]
 }

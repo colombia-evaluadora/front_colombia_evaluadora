@@ -120,10 +120,16 @@ export const MATRICULA_STATUSES = [
 
 // Filtros del buscador: mismo criterio que `establishmentFiltersFormSchema`
 // (texto libre + estado, todo string/array para que el form y la URL
-// serialicen igual).
+// serialicen igual). Sede/Jornada/Grado/Grupo son la misma cascada que
+// "Modificar" (ver `dialog-modificar-matricula.tsx`): strings vacíos cuando
+// no se eligió, para que el form y la URL serialicen igual que el resto.
 export const matriculaFiltersFormSchema = z.object({
   search: z.string(),
   statuses: z.array(z.enum(MATRICULA_STATUSES)),
+  campus: z.string(),
+  shift: z.enum(SHIFTS).or(z.literal("")),
+  grade: z.string(),
+  group: z.string(),
 })
 export type MatriculaFiltersFormInput = z.input<typeof matriculaFiltersFormSchema>
 export type MatriculaFiltersFormValues = z.infer<typeof matriculaFiltersFormSchema>
@@ -135,6 +141,10 @@ export const matriculaSearchSchema = z.object({
   sortDir: z.enum(["asc", "desc"]).optional().catch(undefined),
   search: z.string().optional().catch(undefined),
   statuses: z.array(z.enum(MATRICULA_STATUSES)).optional().catch(undefined),
+  campus: z.string().optional().catch(undefined),
+  shift: z.enum(SHIFTS).optional().catch(undefined),
+  grade: z.coerce.number().optional().catch(undefined),
+  group: z.string().optional().catch(undefined),
 })
 export type MatriculaSearch = z.infer<typeof matriculaSearchSchema>
 

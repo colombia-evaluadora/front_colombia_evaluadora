@@ -24,6 +24,10 @@ export function useMatriculaFilters(): MatriculaFilters {
           ...prev,
           search: values.search || undefined,
           statuses: values.statuses.length ? values.statuses : undefined,
+          campus: values.campus || undefined,
+          shift: values.shift || undefined,
+          grade: values.grade ? Number(values.grade) : undefined,
+          group: values.group || undefined,
           page: 0,
         }),
         replace: true,
@@ -38,6 +42,10 @@ export function useMatriculaFilters(): MatriculaFilters {
         ...prev,
         search: undefined,
         statuses: undefined,
+        campus: undefined,
+        shift: undefined,
+        grade: undefined,
+        group: undefined,
         page: 0,
       }),
       replace: true,
@@ -48,21 +56,33 @@ export function useMatriculaFilters(): MatriculaFilters {
     () => ({
       search: search.search,
       statuses: search.statuses,
+      campus: search.campus,
+      shift: search.shift,
+      grade: search.grade,
+      group: search.group,
     }),
-    [search.search, search.statuses],
+    [search.search, search.statuses, search.campus, search.shift, search.grade, search.group],
   )
 
   const activeFilterCount = useMemo(() => {
     let count = 0
     if (search.search) count += 1
     count += search.statuses?.length ?? 0
+    if (search.campus) count += 1
+    if (search.shift) count += 1
+    if (search.grade != null) count += 1
+    if (search.group) count += 1
     return count
-  }, [search.search, search.statuses])
+  }, [search.search, search.statuses, search.campus, search.shift, search.grade, search.group])
 
   return {
     filters: {
       search: search.search ?? "",
       statuses: search.statuses ?? [],
+      campus: search.campus ?? "",
+      shift: search.shift ?? "",
+      grade: search.grade != null ? String(search.grade) : "",
+      group: search.group ?? "",
     },
     queryFilters,
     applyFilters,

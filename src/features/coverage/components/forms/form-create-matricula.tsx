@@ -34,6 +34,7 @@ import { FileUpload, FileUploadTrigger } from "@/components/ui/file-upload"
 import { FormSectionHeading } from "@/components/form-section-heading"
 
 import { SHIFT_LABELS, formatGrade } from "@/features/coverage/api/ui-mappings"
+import { useMatriculaDependentCatalogsQuery } from "@/features/coverage/api/query/use-matricula-dependent-catalogs-query"
 import { formatDateValue, parseDateValue } from "@/lib/date-time-value"
 import { MATRICULA_STATUSES } from "@/features/coverage/api/schema"
 import {
@@ -64,7 +65,7 @@ import type {
   MatriculaResidence,
   MatriculaStudentInfo,
 } from "@/features/coverage/api/types/matricula"
-import type { ReservationCatalogs } from "@/features/coverage/api/types/reservation"
+import type { ReservationCatalogs, Shift } from "@/features/coverage/api/types/reservation"
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -320,6 +321,14 @@ export function MatriculaAcademicSection({
   invalidFields = [],
   showStatus = true,
 }: AcademicSectionProps) {
+  // Sede → Jornada → Grado → Grupo — mismo criterio que "Modificar" (ver
+  // `dialog-modificar-matricula.tsx` y `use-matricula-dependent-catalogs-query.ts`).
+  const { data: dependentCatalogs } = useMatriculaDependentCatalogsQuery({
+    campus: value.campus || undefined,
+    shift: (value.shift || undefined) as Shift | undefined,
+    grade: value.grade ? Number(value.grade) : undefined,
+  })
+
   return (
     <MatriculaFormSection title="Información de matrícula">
       <MatriculaSelectField
@@ -329,18 +338,25 @@ export function MatriculaAcademicSection({
         value={value.campus}
         options={catalogs?.campuses ?? []}
         invalid={invalidFields.includes("matricula-campus")}
-        onChange={(campus) => onChange({ ...value, campus })}
+        onChange={(campus) => onChange({ ...value, campus, shift: "", grade: "", group: "" })}
       />
       <MatriculaSelectField
         id="matricula-shift"
         label="Jornada"
         required
         value={SHIFT_LABELS[value.shift as keyof typeof SHIFT_LABELS] ?? ""}
-        options={Object.values(SHIFT_LABELS)}
+        options={(dependentCatalogs?.shifts ?? []).map((shift) => SHIFT_LABELS[shift])}
+        placeholder={!value.campus ? "Elegí sede primero" : "Seleccionar"}
+        disabled={!value.campus}
         invalid={invalidFields.includes("matricula-shift")}
         onChange={(label) => {
           const entry = Object.entries(SHIFT_LABELS).find(([, l]) => l === label)
-          onChange({ ...value, shift: (entry?.[0] as MatriculaAcademicInfo["shift"]) ?? "" })
+          onChange({
+            ...value,
+            shift: (entry?.[0] as MatriculaAcademicInfo["shift"]) ?? "",
+            grade: "",
+            group: "",
+          })
         }}
       />
       <MatriculaSelectField
@@ -348,17 +364,21 @@ export function MatriculaAcademicSection({
         label="Grado"
         required
         value={value.grade}
-        options={(catalogs?.grades ?? []).map((grade) => String(grade))}
+        options={(dependentCatalogs?.grades ?? []).map((grade) => String(grade))}
         labelFor={(option) => formatGrade(Number(option))}
+        placeholder={!value.shift ? "Elegí jornada primero" : "Seleccionar"}
+        disabled={!value.shift}
         invalid={invalidFields.includes("matricula-grade")}
-        onChange={(grade) => onChange({ ...value, grade })}
+        onChange={(grade) => onChange({ ...value, grade, group: "" })}
       />
       <MatriculaSelectField
         id="matricula-group"
         label="Grupo"
         required
         value={value.group}
-        options={catalogs?.groups ?? []}
+        options={dependentCatalogs?.groups ?? []}
+        placeholder={!value.grade ? "Elegí grado primero" : "Seleccionar"}
+        disabled={!value.grade}
         invalid={invalidFields.includes("matricula-group")}
         onChange={(group) => onChange({ ...value, group })}
       />

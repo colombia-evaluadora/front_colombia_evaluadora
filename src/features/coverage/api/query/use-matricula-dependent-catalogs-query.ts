@@ -13,18 +13,17 @@ function fetchMatriculaDependentCatalogs(
 }
 
 /**
- * Jornadas disponibles para una Sede+Grado, y grupos disponibles para un
- * Grado — usado por los selects en cascada de "Modificar" (Sede/Jornada
- * dependen entre sí, Grupo depende de Grado). Se activa apenas hay campus o
- * grado (uno solo alcanza para consultar; el mock resuelve con lo que
- * tenga).
+ * Cascada Sede → Jornada → Grado → Grupo para los selects de "Modificar":
+ * jornadas disponibles por sede, grados disponibles por jornada, grupos
+ * disponibles por grado. Se activa apenas hay algún prerequisito (uno solo
+ * alcanza para consultar; el mock resuelve con lo que tenga).
  */
 export function useMatriculaDependentCatalogsQuery(params: MatriculaDependentCatalogsRequest) {
-  const { campus, grade } = params
+  const { campus, shift, grade } = params
   return useQuery({
-    queryKey: ["matricula", "catalogos-dependientes", campus, grade],
-    queryFn: () => fetchMatriculaDependentCatalogs({ campus, grade }),
-    enabled: campus != null || grade != null,
+    queryKey: ["matricula", "catalogos-dependientes", campus, shift, grade],
+    queryFn: () => fetchMatriculaDependentCatalogs({ campus, shift, grade }),
+    enabled: campus != null || shift != null || grade != null,
     staleTime: 30_000,
   })
 }
