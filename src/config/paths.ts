@@ -152,9 +152,25 @@ export const paths = {
       },
   },
 
-    gestionAcademicaPlaneador: {
-      path: "gestion-academica/planeador",
-      getHref: () => "/app/gestion-academica/planeador",
+    // Las dos vistas del Planeador (actividades y unidades temáticas)
+    // cuelgan del mismo prefijo `planeador`, igual que las de registro de
+    // actividad: así el ítem del menú se marca activo en cualquiera de las
+    // dos y en sus subrutas. El prefijo a secas no es una ruta.
+    planeadorActividades: {
+      path: "planeador/actividades",
+      getHref: () => "/app/planeador/actividades",
+    },
+    planeadorDetalle: {
+      path: "planeador/actividades/$actividadId",
+      getHref: (actividadId: string) => `/app/planeador/actividades/${actividadId}`,
+    },
+    planeadorActividadEditar: {
+      path: "planeador/actividades/$actividadId/editar",
+      getHref: (actividadId: string) => `/app/planeador/actividades/${actividadId}/editar`,
+    },
+    planeadorUnidades: {
+      path: "planeador/unidades",
+      getHref: () => "/app/planeador/unidades",
     },
     gestionAcademicaInformes: {
       path: "gestion-academica/informes",

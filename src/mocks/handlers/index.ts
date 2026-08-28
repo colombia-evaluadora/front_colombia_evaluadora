@@ -34,6 +34,7 @@ import { enrollmentsHandlers } from "@/mocks/handlers/enrollments"
 import { matriculaHandlers } from "@/mocks/handlers/matricula"
 import { curricularReferencesHandlers } from "@/mocks/handlers/academic-management/curricular-references"
 import { curricularStatementsHandlers } from "@/mocks/handlers/academic-management/curricular-statements"
+import { planeadorHandlers } from "@/mocks/handlers/planeador"
 
 export const handlers = [
   ...authHandlers,
@@ -69,6 +70,7 @@ export const handlers = [
   ...plansHandlers,
   ...preMatriculaHandlers,
   ...enrollmentsHandlers,
+  ...planeadorHandlers,
   ...matriculaHandlers,
   ...curricularReferencesHandlers,
   ...curricularStatementsHandlers,

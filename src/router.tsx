@@ -32,6 +32,11 @@ import {
   tableOperationsSearchSchema,
 } from "@/features/administration/audits/api/schema"
 import { academicPeriodsSearchSchema } from "@/features/establishment/academic-period/api/schema"
+import {
+  planeadorDetalleSearchSchema,
+  planeadorSearchSchema,
+  planeadorUnidadesSearchSchema,
+} from "@/features/planeador/api/schema"
 import { establishmentsSearchSchema } from "@/features/establishment/institution/api/schema"
 import { campusesSearchSchema } from "@/features/establishment/campuses/api/schema"
 import { employeesSearchSchema } from "@/features/establishment/employees/api/schema"
@@ -119,6 +124,22 @@ const RolesMenusPage = lazyRouteComponent(
 const AddEstablishmentPage = lazyRouteComponent(
   () => import("@/features/establishment/institution/pages/add-establishment-page"),
   "AddEstablishmentPage"
+)
+
+// Planeador (Gestión Académica) — read-only en esta iteración. Las tres rutas
+// cuelgan directo de `appLayoutRoute` (no hay layout agrupador) porque no hay
+// mutaciones que requieran un `NoticeProvider` compartido.
+const PlaneadorPage = lazyRouteComponent(
+  () => import("@/features/planeador/pages/planeador-page"),
+  "PlaneadorPage"
+)
+const PlaneadorDetallePage = lazyRouteComponent(
+  () => import("@/features/planeador/pages/planeador-detalle-page"),
+  "PlaneadorDetallePage"
+)
+const PlaneadorUnidadesPage = lazyRouteComponent(
+  () => import("@/features/planeador/pages/planeador-unidades-page"),
+  "PlaneadorUnidadesPage"
 )
 
 const MatriculaPage = lazyRouteComponent(
@@ -309,7 +330,7 @@ const PERIODOS_CRUMB = {
 }
 const GESTION_ACADEMICA_CRUMB = {
   label: "Gestión académica",
-  to: paths.app.gestionAcademicaPlaneador.getHref(),
+  to: paths.app.planeadorActividades.getHref(),
 }
 
 // `/app` no tiene página propia: manda a la primera pantalla del menú del
@@ -620,10 +641,6 @@ export const periodosAcademicosEditarRoute = createRoute({
   component: AcademicPeriodConfigPage,
 })
 
-const PlannerPage = lazyRouteComponent(
-  () => import("@/features/academic-management/pages/planner-page"),
-  "PlannerPage",
-)
 const ReportsPage = lazyRouteComponent(
   () => import("@/features/academic-management/pages/reports-page"),
   "ReportsPage",
@@ -639,13 +656,6 @@ const CurricularReferenceDetailPage = lazyRouteComponent(
     ),
   "CurricularReferenceDetailPage",
 )
-
-export const gestionAcademicaPlaneadorRoute = createRoute({
-  getParentRoute: () => appLayoutRoute,
-  path: paths.app.gestionAcademicaPlaneador.path,
-  staticData: { breadcrumb: [GESTION_ACADEMICA_CRUMB, { label: "Planeador" }] },
-  component: PlannerPage,
-})
 
 export const gestionAcademicaInformesRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
@@ -674,6 +684,42 @@ export const gestionAcademicaReferentesCurricularesDetalleRoute = createRoute({
     breadcrumb: [GESTION_ACADEMICA_CRUMB, REFERENTES_CURRICULARES_CRUMB, { label: "Detalle" }],
   },
   component: CurricularReferenceDetailPage,
+})
+
+// Planeador — miga única "Planeador" (los placeholders Informes / Asistencia
+// del menú todavía no tienen ruta propia).
+const PLANEADOR_CRUMB = {
+  label: "Planeador",
+  to: paths.app.planeadorActividades.getHref(),
+}
+
+export const planeadorRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.planeadorActividades.path,
+  validateSearch: planeadorSearchSchema,
+  staticData: { breadcrumb: [PLANEADOR_CRUMB] },
+  component: PlaneadorPage,
+})
+
+export const planeadorUnidadesRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.planeadorUnidades.path,
+  validateSearch: planeadorUnidadesSearchSchema,
+  staticData: { breadcrumb: [PLANEADOR_CRUMB, { label: "Unidad temática" }] },
+  component: PlaneadorUnidadesPage,
+})
+
+export const planeadorDetalleRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.planeadorDetalle.path,
+  validateSearch: planeadorDetalleSearchSchema,
+  staticData: {
+    breadcrumb: (params) => [
+      PLANEADOR_CRUMB,
+      { label: `Actividad ${params.actividadId}` },
+    ],
+  },
+  component: PlaneadorDetallePage,
 })
 
 const routeTree = rootRoute.addChildren([
@@ -712,7 +758,6 @@ const routeTree = rootRoute.addChildren([
     employeesRoute,
     addEstablishmentRoute,
     editEstablishmentRoute,
-    gestionAcademicaPlaneadorRoute,
     gestionAcademicaInformesRoute,
     gestionAcademicaReferentesCurricularesRoute,
     gestionAcademicaReferentesCurricularesDetalleRoute,
@@ -723,6 +768,9 @@ const routeTree = rootRoute.addChildren([
       addEstablishmentRoute,
       editEstablishmentRoute,
     ]),
+    planeadorRoute,
+    planeadorUnidadesRoute,
+    planeadorDetalleRoute,
   ]),
 ])
 
