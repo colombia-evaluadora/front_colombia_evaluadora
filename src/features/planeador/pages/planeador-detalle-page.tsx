@@ -63,7 +63,11 @@ export function PlaneadorDetallePage() {
             variant="ghost"
             color="neutral"
             size="icon-sm"
-            disabled
+            render={
+              actividadId
+                ? <Link to={paths.app.planeadorActividadEditar.getHref(actividadId)} />
+                : <button type="button" disabled />
+            }
             aria-label="Editar"
           >
             <PencilIcon />

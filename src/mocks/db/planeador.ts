@@ -44,7 +44,7 @@ export const planeadorDb: Actividad[] = [
         id: "r2",
         titulo: "Recurso 2",
         fuente: "Behance",
-        tipo: "Sitio web",
+        tipo: "Unidad virtual",
         url: "https://behance.net/galeria",
         descripcion: "Galería de referencia.",
       },
@@ -66,6 +66,7 @@ export const planeadorDb: Actividad[] = [
     descripcionUnidad: [
       "Unidad dedicada al proceso de diseño y prototipado, enfocada en la resolución de problemas reales.",
     ],
+    adaptaciones: [],
     rubrica: {
       id: "rb-601",
       criterios: [
@@ -74,18 +75,21 @@ export const planeadorDb: Actividad[] = [
           nombre: "Diseño",
           excelente: "Cumple con todos los criterios de diseño y aporta innovación.",
           ponderacion: 30,
+          niveles: [],
         },
         {
           id: "c2",
           nombre: "Funcionalidad",
           excelente: "El prototipo resuelve el problema identificado.",
           ponderacion: 40,
+          niveles: [],
         },
         {
           id: "c3",
           nombre: "Presentación",
           excelente: "Comunicación clara y profesional.",
           ponderacion: 30,
+          niveles: [],
         },
       ],
     },
@@ -109,14 +113,14 @@ export const planeadorDb: Actividad[] = [
         id: "r3",
         titulo: "Recurso 1",
         fuente: "Miro — tablero de diseño",
-        tipo: "Sitio web",
+        tipo: "Unidad virtual",
         url: "https://miro.com/app/board/abc",
         descripcion: "Lienzo colaborativo para bocetos.",
       },
     ],
     duracionEstimada: "12 horas",
     semana: 3,
-    modalidad: "Híbrida",
+    modalidad: "Mixta",
     esEvaluativa: false,
     instrumento: "—",
     generaEvidencias: true,
@@ -126,6 +130,7 @@ export const planeadorDb: Actividad[] = [
     contenidos: ["Bocetado rápido", "Iteración"],
     objetivos: ["Practicar el flujo iterativo de diseño"],
     descripcionUnidad: ["Sesiones prácticas de bocetado."],
+    adaptaciones: [],
     rubrica: {
       id: "rb-602",
       criterios: [
@@ -134,12 +139,14 @@ export const planeadorDb: Actividad[] = [
           nombre: "Calidad del boceto",
           excelente: "Trazo limpio, proporciones correctas.",
           ponderacion: 50,
+          niveles: [],
         },
         {
           id: "c2",
           nombre: "Iteración",
           excelente: "Múltiples versiones progresivas.",
           ponderacion: 50,
+          niveles: [],
         },
       ],
     },
@@ -171,6 +178,7 @@ export const planeadorDb: Actividad[] = [
     contenidos: ["Planificación", "Hitos"],
     objetivos: ["Documentar el cronograma del proyecto"],
     descripcionUnidad: ["Etapa de planificación."],
+    adaptaciones: [],
     rubrica: {
       id: "rb-603",
       criterios: [
@@ -179,6 +187,7 @@ export const planeadorDb: Actividad[] = [
           nombre: "Coherencia",
           excelente: "Hitos alineados con objetivos.",
           ponderacion: 100,
+          niveles: [],
         },
       ],
     },
@@ -210,6 +219,7 @@ export const planeadorDb: Actividad[] = [
     contenidos: ["Pruebas de uso"],
     objetivos: ["Medir el rendimiento del prototipo"],
     descripcionUnidad: ["Sesión cancelada."],
+    adaptaciones: [],
     rubrica: {
       id: "rb-604",
       criterios: [],
@@ -242,6 +252,7 @@ export const planeadorDb: Actividad[] = [
     contenidos: ["Lluvia de ideas"],
     objetivos: ["Generar al menos 10 ideas por equipo"],
     descripcionUnidad: ["Dinámica de ideación."],
+    adaptaciones: [],
     rubrica: {
       id: "rb-605",
       criterios: [],
@@ -266,7 +277,7 @@ export const planeadorDb: Actividad[] = [
         id: "r4",
         titulo: "Recurso 1",
         fuente: "Drive — enunciado",
-        tipo: "Sitio web",
+        tipo: "Unidad virtual",
         url: "https://drive.google.com/file/enunciado",
         descripcion: "Documento con el enunciado.",
       },
@@ -283,6 +294,7 @@ export const planeadorDb: Actividad[] = [
     contenidos: ["Conceptos clave de la unidad"],
     objetivos: ["Medir comprensión de los temas"],
     descripcionUnidad: ["Evaluación de mitad de unidad."],
+    adaptaciones: [],
     rubrica: {
       id: "rb-606",
       criterios: [
@@ -291,12 +303,14 @@ export const planeadorDb: Actividad[] = [
           nombre: "Comprensión",
           excelente: "Resuelve los problemas con argumentos claros.",
           ponderacion: 60,
+          niveles: [],
         },
         {
           id: "c2",
           nombre: "Aplicación",
           excelente: "Aplica conceptos a casos nuevos.",
           ponderacion: 40,
+          niveles: [],
         },
       ],
     },
@@ -318,7 +332,7 @@ export const planeadorDb: Actividad[] = [
     recursos: [],
     duracionEstimada: "40 horas",
     semana: 10,
-    modalidad: "Híbrida",
+    modalidad: "Mixta",
     esEvaluativa: true,
     instrumento: "Rúbrica analítica",
     generaEvidencias: true,
@@ -328,6 +342,7 @@ export const planeadorDb: Actividad[] = [
     contenidos: ["Integración de contenidos", "Síntesis"],
     objetivos: ["Integrar todos los conceptos del semestre"],
     descripcionUnidad: ["Proyecto final."],
+    adaptaciones: [],
     rubrica: {
       id: "rb-607",
       criterios: [
@@ -336,18 +351,21 @@ export const planeadorDb: Actividad[] = [
           nombre: "Calidad técnica",
           excelente: "Solución robusta y escalable.",
           ponderacion: 50,
+          niveles: [],
         },
         {
           id: "c2",
           nombre: "Calidad estética",
           excelente: "Diseño visual coherente y atractivo.",
           ponderacion: 30,
+          niveles: [],
         },
         {
           id: "c3",
           nombre: "Documentación",
           excelente: "Bitácora completa y bien escrita.",
           ponderacion: 20,
+          niveles: [],
         },
       ],
     },
@@ -379,6 +397,7 @@ export const planeadorDb: Actividad[] = [
     contenidos: ["Reflexión", "Metacognición"],
     objetivos: ["Identificar logros y áreas de mejora"],
     descripcionUnidad: ["Cierre del semestre."],
+    adaptaciones: [],
     rubrica: {
       id: "rb-608",
       criterios: [
@@ -387,6 +406,7 @@ export const planeadorDb: Actividad[] = [
           nombre: "Reflexión",
           excelente: "Reflexión profunda y autocrítica honesta.",
           ponderacion: 100,
+          niveles: [],
         },
       ],
     },
@@ -418,6 +438,7 @@ export const planeadorDb: Actividad[] = [
     contenidos: ["Lengua Castellana"],
     objetivos: ["Cumplir con la actividad programada"],
     descripcionUnidad: ["Taller de comprensión lectora."],
+    adaptaciones: [],
     rubrica: {
       id: "rb-609",
       criterios: [],
@@ -450,6 +471,7 @@ export const planeadorDb: Actividad[] = [
     contenidos: ["Ciencias Naturales"],
     objetivos: ["Cumplir con la actividad programada"],
     descripcionUnidad: ["Laboratorio de ecosistemas."],
+    adaptaciones: [],
     rubrica: {
       id: "rb-610",
       criterios: [],
@@ -482,6 +504,7 @@ export const planeadorDb: Actividad[] = [
     contenidos: ["Artística"],
     objetivos: ["Cumplir con la actividad programada"],
     descripcionUnidad: ["Mural colaborativo."],
+    adaptaciones: [],
     rubrica: {
       id: "rb-611",
       criterios: [],
@@ -514,6 +537,7 @@ export const planeadorDb: Actividad[] = [
     contenidos: ["Matemáticas"],
     objetivos: ["Cumplir con la actividad programada"],
     descripcionUnidad: ["Quiz de fracciones."],
+    adaptaciones: [],
     rubrica: {
       id: "rb-612",
       criterios: [],
