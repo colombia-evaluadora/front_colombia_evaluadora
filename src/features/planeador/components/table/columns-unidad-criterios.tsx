@@ -1,4 +1,3 @@
-import type * as React from "react"
 import type { ColumnDef } from "@tanstack/react-table"
 
 import { Button } from "@/components/ui/button"
@@ -6,22 +5,7 @@ import { DataTableColumnHeader } from "@/components/data-table"
 import { PencilIcon, TrashIcon } from "@/components/ui/icons"
 
 import type { CriterioUnidad } from "@/features/planeador/api/types/unidad-tematica"
-
-/**
- * Descripción de un nivel de desempeño.
- *
- * Las celdas de `DataTable` van `whitespace-nowrap` —bien para valores cortos,
- * no para prosa: las cuatro descripciones en una sola línea daban una tabla
- * mucho más ancha que el panel, que solo se leía scrolleando en horizontal—,
- * así que acá se reactiva el salto de línea.
- *
- * `max-w` y no `w`: es un techo, no un ancho fijo. Con `table-layout: auto` el
- * navegador reparte el sobrante hasta ese límite y, si el panel es más
- * angosto, encoge las columnas en vez de desbordar.
- */
-function NivelTexto({ children }: { children: React.ReactNode }) {
-  return <span className="block max-w-[16rem] whitespace-normal">{children}</span>
-}
+import { NivelTexto } from "@/features/planeador/components/table/criterio-nivel-texto"
 
 /**
  * Columnas de la rúbrica de una unidad: el criterio y su descripción en los

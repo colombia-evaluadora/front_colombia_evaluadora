@@ -11,10 +11,10 @@ import {
   TableScreenToolbar,
 } from "@/components/layout/table-screen"
 import {
-  PlusIcon,
-  DotsThreeIcon,
+  PlusCircleIcon,
   CaretLeftIcon,
   CaretRightIcon,
+  FileDownloadOutlinedIcon,
 } from "@/components/ui/icons"
 import { Spinner } from "@/components/ui/spinner"
 
@@ -67,37 +67,7 @@ export function PlaneadorUnidadesPage() {
   return (
     <TableScreen>
       <TableScreenHeader>
-        <TableScreenTitle
-          action={
-            <TableScreenActions>
-              <div className="flex gap-0">
-                <Button
-                  color="primary"
-                  size="sm"
-                  variant="fill"
-                  disabled
-                  aria-label="Agregar unidad"
-                  className="rounded-r-none border-r-0"
-                >
-                  <PlusIcon data-icon="inline-start" />
-                  Agregar unidad
-                </Button>
-                <Button
-                  color="primary"
-                  size="sm"
-                  variant="fill"
-                  disabled
-                  aria-label="Más opciones"
-                  className="rounded-l-none"
-                >
-                  <DotsThreeIcon />
-                </Button>
-              </div>
-            </TableScreenActions>
-          }
-        >
-          Planeador
-        </TableScreenTitle>
+        <TableScreenTitle>Planeador</TableScreenTitle>
 
         <PlaneadorTabs />
 
@@ -108,6 +78,30 @@ export function PlaneadorUnidadesPage() {
             applyFilters={applyFilters}
             clearAllFilters={clearAllFilters}
           />
+          {/* Misma distribución que en la pestaña "Actividades": el "Agregar…"
+              con su "…" van pegados como un control partido y el exportar va
+              al lado, así todas las acciones del listado quedan juntas. */}
+          <TableScreenActions>
+            <Button
+              color="primary"
+              size="sm"
+              variant="fill"
+              disabled
+              aria-label="Agregar unidad"
+            >
+              <PlusCircleIcon data-icon="inline-start" />
+              Agregar unidad
+            </Button>
+            <Button
+              variant="outline"
+              color="muted"
+              size="icon-sm"
+              disabled
+              aria-label="Exportar unidades filtradas"
+            >
+              <FileDownloadOutlinedIcon />
+            </Button>
+          </TableScreenActions>
         </TableScreenToolbar>
       </TableScreenHeader>
 

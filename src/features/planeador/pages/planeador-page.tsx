@@ -11,7 +11,7 @@ import {
   TableScreenToolbar,
 } from "@/components/layout/table-screen"
 import {
-  PlusIcon,
+  PlusCircleIcon,
   DotsThreeIcon,
   CaretLeftIcon,
   CaretRightIcon,
@@ -153,7 +153,7 @@ export function PlaneadorPage() {
                 aria-label="Nueva actividad"
                 className="rounded-r-none border-r-0"
               >
-                <PlusIcon data-icon="inline-start" />
+                <PlusCircleIcon data-icon="inline-start" />
                 Nueva actividad
               </Button>
               <Button
@@ -217,8 +217,6 @@ export function PlaneadorPage() {
                 >
                   Hoy
                 </Button>
-                {/* `whitespace-nowrap`: a este ancho de columna "VIERNES 28" se
-                  parte en dos líneas y descuadra la fila de botones. */}
                 <span className="text-muted-foreground text-xs font-medium tracking-wide whitespace-nowrap uppercase">
                   {new Date().toLocaleDateString("es-CO", {
                     weekday: "long",
