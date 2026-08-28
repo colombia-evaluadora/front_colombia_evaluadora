@@ -32,6 +32,11 @@ import {
   tableOperationsSearchSchema,
 } from "@/features/administration/audits/api/schema"
 import { academicPeriodsSearchSchema } from "@/features/establishment/academic-period/api/schema"
+import {
+  planeadorDetalleSearchSchema,
+  planeadorSearchSchema,
+  planeadorUnidadesSearchSchema,
+} from "@/features/planeador/api/schema"
 import { establishmentsSearchSchema } from "@/features/establishment/institution/api/schema"
 import { campusesSearchSchema } from "@/features/establishment/campuses/api/schema"
 import { employeesSearchSchema } from "@/features/establishment/employees/api/schema"
@@ -118,6 +123,22 @@ const RolesMenusPage = lazyRouteComponent(
 const AddEstablishmentPage = lazyRouteComponent(
   () => import("@/features/establishment/institution/pages/add-establishment-page"),
   "AddEstablishmentPage"
+)
+
+// Planeador (Gestión Académica) — read-only en esta iteración. Las dos rutas
+// cuelgan directo de `appLayoutRoute` (no hay layout agrupador) porque no hay
+// mutaciones que requieran un `NoticeProvider` compartido.
+const PlaneadorPage = lazyRouteComponent(
+  () => import("@/features/planeador/pages/planeador-page"),
+  "PlaneadorPage"
+)
+const PlaneadorDetallePage = lazyRouteComponent(
+  () => import("@/features/planeador/pages/planeador-detalle-page"),
+  "PlaneadorDetallePage"
+)
+const PlaneadorUnidadesPage = lazyRouteComponent(
+  () => import("@/features/planeador/pages/planeador-unidades-page"),
+  "PlaneadorUnidadesPage"
 )
 
 interface RouterContext {
@@ -531,6 +552,42 @@ export const periodosAcademicosEditarRoute = createRoute({
   component: AcademicPeriodConfigPage,
 })
 
+// Planeador — miga única "Planeador" (los placeholders Informes / Asistencia
+// del menú todavía no tienen ruta propia).
+const PLANEADOR_CRUMB = {
+  label: "Planeador",
+  to: paths.app.planeadorActividades.getHref(),
+}
+
+export const planeadorRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.planeadorActividades.path,
+  validateSearch: planeadorSearchSchema,
+  staticData: { breadcrumb: [PLANEADOR_CRUMB] },
+  component: PlaneadorPage,
+})
+
+export const planeadorUnidadesRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.planeadorUnidades.path,
+  validateSearch: planeadorUnidadesSearchSchema,
+  staticData: { breadcrumb: [PLANEADOR_CRUMB, { label: "Unidad temática" }] },
+  component: PlaneadorUnidadesPage,
+})
+
+export const planeadorDetalleRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.planeadorDetalle.path,
+  validateSearch: planeadorDetalleSearchSchema,
+  staticData: {
+    breadcrumb: (params) => [
+      PLANEADOR_CRUMB,
+      { label: `Actividad ${params.actividadId}` },
+    ],
+  },
+  component: PlaneadorDetallePage,
+})
+
 const routeTree = rootRoute.addChildren([
   //  landingRoute,
   homeRoute,
@@ -570,6 +627,9 @@ const routeTree = rootRoute.addChildren([
       addEstablishmentRoute,
       editEstablishmentRoute,
     ]),
+    planeadorRoute,
+    planeadorUnidadesRoute,
+    planeadorDetalleRoute,
   ]),
 ])
 

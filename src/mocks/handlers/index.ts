@@ -31,6 +31,7 @@ import { plansHandlers } from "@/mocks/handlers/plans"
 import { reportesHandlers } from "@/mocks/handlers/reportes"
 import { preMatriculaHandlers } from "@/mocks/handlers/pre-matricula"
 import { enrollmentsHandlers } from "@/mocks/handlers/enrollments"
+import { planeadorHandlers } from "@/mocks/handlers/planeador"
 
 export const handlers = [
   ...authHandlers,
@@ -66,4 +67,5 @@ export const handlers = [
   ...plansHandlers,
   ...preMatriculaHandlers,
   ...enrollmentsHandlers,
+  ...planeadorHandlers,
 ]

@@ -66,7 +66,10 @@ function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
     <tr
       data-slot="table-row"
       className={cn(
-        "border-b transition-colors hover:bg-muted/50 has-aria-expanded:bg-muted/50 data-[state=selected]:bg-muted",
+        // `muted-22` (muted con ~28% de alfa) y no `muted/50`: el hover de
+        // la fila era demasiado marcado y competía con la fila seleccionada,
+        // que sí usa el muted sólido.
+        "border-b transition-colors hover:bg-muted-22 has-aria-expanded:bg-muted-22 data-[state=selected]:bg-muted",
         className,
       )}
       {...props}
