@@ -33,8 +33,13 @@ import {
 import { FileUpload, FileUploadTrigger } from "@/components/ui/file-upload"
 import { FormSectionHeading } from "@/components/form-section-heading"
 
-import { SHIFT_LABELS, formatGrade } from "@/features/coverage/api/ui-mappings"
+import { formatGrade } from "@/features/coverage/api/ui-mappings"
 import { useMatriculaDependentCatalogsQuery } from "@/features/coverage/api/query/use-matricula-dependent-catalogs-query"
+import {
+  isFieldRequired,
+  isFieldVisible,
+  type MatriculaFieldSettingsMap,
+} from "@/features/coverage/utils/matricula-field-settings"
 import { formatDateValue, parseDateValue } from "@/lib/date-time-value"
 import { MATRICULA_STATUSES } from "@/features/coverage/api/schema"
 import {
@@ -44,6 +49,7 @@ import {
   MATRICULA_STATUS_LABELS,
   PREVIOUS_YEAR_CONDITION_OPTIONS,
   PREVIOUS_YEAR_SITUATION_OPTIONS,
+  SISBEN_OPTIONS,
   SOCIOECONOMIC_STRATUM_OPTIONS,
   SPECIALTY_OPTIONS,
   SPECIAL_CONDITIONS_OPTIONS,
@@ -65,7 +71,7 @@ import type {
   MatriculaResidence,
   MatriculaStudentInfo,
 } from "@/features/coverage/api/types/matricula"
-import type { ReservationCatalogs, Shift } from "@/features/coverage/api/types/reservation"
+import type { ReservationCatalogs } from "@/features/coverage/api/types/reservation"
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -109,6 +115,10 @@ interface TextFieldProps {
   invalid?: boolean
   /** Sólo dígitos — filtra cualquier carácter no numérico al tipear/pegar. */
   numeric?: boolean
+  /** Largo de la columna real (`VARCHAR(N)`) — ver mapeo de campos al final
+   * del archivo. Sin límite si no se pasa (campos sin equivalente VARCHAR,
+   * ej. FKs a catálogo). */
+  maxLength?: number
 }
 
 export function MatriculaTextField({
@@ -120,6 +130,7 @@ export function MatriculaTextField({
   required,
   invalid,
   numeric,
+  maxLength,
 }: TextFieldProps) {
   return (
     <Field
@@ -142,6 +153,7 @@ export function MatriculaTextField({
         value={value}
         aria-invalid={invalid}
         inputMode={numeric ? "numeric" : undefined}
+        maxLength={maxLength}
         onChange={(event) => {
           const nextValue = numeric ? event.target.value.replace(/\D/g, "") : event.target.value
           onChange(nextValue)
@@ -266,6 +278,7 @@ interface DeptMunicipioFieldsProps {
   value: MatriculaDeptMunicipio
   departments: DepartmentOption[]
   onChange: (value: MatriculaDeptMunicipio) => void
+  fieldSettings?: MatriculaFieldSettingsMap
 }
 
 export function DeptMunicipioFields({
@@ -275,25 +288,34 @@ export function DeptMunicipioFields({
   value,
   departments,
   onChange,
+  fieldSettings,
 }: DeptMunicipioFieldsProps) {
   const municipalities = departments.find((d) => d.name === value.department)?.municipalities ?? []
+  const departmentId = `${idPrefix}-department`
+  const municipalityId = `${idPrefix}-municipality`
 
   return (
     <>
-      <MatriculaSelectField
-        id={`${idPrefix}-department`}
-        label={departmentLabel}
-        value={value.department}
-        options={departments.map((d) => d.name)}
-        onChange={(department) => onChange({ department, municipality: "" })}
-      />
-      <MatriculaSelectField
-        id={`${idPrefix}-municipality`}
-        label={municipalityLabel}
-        value={value.municipality}
-        options={municipalities}
-        onChange={(municipality) => onChange({ ...value, municipality })}
-      />
+      {isFieldVisible(fieldSettings, departmentId) && (
+        <MatriculaSelectField
+          id={departmentId}
+          label={departmentLabel}
+          required={isFieldRequired(fieldSettings, departmentId)}
+          value={value.department}
+          options={departments.map((d) => d.name)}
+          onChange={(department) => onChange({ department, municipality: "" })}
+        />
+      )}
+      {isFieldVisible(fieldSettings, municipalityId) && (
+        <MatriculaSelectField
+          id={municipalityId}
+          label={municipalityLabel}
+          required={isFieldRequired(fieldSettings, municipalityId)}
+          value={value.municipality}
+          options={municipalities}
+          onChange={(municipality) => onChange({ ...value, municipality })}
+        />
+      )}
     </>
   )
 }
@@ -312,6 +334,7 @@ interface AcademicSectionProps {
    * (ver MatriculaToolbar) — se muestra acá para que el valor actual quede a
    * la vista mientras se edita el resto de la matrícula. */
   showStatus?: boolean
+  fieldSettings?: MatriculaFieldSettingsMap
 }
 
 export function MatriculaAcademicSection({
@@ -320,12 +343,13 @@ export function MatriculaAcademicSection({
   catalogs,
   invalidFields = [],
   showStatus = true,
+  fieldSettings,
 }: AcademicSectionProps) {
   // Sede → Jornada → Grado → Grupo — mismo criterio que "Modificar" (ver
   // `dialog-modificar-matricula.tsx` y `use-matricula-dependent-catalogs-query.ts`).
   const { data: dependentCatalogs } = useMatriculaDependentCatalogsQuery({
     campus: value.campus || undefined,
-    shift: (value.shift || undefined) as Shift | undefined,
+    shift: value.shift || undefined,
     grade: value.grade ? Number(value.grade) : undefined,
   })
 
@@ -344,20 +368,12 @@ export function MatriculaAcademicSection({
         id="matricula-shift"
         label="Jornada"
         required
-        value={SHIFT_LABELS[value.shift as keyof typeof SHIFT_LABELS] ?? ""}
-        options={(dependentCatalogs?.shifts ?? []).map((shift) => SHIFT_LABELS[shift])}
+        value={value.shift}
+        options={dependentCatalogs?.shifts ?? []}
         placeholder={!value.campus ? "Elegí sede primero" : "Seleccionar"}
         disabled={!value.campus}
         invalid={invalidFields.includes("matricula-shift")}
-        onChange={(label) => {
-          const entry = Object.entries(SHIFT_LABELS).find(([, l]) => l === label)
-          onChange({
-            ...value,
-            shift: (entry?.[0] as MatriculaAcademicInfo["shift"]) ?? "",
-            grade: "",
-            group: "",
-          })
-        }}
+        onChange={(shift) => onChange({ ...value, shift, grade: "", group: "" })}
       />
       <MatriculaSelectField
         id="matricula-grade"
@@ -382,13 +398,17 @@ export function MatriculaAcademicSection({
         invalid={invalidFields.includes("matricula-group")}
         onChange={(group) => onChange({ ...value, group })}
       />
-      <MatriculaSelectField
-        id="matricula-specialty"
-        label="Carácter/Especialidad/Énfasis"
-        value={value.specialty}
-        options={SPECIALTY_OPTIONS}
-        onChange={(specialty) => onChange({ ...value, specialty })}
-      />
+      {isFieldVisible(fieldSettings, "matricula-specialty") && (
+        <MatriculaSelectField
+          id="matricula-specialty"
+          label="Carácter/Especialidad/Énfasis"
+          required={isFieldRequired(fieldSettings, "matricula-specialty")}
+          invalid={invalidFields.includes("matricula-specialty")}
+          value={value.specialty}
+          options={SPECIALTY_OPTIONS}
+          onChange={(specialty) => onChange({ ...value, specialty })}
+        />
+      )}
       {showStatus && (
         <MatriculaSelectField
           id="matricula-status"
@@ -411,6 +431,7 @@ interface StudentSectionProps {
   onChange: (value: MatriculaStudentInfo) => void
   departments: DepartmentOption[]
   invalidFields?: string[]
+  fieldSettings?: MatriculaFieldSettingsMap
 }
 
 export function MatriculaStudentSection({
@@ -418,6 +439,7 @@ export function MatriculaStudentSection({
   onChange,
   departments,
   invalidFields = [],
+  fieldSettings,
 }: StudentSectionProps) {
   return (
     <MatriculaFormSection title="Información del estudiante">
@@ -436,6 +458,7 @@ export function MatriculaStudentSection({
         invalid={invalidFields.includes("student-document-number")}
         value={value.documentNumber}
         numeric
+        maxLength={150}
         onChange={(documentNumber) => onChange({ ...value, documentNumber })}
       />
       <MatriculaTextField
@@ -443,27 +466,39 @@ export function MatriculaStudentSection({
         label="Nombre del estudiante"
         invalid={invalidFields.includes("student-first-name")}
         value={value.firstName}
+        maxLength={40}
         onChange={(firstName) => onChange({ ...value, firstName })}
       />
-      <MatriculaTextField
-        id="student-second-name"
-        label="Segundo nombre del estudiante"
-        value={value.secondName}
-        onChange={(secondName) => onChange({ ...value, secondName })}
-      />
+      {isFieldVisible(fieldSettings, "student-second-name") && (
+        <MatriculaTextField
+          id="student-second-name"
+          label="Segundo nombre del estudiante"
+          required={isFieldRequired(fieldSettings, "student-second-name")}
+          invalid={invalidFields.includes("student-second-name")}
+          value={value.secondName}
+          maxLength={40}
+          onChange={(secondName) => onChange({ ...value, secondName })}
+        />
+      )}
       <MatriculaTextField
         id="student-last-name"
         label="Primer apellido del estudiante"
         invalid={invalidFields.includes("student-last-name")}
         value={value.lastName}
+        maxLength={40}
         onChange={(lastName) => onChange({ ...value, lastName })}
       />
-      <MatriculaTextField
-        id="student-second-last-name"
-        label="Segundo apellido del estudiante"
-        value={value.secondLastName}
-        onChange={(secondLastName) => onChange({ ...value, secondLastName })}
-      />
+      {isFieldVisible(fieldSettings, "student-second-last-name") && (
+        <MatriculaTextField
+          id="student-second-last-name"
+          label="Segundo apellido del estudiante"
+          required={isFieldRequired(fieldSettings, "student-second-last-name")}
+          invalid={invalidFields.includes("student-second-last-name")}
+          value={value.secondLastName}
+          maxLength={40}
+          onChange={(secondLastName) => onChange({ ...value, secondLastName })}
+        />
+      )}
       <DeptMunicipioFields
         idPrefix="student-document-expedition"
         departmentLabel="Lugar expedición documento estudiante departamento"
@@ -471,10 +506,13 @@ export function MatriculaStudentSection({
         value={value.documentExpedition}
         departments={departments}
         onChange={(documentExpedition) => onChange({ ...value, documentExpedition })}
+        fieldSettings={fieldSettings}
       />
       <MatriculaDateField
         id="student-birth-date"
         label="Fecha de nacimiento"
+        required
+        invalid={invalidFields.includes("student-birth-date")}
         value={value.birthDate}
         onChange={(birthDate) => onChange({ ...value, birthDate })}
       />
@@ -485,6 +523,7 @@ export function MatriculaStudentSection({
         value={value.birthPlace}
         departments={departments}
         onChange={(birthPlace) => onChange({ ...value, birthPlace })}
+        fieldSettings={fieldSettings}
       />
       <MatriculaSelectField
         id="student-gender"
@@ -495,13 +534,17 @@ export function MatriculaStudentSection({
         invalid={invalidFields.includes("student-gender")}
         onChange={(gender) => onChange({ ...value, gender })}
       />
-      <MatriculaSelectField
-        id="student-ethnicity"
-        label="Etnia/Resguardo"
-        value={value.ethnicity}
-        options={ETHNICITY_OPTIONS}
-        onChange={(ethnicity) => onChange({ ...value, ethnicity })}
-      />
+      {isFieldVisible(fieldSettings, "student-ethnicity") && (
+        <MatriculaSelectField
+          id="student-ethnicity"
+          label="Etnia/Resguardo"
+          required={isFieldRequired(fieldSettings, "student-ethnicity")}
+          invalid={invalidFields.includes("student-ethnicity")}
+          value={value.ethnicity}
+          options={ETHNICITY_OPTIONS}
+          onChange={(ethnicity) => onChange({ ...value, ethnicity })}
+        />
+      )}
     </MatriculaFormSection>
   )
 }
@@ -515,6 +558,8 @@ interface ResidenceSectionProps {
   value: MatriculaResidence
   onChange: (value: MatriculaResidence) => void
   departments: DepartmentOption[]
+  invalidFields?: string[]
+  fieldSettings?: MatriculaFieldSettingsMap
 }
 
 export function MatriculaResidenceSection({
@@ -526,15 +571,23 @@ export function MatriculaResidenceSection({
   value,
   onChange,
   departments,
+  invalidFields = [],
+  fieldSettings,
 }: ResidenceSectionProps) {
+  const addressId = `${idPrefix}-address`
   return (
     <MatriculaFormSection title={title}>
-      <MatriculaTextField
-        id={`${idPrefix}-address`}
-        label={addressLabel}
-        value={value.address}
-        onChange={(address) => onChange({ ...value, address })}
-      />
+      {isFieldVisible(fieldSettings, addressId) && (
+        <MatriculaTextField
+          id={addressId}
+          label={addressLabel}
+          required={isFieldRequired(fieldSettings, addressId)}
+          invalid={invalidFields.includes(addressId)}
+          value={value.address}
+          maxLength={150}
+          onChange={(address) => onChange({ ...value, address })}
+        />
+      )}
       <DeptMunicipioFields
         idPrefix={idPrefix}
         departmentLabel={departmentLabel}
@@ -542,6 +595,7 @@ export function MatriculaResidenceSection({
         value={value}
         departments={departments}
         onChange={(location) => onChange({ ...value, ...location })}
+        fieldSettings={fieldSettings}
       />
     </MatriculaFormSection>
   )
@@ -555,6 +609,7 @@ interface ContactSectionProps {
   value: MatriculaContact
   onChange: (value: MatriculaContact) => void
   invalidFields?: string[]
+  fieldSettings?: MatriculaFieldSettingsMap
 }
 
 export function MatriculaContactSection({
@@ -565,25 +620,37 @@ export function MatriculaContactSection({
   value,
   onChange,
   invalidFields = [],
+  fieldSettings,
 }: ContactSectionProps) {
+  const phoneId = `${idPrefix}-phone`
+  const emailId = `${idPrefix}-email`
   return (
     <MatriculaFormSection title={title}>
-      <MatriculaTextField
-        id={`${idPrefix}-phone`}
-        label={phoneLabel}
-        type="tel"
-        value={value.phone}
-        numeric
-        onChange={(phone) => onChange({ ...value, phone })}
-      />
-      <MatriculaTextField
-        id={`${idPrefix}-email`}
-        label={emailLabel}
-        type="email"
-        value={value.email}
-        invalid={invalidFields.includes(`${idPrefix}-email`)}
-        onChange={(email) => onChange({ ...value, email })}
-      />
+      {isFieldVisible(fieldSettings, phoneId) && (
+        <MatriculaTextField
+          id={phoneId}
+          label={phoneLabel}
+          type="tel"
+          required={isFieldRequired(fieldSettings, phoneId)}
+          invalid={invalidFields.includes(phoneId)}
+          value={value.phone}
+          numeric
+          maxLength={30}
+          onChange={(phone) => onChange({ ...value, phone })}
+        />
+      )}
+      {isFieldVisible(fieldSettings, emailId) && (
+        <MatriculaTextField
+          id={emailId}
+          label={emailLabel}
+          type="email"
+          required={isFieldRequired(fieldSettings, emailId)}
+          value={value.email}
+          invalid={invalidFields.includes(emailId)}
+          maxLength={120}
+          onChange={(email) => onChange({ ...value, email })}
+        />
+      )}
     </MatriculaFormSection>
   )
 }
@@ -591,37 +658,62 @@ export function MatriculaContactSection({
 interface PreviousYearSectionProps {
   value: MatriculaPreviousYearInfo
   onChange: (value: MatriculaPreviousYearInfo) => void
+  invalidFields?: string[]
+  fieldSettings?: MatriculaFieldSettingsMap
 }
 
-export function MatriculaPreviousYearSection({ value, onChange }: PreviousYearSectionProps) {
+export function MatriculaPreviousYearSection({
+  value,
+  onChange,
+  invalidFields = [],
+  fieldSettings,
+}: PreviousYearSectionProps) {
   return (
     <MatriculaFormSection title="Información académica del año anterior">
-      <MatriculaSelectField
-        id="previous-year-situation"
-        label="Situación del año anterior"
-        value={value.situation}
-        options={PREVIOUS_YEAR_SITUATION_OPTIONS}
-        onChange={(situation) => onChange({ ...value, situation })}
-      />
-      <MatriculaSelectField
-        id="previous-year-condition"
-        label="Condición del estudiante fin del año anterior"
-        value={value.condition}
-        options={PREVIOUS_YEAR_CONDITION_OPTIONS}
-        onChange={(condition) => onChange({ ...value, condition })}
-      />
-      <MatriculaTextField
-        id="previous-institution"
-        label="Nombre de la institución anterior"
-        value={value.previousInstitution}
-        onChange={(previousInstitution) => onChange({ ...value, previousInstitution })}
-      />
-      <MatriculaTextField
-        id="welfare-institution"
-        label="Institución bienestar de origen"
-        value={value.welfareInstitution}
-        onChange={(welfareInstitution) => onChange({ ...value, welfareInstitution })}
-      />
+      {isFieldVisible(fieldSettings, "previous-year-situation") && (
+        <MatriculaSelectField
+          id="previous-year-situation"
+          label="Situación del año anterior"
+          required={isFieldRequired(fieldSettings, "previous-year-situation")}
+          invalid={invalidFields.includes("previous-year-situation")}
+          value={value.situation}
+          options={PREVIOUS_YEAR_SITUATION_OPTIONS}
+          onChange={(situation) => onChange({ ...value, situation })}
+        />
+      )}
+      {isFieldVisible(fieldSettings, "previous-year-condition") && (
+        <MatriculaSelectField
+          id="previous-year-condition"
+          label="Condición del estudiante fin del año anterior"
+          required={isFieldRequired(fieldSettings, "previous-year-condition")}
+          invalid={invalidFields.includes("previous-year-condition")}
+          value={value.condition}
+          options={PREVIOUS_YEAR_CONDITION_OPTIONS}
+          onChange={(condition) => onChange({ ...value, condition })}
+        />
+      )}
+      {isFieldVisible(fieldSettings, "previous-institution") && (
+        <MatriculaTextField
+          id="previous-institution"
+          label="Nombre de la institución anterior"
+          required={isFieldRequired(fieldSettings, "previous-institution")}
+          invalid={invalidFields.includes("previous-institution")}
+          value={value.previousInstitution}
+          maxLength={150}
+          onChange={(previousInstitution) => onChange({ ...value, previousInstitution })}
+        />
+      )}
+      {isFieldVisible(fieldSettings, "welfare-institution") && (
+        <MatriculaTextField
+          id="welfare-institution"
+          label="Institución bienestar de origen"
+          required={isFieldRequired(fieldSettings, "welfare-institution")}
+          invalid={invalidFields.includes("welfare-institution")}
+          value={value.welfareInstitution}
+          maxLength={150}
+          onChange={(welfareInstitution) => onChange({ ...value, welfareInstitution })}
+        />
+      )}
     </MatriculaFormSection>
   )
 }
@@ -629,31 +721,51 @@ export function MatriculaPreviousYearSection({ value, onChange }: PreviousYearSe
 interface OriginSectorSectionProps {
   value: MatriculaOriginSectorInfo
   onChange: (value: MatriculaOriginSectorInfo) => void
+  invalidFields?: string[]
+  fieldSettings?: MatriculaFieldSettingsMap
 }
 
-export function MatriculaOriginSectorSection({ value, onChange }: OriginSectorSectionProps) {
+export function MatriculaOriginSectorSection({
+  value,
+  onChange,
+  invalidFields = [],
+  fieldSettings,
+}: OriginSectorSectionProps) {
   return (
     <MatriculaFormSection title="Sector de origen">
-      <MatriculaSelectField
-        id="origin-private-sector"
-        label="Proviene del sector privado"
-        value={value.fromPrivateSector}
-        options={YES_NO_OPTIONS}
-        onChange={(fromPrivateSector) => onChange({ ...value, fromPrivateSector })}
-      />
-      <MatriculaSelectField
-        id="origin-another-municipality"
-        label="Proviene de otro municipio"
-        value={value.fromAnotherMunicipality}
-        options={YES_NO_OPTIONS}
-        onChange={(fromAnotherMunicipality) => onChange({ ...value, fromAnotherMunicipality })}
-      />
-      <MatriculaTextField
-        id="origin-which-municipality"
-        label="¿Cuál?"
-        value={value.whichMunicipality}
-        onChange={(whichMunicipality) => onChange({ ...value, whichMunicipality })}
-      />
+      {isFieldVisible(fieldSettings, "origin-private-sector") && (
+        <MatriculaSelectField
+          id="origin-private-sector"
+          label="Proviene del sector privado"
+          required={isFieldRequired(fieldSettings, "origin-private-sector")}
+          invalid={invalidFields.includes("origin-private-sector")}
+          value={value.fromPrivateSector}
+          options={YES_NO_OPTIONS}
+          onChange={(fromPrivateSector) => onChange({ ...value, fromPrivateSector })}
+        />
+      )}
+      {isFieldVisible(fieldSettings, "origin-another-municipality") && (
+        <MatriculaSelectField
+          id="origin-another-municipality"
+          label="Proviene de otro municipio"
+          required={isFieldRequired(fieldSettings, "origin-another-municipality")}
+          invalid={invalidFields.includes("origin-another-municipality")}
+          value={value.fromAnotherMunicipality}
+          options={YES_NO_OPTIONS}
+          onChange={(fromAnotherMunicipality) => onChange({ ...value, fromAnotherMunicipality })}
+        />
+      )}
+      {isFieldVisible(fieldSettings, "origin-which-municipality") && (
+        <MatriculaTextField
+          id="origin-which-municipality"
+          label="¿Cuál?"
+          required={isFieldRequired(fieldSettings, "origin-which-municipality")}
+          invalid={invalidFields.includes("origin-which-municipality")}
+          value={value.whichMunicipality}
+          maxLength={150}
+          onChange={(whichMunicipality) => onChange({ ...value, whichMunicipality })}
+        />
+      )}
     </MatriculaFormSection>
   )
 }
@@ -661,24 +773,47 @@ export function MatriculaOriginSectorSection({ value, onChange }: OriginSectorSe
 interface ConflictVictimSectionProps {
   value: MatriculaConflictVictimInfo
   onChange: (value: MatriculaConflictVictimInfo) => void
+  departments: DepartmentOption[]
+  invalidFields?: string[]
+  fieldSettings?: MatriculaFieldSettingsMap
 }
 
-export function MatriculaConflictVictimSection({ value, onChange }: ConflictVictimSectionProps) {
+export function MatriculaConflictVictimSection({
+  value,
+  onChange,
+  departments,
+  invalidFields = [],
+  fieldSettings,
+}: ConflictVictimSectionProps) {
+  // `FK_TMUNICIPIO_VICTIMA` es un municipio libre (sin un departamento
+  // propio que lo filtre, a diferencia de `DeptMunicipioFields`) — se
+  // ofrece el listado completo de municipios de todos los departamentos.
+  const allMunicipalities = departments.flatMap((d) => d.municipalities)
+
   return (
     <MatriculaFormSection title="Víctima conflicto armado">
-      <MatriculaSelectField
-        id="conflict-victim-population"
-        label="Población víctima conflicto"
-        value={value.population}
-        options={CONFLICT_VICTIM_POPULATION_OPTIONS}
-        onChange={(population) => onChange({ ...value, population })}
-      />
-      <MatriculaTextField
-        id="conflict-last-expelling-municipality"
-        label="Último municipio expulsor"
-        value={value.lastExpellingMunicipality}
-        onChange={(lastExpellingMunicipality) => onChange({ ...value, lastExpellingMunicipality })}
-      />
+      {isFieldVisible(fieldSettings, "conflict-victim-population") && (
+        <MatriculaSelectField
+          id="conflict-victim-population"
+          label="Población víctima conflicto"
+          required={isFieldRequired(fieldSettings, "conflict-victim-population")}
+          invalid={invalidFields.includes("conflict-victim-population")}
+          value={value.population}
+          options={CONFLICT_VICTIM_POPULATION_OPTIONS}
+          onChange={(population) => onChange({ ...value, population })}
+        />
+      )}
+      {isFieldVisible(fieldSettings, "conflict-last-expelling-municipality") && (
+        <MatriculaSelectField
+          id="conflict-last-expelling-municipality"
+          label="Último municipio expulsor"
+          required={isFieldRequired(fieldSettings, "conflict-last-expelling-municipality")}
+          invalid={invalidFields.includes("conflict-last-expelling-municipality")}
+          value={value.lastExpellingMunicipality}
+          options={allMunicipalities}
+          onChange={(lastExpellingMunicipality) => onChange({ ...value, lastExpellingMunicipality })}
+        />
+      )}
     </MatriculaFormSection>
   )
 }
@@ -686,50 +821,84 @@ export function MatriculaConflictVictimSection({ value, onChange }: ConflictVict
 interface ComplementarySectionProps {
   value: MatriculaComplementaryInfo
   onChange: (value: MatriculaComplementaryInfo) => void
+  invalidFields?: string[]
+  fieldSettings?: MatriculaFieldSettingsMap
 }
 
-export function MatriculaComplementarySection({ value, onChange }: ComplementarySectionProps) {
+export function MatriculaComplementarySection({
+  value,
+  onChange,
+  invalidFields = [],
+  fieldSettings,
+}: ComplementarySectionProps) {
   return (
     <MatriculaFormSection title="Información complementaria">
-      <MatriculaSelectField
-        id="complementary-stratum"
-        label="Estrato socio económico del estudiante"
-        value={value.socioeconomicStratum}
-        options={SOCIOECONOMIC_STRATUM_OPTIONS}
-        onChange={(socioeconomicStratum) => onChange({ ...value, socioeconomicStratum })}
-      />
-      <MatriculaTextField
-        id="complementary-sisben"
-        label="Sisbén"
-        value={value.sisben}
-        onChange={(sisben) => onChange({ ...value, sisben })}
-      />
-      <MatriculaTextField
-        id="complementary-eps"
-        label="EPS"
-        value={value.eps}
-        onChange={(eps) => onChange({ ...value, eps })}
-      />
-      <MatriculaTextField
-        id="complementary-ars"
-        label="ARS"
-        value={value.ars}
-        onChange={(ars) => onChange({ ...value, ars })}
-      />
-      <MatriculaSelectField
-        id="complementary-special-conditions"
-        label="Condiciones especiales del estudiante"
-        value={value.specialConditions}
-        options={SPECIAL_CONDITIONS_OPTIONS}
-        onChange={(specialConditions) => onChange({ ...value, specialConditions })}
-      />
-      <MatriculaSelectField
-        id="complementary-talent"
-        label="Talento del estudiante"
-        value={value.talent}
-        options={TALENT_OPTIONS}
-        onChange={(talent) => onChange({ ...value, talent })}
-      />
+      {isFieldVisible(fieldSettings, "complementary-stratum") && (
+        <MatriculaSelectField
+          id="complementary-stratum"
+          label="Estrato socio económico del estudiante"
+          required={isFieldRequired(fieldSettings, "complementary-stratum")}
+          invalid={invalidFields.includes("complementary-stratum")}
+          value={value.socioeconomicStratum}
+          options={SOCIOECONOMIC_STRATUM_OPTIONS}
+          onChange={(socioeconomicStratum) => onChange({ ...value, socioeconomicStratum })}
+        />
+      )}
+      {isFieldVisible(fieldSettings, "complementary-sisben") && (
+        <MatriculaSelectField
+          id="complementary-sisben"
+          label="Sisbén"
+          required={isFieldRequired(fieldSettings, "complementary-sisben")}
+          invalid={invalidFields.includes("complementary-sisben")}
+          value={value.sisben}
+          options={SISBEN_OPTIONS}
+          onChange={(sisben) => onChange({ ...value, sisben })}
+        />
+      )}
+      {isFieldVisible(fieldSettings, "complementary-eps") && (
+        <MatriculaTextField
+          id="complementary-eps"
+          label="EPS"
+          required={isFieldRequired(fieldSettings, "complementary-eps")}
+          invalid={invalidFields.includes("complementary-eps")}
+          value={value.eps}
+          maxLength={150}
+          onChange={(eps) => onChange({ ...value, eps })}
+        />
+      )}
+      {isFieldVisible(fieldSettings, "complementary-ars") && (
+        <MatriculaTextField
+          id="complementary-ars"
+          label="ARS"
+          required={isFieldRequired(fieldSettings, "complementary-ars")}
+          invalid={invalidFields.includes("complementary-ars")}
+          value={value.ars}
+          maxLength={150}
+          onChange={(ars) => onChange({ ...value, ars })}
+        />
+      )}
+      {isFieldVisible(fieldSettings, "complementary-special-conditions") && (
+        <MatriculaSelectField
+          id="complementary-special-conditions"
+          label="Condiciones especiales del estudiante"
+          required={isFieldRequired(fieldSettings, "complementary-special-conditions")}
+          invalid={invalidFields.includes("complementary-special-conditions")}
+          value={value.specialConditions}
+          options={SPECIAL_CONDITIONS_OPTIONS}
+          onChange={(specialConditions) => onChange({ ...value, specialConditions })}
+        />
+      )}
+      {isFieldVisible(fieldSettings, "complementary-talent") && (
+        <MatriculaSelectField
+          id="complementary-talent"
+          label="Talento del estudiante"
+          required={isFieldRequired(fieldSettings, "complementary-talent")}
+          invalid={invalidFields.includes("complementary-talent")}
+          value={value.talent}
+          options={TALENT_OPTIONS}
+          onChange={(talent) => onChange({ ...value, talent })}
+        />
+      )}
     </MatriculaFormSection>
   )
 }
@@ -737,52 +906,84 @@ export function MatriculaComplementarySection({ value, onChange }: Complementary
 interface BenefitsSectionProps {
   value: MatriculaBenefitsInfo
   onChange: (value: MatriculaBenefitsInfo) => void
+  invalidFields?: string[]
+  fieldSettings?: MatriculaFieldSettingsMap
 }
 
-export function MatriculaBenefitsSection({ value, onChange }: BenefitsSectionProps) {
+export function MatriculaBenefitsSection({
+  value,
+  onChange,
+  invalidFields = [],
+  fieldSettings,
+}: BenefitsSectionProps) {
   return (
     <MatriculaFormSection title="Subsidio o beneficios">
-      <MatriculaTextField
-        id="benefits-subsidized"
-        label="Subsidiado"
-        value={value.subsidized}
-        onChange={(subsidized) => onChange({ ...value, subsidized })}
-      />
-      <MatriculaSelectField
-        id="benefits-funding-source"
-        label="Fuente de recursos"
-        value={value.fundingSource}
-        options={FUNDING_SOURCE_OPTIONS}
-        onChange={(fundingSource) => onChange({ ...value, fundingSource })}
-      />
-      <MatriculaSelectField
-        id="benefits-head-household-student"
-        label="Alumnos madre cabeza de familia"
-        value={value.headOfHouseholdStudent}
-        options={YES_NO_OPTIONS}
-        onChange={(headOfHouseholdStudent) => onChange({ ...value, headOfHouseholdStudent })}
-      />
-      <MatriculaSelectField
-        id="benefits-head-household-children"
-        label="Hijos de madre cabeza de familia"
-        value={value.headOfHouseholdChildren}
-        options={YES_NO_OPTIONS}
-        onChange={(headOfHouseholdChildren) => onChange({ ...value, headOfHouseholdChildren })}
-      />
-      <MatriculaSelectField
-        id="benefits-public-force-veteran"
-        label="Veteranos de la fuerza pública"
-        value={value.publicForceVeteran}
-        options={YES_NO_OPTIONS}
-        onChange={(publicForceVeteran) => onChange({ ...value, publicForceVeteran })}
-      />
-      <MatriculaSelectField
-        id="benefits-national-heroes"
-        label="Héroes de la nación"
-        value={value.nationalHeroes}
-        options={YES_NO_OPTIONS}
-        onChange={(nationalHeroes) => onChange({ ...value, nationalHeroes })}
-      />
+      {isFieldVisible(fieldSettings, "benefits-subsidized") && (
+        <MatriculaSelectField
+          id="benefits-subsidized"
+          label="Subsidiado"
+          required={isFieldRequired(fieldSettings, "benefits-subsidized")}
+          invalid={invalidFields.includes("benefits-subsidized")}
+          value={value.subsidized}
+          options={YES_NO_OPTIONS}
+          onChange={(subsidized) => onChange({ ...value, subsidized })}
+        />
+      )}
+      {isFieldVisible(fieldSettings, "benefits-funding-source") && (
+        <MatriculaSelectField
+          id="benefits-funding-source"
+          label="Fuente de recursos"
+          required={isFieldRequired(fieldSettings, "benefits-funding-source")}
+          invalid={invalidFields.includes("benefits-funding-source")}
+          value={value.fundingSource}
+          options={FUNDING_SOURCE_OPTIONS}
+          onChange={(fundingSource) => onChange({ ...value, fundingSource })}
+        />
+      )}
+      {isFieldVisible(fieldSettings, "benefits-head-household-student") && (
+        <MatriculaSelectField
+          id="benefits-head-household-student"
+          label="Alumnos madre cabeza de familia"
+          required={isFieldRequired(fieldSettings, "benefits-head-household-student")}
+          invalid={invalidFields.includes("benefits-head-household-student")}
+          value={value.headOfHouseholdStudent}
+          options={YES_NO_OPTIONS}
+          onChange={(headOfHouseholdStudent) => onChange({ ...value, headOfHouseholdStudent })}
+        />
+      )}
+      {isFieldVisible(fieldSettings, "benefits-head-household-children") && (
+        <MatriculaSelectField
+          id="benefits-head-household-children"
+          label="Hijos de madre cabeza de familia"
+          required={isFieldRequired(fieldSettings, "benefits-head-household-children")}
+          invalid={invalidFields.includes("benefits-head-household-children")}
+          value={value.headOfHouseholdChildren}
+          options={YES_NO_OPTIONS}
+          onChange={(headOfHouseholdChildren) => onChange({ ...value, headOfHouseholdChildren })}
+        />
+      )}
+      {isFieldVisible(fieldSettings, "benefits-public-force-veteran") && (
+        <MatriculaSelectField
+          id="benefits-public-force-veteran"
+          label="Veteranos de la fuerza pública"
+          required={isFieldRequired(fieldSettings, "benefits-public-force-veteran")}
+          invalid={invalidFields.includes("benefits-public-force-veteran")}
+          value={value.publicForceVeteran}
+          options={YES_NO_OPTIONS}
+          onChange={(publicForceVeteran) => onChange({ ...value, publicForceVeteran })}
+        />
+      )}
+      {isFieldVisible(fieldSettings, "benefits-national-heroes") && (
+        <MatriculaSelectField
+          id="benefits-national-heroes"
+          label="Héroes de la nación"
+          required={isFieldRequired(fieldSettings, "benefits-national-heroes")}
+          invalid={invalidFields.includes("benefits-national-heroes")}
+          value={value.nationalHeroes}
+          options={YES_NO_OPTIONS}
+          onChange={(nationalHeroes) => onChange({ ...value, nationalHeroes })}
+        />
+      )}
     </MatriculaFormSection>
   )
 }
@@ -792,6 +993,7 @@ interface GuardianSectionProps {
   onChange: (value: MatriculaGuardianInfo) => void
   departments: DepartmentOption[]
   invalidFields?: string[]
+  fieldSettings?: MatriculaFieldSettingsMap
 }
 
 export function MatriculaGuardianSection({
@@ -799,6 +1001,7 @@ export function MatriculaGuardianSection({
   onChange,
   departments,
   invalidFields = [],
+  fieldSettings,
 }: GuardianSectionProps) {
   return (
     <MatriculaFormSection title="Información del acudiente">
@@ -811,30 +1014,50 @@ export function MatriculaGuardianSection({
         invalid={invalidFields.includes("guardian-relationship")}
         onChange={(relationship) => onChange({ ...value, relationship })}
       />
-      <MatriculaTextField
-        id="guardian-first-name"
-        label="Nombre del acudiente"
-        value={value.firstName}
-        onChange={(firstName) => onChange({ ...value, firstName })}
-      />
-      <MatriculaTextField
-        id="guardian-second-name"
-        label="Segundo nombre del acudiente"
-        value={value.secondName}
-        onChange={(secondName) => onChange({ ...value, secondName })}
-      />
-      <MatriculaTextField
-        id="guardian-last-name"
-        label="Primer apellido del acudiente"
-        value={value.lastName}
-        onChange={(lastName) => onChange({ ...value, lastName })}
-      />
-      <MatriculaTextField
-        id="guardian-second-last-name"
-        label="Segundo apellido del acudiente"
-        value={value.secondLastName}
-        onChange={(secondLastName) => onChange({ ...value, secondLastName })}
-      />
+      {isFieldVisible(fieldSettings, "guardian-first-name") && (
+        <MatriculaTextField
+          id="guardian-first-name"
+          label="Nombre del acudiente"
+          required={isFieldRequired(fieldSettings, "guardian-first-name")}
+          invalid={invalidFields.includes("guardian-first-name")}
+          value={value.firstName}
+          maxLength={40}
+          onChange={(firstName) => onChange({ ...value, firstName })}
+        />
+      )}
+      {isFieldVisible(fieldSettings, "guardian-second-name") && (
+        <MatriculaTextField
+          id="guardian-second-name"
+          label="Segundo nombre del acudiente"
+          required={isFieldRequired(fieldSettings, "guardian-second-name")}
+          invalid={invalidFields.includes("guardian-second-name")}
+          value={value.secondName}
+          maxLength={40}
+          onChange={(secondName) => onChange({ ...value, secondName })}
+        />
+      )}
+      {isFieldVisible(fieldSettings, "guardian-last-name") && (
+        <MatriculaTextField
+          id="guardian-last-name"
+          label="Primer apellido del acudiente"
+          required={isFieldRequired(fieldSettings, "guardian-last-name")}
+          invalid={invalidFields.includes("guardian-last-name")}
+          value={value.lastName}
+          maxLength={40}
+          onChange={(lastName) => onChange({ ...value, lastName })}
+        />
+      )}
+      {isFieldVisible(fieldSettings, "guardian-second-last-name") && (
+        <MatriculaTextField
+          id="guardian-second-last-name"
+          label="Segundo apellido del acudiente"
+          required={isFieldRequired(fieldSettings, "guardian-second-last-name")}
+          invalid={invalidFields.includes("guardian-second-last-name")}
+          value={value.secondLastName}
+          maxLength={40}
+          onChange={(secondLastName) => onChange({ ...value, secondLastName })}
+        />
+      )}
       <MatriculaSelectField
         id="guardian-document-type"
         label="Tipo de documento del acudiente"
@@ -844,13 +1067,18 @@ export function MatriculaGuardianSection({
         invalid={invalidFields.includes("guardian-document-type")}
         onChange={(documentType) => onChange({ ...value, documentType })}
       />
-      <MatriculaTextField
-        id="guardian-document-number"
-        label="Documento acudiente"
-        value={value.documentNumber}
-        numeric
-        onChange={(documentNumber) => onChange({ ...value, documentNumber })}
-      />
+      {isFieldVisible(fieldSettings, "guardian-document-number") && (
+        <MatriculaTextField
+          id="guardian-document-number"
+          label="Documento acudiente"
+          required={isFieldRequired(fieldSettings, "guardian-document-number")}
+          invalid={invalidFields.includes("guardian-document-number")}
+          value={value.documentNumber}
+          numeric
+          maxLength={150}
+          onChange={(documentNumber) => onChange({ ...value, documentNumber })}
+        />
+      )}
       <DeptMunicipioFields
         idPrefix="guardian-document-expedition"
         departmentLabel="Lugar expedición documento acudiente departamento"
@@ -858,6 +1086,7 @@ export function MatriculaGuardianSection({
         value={value.documentExpedition}
         departments={departments}
         onChange={(documentExpedition) => onChange({ ...value, documentExpedition })}
+        fieldSettings={fieldSettings}
       />
     </MatriculaFormSection>
   )
@@ -866,43 +1095,75 @@ export function MatriculaGuardianSection({
 interface GuardianEmploymentSectionProps {
   value: MatriculaGuardianEmploymentInfo
   onChange: (value: MatriculaGuardianEmploymentInfo) => void
+  invalidFields?: string[]
+  fieldSettings?: MatriculaFieldSettingsMap
 }
 
-export function MatriculaGuardianEmploymentSection({ value, onChange }: GuardianEmploymentSectionProps) {
+export function MatriculaGuardianEmploymentSection({
+  value,
+  onChange,
+  invalidFields = [],
+  fieldSettings,
+}: GuardianEmploymentSectionProps) {
   return (
     <MatriculaFormSection title="Información laboral del acudiente">
-      <MatriculaTextField
-        id="guardian-employment-profession"
-        label="Profesión acudiente"
-        value={value.profession}
-        onChange={(profession) => onChange({ ...value, profession })}
-      />
-      <MatriculaTextField
-        id="guardian-employment-entity-name"
-        label="Nombre de la entidad acudiente"
-        value={value.entityName}
-        onChange={(entityName) => onChange({ ...value, entityName })}
-      />
-      <MatriculaTextField
-        id="guardian-employment-entity-address"
-        label="Dirección de la entidad acudiente"
-        value={value.entityAddress}
-        onChange={(entityAddress) => onChange({ ...value, entityAddress })}
-      />
-      <MatriculaTextField
-        id="guardian-employment-entity-phone"
-        label="Teléfono de la entidad acudiente"
-        type="tel"
-        value={value.entityPhone}
-        numeric
-        onChange={(entityPhone) => onChange({ ...value, entityPhone })}
-      />
-      <MatriculaTextField
-        id="guardian-employment-entity-position"
-        label="Cargo entidad acudiente"
-        value={value.entityPosition}
-        onChange={(entityPosition) => onChange({ ...value, entityPosition })}
-      />
+      {isFieldVisible(fieldSettings, "guardian-employment-profession") && (
+        <MatriculaTextField
+          id="guardian-employment-profession"
+          label="Profesión acudiente"
+          required={isFieldRequired(fieldSettings, "guardian-employment-profession")}
+          invalid={invalidFields.includes("guardian-employment-profession")}
+          value={value.profession}
+          maxLength={100}
+          onChange={(profession) => onChange({ ...value, profession })}
+        />
+      )}
+      {isFieldVisible(fieldSettings, "guardian-employment-entity-name") && (
+        <MatriculaTextField
+          id="guardian-employment-entity-name"
+          label="Nombre de la entidad acudiente"
+          required={isFieldRequired(fieldSettings, "guardian-employment-entity-name")}
+          invalid={invalidFields.includes("guardian-employment-entity-name")}
+          value={value.entityName}
+          maxLength={100}
+          onChange={(entityName) => onChange({ ...value, entityName })}
+        />
+      )}
+      {isFieldVisible(fieldSettings, "guardian-employment-entity-address") && (
+        <MatriculaTextField
+          id="guardian-employment-entity-address"
+          label="Dirección de la entidad acudiente"
+          required={isFieldRequired(fieldSettings, "guardian-employment-entity-address")}
+          invalid={invalidFields.includes("guardian-employment-entity-address")}
+          value={value.entityAddress}
+          maxLength={100}
+          onChange={(entityAddress) => onChange({ ...value, entityAddress })}
+        />
+      )}
+      {isFieldVisible(fieldSettings, "guardian-employment-entity-phone") && (
+        <MatriculaTextField
+          id="guardian-employment-entity-phone"
+          label="Teléfono de la entidad acudiente"
+          type="tel"
+          required={isFieldRequired(fieldSettings, "guardian-employment-entity-phone")}
+          invalid={invalidFields.includes("guardian-employment-entity-phone")}
+          value={value.entityPhone}
+          numeric
+          maxLength={100}
+          onChange={(entityPhone) => onChange({ ...value, entityPhone })}
+        />
+      )}
+      {isFieldVisible(fieldSettings, "guardian-employment-entity-position") && (
+        <MatriculaTextField
+          id="guardian-employment-entity-position"
+          label="Cargo entidad acudiente"
+          required={isFieldRequired(fieldSettings, "guardian-employment-entity-position")}
+          invalid={invalidFields.includes("guardian-employment-entity-position")}
+          value={value.entityPosition}
+          maxLength={100}
+          onChange={(entityPosition) => onChange({ ...value, entityPosition })}
+        />
+      )}
     </MatriculaFormSection>
   )
 }

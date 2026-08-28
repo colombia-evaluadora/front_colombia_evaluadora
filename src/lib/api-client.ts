@@ -119,11 +119,22 @@ const PUBLIC_ENDPOINTS = [
   "/sso-admin/forgotUsername",
 ]
 
-// Sondas: se llaman para *averiguar* un estado, y "no autorizado" es una de
-// las respuestas posibles. Cada pantalla decide qué mostrar, así que no
-// tostean. El resto de los públicos (restore/forgot) sí avisa: ahí el error
-// es el resultado de una acción que el usuario disparó.
-const PROBE_ENDPOINTS = ["/auth/refresh", "/sso-admin/resetTokenStatus"]
+// Sondas: se llaman para *averiguar* un estado y una respuesta de error es
+// una posibilidad normal, no una falla que el usuario disparó — así que no
+// tostean; cada llamador decide qué hacer con el catch. El resto de los
+// públicos (restore/forgot) sí avisa: ahí el error es el resultado de una
+// acción que el usuario disparó.
+//
+// `/coverage/reservations/catalogs` entra acá con el mismo criterio:
+// institutions/groups todavía no tienen endpoint real (ver `use-
+// reservation-catalogs-query.ts`), así que un 404 contra backend real sin
+// mocks es esperado mientras tanto — el query ya degrada a lista vacía, no
+// hace falta alarmar con un toast en cada carga de Matrícula/Reserva.
+const PROBE_ENDPOINTS = [
+  "/auth/refresh",
+  "/sso-admin/resetTokenStatus",
+  "/coverage/reservations/catalogs",
+]
 
 // El módulo de periodos académicos ya muestra sus propios avisos (banner
 // inline en el diálogo o `notify()`/NoticeOutlet de página) para cada
