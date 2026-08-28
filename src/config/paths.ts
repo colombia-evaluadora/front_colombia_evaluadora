@@ -131,5 +131,21 @@ export const paths = {
           getHref: () => "/app/establecimiento-educativo/periodos",
       },
   },
+    // Las dos vistas del Planeador (actividades y unidades temáticas)
+    // cuelgan del mismo prefijo `planeador`, igual que las de registro de
+    // actividad: así el ítem del menú se marca activo en cualquiera de las
+    // dos y en sus subrutas. El prefijo a secas no es una ruta.
+    planeadorActividades: {
+      path: "planeador/actividades",
+      getHref: () => "/app/planeador/actividades",
+    },
+    planeadorDetalle: {
+      path: "planeador/actividades/$actividadId",
+      getHref: (actividadId: string) => `/app/planeador/actividades/${actividadId}`,
+    },
+    planeadorUnidades: {
+      path: "planeador/unidades",
+      getHref: () => "/app/planeador/unidades",
+    },
   },
 } as const

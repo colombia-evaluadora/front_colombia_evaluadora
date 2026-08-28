@@ -1,0 +1,115 @@
+import { Button } from "@/components/ui/button"
+import {
+  ArrowLeftIcon,
+  CheckIcon,
+  ClipboardCheckIcon,
+  FileDownloadOutlinedIcon,
+  PencilIcon,
+  TrashIcon,
+} from "@/components/ui/icons"
+import { Spinner } from "@/components/ui/spinner"
+
+import { useActividadDetalleQuery } from "@/features/planeador/api/query/use-actividad-detalle-query"
+import { DetailSections } from "@/features/planeador/components/detail-sections"
+
+const ACCIONES = [
+  { label: "Editar", Icon: PencilIcon },
+  { label: "Marcar", Icon: CheckIcon },
+  { label: "Aprobar", Icon: ClipboardCheckIcon },
+  { label: "Descargar", Icon: FileDownloadOutlinedIcon },
+  { label: "Eliminar", Icon: TrashIcon },
+] as const
+
+interface ActividadDetallePanelProps {
+  actividadId: string
+  /** Cierra el panel y devuelve el calendario a la columna derecha. */
+  onClose: () => void
+}
+
+/**
+ * Detalle de una actividad como panel embebido: ocupa el lugar del calendario
+ * en la columna derecha del Planeador cuando hay una card seleccionada.
+ *
+ * Trae su propia consulta en vez de recibir la actividad ya resuelta: el
+ * listado devuelve la actividad "de tarjeta" (nombre, fechas, unidad) y el
+ * detalle tiene secciones que solo llegan por `/detalle/:id`.
+ *
+ * Las cinco acciones están `disabled` en esta iteración (read-only visual),
+ * igual que en la card y que en la pantalla de detalle.
+ */
+export function ActividadDetallePanel({ actividadId, onClose }: ActividadDetallePanelProps) {
+  const { data: actividad, isPending, isError, refetch } = useActividadDetalleQuery(actividadId)
+
+  return (
+    <div className="flex h-full min-h-0 flex-col rounded-md border bg-card">
+      {/* `bg-muted/10`: el mismo fondo que `TableScreenTitle` le da al
+          encabezado de la pantalla, para que el header del panel se lea como
+          parte del mismo sistema. */}
+      <div className="bg-muted/10 flex items-center justify-between gap-2 border-b p-3">
+        <div className="flex min-w-0 items-center gap-2">
+          {/* `icon-sm` es el tamaño de los botones de acción de las filas de
+              tabla: el icono ES el control, no acompaña a un texto. El
+              `size-6` explícito pisa el `size-5` del preset —la base lo
+              permite con `:not([class*='size-'])`— para que la flecha no
+              quede chica al lado del título en negrita. */}
+          <Button
+            variant="ghost"
+            color="neutral"
+            size="icon-sm"
+            onClick={onClose}
+            aria-label="Cerrar detalle"
+          >
+            <ArrowLeftIcon className="size-6" />
+          </Button>
+          <div className="min-w-0">
+            <h2 className="truncate text-base font-bold">
+              {actividad?.nombre ?? "Cargando…"}
+            </h2>
+            {actividad && (
+              <p className="text-muted-foreground text-xs">
+                {actividad.asignatura} {actividad.grado} {actividad.grupo} ·{" "}
+                {actividad.unidad.nombre} · {actividad.tipo}
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div className="flex shrink-0 items-center gap-0.5">
+          {ACCIONES.map(({ label, Icon }) => (
+            <Button
+              key={label}
+              variant="ghost"
+              color="neutral"
+              size="icon-sm"
+              disabled
+              aria-label={label}
+            >
+              <Icon />
+            </Button>
+          ))}
+        </div>
+      </div>
+
+      {/* Mismo patrón que el rail: el header queda fijo y solo scrollea el
+          contenido, con la scrollbar delgada de las tablas. */}
+      <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto p-3">
+        {isPending && (
+          <div className="text-muted-foreground flex items-center justify-center gap-2 px-6 py-12 text-sm">
+            <Spinner /> Cargando actividad…
+          </div>
+        )}
+
+        {isError && (
+          <div className="flex flex-col items-center gap-2 px-6 py-12 text-center">
+            <p className="text-red text-sm">Ocurrió un error al cargar la actividad.</p>
+            <Button variant="outline" color="neutral" size="sm" onClick={() => refetch()}>
+              Reintentar
+            </Button>
+          </div>
+        )}
+
+        {actividad && <DetailSections actividad={actividad} />}
+      </div>
+    </div>
+  )
+}

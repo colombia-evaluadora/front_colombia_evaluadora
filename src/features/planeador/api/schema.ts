@@ -1,0 +1,61 @@
+import * as z from "zod"
+
+/**
+ * Search schema del listado. La barra superior es la misma de los demás
+ * listados: un solo input con la consulta —texto libre + términos
+ * `instrumento:(Rúbrica)`— y el panel de filtros avanzados detrás del embudo.
+ * Todo lo que se elige ahí vive en la URL para que la vista sea enlazable.
+ *
+ * `.catch(undefined)` en todos: tolera URLs armadas a mano con basura.
+ */
+export const planeadorSearchSchema = z.object({
+  buscar: z.string().optional().catch(undefined),
+  /** Instrumento de evaluación. Todavía no filtra (falta el catálogo). */
+  filtro: z.string().optional().catch(undefined),
+  /** Estado de la actividad: `pending` | `in-progress` | … */
+  estado: z.string().optional().catch(undefined),
+  /** Agrupación del listado ("Ver por"): `actividad` | `unidad` | … */
+  vista: z.string().optional().catch(undefined),
+  // Actividad abierta en el panel de la derecha. Va en la URL —y no en
+  // estado local— para que el detalle sea enlazable y sobreviva al refresh,
+  // igual que el resto de los filtros del listado.
+  actividad: z.string().optional().catch(undefined),
+})
+export type PlaneadorSearch = z.infer<typeof planeadorSearchSchema>
+
+/**
+ * Los campos del panel de filtros avanzados. Strings vacíos en vez de
+ * `undefined` porque es lo que espera el form (mismo criterio que el resto
+ * de los `*FiltersFormSchema`).
+ */
+export const planeadorFiltersFormSchema = z.object({
+  buscar: z.string(),
+  filtro: z.string(),
+  estado: z.string(),
+  vista: z.string(),
+})
+export type PlaneadorFiltersFormInput = z.input<typeof planeadorFiltersFormSchema>
+export type PlaneadorFiltersFormValues = z.infer<typeof planeadorFiltersFormSchema>
+
+/**
+ * Search schema del detalle. Solo `buscar` se preserva al volver a la lista
+ * — el resto es estado del listado y se reinicia al entrar.
+ */
+export const planeadorDetalleSearchSchema = z.object({
+  buscar: z.string().optional().catch(undefined),
+})
+export type PlaneadorDetalleSearch = z.infer<typeof planeadorDetalleSearchSchema>
+
+/**
+ * Search schema de la pestaña "Unidad temática". `unidad` es la que está
+ * abierta en el panel derecho; si falta, la página cae a la primera de la
+ * lista.
+ */
+export const planeadorUnidadesSearchSchema = z.object({
+  buscar: z.string().optional().catch(undefined),
+  filtro: z.string().optional().catch(undefined),
+  estado: z.string().optional().catch(undefined),
+  vista: z.string().optional().catch(undefined),
+  unidad: z.string().optional().catch(undefined),
+})
+export type PlaneadorUnidadesSearch = z.infer<typeof planeadorUnidadesSearchSchema>
