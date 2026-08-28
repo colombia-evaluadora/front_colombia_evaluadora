@@ -70,42 +70,29 @@ export function PlaneadorPage() {
     () => new Date(new Date().getFullYear(), new Date().getMonth(), 1),
   )
 
-  // Vista activa del panel de detalle. Por defecto es la informativa (la
-  // misma que muestra el click en la card). Cada modo se guarda por id
-  // de actividad: "Marcar" (chulito) activa `grades`, "Aprobar"
-  // (clipboard-check) activa `approval`. Al cambiar de card se vuelve
-  // al modo "info" — los modos son propios de la actividad en la que
-  // se pidieron.
-  const [gradeViewActividadId, setGradeViewActividadId] = React.useState<
-    string | null
-  >(null)
-  const [approvalViewActividadId, setApprovalViewActividadId] = React.useState<
-    string | null
-  >(null)
+  // Modo del panel de detalle por actividad. Map `id → modo` en vez de dos
+  // flags sueltos: la última acción del usuario gana (Marcar después de
+  // Aprobar cambia a grades, no se queda en approval por orden de check).
+  // Si la entrada no existe para la actividad activa, cae a "info".
+  // Los handlers también setean `actividadId` — sin ese paso, clickear el
+  // chulito estando en el calendario no abría el panel.
+  const [panelModeByActividad, setPanelModeByActividad] = React.useState<
+    Record<string, "info" | "grades" | "approval">
+  >({})
+
   const panelMode: "info" | "grades" | "approval" =
     actividadId !== undefined
-      ? approvalViewActividadId === actividadId
-        ? "approval"
-        : gradeViewActividadId === actividadId
-          ? "grades"
-          : "info"
+      ? panelModeByActividad[actividadId] ?? "info"
       : "info"
 
-  // Al cambiar de actividad, se limpian ambos modos para no arrastrar
-  // un "Marcar" o "Aprobar" de la actividad anterior.
-  React.useEffect(() => {
-    if (actividadId === undefined) {
-      setGradeViewActividadId(null)
-      setApprovalViewActividadId(null)
-      return
-    }
-    if (gradeViewActividadId && gradeViewActividadId !== actividadId) {
-      setGradeViewActividadId(null)
-    }
-    if (approvalViewActividadId && approvalViewActividadId !== actividadId) {
-      setApprovalViewActividadId(null)
-    }
-  }, [actividadId, gradeViewActividadId, approvalViewActividadId])
+  // Abre el panel en una actividad y le setea el modo pedido. Se usa tanto
+  // desde la card (Marcar / Aprobar) como desde los mismos botones del
+  // header del panel — así el comportamiento es idéntico sin importar
+  // desde dónde se disparen.
+  function setMode(actividadId: string, mode: "grades" | "approval") {
+    setActividadId(actividadId)
+    setPanelModeByActividad((prev) => ({ ...prev, [actividadId]: mode }))
+  }
 
   const {
     data: actividades = [],
@@ -333,12 +320,8 @@ export function PlaneadorPage() {
                           actividad={actividad}
                           selected={actividad.id === actividadId}
                           onSelect={() => setActividadId(actividad.id)}
-                          onShowGrades={() =>
-                            setGradeViewActividadId(actividad.id)
-                          }
-                          onShowApproval={() =>
-                            setApprovalViewActividadId(actividad.id)
-                          }
+                          onShowGrades={() => setMode(actividad.id, "grades")}
+                          onShowApproval={() => setMode(actividad.id, "approval")}
                           onEdit={() =>
                             navigate({
                               to: paths.app.planeadorActividadEditar.getHref(
@@ -384,8 +367,8 @@ export function PlaneadorPage() {
                 actividadId={actividadId}
                 mode={panelMode}
                 onClose={() => setActividadId(undefined)}
-                onShowGrades={() => setGradeViewActividadId(actividadId)}
-                onShowApproval={() => setApprovalViewActividadId(actividadId)}
+                onShowGrades={() => setMode(actividadId, "grades")}
+                onShowApproval={() => setMode(actividadId, "approval")}
               />
             ) : (
               <>
