@@ -14,7 +14,6 @@ import { hasSession } from "@/lib/auth"
 import { queryClient } from "@/lib/query-client"
 import { NotFoundPage } from "@/components/layout/not-found-page"
 import { ErrorPage } from "@/components/layout/error-page"
-import { ComingSoonPage } from "@/components/layout/coming-soon-page"
 import {
   checkEmailSearchSchema,
   loginSearchSchema,
@@ -24,6 +23,7 @@ import {
   reservationsSearchSchema,
   preMatriculaSearchSchema,
   enrollmentsSearchSchema,
+  matriculaSearchSchema,
 } from "@/features/coverage/api/schema"
 import {
   auditsSearchSchema,
@@ -125,7 +125,7 @@ const AddEstablishmentPage = lazyRouteComponent(
   "AddEstablishmentPage"
 )
 
-// Planeador (Gestión Académica) — read-only en esta iteración. Las dos rutas
+// Planeador (Gestión Académica) — read-only en esta iteración. Las tres rutas
 // cuelgan directo de `appLayoutRoute` (no hay layout agrupador) porque no hay
 // mutaciones que requieran un `NoticeProvider` compartido.
 const PlaneadorPage = lazyRouteComponent(
@@ -139,6 +139,31 @@ const PlaneadorDetallePage = lazyRouteComponent(
 const PlaneadorUnidadesPage = lazyRouteComponent(
   () => import("@/features/planeador/pages/planeador-unidades-page"),
   "PlaneadorUnidadesPage"
+)
+
+const MatriculaPage = lazyRouteComponent(
+  () => import("@/features/coverage/pages/matricula-page"),
+  "MatriculaPage",
+)
+
+const AddMatriculaPage = lazyRouteComponent(
+  () => import("@/features/coverage/pages/add-matricula-page"),
+  "AddMatriculaPage",
+)
+
+const MatriculaDetailPage = lazyRouteComponent(
+  () => import("@/features/coverage/pages/matricula-detail-page"),
+  "MatriculaDetailPage",
+)
+
+const MatriculaEditPage = lazyRouteComponent(
+  () => import("@/features/coverage/pages/matricula-edit-page"),
+  "MatriculaEditPage",
+)
+
+const MatriculaFieldConfigPage = lazyRouteComponent(
+  () => import("@/features/coverage/pages/matricula-field-config-page"),
+  "MatriculaFieldConfigPage",
 )
 
 interface RouterContext {
@@ -376,11 +401,70 @@ export const coberturaInscritoDetalleRoute = createRoute({
   component: EnrollmentDetailPage,
 })
 
-const coberturaMatriculaRoute = createRoute({
+export const coberturaMatriculaRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.coberturaMatricula.path,
+  validateSearch: matriculaSearchSchema,
   staticData: { breadcrumb: [COBERTURA_CRUMB, { label: "Matrícula" }] },
-  component: () => <ComingSoonPage title="Matrícula" />,
+  component: MatriculaPage,
+})
+
+export const coberturaMatriculaAgregarRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.coberturaMatriculaAgregar.path,
+  staticData: {
+    breadcrumb: [
+      COBERTURA_CRUMB,
+      { label: "Matrícula", to: paths.app.coberturaMatricula.getHref() },
+      { label: "Agregar" },
+    ],
+  },
+  component: AddMatriculaPage,
+})
+
+export const coberturaMatriculaEditarRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.coberturaMatriculaEditar.path,
+  staticData: {
+    breadcrumb: [
+      COBERTURA_CRUMB,
+      { label: "Matrícula", to: paths.app.coberturaMatricula.getHref() },
+      { label: "Editar" },
+    ],
+  },
+  component: MatriculaEditPage,
+})
+
+export const coberturaMatriculaConfiguracionRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.coberturaMatriculaConfiguracion.path,
+  staticData: {
+    breadcrumb: [
+      COBERTURA_CRUMB,
+      { label: "Matrícula", to: paths.app.coberturaMatricula.getHref() },
+      { label: "Configuración" },
+    ],
+  },
+  component: MatriculaFieldConfigPage,
+})
+
+// El id vive bajo `detalle/$matriculaId`, no `matricula/$matriculaId` a
+// secas: un dinámico de un solo segmento ahí competía con los estáticos de
+// al lado (`agregar`, `configuracion`) y en la práctica ganaba el dinámico
+// —entrar a "Configuración" abría el detalle de un estudiante inexistente—,
+// así que se sacó la ambigüedad de raíz en vez de confiar en el orden de
+// declaración.
+export const coberturaMatriculaDetalleRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.coberturaMatriculaDetalle.path,
+  staticData: {
+    breadcrumb: [
+      COBERTURA_CRUMB,
+      { label: "Matrícula", to: paths.app.coberturaMatricula.getHref() },
+      { label: "Detalle" },
+    ],
+  },
+  component: MatriculaDetailPage,
 })
 
 // Mismo criterio que `_establishment`: las cuatro vistas de auditoría
@@ -605,6 +689,10 @@ const routeTree = rootRoute.addChildren([
     coberturaInscritosRoute,
     coberturaInscritoDetalleRoute,
     coberturaMatriculaRoute,
+    coberturaMatriculaAgregarRoute,
+    coberturaMatriculaEditarRoute,
+    coberturaMatriculaConfiguracionRoute,
+    coberturaMatriculaDetalleRoute,
     auditsLayoutRoute.addChildren([
       auditoriaSesionesRoute,
       auditoriaTablasRoute,

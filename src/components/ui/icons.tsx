@@ -42,6 +42,7 @@ import {
   MdDescription,
   MdDragIndicator,
   MdOutlineFileDownload,
+  MdOutlineFileUpload,
   MdOutlineBorderColor,
   MdOutlineDelete,
   MdEmojiEvents,
@@ -90,6 +91,8 @@ import {
   MdPeople,
   MdPictureAsPdf,
   MdPersonOutline,
+  MdOutlinePersonAddAlt,
+  MdOutlinePersonRemove,
   MdPlace,
   MdPsychology,
   MdPublic,
@@ -193,6 +196,7 @@ export const EyeIcon = makeIcon(MdVisibility)
 export const EyeSlashIcon = makeIcon(MdVisibilityOff)
 // `FileDownloadOutlined` de MUI: el de las acciones de exportar.
 export const FileDownloadOutlinedIcon = makeIcon(MdOutlineFileDownload)
+export const FileUploadOutlinedIcon = makeIcon(MdOutlineFileUpload)
 export const FilePdfIcon = makeIcon(MdPictureAsPdf)
 export const FileTextIcon = makeIcon(MdDescription)
 export const FileXlsIcon = makeIcon(MdTableChart)
@@ -251,6 +255,8 @@ export const TreeIcon = makeIcon(MdPark)
 export const TrophyIcon = makeIcon(MdEmojiEvents)
 export const VideoIcon = makeIcon(MdOutlineSmartDisplay)
 export const PersonIcon = makeIcon(MdPersonOutline)
+export const PersonAddIcon = makeIcon(MdOutlinePersonAddAlt)
+export const PersonRemoveIcon = makeIcon(MdOutlinePersonRemove)
 export const UserCircleIcon = makeIcon(MdAccountCircle)
 export const UserGroupAddIcon = makeIcon(MdGroupAdd)
 export const UserIcon = makeIcon(MdPersonOutline)
