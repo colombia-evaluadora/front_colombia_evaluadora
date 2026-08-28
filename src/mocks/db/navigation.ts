@@ -178,16 +178,17 @@ export const navigationMenu: MockMenu[] = [
     idParent: 17,
     roleIds: [1, 2],
   },
-  // Ids 23-26: grupo "Gestión Académica" introducido para el Planeador.
-  // Los dos últimos ítems (Informes / Asistencia) son placeholders visibles
-  // — apuntan a rutas que aún no tienen página; el handler de roles los
-  // acepta como strings y el router los rechazará con 404 cuando alguien
-  // les haga click, que es el comportamiento esperado hasta que lleguen.
+  // Ids 23-26, 40: grupo "Gestión Académica", unificado entre el Planeador
+  // (real) y Referentes curriculares (real). "Asistencia" sigue siendo un
+  // placeholder visible — apunta a una ruta que aún no tiene página; el
+  // handler de roles lo acepta como string y el router lo rechazará con 404
+  // cuando alguien le haga click, que es el comportamiento esperado hasta
+  // que llegue.
   {
     id: 23,
     name: "Gestión Académica",
     icon: "GraduationCap-Icon",
-    path: "/app/planeador",
+    path: "/app/planeador/actividades",
     menuOrder: 3,
     type: "GROUP",
     idParent: null,
@@ -204,11 +205,21 @@ export const navigationMenu: MockMenu[] = [
     roleIds: [1, 2],
   },
   {
-    id: 25,
+    id: 39,
     name: "Informes",
     icon: "",
-    path: "/app/informes",
+    path: "/app/gestion-academica/informes",
     menuOrder: 1,
+    type: "ITEM",
+    idParent: 23,
+    roleIds: [1, 2],
+  },
+  {
+    id: 40,
+    name: "Referentes curriculares",
+    icon: "",
+    path: "/app/gestion-academica/referentes-curriculares",
+    menuOrder: 2,
     type: "ITEM",
     idParent: 23,
     roleIds: [1, 2],
@@ -218,7 +229,7 @@ export const navigationMenu: MockMenu[] = [
     name: "Asistencia",
     icon: "",
     path: "/app/asistencia",
-    menuOrder: 2,
+    menuOrder: 3,
     type: "ITEM",
     idParent: 23,
     roleIds: [1, 2],

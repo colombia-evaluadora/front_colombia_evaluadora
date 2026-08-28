@@ -40,6 +40,7 @@ import {
 import { establishmentsSearchSchema } from "@/features/establishment/institution/api/schema"
 import { campusesSearchSchema } from "@/features/establishment/campuses/api/schema"
 import { employeesSearchSchema } from "@/features/establishment/employees/api/schema"
+import { curricularReferencesSearchSchema } from "@/features/academic-management/curricular-references/api/schema"
 import { NoticeProvider } from "@/components/notice/notice-context"
 import {
   getFirstNavUrl,
@@ -330,6 +331,10 @@ const ESTABLECIMIENTO_CRUMB = {
 const PERIODOS_CRUMB = {
   label: "Periodos académicos",
   to: paths.app.periodosAcademicos.getHref(),
+}
+const GESTION_ACADEMICA_CRUMB = {
+  label: "Gestión académica",
+  to: paths.app.planeadorActividades.getHref(),
 }
 
 // `/app` no tiene página propia: manda a la primera pantalla del menú del
@@ -640,6 +645,51 @@ export const periodosAcademicosEditarRoute = createRoute({
   component: AcademicPeriodConfigPage,
 })
 
+const ReportsPage = lazyRouteComponent(
+  () => import("@/features/academic-management/pages/reports-page"),
+  "ReportsPage",
+)
+const CurricularReferencesPage = lazyRouteComponent(
+  () => import("@/features/academic-management/pages/curricular-references-page"),
+  "CurricularReferencesPage",
+)
+const CurricularReferenceDetailPage = lazyRouteComponent(
+  () =>
+    import(
+      "@/features/academic-management/curricular-references/pages/curricular-reference-detail-page"
+    ),
+  "CurricularReferenceDetailPage",
+)
+
+export const gestionAcademicaInformesRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.gestionAcademicaInformes.path,
+  staticData: { breadcrumb: [GESTION_ACADEMICA_CRUMB, { label: "Informes" }] },
+  component: ReportsPage,
+})
+
+export const gestionAcademicaReferentesCurricularesRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.gestionAcademicaReferentesCurriculares.path,
+  validateSearch: curricularReferencesSearchSchema,
+  staticData: { breadcrumb: [GESTION_ACADEMICA_CRUMB, { label: "Referentes curriculares" }] },
+  component: CurricularReferencesPage,
+})
+
+const REFERENTES_CURRICULARES_CRUMB = {
+  label: "Referentes curriculares",
+  to: paths.app.gestionAcademicaReferentesCurriculares.getHref(),
+}
+
+export const gestionAcademicaReferentesCurricularesDetalleRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.gestionAcademicaReferentesCurricularesDetalle.path,
+  staticData: {
+    breadcrumb: [GESTION_ACADEMICA_CRUMB, REFERENTES_CURRICULARES_CRUMB, { label: "Detalle" }],
+  },
+  component: CurricularReferenceDetailPage,
+})
+
 // Planeador — miga única "Planeador" (los placeholders Informes / Asistencia
 // del menú todavía no tienen ruta propia).
 const PLANEADOR_CRUMB = {
@@ -727,6 +777,9 @@ const routeTree = rootRoute.addChildren([
     employeesRoute,
     addEstablishmentRoute,
     editEstablishmentRoute,
+    gestionAcademicaInformesRoute,
+    gestionAcademicaReferentesCurricularesRoute,
+    gestionAcademicaReferentesCurricularesDetalleRoute,
     establishmentLayoutRoute.addChildren([
       establishmentsRoute,
       campusesRoute,

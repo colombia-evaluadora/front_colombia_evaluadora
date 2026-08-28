@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { Link, useNavigate } from "@tanstack/react-router"
 
 import {
@@ -16,6 +16,7 @@ import { paths } from "@/config/paths"
 import { coberturaMatriculaEditarRoute } from "@/router"
 import { useAuth } from "@/features/auth/hooks/use-auth"
 import { useMatriculaDetailQuery } from "@/features/coverage/api/query/use-matricula-detail-query"
+import { useMatriculaFieldConfigQuery } from "@/features/coverage/api/query/use-matricula-field-config-query"
 import { useReservationCatalogsQuery } from "@/features/coverage/api/query/use-reservation-catalogs-query"
 import { useUpdateMatricula } from "@/features/coverage/api/mutations/update-matricula"
 import { useMunicipalitiesQuery } from "@/features/establishment/institution/api/query/use-municipalities"
@@ -39,6 +40,7 @@ import {
   REQUIRED_MATRICULA_FIELD_LABELS,
   validateMatricula,
 } from "@/features/coverage/utils/matricula-form-defaults"
+import { buildMatriculaFieldSettings } from "@/features/coverage/utils/matricula-field-settings"
 
 const EDIT_MATRICULA_FORM_ID = "edit-matricula-form"
 
@@ -68,6 +70,11 @@ function MatriculaEditPageContent() {
   const { data, isPending, isError } = useMatriculaDetailQuery(matriculaId)
   const { data: catalogs } = useReservationCatalogsQuery()
   const { data: municipalities = [] } = useMunicipalitiesQuery()
+  const { data: fieldConfig } = useMatriculaFieldConfigQuery()
+  const fieldSettings = useMemo(
+    () => (fieldConfig ? buildMatriculaFieldSettings(fieldConfig) : undefined),
+    [fieldConfig],
+  )
 
   const [values, setValues] = useState<CreateMatriculaInput | null>(null)
   const [missingFields, setMissingFields] = useState<string[]>([])
@@ -151,8 +158,8 @@ function MatriculaEditPageContent() {
 
   useEffect(() => {
     if (!hasSubmitted || !values) return
-    setMissingFields(validateMatricula(values))
-  }, [values, hasSubmitted])
+    setMissingFields(validateMatricula(values, undefined, fieldSettings))
+  }, [values, hasSubmitted, fieldSettings])
 
   useEffect(() => {
     if (missingFields.length === 0) {
@@ -263,7 +270,7 @@ function MatriculaEditPageContent() {
   function handleSave() {
     if (!values) return
     setHasSubmitted(true)
-    const missing = validateMatricula(values)
+    const missing = validateMatricula(values, undefined, fieldSettings)
     setMissingFields(missing)
     if (missing.length > 0) return
 
@@ -344,6 +351,7 @@ function MatriculaEditPageContent() {
                 catalogs={catalogs}
                 departments={departments}
                 invalidFields={missingFields}
+                fieldSettings={fieldSettings}
               />
             </div>
           </TableScreenBody>

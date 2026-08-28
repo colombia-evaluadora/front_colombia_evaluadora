@@ -1,32 +1,52 @@
-import type { EducationLevel, Shift } from "@/features/coverage/api/types/reservation"
-import type { MatriculaFieldSetting } from "@/features/coverage/utils/matricula-field-catalog"
+import type { EducationLevel } from "@/features/coverage/api/types/reservation"
 
-// Estados del estudiante (ver resumen de reglas de transición): "cursando"
-// es el único que puede pasar a "retirado" (y viceversa, "reingreso"). Los
-// demás ("aprobado"/"reprobado"/"promovido"/"reubicado") son estados finales
-// de fin de año o de cambio de grado — de momento no hay UI que los dispare,
-// solo se modela el valor.
+// Estados reales de `ESTADO_MATRICULA` (TLISTA_VALOR) — confirmado contra
+// BD real (V200, `fn_matricula_listar`, 2026-08-27). El backend NO manda un
+// id — arma un slug directo de `TLISTA_VALOR.NOMBRE` (minúsculas, tildes
+// fuera, espacios a "_"), así que estos valores son exactamente ese slug, no
+// un mapeo inventado por el front. Si el catálogo real agrega un estado
+// nuevo, aparece con su propio slug sin que el backend tenga que tocar
+// `fn_matricula_listar` — pero el front sí necesita agregarlo acá para que
+// tipe. No existe "Reubicado" (el front lo tenía inventado) — el
+// equivalente real de "promovido" es "Promovido Anticipadamente".
+//
+// "cursando" es el único que puede pasar a "retirado" (y viceversa,
+// "reingreso") — el resto son estados finales de fin de año o de cambio de
+// grado, de momento sin UI propia que los dispare.
 export type MatriculaStatus =
   | "cursando"
   | "aprobado"
   | "reprobado"
-  | "promovido"
-  | "reubicado"
   | "retirado"
+  | "graduado"
+  | "promovido_anticipadamente"
+  | "trasladado"
+  | "sin_definir"
+  | "desertor"
+  | "esperando_aprobacion"
+  | "rechazado"
 
 // ── Catálogos dependientes (Sede → Jornada → Grado → Grupo) ────────────────
 // El mock (`mocks/handlers/matricula.ts`) devuelve datos ficticios pero
 // deterministas — el contrato (request/response) ya queda listo para cuando
 // exista el endpoint real de oferta académica por sede: solo hay que cambiar
 // el handler, no el front.
+//
+// "shift"/"shifts" acá NO es el `Shift` de reservas/cupos (enum fijo de 5
+// jornadas) — matrícula toma las jornadas ACTIVAS de la sede elegida
+// (`GET /eval-col/sedes/jornadas-activas`, `fn_jornadas_activas_por_sede`,
+// mismo endpoint real que ya usa "Permisos de funcionario" — ver
+// `use-matricula-dependent-catalogs-query.ts`), que no tiene un conjunto
+// fijo de valores. Por eso viaja como string libre (el `nombre` de la
+// jornada), no como un enum — ver `docs/matricula-listado-endpoint-contract.md`.
 export interface MatriculaDependentCatalogsRequest {
   campus?: string
-  shift?: Shift
+  shift?: string
   grade?: number
 }
 
 export interface MatriculaDependentCatalogsResponse {
-  shifts: Shift[]
+  shifts: string[]
   grades: number[]
   groups: string[]
 }
@@ -40,7 +60,9 @@ export interface Matricula {
   lastName: string
   institution: string
   campus: string
-  shift: Shift
+  /** Jornada — nombre tal como lo devuelve el catálogo de `TLISTA_VALOR`
+   * (ver comentario de `MatriculaDependentCatalogsRequest` arriba). */
+  shift: string
   educationLevel: EducationLevel
   /** 0 = transición … 11 = once. Se muestra como "3°". */
   grade: number
@@ -58,7 +80,7 @@ export interface MatriculaQueryFilters {
   search?: string
   statuses?: MatriculaStatus[]
   campus?: string
-  shift?: Shift
+  shift?: string
   grade?: number
   group?: string
 }
@@ -142,7 +164,7 @@ export interface MatriculaContact {
 
 export interface MatriculaAcademicInfo {
   campus: string
-  shift: Shift | ""
+  shift: string
   /** String para que el ComboboxField lo maneje igual que en el resto del
    * módulo; se castea a number recién al armar el `CreateMatriculaInput`. */
   grade: string
@@ -238,17 +260,42 @@ export interface CreateMatriculaInput {
   guardianEmployment: MatriculaGuardianEmploymentInfo
 }
 
-// ── Configuración de parámetros requeridos ─────────────────────────────────
-// Por campo (id del catálogo, ver `matricula-field-catalog.ts`): si el
-// administrador institucional lo marcó visible y/o obligatorio en el
-// formulario de matrícula.
+// ── Configuración de parámetros de matrícula (CU-86e2z8aff) ────────────────
+// Espejo de lo que devuelve `fn_matricula_config_obtener` (`GET /eval-col/
+// matricula/configuracion`, ver colección Postman "SSO — configuración de
+// matrícula"): ya viene agrupado por sección y en el orden de la UI (13
+// secciones) — el catálogo de campos lo define el backend, el front ya no
+// tiene uno propio (`matricula-field-catalog.ts` quedó solo para el mock).
 
-export type MatriculaFieldConfigMap = Record<string, MatriculaFieldSetting>
+export interface MatriculaConfigCampo {
+  /** Id real del campo — se manda tal cual en `PUT .../campo/:fkCampo`. */
+  fkCampo: number
+  nombre: string
+  /** `false` ⇒ los dos toggles quedan deshabilitados y fijos en
+   * `true/true` — es uno de los campos obligatorios de la ficha (columna
+   * destino `NOT NULL`), no algo que el administrador pueda decidir. */
+  editable: boolean
+  requerido: boolean
+  visible: boolean
+}
 
-export interface MatriculaFieldConfigResult {
-  status: "ok" | "error"
-  message: string
-  fields: MatriculaFieldConfigMap
+export interface MatriculaConfigSeccion {
+  seccion: string
+  campos: MatriculaConfigCampo[]
+}
+
+export interface MatriculaFieldConfig {
+  fkEstablecimiento: number
+  establecimiento: string
+  pkMatriculaConfig: number
+  secciones: MatriculaConfigSeccion[]
+}
+
+/** Body de `PUT .../campo/:fkCampo` — los dos son opcionales pero hay que
+ * mandar al menos uno; el que se omite no se toca. */
+export interface MatriculaConfigCampoPatch {
+  requerido?: boolean
+  visible?: boolean
 }
 
 // ── Detección de matrícula activa por documento ────────────────────────────
@@ -301,7 +348,7 @@ export interface BulkGroupChange {
 export interface BulkMatriculaChangeRequest {
   ids: string[]
   campus?: string
-  shift?: Shift
+  shift?: string
   grade?: number
   group?: string
   gradeChange?: BulkGradeChange

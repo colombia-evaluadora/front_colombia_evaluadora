@@ -14,6 +14,7 @@ import {
   MatriculaStudentSection,
   type DepartmentOption,
 } from "@/features/coverage/components/forms/form-create-matricula"
+import type { MatriculaFieldSettingsMap } from "@/features/coverage/utils/matricula-field-settings"
 
 interface MatriculaFormBodyProps {
   values: CreateMatriculaInput
@@ -28,6 +29,11 @@ interface MatriculaFormBodyProps {
   /** El alta no lo pide (toda matrícula nueva arranca "cursando"); detalle y
    * edición sí lo muestran. */
   showStatus?: boolean
+  /** Visibilidad/obligatoriedad por campo — sale de "Configuración de
+   * parámetros requeridos" (`buildMatriculaFieldSettings`). Sin cargar
+   * (`undefined`) todo se ve y nada es obligatorio extra, para no ocultar
+   * campos de golpe mientras la config todavía está en vuelo. */
+  fieldSettings?: MatriculaFieldSettingsMap
 }
 
 /**
@@ -44,6 +50,7 @@ export function MatriculaFormBody({
   invalidFields = [],
   disabled = false,
   showStatus = true,
+  fieldSettings,
 }: MatriculaFormBodyProps) {
   return (
     <fieldset disabled={disabled} className="contents border-0 p-0 m-0 min-w-0">
@@ -53,6 +60,7 @@ export function MatriculaFormBody({
         catalogs={catalogs}
         invalidFields={invalidFields}
         showStatus={showStatus}
+        fieldSettings={fieldSettings}
       />
 
       <MatriculaStudentSection
@@ -60,6 +68,7 @@ export function MatriculaFormBody({
         onChange={(student) => onChange({ ...values, student })}
         departments={departments}
         invalidFields={invalidFields}
+        fieldSettings={fieldSettings}
       />
 
       <MatriculaResidenceSection
@@ -71,6 +80,8 @@ export function MatriculaFormBody({
         value={values.studentAddress}
         onChange={(studentAddress) => onChange({ ...values, studentAddress })}
         departments={departments}
+        invalidFields={invalidFields}
+        fieldSettings={fieldSettings}
       />
 
       <MatriculaContactSection
@@ -81,31 +92,43 @@ export function MatriculaFormBody({
         value={values.studentContact}
         onChange={(studentContact) => onChange({ ...values, studentContact })}
         invalidFields={invalidFields}
+        fieldSettings={fieldSettings}
       />
 
       <MatriculaPreviousYearSection
         value={values.previousYear}
         onChange={(previousYear) => onChange({ ...values, previousYear })}
+        invalidFields={invalidFields}
+        fieldSettings={fieldSettings}
       />
 
       <MatriculaOriginSectorSection
         value={values.originSector}
         onChange={(originSector) => onChange({ ...values, originSector })}
+        invalidFields={invalidFields}
+        fieldSettings={fieldSettings}
       />
 
       <MatriculaConflictVictimSection
         value={values.conflictVictim}
+        departments={departments}
         onChange={(conflictVictim) => onChange({ ...values, conflictVictim })}
+        invalidFields={invalidFields}
+        fieldSettings={fieldSettings}
       />
 
       <MatriculaComplementarySection
         value={values.complementary}
         onChange={(complementary) => onChange({ ...values, complementary })}
+        invalidFields={invalidFields}
+        fieldSettings={fieldSettings}
       />
 
       <MatriculaBenefitsSection
         value={values.benefits}
         onChange={(benefits) => onChange({ ...values, benefits })}
+        invalidFields={invalidFields}
+        fieldSettings={fieldSettings}
       />
 
       <MatriculaGuardianSection
@@ -113,6 +136,7 @@ export function MatriculaFormBody({
         onChange={(guardian) => onChange({ ...values, guardian })}
         departments={departments}
         invalidFields={invalidFields}
+        fieldSettings={fieldSettings}
       />
 
       <MatriculaResidenceSection
@@ -124,6 +148,8 @@ export function MatriculaFormBody({
         value={values.guardianAddress}
         onChange={(guardianAddress) => onChange({ ...values, guardianAddress })}
         departments={departments}
+        invalidFields={invalidFields}
+        fieldSettings={fieldSettings}
       />
 
       <MatriculaContactSection
@@ -134,11 +160,14 @@ export function MatriculaFormBody({
         value={values.guardianContact}
         onChange={(guardianContact) => onChange({ ...values, guardianContact })}
         invalidFields={invalidFields}
+        fieldSettings={fieldSettings}
       />
 
       <MatriculaGuardianEmploymentSection
         value={values.guardianEmployment}
         onChange={(guardianEmployment) => onChange({ ...values, guardianEmployment })}
+        invalidFields={invalidFields}
+        fieldSettings={fieldSettings}
       />
     </fieldset>
   )

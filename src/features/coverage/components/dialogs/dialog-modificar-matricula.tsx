@@ -39,7 +39,7 @@ import {
   XIcon,
 } from "@/components/ui/icons"
 
-import { formatGrade, SHIFT_LABELS } from "@/features/coverage/api/ui-mappings"
+import { formatGrade } from "@/features/coverage/api/ui-mappings"
 import { useReservationCatalogsQuery } from "@/features/coverage/api/query/use-reservation-catalogs-query"
 import { useMatriculaDependentCatalogsQuery } from "@/features/coverage/api/query/use-matricula-dependent-catalogs-query"
 import { useBulkChangeMatricula } from "@/features/coverage/api/mutations/bulk-change-matricula"
@@ -57,7 +57,6 @@ import type {
   BulkGroupChange,
   Matricula,
 } from "@/features/coverage/api/types/matricula"
-import type { Shift } from "@/features/coverage/api/types/reservation"
 
 const MAX_VISIBLE_STUDENTS = 2
 
@@ -124,7 +123,7 @@ export function ModificarMatriculaDialog({
   // de la selección, aunque coincida.
   const { data: dependentCatalogs } = useMatriculaDependentCatalogsQuery({
     campus: sede || undefined,
-    shift: (jornada || undefined) as Shift | undefined,
+    shift: jornada || undefined,
     grade: grado ? Number(grado) : undefined,
   })
 
@@ -204,7 +203,7 @@ export function ModificarMatriculaDialog({
       const result = await bulkChangeMutation.mutateAsync({
         ids: selected.map((m) => m.id),
         campus: sede || undefined,
-        shift: jornada ? (jornada as Shift) : undefined,
+        shift: jornada || undefined,
         grade: grado ? Number(grado) : undefined,
         group: grupo || undefined,
         gradeChange: gradeChange ?? undefined,
@@ -450,7 +449,6 @@ export function ModificarMatriculaDialog({
                 <Field variant="outlined">
                   <FieldLabel>Jornada:</FieldLabel>
                   <ComboboxField
-                    items={SHIFT_LABELS}
                     value={jornada || undefined}
                     onValueChange={(v) => handleJornadaChange(v ?? "")}
                     disabled={!sede}
@@ -463,7 +461,7 @@ export function ModificarMatriculaDialog({
                     <ComboboxFieldContent>
                       {(dependentCatalogs?.shifts ?? []).map((value) => (
                         <ComboboxFieldItem key={value} value={value}>
-                          {SHIFT_LABELS[value]}
+                          {value}
                         </ComboboxFieldItem>
                       ))}
                     </ComboboxFieldContent>
