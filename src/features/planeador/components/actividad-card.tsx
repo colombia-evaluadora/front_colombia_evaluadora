@@ -2,11 +2,14 @@ import * as React from "react"
 
 import { Button } from "@/components/ui/button"
 import {
-  CheckIcon,
-  ClipboardCheckIcon,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
   FileDownloadOutlinedIcon,
   PencilIcon,
-  TrashIcon,
 } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
 
@@ -15,14 +18,20 @@ import {
   STATUS_ICON,
   STATUS_RING,
 } from "@/features/planeador/api/ui-mappings"
-import type { Actividad } from "@/features/planeador/api/types/actividad"
+import type {
+  Actividad,
+  ExportFormat,
+} from "@/features/planeador/api/types/actividad"
+import { EXPORT_FORMAT_LABELS } from "@/features/planeador/api/types/actividad"
+
+import { DialogDeleteActividad } from "@/features/planeador/components/dialogs/dialog-delete-actividad"
 
 interface Accion {
   label: string
   Icon: React.ComponentType<{ className?: string }>
   /** Si está definido, este botón tiene handler propio y no se renderiza
-   * `disabled`. Sirve para distinguir visualmente la única acción viva en
-   * esta iteración (el "Marcar") del resto, que siguen siendo read-only. */
+   * `disabled`. Sirve para distinguir visualmente las acciones vivas de
+   * las que siguen siendo read-only visual. */
   onClick?: () => void
 }
 
@@ -32,20 +41,21 @@ interface ActividadCardProps {
   selected?: boolean
   /** Abre esta actividad en el panel de detalle (vista informativa). */
   onSelect?: () => void
-  /** Cambia el panel de detalle a la vista de calificaciones de esta
-   * actividad. Se dispara desde el chulito (Marcar) de la card. */
-  onShowGrades?: () => void
   /** Navega a la pantalla de edición de la actividad. Se dispara desde el
    * lápiz (Editar) de la card. */
   onEdit?: () => void
+  /** Exporta esta actividad en el formato elegido. Lo dispara el menú
+   * "Descargar" de la card (PDF / Excel). El toast sale del mutation
+   * que la página conecte — la card solo delega. */
+  onExport?: (format: ExportFormat) => void
+  /** Hook opcional: se ejecuta cuando termina OK el `DialogDeleteActividad`
+   * (típicamente, limpiar la selección / cerrar el panel). */
+  onDeleted?: () => void
 }
 
 const ACCIONES_BASE: readonly Omit<Accion, "onClick">[] = [
   { label: "Editar", Icon: PencilIcon },
-  { label: "Marcar", Icon: CheckIcon },
-  { label: "Aprobar", Icon: ClipboardCheckIcon },
   { label: "Descargar", Icon: FileDownloadOutlinedIcon },
-  { label: "Eliminar", Icon: TrashIcon },
 ] as const
 
 /**
@@ -59,31 +69,40 @@ const ACCIONES_BASE: readonly Omit<Accion, "onClick">[] = [
  *
  * Las acciones viven en una barra flotante sobre la esquina inferior derecha:
  * la columna es angosta y no hay ancho para ponerlas en línea sin aplastar el
- * título. Están `disabled` en esta iteración (read-only visual).
+ * título.
+ *
+ * Tres acciones viven en la card:
+ * - **Editar**: navega a la pantalla de edición (`onEdit`).
+ * - **Descargar**: popover con dos opciones (PDF / Excel) → `onExport(format)`.
+ *   Mismo shape que el diálogo de export masivo del toolbar, pero sin
+ *   diálogo — la card es angosta y un popover cabe mejor.
+ * - **Eliminar**: dispara el `DialogDeleteActividad`, que es un `AlertDialog`
+ *   con confirmación. El trigger del AlertDialog reemplaza al botón de la
+ *   barra de acciones (mismo color/tamaño que los otros), así se ve parejo.
+ *
+ * "Marcar" (calificaciones) y "Aprobar" (aprobación bulk) viven en el
+ * header del panel de detalle, no acá — la card solo abre el detalle.
  */
 export function ActividadCard({
   actividad,
   selected = false,
   onSelect,
-  onShowGrades,
   onEdit,
+  onExport,
+  onDeleted,
 }: ActividadCardProps) {
   const StatusIcon = STATUS_ICON[actividad.status]
   const accent = STATUS_ACCENT[actividad.status]
 
-  // "Editar" y "Marcar" son las dos acciones vivas de esta iteración: el
-  // primero navega a la pantalla de edición; el segundo cambia el panel de
-  // detalle a la vista de calificaciones. El resto siguen `disabled`
-  // (read-only visual).
-  const acciones: Accion[] = ACCIONES_BASE.map((accion) => {
-    if (accion.label === "Editar" && onEdit) {
-      return { ...accion, onClick: onEdit }
-    }
-    if (accion.label === "Marcar" && onShowGrades) {
-      return { ...accion, onClick: onShowGrades }
-    }
-    return accion
-  })
+  // Sólo "Editar" se monta como botón plano — Descargar y Eliminar tienen
+  // sus propios widgets (Popover y AlertDialog) que también renderean el
+  // botón del trigger, así que se excluyen de este loop para no duplicar
+  // el control visual.
+  const acciones: Accion[] = ACCIONES_BASE.map((accion) =>
+    accion.label === "Editar" && onEdit
+      ? { ...accion, onClick: onEdit }
+      : accion,
+  )
 
   // Sin estudiantes asignados el porcentaje no significa nada: se omite en
   // vez de mostrar un 0% que se leería como "nadie evaluado".
@@ -177,6 +196,48 @@ export function ActividadCard({
             <Icon />
           </Button>
         ))}
+
+        {/* Descargar: popover con PDF / Excel. Sólo se monta si la página
+            le pasó `onExport` — sin handler el botón queda `disabled`, igual
+            que en la versión anterior, así el "ver cómo se ve" sin wiring
+            sigue funcionando. */}
+        {onExport && (
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  color="neutral"
+                  size="icon-sm"
+                  aria-label={`Descargar ${actividad.nombre}`}
+                  className="size-6"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              }
+            >
+              <FileDownloadOutlinedIcon />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {(Object.keys(EXPORT_FORMAT_LABELS) as ExportFormat[]).map((format) => (
+                <DropdownMenuItem
+                  key={format}
+                  onClick={() => onExport(format)}
+                >
+                  {EXPORT_FORMAT_LABELS[format]}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+
+        {/* Eliminar: el `AlertDialog` del delete vive acá adentro. El
+            trigger hereda el `variant/color/size` del resto de la barra
+            (ghost/neutral/icon-sm) para que se vea parejo con Editar. */}
+        <DialogDeleteActividad
+          actividad={actividad}
+          onDeleted={onDeleted}
+          triggerProps={{ className: "size-6" }}
+        />
       </div>
 
       {/* Botón invisible que cubre toda la card: el click entero abre el

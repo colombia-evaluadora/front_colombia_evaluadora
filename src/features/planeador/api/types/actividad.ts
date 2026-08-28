@@ -126,3 +126,26 @@ export interface ActividadQueryResponse {
   pageCount: number
   totalCount: number
 }
+
+/**
+ * Formatos de exportación soportados por el endpoint. La etiqueta legible
+ * se resuelve en el cliente desde `EXPORT_FORMAT_LABELS`, igual que en el
+ * módulo de Cobertura.
+ */
+export type ExportFormat = "excel" | "pdf"
+
+/**
+ * Sobre genérico de las mutaciones que no devuelven un recurso sino un
+ * resultado de operación (`export`, `delete`). El frontend decide qué
+ * tostar leyendo `status` y `message`, así un mismo handler sirve para
+ * las dos variantes (general y por id).
+ */
+export interface ExportResult {
+  status: "ok" | "error"
+  message: string
+}
+
+export const EXPORT_FORMAT_LABELS: Record<ExportFormat, string> = {
+  excel: "Excel",
+  pdf: "PDF",
+}

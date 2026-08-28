@@ -15,13 +15,14 @@ import {
   DotsThreeIcon,
   CaretLeftIcon,
   CaretRightIcon,
-  FileDownloadOutlinedIcon,
 } from "@/components/ui/icons"
 import { Spinner } from "@/components/ui/spinner"
 
 import { useActividadesQuery } from "@/features/planeador/api/query/use-actividades-query"
+import { useExportActividad } from "@/features/planeador/api/mutations/export-actividad"
 import { ActividadCard } from "@/features/planeador/components/actividad-card"
 import { ActividadDetallePanel } from "@/features/planeador/components/actividad-detalle-panel"
+import { DialogExportActividades } from "@/features/planeador/components/dialogs/dialog-export-actividades"
 import {
   PlaneadorMonthGrid,
   type DayEvent,
@@ -70,26 +71,41 @@ export function PlaneadorPage() {
   )
 
   // Vista activa del panel de detalle. Por defecto es la informativa (la
-  // misma que muestra el click en la card); "Marcar" (el chulito) la cambia
-  // a la tabla de calificaciones. Se guarda por id de actividad para que
-  // cambiar de card no mantenga el modo de la anterior.
+  // misma que muestra el click en la card). Cada modo se guarda por id
+  // de actividad: "Marcar" (chulito) activa `grades`, "Aprobar"
+  // (clipboard-check) activa `approval`. Al cambiar de card se vuelve
+  // al modo "info" — los modos son propios de la actividad en la que
+  // se pidieron.
   const [gradeViewActividadId, setGradeViewActividadId] = React.useState<
     string | null
   >(null)
-  const panelMode: "info" | "grades" =
-    actividadId !== undefined && gradeViewActividadId === actividadId
-      ? "grades"
+  const [approvalViewActividadId, setApprovalViewActividadId] = React.useState<
+    string | null
+  >(null)
+  const panelMode: "info" | "grades" | "approval" =
+    actividadId !== undefined
+      ? approvalViewActividadId === actividadId
+        ? "approval"
+        : gradeViewActividadId === actividadId
+          ? "grades"
+          : "info"
       : "info"
 
-  // Al cambiar de actividad, se vuelve al modo informativo — la tabla de
-  // calificaciones es propia de la actividad en la que se pidió.
+  // Al cambiar de actividad, se limpian ambos modos para no arrastrar
+  // un "Marcar" o "Aprobar" de la actividad anterior.
   React.useEffect(() => {
     if (actividadId === undefined) {
       setGradeViewActividadId(null)
-    } else if (gradeViewActividadId && gradeViewActividadId !== actividadId) {
+      setApprovalViewActividadId(null)
+      return
+    }
+    if (gradeViewActividadId && gradeViewActividadId !== actividadId) {
       setGradeViewActividadId(null)
     }
-  }, [actividadId, gradeViewActividadId])
+    if (approvalViewActividadId && approvalViewActividadId !== actividadId) {
+      setApprovalViewActividadId(null)
+    }
+  }, [actividadId, gradeViewActividadId, approvalViewActividadId])
 
   const {
     data: actividades = [],
@@ -97,6 +113,13 @@ export function PlaneadorPage() {
     isError,
     refetch,
   } = useActividadesQuery()
+
+  // Export individual desde la card. El toast sale del propio `onSuccess`
+  // del mutation (mismo patrón que `useDeleteActividad`): la página solo
+  // dispara la mutación con el formato elegido por el popover.
+  // No es necesario `onError` propio: el response interceptor global ya
+  // tostea los 4xx/5xx que escapen del handler mock.
+  const exportActividad = useExportActividad()
 
   // Filtrado client-side: texto libre + estado. `filtro` (instrumento) queda
   // armado para la próxima iteración, cuando llegue su catálogo.
@@ -190,15 +213,14 @@ export function PlaneadorPage() {
                 <DotsThreeIcon />
               </Button>
             </div>
-            <Button
-              variant="outline"
-              color="muted"
-              size="icon-sm"
-              disabled
-              aria-label="Exportar actividades filtradas"
-            >
-              <FileDownloadOutlinedIcon />
-            </Button>
+            {/* El export general reusa el mismo diálogo que el listado de
+                Cobertura (`DialogExportActividades`): las filas ya filtradas
+                viajan como `filters` y el backend reporta cuántas se
+                exportaron. El trigger que el diálogo trae adentro reemplaza
+                al `<Button>` de export que estaba disabled. */}
+            <DialogExportActividades
+              rows={filtered.map((a) => ({ id: a.id, nombre: a.nombre }))}
+            />
           </TableScreenActions>
         </TableScreenToolbar>
       </TableScreenHeader>
@@ -307,9 +329,6 @@ export function PlaneadorPage() {
                           actividad={actividad}
                           selected={actividad.id === actividadId}
                           onSelect={() => setActividadId(actividad.id)}
-                          onShowGrades={() =>
-                            setGradeViewActividadId(actividad.id)
-                          }
                           onEdit={() =>
                             navigate({
                               to: paths.app.planeadorActividadEditar.getHref(
@@ -317,6 +336,18 @@ export function PlaneadorPage() {
                               ),
                             })
                           }
+                          onExport={(format) =>
+                            exportActividad.mutate({ id: actividad.id, format })
+                          }
+                          // Si la actividad que se borró era la abierta en
+                          // el panel, cerramos el panel: sin actividadId
+                          // la página vuelve a mostrar el calendario en la
+                          // columna derecha (mismo path que `onClose`).
+                          onDeleted={() => {
+                            if (actividadId === actividad.id) {
+                              setActividadId(undefined)
+                            }
+                          }}
                         />
                       </li>
                     ))}
@@ -347,6 +378,7 @@ export function PlaneadorPage() {
                 mode={panelMode}
                 onClose={() => setActividadId(undefined)}
                 onShowGrades={() => setGradeViewActividadId(actividadId)}
+                onShowApproval={() => setApprovalViewActividadId(actividadId)}
               />
             ) : (
               <>
