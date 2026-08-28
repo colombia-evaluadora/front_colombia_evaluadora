@@ -23,6 +23,7 @@ import { useExportActividad } from "@/features/planeador/api/mutations/export-ac
 import { ActividadCard } from "@/features/planeador/components/actividad-card"
 import { ActividadDetallePanel } from "@/features/planeador/components/actividad-detalle-panel"
 import { DialogExportActividades } from "@/features/planeador/components/dialogs/dialog-export-actividades"
+import { PlaneadorSummaryCards } from "@/features/planeador/components/planeador-summary-cards"
 import {
   PlaneadorMonthGrid,
   type DayEvent,
@@ -226,6 +227,17 @@ export function PlaneadorPage() {
       </TableScreenHeader>
 
       <TableScreenBody>
+        {/* Cards de resumen por estado. Se computan sobre `actividades` (el
+            set completo, no el filtrado), así el conteo no cambia al filtrar
+            el listado de abajo — si filtrara, "Pendientes: 3" caería a
+            "Pendientes: 1" apenas el usuario tipea en el buscador y
+            perdería el sentido de "cuántas tengo en total". El link de
+            cada card setea `?estado=…` en la URL para que el filter bar
+            del listado muestre ese estado por defecto. */}
+        <div className="mb-6">
+          <PlaneadorSummaryCards actividades={actividades} />
+        </div>
+
         {/* La segunda pista va `minmax(0,1fr)` y no `1fr`: `1fr` equivale a
             `minmax(auto,1fr)`, que no baja del ancho mínimo del contenido, así
             que una tabla ancha empuja la columna en vez de scrollear dentro de
