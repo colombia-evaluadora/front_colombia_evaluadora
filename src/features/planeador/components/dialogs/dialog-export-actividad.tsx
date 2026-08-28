@@ -7,7 +7,6 @@ import {
   FileXlsIcon,
   SpinnerIcon,
 } from "@/components/ui/icons"
-
 import {
   Dialog,
   DialogClose,
@@ -20,37 +19,33 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 
-import { useExportActividades } from "@/features/planeador/api/mutations/export-actividades"
-import type {
-  Actividad,
-  ExportFormat,
-} from "@/features/planeador/api/types/actividad"
+import { useExportActividad } from "@/features/planeador/api/mutations/export-actividad"
+import type { Actividad, ExportFormat } from "@/features/planeador/api/types/actividad"
 
-interface DialogExportActividadesProps {
-  /**
-   * Filas ya filtradas en el cliente (lo que se está viendo en el rail).
-   * El handler mock las recibe para contar y reportar la cantidad; en el
-   * backend real, este mismo shape se traducirá al filtro del query.
-   */
-  rows: Actividad[]
+interface DialogExportActividadProps {
+  actividad: Pick<Actividad, "id" | "nombre">
+  /** Se aplica al `Button` del trigger — la card le pasa su variante
+   * ghost/neutral/icon-sm para que viva dentro del overlay de acciones. */
+  triggerProps?: React.ComponentProps<typeof Button>
 }
 
 /**
- * Exportación masiva del Planeador. Mismo patrón que
- * `DialogExportMatricula`: dos botones con el formato (PDF / Excel) y el
- * toast lo emite el `onSuccess` leyendo el `message` que devuelve el
- * backend.
+ * Exportación de UNA actividad. Mismo diálogo que el export masivo del
+ * toolbar (`DialogExportActividades`) pero apuntando a un solo id: el
+ * usuario abre el diálogo desde el ícono de descarga de la card y elige
+ * el formato ahí adentro, en vez de tener las dos opciones sueltas en un
+ * menú desplegable.
  *
- * El trigger (icon-only `outline muted`) lo inyecta la página en la
- * `TableScreenActions` del listado —acá no se renderiza solo, para no
- * duplicar el botón si la página lo quiere posicionar a mano—.
+ * El toast lo emite el `onSuccess` leyendo el `message` que devuelve el
+ * backend, igual que el resto de los diálogos del feature.
  */
-export function DialogExportActividades({
-  rows,
-}: DialogExportActividadesProps) {
+export function DialogExportActividad({
+  actividad,
+  triggerProps,
+}: DialogExportActividadProps) {
   const [open, setOpen] = useState(false)
 
-  const exportAll = useExportActividades({
+  const exportOne = useExportActividad({
     mutationConfig: {
       onSuccess: (result) => {
         if (result.status === "error") {
@@ -60,38 +55,44 @@ export function DialogExportActividades({
         toast.success(result.message)
         setOpen(false)
       },
+      onError: () => {
+        toast.error("No se pudo exportar la actividad.")
+      },
     },
   })
 
-  function handleExport(format: ExportFormat) {
-    exportAll.mutate({ filters: rows, format })
-  }
+  const pendingFormat = exportOne.isPending ? exportOne.variables?.format : undefined
 
-  const pendingFormat = exportAll.isPending ? exportAll.variables?.format : undefined
+  function handleExport(format: ExportFormat) {
+    exportOne.mutate({ id: actividad.id, format })
+  }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
         render={
           <Button
-            variant="outline"
-            color="muted"
+            type="button"
+            variant="ghost"
+            color="neutral"
             size="icon-sm"
-            aria-label="Exportar actividades filtradas"
-          >
-            {/* El ícono `FileDownload` es el mismo que ya usa la card y el
-                botón grande del toolbar; mantener uno solo en la app ayuda
-                a que se reconozca como "exportar" sin necesidad de label. */}
-            <FileDownloadOutlinedIcon />
-          </Button>
+            aria-label={`Exportar ${actividad.nombre}`}
+            // La card monta el trigger dentro del botón invisible que cubre
+            // toda la tarjeta: sin `stopPropagation` el click abriría también
+            // el detalle en el panel de la derecha.
+            onClick={(e) => e.stopPropagation()}
+            {...triggerProps}
+          />
         }
-      />
+      >
+        <FileDownloadOutlinedIcon />
+      </DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>
-            Elige un formato para exportar las {rows.length} actividad(es) que
-            coinciden con los filtros activos.
+            Elige un formato para exportar la actividad &ldquo;{actividad.nombre}
+            &rdquo;.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="sm:justify-between">
@@ -103,7 +104,7 @@ export function DialogExportActividades({
               size="sm"
               type="button"
               variant="outline"
-              disabled={exportAll.isPending}
+              disabled={exportOne.isPending}
               aria-busy={pendingFormat === "excel"}
               onClick={() => handleExport("excel")}
             >
@@ -118,7 +119,7 @@ export function DialogExportActividades({
               size="sm"
               type="button"
               color="primary"
-              disabled={exportAll.isPending}
+              disabled={exportOne.isPending}
               aria-busy={pendingFormat === "pdf"}
               onClick={() => handleExport("pdf")}
             >
