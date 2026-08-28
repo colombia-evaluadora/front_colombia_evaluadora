@@ -137,6 +137,10 @@ const PlaneadorDetallePage = lazyRouteComponent(
   () => import("@/features/planeador/pages/planeador-detalle-page"),
   "PlaneadorDetallePage"
 )
+const PlaneadorEditarActividadPage = lazyRouteComponent(
+  () => import("@/features/planeador/pages/planeador-editar-actividad-page"),
+  "PlaneadorEditarActividadPage"
+)
 const PlaneadorUnidadesPage = lazyRouteComponent(
   () => import("@/features/planeador/pages/planeador-unidades-page"),
   "PlaneadorUnidadesPage"
@@ -722,6 +726,21 @@ export const planeadorDetalleRoute = createRoute({
   component: PlaneadorDetallePage,
 })
 
+export const planeadorActividadEditarRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.planeadorActividadEditar.path,
+  // Editar no preserva el search (no aporta nada: el listado se navega con
+  // sus propios filtros en la URL al volver). Mismo miga que el detalle.
+  staticData: {
+    breadcrumb: (params) => [
+      PLANEADOR_CRUMB,
+      { label: `Actividad ${params.actividadId}` },
+      { label: "Editar" },
+    ],
+  },
+  component: PlaneadorEditarActividadPage,
+})
+
 const routeTree = rootRoute.addChildren([
   //  landingRoute,
   homeRoute,
@@ -771,6 +790,7 @@ const routeTree = rootRoute.addChildren([
     planeadorRoute,
     planeadorUnidadesRoute,
     planeadorDetalleRoute,
+    planeadorActividadEditarRoute,
   ]),
 ])
 
