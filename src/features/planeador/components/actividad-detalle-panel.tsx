@@ -12,6 +12,7 @@ import { Link } from "@tanstack/react-router"
 import { paths } from "@/config/paths"
 
 import { useActividadDetalleQuery } from "@/features/planeador/api/query/use-actividad-detalle-query"
+import { CalificacionesAprobacionView } from "@/features/planeador/components/calificaciones-aprobacion-view"
 import { CalificacionesView } from "@/features/planeador/components/calificaciones-view"
 import { DetailSections } from "@/features/planeador/components/detail-sections"
 
@@ -26,14 +27,19 @@ const ACCIONES = [
 interface ActividadDetallePanelProps {
   actividadId: string
   /** Vista activa del panel: "info" muestra las secciones de detalle;
-   * "grades" muestra la tabla de calificaciones. El click en la card
-   * activa "info"; el chulito (Marcar) activa "grades". */
-  mode: "info" | "grades"
+   * "grades" muestra la tabla de calificaciones con notas por criterio
+   * (chulito "Marcar"); "approval" muestra la aprobación bulk por
+   * estudiante con instrumento/Diseño/Modalidad (clipboard-check
+   * "Aprobar"). El click en la card activa "info". */
+  mode: "info" | "grades" | "approval"
   /** Cierra el panel y devuelve el calendario a la columna derecha. */
   onClose: () => void
   /** Cambia el panel a la vista de calificaciones (`mode="grades"`).
    * Lo dispara el chulito (Marcar) del propio panel. */
   onShowGrades: () => void
+  /** Cambia el panel a la vista de aprobación (`mode="approval"`).
+   * Lo dispara el clipboard-check (Aprobar) del propio panel. */
+  onShowApproval: () => void
 }
 
 /**
@@ -44,21 +50,25 @@ interface ActividadDetallePanelProps {
  * listado devuelve la actividad "de tarjeta" (nombre, fechas, unidad) y el
  * detalle tiene secciones que solo llegan por `/detalle/:id`.
  *
- * Tiene dos vistas según de dónde se llegó:
+ * Tiene tres vistas según de dónde se llegó:
  * - `mode="info"` (click en la card): las secciones informativas
  *   (Identificación, Programación, Materiales, Recursos, Evaluación,
  *   Rúbrica, Observaciones, Adaptaciones) — read-only.
  * - `mode="grades"` (chulito "Marcar" de la card): la tabla de
  *   calificaciones con asistencia y notas por criterio.
+ * - `mode="approval"` (clipboard-check "Aprobar" de la card): la
+ *   aprobación bulk por estudiante con instrumento / Diseño / Modalidad.
  *
- * Las cinco acciones del header están `disabled` en esta iteración
- * (read-only visual), igual que en la card.
+ * Las cinco acciones del header siguen el mismo patrón que la card: las
+ * tres vivas son Editar (link al form), Marcar (cambia el modo del
+ * panel) y Aprobar (idem). Descargar y Eliminar siguen deshabilitados.
  */
 export function ActividadDetallePanel({
   actividadId,
   mode,
   onClose,
   onShowGrades,
+  onShowApproval,
 }: ActividadDetallePanelProps) {
   const { data: actividad, isPending, isError, refetch } = useActividadDetalleQuery(actividadId)
 
@@ -109,19 +119,27 @@ export function ActividadDetallePanel({
           >
             <PencilIcon />
           </Button>
-          {ACCIONES.filter((a) => a.label !== "Editar").map(({ label, Icon }) => (
-            <Button
-              key={label}
-              variant="ghost"
-              color="neutral"
-              size="icon-sm"
-              disabled={label !== "Marcar"}
-              onClick={label === "Marcar" ? onShowGrades : undefined}
-              aria-label={label}
-            >
-              <Icon />
-            </Button>
-          ))}
+          {ACCIONES.filter((a) => a.label !== "Editar").map(({ label, Icon }) => {
+            const handler =
+              label === "Marcar"
+                ? onShowGrades
+                : label === "Aprobar"
+                  ? onShowApproval
+                  : undefined
+            return (
+              <Button
+                key={label}
+                variant="ghost"
+                color="neutral"
+                size="icon-sm"
+                disabled={!handler}
+                onClick={handler}
+                aria-label={label}
+              >
+                <Icon />
+              </Button>
+            )
+          })}
         </div>
       </div>
 
@@ -146,6 +164,8 @@ export function ActividadDetallePanel({
         {actividad && (
           mode === "grades" ? (
             <CalificacionesView actividad={actividad} />
+          ) : mode === "approval" ? (
+            <CalificacionesAprobacionView actividad={actividad} />
           ) : (
             <DetailSections actividad={actividad} />
           )

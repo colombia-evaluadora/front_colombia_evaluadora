@@ -99,8 +99,7 @@ function EditarActividadPageContent({
           Planeador
         </TableScreenTitle>
       </TableScreenHeader>
-
-      <TableScreenBody>
+      <TableScreenBody className="rounded-b-none border-b-0">
         {isPending && (
           <div className="text-muted-foreground flex items-center justify-center gap-2 px-6 py-12 text-sm">
             <Spinner /> Cargando actividad…
@@ -127,12 +126,7 @@ function EditarActividadPageContent({
           Sigue el patrón de `add-establishment-page`: siempre está montado
           (preserva el layout del `TableScreen`), pero su contenido solo
           pinta el aviso + el Guardar cuando `isDirty`. */}
-      <TableScreenFooter
-        // `rounded-b-none` y `border-b-0` para que el footer se pegue al
-        // borde inferior sin que aparezca la curva superior/inferior de la
-        // caja —es continuo con el body, no una pieza suelta.
-        className="rounded-b-none border-b-0"
-      >
+      <TableScreenFooter>
         {isDirty ? (
           <>
             <p className="text-sm">Se detectaron cambios. Guardar para conservar la información.</p>
