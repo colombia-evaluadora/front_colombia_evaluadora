@@ -15,7 +15,9 @@ import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/not
 import { paths } from "@/config/paths"
 import { useCreateMatricula } from "@/features/coverage/api/mutations/create-matricula"
 import { checkMatriculaByDocument } from "@/features/coverage/api/query/use-matricula-document-check"
+import { useMatriculaFieldConfigQuery } from "@/features/coverage/api/query/use-matricula-field-config-query"
 import { useReservationCatalogsQuery } from "@/features/coverage/api/query/use-reservation-catalogs-query"
+import { buildMatriculaFieldSettings } from "@/features/coverage/utils/matricula-field-settings"
 import { useMunicipalitiesQuery } from "@/features/establishment/institution/api/query/use-municipalities"
 import type {
   CreateMatriculaInput,
@@ -87,6 +89,11 @@ function AddMatriculaPageContent() {
   const { notify, dismiss } = useNotify()
   const { data: catalogs } = useReservationCatalogsQuery()
   const { data: municipalities = [] } = useMunicipalitiesQuery()
+  const { data: fieldConfig } = useMatriculaFieldConfigQuery()
+  const fieldSettings = useMemo(
+    () => (fieldConfig ? buildMatriculaFieldSettings(fieldConfig) : undefined),
+    [fieldConfig],
+  )
 
   const [values, setValues] = useState<CreateMatriculaInput>(createInitialMatriculaValues)
   const [files, setFiles] = useState<MatriculaSupportFiles>(createEmptySupportFiles)
@@ -141,8 +148,8 @@ function AddMatriculaPageContent() {
 
   useEffect(() => {
     if (!hasSubmitted) return
-    setMissingFields(validateMatricula(values, files))
-  }, [values, files, hasSubmitted])
+    setMissingFields(validateMatricula(values, files, fieldSettings))
+  }, [values, files, hasSubmitted, fieldSettings])
 
   // Detección de matrícula activa duplicada — mismo criterio que el
   // autocompletado por documento de establecimiento: se dispara por
@@ -213,7 +220,7 @@ function AddMatriculaPageContent() {
   function handleSave(mode: "again" | "close") {
     if (existingMatricula) return
     setHasSubmitted(true)
-    const missing = validateMatricula(values, files)
+    const missing = validateMatricula(values, files, fieldSettings)
     setMissingFields(missing)
     if (missing.length > 0) return
 
@@ -277,6 +284,7 @@ function AddMatriculaPageContent() {
             departments={departments}
             invalidFields={missingFields}
             showStatus={false}
+            fieldSettings={fieldSettings}
           />
 
           <MatriculaSupportFilesSection value={files} onChange={setFiles} invalidFields={missingFields} />

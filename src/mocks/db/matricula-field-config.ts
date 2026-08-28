@@ -1,24 +1,32 @@
-import type { MatriculaFieldConfigMap } from "@/features/coverage/api/types/matricula"
-import {
-  MATRICULA_FIELD_CATALOG,
-  createDefaultMatriculaFieldConfig,
-} from "@/features/coverage/utils/matricula-field-catalog"
+import { MATRICULA_FIELD_CATALOG } from "@/features/coverage/utils/matricula-field-catalog"
+import type { MatriculaFieldConfig } from "@/features/coverage/api/types/matricula"
 
-export const matriculaFieldConfigDb: MatriculaFieldConfigMap = createDefaultMatriculaFieldConfig()
+// `fkCampo` es ficticio (1..N en el orden del catálogo) — el backend real
+// asigna los suyos, esto solo necesita ser estable dentro de una sesión de
+// mock. Mismo EE/valores de ejemplo que usa la colección Postman de
+// referencia ("PIGSE QA TEST EE").
+let fkCampoSeq = 1
 
-const LOCKED_FIELD_IDS = new Set(
-  MATRICULA_FIELD_CATALOG.flatMap((section) => section.fields)
-    .filter((field) => field.locked)
-    .map((field) => field.id),
-)
+export const matriculaFieldConfigDb: MatriculaFieldConfig = {
+  fkEstablecimiento: 871,
+  establecimiento: "PIGSE QA TEST EE",
+  pkMatriculaConfig: 81,
+  secciones: MATRICULA_FIELD_CATALOG.map((section) => ({
+    seccion: section.title,
+    campos: section.fields.map((field) => ({
+      fkCampo: fkCampoSeq++,
+      nombre: field.label,
+      editable: !field.locked,
+      requerido: Boolean(field.locked),
+      visible: true,
+    })),
+  })),
+}
 
-// El front ya deshabilita los switches de los campos `locked`, pero el mock
-// igual los fuerza acá — un PUT armado a mano no debería poder des-requerir
-// Sede, Documento del estudiante, etc.
-export function updateMatriculaFieldConfig(fields: MatriculaFieldConfigMap) {
-  for (const [id, setting] of Object.entries(fields)) {
-    matriculaFieldConfigDb[id] = LOCKED_FIELD_IDS.has(id)
-      ? { required: true, visible: true }
-      : setting
+export function findMatriculaConfigCampo(fkCampo: number) {
+  for (const seccion of matriculaFieldConfigDb.secciones) {
+    const campo = seccion.campos.find((c) => c.fkCampo === fkCampo)
+    if (campo) return campo
   }
+  return null
 }

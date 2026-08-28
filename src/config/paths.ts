@@ -151,6 +151,7 @@ export const paths = {
           getHref: () => "/app/establecimiento-educativo/periodos",
       },
   },
+
     // Las dos vistas del Planeador (actividades y unidades temáticas)
     // cuelgan del mismo prefijo `planeador`, igual que las de registro de
     // actividad: así el ítem del menú se marca activo en cualquiera de las
@@ -170,6 +171,19 @@ export const paths = {
     planeadorUnidades: {
       path: "planeador/unidades",
       getHref: () => "/app/planeador/unidades",
+    },
+    gestionAcademicaInformes: {
+      path: "gestion-academica/informes",
+      getHref: () => "/app/gestion-academica/informes",
+    },
+    gestionAcademicaReferentesCurriculares: {
+      path: "gestion-academica/referentes-curriculares",
+      getHref: () => "/app/gestion-academica/referentes-curriculares",
+    },
+    gestionAcademicaReferentesCurricularesDetalle: {
+      path: "gestion-academica/referentes-curriculares/detalle/$curricularReferenceId",
+      getHref: (curricularReferenceId: number | string) =>
+        `/app/gestion-academica/referentes-curriculares/detalle/${curricularReferenceId}`,
     },
   },
 } as const

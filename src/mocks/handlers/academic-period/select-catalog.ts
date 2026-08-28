@@ -6,6 +6,8 @@ import { evaluationPeriodStatusesDb } from "../../db/academic-period/evaluation-
 import { ratingScaleTypesDb } from "../../db/academic-period/rating-scale-types"
 import { ratingSymbolsDb } from "../../db/academic-period/rating-symbols"
 import { metodologiasDb } from "../../db/academic-period/metodologias"
+import { GRADES } from "../../db/reservations"
+import { formatGrade } from "@/features/coverage/api/ui-mappings"
 
 // Mismo shape crudo que el catálogo genérico real
 // (`GET /eval-col/select/:CATEGORIA`): `{rows: [{pk_lista_valor, nombre, valor, accion}]}`.
@@ -72,6 +74,16 @@ const CATALOGS_BY_CATEGORIA: Record<string, () => SelectCategoryRow[]> = {
       pk_lista_valor: i + 1,
       nombre: option.label,
       valor: option.key,
+      accion: null,
+    })),
+  // Alimenta `use-grados-catalog.ts` (Períodos Académicos) y, ahora, el
+  // select de Grado de "Reserva de cupo" (`use-reservation-catalogs-
+  // query.ts`) — `VALOR` es el que matchea el orden real (0 = transición).
+  GRADOS: () =>
+    GRADES.map((grade, i) => ({
+      pk_lista_valor: i + 1,
+      nombre: formatGrade(grade),
+      valor: String(grade),
       accion: null,
     })),
 }

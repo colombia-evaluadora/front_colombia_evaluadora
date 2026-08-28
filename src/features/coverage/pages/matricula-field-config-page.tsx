@@ -17,14 +17,14 @@ import { CheckIcon, SpinnerIcon } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
 
 import { paths } from "@/config/paths"
+import { getErrorMessage } from "@/lib/api-client"
 import { useMatriculaFieldConfigQuery } from "@/features/coverage/api/query/use-matricula-field-config-query"
-import { useUpdateMatriculaFieldConfig } from "@/features/coverage/api/mutations/update-matricula-field-config"
-import { MatriculaFormSection } from "@/features/coverage/components/forms/form-create-matricula"
 import {
-  MATRICULA_FIELD_CATALOG,
-  type MatriculaFieldSetting,
-} from "@/features/coverage/utils/matricula-field-catalog"
-import type { MatriculaFieldConfigMap } from "@/features/coverage/api/types/matricula"
+  useUpdateMatriculaFieldConfig,
+  type MatriculaFieldConfigChange,
+} from "@/features/coverage/api/mutations/update-matricula-field-config"
+import { MatriculaFormSection } from "@/features/coverage/components/forms/form-create-matricula"
+import type { MatriculaConfigCampo, MatriculaConfigSeccion } from "@/features/coverage/api/types/matricula"
 
 // Switch redondo — mismo criterio que el toggle "Habilitar reserva de
 // cupos" del formulario de periodo académico (el `Switch` base es
@@ -32,19 +32,17 @@ import type { MatriculaFieldConfigMap } from "@/features/coverage/api/types/matr
 const ROUND_SWITCH_CLASSNAME = "rounded-full [&_[data-slot=switch-thumb]]:rounded-full"
 
 interface FieldConfigBoxProps {
-  id: string
-  label: string
-  setting: MatriculaFieldSetting
-  /** No se puede des-requerir ni ocultar (ver `MatriculaFieldCatalogEntry.
-   * locked`) — ambos switches se ven pero quedan fijos y deshabilitados. */
-  locked?: boolean
-  onChange: (setting: MatriculaFieldSetting) => void
+  campo: MatriculaConfigCampo
+  onChange: (patch: { requerido: boolean; visible: boolean }) => void
 }
 
-function FieldConfigBox({ id, label, setting, locked, onChange }: FieldConfigBoxProps) {
+function FieldConfigBox({ campo, onChange }: FieldConfigBoxProps) {
+  const id = `campo-${campo.fkCampo}`
+  const locked = !campo.editable
+
   return (
     <Field orientation="vertical" variant="outlined" className="w-full gap-2">
-      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+      <FieldLabel htmlFor={id}>{campo.nombre}</FieldLabel>
       <div
         className={cn(
           inputVariants({ variant: "outlined", size: "sm" }),
@@ -57,9 +55,9 @@ function FieldConfigBox({ id, label, setting, locked, onChange }: FieldConfigBox
             id={`${id}-required`}
             size="sm"
             className={ROUND_SWITCH_CLASSNAME}
-            checked={setting.required}
-            disabled={locked || !setting.visible}
-            onCheckedChange={(required) => onChange({ ...setting, required })}
+            checked={campo.requerido}
+            disabled={locked || !campo.visible}
+            onCheckedChange={(requerido) => onChange({ requerido, visible: campo.visible })}
           />
         </label>
         <label htmlFor={`${id}-visible`} className="flex items-center gap-2">
@@ -68,10 +66,10 @@ function FieldConfigBox({ id, label, setting, locked, onChange }: FieldConfigBox
             id={`${id}-visible`}
             size="sm"
             className={ROUND_SWITCH_CLASSNAME}
-            checked={setting.visible}
+            checked={campo.visible}
             disabled={locked}
             onCheckedChange={(visible) =>
-              onChange({ visible, required: visible ? setting.required : false })
+              onChange({ visible, requerido: visible ? campo.requerido : false })
             }
           />
         </label>
@@ -80,34 +78,66 @@ function FieldConfigBox({ id, label, setting, locked, onChange }: FieldConfigBox
   )
 }
 
+/** Compara contra la última config traída del backend — solo los campos que
+ * cambiaron van en el `PUT` (uno por campo, ver `updateMatriculaFieldConfig`). */
+function collectChanges(
+  original: MatriculaConfigSeccion[],
+  edited: MatriculaConfigSeccion[],
+): MatriculaFieldConfigChange[] {
+  const originalById = new Map(
+    original.flatMap((seccion) => seccion.campos).map((campo) => [campo.fkCampo, campo]),
+  )
+
+  const changes: MatriculaFieldConfigChange[] = []
+  for (const campo of edited.flatMap((seccion) => seccion.campos)) {
+    const before = originalById.get(campo.fkCampo)
+    if (!before) continue
+    if (before.requerido !== campo.requerido || before.visible !== campo.visible) {
+      changes.push({
+        fkCampo: campo.fkCampo,
+        patch: { requerido: campo.requerido, visible: campo.visible },
+      })
+    }
+  }
+  return changes
+}
+
 export function MatriculaFieldConfigPage() {
   const { data, isPending, isError } = useMatriculaFieldConfigQuery()
-  const [fields, setFields] = useState<MatriculaFieldConfigMap | null>(null)
+  const [secciones, setSecciones] = useState<MatriculaConfigSeccion[] | null>(null)
 
   useEffect(() => {
-    if (data?.status === "ok" && fields === null) {
-      setFields(data.fields)
+    if (data && secciones === null) {
+      setSecciones(data.secciones)
     }
-  }, [data, fields])
+  }, [data, secciones])
 
   const updateConfig = useUpdateMatriculaFieldConfig({
     mutationConfig: {
       onSuccess: (result) => {
-        if (result.status === "error") {
-          toast.error(result.message)
-          return
-        }
-        toast.success(result.message)
+        setSecciones(result.secciones)
+        toast.success("Configuración guardada.")
       },
-      onError: () => {
-        toast.error("No se pudo guardar la configuración.")
+      onError: (error) => {
+        toast.error(getErrorMessage(error))
       },
     },
   })
 
-  function patchField(id: string, setting: MatriculaFieldSetting) {
-    setFields((prev) => (prev ? { ...prev, [id]: setting } : prev))
+  function patchField(fkCampo: number, patch: { requerido: boolean; visible: boolean }) {
+    setSecciones((prev) =>
+      prev
+        ? prev.map((seccion) => ({
+            ...seccion,
+            campos: seccion.campos.map((campo) =>
+              campo.fkCampo === fkCampo ? { ...campo, ...patch } : campo,
+            ),
+          }))
+        : prev,
+    )
   }
+
+  const changes = data && secciones ? collectChanges(data.secciones, secciones) : []
 
   return (
     <TableScreen>
@@ -151,21 +181,14 @@ export function MatriculaFieldConfigPage() {
             </div>
           )}
 
-          {fields &&
-            MATRICULA_FIELD_CATALOG.map((section) => (
-              <MatriculaFormSection key={section.title} title={section.title}>
-                {section.fields.map((field) => (
+          {secciones &&
+            secciones.map((seccion) => (
+              <MatriculaFormSection key={seccion.seccion} title={seccion.seccion}>
+                {seccion.campos.map((campo) => (
                   <FieldConfigBox
-                    key={field.id}
-                    id={field.id}
-                    label={field.label}
-                    locked={field.locked}
-                    setting={
-                      field.locked
-                        ? { required: true, visible: true }
-                        : (fields[field.id] ?? { required: false, visible: true })
-                    }
-                    onChange={(setting) => patchField(field.id, setting)}
+                    key={campo.fkCampo}
+                    campo={campo}
+                    onChange={(patch) => patchField(campo.fkCampo, patch)}
                   />
                 ))}
               </MatriculaFormSection>
@@ -173,7 +196,7 @@ export function MatriculaFieldConfigPage() {
         </div>
       </TableScreenBody>
 
-      {fields && (
+      {secciones && (
         <TableScreenFooter>
           <p className="text-sm text-muted-foreground">
             Los cambios aplican al próximo formulario de matrícula que se abra.
@@ -183,8 +206,8 @@ export function MatriculaFieldConfigPage() {
             variant="fill"
             color="primary"
             size="sm"
-            disabled={updateConfig.isPending}
-            onClick={() => updateConfig.mutate(fields)}
+            disabled={updateConfig.isPending || changes.length === 0}
+            onClick={() => updateConfig.mutate(changes)}
           >
             {updateConfig.isPending ? (
               <SpinnerIcon data-icon="inline-start" className="animate-spin" />

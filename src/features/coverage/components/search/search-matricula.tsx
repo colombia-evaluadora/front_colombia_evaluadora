@@ -14,10 +14,9 @@ import {
 
 import { MATRICULA_STATUSES, type MatriculaFiltersFormInput } from "@/features/coverage/api/schema"
 import { MATRICULA_STATUS_LABELS } from "@/features/coverage/api/ui-mappings-matricula"
-import { formatGrade, SHIFT_LABELS } from "@/features/coverage/api/ui-mappings"
+import { formatGrade } from "@/features/coverage/api/ui-mappings"
 import { useReservationCatalogsQuery } from "@/features/coverage/api/query/use-reservation-catalogs-query"
 import { useMatriculaDependentCatalogsQuery } from "@/features/coverage/api/query/use-matricula-dependent-catalogs-query"
-import type { Shift } from "@/features/coverage/api/types/reservation"
 import { toSelectItemsMap } from "@/lib/catalog-options"
 
 const SEARCH_INPUT_ID = "matricula-search"
@@ -52,7 +51,7 @@ export function SearchMatricula({
   const { data: catalogs } = useReservationCatalogsQuery()
   const { data: dependentCatalogs } = useMatriculaDependentCatalogsQuery({
     campus: draftCampus || undefined,
-    shift: (draftShift || undefined) as Shift | undefined,
+    shift: draftShift || undefined,
     grade: draftGrade ? Number(draftGrade) : undefined,
   })
 
@@ -124,7 +123,7 @@ export function SearchMatricula({
   const campusItems = [{ value: "", label: "Todas" }, ...(catalogs?.campuses ?? []).map((c) => ({ value: c, label: c }))]
   const shiftItems = [
     { value: "", label: "Todas" },
-    ...(dependentCatalogs?.shifts ?? []).map((s) => ({ value: s, label: SHIFT_LABELS[s] })),
+    ...(dependentCatalogs?.shifts ?? []).map((s) => ({ value: s, label: s })),
   ]
   const gradeItems = [
     { value: "", label: "Todos" },
