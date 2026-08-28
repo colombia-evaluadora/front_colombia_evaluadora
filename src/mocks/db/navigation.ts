@@ -178,24 +178,30 @@ export const navigationMenu: MockMenu[] = [
     idParent: 17,
     roleIds: [1, 2],
   },
+  // Ids 23-26, 40: grupo "Gestión Académica", unificado entre el Planeador
+  // (real) y Referentes curriculares (real). "Asistencia" sigue siendo un
+  // placeholder visible — apunta a una ruta que aún no tiene página; el
+  // handler de roles lo acepta como string y el router lo rechazará con 404
+  // cuando alguien le haga click, que es el comportamiento esperado hasta
+  // que llegue.
   {
-    id: 35,
+    id: 23,
     name: "Gestión Académica",
-    icon: "Graduation-Cap-Icon",
-    path: "/app/gestion-academica/planeador",
+    icon: "GraduationCap-Icon",
+    path: "/app/planeador/actividades",
     menuOrder: 3,
     type: "GROUP",
     idParent: null,
     roleIds: [1, 2],
   },
   {
-    id: 38,
+    id: 24,
     name: "Planeador",
     icon: "",
-    path: "/app/gestion-academica/planeador",
+    path: "/app/planeador/actividades",
     menuOrder: 0,
     type: "ITEM",
-    idParent: 35,
+    idParent: 23,
     roleIds: [1, 2],
   },
   {
@@ -205,7 +211,7 @@ export const navigationMenu: MockMenu[] = [
     path: "/app/gestion-academica/informes",
     menuOrder: 1,
     type: "ITEM",
-    idParent: 35,
+    idParent: 23,
     roleIds: [1, 2],
   },
   {
@@ -215,7 +221,17 @@ export const navigationMenu: MockMenu[] = [
     path: "/app/gestion-academica/referentes-curriculares",
     menuOrder: 2,
     type: "ITEM",
-    idParent: 35,
+    idParent: 23,
+    roleIds: [1, 2],
+  },
+  {
+    id: 26,
+    name: "Asistencia",
+    icon: "",
+    path: "/app/asistencia",
+    menuOrder: 3,
+    type: "ITEM",
+    idParent: 23,
     roleIds: [1, 2],
   },
 ]
