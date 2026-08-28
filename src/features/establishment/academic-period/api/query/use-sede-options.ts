@@ -12,7 +12,7 @@ import type { SedeOption, SedesOptionsResponse } from "../types/sede-option"
 // legacy). El otro consumidor de ese hook legacy es el dialog de permisos de
 // funcionarios (`dialog-manage.tsx`), que se queda en el endpoint viejo por
 // ahora — no se toca UI fuera del módulo.
-async function fetchSedeOptions(): Promise<SedeOption[]> {
+export async function fetchSedeOptions(): Promise<SedeOption[]> {
   const raw: SedesOptionsResponse = await api.get(
     "/eval-col/establecimientos/sedes/opciones",
   )

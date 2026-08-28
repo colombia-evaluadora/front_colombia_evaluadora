@@ -109,13 +109,20 @@ export type CreateReservationFormValues = z.infer<typeof createReservationFormSc
 
 // ── Matrícula ────────────────────────────────────────────────────────────────
 
+// Catálogo real de `ESTADO_MATRICULA` (TLISTA_VALOR) — ver `MatriculaStatus`
+// en `types/matricula.ts`.
 export const MATRICULA_STATUSES = [
   "cursando",
   "aprobado",
   "reprobado",
-  "promovido",
-  "reubicado",
   "retirado",
+  "graduado",
+  "promovido_anticipadamente",
+  "trasladado",
+  "sin_definir",
+  "desertor",
+  "esperando_aprobacion",
+  "rechazado",
 ] as const
 
 // Filtros del buscador: mismo criterio que `establishmentFiltersFormSchema`
@@ -127,7 +134,9 @@ export const matriculaFiltersFormSchema = z.object({
   search: z.string(),
   statuses: z.array(z.enum(MATRICULA_STATUSES)),
   campus: z.string(),
-  shift: z.enum(SHIFTS).or(z.literal("")),
+  // No es el `Shift` de reservas — la Jornada de matrícula sale del catálogo
+  // de `TLISTA_VALOR` (ver `types/matricula.ts`), sin un conjunto fijo.
+  shift: z.string(),
   grade: z.string(),
   group: z.string(),
 })
@@ -142,7 +151,7 @@ export const matriculaSearchSchema = z.object({
   search: z.string().optional().catch(undefined),
   statuses: z.array(z.enum(MATRICULA_STATUSES)).optional().catch(undefined),
   campus: z.string().optional().catch(undefined),
-  shift: z.enum(SHIFTS).optional().catch(undefined),
+  shift: z.string().optional().catch(undefined),
   grade: z.coerce.number().optional().catch(undefined),
   group: z.string().optional().catch(undefined),
 })

@@ -11,11 +11,11 @@ import {
   updateMatriculaRow,
 } from "@/mocks/db/matricula"
 import {
+  findMatriculaConfigCampo,
   matriculaFieldConfigDb,
-  updateMatriculaFieldConfig,
 } from "@/mocks/db/matricula-field-config"
 import { CAMPUSES, GRADES, GROUPS } from "@/mocks/db/reservations"
-import { SHIFTS } from "@/features/coverage/api/schema"
+import { jornadasDb } from "@/mocks/db/academic-period/jornadas"
 import type {
   BulkMatriculaChangeRequest,
   BulkMatriculaChangeResult,
@@ -28,14 +28,31 @@ import type {
   MatriculaDependentCatalogsResponse,
   MatriculaDetailResult,
   MatriculaDocumentCheckResult,
-  MatriculaFieldConfigMap,
-  MatriculaFieldConfigResult,
   MatriculaHomologationInfo,
   MatriculaMutationResult,
   MatriculaQueryFilters,
   MatriculaQueryRequest,
-  MatriculaQueryResponse,
 } from "@/features/coverage/api/types/matricula"
+
+// snake_case, como manda el backend real — camelCase es solo del lado front
+// (ver `toMatriculaFieldConfig` en `use-matricula-field-config-query.ts`).
+function toRawMatriculaFieldConfig() {
+  return {
+    fk_establecimiento: matriculaFieldConfigDb.fkEstablecimiento,
+    establecimiento: matriculaFieldConfigDb.establecimiento,
+    pk_matricula_config: matriculaFieldConfigDb.pkMatriculaConfig,
+    secciones: matriculaFieldConfigDb.secciones.map((seccion) => ({
+      seccion: seccion.seccion,
+      campos: seccion.campos.map((campo) => ({
+        fk_campo: campo.fkCampo,
+        nombre: campo.nombre,
+        editable: campo.editable,
+        requerido: campo.requerido,
+        visible: campo.visible,
+      })),
+    })),
+  }
+}
 
 // Hash determinista y estable (no criptográfico) — solo para variar
 // "aleatoriamente" pero siempre igual el resultado según el string de
@@ -63,6 +80,43 @@ const EXPORT_FORMAT_LABELS: Record<ExportFormat, string> = {
 
 function matches(value: string, needle: string): boolean {
   return value.toLowerCase().includes(needle.toLowerCase())
+}
+
+// Body plano que manda `toListRequest` en `use-matricula-query.ts`.
+interface MatriculaListRequestBody {
+  SEARCH: string | null
+  STATUSES: Matricula["status"][] | null
+  CAMPUS: string | null
+  SHIFT: string | null
+  GRADE: number | null
+  GROUP: string | null
+  PAGEINDEX: number
+  PAGESIZE: number
+  SORTBY: string | null
+  SORTDIR: "asc" | "desc" | null
+}
+
+// camelCase -> snake_case, como manda fn_matricula_listar (V200) — mismo
+// criterio que `toRawMatriculaFieldConfig` arriba. `total_count` viaja
+// repetido por fila (window count real), no como envelope aparte.
+function toRawMatriculaRow(row: Matricula, totalCount: number) {
+  return {
+    id: Number(row.id),
+    document_number: row.documentNumber,
+    first_name: row.firstName,
+    last_name: row.lastName,
+    institution: row.institution,
+    campus: row.campus,
+    shift: row.shift,
+    education_level: row.educationLevel,
+    grade: row.grade,
+    grupo: row.group,
+    enrollment_date: row.enrollmentDate,
+    guardian: row.guardian || null,
+    status: row.status,
+    has_grades: row.hasGrades,
+    total_count: totalCount,
+  }
 }
 
 function applyFilters(rows: Matricula[], filters: MatriculaQueryFilters): Matricula[] {
@@ -116,7 +170,10 @@ export const matriculaHandlers = [
 
     const { campus, shift, grade } = (await request.json()) as MatriculaDependentCatalogsRequest
 
-    let shifts = [...SHIFTS]
+    // Jornada sale del catálogo real de `TLISTA_VALOR` (mismo que Períodos
+    // Académicos), no del `Shift` fijo de reservas — ver
+    // `docs/matricula-listado-endpoint-contract.md`.
+    let shifts = jornadasDb.map((jornada) => jornada.name)
     if (campus && shifts.length > 1) {
       // Simula que no todas las sedes ofrecen todas las jornadas, sin dejar
       // la lista vacía.
@@ -151,23 +208,37 @@ export const matriculaHandlers = [
     return HttpResponse.json<MatriculaDependentCatalogsResponse>({ shifts, grades, groups })
   }),
 
-  http.post("*/api/coverage/matricula/query", async ({ request }) => {
+  // Endpoint real: /eval-col/matricula/query (V200, fn_matricula_listar) —
+  // body PLANO en UPPER_SNAKE (el motor de queries de SSO no soporta un
+  // `filters{}` anidado ni indexar `sorting[]`, ver `use-matricula-query.ts`
+  // / `toListRequest`), y la respuesta es filas snake_case con `total_count`
+  // repetido por fila (window count) — mismo shape que devuelve la función,
+  // no el envelope `{rows, pageCount, totalCount}` que arma el front.
+  http.post("*/api/eval-col/matricula/query", async ({ request }) => {
     await delay(250)
 
-    const { filters, sorting, pageIndex, pageSize } =
-      (await request.json()) as MatriculaQueryRequest
+    const body = (await request.json()) as MatriculaListRequestBody
+    const filters: MatriculaQueryFilters = {
+      search: body.SEARCH ?? undefined,
+      statuses: body.STATUSES ?? undefined,
+      campus: body.CAMPUS ?? undefined,
+      shift: body.SHIFT ?? undefined,
+      grade: body.GRADE ?? undefined,
+      group: body.GROUP ?? undefined,
+    }
+    const sorting: MatriculaQueryRequest["sorting"] = body.SORTBY
+      ? [{ id: body.SORTBY, desc: body.SORTDIR === "desc" }]
+      : []
 
     const filtered = applySorting(applyFilters(matriculaDb, filters), sorting)
 
     const totalCount = filtered.length
-    const safePageSize = pageSize > 0 ? pageSize : 10
-    const pageCount = Math.max(1, Math.ceil(totalCount / safePageSize))
-    const start = pageIndex * safePageSize
+    const safePageSize = body.PAGESIZE > 0 ? body.PAGESIZE : 10
+    const start = body.PAGEINDEX * safePageSize
+    const page = filtered.slice(start, start + safePageSize)
 
-    return HttpResponse.json<MatriculaQueryResponse>({
-      rows: filtered.slice(start, start + safePageSize),
-      pageCount,
-      totalCount,
+    return HttpResponse.json({
+      rows: page.map((row) => toRawMatriculaRow(row, totalCount)),
     })
   }),
 
@@ -232,31 +303,47 @@ export const matriculaHandlers = [
     return HttpResponse.json<CreateMatriculaResult>({ matricula, homologation })
   }),
 
-  // Va ANTES de `GET /matricula/:id`: MSW matchea handlers en el orden en que
-  // se registran (no por especificidad, a diferencia del router), así que si
-  // "config" quedara después caería en el `:id` dinámico.
-  http.get("*/api/coverage/matricula/config", async () => {
+  // Endpoint real (`eval-col`, no `coverage`) — ver colección Postman "SSO —
+  // configuración de matrícula". La respuesta se arma en snake_case y
+  // envuelta en `{rows:[{config:{...}}]}` a propósito, igual que el backend
+  // real: es lo que `use-matricula-field-config-query.ts` espera desenvolver.
+  http.get("*/api/eval-col/matricula/configuracion", async () => {
     await delay(200)
 
-    return HttpResponse.json<MatriculaFieldConfigResult>({
-      status: "ok",
-      message: "",
-      fields: matriculaFieldConfigDb,
-    })
+    return HttpResponse.json({ rows: [{ config: toRawMatriculaFieldConfig() }] })
   }),
 
-  http.put("*/api/coverage/matricula/config", async ({ request }) => {
-    await delay(250)
+  http.put(
+    "*/api/eval-col/matricula/configuracion/campo/:campoId",
+    async ({ params, request }) => {
+      await delay(250)
 
-    const fields = (await request.json()) as MatriculaFieldConfigMap
-    updateMatriculaFieldConfig(fields)
+      const fkCampo = Number(params.campoId)
+      const campo = findMatriculaConfigCampo(fkCampo)
+      if (!campo) {
+        return HttpResponse.json({ message: `El campo ${fkCampo} no existe.` }, { status: 409 })
+      }
 
-    return HttpResponse.json<MatriculaFieldConfigResult>({
-      status: "ok",
-      message: "Configuración guardada.",
-      fields: matriculaFieldConfigDb,
-    })
-  }),
+      const body = (await request.json()) as { requerido?: boolean; visible?: boolean }
+      if (body.requerido === undefined && body.visible === undefined) {
+        return HttpResponse.json(
+          { message: "Hay que mandar al menos uno de requerido/visible." },
+          { status: 400 },
+        )
+      }
+      if (!campo.editable) {
+        return HttpResponse.json(
+          { message: `El campo "${campo.nombre}" no es editable.` },
+          { status: 403 },
+        )
+      }
+
+      if (body.requerido !== undefined) campo.requerido = body.requerido
+      if (body.visible !== undefined) campo.visible = body.visible
+
+      return HttpResponse.json({ rows: [{ config: toRawMatriculaFieldConfig() }] })
+    },
+  ),
 
   // Misma razón que "config": ruta estática, tiene que ir antes del `:id`.
   http.get("*/api/coverage/matricula/check", async ({ request }) => {

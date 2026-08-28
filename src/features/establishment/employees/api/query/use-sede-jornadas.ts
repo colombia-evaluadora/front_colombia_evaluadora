@@ -25,7 +25,7 @@ export interface SedeJornadaOption {
   nombre: string
 }
 
-async function fetchSedeJornadasActivas(sedeId: number): Promise<SedeJornadaOption[]> {
+export async function fetchSedeJornadasActivas(sedeId: number): Promise<SedeJornadaOption[]> {
   const raw = await api.query<SedeJornadasResponse>("/eval-col/sedes/jornadas-activas", {
     FK_SEDE: sedeId,
   })
