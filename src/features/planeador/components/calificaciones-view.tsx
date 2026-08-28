@@ -297,7 +297,7 @@ function InstrumentoPopover({ instrumento }: { instrumento: string }) {
             <SelectContent>
               <SelectItem value="presencial">Presencial</SelectItem>
               <SelectItem value="virtual">Virtual</SelectItem>
-              <SelectItem value="hibrida">Híbrida</SelectItem>
+              <SelectItem value="mixta">Mixta</SelectItem>
             </SelectContent>
           </Select>
         </Field>
