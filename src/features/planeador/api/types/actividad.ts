@@ -14,9 +14,9 @@ export type ActividadStatus = "pending" | "in-progress" | "completed" | "cancell
 
 export type ActividadTipo = "Proyecto" | "Taller" | "Evaluación" | "Actividad"
 
-export type Modalidad = "Presencial" | "Virtual" | "Híbrida"
+export type Modalidad = "Presencial" | "Virtual" | "Mixta"
 
-export type RecursoTipo = "URL" | "Sitio web"
+export type RecursoTipo = "URL" | "Unidad virtual" | "Archivo"
 
 export interface Recurso {
   id: string
@@ -27,13 +27,26 @@ export interface Recurso {
   descripcion: string
 }
 
+/**
+ * Nivel intermedio de desempeño dentro de un criterio de rúbrica. Cada nivel
+ * tiene un nombre (la etiqueta que aparece a la izquierda —estilo "Bueno",
+ * "Aceptable"—) y una descripción opcional (lo que se muestra en el
+ * textarea/Input a la derecha). Vacío si la rúbrica solo registra el nivel
+ * "excelente" sin niveles intermedios.
+ */
+export interface Nivel {
+  id: string
+  nombre: string
+  descripcion: string
+}
+
 export interface Criterio {
   id: string
   nombre: string
   excelente: string
   /** Niveles intermedios de desempeño (entre "bajo" y "excelente"). Vacío si
    *  la rúbrica solo tiene la descripción del nivel más alto. */
-  niveles: string[]
+  niveles: Nivel[]
   /** 0-100 */
   ponderacion: number
 }
@@ -52,13 +65,18 @@ export interface Unidad {
  * Adaptación curricular aplicada a una actividad. Estructura de campos:
  * `tipo` y `aplicaA` son selects con `Seleccione` como placeholder;
  * `descripcion` es textarea con tope de 500 caracteres; `versionModificada`
- * es Sí/No (default No — la mayoría de las adaptaciones no tocan el
- * instrumento de evaluación).
+ * es uno de cuatro valores ("no", "archivo", "enlace", "biblioteca") y
+ * define qué campo auxiliar se muestra abajo:
+ * - "no" → no muestra nada.
+ * - "archivo" → `versionModificadaRef` carga el archivo local.
+ * - "enlace" → `versionModificadaRef` es la URL.
+ * - "biblioteca" → `versionModificadaRef` es el id de la plantilla elegida.
  */
 export interface Adaptacion {
   tipo: string
   descripcion: string
-  versionModificada: "si" | "no" | ""
+  versionModificada: "no" | "archivo" | "enlace" | "biblioteca" | ""
+  versionModificadaRef: string
   aplicaA: string
 }
 

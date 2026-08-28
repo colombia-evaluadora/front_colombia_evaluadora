@@ -5,6 +5,7 @@ import { useForm, useSelector } from "@tanstack/react-form"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Field, FieldLabel } from "@/components/ui/field"
+import { cn } from "@/lib/utils"
 import { Input } from "@/components/ui/input"
 import {
   Popover,
@@ -20,6 +21,7 @@ import {
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { PlusCircleIcon, TrashIcon } from "@/components/ui/icons"
+import { FileUploadOutlinedIcon, ImageIcon } from "@/components/ui/icons"
 
 import type { Actividad, Adaptacion, Criterio, Recurso } from "@/features/planeador/api/types/actividad"
 import type { UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
@@ -161,8 +163,15 @@ function IdentificacionSection({
 
         <form.Field name="unidad">
           {(field) => (
-            <div className="flex items-end gap-2">
-              <Field variant="outlined" className="min-w-0 flex-1">
+            // `gap-0` + redondeado y borde derechos del `SelectTrigger`
+            // anulados (vía descendiente del `Field`) + redondeado y borde
+            // izquierdos del botón del popover anulados → los dos controles
+            // se leen como un único split-button.
+            <div className="flex items-end gap-0">
+              <Field
+                variant="outlined"
+                className="min-w-0 flex-1 [&_[data-slot=select-trigger]]:rounded-r-none [&_[data-slot=select-trigger]]:border-r-0"
+              >
                 <FieldLabel htmlFor={field.name}>Unidad temática asociada</FieldLabel>
                 <Select
                   value={field.state.value.id}
@@ -185,6 +194,7 @@ function IdentificacionSection({
                 </Select>
               </Field>
               <CrearUnidadPopover
+                className="rounded-l-none border-l-0"
                 onCreate={(nombre) => {
                   // Stub: en esta iteración no persiste la unidad nueva —
                   // sólo se asigna al campo con un id temporal para que la
@@ -357,6 +367,17 @@ function RecursoItem({
   onChange: (next: Recurso) => void
   onRemove: () => void
 }) {
+  // El campo "fuente" cambia de icono (y levemente de input) según el
+  // tipo de recurso: para URL es solo un input de enlace; para Unidad
+  // virtual muestra el ícono de imagen; para Archivo muestra el ícono de
+  // upload (lo que abre el file picker del SO).
+  const FuenteIcon =
+    recurso.tipo === "Unidad virtual"
+      ? ImageIcon
+      : recurso.tipo === "Archivo"
+        ? FileUploadOutlinedIcon
+        : null
+
   return (
     <li className="rounded-md border bg-card p-3">
       <div className="flex items-center justify-between">
@@ -377,26 +398,34 @@ function RecursoItem({
         <Field variant="outlined">
           <FieldLabel>Tipo</FieldLabel>
           <Select
-            value={recurso.tipo}
-            onValueChange={(v) => onChange({ ...recurso, tipo: v as Recurso["tipo"] })}
+            value={recurso.tipo as never}
+            onValueChange={(v) => onChange({ ...recurso, tipo: (v ?? "") as Recurso["tipo"] })}
           >
             <SelectTrigger>
-              <SelectValue />
+              <SelectValue placeholder="Seleccione" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="__none__">Seleccione</SelectItem>
               <SelectItem value="URL">URL / Sitio web</SelectItem>
-              <SelectItem value="Sitio web">Sitio web</SelectItem>
+              <SelectItem value="Unidad virtual">Unidad virtual / repositorio</SelectItem>
+              <SelectItem value="Archivo">Archivo en PC</SelectItem>
             </SelectContent>
           </Select>
         </Field>
 
         <Field variant="outlined">
-          <FieldLabel>URL</FieldLabel>
-          <Input
-            type="url"
-            value={recurso.url}
-            onChange={(e) => onChange({ ...recurso, url: e.target.value })}
-          />
+          <FieldLabel>Fuente</FieldLabel>
+          <div className="relative">
+            {FuenteIcon && (
+              <FuenteIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+            )}
+            <Input
+              type={recurso.tipo === "Archivo" ? "file" : "url"}
+              value={recurso.url}
+              onChange={(e) => onChange({ ...recurso, url: e.target.value })}
+              className={FuenteIcon ? "pl-9" : undefined}
+            />
+          </div>
         </Field>
       </div>
 
@@ -483,12 +512,13 @@ function ProgramacionSection({ form }: { form: FormActividad }) {
                 onValueChange={(value) => field.handleChange(value as Actividad["modalidad"])}
               >
                 <SelectTrigger id={field.name}>
-                  <SelectValue />
+                  <SelectValue placeholder="Seleccione" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="__none__">Seleccione</SelectItem>
                   <SelectItem value="Presencial">Presencial</SelectItem>
                   <SelectItem value="Virtual">Virtual</SelectItem>
-                  <SelectItem value="Híbrida">Mixta</SelectItem>
+                  <SelectItem value="Mixta">Mixta</SelectItem>
                 </SelectContent>
               </Select>
             </Field>
@@ -657,8 +687,11 @@ function CriterioItem({
 
       {/* `Excelente` va como label estático a la izquierda del textarea:
           la captura lo muestra pegado al borde izquierdo, no flotando
-          dentro del outline del textarea. */}
-      <div className="mt-4 grid items-start gap-3 sm:grid-cols-[auto_1fr_auto]">
+          dentro del outline del textarea. La columna del label va con
+          `min-w-28` para que todas las filas del criterio (Excelente +
+          niveles) compartan el mismo ancho de label y los textareas
+          queden alineados a la derecha. */}
+      <div className="mt-4 grid items-start gap-3 sm:grid-cols-[minmax(7rem,auto)_minmax(0,1fr)_auto]">
         <p className="pt-2 text-sm font-semibold">Excelente</p>
         <Textarea
           className={TEXTAREA_OUTLINED}
@@ -679,20 +712,28 @@ function CriterioItem({
         </Button>
       </div>
 
-      {/* `Niveles de desempeño`: el outline envuelve un `Input` con
-          placeholder "Agregar" y un botón `+ Agregar nivel` pegado al
-          borde derecho del mismo field. La lista de niveles ya creados va
-          ENCIMA, en su propio sub-bloque: la captura muestra los niveles
-          uno abajo del otro con su tachito, arriba del outlined. */}
-      <ul className="mt-4 flex flex-col gap-2">
+      {/* Lista de niveles ya creados. Cada nivel sigue el mismo patrón que
+          el bloque "Excelente" de arriba: el `nombre` (la etiqueta que el
+          usuario tipeó al confirmar con "Agregar nivel") va como label
+          estático a la izquierda —estilo "Bueno", "Aceptable"—, y la
+          `descripcion` se edita en un `Textarea` al medio. El tachito va
+          a la derecha, igual que en el bloque de "Excelente". El primer
+          track del grid usa el mismo `minmax(7rem,auto)` que el bloque de
+          "Excelente" para que ambas columnas de label queden alineadas. */}
+      <ul className="mt-4 flex flex-col gap-3">
         {criterio.niveles.map((nivel, nIndex) => (
-          <li key={nIndex} className="flex items-start gap-2">
-            <Input
-              variant="outlined"
-              value={nivel}
+          <li
+            key={nivel.id}
+            className="grid items-start gap-3 sm:grid-cols-[minmax(7rem,auto)_minmax(0,1fr)_auto]"
+          >
+            <p className="pt-2 text-sm font-semibold">{nivel.nombre}</p>
+            <Textarea
+              className={TEXTAREA_OUTLINED}
+              rows={2}
+              value={nivel.descripcion}
               onChange={(e) => {
                 const next = criterio.niveles.slice()
-                next[nIndex] = e.target.value
+                next[nIndex] = { ...nivel, descripcion: e.target.value }
                 onChange({ ...criterio, niveles: next })
               }}
             />
@@ -701,7 +742,7 @@ function CriterioItem({
               color="neutral"
               size="icon-sm"
               type="button"
-              aria-label="Quitar nivel"
+              aria-label={`Quitar nivel ${nivel.nombre}`}
               onClick={() => {
                 const next = criterio.niveles.slice()
                 next.splice(nIndex, 1)
@@ -714,11 +755,25 @@ function CriterioItem({
         ))}
       </ul>
 
-      {/* Outline con Input + botón al borde derecho (la captura los
-          muestra dentro del mismo rectángulo con borde). */}
-      <Field variant="outlined" className="mt-2">
+      {/* Split-button con Input + botón al borde derecho (la captura los
+          muestra dentro del mismo rectángulo con borde). `gap-0` + borde/redondeado
+          derechos del `Input` anulados (vía descendiente del `Field`) +
+          borde/redondeado izquierdos del `Button` anulados → se leen como
+          un único control. `size="default"` (h-11) en el `Button` para que
+          calce con la altura del `Input`.
+
+          `mt-6` y no el `mt-2` del variant: el `FieldLabel` outlined se
+          posiciona en `top-0 -translate-y-[calc(100%-0.625rem)]`, o sea
+          que "asoma" por encima del borde superior del `Field`. Con `mt-2`
+          ese asomo se come el `mb` de la lista de niveles de arriba y el
+          label termina pisando la última fila (visible en la captura).
+          24px es lo mínimo para que el label quede libre. */}
+      <Field
+        variant="outlined"
+        className="mt-6 [&_[data-slot=input]]:rounded-r-none [&_[data-slot=input]]:border-r-0"
+      >
         <FieldLabel>Niveles de desempeño (agregar niveles)</FieldLabel>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-0">
           <Input
             placeholder="Agregar"
             value={nivelInput}
@@ -727,12 +782,23 @@ function CriterioItem({
           <Button
             variant="fill"
             color="primary"
-            size="sm"
+            size="default"
+            className="rounded-l-none border-l-0"
             type="button"
             onClick={() => {
               const value = nivelInput.trim()
               if (!value) return
-              onChange({ ...criterio, niveles: [...criterio.niveles, value] })
+              // El texto tipeado pasa a ser el `nombre` (label que aparece a
+              // la izquierda, igual que "Excelente"). La `descripcion` arranca
+              // vacía para que el usuario la complete en el textarea que se
+              // renderiza al confirmar.
+              onChange({
+                ...criterio,
+                niveles: [
+                  ...criterio.niveles,
+                  { id: cryptoId(), nombre: value, descripcion: "" },
+                ],
+              })
               setNivelInput("")
             }}
           >
@@ -767,7 +833,13 @@ function AdaptacionesSection({ form }: { form: FormActividad }) {
           const add = () =>
             field.handleChange([
               ...adaptaciones,
-              { tipo: "", descripcion: "", versionModificada: "no", aplicaA: "" },
+              {
+                tipo: "",
+                descripcion: "",
+                versionModificada: "no",
+                versionModificadaRef: "",
+                aplicaA: "",
+              },
             ])
           if (adaptaciones.length === 0) {
             return (
@@ -865,17 +937,28 @@ function AdaptacionItem({
         <FieldLabel>¿Qué tipo de adaptación requiere esta actividad?</FieldLabel>
         <Select
           value={adaptacion.tipo as never}
-          onValueChange={(value) => onChange({ ...adaptacion, tipo: value })}
+          onValueChange={(value) =>
+            onChange({ ...adaptacion, tipo: (value ?? "") as Adaptacion["tipo"] })
+          }
         >
           <SelectTrigger>
             <SelectValue placeholder="Seleccione" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="__none__">Seleccione</SelectItem>
-            <SelectItem value="Acceso">Acceso</SelectItem>
-            <SelectItem value="Metodológica">Metodológica</SelectItem>
-            <SelectItem value="Evaluación">Evaluación</SelectItem>
-            <SelectItem value="Temporalización">Temporalización</SelectItem>
+            <SelectItem value="Discapacidad visual">Discapacidad visual</SelectItem>
+            <SelectItem value="Discapacidad auditiva">Discapacidad auditiva</SelectItem>
+            <SelectItem value="Dificultades cognitivas">Dificultades cognitivas</SelectItem>
+            <SelectItem value="Estilo de aprendizaje">
+              Estilo de aprendizaje (visual, kinestésico, auditivo)
+            </SelectItem>
+            <SelectItem value="Modalidad">
+              Modalidad (virtual, asincrónica, presencial)
+            </SelectItem>
+            <SelectItem value="Nivel de desempeño">
+              Nivel de desempeño (refuerzo, ampliación)
+            </SelectItem>
+            <SelectItem value="Otro">Otro</SelectItem>
           </SelectContent>
         </Select>
       </Field>
@@ -899,35 +982,100 @@ function AdaptacionItem({
           ¿Se usará una versión modificada del instrumento de evaluación?
         </FieldLabel>
         <Select
-          value={adaptacion.versionModificada}
+          value={adaptacion.versionModificada as never}
           onValueChange={(value) =>
-            onChange({ ...adaptacion, versionModificada: value as Adaptacion["versionModificada"] })
+            onChange({
+              ...adaptacion,
+              versionModificada: (value ?? "") as Adaptacion["versionModificada"],
+              // Al cambiar de modo se limpia el auxiliar para no arrastrar
+              // una URL de un archivo anterior o viceversa.
+              versionModificadaRef: "",
+            })
           }
         >
           <SelectTrigger>
             <SelectValue placeholder="Seleccione" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="si">Sí</SelectItem>
+            <SelectItem value="__none__">Seleccione</SelectItem>
             <SelectItem value="no">No</SelectItem>
+            <SelectItem value="archivo">Sí, Adjuntar plantilla (archivo)</SelectItem>
+            <SelectItem value="enlace">Sí, Adjuntar plantilla (enlace)</SelectItem>
+            <SelectItem value="biblioteca">Sí, Adjuntar plantilla (biblioteca)</SelectItem>
           </SelectContent>
         </Select>
       </Field>
+
+      {/* Campos condicionales según el modo de `versionModificada`. El `No`
+          no muestra nada; los tres modos "Sí…" muestran cada uno su propio
+          control (file picker, input URL o select de plantillas). */}
+      {adaptacion.versionModificada === "archivo" && (
+        <Field variant="outlined" className="mt-4">
+          <FieldLabel>Archivo de plantilla</FieldLabel>
+          <div className="relative">
+            <FileUploadOutlinedIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+            <Input
+              type="file"
+              value={adaptacion.versionModificadaRef}
+              onChange={(e) =>
+                onChange({ ...adaptacion, versionModificadaRef: e.target.value })
+              }
+              className="pl-9"
+            />
+          </div>
+        </Field>
+      )}
+
+      {adaptacion.versionModificada === "enlace" && (
+        <Field variant="outlined" className="mt-4">
+          <FieldLabel>Enlace de la plantilla</FieldLabel>
+          <Input
+            type="url"
+            placeholder="https://…"
+            value={adaptacion.versionModificadaRef}
+            onChange={(e) =>
+              onChange({ ...adaptacion, versionModificadaRef: e.target.value })
+            }
+          />
+        </Field>
+      )}
+
+      {adaptacion.versionModificada === "biblioteca" && (
+        <Field variant="outlined" className="mt-4">
+          <FieldLabel>Seleccionar desde biblioteca institucional</FieldLabel>
+          <Select
+            value={adaptacion.versionModificadaRef as never}
+            onValueChange={(value) =>
+              onChange({ ...adaptacion, versionModificadaRef: (value ?? "") as string })
+            }
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Seleccione" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none__">Seleccione</SelectItem>
+              <SelectItem value="plantilla-a">Biblioteca - Plantilla A</SelectItem>
+              <SelectItem value="plantilla-b">Biblioteca - Plantilla B</SelectItem>
+            </SelectContent>
+          </Select>
+        </Field>
+      )}
 
       <Field variant="outlined" className="mt-4">
         <FieldLabel>¿A quién se aplica esta adaptación?</FieldLabel>
         <Select
           value={adaptacion.aplicaA as never}
-          onValueChange={(value) => onChange({ ...adaptacion, aplicaA: value })}
+          onValueChange={(value) =>
+            onChange({ ...adaptacion, aplicaA: (value ?? "") as Adaptacion["aplicaA"] })
+          }
         >
           <SelectTrigger>
             <SelectValue placeholder="Seleccione" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="__none__">Seleccione</SelectItem>
-            <SelectItem value="Grupo completo">Grupo completo</SelectItem>
+            <SelectItem value="A todo el grupo">A todo el grupo</SelectItem>
             <SelectItem value="Estudiantes específicos">Estudiantes específicos</SelectItem>
-            <SelectItem value="Necesidades educativas">Necesidades educativas</SelectItem>
           </SelectContent>
         </Select>
       </Field>
@@ -1046,7 +1194,16 @@ function cryptoId() {
  * captura del mockup. El Popover (no Dialog) mantiene la referencia visual
  * con el botón que lo abrió.
  */
-function CrearUnidadPopover({ onCreate }: { onCreate: (nombre: string) => void }) {
+function CrearUnidadPopover({
+  onCreate,
+  className,
+}: {
+  onCreate: (nombre: string) => void
+  /** Se aplica al `Button` del trigger para encadenarlo visualmente con
+   * un control adyacente (split-button): típico `rounded-l-none border-l-0`
+   * para pegarse a un `Select`/`Input` por la izquierda. */
+  className?: string
+}) {
   const [open, setOpen] = React.useState(false)
   const [nombre, setNombre] = React.useState("")
   const [contenidos, setContenidos] = React.useState("")
@@ -1079,7 +1236,12 @@ function CrearUnidadPopover({ onCreate }: { onCreate: (nombre: string) => void }
             color="primary"
             size="icon-sm"
             aria-label="Crear nueva unidad temática"
-            className="size-9 shrink-0 rounded-md"
+            // `size-11` para igualar la altura del `SelectTrigger` (h-11);
+            // `shrink-0` para que el flex del call site no lo aplaste.
+            // Si el call site pasa `className` (típico `rounded-l-none
+            // border-l-0` para split-button), gana sobre el `rounded-md`
+            // base porque va al final.
+            className={cn("size-11 shrink-0 rounded-md", className)}
           />
         }
       >
