@@ -2,6 +2,7 @@ import { http, HttpResponse, delay } from "msw"
 
 import { planeadorDb } from "@/mocks/db/planeador"
 import { unidadesTematicasDb } from "@/mocks/db/unidades-tematicas"
+import { getCalificacionesByActividad } from "@/mocks/db/calificaciones"
 
 /**
  * Endpoints del Planeador bajo `/api/eval-col` — mismo prefijo que el resto
@@ -12,6 +13,8 @@ import { unidadesTematicasDb } from "@/mocks/db/unidades-tematicas"
  */
 const ACTIVIDAD_LIST_URL = "/api/eval-col/planeador/actividad/query"
 const ACTIVIDAD_DETAIL_URL = "/api/eval-col/planeador/actividad/detalle/:id"
+const ACTIVIDAD_CALIFICACIONES_URL =
+  "/api/eval-col/planeador/actividad/calificaciones/:id"
 const UNIDAD_LIST_URL = "/api/eval-col/planeador/unidad/query"
 const UNIDAD_DETAIL_URL = "/api/eval-col/planeador/unidad/detalle/:id"
 
@@ -40,6 +43,24 @@ export const planeadorHandlers = [
       )
     }
     return HttpResponse.json({ rows: [found] })
+  }),
+
+  // Calificaciones de la actividad: una fila por estudiante con asistencia
+  // y notas por criterio. Mismo sobre `{rows: [...]}` que el resto, para
+  // que `evalCol.getRows` lo desempaquete sin casos especiales.
+  http.get(ACTIVIDAD_CALIFICACIONES_URL, async ({ params }) => {
+    await delay(120)
+    const id = String(params.id)
+    const actividad = planeadorDb.find((row) => row.id === id)
+    if (!actividad) {
+      return HttpResponse.json(
+        { message: "Actividad no encontrada." },
+        { status: 404 },
+      )
+    }
+    return HttpResponse.json({
+      rows: getCalificacionesByActividad(id, planeadorDb),
+    })
   }),
 
   // Unidades temáticas: mismo par listado/detalle y el mismo sobre, para que

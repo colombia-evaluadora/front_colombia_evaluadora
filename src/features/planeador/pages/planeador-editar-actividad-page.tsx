@@ -1,14 +1,16 @@
+import { useState } from "react"
 import { Link, useNavigate, useParams } from "@tanstack/react-router"
 
 import { Button } from "@/components/ui/button"
 import {
   TableScreen,
   TableScreenBody,
+  TableScreenFooter,
   TableScreenHeader,
   TableScreenTitle,
 } from "@/components/layout/table-screen"
 import { NotFoundPage } from "@/components/layout/not-found-page"
-import { PlusCircleIcon } from "@/components/ui/icons"
+import { CheckIcon, SpinnerIcon } from "@/components/ui/icons"
 import { Spinner } from "@/components/ui/spinner"
 import { paths } from "@/config/paths"
 import { isNotFoundError } from "@/lib/api-client"
@@ -16,17 +18,19 @@ import { isNotFoundError } from "@/lib/api-client"
 import { useActividadDetalleQuery } from "@/features/planeador/api/query/use-actividad-detalle-query"
 import { EditarActividadForm } from "@/features/planeador/components/forms/form-editar-actividad"
 
+const FORM_ID = "editar-actividad-form"
+
 /**
  * Edición de una actividad en una ruta aparte (no in-place en el panel).
  *
- * Mismo `<TableScreen>` que el resto de las pantallas de gestión: encabezado
- * con el título "Planeador" a la izquierda y la acción principal a la derecha
- * —acá "Cerrar", que devuelve al listado sin guardar—.
+ * Mismo `<TableScreen>` que el resto de las pantallas de gestión, con un
+ * `<TableScreenFooter>` sticky al pie: el aviso + el botón "Guardar" solo
+ * aparecen cuando hay cambios sin guardar (mismo patrón que el editar de
+ * Establecimiento Educativo).
  *
- * El formulario carga la actividad vía `useActividadDetalleQuery`: la página
- * pasa esos datos al form como `defaultValues`, así se rellena apenas carga
- * la pantalla. La mutación real queda fuera de esta iteración: los inputs
- * son editables visualmente, pero no hay endpoint ni `useUpdate` todavía.
+ * El form carga la actividad vía `useActividadDetalleQuery`. La mutación
+ * real queda fuera de esta iteración: los inputs son editables visualmente,
+ * pero no hay endpoint ni `useUpdate` todavía.
  */
 export function PlaneadorEditarActividadPage() {
   const navigate = useNavigate()
@@ -54,17 +58,40 @@ export function PlaneadorEditarActividadPage() {
   }
 
   return (
+    <EditarActividadPageContent
+      isPending={isPending}
+      isError={isError}
+      actividad={actividad}
+      onClose={() => navigate({ to: paths.app.planeadorActividades.getHref() })}
+    />
+  )
+}
+
+function EditarActividadPageContent({
+  isPending,
+  isError,
+  actividad,
+  onClose,
+}: {
+  isPending: boolean
+  isError: boolean
+  actividad: ReturnType<typeof useActividadDetalleQuery>["data"]
+  onClose: () => void
+}) {
+  const [isDirty, setIsDirty] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+
+  return (
     <TableScreen>
       <TableScreenHeader>
         <TableScreenTitle
           action={
             <Button
-              color="primary"
+              color="neutral"
               size="sm"
               variant="fill"
               render={<Link to={paths.app.planeadorActividades.getHref()} />}
             >
-              <PlusCircleIcon data-icon="inline-start" />
               Cerrar
             </Button>
           }
@@ -80,7 +107,7 @@ export function PlaneadorEditarActividadPage() {
           </div>
         )}
 
-        {isError && !isNotFoundError(error) && (
+        {isError && (
           <p className="text-red px-6 py-12 text-center text-sm">
             Ocurrió un error al cargar la actividad.
           </p>
@@ -90,10 +117,51 @@ export function PlaneadorEditarActividadPage() {
           <EditarActividadForm
             key={actividad.id}
             actividad={actividad}
-            onCancel={() => navigate({ to: paths.app.planeadorActividades.getHref() })}
+            formId={FORM_ID}
+            onDirtyChange={setIsDirty}
           />
         )}
       </TableScreenBody>
+
+      {/* El footer es el que avisa y guarda; aparece solo cuando hay cambios.
+          Sigue el patrón de `add-establishment-page`: siempre está montado
+          (preserva el layout del `TableScreen`), pero su contenido solo
+          pinta el aviso + el Guardar cuando `isDirty`. */}
+      <TableScreenFooter
+        // `rounded-b-none` y `border-b-0` para que el footer se pegue al
+        // borde inferior sin que aparezca la curva superior/inferior de la
+        // caja —es continuo con el body, no una pieza suelta.
+        className="rounded-b-none border-b-0"
+      >
+        {isDirty ? (
+          <>
+            <p className="text-sm">Se detectaron cambios. Guardar para conservar la información.</p>
+            <Button
+              type="submit"
+              form={FORM_ID}
+              color="primary"
+              variant="fill"
+              size="sm"
+              disabled={isSaving}
+              onClick={() => {
+                // Stub de guardado: cuando exista `useUpdateActividad`,
+                // acá arranca la mutación y se setea isSaving en consecuencia.
+                setIsSaving(true)
+                setTimeout(() => {
+                  setIsSaving(false)
+                  setIsDirty(false)
+                  onClose()
+                }, 300)
+              }}
+            >
+              {isSaving ? <SpinnerIcon data-icon="inline-start" className="animate-spin" /> : <CheckIcon data-icon="inline-start" />}
+              {isSaving ? "Guardando..." : "Guardar"}
+            </Button>
+          </>
+        ) : (
+          <span />
+        )}
+      </TableScreenFooter>
     </TableScreen>
   )
 }
