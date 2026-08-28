@@ -461,6 +461,9 @@ export function UserDetailsForm({
                         aria-invalid={isInvalid(`${fieldPrefix}.password`)}
                         onChange={(event) => emitChange({ password: event.target.value })}
                     />
+                    {/* Guía en vivo: qué requisito falta mientras se escribe
+                        una contraseña nueva, antes de intentar guardar —
+                        fuente única `passwordRules` (`auth/api/schema.ts`). */}
                     <FieldError>{errorFor(`${fieldPrefix}.password`) ?? passwordHint}</FieldError>
                 </Field>
                 <Field orientation="vertical" variant="outlined" className="w-full" data-invalid={isInvalid(`${fieldPrefix}.confirmPassword`) ? "true" : undefined}>
@@ -480,7 +483,16 @@ export function UserDetailsForm({
                         aria-invalid={isInvalid(`${fieldPrefix}.confirmPassword`)}
                         onChange={(event) => setConfirmPassword(event.target.value)}
                     />
-                    <FieldError>{errorFor(`${fieldPrefix}.confirmPassword`)}</FieldError>
+                    {/* Mismatch en vivo, pegado al campo que corrige — antes
+                        vivía como párrafo suelto al final del formulario,
+                        lejos de "Contraseña"/"Confirmar" y sin relación
+                        visual con ellos. */}
+                    <FieldError>
+                        {errorFor(`${fieldPrefix}.confirmPassword`) ??
+                            (!passwordsMatch && person.password.length > 0 && confirmPassword.length > 0
+                                ? "Las contraseñas no coinciden."
+                                : undefined)}
+                    </FieldError>
                 </Field>
             </div>
             <div className="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-3">
@@ -492,6 +504,8 @@ export function UserDetailsForm({
                         id="birth-date"
                         mode="date"
                         size="sm"
+                        // No tiene sentido nacer en el futuro.
+                        maxDate={new Date()}
                         value={parseDateValue(person.birthDate)}
                         aria-invalid={isInvalid(`${fieldPrefix}.birthDate`)}
                         onChange={(date) => emitChange({ birthDate: date ? format(date, DATE_VALUE_FORMAT) : "" })}
@@ -544,9 +558,6 @@ export function UserDetailsForm({
                     />
                 </Field>
             </div>
-            {!passwordsMatch && person.password.length > 0 && confirmPassword.length > 0 ? (
-                <p className="text-sm text-destructive">Las contraseñas no coinciden.</p>
-            ) : null}
         </div>
     )
 }

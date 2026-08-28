@@ -35,6 +35,7 @@ import { academicPeriodsSearchSchema } from "@/features/establishment/academic-p
 import { establishmentsSearchSchema } from "@/features/establishment/institution/api/schema"
 import { campusesSearchSchema } from "@/features/establishment/campuses/api/schema"
 import { employeesSearchSchema } from "@/features/establishment/employees/api/schema"
+import { curricularReferencesSearchSchema } from "@/features/academic-management/curricular-references/api/schema"
 import { NoticeProvider } from "@/components/notice/notice-context"
 import {
   getFirstNavUrl,
@@ -308,7 +309,7 @@ const PERIODOS_CRUMB = {
 }
 const GESTION_ACADEMICA_CRUMB = {
   label: "Gestión académica",
-  to: paths.app.gestionAcademicaAreaAsignatura.getHref(),
+  to: paths.app.gestionAcademicaPlaneador.getHref(),
 }
 
 // `/app` no tiene página propia: manda a la primera pantalla del menú del
@@ -619,14 +620,6 @@ export const periodosAcademicosEditarRoute = createRoute({
   component: AcademicPeriodConfigPage,
 })
 
-const AreaSubjectPage = lazyRouteComponent(
-  () => import("@/features/academic-management/pages/area-subject-page"),
-  "AreaSubjectPage",
-)
-const StudyPlansPage = lazyRouteComponent(
-  () => import("@/features/academic-management/pages/study-plans-page"),
-  "StudyPlansPage",
-)
 const PlannerPage = lazyRouteComponent(
   () => import("@/features/academic-management/pages/planner-page"),
   "PlannerPage",
@@ -635,20 +628,17 @@ const ReportsPage = lazyRouteComponent(
   () => import("@/features/academic-management/pages/reports-page"),
   "ReportsPage",
 )
-
-export const gestionAcademicaAreaAsignaturaRoute = createRoute({
-  getParentRoute: () => appLayoutRoute,
-  path: paths.app.gestionAcademicaAreaAsignatura.path,
-  staticData: { breadcrumb: [GESTION_ACADEMICA_CRUMB, { label: "Área | Asignatura" }] },
-  component: AreaSubjectPage,
-})
-
-export const gestionAcademicaPlanesEstudioRoute = createRoute({
-  getParentRoute: () => appLayoutRoute,
-  path: paths.app.gestionAcademicaPlanesEstudio.path,
-  staticData: { breadcrumb: [GESTION_ACADEMICA_CRUMB, { label: "Planes de estudio" }] },
-  component: StudyPlansPage,
-})
+const CurricularReferencesPage = lazyRouteComponent(
+  () => import("@/features/academic-management/pages/curricular-references-page"),
+  "CurricularReferencesPage",
+)
+const CurricularReferenceDetailPage = lazyRouteComponent(
+  () =>
+    import(
+      "@/features/academic-management/curricular-references/pages/curricular-reference-detail-page"
+    ),
+  "CurricularReferenceDetailPage",
+)
 
 export const gestionAcademicaPlaneadorRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
@@ -662,6 +652,28 @@ export const gestionAcademicaInformesRoute = createRoute({
   path: paths.app.gestionAcademicaInformes.path,
   staticData: { breadcrumb: [GESTION_ACADEMICA_CRUMB, { label: "Informes" }] },
   component: ReportsPage,
+})
+
+export const gestionAcademicaReferentesCurricularesRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.gestionAcademicaReferentesCurriculares.path,
+  validateSearch: curricularReferencesSearchSchema,
+  staticData: { breadcrumb: [GESTION_ACADEMICA_CRUMB, { label: "Referentes curriculares" }] },
+  component: CurricularReferencesPage,
+})
+
+const REFERENTES_CURRICULARES_CRUMB = {
+  label: "Referentes curriculares",
+  to: paths.app.gestionAcademicaReferentesCurriculares.getHref(),
+}
+
+export const gestionAcademicaReferentesCurricularesDetalleRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.gestionAcademicaReferentesCurricularesDetalle.path,
+  staticData: {
+    breadcrumb: [GESTION_ACADEMICA_CRUMB, REFERENTES_CURRICULARES_CRUMB, { label: "Detalle" }],
+  },
+  component: CurricularReferenceDetailPage,
 })
 
 const routeTree = rootRoute.addChildren([
@@ -700,10 +712,10 @@ const routeTree = rootRoute.addChildren([
     employeesRoute,
     addEstablishmentRoute,
     editEstablishmentRoute,
-    gestionAcademicaAreaAsignaturaRoute,
-    gestionAcademicaPlanesEstudioRoute,
     gestionAcademicaPlaneadorRoute,
     gestionAcademicaInformesRoute,
+    gestionAcademicaReferentesCurricularesRoute,
+    gestionAcademicaReferentesCurricularesDetalleRoute,
     establishmentLayoutRoute.addChildren([
       establishmentsRoute,
       campusesRoute,

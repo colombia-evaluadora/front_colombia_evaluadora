@@ -152,14 +152,6 @@ export const paths = {
       },
   },
 
-    gestionAcademicaAreaAsignatura: {
-      path: "gestion-academica/area-asignatura",
-      getHref: () => "/app/gestion-academica/area-asignatura",
-    },
-    gestionAcademicaPlanesEstudio: {
-      path: "gestion-academica/planes-de-estudio",
-      getHref: () => "/app/gestion-academica/planes-de-estudio",
-    },
     gestionAcademicaPlaneador: {
       path: "gestion-academica/planeador",
       getHref: () => "/app/gestion-academica/planeador",
@@ -167,6 +159,15 @@ export const paths = {
     gestionAcademicaInformes: {
       path: "gestion-academica/informes",
       getHref: () => "/app/gestion-academica/informes",
+    },
+    gestionAcademicaReferentesCurriculares: {
+      path: "gestion-academica/referentes-curriculares",
+      getHref: () => "/app/gestion-academica/referentes-curriculares",
+    },
+    gestionAcademicaReferentesCurricularesDetalle: {
+      path: "gestion-academica/referentes-curriculares/detalle/$curricularReferenceId",
+      getHref: (curricularReferenceId: number | string) =>
+        `/app/gestion-academica/referentes-curriculares/detalle/${curricularReferenceId}`,
     },
   },
 } as const
