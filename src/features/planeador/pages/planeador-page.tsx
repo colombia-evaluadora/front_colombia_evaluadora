@@ -32,6 +32,7 @@ import { usePlaneadorFilters } from "@/features/planeador/hooks/use-planeador-fi
 import { VIEW_OPTIONS } from "@/features/planeador/components/view-options"
 
 import { planeadorRoute } from "@/router"
+import { paths } from "@/config/paths"
 import { parseLocalDate } from "@/features/planeador/lib/format-date"
 
 /**
@@ -67,6 +68,28 @@ export function PlaneadorPage() {
   const [displayMonth, setDisplayMonth] = React.useState<Date>(
     () => new Date(new Date().getFullYear(), new Date().getMonth(), 1),
   )
+
+  // Vista activa del panel de detalle. Por defecto es la informativa (la
+  // misma que muestra el click en la card); "Marcar" (el chulito) la cambia
+  // a la tabla de calificaciones. Se guarda por id de actividad para que
+  // cambiar de card no mantenga el modo de la anterior.
+  const [gradeViewActividadId, setGradeViewActividadId] = React.useState<
+    string | null
+  >(null)
+  const panelMode: "info" | "grades" =
+    actividadId !== undefined && gradeViewActividadId === actividadId
+      ? "grades"
+      : "info"
+
+  // Al cambiar de actividad, se vuelve al modo informativo — la tabla de
+  // calificaciones es propia de la actividad en la que se pidió.
+  React.useEffect(() => {
+    if (actividadId === undefined) {
+      setGradeViewActividadId(null)
+    } else if (gradeViewActividadId && gradeViewActividadId !== actividadId) {
+      setGradeViewActividadId(null)
+    }
+  }, [actividadId, gradeViewActividadId])
 
   const {
     data: actividades = [],
@@ -284,6 +307,16 @@ export function PlaneadorPage() {
                           actividad={actividad}
                           selected={actividad.id === actividadId}
                           onSelect={() => setActividadId(actividad.id)}
+                          onShowGrades={() =>
+                            setGradeViewActividadId(actividad.id)
+                          }
+                          onEdit={() =>
+                            navigate({
+                              to: paths.app.planeadorActividadEditar.getHref(
+                                actividad.id,
+                              ),
+                            })
+                          }
                         />
                       </li>
                     ))}
@@ -311,7 +344,9 @@ export function PlaneadorPage() {
             {actividadId ? (
               <ActividadDetallePanel
                 actividadId={actividadId}
+                mode={panelMode}
                 onClose={() => setActividadId(undefined)}
+                onShowGrades={() => setGradeViewActividadId(actividadId)}
               />
             ) : (
               <>

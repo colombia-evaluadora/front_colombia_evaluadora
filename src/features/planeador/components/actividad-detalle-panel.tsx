@@ -8,8 +8,11 @@ import {
   TrashIcon,
 } from "@/components/ui/icons"
 import { Spinner } from "@/components/ui/spinner"
+import { Link } from "@tanstack/react-router"
+import { paths } from "@/config/paths"
 
 import { useActividadDetalleQuery } from "@/features/planeador/api/query/use-actividad-detalle-query"
+import { CalificacionesView } from "@/features/planeador/components/calificaciones-view"
 import { DetailSections } from "@/features/planeador/components/detail-sections"
 
 const ACCIONES = [
@@ -22,8 +25,15 @@ const ACCIONES = [
 
 interface ActividadDetallePanelProps {
   actividadId: string
+  /** Vista activa del panel: "info" muestra las secciones de detalle;
+   * "grades" muestra la tabla de calificaciones. El click en la card
+   * activa "info"; el chulito (Marcar) activa "grades". */
+  mode: "info" | "grades"
   /** Cierra el panel y devuelve el calendario a la columna derecha. */
   onClose: () => void
+  /** Cambia el panel a la vista de calificaciones (`mode="grades"`).
+   * Lo dispara el chulito (Marcar) del propio panel. */
+  onShowGrades: () => void
 }
 
 /**
@@ -34,10 +44,22 @@ interface ActividadDetallePanelProps {
  * listado devuelve la actividad "de tarjeta" (nombre, fechas, unidad) y el
  * detalle tiene secciones que solo llegan por `/detalle/:id`.
  *
- * Las cinco acciones están `disabled` en esta iteración (read-only visual),
- * igual que en la card y que en la pantalla de detalle.
+ * Tiene dos vistas según de dónde se llegó:
+ * - `mode="info"` (click en la card): las secciones informativas
+ *   (Identificación, Programación, Materiales, Recursos, Evaluación,
+ *   Rúbrica, Observaciones, Adaptaciones) — read-only.
+ * - `mode="grades"` (chulito "Marcar" de la card): la tabla de
+ *   calificaciones con asistencia y notas por criterio.
+ *
+ * Las cinco acciones del header están `disabled` en esta iteración
+ * (read-only visual), igual que en la card.
  */
-export function ActividadDetallePanel({ actividadId, onClose }: ActividadDetallePanelProps) {
+export function ActividadDetallePanel({
+  actividadId,
+  mode,
+  onClose,
+  onShowGrades,
+}: ActividadDetallePanelProps) {
   const { data: actividad, isPending, isError, refetch } = useActividadDetalleQuery(actividadId)
 
   return (
@@ -75,13 +97,26 @@ export function ActividadDetallePanel({ actividadId, onClose }: ActividadDetalle
         </div>
 
         <div className="flex shrink-0 items-center gap-0.5">
-          {ACCIONES.map(({ label, Icon }) => (
+          {/* Editar navega a la ruta de edición propia; Marcar cambia el panel
+              a la vista de calificaciones; las demás siguen deshabilitadas
+              (sin endpoints en esta iteración). */}
+          <Button
+            variant="ghost"
+            color="neutral"
+            size="icon-sm"
+            render={<Link to={paths.app.planeadorActividadEditar.getHref(actividadId)} />}
+            aria-label="Editar"
+          >
+            <PencilIcon />
+          </Button>
+          {ACCIONES.filter((a) => a.label !== "Editar").map(({ label, Icon }) => (
             <Button
               key={label}
               variant="ghost"
               color="neutral"
               size="icon-sm"
-              disabled
+              disabled={label !== "Marcar"}
+              onClick={label === "Marcar" ? onShowGrades : undefined}
               aria-label={label}
             >
               <Icon />
@@ -108,7 +143,13 @@ export function ActividadDetallePanel({ actividadId, onClose }: ActividadDetalle
           </div>
         )}
 
-        {actividad && <DetailSections actividad={actividad} />}
+        {actividad && (
+          mode === "grades" ? (
+            <CalificacionesView actividad={actividad} />
+          ) : (
+            <DetailSections actividad={actividad} />
+          )
+        )}
       </div>
     </div>
   )

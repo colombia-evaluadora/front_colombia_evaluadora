@@ -31,6 +31,9 @@ export interface Criterio {
   id: string
   nombre: string
   excelente: string
+  /** Niveles intermedios de desempeño (entre "bajo" y "excelente"). Vacío si
+   *  la rúbrica solo tiene la descripción del nivel más alto. */
+  niveles: string[]
   /** 0-100 */
   ponderacion: number
 }
@@ -43,6 +46,20 @@ export interface Rubrica {
 export interface Unidad {
   id: string
   nombre: string
+}
+
+/**
+ * Adaptación curricular aplicada a una actividad. Estructura de campos:
+ * `tipo` y `aplicaA` son selects con `Seleccione` como placeholder;
+ * `descripcion` es textarea con tope de 500 caracteres; `versionModificada`
+ * es Sí/No (default No — la mayoría de las adaptaciones no tocan el
+ * instrumento de evaluación).
+ */
+export interface Adaptacion {
+  tipo: string
+  descripcion: string
+  versionModificada: "si" | "no" | ""
+  aplicaA: string
 }
 
 export interface Actividad {
@@ -77,6 +94,8 @@ export interface Actividad {
   objetivos: string[]
   descripcionUnidad: string[]
   rubrica: Rubrica
+  /** Adaptaciones curriculares aplicadas a la actividad (lista editable). */
+  adaptaciones: Adaptacion[]
 }
 
 /**

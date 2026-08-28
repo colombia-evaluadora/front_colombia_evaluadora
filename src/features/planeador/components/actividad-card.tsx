@@ -1,3 +1,5 @@
+import * as React from "react"
+
 import { Button } from "@/components/ui/button"
 import {
   CheckIcon,
@@ -15,15 +17,30 @@ import {
 } from "@/features/planeador/api/ui-mappings"
 import type { Actividad } from "@/features/planeador/api/types/actividad"
 
+interface Accion {
+  label: string
+  Icon: React.ComponentType<{ className?: string }>
+  /** Si está definido, este botón tiene handler propio y no se renderiza
+   * `disabled`. Sirve para distinguir visualmente la única acción viva en
+   * esta iteración (el "Marcar") del resto, que siguen siendo read-only. */
+  onClick?: () => void
+}
+
 interface ActividadCardProps {
   actividad: Actividad
   /** Cuando true, la card se renderiza con el fondo de seleccionada. */
   selected?: boolean
-  /** Abre esta actividad en el panel de detalle. */
+  /** Abre esta actividad en el panel de detalle (vista informativa). */
   onSelect?: () => void
+  /** Cambia el panel de detalle a la vista de calificaciones de esta
+   * actividad. Se dispara desde el chulito (Marcar) de la card. */
+  onShowGrades?: () => void
+  /** Navega a la pantalla de edición de la actividad. Se dispara desde el
+   * lápiz (Editar) de la card. */
+  onEdit?: () => void
 }
 
-const ACCIONES = [
+const ACCIONES_BASE: readonly Omit<Accion, "onClick">[] = [
   { label: "Editar", Icon: PencilIcon },
   { label: "Marcar", Icon: CheckIcon },
   { label: "Aprobar", Icon: ClipboardCheckIcon },
@@ -48,9 +65,25 @@ export function ActividadCard({
   actividad,
   selected = false,
   onSelect,
+  onShowGrades,
+  onEdit,
 }: ActividadCardProps) {
   const StatusIcon = STATUS_ICON[actividad.status]
   const accent = STATUS_ACCENT[actividad.status]
+
+  // "Editar" y "Marcar" son las dos acciones vivas de esta iteración: el
+  // primero navega a la pantalla de edición; el segundo cambia el panel de
+  // detalle a la vista de calificaciones. El resto siguen `disabled`
+  // (read-only visual).
+  const acciones: Accion[] = ACCIONES_BASE.map((accion) => {
+    if (accion.label === "Editar" && onEdit) {
+      return { ...accion, onClick: onEdit }
+    }
+    if (accion.label === "Marcar" && onShowGrades) {
+      return { ...accion, onClick: onShowGrades }
+    }
+    return accion
+  })
 
   // Sin estudiantes asignados el porcentaje no significa nada: se omite en
   // vez de mostrar un 0% que se leería como "nadie evaluado".
@@ -124,15 +157,22 @@ export function ActividadCard({
           "group-focus-within/actividad:pointer-events-auto group-focus-within/actividad:opacity-100",
         )}
       >
-        {ACCIONES.map(({ label, Icon }) => (
+        {acciones.map(({ label, Icon, onClick }) => (
           <Button
             key={label}
             variant="ghost"
             color="neutral"
             size="icon-sm"
-            disabled
+            disabled={!onClick}
             aria-label={label}
             className="size-6"
+            // `stopPropagation` para que el click del action no se propague
+            // al `<button>` invisible que cubre toda la card y termine
+            // disparando `onSelect` (selección de la actividad).
+            onClick={(e) => {
+              e.stopPropagation()
+              onClick?.()
+            }}
           >
             <Icon />
           </Button>
