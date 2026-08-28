@@ -537,21 +537,33 @@ export function CreateStudyPlanDialog({
           </div>
         </form>
 
-        <DialogFooter className="sm:justify-between">
-          <DialogClose render={<Button size="sm" type="button" variant="ghost" />}>
+        <DialogFooter>
+          <form.Subscribe selector={(state) => state.values}>
+            {(values) => {
+              const allRequiredFilled =
+                values.asignaturaId > 0 &&
+                values.intensidadHoraria > 0 &&
+                !Number.isNaN(values.influenciaArea) &&
+                !Number.isNaN(values.numeroCreditos)
+              if (!allRequiredFilled) return null
+              return (
+                <Button
+                  size="sm"
+                  type="submit"
+                  color="primary"
+                  form={FORM_ID}
+                  disabled={isSaving}
+                  aria-busy={isSaving}
+                >
+                  {isSaving && <SpinnerIcon data-icon="inline-start" className="animate-spin" />}
+                  Guardar
+                </Button>
+              )
+            }}
+          </form.Subscribe>
+          <DialogClose render={<Button size="sm" type="button" variant="fill" color="neutral" />}>
             Cancelar
           </DialogClose>
-          <Button
-            size="sm"
-            type="submit"
-            color="primary"
-            form={FORM_ID}
-            disabled={isSaving}
-            aria-busy={isSaving}
-          >
-            {isSaving && <SpinnerIcon data-icon="inline-start" className="animate-spin" />}
-            {isEditing ? "Guardar" : "Agregar"}
-          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

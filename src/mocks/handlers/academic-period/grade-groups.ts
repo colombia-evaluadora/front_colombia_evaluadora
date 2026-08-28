@@ -34,16 +34,19 @@ function applyFilters(rows: GradeGroupRecord[], filtro: string | null) {
 
 export const gradeGroupsHandlers = [
   // `fn_grupo_listar` (id_query 65) — path/params reales (ver
-  // `use-grade-groups.ts`), no el `/api/grade-groups/query` viejo. Mismo bug
-  // que Criterio de promoción sin esto: request sin match → pasa al backend
-  // real → 401 → deslogueo.
-  http.get("/api/eval-col/grados/:gradeId/grupos", async ({ params, request }) => {
+  // `use-grade-groups.ts`), no el `/api/grade-groups/query` viejo. `/query`
+  // porque el POST sin sufijo en esta misma ruta ya es la creación de grupo.
+  http.post("/api/eval-col/grados/:gradeId/grupos/query", async ({ params, request }) => {
     await delay(250)
     const gradeId = Number(params.gradeId)
-    const url = new URL(request.url)
-    const filtro = url.searchParams.get("filtro")
-    const pageIndex = Number(url.searchParams.get("pageIndex") ?? 0)
-    const pageSize = Number(url.searchParams.get("pageSize") ?? 10)
+    const body = (await request.json()) as {
+      FILTRO?: string
+      PAGE_INDEX?: string | number
+      PAGE_SIZE?: string | number
+    }
+    const filtro = body.FILTRO ?? null
+    const pageIndex = Number(body.PAGE_INDEX ?? 0)
+    const pageSize = Number(body.PAGE_SIZE ?? 10)
 
     const scoped = gradeGroupsDb.filter((row) => row.gradeId === gradeId)
     const filtered = applyFilters(scoped, filtro)

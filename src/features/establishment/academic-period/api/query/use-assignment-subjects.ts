@@ -34,7 +34,17 @@ async function fetchAssignmentSubjects(
   const raw: AssignmentSubjectsResponse = await api.get(
     `/eval-col/asignaciones/pool/${academicPeriodId}`
   )
-  return (raw.rows ?? []).map((row) => ({
+  // `fn_asignacion_pool` a veces repite el mismo par grupo:asignatura
+  // (join duplicado en el backend) — se deduplica acá por `id` para no
+  // romper las keys de React en `assignment-transfer.tsx`.
+  const seen = new Set<string>()
+  const rows: AssignmentSubjectRow[] = []
+  for (const row of raw.rows ?? []) {
+    if (seen.has(row.id)) continue
+    seen.add(row.id)
+    rows.push(row)
+  }
+  return rows.map((row) => ({
     id: row.id,
     nombre: row.nombre,
     gradoGrupo: row.grado_grupo,

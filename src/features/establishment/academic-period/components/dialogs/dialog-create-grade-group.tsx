@@ -345,7 +345,7 @@ export function CreateGradeGroupDialog({
               ) : null
             }
           </form.Subscribe>
-          <DialogClose render={<Button size="sm" type="button" variant="outline" />}>
+          <DialogClose render={<Button size="sm" type="button" variant="fill" color="neutral" />}>
             Cancelar
           </DialogClose>
         </DialogFooter>

@@ -27,7 +27,7 @@ export function toAsignaturasPayload(subjects: AreaSubjectItem[]) {
     abreviacion: subject.abreviacion,
     asignaturaGeneral: Number(subject.asignaturaGeneral),
     especialidad: subject.especialidad || null,
-    color: subject.color ?? null,
+    color: subject.color ? subject.color.replace(/^#/, "") : null,
     ordenReportes: subject.ordenReportes,
   }))
 }

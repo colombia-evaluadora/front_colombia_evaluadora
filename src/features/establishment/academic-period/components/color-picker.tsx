@@ -16,6 +16,10 @@ function isHex(value: string): boolean {
   return /^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(value)
 }
 
+function withHash(value: string): string {
+  return value.startsWith("#") ? value : `#${value}`
+}
+
 function hexToRgb(hex: string): [number, number, number] {
   const clean = hex.replace("#", "")
   const full =
@@ -236,7 +240,7 @@ export function ColorPickerPopover({ value, onChange }: ColorPickerPopoverProps)
         {value ? (
           <span
             className="inline-block size-4 rounded-full ring-1 ring-foreground/10"
-            style={{ backgroundColor: value }}
+            style={{ backgroundColor: withHash(value) }}
           />
         ) : (
           <span className="text-muted-foreground">Seleccionar</span>

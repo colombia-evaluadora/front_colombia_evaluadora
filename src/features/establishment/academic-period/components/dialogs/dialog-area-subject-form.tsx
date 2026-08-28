@@ -312,6 +312,26 @@ export function AreaSubjectFormDialog({
     )
   }
 
+  // El backend (`fn_subject_guardar_bulk`) rechaza nombre+énfasis repetidos
+  // dentro de la misma área (409, "nombre, enfasis, area") — el nombre solo
+  // puede repetirse entre énfasis distintos (V143), no con el mismo. Se
+  // valida acá también para avisar antes de guardar.
+  function findDuplicateNombreEnfasis(
+    nombreInterno: string,
+    especialidad: string,
+    excludeIndex?: number,
+  ): SubjectDraft | undefined {
+    const needleNombre = nombreInterno.trim().toUpperCase()
+    if (!needleNombre) return undefined
+    const needleEnfasis = especialidad.trim().toUpperCase()
+    return subjects.find(
+      (item, i) =>
+        i !== excludeIndex &&
+        item.nombreInterno.trim().toUpperCase() === needleNombre &&
+        item.especialidad.trim().toUpperCase() === needleEnfasis,
+    )
+  }
+
   function commitDraft() {
     if (!draft.asignaturaGeneral.trim() && !draft.nombreInterno.trim()) {
       showNotice("Elige una asignatura general o completa el nombre interno.", {
@@ -323,6 +343,13 @@ export function AreaSubjectFormDialog({
       showNotice(`Ya existe una asignatura con la abreviación "${draft.abreviacion}" en esta área.`, {
         variant: "error",
       })
+      return
+    }
+    if (findDuplicateNombreEnfasis(draft.nombreInterno, draft.especialidad)) {
+      showNotice(
+        `Ya existe una asignatura con el nombre "${draft.nombreInterno}" y el mismo énfasis en esta área.`,
+        { variant: "error" },
+      )
       return
     }
     setSubjects((prev) => [...prev, draft])
@@ -434,6 +461,13 @@ export function AreaSubjectFormDialog({
       )
       return
     }
+    if (findDuplicateNombreEnfasis(editDraft.nombreInterno, editDraft.especialidad, editingIndex)) {
+      showNotice(
+        `Ya existe una asignatura con el nombre "${editDraft.nombreInterno}" y el mismo énfasis en esta área.`,
+        { variant: "error" },
+      )
+      return
+    }
     const next = editDraft
     setSubjects((prev) => prev.map((item, i) => (i === editingIndex ? next : item)))
     cancelEditSubject()
@@ -505,9 +539,10 @@ export function AreaSubjectFormDialog({
                         onBlur={field.handleBlur}
                         onChange={(e) => {
                           nombreInternoEditedRef.current = true
-                          field.handleChange(e.target.value)
+                          field.handleChange(e.target.value.toUpperCase())
                         }}
                         aria-invalid={isInvalid}
+                        className="uppercase"
                       />
                     )}
                   </AreaField>
@@ -768,7 +803,11 @@ export function AreaSubjectFormDialog({
                               {subject.color ? (
                                 <span
                                   className="inline-block size-4 rounded-full ring-1 ring-foreground/10"
-                                  style={{ backgroundColor: subject.color }}
+                                  style={{
+                                    backgroundColor: subject.color.startsWith("#")
+                                      ? subject.color
+                                      : `#${subject.color}`,
+                                  }}
                                 />
                               ) : (
                                 <span className="text-muted-foreground">—</span>
