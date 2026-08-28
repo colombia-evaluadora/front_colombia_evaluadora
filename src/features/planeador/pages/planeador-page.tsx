@@ -19,7 +19,6 @@ import {
 import { Spinner } from "@/components/ui/spinner"
 
 import { useActividadesQuery } from "@/features/planeador/api/query/use-actividades-query"
-import { useExportActividad } from "@/features/planeador/api/mutations/export-actividad"
 import { ActividadCard } from "@/features/planeador/components/actividad-card"
 import { ActividadDetallePanel } from "@/features/planeador/components/actividad-detalle-panel"
 import { DialogExportActividades } from "@/features/planeador/components/dialogs/dialog-export-actividades"
@@ -114,13 +113,6 @@ export function PlaneadorPage() {
     isError,
     refetch,
   } = useActividadesQuery()
-
-  // Export individual desde la card. El toast sale del propio `onSuccess`
-  // del mutation (mismo patrón que `useDeleteActividad`): la página solo
-  // dispara la mutación con el formato elegido por el popover.
-  // No es necesario `onError` propio: el response interceptor global ya
-  // tostea los 4xx/5xx que escapen del handler mock.
-  const exportActividad = useExportActividad()
 
   // Filtrado client-side: texto libre + estado. `filtro` (instrumento) queda
   // armado para la próxima iteración, cuando llegue su catálogo.
@@ -220,7 +212,7 @@ export function PlaneadorPage() {
                 exportaron. El trigger que el diálogo trae adentro reemplaza
                 al `<Button>` de export que estaba disabled. */}
             <DialogExportActividades
-              rows={filtered.map((a) => ({ id: a.id, nombre: a.nombre }))}
+              rows={filtered}
             />
           </TableScreenActions>
         </TableScreenToolbar>
@@ -341,15 +333,18 @@ export function PlaneadorPage() {
                           actividad={actividad}
                           selected={actividad.id === actividadId}
                           onSelect={() => setActividadId(actividad.id)}
+                          onShowGrades={() =>
+                            setGradeViewActividadId(actividad.id)
+                          }
+                          onShowApproval={() =>
+                            setApprovalViewActividadId(actividad.id)
+                          }
                           onEdit={() =>
                             navigate({
                               to: paths.app.planeadorActividadEditar.getHref(
                                 actividad.id,
                               ),
                             })
-                          }
-                          onExport={(format) =>
-                            exportActividad.mutate({ id: actividad.id, format })
                           }
                           // Si la actividad que se borró era la abierta en
                           // el panel, cerramos el panel: sin actividadId
