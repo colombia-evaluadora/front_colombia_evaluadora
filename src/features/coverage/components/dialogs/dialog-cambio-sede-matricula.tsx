@@ -13,7 +13,7 @@ import { Field, FieldLabel } from "@/components/ui/field"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { ArrowLeftIcon, BankIcon, CheckIcon, InfoIcon, XIcon } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
-import { formatGrade } from "@/features/coverage/api/ui-mappings"
+import { useMatriculaGradeLabel } from "@/features/coverage/hooks/use-matricula-grade-label"
 import type { BulkGroupChangeClassification } from "@/features/coverage/api/types/matricula"
 
 interface CambioSedeMatriculaDialogProps {
@@ -24,16 +24,8 @@ interface CambioSedeMatriculaDialogProps {
   toGrade: number
   fromGroup: string
   toGroup: string
-  /** El Grado también cambia en esta misma operación — define el valor por
-   * defecto del radio de abajo (el usuario lo puede cambiar igual). */
   gradeWillChange: boolean
-  /** Todos los estudiantes seleccionados comparten el mismo grado de
-   * origen — si no, "Reubicación de sede" se deshabilita (mismo criterio
-   * que `dialog-cambio-grado-matricula.tsx`: no se puede reubicar de forma
-   * consistente un lote con grados de origen distintos). */
   sameOrigin: boolean
-  /** Solo el diálogo "Modificar" en lote tiene un paso previo al que volver
-   * — en la edición individual no hay wizard, así que se omite el botón. */
   onBack?: () => void
   onConfirm: (classification: BulkGroupChangeClassification) => void
   onClose: () => void
@@ -62,6 +54,7 @@ export function CambioSedeMatriculaDialog({
   onConfirm,
   onClose,
 }: CambioSedeMatriculaDialogProps) {
+  const gradeLabel = useMatriculaGradeLabel()
   const defaultClassification = sameOrigin && gradeWillChange ? "cambioGrado" : "correccion"
   const [classification, setClassification] = useState<BulkGroupChangeClassification>(defaultClassification)
 
@@ -98,8 +91,8 @@ export function CambioSedeMatriculaDialog({
               <ComparisonLine label="Sede" from={fromSede} to={toSede} />
               <ComparisonLine
                 label="Grado"
-                from={formatGrade(fromGrade)}
-                to={formatGrade(toGrade)}
+                from={gradeLabel(fromGrade)}
+                to={gradeLabel(toGrade)}
               />
               <ComparisonLine label="Grupo" from={fromGroup} to={toGroup} />
             </ul>

@@ -23,11 +23,9 @@ import { createColumns } from "@/features/academic-management/curricular-referen
 import { SearchCurricularReferences } from "@/features/academic-management/curricular-references/components/search/search-curricular-references"
 import { ManageCurricularReferenceDialog } from "@/features/academic-management/curricular-references/components/dialogs/dialog-manage"
 import { ExportCurricularReferencesDialog } from "@/features/academic-management/curricular-references/components/dialogs/dialog-export"
-import {
-  EDUCATION_LEVELS,
-  EVALUATION_TYPES,
-  PEDAGOGICAL_APPROACHES,
-} from "@/features/academic-management/curricular-references/api/catalogs"
+import { useEducationLevelsQuery } from "@/features/academic-management/curricular-references/api/query/use-education-levels"
+import { usePedagogicalApproachesQuery } from "@/features/academic-management/curricular-references/api/query/use-pedagogical-approaches"
+import { useEvaluationTypesQuery } from "@/features/academic-management/curricular-references/api/query/use-evaluation-types"
 import type { CurricularReference } from "@/features/academic-management/curricular-references/api/types/curricular-reference"
 
 export function CurricularReferencesDataTable() {
@@ -35,6 +33,10 @@ export function CurricularReferencesDataTable() {
 
   const { filters, queryFilters, applyFilters, clearAllFilters, activeFilterCount } =
     useCurricularReferencesFilters()
+
+  const { data: educationLevels = [] } = useEducationLevelsQuery()
+  const { data: pedagogicalApproaches = [] } = usePedagogicalApproachesQuery()
+  const { data: evaluationTypes = [] } = useEvaluationTypesQuery()
 
   const { data, isPending, isError, refetch } = useCurricularReferencesQuery({
     filters: queryFilters,
@@ -44,15 +46,15 @@ export function CurricularReferencesDataTable() {
   })
 
   const [editorOpen, setEditorOpen] = useState(false)
-  const [editingReference, setEditingReference] = useState<CurricularReference | null>(null)
+  const [editingReferenceId, setEditingReferenceId] = useState<number | null>(null)
 
   function openCreateDialog() {
-    setEditingReference(null)
+    setEditingReferenceId(null)
     setEditorOpen(true)
   }
 
   function openEditDialog(reference: CurricularReference) {
-    setEditingReference(reference)
+    setEditingReferenceId(reference.id)
     setEditorOpen(true)
   }
 
@@ -81,15 +83,21 @@ export function CurricularReferencesDataTable() {
             applyFilters={applyFilters}
             clearAllFilters={clearAllFilters}
             activeFilterCount={activeFilterCount}
-            educationLevels={EDUCATION_LEVELS}
-            pedagogicalApproaches={PEDAGOGICAL_APPROACHES}
-            evaluationTypes={EVALUATION_TYPES}
+            educationLevels={educationLevels}
+            pedagogicalApproaches={pedagogicalApproaches}
+            evaluationTypes={evaluationTypes}
           />
 
           <TableScreenActions>
-            <Button variant="fill" color="primary" size="sm" onClick={openCreateDialog}>
+            <Button
+              variant="fill"
+              color="primary"
+              size="sm"
+              onClick={openCreateDialog}
+              className="text-sm [&_svg:not([class*='size-'])]:size-4"
+            >
               <ControlPointIcon data-icon="inline-start" />
-              Agregar
+              Agregar referente
             </Button>
             <ExportCurricularReferencesDialog filters={queryFilters} />
           </TableScreenActions>
@@ -123,10 +131,10 @@ export function CurricularReferencesDataTable() {
       <ManageCurricularReferenceDialog
         open={editorOpen}
         onOpenChange={setEditorOpen}
-        curricularReference={editingReference}
-        educationLevels={EDUCATION_LEVELS}
-        pedagogicalApproaches={PEDAGOGICAL_APPROACHES}
-        evaluationTypes={EVALUATION_TYPES}
+        curricularReferenceId={editingReferenceId}
+        educationLevels={educationLevels}
+        pedagogicalApproaches={pedagogicalApproaches}
+        evaluationTypes={evaluationTypes}
       />
     </TableScreen>
   )

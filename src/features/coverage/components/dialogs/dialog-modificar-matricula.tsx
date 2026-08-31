@@ -39,7 +39,7 @@ import {
   XIcon,
 } from "@/components/ui/icons"
 
-import { formatGrade } from "@/features/coverage/api/ui-mappings"
+import { useMatriculaGradeLabel } from "@/features/coverage/hooks/use-matricula-grade-label"
 import { useReservationCatalogsQuery } from "@/features/coverage/api/query/use-reservation-catalogs-query"
 import { useMatriculaDependentCatalogsQuery } from "@/features/coverage/api/query/use-matricula-dependent-catalogs-query"
 import { useBulkChangeMatricula } from "@/features/coverage/api/mutations/bulk-change-matricula"
@@ -86,6 +86,7 @@ export function ModificarMatriculaDialog({
   onRemove,
   resetSelection,
 }: ModificarMatriculaDialogProps) {
+  const gradeLabel = useMatriculaGradeLabel()
   const [open, setOpen] = useState(false)
   // "form" = el diálogo de abajo; el resto son los pasos de verificación
   // encadenados (ver `queue`/`queueIndex`, más abajo).
@@ -384,7 +385,7 @@ export function ModificarMatriculaDialog({
                                 {matricula.firstName} {matricula.lastName}
                               </TableCell>
                               <TableCell>{matricula.campus}</TableCell>
-                              <TableCell>{formatGrade(matricula.grade)}</TableCell>
+                              <TableCell>{gradeLabel(matricula.grade)}</TableCell>
                               <TableCell>{matricula.group}</TableCell>
                             </TableRow>
                           ))}
@@ -404,7 +405,7 @@ export function ModificarMatriculaDialog({
                       {studentChipLabel(matricula)}
                     </span>
                     <span className="rounded bg-secondary-22 px-1.5 py-0.5 text-xs font-medium text-foreground">
-                      {formatGrade(matricula.grade)} - {matricula.group}
+                      {gradeLabel(matricula.grade)} - {matricula.group}
                     </span>
                     <button
                       type="button"
@@ -473,8 +474,8 @@ export function ModificarMatriculaDialog({
                   <ComboboxField
                     items={Object.fromEntries(
                       (dependentCatalogs?.grades ?? []).map((grade) => [
-                        String(grade),
-                        formatGrade(grade),
+                        String(grade.valor),
+                        grade.nombre,
                       ]),
                     )}
                     value={grado || undefined}
@@ -488,8 +489,8 @@ export function ModificarMatriculaDialog({
                     </ComboboxFieldTrigger>
                     <ComboboxFieldContent>
                       {(dependentCatalogs?.grades ?? []).map((grade) => (
-                        <ComboboxFieldItem key={grade} value={String(grade)}>
-                          {formatGrade(grade)}
+                        <ComboboxFieldItem key={grade.valor} value={String(grade.valor)}>
+                          {grade.nombre}
                         </ComboboxFieldItem>
                       ))}
                     </ComboboxFieldContent>
@@ -510,8 +511,8 @@ export function ModificarMatriculaDialog({
                     </ComboboxFieldTrigger>
                     <ComboboxFieldContent>
                       {(dependentCatalogs?.groups ?? []).map((group) => (
-                        <ComboboxFieldItem key={group} value={group}>
-                          {group}
+                        <ComboboxFieldItem key={group.id} value={group.codigo}>
+                          {group.codigo}
                         </ComboboxFieldItem>
                       ))}
                     </ComboboxFieldContent>

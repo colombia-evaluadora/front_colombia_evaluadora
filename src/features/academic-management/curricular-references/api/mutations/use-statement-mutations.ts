@@ -1,18 +1,33 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
+import { apiPath } from "@/lib/api-routes"
+import { env } from "@/config/env"
 import type { MutationConfig } from "@/lib/react-query"
 
 import type {
   CurricularEvidence,
+  CurricularEvidenceDraft,
   CurricularStatement,
   CurricularStatementDraft,
 } from "@/features/academic-management/curricular-references/api/types/statement"
 
+
 interface StatementResult {
-  status: "ok" | "error"
+  status?: "ok" | "error"
   message?: string
-  statement: CurricularStatement
+  statement?: CurricularStatement
+}
+
+function statementsUrl(curricularReferenceId: number) {
+  return apiPath(
+    `/academic-management/curricular-references/${curricularReferenceId}/statements`,
+    `/referentes-curriculares/${curricularReferenceId}/enunciados`,
+  )
+}
+
+function enunciadoUrl(id: number) {
+  return apiPath(`/academic-management/curricular-statements/${id}`, `/referentes-curriculares/enunciados/${id}`)
 }
 
 function createStatement(input: {
@@ -21,10 +36,15 @@ function createStatement(input: {
   text: string
   active: boolean
 }) {
-  return api.post<StatementResult>(
-    `/academic-management/curricular-references/${input.curricularReferenceId}/statements`,
-    { areaId: input.areaId, text: input.text, active: input.active },
-  )
+  const url = statementsUrl(input.curricularReferenceId)
+  if (env.ENABLE_API_MOCKING) {
+    return api.post<StatementResult>(url, { areaId: input.areaId, text: input.text, active: input.active })
+  }
+  return api.post<StatementResult>(url, {
+    TEXTO: input.text,
+    AREA_ID: input.areaId,
+    ESTADO: input.active ? "A" : "I",
+  })
 }
 
 export function useCreateStatement(options: { mutationConfig?: MutationConfig<typeof createStatement> } = {}) {
@@ -41,7 +61,14 @@ export function useCreateStatement(options: { mutationConfig?: MutationConfig<ty
 }
 
 function updateStatement({ id, values }: { id: number; values: Partial<CurricularStatementDraft> }) {
-  return api.put<StatementResult>(`/academic-management/curricular-statements/${id}`, values)
+  const url = enunciadoUrl(id)
+  if (env.ENABLE_API_MOCKING) {
+    return api.put<StatementResult>(url, values)
+  }
+  return api.patch<StatementResult>(url, {
+    ...(values.text != null ? { TEXTO: values.text } : {}),
+    ...(values.active != null ? { ESTADO: values.active ? "A" : "I" } : {}),
+  })
 }
 
 export function useUpdateStatement(options: { mutationConfig?: MutationConfig<typeof updateStatement> } = {}) {
@@ -58,8 +85,13 @@ export function useUpdateStatement(options: { mutationConfig?: MutationConfig<ty
 }
 
 function deleteStatement(id: number) {
-  return api.delete<{ status: "ok" | "error"; message: string }>(
-    `/academic-management/curricular-statements/${id}`,
+  if (env.ENABLE_API_MOCKING) {
+    return api.delete<{ status: "ok" | "error"; message: string }>(
+      `/academic-management/curricular-statements/${id}`,
+    )
+  }
+  return api.patch<{ status?: "ok" | "error"; message?: string }>(
+    `/eval-col/referentes-curriculares/enunciados/${id}/eliminar`,
   )
 }
 
@@ -78,16 +110,33 @@ export function useDeleteStatement(options: { mutationConfig?: MutationConfig<ty
 }
 
 interface EvidencesResult {
-  status: "ok" | "error"
+  status?: "ok" | "error"
   message?: string
-  evidences: CurricularEvidence[]
+  evidences?: CurricularEvidence[]
 }
 
-function createEvidences(input: { statementId: number; texts: string[]; active: boolean }) {
-  return api.post<EvidencesResult>(
-    `/academic-management/curricular-statements/${input.statementId}/evidences`,
-    { texts: input.texts, active: input.active },
-  )
+async function createEvidences(input: {
+  curricularReferenceId: number
+  statementId: number
+  texts: string[]
+  active: boolean
+}) {
+  if (env.ENABLE_API_MOCKING) {
+    const url = apiPath(`/academic-management/curricular-statements/${input.statementId}/evidences`, "")
+    return api.post<EvidencesResult>(url, { texts: input.texts, active: input.active })
+  }
+
+  const url = statementsUrl(input.curricularReferenceId)
+  const created: CurricularEvidence[] = []
+  for (const text of input.texts) {
+    const response = await api.post<StatementResult>(url, {
+      TEXTO: text,
+      ENUNCIADO_PADRE: input.statementId,
+      ESTADO: input.active ? "A" : "I",
+    })
+    if (response.statement) created.push(response.statement as unknown as CurricularEvidence)
+  }
+  return { status: "ok", evidences: created } satisfies EvidencesResult
 }
 
 export function useCreateEvidences(options: { mutationConfig?: MutationConfig<typeof createEvidences> } = {}) {
@@ -103,9 +152,38 @@ export function useCreateEvidences(options: { mutationConfig?: MutationConfig<ty
   })
 }
 
+function updateEvidence({ id, values }: { id: number; values: Partial<CurricularEvidenceDraft> }) {
+  const url = enunciadoUrl(id)
+  if (env.ENABLE_API_MOCKING) {
+    return api.put<{ status: "ok" | "error"; message?: string; evidence: CurricularEvidence }>(url, values)
+  }
+  return api.patch<{ status?: "ok" | "error"; message?: string; evidence?: CurricularEvidence }>(url, {
+    ...(values.text != null ? { TEXTO: values.text } : {}),
+    ...(values.active != null ? { ESTADO: values.active ? "A" : "I" } : {}),
+  })
+}
+
+export function useUpdateEvidence(options: { mutationConfig?: MutationConfig<typeof updateEvidence> } = {}) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: updateEvidence,
+    ...options.mutationConfig,
+    onSuccess: (...args) => {
+      queryClient.invalidateQueries({ queryKey: ["curricular-evidences"] })
+      options.mutationConfig?.onSuccess?.(...args)
+    },
+  })
+}
+
 function deleteEvidence(id: number) {
-  return api.delete<{ status: "ok" | "error"; message: string }>(
-    `/academic-management/curricular-evidences/${id}`,
+  if (env.ENABLE_API_MOCKING) {
+    return api.delete<{ status: "ok" | "error"; message: string }>(
+      `/academic-management/curricular-evidences/${id}`,
+    )
+  }
+  return api.patch<{ status?: "ok" | "error"; message?: string }>(
+    `/eval-col/referentes-curriculares/enunciados/${id}/eliminar`,
   )
 }
 

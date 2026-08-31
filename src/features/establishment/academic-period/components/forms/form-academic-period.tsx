@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef } from "react"
 import { useForm, useSelector } from "@tanstack/react-form"
 
-import { Badge } from "@/components/ui/badge"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input, inputVariants } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
@@ -36,7 +35,6 @@ import {
   type AcademicPeriodFormInput,
   type AcademicPeriodFormValues,
 } from "../../api/schema"
-import { ACADEMIC_PERIOD_STATUS_BADGE } from "../../api/ui-mappings"
 import { DatePicker } from "@/components/date-picker"
 import { formatDateValue, parseDateValue } from "@/lib/date-value"
 
@@ -357,8 +355,7 @@ export function AcademicPeriodForm({
                           (o) => String(o.id) === value
                         )
                         if (!option) return "Seleccionar"
-                        const badge = ACADEMIC_PERIOD_STATUS_BADGE[option.key]
-                        return <Badge {...badge} className="text-xs">{option.label}</Badge>
+                        return option.label
                       }}
                     </SelectValue>
                   </SelectTrigger>

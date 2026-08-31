@@ -1,7 +1,5 @@
 import { useState } from "react"
 
-import { CheckIcon, SpinnerIcon, TrashIcon, XIcon } from "@/components/ui/icons"
-
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,32 +12,27 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
+import { CheckIcon, SpinnerIcon, TrashIcon, XIcon } from "@/components/ui/icons"
+import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
 
-import { useDelete } from "@/features/academic-management/curricular-references/api/mutations/use-delete"
-import type { CurricularReference } from "@/features/academic-management/curricular-references/api/types/curricular-reference"
-import { useNotify } from "@/components/notice/notice-context"
+import { useDeleteEvidence } from "@/features/academic-management/curricular-references/api/mutations/use-statement-mutations"
+import type { CurricularEvidence } from "@/features/academic-management/curricular-references/api/types/statement"
 
-interface DeleteCurricularReferenceDialogProps {
-  curricularReference: CurricularReference
+interface DeleteEvidenceDialogProps {
+  evidence: CurricularEvidence
+  levelLabel: string
 }
 
-export function DeleteCurricularReferenceDialog({
-  curricularReference,
-}: DeleteCurricularReferenceDialogProps) {
+export function DeleteEvidenceDialog({ evidence, levelLabel }: DeleteEvidenceDialogProps) {
   const [open, setOpen] = useState(false)
   const { notify } = useNotify()
-  const label = curricularReference.name || "referente"
 
-  const deleteMutation = useDelete({
+  const deleteMutation = useDeleteEvidence({
     mutationConfig: {
-      onSuccess: (result) => {
+      onSuccess: () => {
         setOpen(false)
-        if (result.status === "error") {
-          notify(result.message ?? "No fue posible eliminar el referente curricular.", { variant: "error" })
-          return
-        }
-        notify("El referente curricular se eliminó correctamente.")
+        notify(`${levelLabel} eliminada correctamente.`)
       },
       onError: (error) => {
         setOpen(false)
@@ -57,7 +50,8 @@ export function DeleteCurricularReferenceDialog({
             variant="ghost"
             color="neutral"
             size="icon-sm"
-            aria-label={`Eliminar ${label}`}
+            aria-label={`Eliminar ${levelLabel.toLowerCase()}`}
+            onClick={(event) => event.stopPropagation()}
           />
         }
       >
@@ -67,8 +61,7 @@ export function DeleteCurricularReferenceDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>Eliminar</AlertDialogTitle>
           <AlertDialogDescription>
-            Se eliminará permanentemente el referente curricular {label}. Esta
-            acción no se puede deshacer.
+            Se eliminará permanentemente esta {levelLabel.toLowerCase()}. Esta acción no se puede deshacer.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -76,7 +69,7 @@ export function DeleteCurricularReferenceDialog({
             color="destructive"
             disabled={deleteMutation.isPending}
             aria-busy={deleteMutation.isPending}
-            onClick={() => deleteMutation.mutate(curricularReference.id)}
+            onClick={() => deleteMutation.mutate(evidence.id)}
           >
             {deleteMutation.isPending ? (
               <SpinnerIcon data-icon="inline-start" className="animate-spin" />

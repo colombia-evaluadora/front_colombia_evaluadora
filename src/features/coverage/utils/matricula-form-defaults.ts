@@ -168,6 +168,11 @@ const OPTIONAL_MATRICULA_FIELD_GETTERS: Record<string, (values: CreateMatriculaI
   "guardian-employment-entity-position": (v) => v.guardianEmployment.entityPosition,
 }
 
+export interface MatriculaAccountsFound {
+  student?: boolean
+  guardian?: boolean
+}
+
 /**
  * Validación mínima: los campos marcados con * en cada sección. El resto de
  * la ficha es informativo y puede quedar vacío, igual que en el detalle de
@@ -183,8 +188,13 @@ export function validateMatricula(
   values: CreateMatriculaInput,
   files?: MatriculaSupportFiles,
   fieldSettings?: MatriculaFieldSettingsMap,
+  accountsFound?: MatriculaAccountsFound,
 ): string[] {
   const missing: string[] = []
+  if (files) {
+    if (files.studentIdDocument.length === 0) missing.push("studentIdDocument")
+    if (files.previousYearCertificate.length === 0) missing.push("previousYearCertificate")
+  }
   if (!values.academic.campus) missing.push("matricula-campus")
   if (!values.academic.shift) missing.push("matricula-shift")
   if (!values.academic.grade) missing.push("matricula-grade")
@@ -206,15 +216,17 @@ export function validateMatricula(
     if (!getValue(values).trim()) missing.push(id)
   }
 
-  if (values.studentContact.email.trim() && !EMAIL_REGEX.test(values.studentContact.email.trim())) {
+  const studentEmail = values.studentContact.email.trim()
+  if (accountsFound?.student === false && !studentEmail) {
+    missing.push("student-contact-email")
+  } else if (studentEmail && !EMAIL_REGEX.test(studentEmail)) {
     missing.push("student-contact-email")
   }
-  if (values.guardianContact.email.trim() && !EMAIL_REGEX.test(values.guardianContact.email.trim())) {
+  const guardianEmail = values.guardianContact.email.trim()
+  if (accountsFound?.guardian === false && !guardianEmail) {
     missing.push("guardian-contact-email")
-  }
-  if (files) {
-    if (files.studentIdDocument.length === 0) missing.push("studentIdDocument")
-    if (files.previousYearCertificate.length === 0) missing.push("previousYearCertificate")
+  } else if (guardianEmail && !EMAIL_REGEX.test(guardianEmail)) {
+    missing.push("guardian-contact-email")
   }
   return missing
 }

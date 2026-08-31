@@ -56,8 +56,10 @@ function FieldConfigBox({ campo, onChange }: FieldConfigBoxProps) {
             size="sm"
             className={ROUND_SWITCH_CLASSNAME}
             checked={campo.requerido}
-            disabled={locked || !campo.visible}
-            onCheckedChange={(requerido) => onChange({ requerido, visible: campo.visible })}
+            disabled={locked}
+            onCheckedChange={(requerido) =>
+              onChange({ requerido, visible: requerido ? true : campo.visible })
+            }
           />
         </label>
         <label htmlFor={`${id}-visible`} className="flex items-center gap-2">

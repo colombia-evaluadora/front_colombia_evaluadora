@@ -143,18 +143,28 @@ export function SelectGeneralAreasDialog({
           />
         }
       >
-        <div className="flex flex-1 flex-wrap items-center gap-1">
+        <div className="flex min-w-0 flex-1 items-center gap-1 overflow-hidden">
           {selectedNames.length === 0 ? (
             <span className="text-muted-foreground">{placeholder}</span>
           ) : (
             <>
               {visibleChips.map((name) => (
-                <Badge key={name} variant="soft" color="muted" className="text-xs" title={name}>
+                <Badge
+                  key={name}
+                  variant="soft"
+                  color="muted"
+                  className="min-w-0 shrink truncate text-xs normal-case tracking-normal"
+                  title={name}
+                >
                   {name}
                 </Badge>
               ))}
               {extra > 0 && (
-                <Badge variant="soft" color="muted" className="text-xs normal-case tracking-normal">
+                <Badge
+                  variant="soft"
+                  color="muted"
+                  className="shrink-0 text-xs normal-case tracking-normal"
+                >
                   +{extra}
                 </Badge>
               )}
