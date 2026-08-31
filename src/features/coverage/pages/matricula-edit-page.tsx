@@ -38,6 +38,7 @@ import type {
 } from "@/features/coverage/api/types/matricula"
 import {
   REQUIRED_MATRICULA_FIELD_LABELS,
+  resolveMatriculaMunicipioDepartments,
   validateMatricula,
 } from "@/features/coverage/utils/matricula-form-defaults"
 import { buildMatriculaFieldSettings } from "@/features/coverage/utils/matricula-field-settings"
@@ -110,24 +111,16 @@ function MatriculaEditPageContent() {
     toGroup: string
   } | null>(null)
 
-  // La ficha llega asíncrona — recién ahí se puede arrancar el borrador de
-  // edición. Solo la primera vez: después el usuario es dueño del estado.
   useEffect(() => {
-    if (data?.status === "ok" && data.details && values === null) {
-      setValues(data.details)
-      initialGradeRef.current = data.details.academic.grade
-      initialSedeRef.current = data.details.academic.campus
-      initialGroupRef.current = data.details.academic.group
+    if (data?.status === "ok" && data.details && values === null && municipalities.length > 0) {
+      const resolved = resolveMatriculaMunicipioDepartments(data.details, municipalities)
+      setValues(resolved)
+      initialGradeRef.current = resolved.academic.grade
+      initialSedeRef.current = resolved.academic.campus
+      initialGroupRef.current = resolved.academic.group
     }
-  }, [data, values])
+  }, [data, values, municipalities])
 
-  // El estado de la matrícula es de solo lectura en este formulario (ver
-  // `disabled` en `MatriculaSelectField` de "matricula-status") — cambia solo
-  // vía "Retirar"/"Reingreso" en `MatriculaToolbar`, que invalida la query y
-  // trae un `status` nuevo acá. Como el resto del borrador ya no se
-  // resincroniza después de la carga inicial (el usuario es dueño de esos
-  // campos), hay que traer el `status` actualizado aparte para que no quede
-  // mostrando el valor viejo tras retirar/reingresar sin salir de esta página.
   useEffect(() => {
     const nextStatus = data?.status === "ok" ? data.details?.academic.status : undefined
     if (nextStatus && values && nextStatus !== values.academic.status) {

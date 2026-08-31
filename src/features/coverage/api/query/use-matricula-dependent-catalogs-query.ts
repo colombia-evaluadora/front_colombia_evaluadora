@@ -24,7 +24,7 @@ interface GradosRawResponse {
   rows: GradoRow[]
 }
 
-async function fetchGrados(periodoId: number): Promise<(MatriculaGradoOption & { id: number })[]> {
+export async function fetchGrados(periodoId: number): Promise<(MatriculaGradoOption & { id: number })[]> {
   const raw: GradosRawResponse = await api.query(`/eval-col/grados/query/${periodoId}`, {
     FILTRO: null,
     PAGE_INDEX: 0,

@@ -203,6 +203,9 @@
   --sidebar-border: #ffffff1a;
   --sidebar-ring: var(--ring);
 
+  /* ---------- TABLE SCREEN ------------------------------------ */
+  --table-screen-title: #141b21;
+
   /* ---------- STROKES (alpha 30%) --------------------------- */
   --foreground-stroke: #f2f6f84d;
   --primary-stroke: #40a1e14d;
@@ -374,6 +377,9 @@
   --sidebar-accent-foreground: var(--foreground);
   --sidebar-border: #ffffff1a;
   --sidebar-ring: var(--ring);
+
+  /* ---------- TABLE SCREEN ------------------------------------ */
+  --table-screen-title: #211417;
 
   /* ---------- STROKES (alpha 30%) --------------------------- */
   --foreground-stroke: #f2f6f84d;
