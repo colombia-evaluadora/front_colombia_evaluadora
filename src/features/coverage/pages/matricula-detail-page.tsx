@@ -1,3 +1,4 @@
+import { useMemo } from "react"
 import { Link } from "@tanstack/react-router"
 
 import {
@@ -19,6 +20,7 @@ import { MatriculaFormBody } from "@/features/coverage/components/forms/matricul
 import { MatriculaToolbar } from "@/features/coverage/components/matricula-toolbar"
 import type { DepartmentOption } from "@/features/coverage/components/forms/form-create-matricula"
 import { buildMatriculaFieldSettings } from "@/features/coverage/utils/matricula-field-settings"
+import { resolveMatriculaMunicipioDepartments } from "@/features/coverage/utils/matricula-form-defaults"
 
 export function MatriculaDetailPage() {
   const { matriculaId } = coberturaMatriculaDetalleRoute.useParams()
@@ -37,6 +39,11 @@ export function MatriculaDetailPage() {
     }
     return Array.from(byName.entries()).map(([name, municipalities]) => ({ name, municipalities }))
   })()
+
+  const details = useMemo(
+    () => (data?.details ? resolveMatriculaMunicipioDepartments(data.details, municipalities) : null),
+    [data?.details, municipalities],
+  )
 
   return (
     <TableScreen>
@@ -71,12 +78,12 @@ export function MatriculaDetailPage() {
         </div>
       )}
 
-      {data?.status === "ok" && data.matricula && data.details && (
+      {data?.status === "ok" && data.matricula && details && (
         <TableScreenBody>
           <div className="flex flex-col gap-6">
             <MatriculaToolbar matricula={data.matricula} />
             <MatriculaFormBody
-              values={data.details}
+              values={details}
               onChange={() => {}}
               catalogs={catalogs}
               departments={departments}

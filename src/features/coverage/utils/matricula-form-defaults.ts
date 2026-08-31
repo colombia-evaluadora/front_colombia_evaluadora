@@ -2,11 +2,36 @@ import type {
   CreateMatriculaInput,
   MatriculaAcademicInfo,
   MatriculaContact,
+  MatriculaDeptMunicipio,
   MatriculaResidence,
 } from "@/features/coverage/api/types/matricula"
 import type { MatriculaSupportFiles } from "@/features/coverage/components/forms/form-create-matricula"
+import type { Municipality } from "@/features/establishment/institution/api/types/location"
 import { MATRICULA_FIELD_CATALOG } from "@/features/coverage/utils/matricula-field-catalog"
 import { isFieldRequired, isFieldVisible, type MatriculaFieldSettingsMap } from "@/features/coverage/utils/matricula-field-settings"
+
+export function resolveMatriculaMunicipioDepartments(
+  values: CreateMatriculaInput,
+  municipalities: Municipality[],
+): CreateMatriculaInput {
+  const departmentByMunicipalityId = new Map(municipalities.map((m) => [String(m.id), m.department.name]))
+  const resolve = (dm: MatriculaDeptMunicipio): MatriculaDeptMunicipio => {
+    if (!dm.municipality || dm.department) return dm
+    const department = departmentByMunicipalityId.get(dm.municipality)
+    return department ? { department, municipality: dm.municipality } : dm
+  }
+  return {
+    ...values,
+    student: {
+      ...values.student,
+      documentExpedition: resolve(values.student.documentExpedition),
+      birthPlace: resolve(values.student.birthPlace),
+    },
+    studentAddress: { ...values.studentAddress, ...resolve(values.studentAddress) },
+    guardian: { ...values.guardian, documentExpedition: resolve(values.guardian.documentExpedition) },
+    guardianAddress: { ...values.guardianAddress, ...resolve(values.guardianAddress) },
+  }
+}
 
 export function createEmptyAcademic(): MatriculaAcademicInfo {
   return { campus: "", shift: "", grade: "", group: "", status: "", specialty: "" }
