@@ -93,8 +93,21 @@ const CATALOG_CATEGORIAS: Partial<Record<CatalogSlug, string>> = {
   [CATALOGS.HIGHEST_EDUCATION_LEVELS]: "ULT_NIVEL",
   // "Grado escalafón".
   [CATALOGS.EMPLOYEE_GRADES]: "ESCALAFON",
-  // "Cargo funcional".
-  [CATALOGS.FUNCTIONAL_POSITIONS]: "NOMBRE_CARGO",
+  // "Cargo funcional" (TFUNCIONARIO.FK_TLV_CARGO).
+  //
+  // Es CARGO, no NOMBRE_CARGO. Son dos catálogos distintos y con PKs que no
+  // se solapan (CARGO: 530-532, 589, 51850-51853 — Docente, Directivo
+  // Docente, Administrativo, Rector…; NOMBRE_CARGO: 156-163, 806 — la
+  // clasificación fina del MEN: Docente de aula, Docente con funciones de
+  // orientador, Director de núcleo…).
+  //
+  // Con NOMBRE_CARGO el select recibía 9 opciones entre las que el valor
+  // guardado nunca estaba, así que el campo se renderizaba vacío aunque el
+  // backend sí devolviera el dato (y su nombre resuelto). Los datos no dejan
+  // duda de cuál es la correcta: de los 495 funcionarios activos con este
+  // campo, 494 usan CARGO y 1 usa NOMBRE_CARGO — ese único creado desde el
+  // front, con este mismo bug.
+  [CATALOGS.FUNCTIONAL_POSITIONS]: "CARGO",
 }
 
 /** Forma real de cada fila de `GET /select/:categoria` (tlista_valor). */
