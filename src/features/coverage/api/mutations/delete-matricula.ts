@@ -5,7 +5,7 @@ import type { MutationConfig } from "@/lib/react-query"
 import type { ExportResult } from "@/features/coverage/api/types/matricula"
 
 function deleteMatricula(id: string): Promise<ExportResult> {
-  return api.delete(`/coverage/matricula/${id}`)
+  return api.put(`/eval-col/cobertura-academica/matricula/${id}`)
 }
 
 interface UseDeleteMatriculaOptions {
