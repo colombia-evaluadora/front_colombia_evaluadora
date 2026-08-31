@@ -32,7 +32,7 @@ function enunciadoUrl(id: number) {
 
 function createStatement(input: {
   curricularReferenceId: number
-  areaId: number
+  areaId: number | null
   text: string
   active: boolean
 }) {
