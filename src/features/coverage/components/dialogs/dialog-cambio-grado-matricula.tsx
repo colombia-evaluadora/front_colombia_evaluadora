@@ -23,7 +23,7 @@ import {
   XIcon,
 } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
-import { formatGrade } from "@/features/coverage/api/ui-mappings"
+import { useMatriculaGradeLabel } from "@/features/coverage/hooks/use-matricula-grade-label"
 import type { BulkGradeChange, BulkGradeChangeSubKind, BulkGradesAction } from "@/features/coverage/api/types/matricula"
 
 interface RadioCardOptionProps {
@@ -74,6 +74,7 @@ export function CambioGradoMatriculaDialog({
   onConfirm,
   onClose,
 }: CambioGradoMatriculaDialogProps) {
+  const gradeLabel = useMatriculaGradeLabel()
   const isSuperior = sameOrigin && fromGrade != null ? toGrade > fromGrade : null
   const directionalKind: BulkGradeChangeSubKind | null = isSuperior === null ? null : isSuperior ? "promocion" : "reubicacion"
 
@@ -126,8 +127,8 @@ export function CambioGradoMatriculaDialog({
           </DialogTitle>
           {sameOrigin && fromGrade != null ? (
             <p className="text-sm text-muted-foreground">
-              El nuevo grado ({formatGrade(toGrade)}) es {isSuperior ? "superior" : "inferior"} al
-              actual ({formatGrade(fromGrade)})
+              El nuevo grado ({gradeLabel(toGrade)}) es {isSuperior ? "superior" : "inferior"} al
+              actual ({gradeLabel(fromGrade)})
             </p>
           ) : (
             <p className="text-sm text-muted-foreground">

@@ -33,8 +33,17 @@ import {
 import { FileUpload, FileUploadTrigger } from "@/components/ui/file-upload"
 import { FormSectionHeading } from "@/components/form-section-heading"
 
-import { formatGrade } from "@/features/coverage/api/ui-mappings"
 import { useMatriculaDependentCatalogsQuery } from "@/features/coverage/api/query/use-matricula-dependent-catalogs-query"
+import {
+  useMatriculaCatalogQuery,
+  type MatriculaCatalogOption,
+} from "@/features/coverage/api/query/use-matricula-catalog-select"
+import { usePeriodoResolverMatriculaQuery } from "@/features/coverage/api/query/use-periodo-resolver-matricula"
+import { useSedeOptionsQuery } from "@/features/establishment/academic-period/api/query/use-sede-options"
+import { useSedeJornadasActivasQuery } from "@/features/establishment/employees/api/query/use-sede-jornadas"
+import { useEspecialidadesQuery } from "@/features/establishment/academic-period/api/query/use-especialidades"
+import { useEtniasQuery } from "@/features/establishment/institution/api/query/use-etnias"
+import { useDisabilityTypesQuery } from "@/features/establishment/institution/api/query/use-disability-types"
 import {
   isFieldRequired,
   isFieldVisible,
@@ -42,21 +51,7 @@ import {
 } from "@/features/coverage/utils/matricula-field-settings"
 import { formatDateValue, parseDateValue } from "@/lib/date-time-value"
 import { MATRICULA_STATUSES } from "@/features/coverage/api/schema"
-import {
-  CONFLICT_VICTIM_POPULATION_OPTIONS,
-  ETHNICITY_OPTIONS,
-  FUNDING_SOURCE_OPTIONS,
-  MATRICULA_STATUS_LABELS,
-  PREVIOUS_YEAR_CONDITION_OPTIONS,
-  PREVIOUS_YEAR_SITUATION_OPTIONS,
-  SISBEN_OPTIONS,
-  SOCIOECONOMIC_STRATUM_OPTIONS,
-  SPECIALTY_OPTIONS,
-  SPECIAL_CONDITIONS_OPTIONS,
-  TALENT_OPTIONS,
-  YES_NO_OPTIONS,
-} from "@/features/coverage/api/ui-mappings-matricula"
-import { DOCUMENT_TYPE_OPTIONS, GENDER_OPTIONS, RELATIONSHIP_OPTIONS } from "@/features/coverage/api/ui-mappings"
+import { MATRICULA_STATUS_LABELS, YES_NO_OPTIONS } from "@/features/coverage/api/ui-mappings-matricula"
 import type {
   MatriculaAcademicInfo,
   MatriculaBenefitsInfo,
@@ -206,12 +201,8 @@ interface SelectFieldProps {
   onChange: (value: string) => void
   required?: boolean
   placeholder?: string
-  /** Etiquetas distintas del valor (ej. grado "5" → "5°"). Por defecto,
-   * cada opción se muestra tal cual. */
   labelFor?: (option: string) => string
-  /** Rojo en el label y el borde del combobox — campo obligatorio sin elegir. */
   invalid?: boolean
-  /** Solo lectura: el valor se muestra pero no se puede cambiar desde acá. */
   disabled?: boolean
 }
 
@@ -266,9 +257,14 @@ export function MatriculaSelectField({
 // acudiente): un solo componente evita reescribir el filtrado en cascada
 // cada vez.
 
+export interface MunicipalityOption {
+  id: number
+  name: string
+}
+
 export interface DepartmentOption {
   name: string
-  municipalities: string[]
+  municipalities: MunicipalityOption[]
 }
 
 interface DeptMunicipioFieldsProps {
@@ -290,7 +286,12 @@ export function DeptMunicipioFields({
   onChange,
   fieldSettings,
 }: DeptMunicipioFieldsProps) {
+  // `municipality` viaja como el `PK_TMUNICIPIO` real (string), no el
+  // nombre — el alta real solo manda `..._MUNICIPIO` (no `..._DEPARTAMENTO`,
+  // esa columna no existe), así que Departamento queda solo para filtrar
+  // acá en el front, sin id propio.
   const municipalities = departments.find((d) => d.name === value.department)?.municipalities ?? []
+  const municipalityNameById = new Map(municipalities.map((m) => [String(m.id), m.name]))
   const departmentId = `${idPrefix}-department`
   const municipalityId = `${idPrefix}-municipality`
 
@@ -312,12 +313,33 @@ export function DeptMunicipioFields({
           label={municipalityLabel}
           required={isFieldRequired(fieldSettings, municipalityId)}
           value={value.municipality}
-          options={municipalities}
+          options={municipalities.map((m) => String(m.id))}
+          labelFor={(option) => municipalityNameById.get(option) ?? option}
+          placeholder={!value.department ? "Elegí departamento primero" : "Seleccionar"}
+          disabled={!value.department}
           onChange={(municipality) => onChange({ ...value, municipality })}
         />
       )}
     </>
   )
+}
+
+// Campos como Tipo de documento/Género/Parentesco viajan al alta real como
+// FK a `TLISTA_VALOR` (`useMatriculaCatalogQuery`), no como texto libre —
+// se guardan como el `id` (string) y se muestran por `nombre`.
+function catalogOptions(catalog: MatriculaCatalogOption[] | undefined) {
+  return (catalog ?? []).map((option) => String(option.id))
+}
+
+function catalogLabelFor(catalog: MatriculaCatalogOption[] | undefined) {
+  const byId = new Map((catalog ?? []).map((option) => [String(option.id), option.nombre]))
+  return (id: string) => byId.get(id) ?? id
+}
+
+/** Para secciones sin ningún campo bloqueado: si la config apagó "Visible"
+ * en todos sus campos, la tarjeta entera no tiene nada que mostrar. */
+function anySettingVisible(fieldSettings: MatriculaFieldSettingsMap | undefined, ids: string[]) {
+  return ids.some((id) => isFieldVisible(fieldSettings, id))
 }
 
 // ── Secciones ─────────────────────────────────────────────────────────────
@@ -352,6 +374,20 @@ export function MatriculaAcademicSection({
     shift: value.shift || undefined,
     grade: value.grade ? Number(value.grade) : undefined,
   })
+  const gradoNombreByValor = new Map(
+    (dependentCatalogs?.grades ?? []).map((grado) => [String(grado.valor), grado.nombre]),
+  )
+
+  // Carácter/Especialidad/Énfasis = `PK_TENFASIS` (`fn_especialidad_enfasis_
+  // listar`, no TLISTA_VALOR) — pide el período académico, que se resuelve
+  // igual que en la cascada de arriba (mismas queries, cacheadas por key).
+  const { data: sedes } = useSedeOptionsQuery()
+  const sedeId = value.campus ? sedes?.find((sede) => sede.nombre === value.campus)?.pk_sede : undefined
+  const { data: jornadasActivas } = useSedeJornadasActivasQuery(sedeId ?? null)
+  const jornadaId = value.shift ? jornadasActivas?.find((j) => j.nombre === value.shift)?.id : undefined
+  const { data: periodoId } = usePeriodoResolverMatriculaQuery(sedeId ?? null, jornadaId ?? null)
+  const { data: especialidades } = useEspecialidadesQuery(periodoId ?? undefined)
+  const especialidadNombreById = new Map((especialidades ?? []).map((e) => [String(e.id), e.label]))
 
   return (
     <MatriculaFormSection title="Información de matrícula">
@@ -380,8 +416,8 @@ export function MatriculaAcademicSection({
         label="Grado"
         required
         value={value.grade}
-        options={(dependentCatalogs?.grades ?? []).map((grade) => String(grade))}
-        labelFor={(option) => formatGrade(Number(option))}
+        options={(dependentCatalogs?.grades ?? []).map((grado) => String(grado.valor))}
+        labelFor={(option) => gradoNombreByValor.get(option) ?? option}
         placeholder={!value.shift ? "Elegí jornada primero" : "Seleccionar"}
         disabled={!value.shift}
         invalid={invalidFields.includes("matricula-grade")}
@@ -392,7 +428,10 @@ export function MatriculaAcademicSection({
         label="Grupo"
         required
         value={value.group}
-        options={dependentCatalogs?.groups ?? []}
+        options={(dependentCatalogs?.groups ?? []).map((grupo) => String(grupo.id))}
+        labelFor={(option) =>
+          dependentCatalogs?.groups.find((grupo) => String(grupo.id) === option)?.codigo ?? option
+        }
         placeholder={!value.grade ? "Elegí grado primero" : "Seleccionar"}
         disabled={!value.grade}
         invalid={invalidFields.includes("matricula-group")}
@@ -405,7 +444,9 @@ export function MatriculaAcademicSection({
           required={isFieldRequired(fieldSettings, "matricula-specialty")}
           invalid={invalidFields.includes("matricula-specialty")}
           value={value.specialty}
-          options={SPECIALTY_OPTIONS}
+          options={(especialidades ?? []).map((e) => String(e.id))}
+          labelFor={(option) => especialidadNombreById.get(option) ?? option}
+          placeholder={!value.shift ? "Elegí jornada primero" : "Seleccionar"}
           onChange={(specialty) => onChange({ ...value, specialty })}
         />
       )}
@@ -441,6 +482,11 @@ export function MatriculaStudentSection({
   invalidFields = [],
   fieldSettings,
 }: StudentSectionProps) {
+  const { data: tipoDocumento } = useMatriculaCatalogQuery("tipoDocumento")
+  const { data: genero } = useMatriculaCatalogQuery("genero")
+  const { data: etnias } = useEtniasQuery()
+  const etniaNombreById = new Map((etnias ?? []).map((e) => [String(e.id), e.name]))
+
   return (
     <MatriculaFormSection title="Información del estudiante">
       <MatriculaSelectField
@@ -448,7 +494,8 @@ export function MatriculaStudentSection({
         label="Tipo de documento del estudiante"
         required
         value={value.documentType}
-        options={DOCUMENT_TYPE_OPTIONS}
+        options={catalogOptions(tipoDocumento)}
+        labelFor={catalogLabelFor(tipoDocumento)}
         invalid={invalidFields.includes("student-document-type")}
         onChange={(documentType) => onChange({ ...value, documentType })}
       />
@@ -530,7 +577,8 @@ export function MatriculaStudentSection({
         label="Género del estudiante"
         required
         value={value.gender}
-        options={GENDER_OPTIONS}
+        options={catalogOptions(genero)}
+        labelFor={catalogLabelFor(genero)}
         invalid={invalidFields.includes("student-gender")}
         onChange={(gender) => onChange({ ...value, gender })}
       />
@@ -541,7 +589,8 @@ export function MatriculaStudentSection({
           required={isFieldRequired(fieldSettings, "student-ethnicity")}
           invalid={invalidFields.includes("student-ethnicity")}
           value={value.ethnicity}
-          options={ETHNICITY_OPTIONS}
+          options={(etnias ?? []).map((e) => String(e.id))}
+          labelFor={(option) => etniaNombreById.get(option) ?? option}
           onChange={(ethnicity) => onChange({ ...value, ethnicity })}
         />
       )}
@@ -575,6 +624,10 @@ export function MatriculaResidenceSection({
   fieldSettings,
 }: ResidenceSectionProps) {
   const addressId = `${idPrefix}-address`
+  const departmentId = `${idPrefix}-department`
+  const municipalityId = `${idPrefix}-municipality`
+  if (!anySettingVisible(fieldSettings, [addressId, departmentId, municipalityId])) return null
+
   return (
     <MatriculaFormSection title={title}>
       {isFieldVisible(fieldSettings, addressId) && (
@@ -624,6 +677,8 @@ export function MatriculaContactSection({
 }: ContactSectionProps) {
   const phoneId = `${idPrefix}-phone`
   const emailId = `${idPrefix}-email`
+  if (!anySettingVisible(fieldSettings, [phoneId, emailId])) return null
+
   return (
     <MatriculaFormSection title={title}>
       {isFieldVisible(fieldSettings, phoneId) && (
@@ -668,6 +723,19 @@ export function MatriculaPreviousYearSection({
   invalidFields = [],
   fieldSettings,
 }: PreviousYearSectionProps) {
+  const { data: situacionAnioAnterior } = useMatriculaCatalogQuery("situacionAnioAnterior")
+  const { data: condicionAnioAnterior } = useMatriculaCatalogQuery("condicionAnioAnterior")
+  if (
+    !anySettingVisible(fieldSettings, [
+      "previous-year-situation",
+      "previous-year-condition",
+      "previous-institution",
+      "welfare-institution",
+    ])
+  ) {
+    return null
+  }
+
   return (
     <MatriculaFormSection title="Información académica del año anterior">
       {isFieldVisible(fieldSettings, "previous-year-situation") && (
@@ -677,7 +745,8 @@ export function MatriculaPreviousYearSection({
           required={isFieldRequired(fieldSettings, "previous-year-situation")}
           invalid={invalidFields.includes("previous-year-situation")}
           value={value.situation}
-          options={PREVIOUS_YEAR_SITUATION_OPTIONS}
+          options={catalogOptions(situacionAnioAnterior)}
+          labelFor={catalogLabelFor(situacionAnioAnterior)}
           onChange={(situation) => onChange({ ...value, situation })}
         />
       )}
@@ -688,7 +757,8 @@ export function MatriculaPreviousYearSection({
           required={isFieldRequired(fieldSettings, "previous-year-condition")}
           invalid={invalidFields.includes("previous-year-condition")}
           value={value.condition}
-          options={PREVIOUS_YEAR_CONDITION_OPTIONS}
+          options={catalogOptions(condicionAnioAnterior)}
+          labelFor={catalogLabelFor(condicionAnioAnterior)}
           onChange={(condition) => onChange({ ...value, condition })}
         />
       )}
@@ -731,6 +801,16 @@ export function MatriculaOriginSectorSection({
   invalidFields = [],
   fieldSettings,
 }: OriginSectorSectionProps) {
+  if (
+    !anySettingVisible(fieldSettings, [
+      "origin-private-sector",
+      "origin-another-municipality",
+      "origin-which-municipality",
+    ])
+  ) {
+    return null
+  }
+
   return (
     <MatriculaFormSection title="Sector de origen">
       {isFieldVisible(fieldSettings, "origin-private-sector") && (
@@ -789,6 +869,16 @@ export function MatriculaConflictVictimSection({
   // propio que lo filtre, a diferencia de `DeptMunicipioFields`) — se
   // ofrece el listado completo de municipios de todos los departamentos.
   const allMunicipalities = departments.flatMap((d) => d.municipalities)
+  const municipalityNameById = new Map(allMunicipalities.map((m) => [String(m.id), m.name]))
+  const { data: poblacionVictima } = useMatriculaCatalogQuery("poblacionVictima")
+  if (
+    !anySettingVisible(fieldSettings, [
+      "conflict-victim-population",
+      "conflict-last-expelling-municipality",
+    ])
+  ) {
+    return null
+  }
 
   return (
     <MatriculaFormSection title="Víctima conflicto armado">
@@ -799,7 +889,8 @@ export function MatriculaConflictVictimSection({
           required={isFieldRequired(fieldSettings, "conflict-victim-population")}
           invalid={invalidFields.includes("conflict-victim-population")}
           value={value.population}
-          options={CONFLICT_VICTIM_POPULATION_OPTIONS}
+          options={catalogOptions(poblacionVictima)}
+          labelFor={catalogLabelFor(poblacionVictima)}
           onChange={(population) => onChange({ ...value, population })}
         />
       )}
@@ -810,7 +901,8 @@ export function MatriculaConflictVictimSection({
           required={isFieldRequired(fieldSettings, "conflict-last-expelling-municipality")}
           invalid={invalidFields.includes("conflict-last-expelling-municipality")}
           value={value.lastExpellingMunicipality}
-          options={allMunicipalities}
+          options={allMunicipalities.map((m) => String(m.id))}
+          labelFor={(option) => municipalityNameById.get(option) ?? option}
           onChange={(lastExpellingMunicipality) => onChange({ ...value, lastExpellingMunicipality })}
         />
       )}
@@ -831,6 +923,26 @@ export function MatriculaComplementarySection({
   invalidFields = [],
   fieldSettings,
 }: ComplementarySectionProps) {
+  const { data: estrato } = useMatriculaCatalogQuery("estrato")
+  const { data: sisben } = useMatriculaCatalogQuery("sisben")
+  const { data: talento } = useMatriculaCatalogQuery("talento")
+  const { data: discapacidades } = useDisabilityTypesQuery()
+  const discapacidadNombreById = new Map(
+    (discapacidades ?? []).map((item) => [String(item.id), item.name]),
+  )
+  if (
+    !anySettingVisible(fieldSettings, [
+      "complementary-stratum",
+      "complementary-sisben",
+      "complementary-eps",
+      "complementary-ars",
+      "complementary-special-conditions",
+      "complementary-talent",
+    ])
+  ) {
+    return null
+  }
+
   return (
     <MatriculaFormSection title="Información complementaria">
       {isFieldVisible(fieldSettings, "complementary-stratum") && (
@@ -840,7 +952,8 @@ export function MatriculaComplementarySection({
           required={isFieldRequired(fieldSettings, "complementary-stratum")}
           invalid={invalidFields.includes("complementary-stratum")}
           value={value.socioeconomicStratum}
-          options={SOCIOECONOMIC_STRATUM_OPTIONS}
+          options={catalogOptions(estrato)}
+          labelFor={catalogLabelFor(estrato)}
           onChange={(socioeconomicStratum) => onChange({ ...value, socioeconomicStratum })}
         />
       )}
@@ -851,7 +964,8 @@ export function MatriculaComplementarySection({
           required={isFieldRequired(fieldSettings, "complementary-sisben")}
           invalid={invalidFields.includes("complementary-sisben")}
           value={value.sisben}
-          options={SISBEN_OPTIONS}
+          options={catalogOptions(sisben)}
+          labelFor={catalogLabelFor(sisben)}
           onChange={(sisben) => onChange({ ...value, sisben })}
         />
       )}
@@ -884,7 +998,8 @@ export function MatriculaComplementarySection({
           required={isFieldRequired(fieldSettings, "complementary-special-conditions")}
           invalid={invalidFields.includes("complementary-special-conditions")}
           value={value.specialConditions}
-          options={SPECIAL_CONDITIONS_OPTIONS}
+          options={(discapacidades ?? []).map((item) => String(item.id))}
+          labelFor={(option) => discapacidadNombreById.get(option) ?? option}
           onChange={(specialConditions) => onChange({ ...value, specialConditions })}
         />
       )}
@@ -895,7 +1010,8 @@ export function MatriculaComplementarySection({
           required={isFieldRequired(fieldSettings, "complementary-talent")}
           invalid={invalidFields.includes("complementary-talent")}
           value={value.talent}
-          options={TALENT_OPTIONS}
+          options={catalogOptions(talento)}
+          labelFor={catalogLabelFor(talento)}
           onChange={(talent) => onChange({ ...value, talent })}
         />
       )}
@@ -916,6 +1032,20 @@ export function MatriculaBenefitsSection({
   invalidFields = [],
   fieldSettings,
 }: BenefitsSectionProps) {
+  const { data: fuenteRecursos } = useMatriculaCatalogQuery("fuenteRecursos")
+  if (
+    !anySettingVisible(fieldSettings, [
+      "benefits-subsidized",
+      "benefits-funding-source",
+      "benefits-head-household-student",
+      "benefits-head-household-children",
+      "benefits-public-force-veteran",
+      "benefits-national-heroes",
+    ])
+  ) {
+    return null
+  }
+
   return (
     <MatriculaFormSection title="Subsidio o beneficios">
       {isFieldVisible(fieldSettings, "benefits-subsidized") && (
@@ -936,7 +1066,8 @@ export function MatriculaBenefitsSection({
           required={isFieldRequired(fieldSettings, "benefits-funding-source")}
           invalid={invalidFields.includes("benefits-funding-source")}
           value={value.fundingSource}
-          options={FUNDING_SOURCE_OPTIONS}
+          options={catalogOptions(fuenteRecursos)}
+          labelFor={catalogLabelFor(fuenteRecursos)}
           onChange={(fundingSource) => onChange({ ...value, fundingSource })}
         />
       )}
@@ -1003,6 +1134,9 @@ export function MatriculaGuardianSection({
   invalidFields = [],
   fieldSettings,
 }: GuardianSectionProps) {
+  const { data: parentesco } = useMatriculaCatalogQuery("parentesco")
+  const { data: tipoDocumento } = useMatriculaCatalogQuery("tipoDocumento")
+
   return (
     <MatriculaFormSection title="Información del acudiente">
       <MatriculaSelectField
@@ -1010,7 +1144,8 @@ export function MatriculaGuardianSection({
         label="Parentesco"
         required
         value={value.relationship}
-        options={RELATIONSHIP_OPTIONS}
+        options={catalogOptions(parentesco)}
+        labelFor={catalogLabelFor(parentesco)}
         invalid={invalidFields.includes("guardian-relationship")}
         onChange={(relationship) => onChange({ ...value, relationship })}
       />
@@ -1063,7 +1198,8 @@ export function MatriculaGuardianSection({
         label="Tipo de documento del acudiente"
         required
         value={value.documentType}
-        options={DOCUMENT_TYPE_OPTIONS}
+        options={catalogOptions(tipoDocumento)}
+        labelFor={catalogLabelFor(tipoDocumento)}
         invalid={invalidFields.includes("guardian-document-type")}
         onChange={(documentType) => onChange({ ...value, documentType })}
       />
@@ -1105,6 +1241,18 @@ export function MatriculaGuardianEmploymentSection({
   invalidFields = [],
   fieldSettings,
 }: GuardianEmploymentSectionProps) {
+  if (
+    !anySettingVisible(fieldSettings, [
+      "guardian-employment-profession",
+      "guardian-employment-entity-name",
+      "guardian-employment-entity-address",
+      "guardian-employment-entity-phone",
+      "guardian-employment-entity-position",
+    ])
+  ) {
+    return null
+  }
+
   return (
     <MatriculaFormSection title="Información laboral del acudiente">
       {isFieldVisible(fieldSettings, "guardian-employment-profession") && (

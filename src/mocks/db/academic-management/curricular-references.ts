@@ -6,8 +6,8 @@ import {
 
 import type { CurricularReference } from "@/features/academic-management/curricular-references/api/types/curricular-reference"
 
-function levels(...codes: string[]) {
-  return EDUCATION_LEVELS.filter((level) => codes.includes(level.code))
+function level(code: string) {
+  return EDUCATION_LEVELS.find((item) => item.code === code) ?? null
 }
 
 function approach(code: string) {
@@ -18,22 +18,16 @@ function evaluationType(code: string) {
   return EVALUATION_TYPES.find((item) => item.code === code) ?? null
 }
 
-// Ejemplos con forma real (DBA, Propósitos e Imprescindibles), sembrados a
-// mano: cada uno cubre uno de los 3 casos que muestra `Estado` (activo desde
-// su alta, inactivo que estuvo activo y se desactivó, inactivo que nació así
-// y nunca se activó).
 export const curricularReferencesDb: CurricularReference[] = [
   {
     id: 1,
     name: "DBA - Secundaria",
-    educationLevels: levels("SECUNDARIA"),
+    educationLevel: level("SECUNDARIA"),
     description: "Derechos Básicos de Aprendizaje para educación básica secundaria.",
     level1: "Enunciado",
     level2: "Evidencia",
     pedagogicalApproach: approach("COMPETENCIAS"),
     evaluationType: evaluationType("SUMATIVA"),
-    // Ids del catálogo real de áreas generales (`generalAreasDb`):
-    // Matemáticas, Humanidades y Lengua Castellana, Ciencias Naturales.
     areas: [
       { id: 15, code: "", name: "Matemáticas" },
       { id: 12, code: "", name: "Humanidades y Lengua Castellana" },
@@ -49,7 +43,7 @@ export const curricularReferencesDb: CurricularReference[] = [
   {
     id: 2,
     name: "DBA - Media",
-    educationLevels: levels("MEDIA"),
+    educationLevel: level("MEDIA"),
     description: "Derechos Básicos de Aprendizaje para educación media.",
     level1: "Enunciado",
     level2: "Evidencia",
@@ -66,7 +60,7 @@ export const curricularReferencesDb: CurricularReference[] = [
   {
     id: 3,
     name: "Propósitos e Imprescindibles - Educación Inicial",
-    educationLevels: levels("PREESCOLAR"),
+    educationLevel: level("PREESCOLAR"),
     description: "Propósitos de la educación inicial y sus imprescindibles.",
     level1: "Propósito",
     level2: "Imprescindible",
@@ -108,7 +102,7 @@ curricularReferencesDb.push(
     return {
       id: 4 + index,
       name,
-      educationLevels: levels(EXTRA_LEVEL_CODES[index % EXTRA_LEVEL_CODES.length]),
+      educationLevel: level(EXTRA_LEVEL_CODES[index % EXTRA_LEVEL_CODES.length]),
       description: `Referente curricular de ejemplo: ${name.toLowerCase()}.`,
       level1: "Enunciado",
       level2: "Evidencia",

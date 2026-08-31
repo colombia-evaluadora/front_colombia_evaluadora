@@ -71,6 +71,12 @@ export function ManageStatementDialog({
 
   const isPending = createMutation.isPending || updateMutation.isPending
 
+  const hasRequiredFields = text.trim().length > 0
+  const hasChanges = isEditMode
+    ? text.trim() !== (statement?.text ?? "") || active !== (statement?.active ?? true)
+    : true
+  const canSave = hasRequiredFields && hasChanges
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
@@ -126,17 +132,19 @@ export function ManageStatementDialog({
         </form>
 
         <DialogFooter className="justify-end gap-2">
-          <Button
-            size="sm"
-            type="submit"
-            form="manage-statement-form"
-            variant="fill"
-            color="primary"
-            disabled={isPending}
-          >
-            <CheckIcon data-icon="inline-start" />
-            {isPending ? "Guardando..." : "Guardar"}
-          </Button>
+          {canSave && (
+            <Button
+              size="sm"
+              type="submit"
+              form="manage-statement-form"
+              variant="fill"
+              color="primary"
+              disabled={isPending}
+            >
+              <CheckIcon data-icon="inline-start" />
+              {isPending ? "Guardando..." : "Guardar"}
+            </Button>
+          )}
           <Button
             size="sm"
             type="button"

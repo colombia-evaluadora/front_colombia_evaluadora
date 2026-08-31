@@ -136,16 +136,13 @@ function MatriculaEditPageContent() {
   }, [data, values])
 
   const departments: DepartmentOption[] = (() => {
-    const byName = new Map<string, Set<string>>()
+    const byName = new Map<string, DepartmentOption["municipalities"]>()
     for (const municipality of municipalities) {
-      const set = byName.get(municipality.department.name) ?? new Set<string>()
-      set.add(municipality.name)
-      byName.set(municipality.department.name, set)
+      const list = byName.get(municipality.department.name) ?? []
+      list.push({ id: municipality.id, name: municipality.name })
+      byName.set(municipality.department.name, list)
     }
-    return Array.from(byName.entries()).map(([name, set]) => ({
-      name,
-      municipalities: Array.from(set),
-    }))
+    return Array.from(byName.entries()).map(([name, municipalities]) => ({ name, municipalities }))
   })()
 
   const updateMatricula = useUpdateMatricula({

@@ -16,7 +16,7 @@ import { inputVariants } from "@/components/ui/input"
 import { FileUpload, FileUploadTrigger } from "@/components/ui/file-upload"
 import { CheckIcon, ChartLineUpIcon, FileUploadOutlinedIcon, XIcon } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
-import { formatGrade } from "@/features/coverage/api/ui-mappings"
+import { useMatriculaGradeLabel } from "@/features/coverage/hooks/use-matricula-grade-label"
 
 export type GradeChangeKind = "promocion" | "correccion"
 export type GradeChangeGradesAction = "eliminar" | "trasladar"
@@ -73,6 +73,7 @@ export function GradeChangeDialog({
   onConfirm,
   onCancel,
 }: GradeChangeDialogProps) {
+  const gradeLabel = useMatriculaGradeLabel()
   const [kind, setKind] = useState<GradeChangeKind>("promocion")
   const [reason, setReason] = useState(EMPTY_RESULT.reason)
   const [supportFile, setSupportFile] = useState<File | null>(EMPTY_RESULT.supportFile)
@@ -114,8 +115,8 @@ export function GradeChangeDialog({
             Cambio de grado
           </DialogTitle>
           <p className="text-sm text-muted-foreground">
-            El nuevo grado ({formatGrade(newGrade)}) es {isSuperior ? "superior" : "inferior"} al
-            actual ({formatGrade(currentGrade)})
+            El nuevo grado ({gradeLabel(newGrade)}) es {isSuperior ? "superior" : "inferior"} al
+            actual ({gradeLabel(currentGrade)})
           </p>
         </DialogHeader>
 
