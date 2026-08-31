@@ -39,8 +39,9 @@ interface TabStatementsProps {
 export function TabStatements({ reference }: TabStatementsProps) {
   const level1Label = reference.level1 || "Enunciado"
   const level2Label = reference.level2 || "Evidencia"
-
-  const [areaId, setAreaId] = useState<number | null>(reference.areas[0]?.id ?? null)
+  const [areaId, setAreaId] = useState<number | null | undefined>(
+    reference.areas.length > 0 ? reference.areas[0].id : null,
+  )
   const [searchOpen, setSearchOpen] = useState(false)
   const [search, setSearch] = useState("")
   const [selectedStatementId, setSelectedStatementId] = useState<number | null>(null)
@@ -72,12 +73,13 @@ export function TabStatements({ reference }: TabStatementsProps) {
   const { data: evidences = [], isPending: isEvidencesPending } = useCurricularEvidencesQuery(
     selectedStatementId,
   )
-
-  const areaLabels = Object.fromEntries(reference.areas.map((area) => [area.id, area.name]))
+  const hasReferenceAreas = reference.areas.length > 0
+  const ALL_AREAS = 0
+  const areaLabels = hasReferenceAreas
+    ? Object.fromEntries(reference.areas.map((area) => [area.id, area.name]))
+    : { [ALL_AREAS]: "Todas las áreas" }
   const sortedEvidences = sortBySortKey(evidences, evidenceSort)
 
-  // Paginación en cliente: el endpoint trae todas las evidencias del
-  // enunciado de una, no hay paginación de servidor que orquestar acá.
   const evidencePageCount = Math.max(1, Math.ceil(sortedEvidences.length / evidencePageSize))
   const clampedEvidencePageIndex = Math.min(evidencePageIndex, evidencePageCount - 1)
   const pagedEvidences = sortedEvidences.slice(
@@ -91,24 +93,32 @@ export function TabStatements({ reference }: TabStatementsProps) {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Fila propia, a todo el ancho de la tarjeta — no va metido en la
-          columna angosta de la lista de enunciados. */}
       <Field orientation="vertical" variant="outlined" className="w-full">
         <FieldLabel htmlFor="statement-area">Áreas o dimensiones</FieldLabel>
         <ComboboxField
           items={areaLabels}
-          value={areaId}
-          onValueChange={(value) => setAreaId((value as number) ?? null)}
+          value={areaId === null ? ALL_AREAS : areaId}
+          onValueChange={(value) => {
+            if (value == null) {
+              setAreaId(undefined)
+              return
+            }
+            setAreaId(value === ALL_AREAS ? null : (value as number))
+          }}
         >
           <ComboboxFieldTrigger id="statement-area" size="sm" className="h-12 w-full [&_svg]:size-5">
             <ComboboxFieldValue placeholder="Seleccionar" />
           </ComboboxFieldTrigger>
           <ComboboxFieldContent>
-            {reference.areas.map((area) => (
-              <ComboboxFieldItem key={area.id} value={area.id}>
-                {area.name}
-              </ComboboxFieldItem>
-            ))}
+            {hasReferenceAreas ? (
+              reference.areas.map((area) => (
+                <ComboboxFieldItem key={area.id} value={area.id}>
+                  {area.name}
+                </ComboboxFieldItem>
+              ))
+            ) : (
+              <ComboboxFieldItem value={ALL_AREAS}>Todas las áreas</ComboboxFieldItem>
+            )}
           </ComboboxFieldContent>
         </ComboboxField>
       </Field>
@@ -116,8 +126,6 @@ export function TabStatements({ reference }: TabStatementsProps) {
       <div className="grid grid-cols-1 gap-4 md:grid-cols-[20rem_1fr]">
       <div className="flex flex-col gap-3">
         <div className="flex items-center gap-2">
-          {/* Flotante sobre un `Popover`: así no empuja la lista de abajo
-              cuando se abre, a diferencia de meterlo en el flujo normal. */}
           <Popover open={searchOpen} onOpenChange={setSearchOpen}>
             <PopoverTrigger
               render={
@@ -148,7 +156,7 @@ export function TabStatements({ reference }: TabStatementsProps) {
             variant="fill"
             color="primary"
             size="sm"
-            disabled={areaId == null}
+            disabled={areaId === undefined}
             onClick={() => setStatementDialog({ open: true, statement: null })}
           >
             <ControlPointIcon data-icon="inline-start" className="size-5" />
@@ -164,7 +172,7 @@ export function TabStatements({ reference }: TabStatementsProps) {
             </>
           ) : filteredStatements.length === 0 ? (
             <p className="text-muted-foreground rounded-lg border p-4 text-center text-sm">
-              {areaId == null ? "Selecciona un área." : `Sin ${level1Label.toLowerCase()}s.`}
+              {areaId === undefined ? "Selecciona un área." : `Sin ${level1Label.toLowerCase()}s.`}
             </p>
           ) : (
             filteredStatements.map((statement) => {
@@ -218,8 +226,6 @@ export function TabStatements({ reference }: TabStatementsProps) {
       </div>
 
       <div className="overflow-hidden rounded-lg border border-border">
-        {/* Cabecera con fondo propio, separada de la tabla — mismo criterio
-            que `TableScreenTitle` (bg-muted/10 + borde inferior). */}
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-table-screen-title px-4 py-2">
           <p className="font-heading text-[17px] font-bold">
             {level2Label}s del {level1Label.toLowerCase()}

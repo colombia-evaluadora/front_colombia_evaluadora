@@ -17,7 +17,10 @@ import { CurricularReferenceDetailsForm } from "@/features/academic-management/c
 import { useCreate } from "@/features/academic-management/curricular-references/api/mutations/use-create"
 import { useUpdate } from "@/features/academic-management/curricular-references/api/mutations/use-update"
 import { useCurricularReferenceQuery } from "@/features/academic-management/curricular-references/api/query/use-curricular-reference"
-import { useCurricularReferenceAreasQuery } from "@/features/academic-management/curricular-references/api/query/use-curricular-reference-areas"
+import {
+  useCurricularReferenceAreasQuery,
+  type CurricularReferenceArea,
+} from "@/features/academic-management/curricular-references/api/query/use-curricular-reference-areas"
 import type { CurricularReferenceDraft } from "@/features/academic-management/curricular-references/api/types/curricular-reference"
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 import { useNotify } from "@/components/notice/notice-context"
@@ -31,6 +34,8 @@ interface ManageCurricularReferenceDialogProps {
   pedagogicalApproaches: CatalogItem[]
   evaluationTypes: CatalogItem[]
 }
+
+const EMPTY_AREAS: CurricularReferenceArea[] = []
 
 function createInitialValues(): CurricularReferenceDraft {
   return {
@@ -107,7 +112,7 @@ export function ManageCurricularReferenceDialog({
     noticeIdRef.current += 1
     setNotice({ id: noticeIdRef.current, message, variant })
   }
-  const { data: referenceAreas = [] } = useCurricularReferenceAreasQuery(curricularReferenceId ?? NaN)
+  const { data: referenceAreas = EMPTY_AREAS } = useCurricularReferenceAreasQuery(curricularReferenceId ?? NaN)
 
   useEffect(() => {
     if (!open) return

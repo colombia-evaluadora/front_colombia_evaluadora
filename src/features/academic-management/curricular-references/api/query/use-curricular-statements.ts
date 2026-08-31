@@ -20,17 +20,17 @@ interface StatementRow {
   total_evidencias: number
 }
 
-function toStatement(row: StatementRow, curricularReferenceId: number, areaId: number): CurricularStatement {
+function toStatement(row: StatementRow, curricularReferenceId: number): CurricularStatement {
   return {
     id: row.pk_referente_enunciado,
     curricularReferenceId,
-    areaId: row.fk_referente_curricular_area ?? areaId,
+    areaId: row.fk_referente_curricular_area,
     text: row.texto,
     active: row.active,
   }
 }
 
-async function fetchStatements(curricularReferenceId: number, areaId: number): Promise<CurricularStatement[]> {
+async function fetchStatements(curricularReferenceId: number, areaId: number | null): Promise<CurricularStatement[]> {
   const url = apiPath(
     `/academic-management/curricular-references/${curricularReferenceId}/statements`,
     `/referentes-curriculares/${curricularReferenceId}/enunciados`,
@@ -41,20 +41,22 @@ async function fetchStatements(curricularReferenceId: number, areaId: number): P
     return response.rows
   }
 
-  const raw = await api.get<StatementRow[] | { rows: StatementRow[] }>(url, { params: { area: areaId } })
-  return unwrapRows(raw).map((row) => toStatement(row, curricularReferenceId, areaId))
+  const raw = await api.get<StatementRow[] | { rows: StatementRow[] }>(url, {
+    params: { area: areaId ?? "" },
+  })
+  return unwrapRows(raw).map((row) => toStatement(row, curricularReferenceId))
 }
 
-export const curricularStatementsQueryKey = (curricularReferenceId: number, areaId: number) => [
+export const curricularStatementsQueryKey = (curricularReferenceId: number, areaId: number | null) => [
   "curricular-statements",
   curricularReferenceId,
   areaId,
 ]
 
-export function useCurricularStatementsQuery(curricularReferenceId: number, areaId: number | null) {
+export function useCurricularStatementsQuery(curricularReferenceId: number, areaId: number | null | undefined) {
   return useQuery({
-    queryKey: curricularStatementsQueryKey(curricularReferenceId, areaId ?? -1),
-    queryFn: () => fetchStatements(curricularReferenceId, areaId as number),
-    enabled: areaId != null,
+    queryKey: curricularStatementsQueryKey(curricularReferenceId, areaId ?? null),
+    queryFn: () => fetchStatements(curricularReferenceId, areaId ?? null),
+    enabled: areaId !== undefined,
   })
 }
