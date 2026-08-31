@@ -22,7 +22,7 @@ interface ManageStatementDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   curricularReferenceId: number
-  areaId: number | null
+  areaId: number | null | undefined
   statement?: CurricularStatement | null
   levelLabel: string
 }
@@ -90,7 +90,7 @@ export function ManageStatementDialog({
       return
     }
 
-    if (areaId == null) return
+    if (areaId === undefined) return
     await createMutation.mutateAsync({ curricularReferenceId, areaId, text: text.trim(), active })
   }
 
