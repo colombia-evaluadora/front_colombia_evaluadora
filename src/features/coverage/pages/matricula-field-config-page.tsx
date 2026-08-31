@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react"
 import { Link } from "@tanstack/react-router"
-import { toast } from "sonner"
 
 import {
   TableScreen,
@@ -14,6 +13,7 @@ import { Field, FieldLabel } from "@/components/ui/field"
 import { inputVariants } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { CheckIcon, SpinnerIcon } from "@/components/ui/icons"
+import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
 import { cn } from "@/lib/utils"
 
 import { paths } from "@/config/paths"
@@ -105,8 +105,17 @@ function collectChanges(
 }
 
 export function MatriculaFieldConfigPage() {
+  return (
+    <NoticeProvider>
+      <MatriculaFieldConfigPageContent />
+    </NoticeProvider>
+  )
+}
+
+function MatriculaFieldConfigPageContent() {
   const { data, isPending, isError } = useMatriculaFieldConfigQuery()
   const [secciones, setSecciones] = useState<MatriculaConfigSeccion[] | null>(null)
+  const { notify } = useNotify()
 
   useEffect(() => {
     if (data && secciones === null) {
@@ -118,10 +127,10 @@ export function MatriculaFieldConfigPage() {
     mutationConfig: {
       onSuccess: (result) => {
         setSecciones(result.secciones)
-        toast.success("Configuración guardada.")
+        notify("Configuración guardada.")
       },
       onError: (error) => {
-        toast.error(getErrorMessage(error))
+        notify(getErrorMessage(error), { variant: "error" })
       },
     },
   })
@@ -159,6 +168,7 @@ export function MatriculaFieldConfigPage() {
         >
           Configuración de parámetros requeridos
         </TableScreenTitle>
+        <NoticeOutlet className="mx-(--screen-spacing) my-4" />
       </TableScreenHeader>
 
       <TableScreenBody className="rounded-b-none border-b-0">

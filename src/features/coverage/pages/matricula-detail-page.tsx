@@ -9,6 +9,7 @@ import {
 } from "@/components/layout/table-screen"
 import { Button } from "@/components/ui/button"
 import { SpinnerIcon } from "@/components/ui/icons"
+import { NoticeOutlet, NoticeProvider } from "@/components/notice/notice-context"
 
 import { paths } from "@/config/paths"
 import { coberturaMatriculaDetalleRoute } from "@/router"
@@ -23,6 +24,14 @@ import { buildMatriculaFieldSettings } from "@/features/coverage/utils/matricula
 import { resolveMatriculaMunicipioDepartments } from "@/features/coverage/utils/matricula-form-defaults"
 
 export function MatriculaDetailPage() {
+  return (
+    <NoticeProvider>
+      <MatriculaDetailPageContent />
+    </NoticeProvider>
+  )
+}
+
+function MatriculaDetailPageContent() {
   const { matriculaId } = coberturaMatriculaDetalleRoute.useParams()
   const { data, isPending, isError } = useMatriculaDetailQuery(matriculaId)
   const { data: catalogs } = useReservationCatalogsQuery()
@@ -63,6 +72,7 @@ export function MatriculaDetailPage() {
         >
           Detalle de Matrícula
         </TableScreenTitle>
+        <NoticeOutlet className="mx-(--screen-spacing) my-4" />
       </TableScreenHeader>
 
       {isPending && (

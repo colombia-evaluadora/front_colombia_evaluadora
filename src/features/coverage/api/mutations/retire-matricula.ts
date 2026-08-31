@@ -4,8 +4,10 @@ import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
 import type { MatriculaMutationResult } from "@/features/coverage/api/types/matricula"
 
+// `PUT /eval-col/cobertura-academica/matricula/:id/retirar` -- sin body,
+// mismo criterio que `delete-matricula.ts`.
 function retireMatricula(id: string): Promise<MatriculaMutationResult> {
-  return api.post(`/coverage/matricula/${id}/retirar`, {})
+  return api.put(`/eval-col/cobertura-academica/matricula/${id}/retirar`)
 }
 
 interface UseRetireMatriculaOptions {

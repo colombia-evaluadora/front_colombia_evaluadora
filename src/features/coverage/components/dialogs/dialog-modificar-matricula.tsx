@@ -1,5 +1,4 @@
 import { useRef, useState } from "react"
-import { toast } from "sonner"
 
 import {
   Dialog,
@@ -38,7 +37,9 @@ import {
   SpinnerIcon,
   XIcon,
 } from "@/components/ui/icons"
+import { useNotify } from "@/components/notice/notice-context"
 
+import { getErrorMessage } from "@/lib/api-client"
 import { useMatriculaGradeLabel } from "@/features/coverage/hooks/use-matricula-grade-label"
 import { useReservationCatalogsQuery } from "@/features/coverage/api/query/use-reservation-catalogs-query"
 import { useMatriculaDependentCatalogsQuery } from "@/features/coverage/api/query/use-matricula-dependent-catalogs-query"
@@ -87,6 +88,7 @@ export function ModificarMatriculaDialog({
   resetSelection,
 }: ModificarMatriculaDialogProps) {
   const gradeLabel = useMatriculaGradeLabel()
+  const { notify } = useNotify()
   const [open, setOpen] = useState(false)
   // "form" = el diálogo de abajo; el resto son los pasos de verificación
   // encadenados (ver `queue`/`queueIndex`, más abajo).
@@ -194,9 +196,11 @@ export function ModificarMatriculaDialog({
       const results = await Promise.allSettled(selected.map((m) => mutate(m.id)))
       const failed = results.filter((r) => r.status === "rejected").length
       if (failed > 0) {
-        toast.error(`No se pudo aplicar el cambio a ${failed} de ${selected.length} estudiante(s).`)
+        notify(`No se pudo aplicar el cambio a ${failed} de ${selected.length} estudiante(s).`, {
+          variant: "error",
+        })
       } else {
-        toast.success(accion === "retirar" ? "Estudiantes retirados." : "Estudiantes reingresados.")
+        notify(accion === "retirar" ? "Estudiantes retirados." : "Estudiantes reingresados.")
       }
     }
 
@@ -229,8 +233,8 @@ export function ModificarMatriculaDialog({
       setStep(nextQueue[nextIndex])
       return
     }
-    void applyChanges(gradeChange, groupChange).catch(() => {
-      toast.error("No se pudo aplicar el cambio de matrícula.")
+    void applyChanges(gradeChange, groupChange).catch((error) => {
+      notify(getErrorMessage(error), { variant: "error" })
     })
   }
 

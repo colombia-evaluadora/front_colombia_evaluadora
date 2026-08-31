@@ -14,6 +14,7 @@ import {
   TableScreenTitle,
   TableScreenToolbar,
 } from "@/components/layout/table-screen"
+import { NoticeOutlet, NoticeProvider } from "@/components/notice/notice-context"
 
 import { useMatriculaFilters } from "@/features/coverage/hooks/use-matricula-filters"
 import { useMatriculaQuery } from "@/features/coverage/api/query/use-matricula-query"
@@ -76,65 +77,68 @@ export function MatriculaDataTable({ title, action, titleAction }: MatriculaData
   }
 
   return (
-    <TableScreen>
-      <TableScreenHeader>
-        <TableScreenTitle action={titleAction}>{title}</TableScreenTitle>
-        <TableScreenToolbar>
-          <SearchMatricula
-            filters={filters}
-            applyFilters={applyFilters}
-            clearAllFilters={clearAllFilters}
-            activeFilterCount={activeFilterCount}
+    <NoticeProvider>
+      <TableScreen>
+        <TableScreenHeader>
+          <TableScreenTitle action={titleAction}>{title}</TableScreenTitle>
+          <NoticeOutlet className="mx-(--screen-spacing) my-4" />
+          <TableScreenToolbar>
+            <SearchMatricula
+              filters={filters}
+              applyFilters={applyFilters}
+              clearAllFilters={clearAllFilters}
+              activeFilterCount={activeFilterCount}
+            />
+
+            <TableScreenActions>
+              {hasSelection ? (
+                <>
+                  <ModificarMatriculaDialog
+                    selected={selectedRows}
+                    onRemove={deselectRow}
+                    resetSelection={resetSelection}
+                  />
+                  <ClearSelectionDialog resetSelection={resetSelection} />
+                  <ExportSelectedMatriculaDialog
+                    selectedIds={selectedRowIds}
+                    resetSelection={resetSelection}
+                  />
+                </>
+              ) : (
+                <>
+                  {action}
+                  <ExportMatriculaDialog filters={queryFilters} />
+                </>
+              )}
+            </TableScreenActions>
+          </TableScreenToolbar>
+        </TableScreenHeader>
+
+        <TableScreenBody>
+          <DataTable
+            table={table}
+            isPending={isPending}
+            isError={isError}
+            onRetry={refetch}
+            emptyMessage="Sin resultados."
+            errorMessage="Ocurrió un error al cargar la matrícula."
           />
 
-          <TableScreenActions>
-            {hasSelection ? (
-              <>
-                <ModificarMatriculaDialog
-                  selected={selectedRows}
-                  onRemove={deselectRow}
-                  resetSelection={resetSelection}
-                />
-                <ClearSelectionDialog resetSelection={resetSelection} />
-                <ExportSelectedMatriculaDialog
-                  selectedIds={selectedRowIds}
-                  resetSelection={resetSelection}
-                />
-              </>
-            ) : (
-              <>
-                {action}
-                <ExportMatriculaDialog filters={queryFilters} />
-              </>
-            )}
-          </TableScreenActions>
-        </TableScreenToolbar>
-      </TableScreenHeader>
-
-      <TableScreenBody>
-        <DataTable
-          table={table}
-          isPending={isPending}
-          isError={isError}
-          onRetry={refetch}
-          emptyMessage="Sin resultados."
-          errorMessage="Ocurrió un error al cargar la matrícula."
-        />
-
-        {data && (
-          <Pagination
-            viewOptions={<DataTableViewOptions table={table} />}
-            pageIndex={pageIndex}
-            pageCount={data.pageCount}
-            canPrev={pageIndex > 0}
-            canNext={pageIndex < data.pageCount - 1}
-            onPageChange={goToPage}
-            totalCount={data.totalCount}
-            pageSize={pageSize}
-            onPageSizeChange={setPageSize}
-          />
-        )}
-      </TableScreenBody>
-    </TableScreen>
+          {data && (
+            <Pagination
+              viewOptions={<DataTableViewOptions table={table} />}
+              pageIndex={pageIndex}
+              pageCount={data.pageCount}
+              canPrev={pageIndex > 0}
+              canNext={pageIndex < data.pageCount - 1}
+              onPageChange={goToPage}
+              totalCount={data.totalCount}
+              pageSize={pageSize}
+              onPageSizeChange={setPageSize}
+            />
+          )}
+        </TableScreenBody>
+      </TableScreen>
+    </NoticeProvider>
   )
 }
