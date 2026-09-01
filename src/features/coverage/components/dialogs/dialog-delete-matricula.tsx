@@ -1,5 +1,4 @@
 import { useState } from "react"
-import { toast } from "sonner"
 
 import { CheckIcon, SpinnerIcon, TrashIcon, XIcon } from "@/components/ui/icons"
 import {
@@ -14,7 +13,9 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
+import { useNotify } from "@/components/notice/notice-context"
 
+import { getErrorMessage } from "@/lib/api-client"
 import { useDeleteMatricula } from "@/features/coverage/api/mutations/delete-matricula"
 import type { Matricula } from "@/features/coverage/api/types/matricula"
 
@@ -32,21 +33,22 @@ export function DeleteMatriculaDialog({
   onDeleted,
 }: DeleteMatriculaDialogProps) {
   const [open, setOpen] = useState(false)
+  const { notify } = useNotify()
   const fullName = `${matricula.firstName} ${matricula.lastName}`
 
   const deleteMutation = useDeleteMatricula({
     mutationConfig: {
       onSuccess: (result) => {
         if (result.status === "error") {
-          toast.error(result.message)
+          notify(result.message, { variant: "error" })
           return
         }
-        toast.success("Estudiante eliminado correctamente.")
+        notify("Estudiante eliminado correctamente.")
         setOpen(false)
         onDeleted?.()
       },
-      onError: () => {
-        toast.error("No se pudo eliminar el estudiante.")
+      onError: (error) => {
+        notify(getErrorMessage(error), { variant: "error" })
       },
     },
   })

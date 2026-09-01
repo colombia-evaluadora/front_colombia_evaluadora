@@ -54,20 +54,18 @@ function appendFlattened(form: FormData, value: unknown, prefix = ""): void {
   form.append(prefix, String(value))
 }
 
-/**
- * `data` aplanado + los archivos bajo el nombre EXACTO que declara el catálogo
- * (`logo` para el escudo, `fkTarchivoFoto` para la foto de perfil). Un campo
- * binario con otro nombre lo rechaza `file-service` con 400 antes de tocar S3
- * — la validación es por nombre, no por contenido.
- *
- * Un archivo ausente (`null`) simplemente no se agrega: los tres destinos lo
- * tratan como opcional y dejan el registro sin imagen.
- */
-export function toMultipart(data: unknown, files: Record<string, File | null | undefined>): FormData {
+export function toMultipart(
+  data: unknown,
+  files: Record<string, File | File[] | null | undefined>,
+): FormData {
   const form = new FormData()
   appendFlattened(form, data)
   for (const [field, file] of Object.entries(files)) {
-    if (file) form.append(field, file)
+    if (Array.isArray(file)) {
+      file.forEach((item) => form.append(field, item))
+    } else if (file) {
+      form.append(field, file)
+    }
   }
   return form
 }
@@ -79,7 +77,7 @@ export function toMultipart(data: unknown, files: Record<string, File | null | u
 export function postMultipart<T>(
   path: string,
   data: unknown,
-  files: Record<string, File | null | undefined>,
+  files: Record<string, File | File[] | null | undefined>,
 ): Promise<T> {
   return api.post(`/files${path}`, toMultipart(data, files)) as Promise<T>
 }
@@ -87,7 +85,7 @@ export function postMultipart<T>(
 export function patchMultipart<T>(
   path: string,
   data: unknown,
-  files: Record<string, File | null | undefined>,
+  files: Record<string, File | File[] | null | undefined>,
 ): Promise<T> {
   return api.patch(`/files${path}`, toMultipart(data, files)) as Promise<T>
 }

@@ -14,7 +14,6 @@ import {
 
 import { MATRICULA_STATUSES, type MatriculaFiltersFormInput } from "@/features/coverage/api/schema"
 import { MATRICULA_STATUS_LABELS } from "@/features/coverage/api/ui-mappings-matricula"
-import { formatGrade } from "@/features/coverage/api/ui-mappings"
 import { useReservationCatalogsQuery } from "@/features/coverage/api/query/use-reservation-catalogs-query"
 import { useMatriculaDependentCatalogsQuery } from "@/features/coverage/api/query/use-matricula-dependent-catalogs-query"
 import { toSelectItemsMap } from "@/lib/catalog-options"
@@ -127,11 +126,11 @@ export function SearchMatricula({
   ]
   const gradeItems = [
     { value: "", label: "Todos" },
-    ...(dependentCatalogs?.grades ?? []).map((g) => ({ value: String(g), label: formatGrade(g) })),
+    ...(dependentCatalogs?.grades ?? []).map((g) => ({ value: String(g.valor), label: g.nombre })),
   ]
   const groupItems = [
     { value: "", label: "Todos" },
-    ...(dependentCatalogs?.groups ?? []).map((g) => ({ value: g, label: g })),
+    ...(dependentCatalogs?.groups ?? []).map((g) => ({ value: g.codigo, label: g.codigo })),
   ]
 
   return (

@@ -15,6 +15,7 @@ import {
   TableScreenHeader,
   TableScreenTitle,
 } from "@/components/layout/table-screen"
+import { NoticeOutlet, NoticeProvider } from "@/components/notice/notice-context"
 
 import { gestionAcademicaReferentesCurricularesDetalleRoute } from "@/router"
 import { useCurricularReferenceQuery } from "@/features/academic-management/curricular-references/api/query/use-curricular-reference"
@@ -23,11 +24,9 @@ import {
   curricularReferenceStatusLabel,
 } from "@/features/academic-management/curricular-references/api/ui-mappings"
 import { ManageCurricularReferenceDialog } from "@/features/academic-management/curricular-references/components/dialogs/dialog-manage"
-import {
-  EDUCATION_LEVELS,
-  EVALUATION_TYPES,
-  PEDAGOGICAL_APPROACHES,
-} from "@/features/academic-management/curricular-references/api/catalogs"
+import { useEducationLevelsQuery } from "@/features/academic-management/curricular-references/api/query/use-education-levels"
+import { usePedagogicalApproachesQuery } from "@/features/academic-management/curricular-references/api/query/use-pedagogical-approaches"
+import { useEvaluationTypesQuery } from "@/features/academic-management/curricular-references/api/query/use-evaluation-types"
 import { TabStatements } from "@/features/academic-management/curricular-references/components/statements/tab-statements"
 import type { CurricularReference } from "@/features/academic-management/curricular-references/api/types/curricular-reference"
 
@@ -86,11 +85,23 @@ function GeneralInfoTab({ reference }: { reference: CurricularReference }) {
 }
 
 export function CurricularReferenceDetailPage() {
+  return (
+    <NoticeProvider>
+      <CurricularReferenceDetailPageContent />
+    </NoticeProvider>
+  )
+}
+
+function CurricularReferenceDetailPageContent() {
   const { curricularReferenceId } = gestionAcademicaReferentesCurricularesDetalleRoute.useParams()
   const id = Number(curricularReferenceId)
 
   const { data: reference, isPending, isError } = useCurricularReferenceQuery(id)
   const [editorOpen, setEditorOpen] = useState(false)
+
+  const { data: educationLevels = [] } = useEducationLevelsQuery()
+  const { data: pedagogicalApproaches = [] } = usePedagogicalApproachesQuery()
+  const { data: evaluationTypes = [] } = useEvaluationTypesQuery()
 
   return (
     <TableScreen>
@@ -101,7 +112,7 @@ export function CurricularReferenceDetailPage() {
               variant="ghost"
               color="neutral"
               size="sm"
-              className="-ml-3 h-auto font-normal"
+              className="-ml-3 h-auto font-normal text-sm"
               render={<Link to={paths.app.gestionAcademicaReferentesCurriculares.getHref()} />}
               nativeButton={false}
             >
@@ -115,6 +126,7 @@ export function CurricularReferenceDetailPage() {
       </TableScreenHeader>
 
       <TableScreenBody>
+        <NoticeOutlet className="mb-4" />
         {isPending ? (
           <Skeleton className="h-32 w-full" />
         ) : isError || !reference ? (
@@ -122,25 +134,20 @@ export function CurricularReferenceDetailPage() {
             No fue posible cargar este referente curricular.
           </div>
         ) : (
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-4 text-sm">
             {/* Sin borde/sombra propios: va dentro de la tarjeta que ya pone
                 `TableScreenBody`, no hace falta encerrarlo en otra. */}
             <div className="relative">
               <div className="flex flex-wrap items-center gap-2">
                 <h2 className="font-heading text-lg font-bold">{reference.name}</h2>
-                {reference.educationLevels.map((level) => (
-                  <Badge
-                    key={level.id}
-                    variant="soft"
-                    color="muted"
-                    className="rounded-full px-3 py-1 text-xs"
-                  >
-                    {level.name}
+                {reference.educationLevel ? (
+                  <Badge variant="soft" color="muted" className="rounded-full px-3 py-1 text-sm">
+                    {reference.educationLevel.name}
                   </Badge>
-                ))}
+                ) : null}
                 <Badge
                   {...curricularReferenceStatusBadge(reference.active)}
-                  className="rounded-full px-3 py-1 text-xs"
+                  className="rounded-full px-3 py-1 text-sm"
                 >
                   {curricularReferenceStatusLabel(reference.active)}
                 </Badge>
@@ -164,12 +171,6 @@ export function CurricularReferenceDetailPage() {
 
             <Tabs defaultValue="general">
               <TabsList variant="folder">
-                {/* La variante "folder" pinta el trigger con `display:block`
-                    (necesario para el truncado con "…"), así que el ícono y
-                    el texto ya no quedan en fila por sí solos — se envuelven
-                    acá en su propio `inline-flex`. */}
-                {/* El ícono se pinta primario solo cuando esta es la pestaña
-                    activa (`data-active` lo pone el propio trigger). */}
                 <TabsTrigger value="general" className="[&[data-active]_svg]:text-primary">
                   <span className="inline-flex items-center gap-1.5">
                     <InfoIcon />
@@ -198,10 +199,10 @@ export function CurricularReferenceDetailPage() {
             <ManageCurricularReferenceDialog
               open={editorOpen}
               onOpenChange={setEditorOpen}
-              curricularReference={reference}
-              educationLevels={EDUCATION_LEVELS}
-              pedagogicalApproaches={PEDAGOGICAL_APPROACHES}
-              evaluationTypes={EVALUATION_TYPES}
+              curricularReferenceId={id}
+              educationLevels={educationLevels}
+              pedagogicalApproaches={pedagogicalApproaches}
+              evaluationTypes={evaluationTypes}
             />
           </div>
         )}

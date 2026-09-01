@@ -11,7 +11,10 @@ import {
   upsertStatement,
 } from "@/mocks/db/academic-management/curricular-statements"
 
-import type { CurricularStatementDraft } from "@/features/academic-management/curricular-references/api/types/statement"
+import type {
+  CurricularEvidenceDraft,
+  CurricularStatementDraft,
+} from "@/features/academic-management/curricular-references/api/types/statement"
 
 export const curricularStatementsHandlers = [
   http.get(
@@ -103,6 +106,21 @@ export const curricularStatementsHandlers = [
       return HttpResponse.json({ status: "ok", evidences: created })
     },
   ),
+
+  http.put("*/api/academic-management/curricular-evidences/:id", async ({ params, request }) => {
+    await delay(250)
+
+    const id = Number(params.id)
+    const existing = curricularEvidencesDb.find((item) => item.id === id)
+    if (!existing) {
+      return HttpResponse.json({ status: "error", message: "Evidencia no encontrada." }, { status: 404 })
+    }
+
+    const values = (await request.json()) as Partial<CurricularEvidenceDraft>
+    const evidence = upsertEvidence({ ...existing, ...values, id })
+
+    return HttpResponse.json({ status: "ok", evidence })
+  }),
 
   http.delete("*/api/academic-management/curricular-evidences/:id", async ({ params }) => {
     await delay(250)
