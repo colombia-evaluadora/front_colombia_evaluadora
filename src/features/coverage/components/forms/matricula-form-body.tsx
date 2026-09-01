@@ -1,5 +1,4 @@
-import type { CreateMatriculaInput } from "@/features/coverage/api/types/matricula"
-import type { ReservationCatalogs } from "@/features/coverage/api/types/reservation"
+import type { CreateMatriculaInput, MatriculaCampusCatalog } from "@/features/coverage/api/types/matricula"
 import {
   MatriculaAcademicSection,
   MatriculaBenefitsSection,
@@ -19,7 +18,7 @@ import type { MatriculaFieldSettingsMap } from "@/features/coverage/utils/matric
 interface MatriculaFormBodyProps {
   values: CreateMatriculaInput
   onChange: (values: CreateMatriculaInput) => void
-  catalogs?: ReservationCatalogs
+  catalogs?: MatriculaCampusCatalog
   departments: DepartmentOption[]
   invalidFields?: string[]
   /** "Ver" usa esto para que ningún campo se pueda tocar — un `<fieldset

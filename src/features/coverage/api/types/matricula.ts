@@ -26,6 +26,16 @@ export type MatriculaStatus =
   | "esperando_aprobacion"
   | "rechazado"
 
+/** Lo único que el formulario de matrícula necesita del catálogo "base" —
+ * a diferencia de Reserva de cupos/Pre-matrícula, acá no hace falta
+ * `institutions`/`groups`/`grades` (esos ya salen de sus propios endpoints
+ * reales, ver `use-matricula-dependent-catalogs-query.ts`), así que no vale
+ * la pena pegarle a `/coverage/reservations/catalogs` (mock-only, 404 contra
+ * el backend real) solo para conseguir `campuses`. */
+export interface MatriculaCampusCatalog {
+  campuses: string[]
+}
+
 export interface MatriculaDependentCatalogsRequest {
   campus?: string
   shift?: string
@@ -114,11 +124,28 @@ export interface MatriculaDetails extends CreateMatriculaInput {
   status: MatriculaStatus
 }
 
+/** Archivo cargado al matricular, tal como lo devuelve el GET de detalle
+ * (`archivos[]`) -- solo lectura por ahora, no hay endpoint de
+ * subida/eliminación real todavía (ver `dialog-files-matricula.tsx`). */
+export interface MatriculaFile {
+  /** `pk_tmatricula_archivo` -- id de la fila de vínculo, solo para key de
+   * lista. Para pedir el binario (Ver/Descargar) usar `archivoId`. */
+  id: number
+  /** `fk_tarchivo` -- el que espera `file-service` (`/files/view/:id`,
+   * `/files/view-token/:id`), ver `lib/files.ts`. */
+  archivoId: number
+  name: string
+  sizeBytes: number
+  typeLabel: string
+  uploadedAt: string
+}
+
 export interface MatriculaDetailResult {
   status: "ok" | "error"
   message: string
   matricula: Matricula | null
   details: MatriculaDetails | null
+  files: MatriculaFile[]
 }
 
 
@@ -204,6 +231,7 @@ export interface MatriculaGuardianInfo {
   documentType: string
   documentNumber: string
   documentExpedition: MatriculaDeptMunicipio
+  gender: string
 }
 
 export interface MatriculaGuardianEmploymentInfo {

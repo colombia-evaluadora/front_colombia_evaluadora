@@ -18,7 +18,7 @@ import { useCreateMatricula } from "@/features/coverage/api/mutations/create-mat
 import { checkMatriculaByDocument } from "@/features/coverage/api/query/use-matricula-document-check"
 import { useMatriculaFieldConfigQuery } from "@/features/coverage/api/query/use-matricula-field-config-query"
 import { findMatriculaUsuarioPorDocumento } from "@/features/coverage/api/query/use-matricula-usuario-por-documento"
-import { useReservationCatalogsQuery } from "@/features/coverage/api/query/use-reservation-catalogs-query"
+import { useMatriculaCampusesQuery } from "@/features/coverage/api/query/use-matricula-campuses-query"
 import { buildMatriculaFieldSettings } from "@/features/coverage/utils/matricula-field-settings"
 import { useMunicipalitiesQuery } from "@/features/establishment/institution/api/query/use-municipalities"
 import type {
@@ -90,7 +90,7 @@ export function AddMatriculaPage() {
 function AddMatriculaPageContent() {
   const navigate = useNavigate()
   const { notify, dismiss } = useNotify()
-  const { data: catalogs } = useReservationCatalogsQuery()
+  const { data: catalogs } = useMatriculaCampusesQuery()
   const { data: municipalities = [] } = useMunicipalitiesQuery()
   const { data: fieldConfig } = useMatriculaFieldConfigQuery()
   const fieldSettings = useMemo(

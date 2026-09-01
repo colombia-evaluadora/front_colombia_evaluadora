@@ -44,6 +44,7 @@ import { useSedeJornadasActivasQuery } from "@/features/establishment/employees/
 import { useEspecialidadesQuery } from "@/features/establishment/academic-period/api/query/use-especialidades"
 import { useEtniasQuery } from "@/features/establishment/institution/api/query/use-etnias"
 import { useDisabilityTypesQuery } from "@/features/establishment/institution/api/query/use-disability-types"
+import { useArchivoViewUrl } from "@/features/files/api/query/use-archivo-view-url"
 import {
   isFieldRequired,
   isFieldVisible,
@@ -55,10 +56,12 @@ import { MATRICULA_STATUS_LABELS, YES_NO_OPTIONS } from "@/features/coverage/api
 import type {
   MatriculaAcademicInfo,
   MatriculaBenefitsInfo,
+  MatriculaCampusCatalog,
   MatriculaComplementaryInfo,
   MatriculaConflictVictimInfo,
   MatriculaContact,
   MatriculaDeptMunicipio,
+  MatriculaFile,
   MatriculaGuardianEmploymentInfo,
   MatriculaGuardianInfo,
   MatriculaOriginSectorInfo,
@@ -66,7 +69,6 @@ import type {
   MatriculaResidence,
   MatriculaStudentInfo,
 } from "@/features/coverage/api/types/matricula"
-import type { ReservationCatalogs } from "@/features/coverage/api/types/reservation"
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -167,10 +169,19 @@ interface DateFieldProps {
   onChange: (value: string) => void
   required?: boolean
   invalid?: boolean
+  maxDate?: Date
 }
 
 /** Mismo `DatePicker` que usa Establecimiento, con el label flotante del resto de campos del alta. */
-export function MatriculaDateField({ id, label, value, onChange, required, invalid }: DateFieldProps) {
+export function MatriculaDateField({
+  id,
+  label,
+  value,
+  onChange,
+  required,
+  invalid,
+  maxDate,
+}: DateFieldProps) {
   return (
     <Field
       orientation="vertical"
@@ -187,6 +198,7 @@ export function MatriculaDateField({ id, label, value, onChange, required, inval
         mode="date"
         value={parseDateValue(value)}
         aria-invalid={invalid}
+        maxDate={maxDate}
         onChange={(date) => onChange(formatDateValue(date) ?? "")}
       />
     </Field>
@@ -347,7 +359,7 @@ function anySettingVisible(fieldSettings: MatriculaFieldSettingsMap | undefined,
 interface AcademicSectionProps {
   value: MatriculaAcademicInfo
   onChange: (value: MatriculaAcademicInfo) => void
-  catalogs?: ReservationCatalogs
+  catalogs?: MatriculaCampusCatalog
   /** Ids de campos obligatorios sin llenar (ver `validateMatricula`). */
   invalidFields?: string[]
   /** El alta no lo pide — toda matrícula nueva arranca "cursando" — así que
@@ -502,6 +514,7 @@ export function MatriculaStudentSection({
       <MatriculaTextField
         id="student-document-number"
         label="Documento estudiante"
+        required
         invalid={invalidFields.includes("student-document-number")}
         value={value.documentNumber}
         numeric
@@ -511,6 +524,7 @@ export function MatriculaStudentSection({
       <MatriculaTextField
         id="student-first-name"
         label="Nombre del estudiante"
+        required
         invalid={invalidFields.includes("student-first-name")}
         value={value.firstName}
         maxLength={40}
@@ -530,6 +544,7 @@ export function MatriculaStudentSection({
       <MatriculaTextField
         id="student-last-name"
         label="Primer apellido del estudiante"
+        required
         invalid={invalidFields.includes("student-last-name")}
         value={value.lastName}
         maxLength={40}
@@ -561,6 +576,7 @@ export function MatriculaStudentSection({
         required
         invalid={invalidFields.includes("student-birth-date")}
         value={value.birthDate}
+        maxDate={new Date()}
         onChange={(birthDate) => onChange({ ...value, birthDate })}
       />
       <DeptMunicipioFields
@@ -1136,6 +1152,7 @@ export function MatriculaGuardianSection({
 }: GuardianSectionProps) {
   const { data: parentesco } = useMatriculaCatalogQuery("parentesco")
   const { data: tipoDocumento } = useMatriculaCatalogQuery("tipoDocumento")
+  const { data: genero } = useMatriculaCatalogQuery("genero")
 
   return (
     <MatriculaFormSection title="Información del acudiente">
@@ -1224,6 +1241,18 @@ export function MatriculaGuardianSection({
         onChange={(documentExpedition) => onChange({ ...value, documentExpedition })}
         fieldSettings={fieldSettings}
       />
+      {isFieldVisible(fieldSettings, "guardian-gender") && (
+        <MatriculaSelectField
+          id="guardian-gender"
+          label="Género del acudiente"
+          required={isFieldRequired(fieldSettings, "guardian-gender")}
+          value={value.gender}
+          options={catalogOptions(genero)}
+          labelFor={catalogLabelFor(genero)}
+          invalid={invalidFields.includes("guardian-gender")}
+          onChange={(gender) => onChange({ ...value, gender })}
+        />
+      )}
     </MatriculaFormSection>
   )
 }
@@ -1452,12 +1481,23 @@ interface SupportFilesSheetFieldProps {
   config: SupportFileFieldConfig
   value: File[]
   onChange: (files: File[]) => void
+  /** Ya cargados en el backend para esta categoría (ver
+   * `groupExistingFilesByKey`) -- de solo lectura, se muestran antes que los
+   * que se adjunten ahora en memoria. */
+  existingFiles?: MatriculaFile[]
 }
 
-function SupportFilesSheetField({ config, value, onChange }: SupportFilesSheetFieldProps) {
+function SupportFilesSheetField({
+  config,
+  value,
+  onChange,
+  existingFiles = [],
+}: SupportFilesSheetFieldProps) {
   function removeFile(file: File) {
     onChange(value.filter((f) => f !== file))
   }
+
+  const isEmpty = value.length === 0 && existingFiles.length === 0
 
   return (
     <FileUpload value={value} onValueChange={onChange} multiple={config.multiple} className="gap-2">
@@ -1466,7 +1506,7 @@ function SupportFilesSheetField({ config, value, onChange }: SupportFilesSheetFi
           {config.label}
           {config.required ? "*" : ""}
         </span>
-        {(config.multiple || value.length === 0) && (
+        {(config.multiple || (value.length === 0 && existingFiles.length === 0)) && (
           <FileUploadTrigger
             render={
               <Button
@@ -1483,10 +1523,13 @@ function SupportFilesSheetField({ config, value, onChange }: SupportFilesSheetFi
         )}
       </div>
 
-      {value.length === 0 ? (
+      {isEmpty ? (
         <SupportFileEmptyRow />
       ) : (
         <div className="flex flex-col gap-2">
+          {existingFiles.map((file) => (
+            <ExistingFileRow key={file.id} file={file} />
+          ))}
           {value.map((file) => (
             <SupportFileRow key={fileKey(file)} file={file} onRemove={removeFile} showDownload />
           ))}
@@ -1496,31 +1539,161 @@ function SupportFilesSheetField({ config, value, onChange }: SupportFilesSheetFi
   )
 }
 
+// Ícono por extensión para archivos reales (`MatriculaFile`, del GET de
+// detalle) -- a diferencia de `FileTypeIcon` no hay un `File` del navegador
+// con `.type`, solo el nombre.
+function existingFileIcon(name: string) {
+  const extension = name.split(".").pop()?.toLowerCase() ?? ""
+  if (["jpg", "jpeg", "png", "gif", "webp"].includes(extension)) {
+    return <ImageIcon className="size-4 shrink-0 text-orange" />
+  }
+  if (extension === "pdf") return <FilePdfIcon className="size-4 shrink-0 text-red" />
+  if (["xls", "xlsx", "csv"].includes(extension)) {
+    return <FileXlsIcon className="size-4 shrink-0 text-green" />
+  }
+  return <FileTextIcon className="size-4 shrink-0 text-blue" />
+}
+
+// Ver/Descargar salen de `file-service` (`useArchivoViewUrl`, acuña un
+// token de vista de un solo archivo por `fk_tarchivo` -- ver `lib/files.ts`),
+// mismo mecanismo que ya usa `ArchivoImage`. Eliminar sigue deshabilitado:
+// no hay endpoint todavía para borrar un archivo ya cargado (mismo criterio
+// que "Asignaturas" en `matricula-toolbar.tsx`, se deja en la UI para no
+// rediseñar la fila cuando el backend lo soporte).
+function ExistingFileRow({ file }: { file: MatriculaFile }) {
+  const { data: url, isPending } = useArchivoViewUrl(file.archivoId)
+
+  function handleView() {
+    if (url) window.open(url, "_blank", "noopener,noreferrer")
+  }
+
+  function handleDownload() {
+    if (!url) return
+    const link = document.createElement("a")
+    link.href = url
+    link.download = file.name
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+  }
+
+  return (
+    <div className="flex items-center justify-between gap-2 border-b border-border pb-1.5 text-sm">
+      <span className="flex min-w-0 items-center gap-2">
+        {existingFileIcon(file.name)}
+        <span className="truncate">{file.name}</span>
+      </span>
+      <span className="flex shrink-0 items-center gap-0.5">
+        <span className="mr-1 text-xs text-muted-foreground">{formatFileSize(file.sizeBytes)}</span>
+        <Button
+          type="button"
+          variant="ghost"
+          color="neutral"
+          size="icon-sm"
+          disabled={isPending || !url}
+          aria-label={`Ver ${file.name}`}
+          onClick={handleView}
+        >
+          <EyeIcon />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          color="neutral"
+          size="icon-sm"
+          disabled={isPending || !url}
+          aria-label={`Descargar ${file.name}`}
+          onClick={handleDownload}
+        >
+          <FileDownloadOutlinedIcon />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          color="neutral"
+          size="icon-sm"
+          disabled
+          aria-label={`Eliminar ${file.name}`}
+        >
+          <TrashIcon />
+        </Button>
+      </span>
+    </div>
+  )
+}
+
+// El GET de detalle manda `typeLabel` (nombre de TLISTA_VALOR TIPO_ARCHIVO),
+// no la misma clave que usa `MatriculaSupportFiles` -- matchea por palabra
+// clave en vez de comparar texto exacto (mismo motivo que el positional
+// match de "Configuración de parámetros requeridos": el backend no
+// garantiza la redacción exacta). Lo que no matchea ningún patrón cae en
+// "Otros documentos relevantes", que ya admite varios archivos.
+function matchSupportFileKey(typeLabel: string): keyof MatriculaSupportFiles {
+  const normalized = typeLabel
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+  if (normalized.includes("identidad")) return "studentIdDocument"
+  if (normalized.includes("medic")) return "medicalCertificate"
+  if (normalized.includes("foto")) return "studentPhoto"
+  if (normalized.includes("anterior") || normalized.includes("estudios")) return "previousYearCertificate"
+  return "otherDocuments"
+}
+
+function groupExistingFilesByKey(
+  files: MatriculaFile[],
+): Record<keyof MatriculaSupportFiles, MatriculaFile[]> {
+  const grouped: Record<keyof MatriculaSupportFiles, MatriculaFile[]> = {
+    studentIdDocument: [],
+    previousYearCertificate: [],
+    medicalCertificate: [],
+    studentPhoto: [],
+    otherDocuments: [],
+  }
+  for (const file of files) {
+    grouped[matchSupportFileKey(file.typeLabel)].push(file)
+  }
+  return grouped
+}
+
 interface SupportFilesSheetProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   value: MatriculaSupportFiles
   onChange: (value: MatriculaSupportFiles) => void
+  /** Archivos ya cargados en el backend (solo detalle/edición) -- se
+   * muestran aparte, arriba, de solo lectura. Los campos de abajo (Adjuntar/
+   * Eliminar) siguen operando sobre `value` en memoria como siempre: todavía
+   * no hay endpoint real de subida/eliminación de archivos. */
+  existingFiles?: MatriculaFile[]
 }
 
-export function SupportFilesSheet({ open, onOpenChange, value, onChange }: SupportFilesSheetProps) {
+export function SupportFilesSheet({
+  open,
+  onOpenChange,
+  value,
+  onChange,
+  existingFiles,
+}: SupportFilesSheetProps) {
+  const existingByKey = groupExistingFilesByKey(existingFiles ?? [])
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full gap-0 data-[side=right]:sm:max-w-lg">
-        <SheetHeader>
+        <SheetHeader className="px-4">
           <SheetTitle>Archivos de soporte</SheetTitle>
           <SheetDescription>
             Por favor cargue los siguientes documentos requeridos para completar la inscripción del
             estudiante.
           </SheetDescription>
         </SheetHeader>
-        <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-8 pb-8">
+        <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-4 pb-8">
           {SUPPORT_FILE_FIELDS.map((field) => (
             <SupportFilesSheetField
               key={field.key}
               config={field}
               value={value[field.key]}
               onChange={(files) => onChange({ ...value, [field.key]: files })}
+              existingFiles={existingByKey[field.key]}
             />
           ))}
         </div>

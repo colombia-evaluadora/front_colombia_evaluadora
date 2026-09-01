@@ -41,7 +41,7 @@ import { useNotify } from "@/components/notice/notice-context"
 
 import { getErrorMessage } from "@/lib/api-client"
 import { useMatriculaGradeLabel } from "@/features/coverage/hooks/use-matricula-grade-label"
-import { useReservationCatalogsQuery } from "@/features/coverage/api/query/use-reservation-catalogs-query"
+import { useMatriculaCampusesQuery } from "@/features/coverage/api/query/use-matricula-campuses-query"
 import { useMatriculaDependentCatalogsQuery } from "@/features/coverage/api/query/use-matricula-dependent-catalogs-query"
 import { useBulkChangeMatricula } from "@/features/coverage/api/mutations/bulk-change-matricula"
 import { useRetireMatricula } from "@/features/coverage/api/mutations/retire-matricula"
@@ -114,7 +114,7 @@ export function ModificarMatriculaDialog({
   const studentsCardRef = useRef<HTMLDivElement>(null)
   const [listWidth, setListWidth] = useState<number>()
 
-  const { data: catalogs } = useReservationCatalogsQuery()
+  const { data: catalogs } = useMatriculaCampusesQuery()
 
   const sameGradeOrigin = selected.every((m) => m.grade === selected[0]?.grade)
   const commonGrade = sameGradeOrigin ? selected[0]?.grade : undefined
