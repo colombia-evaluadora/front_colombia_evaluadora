@@ -246,6 +246,7 @@ async function fetchMatriculaDetail(id: string): Promise<MatriculaDetailResult> 
         department: "",
         municipality: toIdString(guardianRaw?.fk_tmunicipio_documento),
       },
+      gender: toIdString(guardianRaw?.fk_tlv_genero),
     },
     guardianAddress: {
       department: "",

@@ -204,6 +204,7 @@ export interface MatriculaGuardianInfo {
   documentType: string
   documentNumber: string
   documentExpedition: MatriculaDeptMunicipio
+  gender: string
 }
 
 export interface MatriculaGuardianEmploymentInfo {

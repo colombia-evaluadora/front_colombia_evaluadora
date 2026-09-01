@@ -20,6 +20,13 @@ export interface RegisterMatriculaPersonaResult {
   email: string
 }
 
+// Los inputs de nombre viajan en mayúscula sostenida ("JOSE") -- la
+// contraseña temporal quiere Capitalizado ("Jose"), no el nombre tal cual.
+function capitalizeFirstName(name: string): string {
+  const trimmed = name.trim().toLowerCase()
+  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1)
+}
+
 export function registerMatriculaPersona(
   input: RegisterMatriculaPersonaInput,
 ): Promise<RegisterMatriculaPersonaResult> {
@@ -30,7 +37,7 @@ export function registerMatriculaPersona(
   return api.post("/auth/register/usuario", {
     email: input.email || undefined,
     fullName,
-    password: input.documentNumber,
+    password: `${capitalizeFirstName(input.firstName)}${input.documentNumber}.`,
     identificacion: input.documentNumber,
     primerNombre: input.firstName,
     segundoNombre: input.secondName || undefined,
