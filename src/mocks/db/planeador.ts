@@ -544,3 +544,17 @@ export const planeadorDb: Actividad[] = [
     },
   },
 ]
+
+/**
+ * Quita una actividad por id. Devuelve `true` si la encontró y borró,
+ * `false` si no existía. La mutación de delete usa esto directamente;
+ * tener la operación encapsulada evita que el handler quede acoplado a
+ * detalles del array (mismo patrón que `matricula/deleteMatriculaById`).
+ */
+export function deleteActividadById(id: string): boolean {
+  const index = planeadorDb.findIndex((row) => row.id === id)
+  if (index === -1) return false
+  planeadorDb.splice(index, 1)
+  return true
+}
+

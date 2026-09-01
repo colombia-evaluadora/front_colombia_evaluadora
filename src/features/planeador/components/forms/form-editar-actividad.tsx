@@ -399,7 +399,20 @@ function RecursoItem({
           <FieldLabel>Tipo</FieldLabel>
           <Select
             value={recurso.tipo as never}
-            onValueChange={(v) => onChange({ ...recurso, tipo: (v ?? "") as Recurso["tipo"] })}
+            onValueChange={(v) => {
+              const nextTipo = (v ?? "") as Recurso["tipo"]
+              onChange({
+                ...recurso,
+                tipo: nextTipo,
+                // Al pasar a "Archivo", la URL anterior pierde sentido
+                // (y el browser rechaza programáticamente cualquier
+                // string en un `<input type="file">` que no sea "" —
+                // "Failed to set the 'value' property on 'HTMLInputElement'").
+                // En los demás cambios (URL ↔ Unidad virtual) se preserva
+                // para no borrar lo que el usuario ya tipeó.
+                url: nextTipo === "Archivo" ? "" : recurso.url,
+              })
+            }}
           >
             <SelectTrigger>
               <SelectValue placeholder="Seleccione" />
