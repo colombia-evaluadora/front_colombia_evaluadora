@@ -13,6 +13,7 @@ import { CheckIcon, SpinnerIcon } from "@/components/ui/icons"
 import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
 
 import { paths } from "@/config/paths"
+import { getErrorMessage } from "@/lib/api-client"
 import { coberturaMatriculaEditarRoute } from "@/router"
 import { useAuth } from "@/features/auth/hooks/use-auth"
 import { useMatriculaDetailQuery } from "@/features/coverage/api/query/use-matricula-detail-query"
@@ -68,40 +69,31 @@ function MatriculaEditPageContent() {
   const navigate = useNavigate()
   const { notify, dismiss } = useNotify()
   const { user } = useAuth()
-  const { data, isPending, isError } = useMatriculaDetailQuery(matriculaId)
+  const { data, isPending, isError, error } = useMatriculaDetailQuery(matriculaId)
   const { data: catalogs } = useMatriculaCampusesQuery()
   const { data: municipalities = [] } = useMunicipalitiesQuery()
-  const { data: fieldConfig } = useMatriculaFieldConfigQuery()
+  const { data: fieldConfig, isError: isFieldConfigError, error: fieldConfigError } =
+    useMatriculaFieldConfigQuery()
   const fieldSettings = useMemo(
     () => (fieldConfig ? buildMatriculaFieldSettings(fieldConfig) : undefined),
     [fieldConfig],
   )
 
+  useEffect(() => {
+    if (isError) notify(getErrorMessage(error), { variant: "error" })
+  }, [isError, error, notify])
+  useEffect(() => {
+    if (isFieldConfigError) notify(getErrorMessage(fieldConfigError), { variant: "error" })
+  }, [isFieldConfigError, fieldConfigError, notify])
+
   const [values, setValues] = useState<CreateMatriculaInput | null>(null)
   const [missingFields, setMissingFields] = useState<string[]>([])
   const [hasSubmitted, setHasSubmitted] = useState(false)
-  // Grado con el que arrancó el borrador (para detectar si el usuario lo
-  // cambió al guardar) — un ref porque no debe resetearse en cada
-  // `setValues`, solo la primera vez que llega la ficha.
   const initialGradeRef = useRef<string | null>(null)
-  // Igual que `initialGradeRef`, pero para "Sede" (dispara
-  // `CambioSedeMatriculaDialog` en vez de `GradeChangeDialog`).
   const initialSedeRef = useRef<string | null>(null)
-  // Solo para armar la comparación "Grupo: X = X" en `CambioSedeMatriculaDialog`
-  // cuando el grupo no cambió junto con la sede.
   const initialGroupRef = useRef<string | null>(null)
-  // Se llena al intentar guardar si el grado cambió respecto al original —
-  // dispara `GradeChangeDialog` (ver render, abajo) en vez de guardar de
-  // una. El cambio de grado real (crear la matrícula nueva, pasar la vieja a
-  // Promovido/Reubicado) todavía no tiene backend — por ahora el diálogo
-  // solo confirma la intención; al confirmar, recién ahí se guarda.
   const [gradeChange, setGradeChange] = useState<{ from: number; to: number } | null>(null)
-  // Resumen a mostrar en `GradeChangeSummaryDialog` una vez el guardado (que
-  // sigue al "Confirmar cambio" del diálogo de arriba) termina bien.
   const [gradeChangeSummary, setGradeChangeSummary] = useState<GradeChangeSummary | null>(null)
-  // Se llena al intentar guardar si la Sede cambió respecto a la original —
-  // dispara `CambioSedeMatriculaDialog` (ver render, abajo) en vez de
-  // guardar de una, mismo patrón que `gradeChange`.
   const [sedeChange, setSedeChange] = useState<{
     fromSede: string
     toSede: string

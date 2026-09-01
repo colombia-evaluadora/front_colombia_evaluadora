@@ -51,7 +51,7 @@ function toCurricularReference(row: CurricularReferenceRow): CurricularReference
     instrument: row.instrumento,
     instrumentDescription: "",
     regulation: "",
-    active: row.active,
+    active: row.estado === "A",
     createdYear: row.anio_vigencia_desde,
     deactivatedYear: row.anio_vigencia_hasta,
   }

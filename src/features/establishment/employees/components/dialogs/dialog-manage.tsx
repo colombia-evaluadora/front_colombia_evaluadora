@@ -892,6 +892,24 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
       return
     }
 
+    const sameRoleAndCampus = permissions.filter(
+      (permission) => permission.role.id === role.id && permission.campus.id === campus.id,
+    )
+    if (sameRoleAndCampus.some((permission) => permission.workSchedule.id === workSchedule.id)) {
+      notify(
+        `Ya existe un permiso de ${role.name} en ${campus.name} con la jornada ${workSchedule.name}.`,
+        { variant: "error" },
+      )
+      return
+    }
+    if (sameRoleAndCampus.some((permission) => permission.order === Number(draft.order))) {
+      notify(
+        `Ya existe un permiso de ${role.name} en ${campus.name} con el orden ${draft.order}.`,
+        { variant: "error" },
+      )
+      return
+    }
+
     const nextPermission: Permission = {
       order: Number(draft.order),
       role,
@@ -1179,12 +1197,14 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
           </DialogHeader>
 
           {/* Fila fluida: los campos crecen y bajan de línea solos, y el botón
-              ocupa solo lo que mide en vez de reservar una columna entera. */}
-          <div className="flex flex-wrap items-end gap-4">
+              ocupa solo lo que mide en vez de reservar una columna entera.
+              `gap-y` chico: al envolver, es el espacio entre ambas filas de
+              campos, y `gap-4` completo se sentía como un salto de más. */}
+          <div className="flex flex-wrap items-end gap-x-4 gap-y-0">
             <Field
               orientation="vertical"
               variant="outlined"
-              className="min-w-56 grow basis-[calc(33%-1rem)]"
+              className="mt-0 min-w-56 grow basis-[calc(33%-1rem)]"
               data-invalid={permissionErrors["order"] ? "true" : undefined}
             >
               <FieldLabel htmlFor="permission-order">Orden*</FieldLabel>
@@ -1198,20 +1218,16 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
                   setPermissionDraft((prev) => ({ ...prev, order: event.target.value }))
                 }
               />
-              {/* `min-h-5` reserva el alto de una línea de error aunque no
-                  haya mensaje: sin esto, los campos sin error quedaban más
-                  bajos que los campos vecinos con error (la fila usa
-                  `items-end`, así que un campo más corto se corre hacia
-                  abajo para alinear su base con el resto). */}
-              <div className="min-h-5">
-                <FieldError>{permissionErrors["order"]}</FieldError>
-              </div>
+              {/* Sin reserva de alto: el mensaje de error, cuando aparece,
+                  corre la fila hacia abajo en vez de dejar un hueco en blanco
+                  permanente entre las dos filas de campos. */}
+              <FieldError>{permissionErrors["order"]}</FieldError>
             </Field>
 
             <Field
               orientation="vertical"
               variant="outlined"
-              className="min-w-56 grow basis-[calc(33%-1rem)]"
+              className="mt-0 min-w-56 grow basis-[calc(33%-1rem)]"
               data-invalid={permissionErrors["roleId"] ? "true" : undefined}
             >
               <FieldLabel htmlFor="permission-role">Rol*</FieldLabel>
@@ -1234,15 +1250,13 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
                   ))}
                 </ComboboxFieldContent>
               </ComboboxField>
-              <div className="min-h-5">
-                <FieldError>{permissionErrors["roleId"]}</FieldError>
-              </div>
+              <FieldError>{permissionErrors["roleId"]}</FieldError>
             </Field>
 
             <Field
               orientation="vertical"
               variant="outlined"
-              className="min-w-56 grow basis-[calc(33%-1rem)]"
+              className="mt-0 min-w-56 grow basis-[calc(33%-1rem)]"
               data-invalid={permissionErrors["campusId"] ? "true" : undefined}
             >
               <FieldLabel htmlFor="permission-campus">Sede educativa*</FieldLabel>
@@ -1269,15 +1283,13 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
                   ))}
                 </ComboboxFieldContent>
               </ComboboxField>
-              <div className="min-h-5">
-                <FieldError>{permissionErrors["campusId"]}</FieldError>
-              </div>
+              <FieldError>{permissionErrors["campusId"]}</FieldError>
             </Field>
 
             <Field
               orientation="vertical"
               variant="outlined"
-              className="min-w-56 grow basis-[calc(33%-1rem)]"
+              className="mt-0 min-w-56 grow basis-[calc(33%-1rem)]"
               data-invalid={permissionErrors["workScheduleId"] ? "true" : undefined}
             >
               <FieldLabel htmlFor="permission-schedule">Jornada*</FieldLabel>
@@ -1311,19 +1323,17 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
                   )}
                 </ComboboxFieldContent>
               </ComboboxField>
-              <div className="min-h-9">
-                {permissionDraft.campusId != null && workScheduleItems.length === 0 && !isLoadingSedeJornadas ? (
-                  <p className="line-clamp-2 text-xs text-muted-foreground">{workScheduleEmptyMessage}</p>
-                ) : (
-                  <FieldError>{permissionErrors["workScheduleId"]}</FieldError>
-                )}
-              </div>
+              {permissionDraft.campusId != null && workScheduleItems.length === 0 && !isLoadingSedeJornadas ? (
+                <p className="line-clamp-2 text-xs text-muted-foreground">{workScheduleEmptyMessage}</p>
+              ) : (
+                <FieldError>{permissionErrors["workScheduleId"]}</FieldError>
+              )}
             </Field>
 
             <Field
               orientation="vertical"
               variant="outlined"
-              className="min-w-56 grow basis-[calc(33%-1rem)]"
+              className="mt-0 min-w-56 grow basis-[calc(33%-1rem)]"
               data-invalid={permissionErrors["status"] ? "true" : undefined}
             >
               <FieldLabel htmlFor="permission-status">Estado*</FieldLabel>
@@ -1363,9 +1373,7 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
                   ))}
                 </SelectContent>
               </Select>
-              <div className="min-h-9">
-                <FieldError>{permissionErrors["status"]}</FieldError>
-              </div>
+              <FieldError>{permissionErrors["status"]}</FieldError>
             </Field>
 
             <div className="flex w-full flex-col gap-1.5 sm:w-auto">
@@ -1374,12 +1382,12 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
                 variant="fill"
                 color="primary"
                 onClick={addPermission}
+                disabled={!permissionDraftSchema.safeParse(permissionDraft).success}
                 className="w-full sm:w-auto"
               >
                 <ControlPointIcon data-icon="inline-start" />
                 Agregar
               </Button>
-              <div className="min-h-9" />
             </div>
           </div>
 
