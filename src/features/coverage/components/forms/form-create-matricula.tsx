@@ -55,6 +55,7 @@ import { MATRICULA_STATUS_LABELS, YES_NO_OPTIONS } from "@/features/coverage/api
 import type {
   MatriculaAcademicInfo,
   MatriculaBenefitsInfo,
+  MatriculaCampusCatalog,
   MatriculaComplementaryInfo,
   MatriculaConflictVictimInfo,
   MatriculaContact,
@@ -66,7 +67,6 @@ import type {
   MatriculaResidence,
   MatriculaStudentInfo,
 } from "@/features/coverage/api/types/matricula"
-import type { ReservationCatalogs } from "@/features/coverage/api/types/reservation"
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -357,7 +357,7 @@ function anySettingVisible(fieldSettings: MatriculaFieldSettingsMap | undefined,
 interface AcademicSectionProps {
   value: MatriculaAcademicInfo
   onChange: (value: MatriculaAcademicInfo) => void
-  catalogs?: ReservationCatalogs
+  catalogs?: MatriculaCampusCatalog
   /** Ids de campos obligatorios sin llenar (ver `validateMatricula`). */
   invalidFields?: string[]
   /** El alta no lo pide — toda matrícula nueva arranca "cursando" — así que
