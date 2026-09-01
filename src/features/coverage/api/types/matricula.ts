@@ -124,11 +124,28 @@ export interface MatriculaDetails extends CreateMatriculaInput {
   status: MatriculaStatus
 }
 
+/** Archivo cargado al matricular, tal como lo devuelve el GET de detalle
+ * (`archivos[]`) -- solo lectura por ahora, no hay endpoint de
+ * subida/eliminación real todavía (ver `dialog-files-matricula.tsx`). */
+export interface MatriculaFile {
+  /** `pk_tmatricula_archivo` -- id de la fila de vínculo, solo para key de
+   * lista. Para pedir el binario (Ver/Descargar) usar `archivoId`. */
+  id: number
+  /** `fk_tarchivo` -- el que espera `file-service` (`/files/view/:id`,
+   * `/files/view-token/:id`), ver `lib/files.ts`. */
+  archivoId: number
+  name: string
+  sizeBytes: number
+  typeLabel: string
+  uploadedAt: string
+}
+
 export interface MatriculaDetailResult {
   status: "ok" | "error"
   message: string
   matricula: Matricula | null
   details: MatriculaDetails | null
+  files: MatriculaFile[]
 }
 
 

@@ -371,7 +371,7 @@ export const matriculaHandlers = [
 
     if (!found) {
       return HttpResponse.json<MatriculaDetailResult>(
-        { status: "error", message: "Estudiante no encontrado.", matricula: null, details: null },
+        { status: "error", message: "Estudiante no encontrado.", matricula: null, details: null, files: [] },
         { status: 404 },
       )
     }
@@ -381,6 +381,7 @@ export const matriculaHandlers = [
       message: "",
       matricula: found.matricula,
       details: found.details,
+      files: [],
     })
   }),
 
