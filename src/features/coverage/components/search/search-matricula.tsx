@@ -14,7 +14,7 @@ import {
 
 import { MATRICULA_STATUSES, type MatriculaFiltersFormInput } from "@/features/coverage/api/schema"
 import { MATRICULA_STATUS_LABELS } from "@/features/coverage/api/ui-mappings-matricula"
-import { useReservationCatalogsQuery } from "@/features/coverage/api/query/use-reservation-catalogs-query"
+import { useMatriculaCampusesQuery } from "@/features/coverage/api/query/use-matricula-campuses-query"
 import { useMatriculaDependentCatalogsQuery } from "@/features/coverage/api/query/use-matricula-dependent-catalogs-query"
 import { toSelectItemsMap } from "@/lib/catalog-options"
 
@@ -47,7 +47,7 @@ export function SearchMatricula({
   const [draftGrade, setDraftGrade] = useState(filters.grade)
   const [draftGroup, setDraftGroup] = useState(filters.group)
 
-  const { data: catalogs } = useReservationCatalogsQuery()
+  const { data: catalogs } = useMatriculaCampusesQuery()
   const { data: dependentCatalogs } = useMatriculaDependentCatalogsQuery({
     campus: draftCampus || undefined,
     shift: draftShift || undefined,

@@ -26,6 +26,16 @@ export type MatriculaStatus =
   | "esperando_aprobacion"
   | "rechazado"
 
+/** Lo único que el formulario de matrícula necesita del catálogo "base" —
+ * a diferencia de Reserva de cupos/Pre-matrícula, acá no hace falta
+ * `institutions`/`groups`/`grades` (esos ya salen de sus propios endpoints
+ * reales, ver `use-matricula-dependent-catalogs-query.ts`), así que no vale
+ * la pena pegarle a `/coverage/reservations/catalogs` (mock-only, 404 contra
+ * el backend real) solo para conseguir `campuses`. */
+export interface MatriculaCampusCatalog {
+  campuses: string[]
+}
+
 export interface MatriculaDependentCatalogsRequest {
   campus?: string
   shift?: string
