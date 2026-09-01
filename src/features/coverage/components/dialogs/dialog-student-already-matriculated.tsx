@@ -9,7 +9,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { WarningCircleIcon, XIcon } from "@/components/ui/icons"
 
-import { formatGrade } from "@/features/coverage/api/ui-mappings"
+import { useMatriculaGradeLabel } from "@/features/coverage/hooks/use-matricula-grade-label"
 import type { Matricula } from "@/features/coverage/api/types/matricula"
 
 interface StudentAlreadyMatriculatedDialogProps {
@@ -17,17 +17,11 @@ interface StudentAlreadyMatriculatedDialogProps {
   onClose: () => void
 }
 
-/**
- * Se abre sola cuando `checkMatriculaByDocument` (ver `add-matricula-page.tsx`)
- * encuentra una matrícula "cursando" con el mismo documento — bloquea el alta
- * en vez de dejar crear un duplicado. Solo tiene un botón: no hay nada que
- * "confirmar", el usuario tiene que corregir el documento o cerrar el
- * formulario.
- */
 export function StudentAlreadyMatriculatedDialog({
   matricula,
   onClose,
 }: StudentAlreadyMatriculatedDialogProps) {
+  const gradeLabel = useMatriculaGradeLabel()
   return (
     <AlertDialog open onOpenChange={(next) => !next && onClose()}>
       <AlertDialogContent className="sm:max-w-sm">
@@ -50,14 +44,13 @@ export function StudentAlreadyMatriculatedDialog({
             Sede: <span className="font-semibold text-foreground">{matricula.campus}</span>
           </p>
           <p>
-            Grado: <span className="font-semibold text-foreground">{formatGrade(matricula.grade)}</span>
+            Grado: <span className="font-semibold text-foreground">{gradeLabel(matricula.grade)}</span>
           </p>
           <p>
             Grupo: <span className="font-semibold text-foreground">{matricula.group}</span>
           </p>
         </div>
 
-        {/* Mismo botón "Cerrar" que usa el alta (fill neutral + ícono X). */}
         <AlertDialogFooter>
           <Button type="button" variant="fill" color="neutral" size="sm" onClick={onClose}>
             <XIcon data-icon="inline-start" />

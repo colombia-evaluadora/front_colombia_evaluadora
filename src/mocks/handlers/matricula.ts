@@ -14,7 +14,7 @@ import {
   findMatriculaConfigCampo,
   matriculaFieldConfigDb,
 } from "@/mocks/db/matricula-field-config"
-import { CAMPUSES, GRADES, GROUPS } from "@/mocks/db/reservations"
+import { CAMPUSES, GRADES } from "@/mocks/db/reservations"
 import { jornadasDb } from "@/mocks/db/academic-period/jornadas"
 import type {
   BulkMatriculaChangeRequest,
@@ -24,8 +24,6 @@ import type {
   ExportFormat,
   ExportResult,
   Matricula,
-  MatriculaDependentCatalogsRequest,
-  MatriculaDependentCatalogsResponse,
   MatriculaDetailResult,
   MatriculaDocumentCheckResult,
   MatriculaHomologationInfo,
@@ -162,58 +160,65 @@ function applySorting(rows: Matricula[], sorting: MatriculaQueryRequest["sorting
 }
 
 export const matriculaHandlers = [
-  // Sede → Jornada → Grado → Grupo — datos ficticios pero deterministas (ver
-  // `hashString`). El contrato ya queda listo para el endpoint real de
-  // oferta académica; solo hay que reemplazar este handler.
-  http.post("*/api/coverage/matricula/catalogos-dependientes", async ({ request }) => {
+  http.post("*/api/eval-col/sedes/jornadas-activas", async ({ request }) => {
     await delay(150)
+    const { FK_SEDE } = (await request.json()) as { FK_SEDE: number }
 
-    const { campus, shift, grade } = (await request.json()) as MatriculaDependentCatalogsRequest
-
-    // Jornada sale del catálogo real de `TLISTA_VALOR` (mismo que Períodos
-    // Académicos), no del `Shift` fijo de reservas — ver
-    // `docs/matricula-listado-endpoint-contract.md`.
-    let shifts = jornadasDb.map((jornada) => jornada.name)
-    if (campus && shifts.length > 1) {
+    let jornadas = jornadasDb
+    if (jornadas.length > 1) {
       // Simula que no todas las sedes ofrecen todas las jornadas, sin dejar
       // la lista vacía.
-      const dropIndex = mixHash(hashString(campus)) % shifts.length
-      shifts = shifts.filter((_, index) => index !== dropIndex)
+      const dropIndex = mixHash(hashString(`sede-${FK_SEDE}`)) % jornadas.length
+      jornadas = jornadas.filter((_, index) => index !== dropIndex)
     }
 
-    let grades: number[] = [...GRADES]
-    if (shift) {
-      // Mismo criterio que arriba: rota el punto de partida para que el
-      // subconjunto cambie de verdad entre jornadas, no solo el tamaño.
-      const seed = mixHash(hashString(`shift-${shift}`))
-      const count = 1 + (seed % GRADES.length)
-      const offset = seed % GRADES.length
-      grades = Array.from({ length: count }, (_, i) => GRADES[(offset + i) % GRADES.length]).sort(
-        (a, b) => a - b,
-      )
-    }
-
-    let groups = [...GROUPS]
-    if (grade != null) {
-      // No es solo un slice por cantidad (eso repite "01","02" siempre) —
-      // se arma un subconjunto distinto por grado, rotando el punto de
-      // partida antes de recortar, para que el CONTENIDO cambie, no solo el
-      // tamaño.
-      const seed = mixHash(hashString(`grade-${grade}`))
-      const count = 1 + (seed % GROUPS.length)
-      const offset = seed % GROUPS.length
-      groups = Array.from({ length: count }, (_, i) => GROUPS[(offset + i) % GROUPS.length]).sort()
-    }
-
-    return HttpResponse.json<MatriculaDependentCatalogsResponse>({ shifts, grades, groups })
+    return HttpResponse.json({
+      rows: jornadas.map((jornada) => ({ id: jornada.id, nombre: jornada.name })),
+    })
   }),
 
-  // Endpoint real: /eval-col/matricula/query (V200, fn_matricula_listar) —
-  // body PLANO en UPPER_SNAKE (el motor de queries de SSO no soporta un
-  // `filters{}` anidado ni indexar `sorting[]`, ver `use-matricula-query.ts`
-  // / `toListRequest`), y la respuesta es filas snake_case con `total_count`
-  // repetido por fila (window count) — mismo shape que devuelve la función,
-  // no el envelope `{rows, pageCount, totalCount}` que arma el front.
+  http.post("*/api/eval-col/sedes/tiene-periodos", async () => {
+    await delay(100)
+    return HttpResponse.json({ rows: [{ tiene_periodos: true }] })
+  }),
+
+  http.post("*/api/eval-col/periodos/resolver-matricula", async ({ request }) => {
+    await delay(150)
+    const { FK_SEDE, FK_TLV_JORNADA } = (await request.json()) as {
+      FK_SEDE: number
+      FK_TLV_JORNADA: number
+    }
+    const periodoId = mixHash(hashString(`periodo-${FK_SEDE}-${FK_TLV_JORNADA}`)) % 100000
+    return HttpResponse.json({ rows: [{ periodo_id: periodoId }] })
+  }),
+
+  http.post("*/api/eval-col/grados/query/:periodoId", async ({ params }) => {
+    await delay(150)
+    const periodoId = Array.isArray(params.periodoId) ? params.periodoId[0] : params.periodoId
+
+    const seed = mixHash(hashString(`grados-${periodoId}`))
+    const count = 1 + (seed % GRADES.length)
+    const offset = seed % GRADES.length
+    const grados = Array.from({ length: count }, (_, i) => GRADES[(offset + i) % GRADES.length]).sort(
+      (a, b) => a - b,
+    )
+
+    return HttpResponse.json({
+      rows: grados.map((codigo, index) => ({
+        id: mixHash(hashString(`grado-${periodoId}-${codigo}`)) % 1000000,
+        nombre: `Grado ${codigo}`,
+        grado: `Grado ${codigo}`,
+        codigo,
+        teaching_level_id: 1,
+        teaching_level_name: "",
+        grado_siguiente: null,
+        grado_siguiente_name: null,
+        tiene_grado_siguiente: false,
+        total_count: index === 0 ? grados.length : grados.length,
+      })),
+    })
+  }),
+
   http.post("*/api/eval-col/matricula/query", async ({ request }) => {
     await delay(250)
 

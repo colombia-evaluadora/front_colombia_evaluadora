@@ -2,11 +2,36 @@ import type {
   CreateMatriculaInput,
   MatriculaAcademicInfo,
   MatriculaContact,
+  MatriculaDeptMunicipio,
   MatriculaResidence,
 } from "@/features/coverage/api/types/matricula"
 import type { MatriculaSupportFiles } from "@/features/coverage/components/forms/form-create-matricula"
+import type { Municipality } from "@/features/establishment/institution/api/types/location"
 import { MATRICULA_FIELD_CATALOG } from "@/features/coverage/utils/matricula-field-catalog"
 import { isFieldRequired, isFieldVisible, type MatriculaFieldSettingsMap } from "@/features/coverage/utils/matricula-field-settings"
+
+export function resolveMatriculaMunicipioDepartments(
+  values: CreateMatriculaInput,
+  municipalities: Municipality[],
+): CreateMatriculaInput {
+  const departmentByMunicipalityId = new Map(municipalities.map((m) => [String(m.id), m.department.name]))
+  const resolve = (dm: MatriculaDeptMunicipio): MatriculaDeptMunicipio => {
+    if (!dm.municipality || dm.department) return dm
+    const department = departmentByMunicipalityId.get(dm.municipality)
+    return department ? { department, municipality: dm.municipality } : dm
+  }
+  return {
+    ...values,
+    student: {
+      ...values.student,
+      documentExpedition: resolve(values.student.documentExpedition),
+      birthPlace: resolve(values.student.birthPlace),
+    },
+    studentAddress: { ...values.studentAddress, ...resolve(values.studentAddress) },
+    guardian: { ...values.guardian, documentExpedition: resolve(values.guardian.documentExpedition) },
+    guardianAddress: { ...values.guardianAddress, ...resolve(values.guardianAddress) },
+  }
+}
 
 export function createEmptyAcademic(): MatriculaAcademicInfo {
   return { campus: "", shift: "", grade: "", group: "", status: "", specialty: "" }
@@ -168,6 +193,11 @@ const OPTIONAL_MATRICULA_FIELD_GETTERS: Record<string, (values: CreateMatriculaI
   "guardian-employment-entity-position": (v) => v.guardianEmployment.entityPosition,
 }
 
+export interface MatriculaAccountsFound {
+  student?: boolean
+  guardian?: boolean
+}
+
 /**
  * Validación mínima: los campos marcados con * en cada sección. El resto de
  * la ficha es informativo y puede quedar vacío, igual que en el detalle de
@@ -183,8 +213,13 @@ export function validateMatricula(
   values: CreateMatriculaInput,
   files?: MatriculaSupportFiles,
   fieldSettings?: MatriculaFieldSettingsMap,
+  accountsFound?: MatriculaAccountsFound,
 ): string[] {
   const missing: string[] = []
+  if (files) {
+    if (files.studentIdDocument.length === 0) missing.push("studentIdDocument")
+    if (files.previousYearCertificate.length === 0) missing.push("previousYearCertificate")
+  }
   if (!values.academic.campus) missing.push("matricula-campus")
   if (!values.academic.shift) missing.push("matricula-shift")
   if (!values.academic.grade) missing.push("matricula-grade")
@@ -206,15 +241,17 @@ export function validateMatricula(
     if (!getValue(values).trim()) missing.push(id)
   }
 
-  if (values.studentContact.email.trim() && !EMAIL_REGEX.test(values.studentContact.email.trim())) {
+  const studentEmail = values.studentContact.email.trim()
+  if (accountsFound?.student === false && !studentEmail) {
+    missing.push("student-contact-email")
+  } else if (studentEmail && !EMAIL_REGEX.test(studentEmail)) {
     missing.push("student-contact-email")
   }
-  if (values.guardianContact.email.trim() && !EMAIL_REGEX.test(values.guardianContact.email.trim())) {
+  const guardianEmail = values.guardianContact.email.trim()
+  if (accountsFound?.guardian === false && !guardianEmail) {
     missing.push("guardian-contact-email")
-  }
-  if (files) {
-    if (files.studentIdDocument.length === 0) missing.push("studentIdDocument")
-    if (files.previousYearCertificate.length === 0) missing.push("previousYearCertificate")
+  } else if (guardianEmail && !EMAIL_REGEX.test(guardianEmail)) {
+    missing.push("guardian-contact-email")
   }
   return missing
 }

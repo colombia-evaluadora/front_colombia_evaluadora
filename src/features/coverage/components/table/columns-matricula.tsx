@@ -7,8 +7,9 @@ import { DataTableColumnHeader } from "@/components/data-table"
 import { EyeIcon, PencilIcon } from "@/components/ui/icons"
 
 import { paths } from "@/config/paths"
-import { formatGrade, EDUCATION_LEVEL_LABELS } from "@/features/coverage/api/ui-mappings"
+import { EDUCATION_LEVEL_LABELS } from "@/features/coverage/api/ui-mappings"
 import { MATRICULA_STATUS_LABELS } from "@/features/coverage/api/ui-mappings-matricula"
+import { useMatriculaGradeLabel } from "@/features/coverage/hooks/use-matricula-grade-label"
 import type { Matricula } from "@/features/coverage/api/types/matricula"
 import { DeleteMatriculaDialog } from "@/features/coverage/components/dialogs/dialog-delete-matricula"
 import { FilesMatriculaDialog } from "@/features/coverage/components/dialogs/dialog-files-matricula"
@@ -17,6 +18,11 @@ import { ReingresarMatriculaDialog } from "@/features/coverage/components/dialog
 
 function formatEnrollmentDate(iso: string): string {
   return new Date(iso).toLocaleDateString("es-CO", { year: "numeric", month: "2-digit", day: "2-digit" })
+}
+
+function MatriculaGradeCell({ grade }: { grade: number }) {
+  const gradeLabel = useMatriculaGradeLabel()
+  return <span className="tabular-nums">{gradeLabel(grade)}</span>
 }
 
 export const columnsMatricula: ColumnDef<Matricula>[] = [
@@ -99,7 +105,7 @@ export const columnsMatricula: ColumnDef<Matricula>[] = [
     accessorKey: "grade",
     meta: { label: "Grado" },
     header: ({ column }) => <DataTableColumnHeader column={column} title="Grado" />,
-    cell: ({ row }) => <span className="tabular-nums">{formatGrade(row.original.grade)}</span>,
+    cell: ({ row }) => <MatriculaGradeCell grade={row.original.grade} />,
   },
   {
     id: "group",

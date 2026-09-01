@@ -1,7 +1,7 @@
 export interface CurricularStatement {
   id: number
   curricularReferenceId: number
-  areaId: number
+  areaId: number | null
   text: string
   active: boolean
 }

@@ -67,7 +67,7 @@ function applyFilters(
 
     if (
       filters.educationLevels?.length &&
-      !row.educationLevels.some((level) => filters.educationLevels!.includes(String(level.id)))
+      !filters.educationLevels.includes(String(row.educationLevel?.id ?? ""))
     ) {
       return false
     }
@@ -95,7 +95,7 @@ function applyFilters(
 }
 
 function sortValue(row: CurricularReference, id: string) {
-  if (id === "educationLevels") return row.educationLevels.map((level) => level.name).join(", ")
+  if (id === "educationLevel") return row.educationLevel?.name ?? ""
   if (id === "pedagogicalApproach") return row.pedagogicalApproach?.name ?? ""
   if (id === "evaluationType") return row.evaluationType?.name ?? ""
   return row[id as keyof CurricularReference]
@@ -150,6 +150,21 @@ export const curricularReferencesHandlers = [
     }
 
     return HttpResponse.json({ status: "ok", curricularReference })
+  }),
+
+  http.get("*/api/academic-management/curricular-references/:id/areas", async ({ params }) => {
+    await delay(150)
+
+    const idParam = Array.isArray(params.id) ? params.id[0] : params.id
+    const id = idParam ? Number(idParam) : NaN
+    const curricularReference = curricularReferencesDb.find((item) => item.id === id)
+    const rows = (curricularReference?.areas ?? []).map((area) => ({
+      pk_referente_curricular_area: area.id,
+      fk_tarea_asignatura: area.id,
+      nombre: area.name,
+    }))
+
+    return HttpResponse.json(rows)
   }),
 
   http.post("*/api/academic-management/curricular-references", async ({ request }) => {

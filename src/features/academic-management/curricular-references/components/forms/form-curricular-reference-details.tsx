@@ -9,7 +9,6 @@ import {
   ComboboxFieldTrigger,
   ComboboxFieldValue,
 } from "@/components/ui/combobox"
-import { SubjectsMultiSelect } from "@/features/establishment/academic-period/components/subjects-multi-select"
 import { useGeneralAreasQuery } from "@/features/establishment/academic-period/api/query/use-general-areas"
 import { SelectGeneralAreasDialog } from "@/features/academic-management/curricular-references/components/dialogs/dialog-select-general-areas"
 
@@ -41,6 +40,7 @@ export function CurricularReferenceDetailsForm({
   onChange,
   errors = {},
 }: CurricularReferenceDetailsFormProps) {
+  const educationLevelLabels = Object.fromEntries(educationLevels.map((item) => [item.id, item.name]))
   const pedagogicalApproachLabels = Object.fromEntries(
     pedagogicalApproaches.map((item) => [item.id, item.name]),
   )
@@ -81,23 +81,33 @@ export function CurricularReferenceDetailsForm({
           orientation="vertical"
           variant="outlined"
           className="w-full"
-          data-invalid={errors["educationLevels"] ? "true" : undefined}
+          data-invalid={errors["educationLevel"] ? "true" : undefined}
         >
-          <FieldLabel htmlFor="curricular-reference-education-levels">Nivel educativo *</FieldLabel>
-          <SubjectsMultiSelect
-            id="curricular-reference-education-levels"
-            options={educationLevels.map((level) => ({ id: level.id, label: level.name }))}
-            value={value.educationLevels.map((level) => level.id)}
-            onChange={(ids) =>
-              onChange({
-                ...value,
-                educationLevels: educationLevels.filter((level) => ids.includes(level.id)),
-              })
-            }
-            placeholder="Selecciona uno o varios niveles"
-            emptyMessage="No hay niveles educativos configurados."
-          />
-          <FieldError>{errors["educationLevels"]}</FieldError>
+          <FieldLabel htmlFor="curricular-reference-education-level">Nivel educativo *</FieldLabel>
+          <ComboboxField
+            items={educationLevelLabels}
+            value={value.educationLevel?.id ?? null}
+            onValueChange={(selectedValue) => {
+              const option = educationLevels.find((item) => item.id === selectedValue)
+              onChange({ ...value, educationLevel: option ?? null })
+            }}
+          >
+            <ComboboxFieldTrigger
+              id="curricular-reference-education-level"
+              size="sm"
+              aria-invalid={Boolean(errors["educationLevel"])}
+            >
+              <ComboboxFieldValue placeholder="Seleccione" />
+            </ComboboxFieldTrigger>
+            <ComboboxFieldContent>
+              {educationLevels.map((item) => (
+                <ComboboxFieldItem key={item.id} value={item.id}>
+                  {item.name}
+                </ComboboxFieldItem>
+              ))}
+            </ComboboxFieldContent>
+          </ComboboxField>
+          <FieldError>{errors["educationLevel"]}</FieldError>
         </Field>
 
         <Field
@@ -301,9 +311,6 @@ export function CurricularReferenceDetailsForm({
 
         <Field orientation="vertical" variant="outlined" className="w-full md:col-span-2">
           <FieldLabel htmlFor="curricular-reference-status">Estado *</FieldLabel>
-          {/* Card más alta que el resto de los controles (`min-h-14` vs los
-              `h-10`/`h-11` de Input/Select) — el switch por sí solo se ve
-              perdido en una fila angosta. */}
           <div className="border-input flex min-h-14 items-center gap-3 rounded-md border px-3 py-3">
             <span className="text-muted-foreground text-sm">Inactivo / Activo</span>
             <Switch

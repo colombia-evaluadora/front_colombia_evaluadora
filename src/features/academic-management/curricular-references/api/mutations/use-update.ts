@@ -5,8 +5,16 @@ import type { MutationConfig } from "@/lib/react-query"
 import { update } from "@/features/academic-management/curricular-references/api/mutations/create"
 import type { CurricularReferenceDraft } from "@/features/academic-management/curricular-references/api/types/curricular-reference"
 
-function updateCurricularReference({ id, values }: { id: number; values: CurricularReferenceDraft }) {
-  return update(id, values)
+function updateCurricularReference({
+  id,
+  values,
+  previousActive,
+}: {
+  id: number
+  values: CurricularReferenceDraft
+  previousActive?: boolean
+}) {
+  return update(id, values, previousActive)
 }
 
 interface UseUpdateOptions {
@@ -21,6 +29,7 @@ export function useUpdate({ mutationConfig }: UseUpdateOptions = {}) {
     ...mutationConfig,
     onSuccess: (...args) => {
       queryClient.invalidateQueries({ queryKey: ["curricular-references"] })
+      queryClient.invalidateQueries({ queryKey: ["curricular-reference"] })
       mutationConfig?.onSuccess?.(...args)
     },
   })

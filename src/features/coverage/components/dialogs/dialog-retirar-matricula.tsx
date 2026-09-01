@@ -1,5 +1,4 @@
 import { useState } from "react"
-import { toast } from "sonner"
 
 import {
   AlertDialog,
@@ -14,7 +13,9 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { PersonRemoveIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
+import { useNotify } from "@/components/notice/notice-context"
 
+import { getErrorMessage } from "@/lib/api-client"
 import { useRetireMatricula } from "@/features/coverage/api/mutations/retire-matricula"
 import type { Matricula } from "@/features/coverage/api/types/matricula"
 
@@ -26,20 +27,21 @@ interface RetirarMatriculaDialogProps {
 
 export function RetirarMatriculaDialog({ matricula, trigger = "icon" }: RetirarMatriculaDialogProps) {
   const [open, setOpen] = useState(false)
+  const { notify } = useNotify()
   const fullName = `${matricula.firstName} ${matricula.lastName}`
 
   const retireMutation = useRetireMatricula({
     mutationConfig: {
       onSuccess: (result) => {
         if (result.status === "error") {
-          toast.error(result.message)
+          notify(result.message, { variant: "error" })
           return
         }
-        toast.success(`El estudiante ${fullName} quedó en estado retirado.`)
+        notify(`El estudiante ${fullName} quedó en estado retirado.`)
         setOpen(false)
       },
-      onError: () => {
-        toast.error("No se pudo retirar al estudiante.")
+      onError: (error) => {
+        notify(getErrorMessage(error), { variant: "error" })
       },
     },
   })

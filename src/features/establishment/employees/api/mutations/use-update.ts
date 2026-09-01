@@ -10,10 +10,11 @@ interface UpdateEmployeeInput {
   values: Employee
   /** Foto nueva a subir en el mismo PATCH; omitida, la guardada no se toca. */
   foto?: File | null
+  removePhoto?: boolean
 }
 
-function updateMutation({ employeeId, values, foto }: UpdateEmployeeInput) {
-  return update(employeeId, values, foto)
+function updateMutation({ employeeId, values, foto, removePhoto }: UpdateEmployeeInput) {
+  return update(employeeId, values, foto, removePhoto)
 }
 
 interface UseUpdateOptions {
