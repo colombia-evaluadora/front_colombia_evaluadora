@@ -1147,6 +1147,7 @@ export function MatriculaGuardianSection({
 }: GuardianSectionProps) {
   const { data: parentesco } = useMatriculaCatalogQuery("parentesco")
   const { data: tipoDocumento } = useMatriculaCatalogQuery("tipoDocumento")
+  const { data: genero } = useMatriculaCatalogQuery("genero")
 
   return (
     <MatriculaFormSection title="Información del acudiente">
@@ -1235,6 +1236,18 @@ export function MatriculaGuardianSection({
         onChange={(documentExpedition) => onChange({ ...value, documentExpedition })}
         fieldSettings={fieldSettings}
       />
+      {isFieldVisible(fieldSettings, "guardian-gender") && (
+        <MatriculaSelectField
+          id="guardian-gender"
+          label="Género del acudiente"
+          required={isFieldRequired(fieldSettings, "guardian-gender")}
+          value={value.gender}
+          options={catalogOptions(genero)}
+          labelFor={catalogLabelFor(genero)}
+          invalid={invalidFields.includes("guardian-gender")}
+          onChange={(gender) => onChange({ ...value, gender })}
+        />
+      )}
     </MatriculaFormSection>
   )
 }

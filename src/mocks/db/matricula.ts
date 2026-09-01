@@ -176,6 +176,7 @@ function createEmptyMatriculaDetails(): CreateMatriculaInput {
       documentType: "",
       documentNumber: "",
       documentExpedition: { department: "", municipality: "" },
+      gender: "",
     },
     guardianAddress: { department: "", municipality: "", address: "" },
     guardianContact: { phone: "", email: "" },
