@@ -229,6 +229,9 @@ export function validateMatricula(
   if (!values.student.firstName.trim()) missing.push("student-first-name")
   if (!values.student.lastName.trim()) missing.push("student-last-name")
   if (!values.student.birthDate) missing.push("student-birth-date")
+  else if (values.student.birthDate > new Date().toISOString().slice(0, 10)) {
+    missing.push("student-birth-date")
+  }
   if (!values.student.gender) missing.push("student-gender")
   if (!values.guardian.relationship) missing.push("guardian-relationship")
   if (!values.guardian.documentType) missing.push("guardian-document-type")

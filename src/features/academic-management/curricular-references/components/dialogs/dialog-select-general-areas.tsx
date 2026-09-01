@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useLayoutEffect, useMemo, useRef, useState } from "react"
 import { CaretDownIcon, CheckIcon, MagnifyingGlassIcon, XIcon } from "@/components/ui/icons"
 
 import { cn } from "@/lib/utils"
@@ -59,6 +59,64 @@ function chunkRows(areas: GeneralArea[]): GeneralArea[][] {
   return grid
 }
 
+const CHIP_GAP_PX = 4
+const MIN_CHIP_WIDTH_PX = 40
+
+function useAdaptiveVisibleChips(names: string[]) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const measureRef = useRef<HTMLDivElement>(null)
+  const [visibleCount, setVisibleCount] = useState(names.length)
+  const [truncatedLast, setTruncatedLast] = useState(false)
+  const namesKey = names.join(" ")
+
+  useLayoutEffect(() => {
+    const container = containerRef.current
+    const measure = measureRef.current
+    if (!container || !measure) {
+      setVisibleCount(names.length)
+      setTruncatedLast(false)
+      return
+    }
+
+    function recalc() {
+      if (!container || !measure) return
+      const available = container.clientWidth
+      const chipEls = Array.from(measure.querySelectorAll<HTMLElement>("[data-measure-chip]"))
+      const extraEl = measure.querySelector<HTMLElement>("[data-measure-extra]")
+      const extraWidth = extraEl?.offsetWidth ?? 0
+
+      let used = 0
+      let count = 0
+      let lastTruncated = false
+      for (let i = 0; i < chipEls.length; i++) {
+        const gapBefore = i > 0 ? CHIP_GAP_PX : 0
+        const remaining = chipEls.length - (i + 1)
+        const extraSpace = remaining > 0 ? extraWidth + CHIP_GAP_PX : 0
+        const budget = available - used - gapBefore - extraSpace
+        const fullWidth = chipEls[i].offsetWidth
+
+        if (budget < MIN_CHIP_WIDTH_PX) break
+
+        used += gapBefore + Math.min(fullWidth, budget)
+        count++
+        if (fullWidth > budget) {
+          lastTruncated = true
+          break
+        }
+      }
+      setVisibleCount(names.length > 0 ? Math.max(count, 1) : 0)
+      setTruncatedLast(lastTruncated)
+    }
+
+    recalc()
+    const ro = new ResizeObserver(recalc)
+    ro.observe(container)
+    return () => ro.disconnect()
+  }, [namesKey])
+
+  return { containerRef, measureRef, visibleCount, truncatedLast }
+}
+
 interface SelectGeneralAreasDialogProps {
   value: number[]
   onChange: (ids: number[]) => void
@@ -77,8 +135,6 @@ export function SelectGeneralAreasDialog({
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState("")
   const [pageIndex, setPageIndex] = useState(0)
-  // Borrador propio del diálogo: los cambios solo pegan en `value` al
-  // confirmar con "Aceptar" — así "Cancelar" no deja a medio marcar.
   const [draft, setDraft] = useState<number[]>(value)
 
   const resolvedVariant = useInputVariant()
@@ -123,7 +179,8 @@ export function SelectGeneralAreasDialog({
   }
 
   const selectedNames = value.map((areaId) => areaById.get(areaId)?.nombre).filter(Boolean) as string[]
-  const visibleChips = selectedNames.slice(0, 2)
+  const { containerRef, measureRef, visibleCount, truncatedLast } = useAdaptiveVisibleChips(selectedNames)
+  const visibleChips = selectedNames.slice(0, visibleCount)
   const extra = selectedNames.length - visibleChips.length
 
   return (
@@ -143,22 +200,29 @@ export function SelectGeneralAreasDialog({
           />
         }
       >
-        <div className="flex min-w-0 flex-1 items-center gap-1 overflow-hidden">
+        <div ref={containerRef} className="flex min-w-0 flex-1 items-center gap-1 overflow-hidden">
           {selectedNames.length === 0 ? (
             <span className="text-muted-foreground">{placeholder}</span>
           ) : (
             <>
-              {visibleChips.map((name) => (
-                <Badge
-                  key={name}
-                  variant="soft"
-                  color="muted"
-                  className="min-w-0 shrink truncate text-xs normal-case tracking-normal"
-                  title={name}
-                >
-                  {name}
-                </Badge>
-              ))}
+              {visibleChips.map((name, i) => {
+                const isLastVisible = i === visibleChips.length - 1
+                const canTruncate = isLastVisible && truncatedLast
+                return (
+                  <Badge
+                    key={name}
+                    variant="soft"
+                    color="muted"
+                    className={cn(
+                      "text-xs normal-case tracking-normal",
+                      canTruncate ? "min-w-0 shrink justify-start" : "shrink-0",
+                    )}
+                    title={name}
+                  >
+                    {canTruncate ? <span className="block truncate">{name}</span> : name}
+                  </Badge>
+                )
+              })}
               {extra > 0 && (
                 <Badge
                   variant="soft"
@@ -171,12 +235,34 @@ export function SelectGeneralAreasDialog({
             </>
           )}
         </div>
+        <div
+          ref={measureRef}
+          aria-hidden
+          className="pointer-events-none invisible absolute flex items-center gap-1 whitespace-nowrap"
+          style={{ top: -9999, left: -9999 }}
+        >
+          {selectedNames.map((name) => (
+            <Badge
+              key={name}
+              data-measure-chip
+              variant="soft"
+              color="muted"
+              className="text-xs normal-case tracking-normal"
+            >
+              {name}
+            </Badge>
+          ))}
+          <Badge
+            data-measure-extra
+            variant="soft"
+            color="muted"
+            className="text-xs normal-case tracking-normal"
+          >
+            +{selectedNames.length}
+          </Badge>
+        </div>
         <CaretDownIcon className="size-3.5 shrink-0 text-muted-foreground" />
       </DialogTrigger>
-
-      {/* `forceRender`: este diálogo se abre anidado dentro del de "Agregar
-          referente curricular" (ya abierto) — sin forzar su propio overlay,
-          no bloquea el fondo (mismo fix que `SelectGeneralAreaDialog`). */}
       <DialogPortal>
         <DialogOverlay forceRender className="bg-black/30" />
       </DialogPortal>
