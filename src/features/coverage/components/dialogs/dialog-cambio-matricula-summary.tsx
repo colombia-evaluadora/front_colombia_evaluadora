@@ -9,7 +9,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { CheckCircleIcon } from "@/components/ui/icons"
-import { formatGrade } from "@/features/coverage/api/ui-mappings"
+import { useMatriculaGradeLabel } from "@/features/coverage/hooks/use-matricula-grade-label"
 import type { BulkMatriculaChangeStudentResult } from "@/features/coverage/api/types/matricula"
 
 export interface CambioMatriculaSummary {
@@ -27,6 +27,7 @@ export function CambioMatriculaSummaryDialog({
   summary,
   onClose,
 }: CambioMatriculaSummaryDialogProps) {
+  const gradeLabel = useMatriculaGradeLabel()
   if (!summary) return null
 
   const { students } = summary
@@ -65,8 +66,8 @@ export function CambioMatriculaSummaryDialog({
                   </TableCell>
                   <TableCell>
                     {student.fromGrade === student.toGrade
-                      ? formatGrade(student.toGrade)
-                      : `${formatGrade(student.fromGrade)} → ${formatGrade(student.toGrade)}`}
+                      ? gradeLabel(student.toGrade)
+                      : `${gradeLabel(student.fromGrade)} → ${gradeLabel(student.toGrade)}`}
                   </TableCell>
                   <TableCell>
                     {student.fromGroup === student.toGroup

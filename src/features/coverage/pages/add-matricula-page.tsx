@@ -13,10 +13,12 @@ import { CheckIcon, SpinnerIcon } from "@/components/ui/icons"
 import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
 
 import { paths } from "@/config/paths"
+import { getErrorMessage } from "@/lib/api-client"
 import { useCreateMatricula } from "@/features/coverage/api/mutations/create-matricula"
 import { checkMatriculaByDocument } from "@/features/coverage/api/query/use-matricula-document-check"
 import { useMatriculaFieldConfigQuery } from "@/features/coverage/api/query/use-matricula-field-config-query"
-import { useReservationCatalogsQuery } from "@/features/coverage/api/query/use-reservation-catalogs-query"
+import { findMatriculaUsuarioPorDocumento } from "@/features/coverage/api/query/use-matricula-usuario-por-documento"
+import { useMatriculaCampusesQuery } from "@/features/coverage/api/query/use-matricula-campuses-query"
 import { buildMatriculaFieldSettings } from "@/features/coverage/utils/matricula-field-settings"
 import { useMunicipalitiesQuery } from "@/features/establishment/institution/api/query/use-municipalities"
 import type {
@@ -38,6 +40,7 @@ import {
   createEmptySupportFiles,
   createInitialMatriculaValues,
   validateMatricula,
+  type MatriculaAccountsFound,
 } from "@/features/coverage/utils/matricula-form-defaults"
 
 const ADD_MATRICULA_FORM_ID = "create-matricula-form"
@@ -87,7 +90,7 @@ export function AddMatriculaPage() {
 function AddMatriculaPageContent() {
   const navigate = useNavigate()
   const { notify, dismiss } = useNotify()
-  const { data: catalogs } = useReservationCatalogsQuery()
+  const { data: catalogs } = useMatriculaCampusesQuery()
   const { data: municipalities = [] } = useMunicipalitiesQuery()
   const { data: fieldConfig } = useMatriculaFieldConfigQuery()
   const fieldSettings = useMemo(
@@ -119,6 +122,27 @@ function AddMatriculaPageContent() {
   // de verdad cambie el documento, que es lo que reabre el chequeo abajo.
   const [duplicateDialogDismissed, setDuplicateDialogDismissed] = useState(false)
 
+  // `pkTusuario` resuelto por el autocompletado de abajo — matrícula asume
+  // que estudiante/acudiente YA tienen cuenta (creada acá o en otra alta),
+  // así que esto es lo que se manda en el create
+  // (`PK_USUARIO_ESTUDIANTE`/`PK_USUARIO_ACUDIENTE`), no un registro nuevo.
+  // Va en un ref (no `useState`): todavía no hay nada que lo lea (el
+  // guardado real no está armado, ver Fase 4 pendiente) y no debe disparar
+  // un re-render — cuando esa parte se conecte, se lee desde acá.
+  const pkUsuarioEstudianteRef = useRef<number | null>(null)
+  const pkUsuarioAcudienteRef = useRef<number | null>(null)
+
+  // Refleja lo que encontró (o no) el autocompletado por documento —
+  // `false` es lo que hace que el correo pase a ser obligatorio más abajo
+  // (cuenta nueva, ver `MatriculaAccountsFound`). `null` = todavía sin
+  // resolver, no bloquea nada.
+  const [studentAccountFound, setStudentAccountFound] = useState<boolean | null>(null)
+  const [guardianAccountFound, setGuardianAccountFound] = useState<boolean | null>(null)
+  const accountsFound: MatriculaAccountsFound = {
+    student: studentAccountFound ?? undefined,
+    guardian: guardianAccountFound ?? undefined,
+  }
+
   const initialValuesRef = useRef(createInitialMatriculaValues())
 
   const isDirty =
@@ -126,30 +150,27 @@ function AddMatriculaPageContent() {
     Object.values(files).some((fileList) => fileList.length > 0)
 
   const departments = useMemo<DepartmentOption[]>(() => {
-    const byName = new Map<string, Set<string>>()
+    const byName = new Map<string, DepartmentOption["municipalities"]>()
     for (const municipality of municipalities) {
-      const set = byName.get(municipality.department.name) ?? new Set<string>()
-      set.add(municipality.name)
-      byName.set(municipality.department.name, set)
+      const list = byName.get(municipality.department.name) ?? []
+      list.push({ id: municipality.id, name: municipality.name })
+      byName.set(municipality.department.name, list)
     }
-    return Array.from(byName.entries()).map(([name, set]) => ({
-      name,
-      municipalities: Array.from(set),
-    }))
+    return Array.from(byName.entries()).map(([name, municipalities]) => ({ name, municipalities }))
   }, [municipalities])
 
   const createMatricula = useCreateMatricula({
     mutationConfig: {
-      onError: () => {
-        notify("No se pudo matricular al estudiante.", { variant: "error" })
+      onError: (error) => {
+        notify(getErrorMessage(error), { variant: "error" })
       },
     },
   })
 
   useEffect(() => {
     if (!hasSubmitted) return
-    setMissingFields(validateMatricula(values, files, fieldSettings))
-  }, [values, files, hasSubmitted, fieldSettings])
+    setMissingFields(validateMatricula(values, files, fieldSettings, accountsFound))
+  }, [values, files, hasSubmitted, fieldSettings, studentAccountFound, guardianAccountFound])
 
   // Detección de matrícula activa duplicada — mismo criterio que el
   // autocompletado por documento de establecimiento: se dispara por
@@ -184,6 +205,101 @@ function AddMatriculaPageContent() {
       clearTimeout(timeout)
     }
   }, [documentType, documentNumber])
+
+  const { documentType: guardianDocumentType, documentNumber: guardianDocumentNumber } =
+    values.guardian
+
+  useEffect(() => {
+    pkUsuarioEstudianteRef.current = null
+    setStudentAccountFound(null)
+    const trimmed = documentNumber.trim()
+    const documentTypeId = Number(documentType)
+    if (!documentTypeId || trimmed.length < 6) return
+
+    let cancelled = false
+    const timeout = setTimeout(() => {
+      findMatriculaUsuarioPorDocumento(documentTypeId, trimmed)
+        .then((found) => {
+          if (cancelled) return
+          if (!found) {
+            setStudentAccountFound(false)
+            return
+          }
+          setStudentAccountFound(true)
+          pkUsuarioEstudianteRef.current = found.pkTusuario
+          setValues((prev) => ({
+            ...prev,
+            student: {
+              ...prev.student,
+              firstName: found.firstName,
+              secondName: found.secondName,
+              lastName: found.lastName,
+              secondLastName: found.secondLastName,
+              birthDate: found.birthDate,
+              gender: found.gender,
+            },
+            studentContact: {
+              ...prev.studentContact,
+              phone: found.phone,
+              email: found.email,
+            },
+          }))
+        })
+        .catch(() => {
+        })
+    }, 600)
+
+    return () => {
+      cancelled = true
+      clearTimeout(timeout)
+    }
+  }, [documentType, documentNumber])
+
+  useEffect(() => {
+    pkUsuarioAcudienteRef.current = null
+    setGuardianAccountFound(null)
+    const trimmed = guardianDocumentNumber.trim()
+    const documentTypeId = Number(guardianDocumentType)
+    if (!documentTypeId || trimmed.length < 6) return
+
+    let cancelled = false
+    const timeout = setTimeout(() => {
+      findMatriculaUsuarioPorDocumento(documentTypeId, trimmed)
+        .then((found) => {
+          if (cancelled) return
+          if (!found) {
+            setGuardianAccountFound(false)
+            return
+          }
+          setGuardianAccountFound(true)
+          pkUsuarioAcudienteRef.current = found.pkTusuario
+          setValues((prev) => ({
+            ...prev,
+            guardian: {
+              ...prev.guardian,
+              firstName: found.firstName,
+              secondName: found.secondName,
+              lastName: found.lastName,
+              secondLastName: found.secondLastName,
+            },
+            guardianContact: {
+              ...prev.guardianContact,
+              phone: found.phone,
+              email: found.email,
+            },
+          }))
+        })
+        .catch(() => {
+          // Sin cuenta encontrada no se bloquea nada acá — el guardado
+          // real decide qué hacer (ver Fase 3, todavía pendiente).
+        })
+    }, 600)
+
+    return () => {
+      cancelled = true
+      clearTimeout(timeout)
+    }
+  }, [guardianDocumentType, guardianDocumentNumber])
 
   useEffect(() => {
     if (missingFields.length === 0) {
@@ -220,19 +336,27 @@ function AddMatriculaPageContent() {
   function handleSave(mode: "again" | "close") {
     if (existingMatricula) return
     setHasSubmitted(true)
-    const missing = validateMatricula(values, files, fieldSettings)
+    const missing = validateMatricula(values, files, fieldSettings, accountsFound)
     setMissingFields(missing)
     if (missing.length > 0) return
 
-    createMatricula.mutate(values, {
-      onSuccess: ({ matricula, homologation }) => {
-        if (homologation) {
-          setPendingHomologation({ matricula, info: homologation, mode })
-          return
-        }
-        finishSave(matricula, mode)
+    createMatricula.mutate(
+      {
+        values,
+        files,
+        pkUsuarioEstudiante: pkUsuarioEstudianteRef.current,
+        pkUsuarioAcudiente: pkUsuarioAcudienteRef.current,
       },
-    })
+      {
+        onSuccess: ({ matricula, homologation }) => {
+          if (homologation) {
+            setPendingHomologation({ matricula, info: homologation, mode })
+            return
+          }
+          finishSave(matricula, mode)
+        },
+      },
+    )
   }
 
   function handleHomologationChoice(homologate: boolean) {

@@ -68,6 +68,7 @@ interface UserFormProps {
      */
     photo?: File | null
     onPhotoChange?: (file: File | null) => void
+    onRemovePhoto?: () => void
     /**
      * Se dispara con el patch crudo que devolvió `findPersonByDocument`
      * (antes de mezclarlo con `PASSWORD_PLACEHOLDER`) cada vez que el
@@ -109,6 +110,7 @@ export function UserDetailsForm({
     onConfirmPasswordChange,
     photo: photoProp,
     onPhotoChange,
+    onRemovePhoto,
     onMatched,
 }: UserFormProps) {
     // El encabezado solo nombra el rol de la persona (Rector, Secretaria). Sin
@@ -303,6 +305,14 @@ export function UserDetailsForm({
                                 alt="Foto de perfil"
                             />
                         )
+                    }
+                    onRemoveExisting={
+                        person.photoArchivoId == null
+                            ? undefined
+                            : () => {
+                                  emitChange({ photoArchivoId: null })
+                                  onRemovePhoto?.()
+                              }
                     }
                 />
                 {/* Formulario */}

@@ -460,6 +460,7 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
   // Foto elegida en el form, todavía sin subir: viaja como `fkTarchivoFoto`
   // del multipart, tanto en el alta (/register/funcionario) como en el PATCH.
   const [photo, setPhoto] = useState<File | null>(null)
+  const [photoRemoved, setPhotoRemoved] = useState(false)
   // PK_TFUNCIONARIO que devolvió el autocompletado por documento cuando la
   // persona YA es funcionario activo (`fn_fun_activo_por_usuario`, V51 REV5
   // — ver `use-user-by-document.ts`). Dispara el efecto de abajo, que carga
@@ -565,6 +566,7 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
     // La foto guardada no vuelve como `File`: se arranca sin nada elegido y
     // solo se manda si el usuario carga una nueva.
     setPhoto(null)
+    setPhotoRemoved(false)
     // Lo que llega del backend ya está guardado: los botones arrancan con
     // el ícono de editar, sin pedir un Guardar que no aplica.
     setPermissionsSaved(employee.permissions.length > 0)
@@ -584,6 +586,7 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
     setPersonErrors({})
     setConfirmPassword("")
     setPhoto(null)
+    setPhotoRemoved(false)
     setCreatedEmployeeId(null)
     setPermissionsSaved(false)
     setAdditionalInfoSaved(false)
@@ -714,6 +717,7 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
     !isEditMode ||
     cleanSnapshotRef.current === null ||
     photo !== null ||
+    photoRemoved ||
     (person !== null && buildDraftSnapshot(person, additionalInfo, permissions) !== cleanSnapshotRef.current)
 
   const hasPermissionsChanges = JSON.stringify(permissions) !== permissionsSnapshotRef.current
@@ -852,7 +856,9 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
       employeeId: activeEmployeeId,
       values: payload,
       foto: photo,
+      removePhoto: photoRemoved,
     })
+    setPhotoRemoved(false)
   }
 
   function findCampusById(campusId: number): Campus | undefined {
@@ -1065,7 +1071,11 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
             confirmPassword={confirmPassword}
             onConfirmPasswordChange={setConfirmPassword}
             photo={photo}
-            onPhotoChange={setPhoto}
+            onPhotoChange={(file) => {
+              setPhoto(file)
+              if (file) setPhotoRemoved(false)
+            }}
+            onRemovePhoto={() => setPhotoRemoved(true)}
             onMatched={(found) => {
               if (found?.id) {
                 // Ya es funcionario activo -- el efecto de arriba

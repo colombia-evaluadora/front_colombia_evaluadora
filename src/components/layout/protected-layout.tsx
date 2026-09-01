@@ -17,7 +17,7 @@ export function ProtectedLayout() {
     <SidebarProvider defaultOpen={getInitialSidebarOpen()}>
       <AppSidebar />
       <SidebarInset>
-        <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center gap-2 bg-sidebar px-4">
+        <header className="sticky top-0 z-40 flex h-[66px] shrink-0 items-center gap-2 bg-sidebar px-4">
           {/*
             En escritorio el trigger vive junto al logo, dentro del sidebar. En
             móvil no puede: ahí el sidebar es un `Sheet` cerrado, así que el

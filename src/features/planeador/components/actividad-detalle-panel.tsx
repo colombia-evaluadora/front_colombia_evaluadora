@@ -3,7 +3,6 @@ import {
   ArrowLeftIcon,
   CheckIcon,
   ClipboardCheckIcon,
-  FileDownloadOutlinedIcon,
   PencilIcon,
   TrashIcon,
 } from "@/components/ui/icons"
@@ -20,7 +19,10 @@ const ACCIONES = [
   { label: "Editar", Icon: PencilIcon },
   { label: "Marcar", Icon: CheckIcon },
   { label: "Aprobar", Icon: ClipboardCheckIcon },
-  { label: "Descargar", Icon: FileDownloadOutlinedIcon },
+  // "Descargar" NO va acá: el export por actividad ya vive en la card
+  // (menú PDF / Excel conectado a `useExportActividad`). Tenerlo también
+  // en el header del panel dejaba dos disparadores de exportación en la
+  // misma pantalla, y el del panel no tenía handler.
   { label: "Eliminar", Icon: TrashIcon },
 ] as const
 
@@ -61,7 +63,8 @@ interface ActividadDetallePanelProps {
  *
  * Las cinco acciones del header siguen el mismo patrón que la card: las
  * tres vivas son Editar (link al form), Marcar (cambia el modo del
- * panel) y Aprobar (idem). Descargar y Eliminar siguen deshabilitados.
+ * panel) y Aprobar (idem). Eliminar sigue deshabilitado; el export por
+ * actividad vive solo en la card.
  */
 export function ActividadDetallePanel({
   actividadId,

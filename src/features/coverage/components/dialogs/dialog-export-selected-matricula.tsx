@@ -1,5 +1,4 @@
 import { useState } from "react"
-import { toast } from "sonner"
 
 import {
   FileDownloadOutlinedIcon,
@@ -19,7 +18,9 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
+import { useNotify } from "@/components/notice/notice-context"
 
+import { getErrorMessage } from "@/lib/api-client"
 import { useExportSelectedMatricula } from "@/features/coverage/api/mutations/export-selected-matricula"
 import type { ExportFormat } from "@/features/coverage/api/types/matricula"
 
@@ -33,18 +34,22 @@ export function ExportSelectedMatriculaDialog({
   resetSelection,
 }: ExportSelectedMatriculaDialogProps) {
   const [open, setOpen] = useState(false)
+  const { notify } = useNotify()
   const count = selectedIds.length
 
   const exportSelected = useExportSelectedMatricula({
     mutationConfig: {
       onSuccess: (result) => {
         if (result.status === "error") {
-          toast.error(result.message)
+          notify(result.message, { variant: "error" })
           return
         }
-        toast.success(result.message)
+        notify(result.message)
         setOpen(false)
         resetSelection()
+      },
+      onError: (error) => {
+        notify(getErrorMessage(error), { variant: "error" })
       },
     },
   })

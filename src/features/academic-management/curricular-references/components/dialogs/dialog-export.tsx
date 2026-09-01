@@ -48,6 +48,7 @@ export function ExportCurricularReferencesDialog({ filters }: ExportCurricularRe
             color="muted"
             size="icon-sm"
             aria-label="Exportar referentes curriculares filtrados"
+            className="[&_svg:not([class*='size-'])]:size-4"
           >
             <FileDownloadOutlinedIcon />
           </Button>
