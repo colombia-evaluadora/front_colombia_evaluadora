@@ -167,10 +167,19 @@ interface DateFieldProps {
   onChange: (value: string) => void
   required?: boolean
   invalid?: boolean
+  maxDate?: Date
 }
 
 /** Mismo `DatePicker` que usa Establecimiento, con el label flotante del resto de campos del alta. */
-export function MatriculaDateField({ id, label, value, onChange, required, invalid }: DateFieldProps) {
+export function MatriculaDateField({
+  id,
+  label,
+  value,
+  onChange,
+  required,
+  invalid,
+  maxDate,
+}: DateFieldProps) {
   return (
     <Field
       orientation="vertical"
@@ -187,6 +196,7 @@ export function MatriculaDateField({ id, label, value, onChange, required, inval
         mode="date"
         value={parseDateValue(value)}
         aria-invalid={invalid}
+        maxDate={maxDate}
         onChange={(date) => onChange(formatDateValue(date) ?? "")}
       />
     </Field>
@@ -561,6 +571,7 @@ export function MatriculaStudentSection({
         required
         invalid={invalidFields.includes("student-birth-date")}
         value={value.birthDate}
+        maxDate={new Date()}
         onChange={(birthDate) => onChange({ ...value, birthDate })}
       />
       <DeptMunicipioFields
@@ -1507,14 +1518,14 @@ export function SupportFilesSheet({ open, onOpenChange, value, onChange }: Suppo
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full gap-0 data-[side=right]:sm:max-w-lg">
-        <SheetHeader>
+        <SheetHeader className="px-4">
           <SheetTitle>Archivos de soporte</SheetTitle>
           <SheetDescription>
             Por favor cargue los siguientes documentos requeridos para completar la inscripción del
             estudiante.
           </SheetDescription>
         </SheetHeader>
-        <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-8 pb-8">
+        <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-4 pb-8">
           {SUPPORT_FILE_FIELDS.map((field) => (
             <SupportFilesSheetField
               key={field.key}
