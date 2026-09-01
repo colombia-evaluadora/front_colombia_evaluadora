@@ -24,6 +24,7 @@ interface CurricularReferenceRow {
   descripcion: string
   nivel_educativo: string | null
   instrumento: string
+  instrumento_info_adicional: string | null
   enfoque_pedagogico: string | null
   tipo_evaluacion: string | null
   estado: "A" | "I"
@@ -49,7 +50,7 @@ function toCurricularReference(row: CurricularReferenceRow): CurricularReference
     evaluationType: displayOnlyCatalogItem(row.tipo_evaluacion),
     areas: [],
     instrument: row.instrumento,
-    instrumentDescription: "",
+    instrumentDescription: row.instrumento_info_adicional ?? "",
     regulation: "",
     active: row.estado === "A",
     createdYear: row.anio_vigencia_desde,
