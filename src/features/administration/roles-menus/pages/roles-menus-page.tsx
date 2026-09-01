@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 
 import { NoticeProvider, useNotify } from "@/components/notice/notice-context"
 import { Button } from "@/components/ui/button"
@@ -63,6 +63,11 @@ function RolesMenusPageContent() {
 
   const tree = useMemo(() => buildMenuTree(menus), [menus])
 
+  const [readOnlyIds, setReadOnlyIds] = useState<Set<number>>(new Set())
+  useEffect(() => {
+    setReadOnlyIds(new Set())
+  }, [roleId])
+
   const createRole = useCreateRole({
     mutationConfig: {
       onSuccess: (role) => {
@@ -91,7 +96,7 @@ function RolesMenusPageContent() {
     },
   })
 
-  function save(nextIds: number[]) {
+  function save(nextIds: number[], nextReadOnly: Set<number> = readOnlyIds) {
     if (roleId == null) return
     // Sin catálogo no hay con qué resolver la jerarquía, y todo id parecería
     // huérfano: guardar acá vaciaría el rol. No debería pasar (la pantalla no
@@ -119,7 +124,11 @@ function RolesMenusPageContent() {
     // El backend rechaza la lista entera si trae un submenú sin su padre, y la
     // lista puede venir así desde la base. Se completa acá, en el único punto
     // por el que pasan asignar, quitar y reordenar.
-    updateRoleMenus.mutate({ roleId, menuIds: withRequiredParents(known, tree) })
+    const finalIds = withRequiredParents(known, tree)
+    updateRoleMenus.mutate({
+      roleId,
+      menus: finalIds.map((id) => ({ id, soloLectura: nextReadOnly.has(id) })),
+    })
   }
 
   function handleAssign(ids: number[]) {
@@ -127,7 +136,21 @@ function RolesMenusPageContent() {
   }
 
   function handleUnassign(ids: number[]) {
-    save(assignedIds.filter((id) => !ids.includes(id)))
+    const nextReadOnly = new Set(readOnlyIds)
+    ids.forEach((id) => nextReadOnly.delete(id))
+    setReadOnlyIds(nextReadOnly)
+    save(
+      assignedIds.filter((id) => !ids.includes(id)),
+      nextReadOnly,
+    )
+  }
+
+  function handleToggleReadOnly(id: number, checked: boolean) {
+    const nextReadOnly = new Set(readOnlyIds)
+    if (checked) nextReadOnly.add(id)
+    else nextReadOnly.delete(id)
+    setReadOnlyIds(nextReadOnly)
+    save(assignedIds, nextReadOnly)
   }
 
   const isLoading = rolesPending || menusPending || assignedPending
@@ -218,6 +241,8 @@ function RolesMenusPageContent() {
               // El orden del menú del rol ES el orden de su lista de menús, así
               // que reordenar se guarda con la misma llamada que asignar.
               onReorderAssigned={save}
+              readOnlyIds={readOnlyIds}
+              onToggleReadOnly={handleToggleReadOnly}
               disabled={updateRoleMenus.isPending}
             />
           )}

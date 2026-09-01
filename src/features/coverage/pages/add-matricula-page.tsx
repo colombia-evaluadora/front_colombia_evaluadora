@@ -92,11 +92,16 @@ function AddMatriculaPageContent() {
   const { notify, dismiss } = useNotify()
   const { data: catalogs } = useMatriculaCampusesQuery()
   const { data: municipalities = [] } = useMunicipalitiesQuery()
-  const { data: fieldConfig } = useMatriculaFieldConfigQuery()
+  const { data: fieldConfig, isError: isFieldConfigError, error: fieldConfigError } =
+    useMatriculaFieldConfigQuery()
   const fieldSettings = useMemo(
     () => (fieldConfig ? buildMatriculaFieldSettings(fieldConfig) : undefined),
     [fieldConfig],
   )
+
+  useEffect(() => {
+    if (isFieldConfigError) notify(getErrorMessage(fieldConfigError), { variant: "error" })
+  }, [isFieldConfigError, fieldConfigError, notify])
 
   const [values, setValues] = useState<CreateMatriculaInput>(createInitialMatriculaValues)
   const [files, setFiles] = useState<MatriculaSupportFiles>(createEmptySupportFiles)
