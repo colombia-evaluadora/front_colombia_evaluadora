@@ -22,9 +22,6 @@ interface CurricularReferenceColumnsOptions {
   onEdit: (curricularReference: CurricularReference) => void
 }
 
-// Columnas angostas, pero sin recortar de más: en vez de una sola línea con
-// "…", el texto puede pasar a una segunda o tercera línea — el tope real de
-// la fila es este, no el de cada celda por separado.
 const MAX_LINES_CLASS = "line-clamp-5"
 
 function ActionsCell({
@@ -68,12 +65,6 @@ function ActionsCell({
   )
 }
 
-/**
- * Título + bajada en una columna angosta: envuelve hasta `MAX_LINES_CLASS`
- * líneas (no una sola con "…") y el tooltip trae el texto completo para
- * cuando aun así no alcanza — mismo patrón que "Rol"/"Jornada" en la tabla de
- * funcionarios (`columns-employees.tsx`), pero permitiendo varias líneas.
- */
 function TitleWithDescriptionCell({ title, description }: { title: string; description: string }) {
   const { ref, isTruncated } = useTruncated<HTMLDivElement>()
   const [open, setOpen] = useState(false)
@@ -81,15 +72,11 @@ function TitleWithDescriptionCell({ title, description }: { title: string; descr
   const content = (
     <div ref={ref} className={`max-w-[10rem] whitespace-normal ${MAX_LINES_CLASS}`}>
       <span className="font-bold">{title}</span>
-      {description ? <span className="text-muted-foreground text-xs"> — {description}</span> : null}
+      {description ? <span className="text-muted-foreground block text-xs">{description}</span> : null}
     </div>
   )
 
   return (
-    // Siempre montado y controlado (nunca alterna con/sin `Tooltip`
-    // envolviendo, ni entre `open` controlado y no controlado): el nodo
-    // medido tiene que seguir siendo el mismo entre renders, si no el
-    // `ResizeObserver` del hook queda mirando un nodo que ya no existe.
     <Tooltip open={isTruncated && open} onOpenChange={setOpen}>
       <TooltipTrigger render={content} />
       <TooltipContent>
@@ -100,7 +87,6 @@ function TitleWithDescriptionCell({ title, description }: { title: string; descr
   )
 }
 
-/** Celda de texto simple en una columna angosta, con tooltip solo si se recorta. */
 function WrappedTextCell({ text }: { text: string }) {
   const { ref, isTruncated } = useTruncated<HTMLSpanElement>()
   const [open, setOpen] = useState(false)
@@ -119,7 +105,6 @@ function WrappedTextCell({ text }: { text: string }) {
   )
 }
 
-/** Badge de estado + vigencia (desde arriba, hasta abajo). */
 function StatusCell({ reference }: { reference: CurricularReference }) {
   const period = curricularReferenceStatusPeriod(reference)
 
