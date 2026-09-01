@@ -148,6 +148,7 @@ export const MATRICULA_FIELD_CATALOG: MatriculaFieldCatalogSection[] = [
         id: "guardian-document-expedition-municipality",
         label: "Lugar expedición documento acudiente municipio",
       },
+      { id: "guardian-gender", label: "Género del acudiente" },
     ],
   },
   {

@@ -96,6 +96,7 @@ export function createInitialMatriculaValues(): CreateMatriculaInput {
       documentType: "",
       documentNumber: "",
       documentExpedition: { department: "", municipality: "" },
+      gender: "",
     },
     guardianAddress: createEmptyResidence(),
     guardianContact: createEmptyContact(),
@@ -181,6 +182,7 @@ const OPTIONAL_MATRICULA_FIELD_GETTERS: Record<string, (values: CreateMatriculaI
   "guardian-document-number": (v) => v.guardian.documentNumber,
   "guardian-document-expedition-department": (v) => v.guardian.documentExpedition.department,
   "guardian-document-expedition-municipality": (v) => v.guardian.documentExpedition.municipality,
+  "guardian-gender": (v) => v.guardian.gender,
   "guardian-residence-address": (v) => v.guardianAddress.address,
   "guardian-residence-department": (v) => v.guardianAddress.department,
   "guardian-residence-municipality": (v) => v.guardianAddress.municipality,
@@ -229,6 +231,9 @@ export function validateMatricula(
   if (!values.student.firstName.trim()) missing.push("student-first-name")
   if (!values.student.lastName.trim()) missing.push("student-last-name")
   if (!values.student.birthDate) missing.push("student-birth-date")
+  else if (values.student.birthDate > new Date().toISOString().slice(0, 10)) {
+    missing.push("student-birth-date")
+  }
   if (!values.student.gender) missing.push("student-gender")
   if (!values.guardian.relationship) missing.push("guardian-relationship")
   if (!values.guardian.documentType) missing.push("guardian-document-type")

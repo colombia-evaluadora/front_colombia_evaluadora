@@ -63,6 +63,7 @@ async function resolvePkUsuarioAcudiente(
     secondName: guardian.secondName,
     lastName: guardian.lastName,
     secondLastName: guardian.secondLastName,
+    genderId: guardian.gender ? Number(guardian.gender) : undefined,
     phone: guardianContact.phone,
     email: guardianContact.email,
   })

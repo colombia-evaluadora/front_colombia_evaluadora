@@ -17,7 +17,7 @@ import { coberturaMatriculaEditarRoute } from "@/router"
 import { useAuth } from "@/features/auth/hooks/use-auth"
 import { useMatriculaDetailQuery } from "@/features/coverage/api/query/use-matricula-detail-query"
 import { useMatriculaFieldConfigQuery } from "@/features/coverage/api/query/use-matricula-field-config-query"
-import { useReservationCatalogsQuery } from "@/features/coverage/api/query/use-reservation-catalogs-query"
+import { useMatriculaCampusesQuery } from "@/features/coverage/api/query/use-matricula-campuses-query"
 import { useUpdateMatricula } from "@/features/coverage/api/mutations/update-matricula"
 import { useMunicipalitiesQuery } from "@/features/establishment/institution/api/query/use-municipalities"
 import { MatriculaFormBody } from "@/features/coverage/components/forms/matricula-form-body"
@@ -69,7 +69,7 @@ function MatriculaEditPageContent() {
   const { notify, dismiss } = useNotify()
   const { user } = useAuth()
   const { data, isPending, isError } = useMatriculaDetailQuery(matriculaId)
-  const { data: catalogs } = useReservationCatalogsQuery()
+  const { data: catalogs } = useMatriculaCampusesQuery()
   const { data: municipalities = [] } = useMunicipalitiesQuery()
   const { data: fieldConfig } = useMatriculaFieldConfigQuery()
   const fieldSettings = useMemo(
