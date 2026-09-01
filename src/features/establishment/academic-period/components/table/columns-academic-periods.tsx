@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { DataTableColumnHeader } from "@/components/data-table"
 
-import { ACADEMIC_PERIOD_STATUS_BADGE, RESERVATION_STATUS_BADGE } from "@/features/establishment/academic-period/api/ui-mappings"
+import { RESERVATION_STATUS_BADGE } from "@/features/establishment/academic-period/api/ui-mappings"
 import type {
   AcademicPeriod,
   AcademicPeriodStatus,
@@ -19,7 +19,7 @@ import { Authorization } from "@/lib/authorization"
 function StatusCell({ status }: { status: AcademicPeriodStatus }) {
   const { data: statusOptions = [] } = useAcademicPeriodStatusesQuery()
   const label = statusOptions.find((o) => o.key === status)?.label ?? status
-  return <Badge {...ACADEMIC_PERIOD_STATUS_BADGE[status]}>{label}</Badge>
+  return <span>{label}</span>
 }
 
 function ReservationStatusCell({ enabled }: { enabled: boolean }) {

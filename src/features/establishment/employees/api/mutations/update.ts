@@ -110,15 +110,22 @@ export function update(
   employeeId: number,
   values: Employee,
   foto?: File | null,
+  removePhoto?: boolean,
 ): Promise<{ status: "ok" | "error"; message: string; employee: Employee }> {
   const url = apiPath(`/establishments/employees/${employeeId}`, `/establecimientos/funcionarios/${employeeId}`)
 
-  if (env.ENABLE_API_MOCKING) return api.put(url, toOutgoingPayload(values))
+  if (env.ENABLE_API_MOCKING) {
+    return api.put(url, toOutgoingPayload(values))
+  }
 
   if (foto) {
     return patchMultipart(`/eval-col/establecimientos/funcionarios/${employeeId}`, toOutgoingPayload(values), {
       fkTarchivoFoto: foto,
     })
+  }
+
+  if (removePhoto) {
+    return api.patch(url, { ...toOutgoingPayload(values), fkTarchivoFoto: null })
   }
 
   return api.patch(url, toOutgoingPayload(values))

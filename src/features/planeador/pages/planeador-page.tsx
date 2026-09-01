@@ -19,10 +19,10 @@ import {
 import { Spinner } from "@/components/ui/spinner"
 
 import { useActividadesQuery } from "@/features/planeador/api/query/use-actividades-query"
-import { useExportActividad } from "@/features/planeador/api/mutations/export-actividad"
 import { ActividadCard } from "@/features/planeador/components/actividad-card"
 import { ActividadDetallePanel } from "@/features/planeador/components/actividad-detalle-panel"
 import { DialogExportActividades } from "@/features/planeador/components/dialogs/dialog-export-actividades"
+import { PlaneadorSummaryCards } from "@/features/planeador/components/planeador-summary-cards"
 import {
   PlaneadorMonthGrid,
   type DayEvent,
@@ -70,42 +70,29 @@ export function PlaneadorPage() {
     () => new Date(new Date().getFullYear(), new Date().getMonth(), 1),
   )
 
-  // Vista activa del panel de detalle. Por defecto es la informativa (la
-  // misma que muestra el click en la card). Cada modo se guarda por id
-  // de actividad: "Marcar" (chulito) activa `grades`, "Aprobar"
-  // (clipboard-check) activa `approval`. Al cambiar de card se vuelve
-  // al modo "info" — los modos son propios de la actividad en la que
-  // se pidieron.
-  const [gradeViewActividadId, setGradeViewActividadId] = React.useState<
-    string | null
-  >(null)
-  const [approvalViewActividadId, setApprovalViewActividadId] = React.useState<
-    string | null
-  >(null)
+  // Modo del panel de detalle por actividad. Map `id → modo` en vez de dos
+  // flags sueltos: la última acción del usuario gana (Marcar después de
+  // Aprobar cambia a grades, no se queda en approval por orden de check).
+  // Si la entrada no existe para la actividad activa, cae a "info".
+  // Los handlers también setean `actividadId` — sin ese paso, clickear el
+  // chulito estando en el calendario no abría el panel.
+  const [panelModeByActividad, setPanelModeByActividad] = React.useState<
+    Record<string, "info" | "grades" | "approval">
+  >({})
+
   const panelMode: "info" | "grades" | "approval" =
     actividadId !== undefined
-      ? approvalViewActividadId === actividadId
-        ? "approval"
-        : gradeViewActividadId === actividadId
-          ? "grades"
-          : "info"
+      ? panelModeByActividad[actividadId] ?? "info"
       : "info"
 
-  // Al cambiar de actividad, se limpian ambos modos para no arrastrar
-  // un "Marcar" o "Aprobar" de la actividad anterior.
-  React.useEffect(() => {
-    if (actividadId === undefined) {
-      setGradeViewActividadId(null)
-      setApprovalViewActividadId(null)
-      return
-    }
-    if (gradeViewActividadId && gradeViewActividadId !== actividadId) {
-      setGradeViewActividadId(null)
-    }
-    if (approvalViewActividadId && approvalViewActividadId !== actividadId) {
-      setApprovalViewActividadId(null)
-    }
-  }, [actividadId, gradeViewActividadId, approvalViewActividadId])
+  // Abre el panel en una actividad y le setea el modo pedido. Se usa tanto
+  // desde la card (Marcar / Aprobar) como desde los mismos botones del
+  // header del panel — así el comportamiento es idéntico sin importar
+  // desde dónde se disparen.
+  function setMode(actividadId: string, mode: "grades" | "approval") {
+    setActividadId(actividadId)
+    setPanelModeByActividad((prev) => ({ ...prev, [actividadId]: mode }))
+  }
 
   const {
     data: actividades = [],
@@ -113,13 +100,6 @@ export function PlaneadorPage() {
     isError,
     refetch,
   } = useActividadesQuery()
-
-  // Export individual desde la card. El toast sale del propio `onSuccess`
-  // del mutation (mismo patrón que `useDeleteActividad`): la página solo
-  // dispara la mutación con el formato elegido por el popover.
-  // No es necesario `onError` propio: el response interceptor global ya
-  // tostea los 4xx/5xx que escapen del handler mock.
-  const exportActividad = useExportActividad()
 
   // Filtrado client-side: texto libre + estado. `filtro` (instrumento) queda
   // armado para la próxima iteración, cuando llegue su catálogo.
@@ -219,13 +199,24 @@ export function PlaneadorPage() {
                 exportaron. El trigger que el diálogo trae adentro reemplaza
                 al `<Button>` de export que estaba disabled. */}
             <DialogExportActividades
-              rows={filtered.map((a) => ({ id: a.id, nombre: a.nombre }))}
+              rows={filtered}
             />
           </TableScreenActions>
         </TableScreenToolbar>
       </TableScreenHeader>
 
       <TableScreenBody>
+        {/* Cards de resumen por estado. Se computan sobre `actividades` (el
+            set completo, no el filtrado), así el conteo no cambia al filtrar
+            el listado de abajo — si filtrara, "Pendientes: 3" caería a
+            "Pendientes: 1" apenas el usuario tipea en el buscador y
+            perdería el sentido de "cuántas tengo en total". El link de
+            cada card setea `?estado=…` en la URL para que el filter bar
+            del listado muestre ese estado por defecto. */}
+        <div className="mb-6">
+          <PlaneadorSummaryCards actividades={actividades} />
+        </div>
+
         {/* La segunda pista va `minmax(0,1fr)` y no `1fr`: `1fr` equivale a
             `minmax(auto,1fr)`, que no baja del ancho mínimo del contenido, así
             que una tabla ancha empuja la columna en vez de scrollear dentro de
@@ -329,15 +320,14 @@ export function PlaneadorPage() {
                           actividad={actividad}
                           selected={actividad.id === actividadId}
                           onSelect={() => setActividadId(actividad.id)}
+                          onShowGrades={() => setMode(actividad.id, "grades")}
+                          onShowApproval={() => setMode(actividad.id, "approval")}
                           onEdit={() =>
                             navigate({
                               to: paths.app.planeadorActividadEditar.getHref(
                                 actividad.id,
                               ),
                             })
-                          }
-                          onExport={(format) =>
-                            exportActividad.mutate({ id: actividad.id, format })
                           }
                           // Si la actividad que se borró era la abierta en
                           // el panel, cerramos el panel: sin actividadId
@@ -377,8 +367,8 @@ export function PlaneadorPage() {
                 actividadId={actividadId}
                 mode={panelMode}
                 onClose={() => setActividadId(undefined)}
-                onShowGrades={() => setGradeViewActividadId(actividadId)}
-                onShowApproval={() => setApprovalViewActividadId(actividadId)}
+                onShowGrades={() => setMode(actividadId, "grades")}
+                onShowApproval={() => setMode(actividadId, "approval")}
               />
             ) : (
               <>

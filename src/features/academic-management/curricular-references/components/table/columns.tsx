@@ -1,3 +1,4 @@
+import { useState } from "react"
 import type { ColumnDef } from "@tanstack/react-table"
 import { Link } from "@tanstack/react-router"
 
@@ -6,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { EyeIcon, PencilIcon } from "@/components/ui/icons"
 import { DataTableColumnHeader } from "@/components/data-table"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { useTruncated } from "@/hooks/use-truncated"
 import { paths } from "@/config/paths"
 
 import type { CurricularReference } from "@/features/academic-management/curricular-references/api/types/curricular-reference"
@@ -73,12 +75,23 @@ function ActionsCell({
  * funcionarios (`columns-employees.tsx`), pero permitiendo varias líneas.
  */
 function TitleWithDescriptionCell({ title, description }: { title: string; description: string }) {
+  const { ref, isTruncated } = useTruncated<HTMLDivElement>()
+  const [open, setOpen] = useState(false)
+
+  const content = (
+    <div ref={ref} className={`max-w-[10rem] whitespace-normal ${MAX_LINES_CLASS}`}>
+      <span className="font-bold">{title}</span>
+      {description ? <span className="text-muted-foreground text-xs"> — {description}</span> : null}
+    </div>
+  )
+
   return (
-    <Tooltip>
-      <TooltipTrigger render={<div className={`max-w-[10rem] whitespace-normal ${MAX_LINES_CLASS}`} />}>
-        <span className="font-bold">{title}</span>
-        {description ? <span className="text-muted-foreground text-xs"> — {description}</span> : null}
-      </TooltipTrigger>
+    // Siempre montado y controlado (nunca alterna con/sin `Tooltip`
+    // envolviendo, ni entre `open` controlado y no controlado): el nodo
+    // medido tiene que seguir siendo el mismo entre renders, si no el
+    // `ResizeObserver` del hook queda mirando un nodo que ya no existe.
+    <Tooltip open={isTruncated && open} onOpenChange={setOpen}>
+      <TooltipTrigger render={content} />
       <TooltipContent>
         <p className="font-bold">{title}</p>
         {description ? <p>{description}</p> : null}
@@ -87,15 +100,20 @@ function TitleWithDescriptionCell({ title, description }: { title: string; descr
   )
 }
 
-/** Celda de texto simple en una columna angosta, con tooltip. */
+/** Celda de texto simple en una columna angosta, con tooltip solo si se recorta. */
 function WrappedTextCell({ text }: { text: string }) {
+  const { ref, isTruncated } = useTruncated<HTMLSpanElement>()
+  const [open, setOpen] = useState(false)
+
+  const content = (
+    <span ref={ref} className={`block max-w-[9rem] whitespace-normal text-sm text-foreground ${MAX_LINES_CLASS}`}>
+      {text}
+    </span>
+  )
+
   return (
-    <Tooltip>
-      <TooltipTrigger
-        render={<span className={`block max-w-[9rem] whitespace-normal text-sm text-foreground ${MAX_LINES_CLASS}`} />}
-      >
-        {text}
-      </TooltipTrigger>
+    <Tooltip open={isTruncated && open} onOpenChange={setOpen}>
+      <TooltipTrigger render={content} />
       <TooltipContent>{text}</TooltipContent>
     </Tooltip>
   )
@@ -116,10 +134,6 @@ function StatusCell({ reference }: { reference: CurricularReference }) {
   )
 }
 
-// Ninguna columna se puede ocultar: con 4 filas —una por nivel educativo— no
-// hay razón para reducir la tabla, así que `enableHiding: false` va en todas
-// (no solo en `select`/`actions`) para que `DataTableColumnHeader` ni
-// siquiera ofrezca "Ocultar".
 export function createColumns({ onEdit }: CurricularReferenceColumnsOptions): ColumnDef<CurricularReference>[] {
   return [
     {
@@ -133,15 +147,11 @@ export function createColumns({ onEdit }: CurricularReferenceColumnsOptions): Co
       enableHiding: false,
     },
     {
-      accessorKey: "educationLevels",
-      id: "educationLevels",
+      accessorKey: "educationLevel",
+      id: "educationLevel",
       meta: { label: "Nivel educativo" },
       header: ({ column }) => <DataTableColumnHeader column={column} title="Nivel educativo" />,
-      cell: ({ row }) => (
-        <WrappedTextCell
-          text={row.original.educationLevels.map((level) => level.name).join(", ") || "—"}
-        />
-      ),
+      cell: ({ row }) => <WrappedTextCell text={row.original.educationLevel?.name ?? "—"} />,
       enableHiding: false,
     },
     {

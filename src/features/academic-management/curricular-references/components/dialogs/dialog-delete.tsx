@@ -36,7 +36,7 @@ export function DeleteCurricularReferenceDialog({
       onSuccess: (result) => {
         setOpen(false)
         if (result.status === "error") {
-          notify(result.message, { variant: "error" })
+          notify(result.message ?? "No fue posible eliminar el referente curricular.", { variant: "error" })
           return
         }
         notify("El referente curricular se eliminó correctamente.")

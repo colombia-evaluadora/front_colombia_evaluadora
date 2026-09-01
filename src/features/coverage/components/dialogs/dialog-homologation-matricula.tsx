@@ -9,7 +9,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { CheckCircleFillIcon, CheckIcon, XIcon } from "@/components/ui/icons"
 
-import { formatGrade } from "@/features/coverage/api/ui-mappings"
+import { useMatriculaGradeLabel } from "@/features/coverage/hooks/use-matricula-grade-label"
 import type { Matricula, MatriculaHomologationInfo } from "@/features/coverage/api/types/matricula"
 
 interface HomologationMatriculaDialogProps {
@@ -18,19 +18,13 @@ interface HomologationMatriculaDialogProps {
   onChoice: (homologate: boolean) => void
 }
 
-/**
- * Se abre solo cuando el mock detecta que el estudiante ya cursó este grado
- * en otra sede (`homologation` no nulo) — la confirmación normal de "Guardado"
- * no alcanza porque acá hay una decisión que tomar antes de cerrar el alta.
- * No tiene `onOpenChange`/botón de cerrar: la única forma de avanzar es
- * eligiendo una de las dos opciones (ver `onChoice`).
- */
 export function HomologationMatriculaDialog({
   matricula,
   homologation,
   onChoice,
 }: HomologationMatriculaDialogProps) {
   const fullName = `${matricula.firstName} ${matricula.lastName}`
+  const gradeLabel = useMatriculaGradeLabel()
 
   return (
     <Dialog open>
@@ -43,7 +37,7 @@ export function HomologationMatriculaDialog({
           <DialogDescription>
             El estudiante <span className="font-semibold text-foreground">{fullName}</span> ha sido
             registrado correctamente en el grado{" "}
-            <span className="font-semibold text-foreground">{formatGrade(matricula.grade)}</span>.
+            <span className="font-semibold text-foreground">{gradeLabel(matricula.grade)}</span>.
           </DialogDescription>
           <DialogDescription>
             Sin embargo, el sistema detectó que el estudiante cursó este{" "}

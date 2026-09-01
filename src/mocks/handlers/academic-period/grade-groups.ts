@@ -1,7 +1,47 @@
 import { http, HttpResponse, delay } from "msw"
 import { gradeGroupsDb } from "@/mocks/db/academic-period/grade-groups"
+import { GROUPS } from "@/mocks/db/reservations"
+import { jornadasDb } from "@/mocks/db/academic-period/jornadas"
 
 import type { GradeGroupRecord } from "@/features/establishment/academic-period/api/types/grade-group"
+
+function hashString(value: string): number {
+  let hash = 0
+  for (let i = 0; i < value.length; i++) {
+    hash = (hash * 31 + value.charCodeAt(i)) | 0
+  }
+  return Math.abs(hash)
+}
+
+function mixHash(value: number): number {
+  let x = value
+  x = Math.imul(x ^ (x >>> 16), 0x45d9f3b)
+  x = Math.imul(x ^ (x >>> 16), 0x45d9f3b)
+  x = x ^ (x >>> 16)
+  return Math.abs(x)
+}
+
+function generateFallbackGroups(gradeId: number): GradeGroupRecord[] {
+  const seed = mixHash(hashString(`grupos-${gradeId}`))
+  const count = 1 + (seed % GROUPS.length)
+  const offset = seed % GROUPS.length
+  const codigos = Array.from({ length: count }, (_, i) => GROUPS[(offset + i) % GROUPS.length]).sort()
+
+  return codigos.map((codigo) => {
+    const jornada = jornadasDb[mixHash(hashString(`grupo-jornada-${gradeId}-${codigo}`)) % jornadasDb.length]
+    return {
+      id: mixHash(hashString(`grupo-${gradeId}-${codigo}`)) % 1000000,
+      codigo,
+      jornada: jornada.name,
+      jornadaName: jornada.name,
+      director: "",
+      metodologia: undefined,
+      metodologiaName: undefined,
+      cupo: 30,
+      gradeId,
+    }
+  })
+}
 
 interface GradeGroupWriteBody {
   FK_GRADO?: number
@@ -48,11 +88,14 @@ export const gradeGroupsHandlers = [
     const pageIndex = Number(body.PAGE_INDEX ?? 0)
     const pageSize = Number(body.PAGE_SIZE ?? 10)
 
-    const scoped = gradeGroupsDb.filter((row) => row.gradeId === gradeId)
+    const created = gradeGroupsDb.filter((row) => row.gradeId === gradeId)
+    const scoped = created.length > 0 ? created : generateFallbackGroups(gradeId)
     const filtered = applyFilters(scoped, filtro)
     const totalCount = filtered.length
     const start = pageIndex * pageSize
-    const rows = filtered.slice(start, start + pageSize).map((row) => toRawRow(row, totalCount))
+    const rows = (pageSize > 0 ? filtered.slice(start, start + pageSize) : filtered).map((row) =>
+      toRawRow(row, totalCount),
+    )
     return HttpResponse.json({ rows })
   }),
 

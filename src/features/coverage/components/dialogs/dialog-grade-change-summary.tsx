@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { CheckCircleIcon } from "@/components/ui/icons"
-import { formatGrade } from "@/features/coverage/api/ui-mappings"
+import { useMatriculaGradeLabel } from "@/features/coverage/hooks/use-matricula-grade-label"
 import type { GradeChangeGradesAction } from "@/features/coverage/components/dialogs/dialog-grade-change"
 
 const GRADES_ACTION_LABELS: Record<GradeChangeGradesAction, string> = {
@@ -25,30 +25,20 @@ function formatMovementDate(date: Date): string {
     minute: "2-digit",
     hour12: true,
   })
-  // "es-CO" da "a. m."/"p. m." con espacios/puntos — se normaliza a "a.m."/"p.m.".
   return formatted.replace(/\s*([ap])\.?\s*m\.?/i, (_, letter: string) => `${letter.toLowerCase()}.m.`)
 }
 
-/** "grado" = disparado desde `GradeChangeDialog`; "sede" = desde
- * `CambioSedeMatriculaDialog`. Comparten este mismo diálogo de resultado —
- * solo cambia qué línea del resumen se resalta con la flecha. */
 export type MatriculaMovementKind = "grado" | "sede"
 
 export interface GradeChangeSummary {
   studentName: string
   movementKind: MatriculaMovementKind
-  /** "Promoción anticipada" / "Corrección de matrícula" / "Reubicación de
-   * sede" — ya resuelto por quien arma el resumen (ver
-   * `matricula-edit-page.tsx`), porque cada flujo tiene su propio criterio
-   * para elegirlo. */
   movementLabel: string
   fromCampus: string
   toCampus: string
   fromGrade: number
   toGrade: number
   group: string
-  /** `null` cuando el movimiento es de Sede y no tocó calificaciones (ver
-   * `dialog-cambio-sede-matricula.tsx`: ya no pregunta por ellas). */
   gradesAction: GradeChangeGradesAction | null
   date: Date
   userName: string
@@ -61,6 +51,7 @@ interface GradeChangeSummaryDialogProps {
 }
 
 export function GradeChangeSummaryDialog({ open, summary, onClose }: GradeChangeSummaryDialogProps) {
+  const gradeLabel = useMatriculaGradeLabel()
   if (!summary) return null
 
   const isSuperior = summary.toGrade > summary.fromGrade
@@ -108,10 +99,10 @@ export function GradeChangeSummaryDialog({ open, summary, onClose }: GradeChange
             <li>
               <span className="font-medium">Grado:</span>{" "}
               {summary.fromGrade === summary.toGrade ? (
-                formatGrade(summary.toGrade)
+                gradeLabel(summary.toGrade)
               ) : (
                 <>
-                  {formatGrade(summary.fromGrade)} → <strong>{formatGrade(summary.toGrade)}</strong>
+                  {gradeLabel(summary.fromGrade)} → <strong>{gradeLabel(summary.toGrade)}</strong>
                 </>
               )}
             </li>

@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button"
 
 import { useExportActividades } from "@/features/planeador/api/mutations/export-actividades"
 import type {
+  Actividad,
   ExportFormat,
 } from "@/features/planeador/api/types/actividad"
 
@@ -31,7 +32,7 @@ interface DialogExportActividadesProps {
    * El handler mock las recibe para contar y reportar la cantidad; en el
    * backend real, este mismo shape se traducirá al filtro del query.
    */
-  rows: { id: string; nombre: string }[]
+  rows: Actividad[]
 }
 
 /**

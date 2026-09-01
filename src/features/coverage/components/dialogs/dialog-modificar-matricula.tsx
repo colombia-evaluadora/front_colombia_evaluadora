@@ -1,5 +1,4 @@
 import { useRef, useState } from "react"
-import { toast } from "sonner"
 
 import {
   Dialog,
@@ -38,9 +37,11 @@ import {
   SpinnerIcon,
   XIcon,
 } from "@/components/ui/icons"
+import { useNotify } from "@/components/notice/notice-context"
 
-import { formatGrade } from "@/features/coverage/api/ui-mappings"
-import { useReservationCatalogsQuery } from "@/features/coverage/api/query/use-reservation-catalogs-query"
+import { getErrorMessage } from "@/lib/api-client"
+import { useMatriculaGradeLabel } from "@/features/coverage/hooks/use-matricula-grade-label"
+import { useMatriculaCampusesQuery } from "@/features/coverage/api/query/use-matricula-campuses-query"
 import { useMatriculaDependentCatalogsQuery } from "@/features/coverage/api/query/use-matricula-dependent-catalogs-query"
 import { useBulkChangeMatricula } from "@/features/coverage/api/mutations/bulk-change-matricula"
 import { useRetireMatricula } from "@/features/coverage/api/mutations/retire-matricula"
@@ -86,6 +87,8 @@ export function ModificarMatriculaDialog({
   onRemove,
   resetSelection,
 }: ModificarMatriculaDialogProps) {
+  const gradeLabel = useMatriculaGradeLabel()
+  const { notify } = useNotify()
   const [open, setOpen] = useState(false)
   // "form" = el diálogo de abajo; el resto son los pasos de verificación
   // encadenados (ver `queue`/`queueIndex`, más abajo).
@@ -111,7 +114,7 @@ export function ModificarMatriculaDialog({
   const studentsCardRef = useRef<HTMLDivElement>(null)
   const [listWidth, setListWidth] = useState<number>()
 
-  const { data: catalogs } = useReservationCatalogsQuery()
+  const { data: catalogs } = useMatriculaCampusesQuery()
 
   const sameGradeOrigin = selected.every((m) => m.grade === selected[0]?.grade)
   const commonGrade = sameGradeOrigin ? selected[0]?.grade : undefined
@@ -193,9 +196,11 @@ export function ModificarMatriculaDialog({
       const results = await Promise.allSettled(selected.map((m) => mutate(m.id)))
       const failed = results.filter((r) => r.status === "rejected").length
       if (failed > 0) {
-        toast.error(`No se pudo aplicar el cambio a ${failed} de ${selected.length} estudiante(s).`)
+        notify(`No se pudo aplicar el cambio a ${failed} de ${selected.length} estudiante(s).`, {
+          variant: "error",
+        })
       } else {
-        toast.success(accion === "retirar" ? "Estudiantes retirados." : "Estudiantes reingresados.")
+        notify(accion === "retirar" ? "Estudiantes retirados." : "Estudiantes reingresados.")
       }
     }
 
@@ -228,8 +233,8 @@ export function ModificarMatriculaDialog({
       setStep(nextQueue[nextIndex])
       return
     }
-    void applyChanges(gradeChange, groupChange).catch(() => {
-      toast.error("No se pudo aplicar el cambio de matrícula.")
+    void applyChanges(gradeChange, groupChange).catch((error) => {
+      notify(getErrorMessage(error), { variant: "error" })
     })
   }
 
@@ -384,7 +389,7 @@ export function ModificarMatriculaDialog({
                                 {matricula.firstName} {matricula.lastName}
                               </TableCell>
                               <TableCell>{matricula.campus}</TableCell>
-                              <TableCell>{formatGrade(matricula.grade)}</TableCell>
+                              <TableCell>{gradeLabel(matricula.grade)}</TableCell>
                               <TableCell>{matricula.group}</TableCell>
                             </TableRow>
                           ))}
@@ -404,7 +409,7 @@ export function ModificarMatriculaDialog({
                       {studentChipLabel(matricula)}
                     </span>
                     <span className="rounded bg-secondary-22 px-1.5 py-0.5 text-xs font-medium text-foreground">
-                      {formatGrade(matricula.grade)} - {matricula.group}
+                      {gradeLabel(matricula.grade)} - {matricula.group}
                     </span>
                     <button
                       type="button"
@@ -473,8 +478,8 @@ export function ModificarMatriculaDialog({
                   <ComboboxField
                     items={Object.fromEntries(
                       (dependentCatalogs?.grades ?? []).map((grade) => [
-                        String(grade),
-                        formatGrade(grade),
+                        String(grade.valor),
+                        grade.nombre,
                       ]),
                     )}
                     value={grado || undefined}
@@ -488,8 +493,8 @@ export function ModificarMatriculaDialog({
                     </ComboboxFieldTrigger>
                     <ComboboxFieldContent>
                       {(dependentCatalogs?.grades ?? []).map((grade) => (
-                        <ComboboxFieldItem key={grade} value={String(grade)}>
-                          {formatGrade(grade)}
+                        <ComboboxFieldItem key={grade.valor} value={String(grade.valor)}>
+                          {grade.nombre}
                         </ComboboxFieldItem>
                       ))}
                     </ComboboxFieldContent>
@@ -510,8 +515,8 @@ export function ModificarMatriculaDialog({
                     </ComboboxFieldTrigger>
                     <ComboboxFieldContent>
                       {(dependentCatalogs?.groups ?? []).map((group) => (
-                        <ComboboxFieldItem key={group} value={group}>
-                          {group}
+                        <ComboboxFieldItem key={group.id} value={group.codigo}>
+                          {group.codigo}
                         </ComboboxFieldItem>
                       ))}
                     </ComboboxFieldContent>
