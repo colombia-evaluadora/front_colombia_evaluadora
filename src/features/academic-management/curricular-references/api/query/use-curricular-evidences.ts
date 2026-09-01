@@ -23,7 +23,7 @@ function toEvidence(row: EvidenceRow, statementId: number): CurricularEvidence {
     id: row.pk_referente_enunciado,
     statementId,
     text: row.texto,
-    active: row.active,
+    active: row.estado === "A",
   }
 }
 

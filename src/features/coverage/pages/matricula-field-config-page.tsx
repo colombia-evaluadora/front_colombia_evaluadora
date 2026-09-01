@@ -113,7 +113,7 @@ export function MatriculaFieldConfigPage() {
 }
 
 function MatriculaFieldConfigPageContent() {
-  const { data, isPending, isError } = useMatriculaFieldConfigQuery()
+  const { data, isPending, isError, error } = useMatriculaFieldConfigQuery()
   const [secciones, setSecciones] = useState<MatriculaConfigSeccion[] | null>(null)
   const { notify } = useNotify()
 
@@ -122,6 +122,10 @@ function MatriculaFieldConfigPageContent() {
       setSecciones(data.secciones)
     }
   }, [data, secciones])
+
+  useEffect(() => {
+    if (isError) notify(getErrorMessage(error), { variant: "error", autoCloseMs: 0 })
+  }, [isError, error, notify])
 
   const updateConfig = useUpdateMatriculaFieldConfig({
     mutationConfig: {

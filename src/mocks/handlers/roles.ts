@@ -280,7 +280,8 @@ export const rolesHandlers = [
   http.put("/api/eval-col/roles/:roleId/menus", async ({ params, request }) => {
     await delay(200)
     const roleId = Number(params.roleId)
-    const { menuIds } = (await request.json()) as { menuIds: number[] }
+    const { menus } = (await request.json()) as { menus: { id: number; soloLectura?: boolean }[] }
+    const menuIds = menus.map((menu) => menu.id)
 
     if (!rolesDb.some((role) => role.id === roleId)) {
       return HttpResponse.json(

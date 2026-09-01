@@ -113,9 +113,14 @@ export function ManageCurricularReferenceDialog({
     setNotice({ id: noticeIdRef.current, message, variant })
   }
   const { data: referenceAreas = EMPTY_AREAS } = useCurricularReferenceAreasQuery(curricularReferenceId ?? NaN)
+  const populatedRef = useRef(false)
 
   useEffect(() => {
-    if (!open) return
+    if (!open) {
+      populatedRef.current = false
+      return
+    }
+    if (populatedRef.current) return
 
     if (isEditMode) {
       if (!curricularReference) return
@@ -139,6 +144,7 @@ export function ManageCurricularReferenceDialog({
       initialValuesRef.current = initial
     }
     setFieldErrors({})
+    populatedRef.current = true
   }, [open, isEditMode, curricularReference, referenceAreas])
 
   const createMutation = useCreate({
