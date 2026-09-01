@@ -7,6 +7,7 @@ import type {
   Matricula,
   MatriculaDetailResult,
   MatriculaDetails,
+  MatriculaFile,
   MatriculaStatus,
 } from "@/features/coverage/api/types/matricula"
 import type { EducationLevel } from "@/features/coverage/api/types/reservation"
@@ -99,11 +100,21 @@ interface RawMatriculaSocioeconomico {
   tipo_institucion_origen_nombre: string | null
 }
 
+interface RawMatriculaArchivo {
+  pk_tmatricula_archivo: number
+  fk_tarchivo: number
+  archivo_nombre: string
+  archivo_peso: number
+  tipo_archivo_nombre: string
+  created_at: string
+}
+
 interface RawMatriculaDetail {
   matricula: RawMatriculaCore
   acudientes: RawMatriculaAcudiente[]
   estudiante: RawMatriculaEstudiante
   socioeconomico: RawMatriculaSocioeconomico
+  archivos: RawMatriculaArchivo[]
 }
 
 function toBoolSNLabel(value: "S" | "N" | null | undefined): "Sí" | "No" | "" {
@@ -135,7 +146,13 @@ async function fetchMatriculaDetail(id: string): Promise<MatriculaDetailResult> 
   const raw = await api.get<{ rows: { matricula: RawMatriculaDetail }[] } | { matricula: RawMatriculaDetail }>(
     `/eval-col/cobertura-academica/matricula/${id}`,
   )
-  const { matricula: m, acudientes, estudiante: est, socioeconomico: socio } = unwrapRow(raw).matricula
+  const {
+    matricula: m,
+    acudientes,
+    estudiante: est,
+    socioeconomico: socio,
+    archivos,
+  } = unwrapRow(raw).matricula
 
   // `fk_tgrado` es el PK real (fn_grados_query), no el "valor" (-2..100) que
   // usa el resto del módulo como value del select -- hay que resolverlo
@@ -266,7 +283,16 @@ async function fetchMatriculaDetail(id: string): Promise<MatriculaDetailResult> 
     },
   }
 
-  return { status: "ok", message: "", matricula, details }
+  const files: MatriculaFile[] = (archivos ?? []).map((archivo) => ({
+    id: archivo.pk_tmatricula_archivo,
+    archivoId: archivo.fk_tarchivo,
+    name: archivo.archivo_nombre,
+    sizeBytes: archivo.archivo_peso,
+    typeLabel: archivo.tipo_archivo_nombre,
+    uploadedAt: archivo.created_at,
+  }))
+
+  return { status: "ok", message: "", matricula, details, files }
 }
 
 export function useMatriculaDetailQuery(id: string | undefined) {
