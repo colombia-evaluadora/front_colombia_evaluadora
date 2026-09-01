@@ -26,7 +26,7 @@ function toStatement(row: StatementRow, curricularReferenceId: number): Curricul
     curricularReferenceId,
     areaId: row.fk_referente_curricular_area,
     text: row.texto,
-    active: row.active,
+    active: row.estado === "A",
   }
 }
 

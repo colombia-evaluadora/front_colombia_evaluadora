@@ -8,14 +8,14 @@ import type { UpdateRoleMenusResult } from "@/features/administration/roles-menu
 
 interface UpdateRoleMenusInput {
   roleId: number
-  menuIds: number[]
+  menus: { id: number; soloLectura: boolean }[]
 }
 
 function updateRoleMenus({
   roleId,
-  menuIds,
+  menus,
 }: UpdateRoleMenusInput): Promise<UpdateRoleMenusResult> {
-  return evalCol.putRow<UpdateRoleMenusResult>(`/roles/${roleId}/menus`, { menuIds })
+  return evalCol.putRow<UpdateRoleMenusResult>(`/roles/${roleId}/menus`, { menus })
 }
 
 interface UseUpdateRoleMenusOptions {
