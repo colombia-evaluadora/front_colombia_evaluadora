@@ -10,7 +10,7 @@ interface ResolverMatriculaPeriodoResponse {
   rows: ResolverMatriculaPeriodoRow[]
 }
 
-async function fetchPeriodoResolverMatricula(
+export async function fetchPeriodoResolverMatricula(
   sedeId: number,
   jornadaId: number,
 ): Promise<number | null> {

@@ -240,13 +240,17 @@ export function ModificarMatriculaDialog({
 
   function handleApply() {
     if (!canConfirm) return
-    // Si el Grado cambió, el Grupo nuevo va de la mano de ese cambio — no
-    // es una operación aparte, así que no le pide su propia confirmación
-    // (el valor de "grupo" igual viaja en el request, ver `applyChanges`).
+    // El paso "grupo" solo tiene sentido cuando el grupo es el ÚNICO cambio
+    // académico: si el Grado cambió, el Grupo nuevo va de la mano de ese
+    // cambio (no pide su propia confirmación, pero el valor igual viaja en
+    // el request, ver `applyChanges`); si la Sede cambió, el grupo nuevo
+    // pertenece a esa sede nueva y ya queda cubierto por el paso "sede" —
+    // no tiene sentido preguntar por un cambio de grupo "aislado" cuando en
+    // realidad el estudiante se está moviendo de sede.
     const nextQueue: ConfirmStep[] = [
       sedeChanged && "sede",
       gradoChanged && "grado",
-      grupoChanged && !gradoChanged && "grupo",
+      grupoChanged && !gradoChanged && !sedeChanged && "grupo",
     ].filter((value): value is ConfirmStep => value !== false)
 
     setQueue(nextQueue)

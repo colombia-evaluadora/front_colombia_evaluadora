@@ -110,6 +110,7 @@ import {
   MdTableChart,
   MdTimelapse,
   MdTransgender,
+  MdTrendingDown,
   MdTrendingUp,
   MdUnfoldMore,
   MdVerifiedUser,
@@ -160,6 +161,7 @@ export const CalendarIcon = makeIcon(MdCalendarMonth)
 export const ChalkboardTeacherIcon = makeIcon(MdCoPresent)
 export const ChartBarIcon = makeIcon(MdBarChart)
 export const ChartLineUpIcon = makeIcon(MdTrendingUp)
+export const ChartLineDownIcon = makeIcon(MdTrendingDown)
 export const CaretDownIcon = makeIcon(MdKeyboardArrowDown)
 export const CaretLeftIcon = makeIcon(MdKeyboardArrowLeft)
 export const CaretRightIcon = makeIcon(MdKeyboardArrowRight)

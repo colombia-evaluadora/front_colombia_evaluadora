@@ -14,14 +14,8 @@ interface UseAreaSubjectQueryParams {
   pageIndex: number
   pageSize: number
   academicPeriodId?: number
+  enabled?: boolean
 }
-
-// Área y asignatura son recursos separados en el backend real (cada uno con
-// su propio PK y endpoint), pero el resto del front sigue trabajando con el
-// modelo "área + asignaturas anidadas" (`AreaSubject`) — este hook arma ese
-// shape combinando `POST /eval-col/areas/query` + `GET
-// /eval-col/areas/:id/asignaturas` por área, sin cambiar el contrato que ya
-// consume el resto de la UI.
 
 interface GeneralAreaRow {
   id: number
@@ -53,11 +47,6 @@ interface SubjectRow {
   nombre_interno: string
   asignatura_general_id: number
   enfasis_id: number | null
-  // El back ya devuelve el nombre resuelto del énfasis (no solo el FK). Antes
-  // resolvíamos nombre→id contra `GET /areas/:ID/especialidades` y mapeábamos;
-  // con este campo el front lo lee directo del payload — y muestra énfasis
-  // cuyo nombre matchea con una especialidad del catálogo (caso énfasis 143
-  // "Académico"), que el listado de especialidades filtra para no duplicar.
   enfasis_nombre: string | null
   color: string | null
   orden_reportes: number
@@ -79,10 +68,6 @@ async function fetchAreaSubjectItems(
     abreviacion: row.abreviacion,
     ordenReportes: row.orden_reportes,
     color: row.color ?? undefined,
-    // `enfasis_nombre` puede venir null si la asignatura no tiene énfasis
-    // asignado, o string cuando sí — el EspecialidadSelect del form lo
-    // resuelve contra `useEspecialidadesQuery` para mostrar las opciones
-    // disponibles; el trigger usa este string directamente.
     especialidad: row.enfasis_nombre ?? undefined,
   }))
 }
@@ -93,19 +78,11 @@ async function fetchAreaSubject(
   const { filters, sorting, pageIndex, pageSize, academicPeriodId } = params
   const [primary] = sorting
 
-  // Solo precisamos `generalAreaNames` acá — `enfasis_nombre` ya viene
-  // resuelto en el payload de asignaturas (ver `SubjectRow.enfasis_nombre`).
-  // El `EspecialidadSelect` del form hace su propia query para mostrar las
-  // opciones disponibles, pero la resolución del nombre YA ASIGNADO sale del
-  // payload, no de un lookup paralelo.
   const generalAreaNames = await fetchGeneralAreaNames()
 
   const raw: AreasListRawResponse = await api.query("/eval-col/areas/query", {
     FK_PERIODO: academicPeriodId ?? 0,
     NOMBRE_INTERNO: filters.nombreInterno ?? null,
-    // `fn_area_listar` calcula `OFFSET page_index * page_size` — 0-based,
-    // como el resto de las funciones de listado de este catálogo. Con
-    // `pageIndex + 1` se saltaba la primera página completa.
     PAGE_INDEX: pageIndex,
     PAGE_SIZE: pageSize,
     SORT_BY: primary?.id ?? null,
@@ -126,8 +103,6 @@ async function fetchAreaSubject(
     }))
   )
 
-  // El listado real solo filtra por `NOMBRE_INTERNO`; `areaGeneral`/`abreviacion`
-  // se aplican acá para no perder el filtro que ya ofrecía la UI.
   const filtered = rows.filter((row) => {
     if (
       filters.areaGeneral &&
@@ -147,12 +122,16 @@ async function fetchAreaSubject(
   return { rows: filtered, pageCount, totalCount }
 }
 
-export const areaSubjectQueryKey = (params: UseAreaSubjectQueryParams) => ["area-subjects", params]
+export const areaSubjectQueryKey = (params: UseAreaSubjectQueryParams) => {
+  const { enabled: _enabled, ...key } = params
+  return ["area-subjects", key]
+}
 
 export function useAreaSubjectQuery(params: UseAreaSubjectQueryParams) {
   return useQuery({
     queryKey: areaSubjectQueryKey(params),
     queryFn: () => fetchAreaSubject(params),
     placeholderData: (previous) => previous,
+    enabled: params.enabled ?? true,
   })
 }
