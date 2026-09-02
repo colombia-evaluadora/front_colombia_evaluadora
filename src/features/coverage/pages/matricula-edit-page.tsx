@@ -33,6 +33,10 @@ import {
   type GradeChangeSummary,
 } from "@/features/coverage/components/dialogs/dialog-grade-change-summary"
 import { CambioSedeMatriculaDialog } from "@/features/coverage/components/dialogs/dialog-cambio-sede-matricula"
+import {
+  GroupChangeDialog,
+  type GroupChangeResult,
+} from "@/features/coverage/components/dialogs/dialog-group-change"
 import type { DepartmentOption } from "@/features/coverage/components/forms/form-create-matricula"
 import type {
   BulkGroupChangeClassification,
@@ -98,6 +102,7 @@ function MatriculaEditPageContent() {
     fromGroup: string
     toGroup: string
   } | null>(null)
+  const [groupChange, setGroupChange] = useState<{ from: string; to: string } | null>(null)
 
   useEffect(() => {
     if (data?.status === "ok" && data.details && values === null && municipalities.length > 0) {
@@ -198,7 +203,8 @@ function MatriculaEditPageContent() {
         toCampus: values.academic.campus,
         fromGrade: currentGradeChange.from,
         toGrade: currentGradeChange.to,
-        group: values.academic.group,
+        fromGroup: values.academic.group,
+        toGroup: values.academic.group,
         gradesAction: result.gradesAction,
         date: new Date(),
         userName: user?.name ?? "",
@@ -235,10 +241,44 @@ function MatriculaEditPageContent() {
         toCampus: currentSedeChange.toSede,
         fromGrade: currentSedeChange.fromGrade,
         toGrade: currentSedeChange.toGrade,
-        group: values.academic.group,
+        fromGroup: currentSedeChange.fromGroup,
+        toGroup: currentSedeChange.toGroup,
         // El cambio de sede no pregunta por calificaciones (ver
         // `dialog-cambio-sede-matricula.tsx`).
         gradesAction: null,
+        date: new Date(),
+        userName: user?.name ?? "",
+      })
+    })
+  }
+
+  function handleGroupChangeCancel() {
+    if (groupChange && values && initialGroupRef.current) {
+      setValues({ ...values, academic: { ...values.academic, group: initialGroupRef.current } })
+    }
+    setGroupChange(null)
+  }
+
+  function handleGroupChangeConfirm(result: GroupChangeResult) {
+    if (!groupChange || !values || !data?.matricula) {
+      setGroupChange(null)
+      return
+    }
+    const currentGroupChange = groupChange
+    const studentName = `${data.matricula.firstName} ${data.matricula.lastName}`
+    setGroupChange(null)
+    performSave(() => {
+      setGradeChangeSummary({
+        studentName,
+        movementKind: "grupo",
+        movementLabel: "Corrección de matrícula (Cambio de grupo)",
+        fromCampus: values.academic.campus,
+        toCampus: values.academic.campus,
+        fromGrade: Number(values.academic.grade),
+        toGrade: Number(values.academic.grade),
+        fromGroup: currentGroupChange.from,
+        toGroup: currentGroupChange.to,
+        gradesAction: result.gradesAction,
         date: new Date(),
         userName: user?.name ?? "",
       })
@@ -278,6 +318,16 @@ function MatriculaEditPageContent() {
       !Number.isNaN(Number(current))
     ) {
       setGradeChange({ from: Number(original), to: Number(current) })
+      return
+    }
+
+    // Solo llega acá cuando Sede y Grado NO cambiaron (ver los dos
+    // early-return de arriba) -- justo la condición que pediste para que
+    // el cambio de grupo "solo aparezca si es de la misma sede".
+    const originalGroup = initialGroupRef.current
+    const currentGroup = values.academic.group
+    if (originalGroup && currentGroup && originalGroup !== currentGroup) {
+      setGroupChange({ from: originalGroup, to: currentGroup })
       return
     }
 
@@ -388,6 +438,17 @@ function MatriculaEditPageContent() {
           sameOrigin
           onConfirm={handleSedeChangeConfirm}
           onClose={handleSedeChangeCancel}
+        />
+      )}
+
+      {groupChange && (
+        <GroupChangeDialog
+          open
+          currentGroup={groupChange.from}
+          newGroup={groupChange.to}
+          hasGrades={data?.matricula?.hasGrades ?? false}
+          onConfirm={handleGroupChangeConfirm}
+          onCancel={handleGroupChangeCancel}
         />
       )}
     </TableScreen>
