@@ -90,13 +90,13 @@ export function CreateEvaluationPeriodDialog({
   const { data: academicPeriod } = useAcademicPeriodQuery(academicPeriodId)
   const academicPeriodStart = academicPeriod?.startDate ?? ""
   const academicPeriodEnd = academicPeriod?.endDate ?? ""
-
   const { data: allPeriodsData } = useEvaluationPeriodsQuery({
     filters: {},
     sorting: [],
     pageIndex: 0,
     pageSize: 1000,
     academicPeriodId,
+    enabled: open,
   })
   const otherPeriodsWeightSum = (allPeriodsData?.rows ?? [])
     .filter((row) => !isEditing || row.id !== period.id)

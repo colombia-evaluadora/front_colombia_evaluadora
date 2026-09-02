@@ -14,12 +14,23 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Textarea } from "@/components/ui/textarea"
 import { inputVariants } from "@/components/ui/input"
 import { FileUpload, FileUploadTrigger } from "@/components/ui/file-upload"
-import { CheckIcon, ChartLineUpIcon, FileUploadOutlinedIcon, XIcon } from "@/components/ui/icons"
+import {
+  CheckIcon,
+  ChartLineDownIcon,
+  ChartLineUpIcon,
+  FileUploadOutlinedIcon,
+  InfoIcon,
+  XIcon,
+} from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
 import { useMatriculaGradeLabel } from "@/features/coverage/hooks/use-matricula-grade-label"
 
 export type GradeChangeKind = "promocion" | "correccion"
 export type GradeChangeGradesAction = "eliminar" | "trasladar"
+export function gradeChangeKindLabel(kind: GradeChangeKind, isSuperior: boolean): string {
+  if (kind === "correccion") return "Corrección de matrícula"
+  return isSuperior ? "Promoción anticipada" : "Reubicación académica"
+}
 
 export interface GradeChangeResult {
   kind: GradeChangeKind
@@ -111,7 +122,11 @@ export function GradeChangeDialog({
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl" showCloseButton={false}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <ChartLineUpIcon className="size-5 text-primary" />
+            {isSuperior ? (
+              <ChartLineUpIcon className="size-5 text-primary" />
+            ) : (
+              <ChartLineDownIcon className="size-5 text-primary" />
+            )}
             Cambio de grado
           </DialogTitle>
           <p className="text-sm text-muted-foreground">
@@ -129,10 +144,6 @@ export function GradeChangeDialog({
                 if (!value) return
                 const nextKind = value as GradeChangeKind
                 setKind(nextKind)
-                // "Motivo de la reubicación"/"Soporte" solo aplican a la
-                // promoción anticipada — al pasar a corrección se ocultan
-                // (ver render abajo) y se limpian para no mandar un valor
-                // que el usuario ya no ve en pantalla.
                 if (nextKind === "correccion") {
                   setReason(EMPTY_RESULT.reason)
                   setSupportFile(EMPTY_RESULT.supportFile)
@@ -143,14 +154,18 @@ export function GradeChangeDialog({
               <RadioCardOption
                 value="promocion"
                 checked={kind === "promocion"}
-                title="Promoción anticipada"
-                description="Avance académico antes de lo previsto."
+                title={gradeChangeKindLabel("promocion", isSuperior)}
+                description={
+                  isSuperior
+                    ? "Avance académico antes de lo previsto."
+                    : "Necesidad pedagógica o disciplinaria."
+                }
               />
               <RadioCardOption
                 value="correccion"
                 checked={kind === "correccion"}
-                title="Corrección de matrícula"
-                description="Ajuste administrativo sin promoción."
+                title={gradeChangeKindLabel("correccion", isSuperior)}
+                description={isSuperior ? "Ajuste administrativo sin promoción." : "Ajuste administrativo."}
               />
             </RadioGroup>
           </Field>
@@ -219,6 +234,11 @@ export function GradeChangeDialog({
               </label>
             </RadioGroup>
           </Field>
+
+          <div className="flex items-center gap-3 rounded-md border border-transparent bg-primary-22 px-4 py-1 text-sm font-medium text-primary">
+            <InfoIcon className="size-5 shrink-0" />
+            <span>Se registrará: {gradeChangeKindLabel(kind, isSuperior)}</span>
+          </div>
         </div>
 
         <DialogFooter className="sm:justify-end">

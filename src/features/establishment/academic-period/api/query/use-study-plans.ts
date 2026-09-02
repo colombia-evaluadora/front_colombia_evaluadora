@@ -14,6 +14,7 @@ interface UseStudyPlansQueryParams {
   pageSize: number
   academicPeriodId?: number
   gradeId?: number
+  enabled?: boolean
 }
 
 // Fila cruda de `GET /eval-col/grados/:ID/plan-asignaturas` (`fn_plan_listar`,
@@ -51,10 +52,6 @@ function toStudyPlanItem(row: StudyPlanRow): StudyPlanItem {
     influyeDesempeno: row.influye_desempeno,
     matriculaObligatoria: row.matricula_obligatoria,
     aprobacionObligatoria: row.aprobacion_obligatoria,
-    // Solo se exponen como override cuando el renglón lo personalizó — si no,
-    // el diálogo debe mostrar el heredado del periodo, no este valor
-    // resuelto (ver dialog-create-study-plan.tsx: `item.formatoCalificacion
-    // ?? formatoHeredado`).
     formatoCalificacion: row.personalizado ? String(row.formato_calificacion) : undefined,
     criterioNota: row.personalizado ? String(row.criterio_nota) : undefined,
     personalizado: row.personalizado,
@@ -90,12 +87,16 @@ async function fetchStudyPlans(
   return { rows, pageCount, totalCount }
 }
 
-export const studyPlansQueryKey = (params: UseStudyPlansQueryParams) => ["study-plans", params]
+export const studyPlansQueryKey = (params: UseStudyPlansQueryParams) => {
+  const { enabled: _enabled, ...key } = params
+  return ["study-plans", key]
+}
 
 export function useStudyPlansQuery(params: UseStudyPlansQueryParams) {
   return useQuery({
     queryKey: studyPlansQueryKey(params),
     queryFn: () => fetchStudyPlans(params),
+    enabled: params.enabled ?? true,
     placeholderData: (previous) => previous,
   })
 }

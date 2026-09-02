@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { CheckIcon, SpinnerIcon } from "@/components/ui/icons"
 import { Link, useNavigate, useParams } from "@tanstack/react-router"
@@ -24,6 +24,9 @@ import { paths } from "@/config/paths"
 import { useCreateAcademicPeriod } from "@/features/establishment/academic-period/api/mutations/create-academic-period"
 import { useUpdateAcademicPeriod } from "@/features/establishment/academic-period/api/mutations/update-academic-period"
 import { useAcademicPeriodQuery } from "@/features/establishment/academic-period/api/query/use-academic-period"
+import { useSedeOptionsQuery } from "@/features/establishment/academic-period/api/query/use-sede-options"
+import { useJornadasQuery } from "@/features/establishment/academic-period/api/query/use-jornadas"
+import { useAcademicPeriodStatusesQuery } from "@/features/establishment/academic-period/api/query/use-academic-period-statuses"
 import type {
   AcademicPeriodFormInput,
   AcademicPeriodFormValues,
@@ -97,6 +100,10 @@ function AcademicPeriodConfigPageContent() {
     error: detailError,
   } = useAcademicPeriodQuery(numericPeriodId)
 
+  useSedeOptionsQuery()
+  useJornadasQuery()
+  useAcademicPeriodStatusesQuery()
+
   const createPeriod = useCreateAcademicPeriod({
     mutationConfig: {
       onSuccess: (created) => {
@@ -129,6 +136,8 @@ function AcademicPeriodConfigPageContent() {
     },
   })
 
+  const detailJornada = useMemo(() => (detail ? toJornada(detail) : undefined), [detail])
+
   if (isEditing && (!isValidPeriodId || isNotFoundError(detailError))) {
     return <NotFoundPage />
   }
@@ -142,7 +151,6 @@ function AcademicPeriodConfigPageContent() {
       blocksCount: values.defaultBlocksCount,
       breaks: values.breaks,
     })
-    console.log(values)
     if (academicPeriodId != null) {
       updatePeriod.mutate({ id: academicPeriodId, values })
     } else {
@@ -243,8 +251,7 @@ function AcademicPeriodConfigPageContent() {
           <div className="mt-6">
             <EvaluationPeriodsSection
               academicPeriodId={academicPeriodId}
-              jornada={saved || !detail ? jornada : toJornada(detail)}
-              accordionOpen={configOpen}
+              jornada={saved || !detailJornada ? jornada : detailJornada}
             />
           </div>
         )}
