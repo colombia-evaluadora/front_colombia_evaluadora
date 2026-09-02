@@ -28,7 +28,7 @@ function formatMovementDate(date: Date): string {
   return formatted.replace(/\s*([ap])\.?\s*m\.?/i, (_, letter: string) => `${letter.toLowerCase()}.m.`)
 }
 
-export type MatriculaMovementKind = "grado" | "sede"
+export type MatriculaMovementKind = "grado" | "sede" | "grupo"
 
 export interface GradeChangeSummary {
   studentName: string
@@ -38,7 +38,8 @@ export interface GradeChangeSummary {
   toCampus: string
   fromGrade: number
   toGrade: number
-  group: string
+  fromGroup: string
+  toGroup: string
   gradesAction: GradeChangeGradesAction | null
   date: Date
   userName: string
@@ -58,9 +59,11 @@ export function GradeChangeSummaryDialog({ open, summary, onClose }: GradeChange
   const tipoMovimiento =
     summary.movementKind === "sede"
       ? "Cambio de sede"
-      : isSuperior
-        ? "Cambio a grado superior"
-        : "Cambio a grado inferior"
+      : summary.movementKind === "grupo"
+        ? "Cambio de grupo"
+        : isSuperior
+          ? "Cambio a grado superior"
+          : "Cambio a grado inferior"
 
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
@@ -107,7 +110,14 @@ export function GradeChangeSummaryDialog({ open, summary, onClose }: GradeChange
               )}
             </li>
             <li>
-              <span className="font-medium">Grupo:</span> {summary.group}
+              <span className="font-medium">Grupo:</span>{" "}
+              {summary.fromGroup === summary.toGroup ? (
+                summary.toGroup
+              ) : (
+                <>
+                  {summary.fromGroup} → <strong>{summary.toGroup}</strong>
+                </>
+              )}
             </li>
             {summary.gradesAction && (
               <li>

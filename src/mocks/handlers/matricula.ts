@@ -25,11 +25,13 @@ import type {
   ExportResult,
   Matricula,
   MatriculaDetailResult,
+  MatriculaDetails,
   MatriculaDocumentCheckResult,
   MatriculaHomologationInfo,
   MatriculaMutationResult,
   MatriculaQueryFilters,
   MatriculaQueryRequest,
+  MatriculaStatus,
 } from "@/features/coverage/api/types/matricula"
 
 // snake_case, como manda el backend real — camelCase es solo del lado front
@@ -159,7 +161,154 @@ function applySorting(rows: Matricula[], sorting: MatriculaQueryRequest["sorting
   return desc ? sorted.reverse() : sorted
 }
 
+// Slug que arma `slugifyEstado` (`use-matricula-detail-query.ts`) a partir
+// del nombre real -- para que el detalle mockeado devuelva un status
+// consistente con el que ya trae la fila resumen (`matriculaDb`).
+const STATUS_TO_NOMBRE: Record<MatriculaStatus, string> = {
+  cursando: "Cursando",
+  aprobado: "Aprobado",
+  reprobado: "Reprobado",
+  retirado: "Retirado",
+  graduado: "Graduado",
+  promovido_anticipadamente: "Promovido Anticipadamente",
+  trasladado: "Trasladado",
+  sin_definir: "Sin Definir",
+  desertor: "Desertor",
+  esperando_aprobacion: "Esperando Aprobación",
+  rechazado: "Rechazado",
+}
+
+function toNum(value: string | undefined): number | null {
+  return value ? Number(value) : null
+}
+
+function toRawSN(label: string): "S" | "N" | null {
+  if (label === "Sí") return "S"
+  if (label === "No") return "N"
+  return null
+}
+
+// Shape real del GET `/eval-col/cobertura-academica/matricula/:id`
+// (`fetchMatriculaDetail`, ver `use-matricula-detail-query.ts`) -- a
+// diferencia del resto de los handlers de este archivo (que siguen el
+// contrato viejo `/coverage/matricula/:id`), este es el que ya usa el
+// front en producción.
+function toRawMatriculaDetail(matricula: Matricula, details: MatriculaDetails) {
+  const pk = Number(matricula.id)
+
+  return {
+    matricula: {
+      matricula: {
+        fk_tsede: 1,
+        // No hay catálogo de grados resuelto acá -- se reusa el "valor" que
+        // ya trae la fila resumen como si fuera el PK, mismo criterio que el
+        // fallback `gradoValor ?? m.fk_tgrado` en `fetchMatriculaDetail`.
+        fk_tgrado: matricula.grade,
+        fk_tgrupo: 1,
+        fk_tpadre: null,
+        fk_enfasis: toNum(details.academic.specialty),
+        sede_nombre: matricula.campus,
+        grado_nombre: `Grado ${matricula.grade}`,
+        grupo_nombre: matricula.group,
+        pk_tmatricula: pk,
+        fk_testudiante: pk,
+        fk_tlv_jornada: 1,
+        jornada_nombre: matricula.shift,
+        fk_tperiodo_academico: 1,
+        created_at: matricula.enrollmentDate,
+        estado_matricula_nombre: STATUS_TO_NOMBRE[matricula.status],
+      },
+      acudientes: details.guardian.firstName
+        ? [
+            {
+              vinculo: { acudiente: "S" as const, fkTlvParentesco: toNum(details.guardian.relationship) },
+              telefono: details.guardianContact.phone || null,
+              ocupacion: null,
+              profesion: details.guardianEmployment.profession || null,
+              entidad: details.guardianEmployment.entityName || null,
+              fk_tlv_genero: toNum(details.guardian.gender),
+              primer_nombre: details.guardian.firstName,
+              identificacion: details.guardian.documentNumber,
+              segundo_nombre: details.guardian.secondName || null,
+              primer_apellido: details.guardian.lastName,
+              segundo_apellido: details.guardian.secondLastName || null,
+              telefono_entidad: details.guardianEmployment.entityPhone || null,
+              direccion_entidad: details.guardianEmployment.entityAddress || null,
+              correo_electronico: details.guardianContact.email || null,
+              direccion_residencia: details.guardianAddress.address || null,
+              fk_tlv_tipo_documento: toNum(details.guardian.documentType),
+              fk_tmunicipio_documento: toNum(details.guardian.documentExpedition.municipality),
+              fk_tmunicipio_residencia: toNum(details.guardianAddress.municipality),
+              cargo_entidad: details.guardianEmployment.entityPosition || null,
+            },
+          ]
+        : [],
+      estudiante: {
+        telefono: details.studentContact.phone || null,
+        fecha_ingreso: matricula.enrollmentDate,
+        fk_tlv_genero: toNum(details.student.gender),
+        fk_tlv_sisben: toNum(details.complementary.sisben),
+        fk_tresguardo: toNum(details.student.ethnicity),
+        fk_tpadre: null,
+        primer_nombre: details.student.firstName,
+        fk_tlv_estrato: toNum(details.complementary.socioeconomicStratum),
+        fk_tlv_talento: toNum(details.complementary.talent),
+        identificacion: details.student.documentNumber,
+        segundo_nombre: details.student.secondName || null,
+        primer_apellido: details.student.lastName,
+        fecha_nacimiento: details.student.birthDate || null,
+        fk_tdiscapacidad: toNum(details.complementary.specialConditions),
+        segundo_apellido: details.student.secondLastName || null,
+        correo_electronico: details.studentContact.email || null,
+        direccion_residencia: details.studentAddress.address || null,
+        fk_tlv_tipo_documento: toNum(details.student.documentType),
+        fk_tmunicipio_documento: toNum(details.student.documentExpedition.municipality),
+        fk_tmunicipio_nacimiento: toNum(details.student.birthPlace.municipality),
+        fk_tmunicipio_residencia: toNum(details.studentAddress.municipality),
+      },
+      socioeconomico: {
+        beneficiario_heroe: toRawSN(details.benefits.nationalHeroes),
+        institucion_origen: details.previousYear.previousInstitution || null,
+        seguridad_social_ars: details.complementary.ars || null,
+        seguridad_social_eps: details.complementary.eps || null,
+        beneficiario_veterano: toRawSN(details.benefits.publicForceVeteran),
+        estudiante_subsidiado: toRawSN(details.benefits.subsidized),
+        fk_tlv_fuente_recurso: toNum(details.benefits.fundingSource),
+        fk_tmunicipio_victima: toNum(details.conflictVictim.lastExpellingMunicipality),
+        ben_hijo_cabeza_familia: toRawSN(details.benefits.headOfHouseholdChildren),
+        proviene_otro_municipio: toRawSN(details.originSector.fromAnotherMunicipality),
+        proviene_sector_privado: toRawSN(details.originSector.fromPrivateSector),
+        fk_tlv_victima_conflicto: toNum(details.conflictVictim.population),
+        fk_tlv_condicion_promocion: toNum(details.previousYear.condition),
+        beneficiario_cabeza_familia: toRawSN(details.benefits.headOfHouseholdStudent),
+        proviene_otro_municipio_cual: details.originSector.whichMunicipality || null,
+        fk_tlv_tipo_institucion_origen: null,
+        tipo_institucion_origen_nombre: details.previousYear.welfareInstitution || null,
+      },
+      archivos: [] as unknown[],
+    },
+  }
+}
+
 export const matriculaHandlers = [
+  // Endpoint real (`eval-col`) que usa `matricula-edit-page.tsx` /
+  // `matricula-detail-page.tsx` -- distinto del contrato viejo
+  // `/coverage/matricula/:id` que siguen usando los handlers de abajo (alta,
+  // actualización, retiro/reingreso, borrado: esos sí no migraron todavía).
+  http.get("*/api/eval-col/cobertura-academica/matricula/:id", async ({ params }) => {
+    await delay(250)
+
+    const idParam = Array.isArray(params.id) ? params.id[0] : params.id
+    const found = idParam ? getMatriculaDetails(idParam) : null
+
+    if (!found) {
+      return HttpResponse.json({ message: "Estudiante no encontrado." }, { status: 404 })
+    }
+
+    return HttpResponse.json(toRawMatriculaDetail(found.matricula, found.details))
+  }),
+
+
   http.post("*/api/eval-col/sedes/jornadas-activas", async ({ request }) => {
     await delay(150)
     const { FK_SEDE } = (await request.json()) as { FK_SEDE: number }

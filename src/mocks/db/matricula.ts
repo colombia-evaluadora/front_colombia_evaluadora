@@ -40,12 +40,19 @@ function createGuardianName(): string {
   return `${faker.person.firstName()} ${faker.person.lastName()}`.toUpperCase()
 }
 
+// Numérico como string, no UUID: el listado real (fn_matricula_listar) manda
+// `id` numérico (`toRawMatriculaRow` abajo hace `Number(row.id)` para
+// simular ese contrato) -- con UUID, `Number(uuid)` da NaN, que
+// `HttpResponse.json` serializa como `null`, y el front arma links de
+// "Editar" rotos (`.../matricula/null`).
+let nextMatriculaId = 10000
+
 function createMatricula(): Matricula {
   const grade = faker.helpers.arrayElement(GRADES)
   const educationLevel = levelForGrade(grade)
 
   return {
-    id: faker.string.uuid(),
+    id: String(nextMatriculaId++),
     documentNumber: faker.string.numeric({ length: 10, allowLeadingZeros: false }),
     firstName: `${faker.person.firstName()} ${faker.person.middleName()}`.toUpperCase(),
     lastName: `${faker.person.lastName()} ${faker.person.lastName()}`.toUpperCase(),
@@ -103,7 +110,7 @@ export function createMatriculaRow(id: string, details: MatriculaDetails): Matri
 }
 
 export function insertMatricula(input: CreateMatriculaInput): Matricula {
-  const id = crypto.randomUUID()
+  const id = String(nextMatriculaId++)
   const details: MatriculaDetails = { ...input, status: input.academic.status || "cursando" }
   const row = createMatriculaRow(id, details)
 
