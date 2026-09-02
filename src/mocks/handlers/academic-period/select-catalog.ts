@@ -86,6 +86,32 @@ const CATALOGS_BY_CATEGORIA: Record<string, () => SelectCategoryRow[]> = {
       valor: String(grade),
       accion: null,
     })),
+  // Los 3 catálogos que Matrícula pide vía `useMatriculaCatalogQuery` y que
+  // son obligatorios SIEMPRE (ver `validateMatricula` en
+  // `matricula-form-defaults.ts`: tipo de documento y género del estudiante,
+  // tipo de documento del acudiente, y parentesco) -- sin ellos el select
+  // queda vacío y el formulario nunca puede guardar. El resto de categorías
+  // de `MATRICULA_CATALOG_CATEGORIA` (talento, estrato, sisben, etc.) son
+  // opcionales según "Configuración de parámetros requeridos" y quedan
+  // pendientes de agregar acá si hace falta.
+  TIPO_DOCUMENTO: () =>
+    ["Registro Civil", "Tarjeta de Identidad", "Cédula de Ciudadanía", "Cédula de Extranjería", "Pasaporte"].map(
+      (nombre, i) => ({ pk_lista_valor: i + 1, nombre, valor: nombre, accion: null }),
+    ),
+  GENERO: () =>
+    ["Masculino", "Femenino"].map((nombre, i) => ({
+      pk_lista_valor: i + 1,
+      nombre,
+      valor: nombre,
+      accion: null,
+    })),
+  PARENTESCO: () =>
+    ["Padre", "Madre", "Abuelo/a", "Tío/a", "Hermano/a", "Tutor legal"].map((nombre, i) => ({
+      pk_lista_valor: i + 1,
+      nombre,
+      valor: nombre,
+      accion: null,
+    })),
 }
 
 export const selectCatalogHandlers = [

@@ -13,12 +13,9 @@ interface UseEvaluationPeriodsQueryParams {
   pageIndex: number
   pageSize: number
   academicPeriodId?: number
+  enabled?: boolean
 }
 
-// Body PLANO (UPPER_SNAKE) que espera `POST /periodo-evaluacion/query`
-// (`fn_periodo_eval_listar`). El signature probado por Thunder Client todavía
-// no tiene SORT_BY/SORT_DIR, pero se va a agregar igual que en
-// `fn_periodo_listar` — se manda desde ya (el back los ignora hasta que exista).
 interface EvaluationPeriodsListRequest {
   FK_PERIODO: number | null
   FILTRO: string | null
@@ -28,16 +25,6 @@ interface EvaluationPeriodsListRequest {
   SORT_DIR: "asc" | "desc" | null
 }
 
-/**
- * Los filtros del listado, listos para mandar al backend.
- *
- * Se exporta para que la EXPORTACIÓN mande exactamente lo mismo que la
- * tabla. Si cada una armara su propio objeto, el reporte terminaría
- * filtrando distinto de lo que el usuario está viendo — y peor, la
- * diferencia solo se notaría comparando el PDF contra la pantalla.
- *
- * La paginación no entra: el reporte no pagina.
- */
 export function toEvaluationPeriodsFilters(
   params: Omit<UseEvaluationPeriodsQueryParams, "pageIndex" | "pageSize">,
 ) {
@@ -63,9 +50,6 @@ function toListRequest(
   }
 }
 
-// Fila cruda tal como la devuelve el endpoint (snake_case + `total_count`
-// repetido por fila), confirmado por ThunderClient contra la respuesta real
-// de `fn_periodo_eval_listar`.
 export interface EvaluationPeriodListRow {
   id: number
   codigo: string
@@ -78,7 +62,6 @@ export interface EvaluationPeriodListRow {
   estado: string
   estado_name: string
   academic_period_id: number
-  // Solo viene en el listado (window count); el detalle no lo trae.
   total_count?: number
 }
 
@@ -86,7 +69,6 @@ interface EvaluationPeriodsListRawResponse {
   rows: EvaluationPeriodListRow[]
 }
 
-// El backend manda fecha con hora (ISO); el front trabaja con "yyyy-MM-dd".
 function toDateOnly(value: string): string {
   return value ? value.slice(0, 10) : value
 }
@@ -114,7 +96,6 @@ async function fetchEvaluationPeriods(
     toListRequest(params)
   )
   const backendRows = raw.rows ?? []
-  // `total_count` viene repetido por fila (window count); el front arma el envelope.
   const totalCount = backendRows[0]?.total_count ?? 0
   const pageCount = Math.max(1, Math.ceil(totalCount / params.pageSize))
   return {
@@ -124,15 +105,16 @@ async function fetchEvaluationPeriods(
   }
 }
 
-export const evaluationPeriodsQueryKey = (params: UseEvaluationPeriodsQueryParams) => [
-  "evaluation-periods",
-  params,
-]
+export const evaluationPeriodsQueryKey = (params: UseEvaluationPeriodsQueryParams) => {
+  const { enabled: _enabled, ...key } = params
+  return ["evaluation-periods", key]
+}
 
 export function useEvaluationPeriodsQuery(params: UseEvaluationPeriodsQueryParams) {
   return useQuery({
     queryKey: evaluationPeriodsQueryKey(params),
     queryFn: () => fetchEvaluationPeriods(params),
     placeholderData: (previous) => previous,
+    enabled: params.enabled ?? true,
   })
 }

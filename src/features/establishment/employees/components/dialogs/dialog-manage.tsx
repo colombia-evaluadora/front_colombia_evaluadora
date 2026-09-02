@@ -527,6 +527,8 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
       : sedeTienePeriodos === false
         ? "Esta sede todavía no tiene ningún periodo académico creado. Crea uno primero."
         : "Esta sede no tiene un periodo académico activo con jornada configurada."
+  const workScheduleEmptyShortMessage =
+    sedeTienePeriodos === false ? "Sin periodos académicos" : "Sin jornada activa"
   // Estado del permiso: dominio fijo (TSEDE_USUARIO.TLV_ESTADO, no un
   // catálogo real), value por `.code` a propósito — ver
   // PERMISSION_STATUS_OPTIONS en institution/api/types/permission.ts.
@@ -1304,30 +1306,38 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
                   permissionDraft.campusId == null || isLoadingSedeJornadas || workScheduleItems.length === 0
                 }
               >
-                <ComboboxFieldTrigger aria-invalid={Boolean(permissionErrors["workScheduleId"])}>
+                <ComboboxFieldTrigger
+                  aria-invalid={Boolean(permissionErrors["workScheduleId"])}
+                  // El combobox queda deshabilitado en este caso, así que el
+                  // mensaje no se puede mostrar adentro del desplegable —
+                  // nunca llega a abrirse—. Va truncado como placeholder del
+                  // propio input, con el texto completo en el `title`, en vez
+                  // de una línea aparte que empujaba la fila de abajo.
+                  title={
+                    permissionDraft.campusId != null && workScheduleItems.length === 0 && !isLoadingSedeJornadas
+                      ? workScheduleEmptyMessage
+                      : undefined
+                  }
+                >
                   <ComboboxFieldValue
-                    placeholder={isLoadingSedeJornadas ? "Cargando..." : "Seleccionar"}
+                    placeholder={
+                      isLoadingSedeJornadas
+                        ? "Cargando..."
+                        : permissionDraft.campusId != null && workScheduleItems.length === 0
+                          ? workScheduleEmptyShortMessage
+                          : "Seleccionar"
+                    }
                   />
                 </ComboboxFieldTrigger>
                 <ComboboxFieldContent>
-                  {workScheduleItems.length === 0 ? (
-                    <p className="px-3 py-4 text-center text-sm text-muted-foreground">
-                      {workScheduleEmptyMessage}
-                    </p>
-                  ) : (
-                    workScheduleItems.map((item) => (
-                      <ComboboxFieldItem key={item.value} value={item.value}>
-                        {item.label}
-                      </ComboboxFieldItem>
-                    ))
-                  )}
+                  {workScheduleItems.map((item) => (
+                    <ComboboxFieldItem key={item.value} value={item.value}>
+                      {item.label}
+                    </ComboboxFieldItem>
+                  ))}
                 </ComboboxFieldContent>
               </ComboboxField>
-              {permissionDraft.campusId != null && workScheduleItems.length === 0 && !isLoadingSedeJornadas ? (
-                <p className="line-clamp-2 text-xs text-muted-foreground">{workScheduleEmptyMessage}</p>
-              ) : (
-                <FieldError>{permissionErrors["workScheduleId"]}</FieldError>
-              )}
+              <FieldError>{permissionErrors["workScheduleId"]}</FieldError>
             </Field>
 
             <Field
