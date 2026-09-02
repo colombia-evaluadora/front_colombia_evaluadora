@@ -25,6 +25,7 @@ import { MatriculaFormBody } from "@/features/coverage/components/forms/matricul
 import { MatriculaToolbar } from "@/features/coverage/components/matricula-toolbar"
 import {
   GradeChangeDialog,
+  gradeChangeKindLabel,
   type GradeChangeResult,
 } from "@/features/coverage/components/dialogs/dialog-grade-change"
 import {
@@ -45,11 +46,6 @@ import {
 import { buildMatriculaFieldSettings } from "@/features/coverage/utils/matricula-field-settings"
 
 const EDIT_MATRICULA_FORM_ID = "edit-matricula-form"
-
-const GRADE_KIND_LABELS: Record<GradeChangeResult["kind"], string> = {
-  promocion: "Promoción anticipada",
-  correccion: "Corrección de matrícula",
-}
 
 const SEDE_CLASSIFICATION_LABELS: Record<BulkGroupChangeClassification, string> = {
   cambioGrado: "Reubicación de sede",
@@ -197,7 +193,7 @@ function MatriculaEditPageContent() {
       setGradeChangeSummary({
         studentName,
         movementKind: "grado",
-        movementLabel: GRADE_KIND_LABELS[result.kind],
+        movementLabel: gradeChangeKindLabel(result.kind, currentGradeChange.to > currentGradeChange.from),
         fromCampus: values.academic.campus,
         toCampus: values.academic.campus,
         fromGrade: currentGradeChange.from,
