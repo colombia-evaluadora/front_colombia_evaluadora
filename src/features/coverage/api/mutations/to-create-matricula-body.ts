@@ -50,7 +50,11 @@ export function toCreateMatriculaBody(
     ESTUDIANTE_NUEVO: "S",
     CONDICION_DEL_ESTUDIANTE_FIN_DEL_ANO_ANTERIOR: toIntOrNull(previousYear.condition),
     NOMBRE_DE_LA_INSTITUCION_ANTERIOR: toTextOrNull(previousYear.previousInstitution),
-    INSTITUCION_BIENESTAR_DE_ORIGEN: toTextOrNull(previousYear.welfareInstitution),
+    // BIGINT (catálogo), confirmado por la colección "editar y movimientos"
+    // -- pero el form todavía lo captura como texto libre (no hay catálogo
+    // asociado en la UI), así que esto va a mandar `null` salvo que el
+    // valor ya sea numérico. Pendiente: convertir el campo a un select real.
+    INSTITUCION_BIENESTAR_DE_ORIGEN: toIntOrNull(previousYear.welfareInstitution),
     PROVIENE_DE_SECTOR_PRIVADO: toBoolSN(originSector.fromPrivateSector),
     PROVIENE_DE_OTRO_MUNICIPIO: toBoolSN(originSector.fromAnotherMunicipality),
     CUAL: toTextOrNull(originSector.whichMunicipality),

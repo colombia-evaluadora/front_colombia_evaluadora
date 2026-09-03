@@ -93,5 +93,6 @@ export function useAssignmentTeachersQuery(params: UseAssignmentTeachersQueryPar
     queryKey: assignmentTeachersQueryKey(params),
     queryFn: () => fetchAssignmentTeachers(params),
     placeholderData: (previous) => previous,
+    staleTime: 0,
   })
 }
