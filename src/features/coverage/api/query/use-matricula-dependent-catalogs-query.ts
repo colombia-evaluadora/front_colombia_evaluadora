@@ -71,13 +71,17 @@ export function useMatriculaDependentCatalogsQuery(params: MatriculaDependentCat
   const shifts = (jornadasActivas ?? []).map((jornada) => jornada.nombre)
   const jornadaId = shift ? jornadasActivas?.find((j) => j.nombre === shift)?.id : undefined
 
-  const { data: periodoId } = usePeriodoResolverMatriculaQuery(sedeId ?? null, jornadaId ?? null)
+  const {
+    data: periodoId,
+    isError: isPeriodoError,
+    error: periodoError,
+  } = usePeriodoResolverMatriculaQuery(sedeId ?? null, jornadaId ?? null)
 
   const gradosQuery = useQuery({
     queryKey: ["matricula", "grados-por-periodo", periodoId],
     queryFn: () => fetchGrados(periodoId as number),
     enabled: periodoId != null,
-    staleTime: 30_000,
+    staleTime: 0,
   })
   const grados = gradosQuery.data ?? []
   const grades: MatriculaGradoOption[] = grados.map(({ id: _id, ...grado }) => grado)
@@ -88,7 +92,7 @@ export function useMatriculaDependentCatalogsQuery(params: MatriculaDependentCat
     queryKey: ["matricula", "grupos-por-grado", gradoId, shift],
     queryFn: () => fetchGrupos(gradoId as number, shift),
     enabled: gradoId != null,
-    staleTime: 30_000,
+    staleTime: 0,
   })
 
   return {
@@ -98,5 +102,7 @@ export function useMatriculaDependentCatalogsQuery(params: MatriculaDependentCat
       grades,
       groups: gruposQuery.data ?? [],
     } as MatriculaDependentCatalogsResponse,
+    isPeriodoError,
+    periodoError,
   }
 }

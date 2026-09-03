@@ -41,6 +41,11 @@ import { establishmentsSearchSchema } from "@/features/establishment/institution
 import { campusesSearchSchema } from "@/features/establishment/campuses/api/schema"
 import { employeesSearchSchema } from "@/features/establishment/employees/api/schema"
 import { curricularReferencesSearchSchema } from "@/features/academic-management/curricular-references/api/schema"
+import {
+  asistenciaManualSearchSchema,
+  asistenciaSearchSchema,
+  asistenciaSeguimientoSearchSchema,
+} from "@/features/academic-management/asistencia/api/schema"
 import { NoticeProvider } from "@/components/notice/notice-context"
 import {
   getFirstNavUrl,
@@ -741,6 +746,57 @@ export const planeadorActividadEditarRoute = createRoute({
   component: PlaneadorEditarActividadPage,
 })
 
+const AsistenciaPage = lazyRouteComponent(
+  () => import("@/features/academic-management/asistencia/pages/asistencia-page"),
+  "AsistenciaPage",
+)
+
+export const asistenciaRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.asistencia.path,
+  validateSearch: asistenciaSearchSchema,
+  staticData: { breadcrumb: [GESTION_ACADEMICA_CRUMB, { label: "Asistencia" }] },
+  component: AsistenciaPage,
+})
+
+const SeguimientoPage = lazyRouteComponent(
+  () => import("@/features/academic-management/asistencia/pages/seguimiento-page"),
+  "SeguimientoPage",
+)
+
+export const asistenciaSeguimientoRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.asistenciaSeguimiento.path,
+  validateSearch: asistenciaSeguimientoSearchSchema,
+  staticData: {
+    breadcrumb: [
+      GESTION_ACADEMICA_CRUMB,
+      { label: "Asistencia", to: paths.app.asistencia.getHref() },
+      { label: "Seguimiento" },
+    ],
+  },
+  component: SeguimientoPage,
+})
+
+const AsistenciaManualPage = lazyRouteComponent(
+  () => import("@/features/academic-management/asistencia/pages/asistencia-manual-page"),
+  "AsistenciaManualPage",
+)
+
+export const asistenciaManualRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.asistenciaManual.path,
+  validateSearch: asistenciaManualSearchSchema,
+  staticData: {
+    breadcrumb: [
+      GESTION_ACADEMICA_CRUMB,
+      { label: "Asistencia", to: paths.app.asistencia.getHref() },
+      { label: "Asistencia manual" },
+    ],
+  },
+  component: AsistenciaManualPage,
+})
+
 const routeTree = rootRoute.addChildren([
   //  landingRoute,
   homeRoute,
@@ -791,6 +847,9 @@ const routeTree = rootRoute.addChildren([
     planeadorUnidadesRoute,
     planeadorDetalleRoute,
     planeadorActividadEditarRoute,
+    asistenciaRoute,
+    asistenciaSeguimientoRoute,
+    asistenciaManualRoute,
   ]),
 ])
 

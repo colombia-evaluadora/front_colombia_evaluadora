@@ -38,6 +38,15 @@ export const authUsers: (User & {
     roles: ["USER"],
     document: "1098765432",
   },
+  {
+    id: "4",
+    email: "docente@example.com",
+    password: "password",
+    name: "Docente Demo",
+    role: "USER",
+    roles: ["USER", "CEVAL-DOCENTE"],
+    document: "1011223344",
+  },
 ]
 
 /** El usuario con el que se ingresa es el correo. */

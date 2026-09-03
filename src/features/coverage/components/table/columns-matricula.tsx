@@ -8,9 +8,8 @@ import { EyeIcon, PencilIcon } from "@/components/ui/icons"
 
 import { paths } from "@/config/paths"
 import { EDUCATION_LEVEL_LABELS } from "@/features/coverage/api/ui-mappings"
-import { MATRICULA_STATUS_LABELS } from "@/features/coverage/api/ui-mappings-matricula"
 import { useMatriculaGradeLabel } from "@/features/coverage/hooks/use-matricula-grade-label"
-import type { Matricula } from "@/features/coverage/api/types/matricula"
+import type { Matricula, MatriculaStatus } from "@/features/coverage/api/types/matricula"
 import { DeleteMatriculaDialog } from "@/features/coverage/components/dialogs/dialog-delete-matricula"
 import { FilesMatriculaDialog } from "@/features/coverage/components/dialogs/dialog-files-matricula"
 import { RetirarMatriculaDialog } from "@/features/coverage/components/dialogs/dialog-retirar-matricula"
@@ -24,6 +23,8 @@ function MatriculaGradeCell({ grade }: { grade: number }) {
   const gradeLabel = useMatriculaGradeLabel()
   return <span className="tabular-nums">{gradeLabel(grade)}</span>
 }
+
+const NOT_EDITABLE_STATUSES: MatriculaStatus[] = ["Reubicado", "Promovido"]
 
 export const columnsMatricula: ColumnDef<Matricula>[] = [
   {
@@ -135,9 +136,7 @@ export const columnsMatricula: ColumnDef<Matricula>[] = [
     accessorKey: "status",
     meta: { label: "Estado" },
     header: ({ column }) => <DataTableColumnHeader column={column} title="Estado" />,
-    cell: ({ row }) => (
-      <span className="text-sm text-foreground">{MATRICULA_STATUS_LABELS[row.original.status]}</span>
-    ),
+    cell: ({ row }) => <span className="text-sm text-foreground">{row.original.status}</span>,
   },
   {
     id: "actions",
@@ -155,17 +154,19 @@ export const columnsMatricula: ColumnDef<Matricula>[] = [
         >
           <EyeIcon />
         </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          color="neutral"
-          size="icon-sm"
-          aria-label={`Editar ${row.original.firstName} ${row.original.lastName}`}
-          render={<Link to={paths.app.coberturaMatriculaEditar.getHref(row.original.id)} />}
-          nativeButton={false}
-        >
-          <PencilIcon />
-        </Button>
+        {!NOT_EDITABLE_STATUSES.includes(row.original.status) && (
+          <Button
+            type="button"
+            variant="ghost"
+            color="neutral"
+            size="icon-sm"
+            aria-label={`Editar ${row.original.firstName} ${row.original.lastName}`}
+            render={<Link to={paths.app.coberturaMatriculaEditar.getHref(row.original.id)} />}
+            nativeButton={false}
+          >
+            <PencilIcon />
+          </Button>
+        )}
         <FilesMatriculaDialog matricula={row.original} />
         <RetirarMatriculaDialog matricula={row.original} />
         <ReingresarMatriculaDialog matricula={row.original} />

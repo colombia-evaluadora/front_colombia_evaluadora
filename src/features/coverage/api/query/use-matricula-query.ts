@@ -16,14 +16,9 @@ interface UseMatriculaQueryParams {
   pageSize: number
 }
 
-// Body PLANO (UPPER_SNAKE) que espera /eval-col/matricula/query (V200,
-// fn_matricula_listar) -- mismo criterio que /eval-col/periodos-academicos/query
-// (ver `toListRequest` en `use-academic-periods.ts`): el motor de queries no
-// soporta un objeto `filters{}` anidado ni indexar un array `sorting[]`, así
-// que el envelope se aplana acá, no en el tipo de la request.
 interface MatriculaListRequest {
   SEARCH: string | null
-  STATUSES: MatriculaStatus[] | null
+  STATUSES: string[] | null
   CAMPUS: string | null
   SHIFT: string | null
   GRADE: number | null
@@ -34,12 +29,6 @@ interface MatriculaListRequest {
   SORTDIR: "asc" | "desc" | null
 }
 
-/**
- * Los filtros del listado, listos para mandar al backend.
- *
- * Se exporta para que la EXPORTACIÓN mande exactamente lo mismo que la
- * tabla -- mismo criterio que `toAcademicPeriodsFilters`.
- */
 export function toMatriculaFilters(filters: MatriculaQueryRequest["filters"]) {
   const { PAGEINDEX: _i, PAGESIZE: _s, SORTBY: _b, SORTDIR: _d, ...filtros } = toListRequest({
     filters,
@@ -67,7 +56,6 @@ function toListRequest(params: UseMatriculaQueryParams): MatriculaListRequest {
   }
 }
 
-// Fila cruda tal como la devuelve fn_matricula_listar (snake_case, ver V200).
 interface MatriculaListRow {
   id: number
   document_number: string
