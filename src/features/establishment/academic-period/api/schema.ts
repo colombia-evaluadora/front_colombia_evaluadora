@@ -142,12 +142,12 @@ export type AreaSubjectFormValues = z.infer<typeof areaSubjectFormSchema>
 
 // Grupos (grade-group)
 // `codigo` viaja como NOMBRE del grupo (ver create/update-grade-group.ts) — el
-// límite de 130 es el de TGRUPO.NOMBRE, no el de TGRUPO.CODIGO (30, sin usar).
+// límite se restringe a 2 caracteres por requerimiento de negocio.
 export const gradeGroupFormSchema = z.object({
   codigo: z
     .string()
     .min(1, "El grupo es obligatorio")
-    .max(130, "El nombre del grupo no puede superar los 130 caracteres"),
+    .max(2, "El nombre del grupo no puede superar los 2 caracteres"),
   director: z.string(),
   metodologia: z.string(),
   cupo: z

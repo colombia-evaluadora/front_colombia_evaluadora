@@ -160,7 +160,7 @@ async function createMatricula({
     group: values.academic.group,
     enrollmentDate: new Date().toISOString(),
     guardian: `${values.guardian.firstName} ${values.guardian.lastName}`.trim(),
-    status: "cursando",
+    status: "Cursando",
     hasGrades: false,
   }
 

@@ -48,7 +48,7 @@ export function RetirarMatriculaDialog({ matricula, trigger = "icon" }: RetirarM
 
   // El estado de la matrícula solo cambia vía "Retirar"/"Reingreso" — este
   // botón únicamente tiene sentido mientras el estudiante está cursando.
-  if (matricula.status !== "cursando") return null
+  if (matricula.status !== "Cursando") return null
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>

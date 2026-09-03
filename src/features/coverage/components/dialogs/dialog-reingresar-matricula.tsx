@@ -51,7 +51,7 @@ export function ReingresarMatriculaDialog({
 
   // El estado de la matrícula solo cambia vía "Retirar"/"Reingreso" — este
   // botón únicamente tiene sentido cuando ya está retirado.
-  if (matricula.status !== "retirado") return null
+  if (matricula.status !== "Retirado") return null
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>

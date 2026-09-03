@@ -14,7 +14,7 @@ import {
   TableScreenTitle,
   TableScreenToolbar,
 } from "@/components/layout/table-screen"
-import { NoticeOutlet, NoticeProvider } from "@/components/notice/notice-context"
+import { NoticeProvider } from "@/components/notice/notice-context"
 
 import { useMatriculaFilters } from "@/features/coverage/hooks/use-matricula-filters"
 import { useMatriculaQuery } from "@/features/coverage/api/query/use-matricula-query"
@@ -81,7 +81,6 @@ export function MatriculaDataTable({ title, action, titleAction }: MatriculaData
       <TableScreen>
         <TableScreenHeader>
           <TableScreenTitle action={titleAction}>{title}</TableScreenTitle>
-          <NoticeOutlet className="mx-(--screen-spacing) my-4" />
           <TableScreenToolbar>
             <SearchMatricula
               filters={filters}

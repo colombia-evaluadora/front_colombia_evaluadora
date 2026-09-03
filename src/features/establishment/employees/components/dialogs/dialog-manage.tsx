@@ -1007,6 +1007,7 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
       permissionsSnapshotRef.current = JSON.stringify(nextPermissions)
       if (person) cleanSnapshotRef.current = buildDraftSnapshot(person, additionalInfo, nextPermissions)
       void queryClient.invalidateQueries({ queryKey: ["employees"] })
+      void queryClient.invalidateQueries({ queryKey: ["assignment-teachers"] })
 
       setPermissionsSaved(true)
       setPermissionsDialogOpen(false)

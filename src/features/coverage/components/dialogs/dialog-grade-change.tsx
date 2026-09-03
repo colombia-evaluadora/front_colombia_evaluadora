@@ -24,12 +24,18 @@ import {
 } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
 import { useMatriculaGradeLabel } from "@/features/coverage/hooks/use-matricula-grade-label"
+import type { MatriculaMoveKind } from "@/features/coverage/api/mutations/move-matricula"
 
 export type GradeChangeKind = "promocion" | "correccion"
 export type GradeChangeGradesAction = "eliminar" | "trasladar"
 export function gradeChangeKindLabel(kind: GradeChangeKind, isSuperior: boolean): string {
   if (kind === "correccion") return "Corrección de matrícula"
   return isSuperior ? "Promoción anticipada" : "Reubicación académica"
+}
+
+export function moveKindForGradeChange(kind: GradeChangeKind, isSuperior: boolean): MatriculaMoveKind {
+  if (kind === "correccion") return "corregir"
+  return isSuperior ? "promover" : "reubicar"
 }
 
 export interface GradeChangeResult {
@@ -173,7 +179,7 @@ export function GradeChangeDialog({
           {kind === "promocion" && (
             <>
               <Field variant="outlined">
-                <FieldLabel htmlFor={reasonId}>Motivo de la reubicación</FieldLabel>
+                <FieldLabel htmlFor={reasonId}>Motivo de la reubicación*</FieldLabel>
                 <Textarea
                   id={reasonId}
                   value={reason}
@@ -185,7 +191,7 @@ export function GradeChangeDialog({
               </Field>
 
               <Field variant="outlined">
-                <FieldLabel>Soporte (opcional)</FieldLabel>
+                <FieldLabel>Soporte*</FieldLabel>
                 <FileUpload
                   value={supportFile ? [supportFile] : []}
                   onValueChange={(files) => setSupportFile(files[0] ?? null)}
@@ -242,7 +248,13 @@ export function GradeChangeDialog({
         </div>
 
         <DialogFooter className="sm:justify-end">
-          <Button type="button" color="primary" size="sm" onClick={handleConfirm}>
+          <Button
+            type="button"
+            color="primary"
+            size="sm"
+            disabled={kind === "promocion" && (!reason.trim() || !supportFile)}
+            onClick={handleConfirm}
+          >
             <CheckIcon data-icon="inline-start" />
             Confirmar cambio
           </Button>
