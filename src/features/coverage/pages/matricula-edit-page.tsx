@@ -19,20 +19,27 @@ import { useAuth } from "@/features/auth/hooks/use-auth"
 import { useMatriculaDetailQuery } from "@/features/coverage/api/query/use-matricula-detail-query"
 import { useMatriculaFieldConfigQuery } from "@/features/coverage/api/query/use-matricula-field-config-query"
 import { useMatriculaCampusesQuery } from "@/features/coverage/api/query/use-matricula-campuses-query"
+import { useMatriculaDependentCatalogsQuery } from "@/features/coverage/api/query/use-matricula-dependent-catalogs-query"
 import { useUpdateMatricula } from "@/features/coverage/api/mutations/update-matricula"
+import { updatePersona } from "@/features/coverage/api/mutations/update-persona"
+import { useMoveMatricula } from "@/features/coverage/api/mutations/move-matricula"
 import { useMunicipalitiesQuery } from "@/features/establishment/institution/api/query/use-municipalities"
 import { MatriculaFormBody } from "@/features/coverage/components/forms/matricula-form-body"
 import { MatriculaToolbar } from "@/features/coverage/components/matricula-toolbar"
 import {
   GradeChangeDialog,
   gradeChangeKindLabel,
+  moveKindForGradeChange,
   type GradeChangeResult,
 } from "@/features/coverage/components/dialogs/dialog-grade-change"
 import {
   GradeChangeSummaryDialog,
   type GradeChangeSummary,
 } from "@/features/coverage/components/dialogs/dialog-grade-change-summary"
-import { CambioSedeMatriculaDialog } from "@/features/coverage/components/dialogs/dialog-cambio-sede-matricula"
+import {
+  CambioSedeMatriculaDialog,
+  type CambioSedeConfirmResult,
+} from "@/features/coverage/components/dialogs/dialog-cambio-sede-matricula"
 import {
   GroupChangeDialog,
   type GroupChangeResult,
@@ -41,6 +48,7 @@ import type { DepartmentOption } from "@/features/coverage/components/forms/form
 import type {
   BulkGroupChangeClassification,
   CreateMatriculaInput,
+  MatriculaStatus,
 } from "@/features/coverage/api/types/matricula"
 import {
   REQUIRED_MATRICULA_FIELD_LABELS,
@@ -50,6 +58,8 @@ import {
 import { buildMatriculaFieldSettings } from "@/features/coverage/utils/matricula-field-settings"
 
 const EDIT_MATRICULA_FORM_ID = "edit-matricula-form"
+
+const NOT_EDITABLE_STATUSES: MatriculaStatus[] = ["Reubicado", "Promovido"]
 
 const SEDE_CLASSIFICATION_LABELS: Record<BulkGroupChangeClassification, string> = {
   cambioGrado: "Reubicación de sede",
@@ -94,6 +104,7 @@ function MatriculaEditPageContent() {
   const initialGroupRef = useRef<string | null>(null)
   const [gradeChange, setGradeChange] = useState<{ from: number; to: number } | null>(null)
   const [gradeChangeSummary, setGradeChangeSummary] = useState<GradeChangeSummary | null>(null)
+  const summaryNavigateIdRef = useRef(matriculaId)
   const [sedeChange, setSedeChange] = useState<{
     fromSede: string
     toSede: string
@@ -121,6 +132,15 @@ function MatriculaEditPageContent() {
     }
   }, [data, values])
 
+  const { data: dependentCatalogs } = useMatriculaDependentCatalogsQuery({
+    campus: values?.academic.campus || undefined,
+    shift: values?.academic.shift || undefined,
+    grade: values?.academic.grade ? Number(values.academic.grade) : undefined,
+  })
+  const toGroupCodigo = dependentCatalogs.groups.find(
+    (g) => String(g.id) === values?.academic.group,
+  )?.codigo
+
   const departments: DepartmentOption[] = (() => {
     const byName = new Map<string, DepartmentOption["municipalities"]>()
     for (const municipality of municipalities) {
@@ -133,8 +153,16 @@ function MatriculaEditPageContent() {
 
   const updateMatricula = useUpdateMatricula({
     mutationConfig: {
-      onError: () => {
-        notify("No se pudo actualizar la matrícula.", { variant: "error" })
+      onError: (error) => {
+        notify(getErrorMessage(error), { variant: "error" })
+      },
+    },
+  })
+
+  const moveMatricula = useMoveMatricula({
+    mutationConfig: {
+      onError: (error) => {
+        notify(getErrorMessage(error), { variant: "error" })
       },
     },
   })
@@ -155,11 +183,45 @@ function MatriculaEditPageContent() {
       autoCloseMs: 0,
     })
   }, [missingFields, notify, dismiss])
+  async function performSave(onSaved?: () => void) {
+    if (!values || !data?.details) return
 
-  function performSave(onSaved?: () => void) {
-    if (!values) return
+    const { pkUsuarioEstudiante, pkUsuarioAcudiente } = data.details
+    try {
+      if (pkUsuarioEstudiante != null) {
+        await updatePersona(pkUsuarioEstudiante, {
+          documentTypeId: values.student.documentType,
+          documentNumber: values.student.documentNumber,
+          firstName: values.student.firstName,
+          secondName: values.student.secondName,
+          lastName: values.student.lastName,
+          secondLastName: values.student.secondLastName,
+          birthDate: values.student.birthDate,
+          genderId: values.student.gender,
+          phone: values.studentContact.phone,
+          email: values.studentContact.email,
+        })
+      }
+      if (pkUsuarioAcudiente != null) {
+        await updatePersona(pkUsuarioAcudiente, {
+          documentTypeId: values.guardian.documentType,
+          documentNumber: values.guardian.documentNumber,
+          firstName: values.guardian.firstName,
+          secondName: values.guardian.secondName,
+          lastName: values.guardian.lastName,
+          secondLastName: values.guardian.secondLastName,
+          genderId: values.guardian.gender,
+          phone: values.guardianContact.phone,
+          email: values.guardianContact.email,
+        })
+      }
+    } catch (error) {
+      notify(getErrorMessage(error), { variant: "error" })
+      return
+    }
+
     updateMatricula.mutate(
-      { id: matriculaId, values },
+      { id: matriculaId, values, pkTpadre: data.details.pkTpadre },
       {
         onSuccess: (result) => {
           if (result.status === "error") {
@@ -190,31 +252,47 @@ function MatriculaEditPageContent() {
       return
     }
     const currentGradeChange = gradeChange
+    const isSuperior = currentGradeChange.to > currentGradeChange.from
+    const moveKind = moveKindForGradeChange(result.kind, isSuperior)
+    const toGroup = values.academic.group
     const studentName = `${data.matricula.firstName} ${data.matricula.lastName}`
     setGradeChange(null)
-    // El resumen se muestra recién cuando el guardado (con el grado ya
-    // cambiado en `values`) termina bien — no antes.
     performSave(() => {
-      setGradeChangeSummary({
-        studentName,
-        movementKind: "grado",
-        movementLabel: gradeChangeKindLabel(result.kind, currentGradeChange.to > currentGradeChange.from),
-        fromCampus: values.academic.campus,
-        toCampus: values.academic.campus,
-        fromGrade: currentGradeChange.from,
-        toGrade: currentGradeChange.to,
-        fromGroup: values.academic.group,
-        toGroup: values.academic.group,
-        gradesAction: result.gradesAction,
-        date: new Date(),
-        userName: user?.name ?? "",
-      })
+      moveMatricula.mutate(
+        {
+          kind: moveKind,
+          ids: [Number(matriculaId)],
+          grupoDestino: Number(toGroup),
+          motivo: moveKind !== "corregir" ? result.reason : undefined,
+          soporte: moveKind !== "corregir" ? result.supportFile : undefined,
+        },
+        {
+          onSuccess: (moveResult) => {
+            const moved = moveResult?.matriculas?.[0]
+            summaryNavigateIdRef.current = String(moved?.pkTmatriculaNueva ?? matriculaId)
+            setGradeChangeSummary({
+              studentName,
+              movementKind: "grado",
+              movementLabel: gradeChangeKindLabel(result.kind, isSuperior),
+              fromCampus: values.academic.campus,
+              toCampus: values.academic.campus,
+              fromGrade: currentGradeChange.from,
+              toGrade: currentGradeChange.to,
+              fromGroup: moved?.anterior.grupo ?? data?.matricula?.group ?? "",
+              toGroup: moved?.nuevo.grupo ?? toGroupCodigo ?? "",
+              gradesAction: result.gradesAction,
+              date: new Date(),
+              userName: user?.name ?? "",
+            })
+          },
+        },
+      )
     })
   }
 
   function handleGradeChangeSummaryClose() {
     setGradeChangeSummary(null)
-    navigate({ to: paths.app.coberturaMatriculaDetalle.getHref(matriculaId) })
+    navigate({ to: paths.app.coberturaMatriculaDetalle.getHref(summaryNavigateIdRef.current) })
   }
 
   function handleSedeChangeCancel() {
@@ -224,31 +302,47 @@ function MatriculaEditPageContent() {
     setSedeChange(null)
   }
 
-  function handleSedeChangeConfirm(classification: BulkGroupChangeClassification) {
+  function handleSedeChangeConfirm(result: CambioSedeConfirmResult) {
     if (!sedeChange || !values || !data?.matricula) {
       setSedeChange(null)
       return
     }
     const currentSedeChange = sedeChange
+    const moveKind = result.classification === "cambioGrado" ? "reubicar" : "corregir"
     const studentName = `${data.matricula.firstName} ${data.matricula.lastName}`
     setSedeChange(null)
     performSave(() => {
-      setGradeChangeSummary({
-        studentName,
-        movementKind: "sede",
-        movementLabel: SEDE_CLASSIFICATION_LABELS[classification],
-        fromCampus: currentSedeChange.fromSede,
-        toCampus: currentSedeChange.toSede,
-        fromGrade: currentSedeChange.fromGrade,
-        toGrade: currentSedeChange.toGrade,
-        fromGroup: currentSedeChange.fromGroup,
-        toGroup: currentSedeChange.toGroup,
-        // El cambio de sede no pregunta por calificaciones (ver
-        // `dialog-cambio-sede-matricula.tsx`).
-        gradesAction: null,
-        date: new Date(),
-        userName: user?.name ?? "",
-      })
+      moveMatricula.mutate(
+        {
+          kind: moveKind,
+          ids: [Number(matriculaId)],
+          grupoDestino: Number(currentSedeChange.toGroup),
+          motivo: moveKind !== "corregir" ? result.reason : undefined,
+          soporte: moveKind !== "corregir" ? result.supportFile : undefined,
+        },
+        {
+          onSuccess: (moveResult) => {
+            const moved = moveResult?.matriculas?.[0]
+            summaryNavigateIdRef.current = String(moved?.pkTmatriculaNueva ?? matriculaId)
+            setGradeChangeSummary({
+              studentName,
+              movementKind: "sede",
+              movementLabel: SEDE_CLASSIFICATION_LABELS[result.classification],
+              fromCampus: currentSedeChange.fromSede,
+              toCampus: currentSedeChange.toSede,
+              fromGrade: currentSedeChange.fromGrade,
+              toGrade: currentSedeChange.toGrade,
+              fromGroup: moved?.anterior.grupo ?? data?.matricula?.group ?? "",
+              toGroup: moved?.nuevo.grupo ?? toGroupCodigo ?? "",
+              // El cambio de sede no pregunta por calificaciones (ver
+              // `dialog-cambio-sede-matricula.tsx`).
+              gradesAction: null,
+              date: new Date(),
+              userName: user?.name ?? "",
+            })
+          },
+        },
+      )
     })
   }
 
@@ -268,20 +362,33 @@ function MatriculaEditPageContent() {
     const studentName = `${data.matricula.firstName} ${data.matricula.lastName}`
     setGroupChange(null)
     performSave(() => {
-      setGradeChangeSummary({
-        studentName,
-        movementKind: "grupo",
-        movementLabel: "Corrección de matrícula (Cambio de grupo)",
-        fromCampus: values.academic.campus,
-        toCampus: values.academic.campus,
-        fromGrade: Number(values.academic.grade),
-        toGrade: Number(values.academic.grade),
-        fromGroup: currentGroupChange.from,
-        toGroup: currentGroupChange.to,
-        gradesAction: result.gradesAction,
-        date: new Date(),
-        userName: user?.name ?? "",
-      })
+      moveMatricula.mutate(
+        {
+          kind: "corregir",
+          ids: [Number(matriculaId)],
+          grupoDestino: Number(currentGroupChange.to),
+        },
+        {
+          onSuccess: (moveResult) => {
+            const moved = moveResult?.matriculas?.[0]
+            summaryNavigateIdRef.current = matriculaId
+            setGradeChangeSummary({
+              studentName,
+              movementKind: "grupo",
+              movementLabel: "Corrección de matrícula (Cambio de grupo)",
+              fromCampus: values.academic.campus,
+              toCampus: values.academic.campus,
+              fromGrade: Number(values.academic.grade),
+              toGrade: Number(values.academic.grade),
+              fromGroup: moved?.anterior.grupo ?? data?.matricula?.group ?? "",
+              toGroup: moved?.nuevo.grupo ?? toGroupCodigo ?? "",
+              gradesAction: result.gradesAction,
+              date: new Date(),
+              userName: user?.name ?? "",
+            })
+          },
+        },
+      )
     })
   }
 
@@ -302,7 +409,7 @@ function MatriculaEditPageContent() {
         toSede: currentSede,
         fromGrade: originalGrade,
         toGrade: currentGrade,
-        fromGroup: initialGroupRef.current ?? values.academic.group,
+        fromGroup: data?.matricula?.group ?? "",
         toGroup: values.academic.group,
       })
       return
@@ -321,9 +428,7 @@ function MatriculaEditPageContent() {
       return
     }
 
-    // Solo llega acá cuando Sede y Grado NO cambiaron (ver los dos
-    // early-return de arriba) -- justo la condición que pediste para que
-    // el cambio de grupo "solo aparezca si es de la misma sede".
+
     const originalGroup = initialGroupRef.current
     const currentGroup = values.academic.group
     if (originalGroup && currentGroup && originalGroup !== currentGroup) {
@@ -368,7 +473,18 @@ function MatriculaEditPageContent() {
         </div>
       )}
 
-      {data?.status === "ok" && data.matricula && values && (
+      {data?.status === "ok" &&
+        data.matricula &&
+        NOT_EDITABLE_STATUSES.includes(data.matricula.status) && (
+          <div className="p-10 text-center text-sm text-destructive">
+            Esta matrícula está {data.matricula.status.toLowerCase()} y no se puede editar.
+          </div>
+        )}
+
+      {data?.status === "ok" &&
+        data.matricula &&
+        values &&
+        !NOT_EDITABLE_STATUSES.includes(data.matricula.status) && (
         <>
           <TableScreenBody className="rounded-b-none border-b-0">
             <div id={EDIT_MATRICULA_FORM_ID} className="flex flex-col gap-6">
@@ -433,7 +549,7 @@ function MatriculaEditPageContent() {
           fromGrade={sedeChange.fromGrade}
           toGrade={sedeChange.toGrade}
           fromGroup={sedeChange.fromGroup}
-          toGroup={sedeChange.toGroup}
+          toGroup={toGroupCodigo ?? sedeChange.toGroup}
           gradeWillChange={sedeChange.fromGrade !== sedeChange.toGrade}
           sameOrigin
           onConfirm={handleSedeChangeConfirm}
@@ -444,8 +560,8 @@ function MatriculaEditPageContent() {
       {groupChange && (
         <GroupChangeDialog
           open
-          currentGroup={groupChange.from}
-          newGroup={groupChange.to}
+          currentGroup={data?.matricula?.group ?? groupChange.from}
+          newGroup={toGroupCodigo ?? groupChange.to}
           hasGrades={data?.matricula?.hasGrades ?? false}
           onConfirm={handleGroupChangeConfirm}
           onCancel={handleGroupChangeCancel}

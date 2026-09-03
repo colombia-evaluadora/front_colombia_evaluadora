@@ -55,16 +55,6 @@ export function GradeChangeSummaryDialog({ open, summary, onClose }: GradeChange
   const gradeLabel = useMatriculaGradeLabel()
   if (!summary) return null
 
-  const isSuperior = summary.toGrade > summary.fromGrade
-  const tipoMovimiento =
-    summary.movementKind === "sede"
-      ? "Cambio de sede"
-      : summary.movementKind === "grupo"
-        ? "Cambio de grupo"
-        : isSuperior
-          ? "Cambio a grado superior"
-          : "Cambio a grado inferior"
-
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl" showCloseButton={false}>
@@ -87,7 +77,7 @@ export function GradeChangeSummaryDialog({ open, summary, onClose }: GradeChange
               <span className="font-medium">Estudiante:</span> {summary.studentName}
             </li>
             <li>
-              <span className="font-medium">Tipo de movimiento:</span> {tipoMovimiento}
+              <span className="font-medium">Tipo de movimiento:</span> {summary.movementLabel}
             </li>
             <li>
               <span className="font-medium">Sede:</span>{" "}

@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react"
+import { useEffect, useState, type ReactNode } from "react"
 
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
@@ -32,6 +32,9 @@ import {
 } from "@/components/ui/icons"
 import { FileUpload, FileUploadTrigger } from "@/components/ui/file-upload"
 import { FormSectionHeading } from "@/components/form-section-heading"
+import { useNotify } from "@/components/notice/notice-context"
+
+import { getErrorMessage } from "@/lib/api-client"
 
 import { useMatriculaDependentCatalogsQuery } from "@/features/coverage/api/query/use-matricula-dependent-catalogs-query"
 import {
@@ -51,8 +54,7 @@ import {
   type MatriculaFieldSettingsMap,
 } from "@/features/coverage/utils/matricula-field-settings"
 import { formatDateValue, parseDateValue } from "@/lib/date-time-value"
-import { MATRICULA_STATUSES } from "@/features/coverage/api/schema"
-import { MATRICULA_STATUS_LABELS, YES_NO_OPTIONS } from "@/features/coverage/api/ui-mappings-matricula"
+import { MATRICULA_STATUSES, YES_NO_OPTIONS } from "@/features/coverage/api/ui-mappings-matricula"
 import type {
   MatriculaAcademicInfo,
   MatriculaBenefitsInfo,
@@ -108,14 +110,10 @@ interface TextFieldProps {
   onChange: (value: string) => void
   type?: "text" | "date" | "email" | "tel"
   required?: boolean
-  /** Rojo en el label y el borde del input — campo obligatorio sin llenar. */
   invalid?: boolean
-  /** Sólo dígitos — filtra cualquier carácter no numérico al tipear/pegar. */
   numeric?: boolean
-  /** Largo de la columna real (`VARCHAR(N)`) — ver mapeo de campos al final
-   * del archivo. Sin límite si no se pasa (campos sin equivalente VARCHAR,
-   * ej. FKs a catálogo). */
   maxLength?: number
+  disabled?: boolean
 }
 
 export function MatriculaTextField({
@@ -128,6 +126,7 @@ export function MatriculaTextField({
   invalid,
   numeric,
   maxLength,
+  disabled,
 }: TextFieldProps) {
   return (
     <Field
@@ -151,6 +150,7 @@ export function MatriculaTextField({
         aria-invalid={invalid}
         inputMode={numeric ? "numeric" : undefined}
         maxLength={maxLength}
+        disabled={disabled}
         onChange={(event) => {
           const nextValue = numeric ? event.target.value.replace(/\D/g, "") : event.target.value
           onChange(nextValue)
@@ -381,7 +381,7 @@ export function MatriculaAcademicSection({
 }: AcademicSectionProps) {
   // Sede → Jornada → Grado → Grupo — mismo criterio que "Modificar" (ver
   // `dialog-modificar-matricula.tsx` y `use-matricula-dependent-catalogs-query.ts`).
-  const { data: dependentCatalogs } = useMatriculaDependentCatalogsQuery({
+  const { data: dependentCatalogs, isPeriodoError, periodoError } = useMatriculaDependentCatalogsQuery({
     campus: value.campus || undefined,
     shift: value.shift || undefined,
     grade: value.grade ? Number(value.grade) : undefined,
@@ -390,9 +390,12 @@ export function MatriculaAcademicSection({
     (dependentCatalogs?.grades ?? []).map((grado) => [String(grado.valor), grado.nombre]),
   )
 
-  // Carácter/Especialidad/Énfasis = `PK_TENFASIS` (`fn_especialidad_enfasis_
-  // listar`, no TLISTA_VALOR) — pide el período académico, que se resuelve
-  // igual que en la cascada de arriba (mismas queries, cacheadas por key).
+  const { notify } = useNotify()
+  useEffect(() => {
+    if (isPeriodoError) notify(getErrorMessage(periodoError), { variant: "error" })
+  }, [isPeriodoError, periodoError, notify])
+
+
   const { data: sedes } = useSedeOptionsQuery()
   const sedeId = value.campus ? sedes?.find((sede) => sede.nombre === value.campus)?.pk_sede : undefined
   const { data: jornadasActivas } = useSedeJornadasActivasQuery(sedeId ?? null)
@@ -466,10 +469,10 @@ export function MatriculaAcademicSection({
         <MatriculaSelectField
           id="matricula-status"
           label="Estado de la matrícula"
-          value={value.status ? MATRICULA_STATUS_LABELS[value.status] : ""}
-          options={MATRICULA_STATUSES.map((status) => MATRICULA_STATUS_LABELS[status])}
-          onChange={(label) => {
-            const entry = MATRICULA_STATUSES.find((status) => MATRICULA_STATUS_LABELS[status] === label)
+          value={value.status}
+          options={MATRICULA_STATUSES}
+          onChange={(status) => {
+            const entry = MATRICULA_STATUSES.find((option) => option === status)
             onChange({ ...value, status: entry ?? "" })
           }}
           disabled
@@ -485,6 +488,10 @@ interface StudentSectionProps {
   departments: DepartmentOption[]
   invalidFields?: string[]
   fieldSettings?: MatriculaFieldSettingsMap
+  /** Edición: tipo/número de documento y nombre no se pueden tocar acá —
+   * son identidad de la persona (`PATCH /usuarios/:ID`), no de la
+   * matrícula. Sin efecto en el alta. */
+  identityDisabled?: boolean
 }
 
 export function MatriculaStudentSection({
@@ -493,6 +500,7 @@ export function MatriculaStudentSection({
   departments,
   invalidFields = [],
   fieldSettings,
+  identityDisabled,
 }: StudentSectionProps) {
   const { data: tipoDocumento } = useMatriculaCatalogQuery("tipoDocumento")
   const { data: genero } = useMatriculaCatalogQuery("genero")
@@ -509,6 +517,7 @@ export function MatriculaStudentSection({
         options={catalogOptions(tipoDocumento)}
         labelFor={catalogLabelFor(tipoDocumento)}
         invalid={invalidFields.includes("student-document-type")}
+        disabled={identityDisabled}
         onChange={(documentType) => onChange({ ...value, documentType })}
       />
       <MatriculaTextField
@@ -519,6 +528,7 @@ export function MatriculaStudentSection({
         value={value.documentNumber}
         numeric
         maxLength={150}
+        disabled={identityDisabled}
         onChange={(documentNumber) => onChange({ ...value, documentNumber })}
       />
       <MatriculaTextField
@@ -528,6 +538,7 @@ export function MatriculaStudentSection({
         invalid={invalidFields.includes("student-first-name")}
         value={value.firstName}
         maxLength={40}
+        disabled={identityDisabled}
         onChange={(firstName) => onChange({ ...value, firstName })}
       />
       {isFieldVisible(fieldSettings, "student-second-name") && (
@@ -538,6 +549,7 @@ export function MatriculaStudentSection({
           invalid={invalidFields.includes("student-second-name")}
           value={value.secondName}
           maxLength={40}
+          disabled={identityDisabled}
           onChange={(secondName) => onChange({ ...value, secondName })}
         />
       )}
@@ -548,6 +560,7 @@ export function MatriculaStudentSection({
         invalid={invalidFields.includes("student-last-name")}
         value={value.lastName}
         maxLength={40}
+        disabled={identityDisabled}
         onChange={(lastName) => onChange({ ...value, lastName })}
       />
       {isFieldVisible(fieldSettings, "student-second-last-name") && (
@@ -558,6 +571,7 @@ export function MatriculaStudentSection({
           invalid={invalidFields.includes("student-second-last-name")}
           value={value.secondLastName}
           maxLength={40}
+          disabled={identityDisabled}
           onChange={(secondLastName) => onChange({ ...value, secondLastName })}
         />
       )}
@@ -679,6 +693,9 @@ interface ContactSectionProps {
   onChange: (value: MatriculaContact) => void
   invalidFields?: string[]
   fieldSettings?: MatriculaFieldSettingsMap
+  /** Edición: teléfono/email son contacto de la persona (`PATCH
+   * /usuarios/:ID`), no de la matrícula -- no se pueden tocar acá. */
+  disabled?: boolean
 }
 
 export function MatriculaContactSection({
@@ -690,6 +707,7 @@ export function MatriculaContactSection({
   onChange,
   invalidFields = [],
   fieldSettings,
+  disabled,
 }: ContactSectionProps) {
   const phoneId = `${idPrefix}-phone`
   const emailId = `${idPrefix}-email`
@@ -707,6 +725,7 @@ export function MatriculaContactSection({
           value={value.phone}
           numeric
           maxLength={30}
+          disabled={disabled}
           onChange={(phone) => onChange({ ...value, phone })}
         />
       )}
@@ -719,6 +738,7 @@ export function MatriculaContactSection({
           value={value.email}
           invalid={invalidFields.includes(emailId)}
           maxLength={120}
+          disabled={disabled}
           onChange={(email) => onChange({ ...value, email })}
         />
       )}
@@ -1141,6 +1161,10 @@ interface GuardianSectionProps {
   departments: DepartmentOption[]
   invalidFields?: string[]
   fieldSettings?: MatriculaFieldSettingsMap
+  /** Edición: nombre y documento del acudiente son identidad de la persona
+   * (`PATCH /usuarios/:ID`), no de la matrícula -- no se pueden tocar acá.
+   * Parentesco sí queda editable, es propio de esta matrícula. */
+  identityDisabled?: boolean
 }
 
 export function MatriculaGuardianSection({
@@ -1149,6 +1173,7 @@ export function MatriculaGuardianSection({
   departments,
   invalidFields = [],
   fieldSettings,
+  identityDisabled,
 }: GuardianSectionProps) {
   const { data: parentesco } = useMatriculaCatalogQuery("parentesco")
   const { data: tipoDocumento } = useMatriculaCatalogQuery("tipoDocumento")
@@ -1174,6 +1199,7 @@ export function MatriculaGuardianSection({
           invalid={invalidFields.includes("guardian-first-name")}
           value={value.firstName}
           maxLength={40}
+          disabled={identityDisabled}
           onChange={(firstName) => onChange({ ...value, firstName })}
         />
       )}
@@ -1185,6 +1211,7 @@ export function MatriculaGuardianSection({
           invalid={invalidFields.includes("guardian-second-name")}
           value={value.secondName}
           maxLength={40}
+          disabled={identityDisabled}
           onChange={(secondName) => onChange({ ...value, secondName })}
         />
       )}
@@ -1196,6 +1223,7 @@ export function MatriculaGuardianSection({
           invalid={invalidFields.includes("guardian-last-name")}
           value={value.lastName}
           maxLength={40}
+          disabled={identityDisabled}
           onChange={(lastName) => onChange({ ...value, lastName })}
         />
       )}
@@ -1207,6 +1235,7 @@ export function MatriculaGuardianSection({
           invalid={invalidFields.includes("guardian-second-last-name")}
           value={value.secondLastName}
           maxLength={40}
+          disabled={identityDisabled}
           onChange={(secondLastName) => onChange({ ...value, secondLastName })}
         />
       )}
@@ -1218,6 +1247,7 @@ export function MatriculaGuardianSection({
         options={catalogOptions(tipoDocumento)}
         labelFor={catalogLabelFor(tipoDocumento)}
         invalid={invalidFields.includes("guardian-document-type")}
+        disabled={identityDisabled}
         onChange={(documentType) => onChange({ ...value, documentType })}
       />
       {isFieldVisible(fieldSettings, "guardian-document-number") && (
@@ -1229,6 +1259,7 @@ export function MatriculaGuardianSection({
           value={value.documentNumber}
           numeric
           maxLength={150}
+          disabled={identityDisabled}
           onChange={(documentNumber) => onChange({ ...value, documentNumber })}
         />
       )}

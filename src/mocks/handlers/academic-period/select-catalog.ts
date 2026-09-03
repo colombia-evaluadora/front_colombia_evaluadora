@@ -8,9 +8,8 @@ import { ratingSymbolsDb } from "../../db/academic-period/rating-symbols"
 import { metodologiasDb } from "../../db/academic-period/metodologias"
 import { GRADES } from "../../db/reservations"
 import { formatGrade } from "@/features/coverage/api/ui-mappings"
+import { MATRICULA_STATUSES } from "@/features/coverage/api/ui-mappings-matricula"
 
-// Mismo shape crudo que el catálogo genérico real
-// (`GET /eval-col/select/:CATEGORIA`): `{rows: [{pk_lista_valor, nombre, valor, accion}]}`.
 interface SelectCategoryRow {
   pk_lista_valor: number
   nombre: string
@@ -40,10 +39,7 @@ const CATALOGS_BY_CATEGORIA: Record<string, () => SelectCategoryRow[]> = {
       valor: status.key,
       accion: null,
     })),
-  // El pk es sintético (índice + 1) — estable mientras no cambie el orden de
-  // `ratingScaleTypesDb`/`ratingSymbolsDb`/`metodologiasDb`, y suficiente
-  // para el ida-y-vuelta id→valor que hacen `use-rating-scale-types.ts`
-  // (elige por pk) y `resolve-rating-scale-refs.ts` (re-resuelve por valor).
+
   TIPO_VALORACION: () =>
     ratingScaleTypesDb.map((option, i) => ({
       pk_lista_valor: i + 1,
@@ -76,9 +72,6 @@ const CATALOGS_BY_CATEGORIA: Record<string, () => SelectCategoryRow[]> = {
       valor: option.key,
       accion: null,
     })),
-  // Alimenta `use-grados-catalog.ts` (Períodos Académicos) y, ahora, el
-  // select de Grado de "Reserva de cupo" (`use-reservation-catalogs-
-  // query.ts`) — `VALOR` es el que matchea el orden real (0 = transición).
   GRADOS: () =>
     GRADES.map((grade, i) => ({
       pk_lista_valor: i + 1,
@@ -86,14 +79,6 @@ const CATALOGS_BY_CATEGORIA: Record<string, () => SelectCategoryRow[]> = {
       valor: String(grade),
       accion: null,
     })),
-  // Los 3 catálogos que Matrícula pide vía `useMatriculaCatalogQuery` y que
-  // son obligatorios SIEMPRE (ver `validateMatricula` en
-  // `matricula-form-defaults.ts`: tipo de documento y género del estudiante,
-  // tipo de documento del acudiente, y parentesco) -- sin ellos el select
-  // queda vacío y el formulario nunca puede guardar. El resto de categorías
-  // de `MATRICULA_CATALOG_CATEGORIA` (talento, estrato, sisben, etc.) son
-  // opcionales según "Configuración de parámetros requeridos" y quedan
-  // pendientes de agregar acá si hace falta.
   TIPO_DOCUMENTO: () =>
     ["Registro Civil", "Tarjeta de Identidad", "Cédula de Ciudadanía", "Cédula de Extranjería", "Pasaporte"].map(
       (nombre, i) => ({ pk_lista_valor: i + 1, nombre, valor: nombre, accion: null }),
@@ -110,6 +95,13 @@ const CATALOGS_BY_CATEGORIA: Record<string, () => SelectCategoryRow[]> = {
       pk_lista_valor: i + 1,
       nombre,
       valor: nombre,
+      accion: null,
+    })),
+  ESTADO_MATRICULA: () =>
+    MATRICULA_STATUSES.map((nombre, i) => ({
+      pk_lista_valor: i + 1,
+      nombre,
+      valor: String(i + 1),
       accion: null,
     })),
 }
