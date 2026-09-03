@@ -12,6 +12,6 @@ export function useMatriculaCampusesQuery() {
   return useQuery({
     queryKey: ["matricula", "campuses"],
     queryFn: fetchMatriculaCampuses,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
   })
 }

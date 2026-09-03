@@ -111,7 +111,7 @@ export function CambioGradoMatriculaDialog({
     onConfirm({
       subKind,
       reason: needsDetails ? reason : undefined,
-      hasSupport: needsDetails ? supportFile !== null : undefined,
+      supportFile: needsDetails ? supportFile : undefined,
       gradesAction,
     })
     reset()

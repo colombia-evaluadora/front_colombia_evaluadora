@@ -31,7 +31,6 @@ import type {
   MatriculaMutationResult,
   MatriculaQueryFilters,
   MatriculaQueryRequest,
-  MatriculaStatus,
 } from "@/features/coverage/api/types/matricula"
 
 // snake_case, como manda el backend real — camelCase es solo del lado front
@@ -161,23 +160,6 @@ function applySorting(rows: Matricula[], sorting: MatriculaQueryRequest["sorting
   return desc ? sorted.reverse() : sorted
 }
 
-// Slug que arma `slugifyEstado` (`use-matricula-detail-query.ts`) a partir
-// del nombre real -- para que el detalle mockeado devuelva un status
-// consistente con el que ya trae la fila resumen (`matriculaDb`).
-const STATUS_TO_NOMBRE: Record<MatriculaStatus, string> = {
-  cursando: "Cursando",
-  aprobado: "Aprobado",
-  reprobado: "Reprobado",
-  retirado: "Retirado",
-  graduado: "Graduado",
-  promovido_anticipadamente: "Promovido Anticipadamente",
-  trasladado: "Trasladado",
-  sin_definir: "Sin Definir",
-  desertor: "Desertor",
-  esperando_aprobacion: "Esperando Aprobación",
-  rechazado: "Rechazado",
-}
-
 function toNum(value: string | undefined): number | null {
   return value ? Number(value) : null
 }
@@ -188,11 +170,6 @@ function toRawSN(label: string): "S" | "N" | null {
   return null
 }
 
-// Shape real del GET `/eval-col/cobertura-academica/matricula/:id`
-// (`fetchMatriculaDetail`, ver `use-matricula-detail-query.ts`) -- a
-// diferencia del resto de los handlers de este archivo (que siguen el
-// contrato viejo `/coverage/matricula/:id`), este es el que ya usa el
-// front en producción.
 function toRawMatriculaDetail(matricula: Matricula, details: MatriculaDetails) {
   const pk = Number(matricula.id)
 
@@ -200,9 +177,6 @@ function toRawMatriculaDetail(matricula: Matricula, details: MatriculaDetails) {
     matricula: {
       matricula: {
         fk_tsede: 1,
-        // No hay catálogo de grados resuelto acá -- se reusa el "valor" que
-        // ya trae la fila resumen como si fuera el PK, mismo criterio que el
-        // fallback `gradoValor ?? m.fk_tgrado` en `fetchMatriculaDetail`.
         fk_tgrado: matricula.grade,
         fk_tgrupo: 1,
         fk_tpadre: null,
@@ -216,7 +190,7 @@ function toRawMatriculaDetail(matricula: Matricula, details: MatriculaDetails) {
         jornada_nombre: matricula.shift,
         fk_tperiodo_academico: 1,
         created_at: matricula.enrollmentDate,
-        estado_matricula_nombre: STATUS_TO_NOMBRE[matricula.status],
+        estado_matricula_nombre: matricula.status,
       },
       acudientes: details.guardian.firstName
         ? [
@@ -291,10 +265,6 @@ function toRawMatriculaDetail(matricula: Matricula, details: MatriculaDetails) {
 }
 
 export const matriculaHandlers = [
-  // Endpoint real (`eval-col`) que usa `matricula-edit-page.tsx` /
-  // `matricula-detail-page.tsx` -- distinto del contrato viejo
-  // `/coverage/matricula/:id` que siguen usando los handlers de abajo (alta,
-  // actualización, retiro/reingreso, borrado: esos sí no migraron todavía).
   http.get("*/api/eval-col/cobertura-academica/matricula/:id", async ({ params }) => {
     await delay(250)
 
@@ -559,7 +529,7 @@ export const matriculaHandlers = [
     await delay(250)
 
     const idParam = Array.isArray(params.id) ? params.id[0] : params.id
-    const updated = idParam ? updateMatriculaRow(idParam, { status: "retirado" }) : null
+    const updated = idParam ? updateMatriculaRow(idParam, { status: "Retirado" }) : null
 
     if (!updated) {
       return HttpResponse.json<MatriculaMutationResult>(
@@ -579,7 +549,7 @@ export const matriculaHandlers = [
     await delay(250)
 
     const idParam = Array.isArray(params.id) ? params.id[0] : params.id
-    const updated = idParam ? updateMatriculaRow(idParam, { status: "cursando" }) : null
+    const updated = idParam ? updateMatriculaRow(idParam, { status: "Cursando" }) : null
 
     if (!updated) {
       return HttpResponse.json<MatriculaMutationResult>(
