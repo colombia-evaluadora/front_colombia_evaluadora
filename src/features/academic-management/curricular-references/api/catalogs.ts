@@ -11,16 +11,22 @@ export const EDUCATION_LEVELS: CatalogItem[] = [
   { id: 104, code: "MEDIA", name: "Media" },
 ]
 
+// "Tipo de evaluación" describe CÓMO se mide (la naturaleza del dato que
+// produce el instrumento), no cuándo se aplica — eso es `PEDAGOGICAL_APPROACHES`
+// de abajo. Tres valores nada más: cualitativa, cuantitativa, o ambas a la vez
+// (un instrumento puede traer una nota numérica y una valoración descriptiva).
 export const EVALUATION_TYPES: CatalogItem[] = [
-  { id: 111, code: "DIAGNOSTICA", name: "Diagnóstica" },
-  { id: 112, code: "FORMATIVA", name: "Formativa" },
-  { id: 113, code: "SUMATIVA", name: "Sumativa" },
+  { id: 111, code: "CUALITATIVA", name: "Cualitativa" },
+  { id: 112, code: "CUANTITATIVA", name: "Cuantitativa" },
+  { id: 113, code: "CUANTITATIVA_CUALITATIVA", name: "Cuantitativa y cualitativa" },
 ]
 
+// "Enfoque pedagógico" acá es binario: si el referente está pensado para
+// hacer seguimiento continuo del aprendizaje (FORMATIVO) o para calificar un
+// resultado (EVALUATIVO). Gobierna una regla de negocio en el Planeador: una
+// unidad temática ligada a un referente FORMATIVO no admite actividades
+// sumativas — ver `EvaluacionSection` en `form-editar-actividad.tsx`.
 export const PEDAGOGICAL_APPROACHES: CatalogItem[] = [
-  { id: 121, code: "CONSTRUCTIVISMO", name: "Constructivismo" },
-  { id: 122, code: "APRENDIZAJE_SIGNIFICATIVO", name: "Aprendizaje significativo" },
-  { id: 123, code: "APRENDIZAJE_PROBLEMAS", name: "Aprendizaje basado en problemas" },
-  { id: 124, code: "COMPETENCIAS", name: "Enfoque por competencias" },
-  { id: 125, code: "CRITICA", name: "Pedagogía crítica" },
+  { id: 121, code: "EVALUATIVO", name: "Evaluativo" },
+  { id: 122, code: "FORMATIVO", name: "Formativo" },
 ]

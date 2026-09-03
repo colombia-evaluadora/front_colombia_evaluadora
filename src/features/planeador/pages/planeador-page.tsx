@@ -3,6 +3,12 @@ import { useNavigate, useSearch } from "@tanstack/react-router"
 
 import { Button } from "@/components/ui/button"
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
   TableScreen,
   TableScreenActions,
   TableScreenBody,
@@ -182,16 +188,33 @@ export function PlaneadorPage() {
                 <PlusCircleIcon data-icon="inline-start" />
                 Nueva actividad
               </Button>
-              <Button
-                color="primary"
-                size="sm"
-                variant="fill"
-                disabled
-                aria-label="Más opciones"
-                className="rounded-l-none"
-              >
-                <DotsThreeIcon />
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  render={
+                    <Button
+                      color="primary"
+                      size="sm"
+                      variant="fill"
+                      aria-label="Más opciones"
+                      className="rounded-l-none"
+                    />
+                  }
+                >
+                  <DotsThreeIcon />
+                </DropdownMenuTrigger>
+                {/* "Recargar" ya tiene a dónde apuntar (`refetch` del query);
+                    el resto queda disabled hasta que su feature exista. */}
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem disabled>
+                    Planilla de calificación
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => refetch()}>
+                    Recargar
+                  </DropdownMenuItem>
+                  <DropdownMenuItem disabled>Exportar todo</DropdownMenuItem>
+                  <DropdownMenuItem disabled>Importar</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
             {/* El export general reusa el mismo diálogo que el listado de
                 Cobertura (`DialogExportActividades`): las filas ya filtradas
@@ -241,19 +264,22 @@ export function PlaneadorPage() {
           >
             <div className="flex flex-col gap-3 md:absolute md:inset-0">
               {/* Header del rail: chip "Hoy" a la izquierda, el día al centro y
-                las dos flechas agrupadas a la derecha como un solo control
-                partido (mismo patrón que el split-button del título). */}
-              <div className="flex items-center justify-between gap-1">
+                las dos flechas a la derecha. El `Button` del DS ya trae el
+                tamaño más chico en h-7/size-7 (xs/icon-xs); acá no encaja —el
+                rail mide 180/210 px de ancho y cada px cuenta—, así que sólo
+                se achica con className (h-6/size-6) en vez de reconstruir el
+                estilo a mano. */}
+              <div className="flex items-center justify-between gap-0.5">
                 <Button
                   variant="soft"
                   color="muted"
                   size="xs"
                   disabled
-                  className="rounded-none"
+                  className="h-6 rounded-none px-2 text-[11px] tracking-wide uppercase"
                 >
                   Hoy
                 </Button>
-                <span className="text-muted-foreground text-xs font-medium tracking-wide whitespace-nowrap uppercase">
+                <span className="text-muted-foreground text-[11px] font-medium tracking-wide whitespace-nowrap uppercase">
                   {new Date().toLocaleDateString("es-CO", {
                     weekday: "long",
                     day: "2-digit",
@@ -265,7 +291,7 @@ export function PlaneadorPage() {
                     color="neutral"
                     size="icon-xs"
                     aria-label="Día anterior"
-                    className="rounded-none border-r-0"
+                    className="size-6 rounded-none border-r-0"
                   >
                     <CaretLeftIcon />
                   </Button>
@@ -274,7 +300,7 @@ export function PlaneadorPage() {
                     color="neutral"
                     size="icon-xs"
                     aria-label="Día siguiente"
-                    className="rounded-none"
+                    className="size-6 rounded-none"
                   >
                     <CaretRightIcon />
                   </Button>
