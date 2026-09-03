@@ -51,10 +51,12 @@ import {
   MdOutlineChromeReaderMode,
   MdOutlineControlPoint,
   MdOutlineImage,
+  MdOutlineInsertLink,
   MdOutlineEmail,
   MdErrorOutline,
   MdOutlineFilterList,
   MdFolderOpen,
+  MdOutlinePermMedia,
   MdFormatBold,
   MdFormatItalic,
   MdFormatListNumbered,
@@ -97,6 +99,7 @@ import {
   MdPsychology,
   MdPublic,
   MdRadioButtonUnchecked,
+  MdRemoveCircleOutline,
   MdRefresh,
   MdRemove,
   MdOutlineRemoveModerator,
@@ -215,6 +218,7 @@ export const HouseLineIcon = makeIcon(MdHomeWork)
 export const IdentificationCardIcon = makeIcon(MdBadge)
 export const ImageIcon = makeIcon(MdOutlineImage)
 export const InfoIcon = makeIcon(MdInfoOutline)
+export const InsertLinkOutlinedIcon = makeIcon(MdOutlineInsertLink)
 export const KeyIcon = makeIcon(MdKey)
 export const LightningIcon = makeIcon(MdBolt)
 export const LockIcon = makeIcon(MdLockOutline)
@@ -232,14 +236,16 @@ export const PaletteIcon = makeIcon(MdPalette)
 export const PasswordIcon = makeIcon(MdOutlinePassword)
 export const PaperPlaneTiltIcon = makeIcon(MdOutlineSend)
 export const PaperclipIcon = makeIcon(MdAttachFile)
-// Equivalentes de `BorderColorOutlined` y `DeleteOutlined` de MUI: los dos
-// vienen del mismo set (Material), así que `react-icons/md` los trae con el
-// prefijo `MdOutline`. Se repunta acá y no en cada uso para que el lápiz y el
-// tacho sean los mismos en toda la app (acciones de fila, diálogos, filtros).
+// Equivalentes de `BorderColorOutlined`, `DeleteOutlined` y `PermMediaOutlined`
+// de MUI: los tres vienen del mismo set (Material), así que `react-icons/md`
+// los trae con el prefijo `MdOutline`. Se repunta acá y no en cada uso para
+// que queden consistentes en toda la app (acciones de fila, diálogos, filtros).
 export const PencilIcon = makeIcon(MdOutlineBorderColor)
+export const PermMediaOutlinedIcon = makeIcon(MdOutlinePermMedia)
 export const PlusCircleIcon = makeIcon(MdAddCircleOutline)
 export const PlusIcon = makeIcon(MdAdd)
 export const QuestionIcon = makeIcon(MdHelpOutline)
+export const RemoveCircleOutlineIcon = makeIcon(MdRemoveCircleOutline)
 export const ShieldCheckIcon = makeIcon(MdVerifiedUser)
 export const ShieldIcon = makeIcon(MdOutlineShield)
 export const ShieldOffIcon = makeIcon(MdOutlineRemoveModerator)
