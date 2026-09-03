@@ -109,30 +109,17 @@ export type CreateReservationFormValues = z.infer<typeof createReservationFormSc
 
 // ── Matrícula ────────────────────────────────────────────────────────────────
 
-// Catálogo real de `ESTADO_MATRICULA` (TLISTA_VALOR) — ver `MatriculaStatus`
-// en `types/matricula.ts`.
-export const MATRICULA_STATUSES = [
-  "cursando",
-  "aprobado",
-  "reprobado",
-  "retirado",
-  "graduado",
-  "promovido_anticipadamente",
-  "trasladado",
-  "sin_definir",
-  "desertor",
-  "esperando_aprobacion",
-  "rechazado",
-] as const
-
 // Filtros del buscador: mismo criterio que `establishmentFiltersFormSchema`
 // (texto libre + estado, todo string/array para que el form y la URL
-// serialicen igual). Sede/Jornada/Grado/Grupo son la misma cascada que
+// serialicen igual). El valor de `statuses` es el `code` (`valor` de
+// TLISTA_VALOR ESTADO_MATRICULA, ver `use-matricula-status-options.ts`), no
+// un enum fijo -- así el filtro no se desincroniza si el catálogo real suma
+// un estado nuevo. Sede/Jornada/Grado/Grupo son la misma cascada que
 // "Modificar" (ver `dialog-modificar-matricula.tsx`): strings vacíos cuando
 // no se eligió, para que el form y la URL serialicen igual que el resto.
 export const matriculaFiltersFormSchema = z.object({
   search: z.string(),
-  statuses: z.array(z.enum(MATRICULA_STATUSES)),
+  statuses: z.array(z.string()),
   campus: z.string(),
   // No es el `Shift` de reservas — la Jornada de matrícula sale del catálogo
   // de `TLISTA_VALOR` (ver `types/matricula.ts`), sin un conjunto fijo.
@@ -149,7 +136,7 @@ export const matriculaSearchSchema = z.object({
   sortBy: z.string().optional().catch(undefined),
   sortDir: z.enum(["asc", "desc"]).optional().catch(undefined),
   search: z.string().optional().catch(undefined),
-  statuses: z.array(z.enum(MATRICULA_STATUSES)).optional().catch(undefined),
+  statuses: z.array(z.string()).optional().catch(undefined),
   campus: z.string().optional().catch(undefined),
   shift: z.string().optional().catch(undefined),
   grade: z.coerce.number().optional().catch(undefined),

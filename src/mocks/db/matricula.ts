@@ -22,17 +22,17 @@ function pickJornada(): string {
 
 function pickStatus(): MatriculaStatus {
   return faker.helpers.weightedArrayElement([
-    { value: "cursando", weight: 70 },
-    { value: "retirado", weight: 10 },
-    { value: "aprobado", weight: 8 },
-    { value: "reprobado", weight: 4 },
-    { value: "promovido_anticipadamente", weight: 3 },
-    { value: "graduado", weight: 2 },
-    { value: "trasladado", weight: 1 },
-    { value: "desertor", weight: 1 },
-    { value: "esperando_aprobacion", weight: 1 },
-    { value: "sin_definir", weight: 1 },
-    { value: "rechazado", weight: 1 },
+    { value: "Cursando", weight: 70 },
+    { value: "Retirado", weight: 10 },
+    { value: "Aprobado", weight: 8 },
+    { value: "Reprobado", weight: 4 },
+    { value: "Promovido Anticipadamente", weight: 3 },
+    { value: "Graduado", weight: 2 },
+    { value: "Trasladado", weight: 1 },
+    { value: "Desertor", weight: 1 },
+    { value: "Esperando Aprobación", weight: 1 },
+    { value: "Sin definir", weight: 1 },
+    { value: "Rechazado", weight: 1 },
   ])
 }
 
@@ -111,7 +111,7 @@ export function createMatriculaRow(id: string, details: MatriculaDetails): Matri
 
 export function insertMatricula(input: CreateMatriculaInput): Matricula {
   const id = String(nextMatriculaId++)
-  const details: MatriculaDetails = { ...input, status: input.academic.status || "cursando" }
+  const details: MatriculaDetails = { ...input, status: input.academic.status || "Cursando", pkTpadre: null, pkUsuarioEstudiante: null, pkUsuarioAcudiente: null }
   const row = createMatriculaRow(id, details)
 
   matriculaDetailsDb.set(id, details)
@@ -123,12 +123,13 @@ export function updateMatriculaDetails(id: string, input: CreateMatriculaInput):
   const index = matriculaDb.findIndex((item) => item.id === id)
   if (index < 0) return null
 
-  // "Estado de la matrícula" ya es un campo del formulario (sección
-  // "Información de matrícula") — si no se tocó, se conserva el que ya
-  // tenía la fila.
+
   const details: MatriculaDetails = {
     ...input,
     status: input.academic.status || matriculaDb[index].status,
+    pkTpadre: null,
+    pkUsuarioEstudiante: null,
+    pkUsuarioAcudiente: null,
   }
   const row = createMatriculaRow(id, details)
 
@@ -227,6 +228,9 @@ function synthesizeMatriculaDetails(row: Matricula): MatriculaDetails {
       firstName: guardianName,
     },
     status: row.status,
+    pkTpadre: null,
+    pkUsuarioEstudiante: null,
+    pkUsuarioAcudiente: null,
   }
 }
 
@@ -247,7 +251,7 @@ export function getMatriculaDetails(id: string): { matricula: Matricula; details
 export function findActiveMatriculaByDocument(documentNumber: string): Matricula | null {
   const needle = documentNumber.trim()
   if (!needle) return null
-  return matriculaDb.find((item) => item.documentNumber === needle && item.status === "cursando") ?? null
+  return matriculaDb.find((item) => item.documentNumber === needle && item.status === "Cursando") ?? null
 }
 
 export function deleteMatriculaById(id: string) {
@@ -315,8 +319,8 @@ export function applyBulkMatriculaChange(request: BulkMatriculaChangeRequest): B
       name: `${before.firstName} ${before.lastName}`,
       fromCampus: before.campus,
       toCampus,
-      fromGrade: before.grade,
-      toGrade,
+      fromGrade: String(before.grade),
+      toGrade: String(toGrade),
       fromGroup: before.group,
       toGroup,
     })

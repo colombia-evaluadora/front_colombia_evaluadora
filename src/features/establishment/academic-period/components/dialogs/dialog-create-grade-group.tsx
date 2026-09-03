@@ -216,7 +216,7 @@ export function CreateGradeGroupDialog({
                   <FieldLabel htmlFor={field.name}>Grupo*</FieldLabel>
                   <Input
                     id={field.name}
-                    maxLength={130}
+                    maxLength={2}
                     placeholder="Agregar"
                     value={field.state.value}
                     onBlur={field.handleBlur}

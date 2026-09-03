@@ -12,18 +12,13 @@ import {
   ComboboxFieldValue,
 } from "@/components/ui/combobox"
 
-import { MATRICULA_STATUSES, type MatriculaFiltersFormInput } from "@/features/coverage/api/schema"
-import { MATRICULA_STATUS_LABELS } from "@/features/coverage/api/ui-mappings-matricula"
+import type { MatriculaFiltersFormInput } from "@/features/coverage/api/schema"
 import { useMatriculaCampusesQuery } from "@/features/coverage/api/query/use-matricula-campuses-query"
 import { useMatriculaDependentCatalogsQuery } from "@/features/coverage/api/query/use-matricula-dependent-catalogs-query"
+import { useMatriculaStatusOptionsQuery } from "@/features/coverage/api/query/use-matricula-status-options"
 import { toSelectItemsMap } from "@/lib/catalog-options"
 
 const SEARCH_INPUT_ID = "matricula-search"
-
-const STATUS_OPTIONS = MATRICULA_STATUSES.map((status) => ({
-  value: status,
-  label: MATRICULA_STATUS_LABELS[status],
-}))
 
 interface SearchMatriculaProps {
   filters: MatriculaFiltersFormInput
@@ -53,6 +48,7 @@ export function SearchMatricula({
     shift: draftShift || undefined,
     grade: draftGrade ? Number(draftGrade) : undefined,
   })
+  const { data: STATUS_OPTIONS = [] } = useMatriculaStatusOptionsQuery()
 
   // Igual que en establecimientos: el estado se escribe dentro del input,
   // `estado:(Activo)`. Ver `@/components/search/query-syntax`.
@@ -62,7 +58,7 @@ export function SearchMatricula({
       freeText: { key: "texto", field: "search" },
       terms: [optionsTerm("estado", "statuses", STATUS_OPTIONS)],
     }),
-    [],
+    [STATUS_OPTIONS],
   )
 
   const { search, setSearch, freeText } = useQuerySearch({ syntax, filters, applyFilters })
