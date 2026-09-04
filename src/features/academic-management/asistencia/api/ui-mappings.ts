@@ -59,6 +59,11 @@ export function gradoDeGrupo(grupo: string): string {
   return `${grupo.slice(0, -2) || grupo}°`
 }
 
+/** "6" -> "6°" para mostrar -- el `grado_valor` real llega sin el símbolo. */
+export function formatGrado(grado: string): string {
+  return grado.endsWith("°") ? grado : `${grado}°`
+}
+
 export interface GrupoCatalogEntry {
   value: number
   label: string
@@ -81,7 +86,7 @@ export function catalogosDeSesiones(sesiones: SesionCalendario[]): {
 
   for (const s of sesiones) {
     if (!grupos.has(s.fk_grupo)) {
-      grupos.set(s.fk_grupo, { value: s.fk_grupo, label: s.grupo, grado: gradoDeGrupo(s.grupo) })
+      grupos.set(s.fk_grupo, { value: s.fk_grupo, label: s.grupo, grado: s.grado })
     }
     if (!asignaturas.has(s.fk_asignatura)) {
       asignaturas.set(s.fk_asignatura, { value: s.fk_asignatura, label: s.asignatura })

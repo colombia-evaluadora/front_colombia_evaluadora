@@ -12,10 +12,10 @@ import type {
 import { gradoDeGrupo } from "@/features/academic-management/asistencia/api/ui-mappings"
 
 const GRUPOS = [
-  { fk_grupo: 601, grupo: "601", jornada: "C" },
-  { fk_grupo: 602, grupo: "602", jornada: "T" },
-  { fk_grupo: 701, grupo: "701", jornada: "C" },
-  { fk_grupo: 801, grupo: "801", jornada: "T" },
+  { fk_grupo: 601, grupo: "601", grado: "6", jornada: "C" },
+  { fk_grupo: 602, grupo: "602", grado: "6", jornada: "T" },
+  { fk_grupo: 701, grupo: "701", grado: "7", jornada: "C" },
+  { fk_grupo: 801, grupo: "801", grado: "8", jornada: "T" },
 ]
 
 const ASIGNATURAS = [
@@ -85,6 +85,7 @@ export function generarSesionesMes(sedeId: number, anio: number, mes: number): S
           bloque,
           fk_grupo: grupo.fk_grupo,
           grupo: grupo.grupo,
+          grado: grupo.grado,
           jornada: grupo.jornada,
           fk_asignatura: asignatura.fk_asignatura,
           asignatura: asignatura.asignatura,
@@ -348,7 +349,8 @@ export function generarEstudiantesSesion(params: AsistenciaSesionEstudiantesPara
       claveRegistroManual(est.fkMatricula, params.GRUPO, params.ASIGNATURA, params.FECHA, bloque),
     )
     return {
-      fk_matricula: est.fkMatricula,
+      fk_tmatricula: est.fkMatricula,
+      fk_testudiante: est.fkMatricula,
       estudiante: est.nombre,
       documento: est.documento,
       pk_tasistencia: registro?.pk_tasistencia ?? null,

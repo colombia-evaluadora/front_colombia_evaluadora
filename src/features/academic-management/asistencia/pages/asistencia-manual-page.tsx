@@ -72,7 +72,7 @@ function SesionTabContent({ sesion, fecha }: { sesion: SesionTab; fecha: string 
     if (precargado.current || !roster) return
     const inicial: Record<number, TipoAsistencia> = {}
     for (const est of roster) {
-      if (est.tipo_asistencia_valor != null) inicial[est.fk_matricula] = est.tipo_asistencia_valor
+      if (est.tipo_asistencia_valor != null) inicial[est.fk_tmatricula] = est.tipo_asistencia_valor
     }
     if (Object.keys(inicial).length > 0) setSeleccion(inicial)
     precargado.current = true
@@ -113,7 +113,7 @@ function SesionTabContent({ sesion, fecha }: { sesion: SesionTab; fecha: string 
     columns,
     data: rows,
     pageCount,
-    getRowId: (row) => String(row.fk_matricula),
+    getRowId: (row) => String(row.fk_tmatricula),
     pageIndex,
     pageSize,
     goToPage: setPageIndex,

@@ -8,6 +8,12 @@ export interface SesionCalendario {
   bloque: number
   fk_grupo: number
   grupo: string
+  // Confirmado contra `fn_asistencia_calendario`: el backend manda el
+  // nombre completo (`grado`/`jornada`, ej. "Pre-Jardín"/"Mañana") y el
+  // código corto de `TLISTA_VALOR` (`grado_valor`/`jornada_valor`, ej.
+  // "-2"/"M") -- acá se guarda el `_valor` (ver `normalizarSesion`), que es
+  // lo que se usa para agrupar/mostrar en el calendario.
+  grado: string
   jornada: string
   fk_asignatura: number
   asignatura: string
@@ -61,7 +67,10 @@ export interface AsistenciaSesionEstudiantesParams {
 }
 
 export interface RosterEstudiante {
-  fk_matricula: number
+  // Confirmado contra la respuesta real: NO es `fk_matricula` -- el backend
+  // manda el nombre completo de tabla (`TMATRICULA`/`TESTUDIANTE`).
+  fk_tmatricula: number
+  fk_testudiante: number
   estudiante: string
   documento: string
   pk_tasistencia: number | null
@@ -72,7 +81,7 @@ export interface RosterEstudiante {
   soporte_nombre: string | null
   hora_inicio: string | null
   hora_fin: string | null
-  fk_tperiodo_evaluacion: number
+  fk_tperiodo_evaluacion: number | null
   total_estudiantes: number
   registrados: number
 }
