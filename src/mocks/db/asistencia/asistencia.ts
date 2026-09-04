@@ -1,8 +1,11 @@
 import type {
   AsistenciaQueryFilters,
   AsistenciaQueryRow,
+  AsistenciaRegistrarRequest,
+  AsistenciaSesionEstudiantesParams,
   EstadoSesion,
   ResumenHoras,
+  RosterEstudiante,
   SesionCalendario,
   TipoAsistencia,
 } from "@/features/academic-management/asistencia/api/types/asistencia"
@@ -294,27 +297,108 @@ export function generarSeguimiento(
   return rows.map((r) => ({ ...r, total_estudiantes: totalEstudiantes, ausentes, total_count: totalCount }))
 }
 
-// ── Roster de un grupo (pantalla "Asistencia manual") ──────────────────────
-// MOCK-ONLY: no hay todavía un endpoint real "estudiantes de un grupo" en el
-// contrato de Asistencias (V220/V221 solo cubren calendario/resumen/
-// seguimiento/registrar) -- falta confirmar con back si esto sale de
-// `fn_matricula_listar` filtrado por grupo o de una función propia.
-export interface RosterEstudiante {
+// ── Padrón de sesión (GET /asistencias/sesion/estudiantes, pantalla
+// "Asistencia manual") ──────────────────────────────────────────────────────
+
+interface EstudianteBase {
   fkMatricula: number
   nombre: string
+  documento: string
 }
 
-export function generarRosterGrupo(fkGrupo: number): RosterEstudiante[] {
-  // Subconjunto determinístico por grupo (no todos los grupos tienen a
-  // todos los estudiantes) -- rota el punto de partida para que cada grupo
-  // se vea distinto, mismo criterio que el resto de estos generadores.
+/** Subconjunto determinístico por grupo (no todos los grupos tienen a todos los estudiantes). */
+function padronBaseGrupo(fkGrupo: number): EstudianteBase[] {
   const offset = fkGrupo % ESTUDIANTES.length
   const count = 6 + (fkGrupo % 3)
   return Array.from({ length: count }, (_, i) => {
     const estudiante = ESTUDIANTES[(offset + i) % ESTUDIANTES.length]
+    return { fkMatricula: fkGrupo * 1000 + i, nombre: estudiante.nombre, documento: estudiante.documento }
+  })
+}
+
+interface RegistroManual {
+  pk_tasistencia: number
+  tipo_asistencia_valor: TipoAsistencia
+  observacion: string | null
+  fk_soporte_archivo: number | null
+  soporte_nombre: string | null
+}
+
+// Persiste, por `(matrícula, grupo, asignatura, fecha, bloque)`, lo que ya
+// se registró -- el mock no tiene un TASISTENCIA real en memoria, así que
+// sin esto un POST /registrar "funcionaría" pero el siguiente GET
+// /sesion/estudiantes volvería a mostrar "Seleccionar" en vez del estado
+// recién guardado.
+const registrosManuales = new Map<string, RegistroManual>()
+let siguientePkManual = 500000
+
+function claveRegistroManual(fkMatricula: number, fkGrupo: number, fkAsignatura: number, fecha: string, bloque: number): string {
+  return `${fkMatricula}-${fkGrupo}-${fkAsignatura}-${fecha}-${bloque}`
+}
+
+export function generarEstudiantesSesion(params: AsistenciaSesionEstudiantesParams): RosterEstudiante[] {
+  const bloque = params.BLOQUE ?? 1
+  const base = padronBaseGrupo(params.GRUPO)
+  const registrados = base.filter((est) =>
+    registrosManuales.has(claveRegistroManual(est.fkMatricula, params.GRUPO, params.ASIGNATURA, params.FECHA, bloque)),
+  ).length
+
+  return base.map((est) => {
+    const registro = registrosManuales.get(
+      claveRegistroManual(est.fkMatricula, params.GRUPO, params.ASIGNATURA, params.FECHA, bloque),
+    )
     return {
-      fkMatricula: fkGrupo * 1000 + i,
-      nombre: estudiante.nombre,
+      fk_matricula: est.fkMatricula,
+      estudiante: est.nombre,
+      documento: est.documento,
+      pk_tasistencia: registro?.pk_tasistencia ?? null,
+      tipo_asistencia_valor: registro?.tipo_asistencia_valor ?? null,
+      tipo_asistencia: registro ? TIPO_ASISTENCIA_NOMBRE[registro.tipo_asistencia_valor] : null,
+      observacion: registro?.observacion ?? null,
+      fk_soporte_archivo: registro?.fk_soporte_archivo ?? null,
+      soporte_nombre: registro?.soporte_nombre ?? null,
+      hora_inicio: null,
+      hora_fin: null,
+      fk_tperiodo_evaluacion: 1,
+      total_estudiantes: base.length,
+      registrados,
     }
   })
+}
+
+/** POST /asistencias/registrar -- persiste `MARCAR_TODOS`/`REGISTROS` en `registrosManuales` y marca la sesión. */
+export function registrarAsistenciaManual(body: AsistenciaRegistrarRequest): number {
+  marcarSesionRegistrada(body.GRUPO, body.ASIGNATURA, body.FECHA, body.BLOQUE)
+
+  function guardar(fkMatricula: number, tipo: TipoAsistencia, observacion?: string | null, fkArchivo?: unknown) {
+    const key = claveRegistroManual(fkMatricula, body.GRUPO, body.ASIGNATURA, body.FECHA, body.BLOQUE)
+    const existente = registrosManuales.get(key)
+    const tieneArchivoNuevo = fkArchivo != null
+    registrosManuales.set(key, {
+      pk_tasistencia: existente?.pk_tasistencia ?? siguientePkManual++,
+      tipo_asistencia_valor: tipo,
+      observacion: observacion ?? existente?.observacion ?? null,
+      fk_soporte_archivo: tieneArchivoNuevo ? Number(fkArchivo) || siguientePkManual : (existente?.fk_soporte_archivo ?? null),
+      soporte_nombre: tieneArchivoNuevo
+        ? (typeof fkArchivo === "object" && fkArchivo && "name" in fkArchivo ? String((fkArchivo as { name: unknown }).name) : "soporte.pdf")
+        : (existente?.soporte_nombre ?? null),
+    })
+  }
+
+  if (body.REGISTROS?.length) {
+    for (const r of body.REGISTROS) {
+      guardar(r.fkMatricula, r.tipoAsistencia, r.observacion, r.fkArchivo)
+    }
+    return body.REGISTROS.length
+  }
+
+  if (body.MARCAR_TODOS != null) {
+    const base = padronBaseGrupo(body.GRUPO)
+    for (const est of base) {
+      guardar(est.fkMatricula, body.MARCAR_TODOS)
+    }
+    return base.length
+  }
+
+  return 0
 }

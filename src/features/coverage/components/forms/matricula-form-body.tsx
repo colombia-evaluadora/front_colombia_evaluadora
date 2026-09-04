@@ -24,6 +24,7 @@ interface MatriculaFormBodyProps {
   disabled?: boolean
   showStatus?: boolean
   fieldSettings?: MatriculaFieldSettingsMap
+  academicDisabled?: boolean
 }
 
 
@@ -36,6 +37,7 @@ export function MatriculaFormBody({
   disabled = false,
   showStatus = true,
   fieldSettings,
+  academicDisabled,
 }: MatriculaFormBodyProps) {
   return (
     <fieldset disabled={disabled} className="contents border-0 p-0 m-0 min-w-0">
@@ -46,6 +48,7 @@ export function MatriculaFormBody({
         invalidFields={invalidFields}
         showStatus={showStatus}
         fieldSettings={fieldSettings}
+        academicDisabled={academicDisabled}
       />
 
       <MatriculaStudentSection
