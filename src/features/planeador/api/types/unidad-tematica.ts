@@ -13,6 +13,23 @@ import type { ActividadStatus } from "@/features/planeador/api/types/actividad"
 export type MetodoCalculo = "Ponderado" | "Promedio simple" | "Suma de puntos"
 
 /**
+ * Enfoque pedagógico del referente curricular asociado a la unidad —
+ * mismo catálogo de dos valores que `PEDAGOGICAL_APPROACHES` en
+ * `academic-management/curricular-references/api/catalogs.ts`
+ * ("Evaluativo" / "Formativo"). Cada unidad temática cuelga de un
+ * referente curricular; acá se guarda el enfoque de ese referente
+ * directamente en la unidad (sin ir a buscarlo a la tabla de
+ * referentes) porque es lo único de él que el Planeador necesita.
+ *
+ * Gobierna una regla de negocio: una unidad con enfoque FORMATIVO no
+ * admite actividades sumativas — el seguimiento formativo no pondera
+ * nota. El form de actividad (`form-editar-actividad.tsx`,
+ * `EvaluacionSection`) bloquea "¿Es evaluación sumativa?" en "No"
+ * cuando la unidad seleccionada es formativa.
+ */
+export type EnfoquePedagogico = "Evaluativo" | "Formativo"
+
+/**
  * Criterio de la rúbrica de la unidad. NO es el `Criterio` de `Actividad`: acá
  * el criterio se describe en los cuatro niveles de desempeño (una columna por
  * nivel en la tabla), mientras que el de la actividad solo guarda el nivel
@@ -44,6 +61,8 @@ export interface UnidadTematica {
   nombre: string
   /** Área/competencia — "Comunicativa", "Cognitiva"… */
   area: string
+  /** Ver `EnfoquePedagogico`. */
+  enfoquePedagogico: EnfoquePedagogico
   status: ActividadStatus
   /** `yyyy-MM-dd`. */
   fechaInicio: string

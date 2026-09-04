@@ -13,6 +13,7 @@ export const unidadesTematicasDb: UnidadTematica[] = [
     id: "u1",
     nombre: "Análisis de un texto argumentativo",
     area: "Comunicativa",
+    enfoquePedagogico: "Evaluativo",
     status: "in-progress",
     fechaInicio: "2025-02-10",
     fechaFin: "2025-02-28",
@@ -106,6 +107,7 @@ export const unidadesTematicasDb: UnidadTematica[] = [
     id: "u2",
     nombre: "Resolución de problemas con números enteros",
     area: "Cognitiva",
+    enfoquePedagogico: "Evaluativo",
     status: "in-progress",
     fechaInicio: "2025-02-10",
     fechaFin: "2025-02-28",
@@ -190,6 +192,12 @@ export const unidadesTematicasDb: UnidadTematica[] = [
     id: "u3",
     nombre: "Interpretación de gráficos estadísticos",
     area: "Matemática",
+    // Unidad con enfoque formativo: sus actividades no admiten
+    // `esEvaluativa: true` — ver `planeador.ts`, actividad 607
+    // (única del seed que cuelga de esta unidad y que se corrigió
+    // a `esEvaluativa: false` para que el seed sea consistente con
+    // la regla desde el arranque).
+    enfoquePedagogico: "Formativo",
     status: "completed",
     fechaInicio: "2025-02-10",
     fechaFin: "2025-02-28",
@@ -257,6 +265,11 @@ export const unidadesTematicasDb: UnidadTematica[] = [
     id: "u4",
     nombre: "Clasificación de los seres vivos",
     area: "Científica",
+    // Sin actividades en `planeador.ts` — la segunda unidad formativa
+    // del seed, útil para probar la regla desde "Identificación de la
+    // actividad" (cambiar la unidad de cualquier actividad a esta y
+    // ver cómo "¿Es evaluación sumativa?" se bloquea en "No").
+    enfoquePedagogico: "Formativo",
     status: "cancelled",
     fechaInicio: "2025-02-10",
     fechaFin: "2025-02-28",
