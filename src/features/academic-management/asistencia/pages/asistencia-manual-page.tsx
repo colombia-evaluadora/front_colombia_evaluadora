@@ -55,12 +55,28 @@ function formatEncabezadoSesion(fecha: string, horaInicio: string | null, horaFi
 
 function SesionTabContent({ sesion, fecha }: { sesion: SesionTab; fecha: string }) {
   const { notify } = useNotify()
-  const { data: roster, isPending, isError, refetch } = useAsistenciaRosterQuery(sesion.fkGrupo)
+  const { data: roster, isPending, isError, refetch } = useAsistenciaRosterQuery({
+    GRUPO: sesion.fkGrupo,
+    ASIGNATURA: sesion.fkAsignatura,
+    FECHA: fecha,
+    BLOQUE: sesion.bloque,
+  })
   const [seleccion, setSeleccion] = React.useState<Record<number, TipoAsistencia>>({})
   const [soporte, setSoporte] = React.useState<Record<number, File>>({})
   const registrar = useAsistenciaRegistrarMutation()
 
   const roster_ = React.useMemo(() => roster ?? [], [roster])
+
+  const precargado = React.useRef(false)
+  React.useEffect(() => {
+    if (precargado.current || !roster) return
+    const inicial: Record<number, TipoAsistencia> = {}
+    for (const est of roster) {
+      if (est.tipo_asistencia_valor != null) inicial[est.fk_tmatricula] = est.tipo_asistencia_valor
+    }
+    if (Object.keys(inicial).length > 0) setSeleccion(inicial)
+    precargado.current = true
+  }, [roster])
   const columns = React.useMemo(
     () =>
       buildColumnsAsistenciaManual({
@@ -97,7 +113,7 @@ function SesionTabContent({ sesion, fecha }: { sesion: SesionTab; fecha: string 
     columns,
     data: rows,
     pageCount,
-    getRowId: (row) => String(row.fkMatricula),
+    getRowId: (row) => String(row.fk_tmatricula),
     pageIndex,
     pageSize,
     goToPage: setPageIndex,

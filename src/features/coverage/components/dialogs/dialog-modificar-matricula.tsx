@@ -119,16 +119,13 @@ export function ModificarMatriculaDialog({
   const sameGradeOrigin = selected.every((m) => m.grade === selected[0]?.grade)
   const commonGrade = sameGradeOrigin ? selected[0]?.grade : undefined
 
-  // Corregir/promover/reubicar (cambio de Sede/Grado/Grupo) solo aplica
-  // mientras el estudiante está cursando -- el resto son estados finales o
-  // ya movidos a otra matrícula (ver `move-matricula.ts`).
   const allCursando = selected.length > 0 && selected.every((m) => m.status === "Cursando")
+  const hasFinalStatus = selected.some((m) => m.status === "Reubicado" || m.status === "Promovido")
+  useEffect(() => {
+    if (hasFinalStatus && accion !== "sinCambios") setAccion("sinCambios")
+  }, [hasFinalStatus, accion])
 
   // Sede → Jornada → Grado → Grupo — ver
-  // `use-matricula-dependent-catalogs-query.ts` (mock determinista, listo
-  // para el endpoint real de oferta académica por sede). "Grupo" depende de
-  // que el usuario haya elegido Grado — no se infiere solo del grado común
-  // de la selección, aunque coincida.
   const {
     data: dependentCatalogs,
     isPeriodoError,
@@ -218,73 +215,118 @@ export function ModificarMatriculaDialog({
     return "corregir"
   }
 
+  async function applyAccion() {
+    // "Acción sobre la matrícula" es independiente de Sede/Grado/Grupo — no
+    // tiene diálogo de confirmación propio, se aplica junto con el resto acá.
+    if (accion === "sinCambios") return
+
+    // Retirar solo aplica desde "Cursando" y reingresar solo desde
+    // "Retirado" (mismo criterio que los diálogos individuales,
+    // `dialog-retirar-matricula.tsx`/`dialog-reingresar-matricula.tsx`) --
+    // en una selección mixta, el estudiante que ya está en el estado destino
+    // no es un error del usuario, así que ni se manda ni cuenta como falla.
+    const requiredStatus = accion === "retirar" ? "Cursando" : "Retirado"
+    const applicable = selected.filter((m) => m.status === requiredStatus)
+    const alreadyDone = selected.length - applicable.length
+    const mutate = accion === "retirar" ? retireMutation.mutateAsync : reingresarMutation.mutateAsync
+
+    const results = await Promise.allSettled(applicable.map((m) => mutate(m.id)))
+    const failed = results.filter((r) => r.status === "rejected").length
+    const accionLabel = accion === "retirar" ? "retirados" : "reingresados"
+
+    if (failed > 0) {
+      notify(`No se pudo aplicar el cambio a ${failed} de ${applicable.length} estudiante(s).`, {
+        variant: "error",
+      })
+    } else if (applicable.length === 0) {
+      notify(`Ningún estudiante seleccionado necesitaba este cambio (ya estaban ${accionLabel}).`, {
+        variant: "error",
+      })
+    } else if (alreadyDone > 0) {
+      notify(
+        `${applicable.length} estudiante(s) ${accionLabel}. ${alreadyDone} ya estaban en ese estado y no se tocaron.`,
+      )
+    } else {
+      notify(accion === "retirar" ? "Estudiantes retirados." : "Estudiantes reingresados.")
+    }
+  }
+
+  async function applyMovement(
+    gradeChange: BulkGradeChange | null,
+    sedeChangeConfirm: CambioSedeConfirmResult | null,
+  ) {
+    if (!(sedeChanged || gradoChanged || grupoChanged)) return
+
+    const targetGrupoId = dependentCatalogs?.groups.find((g) => g.codigo === grupo)?.id
+    if (targetGrupoId == null) {
+      throw new Error("No se pudo identificar el grupo destino para el movimiento.")
+    }
+
+    const kind = resolveMoveKind(gradeChange, sedeChangeConfirm)
+    const needsDetails = kind !== "corregir"
+    const motivo = needsDetails
+      ? (gradoChanged ? gradeChange?.reason : sedeChangeConfirm?.reason)
+      : undefined
+    const soporte = needsDetails
+      ? (gradoChanged ? gradeChange?.supportFile : sedeChangeConfirm?.supportFile)
+      : undefined
+
+    const result = await moveMatricula.mutateAsync({
+      kind,
+      ids: selected.map((m) => Number(m.id)),
+      grupoDestino: targetGrupoId,
+      motivo,
+      soporte,
+    })
+
+    const movedByOriginalId = new Map(
+      (result.matriculas ?? []).map((m) => [m.pkTmatriculaAnterior, m]),
+    )
+    setSummary({
+      students: selected.map((original) => {
+        const moved = movedByOriginalId.get(Number(original.id))
+        return {
+          id: String(moved?.pkTmatriculaNueva ?? moved?.pkTmatriculaAnterior ?? original.id),
+          name: `${original.firstName} ${original.lastName}`,
+          fromCampus: original.campus,
+          toCampus: moved ? "" : sede || original.campus,
+          fromGrade: moved?.anterior.grado ?? gradeLabel(original.grade),
+          toGrade: moved?.nuevo.grado ?? (grado ? gradeLabel(Number(grado)) : gradeLabel(original.grade)),
+          fromGroup: moved?.anterior.grupo ?? original.group,
+          toGroup: moved?.nuevo.grupo ?? (grupo || original.group),
+        }
+      }),
+    })
+  }
+
   async function applyChanges(
     gradeChange: BulkGradeChange | null,
     _groupChange: BulkGroupChange | null,
     sedeChangeConfirm: CambioSedeConfirmResult | null,
   ) {
-    // "Acción sobre la matrícula" es independiente de Sede/Grado/Grupo — no
-    // tiene diálogo de confirmación propio, se aplica junto con el resto acá.
-    if (accion !== "sinCambios") {
-      const mutate = accion === "retirar" ? retireMutation.mutateAsync : reingresarMutation.mutateAsync
-      const results = await Promise.allSettled(selected.map((m) => mutate(m.id)))
-      const failed = results.filter((r) => r.status === "rejected").length
-      if (failed > 0) {
-        notify(`No se pudo aplicar el cambio a ${failed} de ${selected.length} estudiante(s).`, {
-          variant: "error",
-        })
+    // Movimiento (corregir/reubicar/promover) exige que la matrícula esté
+    // "Cursando" -- si la acción es "retirar", hay que mover PRIMERO y
+    // retirar DESPUÉS, porque una vez retirada ya no se puede mover. Para
+    // "reingresar" es al revés: la matrícula está retirada hasta que se
+    // reingresa, así que el movimiento (que exige "Cursando") va después.
+    try {
+      if (accion === "retirar") {
+        await applyMovement(gradeChange, sedeChangeConfirm)
+        await applyAccion()
       } else {
-        notify(accion === "retirar" ? "Estudiantes retirados." : "Estudiantes reingresados.")
+        await applyAccion()
+        await applyMovement(gradeChange, sedeChangeConfirm)
       }
-    }
-
-    if (sedeChanged || gradoChanged || grupoChanged) {
-      const targetGrupoId = dependentCatalogs?.groups.find((g) => g.codigo === grupo)?.id
-      if (targetGrupoId == null) {
-        throw new Error("No se pudo identificar el grupo destino para el movimiento.")
+    } finally {
+      // Mismo criterio que `DeleteAcademicPeriodDialog`: el diálogo se
+      // cierra pase lo que pase -- el error ya se avisa por notify, dejarlo
+      // abierto solo repite el formulario con datos que van a volver a
+      // fallar igual (ej. matrícula que ya quedó Retirada).
+      setOpen(false)
+      reset()
+      if (!(sedeChanged || gradoChanged || grupoChanged)) {
+        resetSelection()
       }
-
-      const kind = resolveMoveKind(gradeChange, sedeChangeConfirm)
-      const needsDetails = kind !== "corregir"
-      const motivo = needsDetails
-        ? (gradoChanged ? gradeChange?.reason : sedeChangeConfirm?.reason)
-        : undefined
-      const soporte = needsDetails
-        ? (gradoChanged ? gradeChange?.supportFile : sedeChangeConfirm?.supportFile)
-        : undefined
-
-      const result = await moveMatricula.mutateAsync({
-        kind,
-        ids: selected.map((m) => Number(m.id)),
-        grupoDestino: targetGrupoId,
-        motivo,
-        soporte,
-      })
-
-      const movedByOriginalId = new Map(
-        (result.matriculas ?? []).map((m) => [m.pkTmatriculaAnterior, m]),
-      )
-      setSummary({
-        students: selected.map((original) => {
-          const moved = movedByOriginalId.get(Number(original.id))
-          return {
-            id: String(moved?.pkTmatriculaNueva ?? moved?.pkTmatriculaAnterior ?? original.id),
-            name: `${original.firstName} ${original.lastName}`,
-            fromCampus: original.campus,
-            toCampus: moved ? "" : sede || original.campus,
-            fromGrade: moved?.anterior.grado ?? gradeLabel(original.grade),
-            toGrade: moved?.nuevo.grado ?? (grado ? gradeLabel(Number(grado)) : gradeLabel(original.grade)),
-            fromGroup: moved?.anterior.grupo ?? original.group,
-            toGroup: moved?.nuevo.grupo ?? (grupo || original.group),
-          }
-        }),
-      })
-    }
-
-    setOpen(false)
-    reset()
-    if (!(sedeChanged || gradoChanged || grupoChanged)) {
-      resetSelection()
     }
   }
 
@@ -606,6 +648,7 @@ export function ModificarMatriculaDialog({
               <RadioGroup
                 value={accion}
                 onValueChange={(value) => value && setAccion(value as MatriculaAction)}
+                disabled={hasFinalStatus}
                 className="flex min-h-11 flex-row flex-wrap items-center gap-6 rounded-md border border-input px-3"
               >
                 <label className="flex items-center gap-2 text-sm">
@@ -621,6 +664,12 @@ export function ModificarMatriculaDialog({
                   Reingresar estudiante
                 </label>
               </RadioGroup>
+              {hasFinalStatus && (
+                <p className="text-xs text-muted-foreground">
+                  Hay estudiantes con matrícula Reubicada o Promovida en la selección -- ya quedaron
+                  reemplazados por una matrícula nueva y no se pueden retirar ni reingresar.
+                </p>
+              )}
             </Field>
           </div>
 
