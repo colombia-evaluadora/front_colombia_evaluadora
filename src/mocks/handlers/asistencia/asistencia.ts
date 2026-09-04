@@ -2,11 +2,11 @@ import { delay, http, HttpResponse } from "msw"
 
 import {
   aplicarEdicionAsistencia,
+  generarEstudiantesSesion,
   generarResumenHoras,
-  generarRosterGrupo,
   generarSeguimiento,
   generarSesionesMes,
-  marcarSesionRegistrada,
+  registrarAsistenciaManual,
   TIPO_ASISTENCIA_NOMBRE,
 } from "@/mocks/db/asistencia/asistencia"
 
@@ -74,35 +74,33 @@ export const asistenciaHandlers = [
 
     return HttpResponse.json({ rows })
   }),
-
-  // "Marcar todo como Asistió" (MARCAR_TODOS, sin REGISTROS) y "Asistencia
-  // manual" (REGISTROS por estudiante) -- el mock no persiste TASISTENCIA
-  // fila por fila, pero sí marca la sesión (grupo+asignatura+fecha+bloque)
-  // como registrada, para que el próximo GET /calendario la devuelva en
-  // REGISTRADA (ver `marcarSesionRegistrada`) y la celda del calendario
-  // (y el toast/invalidate del front) reflejen que sí se tomó asistencia.
   http.post("*/api/eval-col/asistencias/registrar", async ({ request }) => {
     await delay(300)
 
     const body = (await request.json()) as AsistenciaRegistrarRequest
-    const afectados = body.REGISTROS?.length ?? (body.MARCAR_TODOS != null ? 1 : 0)
-
-    if (afectados > 0) {
-      marcarSesionRegistrada(body.GRUPO, body.ASIGNATURA, body.FECHA, body.BLOQUE)
-    }
+    const afectados = registrarAsistenciaManual(body)
 
     return HttpResponse.json(afectados)
   }),
 
-  // MOCK-ONLY -- roster de un grupo para "Asistencia manual". No hay
-  // endpoint real todavía (ver `generarRosterGrupo` en el db mock).
-  http.get("*/api/eval-col/asistencias/roster", async ({ request }) => {
+ 
+  http.get("*/api/eval-col/asistencias/sesion/estudiantes", async ({ request }) => {
     await delay(200)
 
     const url = new URL(request.url)
     const grupo = Number(url.searchParams.get("GRUPO") ?? 0)
+    const asignatura = Number(url.searchParams.get("ASIGNATURA") ?? 0)
+    const fecha = url.searchParams.get("FECHA") ?? ""
+    const bloqueParam = url.searchParams.get("BLOQUE")
 
-    return HttpResponse.json(generarRosterGrupo(grupo))
+    return HttpResponse.json(
+      generarEstudiantesSesion({
+        GRUPO: grupo,
+        ASIGNATURA: asignatura,
+        FECHA: fecha,
+        ...(bloqueParam != null && { BLOQUE: Number(bloqueParam) }),
+      }),
+    )
   }),
 
   // Editar un registro puntual desde "Seguimiento". Campos ausentes = no se

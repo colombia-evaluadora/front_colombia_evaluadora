@@ -38,7 +38,6 @@ import {
   PlusIcon,
   RemoveCircleOutlineIcon,
   TrashIcon,
-  XIcon,
 } from "@/components/ui/icons"
 
 import type {
