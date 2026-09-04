@@ -2,6 +2,8 @@ packages: []
 
 allowBuilds:
   '@swc/core': true
+  canvas: false
+  core-js: false
   esbuild: true
   msw: true
   sharp: true

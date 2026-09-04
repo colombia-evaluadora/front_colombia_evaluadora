@@ -34,6 +34,7 @@ import {
 import { academicPeriodsSearchSchema } from "@/features/establishment/academic-period/api/schema"
 import {
   planeadorDetalleSearchSchema,
+  planeadorRecursoPreviewSearchSchema,
   planeadorSearchSchema,
   planeadorUnidadesSearchSchema,
 } from "@/features/planeador/api/schema"
@@ -146,9 +147,25 @@ const PlaneadorEditarActividadPage = lazyRouteComponent(
   () => import("@/features/planeador/pages/planeador-editar-actividad-page"),
   "PlaneadorEditarActividadPage"
 )
+const PlaneadorCrearActividadPage = lazyRouteComponent(
+  () => import("@/features/planeador/pages/planeador-crear-actividad-page"),
+  "PlaneadorCrearActividadPage"
+)
 const PlaneadorUnidadesPage = lazyRouteComponent(
   () => import("@/features/planeador/pages/planeador-unidades-page"),
   "PlaneadorUnidadesPage"
+)
+const PlaneadorCrearUnidadPage = lazyRouteComponent(
+  () => import("@/features/planeador/pages/planeador-crear-unidad-page"),
+  "PlaneadorCrearUnidadPage"
+)
+const PlaneadorEditarUnidadPage = lazyRouteComponent(
+  () => import("@/features/planeador/pages/planeador-editar-unidad-page"),
+  "PlaneadorEditarUnidadPage"
+)
+const PlaneadorRecursoPreviewPage = lazyRouteComponent(
+  () => import("@/features/planeador/pages/planeador-recurso-preview-page"),
+  "PlaneadorRecursoPreviewPage"
 )
 
 const MatriculaPage = lazyRouteComponent(
@@ -710,12 +727,35 @@ export const planeadorRoute = createRoute({
   component: PlaneadorPage,
 })
 
+export const planeadorActividadCrearRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.planeadorActividadCrear.path,
+  staticData: { breadcrumb: [PLANEADOR_CRUMB, { label: "Agregar" }] },
+  component: PlaneadorCrearActividadPage,
+})
+
 export const planeadorUnidadesRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.planeadorUnidades.path,
   validateSearch: planeadorUnidadesSearchSchema,
   staticData: { breadcrumb: [PLANEADOR_CRUMB, { label: "Unidad temática" }] },
   component: PlaneadorUnidadesPage,
+})
+
+export const planeadorUnidadCrearRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.planeadorUnidadCrear.path,
+  staticData: { breadcrumb: [PLANEADOR_CRUMB, { label: "Unidad temática" }, { label: "Agregar" }] },
+  component: PlaneadorCrearUnidadPage,
+})
+
+export const planeadorUnidadEditarRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.planeadorUnidadEditar.path,
+  staticData: {
+    breadcrumb: [PLANEADOR_CRUMB, { label: "Unidad temática" }, { label: "Editar" }],
+  },
+  component: PlaneadorEditarUnidadPage,
 })
 
 export const planeadorDetalleRoute = createRoute({
@@ -744,6 +784,16 @@ export const planeadorActividadEditarRoute = createRoute({
     ],
   },
   component: PlaneadorEditarActividadPage,
+})
+
+export const planeadorRecursoPreviewRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.planeadorRecursoPreview.path,
+  validateSearch: planeadorRecursoPreviewSearchSchema,
+  staticData: {
+    breadcrumb: [PLANEADOR_CRUMB, { label: "Vista previa del recurso" }],
+  },
+  component: PlaneadorRecursoPreviewPage,
 })
 
 const AsistenciaPage = lazyRouteComponent(
@@ -844,9 +894,13 @@ const routeTree = rootRoute.addChildren([
       editEstablishmentRoute,
     ]),
     planeadorRoute,
+    planeadorActividadCrearRoute,
     planeadorUnidadesRoute,
+    planeadorUnidadCrearRoute,
+    planeadorUnidadEditarRoute,
     planeadorDetalleRoute,
     planeadorActividadEditarRoute,
+    planeadorRecursoPreviewRoute,
     asistenciaRoute,
     asistenciaSeguimientoRoute,
     asistenciaManualRoute,

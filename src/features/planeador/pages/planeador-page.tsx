@@ -1,5 +1,5 @@
 import * as React from "react"
-import { useNavigate, useSearch } from "@tanstack/react-router"
+import { Link, useNavigate, useSearch } from "@tanstack/react-router"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -181,9 +181,9 @@ export function PlaneadorPage() {
                 color="primary"
                 size="sm"
                 variant="fill"
-                disabled
                 aria-label="Nueva actividad"
                 className="rounded-r-none border-r-0"
+                render={<Link to={paths.app.planeadorActividadCrear.getHref()} />}
               >
                 <PlusCircleIcon data-icon="inline-start" />
                 Nueva actividad
@@ -374,19 +374,22 @@ export function PlaneadorPage() {
           </section>
 
           {/* Columna derecha: calendario por defecto, detalle de la actividad
-              cuando hay una seleccionada. El detalle es mucho más alto que el
-              calendario, así que se acota a la ventana y scrollea por dentro
-              si creciera libre arrastraría el alto de la fila —y con él el del
-              rail, que se mide contra esa misma fila. */}
+              cuando hay una seleccionada. Siempre acotada a la ventana (antes
+              solo pasaba con el detalle abierto): un mes de 6 semanas puede
+              ser más alto que el viewport, y sin este tope la página entera
+              terminaba scrolleando para mostrarlo completo —eso arrastraba
+              el header "Hoy" del rail (que no tiene su propio scroll, solo
+              la lista de abajo lo tiene) hasta quedar semi-tapado por el
+              `TableScreenHeader` sticky a mitad de scroll. Con el tope, si el
+              mes no entra, scrollea POR DENTRO de esta columna en vez de
+              arrastrar toda la página. */}
           <section
             aria-label={
               actividadId
                 ? "Detalle de la actividad"
                 : "Calendario del planeador"
             }
-            className={
-              actividadId ? "md:h-[calc(100dvh-16rem)] md:min-h-0" : undefined
-            }
+            className="md:h-[calc(100dvh-16rem)] md:min-h-0"
           >
             {actividadId ? (
               <ActividadDetallePanel
@@ -397,7 +400,7 @@ export function PlaneadorPage() {
                 onShowApproval={() => setMode(actividadId, "approval")}
               />
             ) : (
-              <>
+              <div className="md:h-full md:overflow-y-auto">
                 <PlaneadorMonthGrid
                   month={displayMonth}
                   events={events}
@@ -413,7 +416,7 @@ export function PlaneadorPage() {
                   Vista actual:{" "}
                   {VIEW_OPTIONS.find((o) => o.value === view)?.label}
                 </p>
-              </>
+              </div>
             )}
           </section>
         </div>

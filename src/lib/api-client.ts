@@ -130,10 +130,17 @@ const PUBLIC_ENDPOINTS = [
 // reservation-catalogs-query.ts`), así que un 404 contra backend real sin
 // mocks es esperado mientras tanto — el query ya degrada a lista vacía, no
 // hace falta alarmar con un toast en cada carga de Matrícula/Reserva.
+// `/eval-col/planeador/actividad/calificaciones` entra acá con el mismo
+// criterio que `/coverage/reservations/catalogs`: el form de alta de una
+// actividad (`crear-actividad-page.tsx`) monta `EditarActividadForm` con un
+// id que todavía no existe en el mock, así que este query siempre pega un
+// 404 la primera vez — ya degrada a lista vacía (`estudiantes = []`), no
+// hace falta alarmar con un toast por algo esperado.
 const PROBE_ENDPOINTS = [
   "/auth/refresh",
   "/sso-admin/resetTokenStatus",
   "/coverage/reservations/catalogs",
+  "/eval-col/planeador/actividad/calificaciones",
 ]
 
 // El módulo de periodos académicos ya muestra sus propios avisos (banner

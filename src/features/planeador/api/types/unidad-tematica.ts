@@ -44,15 +44,31 @@ export interface CriterioUnidad {
   superior: string
 }
 
-/** Actividad vinculada a la unidad, con su peso dentro de ella. */
+/**
+ * Actividad vinculada a la unidad, con su peso dentro de ella. Es un
+ * registro de vínculo (join), no la actividad completa: `nombre`/`tipo`/
+ * `instrumento`/`grupo` quedan congelados acá al momento de vincular
+ * —igual que el resto de este modelo, que no vive sincronizado con el
+ * de `Actividad`— y `actividadId` es la única referencia real de vuelta
+ * a la actividad de origen (`Actividad.id` en `planeadorDb`).
+ *
+ * Esa referencia es lo que permite calcular, al abrir "Agregar
+ * actividad", qué actividades de la unidad TODAVÍA no están vinculadas
+ * (`Actividad.unidad.id === unidad.id` y su id no aparece en ningún
+ * `UnidadActividad.actividadId` de `unidad.actividades`).
+ */
 export interface UnidadActividad {
   id: string
+  /** Referencia a `Actividad.id` — ver el comentario de arriba. */
+  actividadId: string
   nombre: string
   /** "Formativa" | "Sumativa" — no es el `ActividadTipo` del otro modelo. */
   tipo: string
   instrumento: string
   grupo: string
-  /** Peso dentro de la unidad, 0-100. */
+  /** Peso dentro de la unidad, 0-100. Solo tiene sentido cuando
+   *  `metodoCalculo === "Ponderado"`; con "Promedio simple" o "Suma de
+   *  puntos" el vínculo no pide porcentaje y este campo queda en 0. */
   ponderacion: number
 }
 
@@ -74,6 +90,15 @@ export interface UnidadTematica {
   metodoCalculo: MetodoCalculo
   grado: string
   asignatura: string
+  /**
+   * Textos de los enunciados de Derechos Básicos de Aprendizaje (DBA)
+   * elegidos para esta unidad. Se ofrecen para elegir según el Referente
+   * Curricular que le corresponde al `grado` (por nivel educativo) — ver
+   * `useEnunciadosDbaQuery` —, pero acá se guarda el texto plano, no el id
+   * del enunciado: mismo criterio que `objetivos`/`contenidos`, así el
+   * form los agrega/quita con el mismo widget (`ListaAgregableCaja`).
+   */
+  enunciadosDba: string[]
   criterios: CriterioUnidad[]
   actividades: UnidadActividad[]
 }
