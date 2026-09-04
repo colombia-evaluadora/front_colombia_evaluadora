@@ -49,7 +49,7 @@ export function buildColumnsAsistenciaManual({
       enableSorting: false,
       enableHiding: false,
       cell: ({ row }) => {
-        const fkMatricula = row.original.fk_matricula
+        const fkMatricula = row.original.fk_tmatricula
         const value = seleccion[fkMatricula]
         return (
           <Select
@@ -78,7 +78,7 @@ export function buildColumnsAsistenciaManual({
       enableSorting: false,
       enableHiding: false,
       cell: ({ row }) => {
-        const fkMatricula = row.original.fk_matricula
+        const fkMatricula = row.original.fk_tmatricula
         const tipo = seleccion[fkMatricula]
         if (tipo !== NO_ASISTIO) return null
 

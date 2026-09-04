@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils"
 
 import { paths } from "@/config/paths"
 import type { EstadoSesion } from "@/features/academic-management/asistencia/api/types/asistencia"
-import { ESTADO_SESION_COLOR, ESTADO_SESION_ICON, peorEstado } from "@/features/academic-management/asistencia/api/ui-mappings"
+import { ESTADO_SESION_COLOR, ESTADO_SESION_ICON, formatGrado, peorEstado } from "@/features/academic-management/asistencia/api/ui-mappings"
 import { AsistenciaDayCellRectorPopover } from "@/features/academic-management/asistencia/components/asistencia-day-cell-rector-popover"
 
 export interface AsistenciaDayEntry {
@@ -136,12 +136,12 @@ export function AsistenciaMonthGrid({
                                   <li
                                     key={`${grado}-${jornada}`}
                                     className="flex min-w-0 shrink-0 items-center gap-1 text-xs leading-tight"
-                                    title={`${grado} (${jornada}) · ${cantidad} clases`}
+                                    title={`${formatGrado(grado)} (${jornada}) · ${cantidad} clases`}
                                   >
                                     <EstadoIcon
                                       className={cn("size-3 shrink-0", ESTADO_SESION_COLOR[estado])}
                                     />
-                                    <span className="shrink-0 font-semibold">{grado}</span>
+                                    <span className="shrink-0 font-semibold">{formatGrado(grado)}</span>
                                     <span className="shrink-0 rounded-sm bg-muted px-0.5 text-[10px] font-semibold text-muted-foreground">
                                       {jornada}
                                     </span>
@@ -152,18 +152,18 @@ export function AsistenciaMonthGrid({
                                   </li>
                                 )
                               })
-                            : items.map(({ id, grupo, jornada, asignatura, estado }) => {
+                            : items.map(({ id, grado, grupo, jornada, asignatura, estado }) => {
                                 const EstadoIcon = ESTADO_SESION_ICON[estado]
                                 return (
                                   <li
                                     key={id}
                                     className="flex min-w-0 shrink-0 items-center gap-1 text-xs leading-tight"
-                                    title={`${grupo} (${jornada}) · ${asignatura}`}
+                                    title={`${grado}${grupo} (${jornada}) · ${asignatura}`}
                                   >
                                     <EstadoIcon
                                       className={cn("size-3 shrink-0", ESTADO_SESION_COLOR[estado])}
                                     />
-                                    <span className="shrink-0 font-semibold">{grupo}</span>
+                                    <span className="shrink-0 font-semibold">{grado}{grupo}</span>
                                     <span className="shrink-0 rounded-sm bg-muted px-0.5 text-[10px] font-semibold text-muted-foreground">
                                       {jornada}
                                     </span>
@@ -282,7 +282,7 @@ function DayCellPopover({
             return (
               <li key={item.id} className="flex flex-col gap-1">
                 <span className="text-xs font-semibold text-muted-foreground">
-                  {item.grupo} ({item.jornada})
+                  {item.grado}{item.grupo} ({item.jornada})
                 </span>
                 <span className="text-sm font-medium">{item.asignatura}</span>
                 <button
