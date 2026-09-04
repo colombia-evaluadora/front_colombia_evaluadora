@@ -146,7 +146,7 @@ export function AsistenciaSedeSelector({ sedeId, onChange }: AsistenciaSedeSelec
         >
           <CaretDownIcon />
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="min-w-44">
+        <DropdownMenuContent align="end" className="min-w-72">
           {(sedes ?? []).map((sede) => (
             <DropdownMenuItem
               key={sede.pk_sede}
