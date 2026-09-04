@@ -330,7 +330,13 @@ export function ListaAgregableCajaSelect({
         onValueChange={(value) => value && onChange([...items, value])}
         disabled={disabled || isPending || disponibles.length === 0}
       >
-        <SelectTrigger>
+        {/* `variant="outlined"` a mano: este `<Select>` no vive dentro de
+            un `Field variant="outlined"` (no hace falta un label flotando
+            arriba, es un selector de alta, no un campo con nombre propio)
+            así que sin esto caía al default "standard" (subrayado) en vez
+            del borde completo que tienen el resto de los controles del
+            form. */}
+        <SelectTrigger variant="outlined">
           <SelectValue placeholder={isPending ? "Cargando…" : placeholder} />
         </SelectTrigger>
         <SelectContent>

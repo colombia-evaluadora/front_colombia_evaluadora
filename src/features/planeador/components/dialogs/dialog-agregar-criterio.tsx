@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -14,16 +14,18 @@ import { Textarea } from "@/components/ui/textarea"
 import { CheckIcon, PlusCircleIcon, XIcon } from "@/components/ui/icons"
 
 import { useAddCriterioUnidad } from "@/features/planeador/api/mutations/add-criterio-unidad"
+import { useNivelesDesempenoNombres } from "@/features/planeador/api/query/use-niveles-desempeno"
 import type { CriterioUnidad } from "@/features/planeador/api/types/unidad-tematica"
 
 type CriterioDraft = Omit<CriterioUnidad, "id">
 
-const DRAFT_VACIO: CriterioDraft = {
-  nombre: "",
-  basico: "",
-  bajo: "",
-  alto: "",
-  superior: "",
+/** Un `NivelDesempenoCriterio` por nombre, en el mismo orden — arranca cada
+ *  uno con `descripcion` vacía para que el docente la complete. */
+function draftVacio(nombresNiveles: string[]): CriterioDraft {
+  return {
+    nombre: "",
+    niveles: nombresNiveles.map((nombre) => ({ nombre, descripcion: "" })),
+  }
 }
 
 // Mismo criterio que `form-editar-actividad.tsx`: `<Textarea>` no trae
@@ -34,47 +36,79 @@ const TEXTAREA_OUTLINED =
   "rounded-md border border-input px-3 py-2 hover:border-ring focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/20 aria-invalid:border-red aria-invalid:focus-visible:border-red aria-invalid:focus-visible:ring-red/20"
 
 function isDraftCompleto(draft: CriterioDraft): boolean {
-  return Object.values(draft).every((value) => value.trim().length > 0)
+  return draft.nombre.trim().length > 0 && draft.niveles.every((nivel) => nivel.descripcion.trim().length > 0)
 }
 
 function isDraftVacio(draft: CriterioDraft): boolean {
-  return Object.values(draft).every((value) => value.trim().length === 0)
+  return draft.nombre.trim().length === 0 && draft.niveles.every((nivel) => nivel.descripcion.trim().length === 0)
 }
 
 interface DialogAgregarCriterioProps {
   unidadId: string
+  /** Grado de la unidad (en palabras, "Sexto") — de ahí sale el nivel
+   *  educativo con el que se busca la escala de valoración configurada
+   *  para nombrar (y contar) los niveles de desempeño (ver
+   *  `useNivelesDesempenoNombres`). */
+  gradoPalabra: string
   open: boolean
   onOpenChange: (open: boolean) => void
 }
 
 /**
- * Modal "Agregar criterio" de la pestaña Rúbricas. Los 5 campos son
- * obligatorios (los cuatro niveles de desempeño + el nombre del
+ * Modal "Agregar criterio" de la pestaña Rúbricas. Todos los campos son
+ * obligatorios (un nivel de desempeño por cada Textarea + el nombre del
  * criterio) — sin niveles intermedios opcionales como en la rúbrica de
- * Actividad: acá la tabla siempre muestra las cuatro columnas completas.
+ * Actividad: acá la tabla siempre muestra todas las columnas completas.
  *
- * El orden de captura (Criterio, Básico, Bajo, Alto, Superior) no seguí
- * el orden de las columnas de la tabla (Bajo, Básico, Alto, Superior)
- * — así viene del mockup — así que se respeta tal cual.
+ * "Bajo"/"Básico"/"Alto"/"Superior" son los nombres por default
+ * (`NIVELES_DESEMPENO_DEFAULT_NOMBRES`): si el nivel educativo de la
+ * unidad tiene una escala de valoración configurada en Establecimiento, se
+ * usan esos nombres y esa CANTIDAD de niveles en su lugar (ver
+ * `useNivelesDesempenoNombres`) — el TEXTO de cada nivel lo sigue
+ * escribiendo el docente, solo cambian los nombres/cantidad de campos.
  *
  * Dos formas de confirmar: "Vincular y agregar otro" persiste el
  * criterio actual y deja el modal abierto con el form limpio para
  * cargar el siguiente sin tener que reabrirlo; "Vincular y cerrar"
  * persiste y cierra. "Cancelar" descarta el draft sin guardar nada.
  */
-export function DialogAgregarCriterio({ unidadId, open, onOpenChange }: DialogAgregarCriterioProps) {
-  const [draft, setDraft] = useState<CriterioDraft>(DRAFT_VACIO)
+export function DialogAgregarCriterio({
+  unidadId,
+  gradoPalabra,
+  open,
+  onOpenChange,
+}: DialogAgregarCriterioProps) {
+  const { nombres: nombresNiveles } = useNivelesDesempenoNombres(gradoPalabra)
+  const [draft, setDraft] = useState<CriterioDraft>(() => draftVacio(nombresNiveles))
   const addCriterio = useAddCriterioUnidad()
 
-  function updateDraft(patch: Partial<CriterioDraft>) {
+  // Si `nombresNiveles` cambia (la escala configurada terminó de cargar, o
+  // el docente reabrió el modal para OTRA unidad con distinto nivel
+  // educativo) mientras el modal está CERRADO, el próximo draft arranca
+  // con la forma correcta. No se resincroniza con el modal abierto para no
+  // pisar lo que el docente ya venga escribiendo si la data async
+  // resuelve a mitad de la carga.
+  useEffect(() => {
+    if (!open) setDraft(draftVacio(nombresNiveles))
+  }, [nombresNiveles, open])
+
+  function updateDraft(patch: Partial<Omit<CriterioDraft, "niveles">>) {
     setDraft((prev) => ({ ...prev, ...patch }))
+  }
+
+  function updateNivel(index: number, descripcion: string) {
+    setDraft((prev) => {
+      const niveles = prev.niveles.slice()
+      niveles[index] = { ...niveles[index], descripcion }
+      return { ...prev, niveles }
+    })
   }
 
   function handleOpenChange(next: boolean) {
     onOpenChange(next)
     // Al cerrar (por cualquier vía: Cancelar, X, click afuera) el draft
     // no debe sobrevivir a la próxima apertura.
-    if (!next) setDraft(DRAFT_VACIO)
+    if (!next) setDraft(draftVacio(nombresNiveles))
   }
 
   function vincular(onDone: () => void) {
@@ -113,56 +147,25 @@ export function DialogAgregarCriterio({ unidadId, open, onOpenChange }: DialogAg
             />
           </Field>
 
-          <Field variant="outlined">
-            <FieldLabel>Básico *</FieldLabel>
-            <Textarea
-              className={TEXTAREA_OUTLINED}
-              rows={2}
-              placeholder="Agregar"
-              value={draft.basico}
-              onChange={(e) => updateDraft({ basico: e.target.value })}
-            />
-          </Field>
-
-          <Field variant="outlined">
-            <FieldLabel>Bajo *</FieldLabel>
-            <Textarea
-              className={TEXTAREA_OUTLINED}
-              rows={2}
-              placeholder="Agregar"
-              value={draft.bajo}
-              onChange={(e) => updateDraft({ bajo: e.target.value })}
-            />
-          </Field>
-
-          <Field variant="outlined">
-            <FieldLabel>Alto *</FieldLabel>
-            <Textarea
-              className={TEXTAREA_OUTLINED}
-              rows={2}
-              placeholder="Agregar"
-              value={draft.alto}
-              onChange={(e) => updateDraft({ alto: e.target.value })}
-            />
-          </Field>
-
-          <Field variant="outlined">
-            <FieldLabel>Superior *</FieldLabel>
-            <Textarea
-              className={TEXTAREA_OUTLINED}
-              rows={2}
-              placeholder="Agregar"
-              value={draft.superior}
-              onChange={(e) => updateDraft({ superior: e.target.value })}
-            />
-          </Field>
+          {draft.niveles.map((nivel, index) => (
+            <Field key={index} variant="outlined">
+              <FieldLabel>{nivel.nombre} *</FieldLabel>
+              <Textarea
+                className={TEXTAREA_OUTLINED}
+                rows={2}
+                placeholder="Agregar"
+                value={nivel.descripcion}
+                onChange={(e) => updateNivel(index, e.target.value)}
+              />
+            </Field>
+          ))}
         </div>
 
         <DialogFooter className="sm:justify-end">
           {/* Mientras el draft está completamente vacío, los botones de
               "Vincular…" no aportan nada —no hay qué guardar— y solo
               recargan visualmente el footer. Aparecen apenas se tipea algo
-              en cualquier campo; siguen deshabilitados hasta que los 5
+              en cualquier campo; siguen deshabilitados hasta que todos
               estén completos. */}
           {!isDraftVacio(draft) && (
             <>
@@ -172,7 +175,7 @@ export function DialogAgregarCriterio({ unidadId, open, onOpenChange }: DialogAg
                 size="sm"
                 type="button"
                 disabled={!completo || addCriterio.isPending}
-                onClick={() => vincular(() => setDraft(DRAFT_VACIO))}
+                onClick={() => vincular(() => setDraft(draftVacio(nombresNiveles)))}
               >
                 <PlusCircleIcon data-icon="inline-start" />
                 Vincular y agregar otro

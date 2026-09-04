@@ -19,6 +19,7 @@ import { useDataTable } from "@/hooks/use-data-table"
 import { paths } from "@/config/paths"
 
 import { useUnidadDetalleQuery } from "@/features/planeador/api/query/use-unidades-query"
+import { useNivelesDesempenoNombres } from "@/features/planeador/api/query/use-niveles-desempeno"
 import { createUnidadActividadesColumns } from "@/features/planeador/components/table/columns-unidad-actividades"
 import { createUnidadCriteriosColumns } from "@/features/planeador/components/table/columns-unidad-criterios"
 import { DialogAgregarCriterio } from "@/features/planeador/components/dialogs/dialog-agregar-criterio"
@@ -244,7 +245,16 @@ function InformacionGeneral({ unidad }: { unidad: UnidadTematica }) {
  * tal cual, para no mantener dos editores de criterios distintos.
  */
 export function Rubricas({ unidad }: { unidad: UnidadTematica }) {
-  const columns = React.useMemo(() => createUnidadCriteriosColumns(), [])
+  // Nombres (y cantidad) reales de los niveles de desempeño, si la unidad
+  // tiene una escala de valoración configurada para su nivel educativo —
+  // mismos nombres que usa `DialogAgregarCriterio`, para que la tabla y el
+  // modal de alta no queden con nombres/cantidad de niveles distinta para
+  // lo mismo.
+  const { nombres: nombresNiveles } = useNivelesDesempenoNombres(unidad.grado)
+  const columns = React.useMemo(
+    () => createUnidadCriteriosColumns(nombresNiveles),
+    [nombresNiveles],
+  )
   const { sorted, sorting, setSorting } = useSortedRows(unidad.criterios)
   const [dialogOpen, setDialogOpen] = React.useState(false)
 
@@ -279,7 +289,12 @@ export function Rubricas({ unidad }: { unidad: UnidadTematica }) {
         onRetry={() => {}}
         emptyMessage="Esta unidad no tiene criterios definidos."
       />
-      <DialogAgregarCriterio unidadId={unidad.id} open={dialogOpen} onOpenChange={setDialogOpen} />
+      <DialogAgregarCriterio
+        unidadId={unidad.id}
+        gradoPalabra={unidad.grado}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+      />
     </div>
   )
 }
