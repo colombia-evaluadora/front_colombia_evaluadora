@@ -321,11 +321,29 @@ export function UnidadInfoGeneralFields({
           })}
         </RadioGroup>
 
+        {/* Un aviso por método, mismo estilo — cada uno aclara qué le va a
+            pedir (o no) el diálogo de "Agregar actividad" al vincular. */}
         {draft.metodoCalculo === "Ponderado" && (
           <div className="border-blue-stroke bg-blue-22 text-blue flex items-start gap-2 rounded-md border p-3 text-xs">
             <InfoIcon className="mt-0.5 size-4 shrink-0" />
             Al vincular una actividad, deberás asignar el porcentaje que tendrá dentro de la
             unidad, ya que esta unidad utiliza cálculo por ponderación
+          </div>
+        )}
+
+        {draft.metodoCalculo === "Promedio simple" && (
+          <div className="border-blue-stroke bg-blue-22 text-blue flex items-start gap-2 rounded-md border p-3 text-xs">
+            <InfoIcon className="mt-0.5 size-4 shrink-0" />
+            Al vincular una actividad no necesitas asignarle un porcentaje: esta unidad calcula el
+            resultado como el promedio simple de todas las actividades vinculadas
+          </div>
+        )}
+
+        {draft.metodoCalculo === "Suma de puntos" && (
+          <div className="border-blue-stroke bg-blue-22 text-blue flex items-start gap-2 rounded-md border p-3 text-xs">
+            <InfoIcon className="mt-0.5 size-4 shrink-0" />
+            Al vincular una actividad, deberás asignar el puntaje que tendrá dentro de la
+            unidad, ya que esta unidad utiliza cálculo por suma de puntos
           </div>
         )}
       </FieldSet>

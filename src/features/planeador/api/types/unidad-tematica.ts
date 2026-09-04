@@ -30,18 +30,28 @@ export type MetodoCalculo = "Ponderado" | "Promedio simple" | "Suma de puntos"
 export type EnfoquePedagogico = "Evaluativo" | "Formativo"
 
 /**
- * Criterio de la rúbrica de la unidad. NO es el `Criterio` de `Actividad`: acá
- * el criterio se describe en los cuatro niveles de desempeño (una columna por
- * nivel en la tabla), mientras que el de la actividad solo guarda el nivel
- * "excelente" y una ponderación.
+ * Descripción de un criterio en UN nivel de desempeño puntual. `nombre` es
+ * el nombre de la banda ("Bajo"/"Básico"/"Alto"/"Superior" por default, o
+ * el que traiga la escala de valoración configurada para el nivel
+ * educativo de la unidad — ver `useNivelesDesempenoNombres` en
+ * `use-niveles-desempeno.ts`); `descripcion` es lo que el docente escribe.
+ */
+export interface NivelDesempenoCriterio {
+  nombre: string
+  descripcion: string
+}
+
+/**
+ * Criterio de la rúbrica de la unidad. NO es el `Criterio` de `Actividad`:
+ * acá el criterio se describe en TANTOS niveles de desempeño como tenga la
+ * escala de valoración configurada (una columna por nivel en la tabla) —
+ * no un número fijo—, mientras que el de la actividad solo guarda el
+ * nivel "excelente" y una ponderación.
  */
 export interface CriterioUnidad {
   id: string
   nombre: string
-  bajo: string
-  basico: string
-  alto: string
-  superior: string
+  niveles: NivelDesempenoCriterio[]
 }
 
 /**
