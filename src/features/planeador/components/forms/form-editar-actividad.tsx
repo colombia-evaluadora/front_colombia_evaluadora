@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react"
 import * as React from "react"
 import { useForm, useSelector } from "@tanstack/react-form"
+import { Link } from "@tanstack/react-router"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
+import { Field, FieldLabel } from "@/components/ui/field"
 import { cn } from "@/lib/utils"
 import { toDigitsOnly, toDigitsOrRangeInput } from "@/lib/text-input"
 import { Input } from "@/components/ui/input"
@@ -25,6 +26,15 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { useGradosCatalogQuery } from "@/features/establishment/academic-period/api/query/use-grados-catalog"
+import { EDUCATION_LEVELS } from "@/features/academic-management/curricular-references/api/catalogs"
+import { useCurricularReferencesQuery } from "@/features/academic-management/curricular-references/api/query/use-curricular-references"
+import {
+  nivelEducativoCodeForGrado,
+  palabraGradoDesdeNombreCatalogo,
+} from "@/features/planeador/lib/grado-nivel-educativo"
+import { useGradoGrupoCombos } from "@/features/planeador/api/query/use-grado-grupo-combos"
+import { ListaAgregableField } from "@/features/planeador/components/forms/field-lista-agregable"
 import {
   EyeIcon,
   FileDownloadOutlinedIcon,
@@ -38,8 +48,8 @@ import {
   PlusIcon,
   RemoveCircleOutlineIcon,
   TrashIcon,
-  XIcon,
 } from "@/components/ui/icons"
+import { paths } from "@/config/paths"
 
 import type {
   Actividad,
@@ -146,19 +156,30 @@ interface EditarActividadFormProps {
   onDirtyChange?: (isDirty: boolean) => void
   /** Id del `<form>` para que el footer pueda dispararlo desde fuera. */
   formId: string
+  /**
+   * Llamado con los valores completos al confirmar el submit (botón
+   * "Guardar" del footer, vía `form={formId}`). Opcional: la edición
+   * todavía no tiene `useUpdateActividad` (el submit no hace nada si no se
+   * pasa), pero el alta sí lo usa para mandar la actividad a
+   * `useCreateActividad` — mismo form, un solo lugar donde vive el submit
+   * real en vez de bifurcar el componente entero por "crear" vs "editar".
+   */
+  onSubmit?: (values: Actividad) => void
 }
 
 /**
- * Edición visual de una actividad. Carga los datos como `defaultValues`,
- * deja los inputs editables y reporta el estado "dirty" hacia arriba para
- * que el `<TableScreenFooter>` decida si mostrar el aviso de cambios.
- *
- * El form no persiste todavía: la iteración actual es read-only en la red
- * (sin endpoint de update), así que `onSubmit` solo dispara un log local.
- * Quedan listos los campos, la estructura de las secciones y el sticky
- * footer para cuando llegue `useUpdateActividad`.
+ * Form de una actividad — se reusa tal cual para editar (`actividad` ya
+ * existente) y para crear (`actividad` en blanco, ver `crearActividadVacia`
+ * en `lib/empty-actividad.ts`). Carga los datos como `defaultValues`, deja
+ * los inputs editables y reporta el estado "dirty" hacia arriba para que el
+ * `<TableScreenFooter>` decida si mostrar el aviso de cambios.
  */
-export function EditarActividadForm({ actividad, onDirtyChange, formId }: EditarActividadFormProps) {
+export function EditarActividadForm({
+  actividad,
+  onDirtyChange,
+  formId,
+  onSubmit,
+}: EditarActividadFormProps) {
   const { data: unidadesQuery = [] } = useUnidadesQuery()
   // Estudiantes del grupo de la actividad — mismo query que alimenta la
   // vista de calificaciones. Se usa acá para el checklist "Seleccionar
@@ -177,9 +198,7 @@ export function EditarActividadForm({ actividad, onDirtyChange, formId }: Editar
 
   const form = useForm({
     defaultValues: actividad,
-    onSubmit: () => {
-      // Stub: cuando exista `useUpdateActividad`, acá va la mutación.
-    },
+    onSubmit: ({ value }) => onSubmit?.(value),
   })
 
   // `isDefaultValue` es lo que usa el form académico para detectar cambios:
@@ -199,8 +218,8 @@ export function EditarActividadForm({ actividad, onDirtyChange, formId }: Editar
   // (el `<Select>` de "Unidad temática asociada") la asigne de una.
   function crearUnidad(data: {
     nombre: string
-    contenidos: string
-    objetivos: string
+    contenidos: string[]
+    objetivos: string[]
     descripcion: string
   }): UnidadTematica {
     const nueva: UnidadTematica = {
@@ -212,17 +231,12 @@ export function EditarActividadForm({ actividad, onDirtyChange, formId }: Editar
       fechaInicio: "",
       fechaFin: "",
       descripcion: data.descripcion,
-      objetivos: data.objetivos
-        .split(",")
-        .map((o) => o.trim())
-        .filter(Boolean),
-      contenidos: data.contenidos
-        .split(",")
-        .map((c) => c.trim())
-        .filter(Boolean),
+      objetivos: data.objetivos,
+      contenidos: data.contenidos,
       metodoCalculo: "Ponderado",
       grado: "",
       asignatura: "",
+      enunciadosDba: [],
       criterios: [],
       actividades: [],
     }
@@ -322,8 +336,8 @@ function IdentificacionSection({
   unidades: UnidadTematica[]
   onCrearUnidad: (data: {
     nombre: string
-    contenidos: string
-    objetivos: string
+    contenidos: string[]
+    objetivos: string[]
     descripcion: string
   }) => UnidadTematica
 }) {
@@ -371,82 +385,106 @@ function IdentificacionSection({
           )}
         </form.Field>
 
-        <form.Field name="unidad">
-          {(field) => (
-            // `gap-0` + redondeado y borde derechos del `SelectTrigger`
-            // anulados (vía descendiente del `Field`) + redondeado y borde
-            // izquierdos del botón del popover anulados → los dos controles
-            // se leen como un único split-button.
-            <div className="flex items-end gap-0">
-              <Field
-                variant="outlined"
-                className="min-w-0 flex-1 [&_[data-slot=select-trigger]]:rounded-r-none [&_[data-slot=select-trigger]]:border-r-0"
-              >
-                <FieldLabel htmlFor={field.name}>Unidad temática asociada</FieldLabel>
-                <Select
-                  value={field.state.value.id}
-                  onValueChange={(value) => {
-                    // `__none__` es el placeholder "Seleccione": antes el
-                    // `find` no lo encontraba en `unidades` y el `if (!next)
-                    // return` cortaba en seco, dejando la unidad anterior
-                    // pegada —clickear "Seleccione" no hacía nada. Se
-                    // maneja aparte para poder vaciar el campo de una.
-                    // Guardamos el id como `"__none__"` (no `""`) para que
-                    // matchee el `value` del `SelectItem` de abajo y el
-                    // tilde de seleccionado se pinte sobre "Seleccione" —
-                    // mismo patrón que el `Select` de "Modalidad".
-                    if (value === "__none__") {
-                      field.handleChange({ id: "__none__", nombre: "" })
-                      return
-                    }
-                    const next = unidades.find((u) => u.id === value)
-                    if (!next) return
-                    field.handleChange({ id: next.id, nombre: next.nombre })
-                    // Regla de negocio: una unidad de enfoque formativo no
-                    // admite actividades sumativas. Si el usuario cambia a
-                    // una unidad así, la actividad deja de ser sumativa acá
-                    // mismo —no queda esperando a que la reabra— para que
-                    // el resto del form (ponderación, lista de cotejo/
-                    // rúbrica, "Es una recuperación") reaccione de una.
-                    if (next.enfoquePedagogico === "Formativo") {
-                      form.setFieldValue("esEvaluativa", false)
-                    }
-                  }}
-                >
-                  <SelectTrigger id={field.name}>
-                    <SelectValue placeholder="Seleccione">
-                      {(value) =>
-                        unidades.find((u) => u.id === value)?.nombre ?? "Seleccione"
-                      }
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none__">Seleccione</SelectItem>
-                    {unidades.map((u) => (
-                      <SelectItem key={u.id} value={u.id}>
-                        {u.nombre}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
-              <CrearUnidadPopover
-                className="rounded-l-none border-l-0"
-                onCreate={(data) => {
-                  // `onCrearUnidad` agrega la unidad a `unidadesCreadas`
-                  // (arriba en `EditarActividadForm`) y la devuelve: recién
-                  // ahí queda en la lista que consume este `<Select>`, así
-                  // que el campo se puede asignar por id sin quedar
-                  // "huérfano" (antes se armaba un id acá mismo y nunca se
-                  // sumaba a `unidades` — el Select no lo encontraba y
-                  // mostraba "Seleccione" en vez del nombre tipeado).
-                  const nueva = onCrearUnidad(data)
-                  field.handleChange({ id: nueva.id, nombre: nueva.nombre })
-                }}
-              />
-            </div>
-          )}
-        </form.Field>
+        <form.Subscribe
+          selector={(state) => `${state.values.grado}/${state.values.grupo}`}
+        >
+          {() => {
+            // "Unidad temática asociada" depende de "Grado / Grupo"
+            // (`AsignaturaGradoSection`): sin los dos elegidos no hay grado
+            // con el cual filtrar, así que el select queda deshabilitado
+            // (mismo criterio que "Asignatura / materia") y sin opciones,
+            // en vez de mostrar TODAS las unidades sin importar su grado.
+            const grado = form.getFieldValue("grado")
+            const grupo = form.getFieldValue("grupo")
+            const hasGradoGrupo = Boolean(grado && grupo)
+            const palabraGrado = grado ? palabraGradoDesdeNombreCatalogo(grado) : null
+            const unidadesDelGrado = palabraGrado
+              ? unidades.filter((u) => u.grado === palabraGrado)
+              : []
+
+            return (
+              <form.Field name="unidad">
+                {(field) => (
+                  // `gap-0` + redondeado y borde derechos del `SelectTrigger`
+                  // anulados (vía descendiente del `Field`) + redondeado y
+                  // borde izquierdos del botón del popover anulados → los dos
+                  // controles se leen como un único split-button.
+                  <div className="flex items-end gap-0">
+                    <Field
+                      variant="outlined"
+                      className="min-w-0 flex-1 [&_[data-slot=select-trigger]]:rounded-r-none [&_[data-slot=select-trigger]]:border-r-0"
+                    >
+                      <FieldLabel htmlFor={field.name}>Unidad temática asociada</FieldLabel>
+                      <Select
+                        value={field.state.value.id}
+                        disabled={!hasGradoGrupo}
+                        onValueChange={(value) => {
+                          // `__none__` es el placeholder "Seleccione": antes el
+                          // `find` no lo encontraba en `unidades` y el `if (!next)
+                          // return` cortaba en seco, dejando la unidad anterior
+                          // pegada —clickear "Seleccione" no hacía nada. Se
+                          // maneja aparte para poder vaciar el campo de una.
+                          // Guardamos el id como `"__none__"` (no `""`) para que
+                          // matchee el `value` del `SelectItem` de abajo y el
+                          // tilde de seleccionado se pinte sobre "Seleccione" —
+                          // mismo patrón que el `Select` de "Modalidad".
+                          if (value === "__none__") {
+                            field.handleChange({ id: "__none__", nombre: "" })
+                            return
+                          }
+                          const next = unidadesDelGrado.find((u) => u.id === value)
+                          if (!next) return
+                          field.handleChange({ id: next.id, nombre: next.nombre })
+                          // Regla de negocio: una unidad de enfoque formativo no
+                          // admite actividades sumativas. Si el usuario cambia a
+                          // una unidad así, la actividad deja de ser sumativa acá
+                          // mismo —no queda esperando a que la reabra— para que
+                          // el resto del form (ponderación, lista de cotejo/
+                          // rúbrica, "Es una recuperación") reaccione de una.
+                          if (next.enfoquePedagogico === "Formativo") {
+                            form.setFieldValue("esEvaluativa", false)
+                          }
+                        }}
+                      >
+                        <SelectTrigger id={field.name}>
+                          <SelectValue
+                            placeholder={hasGradoGrupo ? "Seleccione" : "Elegí grado/grupo primero"}
+                          >
+                            {(value) =>
+                              unidadesDelGrado.find((u) => u.id === value)?.nombre ?? "Seleccione"
+                            }
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__none__">Seleccione</SelectItem>
+                          {unidadesDelGrado.map((u) => (
+                            <SelectItem key={u.id} value={u.id}>
+                              {u.nombre}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </Field>
+                    <CrearUnidadPopover
+                      className="rounded-l-none border-l-0"
+                      onCreate={(data) => {
+                        // `onCrearUnidad` agrega la unidad a `unidadesCreadas`
+                        // (arriba en `EditarActividadForm`) y la devuelve: recién
+                        // ahí queda en la lista que consume este `<Select>`, así
+                        // que el campo se puede asignar por id sin quedar
+                        // "huérfano" (antes se armaba un id acá mismo y nunca se
+                        // sumaba a `unidades` — el Select no lo encontraba y
+                        // mostraba "Seleccione" en vez del nombre tipeado).
+                        const nueva = onCrearUnidad(data)
+                        field.handleChange({ id: nueva.id, nombre: nueva.nombre })
+                      }}
+                    />
+                  </div>
+                )}
+              </form.Field>
+            )
+          }}
+        </form.Subscribe>
       </div>
     </Card>
   )
@@ -498,7 +536,48 @@ function UnidadSection({
   )
 }
 
+// Placeholder mientras no exista un plan de estudios real por grado en el
+// mock de Establecimiento (`studyPlansDb` está vacío hoy — ver
+// `use-study-plans.ts`): mismas asignaturas para cualquier grado. El select
+// igual queda deshabilitado hasta elegir un grado, para que la dependencia
+// se sienta en la UI aunque el catálogo todavía no varíe por grado.
+export const ASIGNATURA_OPTIONS = [
+  "Matemáticas",
+  "Lengua Castellana",
+  "Ciencias Naturales",
+  "Ciencias Sociales",
+  "Inglés",
+  "Educación Física",
+  "Educación Artística",
+  "Ética y Valores",
+  "Tecnología e Informática",
+  "Educación Religiosa",
+]
+
+/**
+ * "Grado / Grupo" es UN SOLO `<Select>` (no dos campos separados): cada
+ * opción ya es una combinación real "grado/grupo" (ej. `"6°/01"`), armada
+ * con datos de Establecimiento (`useGradoGrupoCombos`, que a su vez usa
+ * `useGradosCatalogQuery` — mismo catálogo que usa Matrícula). Elegir un
+ * combo escribe `grado` y `grupo` por separado en el form (siguen siendo
+ * dos campos en `Actividad`, el resto del código los lee así) y habilita
+ * Asignatura y "Unidad temática asociada" (`IdentificacionSection`), que
+ * dependen de él y se filtran/limpian cuando cambia.
+ *
+ * Antes esto era un solo `<Input>` de texto libre que concatenaba grado +
+ * grupo a mano (`"3º" + "A"`) — sin catálogo real detrás.
+ */
 function AsignaturaGradoSection({ form }: { form: FormActividad }) {
+  const { combos } = useGradoGrupoCombos()
+  const grado = useSelector(form.store, (state) => state.values.grado)
+  const grupo = useSelector(form.store, (state) => state.values.grupo)
+  // Un solo campo "Grado / Grupo" (no dos selects encadenados): el valor
+  // combinado solo existe cuando AMBOS están elegidos, así que Asignatura
+  // (y "Unidad temática asociada", en `IdentificacionSection`) quedan
+  // deshabilitadas mientras falte cualquiera de los dos.
+  const comboValue = grado && grupo ? `${grado}/${grupo}` : ""
+  const hasGradoGrupo = comboValue !== ""
+
   return (
     <Card className="gap-4 p-4">
       <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2">
@@ -506,34 +585,57 @@ function AsignaturaGradoSection({ form }: { form: FormActividad }) {
           {(field) => (
             <Field variant="outlined">
               <FieldLabel htmlFor={field.name}>Asignatura / materia</FieldLabel>
-              <Input
-                id={field.name}
-                name={field.name}
+              <Select
                 value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-                onBlur={field.handleBlur}
-              />
+                onValueChange={(v) => v && field.handleChange(v)}
+                disabled={!hasGradoGrupo}
+              >
+                <SelectTrigger id={field.name}>
+                  <SelectValue
+                    placeholder={hasGradoGrupo ? "Seleccione" : "Elegí grado/grupo primero"}
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {ASIGNATURA_OPTIONS.map((nombre) => (
+                    <SelectItem key={nombre} value={nombre}>
+                      {nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </Field>
           )}
         </form.Field>
 
-        <form.Field name="grupo">
-          {(field) => (
-            <Field variant="outlined">
-              <FieldLabel htmlFor={field.name}>Grado / Grupo</FieldLabel>
-              <Input
-                id={field.name}
-                name={field.name}
-                value={`${form.getFieldValue("grado")}${field.state.value}`}
-                onChange={(e) => {
-                  const v = e.target.value
-                  form.setFieldValue("grado", v.slice(0, -1))
-                  field.handleChange(v.slice(-1))
-                }}
-              />
-            </Field>
-          )}
-        </form.Field>
+        <Field variant="outlined">
+          <FieldLabel htmlFor="grado-grupo">Grado / Grupo</FieldLabel>
+          <Select
+            value={comboValue}
+            onValueChange={(v) => {
+              if (!v) return
+              const [nextGrado, nextGrupo] = v.split("/")
+              form.setFieldValue("grado", nextGrado)
+              form.setFieldValue("grupo", nextGrupo)
+              // Asignatura y unidad dependen de "Grado / Grupo": cambiarlo
+              // invalida lo que había elegido en las dos (mismo criterio
+              // que ya usaba este campo para limpiar Asignatura al
+              // cambiar de grado, ahora extendido a Unidad).
+              form.setFieldValue("asignatura", "")
+              form.setFieldValue("unidad", { id: "__none__", nombre: "" })
+            }}
+          >
+            <SelectTrigger id="grado-grupo">
+              <SelectValue placeholder="Seleccione" />
+            </SelectTrigger>
+            <SelectContent>
+              {combos.map((combo) => (
+                <SelectItem key={combo.value} value={combo.value}>
+                  {combo.value}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
       </div>
     </Card>
   )
@@ -977,7 +1079,22 @@ function RecursoItem({
           size="icon-sm"
           type="button"
           aria-label="Ver recurso"
-          render={recurso.url ? <a href={recurso.url} target="_blank" rel="noopener noreferrer" /> : undefined}
+          render={
+            recurso.url
+              ? (
+                <Link
+                  to={paths.app.planeadorRecursoPreview.getHref()}
+                  search={{
+                    tipo: recurso.tipo,
+                    url: recurso.url,
+                    fuente: recurso.fuente,
+                    titulo: recurso.titulo,
+                    descripcion: recurso.descripcion,
+                  }}
+                />
+              )
+              : undefined
+          }
         >
           <EyeIcon />
         </Button>
@@ -1116,52 +1233,57 @@ function EvaluacionSection({
   form: FormActividad
   unidades: UnidadTematica[]
 }) {
+  // Con unidad elegida, el enfoque sale de `unidad.enfoquePedagogico` (regla
+  // de siempre: una unidad formativa bloquea "¿Es evaluación sumativa?" en
+  // "No"). SIN unidad, se deriva del GRADO elegido en "Grado / Grupo": el
+  // grado cae en un nivel educativo (`nivelEducativoCodeForGrado`) y ese
+  // nivel es el que tienen los Referentes Curriculares — si algún referente
+  // de ese nivel es Formativo, se bloquea igual, como si esa fuera la unidad
+  // (no hay vínculo real grado↔referente en el backend; ver el comentario
+  // de `nivelEducativoCodeForGrado`).
+  const unidadId = useSelector(form.store, (state) => state.values.unidad.id)
+  const gradoValue = useSelector(form.store, (state) => state.values.grado)
+  const { data: grados = [] } = useGradosCatalogQuery()
+  const gradoOption = grados.find((g) => g.nombre === gradoValue)
+  const nivelCode = gradoOption ? nivelEducativoCodeForGrado(gradoOption.valor) : null
+  const nivelId = nivelCode ? EDUCATION_LEVELS.find((l) => l.code === nivelCode)?.id : undefined
+
+  const { data: referenciasResult } = useCurricularReferencesQuery({
+    filters: { educationLevels: !unidadId && nivelId != null ? [String(nivelId)] : [] },
+    sorting: [],
+    pageIndex: 0,
+    pageSize: 20,
+  })
+
+  const esFormativa = unidadId
+    ? unidades.find((u) => u.id === unidadId)?.enfoquePedagogico === "Formativo"
+    : nivelId != null &&
+      (referenciasResult?.rows ?? []).some((r) => r.pedagogicalApproach?.name === "Formativo")
+
   return (
     <Card className="gap-4 p-4">
       <h3 className="text-base font-semibold">Evaluación</h3>
       <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2">
-        {/* Leemos la unidad seleccionada para saber si su enfoque
-            pedagógico es formativo — ahí "¿Es evaluación sumativa?" se
-            bloquea en "No" (regla de negocio: un referente curricular
-            formativo no admite actividades sumativas). El cambio de
-            unidad ya corrige `esEvaluativa` de una en `IdentificacionSection`;
-            esto es lo que mantiene el candado puesto mientras esa unidad
-            siga seleccionada, sin importar cómo se haya llegado al
-            estado (edición existente, cambio de unidad, datos del seed). */}
-        <form.Subscribe selector={(state) => state.values.unidad}>
-          {(unidad) => {
-            const esFormativa =
-              unidades.find((u) => u.id === unidad.id)?.enfoquePedagogico === "Formativo"
-            return (
-              <form.Field name="esEvaluativa">
-                {(field) => (
-                  <Field variant="outlined">
-                    <FieldLabel htmlFor={field.name}>¿Es evaluación sumativa?</FieldLabel>
-                    <Select
-                      value={field.state.value ? "si" : "no"}
-                      onValueChange={(value) => field.handleChange(value === "si")}
-                      disabled={esFormativa}
-                    >
-                      <SelectTrigger id={field.name}>
-                        <SelectValue>{(value) => (value === "si" ? "Sí" : "No")}</SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="si">Sí</SelectItem>
-                        <SelectItem value="no">No</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {esFormativa && (
-                      <FieldDescription>
-                        La unidad temática tiene enfoque formativo: sus actividades no se
-                        pueden marcar como sumativas.
-                      </FieldDescription>
-                    )}
-                  </Field>
-                )}
-              </form.Field>
-            )
-          }}
-        </form.Subscribe>
+        <form.Field name="esEvaluativa">
+          {(field) => (
+            <Field variant="outlined">
+              <FieldLabel htmlFor={field.name}>¿Es evaluación sumativa?</FieldLabel>
+              <Select
+                value={field.state.value ? "si" : "no"}
+                onValueChange={(value) => field.handleChange(value === "si")}
+                disabled={esFormativa}
+              >
+                <SelectTrigger id={field.name}>
+                  <SelectValue>{(value) => (value === "si" ? "Sí" : "No")}</SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="si">Sí</SelectItem>
+                  <SelectItem value="no">No</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
+          )}
+        </form.Field>
 
         <form.Field name="instrumento">
           {(field) => (
@@ -1188,7 +1310,7 @@ function EvaluacionSection({
 
       {/* La definición del instrumento (Rúbrica o Lista de cotejo) vive
           adentro del mismo card de "Evaluación", entre el `instrumento`
-          elegido arriba y la `Puntaje` de abajo — antes era un
+          elegido arriba y la `Ponderación (%)` de abajo — antes era un
           `Card` hermano y suelto, separado de este. */}
       <InstrumentoEvaluacionSection form={form} />
 
@@ -1196,21 +1318,31 @@ function EvaluacionSection({
           instrumento (Rúbrica/Lista de cotejo). La lectura del form es:
             1. ¿Es sumativa?  →  2. ¿Con qué instrumento?  →
             3. definición del instrumento  →  4. ¿Cuánto pesa?
-          Si la respuesta a (1) es "No", (4) desaparece (no aplica). */}
-      <form.Subscribe selector={(state) => state.values.esEvaluativa}>
-        {(esEvaluativa) =>
-          esEvaluativa ? (
+          Si la respuesta a (1) es "No", (4) desaparece (no aplica).
+
+          Además de `esEvaluativa`, (4) también depende del `metodoCalculo`
+          de la unidad temática elegida — mismo criterio de dos vías que
+          `esPonderado` en `DialogAgregarActividad` (ver el comentario de
+          ese componente): el % SOLO tiene sentido cuando la unidad usa
+          cálculo "Ponderado". Con "Promedio simple" cada actividad pesa
+          igual y con "Suma de puntos" no hay nada que repartir, así que
+          el campo no se muestra en ninguno de los dos casos —no hay un
+          input de "Puntaje" separado, ese valor no se pide acá. */}
+      <form.Subscribe selector={(state) => [state.values.esEvaluativa, state.values.unidad.id] as const}>
+        {([esEvaluativa, unidadId]) => {
+          const esPonderado = unidades.find((u) => u.id === unidadId)?.metodoCalculo === "Ponderado"
+          if (!esEvaluativa || !esPonderado) return null
+          return (
             <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2">
               <form.Field name="ponderacion">
                 {(ponderacionField) => (
                   <Field variant="outlined">
-                    <FieldLabel htmlFor={ponderacionField.name}>Puntaje</FieldLabel>
+                    <FieldLabel htmlFor={ponderacionField.name}>Ponderación (%)</FieldLabel>
                     <Input
                       id={ponderacionField.name}
                       type="number"
                       min={0}
                       max={100}
-                      placeholder="Ej: 20"
                       value={ponderacionField.state.value}
                       onChange={(e) => ponderacionField.handleChange(Number(e.target.value))}
                     />
@@ -1218,8 +1350,8 @@ function EvaluacionSection({
                 )}
               </form.Field>
             </div>
-          ) : null
-        }
+          )
+        }}
       </form.Subscribe>
     </Card>
   )
@@ -2650,8 +2782,8 @@ function CrearUnidadPopover({
 }: {
   onCreate: (data: {
     nombre: string
-    contenidos: string
-    objetivos: string
+    contenidos: string[]
+    objetivos: string[]
     descripcion: string
   }) => void
   /** Se aplica al `Button` del trigger para encadenarlo visualmente con
@@ -2661,14 +2793,14 @@ function CrearUnidadPopover({
 }) {
   const [open, setOpen] = React.useState(false)
   const [nombre, setNombre] = React.useState("")
-  const [contenidos, setContenidos] = React.useState("")
-  const [objetivos, setObjetivos] = React.useState("")
+  const [contenidos, setContenidos] = React.useState<string[]>([])
+  const [objetivos, setObjetivos] = React.useState<string[]>([])
   const [descripcion, setDescripcion] = React.useState("")
 
   const reset = () => {
     setNombre("")
-    setContenidos("")
-    setObjetivos("")
+    setContenidos([])
+    setObjetivos([])
     setDescripcion("")
   }
 
@@ -2719,23 +2851,17 @@ function CrearUnidadPopover({
           />
         </Field>
 
-        <Field variant="outlined">
-          <FieldLabel>Contenidos temáticos vinculados</FieldLabel>
-          <Input
-            placeholder="Agregar"
-            value={contenidos}
-            onChange={(e) => setContenidos(e.target.value)}
-          />
-        </Field>
+        <ListaAgregableField
+          label="Contenidos temáticos vinculados"
+          items={contenidos}
+          onChange={setContenidos}
+        />
 
-        <Field variant="outlined">
-          <FieldLabel>Objetivos específicos relacionados</FieldLabel>
-          <Input
-            placeholder="Agregar"
-            value={objetivos}
-            onChange={(e) => setObjetivos(e.target.value)}
-          />
-        </Field>
+        <ListaAgregableField
+          label="Objetivos específicos relacionados"
+          items={objetivos}
+          onChange={setObjetivos}
+        />
 
         <Field variant="outlined">
           <FieldLabel>Descripción breve</FieldLabel>

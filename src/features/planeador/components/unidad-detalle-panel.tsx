@@ -1,6 +1,7 @@
 "use no memo"
 
 import * as React from "react"
+import { Link } from "@tanstack/react-router"
 import type { SortingState } from "@tanstack/react-table"
 
 import { DataTable } from "@/components/data-table"
@@ -11,26 +12,42 @@ import {
   GraduationCapIcon,
   PencilIcon,
   PlusIcon,
-  TrashIcon,
 } from "@/components/ui/icons"
 import { Spinner } from "@/components/ui/spinner"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useDataTable } from "@/hooks/use-data-table"
+import { paths } from "@/config/paths"
 
 import { useUnidadDetalleQuery } from "@/features/planeador/api/query/use-unidades-query"
 import { createUnidadActividadesColumns } from "@/features/planeador/components/table/columns-unidad-actividades"
 import { createUnidadCriteriosColumns } from "@/features/planeador/components/table/columns-unidad-criterios"
+import { DialogAgregarCriterio } from "@/features/planeador/components/dialogs/dialog-agregar-criterio"
+import { DialogAgregarActividad } from "@/features/planeador/components/dialogs/dialog-agregar-actividad"
+import { DialogDeleteUnidad } from "@/features/planeador/components/dialogs/dialog-delete-unidad"
 import type { UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
 
 import { formatDate } from "@/features/planeador/lib/format-date"
 
 type PanelTab = "general" | "rubricas" | "actividades"
 
-const TABS: { value: PanelTab; label: string }[] = [
-  { value: "general", label: "Información general" },
-  { value: "rubricas", label: "Rúbricas" },
-  { value: "actividades", label: "Actividades" },
-]
+/**
+ * La pestaña "Rúbricas" no aplica a una unidad de enfoque formativo: el
+ * seguimiento formativo no califica por niveles de desempeño, así que no
+ * hay nada que definir ahí — se saca en vez de mostrarla deshabilitada
+ * (misma idea que "¿Es evaluación sumativa?" en el form de Actividad,
+ * que se bloquea en "No" para el mismo tipo de unidad).
+ */
+function getVisibleTabs(unidad: UnidadTematica): { value: PanelTab; label: string }[] {
+  const tabs: { value: PanelTab; label: string }[] = [
+    { value: "general", label: "Información general" },
+    { value: "rubricas", label: "Rúbricas" },
+    { value: "actividades", label: "Actividades" },
+  ]
+  if (unidad.enfoquePedagogico === "Formativo") {
+    return tabs.filter((tab) => tab.value !== "rubricas")
+  }
+  return tabs
+}
 
 /**
  * Caja del contenido de cada pestaña. Es el mismo panel que usan las solapas
@@ -50,6 +67,9 @@ const PANEL =
 
 interface UnidadDetallePanelProps {
   unidadId: string
+  /** Llamado cuando la unidad abierta se elimina — la página reselecciona
+   *  otra en el rail (esta ya no existe). */
+  onDeleted?: () => void
 }
 
 /**
@@ -89,10 +109,14 @@ function TabHeader({
   title,
   description,
   actionLabel,
+  onAction,
 }: {
   title: string
   description?: string
   actionLabel: string
+  /** Sin esto el botón queda `disabled` — mismo criterio que el resto de
+   *  la app para las acciones que todavía no tienen flujo propio. */
+  onAction?: () => void
 }) {
   return (
     <div className="mb-4 flex items-start justify-between gap-4">
@@ -102,7 +126,14 @@ function TabHeader({
           <p className="text-muted-foreground text-sm">{description}</p>
         )}
       </div>
-      <Button color="primary" variant="fill" size="sm" disabled className="shrink-0">
+      <Button
+        color="primary"
+        variant="fill"
+        size="sm"
+        disabled={!onAction}
+        onClick={onAction}
+        className="shrink-0"
+      >
         <PlusIcon data-icon="inline-start" />
         {actionLabel}
       </Button>
@@ -207,9 +238,15 @@ function InformacionGeneral({ unidad }: { unidad: UnidadTematica }) {
   )
 }
 
-function Rubricas({ unidad }: { unidad: UnidadTematica }) {
+/**
+ * Exportado (no solo usado acá adentro): las páginas de alta/edición de
+ * unidad (`planeador-editar-unidad-page.tsx`) reusan esta misma pestaña
+ * tal cual, para no mantener dos editores de criterios distintos.
+ */
+export function Rubricas({ unidad }: { unidad: UnidadTematica }) {
   const columns = React.useMemo(() => createUnidadCriteriosColumns(), [])
   const { sorted, sorting, setSorting } = useSortedRows(unidad.criterios)
+  const [dialogOpen, setDialogOpen] = React.useState(false)
 
   // Sin `Pagination`: los criterios vienen enteros dentro del detalle y son
   // pocos, así que entran todos en una sola página.
@@ -228,7 +265,11 @@ function Rubricas({ unidad }: { unidad: UnidadTematica }) {
 
   return (
     <div>
-      <TabHeader title="Criterios de la unidad" actionLabel="Agregar criterio" />
+      <TabHeader
+        title="Criterios de la unidad"
+        actionLabel="Agregar criterio"
+        onAction={() => setDialogOpen(true)}
+      />
       {/* `isPending`/`isError` en falso: las filas llegan dentro del detalle
           de la unidad, así que su carga y su error ya los maneja el panel. */}
       <DataTable
@@ -238,13 +279,16 @@ function Rubricas({ unidad }: { unidad: UnidadTematica }) {
         onRetry={() => {}}
         emptyMessage="Esta unidad no tiene criterios definidos."
       />
+      <DialogAgregarCriterio unidadId={unidad.id} open={dialogOpen} onOpenChange={setDialogOpen} />
     </div>
   )
 }
 
-function Actividades({ unidad }: { unidad: UnidadTematica }) {
+/** Exportado por el mismo motivo que `Rubricas` — ver su comentario. */
+export function Actividades({ unidad }: { unidad: UnidadTematica }) {
   const columns = React.useMemo(() => createUnidadActividadesColumns(), [])
   const { sorted, sorting, setSorting } = useSortedRows(unidad.actividades)
+  const [dialogOpen, setDialogOpen] = React.useState(false)
 
   const { table } = useDataTable({
     columns,
@@ -265,6 +309,7 @@ function Actividades({ unidad }: { unidad: UnidadTematica }) {
         title="Actividades de la unidad"
         description="Las actividades vinculadas y su peso dentro de la unidad."
         actionLabel="Vincular actividad"
+        onAction={() => setDialogOpen(true)}
       />
       <DataTable
         table={table}
@@ -273,7 +318,58 @@ function Actividades({ unidad }: { unidad: UnidadTematica }) {
         onRetry={() => {}}
         emptyMessage="Esta unidad todavía no tiene actividades vinculadas."
       />
+      <DialogAgregarActividad unidad={unidad} open={dialogOpen} onOpenChange={setDialogOpen} />
     </div>
+  )
+}
+
+/**
+ * Envuelve `Tabs` para poder correr el `useEffect` que corrige la pestaña
+ * seleccionada cuando la unidad activa cambia a una sin "Rúbricas" (por
+ * ejemplo, el usuario tenía esa pestaña abierta en una unidad Evaluativo
+ * y hace click en una unidad Formativo en la lista de la izquierda):
+ * sin esto, `Tabs` quedaría con un `value` que no matchea ningún
+ * `TabsTrigger` visible y no se vería ningún contenido.
+ */
+function UnidadTabs({
+  unidad,
+  tab,
+  onTabChange,
+}: {
+  unidad: UnidadTematica
+  tab: PanelTab
+  onTabChange: (tab: PanelTab) => void
+}) {
+  const visibleTabs = React.useMemo(() => getVisibleTabs(unidad), [unidad])
+
+  React.useEffect(() => {
+    if (!visibleTabs.some((t) => t.value === tab)) {
+      onTabChange("general")
+    }
+  }, [visibleTabs, tab, onTabChange])
+
+  return (
+    <Tabs value={tab} onValueChange={(value) => onTabChange(value as PanelTab)} className="w-full min-w-0">
+      <TabsList variant="folder">
+        {visibleTabs.map(({ value, label }) => (
+          <TabsTrigger key={value} value={value}>
+            {label}
+          </TabsTrigger>
+        ))}
+      </TabsList>
+
+      <TabsContent value="general" className={PANEL}>
+        <InformacionGeneral unidad={unidad} />
+      </TabsContent>
+      {unidad.enfoquePedagogico !== "Formativo" && (
+        <TabsContent value="rubricas" className={PANEL}>
+          <Rubricas unidad={unidad} />
+        </TabsContent>
+      )}
+      <TabsContent value="actividades" className={PANEL}>
+        <Actividades unidad={unidad} />
+      </TabsContent>
+    </Tabs>
   )
 }
 
@@ -285,7 +381,7 @@ function Actividades({ unidad }: { unidad: UnidadTematica }) {
  * dos vistas del Planeador—: son secciones del mismo recurso, no pantallas
  * distintas, y no aportan nada como URL enlazable.
  */
-export function UnidadDetallePanel({ unidadId }: UnidadDetallePanelProps) {
+export function UnidadDetallePanel({ unidadId, onDeleted }: UnidadDetallePanelProps) {
   const { data: unidad, isPending, isError, refetch } = useUnidadDetalleQuery(unidadId)
   const [tab, setTab] = React.useState<PanelTab>("general")
 
@@ -295,14 +391,22 @@ export function UnidadDetallePanel({ unidadId }: UnidadDetallePanelProps) {
         <h2 className="min-w-0 truncate text-base font-bold">
           {unidad?.nombre ?? "Cargando…"}
         </h2>
-        <div className="flex shrink-0 items-center gap-0.5">
-          <Button variant="ghost" color="neutral" size="icon-sm" disabled aria-label="Editar">
-            <PencilIcon />
-          </Button>
-          <Button variant="ghost" color="neutral" size="icon-sm" disabled aria-label="Eliminar">
-            <TrashIcon />
-          </Button>
-        </div>
+        {unidad && (
+          <div className="flex shrink-0 items-center gap-0.5">
+            {/* Página aparte, no modal — mismo criterio que "Editar" de
+                Actividad (`planeador-editar-actividad-page.tsx`). */}
+            <Button
+              variant="ghost"
+              color="neutral"
+              size="icon-sm"
+              aria-label="Editar"
+              render={<Link to={paths.app.planeadorUnidadEditar.getHref(unidad.id)} />}
+            >
+              <PencilIcon />
+            </Button>
+            <DialogDeleteUnidad unidad={unidad} onDeleted={onDeleted} />
+          </div>
+        )}
       </div>
 
       <div className="scrollbar-slim min-h-0 w-full min-w-0 flex-1 overflow-y-auto p-3">
@@ -322,29 +426,7 @@ export function UnidadDetallePanel({ unidadId }: UnidadDetallePanelProps) {
         )}
 
         {unidad && (
-          <Tabs
-            value={tab}
-            onValueChange={(value) => setTab(value as PanelTab)}
-            className="w-full min-w-0"
-          >
-            <TabsList variant="folder">
-              {TABS.map(({ value, label }) => (
-                <TabsTrigger key={value} value={value}>
-                  {label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-
-            <TabsContent value="general" className={PANEL}>
-              <InformacionGeneral unidad={unidad} />
-            </TabsContent>
-            <TabsContent value="rubricas" className={PANEL}>
-              <Rubricas unidad={unidad} />
-            </TabsContent>
-            <TabsContent value="actividades" className={PANEL}>
-              <Actividades unidad={unidad} />
-            </TabsContent>
-          </Tabs>
+          <UnidadTabs unidad={unidad} tab={tab} onTabChange={setTab} />
         )}
       </div>
     </div>
