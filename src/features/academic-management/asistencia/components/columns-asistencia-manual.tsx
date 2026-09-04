@@ -16,6 +16,8 @@ export const TIPO_OPTIONS: { value: TipoAsistencia; label: string }[] = [
   { value: 5, label: "Llegó tarde" },
 ]
 
+const TIPO_ITEMS = Object.fromEntries(TIPO_OPTIONS.map((opt) => [opt.value.toString(), opt.label]))
+
 interface BuildColumnsParams {
   fechaLabel: string
   seleccion: Record<number, TipoAsistencia>
@@ -38,7 +40,7 @@ export function buildColumnsAsistenciaManual({
       meta: { label: "Nombres" },
       header: ({ column }) => <DataTableColumnHeader column={column} title="Nombres" />,
       enableHiding: false,
-      cell: ({ row }) => <span className="font-medium uppercase">{row.original.nombre}</span>,
+      cell: ({ row }) => <span className="font-medium uppercase">{row.original.estudiante}</span>,
     },
     {
       id: "tipoAsistencia",
@@ -47,16 +49,14 @@ export function buildColumnsAsistenciaManual({
       enableSorting: false,
       enableHiding: false,
       cell: ({ row }) => {
-        const fkMatricula = row.original.fkMatricula
+        const fkMatricula = row.original.fk_matricula
         const value = seleccion[fkMatricula]
         return (
           <Select
+            items={TIPO_ITEMS}
             value={value?.toString() ?? ""}
             onValueChange={(next) => onChange(fkMatricula, Number(next) as TipoAsistencia)}
           >
-            {/* `h-8` pisa el `h-10` de `size="sm"` -- dentro de la fila, ya
-                achicada (`cellClassName="py-1"`), el trigger por defecto
-                seguía marcando el alto de toda la fila. */}
             <SelectTrigger variant="outlined" size="sm" className="h-8 w-40">
               <SelectValue placeholder="Seleccionar" />
             </SelectTrigger>
@@ -78,11 +78,12 @@ export function buildColumnsAsistenciaManual({
       enableSorting: false,
       enableHiding: false,
       cell: ({ row }) => {
-        const fkMatricula = row.original.fkMatricula
+        const fkMatricula = row.original.fk_matricula
         const tipo = seleccion[fkMatricula]
         if (tipo !== NO_ASISTIO) return null
 
         const archivo = soporte[fkMatricula] ?? null
+        const nombreExistente = archivo ? null : row.original.soporte_nombre
         return (
           <FileUpload
             value={archivo ? [archivo] : []}
@@ -97,13 +98,13 @@ export function buildColumnsAsistenciaManual({
                   type="button"
                   className={cn(
                     "flex items-center gap-1.5 text-sm hover:underline",
-                    archivo ? "text-foreground" : "text-muted-foreground",
+                    archivo || nombreExistente ? "text-foreground" : "text-muted-foreground",
                   )}
                 />
               }
             >
               <PaperclipIcon className="size-4 shrink-0" />
-              <span className="max-w-36 truncate">{archivo ? archivo.name : "Sin soporte"}</span>
+              <span className="max-w-36 truncate">{archivo?.name ?? nombreExistente ?? "Sin soporte"}</span>
             </FileUploadTrigger>
           </FileUpload>
         )

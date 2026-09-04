@@ -2,16 +2,23 @@ import { useQuery } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
 
-import type { RosterEstudiante } from "@/features/academic-management/asistencia/api/types/asistencia"
+import type {
+  AsistenciaSesionEstudiantesParams,
+  RosterEstudiante,
+} from "@/features/academic-management/asistencia/api/types/asistencia"
 
-function fetchRosterGrupo(fkGrupo: number): Promise<RosterEstudiante[]> {
-  return api.get<RosterEstudiante[]>("/eval-col/asistencias/roster", { params: { GRUPO: fkGrupo } })
+async function fetchEstudiantesSesion(params: AsistenciaSesionEstudiantesParams): Promise<RosterEstudiante[]> {
+  const raw = await api.get<{ rows: RosterEstudiante[] } | RosterEstudiante[]>(
+    "/eval-col/asistencias/sesion/estudiantes",
+    { params },
+  )
+  return Array.isArray(raw) ? raw : (raw.rows ?? [])
 }
 
-export function useAsistenciaRosterQuery(fkGrupo: number | null) {
+export function useAsistenciaRosterQuery(params: AsistenciaSesionEstudiantesParams | null) {
   return useQuery({
-    queryKey: ["asistencia", "roster", fkGrupo],
-    queryFn: () => fetchRosterGrupo(fkGrupo!),
-    enabled: fkGrupo !== null,
+    queryKey: ["asistencia", "sesion-estudiantes", params],
+    queryFn: () => fetchEstudiantesSesion(params!),
+    enabled: params !== null,
   })
 }

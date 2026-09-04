@@ -360,15 +360,10 @@ interface AcademicSectionProps {
   value: MatriculaAcademicInfo
   onChange: (value: MatriculaAcademicInfo) => void
   catalogs?: MatriculaCampusCatalog
-  /** Ids de campos obligatorios sin llenar (ver `validateMatricula`). */
   invalidFields?: string[]
-  /** El alta no lo pide — toda matrícula nueva arranca "cursando" — así que
-   * solo se muestra en detalle/edición. Siempre de solo lectura: el estado no
-   * se edita desde el formulario, solo cambia vía "Retirar"/"Reingreso"
-   * (ver MatriculaToolbar) — se muestra acá para que el valor actual quede a
-   * la vista mientras se edita el resto de la matrícula. */
   showStatus?: boolean
   fieldSettings?: MatriculaFieldSettingsMap
+  academicDisabled?: boolean
 }
 
 export function MatriculaAcademicSection({
@@ -378,6 +373,7 @@ export function MatriculaAcademicSection({
   invalidFields = [],
   showStatus = true,
   fieldSettings,
+  academicDisabled,
 }: AcademicSectionProps) {
   // Sede → Jornada → Grado → Grupo — mismo criterio que "Modificar" (ver
   // `dialog-modificar-matricula.tsx` y `use-matricula-dependent-catalogs-query.ts`).
@@ -412,6 +408,7 @@ export function MatriculaAcademicSection({
         required
         value={value.campus}
         options={catalogs?.campuses ?? []}
+        disabled={academicDisabled}
         invalid={invalidFields.includes("matricula-campus")}
         onChange={(campus) => onChange({ ...value, campus, shift: "", grade: "", group: "" })}
       />
@@ -422,7 +419,7 @@ export function MatriculaAcademicSection({
         value={value.shift}
         options={dependentCatalogs?.shifts ?? []}
         placeholder={!value.campus ? "Elegí sede primero" : "Seleccionar"}
-        disabled={!value.campus}
+        disabled={academicDisabled || !value.campus}
         invalid={invalidFields.includes("matricula-shift")}
         onChange={(shift) => onChange({ ...value, shift, grade: "", group: "" })}
       />
@@ -434,7 +431,7 @@ export function MatriculaAcademicSection({
         options={(dependentCatalogs?.grades ?? []).map((grado) => String(grado.valor))}
         labelFor={(option) => gradoNombreByValor.get(option) ?? option}
         placeholder={!value.shift ? "Elegí jornada primero" : "Seleccionar"}
-        disabled={!value.shift}
+        disabled={academicDisabled || !value.shift}
         invalid={invalidFields.includes("matricula-grade")}
         onChange={(grade) => onChange({ ...value, grade, group: "" })}
       />
@@ -448,7 +445,7 @@ export function MatriculaAcademicSection({
           dependentCatalogs?.groups.find((grupo) => String(grupo.id) === option)?.codigo ?? option
         }
         placeholder={!value.grade ? "Elegí grado primero" : "Seleccionar"}
-        disabled={!value.grade}
+        disabled={academicDisabled || !value.grade}
         invalid={invalidFields.includes("matricula-group")}
         onChange={(group) => onChange({ ...value, group })}
       />
