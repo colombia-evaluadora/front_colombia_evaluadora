@@ -8,6 +8,7 @@ import type { AsistenciaDayEntry } from "@/features/academic-management/asistenc
 import {
   ESTADO_SESION_COLOR,
   ESTADO_SESION_ICON,
+  formatGrado,
   peorEstado,
 } from "@/features/academic-management/asistencia/api/ui-mappings"
 
@@ -79,7 +80,7 @@ export function AsistenciaDayCellRectorPopover({ items, children }: AsistenciaDa
     view.level === "grados"
       ? "Grados"
       : view.level === "grupos"
-        ? `Grupos de ${view.grado} (${view.jornada})`
+        ? `Grupos de ${formatGrado(view.grado)} (${view.jornada})`
         : `${view.grupo} (${view.jornada})`
 
   return (
@@ -133,7 +134,7 @@ export function AsistenciaDayCellRectorPopover({ items, children }: AsistenciaDa
                     onClick={() => setView({ level: "grupos", grado, jornada })}
                   >
                     <EstadoIcon className={cn("size-3.5 shrink-0", ESTADO_SESION_COLOR[estado])} />
-                    <span className="min-w-0 flex-1 truncate font-medium">{grado}</span>
+                    <span className="min-w-0 flex-1 truncate font-medium">{formatGrado(grado)}</span>
                     <span className="shrink-0 rounded-sm bg-muted px-1 text-[10px] font-semibold text-muted-foreground">
                       {jornada}
                     </span>
