@@ -7,12 +7,15 @@ import type {
   SesionCalendario,
 } from "@/features/academic-management/asistencia/api/types/asistencia"
 
-interface RawSesionCalendario extends Omit<SesionCalendario, "fk_grupo" | "fk_asignatura" | "jornada"> {
+interface RawSesionCalendario extends Omit<SesionCalendario, "fk_grupo" | "fk_asignatura" | "grado" | "jornada"> {
   fk_grupo?: number
   fk_tgrupo?: number
   fk_asignatura?: number
   fk_tasignatura?: number
+  grado?: string
+  grado_valor?: string
   jornada?: string
+  jornada_valor?: string
 }
 
 function normalizarSesion(raw: RawSesionCalendario): SesionCalendario {
@@ -21,8 +24,8 @@ function normalizarSesion(raw: RawSesionCalendario): SesionCalendario {
     fecha: raw.fecha.slice(0, 10),
     fk_grupo: raw.fk_grupo ?? raw.fk_tgrupo ?? 0,
     fk_asignatura: raw.fk_asignatura ?? raw.fk_tasignatura ?? 0,
-    // GAP DE CONTRATO (ver types/asistencia.ts): no llega del backend real.
-    jornada: raw.jornada ?? "",
+    grado: raw.grado_valor ?? raw.grado ?? "",
+    jornada: raw.jornada_valor ?? raw.jornada ?? "",
   }
 }
 

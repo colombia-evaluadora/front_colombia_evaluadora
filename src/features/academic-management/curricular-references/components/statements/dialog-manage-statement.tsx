@@ -109,6 +109,7 @@ export function ManageStatementDialog({
             <Textarea
               id="statement-text"
               value={text}
+              maxLength={400}
               aria-invalid={Boolean(error)}
               onChange={(event) => setText(event.target.value)}
               placeholder={`Escribe el ${levelLabel.toLowerCase()}...`}
