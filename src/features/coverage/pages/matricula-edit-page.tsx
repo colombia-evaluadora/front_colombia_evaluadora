@@ -496,6 +496,7 @@ function MatriculaEditPageContent() {
                 departments={departments}
                 invalidFields={missingFields}
                 fieldSettings={fieldSettings}
+                academicDisabled={data.matricula.status !== "Cursando"}
               />
             </div>
           </TableScreenBody>

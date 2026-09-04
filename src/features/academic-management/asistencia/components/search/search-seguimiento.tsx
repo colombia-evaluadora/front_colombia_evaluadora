@@ -12,6 +12,7 @@ import {
 
 import {
   EMPTY_SEGUIMIENTO_FILTERS,
+  formatGrado,
   gradosDelCatalogo,
   gruposDeGrado,
   TIPO_ASISTENCIA_OPTIONS,
@@ -66,7 +67,7 @@ export function SearchSeguimiento({
   const jornadaItems = useMemo(() => [TODOS_ITEM, ...jornadaOptions], [jornadaOptions])
 
   const gradoItems = useMemo(
-    () => [TODOS_ITEM, ...gradosDelCatalogo(grupoCatalog).map((g) => ({ value: g, label: g }))],
+    () => [TODOS_ITEM, ...gradosDelCatalogo(grupoCatalog).map((g) => ({ value: g, label: formatGrado(g) }))],
     [grupoCatalog],
   )
   const grupoItems = useMemo(

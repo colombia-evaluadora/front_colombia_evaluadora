@@ -22,7 +22,7 @@ import {
   AsistenciaMonthGrid,
   type AsistenciaDayEntry,
 } from "@/features/academic-management/asistencia/components/asistencia-month-grid"
-import { gradoDeGrupo, peorEstado } from "@/features/academic-management/asistencia/api/ui-mappings"
+import { peorEstado } from "@/features/academic-management/asistencia/api/ui-mappings"
 
 function toIsoDate(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
@@ -117,7 +117,7 @@ function AsistenciaPageContent() {
           bloque: sesion.bloque,
           fkGrupo: sesion.fk_grupo,
           grupo: sesion.grupo,
-          grado: gradoDeGrupo(sesion.grupo),
+          grado: sesion.grado,
           jornada: sesion.jornada,
           fkAsignatura: sesion.fk_asignatura,
           asignatura: sesion.asignatura,
