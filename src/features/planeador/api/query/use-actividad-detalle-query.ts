@@ -31,9 +31,6 @@ export function useActividadDetalleQuery(id: string | undefined) {
     queryKey: id ? actividadDetalleQueryKey(id) : ["planeador", "actividad", "none"],
     queryFn: () => fetchActividadDetalle(id!),
     enabled: !!id,
-    // `0`: entrar al detalle/editar de una actividad siempre revalida contra
-    // el backend, en vez de confiar en el cache un rato — mismo criterio
-    // que `useActividadesQuery`.
-    staleTime: 0,
+    staleTime: 1000 * 60,
   })
 }
