@@ -108,5 +108,8 @@ export function useTableOperationsQuery(params: UseTableOperationsQueryParams) {
     queryKey: ["audit-tables", params.tableSlug, "operations", params],
     queryFn: () => fetchTableOperations(params),
     placeholderData: (previous) => previous,
+    // Mismo criterio que `useAuditsQuery`: revalidar en cada entrada a la
+    // pantalla en vez de confiar en el cache.
+    staleTime: 0,
   })
 }

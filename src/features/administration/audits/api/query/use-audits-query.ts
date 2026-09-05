@@ -91,5 +91,9 @@ export function useAuditsQuery(params: UseAuditsQueryParams) {
     queryKey: auditsQueryKey(params),
     queryFn: () => fetchAudits(params),
     placeholderData: (previous) => previous,
+    // Cada entrada a "Registro de actividad" revalida contra el backend en
+    // vez de confiar en el cache (60s por default) — el `placeholderData`
+    // de arriba evita el flash vacío mientras se revalida.
+    staleTime: 0,
   })
 }
