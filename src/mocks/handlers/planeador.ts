@@ -21,7 +21,7 @@ import type {
   ExportResult,
 } from "@/features/planeador/api/types/actividad"
 import { EXPORT_FORMAT_LABELS } from "@/features/planeador/api/types/actividad"
-import type { UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
+import type { NivelDesempenoCriterio, UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
 
 /**
  * Endpoints del Planeador bajo `/api/eval-col` — mismo prefijo que el resto
@@ -123,10 +123,7 @@ export const planeadorHandlers = [
     const id = String(params.id)
     const body = (await request.json()) as {
       nombre: string
-      bajo: string
-      basico: string
-      alto: string
-      superior: string
+      niveles: NivelDesempenoCriterio[]
     }
     const created = addCriterioToUnidad(id, body)
     if (!created) {
