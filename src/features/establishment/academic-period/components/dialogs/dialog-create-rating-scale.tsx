@@ -47,6 +47,7 @@ import {
 
 import { useCreateRatingScalesBulk } from "@/features/establishment/academic-period/api/mutations/create-rating-scales-bulk"
 import { useEvaluationCriteriaQuery } from "@/features/establishment/academic-period/api/query/use-evaluation-criteria"
+import { useRatingScalesQuery } from "@/features/establishment/academic-period/api/query/use-rating-scales"
 import { useRatingSymbolsQuery } from "@/features/establishment/academic-period/api/query/use-rating-symbols"
 import { useTeachingLevelsQuery } from "@/features/establishment/academic-period/api/query/use-teaching-levels"
 import { useRatingScaleTypesQuery } from "@/features/establishment/academic-period/api/query/use-rating-scale-types"
@@ -60,6 +61,10 @@ import {
   parseGradingRange,
   type GradingRange,
 } from "@/features/establishment/academic-period/components/grading-range"
+import {
+  findDuplicateRatingScale,
+  ratingScaleDuplicateMessage,
+} from "@/features/establishment/academic-period/components/rating-scale-duplicates"
 import { TeachingLevelsMultiSelect } from "@/features/establishment/academic-period/components/teaching-levels-multi-select"
 import {
   ScaleSortableHeader,
@@ -124,12 +129,30 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
   const { data: symbols = [] } = useRatingSymbolsQuery()
   const { data: tipoOptions = [] } = useRatingScaleTypesQuery()
   const { data: criteria } = useEvaluationCriteriaQuery(academicPeriodId)
+  const { data: existingScalesData } = useRatingScalesQuery({
+    filters: {},
+    sorting: [],
+    academicPeriodId,
+  })
   const createScalesBulk = useCreateRatingScalesBulk()
 
   const range = useMemo(() => parseGradingRange(criteria?.gradingFormatName), [criteria])
   const rangeRef = useRef(range)
   rangeRef.current = range
   const draftSchema = useMemo(() => makeRatingScaleGradesSchema(range), [range])
+
+  // Escalas ya existentes en alguno de los niveles seleccionados — la
+  // restricción de unicidad (Nombre/Abreviación) es por nivel de enseñanza
+  // (MantisBT 0000731). `useForm.onSubmit` cierra sobre el render inicial
+  // (mismo motivo que `rangeRef`), así que esto también necesita un ref.
+  const relevantExistingScales = useMemo(() => {
+    const rows = existingScalesData?.rows ?? []
+    return rows.filter((s) => s.teachingLevelIds.some((id) => teachingLevelIds.includes(id)))
+  }, [existingScalesData, teachingLevelIds])
+  const relevantExistingScalesRef = useRef(relevantExistingScales)
+  relevantExistingScalesRef.current = relevantExistingScales
+  const draftsRef = useRef(drafts)
+  draftsRef.current = drafts
 
   const form = useForm({
     defaultValues: makeEmptyDraft(range),
@@ -142,6 +165,16 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
       const parsed = makeRatingScaleGradesSchema(r).safeParse(value)
       if (!parsed.success) {
         showLocalNotice(parsed.error.issues[0]?.message ?? "Revisa los datos.", "error")
+        return
+      }
+      const duplicate = findDuplicateRatingScale(parsed.data, [
+        ...relevantExistingScalesRef.current,
+        ...draftsRef.current,
+      ])
+      if (duplicate) {
+        const duplicateValue =
+          duplicate.field === "nombre" ? parsed.data.nombre : parsed.data.abreviacion
+        showLocalNotice(ratingScaleDuplicateMessage(duplicate.field, duplicateValue), "error")
         return
       }
       setDrafts((prev) => [...prev, parsed.data])
@@ -169,6 +202,16 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
     const parsed = makeRatingScaleGradesSchema(r).safeParse(editRow)
     if (!parsed.success) {
       showLocalNotice(parsed.error.issues[0]?.message ?? "Revisa los datos.", "error")
+      return
+    }
+    const otherDrafts = drafts.filter((_, i) => i !== editingIndex)
+    const duplicate = findDuplicateRatingScale(parsed.data, [
+      ...relevantExistingScales,
+      ...otherDrafts,
+    ])
+    if (duplicate) {
+      const value = duplicate.field === "nombre" ? parsed.data.nombre : parsed.data.abreviacion
+      showLocalNotice(ratingScaleDuplicateMessage(duplicate.field, value), "error")
       return
     }
     setDrafts((prev) => prev.map((d, i) => (i === editingIndex ? parsed.data : d)))

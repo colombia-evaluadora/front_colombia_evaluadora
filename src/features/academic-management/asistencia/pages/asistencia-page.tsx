@@ -22,32 +22,16 @@ import {
   AsistenciaMonthGrid,
   type AsistenciaDayEntry,
 } from "@/features/academic-management/asistencia/components/asistencia-month-grid"
-import { peorEstado } from "@/features/academic-management/asistencia/api/ui-mappings"
+import { agruparPorBloquesContinuos } from "@/features/academic-management/asistencia/api/ui-mappings"
+import type { SesionCalendario } from "@/features/academic-management/asistencia/api/types/asistencia"
 
 function toIsoDate(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
 }
 
-// `'CEVAL-' || TROL.CODIGO` (ver lib/auth-mapper.ts) -- mismo criterio que
-// `SUPER_ADMIN_ROLE` ahí: se compara el claim crudo, no una versión
-// simplificada.
-//
-// La vista detallada (sesión por sesión, "Marcar todo", "Asistencia manual")
-// es SOLO para Docente. Cualquier otro rol -- Rector, Administrador,
-// Coordinador -- ve el resumen por grado de solo lectura: no es que Rector
-// tenga un permiso especial, es que Docente es el único con uno EXTRA.
 const DOCENTE_ROLE = "CEVAL-DOCENTE"
 
-/**
- * Pantalla de calendario de Asistencia (el mockup). Sede + día seleccionado
- * viven como estado local de la página, igual que `displayMonth` en
- * `PlaneadorPage` — no aportan nada persistidos en la URL.
- *
- * `useNotify` solo ve el `NoticeProvider` real si el componente que lo llama
- * es HIJO de ese provider en el árbol -- por eso el wrapper de abajo separa
- * "quien monta el provider" de "quien lo consume" (mismo criterio que
- * `table-matricula.tsx`).
- */
+
 export function AsistenciaPage() {
   return (
     <NoticeProvider>
@@ -98,37 +82,34 @@ function AsistenciaPageContent() {
 
   const events = React.useMemo(() => {
     const map = new Map<number, AsistenciaDayEntry[]>()
-    const porDia = new Map<number, Map<string, AsistenciaDayEntry>>()
+    const porDia = new Map<number, SesionCalendario[]>()
 
     for (const sesion of sesiones ?? []) {
       const day = Number(sesion.fecha.split("-")[2])
       if (Number.isNaN(day)) continue
-
-      const key = `${sesion.fk_grupo}-${sesion.fk_asignatura}`
-      const porClave = porDia.get(day) ?? new Map<string, AsistenciaDayEntry>()
-      const existente = porClave.get(key)
-
-      if (existente) {
-        existente.estado = peorEstado([existente.estado, sesion.estado_sesion])
-      } else {
-        porClave.set(key, {
-          id: `${sesion.fk_grupo}-${sesion.fk_asignatura}-${sesion.fecha}`,
-          fecha: sesion.fecha,
-          bloque: sesion.bloque,
-          fkGrupo: sesion.fk_grupo,
-          grupo: sesion.grupo,
-          grado: sesion.grado,
-          jornada: sesion.jornada,
-          fkAsignatura: sesion.fk_asignatura,
-          asignatura: sesion.asignatura,
-          estado: sesion.estado_sesion,
-        })
-      }
-      porDia.set(day, porClave)
+      const lista = porDia.get(day) ?? []
+      lista.push(sesion)
+      porDia.set(day, lista)
     }
 
-    for (const [day, porClave] of porDia) {
-      map.set(day, [...porClave.values()])
+    for (const [day, lista] of porDia) {
+      map.set(
+        day,
+        agruparPorBloquesContinuos(lista).map((b) => ({
+          id: `${b.fkGrupo}-${b.fkAsignatura}-${b.fecha}-${b.bloque}`,
+          fecha: b.fecha,
+          bloque: b.bloque,
+          fkGrupo: b.fkGrupo,
+          grupo: b.grupo,
+          grado: b.grado,
+          jornada: b.jornada,
+          fkAsignatura: b.fkAsignatura,
+          asignatura: b.asignatura,
+          horaInicio: b.horaInicio,
+          horaFin: b.horaFin,
+          estado: b.estado,
+        })),
+      )
     }
     return map
   }, [sesiones])
@@ -178,7 +159,7 @@ function AsistenciaPageContent() {
             render={
               <Link
                 to={paths.app.asistenciaSeguimiento.getHref()}
-                search={{ fecha: toIsoDate(selectedDay), sede: sedeId ?? undefined }}
+                search={{ sede: sedeId ?? undefined }}
               />
             }
             nativeButton={false}
