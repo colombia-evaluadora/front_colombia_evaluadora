@@ -67,7 +67,7 @@ function applyFilters(
 
     if (
       filters.educationLevels?.length &&
-      !filters.educationLevels.includes(String(row.educationLevel?.id ?? ""))
+      !row.educationLevels.some((level) => filters.educationLevels!.includes(String(level.id)))
     ) {
       return false
     }
@@ -95,7 +95,7 @@ function applyFilters(
 }
 
 function sortValue(row: CurricularReference, id: string) {
-  if (id === "educationLevel") return row.educationLevel?.name ?? ""
+  if (id === "educationLevel") return row.educationLevels.map((level) => level.name).join(", ")
   if (id === "pedagogicalApproach") return row.pedagogicalApproach?.name ?? ""
   if (id === "evaluationType") return row.evaluationType?.name ?? ""
   return row[id as keyof CurricularReference]

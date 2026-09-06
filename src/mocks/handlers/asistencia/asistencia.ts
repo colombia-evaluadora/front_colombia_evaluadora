@@ -6,6 +6,7 @@ import {
   generarResumenHoras,
   generarSeguimiento,
   generarSesionesMes,
+  registrarArchivoSubido,
   registrarAsistenciaManual,
   TIPO_ASISTENCIA_NOMBRE,
 } from "@/mocks/db/asistencia/asistencia"
@@ -19,6 +20,16 @@ import type {
 } from "@/features/academic-management/asistencia/api/types/asistencia"
 
 export const asistenciaHandlers = [
+  http.post("*/api/files/eval-col/tmp-icono-simbolo", async ({ request }) => {
+    await delay(200)
+
+    const form = await request.formData()
+    const archivo = form.get("ICONO")
+    const nombre = archivo instanceof File ? archivo.name : "soporte.pdf"
+
+    return HttpResponse.json({ pk_tarchivo: registrarArchivoSubido(nombre) })
+  }),
+
   http.get("*/api/eval-col/asistencias/calendario", async ({ request }) => {
     await delay(200)
 
@@ -43,12 +54,6 @@ export const asistenciaHandlers = [
     return HttpResponse.json(resumen)
   }),
 
-  // Pantalla "Seguimiento" — sin SEDE en el contrato real (V221): el
-  // alcance lo resuelve el backend por rol, no un filtro en el body. El
-  // mock igual necesita saber cuál sede mostrar (para que coincida con la
-  // que se estaba viendo en Asistencia), así que viaja como query string
-  // (`?SEDE=`), no en el `FILTERS` del body -- mismo patrón que
-  // `resumen-horas`/`calendario` arriba, y no contamina el contrato real.
   http.post("*/api/eval-col/asistencias/query", async ({ request }) => {
     await delay(250)
 
@@ -103,10 +108,6 @@ export const asistenciaHandlers = [
     )
   }),
 
-  // Editar un registro puntual desde "Seguimiento". Campos ausentes = no se
-  // tocan; LIMPIAR_ARCHIVO/LIMPIAR_OBSERVACION son la única forma de
-  // vaciarlos (mismo criterio que el backend real). Persiste vía
-  // `aplicarEdicionAsistencia` para que el próximo /query lo refleje.
   http.patch("*/api/eval-col/asistencias/:id", async ({ request, params }) => {
     await delay(250)
 
