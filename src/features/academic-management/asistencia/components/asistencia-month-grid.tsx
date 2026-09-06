@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils"
 
 import { paths } from "@/config/paths"
 import type { EstadoSesion } from "@/features/academic-management/asistencia/api/types/asistencia"
-import { ESTADO_SESION_COLOR, ESTADO_SESION_ICON, formatGrado, peorEstado } from "@/features/academic-management/asistencia/api/ui-mappings"
+import { ESTADO_SESION_COLOR, ESTADO_SESION_ICON, formatGrado, formatHoraRango, peorEstado } from "@/features/academic-management/asistencia/api/ui-mappings"
 import { AsistenciaDayCellRectorPopover } from "@/features/academic-management/asistencia/components/asistencia-day-cell-rector-popover"
 
 export interface AsistenciaDayEntry {
@@ -23,6 +23,8 @@ export interface AsistenciaDayEntry {
   jornada: string
   fkAsignatura: number
   asignatura: string
+  horaInicio: string | null
+  horaFin: string | null
   estado: EstadoSesion
 }
 
@@ -79,20 +81,23 @@ export function AsistenciaMonthGrid({
             date.toLocaleString("es-CO", { weekday: "short" }).replace(".", "").slice(0, 3),
         }}
         classNames={{
-          root: cn("w-full", defaultClassNames.root),
-          months: cn("relative flex flex-col", defaultClassNames.months),
+          root: cn(
+            "w-full overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+            defaultClassNames.root,
+          ),
+          months: cn("relative flex min-w-[840px] flex-col", defaultClassNames.months),
           month: cn("flex w-full flex-col", defaultClassNames.month),
           month_caption: "hidden",
           caption_label: "hidden",
           button_previous: "hidden",
           button_next: "hidden",
           month_grid: cn("w-full border-collapse", defaultClassNames.month_grid),
-          weekdays: cn("flex w-full border-b border-muted-22", defaultClassNames.weekdays),
+          weekdays: cn("flex w-full min-w-[840px] border-b border-muted-22", defaultClassNames.weekdays),
           weekday: cn(
             "flex-1 border-r border-muted-22 py-2.5 text-center text-xs font-normal tracking-wide text-muted-foreground uppercase select-none last:border-r-0",
             defaultClassNames.weekday,
           ),
-          week: cn("flex w-full", defaultClassNames.week),
+          week: cn("flex w-full min-w-[840px]", defaultClassNames.week),
           today: "",
         }}
         components={{
@@ -279,12 +284,16 @@ function DayCellPopover({
         <ul className="flex max-h-80 flex-col gap-3 overflow-y-auto pr-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {items.map((item) => {
             const marcado = markedEntryIds.has(item.id)
+            const horaRango = formatHoraRango(item.horaInicio, item.horaFin)
             return (
               <li key={item.id} className="flex flex-col gap-1">
                 <span className="text-xs font-semibold text-muted-foreground">
                   {item.grado}{item.grupo} ({item.jornada})
                 </span>
-                <span className="text-sm font-medium">{item.asignatura}</span>
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="text-sm font-medium">{item.asignatura}</span>
+                  {horaRango && <span className="shrink-0 text-xs text-muted-foreground">{horaRango}</span>}
+                </div>
                 <button
                   type="button"
                   disabled={markingEntryId !== null}
