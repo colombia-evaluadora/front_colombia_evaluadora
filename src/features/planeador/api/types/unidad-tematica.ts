@@ -30,29 +30,55 @@ export type MetodoCalculo = "Ponderado" | "Promedio simple" | "Suma de puntos"
 export type EnfoquePedagogico = "Evaluativo" | "Formativo"
 
 /**
- * Criterio de la rúbrica de la unidad. NO es el `Criterio` de `Actividad`: acá
- * el criterio se describe en los cuatro niveles de desempeño (una columna por
- * nivel en la tabla), mientras que el de la actividad solo guarda el nivel
- * "excelente" y una ponderación.
+ * Descripción de un criterio en UN nivel de desempeño puntual. `nombre` es
+ * el nombre de la banda ("Bajo"/"Básico"/"Alto"/"Superior" por default, o
+ * el que traiga la escala de valoración configurada para el nivel
+ * educativo de la unidad — ver `useNivelesDesempenoNombres` en
+ * `use-niveles-desempeno.ts`); `descripcion` es lo que el docente escribe.
+ */
+export interface NivelDesempenoCriterio {
+  nombre: string
+  descripcion: string
+}
+
+/**
+ * Criterio de la rúbrica de la unidad. NO es el `Criterio` de `Actividad`:
+ * acá el criterio se describe en TANTOS niveles de desempeño como tenga la
+ * escala de valoración configurada (una columna por nivel en la tabla) —
+ * no un número fijo—, mientras que el de la actividad solo guarda el
+ * nivel "excelente" y una ponderación.
  */
 export interface CriterioUnidad {
   id: string
   nombre: string
-  bajo: string
-  basico: string
-  alto: string
-  superior: string
+  niveles: NivelDesempenoCriterio[]
 }
 
-/** Actividad vinculada a la unidad, con su peso dentro de ella. */
+/**
+ * Actividad vinculada a la unidad, con su peso dentro de ella. Es un
+ * registro de vínculo (join), no la actividad completa: `nombre`/`tipo`/
+ * `instrumento`/`grupo` quedan congelados acá al momento de vincular
+ * —igual que el resto de este modelo, que no vive sincronizado con el
+ * de `Actividad`— y `actividadId` es la única referencia real de vuelta
+ * a la actividad de origen (`Actividad.id` en `planeadorDb`).
+ *
+ * Esa referencia es lo que permite calcular, al abrir "Agregar
+ * actividad", qué actividades de la unidad TODAVÍA no están vinculadas
+ * (`Actividad.unidad.id === unidad.id` y su id no aparece en ningún
+ * `UnidadActividad.actividadId` de `unidad.actividades`).
+ */
 export interface UnidadActividad {
   id: string
+  /** Referencia a `Actividad.id` — ver el comentario de arriba. */
+  actividadId: string
   nombre: string
   /** "Formativa" | "Sumativa" — no es el `ActividadTipo` del otro modelo. */
   tipo: string
   instrumento: string
   grupo: string
-  /** Peso dentro de la unidad, 0-100. */
+  /** Peso dentro de la unidad, 0-100. Solo tiene sentido cuando
+   *  `metodoCalculo === "Ponderado"`; con "Promedio simple" o "Suma de
+   *  puntos" el vínculo no pide porcentaje y este campo queda en 0. */
   ponderacion: number
 }
 
@@ -74,6 +100,15 @@ export interface UnidadTematica {
   metodoCalculo: MetodoCalculo
   grado: string
   asignatura: string
+  /**
+   * Textos de los enunciados de Derechos Básicos de Aprendizaje (DBA)
+   * elegidos para esta unidad. Se ofrecen para elegir según el Referente
+   * Curricular que le corresponde al `grado` (por nivel educativo) — ver
+   * `useEnunciadosDbaQuery` —, pero acá se guarda el texto plano, no el id
+   * del enunciado: mismo criterio que `objetivos`/`contenidos`, así el
+   * form los agrega/quita con el mismo widget (`ListaAgregableCaja`).
+   */
+  enunciadosDba: string[]
   criterios: CriterioUnidad[]
   actividades: UnidadActividad[]
 }

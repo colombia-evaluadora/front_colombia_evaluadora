@@ -59,3 +59,19 @@ export const planeadorUnidadesSearchSchema = z.object({
   unidad: z.string().optional().catch(undefined),
 })
 export type PlaneadorUnidadesSearch = z.infer<typeof planeadorUnidadesSearchSchema>
+
+/**
+ * El recurso completo viaja en el search de esta ruta (no hay endpoint por
+ * id: un recurso recién agregado en el form de Actividad vive solo en el
+ * estado del form hasta que se guarda). `tipo` llega como string suelto
+ * —no como el literal `RecursoTipo`— porque `zod` no puede validar un
+ * union literal arbitrario tipado en otro archivo sin duplicarlo acá.
+ */
+export const planeadorRecursoPreviewSearchSchema = z.object({
+  tipo: z.string().optional().catch(undefined),
+  url: z.string().optional().catch(undefined),
+  fuente: z.string().optional().catch(undefined),
+  titulo: z.string().optional().catch(undefined),
+  descripcion: z.string().optional().catch(undefined),
+})
+export type PlaneadorRecursoPreviewSearch = z.infer<typeof planeadorRecursoPreviewSearchSchema>
