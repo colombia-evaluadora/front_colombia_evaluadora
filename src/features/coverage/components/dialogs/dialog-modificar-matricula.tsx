@@ -554,6 +554,9 @@ export function ModificarMatriculaDialog({
                       <ComboboxFieldValue placeholder="Seleccionar" />
                     </ComboboxFieldTrigger>
                     <ComboboxFieldContent>
+                      <ComboboxFieldItem key="__empty__" value="">
+                        Seleccionar
+                      </ComboboxFieldItem>
                       {(catalogs?.campuses ?? []).map((campus) => (
                         <ComboboxFieldItem key={campus} value={campus}>
                           {campus}
@@ -576,6 +579,9 @@ export function ModificarMatriculaDialog({
                       />
                     </ComboboxFieldTrigger>
                     <ComboboxFieldContent>
+                      <ComboboxFieldItem key="__empty__" value="">
+                        Seleccionar
+                      </ComboboxFieldItem>
                       {(dependentCatalogs?.shifts ?? []).map((value) => (
                         <ComboboxFieldItem key={value} value={value}>
                           {value}
@@ -588,12 +594,13 @@ export function ModificarMatriculaDialog({
                 <Field variant="outlined">
                   <FieldLabel>Grado</FieldLabel>
                   <ComboboxField
-                    items={Object.fromEntries(
-                      (dependentCatalogs?.grades ?? []).map((grade) => [
+                    items={Object.fromEntries([
+                      ["", "Seleccionar"],
+                      ...(dependentCatalogs?.grades ?? []).map((grade) => [
                         String(grade.valor),
                         grade.nombre,
                       ]),
-                    )}
+                    ])}
                     value={grado}
                     onValueChange={(v) => handleGradoChange(v ?? "")}
                     disabled={!jornada}
@@ -604,6 +611,9 @@ export function ModificarMatriculaDialog({
                       />
                     </ComboboxFieldTrigger>
                     <ComboboxFieldContent>
+                      <ComboboxFieldItem key="__empty__" value="">
+                        Seleccionar
+                      </ComboboxFieldItem>
                       {(dependentCatalogs?.grades ?? []).map((grade) => (
                         <ComboboxFieldItem key={grade.valor} value={String(grade.valor)}>
                           {grade.nombre}
@@ -632,6 +642,9 @@ export function ModificarMatriculaDialog({
                       />
                     </ComboboxFieldTrigger>
                     <ComboboxFieldContent>
+                      <ComboboxFieldItem key="__empty__" value="">
+                        Seleccionar
+                      </ComboboxFieldItem>
                       {(dependentCatalogs?.groups ?? []).map((group) => (
                         <ComboboxFieldItem key={group.id} value={group.codigo}>
                           {group.codigo}

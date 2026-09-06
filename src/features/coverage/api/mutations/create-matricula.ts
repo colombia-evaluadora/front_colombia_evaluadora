@@ -9,6 +9,7 @@ import type { MutationConfig } from "@/lib/react-query"
 import { toCreateMatriculaBody } from "@/features/coverage/api/mutations/to-create-matricula-body"
 import { registerMatriculaPersona } from "@/features/coverage/api/mutations/register-matricula-persona"
 import { registerUsuarioAdministrado } from "@/features/coverage/api/mutations/register-usuario-administrado"
+import { findMatriculaUsuarioPorDocumento } from "@/features/coverage/api/query/use-matricula-usuario-por-documento"
 import { isPreescolarPrimariaGrado } from "@/features/coverage/utils/matricula-grado-rules"
 import type { MatriculaSupportFiles } from "@/features/coverage/components/forms/form-create-matricula"
 import type {
@@ -40,6 +41,9 @@ async function resolvePkUsuarioEstudiante(
 ): Promise<number> {
   if (pkUsuarioEstudiante != null) return pkUsuarioEstudiante
   const { student, studentContact } = values
+  const found = await findMatriculaUsuarioPorDocumento(Number(student.documentType), student.documentNumber)
+  if (found) return found.pkTusuario
+
   const esPreescolarPrimaria = gradoId != null && isPreescolarPrimariaGrado(values.academic.grade)
 
   // Preescolar/primaria no tiene correo -- se crea sin cuenta de acceso
@@ -81,6 +85,13 @@ async function resolvePkUsuarioAcudiente(
 ): Promise<number> {
   if (pkUsuarioAcudiente != null) return pkUsuarioAcudiente
   const { guardian, guardianContact } = values
+
+  // Mismo caso que el estudiante: si un intento previo ya creó la cuenta
+  // del acudiente y la matrícula falló después, reusarla en vez de
+  // reintentar el alta.
+  const found = await findMatriculaUsuarioPorDocumento(Number(guardian.documentType), guardian.documentNumber)
+  if (found) return found.pkTusuario
+
   const result = await registerMatriculaPersona({
     documentTypeId: Number(guardian.documentType),
     documentNumber: guardian.documentNumber,

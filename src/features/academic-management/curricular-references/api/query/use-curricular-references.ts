@@ -10,6 +10,7 @@ import type {
   CurricularReferencesQueryRequest,
   CurricularReferencesQueryResponse,
 } from "@/features/academic-management/curricular-references/api/types/curricular-reference"
+import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 
 interface UseCurricularReferencesQueryParams {
   filters: CurricularReferencesQueryRequest["filters"]
@@ -34,15 +35,17 @@ interface CurricularReferenceRow {
   total_count: number
 }
 
-function displayOnlyCatalogItem(name: string | null): CurricularReference["educationLevel"] {
+function displayOnlyCatalogItem(name: string | null): CatalogItem | null {
   return name ? { id: -1, code: "", name } : null
 }
 
 function toCurricularReference(row: CurricularReferenceRow): CurricularReference {
+  const educationLevel = displayOnlyCatalogItem(row.nivel_educativo)
+
   return {
     id: row.pk_referente_curricular,
     name: row.nombre,
-    educationLevel: displayOnlyCatalogItem(row.nivel_educativo),
+    educationLevels: educationLevel ? [educationLevel] : [],
     description: row.descripcion,
     level1: "",
     level2: "",

@@ -9,13 +9,12 @@ import type {
   SesionCalendario,
   TipoAsistencia,
 } from "@/features/academic-management/asistencia/api/types/asistencia"
-import { gradoDeGrupo } from "@/features/academic-management/asistencia/api/ui-mappings"
 
 const GRUPOS = [
-  { fk_grupo: 601, grupo: "601", grado: "6", jornada: "C" },
-  { fk_grupo: 602, grupo: "602", grado: "6", jornada: "T" },
-  { fk_grupo: 701, grupo: "701", grado: "7", jornada: "C" },
-  { fk_grupo: 801, grupo: "801", grado: "8", jornada: "T" },
+  { fk_grupo: 601, grupo: "601", grado: "6", gradoNombre: "Sexto", jornada: "C", jornadaNombre: "Completa" },
+  { fk_grupo: 602, grupo: "602", grado: "6", gradoNombre: "Sexto", jornada: "T", jornadaNombre: "Tarde" },
+  { fk_grupo: 701, grupo: "701", grado: "7", gradoNombre: "Séptimo", jornada: "C", jornadaNombre: "Completa" },
+  { fk_grupo: 801, grupo: "801", grado: "8", gradoNombre: "Octavo", jornada: "T", jornadaNombre: "Tarde" },
 ]
 
 const ASIGNATURAS = [
@@ -86,7 +85,9 @@ export function generarSesionesMes(sedeId: number, anio: number, mes: number): S
           fk_grupo: grupo.fk_grupo,
           grupo: grupo.grupo,
           grado: grupo.grado,
+          grado_nombre: grupo.gradoNombre,
           jornada: grupo.jornada,
+          jornada_nombre: grupo.jornadaNombre,
           fk_asignatura: asignatura.fk_asignatura,
           asignatura: asignatura.asignatura,
           hora_inicio: horaBloque(fechaIso, bloque, 0),
@@ -225,11 +226,12 @@ function generarTodosLosRegistros(sedeId: number): AsistenciaQueryRow[] {
         tiene_soporte: tieneSoporte,
         fk_soporte_archivo: tieneSoporte ? pk : null,
         soporte_nombre: tieneSoporte ? ARCHIVOS_SOPORTE[(i + j) % ARCHIVOS_SOPORTE.length] : null,
-        // Ventanas (total_estudiantes/ausentes/total_count) las calcula el
-        // handler sobre el set YA filtrado -- acá quedan en 0 como
-        // placeholder.
+        // Ventanas (total_estudiantes/ausentes/tarde/total_count) las
+        // calcula el handler sobre el set YA filtrado -- acá quedan en 0
+        // como placeholder.
         total_estudiantes: 0,
         ausentes: 0,
+        tarde: 0,
         total_count: 0,
       })
     })
@@ -273,8 +275,6 @@ export function generarSeguimiento(
       (r) => ASIGNATURAS.find((a) => a.asignatura === r.asignatura)?.fk_asignatura === filters.ASIGNATURA,
     )
   }
-  if (filters.JORNADA) rows = rows.filter((r) => r.jornada === filters.JORNADA)
-  if (filters.GRADO) rows = rows.filter((r) => gradoDeGrupo(r.grupo) === filters.GRADO)
   if (filters.TIPO_ASISTENCIA != null) {
     rows = rows.filter((r) => r.tipo_asistencia_valor === filters.TIPO_ASISTENCIA)
   }
@@ -289,13 +289,15 @@ export function generarSeguimiento(
     )
   }
 
-  // Ventanas sobre el set filtrado COMPLETO: ausentes cuenta ESTUDIANTES
-  // DISTINTOS (documento), no registros -- mismo criterio que el backend real.
+  // Ventanas sobre el set filtrado COMPLETO: ausentes/tarde cuentan
+  // ESTUDIANTES DISTINTOS (documento), no registros -- mismo criterio que
+  // el backend real.
   const totalEstudiantes = new Set(rows.map((r) => r.documento)).size
   const ausentes = new Set(rows.filter((r) => r.tipo_asistencia_valor === 2 || r.tipo_asistencia_valor === 3).map((r) => r.documento)).size
+  const tarde = new Set(rows.filter((r) => r.tipo_asistencia_valor === 5 || r.tipo_asistencia_valor === 6).map((r) => r.documento)).size
   const totalCount = rows.length
 
-  return rows.map((r) => ({ ...r, total_estudiantes: totalEstudiantes, ausentes, total_count: totalCount }))
+  return rows.map((r) => ({ ...r, total_estudiantes: totalEstudiantes, ausentes, tarde, total_count: totalCount }))
 }
 
 // ── Padrón de sesión (GET /asistencias/sesion/estudiantes, pantalla
@@ -323,6 +325,19 @@ interface RegistroManual {
   observacion: string | null
   fk_soporte_archivo: number | null
   soporte_nombre: string | null
+}
+
+// ── Subida de soporte (paso 1 de 2, POST /files/eval-col/tmp-icono-simbolo) ─
+// El nombre original se pierde una vez resuelto a `pk_tarchivo` (el POST
+// /registrar solo manda el id) -- se guarda acá para que el padrón pueda
+// seguir mostrando el nombre real del archivo en vez de un genérico.
+const archivosSubidos = new Map<number, string>()
+let siguientePkArchivo = 900000
+
+export function registrarArchivoSubido(nombre: string): number {
+  const pk = siguientePkArchivo++
+  archivosSubidos.set(pk, nombre)
+  return pk
 }
 
 // Persiste, por `(matrícula, grupo, asignatura, fecha, bloque)`, lo que ya
@@ -380,9 +395,9 @@ export function registrarAsistenciaManual(body: AsistenciaRegistrarRequest): num
       pk_tasistencia: existente?.pk_tasistencia ?? siguientePkManual++,
       tipo_asistencia_valor: tipo,
       observacion: observacion ?? existente?.observacion ?? null,
-      fk_soporte_archivo: tieneArchivoNuevo ? Number(fkArchivo) || siguientePkManual : (existente?.fk_soporte_archivo ?? null),
+      fk_soporte_archivo: tieneArchivoNuevo ? Number(fkArchivo) : (existente?.fk_soporte_archivo ?? null),
       soporte_nombre: tieneArchivoNuevo
-        ? (typeof fkArchivo === "object" && fkArchivo && "name" in fkArchivo ? String((fkArchivo as { name: unknown }).name) : "soporte.pdf")
+        ? (archivosSubidos.get(Number(fkArchivo)) ?? "soporte.pdf")
         : (existente?.soporte_nombre ?? null),
     })
   }
