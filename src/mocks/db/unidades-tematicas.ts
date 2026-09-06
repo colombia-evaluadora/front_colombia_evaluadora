@@ -1,4 +1,8 @@
-import type { UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
+import type {
+  CriterioUnidad,
+  UnidadActividad,
+  UnidadTematica,
+} from "@/features/planeador/api/types/unidad-tematica"
 
 /**
  * Seed determinista de unidades temáticas. Cuatro unidades con los cuatro
@@ -34,71 +38,73 @@ export const unidadesTematicasDb: UnidadTematica[] = [
     metodoCalculo: "Ponderado",
     grado: "Sexto",
     asignatura: "Metodología de la investigación",
+    enunciadosDba: [
+      "Fortalecer la comunicación oral y la escucha activa en diferentes contextos.",
+    ],
     criterios: [
       {
         id: "cu1",
         nombre: "Comprensión de los conceptos",
-        bajo: "Muestra poca o ninguna comprensión de conceptos.",
-        basico: "Comprende algunos conceptos, pero con dificultades.",
-        alto: "Comprende la mayoría de los conceptos clave.",
-        superior: "Comprende en profundidad todos los conceptos.",
+        niveles: [
+          { nombre: "Bajo", descripcion: "Muestra poca o ninguna comprensión de conceptos." },
+          { nombre: "Básico", descripcion: "Comprende algunos conceptos, pero con dificultades." },
+          { nombre: "Alto", descripcion: "Comprende la mayoría de los conceptos clave." },
+          { nombre: "Superior", descripcion: "Comprende en profundidad todos los conceptos." },
+        ],
       },
       {
         id: "cu2",
         nombre: "Aplicación en situaciones reales",
-        bajo: "No logra aplicar los conceptos en situaciones prácticas.",
-        basico: "Aplica los conceptos con apoyo constante.",
-        alto: "Aplica los conceptos en la mayoría de las situaciones.",
-        superior: "Aplica los conceptos de manera autónoma y creativa.",
+        niveles: [
+          { nombre: "Bajo", descripcion: "No logra aplicar los conceptos en situaciones prácticas." },
+          { nombre: "Básico", descripcion: "Aplica los conceptos con apoyo constante." },
+          { nombre: "Alto", descripcion: "Aplica los conceptos en la mayoría de las situaciones." },
+          { nombre: "Superior", descripcion: "Aplica los conceptos de manera autónoma y creativa." },
+        ],
       },
       {
         id: "cu3",
         nombre: "Análisis y pensamiento crítico",
-        bajo: "Presenta análisis superficiales y sin fundamentos.",
-        basico: "Realiza análisis básicos con algunos fundamentos.",
-        alto: "Realiza análisis críticos con fundamentos sólidos.",
-        superior: "Realiza análisis profundos con excelente argumentación.",
+        niveles: [
+          { nombre: "Bajo", descripcion: "Presenta análisis superficiales y sin fundamentos." },
+          { nombre: "Básico", descripcion: "Realiza análisis básicos con algunos fundamentos." },
+          { nombre: "Alto", descripcion: "Realiza análisis críticos con fundamentos sólidos." },
+          { nombre: "Superior", descripcion: "Realiza análisis profundos con excelente argumentación." },
+        ],
       },
       {
         id: "cu4",
         nombre: "Trabajo colaborativo",
-        bajo: "Participa muy poco y no aporta al trabajo del grupo.",
-        basico: "Participa ocasionalmente y su aporte es limitado.",
-        alto: "Participa activamente y aporta ideas relevantes.",
-        superior: "Lidera el trabajo del grupo y potencia los aportes ajenos.",
+        niveles: [
+          { nombre: "Bajo", descripcion: "Participa muy poco y no aporta al trabajo del grupo." },
+          { nombre: "Básico", descripcion: "Participa ocasionalmente y su aporte es limitado." },
+          { nombre: "Alto", descripcion: "Participa activamente y aporta ideas relevantes." },
+          { nombre: "Superior", descripcion: "Lidera el trabajo del grupo y potencia los aportes ajenos." },
+        ],
       },
     ],
+    // Solo 2 de las 6 actividades de esta unidad (601-604, 609, 610 en
+    // `planeadorDb`) están vinculadas — suman 50%, dejando "Disponible
+    // para asignar: 50%" en el diálogo "Agregar actividad" (las otras 4
+    // aparecen ahí como candidatas). `actividadId` es la referencia real
+    // a `Actividad.id` — ver el comentario de `UnidadActividad`.
     actividades: [
       {
         id: "ua1",
-        nombre: "Entrevista a usuarios",
-        tipo: "Formativa",
+        actividadId: "601",
+        nombre: "Proyecto final: Diseño de prototipo 1",
+        tipo: "Sumativa",
         instrumento: "Rúbrica",
-        grupo: "Grupo A",
+        grupo: "A",
         ponderacion: 25,
       },
       {
         id: "ua2",
-        nombre: "Mapa de empatía",
-        tipo: "Formativa",
+        actividadId: "604",
+        nombre: "Rendimiento Diseño de prototipo",
+        tipo: "Sumativa",
         instrumento: "Lista de cotejo",
-        grupo: "Grupo A",
-        ponderacion: 25,
-      },
-      {
-        id: "ua3",
-        nombre: "Propuesta de solución",
-        tipo: "Sumativa",
-        instrumento: "Escala de valoración",
-        grupo: "Grupo B",
-        ponderacion: 25,
-      },
-      {
-        id: "ua4",
-        nombre: "Presentación del prototipo",
-        tipo: "Sumativa",
-        instrumento: "Rúbrica",
-        grupo: "Grupo B",
+        grupo: "A",
         ponderacion: 25,
       },
     ],
@@ -127,64 +133,50 @@ export const unidadesTematicasDb: UnidadTematica[] = [
     metodoCalculo: "Promedio simple",
     grado: "Séptimo",
     asignatura: "Matemática",
+    enunciadosDba: [],
     criterios: [
       {
         id: "cu5",
         nombre: "Procedimiento",
-        bajo: "Omite pasos y la notación es incorrecta.",
-        basico: "Desarrolla los pasos con errores de notación.",
-        alto: "Desarrolla cada paso con notación correcta.",
-        superior: "Desarrolla el procedimiento y propone una vía alternativa.",
+        niveles: [
+          { nombre: "Bajo", descripcion: "Omite pasos y la notación es incorrecta." },
+          { nombre: "Básico", descripcion: "Desarrolla los pasos con errores de notación." },
+          { nombre: "Alto", descripcion: "Desarrolla cada paso con notación correcta." },
+          { nombre: "Superior", descripcion: "Desarrolla el procedimiento y propone una vía alternativa." },
+        ],
       },
       {
         id: "cu6",
         nombre: "Verificación del resultado",
-        bajo: "No verifica el resultado obtenido.",
-        basico: "Verifica solo algunos resultados.",
-        alto: "Verifica todos los resultados.",
-        superior: "Verifica y argumenta la razonabilidad de cada resultado.",
+        niveles: [
+          { nombre: "Bajo", descripcion: "No verifica el resultado obtenido." },
+          { nombre: "Básico", descripcion: "Verifica solo algunos resultados." },
+          { nombre: "Alto", descripcion: "Verifica todos los resultados." },
+          { nombre: "Superior", descripcion: "Verifica y argumenta la razonabilidad de cada resultado." },
+        ],
       },
     ],
     actividades: [
+      // "Promedio simple": el peso individual no aplica —cada actividad
+      // vinculada cuenta igual— así que `ponderacion` queda en 0 en las
+      // dos. El diálogo "Agregar actividad" no pide porcentaje acá.
       {
         id: "ua5",
-        nombre: "Taller de operaciones",
-        tipo: "Formativa",
-        instrumento: "Lista de cotejo",
-        grupo: "Grupo A",
-        ponderacion: 30,
+        actividadId: "606",
+        nombre: "Evaluación intermedia",
+        tipo: "Sumativa",
+        instrumento: "Escala de valoración",
+        grupo: "B",
+        ponderacion: 0,
       },
       {
         id: "ua6",
-        nombre: "Problemas de aplicación",
+        actividadId: "611",
+        nombre: "Mural colaborativo",
         tipo: "Formativa",
         instrumento: "Rúbrica",
-        grupo: "Grupo A",
-        ponderacion: 20,
-      },
-      {
-        id: "ua7",
-        nombre: "Evaluación intermedia",
-        tipo: "Sumativa",
-        instrumento: "Prueba escrita",
-        grupo: "Grupo B",
-        ponderacion: 25,
-      },
-      {
-        id: "ua8",
-        nombre: "Proyecto integrador",
-        tipo: "Sumativa",
-        instrumento: "Rúbrica",
-        grupo: "Grupo B",
-        ponderacion: 15,
-      },
-      {
-        id: "ua9",
-        nombre: "Cierre y autoevaluación",
-        tipo: "Formativa",
-        instrumento: "Autoevaluación",
-        grupo: "Grupo B",
-        ponderacion: 10,
+        grupo: "B",
+        ponderacion: 0,
       },
     ],
   },
@@ -216,50 +208,34 @@ export const unidadesTematicasDb: UnidadTematica[] = [
     metodoCalculo: "Ponderado",
     grado: "Séptimo",
     asignatura: "Matemática",
+    enunciadosDba: [],
     criterios: [
       {
         id: "cu7",
         nombre: "Interpretación",
-        bajo: "Lee mal los ejes y confunde las magnitudes.",
-        basico: "Lee el gráfico pero no extrae conclusiones.",
-        alto: "Extrae conclusiones correctas y las fundamenta.",
-        superior: "Detecta sesgos de representación y los explica.",
+        niveles: [
+          { nombre: "Bajo", descripcion: "Lee mal los ejes y confunde las magnitudes." },
+          { nombre: "Básico", descripcion: "Lee el gráfico pero no extrae conclusiones." },
+          { nombre: "Alto", descripcion: "Extrae conclusiones correctas y las fundamenta." },
+          { nombre: "Superior", descripcion: "Detecta sesgos de representación y los explica." },
+        ],
       },
       {
         id: "cu8",
         nombre: "Construcción",
-        bajo: "Elige un gráfico inadecuado al tipo de dato.",
-        basico: "Elige el gráfico correcto pero sin rotular.",
-        alto: "Elige el gráfico adecuado y rotula todos los ejes.",
-        superior: "Justifica la elección y cuida la escala.",
+        niveles: [
+          { nombre: "Bajo", descripcion: "Elige un gráfico inadecuado al tipo de dato." },
+          { nombre: "Básico", descripcion: "Elige el gráfico correcto pero sin rotular." },
+          { nombre: "Alto", descripcion: "Elige el gráfico adecuado y rotula todos los ejes." },
+          { nombre: "Superior", descripcion: "Justifica la elección y cuida la escala." },
+        ],
       },
     ],
-    actividades: [
-      {
-        id: "ua10",
-        nombre: "Lectura de gráficos de prensa",
-        tipo: "Formativa",
-        instrumento: "Lista de cotejo",
-        grupo: "Grupo A",
-        ponderacion: 40,
-      },
-      {
-        id: "ua11",
-        nombre: "Construcción de un informe",
-        tipo: "Sumativa",
-        instrumento: "Rúbrica",
-        grupo: "Grupo A",
-        ponderacion: 40,
-      },
-      {
-        id: "ua12",
-        nombre: "Cierre de unidad",
-        tipo: "Sumativa",
-        instrumento: "Prueba escrita",
-        grupo: "Grupo B",
-        ponderacion: 20,
-      },
-    ],
+    // Sin actividades vinculadas todavía: sus dos actividades reales
+    // (607, 608 en `planeadorDb`) son formativas —coherente con el
+    // enfoque Formativo de esta unidad— y aparecen como "disponibles"
+    // en el diálogo, con el 100% completo por asignar.
+    actividades: [],
   },
   {
     id: "u4",
@@ -287,33 +263,100 @@ export const unidadesTematicasDb: UnidadTematica[] = [
     metodoCalculo: "Suma de puntos",
     grado: "Sexto",
     asignatura: "Ciencias naturales",
+    enunciadosDba: [],
     criterios: [
       {
         id: "cu9",
         nombre: "Uso de claves",
-        bajo: "No logra recorrer la clave dicotómica.",
-        basico: "Recorre la clave con ayuda del docente.",
-        alto: "Recorre la clave sin errores.",
-        superior: "Recorre la clave y justifica cada bifurcación.",
+        niveles: [
+          { nombre: "Bajo", descripcion: "No logra recorrer la clave dicotómica." },
+          { nombre: "Básico", descripcion: "Recorre la clave con ayuda del docente." },
+          { nombre: "Alto", descripcion: "Recorre la clave sin errores." },
+          { nombre: "Superior", descripcion: "Recorre la clave y justifica cada bifurcación." },
+        ],
       },
     ],
-    actividades: [
-      {
-        id: "ua13",
-        nombre: "Salida de campo",
-        tipo: "Formativa",
-        instrumento: "Lista de cotejo",
-        grupo: "Grupo A",
-        ponderacion: 50,
-      },
-      {
-        id: "ua14",
-        nombre: "Informe de clasificación",
-        tipo: "Sumativa",
-        instrumento: "Rúbrica",
-        grupo: "Grupo B",
-        ponderacion: 50,
-      },
-    ],
+    // Sin actividades reales en `planeadorDb` para esta unidad (ninguna
+    // `Actividad.unidad.id` apunta a "u4") — no hay nada legítimo que
+    // vincular todavía, así que queda vacía en vez de referenciar ids
+    // que no existen.
+    actividades: [],
   },
 ]
+
+/**
+ * Agrega un criterio a la rúbrica de una unidad. Devuelve `null` si la
+ * unidad no existe (el handler lo traduce a 404) o el `CriterioUnidad`
+ * insertado con su id asignado.
+ */
+export function addCriterioToUnidad(
+  unidadId: string,
+  criterio: Omit<CriterioUnidad, "id">,
+): CriterioUnidad | null {
+  const unidad = unidadesTematicasDb.find((row) => row.id === unidadId)
+  if (!unidad) return null
+
+  const created: CriterioUnidad = { ...criterio, id: crypto.randomUUID() }
+  unidad.criterios.push(created)
+  return created
+}
+
+/**
+ * Vincula una actividad ya existente (de `planeadorDb`) a la unidad, con
+ * su peso dentro de ella. Devuelve `null` si la unidad no existe o si la
+ * actividad ya estaba vinculada (mismo `actividadId`) — el handler
+ * traduce el primer caso a 404 y el segundo a un mensaje de conflicto,
+ * para no terminar con el mismo vínculo duplicado si el usuario hace
+ * doble click en "Vincular".
+ */
+export function addActividadToUnidad(
+  unidadId: string,
+  actividad: Omit<UnidadActividad, "id">,
+): UnidadActividad | null | "duplicado" {
+  const unidad = unidadesTematicasDb.find((row) => row.id === unidadId)
+  if (!unidad) return null
+  if (unidad.actividades.some((a) => a.actividadId === actividad.actividadId)) {
+    return "duplicado"
+  }
+
+  const created: UnidadActividad = { ...actividad, id: crypto.randomUUID() }
+  unidad.actividades.push(created)
+  return created
+}
+
+/**
+ * Quita una unidad por id. Devuelve `true` si la encontró y borró, `false`
+ * si no existía. Mismo patrón que `planeador.ts` / `deleteActividadById`.
+ */
+export function deleteUnidadById(id: string): boolean {
+  const index = unidadesTematicasDb.findIndex((row) => row.id === id)
+  if (index === -1) return false
+  unidadesTematicasDb.splice(index, 1)
+  return true
+}
+
+/**
+ * Agrega una unidad nueva al frente del listado (más reciente primero,
+ * mismo criterio que `addActividad` en `mocks/db/planeador.ts`). El
+ * handler le asigna el `id` antes de llamar a esto.
+ */
+export function addUnidad(unidad: UnidadTematica): UnidadTematica {
+  unidadesTematicasDb.unshift(unidad)
+  return unidad
+}
+
+/**
+ * Actualiza los campos de "Información general" de una unidad (todo menos
+ * `id`, `criterios` y `actividades` — esas listas se editan aparte, desde
+ * las pestañas Rúbricas/Actividades). Devuelve `null` si la unidad no
+ * existe, o la unidad ya actualizada.
+ */
+export function updateUnidadInfoGeneral(
+  id: string,
+  patch: Omit<UnidadTematica, "id" | "criterios" | "actividades">,
+): UnidadTematica | null {
+  const unidad = unidadesTematicasDb.find((row) => row.id === id)
+  if (!unidad) return null
+  Object.assign(unidad, patch)
+  return unidad
+}

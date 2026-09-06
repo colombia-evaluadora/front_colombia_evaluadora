@@ -817,3 +817,14 @@ export function deleteActividadById(id: string): boolean {
   planeadorDb.splice(index, 1)
   return true
 }
+
+/**
+ * Agrega una actividad nueva al frente del listado (más reciente primero,
+ * mismo criterio que `matriculaDb.unshift` en `mocks/db/matricula.ts`). El
+ * handler de creación le asigna el `id` antes de llamar a esto — acá no se
+ * genera ninguno.
+ */
+export function addActividad(actividad: Actividad): Actividad {
+  planeadorDb.unshift(actividad)
+  return actividad
+}

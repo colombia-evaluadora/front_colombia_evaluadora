@@ -1,5 +1,5 @@
 import * as React from "react"
-import { useNavigate, useSearch } from "@tanstack/react-router"
+import { Link, useNavigate, useSearch } from "@tanstack/react-router"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -17,6 +17,7 @@ import {
   FileDownloadOutlinedIcon,
 } from "@/components/ui/icons"
 import { Spinner } from "@/components/ui/spinner"
+import { paths } from "@/config/paths"
 
 import { useUnidadesQuery } from "@/features/planeador/api/query/use-unidades-query"
 import { SearchPlaneador } from "@/features/planeador/components/search/search-planeador"
@@ -86,8 +87,8 @@ export function PlaneadorUnidadesPage() {
               color="primary"
               size="sm"
               variant="fill"
-              disabled
               aria-label="Agregar unidad"
+              render={<Link to={paths.app.planeadorUnidadCrear.getHref()} />}
             >
               <PlusCircleIcon data-icon="inline-start" />
               Agregar unidad
@@ -205,7 +206,16 @@ export function PlaneadorUnidadesPage() {
             className="min-w-0 md:h-[calc(100dvh-16rem)] md:min-h-0"
           >
             {unidadId ? (
-              <UnidadDetallePanel unidadId={unidadId} />
+              <UnidadDetallePanel
+                unidadId={unidadId}
+                onDeleted={() =>
+                  navigate({
+                    to: planeadorUnidadesRoute.id,
+                    search: (prev) => ({ ...prev, unidad: undefined }),
+                    replace: true,
+                  })
+                }
+              />
             ) : (
               <div className="text-muted-foreground flex h-full items-center justify-center rounded-md border p-6 text-sm">
                 Seleccioná una unidad para ver su detalle.
