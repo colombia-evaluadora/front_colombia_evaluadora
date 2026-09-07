@@ -14,11 +14,15 @@ import { useDataTable } from "@/hooks/use-data-table"
 import { paths } from "@/config/paths"
 import { asistenciaManualRoute } from "@/router"
 import { useAsistenciaCalendarioQuery } from "@/features/academic-management/asistencia/api/query/use-asistencia-calendario-query"
-import { useAsistenciaRosterQuery } from "@/features/academic-management/asistencia/api/query/use-asistencia-roster-query"
+import { useAsistenciaRosterPorBloquesQuery } from "@/features/academic-management/asistencia/api/query/use-asistencia-roster-query"
 import { useAsistenciaRegistrarMutation } from "@/features/academic-management/asistencia/api/mutations/use-asistencia-registrar-mutation"
 import { useTipoAsistenciaCatalogQuery } from "@/features/academic-management/asistencia/api/query/use-tipo-asistencia-catalog-query"
 import { buildColumnsAsistenciaManual } from "@/features/academic-management/asistencia/components/columns-asistencia-manual"
-import type { AsistenciaRegistroManual, TipoAsistencia } from "@/features/academic-management/asistencia/api/types/asistencia"
+import type {
+  AsistenciaRegistroManual,
+  RosterEstudiante,
+  TipoAsistencia,
+} from "@/features/academic-management/asistencia/api/types/asistencia"
 import { agruparPorBloquesContinuos, formatHora } from "@/features/academic-management/asistencia/api/ui-mappings"
 
 const TIPOS_ALTA_NUEVA: TipoAsistencia[] = [1, 2, 5]
@@ -58,11 +62,36 @@ function formatEncabezadoSesion(fecha: string, horaInicio: string | null, horaFi
   return `${fechaLabel} (${formatHora(horaInicio)} - ${formatHora(horaFin)})`
 }
 
+/**
+ * Qué mandar como `fkArchivo` para (bloque, estudiante): el upsert de
+ * `fn_asistencia_registrar_bulk` sobreescribe FK_SOPORTE_ARCHIVO con lo que
+ * llegue en CADA guardado -- si se omitiera sin más, cualquier guardado que
+ * no toque el soporte de este estudiante (ej. solo cambió el de otro) lo
+ * borraría sin querer. Por eso, si no hay ni archivo nuevo ni eliminación
+ * explícita, se re-envía el `fk_soporte_archivo` YA guardado en ese bloque
+ * para preservarlo.
+ */
+function resolverArchivo(
+  bloque: number,
+  fkMatricula: number,
+  soporte: Record<number, File>,
+  soporteEliminado: Record<number, boolean>,
+  rosterPorBloque: Map<number, RosterEstudiante[]>,
+): File | number | undefined {
+  if (soporteEliminado[fkMatricula]) return undefined
+  const nuevo = soporte[fkMatricula]
+  if (nuevo) return nuevo
+  const existente = rosterPorBloque.get(bloque)?.find((r) => r.fk_tmatricula === fkMatricula)?.fk_soporte_archivo
+  return existente ?? undefined
+}
+
 function registrosPorBloque(
   bloques: number[],
   seleccion: Record<number, TipoAsistencia>,
   bloqueTarde: Record<number, number>,
   soporte: Record<number, File>,
+  soporteEliminado: Record<number, boolean>,
+  rosterPorBloque: Map<number, RosterEstudiante[]>,
 ): Map<number, AsistenciaRegistroManual[]> {
   const porBloque = new Map<number, AsistenciaRegistroManual[]>(bloques.map((b) => [b, []]))
 
@@ -74,17 +103,35 @@ function registrosPorBloque(
       for (const bloque of bloques) {
         const tipoBloque: TipoAsistencia =
           bloque < bloqueLlegada ? NO_ASISTIO : bloque === bloqueLlegada ? LLEGO_TARDE : ASISTIO
-        porBloque.get(bloque)!.push({ fkMatricula, tipoAsistencia: tipoBloque })
+        // El soporte de la tardanza va SOLO en el bloque marcado "Llegó
+        // tarde" -- los bloques "No asistió"/"Asistió" generados por la
+        // cascada no llevan justificación propia.
+        const archivo =
+          tipoBloque === LLEGO_TARDE
+            ? resolverArchivo(bloque, fkMatricula, soporte, soporteEliminado, rosterPorBloque)
+            : undefined
+        porBloque.get(bloque)!.push({
+          fkMatricula,
+          tipoAsistencia: tipoBloque,
+          ...(archivo !== undefined && { fkArchivo: archivo }),
+        })
       }
       continue
     }
 
-    const archivo = soporte[fkMatricula]
+    // El soporte solo aplica a No asistió / Llegó tarde (única combinación
+    // que la UI deja elegir) -- si `tipo` cambió a Asistió sin pasar por
+    // "Marcar todo" (que sí limpia el borrador), un archivo que haya quedado
+    // en `soporte` de una selección anterior no se re-envía.
+    const admiteSoporte = tipo === NO_ASISTIO || tipo === LLEGO_TARDE
     for (const bloque of bloques) {
+      const archivo = admiteSoporte
+        ? resolverArchivo(bloque, fkMatricula, soporte, soporteEliminado, rosterPorBloque)
+        : undefined
       porBloque.get(bloque)!.push({
         fkMatricula,
         tipoAsistencia: tipo,
-        ...(archivo && { fkArchivo: archivo }),
+        ...(archivo !== undefined && { fkArchivo: archivo }),
       })
     }
   }
@@ -92,16 +139,35 @@ function registrosPorBloque(
   return porBloque
 }
 
+function registroAutoritativo(
+  bloques: number[],
+  rosterPorBloque: Map<number, RosterEstudiante[]>,
+  fkMatricula: number,
+): { bloque: number; row: RosterEstudiante } | undefined {
+  let candidato: { bloque: number; row: RosterEstudiante } | undefined
+  for (const bloque of bloques) {
+    const row = rosterPorBloque.get(bloque)?.find((r) => r.fk_tmatricula === fkMatricula)
+    if (!row || row.tipo_asistencia_valor == null) continue
+    if (row.tipo_asistencia_valor === LLEGO_TARDE) return { bloque, row }
+    candidato ??= { bloque, row }
+  }
+  return candidato
+}
+
 function SesionTabContent({ sesion, fecha }: { sesion: SesionTab; fecha: string }) {
   const { notify } = useNotify()
-  const { data: roster, isPending, isError, refetch } = useAsistenciaRosterQuery({
-    GRUPO: sesion.fkGrupo,
-    ASIGNATURA: sesion.fkAsignatura,
-    FECHA: fecha,
-    BLOQUE: sesion.bloque,
-  })
+  const {
+    porBloque: rosterPorBloque,
+    isPending,
+    isError,
+    refetch,
+  } = useAsistenciaRosterPorBloquesQuery(
+    { GRUPO: sesion.fkGrupo, ASIGNATURA: sesion.fkAsignatura, FECHA: fecha },
+    sesion.bloques,
+  )
   const [seleccion, setSeleccion] = React.useState<Record<number, TipoAsistencia>>({})
   const [soporte, setSoporte] = React.useState<Record<number, File>>({})
+  const [soporteEliminado, setSoporteEliminado] = React.useState<Record<number, boolean>>({})
   const [bloqueTarde, setBloqueTarde] = React.useState<Record<number, number>>({})
   const registrar = useAsistenciaRegistrarMutation()
   const { data: tipoOptionsCompleto = [] } = useTipoAsistenciaCatalogQuery()
@@ -110,20 +176,46 @@ function SesionTabContent({ sesion, fecha }: { sesion: SesionTab; fecha: string 
     [tipoOptionsCompleto],
   )
 
-  const roster_ = React.useMemo(() => roster ?? [], [roster])
+  // El padrón (nombre/documento) es el mismo en cualquier bloque; el primero
+  // alcanza para eso. Lo que SÍ varía por bloque es el estado guardado, así
+  // que cada fila se reemplaza por su registro autoritativo (abajo) antes de
+  // pasarla a la tabla.
+  const primerBloqueRoster = React.useMemo(
+    () => rosterPorBloque.get(sesion.bloque) ?? [],
+    [rosterPorBloque, sesion.bloque],
+  )
+  const autoritativos = React.useMemo(() => {
+    const mapa = new Map<number, { bloque: number; row: RosterEstudiante }>()
+    for (const base of primerBloqueRoster) {
+      const encontrado = registroAutoritativo(sesion.bloques, rosterPorBloque, base.fk_tmatricula)
+      if (encontrado) mapa.set(base.fk_tmatricula, encontrado)
+    }
+    return mapa
+  }, [primerBloqueRoster, rosterPorBloque, sesion.bloques])
+
+  const roster_ = React.useMemo(
+    () => primerBloqueRoster.map((base) => autoritativos.get(base.fk_tmatricula)?.row ?? base),
+    [primerBloqueRoster, autoritativos],
+  )
 
   const baseline = React.useRef<Record<number, TipoAsistencia>>({})
+  const bloqueTardeBaseline = React.useRef<Record<number, number>>({})
   const precargado = React.useRef(false)
   React.useEffect(() => {
-    if (precargado.current || !roster) return
-    const inicial: Record<number, TipoAsistencia> = {}
-    for (const est of roster) {
-      if (est.tipo_asistencia_valor != null) inicial[est.fk_tmatricula] = est.tipo_asistencia_valor
+    if (precargado.current || isPending) return
+    const inicialSeleccion: Record<number, TipoAsistencia> = {}
+    const inicialBloqueTarde: Record<number, number> = {}
+    for (const [fkMatricula, { bloque, row }] of autoritativos) {
+      if (row.tipo_asistencia_valor == null) continue
+      inicialSeleccion[fkMatricula] = row.tipo_asistencia_valor
+      if (row.tipo_asistencia_valor === LLEGO_TARDE) inicialBloqueTarde[fkMatricula] = bloque
     }
-    baseline.current = inicial
-    if (Object.keys(inicial).length > 0) setSeleccion(inicial)
+    baseline.current = inicialSeleccion
+    bloqueTardeBaseline.current = inicialBloqueTarde
+    if (Object.keys(inicialSeleccion).length > 0) setSeleccion(inicialSeleccion)
+    if (Object.keys(inicialBloqueTarde).length > 0) setBloqueTarde(inicialBloqueTarde)
     precargado.current = true
-  }, [roster])
+  }, [isPending, autoritativos])
   const columns = React.useMemo(
     () =>
       buildColumnsAsistenciaManual({
@@ -133,14 +225,30 @@ function SesionTabContent({ sesion, fecha }: { sesion: SesionTab; fecha: string 
         onChange: (fkMatricula, tipo) =>
           setSeleccion((prev) => ({ ...prev, [fkMatricula]: tipo })),
         soporte,
-        onSoporteChange: (fkMatricula, archivo) =>
+        onSoporteChange: (fkMatricula, archivo) => {
           setSoporte((prev) => {
             if (!archivo) {
               const { [fkMatricula]: _omitido, ...resto } = prev
               return resto
             }
             return { ...prev, [fkMatricula]: archivo }
-          }),
+          })
+          if (archivo) {
+            setSoporteEliminado((prev) => {
+              if (!prev[fkMatricula]) return prev
+              const { [fkMatricula]: _omitido, ...resto } = prev
+              return resto
+            })
+          }
+        },
+        soporteEliminado,
+        onSoporteEliminar: (fkMatricula) => {
+          setSoporte((prev) => {
+            const { [fkMatricula]: _omitido, ...resto } = prev
+            return resto
+          })
+          setSoporteEliminado((prev) => ({ ...prev, [fkMatricula]: true }))
+        },
         bloques: sesion.bloques,
         horasPorBloque: sesion.horasPorBloque,
         bloqueTarde,
@@ -156,6 +264,7 @@ function SesionTabContent({ sesion, fecha }: { sesion: SesionTab; fecha: string 
       tipoOptions,
       seleccion,
       soporte,
+      soporteEliminado,
       bloqueTarde,
     ],
   )
@@ -193,32 +302,24 @@ function SesionTabContent({ sesion, fecha }: { sesion: SesionTab; fecha: string 
       (est) => seleccion[est.fk_tmatricula] === LLEGO_TARDE && bloqueTarde[est.fk_tmatricula] == null,
     )
   const puedeGuardar = roster_.length > 0 && faltantes === 0 && !faltaBloqueTarde
-  const esDirty = roster_.some((est) => seleccion[est.fk_tmatricula] !== baseline.current[est.fk_tmatricula])
+  const esDirty =
+    Object.keys(soporte).length > 0 ||
+    Object.keys(soporteEliminado).length > 0 ||
+    roster_.some(
+      (est) =>
+        seleccion[est.fk_tmatricula] !== baseline.current[est.fk_tmatricula] ||
+        bloqueTarde[est.fk_tmatricula] !== bloqueTardeBaseline.current[est.fk_tmatricula],
+    )
   const mostrarGuardar = puedeGuardar && esDirty
 
-  async function handleMarcarTodoAsistio() {
-    try {
-      await Promise.all(
-        sesion.bloques.map((bloque) =>
-          registrar.mutateAsync({
-            GRUPO: sesion.fkGrupo,
-            ASIGNATURA: sesion.fkAsignatura,
-            FECHA: fecha,
-            BLOQUE: bloque,
-            MARCAR_TODOS: 1,
-          }),
-        ),
-      )
-      notify("Asistencia marcada como Asistió para todos.")
-      const todosAsistieron = Object.fromEntries(
-        roster_.map((est) => [est.fk_tmatricula, ASISTIO as TipoAsistencia]),
-      )
-      baseline.current = todosAsistieron
-      setSeleccion(todosAsistieron)
-      setBloqueTarde({})
-    } catch {
-      notify("Ocurrió un error al marcar la asistencia.", { variant: "error" })
-    }
+
+  function handleMarcarTodoAsistio() {
+    setSeleccion(
+      Object.fromEntries(roster_.map((est) => [est.fk_tmatricula, ASISTIO as TipoAsistencia])),
+    )
+    setBloqueTarde({})
+    setSoporte({})
+    setSoporteEliminado({})
   }
 
   async function handleGuardar() {
@@ -231,7 +332,14 @@ function SesionTabContent({ sesion, fecha }: { sesion: SesionTab; fecha: string 
       )
       return
     }
-    const porBloque = registrosPorBloque(sesion.bloques, seleccion, bloqueTarde, soporte)
+    const porBloque = registrosPorBloque(
+      sesion.bloques,
+      seleccion,
+      bloqueTarde,
+      soporte,
+      soporteEliminado,
+      rosterPorBloque,
+    )
     try {
       await Promise.all(
         [...porBloque.entries()].map(([bloque, registros]) =>
@@ -246,7 +354,9 @@ function SesionTabContent({ sesion, fecha }: { sesion: SesionTab; fecha: string 
       )
       notify("Asistencia guardada.")
       baseline.current = seleccion
+      bloqueTardeBaseline.current = bloqueTarde
       setSoporte({})
+      setSoporteEliminado({})
     } catch {
       notify("Ocurrió un error al guardar la asistencia.", { variant: "error" })
     }
@@ -268,8 +378,7 @@ function SesionTabContent({ sesion, fecha }: { sesion: SesionTab; fecha: string 
           variant="outline"
           color="primary"
           size="sm"
-          disabled={registrar.isPending || roster_.length === 0}
-          aria-busy={registrar.isPending}
+          disabled={roster_.length === 0}
           onClick={handleMarcarTodoAsistio}
         >
           <CheckCircleFillIcon data-icon="inline-start" />
@@ -302,7 +411,7 @@ function SesionTabContent({ sesion, fecha }: { sesion: SesionTab; fecha: string 
 
       <div className="flex items-center justify-between gap-4">
         <span className="text-xs text-muted-foreground">
-          {Object.keys(seleccion).length} de {roster?.length ?? 0} estudiantes marcados
+          {Object.keys(seleccion).length} de {roster_.length} estudiantes marcados
         </span>
         {mostrarGuardar && (
           <Button

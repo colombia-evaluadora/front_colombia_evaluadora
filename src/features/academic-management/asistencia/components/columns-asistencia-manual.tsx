@@ -1,7 +1,7 @@
 import type { ColumnDef } from "@tanstack/react-table"
 
 import { DataTableColumnHeader } from "@/components/data-table"
-import { PaperclipIcon } from "@/components/ui/icons"
+import { PaperclipIcon, XIcon } from "@/components/ui/icons"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { FileUpload, FileUploadTrigger } from "@/components/ui/file-upload"
 import { cn } from "@/lib/utils"
@@ -20,6 +20,8 @@ interface BuildColumnsParams {
   onChange: (fkMatricula: number, tipo: TipoAsistencia) => void
   soporte: Record<number, File>
   onSoporteChange: (fkMatricula: number, archivo: File | null) => void
+  soporteEliminado: Record<number, boolean>
+  onSoporteEliminar: (fkMatricula: number) => void
   /** Bloques de la sesion (>1 = asignatura de bloques seguidos). */
   bloques: number[]
   horasPorBloque: Record<number, { horaInicio: string | null; horaFin: string | null }>
@@ -34,6 +36,8 @@ export function buildColumnsAsistenciaManual({
   onChange,
   soporte,
   onSoporteChange,
+  soporteEliminado,
+  onSoporteEliminar,
   bloques,
   horasPorBloque,
   bloqueTarde,
@@ -116,33 +120,47 @@ export function buildColumnsAsistenciaManual({
       cell: ({ row }) => {
         const fkMatricula = row.original.fk_tmatricula
         const tipo = seleccion[fkMatricula]
-        if (tipo !== NO_ASISTIO) return null
+        if (tipo !== NO_ASISTIO && tipo !== LLEGO_TARDE) return null
 
+        const eliminado = soporteEliminado[fkMatricula] ?? false
         const archivo = soporte[fkMatricula] ?? null
-        const nombreExistente = archivo ? null : row.original.soporte_nombre
+        const nombreExistente = archivo || eliminado ? null : row.original.soporte_nombre
+        const hayArchivo = Boolean(archivo || nombreExistente)
         return (
-          <FileUpload
-            value={archivo ? [archivo] : []}
-            onValueChange={(files) => onSoporteChange(fkMatricula, files[0] ?? null)}
-            accept=".pdf,.jpg,.jpeg,.png"
-            maxSize={10 * 1024 * 1024}
-            className="w-fit"
-          >
-            <FileUploadTrigger
-              render={
-                <button
-                  type="button"
-                  className={cn(
-                    "flex items-center gap-1.5 text-sm hover:underline",
-                    archivo || nombreExistente ? "text-foreground" : "text-muted-foreground",
-                  )}
-                />
-              }
+          <div className="flex items-center gap-1">
+            <FileUpload
+              value={archivo ? [archivo] : []}
+              onValueChange={(files) => onSoporteChange(fkMatricula, files[0] ?? null)}
+              accept=".pdf,.jpg,.jpeg,.png"
+              maxSize={10 * 1024 * 1024}
+              className="w-fit"
             >
-              <PaperclipIcon className="size-4 shrink-0" />
-              <span className="max-w-36 truncate">{archivo?.name ?? nombreExistente ?? "Sin soporte"}</span>
-            </FileUploadTrigger>
-          </FileUpload>
+              <FileUploadTrigger
+                render={
+                  <button
+                    type="button"
+                    className={cn(
+                      "flex items-center gap-1.5 text-sm hover:underline",
+                      hayArchivo ? "text-foreground" : "text-muted-foreground",
+                    )}
+                  />
+                }
+              >
+                <PaperclipIcon className="size-4 shrink-0" />
+                <span className="max-w-36 truncate">{archivo?.name ?? nombreExistente ?? "Sin soporte"}</span>
+              </FileUploadTrigger>
+            </FileUpload>
+            {hayArchivo && (
+              <button
+                type="button"
+                aria-label="Quitar soporte"
+                className="text-muted-foreground hover:text-foreground"
+                onClick={() => onSoporteEliminar(fkMatricula)}
+              >
+                <XIcon className="size-3.5 shrink-0" />
+              </button>
+            )}
+          </div>
         )
       },
     },
