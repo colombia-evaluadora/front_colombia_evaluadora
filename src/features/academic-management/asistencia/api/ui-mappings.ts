@@ -54,8 +54,10 @@ export interface BloqueContinuo {
   jornada: string
   fkAsignatura: number
   asignatura: string
-  bloque: number
-  bloques: number[]
+  /** `null` = toma suelta sin bloque (`TASISTENCIA.BLOQUE` nulo). */
+  bloque: number | null
+  /** Bloques reales de la corrida -- `[null]` si `bloque` es `null` (nunca se mezcla con numéricos). */
+  bloques: (number | null)[]
   horasPorBloque: Record<number, { horaInicio: string | null; horaFin: string | null }>
   horaInicio: string | null
   horaFin: string | null
@@ -73,8 +75,28 @@ export function agruparPorBloquesContinuos(sesiones: SesionCalendario[]): Bloque
 
   const resultado: BloqueContinuo[] = []
   for (const lista of porClave.values()) {
-    const ordenado = [...lista].sort((a, b) => a.bloque - b.bloque)
-    let corrida: SesionCalendario[] = []
+    for (const s of lista) {
+      if (s.bloque !== null) continue
+      resultado.push({
+        fecha: s.fecha,
+        fkGrupo: s.fk_grupo,
+        grupo: s.grupo,
+        grado: s.grado,
+        jornada: s.jornada,
+        fkAsignatura: s.fk_asignatura,
+        asignatura: s.asignatura,
+        bloque: null,
+        bloques: [null],
+        horasPorBloque: {},
+        horaInicio: s.hora_inicio,
+        horaFin: s.hora_fin,
+        estado: s.estado_sesion,
+      })
+    }
+
+    const conBloque = lista.filter((s): s is SesionCalendario & { bloque: number } => s.bloque !== null)
+    const ordenado = [...conBloque].sort((a, b) => a.bloque - b.bloque)
+    let corrida: (SesionCalendario & { bloque: number })[] = []
 
     const cerrarCorrida = () => {
       if (corrida.length === 0) return

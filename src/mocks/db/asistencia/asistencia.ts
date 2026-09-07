@@ -385,10 +385,11 @@ export function generarEstudiantesSesion(params: AsistenciaSesionEstudiantesPara
 
 /** POST /asistencias/registrar -- persiste `MARCAR_TODOS`/`REGISTROS` en `registrosManuales` y marca la sesión. */
 export function registrarAsistenciaManual(body: AsistenciaRegistrarRequest): number {
-  marcarSesionRegistrada(body.GRUPO, body.ASIGNATURA, body.FECHA, body.BLOQUE)
+  const bloque = body.BLOQUE ?? 1
+  marcarSesionRegistrada(body.GRUPO, body.ASIGNATURA, body.FECHA, bloque)
 
   function guardar(fkMatricula: number, tipo: TipoAsistencia, observacion?: string | null, fkArchivo?: unknown) {
-    const key = claveRegistroManual(fkMatricula, body.GRUPO, body.ASIGNATURA, body.FECHA, body.BLOQUE)
+    const key = claveRegistroManual(fkMatricula, body.GRUPO, body.ASIGNATURA, body.FECHA, bloque)
     const existente = registrosManuales.get(key)
     const tieneArchivoNuevo = fkArchivo != null
     registrosManuales.set(key, {

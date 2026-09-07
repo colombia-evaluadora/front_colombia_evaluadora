@@ -5,7 +5,7 @@ export type TipoAsistencia = 1 | 2 | 3 | 5 | 6
 
 export interface SesionCalendario {
   fecha: string
-  bloque: number
+  bloque: number | null
   fk_grupo: number
   grupo: string
   grado: string
@@ -60,7 +60,7 @@ export interface AsistenciaSesionEstudiantesParams {
   GRUPO: number
   ASIGNATURA: number
   FECHA: string
-  BLOQUE?: number
+  BLOQUE?: number | null
 }
 
 export interface RosterEstudiante {
@@ -85,7 +85,7 @@ export interface AsistenciaRegistrarRequest {
   GRUPO: number
   ASIGNATURA: number
   FECHA: string
-  BLOQUE: number
+  BLOQUE: number | null
   REGISTROS?: AsistenciaRegistroManual[]
   MARCAR_TODOS?: TipoAsistencia
 }

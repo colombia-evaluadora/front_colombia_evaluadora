@@ -13,11 +13,12 @@ import type { Matricula, MatriculaStatus } from "@/features/coverage/api/types/m
 interface MatriculaToolbarProps {
   matricula: Matricula
   showModificar?: boolean
+  filesEditable?: boolean
 }
 
 const NOT_EDITABLE_STATUSES: MatriculaStatus[] = ["Reubicado", "Promovido"]
 
-export function MatriculaToolbar({ matricula, showModificar = true }: MatriculaToolbarProps) {
+export function MatriculaToolbar({ matricula, showModificar = true, filesEditable = false }: MatriculaToolbarProps) {
   const navigate = useNavigate()
 
   return (
@@ -41,7 +42,7 @@ export function MatriculaToolbar({ matricula, showModificar = true }: MatriculaT
       </Button>
       <RetirarMatriculaDialog matricula={matricula} trigger="button" />
       <ReingresarMatriculaDialog matricula={matricula} trigger="button" />
-      <FilesMatriculaDialog matricula={matricula} trigger="button" />
+      <FilesMatriculaDialog matricula={matricula} trigger="button" editable={filesEditable} />
       <DeleteMatriculaDialog
         matricula={matricula}
         trigger="button"

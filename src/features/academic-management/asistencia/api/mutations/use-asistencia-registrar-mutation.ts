@@ -14,9 +14,9 @@ interface SubirSoporteResponse {
 
 async function subirSoporte(file: File): Promise<number> {
   const raw = await postMultipart<{ rows: SubirSoporteResponse[] } | SubirSoporteResponse>(
-    "/eval-col/tmp-icono-simbolo",
+    "/eval-col/asistencias/soporte",
     {},
-    { ICONO: file },
+    { SOPORTE: file },
   )
   const fila = "rows" in raw ? raw.rows[0] : raw
   return fila.pk_tarchivo

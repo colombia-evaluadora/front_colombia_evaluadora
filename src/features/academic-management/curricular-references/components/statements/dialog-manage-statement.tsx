@@ -96,7 +96,7 @@ export function ManageStatementDialog({
 
   return (
     <Dialog open={open} onOpenChange={(next) => !isPending && onOpenChange(next)}>
-      <DialogContent showCloseButton={false}>
+      <DialogContent showCloseButton={false} className="max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {isEditMode ? `Editar ${levelLabel.toLowerCase()}` : `Agregar ${levelLabel.toLowerCase()}`}

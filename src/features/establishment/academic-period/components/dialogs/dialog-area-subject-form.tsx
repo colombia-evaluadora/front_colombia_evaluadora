@@ -486,7 +486,10 @@ export function AreaSubjectFormDialog({
         )}
 
         <DialogContent
-          className={subjectsStarted ? "sm:max-w-6xl" : "sm:max-w-5xl"}
+          className={cn(
+            "max-h-[85vh] overflow-y-auto",
+            subjectsStarted ? "sm:max-w-6xl" : "sm:max-w-5xl",
+          )}
           showCloseButton={false}
         >
           <DialogHeader>
