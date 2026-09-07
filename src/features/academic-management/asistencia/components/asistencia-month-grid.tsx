@@ -81,10 +81,7 @@ export function AsistenciaMonthGrid({
             date.toLocaleString("es-CO", { weekday: "short" }).replace(".", "").slice(0, 3),
         }}
         classNames={{
-          root: cn(
-            "w-full overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
-            defaultClassNames.root,
-          ),
+          root: cn("w-full overflow-x-auto", defaultClassNames.root),
           months: cn("relative flex min-w-[840px] flex-col", defaultClassNames.months),
           month: cn("flex w-full flex-col", defaultClassNames.month),
           month_caption: "hidden",
