@@ -4,11 +4,11 @@ import { evalCol } from "@/lib/eval-col-client"
 
 import type { Actividad } from "@/features/planeador/api/types/actividad"
 
-function actividadDetalleUrl(id: string): string {
-  return `/planeador/actividad/detalle/${id}`
+function actividadDetalleUrl(id: number): string {
+  return `/planeador/actividades/${id}`
 }
 
-export const actividadDetalleQueryKey = (id: string) =>
+export const actividadDetalleQueryKey = (id: number) =>
   ["planeador", "actividad", id] as const
 
 /**
@@ -17,7 +17,7 @@ export const actividadDetalleQueryKey = (id: string) =>
  * acá se toma la primera fila. Si no existe, se lanza un error para que el
  * `<ErrorBoundary>` / toast del interceptor se encargue.
  */
-async function fetchActividadDetalle(id: string): Promise<Actividad> {
+async function fetchActividadDetalle(id: number): Promise<Actividad> {
   const rows = await evalCol.getRows<Actividad>(actividadDetalleUrl(id))
   const first = rows[0]
   if (!first) {
@@ -26,11 +26,11 @@ async function fetchActividadDetalle(id: string): Promise<Actividad> {
   return first
 }
 
-export function useActividadDetalleQuery(id: string | undefined) {
+export function useActividadDetalleQuery(id: number | undefined) {
   return useQuery({
-    queryKey: id ? actividadDetalleQueryKey(id) : ["planeador", "actividad", "none"],
+    queryKey: id !== undefined ? actividadDetalleQueryKey(id) : ["planeador", "actividad", "none"],
     queryFn: () => fetchActividadDetalle(id!),
-    enabled: !!id,
+    enabled: id !== undefined,
     staleTime: 1000 * 60,
   })
 }

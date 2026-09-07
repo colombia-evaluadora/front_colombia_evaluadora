@@ -5,8 +5,9 @@ import type { MutationConfig } from "@/lib/react-query"
 import { unidadesQueryKey } from "@/features/planeador/api/query/use-unidades-query"
 import type { ExportResult } from "@/features/planeador/api/types/actividad"
 
-function deleteUnidad(id: string): Promise<ExportResult> {
-  return api.delete(`/eval-col/planeador/unidad/${id}`)
+// `PATCH`, no `DELETE` — el motor real no admite ese verbo (soft-delete).
+function deleteUnidad(id: number): Promise<ExportResult> {
+  return api.patch(`/eval-col/planeador/unidades/${id}`)
 }
 
 interface UseDeleteUnidadOptions {

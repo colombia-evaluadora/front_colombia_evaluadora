@@ -13,7 +13,7 @@ import type { UnidadTematica } from "@/features/planeador/api/types/unidad-temat
 export type UnidadInfoGeneral = Omit<UnidadTematica, "id" | "criterios" | "actividades">
 
 interface UpdateUnidadInput {
-  unidadId: string
+  unidadId: number
   data: UnidadInfoGeneral
 }
 
@@ -24,7 +24,7 @@ interface UpdateUnidadResponse {
 }
 
 function updateUnidad({ unidadId, data }: UpdateUnidadInput): Promise<UpdateUnidadResponse> {
-  return api.put(`/eval-col/planeador/unidad/${unidadId}`, data)
+  return api.put(`/eval-col/planeador/unidades/${unidadId}`, data)
 }
 
 interface UseUpdateUnidadOptions {

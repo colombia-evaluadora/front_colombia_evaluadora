@@ -133,7 +133,7 @@ function buildEstudiantes(grado: string, grupo: string): Estudiante[] {
 
   const total = 35
   return Array.from({ length: total }, (_, index) => ({
-    id: `${grado}${grupo}-${index + 1}`,
+    id: index + 1,
     nombres: NOMBRES[index % NOMBRES.length],
     apellidos: `${APELLIDOS[index % APELLIDOS.length]} ${APELLIDOS[(index + 7) % APELLIDOS.length]}`,
   }))
@@ -228,7 +228,7 @@ function getCache(actividades: Actividad[]): Record<string, CalificacionEstudian
 
 /** Calificaciones por id de actividad. */
 export function getCalificacionesByActividad(
-  id: string,
+  id: number,
   actividades: Actividad[],
 ): CalificacionEstudiante[] {
   return getCache(actividades)[id] ?? []

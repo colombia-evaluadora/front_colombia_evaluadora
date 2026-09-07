@@ -11,10 +11,10 @@ function exportActividad({
   id,
   format,
 }: {
-  id: string
+  id: number
   format: ExportFormat
 }): Promise<ExportResult> {
-  return api.post(`/eval-col/planeador/actividad/export/${id}`, { format })
+  return api.post(`/eval-col/planeador/actividades/${id}/export`, { format })
 }
 
 interface UseExportActividadOptions {

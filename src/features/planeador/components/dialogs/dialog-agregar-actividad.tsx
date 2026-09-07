@@ -89,7 +89,7 @@ export function DialogAgregarActividad({ unidad, open, onOpenChange }: DialogAgr
     }
   }
 
-  function handleVincular(actividadId: string) {
+  function handleVincular(actividadId: number) {
     const actividad = actividades.find((a) => a.id === actividadId)
     if (!actividad) return
 

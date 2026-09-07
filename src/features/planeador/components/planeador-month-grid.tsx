@@ -39,7 +39,7 @@ import { STATUS_RING } from "@/features/planeador/api/ui-mappings"
 /** Una actividad tal como se lista dentro de la celda de su día. */
 export interface DayEvent {
   /** Id de la actividad — clave de la fila; el código puede repetirse. */
-  id: string
+  id: number
   /** Código corto de la actividad (3 dígitos). */
   code: string
   /** Texto a la derecha del código — hoy la asignatura. */

@@ -47,7 +47,7 @@ export function CalificacionesAprobacionView({
   // Set de ids aprobados + diseño/modalidad. Se inicializan con
   // todos seleccionados para que el docente "desmarque" a los que
   // rechaza, no al revés — más rápido en la mayoría de los casos.
-  const [aprobados, setAprobados] = useState<Set<string>>(() => {
+  const [aprobados, setAprobados] = useState<Set<number>>(() => {
     if (calificaciones.length === 0) return new Set()
     return new Set(calificaciones.map((c) => c.id))
   })
@@ -72,7 +72,7 @@ export function CalificacionesAprobacionView({
     )
   }, [calificaciones, filtro])
 
-  const toggle = (id: string) => {
+  const toggle = (id: number) => {
     setDirty(true)
     setAprobados((prev) => {
       const next = new Set(prev)

@@ -1,5 +1,11 @@
 import type { Actividad } from "@/features/planeador/api/types/actividad"
 
+/** Id numérico aleatorio para sub-objetos nuevos que todavía no pasaron por
+ *  el backend — que es quien asigna el PK real. */
+function draftId(): number {
+  return Math.floor(Math.random() * 1_000_000_000)
+}
+
 /**
  * Actividad vacía para el form de alta. `EditarActividadForm` reusa el
  * mismo form de edición —`useForm({ defaultValues: actividad })` necesita
@@ -13,13 +19,14 @@ import type { Actividad } from "@/features/planeador/api/types/actividad"
  * desplegable.
  */
 export function crearActividadVacia(): Actividad {
-  const id = crypto.randomUUID()
+  const id = draftId()
   return {
     id,
     nombre: "",
     tipo: "Proyecto",
     esRecuperacion: false,
-    unidad: { id: "", nombre: "" },
+    // `0` es el sentinel de "sin unidad" — ningún PK real es 0.
+    unidad: { id: 0, nombre: "" },
     asignatura: "",
     grado: "",
     grupo: "",
@@ -43,10 +50,10 @@ export function crearActividadVacia(): Actividad {
     contenidos: [],
     objetivos: [],
     descripcionUnidad: [],
-    rubrica: { id: crypto.randomUUID(), criterios: [] },
-    listaCotejo: { id: crypto.randomUUID(), items: [] },
+    rubrica: { id: draftId(), criterios: [] },
+    listaCotejo: { id: draftId(), items: [] },
     escalaValoracion: {
-      id: crypto.randomUUID(),
+      id: draftId(),
       criteriosGenerales: "",
       tipo: "Cualitativa",
       interpretacionRangos: "",

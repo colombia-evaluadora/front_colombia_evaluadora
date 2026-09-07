@@ -55,8 +55,8 @@ export function PlaneadorUnidadesPage() {
   // Unidad abierta en el panel. Si la URL no trae ninguna —o trae una que ya
   // no está en la lista filtrada— se cae a la primera, para que la columna
   // derecha nunca quede vacía.
-  const unidadId =
-    filtered.find((u) => u.id === search.unidad)?.id ?? filtered[0]?.id
+  const unidadIdNum = filtered.find((u) => String(u.id) === search.unidad)?.id ?? filtered[0]?.id
+  const unidadId = unidadIdNum !== undefined ? String(unidadIdNum) : undefined
 
   const setUnidadId = (next: string) =>
     navigate({
@@ -187,8 +187,8 @@ export function PlaneadorUnidadesPage() {
                       <li key={unidad.id}>
                         <UnidadCard
                           unidad={unidad}
-                          selected={unidad.id === unidadId}
-                          onSelect={() => setUnidadId(unidad.id)}
+                          selected={String(unidad.id) === unidadId}
+                          onSelect={() => setUnidadId(String(unidad.id))}
                         />
                       </li>
                     ))}

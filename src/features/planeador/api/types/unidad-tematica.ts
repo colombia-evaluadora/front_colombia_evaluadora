@@ -49,7 +49,7 @@ export interface NivelDesempenoCriterio {
  * nivel "excelente" y una ponderación.
  */
 export interface CriterioUnidad {
-  id: string
+  id: number
   nombre: string
   niveles: NivelDesempenoCriterio[]
 }
@@ -68,9 +68,9 @@ export interface CriterioUnidad {
  * `UnidadActividad.actividadId` de `unidad.actividades`).
  */
 export interface UnidadActividad {
-  id: string
+  id: number
   /** Referencia a `Actividad.id` — ver el comentario de arriba. */
-  actividadId: string
+  actividadId: number
   nombre: string
   /** "Formativa" | "Sumativa" — no es el `ActividadTipo` del otro modelo. */
   tipo: string
@@ -83,7 +83,7 @@ export interface UnidadActividad {
 }
 
 export interface UnidadTematica {
-  id: string
+  id: number
   nombre: string
   /** Área/competencia — "Comunicativa", "Cognitiva"… */
   area: string

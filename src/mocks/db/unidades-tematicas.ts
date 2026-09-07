@@ -1,3 +1,4 @@
+import { nextId } from "@/mocks/db/next-id"
 import type {
   CriterioUnidad,
   UnidadActividad,
@@ -14,7 +15,7 @@ import type {
  */
 export const unidadesTematicasDb: UnidadTematica[] = [
   {
-    id: "u1",
+    id: 1,
     nombre: "Análisis de un texto argumentativo",
     area: "Comunicativa",
     enfoquePedagogico: "Evaluativo",
@@ -43,7 +44,7 @@ export const unidadesTematicasDb: UnidadTematica[] = [
     ],
     criterios: [
       {
-        id: "cu1",
+        id: 150,
         nombre: "Comprensión de los conceptos",
         niveles: [
           { nombre: "Bajo", descripcion: "Muestra poca o ninguna comprensión de conceptos." },
@@ -53,7 +54,7 @@ export const unidadesTematicasDb: UnidadTematica[] = [
         ],
       },
       {
-        id: "cu2",
+        id: 151,
         nombre: "Aplicación en situaciones reales",
         niveles: [
           { nombre: "Bajo", descripcion: "No logra aplicar los conceptos en situaciones prácticas." },
@@ -63,7 +64,7 @@ export const unidadesTematicasDb: UnidadTematica[] = [
         ],
       },
       {
-        id: "cu3",
+        id: 152,
         nombre: "Análisis y pensamiento crítico",
         niveles: [
           { nombre: "Bajo", descripcion: "Presenta análisis superficiales y sin fundamentos." },
@@ -73,7 +74,7 @@ export const unidadesTematicasDb: UnidadTematica[] = [
         ],
       },
       {
-        id: "cu4",
+        id: 153,
         nombre: "Trabajo colaborativo",
         niveles: [
           { nombre: "Bajo", descripcion: "Participa muy poco y no aporta al trabajo del grupo." },
@@ -90,8 +91,8 @@ export const unidadesTematicasDb: UnidadTematica[] = [
     // a `Actividad.id` — ver el comentario de `UnidadActividad`.
     actividades: [
       {
-        id: "ua1",
-        actividadId: "601",
+        id: 154,
+        actividadId: 601,
         nombre: "Proyecto final: Diseño de prototipo 1",
         tipo: "Sumativa",
         instrumento: "Rúbrica",
@@ -99,8 +100,8 @@ export const unidadesTematicasDb: UnidadTematica[] = [
         ponderacion: 25,
       },
       {
-        id: "ua2",
-        actividadId: "604",
+        id: 155,
+        actividadId: 604,
         nombre: "Rendimiento Diseño de prototipo",
         tipo: "Sumativa",
         instrumento: "Lista de cotejo",
@@ -110,7 +111,7 @@ export const unidadesTematicasDb: UnidadTematica[] = [
     ],
   },
   {
-    id: "u2",
+    id: 2,
     nombre: "Resolución de problemas con números enteros",
     area: "Cognitiva",
     enfoquePedagogico: "Evaluativo",
@@ -136,7 +137,7 @@ export const unidadesTematicasDb: UnidadTematica[] = [
     enunciadosDba: [],
     criterios: [
       {
-        id: "cu5",
+        id: 156,
         nombre: "Procedimiento",
         niveles: [
           { nombre: "Bajo", descripcion: "Omite pasos y la notación es incorrecta." },
@@ -146,7 +147,7 @@ export const unidadesTematicasDb: UnidadTematica[] = [
         ],
       },
       {
-        id: "cu6",
+        id: 157,
         nombre: "Verificación del resultado",
         niveles: [
           { nombre: "Bajo", descripcion: "No verifica el resultado obtenido." },
@@ -161,8 +162,8 @@ export const unidadesTematicasDb: UnidadTematica[] = [
       // vinculada cuenta igual— así que `ponderacion` queda en 0 en las
       // dos. El diálogo "Agregar actividad" no pide porcentaje acá.
       {
-        id: "ua5",
-        actividadId: "606",
+        id: 158,
+        actividadId: 606,
         nombre: "Evaluación intermedia",
         tipo: "Sumativa",
         instrumento: "Escala de valoración",
@@ -170,8 +171,8 @@ export const unidadesTematicasDb: UnidadTematica[] = [
         ponderacion: 0,
       },
       {
-        id: "ua6",
-        actividadId: "611",
+        id: 159,
+        actividadId: 611,
         nombre: "Mural colaborativo",
         tipo: "Formativa",
         instrumento: "Rúbrica",
@@ -181,7 +182,7 @@ export const unidadesTematicasDb: UnidadTematica[] = [
     ],
   },
   {
-    id: "u3",
+    id: 3,
     nombre: "Interpretación de gráficos estadísticos",
     area: "Matemática",
     // Unidad con enfoque formativo: sus actividades no admiten
@@ -211,7 +212,7 @@ export const unidadesTematicasDb: UnidadTematica[] = [
     enunciadosDba: [],
     criterios: [
       {
-        id: "cu7",
+        id: 160,
         nombre: "Interpretación",
         niveles: [
           { nombre: "Bajo", descripcion: "Lee mal los ejes y confunde las magnitudes." },
@@ -221,7 +222,7 @@ export const unidadesTematicasDb: UnidadTematica[] = [
         ],
       },
       {
-        id: "cu8",
+        id: 161,
         nombre: "Construcción",
         niveles: [
           { nombre: "Bajo", descripcion: "Elige un gráfico inadecuado al tipo de dato." },
@@ -238,7 +239,7 @@ export const unidadesTematicasDb: UnidadTematica[] = [
     actividades: [],
   },
   {
-    id: "u4",
+    id: 4,
     nombre: "Clasificación de los seres vivos",
     area: "Científica",
     // Sin actividades en `planeador.ts` — la segunda unidad formativa
@@ -266,7 +267,7 @@ export const unidadesTematicasDb: UnidadTematica[] = [
     enunciadosDba: [],
     criterios: [
       {
-        id: "cu9",
+        id: 162,
         nombre: "Uso de claves",
         niveles: [
           { nombre: "Bajo", descripcion: "No logra recorrer la clave dicotómica." },
@@ -290,13 +291,14 @@ export const unidadesTematicasDb: UnidadTematica[] = [
  * insertado con su id asignado.
  */
 export function addCriterioToUnidad(
-  unidadId: string,
+  unidadId: number,
   criterio: Omit<CriterioUnidad, "id">,
 ): CriterioUnidad | null {
   const unidad = unidadesTematicasDb.find((row) => row.id === unidadId)
   if (!unidad) return null
 
-  const created: CriterioUnidad = { ...criterio, id: crypto.randomUUID() }
+  const id = nextId(unidadesTematicasDb.flatMap((u) => u.criterios.map((c) => c.id)))
+  const created: CriterioUnidad = { ...criterio, id }
   unidad.criterios.push(created)
   return created
 }
@@ -310,7 +312,7 @@ export function addCriterioToUnidad(
  * doble click en "Vincular".
  */
 export function addActividadToUnidad(
-  unidadId: string,
+  unidadId: number,
   actividad: Omit<UnidadActividad, "id">,
 ): UnidadActividad | null | "duplicado" {
   const unidad = unidadesTematicasDb.find((row) => row.id === unidadId)
@@ -319,7 +321,8 @@ export function addActividadToUnidad(
     return "duplicado"
   }
 
-  const created: UnidadActividad = { ...actividad, id: crypto.randomUUID() }
+  const id = nextId(unidadesTematicasDb.flatMap((u) => u.actividades.map((a) => a.id)))
+  const created: UnidadActividad = { ...actividad, id }
   unidad.actividades.push(created)
   return created
 }
@@ -328,7 +331,7 @@ export function addActividadToUnidad(
  * Quita una unidad por id. Devuelve `true` si la encontró y borró, `false`
  * si no existía. Mismo patrón que `planeador.ts` / `deleteActividadById`.
  */
-export function deleteUnidadById(id: string): boolean {
+export function deleteUnidadById(id: number): boolean {
   const index = unidadesTematicasDb.findIndex((row) => row.id === id)
   if (index === -1) return false
   unidadesTematicasDb.splice(index, 1)
@@ -352,7 +355,7 @@ export function addUnidad(unidad: UnidadTematica): UnidadTematica {
  * existe, o la unidad ya actualizada.
  */
 export function updateUnidadInfoGeneral(
-  id: string,
+  id: number,
   patch: Omit<UnidadTematica, "id" | "criterios" | "actividades">,
 ): UnidadTematica | null {
   const unidad = unidadesTematicasDb.find((row) => row.id === id)
