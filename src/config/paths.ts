@@ -185,5 +185,17 @@ export const paths = {
       getHref: (curricularReferenceId: number | string) =>
         `/app/gestion-academica/referentes-curriculares/detalle/${curricularReferenceId}`,
     },
+    asistencia: {
+      path: "asistencia",
+      getHref: () => "/app/asistencia",
+    },
+    asistenciaSeguimiento: {
+      path: "asistencia/seguimiento",
+      getHref: () => "/app/asistencia/seguimiento",
+    },
+    asistenciaManual: {
+      path: "asistencia/manual",
+      getHref: () => "/app/asistencia/manual",
+    },
   },
 } as const

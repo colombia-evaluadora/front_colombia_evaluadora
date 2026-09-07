@@ -1,14 +1,55 @@
+import { lazy, Suspense } from "react"
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { SpinnerIcon } from "@/components/ui/icons"
 
 import { NoticeProvider } from "@/components/notice/notice-context"
-import { TabEvaluationPeriods } from "@/features/establishment/academic-period/components/tabs/tab-evaluation-periods"
-import { TabPromotionCriteria } from "@/features/establishment/academic-period/components/tabs/tab-promotion-criteria"
-import { TabGrades } from "@/features/establishment/academic-period/components/tabs/tab-grades"
-import { TabRatingScales } from "@/features/establishment/academic-period/components/tabs/tab-rating-scales"
-import { TabAreaSubject } from "@/features/establishment/academic-period/components/tabs/tab-area-subject"
-import { TabEvaluationCriteria } from "@/features/establishment/academic-period/components/tabs/tab-evaluation-criteria"
-import { TabAcademicAssignments } from "@/features/establishment/academic-period/components/tabs/tab-academic-assignments"
 import type { Jornada } from "@/features/establishment/academic-period/components/schedule-data"
+
+const TabEvaluationPeriods = lazy(() =>
+  import("@/features/establishment/academic-period/components/tabs/tab-evaluation-periods").then(
+    (m) => ({ default: m.TabEvaluationPeriods }),
+  ),
+)
+const TabAreaSubject = lazy(() =>
+  import("@/features/establishment/academic-period/components/tabs/tab-area-subject").then(
+    (m) => ({ default: m.TabAreaSubject }),
+  ),
+)
+const TabPromotionCriteria = lazy(() =>
+  import("@/features/establishment/academic-period/components/tabs/tab-promotion-criteria").then(
+    (m) => ({ default: m.TabPromotionCriteria }),
+  ),
+)
+const TabRatingScales = lazy(() =>
+  import("@/features/establishment/academic-period/components/tabs/tab-rating-scales").then(
+    (m) => ({ default: m.TabRatingScales }),
+  ),
+)
+const TabEvaluationCriteria = lazy(() =>
+  import("@/features/establishment/academic-period/components/tabs/tab-evaluation-criteria").then(
+    (m) => ({ default: m.TabEvaluationCriteria }),
+  ),
+)
+const TabGrades = lazy(() =>
+  import("@/features/establishment/academic-period/components/tabs/tab-grades").then((m) => ({
+    default: m.TabGrades,
+  })),
+)
+const TabAcademicAssignments = lazy(() =>
+  import("@/features/establishment/academic-period/components/tabs/tab-academic-assignments").then(
+    (m) => ({ default: m.TabAcademicAssignments }),
+  ),
+)
+
+function TabFallback() {
+  return (
+    <div className="flex items-center justify-center py-10 text-muted-foreground">
+      <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+      Cargando…
+    </div>
+  )
+}
 
 const TABS: { value: string; label: string }[] = [
   { value: "evaluacion", label: "Periodos de evaluación" },
@@ -26,24 +67,16 @@ const PANEL_BASE =
 interface EvaluationPeriodsSectionProps {
   jornada: Jornada
   academicPeriodId?: number
-  accordionOpen?: boolean
 }
 
 export function EvaluationPeriodsSection({
   jornada,
   academicPeriodId,
 }: EvaluationPeriodsSectionProps) {
-  // TEMPORAL: se saca el `overflow-y-auto max-h-[…vh]` propio del panel para
-  // probar si el "scroll fantasma" reportado (documentElement.scrollHeight
-  // mucho mayor que el contenido real, ver conversación) desaparece dejando
-  // que la página scrollee entera en vez de crear su propio contenedor de
-  // scroll acá. Si se confirma, falta decidir un reemplazo definitivo (capar
-  // por otro lado o rediseñar el layout) — esto no es la solución final.
   const panel = PANEL_BASE
 
   return (
     <Tabs defaultValue="evaluacion">
-      {/* Sin scroll: las tabs se solapan y se encogen para entrar en una fila. */}
       <TabsList variant="folder">
         {TABS.map((tab) => (
           <TabsTrigger key={tab.value} value={tab.value}>
@@ -53,37 +86,51 @@ export function EvaluationPeriodsSection({
       </TabsList>
       <TabsContent value="evaluacion" className={panel}>
         <NoticeProvider>
-          <TabEvaluationPeriods academicPeriodId={academicPeriodId} />
+          <Suspense fallback={<TabFallback />}>
+            <TabEvaluationPeriods academicPeriodId={academicPeriodId} />
+          </Suspense>
         </NoticeProvider>
       </TabsContent>
       <TabsContent value="area" className={panel}>
         <NoticeProvider>
-          <TabAreaSubject academicPeriodId={academicPeriodId} />
+          <Suspense fallback={<TabFallback />}>
+            <TabAreaSubject academicPeriodId={academicPeriodId} />
+          </Suspense>
         </NoticeProvider>
       </TabsContent>
       <TabsContent value="promocion" className={panel}>
         <NoticeProvider>
-          <TabPromotionCriteria academicPeriodId={academicPeriodId} />
+          <Suspense fallback={<TabFallback />}>
+            <TabPromotionCriteria academicPeriodId={academicPeriodId} />
+          </Suspense>
         </NoticeProvider>
       </TabsContent>
       <TabsContent value="escalas" className={panel}>
         <NoticeProvider>
-          <TabRatingScales academicPeriodId={academicPeriodId} />
+          <Suspense fallback={<TabFallback />}>
+            <TabRatingScales academicPeriodId={academicPeriodId} />
+          </Suspense>
         </NoticeProvider>
       </TabsContent>
       <TabsContent value="criterios" className={panel}>
         <NoticeProvider>
-          <TabEvaluationCriteria academicPeriodId={academicPeriodId} />
+          <Suspense fallback={<TabFallback />}>
+            <TabEvaluationCriteria academicPeriodId={academicPeriodId} />
+          </Suspense>
         </NoticeProvider>
       </TabsContent>
       <TabsContent value="grados" className={panel}>
         <NoticeProvider>
-          <TabGrades jornada={jornada} academicPeriodId={academicPeriodId} />
+          <Suspense fallback={<TabFallback />}>
+            <TabGrades jornada={jornada} academicPeriodId={academicPeriodId} />
+          </Suspense>
         </NoticeProvider>
       </TabsContent>
       <TabsContent value="asignaciones" className={panel}>
         <NoticeProvider>
-          <TabAcademicAssignments academicPeriodId={academicPeriodId} />
+          <Suspense fallback={<TabFallback />}>
+            <TabAcademicAssignments academicPeriodId={academicPeriodId} />
+          </Suspense>
         </NoticeProvider>
       </TabsContent>
     </Tabs>

@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useId, useState } from "react"
 
 import {
   Dialog,
@@ -11,10 +11,26 @@ import {
 import { Button } from "@/components/ui/button"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { ArrowLeftIcon, BankIcon, CheckIcon, InfoIcon, XIcon } from "@/components/ui/icons"
+import { Textarea } from "@/components/ui/textarea"
+import { inputVariants } from "@/components/ui/input"
+import { FileUpload, FileUploadTrigger } from "@/components/ui/file-upload"
+import {
+  ArrowLeftIcon,
+  BankIcon,
+  CheckIcon,
+  FileUploadOutlinedIcon,
+  InfoIcon,
+  XIcon,
+} from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
 import { useMatriculaGradeLabel } from "@/features/coverage/hooks/use-matricula-grade-label"
 import type { BulkGroupChangeClassification } from "@/features/coverage/api/types/matricula"
+
+export interface CambioSedeConfirmResult {
+  classification: BulkGroupChangeClassification
+  reason: string
+  supportFile: File | null
+}
 
 interface CambioSedeMatriculaDialogProps {
   open: boolean
@@ -27,7 +43,7 @@ interface CambioSedeMatriculaDialogProps {
   gradeWillChange: boolean
   sameOrigin: boolean
   onBack?: () => void
-  onConfirm: (classification: BulkGroupChangeClassification) => void
+  onConfirm: (result: CambioSedeConfirmResult) => void
   onClose: () => void
 }
 
@@ -57,9 +73,14 @@ export function CambioSedeMatriculaDialog({
   const gradeLabel = useMatriculaGradeLabel()
   const defaultClassification = sameOrigin && gradeWillChange ? "cambioGrado" : "correccion"
   const [classification, setClassification] = useState<BulkGroupChangeClassification>(defaultClassification)
+  const [reason, setReason] = useState("")
+  const [supportFile, setSupportFile] = useState<File | null>(null)
+  const reasonId = useId()
 
   function reset() {
     setClassification(defaultClassification)
+    setReason("")
+    setSupportFile(null)
   }
 
   function handleClose() {
@@ -68,9 +89,12 @@ export function CambioSedeMatriculaDialog({
   }
 
   function handleConfirm() {
-    onConfirm(classification)
+    onConfirm({ classification, reason, supportFile })
     reset()
   }
+
+  const isReubicacion = classification === "cambioGrado"
+  const canConfirm = !isReubicacion || (reason.trim() !== "" && supportFile != null)
 
   return (
     <Dialog open={open} onOpenChange={(next) => !next && handleClose()}>
@@ -131,6 +155,53 @@ export function CambioSedeMatriculaDialog({
               </label>
             </RadioGroup>
           </Field>
+
+          {isReubicacion && (
+            <>
+              <Field variant="outlined">
+                <FieldLabel htmlFor={reasonId}>Motivo de la reubicación*</FieldLabel>
+                <Textarea
+                  id={reasonId}
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  placeholder="Ej: Traslado por cambio de domicilio..."
+                  rows={2}
+                  className={cn(inputVariants({ variant: "outlined" }), "min-h-16 resize-none")}
+                />
+              </Field>
+
+              <Field variant="outlined">
+                <FieldLabel>Soporte*</FieldLabel>
+                <FileUpload
+                  value={supportFile ? [supportFile] : []}
+                  onValueChange={(files) => setSupportFile(files[0] ?? null)}
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  maxSize={10 * 1024 * 1024}
+                  className={cn(
+                    inputVariants({ variant: "outlined" }),
+                    "flex-row items-center justify-between gap-2",
+                  )}
+                >
+                  <span className="truncate text-sm text-muted-foreground">
+                    {supportFile ? supportFile.name : "Subir archivo: PDF, JPG o PNG - Máx 10MB"}
+                  </span>
+                  <FileUploadTrigger
+                    render={
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        color="neutral"
+                        size="icon-sm"
+                        aria-label="Adjuntar soporte"
+                      />
+                    }
+                  >
+                    <FileUploadOutlinedIcon />
+                  </FileUploadTrigger>
+                </FileUpload>
+              </Field>
+            </>
+          )}
         </div>
 
         <DialogFooter className="sm:justify-end">
@@ -140,7 +211,7 @@ export function CambioSedeMatriculaDialog({
               Anterior
             </Button>
           )}
-          <Button type="button" color="primary" size="sm" onClick={handleConfirm}>
+          <Button type="button" color="primary" size="sm" disabled={!canConfirm} onClick={handleConfirm}>
             <CheckIcon data-icon="inline-start" />
             Confirmar cambio de sede
           </Button>

@@ -25,5 +25,6 @@ export function useSedeOptionsQuery() {
   return useQuery({
     queryKey: sedeOptionsQueryKey,
     queryFn: fetchSedeOptions,
+    staleTime: 0,
   })
 }

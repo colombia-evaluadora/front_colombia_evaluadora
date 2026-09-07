@@ -1,37 +1,8 @@
 import type { EducationLevel } from "@/features/coverage/api/types/reservation"
 
-// Estados reales de `ESTADO_MATRICULA` (TLISTA_VALOR) — confirmado contra
-// BD real (V200, `fn_matricula_listar`, 2026-08-27). El backend NO manda un
-// id — arma un slug directo de `TLISTA_VALOR.NOMBRE` (minúsculas, tildes
-// fuera, espacios a "_"), así que estos valores son exactamente ese slug, no
-// un mapeo inventado por el front. Si el catálogo real agrega un estado
-// nuevo, aparece con su propio slug sin que el backend tenga que tocar
-// `fn_matricula_listar` — pero el front sí necesita agregarlo acá para que
-// tipe. No existe "Reubicado" (el front lo tenía inventado) — el
-// equivalente real de "promovido" es "Promovido Anticipadamente".
-//
-// "cursando" es el único que puede pasar a "retirado" (y viceversa,
-// "reingreso") — el resto son estados finales de fin de año o de cambio de
-// grado, de momento sin UI propia que los dispare.
-export type MatriculaStatus =
-  | "cursando"
-  | "aprobado"
-  | "reprobado"
-  | "retirado"
-  | "graduado"
-  | "promovido_anticipadamente"
-  | "trasladado"
-  | "sin_definir"
-  | "desertor"
-  | "esperando_aprobacion"
-  | "rechazado"
 
-/** Lo único que el formulario de matrícula necesita del catálogo "base" —
- * a diferencia de Reserva de cupos/Pre-matrícula, acá no hace falta
- * `institutions`/`groups`/`grades` (esos ya salen de sus propios endpoints
- * reales, ver `use-matricula-dependent-catalogs-query.ts`), así que no vale
- * la pena pegarle a `/coverage/reservations/catalogs` (mock-only, 404 contra
- * el backend real) solo para conseguir `campuses`. */
+export type MatriculaStatus = string
+
 export interface MatriculaCampusCatalog {
   campuses: string[]
 }
@@ -77,7 +48,7 @@ export interface Matricula {
 
 export interface MatriculaQueryFilters {
   search?: string
-  statuses?: MatriculaStatus[]
+  statuses?: string[]
   campus?: string
   shift?: string
   grade?: number
@@ -122,17 +93,13 @@ export interface MatriculaMutationResult {
 
 export interface MatriculaDetails extends CreateMatriculaInput {
   status: MatriculaStatus
+  pkTpadre: number | null
+  pkUsuarioEstudiante: number | null
+  pkUsuarioAcudiente: number | null
 }
 
-/** Archivo cargado al matricular, tal como lo devuelve el GET de detalle
- * (`archivos[]`) -- solo lectura por ahora, no hay endpoint de
- * subida/eliminación real todavía (ver `dialog-files-matricula.tsx`). */
 export interface MatriculaFile {
-  /** `pk_tmatricula_archivo` -- id de la fila de vínculo, solo para key de
-   * lista. Para pedir el binario (Ver/Descargar) usar `archivoId`. */
   id: number
-  /** `fk_tarchivo` -- el que espera `file-service` (`/files/view/:id`,
-   * `/files/view-token/:id`), ver `lib/files.ts`. */
   archivoId: number
   name: string
   sizeBytes: number
@@ -297,7 +264,7 @@ export type BulkGradesAction = "trasladar" | "noTrasladar" | "eliminar"
 export interface BulkGradeChange {
   subKind: BulkGradeChangeSubKind
   reason?: string
-  hasSupport?: boolean
+  supportFile?: File | null
   gradesAction: BulkGradesAction
 }
 
@@ -322,8 +289,11 @@ export interface BulkMatriculaChangeStudentResult {
   name: string
   fromCampus: string
   toCampus: string
-  fromGrade: number
-  toGrade: number
+  /** Texto ya formateado (`fn_matricula_*_lote` devuelve el nombre del
+   * grado, no el "valor" ordinal) -- se muestra tal cual, sin pasar por
+   * `useMatriculaGradeLabel`. */
+  fromGrade: string
+  toGrade: string
   fromGroup: string
   toGroup: string
 }

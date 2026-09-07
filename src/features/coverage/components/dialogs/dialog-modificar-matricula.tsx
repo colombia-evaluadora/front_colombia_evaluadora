@@ -1,4 +1,4 @@
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 
 import {
   Dialog,
@@ -43,10 +43,11 @@ import { getErrorMessage } from "@/lib/api-client"
 import { useMatriculaGradeLabel } from "@/features/coverage/hooks/use-matricula-grade-label"
 import { useMatriculaCampusesQuery } from "@/features/coverage/api/query/use-matricula-campuses-query"
 import { useMatriculaDependentCatalogsQuery } from "@/features/coverage/api/query/use-matricula-dependent-catalogs-query"
-import { useBulkChangeMatricula } from "@/features/coverage/api/mutations/bulk-change-matricula"
+import { useMoveMatricula, type MatriculaMoveKind } from "@/features/coverage/api/mutations/move-matricula"
 import { useRetireMatricula } from "@/features/coverage/api/mutations/retire-matricula"
 import { useReingresarMatricula } from "@/features/coverage/api/mutations/reingresar-matricula"
 import { CambioSedeMatriculaDialog } from "@/features/coverage/components/dialogs/dialog-cambio-sede-matricula"
+import type { CambioSedeConfirmResult } from "@/features/coverage/components/dialogs/dialog-cambio-sede-matricula"
 import { CambioGradoMatriculaDialog } from "@/features/coverage/components/dialogs/dialog-cambio-grado-matricula"
 import { CambioGrupoMatriculaDialog } from "@/features/coverage/components/dialogs/dialog-cambio-grupo-matricula"
 import {
@@ -100,13 +101,12 @@ export function ModificarMatriculaDialog({
   const [jornada, setJornada] = useState("")
   const [grado, setGrado] = useState("")
   const [grupo, setGrupo] = useState("")
+  const [attemptedConfirm, setAttemptedConfirm] = useState(false)
   const [accion, setAccion] = useState<MatriculaAction>("sinCambios")
   const [summary, setSummary] = useState<CambioMatriculaSummary | null>(null)
-  // Se van completando a medida que se confirma cada paso de la cadena
-  // (Sede → Grado → Grupo) — `applyChanges` los necesita a los dos juntos
-  // recién en el último paso.
   const [gradeChangeResult, setGradeChangeResult] = useState<BulkGradeChange | null>(null)
   const [groupChangeResult, setGroupChangeResult] = useState<BulkGroupChange | null>(null)
+  const [sedeChangeResult, setSedeChangeResult] = useState<CambioSedeConfirmResult | null>(null)
 
   // Para que el popover de "Ver lista" quede del mismo ancho que la card de
   // "Estudiantes seleccionados" — el popover se porta al final del <body>,
@@ -119,22 +119,31 @@ export function ModificarMatriculaDialog({
   const sameGradeOrigin = selected.every((m) => m.grade === selected[0]?.grade)
   const commonGrade = sameGradeOrigin ? selected[0]?.grade : undefined
 
+  const allCursando = selected.length > 0 && selected.every((m) => m.status === "Cursando")
+  const hasFinalStatus = selected.some((m) => m.status === "Reubicado" || m.status === "Promovido")
+  useEffect(() => {
+    if (hasFinalStatus && accion !== "sinCambios") setAccion("sinCambios")
+  }, [hasFinalStatus, accion])
+
   // Sede → Jornada → Grado → Grupo — ver
-  // `use-matricula-dependent-catalogs-query.ts` (mock determinista, listo
-  // para el endpoint real de oferta académica por sede). "Grupo" depende de
-  // que el usuario haya elegido Grado — no se infiere solo del grado común
-  // de la selección, aunque coincida.
-  const { data: dependentCatalogs } = useMatriculaDependentCatalogsQuery({
+  const {
+    data: dependentCatalogs,
+    isPeriodoError,
+    periodoError,
+  } = useMatriculaDependentCatalogsQuery({
     campus: sede || undefined,
     shift: jornada || undefined,
     grade: grado ? Number(grado) : undefined,
   })
+  useEffect(() => {
+    if (isPeriodoError) notify(getErrorMessage(periodoError), { variant: "error" })
+  }, [isPeriodoError, periodoError, notify])
 
-  const bulkChangeMutation = useBulkChangeMatricula()
+  const moveMatricula = useMoveMatricula()
   const retireMutation = useRetireMatricula()
   const reingresarMutation = useReingresarMatricula()
   const isApplying =
-    bulkChangeMutation.isPending || retireMutation.isPending || reingresarMutation.isPending
+    moveMatricula.isPending || retireMutation.isPending || reingresarMutation.isPending
 
   function reset() {
     setStep("form")
@@ -144,9 +153,11 @@ export function ModificarMatriculaDialog({
     setJornada("")
     setGrado("")
     setGrupo("")
+    setAttemptedConfirm(false)
     setAccion("sinCambios")
     setGradeChangeResult(null)
     setGroupChangeResult(null)
+    setSedeChangeResult(null)
   }
 
   // Sede → Jornada → Grado → Grupo — las opciones salen de
@@ -186,40 +197,137 @@ export function ModificarMatriculaDialog({
   const gradoChanged = grado !== "" && Number(grado) !== commonGrade
   const grupoChanged = grupo !== "" && grupo !== commonGroup
 
+  const missingGrupo = (sedeChanged || gradoChanged) && grupo === ""
   const canConfirm = count > 0 && (sedeChanged || gradoChanged || grupoChanged || accion !== "sinCambios")
 
-  async function applyChanges(gradeChange: BulkGradeChange | null, groupChange: BulkGroupChange | null) {
+  function resolveMoveKind(
+    gradeChange: BulkGradeChange | null,
+    sedeChangeConfirm: CambioSedeConfirmResult | null,
+  ): MatriculaMoveKind {
+    if (gradoChanged) {
+      if (gradeChange?.subKind === "promocion") return "promover"
+      if (gradeChange?.subKind === "reubicacion") return "reubicar"
+      return "corregir"
+    }
+    if (sedeChanged) {
+      return sedeChangeConfirm?.classification === "cambioGrado" ? "reubicar" : "corregir"
+    }
+    return "corregir"
+  }
+
+  async function applyAccion() {
     // "Acción sobre la matrícula" es independiente de Sede/Grado/Grupo — no
     // tiene diálogo de confirmación propio, se aplica junto con el resto acá.
-    if (accion !== "sinCambios") {
-      const mutate = accion === "retirar" ? retireMutation.mutateAsync : reingresarMutation.mutateAsync
-      const results = await Promise.allSettled(selected.map((m) => mutate(m.id)))
-      const failed = results.filter((r) => r.status === "rejected").length
-      if (failed > 0) {
-        notify(`No se pudo aplicar el cambio a ${failed} de ${selected.length} estudiante(s).`, {
-          variant: "error",
-        })
+    if (accion === "sinCambios") return
+
+    // Retirar solo aplica desde "Cursando" y reingresar solo desde
+    // "Retirado" (mismo criterio que los diálogos individuales,
+    // `dialog-retirar-matricula.tsx`/`dialog-reingresar-matricula.tsx`) --
+    // en una selección mixta, el estudiante que ya está en el estado destino
+    // no es un error del usuario, así que ni se manda ni cuenta como falla.
+    const requiredStatus = accion === "retirar" ? "Cursando" : "Retirado"
+    const applicable = selected.filter((m) => m.status === requiredStatus)
+    const alreadyDone = selected.length - applicable.length
+    const mutate = accion === "retirar" ? retireMutation.mutateAsync : reingresarMutation.mutateAsync
+
+    const results = await Promise.allSettled(applicable.map((m) => mutate(m.id)))
+    const failed = results.filter((r) => r.status === "rejected").length
+    const accionLabel = accion === "retirar" ? "retirados" : "reingresados"
+
+    if (failed > 0) {
+      notify(`No se pudo aplicar el cambio a ${failed} de ${applicable.length} estudiante(s).`, {
+        variant: "error",
+      })
+    } else if (applicable.length === 0) {
+      notify(`Ningún estudiante seleccionado necesitaba este cambio (ya estaban ${accionLabel}).`, {
+        variant: "error",
+      })
+    } else if (alreadyDone > 0) {
+      notify(
+        `${applicable.length} estudiante(s) ${accionLabel}. ${alreadyDone} ya estaban en ese estado y no se tocaron.`,
+      )
+    } else {
+      notify(accion === "retirar" ? "Estudiantes retirados." : "Estudiantes reingresados.")
+    }
+  }
+
+  async function applyMovement(
+    gradeChange: BulkGradeChange | null,
+    sedeChangeConfirm: CambioSedeConfirmResult | null,
+  ) {
+    if (!(sedeChanged || gradoChanged || grupoChanged)) return
+
+    const targetGrupoId = dependentCatalogs?.groups.find((g) => g.codigo === grupo)?.id
+    if (targetGrupoId == null) {
+      throw new Error("No se pudo identificar el grupo destino para el movimiento.")
+    }
+
+    const kind = resolveMoveKind(gradeChange, sedeChangeConfirm)
+    const needsDetails = kind !== "corregir"
+    const motivo = needsDetails
+      ? (gradoChanged ? gradeChange?.reason : sedeChangeConfirm?.reason)
+      : undefined
+    const soporte = needsDetails
+      ? (gradoChanged ? gradeChange?.supportFile : sedeChangeConfirm?.supportFile)
+      : undefined
+
+    const result = await moveMatricula.mutateAsync({
+      kind,
+      ids: selected.map((m) => Number(m.id)),
+      grupoDestino: targetGrupoId,
+      motivo,
+      soporte,
+    })
+
+    const movedByOriginalId = new Map(
+      (result.matriculas ?? []).map((m) => [m.pkTmatriculaAnterior, m]),
+    )
+    setSummary({
+      students: selected.map((original) => {
+        const moved = movedByOriginalId.get(Number(original.id))
+        return {
+          id: String(moved?.pkTmatriculaNueva ?? moved?.pkTmatriculaAnterior ?? original.id),
+          name: `${original.firstName} ${original.lastName}`,
+          fromCampus: original.campus,
+          toCampus: moved ? "" : sede || original.campus,
+          fromGrade: moved?.anterior.grado ?? gradeLabel(original.grade),
+          toGrade: moved?.nuevo.grado ?? (grado ? gradeLabel(Number(grado)) : gradeLabel(original.grade)),
+          fromGroup: moved?.anterior.grupo ?? original.group,
+          toGroup: moved?.nuevo.grupo ?? (grupo || original.group),
+        }
+      }),
+    })
+  }
+
+  async function applyChanges(
+    gradeChange: BulkGradeChange | null,
+    _groupChange: BulkGroupChange | null,
+    sedeChangeConfirm: CambioSedeConfirmResult | null,
+  ) {
+    // Movimiento (corregir/reubicar/promover) exige que la matrícula esté
+    // "Cursando" -- si la acción es "retirar", hay que mover PRIMERO y
+    // retirar DESPUÉS, porque una vez retirada ya no se puede mover. Para
+    // "reingresar" es al revés: la matrícula está retirada hasta que se
+    // reingresa, así que el movimiento (que exige "Cursando") va después.
+    try {
+      if (accion === "retirar") {
+        await applyMovement(gradeChange, sedeChangeConfirm)
+        await applyAccion()
       } else {
-        notify(accion === "retirar" ? "Estudiantes retirados." : "Estudiantes reingresados.")
+        await applyAccion()
+        await applyMovement(gradeChange, sedeChangeConfirm)
+      }
+    } finally {
+      // Mismo criterio que `DeleteAcademicPeriodDialog`: el diálogo se
+      // cierra pase lo que pase -- el error ya se avisa por notify, dejarlo
+      // abierto solo repite el formulario con datos que van a volver a
+      // fallar igual (ej. matrícula que ya quedó Retirada).
+      setOpen(false)
+      reset()
+      if (!(sedeChanged || gradoChanged || grupoChanged)) {
+        resetSelection()
       }
     }
-
-    if (sedeChanged || gradoChanged || grupoChanged) {
-      const result = await bulkChangeMutation.mutateAsync({
-        ids: selected.map((m) => m.id),
-        campus: sede || undefined,
-        shift: jornada || undefined,
-        grade: grado ? Number(grado) : undefined,
-        group: grupo || undefined,
-        gradeChange: gradeChange ?? undefined,
-        groupChange: groupChange ?? undefined,
-      })
-      setSummary({ students: result.students })
-    }
-
-    setOpen(false)
-    reset()
-    resetSelection()
   }
 
   function goToStep(
@@ -227,51 +335,48 @@ export function ModificarMatriculaDialog({
     nextIndex: number,
     gradeChange: BulkGradeChange | null,
     groupChange: BulkGroupChange | null,
+    sedeChangeConfirm: CambioSedeConfirmResult | null,
   ) {
     if (nextIndex < nextQueue.length) {
       setQueueIndex(nextIndex)
       setStep(nextQueue[nextIndex])
       return
     }
-    void applyChanges(gradeChange, groupChange).catch((error) => {
+    void applyChanges(gradeChange, groupChange, sedeChangeConfirm).catch((error) => {
       notify(getErrorMessage(error), { variant: "error" })
     })
   }
 
   function handleApply() {
     if (!canConfirm) return
-    // Si el Grado cambió, el Grupo nuevo va de la mano de ese cambio — no
-    // es una operación aparte, así que no le pide su propia confirmación
-    // (el valor de "grupo" igual viaja en el request, ver `applyChanges`).
+    if (missingGrupo) {
+      setAttemptedConfirm(true)
+      return
+    }
     const nextQueue: ConfirmStep[] = [
       sedeChanged && "sede",
       gradoChanged && "grado",
-      grupoChanged && !gradoChanged && "grupo",
+      grupoChanged && !gradoChanged && !sedeChanged && "grupo",
     ].filter((value): value is ConfirmStep => value !== false)
 
     setQueue(nextQueue)
-    goToStep(nextQueue, 0, null, null)
+    goToStep(nextQueue, 0, null, null, null)
   }
 
-  // Cada paso solo aporta SU propio resultado — el del otro tipo (si ya se
-  // confirmó en un paso anterior) se toma del estado acumulado, para no
-  // perderlo al llegar al último paso de la cadena.
-  function handleSedeConfirm() {
-    // La clasificación que elige el usuario en `CambioSedeMatriculaDialog`
-    // es solo informativa (no hay historial que escribir, ver
-    // `applyBulkMatriculaChange`) — no se acumula como el resultado de
-    // Grado/Grupo, que sí viajan en el request.
-    goToStep(queue, queueIndex + 1, gradeChangeResult, groupChangeResult)
+
+  function handleSedeConfirm(result: CambioSedeConfirmResult) {
+    setSedeChangeResult(result)
+    goToStep(queue, queueIndex + 1, gradeChangeResult, groupChangeResult, result)
   }
 
   function handleGradoConfirm(result: BulkGradeChange) {
     setGradeChangeResult(result)
-    goToStep(queue, queueIndex + 1, result, groupChangeResult)
+    goToStep(queue, queueIndex + 1, result, groupChangeResult, sedeChangeResult)
   }
 
   function handleGrupoConfirm(result: BulkGroupChange) {
     setGroupChangeResult(result)
-    goToStep(queue, queueIndex + 1, gradeChangeResult, result)
+    goToStep(queue, queueIndex + 1, gradeChangeResult, result, sedeChangeResult)
   }
 
   function handleBackFrom(current: ConfirmStep) {
@@ -431,12 +536,19 @@ export function ModificarMatriculaDialog({
 
             <div className="flex flex-col gap-3 rounded-md border border-input p-4">
               <span className="text-sm font-semibold text-foreground">Datos de matrícula</span>
+              {!allCursando && (
+                <p className="text-sm text-muted-foreground">
+                  Solo se puede corregir, promover o reubicar mientras el estudiante está
+                  cursando.
+                </p>
+              )}
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field variant="outlined">
                   <FieldLabel>Sede</FieldLabel>
                   <ComboboxField
-                    value={sede || undefined}
+                    value={sede}
                     onValueChange={(v) => handleSedeChange(v ?? "")}
+                    disabled={!allCursando}
                   >
                     <ComboboxFieldTrigger size="sm">
                       <ComboboxFieldValue placeholder="Seleccionar" />
@@ -454,7 +566,7 @@ export function ModificarMatriculaDialog({
                 <Field variant="outlined">
                   <FieldLabel>Jornada:</FieldLabel>
                   <ComboboxField
-                    value={jornada || undefined}
+                    value={jornada}
                     onValueChange={(v) => handleJornadaChange(v ?? "")}
                     disabled={!sede}
                   >
@@ -482,7 +594,7 @@ export function ModificarMatriculaDialog({
                         grade.nombre,
                       ]),
                     )}
-                    value={grado || undefined}
+                    value={grado}
                     onValueChange={(v) => handleGradoChange(v ?? "")}
                     disabled={!jornada}
                   >
@@ -501,14 +613,20 @@ export function ModificarMatriculaDialog({
                   </ComboboxField>
                 </Field>
 
-                <Field variant="outlined">
-                  <FieldLabel>Grupo</FieldLabel>
+                <Field
+                  variant="outlined"
+                  data-invalid={attemptedConfirm && missingGrupo ? "true" : undefined}
+                >
+                  <FieldLabel>
+                    Grupo
+                    {(sedeChanged || gradoChanged) && "*"}
+                  </FieldLabel>
                   <ComboboxField
-                    value={grupo || undefined}
+                    value={grupo}
                     onValueChange={(v) => setGrupo(v ?? "")}
                     disabled={!grado}
                   >
-                    <ComboboxFieldTrigger size="sm">
+                    <ComboboxFieldTrigger size="sm" aria-invalid={attemptedConfirm && missingGrupo}>
                       <ComboboxFieldValue
                         placeholder={!grado ? "Elegí grado primero" : "Seleccionar"}
                       />
@@ -530,6 +648,7 @@ export function ModificarMatriculaDialog({
               <RadioGroup
                 value={accion}
                 onValueChange={(value) => value && setAccion(value as MatriculaAction)}
+                disabled={hasFinalStatus}
                 className="flex min-h-11 flex-row flex-wrap items-center gap-6 rounded-md border border-input px-3"
               >
                 <label className="flex items-center gap-2 text-sm">
@@ -545,6 +664,12 @@ export function ModificarMatriculaDialog({
                   Reingresar estudiante
                 </label>
               </RadioGroup>
+              {hasFinalStatus && (
+                <p className="text-xs text-muted-foreground">
+                  Hay estudiantes con matrícula Reubicada o Promovida en la selección -- ya quedaron
+                  reemplazados por una matrícula nueva y no se pueden retirar ni reingresar.
+                </p>
+              )}
             </Field>
           </div>
 
@@ -611,7 +736,14 @@ export function ModificarMatriculaDialog({
         onClose={handleWizardClose}
       />
 
-      <CambioMatriculaSummaryDialog open={summary != null} summary={summary} onClose={() => setSummary(null)} />
+      <CambioMatriculaSummaryDialog
+        open={summary != null}
+        summary={summary}
+        onClose={() => {
+          setSummary(null)
+          resetSelection()
+        }}
+      />
     </>
   )
 }

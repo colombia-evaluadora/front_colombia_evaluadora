@@ -27,8 +27,12 @@ async function fetchGradeNames(academicPeriodId: number): Promise<GradeRow[]> {
 }
 
 async function gradeUsesSubject(gradeId: number, nombreInterno: string): Promise<boolean> {
-  const raw: StudyPlanRawResponse = await api.get(
-    `/eval-col/grados/${gradeId}/plan-asignaturas?pageIndex=0&pageSize=1000`
+  const raw: StudyPlanRawResponse = await api.post(
+    `/eval-col/grados/${gradeId}/plan-asignaturas/query`,
+    {
+      PAGE_INDEX: "0",
+      PAGE_SIZE: "1000",
+    }
   )
   return (raw.rows ?? []).some((row) => row.asignatura === nombreInterno)
 }

@@ -68,7 +68,7 @@ export function CurricularReferenceDetailsForm({
           <Input
             id="curricular-reference-name"
             size="sm"
-            maxLength={130}
+            maxLength={150}
             value={value.name}
             aria-invalid={Boolean(errors["name"])}
             onChange={(event) => onChange({ ...value, name: event.target.value })}
@@ -119,7 +119,7 @@ export function CurricularReferenceDetailsForm({
           <FieldLabel htmlFor="curricular-reference-description">Descripción / Finalidad *</FieldLabel>
           <Textarea
             id="curricular-reference-description"
-            maxLength={500}
+            maxLength={400}
             value={value.description}
             aria-invalid={Boolean(errors["description"])}
             onChange={(event) => onChange({ ...value, description: event.target.value })}
@@ -145,7 +145,7 @@ export function CurricularReferenceDetailsForm({
           <Input
             id="curricular-reference-level1"
             size="sm"
-            maxLength={130}
+            maxLength={60}
             value={value.level1}
             aria-invalid={Boolean(errors["level1"])}
             onChange={(event) => onChange({ ...value, level1: event.target.value })}
@@ -164,7 +164,7 @@ export function CurricularReferenceDetailsForm({
           <Input
             id="curricular-reference-level2"
             size="sm"
-            maxLength={130}
+            maxLength={60}
             value={value.level2}
             aria-invalid={Boolean(errors["level2"])}
             onChange={(event) => onChange({ ...value, level2: event.target.value })}
@@ -267,7 +267,7 @@ export function CurricularReferenceDetailsForm({
           <Input
             id="curricular-reference-instrument"
             size="sm"
-            maxLength={130}
+            maxLength={400}
             value={value.instrument}
             aria-invalid={Boolean(errors["instrument"])}
             onChange={(event) => onChange({ ...value, instrument: event.target.value })}
@@ -282,7 +282,7 @@ export function CurricularReferenceDetailsForm({
           </FieldLabel>
           <Textarea
             id="curricular-reference-instrument-description"
-            maxLength={500}
+            maxLength={400}
             value={value.instrumentDescription}
             onChange={(event) => onChange({ ...value, instrumentDescription: event.target.value })}
             placeholder="Describe qué incluye este instrumento y cómo se utiliza..."
@@ -299,7 +299,7 @@ export function CurricularReferenceDetailsForm({
           <FieldLabel htmlFor="curricular-reference-regulation">Normatividad *</FieldLabel>
           <Textarea
             id="curricular-reference-regulation"
-            maxLength={500}
+            maxLength={400}
             value={value.regulation}
             aria-invalid={Boolean(errors["regulation"])}
             onChange={(event) => onChange({ ...value, regulation: event.target.value })}

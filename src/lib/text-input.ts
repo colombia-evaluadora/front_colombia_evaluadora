@@ -26,3 +26,20 @@ export function toNitInput(value: string): string {
   const digits = toDigitsOnly(value, 10)
   return digits.length <= 1 ? digits : `${digits.slice(0, -1)}-${digits.slice(-1)}`
 }
+
+/**
+ * Filtra `value` dejando solo dígitos y, a lo sumo, un guión para expresar
+ * un rango simple ("10-12"). Pensado para campos numéricos que además
+ * admiten un rango (ej. "Semana del cronograma") — nunca letras ni una
+ * lista separada por comas.
+ *
+ * Cualquier guión de más se descarta (junto con el primer dígito antes de
+ * él no se toca, pero los que quedan después del primer guión se
+ * concatenan como dígitos): "10--12" y "10-1-2" quedan en "10-112".
+ */
+export function toDigitsOrRangeInput(value: string): string {
+  const cleaned = value.replace(/[^\d-]/g, "").replace(/^-+/, "")
+  const [first = "", ...rest] = cleaned.split("-")
+  const tail = rest.join("")
+  return tail ? `${first}-${tail}` : first
+}

@@ -28,7 +28,7 @@ function formatMovementDate(date: Date): string {
   return formatted.replace(/\s*([ap])\.?\s*m\.?/i, (_, letter: string) => `${letter.toLowerCase()}.m.`)
 }
 
-export type MatriculaMovementKind = "grado" | "sede"
+export type MatriculaMovementKind = "grado" | "sede" | "grupo"
 
 export interface GradeChangeSummary {
   studentName: string
@@ -38,7 +38,8 @@ export interface GradeChangeSummary {
   toCampus: string
   fromGrade: number
   toGrade: number
-  group: string
+  fromGroup: string
+  toGroup: string
   gradesAction: GradeChangeGradesAction | null
   date: Date
   userName: string
@@ -53,14 +54,6 @@ interface GradeChangeSummaryDialogProps {
 export function GradeChangeSummaryDialog({ open, summary, onClose }: GradeChangeSummaryDialogProps) {
   const gradeLabel = useMatriculaGradeLabel()
   if (!summary) return null
-
-  const isSuperior = summary.toGrade > summary.fromGrade
-  const tipoMovimiento =
-    summary.movementKind === "sede"
-      ? "Cambio de sede"
-      : isSuperior
-        ? "Cambio a grado superior"
-        : "Cambio a grado inferior"
 
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
@@ -84,7 +77,7 @@ export function GradeChangeSummaryDialog({ open, summary, onClose }: GradeChange
               <span className="font-medium">Estudiante:</span> {summary.studentName}
             </li>
             <li>
-              <span className="font-medium">Tipo de movimiento:</span> {tipoMovimiento}
+              <span className="font-medium">Tipo de movimiento:</span> {summary.movementLabel}
             </li>
             <li>
               <span className="font-medium">Sede:</span>{" "}
@@ -107,7 +100,14 @@ export function GradeChangeSummaryDialog({ open, summary, onClose }: GradeChange
               )}
             </li>
             <li>
-              <span className="font-medium">Grupo:</span> {summary.group}
+              <span className="font-medium">Grupo:</span>{" "}
+              {summary.fromGroup === summary.toGroup ? (
+                summary.toGroup
+              ) : (
+                <>
+                  {summary.fromGroup} → <strong>{summary.toGroup}</strong>
+                </>
+              )}
             </li>
             {summary.gradesAction && (
               <li>

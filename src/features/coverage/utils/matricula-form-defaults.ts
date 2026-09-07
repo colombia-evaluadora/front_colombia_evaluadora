@@ -9,6 +9,7 @@ import type { MatriculaSupportFiles } from "@/features/coverage/components/forms
 import type { Municipality } from "@/features/establishment/institution/api/types/location"
 import { MATRICULA_FIELD_CATALOG } from "@/features/coverage/utils/matricula-field-catalog"
 import { isFieldRequired, isFieldVisible, type MatriculaFieldSettingsMap } from "@/features/coverage/utils/matricula-field-settings"
+import { isPreescolarPrimariaGrado } from "@/features/coverage/utils/matricula-grado-rules"
 
 export function resolveMatriculaMunicipioDepartments(
   values: CreateMatriculaInput,
@@ -238,16 +239,17 @@ export function validateMatricula(
   if (!values.guardian.relationship) missing.push("guardian-relationship")
   if (!values.guardian.documentType) missing.push("guardian-document-type")
 
-  // Campos que "Configuración de parámetros requeridos" marcó obligatorios —
-  // si además está oculto no se puede pedir (mismo criterio que el switch
-  // "Requerido" del config, que se apaga solo cuando "Visible" se apaga).
   for (const [id, getValue] of Object.entries(OPTIONAL_MATRICULA_FIELD_GETTERS)) {
     if (!isFieldRequired(fieldSettings, id) || !isFieldVisible(fieldSettings, id)) continue
     if (!getValue(values).trim()) missing.push(id)
   }
 
   const studentEmail = values.studentContact.email.trim()
-  if (accountsFound?.student === false && !studentEmail) {
+  if (
+    accountsFound?.student === false &&
+    !studentEmail &&
+    !isPreescolarPrimariaGrado(values.academic.grade)
+  ) {
     missing.push("student-contact-email")
   } else if (studentEmail && !EMAIL_REGEX.test(studentEmail)) {
     missing.push("student-contact-email")
