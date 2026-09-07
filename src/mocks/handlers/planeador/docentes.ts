@@ -1,9 +1,6 @@
 import { http, HttpResponse, delay } from "msw"
 
-import { GRADES, GROUPS } from "@/mocks/db/reservations"
-import { formatGrade } from "@/features/coverage/api/ui-mappings"
-import { palabraGradoDesdeNombreCatalogo } from "@/features/planeador/lib/grado-nivel-educativo"
-import { ASIGNATURA_OPTIONS } from "@/features/planeador/components/forms/form-editar-actividad"
+import { planeadorDb } from "@/mocks/db/planeador"
 
 /**
  * Mocks de `GET /planeador/docentes/grupos` y
@@ -12,9 +9,16 @@ import { ASIGNATURA_OPTIONS } from "@/features/planeador/components/forms/form-e
  * Planilla de calificación pega contra estas rutas, MSW no tiene handler,
  * la petición cae al backend real con el JWT falso del mock (`alg: none`) y
  * responde 401 — el interceptor global lo toma como sesión vencida y
- * redirige a /login en loop. Determinístico (mismo hash que
- * `grade-groups.ts`) para que grado/grupo/asignatura salgan siempre
- * poblados y estables entre recargas.
+ * redirige a /login en loop.
+ *
+ * Las combinaciones de grado/grupo/asignatura salen de las actividades
+ * reales de `planeadorDb`, no de una lista fabricada aparte con su propio
+ * esquema de nombres: la versión anterior generaba "Tercero"/"302" con un
+ * hash determinístico, que nunca coincidía con el "3º"/"A" que de verdad
+ * traen las actividades — el "Filtro" ofrecía combinaciones para las que la
+ * grilla de la Planilla no encontraba nada, y quedaba siempre vacía. Derivar
+ * acá mismo garantiza que toda combinación que aparece en el filtro tiene
+ * al menos una actividad real detrás.
  */
 function hashString(value: string): number {
   let hash = 0
@@ -24,57 +28,72 @@ function hashString(value: string): number {
   return Math.abs(hash)
 }
 
-function nivelParaGrado(grade: number): { id: number; nombre: string } {
-  if (grade === 0) return { id: 1, nombre: "Preescolar" }
-  if (grade <= 5) return { id: 2, nombre: "Primaria" }
-  if (grade <= 9) return { id: 3, nombre: "Secundaria" }
+function nivelParaGrado(grado: string): { id: number; nombre: string } {
+  const numero = Number(grado.match(/\d+/)?.[0] ?? NaN)
+  if (Number.isNaN(numero)) return { id: 3, nombre: "Secundaria" }
+  if (numero === 0) return { id: 1, nombre: "Preescolar" }
+  if (numero <= 5) return { id: 2, nombre: "Primaria" }
+  if (numero <= 9) return { id: 3, nombre: "Secundaria" }
   return { id: 4, nombre: "Media" }
-}
-
-// Mismo criterio que `generateFallbackGroups` de `grade-groups.ts`: un
-// subconjunto determinístico de `GROUPS` por grado, no todos los grados
-// tienen la misma cantidad de grupos.
-function gruposDeGrado(grade: number): string[] {
-  const seed = hashString(`docente-grupos-${grade}`)
-  const count = 1 + (seed % GROUPS.length)
-  const offset = seed % GROUPS.length
-  return Array.from({ length: count }, (_, i) => GROUPS[(offset + i) % GROUPS.length]).sort()
 }
 
 export const planeadorDocentesHandlers = [
   http.get("/api/eval-col/planeador/docentes/grupos", async () => {
     await delay(200)
-    const rows = GRADES.flatMap((grade) => {
-      const nivel = nivelParaGrado(grade)
-      const gradoNombre = palabraGradoDesdeNombreCatalogo(formatGrade(grade)) ?? formatGrade(grade)
-      return gruposDeGrado(grade).map((codigo) => ({
-        grupo_id: hashString(`grupo-${grade}-${codigo}`) % 1000000,
-        // "601" — grado + código del grupo, mismo formato que el mockup.
-        grupo_codigo: `${grade}${codigo}`,
-        grupo_nombre: `${grade}-${codigo}`,
-        grado_id: grade + 1,
-        grado_codigo: String(grade),
-        grado_nombre: gradoNombre,
+    const vistos = new Set<string>()
+    const rows: {
+      grupo_id: number
+      grupo_codigo: string
+      grupo_nombre: string
+      grado_id: number
+      grado_codigo: string
+      grado_nombre: string
+      nivel_ensenanza_id: number
+      nivel_ensenanza_nombre: string
+    }[] = []
+    for (const actividad of planeadorDb) {
+      const key = `${actividad.grado}|${actividad.grupo}`
+      if (vistos.has(key)) continue
+      vistos.add(key)
+      const nivel = nivelParaGrado(actividad.grado)
+      rows.push({
+        grupo_id: hashString(`grupo-${key}`) % 1000000,
+        grupo_codigo: actividad.grupo,
+        grupo_nombre: `${actividad.grado}-${actividad.grupo}`,
+        grado_id: hashString(`grado-${actividad.grado}`) % 1000000,
+        grado_codigo: actividad.grado,
+        grado_nombre: actividad.grado,
         nivel_ensenanza_id: nivel.id,
         nivel_ensenanza_nombre: nivel.nombre,
-      }))
-    })
+      })
+    }
     return HttpResponse.json({ rows })
   }),
 
   http.get("/api/eval-col/planeador/docentes/grado-asignatura", async () => {
     await delay(200)
-    const rows = GRADES.flatMap((grade) => {
-      const gradoNombre = palabraGradoDesdeNombreCatalogo(formatGrade(grade)) ?? formatGrade(grade)
-      return ASIGNATURA_OPTIONS.map((asignatura, index) => ({
-        grado_id: grade + 1,
-        grado_codigo: String(grade),
-        grado_nombre: gradoNombre,
-        asignatura_id: index + 1,
-        asignatura_codigo: asignatura.slice(0, 3).toUpperCase(),
-        asignatura_nombre: asignatura,
-      }))
-    })
+    const vistos = new Set<string>()
+    const rows: {
+      grado_id: number
+      grado_codigo: string
+      grado_nombre: string
+      asignatura_id: number
+      asignatura_codigo: string
+      asignatura_nombre: string
+    }[] = []
+    for (const actividad of planeadorDb) {
+      const key = `${actividad.grado}|${actividad.asignatura}`
+      if (vistos.has(key)) continue
+      vistos.add(key)
+      rows.push({
+        grado_id: hashString(`grado-${actividad.grado}`) % 1000000,
+        grado_codigo: actividad.grado,
+        grado_nombre: actividad.grado,
+        asignatura_id: hashString(`asignatura-${actividad.asignatura}`) % 1000000,
+        asignatura_codigo: actividad.asignatura.slice(0, 3).toUpperCase(),
+        asignatura_nombre: actividad.asignatura,
+      })
+    }
     return HttpResponse.json({ rows })
   }),
 ]
