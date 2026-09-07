@@ -27,11 +27,11 @@ export function useAsistenciaRosterQuery(params: AsistenciaSesionEstudiantesPara
 
 export function useAsistenciaRosterPorBloquesQuery(
   base: Omit<AsistenciaSesionEstudiantesParams, "BLOQUE">,
-  bloques: number[],
+  bloques: (number | null)[],
 ) {
   const queries = useQueries({
     queries: bloques.map((bloque) => {
-      const params: AsistenciaSesionEstudiantesParams = { ...base, BLOQUE: bloque }
+      const params: AsistenciaSesionEstudiantesParams = { ...base, ...(bloque !== null && { BLOQUE: bloque }) }
       return {
         queryKey: ["asistencia", "sesion-estudiantes", params],
         queryFn: () => fetchEstudiantesSesion(params),
@@ -41,7 +41,7 @@ export function useAsistenciaRosterPorBloquesQuery(
 
   const isPending = queries.some((q) => q.isPending)
   const isError = queries.some((q) => q.isError)
-  const porBloque = new Map<number, RosterEstudiante[]>()
+  const porBloque = new Map<number | null, RosterEstudiante[]>()
   bloques.forEach((bloque, index) => {
     const data = queries[index]?.data
     if (data) porBloque.set(bloque, data)

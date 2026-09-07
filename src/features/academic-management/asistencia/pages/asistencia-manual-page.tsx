@@ -42,9 +42,8 @@ interface SesionTab {
   jornada: string
   fkAsignatura: number
   asignatura: string
-  bloque: number
-  /** Todos los bloques de la corrida (mismo orden que el horario). */
-  bloques: number[]
+  bloque: number | null
+  bloques: (number | null)[]
   horasPorBloque: Record<number, { horaInicio: string | null; horaFin: string | null }>
   horaInicio: string | null
   horaFin: string | null
@@ -72,11 +71,11 @@ function formatEncabezadoSesion(fecha: string, horaInicio: string | null, horaFi
  * para preservarlo.
  */
 function resolverArchivo(
-  bloque: number,
+  bloque: number | null,
   fkMatricula: number,
   soporte: Record<number, File>,
   soporteEliminado: Record<number, boolean>,
-  rosterPorBloque: Map<number, RosterEstudiante[]>,
+  rosterPorBloque: Map<number | null, RosterEstudiante[]>,
 ): File | number | undefined {
   if (soporteEliminado[fkMatricula]) return undefined
   const nuevo = soporte[fkMatricula]
@@ -86,21 +85,22 @@ function resolverArchivo(
 }
 
 function registrosPorBloque(
-  bloques: number[],
+  bloques: (number | null)[],
   seleccion: Record<number, TipoAsistencia>,
   bloqueTarde: Record<number, number>,
   soporte: Record<number, File>,
   soporteEliminado: Record<number, boolean>,
-  rosterPorBloque: Map<number, RosterEstudiante[]>,
-): Map<number, AsistenciaRegistroManual[]> {
-  const porBloque = new Map<number, AsistenciaRegistroManual[]>(bloques.map((b) => [b, []]))
+  rosterPorBloque: Map<number | null, RosterEstudiante[]>,
+): Map<number | null, AsistenciaRegistroManual[]> {
+  const porBloque = new Map<number | null, AsistenciaRegistroManual[]>(bloques.map((b) => [b, []]))
+  const bloquesNumericos = bloques.filter((b): b is number => b !== null)
 
   for (const [fkMatriculaStr, tipo] of Object.entries(seleccion)) {
     const fkMatricula = Number(fkMatriculaStr)
 
-    if (tipo === LLEGO_TARDE && bloques.length > 1) {
-      const bloqueLlegada = bloqueTarde[fkMatricula] ?? bloques[0]
-      for (const bloque of bloques) {
+    if (tipo === LLEGO_TARDE && bloquesNumericos.length > 1) {
+      const bloqueLlegada = bloqueTarde[fkMatricula] ?? bloquesNumericos[0]
+      for (const bloque of bloquesNumericos) {
         const tipoBloque: TipoAsistencia =
           bloque < bloqueLlegada ? NO_ASISTIO : bloque === bloqueLlegada ? LLEGO_TARDE : ASISTIO
         // El soporte de la tardanza va SOLO en el bloque marcado "Llegó
@@ -140,11 +140,11 @@ function registrosPorBloque(
 }
 
 function registroAutoritativo(
-  bloques: number[],
-  rosterPorBloque: Map<number, RosterEstudiante[]>,
+  bloques: (number | null)[],
+  rosterPorBloque: Map<number | null, RosterEstudiante[]>,
   fkMatricula: number,
-): { bloque: number; row: RosterEstudiante } | undefined {
-  let candidato: { bloque: number; row: RosterEstudiante } | undefined
+): { bloque: number | null; row: RosterEstudiante } | undefined {
+  let candidato: { bloque: number | null; row: RosterEstudiante } | undefined
   for (const bloque of bloques) {
     const row = rosterPorBloque.get(bloque)?.find((r) => r.fk_tmatricula === fkMatricula)
     if (!row || row.tipo_asistencia_valor == null) continue
@@ -185,7 +185,7 @@ function SesionTabContent({ sesion, fecha }: { sesion: SesionTab; fecha: string 
     [rosterPorBloque, sesion.bloque],
   )
   const autoritativos = React.useMemo(() => {
-    const mapa = new Map<number, { bloque: number; row: RosterEstudiante }>()
+    const mapa = new Map<number, { bloque: number | null; row: RosterEstudiante }>()
     for (const base of primerBloqueRoster) {
       const encontrado = registroAutoritativo(sesion.bloques, rosterPorBloque, base.fk_tmatricula)
       if (encontrado) mapa.set(base.fk_tmatricula, encontrado)
@@ -208,7 +208,11 @@ function SesionTabContent({ sesion, fecha }: { sesion: SesionTab; fecha: string 
     for (const [fkMatricula, { bloque, row }] of autoritativos) {
       if (row.tipo_asistencia_valor == null) continue
       inicialSeleccion[fkMatricula] = row.tipo_asistencia_valor
-      if (row.tipo_asistencia_valor === LLEGO_TARDE) inicialBloqueTarde[fkMatricula] = bloque
+      // Sin bloque real no hay "en cuál bloque llegó" que preseleccionar
+      // (sesión suelta o de un solo bloque -- el selector ni se muestra).
+      if (row.tipo_asistencia_valor === LLEGO_TARDE && bloque !== null) {
+        inicialBloqueTarde[fkMatricula] = bloque
+      }
     }
     baseline.current = inicialSeleccion
     bloqueTardeBaseline.current = inicialBloqueTarde
@@ -249,7 +253,7 @@ function SesionTabContent({ sesion, fecha }: { sesion: SesionTab; fecha: string 
           })
           setSoporteEliminado((prev) => ({ ...prev, [fkMatricula]: true }))
         },
-        bloques: sesion.bloques,
+        bloques: sesion.bloques.filter((b): b is number => b !== null),
         horasPorBloque: sesion.horasPorBloque,
         bloqueTarde,
         onBloqueTardeChange: (fkMatricula, bloque) =>

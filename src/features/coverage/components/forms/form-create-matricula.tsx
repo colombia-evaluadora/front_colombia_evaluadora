@@ -16,10 +16,13 @@ import {
   Sheet,
   SheetContent,
   SheetDescription,
+  SheetFooter,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
 import {
+  ArrowCounterClockwiseIcon,
+  CheckIcon,
   EyeIcon,
   FileDownloadOutlinedIcon,
   FilePdfIcon,
@@ -28,6 +31,7 @@ import {
   FolderOpenIcon,
   ImageIcon,
   PaperclipIcon,
+  SpinnerIcon,
   TrashIcon,
 } from "@/components/ui/icons"
 import { FileUpload, FileUploadTrigger } from "@/components/ui/file-upload"
@@ -1516,6 +1520,11 @@ interface SupportFilesSheetFieldProps {
    * `groupExistingFilesByKey`) -- de solo lectura, se muestran antes que los
    * que se adjunten ahora en memoria. */
   existingFiles?: MatriculaFile[]
+  /** Editar (no alta): permite reemplazar un archivo de una sola vía aunque
+   * ya haya uno cargado, y marcar para borrar los de "otros documentos". */
+  editable?: boolean
+  removedExistingIds?: Set<number>
+  onToggleRemoveExisting?: (fileId: number) => void
 }
 
 function SupportFilesSheetField({
@@ -1523,12 +1532,20 @@ function SupportFilesSheetField({
   value,
   onChange,
   existingFiles = [],
+  editable = false,
+  removedExistingIds,
+  onToggleRemoveExisting,
 }: SupportFilesSheetFieldProps) {
   function removeFile(file: File) {
     onChange(value.filter((f) => f !== file))
   }
 
-  const isEmpty = value.length === 0 && existingFiles.length === 0
+  const existingSuperseded = editable && !config.multiple && value.length > 0
+  const visibleExisting = existingSuperseded ? [] : existingFiles
+  const isEmpty = value.length === 0 && visibleExisting.length === 0
+  const canAttach = editable
+    ? !config.multiple
+    : config.multiple || (value.length === 0 && existingFiles.length === 0)
 
   return (
     <FileUpload value={value} onValueChange={onChange} multiple={config.multiple} className="gap-2">
@@ -1537,7 +1554,7 @@ function SupportFilesSheetField({
           {config.label}
           {config.required ? "*" : ""}
         </span>
-        {(config.multiple || (value.length === 0 && existingFiles.length === 0)) && (
+        {canAttach && (
           <FileUploadTrigger
             render={
               <Button
@@ -1558,8 +1575,14 @@ function SupportFilesSheetField({
         <SupportFileEmptyRow />
       ) : (
         <div className="flex flex-col gap-2">
-          {existingFiles.map((file) => (
-            <ExistingFileRow key={file.id} file={file} />
+          {visibleExisting.map((file) => (
+            <ExistingFileRow
+              key={file.id}
+              file={file}
+              removable={editable && config.multiple}
+              markedForRemoval={removedExistingIds?.has(file.id)}
+              onToggleRemove={onToggleRemoveExisting ? () => onToggleRemoveExisting(file.id) : undefined}
+            />
           ))}
           {value.map((file) => (
             <SupportFileRow key={fileKey(file)} file={file} onRemove={removeFile} showDownload />
@@ -1585,13 +1608,17 @@ function existingFileIcon(name: string) {
   return <FileTextIcon className="size-4 shrink-0 text-blue" />
 }
 
+interface ExistingFileRowProps {
+  file: MatriculaFile
+  removable?: boolean
+  markedForRemoval?: boolean
+  onToggleRemove?: () => void
+}
+
 // Ver/Descargar salen de `file-service` (`useArchivoViewUrl`, acuña un
 // token de vista de un solo archivo por `fk_tarchivo` -- ver `lib/files.ts`),
-// mismo mecanismo que ya usa `ArchivoImage`. Eliminar sigue deshabilitado:
-// no hay endpoint todavía para borrar un archivo ya cargado (mismo criterio
-// que "Asignaturas" en `matricula-toolbar.tsx`, se deja en la UI para no
-// rediseñar la fila cuando el backend lo soporte).
-function ExistingFileRow({ file }: { file: MatriculaFile }) {
+// mismo mecanismo que ya usa `ArchivoImage`.
+function ExistingFileRow({ file, removable, markedForRemoval, onToggleRemove }: ExistingFileRowProps) {
   const { data: url, isPending } = useArchivoViewUrl(file.archivoId)
 
   function handleView() {
@@ -1609,10 +1636,16 @@ function ExistingFileRow({ file }: { file: MatriculaFile }) {
   }
 
   return (
-    <div className="flex items-center justify-between gap-2 border-b border-border pb-1.5 text-sm">
+    <div
+      className={
+        markedForRemoval
+          ? "flex items-center justify-between gap-2 border-b border-border pb-1.5 text-sm opacity-50"
+          : "flex items-center justify-between gap-2 border-b border-border pb-1.5 text-sm"
+      }
+    >
       <span className="flex min-w-0 items-center gap-2">
         {existingFileIcon(file.name)}
-        <span className="truncate">{file.name}</span>
+        <span className={markedForRemoval ? "truncate line-through" : "truncate"}>{file.name}</span>
       </span>
       <span className="flex shrink-0 items-center gap-0.5">
         <span className="mr-1 text-xs text-muted-foreground">{formatFileSize(file.sizeBytes)}</span>
@@ -1643,10 +1676,11 @@ function ExistingFileRow({ file }: { file: MatriculaFile }) {
           variant="ghost"
           color="neutral"
           size="icon-sm"
-          disabled
-          aria-label={`Eliminar ${file.name}`}
+          disabled={!removable}
+          aria-label={markedForRemoval ? `Deshacer eliminar ${file.name}` : `Eliminar ${file.name}`}
+          onClick={onToggleRemove}
         >
-          <TrashIcon />
+          {markedForRemoval ? <ArrowCounterClockwiseIcon /> : <TrashIcon />}
         </Button>
       </span>
     </div>
@@ -1693,10 +1727,17 @@ interface SupportFilesSheetProps {
   value: MatriculaSupportFiles
   onChange: (value: MatriculaSupportFiles) => void
   /** Archivos ya cargados en el backend (solo detalle/edición) -- se
-   * muestran aparte, arriba, de solo lectura. Los campos de abajo (Adjuntar/
-   * Eliminar) siguen operando sobre `value` en memoria como siempre: todavía
-   * no hay endpoint real de subida/eliminación de archivos. */
+   * muestran aparte, arriba, de solo lectura salvo que `editable` esté
+   * activo. */
   existingFiles?: MatriculaFile[]
+  /** Editar (no alta): habilita reemplazar los de una sola vía y marcar
+   * para borrar los de "otros documentos", más el botón Guardar de abajo. */
+  editable?: boolean
+  removedExistingIds?: Set<number>
+  onToggleRemoveExisting?: (fileId: number) => void
+  onSave?: () => void
+  isSaving?: boolean
+  saveDisabled?: boolean
 }
 
 export function SupportFilesSheet({
@@ -1705,6 +1746,12 @@ export function SupportFilesSheet({
   value,
   onChange,
   existingFiles,
+  editable = false,
+  removedExistingIds,
+  onToggleRemoveExisting,
+  onSave,
+  isSaving = false,
+  saveDisabled = false,
 }: SupportFilesSheetProps) {
   const existingByKey = groupExistingFilesByKey(existingFiles ?? [])
   return (
@@ -1725,9 +1772,31 @@ export function SupportFilesSheet({
               value={value[field.key]}
               onChange={(files) => onChange({ ...value, [field.key]: files })}
               existingFiles={existingByKey[field.key]}
+              editable={editable}
+              removedExistingIds={removedExistingIds}
+              onToggleRemoveExisting={onToggleRemoveExisting}
             />
           ))}
         </div>
+        {onSave && (
+          <SheetFooter className="px-4">
+            <Button
+              type="button"
+              variant="fill"
+              color="primary"
+              size="sm"
+              disabled={isSaving || saveDisabled}
+              onClick={onSave}
+            >
+              {isSaving ? (
+                <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+              ) : (
+                <CheckIcon data-icon="inline-start" />
+              )}
+              Guardar
+            </Button>
+          </SheetFooter>
+        )}
       </SheetContent>
     </Sheet>
   )
