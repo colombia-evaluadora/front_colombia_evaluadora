@@ -1,35 +1,30 @@
-import { useState } from "react"
+import { useMemo, useState } from "react"
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { inputTriggerVariants, inputVariants } from "@/components/ui/input"
 import { CaretDownIcon, CaretRightIcon } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
 
-import { useGradosCatalogQuery, type GradoCatalogOption } from "@/features/establishment/academic-period/api/query/use-grados-catalog"
-import { useGradeGroupsQuery } from "@/features/establishment/academic-period/api/query/use-grade-groups"
-import { palabraGradoDesdeNombreCatalogo } from "@/features/planeador/lib/grado-nivel-educativo"
-import { ASIGNATURA_OPTIONS } from "@/features/planeador/components/forms/form-editar-actividad"
+import { useDocenteGruposQuery } from "@/features/planeador/api/query/use-docente-grupos-query"
+import { useDocenteGradoAsignaturaQuery } from "@/features/planeador/api/query/use-docente-grado-asignatura-query"
+import { useEvaluationPeriodsQuery } from "@/features/establishment/academic-period/api/query/use-evaluation-periods"
+import type { EvaluationPeriod } from "@/features/establishment/academic-period/api/types/evaluation-period"
+import { formatDate } from "@/features/planeador/lib/format-date"
 
-export interface RangoFechasOption {
-  value: string
-  label: string
+/** Hoy cae dentro de `[startDate, endDate]` — comparación lexicográfica
+ *  válida porque las dos son `yyyy-MM-dd` (ISO, mismo largo). */
+function esVigente(periodo: EvaluationPeriod, hoy: string): boolean {
+  return periodo.startDate <= hoy && hoy <= periodo.endDate
 }
 
-// Sin un catálogo real de periodos de evaluación poblado en el mock (la
-// tabla `evaluationPeriodsDb` está vacía — ver `use-evaluation-periods.ts`),
-// se deja este placeholder fijo, mismo criterio que `ASIGNATURA_OPTIONS`:
-// documentado como aproximación, listo para reemplazar por
-// `useEvaluationPeriodsQuery` el día que haya datos reales que mostrar acá.
-export const RANGO_FECHAS_OPTIONS: RangoFechasOption[] = [
-  { value: "1", label: "20/02/2026 | 30/05/2026" },
-  { value: "2", label: "05/06/2026 | 30/11/2026" },
-]
-
 export interface FiltroPlanillaValue {
-  grado: GradoCatalogOption
+  gradoId: number
+  gradoNombre: string
+  grupoId: number
   grupoCodigo: string
-  asignatura: string
-  rangoFechas: RangoFechasOption
+  asignaturaId: number
+  asignaturaNombre: string
+  periodoEvaluacion: EvaluationPeriod
 }
 
 interface FiltroPlanillaCascadaProps {
@@ -45,6 +40,13 @@ interface FiltroPlanillaCascadaProps {
  * componente compartido para esto en el resto de la app, así que se arma acá
  * con columnas de a mano dentro de un `PopoverContent` angosto sin padding.
  *
+ * Grado/Grupo salen de `GET /planeador/docentes/grupos` (una fila por grupo
+ * del DOCENTE autenticado, con su grado embebido — se agrupa acá por
+ * `gradoId` para armar las dos primeras columnas) y Asignatura de
+ * `GET /planeador/docentes/grado-asignatura` (pares grado↔asignatura del
+ * mismo docente), filtrada por el grado elegido — mismos endpoints reales
+ * documentados en la colección Postman `planeador-planilla`, sección 2.
+ *
  * El borrador de la elección en curso vive aparte de `value` (el filtro ya
  * aplicado): así, si se cierra el popover a mitad de camino (click afuera),
  * la próxima vez que se abre vuelve a mostrar el filtro aplicado, no el
@@ -52,55 +54,97 @@ interface FiltroPlanillaCascadaProps {
  */
 export function FiltroPlanillaCascada({ value, onChange }: FiltroPlanillaCascadaProps) {
   const [open, setOpen] = useState(false)
-  const [gradoDraft, setGradoDraft] = useState<GradoCatalogOption | null>(value?.grado ?? null)
-  const [grupoDraft, setGrupoDraft] = useState<string | null>(value?.grupoCodigo ?? null)
-  const [asignaturaDraft, setAsignaturaDraft] = useState<string | null>(value?.asignatura ?? null)
+  const [gradoIdDraft, setGradoIdDraft] = useState<number | null>(value?.gradoId ?? null)
+  const [grupoIdDraft, setGrupoIdDraft] = useState<number | null>(value?.grupoId ?? null)
+  const [asignaturaIdDraft, setAsignaturaIdDraft] = useState<number | null>(
+    value?.asignaturaId ?? null,
+  )
 
-  const { data: grados = [] } = useGradosCatalogQuery()
-  const { data: gruposResult } = useGradeGroupsQuery({
+  const { data: docenteGrupos = [] } = useDocenteGruposQuery()
+  const { data: docenteGradoAsignatura = [] } = useDocenteGradoAsignaturaQuery()
+  const { data: periodosResult } = useEvaluationPeriodsQuery({
     filters: {},
     sorting: [],
     pageIndex: 0,
     pageSize: 100,
-    gradeId: gradoDraft?.id,
-    enabled: gradoDraft != null,
   })
-  const grupos = gruposResult?.rows ?? []
+  const hoy = useMemo(() => new Date().toISOString().slice(0, 10), [])
+  const periodosVigentes = useMemo(
+    () => (periodosResult?.rows ?? []).filter((periodo) => esVigente(periodo, hoy)),
+    [periodosResult, hoy],
+  )
+
+  // La columna Grado sale de `docentes/grado-asignatura` (grado↔asignatura
+  // que dicta el docente), no de `docentes/grupos`: son dos universos
+  // distintos — un docente puede dictar una asignatura en un grado sin
+  // necesariamente tener un grupo propio ahí, así que armar "Grado" a
+  // partir de los grupos podía dejarlo vacío aunque sí hubiera datos en
+  // grado-asignatura.
+  const grados = useMemo(() => {
+    const porId = new Map<number, { id: number; nombre: string }>()
+    for (const par of docenteGradoAsignatura) {
+      if (!porId.has(par.gradoId)) {
+        porId.set(par.gradoId, { id: par.gradoId, nombre: par.gradoNombre })
+      }
+    }
+    return [...porId.values()]
+  }, [docenteGradoAsignatura])
+
+  const grupos = useMemo(
+    () => docenteGrupos.filter((grupo) => grupo.gradoId === gradoIdDraft),
+    [docenteGrupos, gradoIdDraft],
+  )
+
+  const asignaturas = useMemo(
+    () => docenteGradoAsignatura.filter((par) => par.gradoId === gradoIdDraft),
+    [docenteGradoAsignatura, gradoIdDraft],
+  )
 
   function handleOpenChange(next: boolean) {
     setOpen(next)
     if (!next) {
       // Vuelve al último filtro aplicado — un cierre a mitad de camino no
       // debe dejar el borrador a la vista la próxima vez que se abre.
-      setGradoDraft(value?.grado ?? null)
-      setGrupoDraft(value?.grupoCodigo ?? null)
-      setAsignaturaDraft(value?.asignatura ?? null)
+      setGradoIdDraft(value?.gradoId ?? null)
+      setGrupoIdDraft(value?.grupoId ?? null)
+      setAsignaturaIdDraft(value?.asignaturaId ?? null)
     }
   }
 
-  function elegirGrado(grado: GradoCatalogOption) {
-    setGradoDraft(grado)
-    setGrupoDraft(null)
-    setAsignaturaDraft(null)
+  function elegirGrado(gradoId: number) {
+    setGradoIdDraft(gradoId)
+    setGrupoIdDraft(null)
+    setAsignaturaIdDraft(null)
   }
 
-  function elegirGrupo(codigo: string) {
-    setGrupoDraft(codigo)
-    setAsignaturaDraft(null)
+  function elegirGrupo(grupoId: number) {
+    setGrupoIdDraft(grupoId)
+    setAsignaturaIdDraft(null)
   }
 
-  function elegirRango(rango: RangoFechasOption) {
-    if (!gradoDraft || !grupoDraft || !asignaturaDraft) return
-    onChange({ grado: gradoDraft, grupoCodigo: grupoDraft, asignatura: asignaturaDraft, rangoFechas: rango })
+  function elegirPeriodo(periodo: EvaluationPeriod) {
+    const grado = grados.find((g) => g.id === gradoIdDraft)
+    const grupo = grupos.find((g) => g.grupoId === grupoIdDraft)
+    const asignatura = asignaturas.find((a) => a.asignaturaId === asignaturaIdDraft)
+    if (!grado || !grupo || !asignatura) return
+    onChange({
+      gradoId: grado.id,
+      gradoNombre: grado.nombre,
+      grupoId: grupo.grupoId,
+      grupoCodigo: grupo.grupoCodigo,
+      asignaturaId: asignatura.asignaturaId,
+      asignaturaNombre: asignatura.asignaturaNombre,
+      periodoEvaluacion: periodo,
+    })
     setOpen(false)
   }
 
   const label = value
     ? [
-        palabraGradoDesdeNombreCatalogo(value.grado.nombre) ?? value.grado.nombre,
-        `${value.grado.valor}${value.grupoCodigo}`,
-        value.asignatura,
-        value.rangoFechas.label,
+        value.gradoNombre,
+        value.grupoCodigo,
+        value.asignaturaNombre,
+        `${formatDate(value.periodoEvaluacion.startDate)} | ${formatDate(value.periodoEvaluacion.endDate)}`,
       ].join(" / ")
     : null
 
@@ -127,43 +171,40 @@ export function FiltroPlanillaCascada({ value, onChange }: FiltroPlanillaCascada
 
       <PopoverContent align="start" className="w-auto flex-row gap-0 p-0">
         <FiltroColumna
-          items={grados.map((grado) => ({
-            key: grado.id,
-            label: palabraGradoDesdeNombreCatalogo(grado.nombre) ?? grado.nombre,
-          }))}
-          selectedKey={gradoDraft?.id ?? null}
-          onSelect={(key) => {
-            const grado = grados.find((g) => g.id === key)
-            if (grado) elegirGrado(grado)
-          }}
+          items={grados.map((grado) => ({ key: grado.id, label: grado.nombre }))}
+          selectedKey={gradoIdDraft}
+          onSelect={elegirGrado}
         />
 
-        {gradoDraft && (
+        {gradoIdDraft != null && (
           <FiltroColumna
-            items={grupos.map((grupo) => ({
-              key: grupo.codigo,
-              label: `${gradoDraft.valor}${grupo.codigo}`,
-            }))}
-            selectedKey={grupoDraft}
+            items={grupos.map((grupo) => ({ key: grupo.grupoId, label: grupo.grupoCodigo }))}
+            selectedKey={grupoIdDraft}
             onSelect={elegirGrupo}
           />
         )}
 
-        {gradoDraft && grupoDraft && (
+        {gradoIdDraft != null && grupoIdDraft != null && (
           <FiltroColumna
-            items={ASIGNATURA_OPTIONS.map((asignatura) => ({ key: asignatura, label: asignatura }))}
-            selectedKey={asignaturaDraft}
-            onSelect={setAsignaturaDraft}
+            items={asignaturas.map((asignatura) => ({
+              key: asignatura.asignaturaId,
+              label: asignatura.asignaturaNombre,
+            }))}
+            selectedKey={asignaturaIdDraft}
+            onSelect={setAsignaturaIdDraft}
           />
         )}
 
-        {gradoDraft && grupoDraft && asignaturaDraft && (
+        {gradoIdDraft != null && grupoIdDraft != null && asignaturaIdDraft != null && (
           <FiltroColumna
-            items={RANGO_FECHAS_OPTIONS.map((rango) => ({ key: rango.value, label: rango.label }))}
-            selectedKey={value?.rangoFechas.value ?? null}
+            items={periodosVigentes.map((periodo) => ({
+              key: periodo.id,
+              label: `${formatDate(periodo.startDate)} | ${formatDate(periodo.endDate)}`,
+            }))}
+            selectedKey={value?.periodoEvaluacion.id ?? null}
             onSelect={(key) => {
-              const rango = RANGO_FECHAS_OPTIONS.find((r) => r.value === key)
-              if (rango) elegirRango(rango)
+              const periodo = periodosVigentes.find((p) => p.id === key)
+              if (periodo) elegirPeriodo(periodo)
             }}
             showCaret={false}
             className="border-r-0"
