@@ -264,7 +264,7 @@ export function Rubricas({ unidad }: { unidad: UnidadTematica }) {
     columns,
     data: sorted,
     pageCount: 1,
-    getRowId: (row) => row.id,
+    getRowId: (row) => String(row.id),
     pageIndex: 0,
     pageSize: sorted.length || 1,
     goToPage: () => {},
@@ -309,7 +309,7 @@ export function Actividades({ unidad }: { unidad: UnidadTematica }) {
     columns,
     data: sorted,
     pageCount: 1,
-    getRowId: (row) => row.id,
+    getRowId: (row) => String(row.id),
     pageIndex: 0,
     pageSize: sorted.length || 1,
     goToPage: () => {},
@@ -397,7 +397,7 @@ function UnidadTabs({
  * distintas, y no aportan nada como URL enlazable.
  */
 export function UnidadDetallePanel({ unidadId, onDeleted }: UnidadDetallePanelProps) {
-  const { data: unidad, isPending, isError, refetch } = useUnidadDetalleQuery(unidadId)
+  const { data: unidad, isPending, isError, refetch } = useUnidadDetalleQuery(Number(unidadId))
   const [tab, setTab] = React.useState<PanelTab>("general")
 
   return (
@@ -415,7 +415,7 @@ export function UnidadDetallePanel({ unidadId, onDeleted }: UnidadDetallePanelPr
               color="neutral"
               size="icon-sm"
               aria-label="Editar"
-              render={<Link to={paths.app.planeadorUnidadEditar.getHref(unidad.id)} />}
+              render={<Link to={paths.app.planeadorUnidadEditar.getHref(String(unidad.id))} />}
             >
               <PencilIcon />
             </Button>

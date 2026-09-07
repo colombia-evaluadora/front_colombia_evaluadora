@@ -15,7 +15,7 @@ import type { Criterio } from "@/features/planeador/api/types/actividad"
 export type EstadoAsistencia = "asistio" | "llego-tarde" | "no-asistio"
 
 export type Estudiante = {
-  id: string
+  id: number
   nombres: string
   apellidos: string
 }
@@ -31,7 +31,7 @@ export type Asistencia = {
 
 /** Nota del estudiante en un criterio específico. */
 export type NotaCriterio = {
-  criterioId: string
+  criterioId: number
   /** 0-100. Sin nota hasta que se ingrese (undefined). */
   valor?: number
 }

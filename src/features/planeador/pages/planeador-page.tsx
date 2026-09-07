@@ -136,7 +136,7 @@ export function PlaneadorPage() {
       const start = parseLocalDate(a.fechaInicio)
       const end = parseLocalDate(a.fechaCierre)
       if (!start || !end) continue
-      const code = a.id.slice(-3) // "601", "602"…
+      const code = String(a.id).slice(-3) // "601", "602"…
       for (const d of [start, end]) {
         if (!isVisible(d)) continue
         const day = d.getDate()
@@ -344,14 +344,14 @@ export function PlaneadorPage() {
                       <li key={actividad.id}>
                         <ActividadCard
                           actividad={actividad}
-                          selected={actividad.id === actividadId}
-                          onSelect={() => setActividadId(actividad.id)}
-                          onShowGrades={() => setMode(actividad.id, "grades")}
-                          onShowApproval={() => setMode(actividad.id, "approval")}
+                          selected={String(actividad.id) === actividadId}
+                          onSelect={() => setActividadId(String(actividad.id))}
+                          onShowGrades={() => setMode(String(actividad.id), "grades")}
+                          onShowApproval={() => setMode(String(actividad.id), "approval")}
                           onEdit={() =>
                             navigate({
                               to: paths.app.planeadorActividadEditar.getHref(
-                                actividad.id,
+                                String(actividad.id),
                               ),
                             })
                           }
@@ -360,7 +360,7 @@ export function PlaneadorPage() {
                           // la página vuelve a mostrar el calendario en la
                           // columna derecha (mismo path que `onClose`).
                           onDeleted={() => {
-                            if (actividadId === actividad.id) {
+                            if (actividadId === String(actividad.id)) {
                               setActividadId(undefined)
                             }
                           }}
@@ -393,7 +393,7 @@ export function PlaneadorPage() {
           >
             {actividadId ? (
               <ActividadDetallePanel
-                actividadId={actividadId}
+                actividadId={Number(actividadId)}
                 mode={panelMode}
                 onClose={() => setActividadId(undefined)}
                 onShowGrades={() => setMode(actividadId, "grades")}

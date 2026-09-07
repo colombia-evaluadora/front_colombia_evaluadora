@@ -27,7 +27,9 @@ import { DetailSections } from "@/features/planeador/components/detail-sections"
  */
 export function PlaneadorDetallePage() {
   const { actividadId } = useParams({ strict: false }) as { actividadId?: string }
-  const { data: actividad, isPending, isError, refetch } = useActividadDetalleQuery(actividadId)
+  const { data: actividad, isPending, isError, refetch } = useActividadDetalleQuery(
+    actividadId ? Number(actividadId) : undefined,
+  )
 
   return (
     <TableScreen>

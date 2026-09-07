@@ -6,7 +6,7 @@ import { unidadDetalleQueryKey } from "@/features/planeador/api/query/use-unidad
 import type { CriterioUnidad } from "@/features/planeador/api/types/unidad-tematica"
 
 interface AddCriterioInput {
-  unidadId: string
+  unidadId: number
   criterio: Omit<CriterioUnidad, "id">
 }
 
@@ -17,7 +17,7 @@ interface AddCriterioResponse {
 }
 
 function addCriterioUnidad({ unidadId, criterio }: AddCriterioInput): Promise<AddCriterioResponse> {
-  return api.post(`/eval-col/planeador/unidad/${unidadId}/criterio`, criterio)
+  return api.post(`/eval-col/planeador/unidades/${unidadId}/criterios`, criterio)
 }
 
 interface UseAddCriterioUnidadOptions {

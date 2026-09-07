@@ -7,7 +7,7 @@ import type { UnidadInfoGeneral } from "@/features/planeador/api/mutations/updat
 import type { UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
 
 function createUnidad(data: UnidadInfoGeneral): Promise<UnidadTematica> {
-  return api.post("/eval-col/planeador/unidad", data)
+  return api.post("/eval-col/planeador/unidades", data)
 }
 
 interface UseCreateUnidadOptions {

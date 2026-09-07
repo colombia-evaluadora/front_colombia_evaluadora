@@ -31,7 +31,7 @@ export type Modalidad = "Presencial" | "Virtual" | "Mixta"
 export type RecursoTipo = "URL" | "Unidad virtual" | "Archivo"
 
 export interface Recurso {
-  id: string
+  id: number
   titulo: string
   fuente: string
   tipo: RecursoTipo
@@ -53,14 +53,14 @@ export interface Recurso {
  * input numérico al lado del textarea de descripción.
  */
 export interface Nivel {
-  id: string
+  id: number
   nombre: string
   descripcion: string
   ponderacion?: number
 }
 
 export interface Criterio {
-  id: string
+  id: number
   nombre: string
   excelente: string
   /**
@@ -79,7 +79,7 @@ export interface Criterio {
 }
 
 export interface Rubrica {
-  id: string
+  id: number
   criterios: Criterio[]
 }
 
@@ -91,13 +91,13 @@ export interface Rubrica {
  * de descripción cuando `actividad.esEvaluativa` es `true`.
  */
 export interface ListaCotejoItem {
-  id: string
+  id: number
   descripcion: string
   ponderacion?: number
 }
 
 export interface ListaCotejo {
-  id: string
+  id: number
   items: ListaCotejoItem[]
 }
 
@@ -120,7 +120,7 @@ export type EscalaValoracionTipo = "Numérica" | "Cualitativa"
  *   mismo patrón que los niveles intermedios de `CriterioItem`.
  */
 export interface EscalaValoracion {
-  id: string
+  id: number
   /** Texto libre separado por coma — ej. "Puntualidad, Participación". */
   criteriosGenerales: string
   tipo: EscalaValoracionTipo
@@ -158,7 +158,7 @@ export interface InstrumentoPersonalizado {
 }
 
 export interface Unidad {
-  id: string
+  id: number
   nombre: string
 }
 
@@ -184,11 +184,11 @@ export interface Adaptacion {
   versionModificada: "no" | "archivo" | "enlace" | "biblioteca" | ""
   versionModificadaRef: string
   aplicaA: string
-  estudiantesIds: string[]
+  estudiantesIds: number[]
 }
 
 export interface Actividad {
-  id: string
+  id: number
   nombre: string
   tipo: ActividadTipo
   /**

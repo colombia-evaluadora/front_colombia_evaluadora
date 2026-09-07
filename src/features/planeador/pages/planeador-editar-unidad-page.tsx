@@ -38,7 +38,9 @@ export function PlaneadorEditarUnidadPage() {
   const navigate = useNavigate()
   const { unidadId } = useParams({ strict: false }) as { unidadId?: string }
 
-  const { data: unidad, isPending, isError, error } = useUnidadDetalleQuery(unidadId)
+  const { data: unidad, isPending, isError, error } = useUnidadDetalleQuery(
+    unidadId ? Number(unidadId) : undefined,
+  )
 
   if (isNotFoundError(error)) {
     return <NotFoundPage />
