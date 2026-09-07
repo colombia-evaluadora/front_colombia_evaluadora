@@ -9,6 +9,7 @@ import { useMatriculaDetailQuery } from "@/features/coverage/api/query/use-matri
 import { useUpdateMatriculaFiles } from "@/features/coverage/api/mutations/update-matricula-files"
 import {
   SupportFilesSheet,
+  groupExistingFilesByKey,
   type MatriculaSupportFiles,
 } from "@/features/coverage/components/forms/form-create-matricula"
 import type { Matricula } from "@/features/coverage/api/types/matricula"
@@ -70,10 +71,12 @@ export function FilesMatriculaDialog({ matricula, trigger = "icon", editable = f
     files.previousYearCertificate.length > 0 ||
     files.medicalCertificate.length > 0 ||
     files.studentPhoto.length > 0 ||
+    files.otherDocuments.length > 0 ||
     removedIds.size > 0
 
   function handleSave() {
     if (data?.status !== "ok" || !data.details || !hasPendingChanges) return
+    const byCategory = groupExistingFilesByKey(data.files)
     updateFiles.mutate({
       id: matricula.id,
       values: data.details,
@@ -83,7 +86,10 @@ export function FilesMatriculaDialog({ matricula, trigger = "icon", editable = f
       previousYearCertificate: files.previousYearCertificate[0] ?? null,
       medicalCertificate: files.medicalCertificate[0] ?? null,
       studentPhoto: files.studentPhoto[0] ?? null,
-      otrosDocumentosARemover: Array.from(removedIds),
+      deleteMedicalCertificate: byCategory.medicalCertificate.some((f) => removedIds.has(f.id)),
+      deleteStudentPhoto: byCategory.studentPhoto.some((f) => removedIds.has(f.id)),
+      otrosDocumentosANuevos: files.otherDocuments,
+      otrosDocumentosARemover: byCategory.otherDocuments.filter((f) => removedIds.has(f.id)).map((f) => f.id),
     })
   }
 
@@ -120,6 +126,7 @@ export function FilesMatriculaDialog({ matricula, trigger = "icon", editable = f
         onChange={setFiles}
         existingFiles={data?.status === "ok" ? data.files : undefined}
         editable={editable}
+        viewOnly={trigger === "icon"}
         removedExistingIds={removedIds}
         onToggleRemoveExisting={toggleRemoveExisting}
         onSave={editable ? handleSave : undefined}

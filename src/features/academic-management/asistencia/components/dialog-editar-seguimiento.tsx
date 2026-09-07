@@ -18,6 +18,7 @@ import { PencilIcon, SpinnerIcon } from "@/components/ui/icons"
 
 import { useAsistenciaEditarMutation } from "@/features/academic-management/asistencia/api/mutations/use-asistencia-editar-mutation"
 import { useTipoAsistenciaCatalogQuery } from "@/features/academic-management/asistencia/api/query/use-tipo-asistencia-catalog-query"
+import { nombreMateriaSeguimiento } from "@/features/academic-management/asistencia/api/ui-mappings"
 import type { AsistenciaQueryRow } from "@/features/academic-management/asistencia/api/types/asistencia"
 
 interface EditarSeguimientoDialogProps {
@@ -72,7 +73,7 @@ export function EditarSeguimientoDialog({ row }: EditarSeguimientoDialogProps) {
         <DialogHeader>
           <DialogTitle>Editar asistencia</DialogTitle>
           <DialogDescription>
-            {row.estudiante} · {row.grupo} · {row.asignatura}
+            {row.estudiante} · {row.grupo} · {nombreMateriaSeguimiento(row)}
           </DialogDescription>
         </DialogHeader>
 
