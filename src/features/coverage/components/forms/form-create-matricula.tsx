@@ -1516,13 +1516,9 @@ interface SupportFilesSheetFieldProps {
   config: SupportFileFieldConfig
   value: File[]
   onChange: (files: File[]) => void
-  /** Ya cargados en el backend para esta categoría (ver
-   * `groupExistingFilesByKey`) -- de solo lectura, se muestran antes que los
-   * que se adjunten ahora en memoria. */
   existingFiles?: MatriculaFile[]
-  /** Editar (no alta): permite reemplazar un archivo de una sola vía aunque
-   * ya haya uno cargado, y marcar para borrar los de "otros documentos". */
   editable?: boolean
+  viewOnly?: boolean
   removedExistingIds?: Set<number>
   onToggleRemoveExisting?: (fileId: number) => void
 }
@@ -1533,6 +1529,7 @@ function SupportFilesSheetField({
   onChange,
   existingFiles = [],
   editable = false,
+  viewOnly = false,
   removedExistingIds,
   onToggleRemoveExisting,
 }: SupportFilesSheetFieldProps) {
@@ -1543,9 +1540,9 @@ function SupportFilesSheetField({
   const existingSuperseded = editable && !config.multiple && value.length > 0
   const visibleExisting = existingSuperseded ? [] : existingFiles
   const isEmpty = value.length === 0 && visibleExisting.length === 0
-  const canAttach = editable
-    ? !config.multiple
-    : config.multiple || (value.length === 0 && existingFiles.length === 0)
+  const canAttach =
+    !viewOnly && (editable ? true : config.multiple || (value.length === 0 && existingFiles.length === 0))
+  const canRemoveExisting = editable && (config.multiple || !config.required)
 
   return (
     <FileUpload value={value} onValueChange={onChange} multiple={config.multiple} className="gap-2">
@@ -1579,7 +1576,7 @@ function SupportFilesSheetField({
             <ExistingFileRow
               key={file.id}
               file={file}
-              removable={editable && config.multiple}
+              removable={canRemoveExisting}
               markedForRemoval={removedExistingIds?.has(file.id)}
               onToggleRemove={onToggleRemoveExisting ? () => onToggleRemoveExisting(file.id) : undefined}
             />
@@ -1671,17 +1668,18 @@ function ExistingFileRow({ file, removable, markedForRemoval, onToggleRemove }: 
         >
           <FileDownloadOutlinedIcon />
         </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          color="neutral"
-          size="icon-sm"
-          disabled={!removable}
-          aria-label={markedForRemoval ? `Deshacer eliminar ${file.name}` : `Eliminar ${file.name}`}
-          onClick={onToggleRemove}
-        >
-          {markedForRemoval ? <ArrowCounterClockwiseIcon /> : <TrashIcon />}
-        </Button>
+        {removable && (
+          <Button
+            type="button"
+            variant="ghost"
+            color="neutral"
+            size="icon-sm"
+            aria-label={markedForRemoval ? `Deshacer eliminar ${file.name}` : `Eliminar ${file.name}`}
+            onClick={onToggleRemove}
+          >
+            {markedForRemoval ? <ArrowCounterClockwiseIcon /> : <TrashIcon />}
+          </Button>
+        )}
       </span>
     </div>
   )
@@ -1705,7 +1703,7 @@ function matchSupportFileKey(typeLabel: string): keyof MatriculaSupportFiles {
   return "otherDocuments"
 }
 
-function groupExistingFilesByKey(
+export function groupExistingFilesByKey(
   files: MatriculaFile[],
 ): Record<keyof MatriculaSupportFiles, MatriculaFile[]> {
   const grouped: Record<keyof MatriculaSupportFiles, MatriculaFile[]> = {
@@ -1733,6 +1731,8 @@ interface SupportFilesSheetProps {
   /** Editar (no alta): habilita reemplazar los de una sola vía y marcar
    * para borrar los de "otros documentos", más el botón Guardar de abajo. */
   editable?: boolean
+  /** Fila de la tabla: puramente de visualización (ver `SupportFilesSheetField`). */
+  viewOnly?: boolean
   removedExistingIds?: Set<number>
   onToggleRemoveExisting?: (fileId: number) => void
   onSave?: () => void
@@ -1747,6 +1747,7 @@ export function SupportFilesSheet({
   onChange,
   existingFiles,
   editable = false,
+  viewOnly = false,
   removedExistingIds,
   onToggleRemoveExisting,
   onSave,
@@ -1760,8 +1761,9 @@ export function SupportFilesSheet({
         <SheetHeader className="px-4">
           <SheetTitle>Archivos de soporte</SheetTitle>
           <SheetDescription>
-            Por favor cargue los siguientes documentos requeridos para completar la inscripción del
-            estudiante.
+            {viewOnly
+              ? "Documentos cargados para este estudiante."
+              : "Por favor cargue los siguientes documentos requeridos para completar la inscripción del estudiante."}
           </SheetDescription>
         </SheetHeader>
         <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-4 pb-8">
@@ -1773,6 +1775,7 @@ export function SupportFilesSheet({
               onChange={(files) => onChange({ ...value, [field.key]: files })}
               existingFiles={existingByKey[field.key]}
               editable={editable}
+              viewOnly={viewOnly}
               removedExistingIds={removedExistingIds}
               onToggleRemoveExisting={onToggleRemoveExisting}
             />
