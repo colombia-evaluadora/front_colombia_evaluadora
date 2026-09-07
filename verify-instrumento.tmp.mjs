@@ -14,21 +14,17 @@ await page.waitForTimeout(2000)
 await page.goto(`${BASE}/app/planeador/actividades`, { waitUntil: "domcontentloaded" })
 await page.waitForTimeout(1500)
 
-// Open the filter funnel button next to the search bar.
-await page.click('[aria-label="Filtros avanzados"], button:has-text("Filtros")').catch(async () => {
-  // fallback: find the funnel/filter trigger by role
-  await page.locator("button").filter({ hasText: "" }).first().click({ trial: true }).catch(() => {})
-})
+await page.click('button[aria-label="Filtros avanzados"]')
 await page.waitForTimeout(500)
-await page.screenshot({ path: "verify-instrumento-1.png" })
+await page.screenshot({ path: "verify-instrumento-panel.png" })
 
-// Try to open the Instrumento combobox directly.
-const trigger = page.getByText("Instrumento").locator("..").locator("button, [role=combobox]").first()
-await trigger.click({ timeout: 5000 }).catch((e) => console.log("trigger click failed:", e.message))
+// Instrumento combobox trigger is the second ComboboxFieldTrigger (Ver por, Estado, Instrumento)
+const instrumentoTrigger = page.locator("#filtro")
+await instrumentoTrigger.click({ timeout: 5000 })
 await page.waitForTimeout(500)
-await page.screenshot({ path: "verify-instrumento-2.png" })
+await page.screenshot({ path: "verify-instrumento-open.png" })
 
 const optionsText = await page.locator('[role="option"]').allTextContents().catch(() => [])
-console.log("Instrumento options found:", optionsText)
+console.log("Instrumento options found:", JSON.stringify(optionsText))
 
 await browser.close()
