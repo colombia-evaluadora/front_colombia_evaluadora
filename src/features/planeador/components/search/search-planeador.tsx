@@ -10,10 +10,7 @@ import type {
 } from "@/features/planeador/api/schema"
 import { ESTADO_OPTIONS } from "@/features/planeador/api/ui-mappings"
 import { FilterPlaneadorForm } from "@/features/planeador/components/forms/form-filter-planeador"
-import {
-  INSTRUMENTO_OPTIONS,
-  VIEW_OPTIONS,
-} from "@/features/planeador/components/view-options"
+import { VIEW_OPTIONS } from "@/features/planeador/components/view-options"
 
 const FILTER_PLANEADOR_FORM_ID = "filter-planeador-form"
 
@@ -25,6 +22,12 @@ interface SearchPlaneadorProps {
   filters: PlaneadorFiltersFormInput
   applyFilters: (values: PlaneadorFiltersFormValues) => void
   clearAllFilters: () => void
+  // Catálogo `INSTRUMENTO_EVALUACION` (`TLISTA_VALOR`, ver
+  // `use-instrumento-evaluacion-catalog.ts`) — nombre y valor son el mismo
+  // string, igual que el resto de catálogos "planos" del Planeador. Opcional:
+  // la pestaña "Unidad temática" comparte este buscador pero no tiene
+  // instrumento que filtrar.
+  instrumentoOptions?: string[]
 }
 
 /**
@@ -39,6 +42,7 @@ export function SearchPlaneador({
   filters,
   applyFilters,
   clearAllFilters,
+  instrumentoOptions = [],
 }: SearchPlaneadorProps) {
   const [open, setOpen] = useState(false)
 
@@ -50,11 +54,15 @@ export function SearchPlaneador({
       freeText: { key: "actividad", field: "buscar" },
       terms: [
         optionTerm("estado", "estado", [...ESTADO_OPTIONS]),
-        optionTerm("instrumento", "filtro", [...INSTRUMENTO_OPTIONS]),
+        optionTerm(
+          "instrumento",
+          "filtro",
+          instrumentoOptions.map((nombre) => ({ value: nombre, label: nombre })),
+        ),
         optionTerm("ver", "vista", [...VIEW_OPTIONS]),
       ],
     }),
-    [],
+    [instrumentoOptions],
   )
 
   const { search, setSearch, freeText } = useQuerySearch({
@@ -99,6 +107,7 @@ export function SearchPlaneador({
           id={FILTER_PLANEADOR_FORM_ID}
           defaultValues={filters}
           onSubmit={handleApplyAdvanced}
+          instrumentoOptions={instrumentoOptions}
         />
       </SearchQueryBar>
     </div>
