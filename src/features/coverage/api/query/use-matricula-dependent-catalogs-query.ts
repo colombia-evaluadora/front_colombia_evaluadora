@@ -4,6 +4,7 @@ import { api } from "@/lib/api-client"
 import { useSedeJornadasActivasQuery } from "@/features/establishment/employees/api/query/use-sede-jornadas"
 import { useSedeOptionsQuery } from "@/features/establishment/academic-period/api/query/use-sede-options"
 import { usePeriodoResolverMatriculaQuery } from "@/features/coverage/api/query/use-periodo-resolver-matricula"
+import { fetchSelectCategory } from "@/features/establishment/academic-period/api/query/fetch-select-category"
 import type {
   MatriculaDependentCatalogsRequest,
   MatriculaDependentCatalogsResponse,
@@ -17,7 +18,6 @@ const CATALOG_PAGE_SIZE = 200
 interface GradoRow {
   id: number
   nombre: string
-  codigo?: number | string
   total_count: number
 }
 interface GradosRawResponse {
@@ -25,15 +25,19 @@ interface GradosRawResponse {
 }
 
 export async function fetchGrados(periodoId: number): Promise<(MatriculaGradoOption & { id: number })[]> {
-  const raw: GradosRawResponse = await api.query(`/eval-col/grados/query/${periodoId}`, {
-    FILTRO: null,
-    PAGE_INDEX: 0,
-    PAGE_SIZE: CATALOG_PAGE_SIZE,
-    SORTING_ID: null,
-    SORTING_DESC: null,
-  })
+  const [raw, catalogRows] = await Promise.all([
+    api.query<GradosRawResponse>(`/eval-col/grados/query/${periodoId}`, {
+      FILTRO: null,
+      PAGE_INDEX: 0,
+      PAGE_SIZE: CATALOG_PAGE_SIZE,
+      SORTING_ID: null,
+      SORTING_DESC: null,
+    }),
+    fetchSelectCategory("GRADOS"),
+  ])
+  const valorByNombre = new Map(catalogRows.map((row) => [row.nombre, row.valor]))
   return (raw.rows ?? [])
-    .map((row) => ({ id: row.id, nombre: row.nombre, valor: Number(row.codigo) }))
+    .map((row) => ({ id: row.id, nombre: row.nombre, valor: Number(valorByNombre.get(row.nombre)) }))
     .filter((row) => !Number.isNaN(row.valor))
     .sort((a, b) => a.valor - b.valor)
 }

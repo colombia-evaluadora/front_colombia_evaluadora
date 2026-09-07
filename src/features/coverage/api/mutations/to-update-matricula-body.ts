@@ -19,6 +19,8 @@ function toBoolSN(value: string | undefined | null): "S" | "N" | null {
 
 export interface UpdateMatriculaBodyContext {
   pkTpadre: number | null
+  pkUsuarioAcudiente: number | null
+  actualizarAcudiente: boolean
 }
 
 export function toUpdateMatriculaBody(
@@ -27,14 +29,14 @@ export function toUpdateMatriculaBody(
 ) {
   const { academic, student, studentAddress, previousYear, originSector, conflictVictim } = values
   const { complementary, benefits, guardian, guardianAddress, guardianEmployment } = values
-  const actualizarAcudiente = context.pkTpadre != null
 
   return {
     ACTUALIZAR_MATRICULA: true,
     ACTUALIZAR_ESTUDIANTE: true,
-    ACTUALIZAR_ACUDIENTE: actualizarAcudiente,
+    ACTUALIZAR_ACUDIENTE: context.actualizarAcudiente,
     ACTUALIZAR_SOCIOECONOMICO: true,
     PK_TPADRE: context.pkTpadre,
+    PK_USUARIO_ACUDIENTE: context.pkUsuarioAcudiente,
     TOCAR_DOCUMENTO_DE_IDENTIDAD: false,
     TOCAR_CERTIFICADO_DE_ESTUDIOS: false,
     TOCAR_CERTIFICADO_MEDICO: false,

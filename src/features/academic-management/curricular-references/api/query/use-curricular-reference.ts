@@ -39,10 +39,10 @@ function toCurricularReference(row: CurricularReferenceRow, areas: CurricularRef
   return {
     id: row.pk_referente_curricular,
     name: row.nombre,
-    educationLevel:
+    educationLevels:
       row.fk_tnivel_ensenanza != null
-        ? { id: row.fk_tnivel_ensenanza, code: "", name: row.nivel_educativo ?? "" }
-        : null,
+        ? [{ id: row.fk_tnivel_ensenanza, code: "", name: row.nivel_educativo ?? "" }]
+        : [],
     description: row.descripcion,
     level1: row.nivel_1_etiqueta,
     level2: row.nivel_2_etiqueta,

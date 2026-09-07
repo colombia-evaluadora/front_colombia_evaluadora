@@ -135,16 +135,14 @@ function CurricularReferenceDetailPageContent() {
           </div>
         ) : (
           <div className="flex flex-col gap-4 text-sm">
-            {/* Sin borde/sombra propios: va dentro de la tarjeta que ya pone
-                `TableScreenBody`, no hace falta encerrarlo en otra. */}
             <div className="relative">
               <div className="flex flex-wrap items-center gap-2">
                 <h2 className="font-heading text-lg font-bold">{reference.name}</h2>
-                {reference.educationLevel ? (
-                  <Badge variant="soft" color="muted" className="rounded-full px-3 py-1 text-sm">
-                    {reference.educationLevel.name}
+                {reference.educationLevels.map((level) => (
+                  <Badge key={level.id} variant="soft" color="muted" className="rounded-full px-3 py-1 text-sm">
+                    {level.name}
                   </Badge>
-                ) : null}
+                ))}
                 <Badge
                   {...curricularReferenceStatusBadge(reference.active)}
                   className="rounded-full px-3 py-1 text-sm"

@@ -40,7 +40,7 @@ const EMPTY_AREAS: CurricularReferenceArea[] = []
 function createInitialValues(): CurricularReferenceDraft {
   return {
     name: "",
-    educationLevel: null,
+    educationLevels: [],
     description: "",
     level1: "",
     level2: "",
@@ -56,10 +56,9 @@ function createInitialValues(): CurricularReferenceDraft {
 
 const curricularReferenceSchema = z.object({
   name: z.string().trim().min(1, "Ingresa el nombre del referente."),
-  educationLevel: z
-    .object({ id: z.number().nullish() })
-    .nullish()
-    .refine((item) => item?.id != null, { message: "Selecciona el nivel educativo." }),
+  educationLevels: z
+    .array(z.object({ id: z.number() }))
+    .min(1, "Selecciona al menos un nivel educativo."),
   description: z.string().trim().min(1, "Ingresa la descripción o finalidad."),
   level1: z.string().trim().min(1, "Ingresa el nivel 1."),
   level2: z.string().trim().min(1, "Ingresa el nivel 2."),
@@ -149,14 +148,6 @@ export function ManageCurricularReferenceDialog({
 
   const createMutation = useCreate({
     mutationConfig: {
-      onSuccess: (result) => {
-        if (result.status === "error") {
-          notifyInDialog(result.message ?? "No fue posible guardar el referente curricular.")
-          return
-        }
-        notify("El referente curricular se creó correctamente.")
-        onOpenChange(false)
-      },
       onError: (error) => {
         notifyInDialog(getErrorMessage(error) || "No fue posible guardar el referente curricular.")
       },
@@ -165,14 +156,6 @@ export function ManageCurricularReferenceDialog({
 
   const updateMutation = useUpdate({
     mutationConfig: {
-      onSuccess: (result) => {
-        if (result.status === "error") {
-          notifyInDialog(result.message ?? "No fue posible guardar el referente curricular.")
-          return
-        }
-        notify("El referente curricular se actualizó correctamente.")
-        onOpenChange(false)
-      },
       onError: (error) => {
         notifyInDialog(getErrorMessage(error) || "No fue posible actualizar el referente curricular.")
       },
@@ -197,16 +180,46 @@ export function ManageCurricularReferenceDialog({
       return
     }
 
+    // El backend guarda un solo nivel educativo por referente (FK única), así
+    // que un formulario con varios niveles seleccionados se traduce en varias
+    // llamadas al endpoint: el primer nivel actualiza/crea el registro base y
+    // cada nivel adicional crea un referente nuevo con el resto de los datos.
+    const [firstLevel, ...extraLevels] = formValues.educationLevels
+
     if (isEditMode && curricularReference) {
-      await updateMutation.mutateAsync({
+      const result = await updateMutation.mutateAsync({
         id: curricularReference.id,
-        values: formValues,
+        values: { ...formValues, educationLevels: firstLevel ? [firstLevel] : [] },
         previousActive: curricularReference.active,
       })
+      if (result.status === "error") {
+        notifyInDialog(result.message ?? "No fue posible guardar el referente curricular.")
+        return
+      }
+
+      for (const level of extraLevels) {
+        const extraResult = await createMutation.mutateAsync({ ...formValues, educationLevels: [level] })
+        if (extraResult.status === "error") {
+          notifyInDialog(extraResult.message ?? "No fue posible guardar el referente curricular.")
+          return
+        }
+      }
+
+      notify("El referente curricular se actualizó correctamente.")
+      onOpenChange(false)
       return
     }
 
-    await createMutation.mutateAsync(formValues)
+    for (const level of formValues.educationLevels) {
+      const result = await createMutation.mutateAsync({ ...formValues, educationLevels: [level] })
+      if (result.status === "error") {
+        notifyInDialog(result.message ?? "No fue posible guardar el referente curricular.")
+        return
+      }
+    }
+
+    notify("El referente curricular se creó correctamente.")
+    onOpenChange(false)
   }
 
   const isPending = createMutation.isPending || updateMutation.isPending

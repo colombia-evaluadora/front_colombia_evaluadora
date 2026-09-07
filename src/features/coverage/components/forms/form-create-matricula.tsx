@@ -230,7 +230,10 @@ export function MatriculaSelectField({
   invalid,
   disabled,
 }: SelectFieldProps) {
-  const items = Object.fromEntries(options.map((option) => [option, labelFor(option)]))
+  const items = Object.fromEntries([
+    ["", placeholder],
+    ...options.map((option) => [option, labelFor(option)]),
+  ])
   return (
     <Field
       orientation="vertical"
@@ -252,6 +255,10 @@ export function MatriculaSelectField({
           <ComboboxFieldValue placeholder={placeholder} />
         </ComboboxFieldTrigger>
         <ComboboxFieldContent>
+          {/* Opción para deseleccionar: vuelve el campo a su placeholder. */}
+          <ComboboxFieldItem key="__empty__" value="">
+            {placeholder}
+          </ComboboxFieldItem>
           {options.map((option) => (
             <ComboboxFieldItem key={option} value={option}>
               {labelFor(option)}
@@ -298,10 +305,6 @@ export function DeptMunicipioFields({
   onChange,
   fieldSettings,
 }: DeptMunicipioFieldsProps) {
-  // `municipality` viaja como el `PK_TMUNICIPIO` real (string), no el
-  // nombre — el alta real solo manda `..._MUNICIPIO` (no `..._DEPARTAMENTO`,
-  // esa columna no existe), así que Departamento queda solo para filtrar
-  // acá en el front, sin id propio.
   const municipalities = departments.find((d) => d.name === value.department)?.municipalities ?? []
   const municipalityNameById = new Map(municipalities.map((m) => [String(m.id), m.name]))
   const departmentId = `${idPrefix}-department`
