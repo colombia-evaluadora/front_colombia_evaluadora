@@ -26,6 +26,7 @@ interface CurricularReferenceDetailsFormProps {
   evaluationTypes: CatalogItem[]
   onChange: (next: CurricularReferenceDraft) => void
   errors?: Record<string, string>
+  isEditMode?: boolean
 }
 
 export function CurricularReferenceDetailsForm({
@@ -35,7 +36,9 @@ export function CurricularReferenceDetailsForm({
   evaluationTypes,
   onChange,
   errors = {},
+  isEditMode = false,
 }: CurricularReferenceDetailsFormProps) {
+  const educationLevelLabels = Object.fromEntries(educationLevels.map((item) => [item.id, item.name]))
   const pedagogicalApproachLabels = Object.fromEntries(
     pedagogicalApproaches.map((item) => [item.id, item.name]),
   )
@@ -73,20 +76,46 @@ export function CurricularReferenceDetailsForm({
           data-invalid={errors["educationLevels"] ? "true" : undefined}
         >
           <FieldLabel htmlFor="curricular-reference-education-level">Nivel educativo *</FieldLabel>
-          <SubjectsMultiSelect
-            id="curricular-reference-education-level"
-            options={educationLevels.map((item) => ({ id: item.id, label: item.name }))}
-            value={value.educationLevels.map((item) => item.id)}
-            onChange={(ids) =>
-              onChange({
-                ...value,
-                educationLevels: ids
-                  .map((id) => educationLevels.find((item) => item.id === id))
-                  .filter((item): item is CatalogItem => item != null),
-              })
-            }
-            placeholder="Seleccione"
-          />
+          {isEditMode ? (
+            <ComboboxField
+              items={educationLevelLabels}
+              value={value.educationLevels[0]?.id ?? null}
+              onValueChange={(selectedValue) => {
+                const option = educationLevels.find((item) => item.id === selectedValue)
+                onChange({ ...value, educationLevels: option ? [option] : [] })
+              }}
+            >
+              <ComboboxFieldTrigger
+                id="curricular-reference-education-level"
+                size="sm"
+                aria-invalid={Boolean(errors["educationLevels"])}
+              >
+                <ComboboxFieldValue placeholder="Seleccione" />
+              </ComboboxFieldTrigger>
+              <ComboboxFieldContent>
+                {educationLevels.map((item) => (
+                  <ComboboxFieldItem key={item.id} value={item.id}>
+                    {item.name}
+                  </ComboboxFieldItem>
+                ))}
+              </ComboboxFieldContent>
+            </ComboboxField>
+          ) : (
+            <SubjectsMultiSelect
+              id="curricular-reference-education-level"
+              options={educationLevels.map((item) => ({ id: item.id, label: item.name }))}
+              value={value.educationLevels.map((item) => item.id)}
+              onChange={(ids) =>
+                onChange({
+                  ...value,
+                  educationLevels: ids
+                    .map((id) => educationLevels.find((item) => item.id === id))
+                    .filter((item): item is CatalogItem => item != null),
+                })
+              }
+              placeholder="Seleccione"
+            />
+          )}
           <FieldError>{errors["educationLevels"]}</FieldError>
         </Field>
 

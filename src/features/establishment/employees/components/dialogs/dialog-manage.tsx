@@ -420,7 +420,7 @@ export function ManageEmployeeDialog(props: ManageEmployeeDialogProps) {
 }
 
 function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageEmployeeDialogProps) {
-  const { notify } = useNotify()
+  const { notify, dismiss } = useNotify()
   const queryClient = useQueryClient()
   const isEditMode = Boolean(employeeId)
   /**
@@ -611,6 +611,8 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
     if (!open) {
       return
     }
+
+    dismiss()
 
     if (!isEditMode) {
       resetDraft()
@@ -926,15 +928,9 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
   }
 
   function removePermission(order: number) {
-    // El permiso se busca antes de filtrar: después del `setPermissions` los
-    // órdenes se renumeran y ya no habría con qué armar el mensaje.
     const removed = permissions.find((permission) => permission.order === order)
 
-    setPermissions((current) =>
-      current
-        .filter((permission) => permission.order !== order)
-        .map((permission, index) => ({ ...permission, order: index + 1 }))
-    )
+    setPermissions((current) => current.filter((permission) => permission.order !== order))
 
     notify(
       removed

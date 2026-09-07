@@ -1,14 +1,40 @@
 import type { ColumnDef } from "@tanstack/react-table"
 
 import { DataTableColumnHeader } from "@/components/data-table"
-import { PaperclipIcon, XIcon } from "@/components/ui/icons"
+import { EyeIcon, PaperclipIcon, XIcon } from "@/components/ui/icons"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { FileUpload, FileUploadTrigger } from "@/components/ui/file-upload"
 import { cn } from "@/lib/utils"
 
+import { useArchivoViewUrl } from "@/features/files/api/query/use-archivo-view-url"
 import { formatHoraRango } from "@/features/academic-management/asistencia/api/ui-mappings"
 import type { RosterEstudiante, TipoAsistencia } from "@/features/academic-management/asistencia/api/types/asistencia"
 import type { TipoAsistenciaOption } from "@/features/academic-management/asistencia/api/query/use-tipo-asistencia-catalog-query"
+
+function VerSoporteButton({ archivoLocal, fkSoporteArchivo }: { archivoLocal: File | null; fkSoporteArchivo: number | null }) {
+  const { data: url, isPending } = useArchivoViewUrl(archivoLocal ? null : fkSoporteArchivo)
+  const puedeVer = Boolean(archivoLocal) || Boolean(url)
+
+  function handleVer() {
+    if (archivoLocal) {
+      window.open(URL.createObjectURL(archivoLocal), "_blank", "noopener,noreferrer")
+    } else if (url) {
+      window.open(url, "_blank", "noopener,noreferrer")
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      aria-label="Ver soporte"
+      disabled={!puedeVer || isPending}
+      className="text-muted-foreground hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
+      onClick={handleVer}
+    >
+      <EyeIcon className="size-3.5 shrink-0" />
+    </button>
+  )
+}
 
 const NO_ASISTIO: TipoAsistencia = 2
 const LLEGO_TARDE: TipoAsistencia = 5
@@ -125,6 +151,7 @@ export function buildColumnsAsistenciaManual({
         const eliminado = soporteEliminado[fkMatricula] ?? false
         const archivo = soporte[fkMatricula] ?? null
         const nombreExistente = archivo || eliminado ? null : row.original.soporte_nombre
+        const fkSoporteExistente = archivo || eliminado ? null : row.original.fk_soporte_archivo
         const hayArchivo = Boolean(archivo || nombreExistente)
         return (
           <div className="flex items-center gap-1">
@@ -150,6 +177,7 @@ export function buildColumnsAsistenciaManual({
                 <span className="max-w-36 truncate">{archivo?.name ?? nombreExistente ?? "Sin soporte"}</span>
               </FileUploadTrigger>
             </FileUpload>
+            {hayArchivo && <VerSoporteButton archivoLocal={archivo} fkSoporteArchivo={fkSoporteExistente} />}
             {hayArchivo && (
               <button
                 type="button"
