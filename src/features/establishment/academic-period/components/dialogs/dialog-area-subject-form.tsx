@@ -11,7 +11,7 @@ import {
   SpinnerIcon,
   XIcon,
 } from "@/components/ui/icons"
-import { useNotify, NoticeOutlet } from "@/components/notice/notice-context"
+import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
 import { Pagination } from "@/components/pagination"
 
@@ -137,11 +137,8 @@ export function AreaSubjectFormDialog({
 
   const createAreaSubject = useCreateAreaSubject({
     mutationConfig: {
-      // El interceptor global también tostea el error; acá además lo
-      // mostramos en el `NoticeOutlet` propio del diálogo (línea de abajo),
-      // que no queda detrás del overlay del modal.
       onError: (error) => {
-        notify(getErrorMessage(error), { variant: "error" })
+        showNotice(getErrorMessage(error), { variant: "error" })
       },
     },
   })
@@ -182,7 +179,7 @@ export function AreaSubjectFormDialog({
         })
 
         if (result.status === "error") {
-          notify(result.message, { variant: "error" })
+          showNotice(result.message, { variant: "error" })
           return
         }
 
@@ -497,8 +494,6 @@ export function AreaSubjectFormDialog({
           </DialogHeader>
 
           <div className="flex min-w-0 flex-col gap-6">
-            <NoticeOutlet />
-
             <form
               id={FORM_ID}
               onSubmit={(e) => {

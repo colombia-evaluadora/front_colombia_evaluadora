@@ -211,6 +211,7 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
     pageIndex: 0,
     pageSize: 100,
     gradeId: gradeId ?? undefined,
+    enabled: open,
   })
   const { data: areaData } = useAreaSubjectQuery({
     filters: {},
@@ -218,6 +219,7 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
     pageIndex: 0,
     pageSize: 100,
     academicPeriodId,
+    enabled: open,
   })
 
   const { data: gradeGroupsData } = useGradeGroupsQuery({
@@ -226,6 +228,7 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
     pageIndex: 0,
     pageSize: 100,
     gradeId: gradeId ?? undefined,
+    enabled: open,
   })
   const gradeGroupOptions = useMemo(
     () =>
@@ -239,9 +242,6 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
   )
 
   const scheduleSubjects = useMemo<ScheduleSubject[]>(() => {
-    // Por `id` de asignatura, no por nombre: el nombre puede repetirse entre
-    // distinto énfasis (y `item.asignatura` ya viene como "Nombre (Énfasis)"
-    // desde `toStudyPlanItem`, así que un lookup por nombre nunca matchearía).
     const abbreviationById = new Map<number, string>()
     const colorById = new Map<number, string>()
     for (const area of areaData?.rows ?? []) {
@@ -425,13 +425,6 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
             </>
           )}
         </div>
-
-        {/* Debajo de los campos del grado, en el flujo normal (no `sticky`):
-            un aviso pegado arriba del contenedor con scroll se repintaba mal
-            en Chromium/Firefox al desplazarse por la pestaña Horario, la más
-            larga (bug conocido de `position: sticky` dentro de un ancestro
-            con `transform` — `DialogContent` se centra así). Acá el aviso
-            queda fijo en su lugar y no interactúa con el scroll. */}
         <NoticeBanner
           notice={notice}
           onClose={() => setNotice(null)}
@@ -444,37 +437,39 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
             Crea el grado para configurar sus grupos, plan de estudio y horario.
           </p>
         ) : (
-          // Provider propio: los diálogos de crear/eliminar de cada pestaña
-          // (grupo, plan de estudio) usan `useNotify()` y, sin esto,
-          // resolvían al provider de la página de atrás — el aviso aparecía
-          // detrás de "Editar grado" en vez de en la tabla de la pestaña.
-          <NoticeProvider>
-            <Tabs defaultValue="grupo" className="w-full min-w-0">
-              <TabsList variant="folder">
-                <TabsTrigger value="grupo">Grupo</TabsTrigger>
-                <TabsTrigger value="promocion">Criterios de promoción</TabsTrigger>
-                <TabsTrigger value="plan">Plan de estudio</TabsTrigger>
-                <TabsTrigger value="horario">Horario</TabsTrigger>
-              </TabsList>
+          <Tabs defaultValue="grupo" className="w-full min-w-0">
+            <TabsList variant="folder">
+              <TabsTrigger value="grupo">Grupo</TabsTrigger>
+              <TabsTrigger value="promocion">Criterios de promoción</TabsTrigger>
+              <TabsTrigger value="plan">Plan de estudio</TabsTrigger>
+              <TabsTrigger value="horario">Horario</TabsTrigger>
+            </TabsList>
 
-              <TabsContent value="grupo" className={PANEL}>
+            <TabsContent value="grupo" className={PANEL}>
+              <NoticeProvider>
                 <TabGradeGroups gradeId={gradeId} academicPeriodId={academicPeriodId} />
-              </TabsContent>
+              </NoticeProvider>
+            </TabsContent>
 
-              <TabsContent value="promocion" keepMounted className={PANEL}>
+            <TabsContent value="promocion" keepMounted className={PANEL}>
+              <NoticeProvider>
                 <TabPromotionCriteria
                   ref={promotionRef}
                   hideSubmit
                   gradeId={gradeId}
                   academicPeriodId={academicPeriodId}
                 />
-              </TabsContent>
+              </NoticeProvider>
+            </TabsContent>
 
-              <TabsContent value="plan" className={PANEL}>
+            <TabsContent value="plan" className={PANEL}>
+              <NoticeProvider>
                 <TabStudyPlan academicPeriodId={academicPeriodId} gradeId={gradeId} />
-              </TabsContent>
+              </NoticeProvider>
+            </TabsContent>
 
-              <TabsContent value="horario" keepMounted className={PANEL}>
+            <TabsContent value="horario" keepMounted className={PANEL}>
+              <NoticeProvider>
                 <ScheduleBuilder
                   ref={scheduleRef}
                   jornada={jornada}
@@ -482,9 +477,9 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
                   gradeGroups={gradeGroupOptions}
                   gradeId={gradeId}
                 />
-              </TabsContent>
-            </Tabs>
-          </NoticeProvider>
+              </NoticeProvider>
+            </TabsContent>
+          </Tabs>
         )}
 
         <DialogFooter>

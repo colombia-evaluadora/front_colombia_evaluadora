@@ -111,6 +111,7 @@ export function AddEvidencesDialog({
             <Textarea
               id="evidence-text"
               value={text}
+              maxLength={400}
               aria-invalid={Boolean(error)}
               onChange={(event) => setText(event.target.value)}
               placeholder={`Escribe la ${levelLabel.toLowerCase()}...`}

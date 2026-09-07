@@ -19,6 +19,7 @@ interface RawMatriculaVinculo {
 
 interface RawMatriculaAcudiente {
   vinculo: RawMatriculaVinculo
+  fk_tusuario: number | null
   telefono: string | null
   ocupacion: string | null
   profesion: string | null
@@ -40,6 +41,7 @@ interface RawMatriculaAcudiente {
 }
 
 interface RawMatriculaEstudiante {
+  fk_tusuario: number | null
   telefono: string | null
   fecha_ingreso: string | null
   fk_tlv_genero: number | null
@@ -127,21 +129,6 @@ function toIdString(value: number | null | undefined): string {
   return value != null ? String(value) : ""
 }
 
-// El backend no manda un id para el estado -- arma el slug directo del
-// nombre (minúsculas, sin tildes, espacios a "_"), mismo criterio que
-// `fn_matricula_listar` (ver comentario en `types/matricula.ts`), pero el
-// GET de detalle sí manda el nombre crudo ("Cursando"), así que hay que
-// rearmar el slug acá.
-function slugifyEstado(nombre: string): MatriculaStatus {
-  const slug = nombre
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, "_")
-  return slug as MatriculaStatus
-}
-
 async function fetchMatriculaDetail(id: string): Promise<MatriculaDetailResult> {
   const raw = await api.get<{ rows: { matricula: RawMatriculaDetail }[] } | { matricula: RawMatriculaDetail }>(
     `/eval-col/cobertura-academica/matricula/${id}`,
@@ -162,19 +149,16 @@ async function fetchMatriculaDetail(id: string): Promise<MatriculaDetailResult> 
 
   const guardianRaw = acudientes.find((a) => a.vinculo.acudiente === "S") ?? acudientes[0]
 
-  const status = slugifyEstado(m.estado_matricula_nombre)
+  const status = m.estado_matricula_nombre as MatriculaStatus
 
   const matricula: Matricula = {
     id: String(m.pk_tmatricula),
     documentNumber: est.identificacion,
     firstName: est.primer_nombre,
     lastName: est.primer_apellido,
-    // El backend no manda el nombre del establecimiento en este endpoint.
     institution: "",
     campus: m.sede_nombre,
     shift: m.jornada_nombre,
-    // Tampoco manda el nivel educativo -- mismo placeholder que usa el
-    // create local (ver `create-matricula.ts`).
     educationLevel: "PREESCOLAR" as EducationLevel,
     grade: gradoValor ?? 0,
     group: m.grupo_nombre,
@@ -188,6 +172,9 @@ async function fetchMatriculaDetail(id: string): Promise<MatriculaDetailResult> 
 
   const details: MatriculaDetails = {
     status,
+    pkTpadre: m.fk_tpadre,
+    pkUsuarioEstudiante: est.fk_tusuario,
+    pkUsuarioAcudiente: guardianRaw?.fk_tusuario ?? null,
     academic: {
       campus: m.sede_nombre,
       shift: m.jornada_nombre,

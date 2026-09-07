@@ -13,12 +13,9 @@ interface UseGradeGroupsQueryParams {
   pageIndex: number
   pageSize: number
   gradeId?: number
+  enabled?: boolean
 }
 
-// Fila cruda de `POST /eval-col/grados/:FK_GRADO/grupos/query` (`fn_grupo_listar`,
-// id_query 65 — FK_GRADO va por path (`:PARAM.FK_GRADO`), el resto de
-// filtros por body (`:BODY.*`)). `codigo` en realidad es `gr.NOMBRE` —
-// TGRUPO.CODIGO no lo usa esta función (confirmado leyendo el body).
 interface GradeGroupRow {
   id: number
   codigo: string
@@ -53,9 +50,6 @@ async function fetchGradeGroups(
 ): Promise<GradeGroupsQueryResponse> {
   if (params.gradeId == null) return { rows: [], pageCount: 1, totalCount: 0 }
   const [primary] = params.sorting
-  // Las llaves del body deben matchear EXACTAMENTE el `:BODY.X` del SQL:
-  // FILTRO, PAGE_INDEX, PAGE_SIZE, SORTING_ID, SORTING_DESC (UPPER_SNAKE_CASE).
-  // FK_GRADO va por path (`:PARAM.FK_GRADO`), no por body.
   const body: Record<string, string> = {
     PAGE_INDEX: String(params.pageIndex),
     PAGE_SIZE: String(params.pageSize),
@@ -70,7 +64,6 @@ async function fetchGradeGroups(
     body,
   )
   let rows = (raw.rows ?? []).map(toGradeGroup)
-  // `fn_grupo_listar` solo filtra por nombre; jornada/director se filtran en cliente.
   if (params.filters.jornada) {
     rows = rows.filter((row) => row.jornada === params.filters.jornada)
   }
@@ -82,12 +75,16 @@ async function fetchGradeGroups(
   return { rows, pageCount, totalCount }
 }
 
-export const gradeGroupsQueryKey = (params: UseGradeGroupsQueryParams) => ["grade-groups", params]
+export const gradeGroupsQueryKey = (params: UseGradeGroupsQueryParams) => {
+  const { enabled: _enabled, ...key } = params
+  return ["grade-groups", key]
+}
 
 export function useGradeGroupsQuery(params: UseGradeGroupsQueryParams) {
   return useQuery({
     queryKey: gradeGroupsQueryKey(params),
     queryFn: () => fetchGradeGroups(params),
     placeholderData: (previous) => previous,
+    enabled: params.enabled ?? true,
   })
 }

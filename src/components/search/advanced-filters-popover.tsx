@@ -39,6 +39,13 @@ interface AdvancedFiltersPopoverProps {
   formId?: string
   onApply?: () => void
   /**
+   * Deshabilita "Aplicar filtros" -- para buscadores donde una combinación
+   * de campos a medio llenar no es un filtro válido (ver `SearchSeguimiento`,
+   * que exige jornada+grado+grupo+asignatura completos). Por defecto
+   * `false`: no todos los buscadores necesitan esta validación.
+   */
+  applyDisabled?: boolean
+  /**
    * Ancho del panel según cuánto tenga que mostrar. `sm` para uno o dos
    * controles —un panel ancho con un solo select es casi todo espacio en
    * blanco—; `lg` cuando hay secciones que repartir en columnas.
@@ -55,6 +62,7 @@ export function AdvancedFiltersPopover({
   badgeCount,
   formId,
   onApply,
+  applyDisabled = false,
   size = "lg",
   children,
   className,
@@ -134,6 +142,7 @@ export function AdvancedFiltersPopover({
             form={formId}
             color="primary"
             size="sm"
+            disabled={applyDisabled}
             onClick={onApply}
           >
             <CheckIcon data-icon="inline-start" />

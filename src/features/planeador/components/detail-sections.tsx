@@ -177,11 +177,11 @@ export function DetailSections({ actividad }: DetailSectionsProps) {
 
       {/* 4) Materiales de apoyo (read-only) */}
       <Section title="Materiales de apoyo (agrega varios recursos)">
-        {actividad.recursos.length === 0 ? (
-          <p className="text-muted-foreground text-sm">
-            Esta actividad no tiene recursos de apoyo.
-          </p>
-        ) : (
+        {/* Vacío = no se muestra nada bajo el título. Un placeholder
+            ("no tiene recursos") repite la ausencia sin aportar, y en
+            read-only el "(agrega varios recursos)" del header igual
+            invita al usuario a pasar al modo edición si quiere cargar. */}
+        {actividad.recursos.length === 0 ? null : (
           <ul className="flex flex-col gap-4">
             {actividad.recursos.map((recurso, index) => (
               <li key={recurso.id}>
@@ -231,7 +231,10 @@ export function DetailSections({ actividad }: DetailSectionsProps) {
             {actividad.duracionEstimada}
           </Definition>
           <Definition term="Semana del cronograma">
-            Semana {actividad.semana}
+            {/* Solo un número o un rango simple ("10-12"), sin el prefijo
+                "Semana" — el form restringe la entrada a ese formato (ver
+                `toDigitsOrRangeInput` en `text-input.ts`). */}
+            {actividad.semana}
           </Definition>
           <Definition term="Modalidad">{actividad.modalidad}</Definition>
         </DefinitionGrid>

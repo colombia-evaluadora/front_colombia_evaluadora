@@ -8,9 +8,8 @@ import { ratingSymbolsDb } from "../../db/academic-period/rating-symbols"
 import { metodologiasDb } from "../../db/academic-period/metodologias"
 import { GRADES } from "../../db/reservations"
 import { formatGrade } from "@/features/coverage/api/ui-mappings"
+import { MATRICULA_STATUSES } from "@/features/coverage/api/ui-mappings-matricula"
 
-// Mismo shape crudo que el catálogo genérico real
-// (`GET /eval-col/select/:CATEGORIA`): `{rows: [{pk_lista_valor, nombre, valor, accion}]}`.
 interface SelectCategoryRow {
   pk_lista_valor: number
   nombre: string
@@ -40,10 +39,7 @@ const CATALOGS_BY_CATEGORIA: Record<string, () => SelectCategoryRow[]> = {
       valor: status.key,
       accion: null,
     })),
-  // El pk es sintético (índice + 1) — estable mientras no cambie el orden de
-  // `ratingScaleTypesDb`/`ratingSymbolsDb`/`metodologiasDb`, y suficiente
-  // para el ida-y-vuelta id→valor que hacen `use-rating-scale-types.ts`
-  // (elige por pk) y `resolve-rating-scale-refs.ts` (re-resuelve por valor).
+
   TIPO_VALORACION: () =>
     ratingScaleTypesDb.map((option, i) => ({
       pk_lista_valor: i + 1,
@@ -76,14 +72,36 @@ const CATALOGS_BY_CATEGORIA: Record<string, () => SelectCategoryRow[]> = {
       valor: option.key,
       accion: null,
     })),
-  // Alimenta `use-grados-catalog.ts` (Períodos Académicos) y, ahora, el
-  // select de Grado de "Reserva de cupo" (`use-reservation-catalogs-
-  // query.ts`) — `VALOR` es el que matchea el orden real (0 = transición).
   GRADOS: () =>
     GRADES.map((grade, i) => ({
       pk_lista_valor: i + 1,
       nombre: formatGrade(grade),
       valor: String(grade),
+      accion: null,
+    })),
+  TIPO_DOCUMENTO: () =>
+    ["Registro Civil", "Tarjeta de Identidad", "Cédula de Ciudadanía", "Cédula de Extranjería", "Pasaporte"].map(
+      (nombre, i) => ({ pk_lista_valor: i + 1, nombre, valor: nombre, accion: null }),
+    ),
+  GENERO: () =>
+    ["Masculino", "Femenino"].map((nombre, i) => ({
+      pk_lista_valor: i + 1,
+      nombre,
+      valor: nombre,
+      accion: null,
+    })),
+  PARENTESCO: () =>
+    ["Padre", "Madre", "Abuelo/a", "Tío/a", "Hermano/a", "Tutor legal"].map((nombre, i) => ({
+      pk_lista_valor: i + 1,
+      nombre,
+      valor: nombre,
+      accion: null,
+    })),
+  ESTADO_MATRICULA: () =>
+    MATRICULA_STATUSES.map((nombre, i) => ({
+      pk_lista_valor: i + 1,
+      nombre,
+      valor: String(i + 1),
       accion: null,
     })),
 }

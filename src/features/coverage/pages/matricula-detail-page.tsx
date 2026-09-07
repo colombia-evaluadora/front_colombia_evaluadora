@@ -1,4 +1,4 @@
-import { useMemo } from "react"
+import { useEffect, useMemo } from "react"
 import { Link } from "@tanstack/react-router"
 
 import {
@@ -9,9 +9,10 @@ import {
 } from "@/components/layout/table-screen"
 import { Button } from "@/components/ui/button"
 import { SpinnerIcon } from "@/components/ui/icons"
-import { NoticeOutlet, NoticeProvider } from "@/components/notice/notice-context"
+import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
 
 import { paths } from "@/config/paths"
+import { getErrorMessage } from "@/lib/api-client"
 import { coberturaMatriculaDetalleRoute } from "@/router"
 import { useMatriculaDetailQuery } from "@/features/coverage/api/query/use-matricula-detail-query"
 import { useMatriculaFieldConfigQuery } from "@/features/coverage/api/query/use-matricula-field-config-query"
@@ -33,11 +34,23 @@ export function MatriculaDetailPage() {
 
 function MatriculaDetailPageContent() {
   const { matriculaId } = coberturaMatriculaDetalleRoute.useParams()
-  const { data, isPending, isError } = useMatriculaDetailQuery(matriculaId)
+  const { notify } = useNotify()
+  const { data, isPending, isError, error } = useMatriculaDetailQuery(matriculaId)
   const { data: catalogs } = useMatriculaCampusesQuery()
   const { data: municipalities = [] } = useMunicipalitiesQuery()
-  const { data: fieldConfig } = useMatriculaFieldConfigQuery()
+  const {
+    data: fieldConfig,
+    isError: isFieldConfigError,
+    error: fieldConfigError,
+  } = useMatriculaFieldConfigQuery()
   const fieldSettings = fieldConfig ? buildMatriculaFieldSettings(fieldConfig) : undefined
+
+  useEffect(() => {
+    if (isError) notify(getErrorMessage(error), { variant: "error" })
+  }, [isError, error, notify])
+  useEffect(() => {
+    if (isFieldConfigError) notify(getErrorMessage(fieldConfigError), { variant: "error" })
+  }, [isFieldConfigError, fieldConfigError, notify])
 
   const departments: DepartmentOption[] = (() => {
     const byName = new Map<string, DepartmentOption["municipalities"]>()
