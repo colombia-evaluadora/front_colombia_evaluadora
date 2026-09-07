@@ -205,7 +205,7 @@ export function PlaneadorPage() {
                 {/* "Recargar" ya tiene a dónde apuntar (`refetch` del query);
                     el resto queda disabled hasta que su feature exista. */}
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem disabled>
+                  <DropdownMenuItem render={<Link to={paths.app.planeadorPlanilla.getHref()} />}>
                     Planilla de calificación
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => refetch()}>

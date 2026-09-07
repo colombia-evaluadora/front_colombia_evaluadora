@@ -3,9 +3,9 @@ import { PencilIcon, TrashIcon } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
 
 import {
-  STATUS_ACCENT,
-  STATUS_ICON,
-  STATUS_RING,
+  statusAccentFor,
+  statusIconFor,
+  statusRingFor,
 } from "@/features/planeador/api/ui-mappings"
 import type { UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
 
@@ -34,8 +34,8 @@ const ACCIONES = [
  * dato se está mostrando.
  */
 export function UnidadCard({ unidad, selected = false, onSelect }: UnidadCardProps) {
-  const StatusIcon = STATUS_ICON[unidad.status]
-  const accent = STATUS_ACCENT[unidad.status]
+  const StatusIcon = statusIconFor(unidad.status)
+  const accent = statusAccentFor(unidad.status)
 
   return (
     <article
@@ -46,7 +46,7 @@ export function UnidadCard({ unidad, selected = false, onSelect }: UnidadCardPro
     >
       <span
         aria-hidden="true"
-        className={cn("absolute inset-y-0 left-0 w-1", STATUS_RING[unidad.status])}
+        className={cn("absolute inset-y-0 left-0 w-1", statusRingFor(unidad.status))}
       />
 
       <div className="flex items-start gap-2">

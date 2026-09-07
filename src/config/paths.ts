@@ -200,6 +200,10 @@ export const paths = {
       path: "planeador/recursos/vista-previa",
       getHref: () => "/app/planeador/recursos/vista-previa",
     },
+    planeadorPlanilla: {
+      path: "planeador/planilla",
+      getHref: () => "/app/planeador/planilla",
+    },
     gestionAcademicaInformes: {
       path: "gestion-academica/informes",
       getHref: () => "/app/gestion-academica/informes",

@@ -9,9 +9,9 @@ import {
 import { cn } from "@/lib/utils"
 
 import {
-  STATUS_ACCENT,
-  STATUS_ICON,
-  STATUS_RING,
+  statusAccentFor,
+  statusIconFor,
+  statusRingFor,
 } from "@/features/planeador/api/ui-mappings"
 import type { Actividad } from "@/features/planeador/api/types/actividad"
 
@@ -88,8 +88,8 @@ export function ActividadCard({
   onEdit,
   onDeleted,
 }: ActividadCardProps) {
-  const StatusIcon = STATUS_ICON[actividad.status]
-  const accent = STATUS_ACCENT[actividad.status]
+  const StatusIcon = statusIconFor(actividad.status)
+  const accent = statusAccentFor(actividad.status)
 
   // Editar / Marcar / Aprobar se montan como botones planos. Descargar y
   // Eliminar tienen sus propios widgets (Dialog y AlertDialog) que
@@ -125,7 +125,7 @@ export function ActividadCard({
       {/* Barra de status del borde izquierdo. */}
       <span
         aria-hidden="true"
-        className={cn("absolute inset-y-0 left-0 w-1", STATUS_RING[actividad.status])}
+        className={cn("absolute inset-y-0 left-0 w-1", statusRingFor(actividad.status))}
       />
 
       <div className="flex items-start gap-2">
