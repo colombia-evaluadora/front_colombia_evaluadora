@@ -23,6 +23,7 @@ import type {
 } from "@/features/planeador/api/types/actividad"
 import { EXPORT_FORMAT_LABELS } from "@/features/planeador/api/types/actividad"
 import type { NivelDesempenoCriterio, UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
+import { statusToEstadoDerivado } from "@/features/planeador/lib/estado-derivado"
 
 /**
  * Endpoints del Planeador bajo `/api/eval-col` — mismo prefijo que el resto
@@ -38,6 +39,14 @@ import type { NivelDesempenoCriterio, UnidadTematica } from "@/features/planeado
  * paginación explícita por `size`/`offset` en los listados.
  */
 const ACTIVIDAD_LIST_URL = "/api/eval-col/planeador/actividades"
+// Registrados ANTES que `ACTIVIDAD_DETAIL_URL` (`/actividades/:id`): MSW
+// matchea por orden de registro, no por especificidad, así que si
+// `:id` fuera antes, "stats"/"calendario"/"mias" calzarían ahí como si
+// fueran un id — mismo cuidado que las rutas estáticas vs. dinámicas de
+// TanStack Router.
+const ACTIVIDAD_STATS_URL = "/api/eval-col/planeador/actividades/stats"
+const ACTIVIDAD_CALENDARIO_URL = "/api/eval-col/planeador/actividades/calendario"
+const ACTIVIDAD_MIAS_URL = "/api/eval-col/planeador/actividades/mias"
 const ACTIVIDAD_DETAIL_URL = "/api/eval-col/planeador/actividades/:id"
 const ACTIVIDAD_CALIFICACIONES_URL =
   "/api/eval-col/planeador/actividades/:id/calificaciones"
@@ -78,6 +87,90 @@ export const planeadorHandlers = [
     await delay(150)
     const page = paginate(planeadorDb, new URL(request.url))
     return HttpResponse.json(page)
+  }),
+
+  // Stats del docente (cards de resumen). Contadores sobre TODO
+  // `planeadorDb`, no sobre lo que devuelva `/mias` filtrado — mismo
+  // criterio que el real: el universo no cambia con el buscador de abajo.
+  http.get(ACTIVIDAD_STATS_URL, async () => {
+    await delay(150)
+    const counts = { pending: 0, in_progress: 0, completed: 0, cancelled: 0 }
+    for (const row of planeadorDb) {
+      if (row.status === "pending") counts.pending++
+      else if (row.status === "in-progress") counts.in_progress++
+      else if (row.status === "completed") counts.completed++
+      else if (row.status === "cancelled") counts.cancelled++
+    }
+    return HttpResponse.json({ rows: [counts] })
+  }),
+
+  // Calendario mensual: filtra por solapamiento `[fechaInicio, fechaCierre]`
+  // contra `[fecha_desde, fecha_hasta]` (comparación lexicográfica, ambas
+  // `yyyy-MM-dd`) y resuelve `fecha` como día de anclaje — el inicio si cae
+  // dentro del rango pedido, si no el propio `fecha_desde` (la actividad ya
+  // venía abierta de un mes anterior).
+  http.get(ACTIVIDAD_CALENDARIO_URL, async ({ request }) => {
+    await delay(150)
+    const url = new URL(request.url)
+    const fechaDesde = url.searchParams.get("fecha_desde") ?? ""
+    const fechaHasta = url.searchParams.get("fecha_hasta") ?? ""
+    const rows = planeadorDb
+      .filter((row) => row.fechaInicio <= fechaHasta && row.fechaCierre >= fechaDesde)
+      .map((row) => ({
+        fecha: row.fechaInicio >= fechaDesde ? row.fechaInicio : fechaDesde,
+        fecha_inicio: row.fechaInicio,
+        fecha_cierre: row.fechaCierre,
+        pk_tactividad: row.id,
+        titulo: row.nombre,
+        grupo: row.grupo,
+        asignatura: row.asignatura,
+        area: null,
+        estado: statusToEstadoDerivado(row.status),
+      }))
+    return HttpResponse.json({ rows })
+  }),
+
+  // Listado del docente para el rail izquierdo: `search` filtra por
+  // nombre/asignatura/grupo, `estados` es una lista separada por coma de
+  // estados DERIVADOS (`PENDIENTE_POR_EVALUAR`, …) — se traduce de vuelta a
+  // `ActividadStatus` para filtrar `planeadorDb`, que guarda el status en
+  // el formato del front.
+  http.get(ACTIVIDAD_MIAS_URL, async ({ request }) => {
+    await delay(150)
+    const url = new URL(request.url)
+    const search = (url.searchParams.get("search") ?? "").trim().toLowerCase()
+    const estadosParam = url.searchParams.get("estados")
+    const estadosDerivados = estadosParam ? estadosParam.split(",") : null
+
+    const filtered = planeadorDb.filter((row) => {
+      if (estadosDerivados && !estadosDerivados.includes(statusToEstadoDerivado(row.status))) {
+        return false
+      }
+      if (!search) return true
+      return [row.nombre, row.asignatura, row.grupo, row.tipo]
+        .join(" ")
+        .toLowerCase()
+        .includes(search)
+    })
+
+    const page = paginate(filtered, url)
+    const rows = page.rows.map((row) => ({
+      pk_tactividad: row.id,
+      titulo: row.nombre,
+      estado: statusToEstadoDerivado(row.status),
+      fecha_inicio: row.fechaInicio,
+      fecha_cierre: row.fechaCierre,
+      asignatura: row.asignatura,
+      grupo: row.grupo,
+      unidad: row.unidad.nombre || null,
+      instrumento_evaluacion: row.instrumento,
+      ponderacion: row.ponderacion,
+      es_evaluativa: row.esEvaluativa ? "S" : "N",
+      estudiantes_asignados: row.totalEstudiantes,
+      estudiantes_evaluados: row.evaluados,
+      total_count: page.totalCount,
+    }))
+    return HttpResponse.json({ rows })
   }),
 
   // Detalle: id desconocido → 404 con mensaje. El cliente espera el sobre

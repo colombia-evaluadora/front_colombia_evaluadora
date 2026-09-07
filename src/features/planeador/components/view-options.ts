@@ -11,13 +11,3 @@ export const VIEW_OPTIONS = [
 ] as const
 
 export type ViewOption = (typeof VIEW_OPTIONS)[number]["value"]
-/**
- * Opciones del filtro "Instrumento" del panel de filtros avanzados. Todavía
- * no filtra nada: el catálogo real de instrumentos llega en otra iteración,
- * pero el valor ya viaja en la URL.
- */
-export const INSTRUMENTO_OPTIONS = [
-  { value: "rubrica", label: "Rúbrica" },
-  { value: "autoevaluacion", label: "Autoevaluación" },
-  { value: "prueba", label: "Prueba escrita" },
-] as const

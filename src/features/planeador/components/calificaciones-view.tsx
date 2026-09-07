@@ -1,15 +1,8 @@
-import { useId } from "react"
+import { useId, useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import {
-  Popover,
-  PopoverContent,
-  PopoverHeader,
-  PopoverTitle,
-  PopoverTrigger,
-} from "@/components/ui/popover"
 import {
   Select,
   SelectContent,
@@ -20,12 +13,9 @@ import {
 import { Spinner } from "@/components/ui/spinner"
 import {
   CheckCircleIcon,
-  CheckIcon,
   ClockIcon,
-  EnvelopeIcon,
   PaperclipIcon,
   WarningCircleIcon,
-  XIcon,
 } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
 
@@ -34,9 +24,11 @@ import type { Actividad } from "@/features/planeador/api/types/actividad"
 import type {
   CalificacionEstudiante,
   EstadoAsistencia,
+  NotaCriterio,
 } from "@/features/planeador/api/types/calificacion"
-import { porcentajeFinal } from "@/features/planeador/api/types/calificacion"
+import { itemsPonderables, porcentajeFinal } from "@/features/planeador/api/types/calificacion"
 import { formatDate } from "@/features/planeador/lib/format-date"
+import { CeldaNotaPopover } from "@/features/planeador/components/planilla/celda-nota-popover"
 
 interface CalificacionesViewProps {
   actividad: Actividad
@@ -61,7 +53,10 @@ export function CalificacionesView({ actividad }: CalificacionesViewProps) {
   const { data: calificaciones = [], isPending, isError, refetch } =
     useCalificacionesQuery(actividad.id)
 
-  const criterios = actividad.rubrica.criterios
+  // Ediciones locales del popover por celda — mismo nivel que el resto de
+  // las vistas de calificación del Planeador: no hay mutación/endpoint de
+  // escritura todavía, así que se pierden al recargar.
+  const [overrides, setOverrides] = useState<Map<number, NotaCriterio[]>>(new Map())
 
   if (isPending) {
     return (
@@ -110,9 +105,12 @@ export function CalificacionesView({ actividad }: CalificacionesViewProps) {
           {calificaciones.map((estudiante) => (
             <CalificacionRow
               key={estudiante.id}
+              actividad={actividad}
               estudiante={estudiante}
-              criterios={criterios}
-              instrumento={actividad.instrumento}
+              notas={overrides.get(estudiante.id) ?? estudiante.notas}
+              onGuardar={(next) =>
+                setOverrides((prev) => new Map(prev).set(estudiante.id, next))
+              }
             />
           ))}
         </tbody>
@@ -122,13 +120,14 @@ export function CalificacionesView({ actividad }: CalificacionesViewProps) {
 }
 
 interface CalificacionRowProps {
+  actividad: Actividad
   estudiante: CalificacionEstudiante
-  criterios: Actividad["rubrica"]["criterios"]
-  instrumento: string
+  notas: NotaCriterio[]
+  onGuardar: (next: NotaCriterio[]) => void
 }
 
-function CalificacionRow({ estudiante, criterios, instrumento }: CalificacionRowProps) {
-  const porcentaje = porcentajeFinal(estudiante.notas, criterios)
+function CalificacionRow({ actividad, estudiante, notas, onGuardar }: CalificacionRowProps) {
+  const porcentaje = porcentajeFinal(notas, itemsPonderables(actividad))
   const mostrarJustificacion =
     estudiante.asistencia.estado === "llego-tarde" ||
     estudiante.asistencia.estado === "no-asistio"
@@ -157,7 +156,12 @@ function CalificacionRow({ estudiante, criterios, instrumento }: CalificacionRow
         )}
       </td>
       <td className="px-2 py-3 align-middle">
-        <InstrumentoPopover instrumento={instrumento} />
+        <CeldaNotaPopover
+          actividad={actividad}
+          estudianteNombre={`${estudiante.nombres} ${estudiante.apellidos}`}
+          notaActual={notas}
+          onGuardar={onGuardar}
+        />
       </td>
     </tr>
   )
@@ -243,76 +247,5 @@ function JustificacionField({
         </span>
       )}
     </div>
-  )
-}
-
-/**
- * Popover con los datos del instrumento (los mismos campos del mockup
- * original —Diseño y Modalidad—). Se abre desde el sobre azul de cada fila
- * y se queda anclado a su trigger mientras se edita, así no se pierde la
- * referencia de a qué fila corresponde.
- */
-function InstrumentoPopover({ instrumento }: { instrumento: string }) {
-  return (
-    <Popover>
-      <PopoverTrigger
-        render={
-          <Button
-            variant="fill"
-            color="primary"
-            size="icon-sm"
-            aria-label="Ver instrumento"
-            className="size-8"
-          />
-        }
-      >
-        <EnvelopeIcon className="size-4" />
-      </PopoverTrigger>
-      <PopoverContent align="end" side="bottom" className="w-72">
-        <PopoverHeader>
-          <PopoverTitle>Instrumento: {instrumento}</PopoverTitle>
-        </PopoverHeader>
-
-        <Field variant="outlined">
-          <FieldLabel>Diseño</FieldLabel>
-          <Select value="excelente" onValueChange={() => {}}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="excelente">Excelente</SelectItem>
-              <SelectItem value="bueno">Bueno</SelectItem>
-              <SelectItem value="aceptable">Aceptable</SelectItem>
-              <SelectItem value="bajo">Bajo</SelectItem>
-            </SelectContent>
-          </Select>
-        </Field>
-
-        <Field variant="outlined">
-          <FieldLabel>Modalidad</FieldLabel>
-          <Select value="presencial" onValueChange={() => {}}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="presencial">Presencial</SelectItem>
-              <SelectItem value="virtual">Virtual</SelectItem>
-              <SelectItem value="mixta">Mixta</SelectItem>
-            </SelectContent>
-          </Select>
-        </Field>
-
-        <div className="flex items-center justify-end gap-2">
-          <Button variant="fill" color="primary" size="sm">
-            <CheckIcon data-icon="inline-start" />
-            Guardar
-          </Button>
-          <Button variant="fill" color="neutral" size="sm">
-            <XIcon data-icon="inline-start" />
-            Cancelar
-          </Button>
-        </div>
-      </PopoverContent>
-    </Popover>
   )
 }
