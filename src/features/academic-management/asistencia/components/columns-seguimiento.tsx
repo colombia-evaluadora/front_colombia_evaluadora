@@ -4,7 +4,7 @@ import { DataTableColumnHeader } from "@/components/data-table"
 import { PaperclipIcon } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
 
-import { TIPO_ASISTENCIA_DOT } from "@/features/academic-management/asistencia/api/ui-mappings"
+import { nombreMateriaSeguimiento, TIPO_ASISTENCIA_DOT } from "@/features/academic-management/asistencia/api/ui-mappings"
 import { EditarSeguimientoDialog } from "@/features/academic-management/asistencia/components/dialog-editar-seguimiento"
 import type { AsistenciaQueryRow } from "@/features/academic-management/asistencia/api/types/asistencia"
 
@@ -41,6 +41,7 @@ export const columnsSeguimiento: ColumnDef<AsistenciaQueryRow>[] = [
     accessorKey: "asignatura",
     meta: { label: "Asignatura" },
     header: ({ column }) => <DataTableColumnHeader column={column} title="Asignatura" />,
+    cell: ({ row }) => nombreMateriaSeguimiento(row.original),
   },
   {
     id: "grupo",

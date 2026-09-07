@@ -14,6 +14,9 @@ export interface SesionCalendario {
   jornada_nombre: string
   fk_asignatura: number
   asignatura: string
+  es_formativa: boolean
+  fk_tactividad: number | null
+  actividad: string | null
   hora_inicio: string | null
   hora_fin: string | null
   estado_sesion: EstadoSesion
@@ -56,9 +59,11 @@ export interface AsistenciaRegistroManual {
   fkArchivo?: number | File
 }
 
+/** Padrón de una sesión: `ASIGNATURA` (+ `BLOQUE` opcional) para un grupo normal, o `ACTIVIDAD` para uno formativo -- nunca ambos. */
 export interface AsistenciaSesionEstudiantesParams {
   GRUPO: number
-  ASIGNATURA: number
+  ASIGNATURA?: number
+  ACTIVIDAD?: number
   FECHA: string
   BLOQUE?: number | null
 }
@@ -81,11 +86,17 @@ export interface RosterEstudiante {
   registrados: number
 }
 
+/**
+ * `ASIGNATURA` (+ `BLOQUE`, sesión por horario) o `ACTIVIDAD` (sesión
+ * formativa, sin `BLOQUE`) -- exactamente una de las dos; la función rechaza
+ * con 409 si faltan ambas (`CK_TASISTENCIA_CONTEXTO`).
+ */
 export interface AsistenciaRegistrarRequest {
   GRUPO: number
-  ASIGNATURA: number
+  ASIGNATURA?: number
+  ACTIVIDAD?: number
   FECHA: string
-  BLOQUE: number | null
+  BLOQUE?: number | null
   REGISTROS?: AsistenciaRegistroManual[]
   MARCAR_TODOS?: TipoAsistencia
 }
@@ -103,6 +114,8 @@ export interface AsistenciaQueryFilters {
   FECHA_HASTA?: string | null
   GRUPO?: number | null
   ASIGNATURA?: number | null
+  /** Formativo (preescolar): filtra por actividad -- `ASIGNATURA` no encuentra estas filas (`FK_TASIGNATURA` queda `NULL`). */
+  ACTIVIDAD?: number | null
   TIPO_ASISTENCIA?: TipoAsistencia | null
   SEARCH?: string | null
 }
@@ -136,6 +149,10 @@ export interface AsistenciaQueryRow {
   ausentes: number
   tarde: number
   total_count: number
+  /** Formativo (preescolar): la fila es de una actividad, no de `asignatura` (que llega `""`/dueña, no la sesión). */
+  es_formativa: boolean
+  fk_tactividad: number | null
+  actividad: string | null
 }
 
 
@@ -146,5 +163,6 @@ export interface SeguimientoFiltersValues {
   grado: string
   grupo: string
   asignatura: string
+  actividad: string
   tipoAsistencia: string
 }

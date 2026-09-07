@@ -18,6 +18,7 @@ import {
   EMPTY_SEGUIMIENTO_FILTERS,
   gradosDeJornada,
   gruposDeGradoJornada,
+  type ActividadCatalogEntry,
   type AsignaturaCatalogEntry,
   type CodigoNombreOption,
   type GrupoCatalogEntry,
@@ -35,8 +36,13 @@ interface SearchSeguimientoProps {
   grupoCatalog: GrupoCatalogEntry[]
   asignaturaCatalog: AsignaturaCatalogEntry[]
   asignaturasPorGrupo: Map<number, AsignaturaCatalogEntry[]>
+  actividadCatalog: ActividadCatalogEntry[]
+  actividadesPorGrupo: Map<number, ActividadCatalogEntry[]>
   tipoAsistenciaOptions: TipoAsistenciaOption[]
 }
+
+const PREFIJO_ASIGNATURA = "asig:"
+const PREFIJO_ACTIVIDAD = "act:"
 
 const TODOS_ITEM = { value: "", label: "Todos" }
 
@@ -55,6 +61,8 @@ export function SearchSeguimiento({
   grupoCatalog,
   asignaturaCatalog,
   asignaturasPorGrupo,
+  actividadCatalog,
+  actividadesPorGrupo,
   tipoAsistenciaOptions,
 }: SearchSeguimientoProps) {
   const [open, setOpen] = useState(false)
@@ -84,15 +92,38 @@ export function SearchSeguimiento({
     [grupoCatalog, draft.jornada, draft.grado],
   )
   const asignaturaItems = useMemo(() => {
-    const opciones = draft.grupo ? (asignaturasPorGrupo.get(Number(draft.grupo)) ?? []) : []
-    return [TODOS_ITEM, ...opciones.map((a) => ({ value: String(a.value), label: a.label }))]
-  }, [asignaturasPorGrupo, draft.grupo])
+    if (!draft.grupo) return [TODOS_ITEM]
+    const grupoId = Number(draft.grupo)
+    const asignaturas = asignaturasPorGrupo.get(grupoId) ?? []
+    const actividades = actividadesPorGrupo.get(grupoId) ?? []
+    return [
+      TODOS_ITEM,
+      ...asignaturas.map((a) => ({ value: `${PREFIJO_ASIGNATURA}${a.value}`, label: a.label })),
+      ...actividades.map((a) => ({ value: `${PREFIJO_ACTIVIDAD}${a.value}`, label: a.label })),
+    ]
+  }, [asignaturasPorGrupo, actividadesPorGrupo, draft.grupo])
+
+  const draftAsignaturaValue = draft.actividad
+    ? `${PREFIJO_ACTIVIDAD}${draft.actividad}`
+    : draft.asignatura
+      ? `${PREFIJO_ASIGNATURA}${draft.asignatura}`
+      : ""
+
+  function handleAsignaturaChange(value: string | null) {
+    if (!value) {
+      setDraft((d) => ({ ...d, asignatura: "", actividad: "" }))
+    } else if (value.startsWith(PREFIJO_ACTIVIDAD)) {
+      setDraft((d) => ({ ...d, actividad: value.slice(PREFIJO_ACTIVIDAD.length), asignatura: "" }))
+    } else {
+      setDraft((d) => ({ ...d, asignatura: value.slice(PREFIJO_ASIGNATURA.length), actividad: "" }))
+    }
+  }
   const tipoAsistenciaItems = useMemo(
     () => [TODOS_ITEM, ...tipoAsistenciaOptions.map((o) => ({ value: String(o.value), label: o.label }))],
     [tipoAsistenciaOptions],
   )
 
-  const cadenaIniciada = Boolean(draft.jornada || draft.grado || draft.grupo || draft.asignatura)
+  const cadenaIniciada = Boolean(draft.jornada || draft.grado || draft.grupo || draft.asignatura || draft.actividad)
   const canApply = !cadenaIniciada || Boolean(draft.grupo)
 
   function handleApply() {
@@ -127,13 +158,18 @@ export function SearchSeguimiento({
           asignaturaCatalog.map((a) => ({ value: String(a.value), label: a.label })),
         ),
         optionTerm(
+          "actividad",
+          "actividad",
+          actividadCatalog.map((a) => ({ value: String(a.value), label: a.label })),
+        ),
+        optionTerm(
           "tipo",
           "tipoAsistencia",
           tipoAsistenciaOptions.map((o) => ({ value: String(o.value), label: o.label })),
         ),
       ],
     }),
-    [jornadaOptions, grupoCatalog, asignaturaCatalog, tipoAsistenciaOptions],
+    [jornadaOptions, grupoCatalog, asignaturaCatalog, actividadCatalog, tipoAsistenciaOptions],
   )
 
   const combinedFilters = useMemo<QueryFilters>(() => ({ ...filters, search }), [filters, search])
@@ -206,7 +242,7 @@ export function SearchSeguimiento({
               value={draft.jornada}
               // Raíz de esta cadena: cambiarla borra Grado/Grupo/Asignatura.
               onValueChange={(value) =>
-                setDraft((d) => ({ ...d, jornada: value ?? "", grado: "", grupo: "", asignatura: "" }))
+                setDraft((d) => ({ ...d, jornada: value ?? "", grado: "", grupo: "", asignatura: "", actividad: "" }))
               }
             >
               <ComboboxFieldTrigger id="seguimiento-jornada" size="sm" className="w-full">
@@ -229,7 +265,7 @@ export function SearchSeguimiento({
               items={Object.fromEntries(gradoItems.map((item) => [item.value, item.label]))}
               value={draft.grado}
               onValueChange={(value) =>
-                setDraft((d) => ({ ...d, grado: value ?? "", grupo: "", asignatura: "" }))
+                setDraft((d) => ({ ...d, grado: value ?? "", grupo: "", asignatura: "", actividad: "" }))
               }
             >
               <ComboboxFieldTrigger id="seguimiento-grado" size="sm" className="w-full">
@@ -251,8 +287,8 @@ export function SearchSeguimiento({
               disabled={!draft.grado}
               items={Object.fromEntries(grupoItems.map((item) => [item.value, item.label]))}
               value={draft.grupo}
-              // Depende de Grado -- al cambiarlo, Asignatura se borra.
-              onValueChange={(value) => setDraft((d) => ({ ...d, grupo: value ?? "", asignatura: "" }))}
+              // Depende de Grado -- al cambiarlo, Asignatura/Actividad se borra.
+              onValueChange={(value) => setDraft((d) => ({ ...d, grupo: value ?? "", asignatura: "", actividad: "" }))}
             >
               <ComboboxFieldTrigger id="seguimiento-grupo" size="sm" className="w-full">
                 <ComboboxFieldValue placeholder={draft.grado ? "Todos" : "Elegí Grado primero"} />
@@ -272,8 +308,8 @@ export function SearchSeguimiento({
             <ComboboxField
               disabled={!draft.grupo}
               items={Object.fromEntries(asignaturaItems.map((item) => [item.value, item.label]))}
-              value={draft.asignatura}
-              onValueChange={(value) => setDraft((d) => ({ ...d, asignatura: value ?? "" }))}
+              value={draftAsignaturaValue}
+              onValueChange={handleAsignaturaChange}
             >
               <ComboboxFieldTrigger id="seguimiento-asignatura" size="sm" className="w-full">
                 <ComboboxFieldValue placeholder={draft.grupo ? "Todos" : "Elegí Grupo primero"} />

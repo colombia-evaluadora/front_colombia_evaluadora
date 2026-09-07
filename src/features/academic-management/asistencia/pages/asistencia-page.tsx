@@ -20,6 +20,7 @@ import { AsistenciaHoursCards } from "@/features/academic-management/asistencia/
 import { AsistenciaRegistroMensualCard } from "@/features/academic-management/asistencia/components/asistencia-registro-mensual-card"
 import {
   AsistenciaMonthGrid,
+  nombreSesion,
   type AsistenciaDayEntry,
 } from "@/features/academic-management/asistencia/components/asistencia-month-grid"
 import { agruparPorBloquesContinuos } from "@/features/academic-management/asistencia/api/ui-mappings"
@@ -96,7 +97,9 @@ function AsistenciaPageContent() {
       map.set(
         day,
         agruparPorBloquesContinuos(lista).map((b) => ({
-          id: `${b.fkGrupo}-${b.fkAsignatura}-${b.fecha}-${b.bloque}`,
+          id: b.esFormativa
+            ? `${b.fkGrupo}-actividad-${b.fkActividad}-${b.fecha}`
+            : `${b.fkGrupo}-${b.fkAsignatura}-${b.fecha}-${b.bloque}`,
           fecha: b.fecha,
           bloque: b.bloque,
           fkGrupo: b.fkGrupo,
@@ -108,6 +111,9 @@ function AsistenciaPageContent() {
           horaInicio: b.horaInicio,
           horaFin: b.horaFin,
           estado: b.estado,
+          esFormativa: b.esFormativa,
+          fkActividad: b.fkActividad,
+          actividad: b.actividad,
         })),
       )
     }
@@ -123,14 +129,15 @@ function AsistenciaPageContent() {
     registrar.mutate(
       {
         GRUPO: entry.fkGrupo,
-        ASIGNATURA: entry.fkAsignatura,
         FECHA: entry.fecha,
-        BLOQUE: entry.bloque,
         MARCAR_TODOS: 1,
+        ...(entry.esFormativa
+          ? { ACTIVIDAD: entry.fkActividad ?? undefined }
+          : { ASIGNATURA: entry.fkAsignatura, BLOQUE: entry.bloque }),
       },
       {
         onSuccess: () => {
-          notify(`Asistencia de ${entry.grupo} · ${entry.asignatura} marcada como Asistió.`)
+          notify(`Asistencia de ${entry.grupo} · ${nombreSesion(entry)} marcada como Asistió.`)
           setMarkedEntryIds((prev) => new Set(prev).add(entry.id))
         },
         onSettled: () => setMarkingEntryId(null),

@@ -54,7 +54,7 @@ export interface BloqueContinuo {
   jornada: string
   fkAsignatura: number
   asignatura: string
-  /** `null` = toma suelta sin bloque (`TASISTENCIA.BLOQUE` nulo). */
+  /** `null` = toma suelta sin bloque (`TASISTENCIA.BLOQUE` nulo), o sesión formativa (siempre sin bloque). */
   bloque: number | null
   /** Bloques reales de la corrida -- `[null]` si `bloque` es `null` (nunca se mezcla con numéricos). */
   bloques: (number | null)[]
@@ -62,19 +62,61 @@ export interface BloqueContinuo {
   horaInicio: string | null
   horaFin: string | null
   estado: EstadoSesion
+  /** Grupo de Preescolar: la sesión es esta ACTIVIDAD, no la asignatura de arriba. */
+  esFormativa: boolean
+  fkActividad: number | null
+  actividad: string | null
 }
 
 export function agruparPorBloquesContinuos(sesiones: SesionCalendario[]): BloqueContinuo[] {
-  const porClave = new Map<string, SesionCalendario[]>()
+  const resultado: BloqueContinuo[] = []
+  const porActividad = new Map<string, SesionCalendario[]>()
+  const noFormativas: SesionCalendario[] = []
   for (const s of sesiones) {
+    if (!s.es_formativa) {
+      noFormativas.push(s)
+      continue
+    }
+    const key = `${s.fecha}-${s.fk_grupo}-actividad-${s.fk_tactividad}`
+    const grupo = porActividad.get(key) ?? []
+    grupo.push(s)
+    porActividad.set(key, grupo)
+  }
+  for (const grupo of porActividad.values()) {
+    const primero = grupo[0]
+    resultado.push({
+      fecha: primero.fecha,
+      fkGrupo: primero.fk_grupo,
+      grupo: primero.grupo,
+      grado: primero.grado,
+      jornada: primero.jornada,
+      fkAsignatura: primero.fk_asignatura,
+      asignatura: primero.asignatura,
+      bloque: null,
+      bloques: [null],
+      horasPorBloque: {},
+      horaInicio: primero.hora_inicio,
+      horaFin: primero.hora_fin,
+      estado: peorEstado(grupo.map((s) => s.estado_sesion)),
+      esFormativa: true,
+      fkActividad: primero.fk_tactividad,
+      actividad: primero.actividad,
+    })
+  }
+
+  // No formativas: por (fecha, grupo, asignatura), para separar sueltas sin
+  // bloque (cada una su propia entrada) de las corridas de bloques continuos.
+  const porClave = new Map<string, SesionCalendario[]>()
+  for (const s of noFormativas) {
     const key = `${s.fecha}-${s.fk_grupo}-${s.fk_asignatura}`
     const lista = porClave.get(key) ?? []
     lista.push(s)
     porClave.set(key, lista)
   }
 
-  const resultado: BloqueContinuo[] = []
   for (const lista of porClave.values()) {
+    // Sueltas sin bloque (ej. una toma manual vieja): no hay por qué
+    // fusionarlas, cada una es su propia entrada.
     for (const s of lista) {
       if (s.bloque !== null) continue
       resultado.push({
@@ -91,6 +133,9 @@ export function agruparPorBloquesContinuos(sesiones: SesionCalendario[]): Bloque
         horaInicio: s.hora_inicio,
         horaFin: s.hora_fin,
         estado: s.estado_sesion,
+        esFormativa: false,
+        fkActividad: null,
+        actividad: null,
       })
     }
 
@@ -118,6 +163,11 @@ export function agruparPorBloquesContinuos(sesiones: SesionCalendario[]): Bloque
         horaInicio: primero.hora_inicio,
         horaFin: ultimo.hora_fin,
         estado: peorEstado(corrida.map((s) => s.estado_sesion)),
+        // Una sesión con bloque real (THORARIO) nunca es formativa -- ese
+        // modelo (preescolar) no usa bloques en absoluto.
+        esFormativa: false,
+        fkActividad: null,
+        actividad: null,
       })
       corrida = []
     }
@@ -176,6 +226,9 @@ export interface AsignaturaCatalogEntry {
   label: string
 }
 
+/** Actividad de un grupo formativo (preescolar) -- misma forma que `AsignaturaCatalogEntry`, entidad distinta (`TACTIVIDAD`, no `TASIGNATURA`). */
+export type ActividadCatalogEntry = AsignaturaCatalogEntry
+
 /** Opción de filtro con código (`value`, lo que se usa para filtrar/agrupar) y nombre completo (`label`, lo que se muestra). */
 export interface CodigoNombreOption {
   value: string
@@ -186,11 +239,15 @@ export function catalogosDeSesiones(sesiones: SesionCalendario[]): {
   grupos: GrupoCatalogEntry[]
   asignaturas: AsignaturaCatalogEntry[]
   asignaturasPorGrupo: Map<number, AsignaturaCatalogEntry[]>
+  actividades: ActividadCatalogEntry[]
+  actividadesPorGrupo: Map<number, ActividadCatalogEntry[]>
   jornadas: CodigoNombreOption[]
 } {
   const grupos = new Map<number, GrupoCatalogEntry>()
   const asignaturas = new Map<number, AsignaturaCatalogEntry>()
   const asignaturasPorGrupo = new Map<number, Map<number, AsignaturaCatalogEntry>>()
+  const actividades = new Map<number, ActividadCatalogEntry>()
+  const actividadesPorGrupo = new Map<number, Map<number, ActividadCatalogEntry>>()
   const jornadas = new Map<string, string>()
 
   for (const s of sesiones) {
@@ -204,11 +261,26 @@ export function catalogosDeSesiones(sesiones: SesionCalendario[]): {
         jornadaNombre: s.jornada_nombre,
       })
     }
+    if (s.jornada) jornadas.set(s.jornada, s.jornada_nombre || s.jornada)
+
+    // Formativo (preescolar): la sesión es la ACTIVIDAD, no `fk_asignatura`
+    // (esa es la asignatura dueña -- filtrar por ella no encuentra estas
+    // filas). Se cataloga aparte, sin mezclarse con `asignaturas`.
+    if (s.es_formativa && s.fk_tactividad !== null) {
+      if (!actividades.has(s.fk_tactividad)) {
+        actividades.set(s.fk_tactividad, { value: s.fk_tactividad, label: s.actividad ?? "Actividad" })
+      }
+      const porGrupoAct = actividadesPorGrupo.get(s.fk_grupo) ?? new Map<number, ActividadCatalogEntry>()
+      if (!porGrupoAct.has(s.fk_tactividad)) {
+        porGrupoAct.set(s.fk_tactividad, { value: s.fk_tactividad, label: s.actividad ?? "Actividad" })
+      }
+      actividadesPorGrupo.set(s.fk_grupo, porGrupoAct)
+      continue
+    }
+
     if (!asignaturas.has(s.fk_asignatura)) {
       asignaturas.set(s.fk_asignatura, { value: s.fk_asignatura, label: s.asignatura })
     }
-    if (s.jornada) jornadas.set(s.jornada, s.jornada_nombre || s.jornada)
-
     const porGrupo = asignaturasPorGrupo.get(s.fk_grupo) ?? new Map<number, AsignaturaCatalogEntry>()
     if (!porGrupo.has(s.fk_asignatura)) {
       porGrupo.set(s.fk_asignatura, { value: s.fk_asignatura, label: s.asignatura })
@@ -225,10 +297,30 @@ export function catalogosDeSesiones(sesiones: SesionCalendario[]): {
         [...mapa.values()].sort((a, b) => a.label.localeCompare(b.label)),
       ]),
     ),
+    actividades: [...actividades.values()].sort((a, b) => a.label.localeCompare(b.label)),
+    actividadesPorGrupo: new Map(
+      [...actividadesPorGrupo.entries()].map(([grupoId, mapa]) => [
+        grupoId,
+        [...mapa.values()].sort((a, b) => a.label.localeCompare(b.label)),
+      ]),
+    ),
     jornadas: [...jornadas.entries()]
       .map(([value, label]) => ({ value, label }))
       .sort((a, b) => a.label.localeCompare(b.label)),
   }
+}
+
+/** Nombre a mostrar de una fila de Seguimiento -- actividad si es formativa, asignatura si no (mismo criterio que `nombreSesion` del calendario). */
+export function nombreMateriaSeguimiento(
+  row: Pick<SeguimientoRowLike, "es_formativa" | "actividad" | "asignatura">,
+): string {
+  return row.es_formativa ? (row.actividad ?? "Actividad") : row.asignatura
+}
+
+interface SeguimientoRowLike {
+  es_formativa: boolean
+  actividad: string | null
+  asignatura: string
 }
 
 /** Grados de `jornada` (vacío = todas) -- código + nombre, distintos y ordenados por nombre. */
@@ -254,5 +346,6 @@ export const EMPTY_SEGUIMIENTO_FILTERS: SeguimientoFiltersValues = {
   grado: "",
   grupo: "",
   asignatura: "",
+  actividad: "",
   tipoAsistencia: "",
 }
