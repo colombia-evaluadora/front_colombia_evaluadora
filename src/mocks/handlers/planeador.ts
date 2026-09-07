@@ -13,6 +13,7 @@ import {
   unidadesTematicasDb,
   updateUnidadInfoGeneral,
 } from "@/mocks/db/unidades-tematicas"
+import { nextId } from "@/mocks/db/next-id"
 import { getCalificacionesByActividad } from "@/mocks/db/calificaciones"
 
 import type {
@@ -29,32 +30,54 @@ import type { NivelDesempenoCriterio, UnidadTematica } from "@/features/planeado
  * forma `/api/eval-col/...` (en lugar del helper `apiPath(mock, real)` que
  * usan otros handlers) porque hoy solo existe el mock: si mañana hay ruta
  * real, se sustituye la constante por una llamada a `apiPath`.
+ *
+ * URLs y verbos calcados de las colecciones Postman del contrato real
+ * (`planeador-unidad`/`planeador-actividad`, `query-service eval-col`):
+ * rutas plurales (`/actividades`, `/unidades`), sin `DELETE` (el motor solo
+ * admite GET/POST/PUT/PATCH — los borrados/desvinculaciones son `PATCH`), y
+ * paginación explícita por `size`/`offset` en los listados.
  */
-const ACTIVIDAD_LIST_URL = "/api/eval-col/planeador/actividad/query"
-const ACTIVIDAD_DETAIL_URL = "/api/eval-col/planeador/actividad/detalle/:id"
+const ACTIVIDAD_LIST_URL = "/api/eval-col/planeador/actividades"
+const ACTIVIDAD_DETAIL_URL = "/api/eval-col/planeador/actividades/:id"
 const ACTIVIDAD_CALIFICACIONES_URL =
-  "/api/eval-col/planeador/actividad/calificaciones/:id"
-const ACTIVIDAD_CREATE_URL = "/api/eval-col/planeador/actividad"
-const ACTIVIDAD_DELETE_URL = "/api/eval-col/planeador/actividad/:id"
-const ACTIVIDAD_EXPORT_URL = "/api/eval-col/planeador/actividad/export/:id"
-const ACTIVIDAD_EXPORT_ALL_URL = "/api/eval-col/planeador/actividad/export-all"
-const UNIDAD_LIST_URL = "/api/eval-col/planeador/unidad/query"
-const UNIDAD_DETAIL_URL = "/api/eval-col/planeador/unidad/detalle/:id"
-const UNIDAD_CRITERIO_CREATE_URL = "/api/eval-col/planeador/unidad/:id/criterio"
-const UNIDAD_ACTIVIDAD_LINK_URL = "/api/eval-col/planeador/unidad/:id/actividad"
-const UNIDAD_CREATE_URL = "/api/eval-col/planeador/unidad"
-const UNIDAD_UPDATE_URL = "/api/eval-col/planeador/unidad/:id"
-const UNIDAD_DELETE_URL = "/api/eval-col/planeador/unidad/:id"
+  "/api/eval-col/planeador/actividades/:id/calificaciones"
+const ACTIVIDAD_CREATE_URL = "/api/eval-col/planeador/actividades"
+const ACTIVIDAD_DELETE_URL = "/api/eval-col/planeador/actividades/:id"
+const ACTIVIDAD_EXPORT_URL = "/api/eval-col/planeador/actividades/:id/export"
+const ACTIVIDAD_EXPORT_ALL_URL = "/api/eval-col/planeador/actividades/export-all"
+const UNIDAD_LIST_URL = "/api/eval-col/planeador/unidades"
+const UNIDAD_DETAIL_URL = "/api/eval-col/planeador/unidades/:id"
+const UNIDAD_CRITERIO_CREATE_URL = "/api/eval-col/planeador/unidades/:id/criterios"
+const UNIDAD_ACTIVIDAD_LINK_URL =
+  "/api/eval-col/planeador/unidades/:id/actividades/:actividadId"
+const UNIDAD_CREATE_URL = "/api/eval-col/planeador/unidades"
+const UNIDAD_UPDATE_URL = "/api/eval-col/planeador/unidades/:id"
+const UNIDAD_DELETE_URL = "/api/eval-col/planeador/unidades/:id"
+
+/**
+ * Recorta `rows` según `?size=`/`?offset=` de la query string (el contrato
+ * real los exige explícitos — devuelve 500 si faltan; acá, al ser mock, se
+ * usa el total como default en vez de fallar). Devuelve también el sobre de
+ * paginación (`pageCount`/`totalCount`) que ya espera `evalCol.getRows`.
+ */
+function paginate<T>(rows: T[], url: URL) {
+  const total = rows.length
+  const size = Number(url.searchParams.get("size") ?? total) || total || 1
+  const offset = Number(url.searchParams.get("offset") ?? 0) || 0
+  return {
+    rows: rows.slice(offset, offset + size),
+    pageCount: Math.max(1, Math.ceil(total / size)),
+    totalCount: total,
+  }
+}
 
 export const planeadorHandlers = [
   // Listado: el cliente (`evalCol.getRows`) desenvuelve el sobre `{rows: [...]}`.
-  http.get(ACTIVIDAD_LIST_URL, async () => {
+  // Paginado por `size`/`offset`, igual que `GET /planeador/actividades` real.
+  http.get(ACTIVIDAD_LIST_URL, async ({ request }) => {
     await delay(150)
-    return HttpResponse.json({
-      rows: planeadorDb,
-      pageCount: 1,
-      totalCount: planeadorDb.length,
-    })
+    const page = paginate(planeadorDb, new URL(request.url))
+    return HttpResponse.json(page)
   }),
 
   // Detalle: id desconocido → 404 con mensaje. El cliente espera el sobre
@@ -62,7 +85,7 @@ export const planeadorHandlers = [
   // solo traiga una fila.
   http.get(ACTIVIDAD_DETAIL_URL, async ({ params }) => {
     await delay(120)
-    const id = String(params.id)
+    const id = Number(params.id)
     const found = planeadorDb.find((row) => row.id === id)
     if (!found) {
       return HttpResponse.json(
@@ -78,7 +101,7 @@ export const planeadorHandlers = [
   // que `evalCol.getRows` lo desempaquete sin casos especiales.
   http.get(ACTIVIDAD_CALIFICACIONES_URL, async ({ params }) => {
     await delay(120)
-    const id = String(params.id)
+    const id = Number(params.id)
     const actividad = planeadorDb.find((row) => row.id === id)
     if (!actividad) {
       return HttpResponse.json(
@@ -93,18 +116,15 @@ export const planeadorHandlers = [
 
   // Unidades temáticas: mismo par listado/detalle y el mismo sobre, para que
   // el cliente las consuma con `evalCol.getRows` sin casos especiales.
-  http.get(UNIDAD_LIST_URL, async () => {
+  http.get(UNIDAD_LIST_URL, async ({ request }) => {
     await delay(150)
-    return HttpResponse.json({
-      rows: unidadesTematicasDb,
-      pageCount: 1,
-      totalCount: unidadesTematicasDb.length,
-    })
+    const page = paginate(unidadesTematicasDb, new URL(request.url))
+    return HttpResponse.json(page)
   }),
 
   http.get(UNIDAD_DETAIL_URL, async ({ params }) => {
     await delay(120)
-    const id = String(params.id)
+    const id = Number(params.id)
     const found = unidadesTematicasDb.find((row) => row.id === id)
     if (!found) {
       return HttpResponse.json(
@@ -115,12 +135,12 @@ export const planeadorHandlers = [
     return HttpResponse.json({ rows: [found] })
   }),
 
-  // Agregar criterio a la rúbrica de una unidad. El diálogo manda los 5
+  // Agregar criterio a la rúbrica de una unidad. El diálogo manda los
   // campos de texto (sin id); acá se le asigna uno y se empuja al array en
   // memoria de la unidad. 404 si la unidad no existe.
   http.post(UNIDAD_CRITERIO_CREATE_URL, async ({ params, request }) => {
     await delay(250)
-    const id = String(params.id)
+    const id = Number(params.id)
     const body = (await request.json()) as {
       nombre: string
       niveles: NivelDesempenoCriterio[]
@@ -135,21 +155,23 @@ export const planeadorHandlers = [
     return HttpResponse.json({ status: "ok", criterio: created })
   }),
 
-  // Vincula una actividad ya existente a la unidad, con su peso. 404 si la
-  // unidad no existe, 409 si esa actividad ya estaba vinculada (evita el
+  // Vincula una actividad ya existente a la unidad, con su peso. El id de la
+  // actividad viaja en el path (`PUT .../actividades/:actividadId`, no en el
+  // body) — mismo criterio que `fn_unidad_actividad_vincular` real. 404 si
+  // la unidad no existe, 409 si esa actividad ya estaba vinculada (evita el
   // duplicado si el usuario hace doble click en "Vincular").
-  http.post(UNIDAD_ACTIVIDAD_LINK_URL, async ({ params, request }) => {
+  http.put(UNIDAD_ACTIVIDAD_LINK_URL, async ({ params, request }) => {
     await delay(250)
-    const id = String(params.id)
+    const id = Number(params.id)
+    const actividadId = Number(params.actividadId)
     const body = (await request.json()) as {
-      actividadId: string
       nombre: string
       tipo: string
       instrumento: string
       grupo: string
       ponderacion: number
     }
-    const created = addActividadToUnidad(id, body)
+    const created = addActividadToUnidad(id, { ...body, actividadId })
     if (created === null) {
       return HttpResponse.json(
         { status: "error", message: "Unidad temática no encontrada." },
@@ -172,7 +194,8 @@ export const planeadorHandlers = [
   http.post(UNIDAD_CREATE_URL, async ({ request }) => {
     await delay(300)
     const body = (await request.json()) as Omit<UnidadTematica, "id" | "criterios" | "actividades">
-    const created: UnidadTematica = { ...body, id: crypto.randomUUID(), criterios: [], actividades: [] }
+    const id = nextId(unidadesTematicasDb.map((u) => u.id))
+    const created: UnidadTematica = { ...body, id, criterios: [], actividades: [] }
     addUnidad(created)
     return HttpResponse.json(created)
   }),
@@ -181,7 +204,7 @@ export const planeadorHandlers = [
   // criterios/actividades, que se editan aparte). 404 si no existe.
   http.put(UNIDAD_UPDATE_URL, async ({ params, request }) => {
     await delay(250)
-    const id = String(params.id)
+    const id = Number(params.id)
     const body = (await request.json()) as Omit<UnidadTematica, "id" | "criterios" | "actividades">
     const updated = updateUnidadInfoGeneral(id, body)
     if (!updated) {
@@ -193,10 +216,12 @@ export const planeadorHandlers = [
     return HttpResponse.json({ status: "ok", unidad: updated })
   }),
 
-  // Borrado de la unidad. 404 si no existe, igual que el de actividad.
-  http.delete(UNIDAD_DELETE_URL, async ({ params }) => {
+  // Borrado (soft-delete) de la unidad. `PATCH`, no `DELETE` — el motor real
+  // no admite ese verbo (`ck_query_http_method` solo permite GET/POST/PUT/
+  // PATCH). 404 si no existe, igual que el de actividad.
+  http.patch(UNIDAD_DELETE_URL, async ({ params }) => {
     await delay(250)
-    const id = String(params.id)
+    const id = Number(params.id)
     const found = unidadesTematicasDb.find((row) => row.id === id)
     if (!found) {
       return HttpResponse.json<ExportResult>(
@@ -225,18 +250,20 @@ export const planeadorHandlers = [
   http.post(ACTIVIDAD_CREATE_URL, async ({ request }) => {
     await delay(300)
     const body = (await request.json()) as Actividad
-    const created: Actividad = { ...body, id: crypto.randomUUID() }
+    const id = nextId(planeadorDb.map((a) => a.id))
+    const created: Actividad = { ...body, id }
     addActividad(created)
     return HttpResponse.json(created)
   }),
 
-  // Borrado: 404 si la actividad no existe, igual que el GET de detalle.
-  // Ojo con el orden de las rutas: `:id` matchea cualquier string, así que
-  // tiene que ir DESPUÉS de las específicas (`/export/:id`, `/export-all`)
-  // para que MSW no las capture como "actividad con id = 'export-all'".
-  http.delete(ACTIVIDAD_DELETE_URL, async ({ params }) => {
+  // Borrado (soft-delete): `PATCH`, no `DELETE` (ver nota de arriba). 404 si
+  // la actividad no existe, igual que el GET de detalle. Ojo con el orden de
+  // las rutas: `:id` matchea cualquier valor, así que tiene que ir DESPUÉS
+  // de las específicas (`/export/...`, `/export-all`) para que MSW no las
+  // capture como "actividad con id = 'export-all'".
+  http.patch(ACTIVIDAD_DELETE_URL, async ({ params }) => {
     await delay(250)
-    const id = String(params.id)
+    const id = Number(params.id)
     const found = planeadorDb.find((row) => row.id === id)
     if (!found) {
       return HttpResponse.json<ExportResult>(
@@ -254,11 +281,13 @@ export const planeadorHandlers = [
   }),
 
   // Export individual: recibe `{format}` y devuelve el mensaje listo para
-  // tostar. 404 si el id no existe (mismo criterio que delete).
+  // tostar. 404 si el id no existe (mismo criterio que delete). Sin
+  // equivalente en el contrato real (no documentado en las colecciones);
+  // se mantiene bajo el mismo prefijo plural por consistencia.
   http.post(ACTIVIDAD_EXPORT_URL, async ({ params, request }) => {
     await delay(500)
 
-    const id = String(params.id)
+    const id = Number(params.id)
     const found = planeadorDb.find((row) => row.id === id)
     if (!found) {
       return HttpResponse.json<ExportResult>(
@@ -283,7 +312,7 @@ export const planeadorHandlers = [
     await delay(600)
 
     const { filters, format } = (await request.json()) as {
-      filters: { id: string; nombre: string }[]
+      filters: { id: number; nombre: string }[]
       format: ExportFormat
     }
 

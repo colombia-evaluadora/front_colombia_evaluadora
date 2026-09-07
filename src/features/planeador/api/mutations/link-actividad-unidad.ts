@@ -6,8 +6,10 @@ import { unidadDetalleQueryKey } from "@/features/planeador/api/query/use-unidad
 import type { UnidadActividad } from "@/features/planeador/api/types/unidad-tematica"
 
 interface LinkActividadInput {
-  unidadId: string
-  actividad: Omit<UnidadActividad, "id">
+  unidadId: number
+  /** `actividadId` viaja en el path (`PUT .../actividades/:actividadId`),
+   *  no en el body — mismo criterio que `fn_unidad_actividad_vincular` real. */
+  actividad: Omit<UnidadActividad, "id" | "actividadId"> & { actividadId: number }
 }
 
 interface LinkActividadResponse {
@@ -18,9 +20,9 @@ interface LinkActividadResponse {
 
 function linkActividadUnidad({
   unidadId,
-  actividad,
+  actividad: { actividadId, ...body },
 }: LinkActividadInput): Promise<LinkActividadResponse> {
-  return api.post(`/eval-col/planeador/unidad/${unidadId}/actividad`, actividad)
+  return api.put(`/eval-col/planeador/unidades/${unidadId}/actividades/${actividadId}`, body)
 }
 
 interface UseLinkActividadUnidadOptions {

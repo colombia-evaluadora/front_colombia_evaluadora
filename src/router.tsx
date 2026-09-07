@@ -167,6 +167,10 @@ const PlaneadorRecursoPreviewPage = lazyRouteComponent(
   () => import("@/features/planeador/pages/planeador-recurso-preview-page"),
   "PlaneadorRecursoPreviewPage"
 )
+const PlaneadorPlanillaPage = lazyRouteComponent(
+  () => import("@/features/planeador/pages/planeador-planilla-page"),
+  "PlaneadorPlanillaPage"
+)
 
 const MatriculaPage = lazyRouteComponent(
   () => import("@/features/coverage/pages/matricula-page"),
@@ -796,6 +800,15 @@ export const planeadorRecursoPreviewRoute = createRoute({
   component: PlaneadorRecursoPreviewPage,
 })
 
+export const planeadorPlanillaRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.planeadorPlanilla.path,
+  staticData: {
+    breadcrumb: [PLANEADOR_CRUMB, { label: "Planilla de calificación" }],
+  },
+  component: PlaneadorPlanillaPage,
+})
+
 const AsistenciaPage = lazyRouteComponent(
   () => import("@/features/academic-management/asistencia/pages/asistencia-page"),
   "AsistenciaPage",
@@ -901,6 +914,7 @@ const routeTree = rootRoute.addChildren([
     planeadorDetalleRoute,
     planeadorActividadEditarRoute,
     planeadorRecursoPreviewRoute,
+    planeadorPlanillaRoute,
     asistenciaRoute,
     asistenciaSeguimientoRoute,
     asistenciaManualRoute,

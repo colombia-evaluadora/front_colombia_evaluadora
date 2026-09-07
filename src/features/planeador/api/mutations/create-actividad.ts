@@ -7,7 +7,7 @@ import { actividadesQueryKey } from "@/features/planeador/api/query/use-activida
 import type { Actividad } from "@/features/planeador/api/types/actividad"
 
 function createActividad(actividad: Actividad): Promise<Actividad> {
-  return api.post("/eval-col/planeador/actividad", actividad)
+  return api.post("/eval-col/planeador/actividades", actividad)
 }
 
 interface UseCreateActividadOptions {

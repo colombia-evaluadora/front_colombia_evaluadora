@@ -44,7 +44,7 @@ function isDraftVacio(draft: CriterioDraft): boolean {
 }
 
 interface DialogAgregarCriterioProps {
-  unidadId: string
+  unidadId: number
   /** Grado de la unidad (en palabras, "Sexto") — de ahí sale el nivel
    *  educativo con el que se busca la escala de valoración configurada
    *  para nombrar (y contar) los niveles de desempeño (ver

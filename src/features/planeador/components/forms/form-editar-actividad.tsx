@@ -34,6 +34,8 @@ import {
   palabraGradoDesdeNombreCatalogo,
 } from "@/features/planeador/lib/grado-nivel-educativo"
 import { useGradoGrupoCombos } from "@/features/planeador/api/query/use-grado-grupo-combos"
+import { useTipoActividadCatalogQuery } from "@/features/planeador/api/query/use-tipo-actividad-catalog"
+import { useInstrumentoEvaluacionCatalogQuery } from "@/features/planeador/api/query/use-instrumento-evaluacion-catalog"
 import { ListaAgregableField } from "@/features/planeador/components/forms/field-lista-agregable"
 import {
   EyeIcon,
@@ -341,6 +343,9 @@ function IdentificacionSection({
     descripcion: string
   }) => UnidadTematica
 }) {
+  // Catálogo `TIPO_ACTIVIDAD` (`TLISTA_VALOR`) — antes hardcodeado acá mismo.
+  const { data: tiposActividad = [] } = useTipoActividadCatalogQuery()
+
   return (
     <Card className="gap-4 p-4">
       <h3 className="text-base font-semibold">Identificación de la actividad</h3>
@@ -372,13 +377,11 @@ function IdentificacionSection({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Proyecto">Proyecto</SelectItem>
-                  <SelectItem value="Exposición">Exposición</SelectItem>
-                  <SelectItem value="Práctica">Práctica</SelectItem>
-                  <SelectItem value="Ensayo">Ensayo</SelectItem>
-                  <SelectItem value="Debate">Debate</SelectItem>
-                  <SelectItem value="Simulación">Simulación</SelectItem>
-                  <SelectItem value="Otro">Otro</SelectItem>
+                  {tiposActividad.map((tipo) => (
+                    <SelectItem key={tipo} value={tipo}>
+                      {tipo}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </Field>
@@ -416,7 +419,10 @@ function IdentificacionSection({
                     >
                       <FieldLabel htmlFor={field.name}>Unidad temática asociada</FieldLabel>
                       <Select
-                        value={field.state.value.id}
+                        // `Select` siempre trabaja con `value` string — el id real
+                        // es numérico, así que se convierte acá. `0` es el
+                        // sentinel de "sin unidad" (ningún PK real es 0).
+                        value={field.state.value.id === 0 ? "__none__" : String(field.state.value.id)}
                         disabled={!hasGradoGrupo}
                         onValueChange={(value) => {
                           // `__none__` es el placeholder "Seleccione": antes el
@@ -424,15 +430,15 @@ function IdentificacionSection({
                           // return` cortaba en seco, dejando la unidad anterior
                           // pegada —clickear "Seleccione" no hacía nada. Se
                           // maneja aparte para poder vaciar el campo de una.
-                          // Guardamos el id como `"__none__"` (no `""`) para que
-                          // matchee el `value` del `SelectItem` de abajo y el
-                          // tilde de seleccionado se pinte sobre "Seleccione" —
-                          // mismo patrón que el `Select` de "Modalidad".
+                          // Guardamos el id como `0` (sentinel de "sin unidad")
+                          // para que el value de arriba lo vuelva a mostrar como
+                          // "__none__" — mismo patrón que el `Select` de
+                          // "Modalidad".
                           if (value === "__none__") {
-                            field.handleChange({ id: "__none__", nombre: "" })
+                            field.handleChange({ id: 0, nombre: "" })
                             return
                           }
-                          const next = unidadesDelGrado.find((u) => u.id === value)
+                          const next = unidadesDelGrado.find((u) => String(u.id) === value)
                           if (!next) return
                           field.handleChange({ id: next.id, nombre: next.nombre })
                           // Regla de negocio: una unidad de enfoque formativo no
@@ -451,14 +457,14 @@ function IdentificacionSection({
                             placeholder={hasGradoGrupo ? "Seleccione" : "Elegí grado/grupo primero"}
                           >
                             {(value) =>
-                              unidadesDelGrado.find((u) => u.id === value)?.nombre ?? "Seleccione"
+                              unidadesDelGrado.find((u) => String(u.id) === value)?.nombre ?? "Seleccione"
                             }
                           </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="__none__">Seleccione</SelectItem>
                           {unidadesDelGrado.map((u) => (
-                            <SelectItem key={u.id} value={u.id}>
+                            <SelectItem key={u.id} value={String(u.id)}>
                               {u.nombre}
                             </SelectItem>
                           ))}
@@ -621,7 +627,7 @@ function AsignaturaGradoSection({ form }: { form: FormActividad }) {
               // que ya usaba este campo para limpiar Asignatura al
               // cambiar de grado, ahora extendido a Unidad).
               form.setFieldValue("asignatura", "")
-              form.setFieldValue("unidad", { id: "__none__", nombre: "" })
+              form.setFieldValue("unidad", { id: 0, nombre: "" })
             }}
           >
             <SelectTrigger id="grado-grupo">
@@ -1260,6 +1266,10 @@ function EvaluacionSection({
     : nivelId != null &&
       (referenciasResult?.rows ?? []).some((r) => r.pedagogicalApproach?.name === "Formativo")
 
+  // Catálogo `INSTRUMENTO_EVALUACION` (`TLISTA_VALOR`) — antes hardcodeado
+  // acá mismo.
+  const { data: instrumentos = [] } = useInstrumentoEvaluacionCatalogQuery()
+
   return (
     <Card className="gap-4 p-4">
       <h3 className="text-base font-semibold">Evaluación</h3>
@@ -1296,10 +1306,11 @@ function EvaluacionSection({
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Rúbrica">Rúbrica</SelectItem>
-                  <SelectItem value="Lista de cotejo">Lista de cotejo</SelectItem>
-                  <SelectItem value="Escala de valoración">Escala de valoración</SelectItem>
-                  <SelectItem value="Otro">Otro (personalizado)</SelectItem>
+                  {instrumentos.map((instrumento) => (
+                    <SelectItem key={instrumento} value={instrumento}>
+                      {instrumento === "Otro" ? "Otro (personalizado)" : instrumento}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </Field>
@@ -1961,7 +1972,7 @@ function RubricasSection({ form }: { form: FormActividad }) {
           type="button"
           aria-label="Agregar criterio"
           onClick={() => {
-            const rubrica = form.getFieldValue("rubrica") as { id: string; criterios: Criterio[] }
+            const rubrica = form.getFieldValue("rubrica") as { id: number; criterios: Criterio[] }
             form.setFieldValue("rubrica", {
               ...rubrica,
               criterios: [
@@ -1983,7 +1994,7 @@ function RubricasSection({ form }: { form: FormActividad }) {
         {(esEvaluativa) => (
           <form.Field name="rubrica">
             {(field) => {
-              const rubrica = field.state.value as { id: string; criterios: Criterio[] }
+              const rubrica = field.state.value as { id: number; criterios: Criterio[] }
               if (rubrica.criterios.length === 0) {
                 return null
               }
@@ -1996,13 +2007,13 @@ function RubricasSection({ form }: { form: FormActividad }) {
                       index={index}
                       esEvaluativa={esEvaluativa}
                       onChange={(next) => {
-                        const current = field.state.value as { id: string; criterios: Criterio[] }
+                        const current = field.state.value as { id: number; criterios: Criterio[] }
                         const next_criterios = current.criterios.slice()
                         next_criterios[index] = next
                         field.handleChange({ ...current, criterios: next_criterios })
                       }}
                       onRemove={() => {
-                        const current = field.state.value as { id: string; criterios: Criterio[] }
+                        const current = field.state.value as { id: number; criterios: Criterio[] }
                         const next_criterios = current.criterios.slice()
                         next_criterios.splice(index, 1)
                         field.handleChange({ ...current, criterios: next_criterios })
@@ -2765,9 +2776,10 @@ function BulletList({ items }: { items: string[] }) {
   )
 }
 
-/** Id aleatorio estable para items nuevos (recursos/criterios/niveles). */
-function cryptoId() {
-  return Math.random().toString(36).slice(2, 10)
+/** Id numérico aleatorio para items nuevos (recursos/criterios/niveles) que
+ *  todavía no pasaron por el backend — que es quien asigna el PK real. */
+function cryptoId(): number {
+  return Math.floor(Math.random() * 1_000_000_000)
 }
 
 /**

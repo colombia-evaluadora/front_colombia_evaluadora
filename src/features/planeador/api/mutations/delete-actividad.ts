@@ -4,8 +4,9 @@ import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
 import type { ExportResult } from "@/features/planeador/api/types/actividad"
 
-function deleteActividad(id: string): Promise<ExportResult> {
-  return api.delete(`/eval-col/planeador/actividad/${id}`)
+// `PATCH`, no `DELETE` — el motor real no admite ese verbo (soft-delete).
+function deleteActividad(id: number): Promise<ExportResult> {
+  return api.patch(`/eval-col/planeador/actividades/${id}`)
 }
 
 interface UseDeleteActividadOptions {
