@@ -47,6 +47,15 @@ interface SesionTab {
   horasPorBloque: Record<number, { horaInicio: string | null; horaFin: string | null }>
   horaInicio: string | null
   horaFin: string | null
+  /** Grupo de Preescolar: la sesión es `actividad`, no `asignatura` -- ver `registrar`/roster mas abajo. */
+  esFormativa: boolean
+  fkActividad: number | null
+  actividad: string | null
+}
+
+/** Nombre a mostrar en pestaña/encabezado: la actividad si es formativa, la asignatura si no. */
+function nombreSesion(sesion: Pick<SesionTab, "esFormativa" | "actividad" | "asignatura">): string {
+  return sesion.esFormativa ? (sesion.actividad ?? "Actividad") : sesion.asignatura
 }
 
 function formatFechaLarga(fecha: string): string {
@@ -54,22 +63,12 @@ function formatFechaLarga(fecha: string): string {
   return new Date(anio, mes - 1, dia).toLocaleDateString("es-CO", { day: "numeric", month: "long" })
 }
 
-/** "16 febrero (7:00 - 10:00)" del mockup -- sin horas, se queda solo en la fecha. */
 function formatEncabezadoSesion(fecha: string, horaInicio: string | null, horaFin: string | null): string {
   const fechaLabel = formatFechaLarga(fecha)
   if (!horaInicio || !horaFin) return fechaLabel
   return `${fechaLabel} (${formatHora(horaInicio)} - ${formatHora(horaFin)})`
 }
 
-/**
- * Qué mandar como `fkArchivo` para (bloque, estudiante): el upsert de
- * `fn_asistencia_registrar_bulk` sobreescribe FK_SOPORTE_ARCHIVO con lo que
- * llegue en CADA guardado -- si se omitiera sin más, cualquier guardado que
- * no toque el soporte de este estudiante (ej. solo cambió el de otro) lo
- * borraría sin querer. Por eso, si no hay ni archivo nuevo ni eliminación
- * explícita, se re-envía el `fk_soporte_archivo` YA guardado en ese bloque
- * para preservarlo.
- */
 function resolverArchivo(
   bloque: number | null,
   fkMatricula: number,
@@ -162,7 +161,15 @@ function SesionTabContent({ sesion, fecha }: { sesion: SesionTab; fecha: string 
     isError,
     refetch,
   } = useAsistenciaRosterPorBloquesQuery(
-    { GRUPO: sesion.fkGrupo, ASIGNATURA: sesion.fkAsignatura, FECHA: fecha },
+    {
+      GRUPO: sesion.fkGrupo,
+      FECHA: fecha,
+      // Sesión formativa (preescolar): el padrón/registro se identifican por
+      // ACTIVIDAD, no por ASIGNATURA+BLOQUE.
+      ...(sesion.esFormativa
+        ? { ACTIVIDAD: sesion.fkActividad ?? undefined }
+        : { ASIGNATURA: sesion.fkAsignatura }),
+    },
     sesion.bloques,
   )
   const [seleccion, setSeleccion] = React.useState<Record<number, TipoAsistencia>>({})
@@ -349,10 +356,13 @@ function SesionTabContent({ sesion, fecha }: { sesion: SesionTab; fecha: string 
         [...porBloque.entries()].map(([bloque, registros]) =>
           registrar.mutateAsync({
             GRUPO: sesion.fkGrupo,
-            ASIGNATURA: sesion.fkAsignatura,
             FECHA: fecha,
-            BLOQUE: bloque,
             REGISTROS: registros,
+            // Sesión formativa: ACTIVIDAD y sin BLOQUE (no cuelga del
+            // horario) -- sesión normal: ASIGNATURA + BLOQUE de siempre.
+            ...(sesion.esFormativa
+              ? { ACTIVIDAD: sesion.fkActividad ?? undefined }
+              : { ASIGNATURA: sesion.fkAsignatura, BLOQUE: bloque }),
           }),
         ),
       )
@@ -375,7 +385,7 @@ function SesionTabContent({ sesion, fecha }: { sesion: SesionTab; fecha: string 
             {sesion.jornada}
           </span>
           <span className="text-muted-foreground">·</span>
-          <span className="font-medium">{sesion.asignatura}</span>
+          <span className="font-medium">{nombreSesion(sesion)}</span>
         </div>
         <Button
           type="button"
@@ -448,7 +458,9 @@ export function AsistenciaManualPage() {
   const sesionesDelDia: SesionTab[] = React.useMemo(() => {
     const delDia = (sesiones ?? []).filter((s) => s.fecha === fecha)
     return agruparPorBloquesContinuos(delDia).map((b) => ({
-      id: `${b.fkGrupo}-${b.fkAsignatura}-${b.bloque}`,
+      // Una actividad no tiene bloque -- se identifica sola, distinta de
+      // cualquier otra sesión del mismo grupo/asignatura ese día.
+      id: b.esFormativa ? `${b.fkGrupo}-actividad-${b.fkActividad}` : `${b.fkGrupo}-${b.fkAsignatura}-${b.bloque}`,
       fkGrupo: b.fkGrupo,
       grado: b.grado,
       grupo: b.grupo,
@@ -457,6 +469,9 @@ export function AsistenciaManualPage() {
       asignatura: b.asignatura,
       bloque: b.bloque,
       bloques: b.bloques,
+      esFormativa: b.esFormativa,
+      fkActividad: b.fkActividad,
+      actividad: b.actividad,
       horasPorBloque: b.horasPorBloque,
       horaInicio: b.horaInicio,
       horaFin: b.horaFin,
@@ -502,7 +517,7 @@ export function AsistenciaManualPage() {
             <TabsList variant="folder">
               {sesionesDelDia.map((sesion) => (
                 <TabsTrigger key={sesion.id} value={sesion.id}>
-                  {sesion.grado}{sesion.grupo} · {sesion.asignatura}
+                  {sesion.grado}{sesion.grupo} · {nombreSesion(sesion)}
                 </TabsTrigger>
               ))}
             </TabsList>
