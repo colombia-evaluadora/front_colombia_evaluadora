@@ -184,7 +184,7 @@ export function AsistenciaDayCellRectorPopover({ items, children }: AsistenciaDa
               return (
                 <li key={item.id} className="flex items-center gap-2 text-sm">
                   <EstadoIcon className={cn("size-3.5 shrink-0", ESTADO_SESION_COLOR[item.estado])} />
-                  <span className="min-w-0 flex-1 truncate">{item.asignatura}</span>
+                  <span className="min-w-0 flex-1">{item.asignatura}</span>
                   {horaRango && <span className="shrink-0 text-xs text-muted-foreground">{horaRango}</span>}
                 </li>
               )
