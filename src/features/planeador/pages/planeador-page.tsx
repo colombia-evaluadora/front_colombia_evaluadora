@@ -24,7 +24,10 @@ import {
 } from "@/components/ui/icons"
 import { Spinner } from "@/components/ui/spinner"
 
-import { useActividadesQuery } from "@/features/planeador/api/query/use-actividades-query"
+import { useActividadesStatsQuery } from "@/features/planeador/api/query/use-actividades-stats-query"
+import { useActividadesCalendarioQuery } from "@/features/planeador/api/query/use-actividades-calendario-query"
+import { useActividadesMiasQuery } from "@/features/planeador/api/query/use-actividades-mias-query"
+import { useInstrumentoEvaluacionCatalogQuery } from "@/features/planeador/api/query/use-instrumento-evaluacion-catalog"
 import { ActividadCard } from "@/features/planeador/components/actividad-card"
 import { ActividadDetallePanel } from "@/features/planeador/components/actividad-detalle-panel"
 import { DialogExportActividades } from "@/features/planeador/components/dialogs/dialog-export-actividades"
@@ -37,10 +40,21 @@ import { PlaneadorTabs } from "@/features/planeador/components/planeador-tabs"
 import { SearchPlaneador } from "@/features/planeador/components/search/search-planeador"
 import { usePlaneadorFilters } from "@/features/planeador/hooks/use-planeador-filters"
 import { VIEW_OPTIONS } from "@/features/planeador/components/view-options"
+import { statusToEstadoDerivado } from "@/features/planeador/lib/estado-derivado"
+import type { ActividadStatus } from "@/features/planeador/api/types/actividad"
 
 import { planeadorRoute } from "@/router"
 import { paths } from "@/config/paths"
 import { parseLocalDate } from "@/features/planeador/lib/format-date"
+
+/** `yyyy-MM-dd` local — sin pasar por UTC, que corría el día en zonas
+ *  horarias negativas cerca de medianoche. */
+function toDateOnly(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  const day = String(date.getDate()).padStart(2, "0")
+  return `${year}-${month}-${day}`
+}
 
 /**
  * Página principal del Planeador. Layout 2-columnas:
@@ -100,58 +114,60 @@ export function PlaneadorPage() {
     setPanelModeByActividad((prev) => ({ ...prev, [actividadId]: mode }))
   }
 
+  // 3 endpoints reales en vez del hack de traer TODO con `size=500` y
+  // derivar stats/calendario/listado en el cliente (`use-actividades-query`,
+  // ya no se usa acá — ver colección Postman `planeador-pantalla-principal`).
+  const { data: statsCounts } = useActividadesStatsQuery()
+
+  // Catálogo `INSTRUMENTO_EVALUACION` (`TLISTA_VALOR`) para el filtro
+  // "Instrumento" del buscador — reemplaza la lista fija que traía antes.
+  const { data: instrumentoOptions = [] } = useInstrumentoEvaluacionCatalogQuery()
+
+  const mesDesde = React.useMemo(
+    () => toDateOnly(new Date(displayMonth.getFullYear(), displayMonth.getMonth(), 1)),
+    [displayMonth],
+  )
+  const mesHasta = React.useMemo(
+    () => toDateOnly(new Date(displayMonth.getFullYear(), displayMonth.getMonth() + 1, 0)),
+    [displayMonth],
+  )
+  const { data: calendarioActividades = [] } = useActividadesCalendarioQuery({
+    fechaDesde: mesDesde,
+    fechaHasta: mesHasta,
+  })
+
+  // `search`/`estados` ya filtran del lado del servidor — `filtro`
+  // (instrumento) queda armado para la próxima iteración, cuando llegue su
+  // catálogo.
   const {
-    data: actividades = [],
+    data: miasResult,
     isPending,
     isError,
     refetch,
-  } = useActividadesQuery()
+  } = useActividadesMiasQuery({
+    search: buscar || undefined,
+    estados: estado ? statusToEstadoDerivado(estado as ActividadStatus) : undefined,
+    size: 50,
+    offset: 0,
+  })
+  const filtered = miasResult?.rows ?? []
 
-  // Filtrado client-side: texto libre + estado. `filtro` (instrumento) queda
-  // armado para la próxima iteración, cuando llegue su catálogo.
-  const filtered = React.useMemo(() => {
-    const term = buscar.trim().toLowerCase()
-    return actividades.filter((a) => {
-      if (estado && a.status !== estado) return false
-      if (!term) return true
-      return [a.nombre, a.asignatura, a.unidad.nombre, a.tipo, a.grado, a.grupo]
-        .join(" ")
-        .toLowerCase()
-        .includes(term)
-    })
-  }, [actividades, buscar, estado])
-
-  // Map day-of-month → actividades, para las filas de la grilla.
-  // Sólo el día de INICIO y el día de CIERRE pintan fila (mismo criterio
-  // que el mockup) — pintar todo el rango satura la celda y las filas
-  // dejan de ser una pista visual. Un mismo día puede tener varias
-  // actividades, incluso repitiendo código; el recorte visual lo hace la
-  // grilla (muestra 3 y resume el resto), acá se arma la lista completa.
+  // Map day-of-month → actividades, para las filas de la grilla. El
+  // endpoint ya resuelve un solo día de anclaje por actividad (`fecha`,
+  // filtrando por solapamiento con el mes pedido) — no hace falta volver a
+  // filtrar por mes visible ni plotear inicio/cierre a mano acá.
   const events = React.useMemo(() => {
     const map = new Map<number, DayEvent[]>()
-    const isVisible = (d: Date) =>
-      d.getFullYear() === displayMonth.getFullYear() &&
-      d.getMonth() === displayMonth.getMonth()
-    for (const a of filtered) {
-      const start = parseLocalDate(a.fechaInicio)
-      const end = parseLocalDate(a.fechaCierre)
-      if (!start || !end) continue
-      const code = String(a.id).slice(-3) // "601", "602"…
-      for (const d of [start, end]) {
-        if (!isVisible(d)) continue
-        const day = d.getDate()
-        const list = map.get(day) ?? []
-        // Dedup por actividad (id), no por código: dos actividades distintas
-        // pueden compartir código y ambas deben verse. Lo único que se evita
-        // es repetir la misma actividad cuando inicia y cierra el mismo día.
-        if (!list.some((e) => e.id === a.id)) {
-          list.push({ id: a.id, code, label: a.asignatura, status: a.status })
-        }
-        map.set(day, list)
-      }
+    for (const a of calendarioActividades) {
+      const anchor = parseLocalDate(a.fecha)
+      if (!anchor) continue
+      const day = anchor.getDate()
+      const list = map.get(day) ?? []
+      list.push({ id: a.id, code: String(a.id).slice(-3), label: a.label, status: a.status })
+      map.set(day, list)
     }
     return map
-  }, [filtered, displayMonth])
+  }, [calendarioActividades])
 
   return (
     <TableScreen>
@@ -165,6 +181,7 @@ export function PlaneadorPage() {
             filters={filters}
             applyFilters={applyFilters}
             clearAllFilters={clearAllFilters}
+            instrumentoOptions={instrumentoOptions}
           />
 
           {/* Las acciones de la pantalla van junto al buscador, no en el
@@ -229,15 +246,19 @@ export function PlaneadorPage() {
       </TableScreenHeader>
 
       <TableScreenBody>
-        {/* Cards de resumen por estado. Se computan sobre `actividades` (el
-            set completo, no el filtrado), así el conteo no cambia al filtrar
-            el listado de abajo — si filtrara, "Pendientes: 3" caería a
-            "Pendientes: 1" apenas el usuario tipea en el buscador y
-            perdería el sentido de "cuántas tengo en total". El link de
+        {/* Cards de resumen por estado. Salen de `/actividades/stats`, no de
+            contar el listado de abajo — así el conteo no cambia al filtrar
+            ese listado (si contara sobre `filtered`, "Pendientes: 3" caería
+            a "Pendientes: 1" apenas el usuario tipea en el buscador y
+            perdería el sentido de "cuántas tengo en total"). El link de
             cada card setea `?estado=…` en la URL para que el filter bar
             del listado muestre ese estado por defecto. */}
         <div className="mb-6">
-          <PlaneadorSummaryCards actividades={actividades} />
+          <PlaneadorSummaryCards
+            counts={
+              statsCounts ?? { pending: 0, "in-progress": 0, completed: 0, cancelled: 0 }
+            }
+          />
         </div>
 
         {/* La segunda pista va `minmax(0,1fr)` y no `1fr`: `1fr` equivale a
