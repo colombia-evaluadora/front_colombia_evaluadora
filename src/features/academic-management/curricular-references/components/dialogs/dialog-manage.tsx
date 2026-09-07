@@ -117,6 +117,7 @@ export function ManageCurricularReferenceDialog({
   useEffect(() => {
     if (!open) {
       populatedRef.current = false
+      setNotice(null)
       return
     }
     if (populatedRef.current) return
@@ -270,6 +271,7 @@ export function ManageCurricularReferenceDialog({
               pedagogicalApproaches={pedagogicalApproaches}
               evaluationTypes={evaluationTypes}
               errors={fieldErrors}
+              isEditMode={isEditMode}
             />
           </form>
         )}
