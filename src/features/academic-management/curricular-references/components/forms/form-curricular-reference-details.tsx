@@ -11,15 +11,11 @@ import {
 } from "@/components/ui/combobox"
 import { useGeneralAreasQuery } from "@/features/establishment/academic-period/api/query/use-general-areas"
 import { SelectGeneralAreasDialog } from "@/features/academic-management/curricular-references/components/dialogs/dialog-select-general-areas"
+import { SubjectsMultiSelect } from "@/features/establishment/academic-period/components/subjects-multi-select"
 
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 import type { CurricularReferenceDraft } from "@/features/academic-management/curricular-references/api/types/curricular-reference"
 
-// Los `<textarea>` de este formulario van con caja completa (borde en los 4
-// lados), no la línea inferior que usa `Textarea` por defecto — el componente
-// compartido no tiene una variante "outlined" propia (a diferencia de
-// `Input`), así que se sobreescribe acá con las mismas clases que usa
-// `inputVariants({variant:"outlined"})`.
 const TEXTAREA_OUTLINE_CLASS =
   "rounded-md border border-input px-3 py-2 hover:border-ring focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/20 aria-invalid:border-red aria-invalid:focus-visible:border-red aria-invalid:focus-visible:ring-red/20"
 
@@ -40,18 +36,11 @@ export function CurricularReferenceDetailsForm({
   onChange,
   errors = {},
 }: CurricularReferenceDetailsFormProps) {
-  const educationLevelLabels = Object.fromEntries(educationLevels.map((item) => [item.id, item.name]))
   const pedagogicalApproachLabels = Object.fromEntries(
     pedagogicalApproaches.map((item) => [item.id, item.name]),
   )
   const evaluationTypeLabels = Object.fromEntries(evaluationTypes.map((item) => [item.id, item.name]))
 
-  // Catálogo de áreas generales reutilizado de "Área/Asignatura" en Periodos
-  // académicos (`useGeneralAreasQuery`): son las mismas ~300 áreas que se
-  // eligen ahí al dar de alta un área. Con ese volumen, un dropdown con
-  // checkboxes no alcanza — por eso el selector es el mismo diálogo con
-  // buscador y paginación que usa Área/Asignatura, en versión multi-selección
-  // (`SelectGeneralAreasDialog`).
   const { data: generalAreas = [] } = useGeneralAreasQuery()
   const areaById = new Map(generalAreas.map((area) => [area.id, area]))
 
@@ -81,33 +70,24 @@ export function CurricularReferenceDetailsForm({
           orientation="vertical"
           variant="outlined"
           className="w-full"
-          data-invalid={errors["educationLevel"] ? "true" : undefined}
+          data-invalid={errors["educationLevels"] ? "true" : undefined}
         >
           <FieldLabel htmlFor="curricular-reference-education-level">Nivel educativo *</FieldLabel>
-          <ComboboxField
-            items={educationLevelLabels}
-            value={value.educationLevel?.id ?? null}
-            onValueChange={(selectedValue) => {
-              const option = educationLevels.find((item) => item.id === selectedValue)
-              onChange({ ...value, educationLevel: option ?? null })
-            }}
-          >
-            <ComboboxFieldTrigger
-              id="curricular-reference-education-level"
-              size="sm"
-              aria-invalid={Boolean(errors["educationLevel"])}
-            >
-              <ComboboxFieldValue placeholder="Seleccione" />
-            </ComboboxFieldTrigger>
-            <ComboboxFieldContent>
-              {educationLevels.map((item) => (
-                <ComboboxFieldItem key={item.id} value={item.id}>
-                  {item.name}
-                </ComboboxFieldItem>
-              ))}
-            </ComboboxFieldContent>
-          </ComboboxField>
-          <FieldError>{errors["educationLevel"]}</FieldError>
+          <SubjectsMultiSelect
+            id="curricular-reference-education-level"
+            options={educationLevels.map((item) => ({ id: item.id, label: item.name }))}
+            value={value.educationLevels.map((item) => item.id)}
+            onChange={(ids) =>
+              onChange({
+                ...value,
+                educationLevels: ids
+                  .map((id) => educationLevels.find((item) => item.id === id))
+                  .filter((item): item is CatalogItem => item != null),
+              })
+            }
+            placeholder="Seleccione"
+          />
+          <FieldError>{errors["educationLevels"]}</FieldError>
         </Field>
 
         <Field

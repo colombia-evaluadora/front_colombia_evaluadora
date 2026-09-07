@@ -3,14 +3,41 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api-client"
 import { postMultipart } from "@/lib/files"
 
-import type { AsistenciaRegistrarRequest } from "@/features/academic-management/asistencia/api/types/asistencia"
+import type {
+  AsistenciaRegistrarRequest,
+  AsistenciaRegistroManual,
+} from "@/features/academic-management/asistencia/api/types/asistencia"
 
-function registrarAsistencia(body: AsistenciaRegistrarRequest): Promise<number> {
-  const tieneArchivos = body.REGISTROS?.some((r) => r.fkArchivo instanceof File) ?? false
-  if (tieneArchivos) {
-    return postMultipart<number>("/eval-col/asistencias/registrar", body, {})
-  }
-  return api.post<number>("/eval-col/asistencias/registrar", body)
+interface SubirSoporteResponse {
+  pk_tarchivo: number
+}
+
+async function subirSoporte(file: File): Promise<number> {
+  const raw = await postMultipart<{ rows: SubirSoporteResponse[] } | SubirSoporteResponse>(
+    "/eval-col/tmp-icono-simbolo",
+    {},
+    { ICONO: file },
+  )
+  const fila = "rows" in raw ? raw.rows[0] : raw
+  return fila.pk_tarchivo
+}
+
+async function resolverRegistros(
+  registros: AsistenciaRegistroManual[] | undefined,
+): Promise<AsistenciaRegistroManual[] | undefined> {
+  if (!registros?.length) return registros
+  return Promise.all(
+    registros.map(async (registro) =>
+      registro.fkArchivo instanceof File
+        ? { ...registro, fkArchivo: await subirSoporte(registro.fkArchivo) }
+        : registro,
+    ),
+  )
+}
+
+async function registrarAsistencia(body: AsistenciaRegistrarRequest): Promise<number> {
+  const REGISTROS = await resolverRegistros(body.REGISTROS)
+  return api.post<number>("/eval-col/asistencias/registrar", { ...body, REGISTROS })
 }
 
 export function useAsistenciaRegistrarMutation() {

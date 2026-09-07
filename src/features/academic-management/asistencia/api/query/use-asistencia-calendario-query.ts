@@ -7,7 +7,8 @@ import type {
   SesionCalendario,
 } from "@/features/academic-management/asistencia/api/types/asistencia"
 
-interface RawSesionCalendario extends Omit<SesionCalendario, "fk_grupo" | "fk_asignatura" | "grado" | "jornada"> {
+interface RawSesionCalendario
+  extends Omit<SesionCalendario, "fk_grupo" | "fk_asignatura" | "grado" | "grado_nombre" | "jornada" | "jornada_nombre"> {
   fk_grupo?: number
   fk_tgrupo?: number
   fk_asignatura?: number
@@ -25,7 +26,9 @@ function normalizarSesion(raw: RawSesionCalendario): SesionCalendario {
     fk_grupo: raw.fk_grupo ?? raw.fk_tgrupo ?? 0,
     fk_asignatura: raw.fk_asignatura ?? raw.fk_tasignatura ?? 0,
     grado: raw.grado_valor ?? raw.grado ?? "",
+    grado_nombre: raw.grado ?? raw.grado_valor ?? "",
     jornada: raw.jornada_valor ?? raw.jornada ?? "",
+    jornada_nombre: raw.jornada ?? raw.jornada_valor ?? "",
   }
 }
 

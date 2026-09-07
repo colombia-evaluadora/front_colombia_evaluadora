@@ -10,6 +10,11 @@ function level(code: string) {
   return EDUCATION_LEVELS.find((item) => item.code === code) ?? null
 }
 
+function levels(code: string) {
+  const item = level(code)
+  return item ? [item] : []
+}
+
 function approach(code: string) {
   return PEDAGOGICAL_APPROACHES.find((item) => item.code === code) ?? null
 }
@@ -22,7 +27,7 @@ export const curricularReferencesDb: CurricularReference[] = [
   {
     id: 1,
     name: "DBA - Secundaria",
-    educationLevel: level("SECUNDARIA"),
+    educationLevels: levels("SECUNDARIA"),
     description: "Derechos Básicos de Aprendizaje para educación básica secundaria.",
     level1: "Enunciado",
     level2: "Evidencia",
@@ -43,7 +48,7 @@ export const curricularReferencesDb: CurricularReference[] = [
   {
     id: 2,
     name: "DBA - Media",
-    educationLevel: level("MEDIA"),
+    educationLevels: levels("MEDIA"),
     description: "Derechos Básicos de Aprendizaje para educación media.",
     level1: "Enunciado",
     level2: "Evidencia",
@@ -60,7 +65,7 @@ export const curricularReferencesDb: CurricularReference[] = [
   {
     id: 3,
     name: "Propósitos e Imprescindibles - Educación Inicial",
-    educationLevel: level("PREESCOLAR"),
+    educationLevels: levels("PREESCOLAR"),
     description: "Propósitos de la educación inicial y sus imprescindibles.",
     level1: "Propósito",
     level2: "Imprescindible",
@@ -102,7 +107,7 @@ curricularReferencesDb.push(
     return {
       id: 4 + index,
       name,
-      educationLevel: level(EXTRA_LEVEL_CODES[index % EXTRA_LEVEL_CODES.length]),
+      educationLevels: levels(EXTRA_LEVEL_CODES[index % EXTRA_LEVEL_CODES.length]),
       description: `Referente curricular de ejemplo: ${name.toLowerCase()}.`,
       level1: "Enunciado",
       level2: "Evidencia",

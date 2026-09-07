@@ -13,7 +13,6 @@ export type AsistenciaManualSearch = z.infer<typeof asistenciaManualSearchSchema
 
 
 export const asistenciaSeguimientoSearchSchema = z.object({
-  fecha: z.string().optional(),
   sede: z.coerce.number().optional(),
 })
 export type AsistenciaSeguimientoSearch = z.infer<typeof asistenciaSeguimientoSearchSchema>

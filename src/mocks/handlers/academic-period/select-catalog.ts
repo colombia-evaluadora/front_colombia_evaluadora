@@ -121,6 +121,16 @@ const CATALOGS_BY_CATEGORIA: Record<string, () => SelectCategoryRow[]> = {
       valor: nombre,
       accion: null,
     })),
+  // Catálogo de asistencias -- el valor 4 no existe (ver Postman de
+  // `SSO - Asistencias`).
+  TIPO_ASISTENCIA: () =>
+    [
+      { valor: 1, nombre: "Asistió" },
+      { valor: 2, nombre: "No asistió" },
+      { valor: 3, nombre: "No asistió (justificado)" },
+      { valor: 5, nombre: "Llegó tarde" },
+      { valor: 6, nombre: "Llegó tarde (justificado)" },
+    ].map((opt, i) => ({ pk_lista_valor: i + 1, nombre: opt.nombre, valor: String(opt.valor), accion: null })),
 }
 
 export const selectCatalogHandlers = [
