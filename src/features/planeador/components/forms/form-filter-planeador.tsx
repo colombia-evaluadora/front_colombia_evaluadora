@@ -17,10 +17,7 @@ import {
   type PlaneadorFiltersFormValues,
 } from "@/features/planeador/api/schema"
 import { ESTADO_OPTIONS } from "@/features/planeador/api/ui-mappings"
-import {
-  INSTRUMENTO_OPTIONS,
-  VIEW_OPTIONS,
-} from "@/features/planeador/components/view-options"
+import { VIEW_OPTIONS } from "@/features/planeador/components/view-options"
 
 /** Valor de la opción "Todos": el filtro vacío. */
 const ALL_VALUE = ""
@@ -29,6 +26,11 @@ interface FilterPlaneadorFormProps {
   id: string
   defaultValues: PlaneadorFiltersFormInput
   onSubmit: (values: PlaneadorFiltersFormValues) => void
+  // Catálogo `INSTRUMENTO_EVALUACION` (`TLISTA_VALOR`) — nombre y valor son
+  // el mismo string, ver `use-instrumento-evaluacion-catalog.ts`. Opcional:
+  // la pestaña "Unidad temática" comparte este form pero no tiene
+  // instrumento que filtrar.
+  instrumentoOptions?: string[]
 }
 
 /**
@@ -44,6 +46,7 @@ export function FilterPlaneadorForm({
   id,
   defaultValues,
   onSubmit,
+  instrumentoOptions = [],
 }: FilterPlaneadorFormProps) {
   const form = useForm({
     defaultValues,
@@ -56,8 +59,8 @@ export function FilterPlaneadorForm({
     [],
   )
   const instrumentoItems = useMemo<Record<string, string>>(
-    () => Object.fromEntries(INSTRUMENTO_OPTIONS.map((o) => [o.value, o.label])),
-    [],
+    () => Object.fromEntries(instrumentoOptions.map((nombre) => [nombre, nombre])),
+    [instrumentoOptions],
   )
   const vistaItems = useMemo<Record<string, string>>(
     () => Object.fromEntries(VIEW_OPTIONS.map((o) => [o.value, o.label])),
@@ -143,9 +146,9 @@ export function FilterPlaneadorForm({
                 <ComboboxFieldContent>
                   <ComboboxGroup>
                     <ComboboxFieldItem value={ALL_VALUE}>Todos</ComboboxFieldItem>
-                    {INSTRUMENTO_OPTIONS.map((option) => (
-                      <ComboboxFieldItem key={option.value} value={option.value}>
-                        {option.label}
+                    {instrumentoOptions.map((nombre) => (
+                      <ComboboxFieldItem key={nombre} value={nombre}>
+                        {nombre}
                       </ComboboxFieldItem>
                     ))}
                   </ComboboxGroup>

@@ -10,10 +10,8 @@ import {
 import { cn } from "@/lib/utils"
 import { Link } from "@tanstack/react-router"
 
-import type {
-  Actividad,
-  ActividadStatus,
-} from "@/features/planeador/api/types/actividad"
+import type { ActividadStatus } from "@/features/planeador/api/types/actividad"
+import type { ActividadesStatsCounts } from "@/features/planeador/api/query/use-actividades-stats-query"
 import { STATUS_BADGE } from "@/features/planeador/api/ui-mappings"
 import { planeadorRoute } from "@/router"
 
@@ -74,11 +72,12 @@ const ACCENT_BG: Record<SummaryCard["accent"], string> = {
 }
 
 interface PlaneadorSummaryCardsProps {
-  /** Lista completa (no filtrada): los contadores son siempre sobre el
-   * universo, no sobre lo que el usuario ya recortó con el buscador — si
-   * no, al filtrar "Pendientes" el contador caería a la cantidad
-   * filtrada y perdería el sentido de "cuántas tengo en total". */
-  actividades: Actividad[]
+  /** Contadores del docente autenticado (`GET /planeador/actividades/stats`
+   * — resuelve el universo completo del lado del backend, no algo que el
+   * front deba derivar contando filas): si no, al filtrar "Pendientes" en
+   * el listado el contador caería a la cantidad filtrada y perdería el
+   * sentido de "cuántas tengo en total". */
+  counts: ActividadesStatsCounts
 }
 
 /**
@@ -87,20 +86,7 @@ interface PlaneadorSummaryCardsProps {
  * para que abra el listado ya filtrado (el filter bar del listado lee
  * `estado` del search).
  */
-export function PlaneadorSummaryCards({ actividades }: PlaneadorSummaryCardsProps) {
-  const counts = React.useMemo(() => {
-    const acc: Record<ActividadStatus, number> = {
-      pending: 0,
-      "in-progress": 0,
-      completed: 0,
-      cancelled: 0,
-    }
-    for (const a of actividades) {
-      acc[a.status] += 1
-    }
-    return acc
-  }, [actividades])
-
+export function PlaneadorSummaryCards({ counts }: PlaneadorSummaryCardsProps) {
   return (
     <ul
       aria-label="Resumen por estado"
