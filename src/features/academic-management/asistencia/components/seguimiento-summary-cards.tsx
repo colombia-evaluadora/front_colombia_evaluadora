@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils"
 
 interface SeguimientoSummaryCardsProps {
   totalEstudiantes: number | undefined
+  asistieron: number | undefined
   ausentes: number | undefined
   tarde: number | undefined
 }
@@ -11,10 +12,10 @@ interface SeguimientoSummaryCardsProps {
 const numberFormatter = new Intl.NumberFormat("es-CO")
 const percentFormatter = new Intl.NumberFormat("es-CO", { maximumFractionDigits: 1 })
 
-export function SeguimientoSummaryCards({ totalEstudiantes, ausentes, tarde }: SeguimientoSummaryCardsProps) {
+export function SeguimientoSummaryCards({ totalEstudiantes, asistieron, ausentes, tarde }: SeguimientoSummaryCardsProps) {
   const loaded = totalEstudiantes != null && ausentes != null
+  const asistieronLoaded = loaded && asistieron != null
   const tardeLoaded = loaded && tarde != null
-  const asistieron = loaded ? totalEstudiantes - ausentes - (tarde ?? 0) : 0
   const pct = (n: number) => (loaded && totalEstudiantes > 0 ? (n / totalEstudiantes) * 100 : 0)
 
   const cards = [
@@ -33,8 +34,8 @@ export function SeguimientoSummaryCards({ totalEstudiantes, ausentes, tarde }: S
       iconBg: "bg-green",
       cardBg: "bg-green-22",
       label: "Asistieron",
-      value: loaded ? numberFormatter.format(asistieron) : null,
-      description: loaded ? `${percentFormatter.format(pct(asistieron))}% del grupo` : null,
+      value: asistieronLoaded ? numberFormatter.format(asistieron) : null,
+      description: asistieronLoaded ? `${percentFormatter.format(pct(asistieron))}% del grupo` : null,
     },
     {
       key: "ausentes",

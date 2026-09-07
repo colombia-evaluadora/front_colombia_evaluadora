@@ -17,10 +17,18 @@ const GRUPOS = [
   { fk_grupo: 801, grupo: "801", grado: "8", gradoNombre: "Octavo", jornada: "T", jornadaNombre: "Tarde" },
 ]
 
+const GRUPO_PREESCOLAR = { fk_grupo: 101, grupo: "PJ", grado: "PJ", gradoNombre: "Pre-Jardín", jornada: "M", jornadaNombre: "Mañana" }
+
 const ASIGNATURAS = [
   { fk_asignatura: 1, asignatura: "Cognitiva" },
   { fk_asignatura: 2, asignatura: "Matemáticas" },
   { fk_asignatura: 3, asignatura: "Lenguaje" },
+]
+
+const ACTIVIDADES = [
+  { fk_tactividad: 900, actividad: "Proyecto: Los animales" },
+  { fk_tactividad: 901, actividad: "Proyecto: El cuerpo humano" },
+  { fk_tactividad: 902, actividad: "Proyecto: Mi familia" },
 ]
 
 const HORAS_BLOQUE = 1.5
@@ -90,6 +98,9 @@ export function generarSesionesMes(sedeId: number, anio: number, mes: number): S
           jornada_nombre: grupo.jornadaNombre,
           fk_asignatura: asignatura.fk_asignatura,
           asignatura: asignatura.asignatura,
+          es_formativa: false,
+          fk_tactividad: null,
+          actividad: null,
           hora_inicio: horaBloque(fechaIso, bloque, 0),
           hora_fin: horaBloque(fechaIso, bloque, HORAS_BLOQUE),
           estado_sesion: registrada ? "REGISTRADA" : estadoDeSesion(fecha, hoy),
@@ -100,6 +111,44 @@ export function generarSesionesMes(sedeId: number, anio: number, mes: number): S
           horas: HORAS_BLOQUE,
         })
       }
+    }
+
+    // Preescolar: UNA actividad por día (sin bloque, sin THORARIO) -- mismo
+    // sentinel de bloque (0) que usa `registrarAsistenciaManual` más abajo
+    // para las sesiones formativas.
+    {
+      const grupo = GRUPO_PREESCOLAR
+      const actividad = ACTIVIDADES[(dia + grupo.fk_grupo) % ACTIVIDADES.length]
+      const totalEstudiantes = 15 + ((dia + grupo.fk_grupo + sedeId) % 4)
+      const ausentes = dia % 4
+      const tarde = dia % 2
+      const aTiempo = Math.max(0, totalEstudiantes - ausentes - tarde)
+      const fechaIso = `${anio}-${String(mes).padStart(2, "0")}-${String(dia).padStart(2, "0")}`
+      const registrada = sesionesRegistradas.has(claveSesion(grupo.fk_grupo, actividad.fk_tactividad, fechaIso, 0))
+
+      sesiones.push({
+        fecha: fechaIso,
+        bloque: null,
+        fk_grupo: grupo.fk_grupo,
+        grupo: grupo.grupo,
+        grado: grupo.grado,
+        grado_nombre: grupo.gradoNombre,
+        jornada: grupo.jornada,
+        jornada_nombre: grupo.jornadaNombre,
+        fk_asignatura: ASIGNATURAS[0].fk_asignatura,
+        asignatura: ASIGNATURAS[0].asignatura,
+        es_formativa: true,
+        fk_tactividad: actividad.fk_tactividad,
+        actividad: actividad.actividad,
+        hora_inicio: null,
+        hora_fin: null,
+        estado_sesion: registrada ? "REGISTRADA" : estadoDeSesion(fecha, hoy),
+        total_estudiantes: totalEstudiantes,
+        a_tiempo: aTiempo,
+        tarde,
+        ausentes,
+        horas: 0,
+      })
     }
   }
 
@@ -226,9 +275,54 @@ function generarTodosLosRegistros(sedeId: number): AsistenciaQueryRow[] {
         tiene_soporte: tieneSoporte,
         fk_soporte_archivo: tieneSoporte ? pk : null,
         soporte_nombre: tieneSoporte ? ARCHIVOS_SOPORTE[(i + j) % ARCHIVOS_SOPORTE.length] : null,
+        es_formativa: false,
+        fk_tactividad: null,
+        actividad: null,
         // Ventanas (total_estudiantes/ausentes/tarde/total_count) las
         // calcula el handler sobre el set YA filtrado -- acá quedan en 0
         // como placeholder.
+        total_estudiantes: 0,
+        ausentes: 0,
+        tarde: 0,
+        total_count: 0,
+      })
+    })
+  })
+
+  // Preescolar (formativo): mismos estudiantes, pero la sesión es una
+  // ACTIVIDAD -- `asignatura` queda vacía (`FK_TASIGNATURA` es `NULL` en el
+  // registro real) y filtrar por ella no debe encontrar estas filas.
+  ESTUDIANTES.forEach((estudiante, i) => {
+    const actividad = ACTIVIDADES[i % ACTIVIDADES.length]
+    const patron: TipoAsistencia[] = [1, 1, i % 3 === 0 ? 2 : 1]
+    const anio = new Date().getFullYear()
+    const mes = new Date().getMonth() + 1
+
+    patron.forEach((tipoValor, j) => {
+      const dia = 1 + ((i * 2 + j * 3) % 27)
+      const observacionesPosibles = OBSERVACIONES[tipoValor]
+      const observacion = observacionesPosibles ? observacionesPosibles[(i + j) % observacionesPosibles.length] : null
+
+      registros.push({
+        pk_tasistencia: pk++,
+        estudiante: estudiante.nombre,
+        documento: estudiante.documento,
+        grupo: GRUPO_PREESCOLAR.grupo,
+        jornada: GRUPO_PREESCOLAR.jornada,
+        asignatura: "",
+        fecha: `${anio}-${String(mes).padStart(2, "0")}-${String(dia).padStart(2, "0")}`,
+        bloque: null,
+        hora_inicio: null,
+        hora_fin: null,
+        tipo_asistencia_valor: tipoValor,
+        tipo_asistencia: TIPO_ASISTENCIA_NOMBRE[tipoValor],
+        observacion,
+        tiene_soporte: false,
+        fk_soporte_archivo: null,
+        soporte_nombre: null,
+        es_formativa: true,
+        fk_tactividad: actividad.fk_tactividad,
+        actividad: actividad.actividad,
         total_estudiantes: 0,
         ausentes: 0,
         tarde: 0,
@@ -268,12 +362,15 @@ export function generarSeguimiento(
   if (filters.FECHA_DESDE) rows = rows.filter((r) => r.fecha >= filters.FECHA_DESDE!)
   if (filters.FECHA_HASTA) rows = rows.filter((r) => r.fecha <= filters.FECHA_HASTA!)
   if (filters.GRUPO != null) {
-    rows = rows.filter((r) => GRUPOS.find((g) => g.grupo === r.grupo)?.fk_grupo === filters.GRUPO)
+    rows = rows.filter((r) => [...GRUPOS, GRUPO_PREESCOLAR].find((g) => g.grupo === r.grupo)?.fk_grupo === filters.GRUPO)
   }
   if (filters.ASIGNATURA != null) {
     rows = rows.filter(
-      (r) => ASIGNATURAS.find((a) => a.asignatura === r.asignatura)?.fk_asignatura === filters.ASIGNATURA,
+      (r) => !r.es_formativa && ASIGNATURAS.find((a) => a.asignatura === r.asignatura)?.fk_asignatura === filters.ASIGNATURA,
     )
+  }
+  if (filters.ACTIVIDAD != null) {
+    rows = rows.filter((r) => r.es_formativa && r.fk_tactividad === filters.ACTIVIDAD)
   }
   if (filters.TIPO_ASISTENCIA != null) {
     rows = rows.filter((r) => r.tipo_asistencia_valor === filters.TIPO_ASISTENCIA)
@@ -285,7 +382,8 @@ export function generarSeguimiento(
         normaliza(r.estudiante).includes(needle) ||
         r.documento.includes(needle) ||
         normaliza(r.grupo).includes(needle) ||
-        normaliza(r.asignatura).includes(needle),
+        normaliza(r.asignatura).includes(needle) ||
+        (r.actividad != null && normaliza(r.actividad).includes(needle)),
     )
   }
 
@@ -353,15 +451,19 @@ function claveRegistroManual(fkMatricula: number, fkGrupo: number, fkAsignatura:
 }
 
 export function generarEstudiantesSesion(params: AsistenciaSesionEstudiantesParams): RosterEstudiante[] {
-  const bloque = params.BLOQUE ?? 1
+  // El mock no distingue asignatura de actividad como identidades separadas
+  // -- alcanza con una clave numérica estable por sesión (BLOQUE default 1
+  // para asignatura; sin BLOQUE para actividad, como en el back real).
+  const identidad = params.ASIGNATURA ?? params.ACTIVIDAD ?? 0
+  const bloque = params.ASIGNATURA != null ? (params.BLOQUE ?? 1) : 0
   const base = padronBaseGrupo(params.GRUPO)
   const registrados = base.filter((est) =>
-    registrosManuales.has(claveRegistroManual(est.fkMatricula, params.GRUPO, params.ASIGNATURA, params.FECHA, bloque)),
+    registrosManuales.has(claveRegistroManual(est.fkMatricula, params.GRUPO, identidad, params.FECHA, bloque)),
   ).length
 
   return base.map((est) => {
     const registro = registrosManuales.get(
-      claveRegistroManual(est.fkMatricula, params.GRUPO, params.ASIGNATURA, params.FECHA, bloque),
+      claveRegistroManual(est.fkMatricula, params.GRUPO, identidad, params.FECHA, bloque),
     )
     return {
       fk_tmatricula: est.fkMatricula,
@@ -385,11 +487,12 @@ export function generarEstudiantesSesion(params: AsistenciaSesionEstudiantesPara
 
 /** POST /asistencias/registrar -- persiste `MARCAR_TODOS`/`REGISTROS` en `registrosManuales` y marca la sesión. */
 export function registrarAsistenciaManual(body: AsistenciaRegistrarRequest): number {
-  const bloque = body.BLOQUE ?? 1
-  marcarSesionRegistrada(body.GRUPO, body.ASIGNATURA, body.FECHA, bloque)
+  const identidad = body.ASIGNATURA ?? body.ACTIVIDAD ?? 0
+  const bloque = body.ASIGNATURA != null ? (body.BLOQUE ?? 1) : 0
+  marcarSesionRegistrada(body.GRUPO, identidad, body.FECHA, bloque)
 
   function guardar(fkMatricula: number, tipo: TipoAsistencia, observacion?: string | null, fkArchivo?: unknown) {
-    const key = claveRegistroManual(fkMatricula, body.GRUPO, body.ASIGNATURA, body.FECHA, bloque)
+    const key = claveRegistroManual(fkMatricula, body.GRUPO, identidad, body.FECHA, bloque)
     const existente = registrosManuales.get(key)
     const tieneArchivoNuevo = fkArchivo != null
     registrosManuales.set(key, {

@@ -70,13 +70,21 @@ function SeguimientoTable({ sede }: { sede: number }) {
     grupos: grupoCatalog,
     asignaturas: asignaturaCatalog,
     asignaturasPorGrupo,
+    actividades: actividadCatalog,
+    actividadesPorGrupo,
     jornadas: jornadaOptions,
   } = React.useMemo(() => catalogosDeSesiones(sesionesDelMes ?? []), [sesionesDelMes])
   const { data: tipoAsistenciaOptions = [] } = useTipoAsistenciaCatalogQuery()
 
 
   const hasFilter = Boolean(
-    search || filters.grupo || filters.asignatura || filters.tipoAsistencia || filters.fechaDesde || filters.fechaHasta,
+    search ||
+      filters.grupo ||
+      filters.asignatura ||
+      filters.actividad ||
+      filters.tipoAsistencia ||
+      filters.fechaDesde ||
+      filters.fechaHasta,
   )
 
   const [primary] = sorting
@@ -88,6 +96,7 @@ function SeguimientoTable({ sede }: { sede: number }) {
         SEARCH: search || null,
         GRUPO: filters.grupo ? Number(filters.grupo) : null,
         ASIGNATURA: filters.asignatura ? Number(filters.asignatura) : null,
+        ACTIVIDAD: filters.actividad ? Number(filters.actividad) : null,
         TIPO_ASISTENCIA: filters.tipoAsistencia ? (Number(filters.tipoAsistencia) as TipoAsistencia) : null,
       },
       SORTING: { ID: primary?.id ?? null, DESC: primary ? primary.desc : null },
@@ -109,6 +118,9 @@ function SeguimientoTable({ sede }: { sede: number }) {
           rows.filter((r) => r.tipo_asistencia_valor === 5 || r.tipo_asistencia_valor === 6).map((r) => r.documento),
         ).size
       : undefined)
+  const asistieron = data
+    ? new Set(rows.filter((r) => r.tipo_asistencia_valor === 1).map((r) => r.documento)).size
+    : undefined
   const pageCount = Math.max(1, Math.ceil(totalCount / pageSize))
 
   const { table } = useDataTable({
@@ -147,6 +159,8 @@ function SeguimientoTable({ sede }: { sede: number }) {
           grupoCatalog={grupoCatalog}
           asignaturaCatalog={asignaturaCatalog}
           asignaturasPorGrupo={asignaturasPorGrupo}
+          actividadCatalog={actividadCatalog}
+          actividadesPorGrupo={actividadesPorGrupo}
           tipoAsistenciaOptions={tipoAsistenciaOptions}
         />
 
@@ -165,7 +179,12 @@ function SeguimientoTable({ sede }: { sede: number }) {
       {hasFilter ? (
         <>
           <div className="mb-4">
-            <SeguimientoSummaryCards totalEstudiantes={totalEstudiantes} ausentes={ausentes} tarde={tarde} />
+            <SeguimientoSummaryCards
+              totalEstudiantes={totalEstudiantes}
+              asistieron={asistieron}
+              ausentes={ausentes}
+              tarde={tarde}
+            />
           </div>
 
           <DataTable

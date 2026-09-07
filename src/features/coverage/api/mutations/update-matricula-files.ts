@@ -17,10 +17,9 @@ export interface UpdateMatriculaFilesInput {
   previousYearCertificate?: File | null
   medicalCertificate?: File | null
   studentPhoto?: File | null
-  /** Solo bajas -- agregar archivos nuevos a "Otros documentos relevantes"
-   * desde el editar queda pendiente: requeriría un `fkTarchivo` ya
-   * existente y no hay endpoint de "solo subir" documentado para minarlo
-   * antes de referenciarlo acá (ver conversación). */
+  deleteMedicalCertificate?: boolean
+  deleteStudentPhoto?: boolean
+  otrosDocumentosANuevos: File[]
   otrosDocumentosARemover: number[]
 }
 
@@ -39,6 +38,9 @@ async function updateMatriculaFiles({
   previousYearCertificate,
   medicalCertificate,
   studentPhoto,
+  deleteMedicalCertificate,
+  deleteStudentPhoto,
+  otrosDocumentosANuevos,
   otrosDocumentosARemover,
 }: UpdateMatriculaFilesInput): Promise<MatriculaMutationResult> {
   const otrosDocumentosRelevantes: OtroDocumentoRelevanteOperation[] = otrosDocumentosARemover.map(
@@ -54,8 +56,8 @@ async function updateMatriculaFiles({
     actualizarSocioeconomico: false,
     tocarDocumentoIdentidad: Boolean(studentIdDocument),
     tocarCertificadoEstudios: Boolean(previousYearCertificate),
-    tocarCertificadoMedico: Boolean(medicalCertificate),
-    tocarFoto: Boolean(studentPhoto),
+    tocarCertificadoMedico: Boolean(medicalCertificate) || Boolean(deleteMedicalCertificate),
+    tocarFoto: Boolean(studentPhoto) || Boolean(deleteStudentPhoto),
     otrosDocumentosRelevantes,
   })
 
@@ -64,6 +66,7 @@ async function updateMatriculaFiles({
     CERTIFICADO_DE_ESTUDIOS_DEL_ANO_ANTERIOR: previousYearCertificate ?? null,
     CERTIFICADO_MEDICO_DEL_ESTUDIANTE: medicalCertificate ?? null,
     FOTO_DEL_ESTUDIANTE: studentPhoto ?? null,
+    OTROS_DOCUMENTOS_RELEVANTES: otrosDocumentosANuevos,
   })
 
   return { status: "ok", message: "Archivos actualizados correctamente.", matricula: null }
