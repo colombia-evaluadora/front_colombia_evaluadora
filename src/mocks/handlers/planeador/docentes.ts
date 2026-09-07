@@ -1,6 +1,7 @@
 import { http, HttpResponse, delay } from "msw"
 
 import { planeadorDb } from "@/mocks/db/planeador"
+import { evaluationPeriodsDb } from "@/mocks/db/academic-period/evaluation-periods"
 
 /**
  * Mocks de `GET /planeador/docentes/grupos` y
@@ -20,7 +21,7 @@ import { planeadorDb } from "@/mocks/db/planeador"
  * acá mismo garantiza que toda combinación que aparece en el filtro tiene
  * al menos una actividad real detrás.
  */
-function hashString(value: string): number {
+export function hashString(value: string): number {
   let hash = 0
   for (let i = 0; i < value.length; i++) {
     hash = (hash * 31 + value.charCodeAt(i)) | 0
@@ -94,6 +95,34 @@ export const planeadorDocentesHandlers = [
         asignatura_nombre: actividad.asignatura,
       })
     }
+    return HttpResponse.json({ rows })
+  }),
+
+  // `GET /planeador/periodos-evaluacion` — reemplaza a `POST
+  // /periodo-evaluacion/query` como fuente del cuarto paso del filtro de la
+  // Planilla: ese endpoint genérico responde 403 para `CEVAL-DOCENTE`
+  // (confirmado en vivo), este es accesible al docente. Shape confirmado
+  // contra la respuesta real — ya trae `vigente_hoy` calculado, así que acá
+  // se deriva de las mismas fechas de `evaluationPeriodsDb` en vez de
+  // hardcodear `true`.
+  http.get("/api/eval-col/planeador/periodos-evaluacion", async () => {
+    await delay(150)
+    const hoy = new Date().toISOString().slice(0, 10)
+    const rows = evaluationPeriodsDb.map((periodo) => ({
+      pk_tperiodo_evaluacion: periodo.id,
+      codigo: periodo.codigo,
+      nombre: periodo.nombre,
+      abreviacion: periodo.abreviacion,
+      fecha_inicio: periodo.startDate,
+      fecha_fin: periodo.endDate,
+      porcentaje: periodo.peso,
+      vigente_hoy: periodo.startDate <= hoy && hoy <= periodo.endDate,
+      fk_tlv_estado: periodo.estadoId ?? 0,
+      estado_valor: periodo.estado,
+      estado_nombre: periodo.estadoName ?? "",
+      fk_tperiodo_academico: periodo.academicPeriodId,
+      periodo_academico: "",
+    }))
     return HttpResponse.json({ rows })
   }),
 ]

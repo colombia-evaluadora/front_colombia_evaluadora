@@ -7,14 +7,14 @@ import { cn } from "@/lib/utils"
 
 import { useDocenteGruposQuery } from "@/features/planeador/api/query/use-docente-grupos-query"
 import { useDocenteGradoAsignaturaQuery } from "@/features/planeador/api/query/use-docente-grado-asignatura-query"
-import { useEvaluationPeriodsQuery } from "@/features/establishment/academic-period/api/query/use-evaluation-periods"
+import { usePlaneadorPeriodosEvaluacionQuery } from "@/features/planeador/api/query/use-planeador-periodos-evaluacion-query"
 import type { EvaluationPeriod } from "@/features/establishment/academic-period/api/types/evaluation-period"
 import { formatDate } from "@/features/planeador/lib/format-date"
 
-/** Hoy cae dentro de `[startDate, endDate]` — comparación lexicográfica
- *  válida porque las dos son `yyyy-MM-dd` (ISO, mismo largo). */
-function esVigente(periodo: EvaluationPeriod, hoy: string): boolean {
-  return periodo.startDate <= hoy && hoy <= periodo.endDate
+/** `grupo_codigo` viene `null` en los datos reales — `grupo_nombre` ("01",
+ *  "302", …) es el que sí trae valor, así que se prioriza acá. */
+function grupoLabel(grupo: { grupoCodigo: string; grupoNombre: string }): string {
+  return grupo.grupoCodigo || grupo.grupoNombre
 }
 
 export interface FiltroPlanillaValue {
@@ -62,17 +62,9 @@ export function FiltroPlanillaCascada({ value, onChange }: FiltroPlanillaCascada
 
   const { data: docenteGrupos = [] } = useDocenteGruposQuery()
   const { data: docenteGradoAsignatura = [] } = useDocenteGradoAsignaturaQuery()
-  const { data: periodosResult } = useEvaluationPeriodsQuery({
-    filters: {},
-    sorting: [],
-    pageIndex: 0,
-    pageSize: 100,
-  })
-  const hoy = useMemo(() => new Date().toISOString().slice(0, 10), [])
-  const periodosVigentes = useMemo(
-    () => (periodosResult?.rows ?? []).filter((periodo) => esVigente(periodo, hoy)),
-    [periodosResult, hoy],
-  )
+  // El backend ya filtra por vigencia (`vigente_hoy`) — no hace falta
+  // repetir la comparación de fechas acá.
+  const { data: periodosVigentes = [] } = usePlaneadorPeriodosEvaluacionQuery()
 
   // La columna Grado sale de `docentes/grado-asignatura` (grado↔asignatura
   // que dicta el docente), no de `docentes/grupos`: son dos universos
@@ -131,7 +123,10 @@ export function FiltroPlanillaCascada({ value, onChange }: FiltroPlanillaCascada
       gradoId: grado.id,
       gradoNombre: grado.nombre,
       grupoId: grupo.grupoId,
-      grupoCodigo: grupo.grupoCodigo,
+      // `grupo_codigo` viene `null` en los datos reales (confirmado contra
+      // el backend) — `grupo_nombre` es el que sí trae valor ("01", "302",
+      // …), así que se prioriza acá en vez de mostrar un código vacío.
+      grupoCodigo: grupoLabel(grupo),
       asignaturaId: asignatura.asignaturaId,
       asignaturaNombre: asignatura.asignaturaNombre,
       periodoEvaluacion: periodo,
@@ -178,7 +173,7 @@ export function FiltroPlanillaCascada({ value, onChange }: FiltroPlanillaCascada
 
         {gradoIdDraft != null && (
           <FiltroColumna
-            items={grupos.map((grupo) => ({ key: grupo.grupoId, label: grupo.grupoCodigo }))}
+            items={grupos.map((grupo) => ({ key: grupo.grupoId, label: grupoLabel(grupo) }))}
             selectedKey={grupoIdDraft}
             onSelect={elegirGrupo}
           />

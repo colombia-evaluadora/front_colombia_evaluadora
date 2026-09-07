@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react"
 import { Link } from "@tanstack/react-router"
-import { useQueries } from "@tanstack/react-query"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -32,159 +31,97 @@ import {
   FiltroPlanillaCascada,
   type FiltroPlanillaValue,
 } from "@/features/planeador/components/forms/filtro-planilla-cascada"
-import { useActividadesQuery } from "@/features/planeador/api/query/use-actividades-query"
-import { calificacionesQueryOptions } from "@/features/planeador/api/query/use-calificaciones-query"
+import { usePlanillaColumnasQuery } from "@/features/planeador/api/query/use-planilla-columnas-query"
+import { usePlanillaCalificacionesQuery } from "@/features/planeador/api/query/use-planilla-calificaciones-query"
+import {
+  useElementoCalculoOptionsQuery,
+  type ElementoCalculoKey,
+} from "@/features/planeador/api/query/use-elemento-calculo-catalog"
 import { CalificarActividadBulk } from "@/features/planeador/components/planilla/calificar-actividad-bulk"
 import { PlanillaGrid } from "@/features/planeador/components/planilla/planilla-grid"
-import type { EstadoAsistencia, NotaCriterio } from "@/features/planeador/api/types/calificacion"
+import type { PlanillaColumna } from "@/features/planeador/api/types/planilla"
 
-/** Opciones de "Ver por" de esta pantalla — a diferencia del listado del
- *  Planeador (`VIEW_OPTIONS`), acá no hay "Instrumento": la planilla siempre
- *  agrupa columnas por actividad o por unidad, nunca por instrumento.
- *  "Unidad" queda seleccionable pero sin implementar todavía — mismo
- *  criterio que `viewOption` en el listado principal del Planeador. */
-const VER_POR_OPTIONS = [
-  { value: "actividad", label: "Actividad" },
-  { value: "unidad", label: "Unidad" },
-] as const
-type VerPorOption = (typeof VER_POR_OPTIONS)[number]["value"]
-
-/** `actividadId:estudianteId` — clave de los overrides locales. */
-function overrideKey(actividadId: number, estudianteId: number): string {
-  return `${actividadId}:${estudianteId}`
-}
+/** Fallback mientras carga (o si el mock no tiene) el catálogo real
+ *  `ELEMENTO_CALCULO_DEF` — orden y labels calcados de la respuesta real
+ *  ("Instrumentos" pk 494, "Actividades" pk 495). "Instrumentos" agrupa las
+ *  columnas de la grilla por el instrumento de evaluación de cada actividad
+ *  (`PlanillaColumna.instrumentoNombre`) — juega el mismo rol que la
+ *  agrupación por unidad temática que se había asumido al principio, pero
+ *  la real es por instrumento. */
+const VER_POR_FALLBACK: { key: ElementoCalculoKey; label: string }[] = [
+  { key: "instrumento", label: "Instrumentos" },
+  { key: "actividad", label: "Actividades" },
+]
+type VerPorOption = ElementoCalculoKey
 
 /**
  * "Planilla de calificación": grilla de notas por estudiante, con una
  * columna por actividad del Grado/Grupo/Asignatura/Periodo elegidos en
- * "Filtro". Sin endpoint propio: las columnas salen de filtrar
- * `useActividadesQuery` client-side, y las notas de pedir las calificaciones
- * de cada actividad filtrada en paralelo con `useQueries`.
+ * "Filtro". Columnas y celdas salen de los endpoints reales
+ * (`/planilla/columnas`, `/planilla/calificaciones`) — el backend ya trae
+ * el cruce grado/grupo/asignatura y las notas/definitiva calculadas, así
+ * que acá no se recalcula nada; solo se filtra por texto y por rango de
+ * fechas del periodo elegido (el endpoint no acepta esos dos como filtro
+ * propio).
  *
- * Todas las ediciones (celda a celda o en bloque) viven en `overrides`,
- * estado local de esta página — no hay mutación/endpoint de escritura
- * todavía (mismo nivel que `CalificacionesAprobacionView`/el viejo
- * `InstrumentoPopover`): se pierden al recargar la página.
+ * Guardar una nota (celda a celda o en bloque) pega directo contra el
+ * backend desde `CeldaNotaPopover`/`CalificarActividadBulk` — no hay
+ * overrides locales: al guardar se invalida la query y la grilla vuelve a
+ * traer la verdad del servidor.
  */
 export function PlaneadorPlanillaPage() {
   const [verPor, setVerPor] = useState<VerPorOption>("actividad")
   const [buscar, setBuscar] = useState("")
   const [filtro, setFiltro] = useState<FiltroPlanillaValue | null>(null)
-  const [vista, setVista] = useState<{ tipo: "grid" } | { tipo: "bulk"; actividadId: number }>({
-    tipo: "grid",
-  })
-  const [overrides, setOverrides] = useState<Map<string, NotaCriterio[]>>(new Map())
+  const [columnaEnBulk, setColumnaEnBulk] = useState<PlanillaColumna | null>(null)
 
-  // Recién con Grado, Grupo Y Asignatura elegidos hay contra qué buscar
-  // actividades/unidades reales — antes de eso no tiene sentido mostrar una
-  // grilla vacía intentando adivinar qué traer.
-  const filtroCompleto = filtro != null
+  const { data: verPorOptions } = useElementoCalculoOptionsQuery()
+  const opcionesVerPor = verPorOptions?.length ? verPorOptions : VER_POR_FALLBACK
 
-  const { data: todasLasActividades = [] } = useActividadesQuery()
+  // Recién con Grado, Grupo Y Asignatura elegidos hay contra qué pedir
+  // columnas/calificaciones reales — antes de eso no tiene sentido pegarle
+  // al backend adivinando.
+  const params = filtro
+    ? { grupoId: filtro.grupoId, asignaturaId: filtro.asignaturaId, gradoId: filtro.gradoId }
+    : null
 
-  const actividadesFiltradas = useMemo(() => {
+  const { data: todasLasColumnas = [] } = usePlanillaColumnasQuery(params)
+  const { data: calificacionesResult } = usePlanillaCalificacionesQuery(params)
+  const filas = calificacionesResult?.rows ?? []
+
+  const columnas = useMemo(() => {
     if (!filtro) return []
     const term = buscar.trim().toLowerCase()
-    return todasLasActividades.filter((actividad) => {
-      if (actividad.grado !== filtro.gradoNombre) return false
-      if (actividad.grupo !== filtro.grupoCodigo) return false
-      if (actividad.asignatura !== filtro.asignaturaNombre) return false
-      // Solapamiento de rangos `yyyy-MM-dd` — comparación lexicográfica
-      // válida porque todas son ISO del mismo largo.
-      if (actividad.fechaCierre < filtro.periodoEvaluacion.startDate) return false
-      if (actividad.fechaInicio > filtro.periodoEvaluacion.endDate) return false
+    return todasLasColumnas.filter((columna) => {
+      // Solapamiento de rangos `yyyy-MM-dd` contra el periodo elegido —
+      // comparación lexicográfica válida porque todas son ISO del mismo
+      // largo. El endpoint no filtra por periodo, así que se hace acá.
+      if (columna.fechaCierre < filtro.periodoEvaluacion.startDate) return false
+      if (columna.fechaInicio > filtro.periodoEvaluacion.endDate) return false
       if (!term) return true
-      // "Ver por: Unidad" busca por el nombre de la unidad (agrupa por
-      // eso); "Actividad" busca por el nombre de la actividad — mismo
+      // "Ver por: Instrumentos" busca por el nombre del instrumento (agrupa
+      // por eso); "Actividades" busca por el título de la actividad — mismo
       // criterio que el placeholder del buscador.
-      const campo = verPor === "unidad" ? actividad.unidad.nombre : actividad.nombre
+      const campo = verPor === "instrumento" ? (columna.instrumentoNombre ?? "") : columna.titulo
       return campo.toLowerCase().includes(term)
     })
-  }, [todasLasActividades, filtro, verPor, buscar])
+  }, [todasLasColumnas, filtro, verPor, buscar])
 
-  const calificacionesQueries = useQueries({
-    queries: actividadesFiltradas.map((actividad) => calificacionesQueryOptions(actividad.id)),
-  })
-
-  // Roster de estudiantes: unión por id de todas las actividades cargadas
-  // (en el mock comparten el mismo roster por grado+grupo, así que en la
-  // práctica coinciden).
-  const estudiantes = useMemo(() => {
-    const porId = new Map<number, { id: number; nombres: string; apellidos: string }>()
-    for (const query of calificacionesQueries) {
-      for (const estudiante of query.data ?? []) {
-        if (!porId.has(estudiante.id)) {
-          porId.set(estudiante.id, {
-            id: estudiante.id,
-            nombres: estudiante.nombres,
-            apellidos: estudiante.apellidos,
-          })
-        }
-      }
-    }
-    return [...porId.values()].sort((a, b) =>
-      `${a.nombres} ${a.apellidos}`.localeCompare(`${b.nombres} ${b.apellidos}`),
-    )
-  }, [calificacionesQueries])
-
-  // Notas por actividad, con los overrides locales ya aplicados encima de
-  // lo que trajo el mock.
-  const notasPorActividad = useMemo(() => {
-    const map = new Map<number, Map<number, NotaCriterio[]>>()
-    actividadesFiltradas.forEach((actividad, index) => {
-      const porEstudiante = new Map<number, NotaCriterio[]>()
-      for (const estudiante of calificacionesQueries[index]?.data ?? []) {
-        const override = overrides.get(overrideKey(actividad.id, estudiante.id))
-        porEstudiante.set(estudiante.id, override ?? estudiante.notas)
-      }
-      map.set(actividad.id, porEstudiante)
-    })
-    return map
-  }, [actividadesFiltradas, calificacionesQueries, overrides])
-
-  // Asistencia de cada estudiante en cada actividad — no tiene overrides
-  // (esta pantalla no la edita, solo la lee): si faltó a la actividad, la
-  // celda de esa nota se bloquea en vez de mostrar un valor editable.
-  const asistenciaPorActividad = useMemo(() => {
-    const map = new Map<number, Map<number, EstadoAsistencia>>()
-    actividadesFiltradas.forEach((actividad, index) => {
-      const porEstudiante = new Map<number, EstadoAsistencia>()
-      for (const estudiante of calificacionesQueries[index]?.data ?? []) {
-        porEstudiante.set(estudiante.id, estudiante.asistencia.estado)
-      }
-      map.set(actividad.id, porEstudiante)
-    })
-    return map
-  }, [actividadesFiltradas, calificacionesQueries])
-
-  function guardarCelda(actividadId: number, estudianteId: number, nota: NotaCriterio[]) {
-    setOverrides((prev) => new Map(prev).set(overrideKey(actividadId, estudianteId), nota))
-  }
-
-  function guardarBulk(actividadId: number, estudianteIds: number[], nota: NotaCriterio[]) {
-    setOverrides((prev) => {
-      const next = new Map(prev)
-      for (const estudianteId of estudianteIds) {
-        next.set(overrideKey(actividadId, estudianteId), nota)
-      }
-      return next
-    })
-  }
-
-  const actividadEnBulk =
-    vista.tipo === "bulk"
-      ? actividadesFiltradas.find((actividad) => actividad.id === vista.actividadId)
-      : undefined
-  const indexActividadEnBulk = actividadEnBulk
-    ? actividadesFiltradas.indexOf(actividadEnBulk)
-    : -1
-  const estudiantesEnBulk = (calificacionesQueries[indexActividadEnBulk]?.data ?? []).map(
-    (estudiante) => ({
-      id: estudiante.id,
-      nombres: estudiante.nombres,
-      apellidos: estudiante.apellidos,
-    }),
+  const columnaIds = useMemo(() => new Set(columnas.map((c) => c.pkTactividad)), [columnas])
+  const filasFiltradas = useMemo(
+    () =>
+      filas.map((fila) => ({
+        ...fila,
+        celdas: fila.celdas.filter((celda) => columnaIds.has(celda.pkTactividad)),
+      })),
+    [filas, columnaIds],
   )
+
+  const estudiantesEnBulk = filas.map((fila) => ({
+    id: fila.pkTestudiante,
+    nombres: fila.nombreEstudiante,
+    apellidos: "",
+  }))
 
   return (
     <TableScreen>
@@ -235,12 +172,12 @@ export function PlaneadorPlanillaPage() {
               <Select value={verPor} onValueChange={(v) => v && setVerPor(v as VerPorOption)}>
                 <SelectTrigger>
                   <SelectValue>
-                    {(v) => VER_POR_OPTIONS.find((o) => o.value === v)?.label ?? "Actividad"}
+                    {(v) => opcionesVerPor.find((o) => o.key === v)?.label ?? "Actividad"}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  {VER_POR_OPTIONS.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
+                  {opcionesVerPor.map((option) => (
+                    <SelectItem key={option.key} value={option.key}>
                       {option.label}
                     </SelectItem>
                   ))}
@@ -254,7 +191,7 @@ export function PlaneadorPlanillaPage() {
                 <MagnifyingGlassIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   id="buscar-planilla"
-                  placeholder={verPor === "unidad" ? "Buscar unidad" : "Buscar actividad"}
+                  placeholder={verPor === "instrumento" ? "Buscar instrumento" : "Buscar actividad"}
                   value={buscar}
                   onChange={(e) => setBuscar(e.target.value)}
                   className="pl-9"
@@ -271,33 +208,29 @@ export function PlaneadorPlanillaPage() {
       </TableScreenHeader>
 
       <TableScreenBody>
-        {!filtroCompleto && (
+        {!filtro && (
           <div className="flex flex-col items-center justify-center gap-3 py-24 text-center">
             <InboxIcon className="size-10 text-muted-foreground" />
             <p className="text-muted-foreground text-sm">Seleccione Grado, Grupo o Asignatura</p>
           </div>
         )}
 
-        {filtroCompleto && vista.tipo === "grid" && (
+        {filtro && !columnaEnBulk && (
           <PlanillaGrid
-            actividades={actividadesFiltradas}
+            columnas={columnas}
             verPor={verPor}
-            notasPorActividad={notasPorActividad}
-            asistenciaPorActividad={asistenciaPorActividad}
-            estudiantes={estudiantes}
-            onAbrirBulk={(actividadId) => setVista({ tipo: "bulk", actividadId })}
-            onGuardarCelda={guardarCelda}
+            filas={filasFiltradas}
+            onAbrirBulk={setColumnaEnBulk}
           />
         )}
 
-        {filtroCompleto && vista.tipo === "bulk" && actividadEnBulk && (
+        {filtro && columnaEnBulk && (
           <CalificarActividadBulk
-            actividad={actividadEnBulk}
+            actividadId={columnaEnBulk.pkTactividad}
+            titulo={columnaEnBulk.titulo}
+            fecha={columnaEnBulk.fechaInicio}
             estudiantes={estudiantesEnBulk}
-            onVolver={() => setVista({ tipo: "grid" })}
-            onGuardar={(estudianteIds, nota) =>
-              guardarBulk(actividadEnBulk.id, estudianteIds, nota)
-            }
+            onVolver={() => setColumnaEnBulk(null)}
           />
         )}
       </TableScreenBody>

@@ -121,6 +121,16 @@ const CATALOGS_BY_CATEGORIA: Record<string, () => SelectCategoryRow[]> = {
       valor: nombre,
       accion: null,
     })),
+  // Catálogo `ELEMENTO_CALCULO_DEF` real — resuelve, entre otros, el "Ver
+  // por" de la Planilla de calificación (agrupar columnas por instrumento
+  // de evaluación o dejarlas sueltas por actividad); el Planeador ya no lo
+  // hardcodea en el `<Select>`. Valores confirmados en vivo: "Instrumentos"
+  // (valor "1"), "Actividades" (valor "2").
+  ELEMENTO_CALCULO_DEF: () =>
+    [
+      { nombre: "Instrumentos", valor: "1" },
+      { nombre: "Actividades", valor: "2" },
+    ].map((opt, i) => ({ pk_lista_valor: i + 1, nombre: opt.nombre, valor: opt.valor, accion: null })),
   // Catálogo de asistencias -- el valor 4 no existe (ver Postman de
   // `SSO - Asistencias`).
   TIPO_ASISTENCIA: () =>
