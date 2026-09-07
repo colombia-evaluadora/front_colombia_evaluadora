@@ -16,7 +16,8 @@ import { AsistenciaDayCellRectorPopover } from "@/features/academic-management/a
 export interface AsistenciaDayEntry {
   id: string
   fecha: string
-  bloque: number
+  /** `null` = toma suelta sin bloque (`TASISTENCIA.BLOQUE` nulo). */
+  bloque: number | null
   fkGrupo: number
   grupo: string
   grado: string
