@@ -73,3 +73,29 @@ export const STATUS_ACCENT: Record<ActividadStatus, string> = {
 export const ESTADO_OPTIONS = (
   Object.keys(STATUS_BADGE) as ActividadStatus[]
 ).map((value) => ({ value, label: STATUS_BADGE[value].label }))
+
+/**
+ * Contra el backend real, algunas pantallas todavía arman `status` con un
+ * mapeo incompleto/aproximado (ver el comentario de `status` en
+ * `use-unidades-query.ts`) — un valor que no sea una de las 4 claves
+ * canónicas rompía toda la card (`STATUS_ICON[status]` devolvía `undefined`
+ * y React tiraba "Element type is invalid"). Estos 3 accesores degradan al
+ * ícono/color de "pending" en vez de eso.
+ */
+const STATUS_FALLBACK: ActividadStatus = "pending"
+
+export function statusIconFor(status: ActividadStatus): ComponentType<{ className?: string }> {
+  return STATUS_ICON[status] ?? STATUS_ICON[STATUS_FALLBACK]
+}
+
+export function statusAccentFor(status: ActividadStatus): string {
+  return STATUS_ACCENT[status] ?? STATUS_ACCENT[STATUS_FALLBACK]
+}
+
+export function statusRingFor(status: ActividadStatus): string {
+  return STATUS_RING[status] ?? STATUS_RING[STATUS_FALLBACK]
+}
+
+export function statusBadgeFor(status: ActividadStatus): (typeof STATUS_BADGE)[ActividadStatus] {
+  return STATUS_BADGE[status] ?? STATUS_BADGE[STATUS_FALLBACK]
+}

@@ -12,7 +12,7 @@ import { CaretDownIcon } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
 
 import type { ActividadStatus } from "@/features/planeador/api/types/actividad"
-import { STATUS_RING } from "@/features/planeador/api/ui-mappings"
+import { statusRingFor } from "@/features/planeador/api/ui-mappings"
 
 /**
  * Grilla mensual "decorativa" del Planeador: muestra un mes con las
@@ -39,7 +39,7 @@ import { STATUS_RING } from "@/features/planeador/api/ui-mappings"
 /** Una actividad tal como se lista dentro de la celda de su día. */
 export interface DayEvent {
   /** Id de la actividad — clave de la fila; el código puede repetirse. */
-  id: string
+  id: number
   /** Código corto de la actividad (3 dígitos). */
   code: string
   /** Texto a la derecha del código — hoy la asignatura. */
@@ -221,7 +221,7 @@ export function PlaneadorMonthGrid({
                               como texto plano, más denso en la celda. */}
                           <span
                             aria-hidden
-                            className={cn("h-3.5 w-1 shrink-0 rounded-full", STATUS_RING[status])}
+                            className={cn("h-3.5 w-1 shrink-0 rounded-full", statusRingFor(status))}
                           />
                           <span className="shrink-0 font-semibold">{code}</span>
                           <span aria-hidden className="shrink-0 text-muted-foreground/40">

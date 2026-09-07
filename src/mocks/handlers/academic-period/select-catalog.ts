@@ -104,6 +104,23 @@ const CATALOGS_BY_CATEGORIA: Record<string, () => SelectCategoryRow[]> = {
       valor: String(i + 1),
       accion: null,
     })),
+  // Catálogo `TIPO_ACTIVIDAD` real que resuelve `FK_TLV_TIPO_ACTIVIDAD` en
+  // `fn_actividad_crear`/`_actualizar` (V224, colección Postman
+  // `planeador-actividad`) — el Planeador ya no lo hardcodea en el `<Select>`.
+  TIPO_ACTIVIDAD: () =>
+    ["Proyecto", "Exposición", "Práctica", "Ensayo", "Debate", "Simulación", "Otro"].map(
+      (nombre, i) => ({ pk_lista_valor: i + 1, nombre, valor: nombre, accion: null }),
+    ),
+  // Catálogo `INSTRUMENTO_EVALUACION` real que resuelve
+  // `FK_TLV_INSTRUMENTO_EVALUACION` (V226/V240, colección Postman
+  // `planeador-instrumentos`).
+  INSTRUMENTO_EVALUACION: () =>
+    ["Rúbrica", "Lista de cotejo", "Escala de valoración", "Otro"].map((nombre, i) => ({
+      pk_lista_valor: i + 1,
+      nombre,
+      valor: nombre,
+      accion: null,
+    })),
   // Catálogo de asistencias -- el valor 4 no existe (ver Postman de
   // `SSO - Asistencias`).
   TIPO_ASISTENCIA: () =>

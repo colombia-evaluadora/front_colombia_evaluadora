@@ -27,7 +27,7 @@ const ACCIONES = [
 ] as const
 
 interface ActividadDetallePanelProps {
-  actividadId: string
+  actividadId: number
   /** Vista activa del panel: "info" muestra las secciones de detalle;
    * "grades" muestra la tabla de calificaciones con notas por criterio
    * (chulito "Marcar"); "approval" muestra la aprobación bulk por
@@ -117,7 +117,7 @@ export function ActividadDetallePanel({
             variant="ghost"
             color="neutral"
             size="icon-sm"
-            render={<Link to={paths.app.planeadorActividadEditar.getHref(actividadId)} />}
+            render={<Link to={paths.app.planeadorActividadEditar.getHref(String(actividadId))} />}
             aria-label="Editar"
           >
             <PencilIcon />

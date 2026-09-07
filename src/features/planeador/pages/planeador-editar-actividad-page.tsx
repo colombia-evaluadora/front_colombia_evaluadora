@@ -36,7 +36,9 @@ export function PlaneadorEditarActividadPage() {
   const navigate = useNavigate()
   const { actividadId } = useParams({ strict: false }) as { actividadId?: string }
 
-  const { data: actividad, isPending, isError, error } = useActividadDetalleQuery(actividadId)
+  const { data: actividad, isPending, isError, error } = useActividadDetalleQuery(
+    actividadId ? Number(actividadId) : undefined,
+  )
 
   if (!actividadId) {
     return (

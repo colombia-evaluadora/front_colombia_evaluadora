@@ -27,7 +27,7 @@ export function PlaneadorRecursoPreviewPage() {
   const search = useSearch({ strict: false }) as Partial<Record<keyof Recurso, string>>
 
   const recurso: Recurso = {
-    id: "preview",
+    id: 0,
     tipo: (search.tipo as Recurso["tipo"]) || "URL",
     url: search.url ?? "",
     fuente: search.fuente ?? "",

@@ -68,6 +68,7 @@ import {
   MdHelpOutline,
   MdHome,
   MdHomeWork,
+  MdOutlineInbox,
   MdInfoOutline,
   MdKey,
   MdKeyboardArrowDown,
@@ -217,6 +218,7 @@ export const HouseIcon = makeIcon(MdHome)
 export const HouseLineIcon = makeIcon(MdHomeWork)
 export const IdentificationCardIcon = makeIcon(MdBadge)
 export const ImageIcon = makeIcon(MdOutlineImage)
+export const InboxIcon = makeIcon(MdOutlineInbox)
 export const InfoIcon = makeIcon(MdInfoOutline)
 export const InsertLinkOutlinedIcon = makeIcon(MdOutlineInsertLink)
 export const KeyIcon = makeIcon(MdKey)
