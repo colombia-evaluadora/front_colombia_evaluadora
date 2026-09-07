@@ -538,7 +538,7 @@ function MatriculaEditPageContent() {
         <>
           <TableScreenBody className="rounded-b-none border-b-0">
             <div id={EDIT_MATRICULA_FORM_ID} className="flex flex-col gap-6">
-              <MatriculaToolbar matricula={data.matricula} showModificar={false} />
+              <MatriculaToolbar matricula={data.matricula} showModificar={false} filesEditable />
               <MatriculaFormBody
                 values={values}
                 onChange={setValues}

@@ -2,8 +2,11 @@ import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { FolderOpenIcon } from "@/components/ui/icons"
+import { useNotify } from "@/components/notice/notice-context"
 
+import { getErrorMessage } from "@/lib/api-client"
 import { useMatriculaDetailQuery } from "@/features/coverage/api/query/use-matricula-detail-query"
+import { useUpdateMatriculaFiles } from "@/features/coverage/api/mutations/update-matricula-files"
 import {
   SupportFilesSheet,
   type MatriculaSupportFiles,
@@ -24,24 +27,65 @@ interface FilesMatriculaDialogProps {
   matricula: Matricula
   /** "icon" (fila de la tabla) o "button" (barra de detalle/edición). */
   trigger?: "icon" | "button"
+  editable?: boolean
 }
 
 /**
  * Botón de la tabla (o de la barra de detalle/edición) que abre el sheet de
  * "Archivos de soporte" — el mismo que usa el alta, reutilizado acá. Los
- * archivos ya cargados se traen del GET de detalle (`archivos[]`) y se
- * muestran de solo lectura arriba -- todavía no hay endpoint de
- * subida/eliminación real, así que los campos de "Adjuntar"/"Eliminar" de
- * abajo siguen operando en memoria nomás (se pierden al cerrar, igual que en
- * el alta antes de guardar).
+ * archivos ya cargados se traen del GET de detalle (`archivos[]`).
  */
-export function FilesMatriculaDialog({ matricula, trigger = "icon" }: FilesMatriculaDialogProps) {
+export function FilesMatriculaDialog({ matricula, trigger = "icon", editable = false }: FilesMatriculaDialogProps) {
   const [open, setOpen] = useState(false)
   const [files, setFiles] = useState<MatriculaSupportFiles>(createEmptySupportFiles)
+  const [removedIds, setRemovedIds] = useState<Set<number>>(new Set())
+  const { notify } = useNotify()
   // Solo se pide mientras el sheet está abierto -- evita una consulta por
   // fila de la tabla apenas se renderiza.
   const { data } = useMatriculaDetailQuery(open ? matricula.id : undefined)
   const fullName = `${matricula.firstName} ${matricula.lastName}`
+
+  const updateFiles = useUpdateMatriculaFiles({
+    mutationConfig: {
+      onError: (error) => notify(getErrorMessage(error), { variant: "error" }),
+      onSuccess: () => {
+        notify("Archivos actualizados correctamente.")
+        setFiles(createEmptySupportFiles())
+        setRemovedIds(new Set())
+      },
+    },
+  })
+
+  function toggleRemoveExisting(fileId: number) {
+    setRemovedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(fileId)) next.delete(fileId)
+      else next.add(fileId)
+      return next
+    })
+  }
+
+  const hasPendingChanges =
+    files.studentIdDocument.length > 0 ||
+    files.previousYearCertificate.length > 0 ||
+    files.medicalCertificate.length > 0 ||
+    files.studentPhoto.length > 0 ||
+    removedIds.size > 0
+
+  function handleSave() {
+    if (data?.status !== "ok" || !data.details || !hasPendingChanges) return
+    updateFiles.mutate({
+      id: matricula.id,
+      values: data.details,
+      pkTpadre: data.details.pkTpadre,
+      pkUsuarioAcudiente: data.details.pkUsuarioAcudiente,
+      studentIdDocument: files.studentIdDocument[0] ?? null,
+      previousYearCertificate: files.previousYearCertificate[0] ?? null,
+      medicalCertificate: files.medicalCertificate[0] ?? null,
+      studentPhoto: files.studentPhoto[0] ?? null,
+      otrosDocumentosARemover: Array.from(removedIds),
+    })
+  }
 
   return (
     <>
@@ -75,6 +119,12 @@ export function FilesMatriculaDialog({ matricula, trigger = "icon" }: FilesMatri
         value={files}
         onChange={setFiles}
         existingFiles={data?.status === "ok" ? data.files : undefined}
+        editable={editable}
+        removedExistingIds={removedIds}
+        onToggleRemoveExisting={toggleRemoveExisting}
+        onSave={editable ? handleSave : undefined}
+        isSaving={updateFiles.isPending}
+        saveDisabled={!hasPendingChanges}
       />
     </>
   )
