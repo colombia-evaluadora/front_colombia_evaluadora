@@ -4,6 +4,13 @@ import { Button } from "@/components/ui/button"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
+  Popover,
+  PopoverContent,
+  PopoverHeader,
+  PopoverTitle,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -13,9 +20,12 @@ import {
 import { Spinner } from "@/components/ui/spinner"
 import {
   CheckCircleIcon,
+  CheckIcon,
   ClockIcon,
   PaperclipIcon,
+  PencilIcon,
   WarningCircleIcon,
+  XIcon,
 } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
 
@@ -28,7 +38,7 @@ import type {
 } from "@/features/planeador/api/types/calificacion"
 import { itemsPonderables, porcentajeFinal } from "@/features/planeador/api/types/calificacion"
 import { formatDate } from "@/features/planeador/lib/format-date"
-import { CeldaNotaPopover } from "@/features/planeador/components/planilla/celda-nota-popover"
+import { InstrumentoGradingFields } from "@/features/planeador/components/planilla/instrumento-grading-fields"
 
 interface CalificacionesViewProps {
   actividad: Actividad
@@ -156,14 +166,87 @@ function CalificacionRow({ actividad, estudiante, notas, onGuardar }: Calificaci
         )}
       </td>
       <td className="px-2 py-3 align-middle">
-        <CeldaNotaPopover
-          actividad={actividad}
+        <CeldaNotaPopoverLocal
+          actividadId={actividad.id}
           estudianteNombre={`${estudiante.nombres} ${estudiante.apellidos}`}
           notaActual={notas}
           onGuardar={onGuardar}
         />
       </td>
     </tr>
+  )
+}
+
+/**
+ * Popover de calificación puntual de esta vista — a diferencia del de la
+ * Planilla (`CeldaNotaPopover`), acá NO pega contra el backend: esta
+ * pantalla vive sobre `useCalificacionesQuery`, que consulta un endpoint
+ * cuyo shape real no coincide todavía con lo que espera este componente
+ * (flagged en `use-calificaciones-query.ts`) — hasta que se remapee, el
+ * guardado sigue siendo local (`onGuardar` solo actualiza el estado en
+ * memoria de `CalificacionesView`), igual que antes.
+ */
+function CeldaNotaPopoverLocal({
+  actividadId,
+  estudianteNombre,
+  notaActual,
+  onGuardar,
+}: {
+  actividadId: number
+  estudianteNombre: string
+  notaActual: NotaCriterio[]
+  onGuardar: (next: NotaCriterio[]) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const [draft, setDraft] = useState<NotaCriterio[]>(notaActual)
+
+  return (
+    <Popover
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next)
+        if (next) setDraft(notaActual)
+      }}
+    >
+      <PopoverTrigger
+        render={
+          <Button
+            variant="ghost"
+            color="neutral"
+            size="icon-xs"
+            aria-label={`Calificar a ${estudianteNombre}`}
+          />
+        }
+      >
+        <PencilIcon className="size-3.5" />
+      </PopoverTrigger>
+      <PopoverContent align="end" side="bottom" className="w-80">
+        <PopoverHeader>
+          <PopoverTitle>Calificar</PopoverTitle>
+        </PopoverHeader>
+
+        <InstrumentoGradingFields actividadId={actividadId} value={draft} onChange={setDraft} />
+
+        <div className="flex items-center justify-end gap-2">
+          <Button
+            variant="fill"
+            color="primary"
+            size="sm"
+            onClick={() => {
+              onGuardar(draft)
+              setOpen(false)
+            }}
+          >
+            <CheckIcon data-icon="inline-start" />
+            Guardar
+          </Button>
+          <Button variant="fill" color="neutral" size="sm" onClick={() => setOpen(false)}>
+            <XIcon data-icon="inline-start" />
+            Cancelar
+          </Button>
+        </div>
+      </PopoverContent>
+    </Popover>
   )
 }
 
