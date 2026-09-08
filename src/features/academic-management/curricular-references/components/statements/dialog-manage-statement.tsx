@@ -12,6 +12,7 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
+import { CharacterCounter } from "@/components/ui/character-counter"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
 
@@ -115,11 +116,12 @@ export function ManageStatementDialog({
               placeholder={`Escribe el ${levelLabel.toLowerCase()}...`}
               className="min-h-32 rounded-md border border-input px-3 py-2"
             />
+            <CharacterCounter value={text} max={400} />
             <FieldError>{error}</FieldError>
           </Field>
 
           <Field orientation="vertical" variant="outlined" className="mt-6">
-            <FieldLabel htmlFor="statement-status">Estado *</FieldLabel>
+            <FieldLabel htmlFor="statement-status">Estado</FieldLabel>
             <div className="border-input flex min-h-14 items-center gap-3 rounded-md border px-3 py-3">
               <span className="text-muted-foreground text-sm">Inactivo / Activo</span>
               <Switch
