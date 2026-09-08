@@ -151,7 +151,7 @@ export function UnidadInfoGeneralFields({
   }, [draft.enfoquePedagogico, enfoqueDerivado, onChange])
 
   const { enunciados: enunciadosDisponibles, isPending: isPendingEnunciados } =
-    useEnunciadosDbaQuery(draft.grado)
+    useEnunciadosDbaQuery(unidadId)
 
   // Grado/Asignatura salen de `GET /planeador/docentes/grado-asignatura`
   // (mismo endpoint real que ya usa el filtro de la Planilla): son los
