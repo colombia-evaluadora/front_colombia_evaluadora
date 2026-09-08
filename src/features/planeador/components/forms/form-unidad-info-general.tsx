@@ -205,7 +205,16 @@ export function UnidadInfoGeneralFields({
             }}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Seleccione" />
+              {/* El catálogo `grados` solo trae lo que este docente dicta:
+                  una unidad de otro docente (o de un grado que este ya no
+                  tiene asignado) no matchea ningún `SelectItem` — sin este
+                  respaldo el `<SelectValue>` mostraba el id crudo (`3744`)
+                  en vez del nombre real que sí trae `draft.grado`. */}
+              <SelectValue placeholder="Seleccione">
+                {(value) =>
+                  grados.find((g) => String(g.id) === value)?.nombre ?? draft.grado ?? "Seleccione"
+                }
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {grados.map((g) => (
@@ -229,7 +238,13 @@ export function UnidadInfoGeneralFields({
             disabled={!draft.gradoId}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Seleccione" />
+              <SelectValue placeholder="Seleccione">
+                {(value) =>
+                  asignaturas.find((a) => String(a.asignaturaId) === value)?.asignaturaNombre ??
+                  draft.asignatura ??
+                  "Seleccione"
+                }
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {asignaturas.map((a) => (

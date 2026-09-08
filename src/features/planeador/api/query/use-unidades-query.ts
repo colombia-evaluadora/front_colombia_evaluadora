@@ -23,9 +23,16 @@ interface UnidadRealRow {
   pk_tunidad: number
   nombre: string
   asignatura: string
+  /** Id real de la asignatura — necesario para preseleccionar el `<Select>`
+   *  de "Asignatura" en el form de edición contra el catálogo del docente
+   *  (`fk_tasignatura`, ver `use-docente-grado-asignatura-query.ts`). */
+  fk_tasignatura?: number
   /** Área curricular de la asignatura (`fk_tarea`). */
   area?: string
   grado: string
+  /** Id real del grado — mismo criterio que `fk_tasignatura`, para el
+   *  `<Select>` de "Grado" (`fk_tgrado`). */
+  fk_tgrado?: number
   descripcion?: string
   calculo_definitiva?: string
   objetivos?: { pk: number; orden: number; descripcion: string }[]
@@ -73,6 +80,8 @@ function toUnidadTematica(row: UnidadRealRow): UnidadTematica {
     metodoCalculo: metodoCalculoFromLabel(row.calculo_definitiva),
     grado: row.grado,
     asignatura: row.asignatura,
+    gradoId: row.fk_tgrado,
+    asignaturaId: row.fk_tasignatura,
     // Enunciados DBA y criterios viven en endpoints separados del backend
     // real (`/unidades/:id/enunciados`, `/unidades/:id/criterios`) —
     // quedan vacíos acá; las pantallas que los muestran los piden aparte

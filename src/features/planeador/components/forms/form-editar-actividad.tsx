@@ -559,6 +559,16 @@ function AsignaturaGradoSection({ form }: { form: FormActividad }) {
   const { data: docenteGradoAsignatura = [] } = useDocenteGradoAsignaturaQuery()
   const gradoId = useSelector(form.store, (state) => state.values.gradoId)
   const grupoId = useSelector(form.store, (state) => state.values.grupoId)
+  // El backend real de una actividad no siempre trae `fk_tgrado`/el id no
+  // siempre está en el catálogo del docente autenticado (una actividad
+  // puede pertenecer a un grado/grupo/asignatura que este docente ya no
+  // dicta, o a otro docente) — sin esto el `<SelectValue>` no encuentra con
+  // qué opción matchear el id guardado y termina mostrando el número
+  // crudo. `grado`/`grupo`/`asignatura` son los labels que el mapper real
+  // (`toActividadDetalle`) SÍ preserva siempre; se usan como respaldo.
+  const grado = useSelector(form.store, (state) => state.values.grado)
+  const grupo = useSelector(form.store, (state) => state.values.grupo)
+  const asignatura = useSelector(form.store, (state) => state.values.asignatura)
   const hasGradoGrupo = gradoId != null && grupoId != null
 
   const asignaturas = docenteGradoAsignatura.filter((par) => par.gradoId === gradoId)
@@ -584,7 +594,13 @@ function AsignaturaGradoSection({ form }: { form: FormActividad }) {
                 <SelectTrigger id={field.name}>
                   <SelectValue
                     placeholder={hasGradoGrupo ? "Seleccione" : "Elegí grado/grupo primero"}
-                  />
+                  >
+                    {(value) =>
+                      asignaturas.find((a) => String(a.asignaturaId) === value)?.asignaturaNombre ??
+                      asignatura ??
+                      "Seleccione"
+                    }
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {asignaturas.map((a) => (
@@ -618,7 +634,13 @@ function AsignaturaGradoSection({ form }: { form: FormActividad }) {
             }}
           >
             <SelectTrigger id="grado-grupo">
-              <SelectValue placeholder="Seleccione" />
+              <SelectValue placeholder="Seleccione">
+                {(value) => {
+                  const combo = docenteGrupos.find((g) => String(g.grupoId) === value)
+                  if (combo) return `${combo.gradoNombre}/${combo.grupoCodigo}`
+                  return [grado, grupo].filter(Boolean).join("/") || "Seleccione"
+                }}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {docenteGrupos.map((g) => (
