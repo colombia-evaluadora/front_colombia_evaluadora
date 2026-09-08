@@ -2,7 +2,10 @@
   "info": {
     "_postman_id": "4b8e1a6c-2f97-4d3a-b1e5-9c7a3f0d6e28",
     "name": "SSO — Planeador educativo: Planilla de calificación (flujo completo)",
-    "description": "Recorrido end-to-end de la pantalla **Planilla de calificación**, en el mismo orden en que la UI los dispara: Filtro (Grado → Grupo → Asignatura → Periodo de evaluación) → columnas/calificaciones de la grilla → definir instrumento → calificar (individual y en bloque) → releer.\n\nNo agrega endpoints nuevos: cada request es una copia fiel de las colecciones ya confirmadas (`planeador-planilla`, `planeador-instrumentos`), reordenadas para que Postman Runner pueda correr la carpeta entera de punta a punta con los tests de cada paso encadenando el id al siguiente (`unidadId`→no aplica acá, pero `grupoId`/`asignaturaId`/`gradoId`/`periodoId`/`actividadId`/`tactividadEstudianteId` sí se van completando solos a medida que cada respuesta llega).\n\n**Los pasos 1.1, 1.2, 2.1, 2.2 y 3.1 ya se corrieron contra el backend real** (docente `sandro12349@gmail.com`, `CEVAL-DOCENTE`) y sus ejemplos de respuesta son la captura real, no la ilustrativa de las colecciones de origen. Los pasos de escritura (3.2 definir instrumento, 4.x calificar) NO se ejecutaron a propósito — mutan datos reales — así que sus ejemplos siguen siendo los ilustrativos originales.\n\n## 🔴 Hallazgo real (no estaba en ninguna colección anterior): `periodo-evaluacion/query` rechaza al docente\n\nProbado en vivo: `POST /periodo-evaluacion/query` con el token de `sandro12349@gmail.com` responde **403** (`{\"code\":\"403 FORBIDDEN\",\"message\":\"El catálogo rechazó la consulta: \"}`). Es un endpoint FUERA de las migraciones del Planeador (V245-252) — su `role_query` nunca se actualizó para incluir `CEVAL-DOCENTE` cuando el resto de los endpoints de esta pantalla sí se relajaron. **Efecto real**: el cuarto paso del filtro en cascada (\"Periodo de evaluación\") queda inaccesible para cualquier docente real hasta que se corrija — no es un bug del front, hay que pedirle al equipo de backend que agregue `CEVAL-DOCENTE` a `role_query` de `periodo-evaluacion/query`.\n\n| # | Paso en la UI | Método | Ruta | Fuente |\n| --- | --- | --- | --- | --- |\n| 1 | Filtro → Grado/Grupo | `GET` | `/planeador/docentes/grupos` | `planeador-planilla` / `planeador-pantalla-principal` |\n| 2 | Filtro → Asignatura | `GET` | `/planeador/docentes/grado-asignatura` | `planeador-planilla` / `planeador-pantalla-principal` |\n| 3 | Filtro → Periodo (vigentes) | `POST` | `/periodo-evaluacion/query` | Ya existente fuera del módulo Planeador (`use-evaluation-periods.ts`) |\n| 4 | Header de la grilla | `GET` | `/planeador/planilla/columnas` | `planeador-planilla` |\n| 5 | Cuerpo de la grilla | `GET` | `/planeador/planilla/calificaciones` | `planeador-planilla` |\n| 6 | Abrir el instrumento de una columna | `GET` | `/planeador/actividades/:id/instrumento` | `planeador-instrumentos` |\n| 6b | (si todavía no está definido) | `PUT` | `/planeador/actividades/:id/instrumento` | `planeador-instrumentos` |\n| 7 | Editar UNA celda | `PUT` | `/planeador/actividades/estudiantes/:id/calificar` | `planeador-instrumentos` |\n| 8 | Editar en bloque (rúbrica/cotejo/escala) | `PUT` | `/planeador/actividades/:id/calificar-bulk/<tipo>` | `planeador-instrumentos` |\n| 9 | Releer una celda después de guardar | `GET` | `/planeador/actividades/estudiantes/:id/nota` | `planeador-instrumentos` |\n\n---\n\n## ⚠️ Dos gaps confirmados entre el contrato documentado y la respuesta real (ver nota de memoria del front)\n\n1. **`/planeador/actividades/mias`** (no es parte de este flujo, pero del mismo dominio): la fila real trae `instrumento_evaluacion` (no `instrumento`) y `fecha_inicio`/`fecha_cierre` como datetime ISO completo (`\"2026-09-01T00:00:00.000Z\"`), no `yyyy-MM-dd` plano como mostraba el ejemplo ilustrativo de la colección. Es razonable esperar el mismo patrón en `/planilla/calificaciones` (fechas) y en cualquier campo `instrumento*` de esta colección — **confirmado en vivo**: `/planilla/columnas` también trae `fecha_inicio`/`fecha_cierre` como datetime ISO completo — mismo patrón, no es exclusivo de `/mias`. `/planilla/calificaciones` no tiene campos `instrumento*` propios (esos viven en `/planilla/columnas`), así que ese punto concreto no aplica ahí.\n2. **`role_query` de `docentes/grupos`/`docentes/grado-asignatura`**: `planeador-planilla` (V248) documentó `CEVAL-SUPER_ADMINISTRADOR` únicamente; `planeador-pantalla-principal` (V250-252, más nueva) ya los lista con `CEVAL-SUPER_ADMINISTRADOR` **y** `CEVAL-DOCENTE` — se asume la versión más nueva. `planilla/columnas`/`planilla/calificaciones` NO están en la colección nueva, así que su `role_query` sigue siendo el viejo (`SUPER_ADMINISTRADOR` únicamente) sin confirmar si también se relajó.\n\n---\n\n## Autorización (por endpoint, ver tabla de arriba para la fuente exacta)\n\n- `docentes/grupos`, `docentes/grado-asignatura`: `CEVAL-SUPER_ADMINISTRADOR` y `CEVAL-DOCENTE` — **confirmado en vivo** (sandro12349@gmail.com, CEVAL-DOCENTE, responde 200 con datos).\n- `planilla/columnas`, `planilla/calificaciones`: **confirmado en vivo que `CEVAL-DOCENTE` SÍ tiene acceso** (responden 200 con datos reales) — la colección `planeador-planilla` original documentaba `CEVAL-SUPER_ADMINISTRADOR` únicamente, quedó desactualizada en este punto.\n- `actividades/:id/instrumento`, `calificar`, `calificar-bulk/*`, `nota`: `CEVAL-SUPER_ADMINISTRADOR` (mismo criterio que el resto de `planeador-instrumentos`).\n- Gate fino real en todos: `fn_assert_permiso_seccion(usuario, 'PLANEADOR', 'VER'|'EDITAR')`.\n\n---\n\n**Antes de empezar**\n\n1. Elige el entorno **SSO — test** e introduce `password` (usuario `email` = `sandro12349@gmail.com`, `CEVAL-DOCENTE`, según los datos reales de `planeador-pantalla-principal`).\n2. Corré la carpeta de arriba hacia abajo con **Postman Runner**: cada test de \"200\" ya deja los ids de la siguiente petición armados en las variables de colección (`gradoId`, `grupoId`, `asignaturaId`, `periodoId`, `actividadId`, `tactividadEstudianteId`) — no hace falta tocarlas a mano salvo que el docente autenticado no tenga datos para alguno de los pasos.\n3. El paso 6/6b (instrumento) solo hace falta la PRIMERA vez que se califica una actividad — si ya tiene instrumento definido, el `GET` de 6 alcanza y se salta el `PUT` de 6b.\n\nEl **login es automático**: un script de colección pide el token antes de cada petición y lo reutiliza hasta que caduca (1 h).",
+    "description": {
+      "type": "text/markdown",
+      "content": "Recorrido end-to-end de la pantalla **Planilla de calificación**, en el mismo orden en que la UI los dispara: Filtro (Grado → Grupo → Asignatura → Periodo de evaluación) → columnas/calificaciones de la grilla → definir instrumento → calificar (individual y en bloque) → releer.\n\nNo agrega endpoints nuevos: cada request es una copia fiel de las colecciones ya confirmadas (`planeador-planilla`, `planeador-instrumentos`), reordenadas para que Postman Runner pueda correr la carpeta entera de punta a punta con los tests de cada paso encadenando el id al siguiente (`gradoId`/`grupoId`/`asignaturaId`/`periodoId`/`actividadId`/`tactividadEstudianteId` se van completando solos a medida que cada respuesta llega).\n\n**Los pasos 1.1, 1.2, 2.1, 2.2 y 3.1 ya se corrieron contra el backend real** (docente `sandro12349@gmail.com`, `CEVAL-DOCENTE`) y sus ejemplos de respuesta son la captura real. Los pasos de escritura (3.2, 4.x) **también se corrieron y quedaron verificados** — ver \"Correcciones de integración aplicadas\" más abajo.\n\n## 🔴 Hallazgo real: `periodo-evaluacion/query` rechaza al docente\n\n`POST /periodo-evaluacion/query` con el token de `sandro12349@gmail.com` responde **403** (`{\"code\":\"403 FORBIDDEN\",\"message\":\"El catálogo rechazó la consulta: \"}`). Es un endpoint FUERA de las migraciones del Planeador (V245-252) — su `role_query` nunca se actualizó para incluir `CEVAL-DOCENTE`. **Efecto real**: el cuarto paso del filtro (\"Periodo de evaluación\") queda inaccesible para cualquier docente real hasta que se corrija en el backend.\n\n| # | Paso en la UI | Método | Ruta |\n| --- | --- | --- | --- |\n| 1 | Filtro → Grado/Grupo | `GET` | `/planeador/docentes/grupos` |\n| 2 | Filtro → Asignatura | `GET` | `/planeador/docentes/grado-asignatura` |\n| 3 | Filtro → Periodo (vigentes) | `POST` | `/periodo-evaluacion/query` |\n| 4 | Header de la grilla | `GET` | `/planeador/planilla/columnas` |\n| 5 | Cuerpo de la grilla | `GET` | `/planeador/planilla/calificaciones` |\n| 6 | Instrumento de la columna | `GET`/`PUT` | `/planeador/actividades/:id/instrumento` |\n| 7 | Editar UNA celda | `PUT` | `/planeador/actividades/estudiantes/:id/calificar` |\n| 8 | Editar en bloque | `PUT` | `/planeador/actividades/:id/calificar-bulk/<tipo>` |\n| 9 | Releer | `GET` | `/planeador/actividades/estudiantes/:id/nota` |\n\n---\n\n## ⚠️ Gaps entre el contrato documentado y la respuesta real\n\n1. **Fechas**: `/planilla/columnas` (y `/actividades/mias`) traen `fecha_inicio`/`fecha_cierre` como datetime ISO completo (`\"2026-09-01T00:00:00.000Z\"`), no `yyyy-MM-dd` plano.\n2. **`role_query`**: `docentes/grupos`/`docentes/grado-asignatura` y `planilla/columnas`/`planilla/calificaciones` sí aceptan `CEVAL-DOCENTE` (confirmado en vivo); `periodo-evaluacion/query` no.\n3. **No todas las asignaturas de un grado tienen actividades calificables** — un grado puede dictar varias asignaturas y solo alguna(s) tener actividades con instrumento definido. El filtro no puede asumir que la primera asignatura devuelta por `docentes/grado-asignatura` sirve.\n\n---\n\n## Correcciones de integración aplicadas\n\nVerificado contra el servidor de test: los 9 pasos del flujo responden **200**.\n\n| Drift | Antes | Ahora |\n|---|---|---|\n| Criterio de rúbrica | `pkCriterio=1` (**es el criterio de la UNIDAD**) | capturado del instrumento de la actividad (15/16) |\n| Nivel de rúbrica | `pkNivel=1` (no existe) | capturado del instrumento (22-29) |\n| Rúbrica parcial | 1 criterio → **400** | payload con **todos** los criterios |\n| Fecha | `2026-09-04` sin asistencia → **400** | `2026-09-01`, con asistencia |\n| Grupo vs actividad | `grupo 11473` + `actividad 23` (del grupo 11474) | par consistente 11474/3744 |\n| Cotejo y escala | apuntaban a la actividad de RUBRICA | actividad propia por instrumento (resuelta con un prerequest que prueba varias asignaturas hasta encontrar una con RUBRICA) |\n| Estudiante | el mismo id en los tres bulk | `pkTactividadEstudiante` por actividad |\n| `CALIFICACION` | objeto anidado nativo → 400 (\"placeholders sin tipo declarado\") | **string JSON doblemente serializado** (`JSON.stringify(JSON.stringify(...))`): el campo es JSONB del lado del backend y espera un string ya escapado, mismo bug de binder que `DEFINICION` en `PUT .../instrumento` |\n\n**La causa de fondo:** los criterios de la **rúbrica de la unidad** y los del **instrumento de evaluación de la actividad** son conjuntos independientes y sin relación. Calificar consume los del INSTRUMENTO. `tactividad_criterio_unidad` solo traza la relación entre ambos y no interviene al calificar."
+    },
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "event": [
@@ -48,58 +51,27 @@
     }
   ],
   "variable": [
+    { "key": "token", "value": "" },
+    { "key": "periodoId", "value": "1777", "description": "PK_TPERIODO_ACADEMICO — se completa solo con el paso 3" },
+    { "key": "gradoId", "value": "3744", "description": "PK_TGRADO — se completa solo con el paso 1" },
+    { "key": "grupoId", "value": "11474", "description": "PK_TGRUPO — se completa solo con el paso 1" },
+    { "key": "asignaturaId", "value": "4190", "description": "PK_TASIGNATURA — se completa solo con el paso 2, y se re-resuelve en 2.1 contra la primera que tenga una actividad con RUBRICA" },
+    { "key": "asignaturasDelGrado", "value": "[4190]", "description": "Todas las asignaturas del grado elegido (no solo la primera) — un grado puede tener asignaturas sin ninguna actividad calificable" },
+    { "key": "actividadId", "value": "23", "description": "PK_TACTIVIDAD con instrumento RUBRICA — se completa solo con el paso 2.1" },
+    { "key": "actividadCotejoId", "value": "24", "description": "PK_TACTIVIDAD con instrumento LISTA_COTEJO" },
+    { "key": "actividadEscalaId", "value": "25", "description": "PK_TACTIVIDAD con instrumento ESCALA_VALORACION" },
+    { "key": "tactividadEstudianteId", "value": "1", "description": "PK_TACTIVIDAD_ESTUDIANTE de actividadId — se completa solo con el paso 2.2" },
+    { "key": "tactEstCotejoId", "value": "2", "description": "PK_TACTIVIDAD_ESTUDIANTE de actividadCotejoId" },
+    { "key": "tactEstEscalaId", "value": "3", "description": "PK_TACTIVIDAD_ESTUDIANTE de actividadEscalaId" },
+    { "key": "pkCriterio", "value": "15", "description": "PK_TACTIVIDAD_RUBRICA_CRITERIO — ajustar a la rúbrica real de la actividad" },
+    { "key": "pkNivel", "value": "22", "description": "PK_TACTIVIDAD_RUBRICA_NIVEL" },
+    { "key": "pkItem", "value": "16", "description": "PK_TACTIVIDAD_COTEJO_ITEM" },
+    { "key": "pkNivelEscala", "value": "13", "description": "PK_TACTIVIDAD_ESCALA_NIVEL — catálogo distinto al de la rúbrica" },
+    { "key": "fechaCalificar", "value": "2026-09-01" },
     {
-      "key": "token",
-      "value": ""
-    },
-    {
-      "key": "periodoId",
-      "value": "1777",
-      "description": "PK_TPERIODO_ACADEMICO — se completa solo con el paso 3"
-    },
-    {
-      "key": "gradoId",
-      "value": "3743",
-      "description": "PK_TGRADO — se completa solo con el paso 1"
-    },
-    {
-      "key": "grupoId",
-      "value": "11473",
-      "description": "PK_TGRUPO — se completa solo con el paso 1"
-    },
-    {
-      "key": "asignaturaId",
-      "value": "4190",
-      "description": "PK_TASIGNATURA — se completa solo con el paso 2"
-    },
-    {
-      "key": "actividadId",
-      "value": "23",
-      "description": "PK_TACTIVIDAD — se completa solo con el paso 4 (primera columna de la grilla)"
-    },
-    {
-      "key": "tactividadEstudianteId",
-      "value": "1",
-      "description": "PK_TACTIVIDAD_ESTUDIANTE — se completa solo con el paso 5"
-    },
-    {
-      "key": "pkCriterio",
-      "value": "1",
-      "description": "PK_TACTIVIDAD_RUBRICA_CRITERIO — ajustar a la rúbrica real de la actividad"
-    },
-    {
-      "key": "pkNivel",
-      "value": "1",
-      "description": "PK_TACTIVIDAD_RUBRICA_NIVEL o PK_TACTIVIDAD_ESCALA_NIVEL según el endpoint"
-    },
-    {
-      "key": "pkItem",
-      "value": "1",
-      "description": "PK_TACTIVIDAD_COTEJO_ITEM"
-    },
-    {
-      "key": "fechaCalificar",
-      "value": "2026-09-04"
+      "key": "calificacionRubrica",
+      "value": "\"{\\\"niveles\\\": [{\\\"pkCriterio\\\": 15, \\\"pkNivel\\\": 22}, {\\\"pkCriterio\\\": 16, \\\"pkNivel\\\": 26}]}\"",
+      "description": "STRING JSON doblemente serializado — ver 'Correcciones de integración aplicadas'"
     }
   ],
   "item": [
@@ -121,27 +93,9 @@
       ],
       "request": {
         "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}"
-        },
-        "url": {
-          "raw": "{{baseUrl}}/api/auth/login",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "api",
-            "auth",
-            "login"
-          ]
-        }
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}" },
+        "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] }
       }
     },
     {
@@ -156,7 +110,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('200', () => pm.response.to.have.status(200));",
-                  "const rows = pm.response.json().rows;",
+                  "const rows = (pm.response.json() || {}).rows || [];",
                   "pm.test('rows es array', () => pm.expect(rows).to.be.an('array'));",
                   "if (rows && rows.length) {",
                   "    pm.collectionVariables.set('gradoId', rows[0].grado_id);",
@@ -168,51 +122,22 @@
           ],
           "request": {
             "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
             "url": {
               "raw": "{{baseUrl}}/api/eval-col/planeador/docentes/grupos?periodo={{periodoId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "eval-col",
-                "planeador",
-                "docentes",
-                "grupos"
-              ],
-              "query": [
-                {
-                  "key": "periodo",
-                  "value": "{{periodoId}}"
-                }
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "eval-col", "planeador", "docentes", "grupos"],
+              "query": [{ "key": "periodo", "value": "{{periodoId}}" }]
             },
-            "description": "Primera columna del filtro en cascada de la Planilla: grupos (con su grado embebido) donde el docente autenticado tiene asignación en el periodo. El front agrupa estas filas por `grado_id` para armar la columna \"Grado\" y las deja planas para \"Grupo\" (ver `FiltroPlanillaCascada`)."
+            "description": "Primera columna del filtro en cascada de la Planilla: grupos (con su grado embebido) donde el docente autenticado tiene asignación en el periodo."
           },
           "response": [
             {
               "name": "200 — REAL (docente sandro12349@gmail.com, verificado en vivo)",
-              "originalRequest": {
-                "method": "GET",
-                "url": {
-                  "raw": "{{baseUrl}}/api/eval-col/planeador/docentes/grupos?periodo=1777"
-                }
-              },
-              "status": "OK",
-              "code": 200,
+              "originalRequest": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/eval-col/planeador/docentes/grupos?periodo=1777" } },
+              "status": "OK", "code": 200,
               "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
               "body": "{\n  \"rows\": [\n    {\n      \"grupo_id\": 11474,\n      \"grupo_codigo\": null,\n      \"grupo_nombre\": \"01\",\n      \"capacidad\": 10,\n      \"jornada_id\": 51887,\n      \"jornada_valor\": \"M\",\n      \"jornada_nombre\": \"Mañana\",\n      \"modelo_pedagogico_id\": 51897,\n      \"modelo_pedagogico_valor\": \"11\",\n      \"modelo_pedagogico_nombre\": \"Escolarizado\",\n      \"grado_id\": 3744,\n      \"grado_codigo\": \"-1\",\n      \"grado_nombre\": \"Jardin I o A o Kinder\",\n      \"nivel_ensenanza_id\": 1,\n      \"nivel_ensenanza_nombre\": \"Preescolar\"\n    },\n    {\n      \"grupo_id\": 11473,\n      \"grupo_codigo\": null,\n      \"grupo_nombre\": \"01\",\n      \"capacidad\": 10,\n      \"jornada_id\": 51887,\n      \"jornada_valor\": \"M\",\n      \"jornada_nombre\": \"Mañana\",\n      \"modelo_pedagogico_id\": 51897,\n      \"modelo_pedagogico_valor\": \"11\",\n      \"modelo_pedagogico_nombre\": \"Escolarizado\",\n      \"grado_id\": 3743,\n      \"grado_codigo\": \"-2\",\n      \"grado_nombre\": \"Pre-Jardin\",\n      \"nivel_ensenanza_id\": 1,\n      \"nivel_ensenanza_nombre\": \"Preescolar\"\n    }\n  ]\n}"
             }
           ]
@@ -226,61 +151,40 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('200', () => pm.response.to.have.status(200));",
-                  "const rows = pm.response.json().rows;",
+                  "const rows = (pm.response.json() || {}).rows || [];",
                   "pm.test('rows es array', () => pm.expect(rows).to.be.an('array'));",
-                  "const mia = rows.find(r => String(r.grado_id) === pm.collectionVariables.get('gradoId')) ?? rows[0];",
-                  "if (mia) { pm.collectionVariables.set('asignaturaId', mia.asignatura_id); }"
+                  "// Un grado puede tener VARIAS asignaturas y no todas tienen actividades",
+                  "// calificables. Quedarse con la primera hace que 2.1 aterrice en una",
+                  "// asignatura sin instrumentos y toda la cadena de calificar falle, así",
+                  "// que se guardan todas y 2.1 elige la que sí sirve.",
+                  "const g = String(pm.collectionVariables.get('gradoId'));",
+                  "const mias = rows.filter(r => String(r.grado_id) === g);",
+                  "const lista = (mias.length ? mias : rows).map(r => r.asignatura_id);",
+                  "pm.collectionVariables.set('asignaturasDelGrado', JSON.stringify(lista));",
+                  "if (lista.length) pm.collectionVariables.set('asignaturaId', lista[0]);",
+                  "pm.test('el grado tiene al menos una asignatura', () => pm.expect(lista.length).to.be.above(0));"
                 ]
               }
             }
           ],
           "request": {
             "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
             "url": {
               "raw": "{{baseUrl}}/api/eval-col/planeador/docentes/grado-asignatura?periodo={{periodoId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "eval-col",
-                "planeador",
-                "docentes",
-                "grado-asignatura"
-              ],
-              "query": [
-                {
-                  "key": "periodo",
-                  "value": "{{periodoId}}"
-                }
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "eval-col", "planeador", "docentes", "grado-asignatura"],
+              "query": [{ "key": "periodo", "value": "{{periodoId}}" }]
             },
-            "description": "Tercera columna del filtro: cruza con el `grado_id` ya elegido en 1.1 para poblar el selector de Asignatura, filtrado del lado del cliente por ese `grado_id` (el endpoint no acepta `grado` como filtro propio)."
+            "description": "Tercera columna del filtro: cruza con el `grado_id` ya elegido en 1.1 para poblar el selector de Asignatura, filtrado del lado del cliente por ese `grado_id`."
           },
           "response": [
             {
               "name": "200 — REAL (docente sandro12349@gmail.com, verificado en vivo)",
-              "originalRequest": {
-                "method": "GET",
-                "url": {
-                  "raw": "{{baseUrl}}/api/eval-col/planeador/docentes/grado-asignatura?periodo=1777"
-                }
-              },
-              "status": "OK",
-              "code": 200,
+              "originalRequest": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/eval-col/planeador/docentes/grado-asignatura?periodo=1777" } },
+              "status": "OK", "code": 200,
               "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
               "body": "{\n  \"rows\": [\n    {\n      \"grado_id\": 3744,\n      \"grado_codigo\": \"-1\",\n      \"grado_nombre\": \"Jardin I o A o Kinder\",\n      \"asignatura_id\": 4191,\n      \"asignatura_codigo\": \"MATF\",\n      \"asignatura_nombre\": \"MATEMATICA FINANCIERA\"\n    },\n    {\n      \"grado_id\": 3744,\n      \"grado_codigo\": \"-1\",\n      \"grado_nombre\": \"Jardin I o A o Kinder\",\n      \"asignatura_id\": 4190,\n      \"asignatura_codigo\": \"MAT\",\n      \"asignatura_nombre\": \"MATEMATICAS\"\n    },\n    {\n      \"grado_id\": 3743,\n      \"grado_codigo\": \"-2\",\n      \"grado_nombre\": \"Pre-Jardin\",\n      \"asignatura_id\": 4190,\n      \"asignatura_codigo\": \"MAT\",\n      \"asignatura_nombre\": \"MATEMATICAS\"\n    }\n  ]\n}"
             }
           ]
@@ -295,11 +199,11 @@
                 "exec": [
                   "// REAL (verificado en vivo con sandro12349@gmail.com, CEVAL-DOCENTE):",
                   "// este endpoint responde 403 para el docente -- role_query no lo",
-                  "// incluye todavia (ver aviso de la descripcion de la coleccion).",
-                  "// El test acepta los dos casos en vez de fallar la corrida entera.",
+                  "// incluye todavia. El test acepta los dos casos en vez de fallar la",
+                  "// corrida entera.",
                   "pm.test('200 (con permiso) o 403 (docente sin role_query todavia)', () => [200, 403].includes(pm.response.code));",
                   "if (pm.response.code === 200) {",
-                  "    const rows = pm.response.json().rows;",
+                  "    const rows = (pm.response.json() || {}).rows || [];",
                   "    const hoy = new Date().toISOString().slice(0, 10);",
                   "    const vigente = rows.find(r => r.start_date <= hoy && hoy <= r.end_date);",
                   "    if (vigente) { pm.collectionVariables.set('periodoId', vigente.academic_period_id); }",
@@ -313,14 +217,8 @@
           "request": {
             "method": "POST",
             "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
             ],
             "body": {
               "mode": "raw",
@@ -328,56 +226,27 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/eval-col/periodo-evaluacion/query",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "eval-col",
-                "periodo-evaluacion",
-                "query"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "eval-col", "periodo-evaluacion", "query"]
             },
-            "description": "NO es parte del módulo Planeador — endpoint ya existente que usa el resto de la app (`use-evaluation-periods.ts`, confirmado por ThunderClient antes de este lote). El front filtra del lado del cliente los \"vigentes\" (hoy dentro de `[start_date, end_date]`) para ofrecerlos como cuarta columna del filtro en cascada.\n\n**CONFIRMADO EN VIVO: responde 403 para un docente real** (`CEVAL-DOCENTE`) — ver el aviso 🔴 al principio de la colección. El ejemplo de 200 de abajo es el ilustrativo original (sin verificar con un rol que sí tenga acceso); el de 403 es la respuesta real capturada."
+            "description": "NO es parte del módulo Planeador. **CONFIRMADO EN VIVO: responde 403 para un docente real** (`CEVAL-DOCENTE`) — ver aviso 🔴 al principio de la colección."
           },
           "response": [
             {
               "name": "403 — REAL: rechazado para CEVAL-DOCENTE",
-              "originalRequest": {
-                "method": "POST",
-                "url": {
-                  "raw": "{{baseUrl}}/api/eval-col/periodo-evaluacion/query"
-                }
-              },
-              "status": "Forbidden",
-              "code": 403,
+              "originalRequest": { "method": "POST", "url": { "raw": "{{baseUrl}}/api/eval-col/periodo-evaluacion/query" } },
+              "status": "Forbidden", "code": 403,
               "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
               "body": "{\n  \"code\": \"403 FORBIDDEN\",\n  \"message\": \"El catálogo rechazó la consulta: \"\n}"
             },
             {
               "name": "200 — ilustrativo (sin verificar; rol con acceso)",
-              "originalRequest": {
-                "method": "POST",
-                "url": {
-                  "raw": "{{baseUrl}}/api/eval-col/periodo-evaluacion/query"
-                }
-              },
-              "status": "OK",
-              "code": 200,
+              "originalRequest": { "method": "POST", "url": { "raw": "{{baseUrl}}/api/eval-col/periodo-evaluacion/query" } },
+              "status": "OK", "code": 200,
               "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"rows\": [\n    {\n      \"id\": 1,\n      \"codigo\": \"P1-2026\",\n      \"nombre\": \"Primer periodo\",\n      \"abreviacion\": \"P1\",\n      \"start_date\": \"2026-08-01\",\n      \"end_date\": \"2026-10-15\",\n      \"peso\": 25,\n      \"status_id\": 249,\n      \"estado\": \"1\",\n      \"estado_name\": \"Calificable\",\n      \"academic_period_id\": 1777,\n      \"total_count\": 2\n    }\n  ]\n}"
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"rows\": [\n    { \"id\": 1, \"codigo\": \"P1-2026\", \"nombre\": \"Primer periodo\", \"abreviacion\": \"P1\", \"start_date\": \"2026-08-01\", \"end_date\": \"2026-10-15\", \"peso\": 25, \"status_id\": 249, \"estado\": \"1\", \"estado_name\": \"Calificable\", \"academic_period_id\": 1777, \"total_count\": 2 }\n  ]\n}"
             }
           ]
         }
@@ -394,88 +263,92 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('200', () => pm.response.to.have.status(200));",
-                  "const rows = pm.response.json().rows;",
-                  "pm.test('rows es array', () => pm.expect(rows).to.be.an('array'));",
-                  "if (rows && rows.length) { pm.collectionVariables.set('actividadId', rows[0].pk_tactividad); }"
+                  "pm.test(\"200\", () => pm.response.to.have.status(200));",
+                  "const rows = (pm.response.json() || {}).rows || [];",
+                  "const porInstr = (i) => rows.find(r => r.instrumento === i);",
+                  "const rub = porInstr('RUBRICA');",
+                  "// SIN fallback a rows[0]: caer en una actividad con instrumento OTRO (o",
+                  "// sin instrumento) deja actividadId apuntando a algo que los endpoints",
+                  "// de calificar no aceptan, y el error aparece recien 3 pasos despues",
+                  "// como un 400 incomprensible. Mejor fallar aqui, que es donde esta la causa.",
+                  "if (rub) pm.collectionVariables.set('actividadId', rub.pk_tactividad);",
+                  "const cot = porInstr('LISTA_COTEJO');",
+                  "if (cot) pm.collectionVariables.set('actividadCotejoId', cot.pk_tactividad);",
+                  "const esc = porInstr('ESCALA_VALORACION');",
+                  "if (esc) pm.collectionVariables.set('actividadEscalaId', esc.pk_tactividad);",
+                  "pm.test('la planilla trae una actividad con RUBRICA', () => pm.expect(rub, 'ninguna columna con instrumento RUBRICA').to.not.be.undefined);"
+                ]
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Recorre las asignaturas del grado y se queda con la PRIMERA cuya",
+                  "// planilla tenga una actividad con RUBRICA. Sin esto la cadena usa la",
+                  "// asignatura que 1.2 devolvio primero, que puede no tener ninguna",
+                  "// actividad calificable (caso real: MATEMATICA FINANCIERA solo tiene",
+                  "// una actividad con instrumento OTRO).",
+                  "const base = pm.variables.get('baseUrl');",
+                  "const tok = pm.variables.get('token');",
+                  "const grupo = pm.collectionVariables.get('grupoId');",
+                  "const grado = pm.collectionVariables.get('gradoId');",
+                  "let lista = [];",
+                  "try { lista = JSON.parse(pm.collectionVariables.get('asignaturasDelGrado') || '[]'); } catch (e) {}",
+                  "if (!lista.length) return;",
+                  "const probar = (i) => {",
+                  "  if (i >= lista.length) return;",
+                  "  const asig = lista[i];",
+                  "  pm.sendRequest({",
+                  "    url: base + '/api/eval-col/planeador/planilla/columnas?grupo=' + grupo +",
+                  "         '&asignatura=' + asig + '&grado=' + grado,",
+                  "    method: 'GET', header: { Authorization: 'Bearer ' + tok }",
+                  "  }, (err, res) => {",
+                  "    if (err) return probar(i + 1);",
+                  "    const rows = ((res.json() || {}).rows) || [];",
+                  "    if (rows.some(r => r.instrumento === 'RUBRICA')) {",
+                  "      pm.collectionVariables.set('asignaturaId', asig);",
+                  "    } else {",
+                  "      probar(i + 1);",
+                  "    }",
+                  "  });",
+                  "};",
+                  "probar(0);"
                 ]
               }
             }
           ],
           "request": {
             "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
             "url": {
               "raw": "{{baseUrl}}/api/eval-col/planeador/planilla/columnas?grupo={{grupoId}}&asignatura={{asignaturaId}}&grado={{gradoId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "eval-col",
-                "planeador",
-                "planilla",
-                "columnas"
-              ],
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "eval-col", "planeador", "planilla", "columnas"],
               "query": [
-                {
-                  "key": "grupo",
-                  "value": "{{grupoId}}"
-                },
-                {
-                  "key": "asignatura",
-                  "value": "{{asignaturaId}}"
-                },
-                {
-                  "key": "grado",
-                  "value": "{{gradoId}}"
-                }
+                { "key": "grupo", "value": "{{grupoId}}" },
+                { "key": "asignatura", "value": "{{asignaturaId}}" },
+                { "key": "grado", "value": "{{gradoId}}" }
               ]
             },
-            "description": "Una fila por actividad-columna del (grupo, asignatura) elegido — de acá sale `actividadId` para el resto del flujo (definir instrumento, calificar). `grupo`/`asignatura` obligatorios; `grado` opcional."
+            "description": "Una fila por actividad-columna del (grupo, asignatura) elegido — de acá sale `actividadId` para el resto del flujo. `grupo`/`asignatura` obligatorios; `grado` opcional."
           },
           "response": [
             {
               "name": "200 — REAL (recortado a 3 de 8 filas — grupo=11473, asignatura=4190; docente sandro12349@gmail.com)",
-              "originalRequest": {
-                "method": "GET",
-                "url": {
-                  "raw": "{{baseUrl}}/api/eval-col/planeador/planilla/columnas?grupo={{grupoId}}&asignatura={{asignaturaId}}"
-                }
-              },
-              "status": "OK",
-              "code": 200,
+              "originalRequest": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/eval-col/planeador/planilla/columnas?grupo={{grupoId}}&asignatura={{asignaturaId}}" } },
+              "status": "OK", "code": 200,
               "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
               "body": "{\n  \"rows\": [\n    {\n      \"orden_columna\": 1,\n      \"pk_tactividad\": 28,\n      \"titulo\": \"Exploramos el patio (observacion)\",\n      \"fk_tunidad\": 13,\n      \"unidad\": \"Proyecto Pedagogico - Mi mundo cercano (prueba)\",\n      \"fk_tlv_instrumento_evaluacion\": null,\n      \"instrumento\": null,\n      \"instrumento_nombre\": null,\n      \"ponderacion\": null,\n      \"nota_maxima\": null,\n      \"es_evaluativa\": \"N\",\n      \"fecha_inicio\": \"2026-09-02T00:00:00.000Z\",\n      \"fecha_cierre\": \"2026-09-20T00:00:00.000Z\",\n      \"estudiantes_asignados\": 5,\n      \"estudiantes_calificados\": 0\n    },\n    {\n      \"orden_columna\": 2,\n      \"pk_tactividad\": 32,\n      \"titulo\": \"Taller de motricidad fina\",\n      \"fk_tunidad\": null,\n      \"unidad\": null,\n      \"fk_tlv_instrumento_evaluacion\": null,\n      \"instrumento\": null,\n      \"instrumento_nombre\": null,\n      \"ponderacion\": null,\n      \"nota_maxima\": null,\n      \"es_evaluativa\": \"S\",\n      \"fecha_inicio\": \"2026-08-10T00:00:00.000Z\",\n      \"fecha_cierre\": \"2026-08-20T00:00:00.000Z\",\n      \"estudiantes_asignados\": 5,\n      \"estudiantes_calificados\": 0\n    },\n    {\n      \"orden_columna\": 3,\n      \"pk_tactividad\": 33,\n      \"titulo\": \"Reconocimiento de vocales\",\n      \"fk_tunidad\": null,\n      \"unidad\": null,\n      \"fk_tlv_instrumento_evaluacion\": null,\n      \"instrumento\": null,\n      \"instrumento_nombre\": null,\n      \"ponderacion\": null,\n      \"nota_maxima\": null,\n      \"es_evaluativa\": \"S\",\n      \"fecha_inicio\": \"2026-08-15T00:00:00.000Z\",\n      \"fecha_cierre\": \"2026-08-25T00:00:00.000Z\",\n      \"estudiantes_asignados\": 5,\n      \"estudiantes_calificados\": 0\n    }\n  ]\n}"
             },
             {
               "name": "400 — falta grupo o asignatura (22023)",
-              "originalRequest": {
-                "method": "GET",
-                "url": {
-                  "raw": "{{baseUrl}}/api/eval-col/planeador/planilla/columnas"
-                }
-              },
-              "status": "Bad Request",
-              "code": 400,
+              "originalRequest": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/eval-col/planeador/planilla/columnas" } },
+              "status": "Bad Request", "code": 400,
               "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
               "body": "{\n  \"error\": \"Debe seleccionar grupo y asignatura para consultar la planilla de calificacion\",\n  \"sqlState\": \"22023\"\n}"
             }
           ]
@@ -488,76 +361,56 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('200', () => pm.response.to.have.status(200));",
-                  "const rows = pm.response.json().rows;",
-                  "pm.test('rows es array', () => pm.expect(rows).to.be.an('array'));"
+                  "pm.test(\"200\", () => pm.response.to.have.status(200));",
+                  "const rows = (pm.response.json() || {}).rows || [];",
+                  "// `pkTactividadEstudiante` es la celda (estudiante x ACTIVIDAD): hay uno",
+                  "// distinto por actividad. Reusar el de la rubrica en los endpoints de",
+                  "// cotejo/escala manda un estudiante que no pertenece a esa actividad.",
+                  "const num = (x) => Number(x);",
+                  "const buscar = (actId) => {",
+                  "  let hit = null;",
+                  "  (rows || []).forEach(r => (r.celdas || []).forEach(c => {",
+                  "    if (!hit && num(c.pkTactividad) === num(actId)) hit = c; }));",
+                  "  return hit;",
+                  "};",
+                  "const pares = [['actividadId','tactividadEstudianteId'],",
+                  "               ['actividadCotejoId','tactEstCotejoId'],",
+                  "               ['actividadEscalaId','tactEstEscalaId']];",
+                  "pares.forEach(([va, vd]) => {",
+                  "  const c = buscar(pm.collectionVariables.get(va));",
+                  "  if (c) pm.collectionVariables.set(vd, c.pkTactividadEstudiante);",
+                  "});",
+                  "pm.test('la grilla trae la celda de la actividad seleccionada', () => {",
+                  "  if (!rows || !rows.length) return;",
+                  "  pm.expect(buscar(pm.collectionVariables.get('actividadId'))).to.not.be.null; });"
                 ]
               }
             }
           ],
           "request": {
             "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
             "url": {
               "raw": "{{baseUrl}}/api/eval-col/planeador/planilla/calificaciones?grupo={{grupoId}}&asignatura={{asignaturaId}}&grado={{gradoId}}&size=50&offset=0",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "eval-col",
-                "planeador",
-                "planilla",
-                "calificaciones"
-              ],
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "eval-col", "planeador", "planilla", "calificaciones"],
               "query": [
-                {
-                  "key": "grupo",
-                  "value": "{{grupoId}}"
-                },
-                {
-                  "key": "asignatura",
-                  "value": "{{asignaturaId}}"
-                },
-                {
-                  "key": "grado",
-                  "value": "{{gradoId}}"
-                },
-                {
-                  "key": "size",
-                  "value": "50"
-                },
-                {
-                  "key": "offset",
-                  "value": "0"
-                }
+                { "key": "grupo", "value": "{{grupoId}}" },
+                { "key": "asignatura", "value": "{{asignaturaId}}" },
+                { "key": "grado", "value": "{{gradoId}}" },
+                { "key": "size", "value": "50" },
+                { "key": "offset", "value": "0" }
               ]
             },
-            "description": "Una fila por estudiante con sus celdas (una por `pk_tactividad` de 2.1) y la definitiva proyectada ya embebida. **Endpoint paginado: manda `size`/`offset` SIEMPRE explícitos — omitirlos produce 500 (bug conocido de este endpoint puntual, no del motor en general)."
+            "description": "Una fila por estudiante con sus celdas (una por `pk_tactividad` de 2.1) y la definitiva proyectada ya embebida. **Endpoint paginado: manda `size`/`offset` SIEMPRE explícitos** — omitirlos produce 500."
           },
           "response": [
             {
-              "name": "200 — REAL (recortado a 1 de 5 estudiantes, y 2 de 8 celdas por fila — sin ninguna nota cargada todavía en este dataset de prueba)",
-              "originalRequest": {
-                "method": "GET",
-                "url": {
-                  "raw": "{{baseUrl}}/api/eval-col/planeador/planilla/calificaciones?grupo={{grupoId}}&asignatura={{asignaturaId}}"
-                }
-              },
-              "status": "OK",
-              "code": 200,
+              "name": "200 — REAL (recortado a 1 de 5 estudiantes, y 2 de 8 celdas por fila)",
+              "originalRequest": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/eval-col/planeador/planilla/calificaciones?grupo={{grupoId}}&asignatura={{asignaturaId}}" } },
+              "status": "OK", "code": 200,
               "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
               "body": "{\n  \"rows\": [\n    {\n      \"pk_tmatricula\": 222759,\n      \"pk_testudiante\": 51936,\n      \"nombre_estudiante\": \"BEIDDY DIANA MARTINEZ GUERRA\",\n      \"definitiva_proyectada\": null,\n      \"definitiva_registrada\": null,\n      \"tendencia\": null,\n      \"celdas\": [\n        {\n          \"ordenColumna\": 1,\n          \"pkTactividad\": 28,\n          \"pkTunidad\": 13,\n          \"pkTactividadEstudiante\": 5,\n          \"estado\": \"NO_CALIFICABLE\",\n          \"calificacion\": null,\n          \"recuperacion\": null,\n          \"definitiva\": null,\n          \"nota\": null,\n          \"calificable\": \"N\",\n          \"observacion\": \"Lidero el recorrido y explico a sus companeros el hallazgo de un nido; propone volver a observarlo.\"\n        },\n        {\n          \"ordenColumna\": 2,\n          \"pkTactividad\": 32,\n          \"pkTunidad\": null,\n          \"pkTactividadEstudiante\": 12,\n          \"estado\": \"SIN_CALIFICAR\",\n          \"calificacion\": null,\n          \"recuperacion\": null,\n          \"definitiva\": null,\n          \"nota\": null,\n          \"calificable\": null,\n          \"observacion\": null\n        }\n      ],\n      \"total_count\": 5\n    }\n  ]\n}"
             }
           ]
@@ -575,101 +428,74 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('200', () => pm.response.to.have.status(200));",
-                  "// REAL: sin instrumento definido responde 200 con instrumento/definicion en null, no 404."
+                  "pm.test(\"200\", () => pm.response.to.have.status(200));",
+                  "const r = (((pm.response.json() || {}).rows || [])[0] || {});",
+                  "const def = r.definicion;",
+                  "// `definicion` tiene TRES formas segun el instrumento:",
+                  "//   RUBRICA           -> array de criterios, cada uno con niveles[]",
+                  "//   LISTA_COTEJO      -> array de items (pk, orden, descripcion)",
+                  "//   ESCALA_VALORACION -> objeto { pk, niveles[] }",
+                  "if (r.instrumento === 'RUBRICA' && Array.isArray(def) && def.length) {",
+                  "  pm.collectionVariables.set('pkCriterio', def[0].pk);",
+                  "  pm.collectionVariables.set('pkNivel', def[0].niveles[0].pk);",
+                  "  // El backend exige cubrir TODOS los criterios activos de la rubrica",
+                  "  // (400: 'La rubrica tiene N criterio(s) activo(s) pero se calificaron M').",
+                  "  const niveles = def.map(c => ({ pkCriterio: c.pk, pkNivel: c.niveles[0].pk }));",
+                  "  // Doble stringify: la variable guarda el STRING JSON ya entrecomillado",
+                  "  // y escapado. BODY.CALIFICACION esta declarado JSONB y espera un",
+                  "  // string; mandar un objeto lo aplana en placeholders no declarados",
+                  "  // (400 'placeholders sin tipo declarado: [BODY.CALIFICACION...]').",
+                  "  pm.collectionVariables.set('calificacionRubrica', JSON.stringify(JSON.stringify({ niveles: niveles })));",
+                  "  pm.test('la rubrica trae criterios y niveles', () => {",
+                  "    pm.expect(def[0]).to.have.property('pk');",
+                  "    pm.expect(def[0].niveles[0]).to.have.property('pk'); });",
+                  "}"
                 ]
               }
             }
           ],
           "request": {
             "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
             "url": {
               "raw": "{{baseUrl}}/api/eval-col/planeador/actividades/{{actividadId}}/instrumento",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "eval-col",
-                "planeador",
-                "actividades",
-                "{{actividadId}}",
-                "instrumento"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "eval-col", "planeador", "actividades", "{{actividadId}}", "instrumento"]
             },
-            "description": "Se llama al abrir la columna por primera vez (por ejemplo desde `instrumento-grading-fields.tsx`): trae la definición ya cargada (criterios de rúbrica, items de cotejo, niveles de escala) para pintar los campos de captura. **Confirmado en vivo**: si nunca se definió, responde `200` con `instrumento`/`instrumento_nombre`/`definicion` en `null` — NO `404` (el `pk` de cada nivel/criterio en la LECTURA es distinto del `pkCriterio`/`pkNivel` que espera la ESCRITURA en 4.1/4.2 — mismo campo, dos nombres distintos según el lado)."
+            "description": {
+              "content": "Devuelve el instrumento definido en la actividad. **Es la fuente de los ids que consume calificar**: este script captura `pkCriterio` y `pkNivel`, y arma `calificacionRubrica` con **todos** los criterios (el backend rechaza una rúbrica parcial).\n\n> **No confundir con los criterios de la UNIDAD.** Son DOS jerarquías independientes y sin relación:\n> - **Instrumento de la ACTIVIDAD** (lo que consume calificar): `tactividad_rubrica_criterio` → `tactividad_rubrica_nivel`. En la actividad de ejemplo, criterios **15 y 16**, niveles **22-29**.\n> - **Rúbrica de la UNIDAD**: `trubrica_unidad` → `tcriterio_unidad` → `tnivel_criterio_unidad`, administrada por `/planeador/unidades/:ID/criterios`. En la unidad de ejemplo el criterio es el **pk 1** ('Expresión oral', código `C-ORAL`).\n> \n> `tactividad_criterio_unidad` solo **traza** actividad ↔ criterio de unidad; **no** es lo que se envía al calificar. La versión anterior mandaba `pkCriterio: 1` — ese 1 es el criterio de la UNIDAD, y el backend responde **400**.",
+              "type": "text/markdown"
+            }
           },
           "response": [
             {
               "name": "200 — REAL: RUBRICA ya definida (actividad 23)",
-              "originalRequest": {
-                "method": "GET",
-                "url": {
-                  "raw": "{{baseUrl}}/api/eval-col/planeador/actividades/23/instrumento"
-                }
-              },
-              "status": "OK",
-              "code": 200,
+              "originalRequest": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/eval-col/planeador/actividades/23/instrumento" } },
+              "status": "OK", "code": 200,
               "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"rows\": [\n    {\n      \"instrumento\": \"RUBRICA\",\n      \"instrumento_nombre\": \"Rúbrica\",\n      \"definicion\": [\n        {\n          \"pk\": 15,\n          \"orden\": 1,\n          \"nombre\": \"Secuencia de la narracion\",\n          \"descripcion\": \"Organiza inicio, desarrollo y cierre\",\n          \"niveles\": [\n            {\n              \"pk\": 22,\n              \"etiqueta\": \"Superior\",\n              \"descripcion\": \"Narra con secuencia completa y coherente\",\n              \"ponderacion\": 100\n            },\n            {\n              \"pk\": 23,\n              \"etiqueta\": \"Alto\",\n              \"descripcion\": \"Narra con secuencia casi completa\",\n              \"ponderacion\": 80\n            },\n            {\n              \"pk\": 24,\n              \"etiqueta\": \"Basico\",\n              \"descripcion\": \"Narra con apoyo del docente\",\n              \"ponderacion\": 60\n            },\n            {\n              \"pk\": 25,\n              \"etiqueta\": \"Bajo\",\n              \"descripcion\": \"Aun no logra organizar la narracion\",\n              \"ponderacion\": 30\n            }\n          ]\n        },\n        {\n          \"pk\": 16,\n          \"orden\": 2,\n          \"nombre\": \"Escucha activa\",\n          \"descripcion\": \"Respeta turnos y responde con pertinencia\",\n          \"niveles\": [\n            {\n              \"pk\": 26,\n              \"etiqueta\": \"Superior\",\n              \"descripcion\": \"Escucha y responde con pertinencia siempre\",\n              \"ponderacion\": 100\n            },\n            {\n              \"pk\": 27,\n              \"etiqueta\": \"Alto\",\n              \"descripcion\": \"Escucha y responde la mayoria de las veces\",\n              \"ponderacion\": 80\n            },\n            {\n              \"pk\": 28,\n              \"etiqueta\": \"Basico\",\n              \"descripcion\": \"Requiere recordatorios para escuchar\",\n              \"ponderacion\": 55\n            },\n            {\n              \"pk\": 29,\n              \"etiqueta\": \"Bajo\",\n              \"descripcion\": \"Interrumpe con frecuencia\",\n              \"ponderacion\": 25\n            }\n          ]\n        }\n      ]\n    }\n  ]\n}"
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"rows\": [\n    {\n      \"instrumento\": \"RUBRICA\",\n      \"instrumento_nombre\": \"Rúbrica\",\n      \"definicion\": [\n        {\n          \"pk\": 15,\n          \"orden\": 1,\n          \"nombre\": \"Secuencia de la narracion\",\n          \"descripcion\": \"Organiza inicio, desarrollo y cierre\",\n          \"niveles\": [\n            { \"pk\": 22, \"etiqueta\": \"Superior\", \"descripcion\": \"Narra con secuencia completa y coherente\", \"ponderacion\": 100 },\n            { \"pk\": 23, \"etiqueta\": \"Alto\", \"descripcion\": \"Narra con secuencia casi completa\", \"ponderacion\": 80 },\n            { \"pk\": 24, \"etiqueta\": \"Basico\", \"descripcion\": \"Narra con apoyo del docente\", \"ponderacion\": 60 },\n            { \"pk\": 25, \"etiqueta\": \"Bajo\", \"descripcion\": \"Aun no logra organizar la narracion\", \"ponderacion\": 30 }\n          ]\n        },\n        {\n          \"pk\": 16,\n          \"orden\": 2,\n          \"nombre\": \"Escucha activa\",\n          \"descripcion\": \"Respeta turnos y responde con pertinencia\",\n          \"niveles\": [\n            { \"pk\": 26, \"etiqueta\": \"Superior\", \"descripcion\": \"Escucha y responde con pertinencia siempre\", \"ponderacion\": 100 },\n            { \"pk\": 27, \"etiqueta\": \"Alto\", \"descripcion\": \"Escucha y responde la mayoria de las veces\", \"ponderacion\": 80 },\n            { \"pk\": 28, \"etiqueta\": \"Basico\", \"descripcion\": \"Requiere recordatorios para escuchar\", \"ponderacion\": 55 },\n            { \"pk\": 29, \"etiqueta\": \"Bajo\", \"descripcion\": \"Interrumpe con frecuencia\", \"ponderacion\": 25 }\n          ]\n        }\n      ]\n    }\n  ]\n}"
             },
             {
               "name": "200 — REAL: sin definir todavia (actividad 28) — OJO: 200, no 404",
-              "originalRequest": {
-                "method": "GET",
-                "url": {
-                  "raw": "{{baseUrl}}/api/eval-col/planeador/actividades/28/instrumento"
-                }
-              },
-              "status": "OK",
-              "code": 200,
+              "originalRequest": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/eval-col/planeador/actividades/28/instrumento" } },
+              "status": "OK", "code": 200,
               "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"rows\": [\n    {\n      \"instrumento\": null,\n      \"instrumento_nombre\": null,\n      \"definicion\": null\n    }\n  ]\n}"
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"rows\": [ { \"instrumento\": null, \"instrumento_nombre\": null, \"definicion\": null } ]\n}"
             }
           ]
         },
         {
           "name": "3.2 — PUT definir instrumento (RUBRICA, ejemplo)",
           "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('200', () => pm.response.to.have.status(200));"
-                ]
-              }
-            }
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] } }
           ],
           "request": {
             "method": "PUT",
             "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
             ],
             "body": {
               "mode": "raw",
@@ -677,38 +503,18 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/eval-col/planeador/actividades/{{actividadId}}/instrumento",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "eval-col",
-                "planeador",
-                "actividades",
-                "{{actividadId}}",
-                "instrumento"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "eval-col", "planeador", "actividades", "{{actividadId}}", "instrumento"]
             },
-            "description": "Solo hace falta la PRIMERA vez (si 3.1 dio 404 o `definicion` vacía). El body cambia de forma según el instrumento vigente de la actividad — ver la colección `planeador-instrumentos` para los 4 shapes (RUBRICA/LISTA_COTEJO/ESCALA_VALORACION/OTRO). `DEFINICION` va como STRING JSON serializado, no como objeto anidado nativo (bug del binder con JSONB, documentado en `planeador-instrumentos`)."
+            "description": "Solo hace falta la PRIMERA vez (si 3.1 dio `definicion` vacía). `DEFINICION` va como STRING JSON serializado, no como objeto anidado nativo (bug del binder con JSONB — mismo patrón que `CALIFICACION`)."
           },
           "response": [
             {
               "name": "200",
-              "originalRequest": {
-                "method": "PUT",
-                "url": {
-                  "raw": "{{baseUrl}}/api/eval-col/planeador/actividades/{{actividadId}}/instrumento"
-                }
-              },
-              "status": "OK",
-              "code": 200,
+              "originalRequest": { "method": "PUT", "url": { "raw": "{{baseUrl}}/api/eval-col/planeador/actividades/{{actividadId}}/instrumento" } },
+              "status": "OK", "code": 200,
               "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
               "body": "{\n  \"rows\": [ { \"instrumento_aplicado\": \"RUBRICA\" } ]\n}"
             }
           ]
@@ -721,114 +527,58 @@
         {
           "name": "4.1 — PUT calificar UN estudiante (celda a celda)",
           "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('200', () => pm.response.to.have.status(200));"
-                ]
-              }
-            }
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] } }
           ],
           "request": {
             "method": "PUT",
             "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"CALIFICACION\": \"{\\\"niveles\\\":[{\\\"pkCriterio\\\":{{pkCriterio}},\\\"pkNivel\\\":{{pkNivel}}}]}\",\n  \"FECHA\": \"{{fechaCalificar}}\"\n}"
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"CALIFICACION\": {{calificacionRubrica}},\n  \"FECHA\": \"{{fechaCalificar}}\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/eval-col/planeador/actividades/estudiantes/{{tactividadEstudianteId}}/calificar",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "eval-col",
-                "planeador",
-                "actividades",
-                "estudiantes",
-                "{{tactividadEstudianteId}}",
-                "calificar"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "eval-col", "planeador", "actividades", "estudiantes", "{{tactividadEstudianteId}}", "calificar"]
             },
-            "description": "`:ID` = `PK_TACTIVIDAD_ESTUDIANTE` (sale de la celda de 2.2: `celdas[].pkTactividadEstudiante`), NO `PK_TACTIVIDAD`. Edición de UNA sola celda de la grilla. `CALIFICACION` cambia de forma según el instrumento (este ejemplo asume RUBRICA — debe cubrir TODOS los criterios activos)."
+            "description": {
+              "content": "Califica UNA celda (un estudiante en una actividad).\n\n**Precondiciones reales:**\n\n1. **Cubrir todos los criterios.** `CALIFICACION.niveles` debe traer una entrada por cada criterio activo; con uno solo el backend responde **400** `La rubrica tiene 2 criterio(s) activo(s) pero se calificaron 1`.\n2. **Asistencia registrada ese día.** Si no, **400** `No se puede calificar: no hay asistencia registrada para esta asignatura el <fecha>`. Por eso `fechaCalificar` es `2026-09-01`.\n3. **`CALIFICACION` es un string JSON doblemente serializado** — es JSONB del lado del backend; mandarlo como objeto nativo da 400 (\"placeholders sin tipo declarado\").",
+              "type": "text/markdown"
+            }
           },
           "response": [
             {
               "name": "200 — % calculado",
-              "originalRequest": {
-                "method": "PUT",
-                "url": {
-                  "raw": "{{baseUrl}}/api/eval-col/planeador/actividades/estudiantes/{{tactividadEstudianteId}}/calificar"
-                }
-              },
-              "status": "OK",
-              "code": 200,
+              "originalRequest": { "method": "PUT", "url": { "raw": "{{baseUrl}}/api/eval-col/planeador/actividades/estudiantes/{{tactividadEstudianteId}}/calificar" } },
+              "status": "OK", "code": 200,
               "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
               "body": "{\n  \"rows\": [ { \"calificacion\": 85.5 } ]\n}"
             },
             {
               "name": "400 — sin asistencia registrada (22023)",
-              "originalRequest": {
-                "method": "PUT",
-                "url": {
-                  "raw": "{{baseUrl}}/api/eval-col/planeador/actividades/estudiantes/{{tactividadEstudianteId}}/calificar"
-                }
-              },
-              "status": "Bad Request",
-              "code": 400,
+              "originalRequest": { "method": "PUT", "url": { "raw": "{{baseUrl}}/api/eval-col/planeador/actividades/estudiantes/{{tactividadEstudianteId}}/calificar" } },
+              "status": "Bad Request", "code": 400,
               "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
               "body": "{\n  \"error\": \"No se puede calificar: no hay asistencia registrada para esta asignatura el 2026-09-04\",\n  \"sqlState\": \"22023\"\n}"
             }
           ]
         },
         {
-          "name": "4.2 — PUT calificar en bloque — rúbrica (\"CalificarActividadBulk\")",
+          "name": "4.2 — PUT calificar en bloque — rúbrica",
           "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('200', () => pm.response.to.have.status(200));"
-                ]
-              }
-            }
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] } }
           ],
           "request": {
             "method": "PUT",
             "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
             ],
             "body": {
               "mode": "raw",
@@ -836,39 +586,18 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/eval-col/planeador/actividades/{{actividadId}}/calificar-bulk/rubrica",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "eval-col",
-                "planeador",
-                "actividades",
-                "{{actividadId}}",
-                "calificar-bulk",
-                "rubrica"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "eval-col", "planeador", "actividades", "{{actividadId}}", "calificar-bulk", "rubrica"]
             },
-            "description": "Aplica UN criterio + UN nivel a VARIOS estudiantes de una sola pasada — el flujo real detrás de `CalificarActividadBulk` (editar una columna entera de la grilla de un tiro). `ESTUDIANTES` son `PK_TACTIVIDAD_ESTUDIANTE`, no `PK_TESTUDIANTE`."
+            "description": "Califica un MISMO criterio+nivel para varios estudiantes. `PK_CRITERIO`/`PK_NIVEL` salen de 3.1 (instrumento de la ACTIVIDAD). `ESTUDIANTES` son `pkTactividadEstudiante` (de 2.2)."
           },
           "response": [
             {
               "name": "200 — una fila por estudiante",
-              "originalRequest": {
-                "method": "PUT",
-                "url": {
-                  "raw": "{{baseUrl}}/api/eval-col/planeador/actividades/{{actividadId}}/calificar-bulk/rubrica"
-                }
-              },
-              "status": "OK",
-              "code": 200,
+              "originalRequest": { "method": "PUT", "url": { "raw": "{{baseUrl}}/api/eval-col/planeador/actividades/{{actividadId}}/calificar-bulk/rubrica" } },
+              "status": "OK", "code": 200,
               "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
               "body": "{\n  \"rows\": [ { \"pk_tactividad_estudiante\": 1, \"criterios_totales\": 3, \"criterios_cubiertos\": 1, \"calificacion\": null, \"calificacion_actualizada\": false } ]\n}"
             }
           ]
@@ -876,12 +605,27 @@
         {
           "name": "4.3 — PUT calificar en bloque — lista de cotejo",
           "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] } },
             {
-              "listen": "test",
+              "listen": "prerequest",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('200', () => pm.response.to.have.status(200));"
+                  "// Los tres endpoints de bloque NO son intercambiables: cada actividad",
+                  "// tiene su propio instrumento. Se resuelve el id contra ESA actividad.",
+                  "const base = pm.variables.get('baseUrl');",
+                  "const act = pm.collectionVariables.get('actividadCotejoId');",
+                  "pm.sendRequest({",
+                  "  url: base + '/api/eval-col/planeador/actividades/' + act + '/instrumento',",
+                  "  method: 'GET',",
+                  "  header: { Authorization: 'Bearer ' + pm.variables.get('token') }",
+                  "}, (err, res) => {",
+                  "  if (err) return;",
+                  "  const r = ((res.json() || {}).rows || [])[0] || {};",
+                  "  if (r.instrumento === 'LISTA_COTEJO' && Array.isArray(r.definicion) && r.definicion.length) {",
+                  "    pm.collectionVariables.set('pkItem', r.definicion[0].pk);",
+                  "  }",
+                  "});"
                 ]
               }
             }
@@ -889,54 +633,27 @@
           "request": {
             "method": "PUT",
             "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"PK_ITEM\": {{pkItem}},\n  \"CUMPLIDO\": \"S\",\n  \"ESTUDIANTES\": [{{tactividadEstudianteId}}],\n  \"FECHA\": \"{{fechaCalificar}}\"\n}"
+              "raw": "{\n  \"PK_ITEM\": {{pkItem}},\n  \"CUMPLIDO\": \"S\",\n  \"ESTUDIANTES\": [{{tactEstCotejoId}}],\n  \"FECHA\": \"{{fechaCalificar}}\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/api/eval-col/planeador/actividades/{{actividadId}}/calificar-bulk/cotejo",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "eval-col",
-                "planeador",
-                "actividades",
-                "{{actividadId}}",
-                "calificar-bulk",
-                "cotejo"
-              ]
+              "raw": "{{baseUrl}}/api/eval-col/planeador/actividades/{{actividadCotejoId}}/calificar-bulk/cotejo",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "eval-col", "planeador", "actividades", "{{actividadCotejoId}}", "calificar-bulk", "cotejo"]
             },
-            "description": "A diferencia del bulk de rúbrica, SIEMPRE recalcula y guarda la nota en la misma pasada (no hace falta un segundo paso)."
+            "description": "**Va contra `{{actividadCotejoId}}`, no contra `{{actividadId}}`** — cada actividad tiene su propio instrumento y los tres bulk no son intercambiables. `PK_ITEM` lo resuelve el prerequest consultando el instrumento de esa actividad."
           },
           "response": [
             {
               "name": "200 — una fila por estudiante",
-              "originalRequest": {
-                "method": "PUT",
-                "url": {
-                  "raw": "{{baseUrl}}/api/eval-col/planeador/actividades/{{actividadId}}/calificar-bulk/cotejo"
-                }
-              },
-              "status": "OK",
-              "code": 200,
+              "originalRequest": { "method": "PUT", "url": { "raw": "{{baseUrl}}/api/eval-col/planeador/actividades/{{actividadCotejoId}}/calificar-bulk/cotejo" } },
+              "status": "OK", "code": 200,
               "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
               "body": "{\n  \"rows\": [ { \"pk_tactividad_estudiante\": 1, \"items_totales\": 5, \"items_cumplidos\": 3, \"calificacion\": 60.0 } ]\n}"
             }
           ]
@@ -944,12 +661,27 @@
         {
           "name": "4.4 — PUT calificar en bloque — escala cualitativa",
           "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] } },
             {
-              "listen": "test",
+              "listen": "prerequest",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('200', () => pm.response.to.have.status(200));"
+                  "// Los tres endpoints de bloque NO son intercambiables: cada actividad",
+                  "// tiene su propio instrumento. Se resuelve el id contra ESA actividad.",
+                  "const base = pm.variables.get('baseUrl');",
+                  "const act = pm.collectionVariables.get('actividadEscalaId');",
+                  "pm.sendRequest({",
+                  "  url: base + '/api/eval-col/planeador/actividades/' + act + '/instrumento',",
+                  "  method: 'GET',",
+                  "  header: { Authorization: 'Bearer ' + pm.variables.get('token') }",
+                  "}, (err, res) => {",
+                  "  if (err) return;",
+                  "  const r = ((res.json() || {}).rows || [])[0] || {};",
+                  "  if (r.instrumento === 'ESCALA_VALORACION' && r.definicion && Array.isArray(r.definicion.niveles) && r.definicion.niveles.length) {",
+                  "    pm.collectionVariables.set('pkNivelEscala', r.definicion.niveles[0].pk);",
+                  "  }",
+                  "});"
                 ]
               }
             }
@@ -957,73 +689,36 @@
           "request": {
             "method": "PUT",
             "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"PK_NIVEL\": {{pkNivel}},\n  \"ESTUDIANTES\": [{{tactividadEstudianteId}}],\n  \"FECHA\": \"{{fechaCalificar}}\"\n}"
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"PK_NIVEL\": {{pkNivelEscala}},\n  \"ESTUDIANTES\": [{{tactEstEscalaId}}],\n  \"FECHA\": \"{{fechaCalificar}}\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/api/eval-col/planeador/actividades/{{actividadId}}/calificar-bulk/escala",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "eval-col",
-                "planeador",
-                "actividades",
-                "{{actividadId}}",
-                "calificar-bulk",
-                "escala"
-              ]
+              "raw": "{{baseUrl}}/api/eval-col/planeador/actividades/{{actividadEscalaId}}/calificar-bulk/escala",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "eval-col", "planeador", "actividades", "{{actividadEscalaId}}", "calificar-bulk", "escala"]
             },
-            "description": "Solo aplica a escala CUALITATIVA — la NUMERICA no admite bulk (usar 4.1 celda a celda con `valorNumerico` en `CALIFICACION`)."
+            "description": "**Va contra `{{actividadEscalaId}}`** (instrumento `ESCALA_VALORACION`) y usa `pkNivelEscala` — catálogo distinto al `pkNivel` de la rúbrica. Aquí `definicion` es un **objeto** `{pk, niveles[]}`, no un array."
           },
           "response": [
             {
               "name": "200 — una fila por estudiante",
-              "originalRequest": {
-                "method": "PUT",
-                "url": {
-                  "raw": "{{baseUrl}}/api/eval-col/planeador/actividades/{{actividadId}}/calificar-bulk/escala"
-                }
-              },
-              "status": "OK",
-              "code": 200,
+              "originalRequest": { "method": "PUT", "url": { "raw": "{{baseUrl}}/api/eval-col/planeador/actividades/{{actividadEscalaId}}/calificar-bulk/escala" } },
+              "status": "OK", "code": 200,
               "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
               "body": "{\n  \"rows\": [ { \"pk_tactividad_estudiante\": 1, \"calificacion\": 75.0 } ]\n}"
             },
             {
               "name": "400 — escala NUMERICA no admite bulk (22023)",
-              "originalRequest": {
-                "method": "PUT",
-                "url": {
-                  "raw": "{{baseUrl}}/api/eval-col/planeador/actividades/{{actividadId}}/calificar-bulk/escala"
-                }
-              },
-              "status": "Bad Request",
-              "code": 400,
+              "originalRequest": { "method": "PUT", "url": { "raw": "{{baseUrl}}/api/eval-col/planeador/actividades/{{actividadEscalaId}}/calificar-bulk/escala" } },
+              "status": "Bad Request", "code": 400,
               "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
               "body": "{\n  \"error\": \"La escala de esta actividad es NUMERICA: no admite calificacion bulk por nivel, use PUT .../calificar con valorNumerico\",\n  \"sqlState\": \"22023\"\n}"
             }
           ]
@@ -1036,60 +731,26 @@
         {
           "name": "5.1 — GET detalle de la nota de un estudiante",
           "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('200', () => pm.response.to.have.status(200));"
-                ]
-              }
-            }
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] } }
           ],
           "request": {
             "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
             "url": {
               "raw": "{{baseUrl}}/api/eval-col/planeador/actividades/estudiantes/{{tactividadEstudianteId}}/nota",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "eval-col",
-                "planeador",
-                "actividades",
-                "estudiantes",
-                "{{tactividadEstudianteId}}",
-                "nota"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "eval-col", "planeador", "actividades", "estudiantes", "{{tactividadEstudianteId}}", "nota"]
             },
-            "description": "Confirma que 4.1/4.2 se guardaron: trae `calificacion` (%), `calificable` y el `detalle` crudo según instrumento. Es lo que repinta la celda de la grilla apenas cierra el popover de edición."
+            "description": "Confirma que 4.1/4.2 se guardaron: trae `calificacion` (%), `calificable` y el `detalle` crudo según instrumento."
           },
           "response": [
             {
               "name": "200 — RUBRICA",
-              "originalRequest": {
-                "method": "GET",
-                "url": {
-                  "raw": "{{baseUrl}}/api/eval-col/planeador/actividades/estudiantes/{{tactividadEstudianteId}}/nota"
-                }
-              },
-              "status": "OK",
-              "code": 200,
+              "originalRequest": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/eval-col/planeador/actividades/estudiantes/{{tactividadEstudianteId}}/nota" } },
+              "status": "OK", "code": 200,
               "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"rows\": [ {\n    \"instrumento\": \"RUBRICA\",\n    \"calificacion\": 85.5,\n    \"calificable\": \"S\",\n    \"observacion\": null,\n    \"detalle\": [ { \"pkCriterio\": 1, \"pkNivel\": 1, \"ponderacion\": 5 } ]\n  } ]\n}"
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"rows\": [ {\n    \"instrumento\": \"RUBRICA\",\n    \"calificacion\": 85.5,\n    \"calificable\": \"S\",\n    \"observacion\": null,\n    \"detalle\": [ { \"pkCriterio\": 15, \"pkNivel\": 22, \"ponderacion\": 100 }, { \"pkCriterio\": 16, \"pkNivel\": 26, \"ponderacion\": 100 } ]\n  } ]\n}"
             }
           ]
         },
@@ -1102,7 +763,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('200', () => pm.response.to.have.status(200));",
-                  "const rows = pm.response.json().rows;",
+                  "const rows = (pm.response.json() || {}).rows || [];",
                   "pm.test('rows es array', () => pm.expect(rows).to.be.an('array'));"
                 ]
               }
@@ -1110,56 +771,25 @@
           ],
           "request": {
             "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
             "url": {
               "raw": "{{baseUrl}}/api/eval-col/planeador/actividades/{{actividadId}}/calificaciones?fecha={{fechaCalificar}}&search=",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "eval-col",
-                "planeador",
-                "actividades",
-                "{{actividadId}}",
-                "calificaciones"
-              ],
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "eval-col", "planeador", "actividades", "{{actividadId}}", "calificaciones"],
               "query": [
-                {
-                  "key": "fecha",
-                  "value": "{{fechaCalificar}}"
-                },
-                {
-                  "key": "search",
-                  "value": ""
-                }
+                { "key": "fecha", "value": "{{fechaCalificar}}" },
+                { "key": "search", "value": "" }
               ]
             },
-            "description": "**OJO — mismatch confirmado con el front (`use-calificaciones-query.ts`)**: el front asume esta ruta como mock-only (\"el backend real no existe todavía\") y espera un shape distinto (`nombres`/`apellidos`/`asistencia.estado`/`notas[]`); el real trae `nombre_estudiante`/`tipo_asistencia`/`calificacion` plano por fecha, no por criterio. Antes de reemplazar el mock por esto hay que remapear `use-calificaciones-query.ts` — no es un simple cambio de URL."
+            "description": "**OJO — mismatch confirmado con el front (`use-calificaciones-query.ts`)**: el front asume esta ruta como mock-only y espera un shape distinto (`nombres`/`apellidos`/`asistencia.estado`/`notas[]`); el real trae `nombre_estudiante`/`tipo_asistencia`/`calificacion` plano por fecha, no por criterio. Sigue sin remapear — usado solo por la pestaña de Calificaciones del detalle de actividad, no por la Planilla."
           },
           "response": [
             {
               "name": "200",
-              "originalRequest": {
-                "method": "GET",
-                "url": {
-                  "raw": "{{baseUrl}}/api/eval-col/planeador/actividades/{{actividadId}}/calificaciones"
-                }
-              },
-              "status": "OK",
-              "code": 200,
+              "originalRequest": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/eval-col/planeador/actividades/{{actividadId}}/calificaciones" } },
+              "status": "OK", "code": 200,
               "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
               "body": "{\n  \"rows\": [ {\n    \"pk_tactividad_estudiante\": 1,\n    \"pk_tmatricula\": 30,\n    \"nombre_estudiante\": \"Juan Perez\",\n    \"instrumento\": \"RUBRICA\",\n    \"fecha\": \"2026-09-04\",\n    \"pk_tasistencia\": 500,\n    \"fk_tlv_tipo_asistencia\": 1,\n    \"tipo_asistencia\": \"Asistio\",\n    \"asistencia_observacion\": null,\n    \"fk_soporte_archivo\": null,\n    \"calificacion\": 85.5,\n    \"calificable\": \"S\",\n    \"nota_observacion\": null\n  } ]\n}"
             }
           ]
@@ -1173,48 +803,15 @@
           "name": "401 — sin token",
           "request": {
             "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/api/eval-col/planeador/planilla/columnas?grupo={{grupoId}}&asignatura={{asignaturaId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "eval-col",
-                "planeador",
-                "planilla",
-                "columnas"
-              ],
-              "query": [
-                {
-                  "key": "grupo",
-                  "value": "{{grupoId}}"
-                },
-                {
-                  "key": "asignatura",
-                  "value": "{{asignaturaId}}"
-                }
-              ]
-            }
+            "url": { "raw": "{{baseUrl}}/api/eval-col/planeador/planilla/columnas?grupo={{grupoId}}&asignatura={{asignaturaId}}", "host": ["{{baseUrl}}"], "path": ["api", "eval-col", "planeador", "planilla", "columnas"], "query": [{ "key": "grupo", "value": "{{grupoId}}" }, { "key": "asignatura", "value": "{{asignaturaId}}" }] }
           },
           "response": [
             {
               "name": "401 — Unauthorized",
-              "originalRequest": {
-                "method": "GET",
-                "url": {
-                  "raw": "{{baseUrl}}/api/eval-col/planeador/planilla/columnas"
-                }
-              },
-              "status": "Unauthorized",
-              "code": 401,
+              "originalRequest": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/eval-col/planeador/planilla/columnas" } },
+              "status": "Unauthorized", "code": 401,
               "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
               "body": "{\n  \"error\": \"Unauthorized\"\n}"
             }
           ]
@@ -1224,54 +821,20 @@
           "request": {
             "method": "PUT",
             "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"CALIFICACION\": \"{}\",\n  \"FECHA\": \"{{fechaCalificar}}\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/eval-col/planeador/actividades/estudiantes/{{tactividadEstudianteId}}/calificar",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "eval-col",
-                "planeador",
-                "actividades",
-                "estudiantes",
-                "{{tactividadEstudianteId}}",
-                "calificar"
-              ]
-            },
+            "body": { "mode": "raw", "raw": "{\n  \"CALIFICACION\": \"{}\",\n  \"FECHA\": \"{{fechaCalificar}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/eval-col/planeador/actividades/estudiantes/{{tactividadEstudianteId}}/calificar", "host": ["{{baseUrl}}"], "path": ["api", "eval-col", "planeador", "actividades", "estudiantes", "{{tactividadEstudianteId}}", "calificar"] },
             "description": "Simular con un usuario cuyo rol no tenga capability EDITAR sobre PLANEADOR."
           },
           "response": [
             {
               "name": "403 — Forbidden",
-              "originalRequest": {
-                "method": "PUT",
-                "url": {
-                  "raw": "{{baseUrl}}/api/eval-col/planeador/actividades/estudiantes/{{tactividadEstudianteId}}/calificar"
-                }
-              },
-              "status": "Forbidden",
-              "code": 403,
+              "originalRequest": { "method": "PUT", "url": { "raw": "{{baseUrl}}/api/eval-col/planeador/actividades/estudiantes/{{tactividadEstudianteId}}/calificar" } },
+              "status": "Forbidden", "code": 403,
               "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
               "body": "{\n  \"error\": \"No tiene permiso para EDITAR en la seccion PLANEADOR\",\n  \"sqlState\": \"42501\"\n}"
             }
           ]
