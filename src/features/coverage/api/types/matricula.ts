@@ -83,6 +83,7 @@ export interface MatriculaHomologationInfo {
 export interface CreateMatriculaResult {
   matricula: Matricula
   homologation: MatriculaHomologationInfo | null
+  failedOtherDocuments: File[]
 }
 
 export interface MatriculaMutationResult {

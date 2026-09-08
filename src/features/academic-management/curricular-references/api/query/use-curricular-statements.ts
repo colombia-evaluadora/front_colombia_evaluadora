@@ -45,7 +45,7 @@ export async function fetchStatements(
   }
 
   const raw = await api.get<StatementRow[] | { rows: StatementRow[] }>(url, {
-    params: { area: areaId ?? "" },
+    params: areaId != null ? { area: areaId } : {},
   })
   return unwrapRows(raw).map((row) => toStatement(row, curricularReferenceId))
 }

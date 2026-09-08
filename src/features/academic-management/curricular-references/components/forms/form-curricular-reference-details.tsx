@@ -1,6 +1,7 @@
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import { CharacterCounter } from "@/components/ui/character-counter"
 import { Switch } from "@/components/ui/switch"
 import {
   ComboboxField,
@@ -26,7 +27,6 @@ interface CurricularReferenceDetailsFormProps {
   evaluationTypes: CatalogItem[]
   onChange: (next: CurricularReferenceDraft) => void
   errors?: Record<string, string>
-  isEditMode?: boolean
 }
 
 export function CurricularReferenceDetailsForm({
@@ -36,9 +36,7 @@ export function CurricularReferenceDetailsForm({
   evaluationTypes,
   onChange,
   errors = {},
-  isEditMode = false,
 }: CurricularReferenceDetailsFormProps) {
-  const educationLevelLabels = Object.fromEntries(educationLevels.map((item) => [item.id, item.name]))
   const pedagogicalApproachLabels = Object.fromEntries(
     pedagogicalApproaches.map((item) => [item.id, item.name]),
   )
@@ -48,7 +46,7 @@ export function CurricularReferenceDetailsForm({
   const areaById = new Map(generalAreas.map((area) => [area.id, area]))
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 [&_::placeholder]:opacity-60">
       <div className="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2">
         <Field
           orientation="vertical"
@@ -76,46 +74,20 @@ export function CurricularReferenceDetailsForm({
           data-invalid={errors["educationLevels"] ? "true" : undefined}
         >
           <FieldLabel htmlFor="curricular-reference-education-level">Nivel educativo *</FieldLabel>
-          {isEditMode ? (
-            <ComboboxField
-              items={educationLevelLabels}
-              value={value.educationLevels[0]?.id ?? null}
-              onValueChange={(selectedValue) => {
-                const option = educationLevels.find((item) => item.id === selectedValue)
-                onChange({ ...value, educationLevels: option ? [option] : [] })
-              }}
-            >
-              <ComboboxFieldTrigger
-                id="curricular-reference-education-level"
-                size="sm"
-                aria-invalid={Boolean(errors["educationLevels"])}
-              >
-                <ComboboxFieldValue placeholder="Seleccione" />
-              </ComboboxFieldTrigger>
-              <ComboboxFieldContent>
-                {educationLevels.map((item) => (
-                  <ComboboxFieldItem key={item.id} value={item.id}>
-                    {item.name}
-                  </ComboboxFieldItem>
-                ))}
-              </ComboboxFieldContent>
-            </ComboboxField>
-          ) : (
-            <SubjectsMultiSelect
-              id="curricular-reference-education-level"
-              options={educationLevels.map((item) => ({ id: item.id, label: item.name }))}
-              value={value.educationLevels.map((item) => item.id)}
-              onChange={(ids) =>
-                onChange({
-                  ...value,
-                  educationLevels: ids
-                    .map((id) => educationLevels.find((item) => item.id === id))
-                    .filter((item): item is CatalogItem => item != null),
-                })
-              }
-              placeholder="Seleccione"
-            />
-          )}
+          <SubjectsMultiSelect
+            id="curricular-reference-education-level"
+            options={educationLevels.map((item) => ({ id: item.id, label: item.name }))}
+            value={value.educationLevels.map((item) => item.id)}
+            onChange={(ids) =>
+              onChange({
+                ...value,
+                educationLevels: ids
+                  .map((id) => educationLevels.find((item) => item.id === id))
+                  .filter((item): item is CatalogItem => item != null),
+              })
+            }
+            placeholder="Seleccione"
+          />
           <FieldError>{errors["educationLevels"]}</FieldError>
         </Field>
 
@@ -135,6 +107,7 @@ export function CurricularReferenceDetailsForm({
             placeholder="Describe la finalidad o propósito de este referente curricular."
             className={TEXTAREA_OUTLINE_CLASS}
           />
+          <CharacterCounter value={value.description} max={400} />
           <FieldError>{errors["description"]}</FieldError>
         </Field>
       </div>
@@ -297,6 +270,7 @@ export function CurricularReferenceDetailsForm({
             placeholder="Describe qué incluye este instrumento y cómo se utiliza..."
             className={TEXTAREA_OUTLINE_CLASS}
           />
+          <CharacterCounter value={value.instrumentDescription} max={400} />
         </Field>
 
         <Field
@@ -315,11 +289,12 @@ export function CurricularReferenceDetailsForm({
             placeholder="Escribe una o varias normas que aplican a este referente curricular..."
             className={TEXTAREA_OUTLINE_CLASS}
           />
+          <CharacterCounter value={value.regulation} max={400} />
           <FieldError>{errors["regulation"]}</FieldError>
         </Field>
 
         <Field orientation="vertical" variant="outlined" className="w-full md:col-span-2">
-          <FieldLabel htmlFor="curricular-reference-status">Estado *</FieldLabel>
+          <FieldLabel htmlFor="curricular-reference-status">Estado</FieldLabel>
           <div className="border-input flex min-h-14 items-center gap-3 rounded-md border px-3 py-3">
             <span className="text-muted-foreground text-sm">Inactivo / Activo</span>
             <Switch

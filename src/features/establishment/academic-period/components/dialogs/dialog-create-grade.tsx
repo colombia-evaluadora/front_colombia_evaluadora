@@ -7,11 +7,11 @@ import { ControlPointIcon, PencilIcon, SpinnerIcon } from "@/components/ui/icons
 
 import { NoticeBanner, type NoticeVariant } from "@/components/notice/notice-banner"
 import { NoticeProvider } from "@/components/notice/notice-context"
+import { ConfirmDiscardDialog } from "@/components/confirm-discard-dialog"
 
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogFooter,
   DialogHeader,
@@ -260,12 +260,33 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
     }))
   }, [planData, areaData])
 
+  const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false)
+
+  function closeDialog() {
+    setOpen(false)
+    resetForm()
+  }
+
+  function requestClose() {
+    if (saving) return
+    const isDirty =
+      teachingLevelId !== (grade?.teachingLevelId ?? null) ||
+      nombre !== (grade?.nombre ?? "") ||
+      gradoSiguiente !== (grade?.gradoSiguiente ?? "") ||
+      tieneGradoSiguiente !== (grade ? (grade.tieneGradoSiguiente ? "si" : "no") : "")
+    if (isDirty) {
+      setConfirmDiscardOpen(true)
+      return
+    }
+    closeDialog()
+  }
+
   return (
     <Dialog
       open={open}
       onOpenChange={(next) => {
-        setOpen(next)
-        if (!next) resetForm()
+        if (next) setOpen(true)
+        else requestClose()
       }}
     >
       <DialogTrigger
@@ -500,13 +521,20 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
               {gradeId == null ? "Crear" : "Guardar"}
             </Button>
           )}
-          <DialogClose
-            render={<Button size="sm" type="button" variant="fill" color="neutral" />}
-          >
+          <Button size="sm" type="button" variant="fill" color="neutral" onClick={requestClose}>
             Cerrar
-          </DialogClose>
+          </Button>
         </DialogFooter>
       </DialogContent>
+
+      <ConfirmDiscardDialog
+        open={confirmDiscardOpen}
+        onOpenChange={setConfirmDiscardOpen}
+        onConfirm={() => {
+          setConfirmDiscardOpen(false)
+          closeDialog()
+        }}
+      />
     </Dialog>
   )
 }
