@@ -5,12 +5,12 @@ import { CheckIcon, ControlPointIcon, PencilIcon, SpinnerIcon, XIcon } from "@/c
 
 import { useNotify } from "@/components/notice/notice-context"
 import { NoticeBanner, type NoticeVariant } from "@/components/notice/notice-banner"
+import { ConfirmDiscardDialog } from "@/components/confirm-discard-dialog"
 import { getErrorMessage } from "@/lib/api-client"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogFooter,
   DialogHeader,
@@ -169,8 +169,25 @@ export function CreateEvaluationPeriodDialog({
     setOpen(next)
   }
 
+  const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false)
+
+  function requestClose() {
+    if (isSaving) return
+    if (JSON.stringify(form.state.values) !== JSON.stringify(defaultValues)) {
+      setConfirmDiscardOpen(true)
+      return
+    }
+    handleOpenChange(false)
+  }
+
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (next) handleOpenChange(true)
+        else requestClose()
+      }}
+    >
       <DialogTrigger
         render={
           isEditing ? (
@@ -522,12 +539,21 @@ export function CreateEvaluationPeriodDialog({
               )
             }}
           </form.Subscribe>
-          <DialogClose render={<Button size="sm" type="button" variant="fill" color="neutral" />}>
+          <Button size="sm" type="button" variant="fill" color="neutral" onClick={requestClose}>
             <XIcon data-icon="inline-start" />
             Cancelar
-          </DialogClose>
+          </Button>
         </DialogFooter>
       </DialogContent>
+
+      <ConfirmDiscardDialog
+        open={confirmDiscardOpen}
+        onOpenChange={setConfirmDiscardOpen}
+        onConfirm={() => {
+          setConfirmDiscardOpen(false)
+          handleOpenChange(false)
+        }}
+      />
     </Dialog>
   )
 }

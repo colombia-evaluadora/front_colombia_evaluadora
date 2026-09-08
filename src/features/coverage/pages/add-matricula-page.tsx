@@ -112,19 +112,11 @@ function AddMatriculaPageContent() {
     matricula: Matricula
     info: MatriculaHomologationInfo
     mode: "again" | "close"
+    failedOtherDocumentsCount: number
   } | null>(null)
-  // Se activa cuando el usuario elige "Sí, homologar" — reemplaza el diálogo
-  // de confirmación por el wizard de traslado de calificaciones (mismo
-  // `pendingHomologation` de fondo, todavía sin cerrar el alta).
   const [showTransferGrades, setShowTransferGrades] = useState(false)
 
-  // Se llena cuando `checkMatriculaByDocument` encuentra una matrícula
-  // "cursando" con el mismo documento — bloquea el guardado hasta que el
-  // usuario corrija el documento (ver el `useEffect` con debounce, abajo).
   const [existingMatricula, setExistingMatricula] = useState<Matricula | null>(null)
-  // Cerrar el modal ("Entendido") solo lo saca de pantalla — el guardado
-  // sigue bloqueado (`existingMatricula` no se limpia) hasta que el usuario
-  // de verdad cambie el documento, que es lo que reabre el chequeo abajo.
   const [duplicateDialogDismissed, setDuplicateDialogDismissed] = useState(false)
 
   // `pkTusuario` resuelto por el autocompletado de abajo — matrícula asume
@@ -184,9 +176,6 @@ function AddMatriculaPageContent() {
   // usuario termine de escribir, no consultar en cada dígito.
   const { documentType, documentNumber } = values.student
   useEffect(() => {
-    // Cualquier cambio en el documento reabre la posibilidad de bloquear de
-    // nuevo — si el usuario ya había cerrado el aviso para un documento y lo
-    // vuelve a escribir igual, tiene que volver a verlo.
     setExistingMatricula(null)
     setDuplicateDialogDismissed(false)
 
@@ -328,9 +317,23 @@ function AddMatriculaPageContent() {
     dismiss()
   }
 
-  function finishSave(matricula: Matricula, mode: "again" | "close", extraMessage?: string) {
+  function finishSave(
+    matricula: Matricula,
+    mode: "again" | "close",
+    extraMessage?: string,
+    failedOtherDocumentsCount = 0,
+  ) {
     const base = `Estudiante ${matricula.firstName} ${matricula.lastName} matriculado correctamente.`
-    notify(extraMessage ? `${base} ${extraMessage}` : base)
+    const message = extraMessage ? `${base} ${extraMessage}` : base
+    if (failedOtherDocumentsCount > 0) {
+      notify(
+        `${message} ${failedOtherDocumentsCount} archivo(s) de "otros documentos" no se pudieron subir; ` +
+          `podés reintentarlos desde "Archivos" en el detalle del estudiante.`,
+        { variant: "error" },
+      )
+    } else {
+      notify(message)
+    }
     if (mode === "close") {
       navigate({ to: paths.app.coberturaMatricula.getHref() })
     } else {
@@ -353,12 +356,17 @@ function AddMatriculaPageContent() {
         pkUsuarioAcudiente: pkUsuarioAcudienteRef.current,
       },
       {
-        onSuccess: ({ matricula, homologation }) => {
+        onSuccess: ({ matricula, homologation, failedOtherDocuments }) => {
           if (homologation) {
-            setPendingHomologation({ matricula, info: homologation, mode })
+            setPendingHomologation({
+              matricula,
+              info: homologation,
+              mode,
+              failedOtherDocumentsCount: failedOtherDocuments.length,
+            })
             return
           }
-          finishSave(matricula, mode)
+          finishSave(matricula, mode, undefined, failedOtherDocuments.length)
         },
       },
     )
@@ -370,17 +378,22 @@ function AddMatriculaPageContent() {
       setShowTransferGrades(true)
       return
     }
-    const { matricula, mode } = pendingHomologation
+    const { matricula, mode, failedOtherDocumentsCount } = pendingHomologation
     setPendingHomologation(null)
-    finishSave(matricula, mode, "No se homologaron las calificaciones previas.")
+    finishSave(matricula, mode, "No se homologaron las calificaciones previas.", failedOtherDocumentsCount)
   }
 
   function handleTransferGradesCancel() {
     if (!pendingHomologation) return
-    const { matricula, mode } = pendingHomologation
+    const { matricula, mode, failedOtherDocumentsCount } = pendingHomologation
     setShowTransferGrades(false)
     setPendingHomologation(null)
-    finishSave(matricula, mode, "Las calificaciones previas se homologaron correctamente.")
+    finishSave(
+      matricula,
+      mode,
+      "Las calificaciones previas se homologaron correctamente.",
+      failedOtherDocumentsCount,
+    )
   }
 
   return (

@@ -19,11 +19,17 @@ interface UseCurricularReferencesQueryParams {
   pageSize: number
 }
 
+interface NivelRow {
+  id: number
+  codigo: string
+  nombre: string
+}
+
 interface CurricularReferenceRow {
   pk_referente_curricular: number
   nombre: string
   descripcion: string
-  nivel_educativo: string | null
+  niveles: NivelRow[] | string | null
   instrumento: string
   instrumento_info_adicional: string | null
   enfoque_pedagogico: string | null
@@ -39,13 +45,21 @@ function displayOnlyCatalogItem(name: string | null): CatalogItem | null {
   return name ? { id: -1, code: "", name } : null
 }
 
-function toCurricularReference(row: CurricularReferenceRow): CurricularReference {
-  const educationLevel = displayOnlyCatalogItem(row.nivel_educativo)
+function parseNiveles(niveles: CurricularReferenceRow["niveles"]): NivelRow[] {
+  if (!niveles) return []
+  const parsed = typeof niveles === "string" ? JSON.parse(niveles) : niveles
+  return Array.isArray(parsed) ? parsed : []
+}
 
+function toCurricularReference(row: CurricularReferenceRow): CurricularReference {
   return {
     id: row.pk_referente_curricular,
     name: row.nombre,
-    educationLevels: educationLevel ? [educationLevel] : [],
+    educationLevels: parseNiveles(row.niveles).map((nivel) => ({
+      id: nivel.id,
+      code: nivel.codigo,
+      name: nivel.nombre,
+    })),
     description: row.descripcion,
     level1: "",
     level2: "",
