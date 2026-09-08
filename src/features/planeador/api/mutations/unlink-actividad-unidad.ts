@@ -2,7 +2,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
 import type { MutationConfig } from "@/lib/react-query"
-import { unidadDetalleQueryKey } from "@/features/planeador/api/query/use-unidades-query"
 
 // `PATCH`, no `DELETE` — mismo motor que el resto de soft-deletes del
 // Planeador. Sin body: el `:actividadId` en el path alcanza.
@@ -32,7 +31,7 @@ export function useUnlinkActividadUnidad({
   return useMutation({
     mutationFn: unlinkActividadUnidad,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: unidadDetalleQueryKey(unidadId) })
+      queryClient.invalidateQueries({ queryKey: ["planeador", "unidad", unidadId] })
       onSuccess?.(...args)
     },
     ...restConfig,

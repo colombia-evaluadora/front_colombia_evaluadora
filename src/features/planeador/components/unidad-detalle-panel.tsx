@@ -19,6 +19,7 @@ import { useDataTable } from "@/hooks/use-data-table"
 import { paths } from "@/config/paths"
 
 import { useUnidadDetalleQuery } from "@/features/planeador/api/query/use-unidades-query"
+import { useUnidadActividadesQuery } from "@/features/planeador/api/query/use-unidad-actividades-query"
 import { useNivelesDesempenoNombres } from "@/features/planeador/api/query/use-niveles-desempeno"
 import { createUnidadActividadesColumns } from "@/features/planeador/components/table/columns-unidad-actividades"
 import { createUnidadCriteriosColumns } from "@/features/planeador/components/table/columns-unidad-criterios"
@@ -300,7 +301,11 @@ export function Actividades({ unidad }: { unidad: UnidadTematica }) {
     () => createUnidadActividadesColumns(unidad.id, unidad.metodoCalculo === "Ponderado"),
     [unidad.id, unidad.metodoCalculo],
   )
-  const { sorted, sorting, setSorting } = useSortedRows(unidad.actividades)
+  // `GET /unidades/:id/actividades` (real) — ya no se lee `unidad.actividades`
+  // del detalle: ese campo queda siempre vacío contra el backend real
+  // (viven en este endpoint aparte, ver `use-unidad-actividades-query.ts`).
+  const { data: actividadesVinculadas = [], isPending, isError, refetch } = useUnidadActividadesQuery(unidad.id)
+  const { sorted, sorting, setSorting } = useSortedRows(actividadesVinculadas)
   const [dialogOpen, setDialogOpen] = React.useState(false)
 
   const { table } = useDataTable({
@@ -326,9 +331,9 @@ export function Actividades({ unidad }: { unidad: UnidadTematica }) {
       />
       <DataTable
         table={table}
-        isPending={false}
-        isError={false}
-        onRetry={() => {}}
+        isPending={isPending}
+        isError={isError}
+        onRetry={refetch}
         emptyMessage="Esta unidad todavía no tiene actividades vinculadas."
       />
       <DialogAgregarActividad unidad={unidad} open={dialogOpen} onOpenChange={setDialogOpen} />

@@ -76,16 +76,16 @@ function toUnidadTematica(row: UnidadRealRow): UnidadTematica {
     metodoCalculo: metodoCalculoFromLabel(row.calculo_definitiva),
     grado: row.grado,
     asignatura: row.asignatura,
-    // Enunciados DBA, criterios y actividades vinculadas viven en endpoints
-    // separados del backend real (`/unidades/:id/criterios`,
-    // `/unidades/:id/actividades`) — traerlos de una implica un fetch
-    // compuesto que todavía no está armado (ver nota en el mensaje al
-    // usuario). Quedan vacíos hasta esa integración; por eso
-    // `UnidadCard` muestra "0 actividades" contra el backend real aunque
-    // `total_actividades` diga otra cosa.
+    // Enunciados DBA y criterios viven en endpoints separados del backend
+    // real (`/unidades/:id/enunciados`, `/unidades/:id/criterios`) —
+    // quedan vacíos acá; las pantallas que los muestran los piden aparte
+    // (ver `use-unidad-actividades-query.ts` para el caso ya resuelto de
+    // actividades vinculadas). El conteo de la card del rail sí viene
+    // resuelto en este mismo listado (`total_actividades`, ver abajo).
     enunciadosDba: [],
     criterios: [],
     actividades: [],
+    totalActividades: row.total_actividades,
   }
 }
 
