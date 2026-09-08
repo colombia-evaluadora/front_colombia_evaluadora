@@ -134,15 +134,13 @@ export function SelectGeneralAreaDialog({
         <CaretDownIcon className="size-3.5 shrink-0 text-muted-foreground" />
       </DialogTrigger>
 
-      {/* `forceRender`: este Dialog se abre anidado dentro del Dialog de
-          área/asignatura (ya abierto) — sin forzar su propio overlay, el
-          Dialog anidado no bloquea el fondo (mismo fix que ya usan
-          dialog-create-study-plan.tsx y dialog-create-grade-group.tsx,
-          también anidados dentro de otro Dialog abierto). */}
       <DialogPortal>
         <DialogOverlay forceRender className="bg-black/30" />
       </DialogPortal>
-      <DialogContent className="sm:max-w-4xl" showCloseButton={false}>
+      <DialogContent
+        className="max-h-[85vh] overflow-y-auto sm:max-w-4xl"
+        showCloseButton={false}
+      >
         <DialogHeader>
           <DialogTitle>Agregar área</DialogTitle>
         </DialogHeader>

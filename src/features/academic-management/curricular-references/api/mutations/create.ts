@@ -18,7 +18,7 @@ function toRealCreatePayload(values: CurricularReferenceDraft) {
   return {
     NOMBRE: values.name,
     DESCRIPCION: values.description,
-    NIVEL_EDUCATIVO: values.educationLevels[0]?.id ?? null,
+    NIVELES_IDS: values.educationLevels.map((level) => level.id),
     ENFOQUE_PEDAGOGICO: values.pedagogicalApproach?.id ?? null,
     TIPO_EVALUACION: values.evaluationType?.id ?? null,
     INSTRUMENTO: values.instrument,
@@ -38,7 +38,7 @@ function toRealUpdatePayload(values: CurricularReferenceDraft, previousActive?: 
   return {
     NOMBRE: values.name,
     DESCRIPCION: values.description,
-    NIVEL_EDUCATIVO: values.educationLevels[0]?.id ?? null,
+    NIVELES_IDS: values.educationLevels.map((level) => level.id),
     ENFOQUE_PEDAGOGICO: values.pedagogicalApproach?.id ?? null,
     TIPO_EVALUACION: values.evaluationType?.id ?? null,
     INSTRUMENTO: values.instrument,
