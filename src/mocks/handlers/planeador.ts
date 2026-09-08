@@ -11,6 +11,8 @@ import {
   addUnidad,
   deleteUnidadById,
   unidadesTematicasDb,
+  unlinkActividadFromUnidad,
+  updatePonderacionActividad,
   updateUnidadInfoGeneral,
 } from "@/mocks/db/unidades-tematicas"
 import { nextId } from "@/mocks/db/next-id"
@@ -57,8 +59,12 @@ const ACTIVIDAD_EXPORT_ALL_URL = "/api/eval-col/planeador/actividades/export-all
 const UNIDAD_LIST_URL = "/api/eval-col/planeador/unidades"
 const UNIDAD_DETAIL_URL = "/api/eval-col/planeador/unidades/:id"
 const UNIDAD_CRITERIO_CREATE_URL = "/api/eval-col/planeador/unidades/:id/criterios"
+const UNIDAD_VALORACIONES_URL = "/api/eval-col/planeador/unidades/:id/valoraciones"
 const UNIDAD_ACTIVIDAD_LINK_URL =
   "/api/eval-col/planeador/unidades/:id/actividades/:actividadId"
+const UNIDAD_ACTIVIDAD_UNLINK_URL = "/api/eval-col/planeador/unidades/actividades/:actividadId"
+const UNIDAD_ACTIVIDAD_PONDERACION_URL =
+  "/api/eval-col/planeador/unidades/actividades/:actividadId/ponderacion"
 const UNIDAD_CREATE_URL = "/api/eval-col/planeador/unidades"
 const UNIDAD_UPDATE_URL = "/api/eval-col/planeador/unidades/:id"
 const UNIDAD_DELETE_URL = "/api/eval-col/planeador/unidades/:id"
@@ -189,6 +195,22 @@ export const planeadorHandlers = [
     return HttpResponse.json({ rows: [found] })
   }),
 
+  // Edición parcial de la actividad — el mock, a diferencia del real, no
+  // hace merge campo por campo: reemplaza con lo que mandó el form entero
+  // (que ya trae la actividad completa, editada), mismo criterio que
+  // `updateUnidadInfoGeneral`.
+  http.put(ACTIVIDAD_DETAIL_URL, async ({ params, request }) => {
+    await delay(250)
+    const id = Number(params.id)
+    const index = planeadorDb.findIndex((row) => row.id === id)
+    if (index === -1) {
+      return HttpResponse.json({ message: "Actividad no encontrada." }, { status: 404 })
+    }
+    const body = (await request.json()) as Actividad
+    planeadorDb[index] = { ...planeadorDb[index], ...body, id }
+    return HttpResponse.json({ status: "ok", actividad: planeadorDb[index] })
+  }),
+
   // Calificaciones de la actividad: una fila por estudiante con asistencia
   // y notas por criterio. Mismo sobre `{rows: [...]}` que el resto, para
   // que `evalCol.getRows` lo desempaquete sin casos especiales.
@@ -248,26 +270,43 @@ export const planeadorHandlers = [
     return HttpResponse.json({ status: "ok", criterio: created })
   }),
 
+  // Valoraciones activas de la escala que aplica a la unidad — paso previo
+  // a "Agregar criterio" real (3.3 exige un nivel por cada una). El mock no
+  // replica la derivación real (asignatura+grado → escala del periodo):
+  // devuelve directo las 4 bandas por default, alcanza para poder probar
+  // el modal en mock.
+  http.get(UNIDAD_VALORACIONES_URL, async () => {
+    await delay(150)
+    const rows = ["Bajo", "Básico", "Alto", "Superior"].map((nombre, index) => ({
+      pk_tescala_valoracion: index + 1,
+      nombre,
+      limite_inferior: null,
+      limite_superior: null,
+      nota_minima: null,
+      nota_maxima: null,
+      valoracion_simbolo: null,
+      valoracion_carita: null,
+    }))
+    return HttpResponse.json({ rows })
+  }),
+
   // Vincula una actividad ya existente a la unidad, con su peso. El id de la
   // actividad viaja en el path (`PUT .../actividades/:actividadId`, no en el
   // body) — mismo criterio que `fn_unidad_actividad_vincular` real. 404 si
   // la unidad no existe, 409 si esa actividad ya estaba vinculada (evita el
   // duplicado si el usuario hace doble click en "Vincular").
+  // Body real: solo `PONDERACION`/`PERMITIR_MOVER_DE_UNIDAD` — el resto de
+  // los campos que muestra la tabla (nombre/tipo/instrumento/grupo) se
+  // derivan de `planeadorDb` dentro de `addActividadToUnidad`, no del body.
   http.put(UNIDAD_ACTIVIDAD_LINK_URL, async ({ params, request }) => {
     await delay(250)
     const id = Number(params.id)
     const actividadId = Number(params.actividadId)
-    const body = (await request.json()) as {
-      nombre: string
-      tipo: string
-      instrumento: string
-      grupo: string
-      ponderacion: number
-    }
-    const created = addActividadToUnidad(id, { ...body, actividadId })
+    const body = (await request.json()) as { PONDERACION: number | null }
+    const created = addActividadToUnidad(id, actividadId, body.PONDERACION ?? 0)
     if (created === null) {
       return HttpResponse.json(
-        { status: "error", message: "Unidad temática no encontrada." },
+        { status: "error", message: "Unidad o actividad no encontrada." },
         { status: 404 },
       )
     }
@@ -278,6 +317,35 @@ export const planeadorHandlers = [
       )
     }
     return HttpResponse.json({ status: "ok", actividad: created })
+  }),
+
+  // Desvincular: la actividad vuelve a ser huérfana.
+  http.patch(UNIDAD_ACTIVIDAD_UNLINK_URL, async ({ params }) => {
+    await delay(200)
+    const actividadId = Number(params.actividadId)
+    const ok = unlinkActividadFromUnidad(actividadId)
+    if (!ok) {
+      return HttpResponse.json(
+        { status: "error", message: "Esa actividad no está vinculada a ninguna unidad." },
+        { status: 404 },
+      )
+    }
+    return HttpResponse.json({ status: "ok" })
+  }),
+
+  // Edición rápida (inline) del peso de una actividad ya vinculada.
+  http.put(UNIDAD_ACTIVIDAD_PONDERACION_URL, async ({ params, request }) => {
+    await delay(200)
+    const actividadId = Number(params.actividadId)
+    const body = (await request.json()) as { PONDERACION: number }
+    const ok = updatePonderacionActividad(actividadId, body.PONDERACION)
+    if (!ok) {
+      return HttpResponse.json(
+        { status: "error", message: "Esa actividad no está vinculada a ninguna unidad." },
+        { status: 404 },
+      )
+    }
+    return HttpResponse.json({ status: "ok" })
   }),
 
   // Creación: el cliente manda solo "Información general" (sin

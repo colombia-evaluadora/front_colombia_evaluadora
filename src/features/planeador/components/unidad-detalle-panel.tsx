@@ -289,19 +289,17 @@ export function Rubricas({ unidad }: { unidad: UnidadTematica }) {
         onRetry={() => {}}
         emptyMessage="Esta unidad no tiene criterios definidos."
       />
-      <DialogAgregarCriterio
-        unidadId={unidad.id}
-        gradoPalabra={unidad.grado}
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-      />
+      <DialogAgregarCriterio unidadId={unidad.id} open={dialogOpen} onOpenChange={setDialogOpen} />
     </div>
   )
 }
 
 /** Exportado por el mismo motivo que `Rubricas` — ver su comentario. */
 export function Actividades({ unidad }: { unidad: UnidadTematica }) {
-  const columns = React.useMemo(() => createUnidadActividadesColumns(), [])
+  const columns = React.useMemo(
+    () => createUnidadActividadesColumns(unidad.id, unidad.metodoCalculo === "Ponderado"),
+    [unidad.id, unidad.metodoCalculo],
+  )
   const { sorted, sorting, setSorting } = useSortedRows(unidad.actividades)
   const [dialogOpen, setDialogOpen] = React.useState(false)
 

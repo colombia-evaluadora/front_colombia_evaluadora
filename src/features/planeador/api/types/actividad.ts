@@ -202,6 +202,15 @@ export interface Actividad {
   asignatura: string
   grado: string
   grupo: string
+  /** `PK_TASIGNATURA`/`PK_TGRADO`/`PK_TGRUPO` reales — solo se conocen
+   *  cuando el docente ELIGE en los `<Select>` de "Grado / Grupo" y
+   *  "Asignatura" (`useDocenteGruposQuery`/`useDocenteGradoAsignaturaQuery`,
+   *  ver `AsignaturaGradoSection`). Igual que en `UnidadTematica`, si
+   *  quedan `undefined` al editar, `update-actividad.ts` no manda
+   *  `FK_TGRUPO`/`FK_TASIGNATURA` — el PUT real es parcial. */
+  asignaturaId?: number
+  gradoId?: number
+  grupoId?: number
   /** `yyyy-MM-dd`. */
   fechaInicio: string
   /** `yyyy-MM-dd`. */
