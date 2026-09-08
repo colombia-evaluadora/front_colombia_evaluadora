@@ -29,11 +29,9 @@ import { Textarea } from "@/components/ui/textarea"
 import { useGradosCatalogQuery } from "@/features/establishment/academic-period/api/query/use-grados-catalog"
 import { EDUCATION_LEVELS } from "@/features/academic-management/curricular-references/api/catalogs"
 import { useCurricularReferencesQuery } from "@/features/academic-management/curricular-references/api/query/use-curricular-references"
-import {
-  nivelEducativoCodeForGrado,
-  palabraGradoDesdeNombreCatalogo,
-} from "@/features/planeador/lib/grado-nivel-educativo"
-import { useGradoGrupoCombos } from "@/features/planeador/api/query/use-grado-grupo-combos"
+import { nivelEducativoCodeForGrado } from "@/features/planeador/lib/grado-nivel-educativo"
+import { useDocenteGruposQuery } from "@/features/planeador/api/query/use-docente-grupos-query"
+import { useDocenteGradoAsignaturaQuery } from "@/features/planeador/api/query/use-docente-grado-asignatura-query"
 import { useTipoActividadCatalogQuery } from "@/features/planeador/api/query/use-tipo-actividad-catalog"
 import { useInstrumentoEvaluacionCatalogQuery } from "@/features/planeador/api/query/use-instrumento-evaluacion-catalog"
 import { ListaAgregableField } from "@/features/planeador/components/forms/field-lista-agregable"
@@ -400,10 +398,11 @@ function IdentificacionSection({
             const grado = form.getFieldValue("grado")
             const grupo = form.getFieldValue("grupo")
             const hasGradoGrupo = Boolean(grado && grupo)
-            const palabraGrado = grado ? palabraGradoDesdeNombreCatalogo(grado) : null
-            const unidadesDelGrado = palabraGrado
-              ? unidades.filter((u) => u.grado === palabraGrado)
-              : []
+            // `grado` y `UnidadTematica.grado` salen ahora del mismo origen
+            // real (`docentes/grupos`/`docentes/grado-asignatura`), así que
+            // se comparan directo — ya no hace falta traducir contra el
+            // catálogo genérico de grados.
+            const unidadesDelGrado = grado ? unidades.filter((u) => u.grado === grado) : []
 
             return (
               <form.Field name="unidad">
@@ -542,58 +541,47 @@ function UnidadSection({
   )
 }
 
-// Placeholder mientras no exista un plan de estudios real por grado en el
-// mock de Establecimiento (`studyPlansDb` está vacío hoy — ver
-// `use-study-plans.ts`): mismas asignaturas para cualquier grado. El select
-// igual queda deshabilitado hasta elegir un grado, para que la dependencia
-// se sienta en la UI aunque el catálogo todavía no varíe por grado.
-export const ASIGNATURA_OPTIONS = [
-  "Matemáticas",
-  "Lengua Castellana",
-  "Ciencias Naturales",
-  "Ciencias Sociales",
-  "Inglés",
-  "Educación Física",
-  "Educación Artística",
-  "Ética y Valores",
-  "Tecnología e Informática",
-  "Educación Religiosa",
-]
-
 /**
  * "Grado / Grupo" es UN SOLO `<Select>` (no dos campos separados): cada
- * opción ya es una combinación real "grado/grupo" (ej. `"6°/01"`), armada
- * con datos de Establecimiento (`useGradoGrupoCombos`, que a su vez usa
- * `useGradosCatalogQuery` — mismo catálogo que usa Matrícula). Elegir un
- * combo escribe `grado` y `grupo` por separado en el form (siguen siendo
- * dos campos en `Actividad`, el resto del código los lee así) y habilita
- * Asignatura y "Unidad temática asociada" (`IdentificacionSection`), que
- * dependen de él y se filtran/limpian cuando cambia.
+ * opción ya es una combinación real "grado/grupo" del DOCENTE autenticado
+ * (`useDocenteGruposQuery` — mismo endpoint real que ya usa el filtro de la
+ * Planilla, `GET /planeador/docentes/grupos`), no el catálogo genérico de
+ * Establecimiento (que ofrecía grados/grupos que ni siquiera le
+ * correspondían a este docente). Elegir un combo escribe `grado`/`grado Id`
+ * y `grupo`/`grupoId` en el form y habilita Asignatura y "Unidad temática
+ * asociada" (`IdentificacionSection`), que dependen de él y se filtran/
+ * limpian cuando cambia.
  *
- * Antes esto era un solo `<Input>` de texto libre que concatenaba grado +
- * grupo a mano (`"3º" + "A"`) — sin catálogo real detrás.
+ * Asignatura sale de `useDocenteGradoAsignaturaQuery` (mismo endpoint real,
+ * `GET /planeador/docentes/grado-asignatura`), filtrada por el `gradoId`
+ * ya elegido — reemplaza la lista `ASIGNATURA_OPTIONS` hardcodeada, que
+ * ofrecía asignaturas sin relación con lo que el docente realmente dicta.
  */
 function AsignaturaGradoSection({ form }: { form: FormActividad }) {
-  const { combos } = useGradoGrupoCombos()
-  const grado = useSelector(form.store, (state) => state.values.grado)
-  const grupo = useSelector(form.store, (state) => state.values.grupo)
-  // Un solo campo "Grado / Grupo" (no dos selects encadenados): el valor
-  // combinado solo existe cuando AMBOS están elegidos, así que Asignatura
-  // (y "Unidad temática asociada", en `IdentificacionSection`) quedan
-  // deshabilitadas mientras falte cualquiera de los dos.
-  const comboValue = grado && grupo ? `${grado}/${grupo}` : ""
-  const hasGradoGrupo = comboValue !== ""
+  const { data: docenteGrupos = [] } = useDocenteGruposQuery()
+  const { data: docenteGradoAsignatura = [] } = useDocenteGradoAsignaturaQuery()
+  const gradoId = useSelector(form.store, (state) => state.values.gradoId)
+  const grupoId = useSelector(form.store, (state) => state.values.grupoId)
+  const hasGradoGrupo = gradoId != null && grupoId != null
+
+  const asignaturas = docenteGradoAsignatura.filter((par) => par.gradoId === gradoId)
 
   return (
     <Card className="gap-4 p-4">
       <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2">
-        <form.Field name="asignatura">
+        <form.Field name="asignaturaId">
           {(field) => (
             <Field variant="outlined">
               <FieldLabel htmlFor={field.name}>Asignatura / materia</FieldLabel>
               <Select
-                value={field.state.value}
-                onValueChange={(v) => v && field.handleChange(v)}
+                value={field.state.value != null ? String(field.state.value) : ""}
+                onValueChange={(v) => {
+                  if (!v) return
+                  const par = asignaturas.find((a) => String(a.asignaturaId) === v)
+                  if (!par) return
+                  field.handleChange(par.asignaturaId)
+                  form.setFieldValue("asignatura", par.asignaturaNombre)
+                }}
                 disabled={!hasGradoGrupo}
               >
                 <SelectTrigger id={field.name}>
@@ -602,9 +590,9 @@ function AsignaturaGradoSection({ form }: { form: FormActividad }) {
                   />
                 </SelectTrigger>
                 <SelectContent>
-                  {ASIGNATURA_OPTIONS.map((nombre) => (
-                    <SelectItem key={nombre} value={nombre}>
-                      {nombre}
+                  {asignaturas.map((a) => (
+                    <SelectItem key={a.asignaturaId} value={String(a.asignaturaId)}>
+                      {a.asignaturaNombre}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -616,16 +604,18 @@ function AsignaturaGradoSection({ form }: { form: FormActividad }) {
         <Field variant="outlined">
           <FieldLabel htmlFor="grado-grupo">Grado / Grupo</FieldLabel>
           <Select
-            value={comboValue}
+            value={grupoId != null ? String(grupoId) : ""}
             onValueChange={(v) => {
               if (!v) return
-              const [nextGrado, nextGrupo] = v.split("/")
-              form.setFieldValue("grado", nextGrado)
-              form.setFieldValue("grupo", nextGrupo)
+              const combo = docenteGrupos.find((g) => String(g.grupoId) === v)
+              if (!combo) return
+              form.setFieldValue("gradoId", combo.gradoId)
+              form.setFieldValue("grado", combo.gradoNombre)
+              form.setFieldValue("grupoId", combo.grupoId)
+              form.setFieldValue("grupo", combo.grupoCodigo)
               // Asignatura y unidad dependen de "Grado / Grupo": cambiarlo
-              // invalida lo que había elegido en las dos (mismo criterio
-              // que ya usaba este campo para limpiar Asignatura al
-              // cambiar de grado, ahora extendido a Unidad).
+              // invalida lo que había elegido en las dos.
+              form.setFieldValue("asignaturaId", undefined)
               form.setFieldValue("asignatura", "")
               form.setFieldValue("unidad", { id: 0, nombre: "" })
             }}
@@ -634,9 +624,9 @@ function AsignaturaGradoSection({ form }: { form: FormActividad }) {
               <SelectValue placeholder="Seleccione" />
             </SelectTrigger>
             <SelectContent>
-              {combos.map((combo) => (
-                <SelectItem key={combo.value} value={combo.value}>
-                  {combo.value}
+              {docenteGrupos.map((g) => (
+                <SelectItem key={g.grupoId} value={String(g.grupoId)}>
+                  {g.gradoNombre}/{g.grupoCodigo}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -1247,6 +1237,15 @@ function EvaluacionSection({
   // de ese nivel es Formativo, se bloquea igual, como si esa fuera la unidad
   // (no hay vínculo real grado↔referente en el backend; ver el comentario
   // de `nivelEducativoCodeForGrado`).
+  //
+  // OJO — gap conocido contra el backend real: `grados`/`gradoOption` acá
+  // abajo salen del catálogo GENÉRICO `/select/GRADOS` ("6°"...), pero
+  // `gradoValue` ahora es el nombre real de `docentes/grupos` ("Jardin I o
+  // A o Kinder"...) — no matchean, así que `gradoOption` siempre da
+  // `undefined` para un grado real y esto cae en "no formativo" por
+  // default (mismo gap que `useEnfoquePedagogicoDerivado` en
+  // `form-unidad-info-general.tsx`). Se corrige cuando se cablee
+  // `GET /unidades/:id/referente` (fuera de este alcance).
   const unidadId = useSelector(form.store, (state) => state.values.unidad.id)
   const gradoValue = useSelector(form.store, (state) => state.values.grado)
   const { data: grados = [] } = useGradosCatalogQuery()

@@ -1,13 +1,46 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
+import { env } from "@/config/env"
 import type { MutationConfig } from "@/lib/react-query"
 import { unidadesQueryKey } from "@/features/planeador/api/query/use-unidades-query"
+import { resolveCalculoDefinitivaId } from "@/features/planeador/api/query/use-calculo-definitiva-catalog"
 import type { UnidadInfoGeneral } from "@/features/planeador/api/mutations/update-unidad"
-import type { UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
 
-function createUnidad(data: UnidadInfoGeneral): Promise<UnidadTematica> {
-  return api.post("/eval-col/planeador/unidades", data)
+/**
+ * `POST /planeador/unidades` (confirmado real, colección Postman
+ * `planeador-guia-completa`). `FK_TFUNCIONARIO` YA NO se manda: el docente
+ * autor se deriva del token — el campo sigue existiendo en el backend
+ * (para que un coordinador cree la unidad a nombre de otro docente), pero
+ * el Planeador no tiene ese caso de uso todavía.
+ *
+ * `FK_TGRADO`/`FK_TASIGNATURA` salen de lo que el docente eligió en el
+ * `<Select>` (`useDocenteGradoAsignaturaQuery`, ver `form-unidad-info-general.tsx`)
+ * — si por algún motivo quedaron sin resolver, se corta acá antes de mandar
+ * un body a medias que el backend rechazaría igual.
+ *
+ * `FK_REFERENTE_CURRICULAR` es opcional y NO se manda: se deriva en la
+ * práctica del grado → nivel de enseñanza (`GET .../referente`), que
+ * todavía no está cableado en el front (queda para cuando se aborde el
+ * "referente curricular" completo).
+ */
+async function createUnidad(data: UnidadInfoGeneral): Promise<unknown> {
+  if (env.ENABLE_API_MOCKING) {
+    return api.post("/eval-col/planeador/unidades", data)
+  }
+  if (data.gradoId == null || data.asignaturaId == null) {
+    throw new Error("Elegí un grado y una asignatura antes de guardar.")
+  }
+  const calculoDefinitivaId = await resolveCalculoDefinitivaId(data.metodoCalculo)
+  return api.post("/eval-col/planeador/unidades", {
+    NOMBRE: data.nombre,
+    DESCRIPCION: data.descripcion,
+    FK_TASIGNATURA: data.asignaturaId,
+    FK_TGRADO: data.gradoId,
+    FK_TLV_CALCULO_DEFINITIVA: calculoDefinitivaId,
+    OBJETIVOS: data.objetivos,
+    CONTENIDOS: data.contenidos,
+  })
 }
 
 interface UseCreateUnidadOptions {

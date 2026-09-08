@@ -90,27 +90,11 @@ export function DialogAgregarActividad({ unidad, open, onOpenChange }: DialogAgr
   }
 
   function handleVincular(actividadId: number) {
-    const actividad = actividades.find((a) => a.id === actividadId)
-    if (!actividad) return
-
     const pesoRaw = pesos[actividadId]?.trim()
     const ponderacion = esPonderado ? Number(pesoRaw) || 0 : 0
 
     linkActividad.mutate(
-      {
-        unidadId: unidad.id,
-        actividad: {
-          actividadId: actividad.id,
-          nombre: actividad.nombre,
-          // Mismo criterio que el resto de este modelo: "Formativa"/
-          // "Sumativa" se deriva de `esEvaluativa`, no del `ActividadTipo`
-          // (Proyecto/Ensayo/…) que trae la actividad de origen.
-          tipo: actividad.esEvaluativa ? "Sumativa" : "Formativa",
-          instrumento: actividad.instrumento,
-          grupo: actividad.grupo,
-          ponderacion,
-        },
-      },
+      { unidadId: unidad.id, actividadId, ponderacion },
       {
         onSuccess: (data) => {
           if (data.status === "error") return
