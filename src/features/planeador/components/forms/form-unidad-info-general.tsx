@@ -213,7 +213,10 @@ export function UnidadInfoGeneralFields({
                   en vez del nombre real que sí trae `draft.grado`. */}
               <SelectValue placeholder="Seleccione">
                 {(value) =>
-                  grados.find((g) => String(g.id) === value)?.nombre ?? draft.grado ?? "Seleccione"
+                  // `||`, no `??`: `draft.grado` llega `""` (no
+                  // `undefined`) en una unidad sin grado todavía, y
+                  // `?? "Seleccione"` no cae ahí — se veía en blanco.
+                  grados.find((g) => String(g.id) === value)?.nombre || draft.grado || "Seleccione"
                 }
               </SelectValue>
             </SelectTrigger>
@@ -241,8 +244,8 @@ export function UnidadInfoGeneralFields({
             <SelectTrigger>
               <SelectValue placeholder="Seleccione">
                 {(value) =>
-                  asignaturas.find((a) => String(a.asignaturaId) === value)?.asignaturaNombre ??
-                  draft.asignatura ??
+                  asignaturas.find((a) => String(a.asignaturaId) === value)?.asignaturaNombre ||
+                  draft.asignatura ||
                   "Seleccione"
                 }
               </SelectValue>
