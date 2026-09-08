@@ -49,16 +49,7 @@ import type { ActividadStatus } from "@/features/planeador/api/types/actividad"
 
 import { planeadorRoute } from "@/router"
 import { paths } from "@/config/paths"
-import { parseLocalDate } from "@/features/planeador/lib/format-date"
-
-/** `yyyy-MM-dd` local — sin pasar por UTC, que corría el día en zonas
- *  horarias negativas cerca de medianoche. */
-function toDateOnly(date: Date): string {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, "0")
-  const day = String(date.getDate()).padStart(2, "0")
-  return `${year}-${month}-${day}`
-}
+import { formatDate, parseLocalDate, toDateOnly, todayDateOnly } from "@/features/planeador/lib/format-date"
 
 /**
  * Página principal del Planeador. Layout 2-columnas:
@@ -87,6 +78,18 @@ export function PlaneadorPage() {
     navigate({
       to: planeadorRoute.id,
       search: (prev) => ({ ...prev, actividad: next }),
+      replace: true,
+    })
+
+  // Día activo de la barra "Hoy | MARTES 16 | < >" del rail (`?dia=`,
+  // paginado por día activo de `GET /actividades/mias` — colección Postman
+  // `planeador-guia-completa`, 4.1/8.3). Vive en la URL, no en estado local,
+  // por el mismo motivo que `actividadId`. Ausente en la URL == hoy.
+  const dia = search.dia ?? todayDateOnly()
+  const setDia = (next: string) =>
+    navigate({
+      to: planeadorRoute.id,
+      search: (prev) => ({ ...prev, dia: next }),
       replace: true,
     })
 
@@ -153,8 +156,11 @@ export function PlaneadorPage() {
     estados: estado ? statusToEstadoDerivado(estado as ActividadStatus) : undefined,
     size: 50,
     offset: 0,
+    dia,
   })
   const filtered = miasResult?.rows ?? []
+  const diaAnterior = miasResult?.diaAnterior ?? null
+  const diaSiguiente = miasResult?.diaSiguiente ?? null
 
   // "Exportar todo"/"Importar" del menú "…": intercambio JSON de
   // actividades (colección Postman
@@ -344,13 +350,14 @@ export function PlaneadorPage() {
                   variant="soft"
                   color="muted"
                   size="xs"
-                  disabled
+                  disabled={dia === todayDateOnly()}
                   className="h-6 rounded-none px-2 text-[11px] tracking-wide uppercase"
+                  onClick={() => setDia(todayDateOnly())}
                 >
                   Hoy
                 </Button>
                 <span className="text-muted-foreground text-[11px] font-medium tracking-wide whitespace-nowrap uppercase">
-                  {new Date().toLocaleDateString("es-CO", {
+                  {(parseLocalDate(dia) ?? new Date()).toLocaleDateString("es-CO", {
                     weekday: "long",
                     day: "2-digit",
                   })}
@@ -362,6 +369,8 @@ export function PlaneadorPage() {
                     size="icon-xs"
                     aria-label="Día anterior"
                     className="size-6 rounded-none border-r-0"
+                    disabled={!diaAnterior}
+                    onClick={() => diaAnterior && setDia(diaAnterior)}
                   >
                     <CaretLeftIcon />
                   </Button>
@@ -371,6 +380,8 @@ export function PlaneadorPage() {
                     size="icon-xs"
                     aria-label="Día siguiente"
                     className="size-6 rounded-none"
+                    disabled={!diaSiguiente}
+                    onClick={() => diaSiguiente && setDia(diaSiguiente)}
                   >
                     <CaretRightIcon />
                   </Button>
@@ -404,7 +415,7 @@ export function PlaneadorPage() {
                   <div className="text-muted-foreground px-6 py-8 text-center text-sm">
                     {buscar
                       ? `Sin actividades que coincidan con "${buscar}".`
-                      : "Sin actividades registradas."}
+                      : `Sin actividades vigentes el ${formatDate(dia)}.`}
                   </div>
                 )}
 

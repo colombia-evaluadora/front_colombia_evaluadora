@@ -96,7 +96,14 @@ export function useActividadesCalendarioQuery(params: UseActividadesCalendarioPa
   return useQuery({
     queryKey: actividadesCalendarioQueryKey(params),
     queryFn: () => fetchActividadesCalendario(params),
-    placeholderData: (previous) => previous,
+    // SIN `placeholderData`, a propósito: la grilla mensual mapea estas
+    // actividades por día-DE-MES (`date.getDate()`, ver
+    // `planeador-page.tsx`), sin el mes en la clave. Si al cambiar de mes se
+    // siguiera mostrando la respuesta del mes ANTERIOR mientras el fetch
+    // nuevo está en vuelo, esas actividades aparecerían bajo los números de
+    // día del mes NUEVO como si fueran de ese mes — el bug reportado de
+    // "actividades que no son del mes en donde estoy". Mejor un parpadeo a
+    // vacío que un mes mostrando datos de otro.
     staleTime: 1000 * 30,
   })
 }

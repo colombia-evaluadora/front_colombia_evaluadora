@@ -18,27 +18,65 @@ import type { UnidadReferente } from "@/features/planeador/api/query/use-unidad-
  * el primero de la lista es el que aplica; nunca hay que elegir "a mano"
  * cuál usar.
  */
+interface ReferenteEvidenciaRow {
+  pk: number
+  texto: string
+}
+
+interface ReferenteEnunciadoRow {
+  pk: number
+  texto: string
+  evidencias?: ReferenteEvidenciaRow[]
+}
+
 interface ReferenteCurricularRow {
   pk_referente_curricular?: number
   /** A diferencia de 3.1 (`enfoque_valor: "EVALUATIVO" | "FORMATIVO"`), acá
    *  el enfoque llega como booleano directo. */
   es_evaluativo?: boolean
   tipo_evaluacion_valor?: string | null
+  /** Confirmado contra una respuesta real: el texto de cada enunciado (y de
+   *  cada evidencia anidada) viene en `texto`, no `nombre`/`descripcion`. */
+  enunciados?: ReferenteEnunciadoRow[]
 }
 
-const SIN_REFERENTE: UnidadReferente = {
+export interface ReferenteEvidencia {
+  id: number
+  text: string
+}
+
+export interface ReferenteEnunciado {
+  id: number
+  text: string
+  evidencias: ReferenteEvidencia[]
+}
+
+export interface ReferenteCurricular extends UnidadReferente {
+  enunciados: ReferenteEnunciado[]
+}
+
+const SIN_REFERENTE: ReferenteCurricular = {
   tieneReferente: false,
   esFormativo: false,
   tipoEvaluacion: null,
+  enunciados: [],
 }
 
-function toUnidadReferente(rows: ReferenteCurricularRow[]): UnidadReferente {
+function toReferenteCurricular(rows: ReferenteCurricularRow[]): ReferenteCurricular {
   const row = rows[0]
   if (!row) return SIN_REFERENTE
   return {
     tieneReferente: true,
     esFormativo: row.es_evaluativo === false,
     tipoEvaluacion: row.tipo_evaluacion_valor ?? null,
+    enunciados: (row.enunciados ?? []).map((enunciado) => ({
+      id: enunciado.pk,
+      text: enunciado.texto,
+      evidencias: (enunciado.evidencias ?? []).map((evidencia) => ({
+        id: evidencia.pk,
+        text: evidencia.texto,
+      })),
+    })),
   }
 }
 
@@ -52,13 +90,13 @@ export const referenteCurricularQueryKey = (params: UseReferenteCurricularParams
 
 async function fetchReferenteCurricular(
   params: UseReferenteCurricularParams,
-): Promise<UnidadReferente> {
+): Promise<ReferenteCurricular> {
   const query = new URLSearchParams({ grado: String(params.gradoId) })
   if (params.asignaturaId != null) query.set("asignatura", String(params.asignaturaId))
   const rows = await evalCol.getRows<ReferenteCurricularRow>(
     `/planeador/referente-curricular?${query}`,
   )
-  return toUnidadReferente(rows)
+  return toReferenteCurricular(rows)
 }
 
 /**

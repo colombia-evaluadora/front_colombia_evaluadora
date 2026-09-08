@@ -25,16 +25,35 @@ const PANEL =
  * "Actividades" quedan deshabilitadas — no hay a qué unidad engancharles un
  * criterio o una actividad todavía. Se habilitan solas apenas la página de
  * edición las monta con la unidad ya creada.
+ *
+ * "Rúbricas" además se SACA (no se deshabilita) cuando `esFormativo` —
+ * mismo criterio que `getVisibleTabs` en `unidad-detalle-panel.tsx`: el
+ * seguimiento formativo no califica por niveles de desempeño, así que no
+ * hay nada que definir ahí. El caller pasa el enfoque YA DERIVADO del
+ * draft (`useEnfoquePedagogicoDerivado` en `form-unidad-info-general.tsx`),
+ * no el de `unidad`, para que reaccione apenas cambia Grado/Asignatura,
+ * antes de guardar.
  */
 export function UnidadFormTabs({
   infoGeneralContent,
   unidad,
+  esFormativo = false,
 }: {
   infoGeneralContent: React.ReactNode
   unidad?: UnidadTematica
+  esFormativo?: boolean
 }) {
   const [tab, setTab] = useState<UnidadFormTab>("general")
   const puedeEditarListas = unidad != null
+
+  // Si la pestaña activa deja de existir (el enfoque pasó a Formativo
+  // mientras estaba parado en "Rúbricas"), vuelve a "Información general"
+  // en vez de quedar en un `Tabs` sin trigger visible para ese value. Ajuste
+  // de estado durante el render, no un efecto: la condición se vuelve falsa
+  // apenas se aplica, así que no hay loop.
+  if (esFormativo && tab === "rubricas") {
+    setTab("general")
+  }
 
   return (
     <Tabs value={tab} onValueChange={(value) => setTab(value as UnidadFormTab)} className="w-full min-w-0">
@@ -50,12 +69,14 @@ export function UnidadFormTabs({
             Información general
           </span>
         </TabsTrigger>
-        <TabsTrigger value="rubricas" disabled={!puedeEditarListas}>
-          <span className="inline-flex items-center gap-1.5">
-            <FolderOpenIcon data-icon="inline-start" />
-            Rúbricas
-          </span>
-        </TabsTrigger>
+        {!esFormativo && (
+          <TabsTrigger value="rubricas" disabled={!puedeEditarListas}>
+            <span className="inline-flex items-center gap-1.5">
+              <FolderOpenIcon data-icon="inline-start" />
+              Rúbricas
+            </span>
+          </TabsTrigger>
+        )}
         <TabsTrigger value="actividades" disabled={!puedeEditarListas}>
           <span className="inline-flex items-center gap-1.5">
             <ClipboardCheckIcon data-icon="inline-start" />
@@ -67,7 +88,7 @@ export function UnidadFormTabs({
       <TabsContent value="general" className={PANEL}>
         {infoGeneralContent}
       </TabsContent>
-      {unidad && (
+      {unidad && !esFormativo && (
         <TabsContent value="rubricas" className={PANEL}>
           <Rubricas unidad={unidad} />
         </TabsContent>

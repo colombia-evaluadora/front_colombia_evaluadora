@@ -8,34 +8,35 @@ import { CeldaNotaPopover } from "@/features/planeador/components/planilla/celda
 
 interface PlanillaGridProps {
   columnas: PlanillaColumna[]
-  /** "Actividad": una columna por actividad, sin agrupar. "Instrumento": las
-   *  mismas columnas, agrupadas bajo un `<th colSpan>` con el nombre del
-   *  instrumento de evaluación de cada actividad
-   *  (`PlanillaColumna.instrumentoNombre`) — el backend real solo trae el
-   *  nombre, no un id propio del agrupador, así que se agrupa por nombre.
-   *  Catálogo real `ELEMENTO_CALCULO_DEF`: "Instrumentos"/"Actividades". */
-  verPor: "actividad" | "instrumento"
+  /** "Actividad": una columna por actividad, sin agrupar. "Unidad": las
+   *  mismas columnas, agrupadas bajo un `<th colSpan>` con la unidad
+   *  temática de cada actividad (`PlanillaColumna.fkTunidad`/`unidad`).
+   *  Catálogo real `AGRUPACION_PLANILLA`: "Actividades"/"Unidad". */
+  verPor: "actividad" | "unidad"
   filas: PlanillaFila[]
   onAbrirBulk: (columna: PlanillaColumna) => void
 }
 
-interface GrupoInstrumento {
+interface GrupoUnidad {
+  /** `null` = actividad huérfana (sin unidad) — agrupan todas juntas bajo
+   *  "Sin unidad" en vez de una columna por cada una. */
+  fkTunidad: number | null
   nombre: string
   columnas: PlanillaColumna[]
 }
 
-/** Agrupa manteniendo el orden de aparición de cada instrumento en
- *  `columnas` (no alfabético) — así el orden de columnas no salta al
- *  cambiar "Ver por". */
-function agruparPorInstrumento(columnas: PlanillaColumna[]): GrupoInstrumento[] {
-  const grupos: GrupoInstrumento[] = []
-  const porNombre = new Map<string, GrupoInstrumento>()
+/** Agrupa manteniendo el orden de aparición de cada unidad en `columnas`
+ *  (no alfabético) — así el orden de columnas no salta al cambiar
+ *  "Ver por". Agrupa por `fkTunidad` (id real), no por el nombre: dos
+ *  unidades distintas podrían compartir nombre. */
+function agruparPorUnidad(columnas: PlanillaColumna[]): GrupoUnidad[] {
+  const grupos: GrupoUnidad[] = []
+  const porId = new Map<number | null, GrupoUnidad>()
   for (const columna of columnas) {
-    const nombre = columna.instrumentoNombre ?? "Sin instrumento"
-    let grupo = porNombre.get(nombre)
+    let grupo = porId.get(columna.fkTunidad)
     if (!grupo) {
-      grupo = { nombre, columnas: [] }
-      porNombre.set(nombre, grupo)
+      grupo = { fkTunidad: columna.fkTunidad, nombre: columna.unidad ?? "Sin unidad", columnas: [] }
+      porId.set(columna.fkTunidad, grupo)
       grupos.push(grupo)
     }
     grupo.columnas.push(columna)
@@ -56,8 +57,8 @@ function formatNota(porcentaje: number | null): number | null {
 
 /**
  * Grilla de la Planilla: una fila por estudiante, una columna por actividad
- * (más "Definit. Proy." al frente), opcionalmente agrupadas por instrumento
- * de evaluación. Lee directo lo que ya trae `/planilla/calificaciones` (estado,
+ * (más "Definit. Proy." al frente), opcionalmente agrupadas por unidad
+ * temática. Lee directo lo que ya trae `/planilla/calificaciones` (estado,
  * calificación, definitiva) — no recalcula porcentajes en el cliente, el
  * backend real ya los resuelve.
  *
@@ -83,7 +84,7 @@ export function PlanillaGrid({ columnas, verPor, filas, onAbrirBulk }: PlanillaG
     )
   }
 
-  const grupos = verPor === "instrumento" ? agruparPorInstrumento(columnas) : null
+  const grupos = verPor === "unidad" ? agruparPorUnidad(columnas) : null
 
   return (
     <div className="border-input overflow-auto rounded-md border">
@@ -100,7 +101,7 @@ export function PlanillaGrid({ columnas, verPor, filas, onAbrirBulk }: PlanillaG
                 </th>
                 {grupos.map((grupo) => (
                   <th
-                    key={grupo.nombre}
+                    key={grupo.fkTunidad ?? "sin-unidad"}
                     colSpan={grupo.columnas.length}
                     className="border-b px-4 py-2 text-center font-semibold uppercase"
                   >
