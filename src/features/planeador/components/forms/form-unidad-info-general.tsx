@@ -19,7 +19,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { InfoIcon } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
 
-import { useUnidadReferenteQuery } from "@/features/planeador/api/query/use-unidad-referente-query"
+import { useReferenteCurricularQuery } from "@/features/planeador/api/query/use-referente-curricular-query"
 import { useDocenteGradoAsignaturaQuery } from "@/features/planeador/api/query/use-docente-grado-asignatura-query"
 import {
   ListaAgregableCaja,
@@ -103,8 +103,8 @@ export function draftToPayload(draft: UnidadDraft): UnidadInfoGeneral {
 
 /**
  * `enfoquePedagogico` deja de ser un campo elegido a mano en este form: se
- * deriva del referente curricular REAL de la unidad
- * (`GET /planeador/unidades/:id/referente`, `useUnidadReferenteQuery`) —
+ * deriva del referente curricular REAL de GRADO+ASIGNATURA
+ * (`GET /planeador/referente-curricular`, `useReferenteCurricularQuery`) —
  * reemplaza a `POST /referentes-curriculares/query`
  * (`useCurricularReferencesQuery`), que responde 403 para `CEVAL-DOCENTE`
  * (confirmado en vivo). Sigue viviendo en `UnidadTematica`/`UnidadDraft` (lo
@@ -112,13 +112,16 @@ export function draftToPayload(draft: UnidadDraft): UnidadInfoGeneral {
  * actividades), solo que ya no hay un `<Select>` para tocarlo directamente
  * acá.
  *
- * El referente se deriva del GRADO de la unidad → nivel de enseñanza, así
- * que la ruta pide el `:id` de una unidad YA EXISTENTE — al CREAR (sin id
- * todavía) no hay forma de consultarlo, y queda en el default histórico
- * ("Evaluativo") hasta que la unidad se guarda y se puede editar.
+ * A diferencia de la versión anterior (que pedía `GET /unidades/:id/
+ * referente` y por lo tanto exigía una unidad YA GUARDADA), esto resuelve
+ * apenas se elige Grado/Asignatura en el form — funciona igual creando que
+ * editando, sin depender de que la unidad tenga `id` todavía.
  */
-function useEnfoquePedagogicoDerivado(unidadId: number | undefined): EnfoquePedagogico {
-  const { data: referente } = useUnidadReferenteQuery(unidadId)
+function useEnfoquePedagogicoDerivado(
+  gradoId: number | undefined,
+  asignaturaId: number | undefined,
+): EnfoquePedagogico {
+  const { data: referente } = useReferenteCurricularQuery(gradoId, asignaturaId)
   return referente?.esFormativo ? "Formativo" : "Evaluativo"
 }
 
@@ -135,23 +138,21 @@ function useEnfoquePedagogicoDerivado(unidadId: number | undefined): EnfoquePeda
 export function UnidadInfoGeneralFields({
   draft,
   onChange,
-  unidadId,
 }: {
   draft: UnidadDraft
   onChange: (patch: Partial<UnidadDraft>) => void
-  /** Solo presente al EDITAR — al crear todavía no hay id para consultar
-   *  `GET /unidades/:id/referente`, ver `useEnfoquePedagogicoDerivado`. */
-  unidadId?: number
 }) {
-  const enfoqueDerivado = useEnfoquePedagogicoDerivado(unidadId)
+  const enfoqueDerivado = useEnfoquePedagogicoDerivado(draft.gradoId, draft.asignaturaId)
   useEffect(() => {
     if (draft.enfoquePedagogico !== enfoqueDerivado) {
       onChange({ enfoquePedagogico: enfoqueDerivado })
     }
   }, [draft.enfoquePedagogico, enfoqueDerivado, onChange])
 
-  const { enunciados: enunciadosDisponibles, isPending: isPendingEnunciados } =
-    useEnunciadosDbaQuery(unidadId)
+  const { enunciados: enunciadosDisponibles, isPending: isPendingEnunciados } = useEnunciadosDbaQuery(
+    draft.gradoId,
+    draft.asignaturaId,
+  )
 
   // Grado/Asignatura salen de `GET /planeador/docentes/grado-asignatura`
   // (mismo endpoint real que ya usa el filtro de la Planilla): son los
