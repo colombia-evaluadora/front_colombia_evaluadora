@@ -23,10 +23,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { ConfirmDiscardDialog } from "@/components/confirm-discard-dialog"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogFooter,
   DialogHeader,
@@ -210,6 +210,22 @@ export function AreaSubjectFormDialog({
     } else {
       resetCreateForm()
     }
+  }
+
+  const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false)
+
+  function requestClose() {
+    if (isPending) return
+    const initialSubjects = areaSubject?.subjects.map(itemToDraft) ?? []
+    const isDirty =
+      JSON.stringify(form.state.values) !== JSON.stringify(areaDefaults) ||
+      JSON.stringify(subjects) !== JSON.stringify(initialSubjects) ||
+      JSON.stringify(draft) !== JSON.stringify(emptyDraft())
+    if (isDirty) {
+      setConfirmDiscardOpen(true)
+      return
+    }
+    handleOpenChange(false)
   }
 
   function resetEditForm() {
@@ -472,7 +488,13 @@ export function AreaSubjectFormDialog({
 
   return (
     <>
-      <Dialog open={open} onOpenChange={handleOpenChange}>
+      <Dialog
+        open={open}
+        onOpenChange={(next) => {
+          if (next) handleOpenChange(true)
+          else requestClose()
+        }}
+      >
         {isEdit ? (
           <DialogTrigger render={<Button variant="ghost" color="neutral" size="icon-sm" />}>
             <span className="sr-only">Editar área</span>
@@ -900,12 +922,16 @@ export function AreaSubjectFormDialog({
                 Guardar
               </Button>
             )}
-            <DialogClose
-              render={<Button size="sm" type="button" variant="fill" color="neutral" />}
+            <Button
+              size="sm"
+              type="button"
+              variant="fill"
+              color="neutral"
+              onClick={requestClose}
             >
               <XIcon data-icon="inline-start" />
               Cancelar
-            </DialogClose>
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -967,6 +993,14 @@ export function AreaSubjectFormDialog({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <ConfirmDiscardDialog
+        open={confirmDiscardOpen}
+        onOpenChange={setConfirmDiscardOpen}
+        onConfirm={() => {
+          setConfirmDiscardOpen(false)
+          handleOpenChange(false)
+        }}
+      />
     </>
   )
 }

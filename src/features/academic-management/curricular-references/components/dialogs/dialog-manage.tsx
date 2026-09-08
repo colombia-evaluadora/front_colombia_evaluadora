@@ -12,6 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { ConfirmDiscardDialog } from "@/components/confirm-discard-dialog"
 import { getErrorMessage } from "@/lib/api-client"
 import { CurricularReferenceDetailsForm } from "@/features/academic-management/curricular-references/components/forms/form-curricular-reference-details"
 import { useCreate } from "@/features/academic-management/curricular-references/api/mutations/use-create"
@@ -106,6 +107,7 @@ export function ManageCurricularReferenceDialog({
 
   const [notice, setNotice] = useState<{ id: number; message: string; variant: NoticeVariant } | null>(null)
   const noticeIdRef = useRef(0)
+  const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false)
 
   function notifyInDialog(message: string, variant: NoticeVariant = "error") {
     noticeIdRef.current += 1
@@ -118,6 +120,7 @@ export function ManageCurricularReferenceDialog({
     if (!open) {
       populatedRef.current = false
       setNotice(null)
+      setConfirmDiscardOpen(false)
       return
     }
     if (populatedRef.current) return
@@ -181,16 +184,10 @@ export function ManageCurricularReferenceDialog({
       return
     }
 
-    // El backend guarda un solo nivel educativo por referente (FK única), así
-    // que un formulario con varios niveles seleccionados se traduce en varias
-    // llamadas al endpoint: el primer nivel actualiza/crea el registro base y
-    // cada nivel adicional crea un referente nuevo con el resto de los datos.
-    const [firstLevel, ...extraLevels] = formValues.educationLevels
-
     if (isEditMode && curricularReference) {
       const result = await updateMutation.mutateAsync({
         id: curricularReference.id,
-        values: { ...formValues, educationLevels: firstLevel ? [firstLevel] : [] },
+        values: formValues,
         previousActive: curricularReference.active,
       })
       if (result.status === "error") {
@@ -198,25 +195,15 @@ export function ManageCurricularReferenceDialog({
         return
       }
 
-      for (const level of extraLevels) {
-        const extraResult = await createMutation.mutateAsync({ ...formValues, educationLevels: [level] })
-        if (extraResult.status === "error") {
-          notifyInDialog(extraResult.message ?? "No fue posible guardar el referente curricular.")
-          return
-        }
-      }
-
       notify("El referente curricular se actualizó correctamente.")
       onOpenChange(false)
       return
     }
 
-    for (const level of formValues.educationLevels) {
-      const result = await createMutation.mutateAsync({ ...formValues, educationLevels: [level] })
-      if (result.status === "error") {
-        notifyInDialog(result.message ?? "No fue posible guardar el referente curricular.")
-        return
-      }
+    const result = await createMutation.mutateAsync(formValues)
+    if (result.status === "error") {
+      notifyInDialog(result.message ?? "No fue posible guardar el referente curricular.")
+      return
     }
 
     notify("El referente curricular se creó correctamente.")
@@ -226,17 +213,24 @@ export function ManageCurricularReferenceDialog({
   const isPending = createMutation.isPending || updateMutation.isPending
   const isLoadingDetail = isEditMode && isDetailPending
 
-  const hasRequiredFields = curricularReferenceSchema.safeParse(formValues).success
-  const hasChanges = isEditMode
-    ? JSON.stringify(formValues) !== JSON.stringify(initialValuesRef.current)
-    : true
-  const canSave = !isLoadingDetail && hasRequiredFields && hasChanges
+  const isDirty = JSON.stringify(formValues) !== JSON.stringify(initialValuesRef.current)
+  const hasChanges = isEditMode ? isDirty : true
+  const canSave = !isLoadingDetail && hasChanges
+
+  function requestClose() {
+    if (isPending) return
+    if (isDirty) {
+      setConfirmDiscardOpen(true)
+      return
+    }
+    onOpenChange(false)
+  }
 
   return (
     <Dialog
       open={open}
       onOpenChange={(next) => {
-        if (!isPending) onOpenChange(next)
+        if (!next) requestClose()
       }}
     >
       <DialogContent
@@ -271,7 +265,6 @@ export function ManageCurricularReferenceDialog({
               pedagogicalApproaches={pedagogicalApproaches}
               evaluationTypes={evaluationTypes}
               errors={fieldErrors}
-              isEditMode={isEditMode}
             />
           </form>
         )}
@@ -296,13 +289,22 @@ export function ManageCurricularReferenceDialog({
             variant="fill"
             color="neutral"
             disabled={isPending}
-            onClick={() => onOpenChange(false)}
+            onClick={requestClose}
           >
             <XIcon data-icon="inline-start" />
             Cerrar
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      <ConfirmDiscardDialog
+        open={confirmDiscardOpen}
+        onOpenChange={setConfirmDiscardOpen}
+        onConfirm={() => {
+          setConfirmDiscardOpen(false)
+          onOpenChange(false)
+        }}
+      />
     </Dialog>
   )
 }

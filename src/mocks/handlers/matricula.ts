@@ -428,7 +428,7 @@ export const matriculaHandlers = [
           }
         : null
 
-    return HttpResponse.json<CreateMatriculaResult>({ matricula, homologation })
+    return HttpResponse.json<CreateMatriculaResult>({ matricula, homologation, failedOtherDocuments: [] })
   }),
 
   // Endpoint real (`eval-col`, no `coverage`) — ver colección Postman "SSO —

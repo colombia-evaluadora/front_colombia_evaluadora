@@ -7,6 +7,7 @@ import { fetchGrados } from "@/features/coverage/api/query/use-matricula-depende
 import { postMultipart } from "@/lib/files"
 import type { MutationConfig } from "@/lib/react-query"
 import { toCreateMatriculaBody } from "@/features/coverage/api/mutations/to-create-matricula-body"
+import { addMatriculaDocumento } from "@/features/coverage/api/mutations/add-matricula-documento"
 import { registerMatriculaPersona } from "@/features/coverage/api/mutations/register-matricula-persona"
 import { registerUsuarioAdministrado } from "@/features/coverage/api/mutations/register-usuario-administrado"
 import { findMatriculaUsuarioPorDocumento } from "@/features/coverage/api/query/use-matricula-usuario-por-documento"
@@ -154,12 +155,21 @@ async function createMatricula({
       CERTIFICADO_DE_ESTUDIOS_DEL_ANO_ANTERIOR: files.previousYearCertificate[0] ?? null,
       CERTIFICADO_MEDICO_DEL_ESTUDIANTE: files.medicalCertificate[0] ?? null,
       FOTO_DEL_ESTUDIANTE: files.studentPhoto[0] ?? null,
-      OTROS_DOCUMENTOS_RELEVANTES: files.otherDocuments,
     },
   )
 
+  const matriculaId = String(raw.pk_tmatricula)
+  const failedOtherDocuments: File[] = []
+  for (const file of files.otherDocuments) {
+    try {
+      await addMatriculaDocumento(matriculaId, file)
+    } catch {
+      failedOtherDocuments.push(file)
+    }
+  }
+
   const matricula: Matricula = {
-    id: String(raw.pk_tmatricula),
+    id: matriculaId,
     documentNumber: values.student.documentNumber,
     firstName: values.student.firstName,
     lastName: values.student.lastName,
@@ -175,7 +185,7 @@ async function createMatricula({
     hasGrades: false,
   }
 
-  return { matricula, homologation: null }
+  return { matricula, homologation: null, failedOtherDocuments }
 }
 
 interface UseCreateMatriculaOptions {
