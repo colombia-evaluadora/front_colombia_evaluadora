@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import { evalCol } from "@/lib/eval-col-client"
 import { env } from "@/config/env"
 
+import { estadoDerivadoToStatus } from "@/features/planeador/lib/estado-derivado"
 import type { MetodoCalculo, UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
 
 const UNIDAD_LIST_URL = "/planeador/unidades"
@@ -38,6 +39,12 @@ interface UnidadRealRow {
   objetivos?: { pk: number; orden: number; descripcion: string }[]
   contenidos?: { pk: number; orden: number; descripcion: string }[]
   active?: boolean
+  /** Estado derivado de la unidad (`fn_unidad_listar`/`_buscar_por_pk`) —
+   *  los MISMOS cuatro valores que ya deriva `/actividades` (colección
+   *  Postman `planeador-guia-completa`, 2.1): una unidad hereda el peor
+   *  estado entre sus actividades. `estadoDerivadoToStatus` ya sabe
+   *  traducirlos porque es el mismo union que `ActividadStatus`. */
+  estado?: string
   total_actividades?: number
   /** ISO con hora (`"2026-09-01T00:00:00.000Z"`). `formatDate`/
    *  `parseLocalDate` ya toleran el sufijo de hora (`.slice(0, 10)`), así
@@ -69,9 +76,11 @@ function toUnidadTematica(row: UnidadRealRow): UnidadTematica {
     // (`getVisibleTabs`, `EvaluacionSection`) ven "Evaluativo" hasta que se
     // abra el form de edición, que lo recalcula de una.
     enfoquePedagogico: "Evaluativo",
-    // Tampoco hay un status de 4 estados real para unidad, solo `active` —
-    // se aproxima a dos de los cuatro que ya usa la UI.
-    status: row.active === false ? "cancelled" : "in-progress",
+    // `estado` ya trae los 4 valores derivados reales (VENCIDA hereda de
+    // cualquier actividad vencida, etc. — ver el comentario de
+    // `UnidadRealRow.estado`); `active` queda solo de respaldo por si algún
+    // endpoint viejo todavía no lo manda.
+    status: row.estado ? estadoDerivadoToStatus(row.estado) : row.active === false ? "cancelled" : "in-progress",
     fechaInicio: row.fecha_inicio ?? "",
     fechaFin: row.fecha_fin ?? "",
     descripcion: row.descripcion ?? "",
