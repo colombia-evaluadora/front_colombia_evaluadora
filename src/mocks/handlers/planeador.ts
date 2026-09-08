@@ -25,6 +25,10 @@ import type {
 } from "@/features/planeador/api/types/actividad"
 import { EXPORT_FORMAT_LABELS } from "@/features/planeador/api/types/actividad"
 import type { NivelDesempenoCriterio, UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
+import type {
+  ActividadExportada,
+  FilaInformeImportacion,
+} from "@/features/planeador/api/types/actividad-intercambio"
 import { statusToEstadoDerivado } from "@/features/planeador/lib/estado-derivado"
 
 /**
@@ -56,6 +60,8 @@ const ACTIVIDAD_CREATE_URL = "/api/eval-col/planeador/actividades"
 const ACTIVIDAD_DELETE_URL = "/api/eval-col/planeador/actividades/:id"
 const ACTIVIDAD_EXPORT_URL = "/api/eval-col/planeador/actividades/:id/export"
 const ACTIVIDAD_EXPORT_ALL_URL = "/api/eval-col/planeador/actividades/export-all"
+const ACTIVIDAD_EXPORTAR_JSON_URL = "/api/eval-col/planeador/actividades/exportar"
+const ACTIVIDAD_IMPORTAR_JSON_URL = "/api/eval-col/planeador/actividades/importar"
 const UNIDAD_LIST_URL = "/api/eval-col/planeador/unidades"
 const UNIDAD_DETAIL_URL = "/api/eval-col/planeador/unidades/:id"
 const UNIDAD_CRITERIO_CREATE_URL = "/api/eval-col/planeador/unidades/:id/criterios"
@@ -87,6 +93,157 @@ function paginate<T>(rows: T[], url: URL) {
     rows: rows.slice(offset, offset + size),
     pageCount: Math.max(1, Math.ceil(total / size)),
     totalCount: total,
+  }
+}
+
+/**
+ * `Actividad` (mock) → `ActividadExportada` (formato de intercambio real).
+ * No es una traducción exhaustiva de cada campo del ejemplo capturado en la
+ * colección Postman —el mock no diferencia rúbrica/cotejo/escala con la
+ * misma fidelidad que el backend real—, alcanza para poder probar el
+ * roundtrip exportar → importar en modo mock.
+ */
+function toActividadExportada(actividad: Actividad): ActividadExportada {
+  const instrumentoLower = actividad.instrumento?.toLowerCase() ?? ""
+  const esRubrica = instrumentoLower.includes("rúbrica") || instrumentoLower.includes("rubrica")
+  const esCotejo = instrumentoLower.includes("cotejo")
+  const esEscala = instrumentoLower.includes("escala")
+
+  const exportada: ActividadExportada = {
+    tipo: actividad.tipo,
+    grado: actividad.grado,
+    grupo: actividad.grupo,
+    creado: new Date().toISOString(),
+    nombre: actividad.nombre,
+    semana: actividad.semana,
+    unidad: actividad.unidad.nombre || null,
+    duracion: actividad.duracionEstimada,
+    recursos: actividad.recursos.map((recurso) => ({
+      url: recurso.url,
+      origen: "url",
+      descripcion: recurso.descripcion,
+    })),
+    modalidad: actividad.modalidad,
+    asignatura: actividad.asignatura,
+    evaluativa: actividad.esEvaluativa ? "Si" : "No",
+    materiales: actividad.materiales,
+    descripcion: actividad.observaciones,
+    instrumento: actividad.instrumento,
+    adaptaciones: actividad.adaptaciones,
+    fecha_inicio: actividad.fechaInicio,
+    fecha_entrega: actividad.fechaCierre,
+    observaciones: actividad.observaciones,
+    tipo_evidencia: actividad.tipoEvidencia,
+    genera_evidencias: actividad.generaEvidencias ? "Si" : "No",
+    requiere_validacion: actividad.requiereValidacion ? "Si" : "No",
+    _identificadores: {
+      pkTactividad: actividad.id,
+      ...(actividad.unidad.id !== 0 ? { pkTunidad: actividad.unidad.id } : {}),
+    },
+  }
+
+  if (actividad.esEvaluativa) exportada.ponderacion = actividad.ponderacion
+
+  if (esRubrica) {
+    exportada.rubrica = actividad.rubrica.criterios.map((criterio) => ({
+      nombre: criterio.nombre,
+      niveles: [
+        ...criterio.niveles.map((nivel) => ({
+          nombre: nivel.nombre,
+          descriptor: nivel.descripcion,
+          ponderacion: nivel.ponderacion ?? 0,
+        })),
+        {
+          nombre: "Excelente",
+          descriptor: criterio.excelente,
+          ponderacion: criterio.excelentePonderacion ?? 100,
+        },
+      ],
+    }))
+  } else if (esCotejo) {
+    exportada.cotejo = actividad.listaCotejo.items.map((item) => item.descripcion)
+  } else if (esEscala) {
+    exportada.escala =
+      actividad.escalaValoracion.tipo === "Numérica"
+        ? {
+            minimo: actividad.escalaValoracion.valorMinimo,
+            maximo: actividad.escalaValoracion.valorMaximo,
+            interpretacion: actividad.escalaValoracion.interpretacionRangos,
+          }
+        : actividad.escalaValoracion.niveles.map((nivel) => ({
+            nombre: nivel.nombre,
+            descriptor: nivel.descripcion,
+            ponderacion: nivel.ponderacion ?? 0,
+          }))
+  }
+
+  if (actividad.unidad.id !== 0) {
+    exportada.unidad_meta = {
+      nombre: actividad.unidad.nombre,
+      objetivos: actividad.objetivos,
+      contenidos: actividad.contenidos,
+      descripcion: actividad.descripcionUnidad,
+    }
+  }
+
+  return exportada
+}
+
+/**
+ * Arma una `Actividad` completa con defaults vacíos para todos los campos
+ * que el formato de intercambio no trae (recursos/rúbrica/adaptaciones de
+ * detalle) — el importar real solo exige lo mínimo para crearla; el resto
+ * queda como el form los inicializaría para una actividad nueva.
+ */
+function actividadFromImportRow(raw: Record<string, unknown>, id: number): Actividad {
+  const nombre = String(raw.nombre ?? `Actividad ${id}`)
+  const esEvaluativa = raw.evaluativa === "Si" || raw.evaluativa === "Sí"
+  return {
+    id,
+    nombre,
+    tipo: String(raw.tipo ?? ""),
+    esRecuperacion: false,
+    unidad: { id: 0, nombre: String(raw.unidad ?? "") },
+    asignatura: String(raw.asignatura ?? ""),
+    grado: String(raw.grado ?? ""),
+    grupo: String(raw.grupo ?? ""),
+    fechaInicio: String(raw.fecha_inicio ?? ""),
+    fechaCierre: String(raw.fecha_entrega ?? ""),
+    status: "pending",
+    evaluados: 0,
+    totalEstudiantes: 0,
+    materiales: String(raw.materiales ?? ""),
+    recursos: [],
+    duracionEstimada: String(raw.duracion ?? ""),
+    semana: String(raw.semana ?? ""),
+    modalidad: (raw.modalidad as Actividad["modalidad"]) ?? "Presencial",
+    esEvaluativa,
+    instrumento: String(raw.instrumento ?? ""),
+    ponderacion: esEvaluativa ? Number(raw.ponderacion ?? 0) : 0,
+    generaEvidencias: raw.genera_evidencias === "Si" || raw.genera_evidencias === "Sí",
+    tipoEvidencia: String(raw.tipo_evidencia ?? ""),
+    requiereValidacion: raw.requiere_validacion === "Si" || raw.requiere_validacion === "Sí",
+    observaciones: String(raw.observaciones ?? raw.descripcion ?? ""),
+    contenidos: [],
+    objetivos: [],
+    descripcionUnidad: [],
+    rubrica: { id: 0, criterios: [] },
+    listaCotejo: { id: 0, items: [] },
+    escalaValoracion: {
+      id: 0,
+      criteriosGenerales: "",
+      tipo: "Cualitativa",
+      interpretacionRangos: "",
+      niveles: [],
+    },
+    instrumentoPersonalizado: {
+      descripcion: "",
+      tipoEvidenciaEsperada: "",
+      metodoValoracion: "",
+      requiereArchivo: false,
+      requiereRespuestaTexto: false,
+    },
+    adaptaciones: [],
   }
 }
 
@@ -560,6 +717,152 @@ export const planeadorHandlers = [
     return HttpResponse.json<ExportResult>({
       status: "ok",
       message: `${filters.length} actividad(es) exportada(s) a ${EXPORT_FORMAT_LABELS[format]}.`,
+    })
+  }),
+
+  // Exportar (formato de intercambio JSON, no PDF/Excel — ver
+  // `use-exportar-actividades-json.ts`). Registrado ANTES que
+  // `ACTIVIDAD_DETAIL_URL`/`ACTIVIDAD_DELETE_URL` no hace falta acá: esos
+  // matchean por MÉTODO (GET/PATCH) y este es POST, así que no compiten por
+  // la misma ruta como sí pasaría entre dos GET.
+  http.post(ACTIVIDAD_EXPORTAR_JSON_URL, async ({ request }) => {
+    await delay(400)
+    const body = (await request.json()) as {
+      IDS?: number[]
+      PK_TUNIDAD?: number
+      FK_TASIGNATURA?: number
+      FK_TGRUPO?: number
+    }
+
+    if (!body.IDS?.length && body.PK_TUNIDAD == null && !body.FK_TASIGNATURA && !body.FK_TGRUPO) {
+      return HttpResponse.json(
+        { message: "Hay que indicar al menos un filtro para exportar" },
+        { status: 400 },
+      )
+    }
+
+    let rows = planeadorDb
+    if (body.IDS?.length) {
+      const ids = new Set(body.IDS)
+      const found = rows.filter((actividad) => ids.has(actividad.id))
+      const missing = body.IDS.filter((id) => !found.some((actividad) => actividad.id === id))
+      if (missing.length > 0) {
+        return HttpResponse.json(
+          { message: `No se encontraron las actividades ${missing.join(", ")}` },
+          { status: 400 },
+        )
+      }
+      rows = found
+    }
+    // El mock no modela `FK_TASIGNATURA`/`FK_TGRUPO` como ids reales sobre
+    // `planeadorDb` (ahí esos campos son texto plano) — solo `PK_TUNIDAD` sí
+    // tiene un id (`unidad.id`) y por eso es el único filtro sin `IDS` que
+    // acota en mock.
+    if (body.PK_TUNIDAD != null) {
+      rows = rows.filter((actividad) => actividad.unidad.id === body.PK_TUNIDAD)
+    }
+
+    return HttpResponse.json(rows.map(toActividadExportada))
+  }),
+
+  // Importar (dos pasos: `SOLO_VALIDAR` decide si escribe). El mock no
+  // resuelve destino contra catálogos reales —solo comprueba que haya de
+  // dónde sacarlo (`_identificadores` o algún `FK_*` del cuerpo) y que
+  // venga un `tipo`—, alcanza para probar el flujo de validar → aplicar.
+  http.post(ACTIVIDAD_IMPORTAR_JSON_URL, async ({ request }) => {
+    await delay(500)
+    const body = (await request.json()) as {
+      ACTIVIDADES: Record<string, unknown>[]
+      SOLO_VALIDAR?: boolean
+      FK_TASIGNATURA?: number
+      FK_TGRUPO?: number
+      FK_TGRADO?: number
+    }
+    const soloValidar = body.SOLO_VALIDAR !== false
+
+    const filas: FilaInformeImportacion[] = body.ACTIVIDADES.map((raw, indice) => {
+      const nombre = String(raw.nombre ?? `Actividad ${indice + 1}`)
+      const identificadores = raw._identificadores as
+        | { pkTunidad?: number; fkTasignatura?: number; fkTgrupo?: number; fkTgrado?: number }
+        | undefined
+      const tieneDestino =
+        identificadores?.fkTasignatura != null ||
+        identificadores?.fkTgrupo != null ||
+        body.FK_TASIGNATURA != null ||
+        body.FK_TGRUPO != null
+
+      if (!tieneDestino) {
+        return {
+          estado: "error",
+          indice,
+          nombre,
+          errores: [
+            "destino: no se pudo resolver la asignatura ni el grupo (ni _identificadores en la actividad ni FK_* en el cuerpo)",
+          ],
+        }
+      }
+      if (!raw.tipo) {
+        return { estado: "error", indice, nombre, errores: ['tipo: no viene en la actividad'] }
+      }
+
+      return {
+        estado: "ok",
+        indice,
+        nombre,
+        resuelto: {
+          fkTasignatura: identificadores?.fkTasignatura ?? body.FK_TASIGNATURA,
+          fkTgrupo: identificadores?.fkTgrupo ?? body.FK_TGRUPO,
+          fkTgrado: identificadores?.fkTgrado ?? body.FK_TGRADO,
+          pkTunidad: identificadores?.pkTunidad,
+        },
+      }
+    })
+
+    const validas = filas.filter((fila) => fila.estado === "ok").length
+    const conError = filas.length - validas
+
+    if (soloValidar) {
+      return HttpResponse.json({
+        modo: "validacion",
+        total: filas.length,
+        validas,
+        conError,
+        aplicadas: 0,
+        mensaje:
+          conError === 0
+            ? "Todas las actividades son importables"
+            : `${conError} de ${filas.length} actividades tienen problemas`,
+        filas,
+      })
+    }
+
+    if (conError > 0) {
+      return HttpResponse.json({
+        modo: "aplicacion",
+        total: filas.length,
+        validas,
+        conError,
+        aplicadas: 0,
+        mensaje: `No se importó nada: ${conError} de ${filas.length} actividades tienen problemas. La importación es todo o nada`,
+        filas,
+      })
+    }
+
+    const filasAplicadas: FilaInformeImportacion[] = body.ACTIVIDADES.map((raw, indice) => {
+      const id = nextId(planeadorDb.map((actividad) => actividad.id))
+      const creada = actividadFromImportRow(raw, id)
+      addActividad(creada)
+      return { estado: "ok", indice, nombre: creada.nombre, pkTactividad: id }
+    })
+
+    return HttpResponse.json({
+      modo: "aplicacion",
+      total: filasAplicadas.length,
+      validas: filasAplicadas.length,
+      conError: 0,
+      aplicadas: filasAplicadas.length,
+      mensaje: `${filasAplicadas.length} actividades importadas`,
+      filas: filasAplicadas,
     })
   }),
 ]

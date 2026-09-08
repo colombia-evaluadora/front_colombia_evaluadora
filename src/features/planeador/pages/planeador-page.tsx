@@ -1,5 +1,6 @@
 import * as React from "react"
 import { Link, useNavigate, useSearch } from "@tanstack/react-router"
+import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -28,9 +29,12 @@ import { useActividadesStatsQuery } from "@/features/planeador/api/query/use-act
 import { useActividadesCalendarioQuery } from "@/features/planeador/api/query/use-actividades-calendario-query"
 import { useActividadesMiasQuery } from "@/features/planeador/api/query/use-actividades-mias-query"
 import { useInstrumentoEvaluacionCatalogQuery } from "@/features/planeador/api/query/use-instrumento-evaluacion-catalog"
+import { useExportarActividadesJson } from "@/features/planeador/api/mutations/exportar-actividades-json"
 import { ActividadCard } from "@/features/planeador/components/actividad-card"
 import { ActividadDetallePanel } from "@/features/planeador/components/actividad-detalle-panel"
 import { DialogExportActividades } from "@/features/planeador/components/dialogs/dialog-export-actividades"
+import { DialogImportarActividadesJson } from "@/features/planeador/components/dialogs/dialog-importar-actividades-json"
+import { downloadJson } from "@/features/planeador/lib/download-json"
 import { PlaneadorSummaryCards } from "@/features/planeador/components/planeador-summary-cards"
 import {
   PlaneadorMonthGrid,
@@ -152,6 +156,35 @@ export function PlaneadorPage() {
   })
   const filtered = miasResult?.rows ?? []
 
+  // "Exportar todo"/"Importar" del menú "…": intercambio JSON de
+  // actividades (colección Postman
+  // `planeador-actividades-exportar-importar`), aparte del export PDF/Excel
+  // que ya cubre `DialogExportActividades`. El exportar reusa las mismas
+  // actividades ya filtradas/visibles en el rail — mismo criterio que ese
+  // otro diálogo — porque el endpoint real exige al menos un filtro (`IDS`,
+  // acá) y no admite "exportar todo" sin acotar.
+  const [importarOpen, setImportarOpen] = React.useState(false)
+  const exportarJson = useExportarActividadesJson({
+    mutationConfig: {
+      onSuccess: (actividadesExportadas) => {
+        downloadJson(
+          `actividades-planeador-${toDateOnly(new Date())}.json`,
+          actividadesExportadas,
+        )
+        toast.success(`${actividadesExportadas.length} actividad(es) exportada(s).`)
+      },
+      onError: () => toast.error("No se pudo exportar el JSON de actividades."),
+    },
+  })
+
+  function handleExportarJson() {
+    if (filtered.length === 0) {
+      toast.error("No hay actividades para exportar con los filtros actuales.")
+      return
+    }
+    exportarJson.mutate({ ids: filtered.map((actividad) => actividad.id) })
+  }
+
   // Map day-of-month → actividades, para las filas de la grilla. El
   // endpoint ya resuelve un solo día de anclaje por actividad (`fecha`,
   // filtrando por solapamiento con el mes pedido) — no hace falta volver a
@@ -219,8 +252,10 @@ export function PlaneadorPage() {
                 >
                   <DotsThreeIcon />
                 </DropdownMenuTrigger>
-                {/* "Recargar" ya tiene a dónde apuntar (`refetch` del query);
-                    el resto queda disabled hasta que su feature exista. */}
+                {/* "Recargar" apunta a `refetch` del query. "Exportar todo"
+                    e "Importar" son el intercambio JSON de actividades —
+                    ver el comentario junto a `exportarJson` más arriba—,
+                    no el export PDF/Excel del botón de al lado. */}
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem render={<Link to={paths.app.planeadorPlanilla.getHref()} />}>
                     Planilla de calificación
@@ -228,8 +263,15 @@ export function PlaneadorPage() {
                   <DropdownMenuItem onClick={() => refetch()}>
                     Recargar
                   </DropdownMenuItem>
-                  <DropdownMenuItem disabled>Exportar todo</DropdownMenuItem>
-                  <DropdownMenuItem disabled>Importar</DropdownMenuItem>
+                  <DropdownMenuItem
+                    disabled={exportarJson.isPending}
+                    onClick={handleExportarJson}
+                  >
+                    Exportar todo
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setImportarOpen(true)}>
+                    Importar
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -240,6 +282,13 @@ export function PlaneadorPage() {
                 al `<Button>` de export que estaba disabled. */}
             <DialogExportActividades
               rows={filtered}
+            />
+            {/* Controlado desde acá y no con su propio `DialogTrigger`: el
+                que lo abre es un `DropdownMenuItem`, y un diálogo anidado
+                dentro del menú se desmonta apenas el menú cierra. */}
+            <DialogImportarActividadesJson
+              open={importarOpen}
+              onOpenChange={setImportarOpen}
             />
           </TableScreenActions>
         </TableScreenToolbar>
