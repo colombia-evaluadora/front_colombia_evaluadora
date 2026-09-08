@@ -34,6 +34,10 @@ export type NotaCriterio = {
   criterioId: number
   /** 0-100. Sin nota hasta que se ingrese (undefined). */
   valor?: number
+  /** `pk` del nivel elegido (rúbrica / escala cualitativa) — el id real que
+   *  exige el backend al calificar (`PK_NIVEL`). No aplica a lista de cotejo
+   *  ni a un valor numérico puro, que se resuelven solo con `valor`. */
+  nivelId?: number
 }
 
 /** Calificación completa de un estudiante en una actividad. */

@@ -3,6 +3,7 @@ import { useId } from "react"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { Spinner } from "@/components/ui/spinner"
 import {
   Select,
   SelectContent,
@@ -11,75 +12,116 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
+import { useInstrumentoActividadQuery } from "@/features/planeador/api/query/use-instrumento-actividad-query"
 import type {
-  Actividad,
-  Criterio,
-  EscalaValoracion,
-  ListaCotejoItem,
-} from "@/features/planeador/api/types/actividad"
-import type { NivelElegible, NotaCriterio } from "@/features/planeador/api/types/calificacion"
-import { nivelesDe } from "@/features/planeador/api/types/calificacion"
+  InstrumentoActividad,
+  InstrumentoCotejoItem,
+  InstrumentoCriterio,
+  InstrumentoEscala,
+} from "@/features/planeador/api/types/planilla"
+import type { NotaCriterio } from "@/features/planeador/api/types/calificacion"
 
 interface InstrumentoGradingFieldsProps {
-  actividad: Actividad
+  actividadId: number
   /** Notas de UN estudiante en esta actividad (o el valor "a transmitir" en
    *  la pantalla de calificación en bulk, antes de aplicarlo a nadie). */
   value: NotaCriterio[]
   onChange: (next: NotaCriterio[]) => void
 }
 
-function setNota(value: NotaCriterio[], criterioId: number, valor: number): NotaCriterio[] {
-  return [...value.filter((n) => n.criterioId !== criterioId), { criterioId, valor }]
+function setNota(
+  value: NotaCriterio[],
+  criterioId: number,
+  valor: number,
+  nivelId?: number,
+): NotaCriterio[] {
+  return [...value.filter((n) => n.criterioId !== criterioId), { criterioId, valor, nivelId }]
 }
 
 function quitarNota(value: NotaCriterio[], criterioId: number): NotaCriterio[] {
   return value.filter((n) => n.criterioId !== criterioId)
 }
 
-function notaDe(value: NotaCriterio[], criterioId: number): number | undefined {
-  return value.find((n) => n.criterioId === criterioId)?.valor
+function notaDe(value: NotaCriterio[], criterioId: number): NotaCriterio | undefined {
+  return value.find((n) => n.criterioId === criterioId)
+}
+
+/**
+ * ¿Ya se puede guardar `value` contra el backend real? Rúbrica exige cubrir
+ * TODOS los criterios activos en un solo request (400 si falta alguno) —
+ * el resto de instrumentos solo necesita al menos una nota cargada. Se usa
+ * tanto para deshabilitar el botón "Guardar" como para armar el payload de
+ * la mutación (`CeldaNotaPopover`/`CalificarActividadBulk`) sin repetir la
+ * misma cuenta.
+ */
+export function instrumentoCompletitud(
+  instrumento: InstrumentoActividad | undefined,
+  value: NotaCriterio[],
+): { completo: boolean; mensaje?: string } {
+  if (!instrumento || !instrumento.instrumento) {
+    return { completo: false, mensaje: "Esta actividad todavía no tiene instrumento definido." }
+  }
+  if (instrumento.instrumento === "RUBRICA") {
+    const total = instrumento.definicion.length
+    const cubiertos = value.filter((n) => n.nivelId != null).length
+    if (total === 0) return { completo: false, mensaje: "La rúbrica no tiene criterios activos." }
+    if (cubiertos < total) {
+      return {
+        completo: false,
+        mensaje: `Faltan ${total - cubiertos} de ${total} criterio(s) por calificar.`,
+      }
+    }
+    return { completo: true }
+  }
+  return { completo: value.length > 0 }
 }
 
 /**
  * El formulario "volátil" de calificación: qué campos mostrar depende del
- * instrumento de la actividad — mismo criterio de resolución que
- * `itemsPonderables` (calificacion.ts), que además resuelve los mismos
- * `metodoValoracion` delegados de "Otro". Se usa tal cual tanto en el
- * popover por celda (`CeldaNotaPopover`) como en la pantalla de
- * calificación en bulk (`CalificarActividadBulk`) — el `value`/`onChange`
- * son lo único que cambia entre los dos contextos.
+ * instrumento REAL de la actividad (`GET .../actividades/:id/instrumento`),
+ * no de la rúbrica/lista de cotejo/escala de la Unidad temática — son dos
+ * jerarquías independientes en el backend real, y esta es la única que
+ * consume calificar. Se usa tal cual tanto en el popover por celda
+ * (`CeldaNotaPopover`) como en la pantalla de calificación en bulk
+ * (`CalificarActividadBulk`) — el `value`/`onChange` son lo único que
+ * cambia entre los dos contextos.
  */
 export function InstrumentoGradingFields({
-  actividad,
+  actividadId,
   value,
   onChange,
 }: InstrumentoGradingFieldsProps) {
-  const instrumentoEfectivo =
-    actividad.instrumento === "Otro"
-      ? actividad.instrumentoPersonalizado.metodoValoracion || "Otro"
-      : actividad.instrumento
+  const { data: instrumento, isPending } = useInstrumentoActividadQuery(actividadId)
 
-  if (instrumentoEfectivo === "Lista de cotejo") {
+  if (isPending) {
     return (
-      <ListaCotejoFields items={actividad.listaCotejo.items} value={value} onChange={onChange} />
+      <div className="text-muted-foreground flex items-center gap-2 text-sm">
+        <Spinner /> Cargando instrumento…
+      </div>
     )
   }
 
-  if (instrumentoEfectivo === "Escala de valoración") {
+  if (!instrumento || !instrumento.instrumento) {
     return (
-      <EscalaValoracionFields
-        escala={actividad.escalaValoracion}
-        value={value}
-        onChange={onChange}
-      />
+      <p className="text-muted-foreground text-sm">
+        Esta actividad todavía no tiene instrumento de evaluación definido.
+      </p>
     )
   }
 
-  if (instrumentoEfectivo === "Otro") {
-    return <PersonalizadoSimpleFields value={value} onChange={onChange} />
+  if (instrumento.instrumento === "RUBRICA") {
+    return <RubricaFields criterios={instrumento.definicion} value={value} onChange={onChange} />
   }
 
-  return <RubricaFields criterios={actividad.rubrica.criterios} value={value} onChange={onChange} />
+  if (instrumento.instrumento === "LISTA_COTEJO") {
+    return <ListaCotejoFields items={instrumento.definicion} value={value} onChange={onChange} />
+  }
+
+  if (instrumento.instrumento === "ESCALA_VALORACION") {
+    return <EscalaValoracionFields escala={instrumento.definicion} value={value} onChange={onChange} />
+  }
+
+  return <ValorNumericoField value={value} onChange={onChange} />
 }
 
 function RubricaFields({
@@ -87,7 +129,7 @@ function RubricaFields({
   value,
   onChange,
 }: {
-  criterios: Criterio[]
+  criterios: InstrumentoCriterio[]
   value: NotaCriterio[]
   onChange: (next: NotaCriterio[]) => void
 }) {
@@ -102,11 +144,11 @@ function RubricaFields({
     <div className="grid gap-4 sm:grid-cols-2">
       {criterios.map((criterio) => (
         <NivelSelectField
-          key={criterio.id}
+          key={criterio.pk}
           label={criterio.nombre}
-          niveles={nivelesDe(criterio)}
-          valorActual={notaDe(value, criterio.id)}
-          onSelect={(valor) => onChange(setNota(value, criterio.id, valor))}
+          niveles={criterio.niveles}
+          nivelIdActual={notaDe(value, criterio.pk)?.nivelId}
+          onSelect={(nivel) => onChange(setNota(value, criterio.pk, nivel.ponderacion, nivel.pk))}
         />
       ))}
     </div>
@@ -118,120 +160,31 @@ function EscalaValoracionFields({
   value,
   onChange,
 }: {
-  escala: EscalaValoracion
+  escala: InstrumentoEscala
   value: NotaCriterio[]
   onChange: (next: NotaCriterio[]) => void
 }) {
-  if (escala.tipo === "Numérica") {
-    return (
-      <EscalaNumericaField
-        valorMinimo={escala.valorMinimo ?? 1}
-        valorMaximo={escala.valorMaximo ?? 5}
-        value={value}
-        onChange={onChange}
-      />
-    )
+  // Sin niveles cualitativos: es una escala numérica — el backend la exige
+  // calificar celda a celda con `valorNumerico`, no con `calificar-bulk`
+  // (ver el 400 documentado: "use PUT .../calificar con valorNumerico").
+  if (escala.niveles.length === 0) {
+    return <ValorNumericoField value={value} onChange={onChange} />
   }
   return (
     <NivelSelectField
-      label={escala.criteriosGenerales || "Nivel"}
-      niveles={nivelesDe(escala)}
-      valorActual={notaDe(value, 0)}
-      onSelect={(valor) => onChange(setNota(value, 0, valor))}
+      label="Nivel"
+      niveles={escala.niveles}
+      nivelIdActual={notaDe(value, 0)?.nivelId}
+      onSelect={(nivel) => onChange(setNota(value, 0, nivel.ponderacion, nivel.pk))}
     />
   )
 }
 
-/** El único `NotaCriterio` de una escala numérica se guarda como porcentaje
- *  (0-100, misma escala que el resto de los instrumentos) — acá se
- *  desconvierte para mostrar/editar en la escala real de la actividad
- *  (p. ej. 1-5) y se vuelve a convertir al guardar. */
-function EscalaNumericaField({
-  valorMinimo,
-  valorMaximo,
-  value,
-  onChange,
-}: {
-  valorMinimo: number
-  valorMaximo: number
-  value: NotaCriterio[]
-  onChange: (next: NotaCriterio[]) => void
-}) {
-  const id = useId()
-  const porcentajeActual = notaDe(value, 0)
-  const rango = valorMaximo - valorMinimo
-  const valorActual =
-    porcentajeActual !== undefined
-      ? valorMinimo + (porcentajeActual / 100) * rango
-      : undefined
-
-  return (
-    <Field variant="outlined">
-      <FieldLabel htmlFor={id}>{`Valor (${valorMinimo}-${valorMaximo})`}</FieldLabel>
-      <Input
-        id={id}
-        type="number"
-        min={valorMinimo}
-        max={valorMaximo}
-        placeholder="Agregar"
-        value={valorActual ?? ""}
-        onChange={(e) => {
-          const raw = Number(e.target.value)
-          if (e.target.value === "" || Number.isNaN(raw)) {
-            onChange(quitarNota(value, 0))
-            return
-          }
-          const clamped = Math.min(valorMaximo, Math.max(valorMinimo, raw))
-          const porcentaje = rango === 0 ? 100 : ((clamped - valorMinimo) / rango) * 100
-          onChange(setNota(value, 0, porcentaje))
-        }}
-      />
-    </Field>
-  )
-}
-
-function ListaCotejoFields({
-  items,
-  value,
-  onChange,
-}: {
-  items: ListaCotejoItem[]
-  value: NotaCriterio[]
-  onChange: (next: NotaCriterio[]) => void
-}) {
-  if (items.length === 0) {
-    return (
-      <p className="text-muted-foreground text-sm">
-        Esta actividad todavía no tiene ítems de lista de cotejo definidos.
-      </p>
-    )
-  }
-  return (
-    <ul className="border-input divide-border max-h-64 divide-y overflow-y-auto rounded-md border">
-      {items.map((item) => {
-        const checked = notaDe(value, item.id) !== undefined
-        return (
-          <li key={item.id} className="flex items-center gap-3 px-4 py-2.5">
-            <Checkbox
-              checked={checked}
-              onCheckedChange={() =>
-                onChange(
-                  checked
-                    ? quitarNota(value, item.id)
-                    : setNota(value, item.id, item.ponderacion ?? 100),
-                )
-              }
-              aria-label={item.descripcion || `Ítem ${item.id}`}
-            />
-            <span className="text-sm">{item.descripcion || `Ítem ${item.id}`}</span>
-          </li>
-        )
-      })}
-    </ul>
-  )
-}
-
-function PersonalizadoSimpleFields({
+/** Único campo numérico 0-100 — cubre la escala NUMÉRICA y el instrumento
+ *  "OTRO" (shape no confirmado contra el backend real todavía): mismo
+ *  criterio conservador que `use-nota-estudiante-query.ts`, no se asume una
+ *  forma más rica sin haberla visto en una respuesta real. */
+function ValorNumericoField({
   value,
   onChange,
 }: {
@@ -239,7 +192,7 @@ function PersonalizadoSimpleFields({
   onChange: (next: NotaCriterio[]) => void
 }) {
   const id = useId()
-  const actual = notaDe(value, 0)
+  const actual = notaDe(value, 0)?.valor
   return (
     <Field variant="outlined">
       <FieldLabel htmlFor={id}>Nota (0-100)</FieldLabel>
@@ -263,27 +216,61 @@ function PersonalizadoSimpleFields({
   )
 }
 
+function ListaCotejoFields({
+  items,
+  value,
+  onChange,
+}: {
+  items: InstrumentoCotejoItem[]
+  value: NotaCriterio[]
+  onChange: (next: NotaCriterio[]) => void
+}) {
+  if (items.length === 0) {
+    return (
+      <p className="text-muted-foreground text-sm">
+        Esta actividad todavía no tiene ítems de lista de cotejo definidos.
+      </p>
+    )
+  }
+  return (
+    <ul className="border-input divide-border max-h-64 divide-y overflow-y-auto rounded-md border">
+      {items.map((item) => {
+        const checked = notaDe(value, item.pk) !== undefined
+        return (
+          <li key={item.pk} className="flex items-center gap-3 px-4 py-2.5">
+            <Checkbox
+              checked={checked}
+              onCheckedChange={() =>
+                onChange(checked ? quitarNota(value, item.pk) : setNota(value, item.pk, 100))
+              }
+              aria-label={item.descripcion || `Ítem ${item.pk}`}
+            />
+            <span className="text-sm">{item.descripcion || `Ítem ${item.pk}`}</span>
+          </li>
+        )
+      })}
+    </ul>
+  )
+}
+
 /**
  * `<Select>` de un nivel elegible (nivel de rúbrica o de escala
- * cualitativa), mostrando su etiqueta pero guardando el número que aporta.
- * La etiqueta preseleccionada se aproxima buscando qué nivel tiene el mismo
- * valor guardado — si dos niveles compartieran el mismo valor (p. ej. ambos
- * sin ponderación explícita) gana el primero; no afecta lo que se guarda,
- * solo qué aparece marcado al reabrir.
+ * cualitativa), mostrando su etiqueta pero guardando el `pk` real que exige
+ * el backend al calificar.
  */
 function NivelSelectField({
   label,
   niveles,
-  valorActual,
+  nivelIdActual,
   onSelect,
 }: {
   label: string
-  niveles: NivelElegible[]
-  valorActual: number | undefined
-  onSelect: (valor: number) => void
+  niveles: { pk: number; etiqueta: string; ponderacion: number }[]
+  nivelIdActual: number | undefined
+  onSelect: (nivel: { pk: number; ponderacion: number }) => void
 }) {
   const id = useId()
-  const labelActual = niveles.find((n) => n.valor === valorActual)?.label
+  const etiquetaActual = niveles.find((n) => n.pk === nivelIdActual)?.etiqueta
 
   if (niveles.length === 0) {
     return (
@@ -297,10 +284,10 @@ function NivelSelectField({
     <Field variant="outlined">
       <FieldLabel htmlFor={id}>{label}</FieldLabel>
       <Select
-        value={labelActual}
+        value={etiquetaActual}
         onValueChange={(nextLabel) => {
-          const nivel = niveles.find((n) => n.label === nextLabel)
-          if (nivel) onSelect(nivel.valor)
+          const nivel = niveles.find((n) => n.etiqueta === nextLabel)
+          if (nivel) onSelect(nivel)
         }}
       >
         <SelectTrigger id={id}>
@@ -308,8 +295,8 @@ function NivelSelectField({
         </SelectTrigger>
         <SelectContent>
           {niveles.map((nivel) => (
-            <SelectItem key={nivel.label} value={nivel.label}>
-              {nivel.label}
+            <SelectItem key={nivel.pk} value={nivel.etiqueta}>
+              {nivel.etiqueta}
             </SelectItem>
           ))}
         </SelectContent>
