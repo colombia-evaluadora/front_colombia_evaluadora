@@ -19,6 +19,7 @@ import { useDataTable } from "@/hooks/use-data-table"
 import { paths } from "@/config/paths"
 
 import { useUnidadDetalleQuery } from "@/features/planeador/api/query/use-unidades-query"
+import { useUnidadActividadesQuery } from "@/features/planeador/api/query/use-unidad-actividades-query"
 import { useNivelesDesempenoNombres } from "@/features/planeador/api/query/use-niveles-desempeno"
 import { createUnidadActividadesColumns } from "@/features/planeador/components/table/columns-unidad-actividades"
 import { createUnidadCriteriosColumns } from "@/features/planeador/components/table/columns-unidad-criterios"
@@ -289,20 +290,22 @@ export function Rubricas({ unidad }: { unidad: UnidadTematica }) {
         onRetry={() => {}}
         emptyMessage="Esta unidad no tiene criterios definidos."
       />
-      <DialogAgregarCriterio
-        unidadId={unidad.id}
-        gradoPalabra={unidad.grado}
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-      />
+      <DialogAgregarCriterio unidadId={unidad.id} open={dialogOpen} onOpenChange={setDialogOpen} />
     </div>
   )
 }
 
 /** Exportado por el mismo motivo que `Rubricas` — ver su comentario. */
 export function Actividades({ unidad }: { unidad: UnidadTematica }) {
-  const columns = React.useMemo(() => createUnidadActividadesColumns(), [])
-  const { sorted, sorting, setSorting } = useSortedRows(unidad.actividades)
+  const columns = React.useMemo(
+    () => createUnidadActividadesColumns(unidad.id, unidad.metodoCalculo === "Ponderado"),
+    [unidad.id, unidad.metodoCalculo],
+  )
+  // `GET /unidades/:id/actividades` (real) — ya no se lee `unidad.actividades`
+  // del detalle: ese campo queda siempre vacío contra el backend real
+  // (viven en este endpoint aparte, ver `use-unidad-actividades-query.ts`).
+  const { data: actividadesVinculadas = [], isPending, isError, refetch } = useUnidadActividadesQuery(unidad.id)
+  const { sorted, sorting, setSorting } = useSortedRows(actividadesVinculadas)
   const [dialogOpen, setDialogOpen] = React.useState(false)
 
   const { table } = useDataTable({
@@ -328,9 +331,9 @@ export function Actividades({ unidad }: { unidad: UnidadTematica }) {
       />
       <DataTable
         table={table}
-        isPending={false}
-        isError={false}
-        onRetry={() => {}}
+        isPending={isPending}
+        isError={isError}
+        onRetry={refetch}
         emptyMessage="Esta unidad todavía no tiene actividades vinculadas."
       />
       <DialogAgregarActividad unidad={unidad} open={dialogOpen} onOpenChange={setDialogOpen} />

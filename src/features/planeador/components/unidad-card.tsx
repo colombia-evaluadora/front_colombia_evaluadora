@@ -68,7 +68,7 @@ export function UnidadCard({ unidad, selected = false, onSelect }: UnidadCardPro
         {unidad.area}
       </p>
       <p className="text-muted-foreground text-[0.625rem] leading-snug">
-        {unidad.actividades.length} Actividades
+        {unidad.totalActividades ?? unidad.actividades.length} Actividades
       </p>
       <p className="text-muted-foreground text-[0.625rem] leading-snug">
         {formatDate(unidad.fechaInicio)} - {formatDate(unidad.fechaFin)}

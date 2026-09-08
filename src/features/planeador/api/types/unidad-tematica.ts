@@ -39,6 +39,11 @@ export type EnfoquePedagogico = "Evaluativo" | "Formativo"
 export interface NivelDesempenoCriterio {
   nombre: string
   descripcion: string
+  /** `pk_tescala_valoracion` real de esta banda (`useUnidadValoracionesQuery`)
+   *  — lo que `POST .../criterios` necesita mandar como
+   *  `NIVELES[].fkTescalaValoracion`. `undefined` en datos de mock viejos
+   *  que todavía no pasaron por ese endpoint. */
+  valoracionId?: number
 }
 
 /**
@@ -100,6 +105,21 @@ export interface UnidadTematica {
   metodoCalculo: MetodoCalculo
   grado: string
   asignatura: string
+  /** `PK_TGRADO`/`PK_TASIGNATURA` reales — solo se conocen cuando el
+   *  docente ELIGE grado/asignatura en el form (vía
+   *  `useDocenteGradoAsignaturaQuery`, no hay forma de resolverlos de
+   *  vuelta desde el nombre plano que devuelve el listado/detalle real).
+   *  Si quedan `undefined` al editar, `update-unidad.ts` no manda
+   *  `FK_TGRADO`/`FK_TASIGNATURA` — el backend real trata el PUT como
+   *  parcial, así que el grado/asignatura ya guardados no se tocan. */
+  gradoId?: number
+  asignaturaId?: number
+  /** Conteo real (`total_actividades` del listado) — la card del rail lo
+   *  usa en vez de `actividades.length`, que contra el backend real queda
+   *  siempre vacío (esa lista vive en `GET /unidades/:id/actividades`,
+   *  aparte del listado/detalle). `undefined` en mock, donde sí alcanza
+   *  con `.length`. */
+  totalActividades?: number
   /**
    * Textos de los enunciados de Derechos Básicos de Aprendizaje (DBA)
    * elegidos para esta unidad. Se ofrecen para elegir según el Referente

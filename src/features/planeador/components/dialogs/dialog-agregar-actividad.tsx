@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/table"
 import { InfoIcon, MagnifyingGlassIcon, PlusCircleIcon, XIcon } from "@/components/ui/icons"
 
-import { useActividadesQuery } from "@/features/planeador/api/query/use-actividades-query"
+import { useUnidadActividadesDisponiblesQuery } from "@/features/planeador/api/query/use-unidad-actividades-disponibles-query"
 import { useLinkActividadUnidad } from "@/features/planeador/api/mutations/link-actividad-unidad"
 import type { UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
 
@@ -33,17 +33,20 @@ interface DialogAgregarActividadProps {
 
 /**
  * Modal "Agregar actividad" de la pestaña Actividades. Lista las
- * actividades de la MISMA unidad (`Actividad.unidad.id === unidad.id`)
- * que todavía no están vinculadas —su id no aparece en ningún
- * `UnidadActividad.actividadId` de `unidad.actividades`— para que el
- * docente elija cuáles sumar a la rúbrica/promedio/puntaje de la unidad.
+ * "actividades disponibles" reales para esta unidad
+ * (`GET /unidades/:id/actividades-disponibles`, `useUnidadActividadesDisponiblesQuery`)
+ * — huérfanas de la misma asignatura y (vía su grupo) del mismo grado que
+ * la unidad; el backend ya las devuelve sin las que estén vinculadas, así
+ * que acá no hace falta filtrar de nuevo. `search` viaja al servidor
+ * (parámetro `search` del endpoint), no se filtra en el cliente.
  *
  * El campo de porcentaje SOLO se pide cuando `metodoCalculo ===
  * "Ponderado"` —con "Promedio simple" o "Suma de puntos" cada actividad
  * vinculada pesa lo mismo (o suma sus puntos), no hay nada que repartir—.
  * En ese caso, el botón "Vincular" de una fila permanece oculto hasta
  * que se tipea un valor mayor a 0: no tiene sentido vincular con un peso
- * en blanco.
+ * en blanco. `porcentajeDisponible` viene YA CALCULADO por fila (unidad +
+ * grupo de esa actividad), no hace falta pedirlo aparte (1.5).
  */
 export function DialogAgregarActividad({ unidad, open, onOpenChange }: DialogAgregarActividadProps) {
   const [search, setSearch] = useState("")
@@ -52,34 +55,10 @@ export function DialogAgregarActividad({ unidad, open, onOpenChange }: DialogAgr
   // "Vincular". Se limpia por completo al cerrar el modal.
   const [pesos, setPesos] = useState<Record<string, string>>({})
 
-  const { data: actividades = [] } = useActividadesQuery()
+  const { data: disponibles = [] } = useUnidadActividadesDisponiblesQuery(unidad.id, search)
   const linkActividad = useLinkActividadUnidad()
 
   const esPonderado = unidad.metodoCalculo === "Ponderado"
-
-  // % ya comprometido por las actividades YA vinculadas — el "disponible"
-  // que se muestra es contra este total, no contra lo que el usuario esté
-  // tipeando ahora mismo en las filas (esos valores no cuentan hasta que
-  // se confirma "Vincular" y la unidad se vuelve a consultar).
-  const disponible = useMemo(() => {
-    const comprometido = unidad.actividades.reduce((acc, a) => acc + a.ponderacion, 0)
-    return Math.max(0, 100 - comprometido)
-  }, [unidad.actividades])
-
-  const vinculadasIds = useMemo(
-    () => new Set(unidad.actividades.map((a) => a.actividadId)),
-    [unidad.actividades],
-  )
-
-  const disponibles = useMemo(() => {
-    const query = search.trim().toLowerCase()
-    return actividades.filter((actividad) => {
-      if (actividad.unidad.id !== unidad.id) return false
-      if (vinculadasIds.has(actividad.id)) return false
-      if (!query) return true
-      return actividad.nombre.toLowerCase().includes(query)
-    })
-  }, [actividades, unidad.id, vinculadasIds, search])
 
   function handleOpenChange(next: boolean) {
     onOpenChange(next)
@@ -90,27 +69,11 @@ export function DialogAgregarActividad({ unidad, open, onOpenChange }: DialogAgr
   }
 
   function handleVincular(actividadId: number) {
-    const actividad = actividades.find((a) => a.id === actividadId)
-    if (!actividad) return
-
     const pesoRaw = pesos[actividadId]?.trim()
     const ponderacion = esPonderado ? Number(pesoRaw) || 0 : 0
 
     linkActividad.mutate(
-      {
-        unidadId: unidad.id,
-        actividad: {
-          actividadId: actividad.id,
-          nombre: actividad.nombre,
-          // Mismo criterio que el resto de este modelo: "Formativa"/
-          // "Sumativa" se deriva de `esEvaluativa`, no del `ActividadTipo`
-          // (Proyecto/Ensayo/…) que trae la actividad de origen.
-          tipo: actividad.esEvaluativa ? "Sumativa" : "Formativa",
-          instrumento: actividad.instrumento,
-          grupo: actividad.grupo,
-          ponderacion,
-        },
-      },
+      { unidadId: unidad.id, actividadId, ponderacion },
       {
         onSuccess: (data) => {
           if (data.status === "error") return
@@ -200,19 +163,20 @@ export function DialogAgregarActividad({ unidad, open, onOpenChange }: DialogAgr
                     >
                       {search
                         ? "Sin actividades que coincidan con la búsqueda."
-                        : "No hay actividades de esta unidad disponibles para vincular."}
+                        : "No hay actividades disponibles para vincular."}
                     </TableCell>
                   </TableRow>
                 ) : (
                   disponibles.map((actividad) => {
                     const peso = pesos[actividad.id] ?? ""
                     const tienePeso = Number(peso) > 0
+                    const disponible = actividad.porcentajeDisponible ?? 100
                     return (
                       <TableRow key={actividad.id}>
                         <TableCell className="font-semibold whitespace-normal">
                           {actividad.nombre}
                         </TableCell>
-                        <TableCell>{actividad.esEvaluativa ? "Sumativa" : "Formativa"}</TableCell>
+                        <TableCell>{actividad.tipo}</TableCell>
                         <TableCell>{actividad.instrumento}</TableCell>
                         <TableCell>{actividad.grupo}</TableCell>
                         {esPonderado && (

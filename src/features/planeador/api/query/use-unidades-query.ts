@@ -13,27 +13,37 @@ const PAGE_SIZE = 500
 
 /**
  * Fila real de `fn_unidad_listar`/`fn_unidad_buscar_por_pk` (colección
- * Postman `planeador-unidad`). El listado solo trae un subconjunto de estos
- * campos (`pk_tunidad`, `nombre`, `asignatura`, `grado`,
- * `total_actividades`); el detalle agrega `calculo_definitiva`,
- * `objetivos`/`contenidos` y `active`. `toUnidadTematica` tolera que
- * cualquiera de los campos "de detalle" venga ausente.
- *
- * Campos que la colección documenta pero NO muestra en su ejemplo de
- * respuesta (fechas derivadas MIN/MAX de actividades, `descripcion`) no
- * están acá — hace falta confirmar sus nombres de columna contra una
- * respuesta real antes de mapearlos con confianza.
+ * Postman `planeador-unidad`) — confirmada contra una respuesta real de
+ * `GET /planeador/unidades`, que ya trae `area`, `descripcion`,
+ * `fecha_inicio`/`fecha_fin` y `total_actividades` en el LISTADO (no solo
+ * en el detalle, como se creía antes). `toUnidadTematica` igual tolera que
+ * cualquiera venga ausente, por si el detalle no las repite todas.
  */
 interface UnidadRealRow {
   pk_tunidad: number
   nombre: string
   asignatura: string
+  /** Id real de la asignatura — necesario para preseleccionar el `<Select>`
+   *  de "Asignatura" en el form de edición contra el catálogo del docente
+   *  (`fk_tasignatura`, ver `use-docente-grado-asignatura-query.ts`). */
+  fk_tasignatura?: number
+  /** Área curricular de la asignatura (`fk_tarea`). */
+  area?: string
   grado: string
+  /** Id real del grado — mismo criterio que `fk_tasignatura`, para el
+   *  `<Select>` de "Grado" (`fk_tgrado`). */
+  fk_tgrado?: number
+  descripcion?: string
   calculo_definitiva?: string
   objetivos?: { pk: number; orden: number; descripcion: string }[]
   contenidos?: { pk: number; orden: number; descripcion: string }[]
   active?: boolean
   total_actividades?: number
+  /** ISO con hora (`"2026-09-01T00:00:00.000Z"`). `formatDate`/
+   *  `parseLocalDate` ya toleran el sufijo de hora (`.slice(0, 10)`), así
+   *  que se guardan tal cual. */
+  fecha_inicio?: string
+  fecha_fin?: string
 }
 
 /** `"Ponderar Actividades o Descriptores"` → `"Ponderado"`, etc. — el
@@ -51,10 +61,7 @@ function toUnidadTematica(row: UnidadRealRow): UnidadTematica {
   return {
     id: row.pk_tunidad,
     nombre: row.nombre,
-    // `área` no existe como columna en el backend real —era un campo propio
-    // del mock— así que queda vacía hasta que el negocio defina qué mostrar
-    // ahí (o se saque del todo de la UI).
-    area: "",
+    area: row.area ?? "",
     // El backend real no guarda un "enfoque pedagógico" propio por unidad:
     // se deriva del referente curricular de grado/asignatura, igual que ya
     // hace `useEnfoquePedagogicoDerivado` en el form de edición. Acá queda
@@ -65,27 +72,26 @@ function toUnidadTematica(row: UnidadRealRow): UnidadTematica {
     // Tampoco hay un status de 4 estados real para unidad, solo `active` —
     // se aproxima a dos de los cuatro que ya usa la UI.
     status: row.active === false ? "cancelled" : "in-progress",
-    // La colección documenta que el detalle trae fechas derivadas (MIN/MAX
-    // de actividades activas), pero su ejemplo no muestra los nombres de
-    // columna — quedan vacías hasta confirmarlos contra una respuesta real.
-    fechaInicio: "",
-    fechaFin: "",
-    descripcion: "",
+    fechaInicio: row.fecha_inicio ?? "",
+    fechaFin: row.fecha_fin ?? "",
+    descripcion: row.descripcion ?? "",
     objetivos: (row.objetivos ?? []).map((o) => o.descripcion),
     contenidos: (row.contenidos ?? []).map((c) => c.descripcion),
     metodoCalculo: metodoCalculoFromLabel(row.calculo_definitiva),
     grado: row.grado,
     asignatura: row.asignatura,
-    // Enunciados DBA, criterios y actividades vinculadas viven en endpoints
-    // separados del backend real (`/unidades/:id/criterios`,
-    // `/unidades/:id/actividades`) — traerlos de una implica un fetch
-    // compuesto que todavía no está armado (ver nota en el mensaje al
-    // usuario). Quedan vacíos hasta esa integración; por eso
-    // `UnidadCard` muestra "0 actividades" contra el backend real aunque
-    // `total_actividades` diga otra cosa.
+    gradoId: row.fk_tgrado,
+    asignaturaId: row.fk_tasignatura,
+    // Enunciados DBA y criterios viven en endpoints separados del backend
+    // real (`/unidades/:id/enunciados`, `/unidades/:id/criterios`) —
+    // quedan vacíos acá; las pantallas que los muestran los piden aparte
+    // (ver `use-unidad-actividades-query.ts` para el caso ya resuelto de
+    // actividades vinculadas). El conteo de la card del rail sí viene
+    // resuelto en este mismo listado (`total_actividades`, ver abajo).
     enunciadosDba: [],
     criterios: [],
     actividades: [],
+    totalActividades: row.total_actividades,
   }
 }
 

@@ -11,6 +11,8 @@ import {
   addUnidad,
   deleteUnidadById,
   unidadesTematicasDb,
+  unlinkActividadFromUnidad,
+  updatePonderacionActividad,
   updateUnidadInfoGeneral,
 } from "@/mocks/db/unidades-tematicas"
 import { nextId } from "@/mocks/db/next-id"
@@ -23,6 +25,10 @@ import type {
 } from "@/features/planeador/api/types/actividad"
 import { EXPORT_FORMAT_LABELS } from "@/features/planeador/api/types/actividad"
 import type { NivelDesempenoCriterio, UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
+import type {
+  ActividadExportada,
+  FilaInformeImportacion,
+} from "@/features/planeador/api/types/actividad-intercambio"
 import { statusToEstadoDerivado } from "@/features/planeador/lib/estado-derivado"
 
 /**
@@ -52,13 +58,22 @@ const ACTIVIDAD_CALIFICACIONES_URL =
   "/api/eval-col/planeador/actividades/:id/calificaciones"
 const ACTIVIDAD_CREATE_URL = "/api/eval-col/planeador/actividades"
 const ACTIVIDAD_DELETE_URL = "/api/eval-col/planeador/actividades/:id"
-const ACTIVIDAD_EXPORT_URL = "/api/eval-col/planeador/actividades/:id/export"
 const ACTIVIDAD_EXPORT_ALL_URL = "/api/eval-col/planeador/actividades/export-all"
+const ACTIVIDAD_EXPORTAR_JSON_URL = "/api/eval-col/planeador/actividades/exportar"
+const ACTIVIDAD_IMPORTAR_JSON_URL = "/api/eval-col/planeador/actividades/importar"
 const UNIDAD_LIST_URL = "/api/eval-col/planeador/unidades"
 const UNIDAD_DETAIL_URL = "/api/eval-col/planeador/unidades/:id"
 const UNIDAD_CRITERIO_CREATE_URL = "/api/eval-col/planeador/unidades/:id/criterios"
+const UNIDAD_VALORACIONES_URL = "/api/eval-col/planeador/unidades/:id/valoraciones"
+const UNIDAD_REFERENTE_URL = "/api/eval-col/planeador/unidades/:id/referente"
+const UNIDAD_ACTIVIDADES_VINCULADAS_URL = "/api/eval-col/planeador/unidades/:id/actividades"
+const UNIDAD_ACTIVIDADES_DISPONIBLES_URL =
+  "/api/eval-col/planeador/unidades/:id/actividades-disponibles"
 const UNIDAD_ACTIVIDAD_LINK_URL =
   "/api/eval-col/planeador/unidades/:id/actividades/:actividadId"
+const UNIDAD_ACTIVIDAD_UNLINK_URL = "/api/eval-col/planeador/unidades/actividades/:actividadId"
+const UNIDAD_ACTIVIDAD_PONDERACION_URL =
+  "/api/eval-col/planeador/unidades/actividades/:actividadId/ponderacion"
 const UNIDAD_CREATE_URL = "/api/eval-col/planeador/unidades"
 const UNIDAD_UPDATE_URL = "/api/eval-col/planeador/unidades/:id"
 const UNIDAD_DELETE_URL = "/api/eval-col/planeador/unidades/:id"
@@ -77,6 +92,157 @@ function paginate<T>(rows: T[], url: URL) {
     rows: rows.slice(offset, offset + size),
     pageCount: Math.max(1, Math.ceil(total / size)),
     totalCount: total,
+  }
+}
+
+/**
+ * `Actividad` (mock) → `ActividadExportada` (formato de intercambio real).
+ * No es una traducción exhaustiva de cada campo del ejemplo capturado en la
+ * colección Postman —el mock no diferencia rúbrica/cotejo/escala con la
+ * misma fidelidad que el backend real—, alcanza para poder probar el
+ * roundtrip exportar → importar en modo mock.
+ */
+function toActividadExportada(actividad: Actividad): ActividadExportada {
+  const instrumentoLower = actividad.instrumento?.toLowerCase() ?? ""
+  const esRubrica = instrumentoLower.includes("rúbrica") || instrumentoLower.includes("rubrica")
+  const esCotejo = instrumentoLower.includes("cotejo")
+  const esEscala = instrumentoLower.includes("escala")
+
+  const exportada: ActividadExportada = {
+    tipo: actividad.tipo,
+    grado: actividad.grado,
+    grupo: actividad.grupo,
+    creado: new Date().toISOString(),
+    nombre: actividad.nombre,
+    semana: actividad.semana,
+    unidad: actividad.unidad.nombre || null,
+    duracion: actividad.duracionEstimada,
+    recursos: actividad.recursos.map((recurso) => ({
+      url: recurso.url,
+      origen: "url",
+      descripcion: recurso.descripcion,
+    })),
+    modalidad: actividad.modalidad,
+    asignatura: actividad.asignatura,
+    evaluativa: actividad.esEvaluativa ? "Si" : "No",
+    materiales: actividad.materiales,
+    descripcion: actividad.observaciones,
+    instrumento: actividad.instrumento,
+    adaptaciones: actividad.adaptaciones,
+    fecha_inicio: actividad.fechaInicio,
+    fecha_entrega: actividad.fechaCierre,
+    observaciones: actividad.observaciones,
+    tipo_evidencia: actividad.tipoEvidencia,
+    genera_evidencias: actividad.generaEvidencias ? "Si" : "No",
+    requiere_validacion: actividad.requiereValidacion ? "Si" : "No",
+    _identificadores: {
+      pkTactividad: actividad.id,
+      ...(actividad.unidad.id !== 0 ? { pkTunidad: actividad.unidad.id } : {}),
+    },
+  }
+
+  if (actividad.esEvaluativa) exportada.ponderacion = actividad.ponderacion
+
+  if (esRubrica) {
+    exportada.rubrica = actividad.rubrica.criterios.map((criterio) => ({
+      nombre: criterio.nombre,
+      niveles: [
+        ...criterio.niveles.map((nivel) => ({
+          nombre: nivel.nombre,
+          descriptor: nivel.descripcion,
+          ponderacion: nivel.ponderacion ?? 0,
+        })),
+        {
+          nombre: "Excelente",
+          descriptor: criterio.excelente,
+          ponderacion: criterio.excelentePonderacion ?? 100,
+        },
+      ],
+    }))
+  } else if (esCotejo) {
+    exportada.cotejo = actividad.listaCotejo.items.map((item) => item.descripcion)
+  } else if (esEscala) {
+    exportada.escala =
+      actividad.escalaValoracion.tipo === "Numérica"
+        ? {
+            minimo: actividad.escalaValoracion.valorMinimo,
+            maximo: actividad.escalaValoracion.valorMaximo,
+            interpretacion: actividad.escalaValoracion.interpretacionRangos,
+          }
+        : actividad.escalaValoracion.niveles.map((nivel) => ({
+            nombre: nivel.nombre,
+            descriptor: nivel.descripcion,
+            ponderacion: nivel.ponderacion ?? 0,
+          }))
+  }
+
+  if (actividad.unidad.id !== 0) {
+    exportada.unidad_meta = {
+      nombre: actividad.unidad.nombre,
+      objetivos: actividad.objetivos,
+      contenidos: actividad.contenidos,
+      descripcion: actividad.descripcionUnidad,
+    }
+  }
+
+  return exportada
+}
+
+/**
+ * Arma una `Actividad` completa con defaults vacíos para todos los campos
+ * que el formato de intercambio no trae (recursos/rúbrica/adaptaciones de
+ * detalle) — el importar real solo exige lo mínimo para crearla; el resto
+ * queda como el form los inicializaría para una actividad nueva.
+ */
+function actividadFromImportRow(raw: Record<string, unknown>, id: number): Actividad {
+  const nombre = String(raw.nombre ?? `Actividad ${id}`)
+  const esEvaluativa = raw.evaluativa === "Si" || raw.evaluativa === "Sí"
+  return {
+    id,
+    nombre,
+    tipo: String(raw.tipo ?? ""),
+    esRecuperacion: false,
+    unidad: { id: 0, nombre: String(raw.unidad ?? "") },
+    asignatura: String(raw.asignatura ?? ""),
+    grado: String(raw.grado ?? ""),
+    grupo: String(raw.grupo ?? ""),
+    fechaInicio: String(raw.fecha_inicio ?? ""),
+    fechaCierre: String(raw.fecha_entrega ?? ""),
+    status: "pending",
+    evaluados: 0,
+    totalEstudiantes: 0,
+    materiales: String(raw.materiales ?? ""),
+    recursos: [],
+    duracionEstimada: String(raw.duracion ?? ""),
+    semana: String(raw.semana ?? ""),
+    modalidad: (raw.modalidad as Actividad["modalidad"]) ?? "Presencial",
+    esEvaluativa,
+    instrumento: String(raw.instrumento ?? ""),
+    ponderacion: esEvaluativa ? Number(raw.ponderacion ?? 0) : 0,
+    generaEvidencias: raw.genera_evidencias === "Si" || raw.genera_evidencias === "Sí",
+    tipoEvidencia: String(raw.tipo_evidencia ?? ""),
+    requiereValidacion: raw.requiere_validacion === "Si" || raw.requiere_validacion === "Sí",
+    observaciones: String(raw.observaciones ?? raw.descripcion ?? ""),
+    contenidos: [],
+    objetivos: [],
+    descripcionUnidad: [],
+    rubrica: { id: 0, criterios: [] },
+    listaCotejo: { id: 0, items: [] },
+    escalaValoracion: {
+      id: 0,
+      criteriosGenerales: "",
+      tipo: "Cualitativa",
+      interpretacionRangos: "",
+      niveles: [],
+    },
+    instrumentoPersonalizado: {
+      descripcion: "",
+      tipoEvidenciaEsperada: "",
+      metodoValoracion: "",
+      requiereArchivo: false,
+      requiereRespuestaTexto: false,
+    },
+    adaptaciones: [],
   }
 }
 
@@ -189,6 +355,22 @@ export const planeadorHandlers = [
     return HttpResponse.json({ rows: [found] })
   }),
 
+  // Edición parcial de la actividad — el mock, a diferencia del real, no
+  // hace merge campo por campo: reemplaza con lo que mandó el form entero
+  // (que ya trae la actividad completa, editada), mismo criterio que
+  // `updateUnidadInfoGeneral`.
+  http.put(ACTIVIDAD_DETAIL_URL, async ({ params, request }) => {
+    await delay(250)
+    const id = Number(params.id)
+    const index = planeadorDb.findIndex((row) => row.id === id)
+    if (index === -1) {
+      return HttpResponse.json({ message: "Actividad no encontrada." }, { status: 404 })
+    }
+    const body = (await request.json()) as Actividad
+    planeadorDb[index] = { ...planeadorDb[index], ...body, id }
+    return HttpResponse.json({ status: "ok", actividad: planeadorDb[index] })
+  }),
+
   // Calificaciones de la actividad: una fila por estudiante con asistencia
   // y notas por criterio. Mismo sobre `{rows: [...]}` que el resto, para
   // que `evalCol.getRows` lo desempaquete sin casos especiales.
@@ -248,26 +430,119 @@ export const planeadorHandlers = [
     return HttpResponse.json({ status: "ok", criterio: created })
   }),
 
+  // Valoraciones activas de la escala que aplica a la unidad — paso previo
+  // a "Agregar criterio" real (3.3 exige un nivel por cada una). El mock no
+  // replica la derivación real (asignatura+grado → escala del periodo):
+  // devuelve directo las 4 bandas por default, alcanza para poder probar
+  // el modal en mock.
+  http.get(UNIDAD_VALORACIONES_URL, async () => {
+    await delay(150)
+    const rows = ["Bajo", "Básico", "Alto", "Superior"].map((valoracion_nombre, index) => ({
+      pk_tescala_valoracion: index + 1,
+      valoracion_nombre,
+      limite_inferior: null,
+      limite_superior: null,
+      nota_minima: null,
+      nota_maxima: null,
+      valoracion_simbolo: null,
+      valoracion_carita: null,
+    }))
+    return HttpResponse.json({ rows })
+  }),
+
+  // Referente curricular de la unidad — el mock deriva el enfoque directo
+  // del propio `enfoquePedagogico` de la unidad (ya lo trae el seed), sin
+  // replicar el recorrido real grado → nivel de enseñanza → referente.
+  http.get(UNIDAD_REFERENTE_URL, async ({ params }) => {
+    await delay(150)
+    const id = Number(params.id)
+    const unidad = unidadesTematicasDb.find((row) => row.id === id)
+    if (!unidad) {
+      return HttpResponse.json({ message: "Unidad temática no encontrada." }, { status: 404 })
+    }
+    return HttpResponse.json({
+      rows: [
+        {
+          referente: { id: 1 },
+          enfoque_valor: unidad.enfoquePedagogico === "Formativo" ? "FORMATIVO" : "EVALUATIVO",
+          tipo_evaluacion_valor: "CUANTITATIVA_CUALITATIVA",
+        },
+      ],
+    })
+  }),
+
+  // Actividades ya vinculadas a la unidad — el mock reusa `unidad.actividades`
+  // (la lista de vínculos que ya tenía el modelo mock) pero reshapeada al
+  // shape REAL de fila (`toUnidadActividad` en `use-unidad-actividades-query.ts`
+  // espera snake_case, no el `UnidadActividad` del mock directo).
+  http.get(UNIDAD_ACTIVIDADES_VINCULADAS_URL, async ({ params }) => {
+    await delay(150)
+    const id = Number(params.id)
+    const unidad = unidadesTematicasDb.find((row) => row.id === id)
+    if (!unidad) {
+      return HttpResponse.json({ message: "Unidad temática no encontrada." }, { status: 404 })
+    }
+    const rows = unidad.actividades.map((a) => ({
+      pk_tactividad: a.actividadId,
+      titulo: a.nombre,
+      es_evaluativa: a.tipo === "Sumativa" ? "S" : "N",
+      instrumento_evaluacion: a.instrumento,
+      grupo: a.grupo,
+      ponderacion: a.ponderacion,
+    }))
+    return HttpResponse.json({ rows })
+  }),
+
+  // Actividades disponibles para vincular: las de `planeadorDb` que NO
+  // aparecen todavía en el `actividades[]` de NINGUNA unidad — aproxima
+  // "huérfana" para el mock (que no modela `FK_TUNIDAD` como el real).
+  // `porcentaje_disponible` es el mismo para todas las filas: lo que le
+  // queda a ESTA unidad, igual que calcularía el real para su grupo.
+  http.get(UNIDAD_ACTIVIDADES_DISPONIBLES_URL, async ({ params, request }) => {
+    await delay(150)
+    const id = Number(params.id)
+    const unidad = unidadesTematicasDb.find((row) => row.id === id)
+    if (!unidad) {
+      return HttpResponse.json({ message: "Unidad temática no encontrada." }, { status: 404 })
+    }
+    const url = new URL(request.url)
+    const search = (url.searchParams.get("search") ?? "").trim().toLowerCase()
+    const vinculadasIds = new Set(
+      unidadesTematicasDb.flatMap((u) => u.actividades.map((a) => a.actividadId)),
+    )
+    const comprometido = unidad.actividades.reduce((acc, a) => acc + a.ponderacion, 0)
+    const porcentajeDisponible = Math.max(0, 100 - comprometido)
+    const rows = planeadorDb
+      .filter((a) => !vinculadasIds.has(a.id))
+      .filter((a) => !search || a.nombre.toLowerCase().includes(search))
+      .map((a) => ({
+        pk_tactividad: a.id,
+        titulo: a.nombre,
+        es_evaluativa: a.esEvaluativa ? "S" : "N",
+        instrumento_evaluacion: a.instrumento,
+        grupo: a.grupo,
+        porcentaje_disponible: porcentajeDisponible,
+      }))
+    return HttpResponse.json({ rows })
+  }),
+
   // Vincula una actividad ya existente a la unidad, con su peso. El id de la
   // actividad viaja en el path (`PUT .../actividades/:actividadId`, no en el
   // body) — mismo criterio que `fn_unidad_actividad_vincular` real. 404 si
   // la unidad no existe, 409 si esa actividad ya estaba vinculada (evita el
   // duplicado si el usuario hace doble click en "Vincular").
+  // Body real: solo `PONDERACION`/`PERMITIR_MOVER_DE_UNIDAD` — el resto de
+  // los campos que muestra la tabla (nombre/tipo/instrumento/grupo) se
+  // derivan de `planeadorDb` dentro de `addActividadToUnidad`, no del body.
   http.put(UNIDAD_ACTIVIDAD_LINK_URL, async ({ params, request }) => {
     await delay(250)
     const id = Number(params.id)
     const actividadId = Number(params.actividadId)
-    const body = (await request.json()) as {
-      nombre: string
-      tipo: string
-      instrumento: string
-      grupo: string
-      ponderacion: number
-    }
-    const created = addActividadToUnidad(id, { ...body, actividadId })
+    const body = (await request.json()) as { PONDERACION: number | null }
+    const created = addActividadToUnidad(id, actividadId, body.PONDERACION ?? 0)
     if (created === null) {
       return HttpResponse.json(
-        { status: "error", message: "Unidad temática no encontrada." },
+        { status: "error", message: "Unidad o actividad no encontrada." },
         { status: 404 },
       )
     }
@@ -278,6 +553,35 @@ export const planeadorHandlers = [
       )
     }
     return HttpResponse.json({ status: "ok", actividad: created })
+  }),
+
+  // Desvincular: la actividad vuelve a ser huérfana.
+  http.patch(UNIDAD_ACTIVIDAD_UNLINK_URL, async ({ params }) => {
+    await delay(200)
+    const actividadId = Number(params.actividadId)
+    const ok = unlinkActividadFromUnidad(actividadId)
+    if (!ok) {
+      return HttpResponse.json(
+        { status: "error", message: "Esa actividad no está vinculada a ninguna unidad." },
+        { status: 404 },
+      )
+    }
+    return HttpResponse.json({ status: "ok" })
+  }),
+
+  // Edición rápida (inline) del peso de una actividad ya vinculada.
+  http.put(UNIDAD_ACTIVIDAD_PONDERACION_URL, async ({ params, request }) => {
+    await delay(200)
+    const actividadId = Number(params.actividadId)
+    const body = (await request.json()) as { PONDERACION: number }
+    const ok = updatePonderacionActividad(actividadId, body.PONDERACION)
+    if (!ok) {
+      return HttpResponse.json(
+        { status: "error", message: "Esa actividad no está vinculada a ninguna unidad." },
+        { status: 404 },
+      )
+    }
+    return HttpResponse.json({ status: "ok" })
   }),
 
   // Creación: el cliente manda solo "Información general" (sin
@@ -350,10 +654,7 @@ export const planeadorHandlers = [
   }),
 
   // Borrado (soft-delete): `PATCH`, no `DELETE` (ver nota de arriba). 404 si
-  // la actividad no existe, igual que el GET de detalle. Ojo con el orden de
-  // las rutas: `:id` matchea cualquier valor, así que tiene que ir DESPUÉS
-  // de las específicas (`/export/...`, `/export-all`) para que MSW no las
-  // capture como "actividad con id = 'export-all'".
+  // la actividad no existe, igual que el GET de detalle.
   http.patch(ACTIVIDAD_DELETE_URL, async ({ params }) => {
     await delay(250)
     const id = Number(params.id)
@@ -373,30 +674,6 @@ export const planeadorHandlers = [
     })
   }),
 
-  // Export individual: recibe `{format}` y devuelve el mensaje listo para
-  // tostar. 404 si el id no existe (mismo criterio que delete). Sin
-  // equivalente en el contrato real (no documentado en las colecciones);
-  // se mantiene bajo el mismo prefijo plural por consistencia.
-  http.post(ACTIVIDAD_EXPORT_URL, async ({ params, request }) => {
-    await delay(500)
-
-    const id = Number(params.id)
-    const found = planeadorDb.find((row) => row.id === id)
-    if (!found) {
-      return HttpResponse.json<ExportResult>(
-        { status: "error", message: "Actividad no encontrada." },
-        { status: 404 },
-      )
-    }
-
-    const { format } = (await request.json()) as { format: ExportFormat }
-
-    return HttpResponse.json<ExportResult>({
-      status: "ok",
-      message: `Actividad exportada a ${EXPORT_FORMAT_LABELS[format]}.`,
-    })
-  }),
-
   // Export general: el cliente manda el array ya filtrado (mismo shape que
   // `matricula/export-all`). El mensaje reporta cuántas filas se exportaron
   // para que el toast sea informativo sin abrir el archivo generado (el
@@ -412,6 +689,152 @@ export const planeadorHandlers = [
     return HttpResponse.json<ExportResult>({
       status: "ok",
       message: `${filters.length} actividad(es) exportada(s) a ${EXPORT_FORMAT_LABELS[format]}.`,
+    })
+  }),
+
+  // Exportar (formato de intercambio JSON, no PDF/Excel — ver
+  // `use-exportar-actividades-json.ts`). Registrado ANTES que
+  // `ACTIVIDAD_DETAIL_URL`/`ACTIVIDAD_DELETE_URL` no hace falta acá: esos
+  // matchean por MÉTODO (GET/PATCH) y este es POST, así que no compiten por
+  // la misma ruta como sí pasaría entre dos GET.
+  http.post(ACTIVIDAD_EXPORTAR_JSON_URL, async ({ request }) => {
+    await delay(400)
+    const body = (await request.json()) as {
+      IDS?: number[]
+      PK_TUNIDAD?: number
+      FK_TASIGNATURA?: number
+      FK_TGRUPO?: number
+    }
+
+    if (!body.IDS?.length && body.PK_TUNIDAD == null && !body.FK_TASIGNATURA && !body.FK_TGRUPO) {
+      return HttpResponse.json(
+        { message: "Hay que indicar al menos un filtro para exportar" },
+        { status: 400 },
+      )
+    }
+
+    let rows = planeadorDb
+    if (body.IDS?.length) {
+      const ids = new Set(body.IDS)
+      const found = rows.filter((actividad) => ids.has(actividad.id))
+      const missing = body.IDS.filter((id) => !found.some((actividad) => actividad.id === id))
+      if (missing.length > 0) {
+        return HttpResponse.json(
+          { message: `No se encontraron las actividades ${missing.join(", ")}` },
+          { status: 400 },
+        )
+      }
+      rows = found
+    }
+    // El mock no modela `FK_TASIGNATURA`/`FK_TGRUPO` como ids reales sobre
+    // `planeadorDb` (ahí esos campos son texto plano) — solo `PK_TUNIDAD` sí
+    // tiene un id (`unidad.id`) y por eso es el único filtro sin `IDS` que
+    // acota en mock.
+    if (body.PK_TUNIDAD != null) {
+      rows = rows.filter((actividad) => actividad.unidad.id === body.PK_TUNIDAD)
+    }
+
+    return HttpResponse.json(rows.map(toActividadExportada))
+  }),
+
+  // Importar (dos pasos: `SOLO_VALIDAR` decide si escribe). El mock no
+  // resuelve destino contra catálogos reales —solo comprueba que haya de
+  // dónde sacarlo (`_identificadores` o algún `FK_*` del cuerpo) y que
+  // venga un `tipo`—, alcanza para probar el flujo de validar → aplicar.
+  http.post(ACTIVIDAD_IMPORTAR_JSON_URL, async ({ request }) => {
+    await delay(500)
+    const body = (await request.json()) as {
+      ACTIVIDADES: Record<string, unknown>[]
+      SOLO_VALIDAR?: boolean
+      FK_TASIGNATURA?: number
+      FK_TGRUPO?: number
+      FK_TGRADO?: number
+    }
+    const soloValidar = body.SOLO_VALIDAR !== false
+
+    const filas: FilaInformeImportacion[] = body.ACTIVIDADES.map((raw, indice) => {
+      const nombre = String(raw.nombre ?? `Actividad ${indice + 1}`)
+      const identificadores = raw._identificadores as
+        | { pkTunidad?: number; fkTasignatura?: number; fkTgrupo?: number; fkTgrado?: number }
+        | undefined
+      const tieneDestino =
+        identificadores?.fkTasignatura != null ||
+        identificadores?.fkTgrupo != null ||
+        body.FK_TASIGNATURA != null ||
+        body.FK_TGRUPO != null
+
+      if (!tieneDestino) {
+        return {
+          estado: "error",
+          indice,
+          nombre,
+          errores: [
+            "destino: no se pudo resolver la asignatura ni el grupo (ni _identificadores en la actividad ni FK_* en el cuerpo)",
+          ],
+        }
+      }
+      if (!raw.tipo) {
+        return { estado: "error", indice, nombre, errores: ['tipo: no viene en la actividad'] }
+      }
+
+      return {
+        estado: "ok",
+        indice,
+        nombre,
+        resuelto: {
+          fkTasignatura: identificadores?.fkTasignatura ?? body.FK_TASIGNATURA,
+          fkTgrupo: identificadores?.fkTgrupo ?? body.FK_TGRUPO,
+          fkTgrado: identificadores?.fkTgrado ?? body.FK_TGRADO,
+          pkTunidad: identificadores?.pkTunidad,
+        },
+      }
+    })
+
+    const validas = filas.filter((fila) => fila.estado === "ok").length
+    const conError = filas.length - validas
+
+    if (soloValidar) {
+      return HttpResponse.json({
+        modo: "validacion",
+        total: filas.length,
+        validas,
+        conError,
+        aplicadas: 0,
+        mensaje:
+          conError === 0
+            ? "Todas las actividades son importables"
+            : `${conError} de ${filas.length} actividades tienen problemas`,
+        filas,
+      })
+    }
+
+    if (conError > 0) {
+      return HttpResponse.json({
+        modo: "aplicacion",
+        total: filas.length,
+        validas,
+        conError,
+        aplicadas: 0,
+        mensaje: `No se importó nada: ${conError} de ${filas.length} actividades tienen problemas. La importación es todo o nada`,
+        filas,
+      })
+    }
+
+    const filasAplicadas: FilaInformeImportacion[] = body.ACTIVIDADES.map((raw, indice) => {
+      const id = nextId(planeadorDb.map((actividad) => actividad.id))
+      const creada = actividadFromImportRow(raw, id)
+      addActividad(creada)
+      return { estado: "ok", indice, nombre: creada.nombre, pkTactividad: id }
+    })
+
+    return HttpResponse.json({
+      modo: "aplicacion",
+      total: filasAplicadas.length,
+      validas: filasAplicadas.length,
+      conError: 0,
+      aplicadas: filasAplicadas.length,
+      mensaje: `${filasAplicadas.length} actividades importadas`,
+      filas: filasAplicadas,
     })
   }),
 ]
