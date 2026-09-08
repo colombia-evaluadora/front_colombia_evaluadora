@@ -20,9 +20,10 @@ const ACCIONES = [
   { label: "Marcar", Icon: CheckIcon },
   { label: "Aprobar", Icon: ClipboardCheckIcon },
   // "Descargar" NO va acá: el export por actividad ya vive en la card
-  // (menú PDF / Excel conectado a `useExportActividad`). Tenerlo también
-  // en el header del panel dejaba dos disparadores de exportación en la
-  // misma pantalla, y el del panel no tenía handler.
+  // (botón conectado a `useExportarActividadesJson`, el mismo endpoint
+  // JSON del "Exportar todo" del toolbar). Tenerlo también en el header
+  // del panel dejaba dos disparadores de exportación en la misma
+  // pantalla, y el del panel no tenía handler.
   { label: "Eliminar", Icon: TrashIcon },
 ] as const
 
