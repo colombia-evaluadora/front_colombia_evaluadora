@@ -135,6 +135,11 @@ export function AreaSubjectFormDialog({
     ordenReportes: areaSubject?.ordenReportes ?? 0,
   }
 
+  const savedSnapshotRef = useRef({
+    values: areaDefaults,
+    subjects: areaSubject?.subjects.map(itemToDraft) ?? [],
+  })
+
   const createAreaSubject = useCreateAreaSubject({
     mutationConfig: {
       onError: (error) => {
@@ -197,8 +202,7 @@ export function AreaSubjectFormDialog({
         academicPeriodId,
       })
 
-      setSuccessOpen(true)
-
+      savedSnapshotRef.current = { values: base, subjects }
       setSuccessOpen(true)
     },
   })
@@ -216,10 +220,9 @@ export function AreaSubjectFormDialog({
 
   function requestClose() {
     if (isPending) return
-    const initialSubjects = areaSubject?.subjects.map(itemToDraft) ?? []
     const isDirty =
-      JSON.stringify(form.state.values) !== JSON.stringify(areaDefaults) ||
-      JSON.stringify(subjects) !== JSON.stringify(initialSubjects) ||
+      JSON.stringify(form.state.values) !== JSON.stringify(savedSnapshotRef.current.values) ||
+      JSON.stringify(subjects) !== JSON.stringify(savedSnapshotRef.current.subjects) ||
       JSON.stringify(draft) !== JSON.stringify(emptyDraft())
     if (isDirty) {
       setConfirmDiscardOpen(true)
@@ -239,6 +242,7 @@ export function AreaSubjectFormDialog({
     setNotice(null)
     setPageIndex(0)
     nombreInternoEditedRef.current = false
+    savedSnapshotRef.current = { values: areaDefaults, subjects: areaSubject?.subjects.map(itemToDraft) ?? [] }
   }
 
   function resetCreateForm() {
@@ -248,6 +252,7 @@ export function AreaSubjectFormDialog({
     setSubjectsStarted(false)
     setDraft(emptyDraft())
     setSelectedIndexes(new Set())
+    savedSnapshotRef.current = { values: areaDefaults, subjects: [] }
 
     cancelEditSubject()
 
