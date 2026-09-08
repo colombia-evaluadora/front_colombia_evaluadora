@@ -196,14 +196,14 @@ export function GradeChangeDialog({
                   value={supportFile ? [supportFile] : []}
                   onValueChange={(files) => setSupportFile(files[0] ?? null)}
                   accept=".pdf,.jpg,.jpeg,.png"
-                  maxSize={10 * 1024 * 1024}
+                  maxSize={25 * 1024 * 1024}
                   className={cn(
                     inputVariants({ variant: "outlined" }),
                     "flex-row items-center justify-between gap-2",
                   )}
                 >
                   <span className="truncate text-sm text-muted-foreground">
-                    {supportFile ? supportFile.name : "Subir archivo: PDF, JPG o PNG - Máx 10MB"}
+                    {supportFile ? supportFile.name : "Subir archivo: PDF, JPG o PNG - Máx 25MB"}
                   </span>
                   <FileUploadTrigger
                     render={

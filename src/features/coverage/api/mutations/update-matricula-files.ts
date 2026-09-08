@@ -19,7 +19,6 @@ export interface UpdateMatriculaFilesInput {
   studentPhoto?: File | null
   deleteMedicalCertificate?: boolean
   deleteStudentPhoto?: boolean
-  otrosDocumentosANuevos: File[]
   otrosDocumentosARemover: number[]
 }
 
@@ -40,7 +39,6 @@ async function updateMatriculaFiles({
   studentPhoto,
   deleteMedicalCertificate,
   deleteStudentPhoto,
-  otrosDocumentosANuevos,
   otrosDocumentosARemover,
 }: UpdateMatriculaFilesInput): Promise<MatriculaMutationResult> {
   const otrosDocumentosRelevantes: OtroDocumentoRelevanteOperation[] = otrosDocumentosARemover.map(
@@ -66,7 +64,6 @@ async function updateMatriculaFiles({
     CERTIFICADO_DE_ESTUDIOS_DEL_ANO_ANTERIOR: previousYearCertificate ?? null,
     CERTIFICADO_MEDICO_DEL_ESTUDIANTE: medicalCertificate ?? null,
     FOTO_DEL_ESTUDIANTE: studentPhoto ?? null,
-    OTROS_DOCUMENTOS_RELEVANTES: otrosDocumentosANuevos,
   })
 
   return { status: "ok", message: "Archivos actualizados correctamente.", matricula: null }

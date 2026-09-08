@@ -1403,6 +1403,8 @@ const SUPPORT_FILE_FIELDS: SupportFileFieldConfig[] = [
   { key: "otherDocuments", label: "Otros documentos relevantes", multiple: true },
 ]
 
+const MATRICULA_MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024
+
 function fileKey(file: File): string {
   return `${file.name}:${file.size}:${file.lastModified}`
 }
@@ -1533,6 +1535,8 @@ function SupportFilesSheetField({
   removedExistingIds,
   onToggleRemoveExisting,
 }: SupportFilesSheetFieldProps) {
+  const [rejection, setRejection] = useState<string | null>(null)
+
   function removeFile(file: File) {
     onChange(value.filter((f) => f !== file))
   }
@@ -1545,7 +1549,19 @@ function SupportFilesSheetField({
   const canRemoveExisting = editable && (config.multiple || !config.required)
 
   return (
-    <FileUpload value={value} onValueChange={onChange} multiple={config.multiple} className="gap-2">
+    <FileUpload
+      value={value}
+      onValueChange={(files) => {
+        setRejection(null)
+        onChange(files)
+      }}
+      multiple={config.multiple}
+      onFileValidate={(file) =>
+        file.size > MATRICULA_MAX_FILE_SIZE_BYTES ? "supera el máximo permitido de 25 MB" : null
+      }
+      onFileReject={(file, message) => setRejection(`${file.name} ${message}`)}
+      className="gap-2"
+    >
       <div className="flex items-center justify-between gap-2">
         <span className="text-sm font-semibold text-foreground">
           {config.label}
@@ -1567,6 +1583,7 @@ function SupportFilesSheetField({
           </FileUploadTrigger>
         )}
       </div>
+      {rejection && <p className="text-xs text-red">{rejection}</p>}
 
       {isEmpty ? (
         <SupportFileEmptyRow />
