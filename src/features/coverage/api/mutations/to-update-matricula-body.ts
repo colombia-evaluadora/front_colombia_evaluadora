@@ -60,7 +60,7 @@ export function toUpdateMatriculaBody(
     TOCAR_CERTIFICADO_DE_ESTUDIOS: context.tocarCertificadoEstudios ?? false,
     TOCAR_CERTIFICADO_MEDICO: context.tocarCertificadoMedico ?? false,
     TOCAR_FOTO: context.tocarFoto ?? false,
-    OTROS_DOCUMENTOS_RELEVANTES: context.otrosDocumentosRelevantes ?? [],
+    OTROS_DOCUMENTOS_RELEVANTES: JSON.stringify(context.otrosDocumentosRelevantes ?? []),
 
     CARACTER_ESPECIALIDAD_ENFASIS: toIntOrNull(academic.specialty),
 
