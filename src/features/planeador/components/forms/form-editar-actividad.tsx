@@ -177,7 +177,8 @@ export function EditarActividadForm({
   formId,
   onSubmit,
 }: EditarActividadFormProps) {
-  const { data: unidadesQuery = [] } = useUnidadesQuery()
+  const { data: unidadesResult } = useUnidadesQuery()
+  const unidadesQuery = unidadesResult?.rows ?? []
   // Estudiantes del grupo de la actividad — mismo query que alimenta la
   // vista de calificaciones. Se usa acá para el checklist "Seleccionar
   // estudiantes (múltiple)" cuando una adaptación aplica a "Estudiantes
@@ -384,22 +385,28 @@ function IdentificacionSection({
         </form.Field>
 
         <form.Subscribe
-          selector={(state) => `${state.values.grado}/${state.values.grupo}`}
+          selector={(state) => `${state.values.grado}/${state.values.asignatura}`}
         >
           {() => {
-            // "Unidad temática asociada" depende de "Grado / Grupo"
-            // (`AsignaturaGradoSection`): sin los dos elegidos no hay grado
-            // con el cual filtrar, así que el select queda deshabilitado
-            // (mismo criterio que "Asignatura / materia") y sin opciones,
-            // en vez de mostrar TODAS las unidades sin importar su grado.
+            // "Unidad temática asociada" depende de Grado + Asignatura, no
+            // de Grado + Grupo: una unidad se identifica por (asignatura,
+            // grado) —igual que el backend real (`FK_TASIGNATURA`/
+            // `FK_TGRADO` en `POST /unidades`)—, el grupo no participa de su
+            // identidad. Antes exigía `grupo` acá, así que elegir Asignatura
+            // sin volver a tocar "Grado / Grupo" (p.ej. al editar una
+            // actividad existente, donde `grado` se resuelve recién cuando
+            // `AsignaturaGradoSection` cruza `grupoId` contra el catálogo
+            // del docente) dejaba este select deshabilitado sin motivo.
             const grado = form.getFieldValue("grado")
-            const grupo = form.getFieldValue("grupo")
-            const hasGradoGrupo = Boolean(grado && grupo)
-            // `grado` y `UnidadTematica.grado` salen ahora del mismo origen
-            // real (`docentes/grupos`/`docentes/grado-asignatura`), así que
-            // se comparan directo — ya no hace falta traducir contra el
-            // catálogo genérico de grados.
-            const unidadesDelGrado = grado ? unidades.filter((u) => u.grado === grado) : []
+            const asignatura = form.getFieldValue("asignatura")
+            const hasGradoAsignatura = Boolean(grado && asignatura)
+            // `grado`/`asignatura` y `UnidadTematica.grado`/`.asignatura`
+            // salen ahora del mismo origen real (`docentes/grupos`/
+            // `docentes/grado-asignatura`), así que se comparan directo —
+            // ya no hace falta traducir contra el catálogo genérico.
+            const unidadesDelGrado = hasGradoAsignatura
+              ? unidades.filter((u) => u.grado === grado && u.asignatura === asignatura)
+              : []
 
             return (
               <form.Field name="unidad">
@@ -419,7 +426,7 @@ function IdentificacionSection({
                         // es numérico, así que se convierte acá. `0` es el
                         // sentinel de "sin unidad" (ningún PK real es 0).
                         value={field.state.value.id === 0 ? "__none__" : String(field.state.value.id)}
-                        disabled={!hasGradoGrupo}
+                        disabled={!hasGradoAsignatura}
                         onValueChange={(value) => {
                           // `__none__` es el placeholder "Seleccione": antes el
                           // `find` no lo encontraba en `unidades` y el `if (!next)
@@ -450,7 +457,7 @@ function IdentificacionSection({
                       >
                         <SelectTrigger id={field.name}>
                           <SelectValue
-                            placeholder={hasGradoGrupo ? "Seleccione" : "Elegí grado/grupo primero"}
+                            placeholder={hasGradoAsignatura ? "Seleccione" : "Elegí grado/asignatura primero"}
                           >
                             {(value) =>
                               unidadesDelGrado.find((u) => String(u.id) === value)?.nombre ?? "Seleccione"
@@ -554,6 +561,13 @@ function UnidadSection({
  * ya elegido — reemplaza la lista `ASIGNATURA_OPTIONS` hardcodeada, que
  * ofrecía asignaturas sin relación con lo que el docente realmente dicta.
  */
+/** `grupo_codigo` viene `null` en los datos reales — `grupo_nombre` ("01",
+ *  "302", …) es el que sí trae valor, así que se prioriza acá. Mismo
+ *  criterio que `grupoLabel` en `filtro-planilla-cascada.tsx`. */
+function grupoLabel(grupo: { grupoCodigo: string; grupoNombre: string }): string {
+  return grupo.grupoCodigo || grupo.grupoNombre
+}
+
 function AsignaturaGradoSection({ form }: { form: FormActividad }) {
   const { data: docenteGrupos = [] } = useDocenteGruposQuery()
   const { data: docenteGradoAsignatura = [] } = useDocenteGradoAsignaturaQuery()
@@ -570,6 +584,22 @@ function AsignaturaGradoSection({ form }: { form: FormActividad }) {
   const grupo = useSelector(form.store, (state) => state.values.grupo)
   const asignatura = useSelector(form.store, (state) => state.values.asignatura)
   const hasGradoGrupo = gradoId != null && grupoId != null
+
+  // El detalle real de la actividad (`toActividadDetalle`) NO trae
+  // `fk_tgrado` —solo `fk_tgrupo`—, así que al abrir el form de EDITAR
+  // `gradoId` llega vacío aunque `grupoId` sí esté, y eso dejaba "Asignatura
+  // / materia" deshabilitado de entrada (además de encadenarse a "Unidad
+  // temática asociada" en `IdentificacionSection`, que depende de `grado`).
+  // Acá se resuelve el `gradoId`/`grado` que falta cruzando `grupoId` contra
+  // el catálogo `docentes/grupos` del propio docente, que sí trae el grado
+  // de cada uno de sus grupos.
+  useEffect(() => {
+    if (gradoId != null || grupoId == null) return
+    const combo = docenteGrupos.find((g) => g.grupoId === grupoId)
+    if (!combo) return
+    form.setFieldValue("gradoId", combo.gradoId)
+    form.setFieldValue("grado", combo.gradoNombre)
+  }, [gradoId, grupoId, docenteGrupos, form])
 
   const asignaturas = docenteGradoAsignatura.filter((par) => par.gradoId === gradoId)
 
@@ -625,7 +655,7 @@ function AsignaturaGradoSection({ form }: { form: FormActividad }) {
               form.setFieldValue("gradoId", combo.gradoId)
               form.setFieldValue("grado", combo.gradoNombre)
               form.setFieldValue("grupoId", combo.grupoId)
-              form.setFieldValue("grupo", combo.grupoCodigo)
+              form.setFieldValue("grupo", grupoLabel(combo))
               // Asignatura y unidad dependen de "Grado / Grupo": cambiarlo
               // invalida lo que había elegido en las dos.
               form.setFieldValue("asignaturaId", undefined)
@@ -637,7 +667,7 @@ function AsignaturaGradoSection({ form }: { form: FormActividad }) {
               <SelectValue placeholder="Seleccione">
                 {(value) => {
                   const combo = docenteGrupos.find((g) => String(g.grupoId) === value)
-                  if (combo) return `${combo.gradoNombre}/${combo.grupoCodigo}`
+                  if (combo) return `${combo.gradoNombre}/${grupoLabel(combo)}`
                   return [grado, grupo].filter(Boolean).join("/") || "Seleccione"
                 }}
               </SelectValue>
@@ -645,7 +675,7 @@ function AsignaturaGradoSection({ form }: { form: FormActividad }) {
             <SelectContent>
               {docenteGrupos.map((g) => (
                 <SelectItem key={g.grupoId} value={String(g.grupoId)}>
-                  {g.gradoNombre}/{g.grupoCodigo}
+                  {g.gradoNombre}/{grupoLabel(g)}
                 </SelectItem>
               ))}
             </SelectContent>

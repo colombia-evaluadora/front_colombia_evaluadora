@@ -20,6 +20,9 @@ export const planeadorSearchSchema = z.object({
   // estado local— para que el detalle sea enlazable y sobreviva al refresh,
   // igual que el resto de los filtros del listado.
   actividad: z.string().optional().catch(undefined),
+  /** Día activo de la barra "Hoy | MARTES 16 | < >" (`yyyy-MM-dd`), que
+   *  pagina el rail por `?dia=` (`GET /actividades/mias`). Ausente = hoy. */
+  dia: z.string().optional().catch(undefined),
 })
 export type PlaneadorSearch = z.infer<typeof planeadorSearchSchema>
 
@@ -57,6 +60,9 @@ export const planeadorUnidadesSearchSchema = z.object({
   estado: z.string().optional().catch(undefined),
   vista: z.string().optional().catch(undefined),
   unidad: z.string().optional().catch(undefined),
+  /** Mismo día activo que `planeadorSearchSchema.dia`, para `GET /unidades`
+   *  (`?dia=`). Ausente = hoy. */
+  dia: z.string().optional().catch(undefined),
 })
 export type PlaneadorUnidadesSearch = z.infer<typeof planeadorUnidadesSearchSchema>
 

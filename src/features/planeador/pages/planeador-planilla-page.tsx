@@ -34,25 +34,22 @@ import {
 import { usePlanillaColumnasQuery } from "@/features/planeador/api/query/use-planilla-columnas-query"
 import { usePlanillaCalificacionesQuery } from "@/features/planeador/api/query/use-planilla-calificaciones-query"
 import {
-  useElementoCalculoOptionsQuery,
-  type ElementoCalculoKey,
-} from "@/features/planeador/api/query/use-elemento-calculo-catalog"
+  useAgrupacionPlanillaOptionsQuery,
+  type AgrupacionPlanillaKey,
+} from "@/features/planeador/api/query/use-agrupacion-planilla-catalog"
 import { CalificarActividadBulk } from "@/features/planeador/components/planilla/calificar-actividad-bulk"
 import { PlanillaGrid } from "@/features/planeador/components/planilla/planilla-grid"
 import type { PlanillaColumna } from "@/features/planeador/api/types/planilla"
 
 /** Fallback mientras carga (o si el mock no tiene) el catálogo real
- *  `ELEMENTO_CALCULO_DEF` — orden y labels calcados de la respuesta real
- *  ("Instrumentos" pk 494, "Actividades" pk 495). "Instrumentos" agrupa las
- *  columnas de la grilla por el instrumento de evaluación de cada actividad
- *  (`PlanillaColumna.instrumentoNombre`) — juega el mismo rol que la
- *  agrupación por unidad temática que se había asumido al principio, pero
- *  la real es por instrumento. */
-const VER_POR_FALLBACK: { key: ElementoCalculoKey; label: string }[] = [
-  { key: "instrumento", label: "Instrumentos" },
+ *  `AGRUPACION_PLANILLA`. "Unidad" agrupa las columnas de la grilla por la
+ *  unidad temática de cada actividad (`PlanillaColumna.unidad`);
+ *  "Actividades" las deja sueltas. */
+const VER_POR_FALLBACK: { key: AgrupacionPlanillaKey; label: string }[] = [
   { key: "actividad", label: "Actividades" },
+  { key: "unidad", label: "Unidad" },
 ]
-type VerPorOption = ElementoCalculoKey
+type VerPorOption = AgrupacionPlanillaKey
 
 /**
  * "Planilla de calificación": grilla de notas por estudiante, con una
@@ -75,7 +72,7 @@ export function PlaneadorPlanillaPage() {
   const [filtro, setFiltro] = useState<FiltroPlanillaValue | null>(null)
   const [columnaEnBulk, setColumnaEnBulk] = useState<PlanillaColumna | null>(null)
 
-  const { data: verPorOptions } = useElementoCalculoOptionsQuery()
+  const { data: verPorOptions } = useAgrupacionPlanillaOptionsQuery()
   const opcionesVerPor = verPorOptions?.length ? verPorOptions : VER_POR_FALLBACK
 
   // Recién con Grado, Grupo Y Asignatura elegidos hay contra qué pedir
@@ -99,10 +96,10 @@ export function PlaneadorPlanillaPage() {
       if (columna.fechaCierre < filtro.periodoEvaluacion.startDate) return false
       if (columna.fechaInicio > filtro.periodoEvaluacion.endDate) return false
       if (!term) return true
-      // "Ver por: Instrumentos" busca por el nombre del instrumento (agrupa
-      // por eso); "Actividades" busca por el título de la actividad — mismo
+      // "Ver por: Unidad" busca por el nombre de la unidad (agrupa por
+      // eso); "Actividades" busca por el título de la actividad — mismo
       // criterio que el placeholder del buscador.
-      const campo = verPor === "instrumento" ? (columna.instrumentoNombre ?? "") : columna.titulo
+      const campo = verPor === "unidad" ? (columna.unidad ?? "") : columna.titulo
       return campo.toLowerCase().includes(term)
     })
   }, [todasLasColumnas, filtro, verPor, buscar])
@@ -191,7 +188,7 @@ export function PlaneadorPlanillaPage() {
                 <MagnifyingGlassIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   id="buscar-planilla"
-                  placeholder={verPor === "instrumento" ? "Buscar instrumento" : "Buscar actividad"}
+                  placeholder={verPor === "unidad" ? "Buscar unidad" : "Buscar actividad"}
                   value={buscar}
                   onChange={(e) => setBuscar(e.target.value)}
                   className="pl-9"
