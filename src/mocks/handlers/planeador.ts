@@ -58,7 +58,6 @@ const ACTIVIDAD_CALIFICACIONES_URL =
   "/api/eval-col/planeador/actividades/:id/calificaciones"
 const ACTIVIDAD_CREATE_URL = "/api/eval-col/planeador/actividades"
 const ACTIVIDAD_DELETE_URL = "/api/eval-col/planeador/actividades/:id"
-const ACTIVIDAD_EXPORT_URL = "/api/eval-col/planeador/actividades/:id/export"
 const ACTIVIDAD_EXPORT_ALL_URL = "/api/eval-col/planeador/actividades/export-all"
 const ACTIVIDAD_EXPORTAR_JSON_URL = "/api/eval-col/planeador/actividades/exportar"
 const ACTIVIDAD_IMPORTAR_JSON_URL = "/api/eval-col/planeador/actividades/importar"
@@ -655,10 +654,7 @@ export const planeadorHandlers = [
   }),
 
   // Borrado (soft-delete): `PATCH`, no `DELETE` (ver nota de arriba). 404 si
-  // la actividad no existe, igual que el GET de detalle. Ojo con el orden de
-  // las rutas: `:id` matchea cualquier valor, así que tiene que ir DESPUÉS
-  // de las específicas (`/export/...`, `/export-all`) para que MSW no las
-  // capture como "actividad con id = 'export-all'".
+  // la actividad no existe, igual que el GET de detalle.
   http.patch(ACTIVIDAD_DELETE_URL, async ({ params }) => {
     await delay(250)
     const id = Number(params.id)
@@ -675,30 +671,6 @@ export const planeadorHandlers = [
     return HttpResponse.json<ExportResult>({
       status: "ok",
       message: "Actividad eliminada correctamente.",
-    })
-  }),
-
-  // Export individual: recibe `{format}` y devuelve el mensaje listo para
-  // tostar. 404 si el id no existe (mismo criterio que delete). Sin
-  // equivalente en el contrato real (no documentado en las colecciones);
-  // se mantiene bajo el mismo prefijo plural por consistencia.
-  http.post(ACTIVIDAD_EXPORT_URL, async ({ params, request }) => {
-    await delay(500)
-
-    const id = Number(params.id)
-    const found = planeadorDb.find((row) => row.id === id)
-    if (!found) {
-      return HttpResponse.json<ExportResult>(
-        { status: "error", message: "Actividad no encontrada." },
-        { status: 404 },
-      )
-    }
-
-    const { format } = (await request.json()) as { format: ExportFormat }
-
-    return HttpResponse.json<ExportResult>({
-      status: "ok",
-      message: `Actividad exportada a ${EXPORT_FORMAT_LABELS[format]}.`,
     })
   }),
 
