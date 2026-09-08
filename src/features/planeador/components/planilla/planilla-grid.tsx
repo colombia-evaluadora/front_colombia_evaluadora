@@ -103,9 +103,13 @@ export function PlanillaGrid({ columnas, verPor, filas, onAbrirBulk }: PlanillaG
                   <th
                     key={grupo.fkTunidad ?? "sin-unidad"}
                     colSpan={grupo.columnas.length}
+                    title={grupo.nombre}
                     className="border-b px-4 py-2 text-center font-semibold uppercase"
                   >
-                    {grupo.nombre}
+                    {/* Máximo 2 líneas — el nombre de la unidad puede ser
+                        largo y, sin este tope, empujaba el alto de la fila
+                        de cabecera hasta 4+ líneas. */}
+                    <span className="line-clamp-2">{grupo.nombre}</span>
                   </th>
                 ))}
               </tr>

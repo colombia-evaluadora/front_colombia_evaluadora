@@ -19,6 +19,7 @@ import { useDataTable } from "@/hooks/use-data-table"
 import { paths } from "@/config/paths"
 
 import { useUnidadDetalleQuery } from "@/features/planeador/api/query/use-unidades-query"
+import { useReferenteCurricularQuery } from "@/features/planeador/api/query/use-referente-curricular-query"
 import { useUnidadActividadesQuery } from "@/features/planeador/api/query/use-unidad-actividades-query"
 import { useNivelesDesempenoNombres } from "@/features/planeador/api/query/use-niveles-desempeno"
 import { createUnidadActividadesColumns } from "@/features/planeador/components/table/columns-unidad-actividades"
@@ -38,14 +39,19 @@ type PanelTab = "general" | "rubricas" | "actividades"
  * hay nada que definir ahí — se saca en vez de mostrarla deshabilitada
  * (misma idea que "¿Es evaluación sumativa?" en el form de Actividad,
  * que se bloquea en "No" para el mismo tipo de unidad).
+ *
+ * Recibe `esFormativo` ya resuelto (no lee `unidad.enfoquePedagogico`): ese
+ * campo viene hardcodeado en `"Evaluativo"` para toda unidad real
+ * (`toUnidadTematica` no tiene de dónde sacarlo) — el enfoque de verdad se
+ * deriva en vivo por Grado+Asignatura, ver `UnidadTabs` más abajo.
  */
-function getVisibleTabs(unidad: UnidadTematica): { value: PanelTab; label: string }[] {
+function getVisibleTabs(esFormativo: boolean): { value: PanelTab; label: string }[] {
   const tabs: { value: PanelTab; label: string }[] = [
     { value: "general", label: "Información general" },
     { value: "rubricas", label: "Rúbricas" },
     { value: "actividades", label: "Actividades" },
   ]
-  if (unidad.enfoquePedagogico === "Formativo") {
+  if (esFormativo) {
     return tabs.filter((tab) => tab.value !== "rubricas")
   }
   return tabs
@@ -348,6 +354,13 @@ export function Actividades({ unidad }: { unidad: UnidadTematica }) {
  * y hace click en una unidad Formativo en la lista de la izquierda):
  * sin esto, `Tabs` quedaría con un `value` que no matchea ningún
  * `TabsTrigger` visible y no se vería ningún contenido.
+ *
+ * El enfoque (¿es Formativo?) se deriva en vivo por Grado+Asignatura
+ * (`useReferenteCurricularQuery`, mismo hook que ya usa el form de
+ * edición) en vez de leer `unidad.enfoquePedagogico` — ese campo viene
+ * hardcodeado en `"Evaluativo"` para toda unidad real, así que sin esto la
+ * pestaña "Rúbricas" se veía siempre acá, aunque el form de edición ya la
+ * ocultara bien para la misma unidad.
  */
 function UnidadTabs({
   unidad,
@@ -358,7 +371,9 @@ function UnidadTabs({
   tab: PanelTab
   onTabChange: (tab: PanelTab) => void
 }) {
-  const visibleTabs = React.useMemo(() => getVisibleTabs(unidad), [unidad])
+  const { data: referente } = useReferenteCurricularQuery(unidad.gradoId, unidad.asignaturaId)
+  const esFormativo = referente?.esFormativo ?? false
+  const visibleTabs = React.useMemo(() => getVisibleTabs(esFormativo), [esFormativo])
 
   React.useEffect(() => {
     if (!visibleTabs.some((t) => t.value === tab)) {
@@ -379,7 +394,7 @@ function UnidadTabs({
       <TabsContent value="general" className={PANEL}>
         <InformacionGeneral unidad={unidad} />
       </TabsContent>
-      {unidad.enfoquePedagogico !== "Formativo" && (
+      {!esFormativo && (
         <TabsContent value="rubricas" className={PANEL}>
           <Rubricas unidad={unidad} />
         </TabsContent>

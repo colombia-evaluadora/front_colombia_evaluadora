@@ -115,5 +115,11 @@ export function useReferenteCurricularQuery(
     queryFn: () => fetchReferenteCurricular(params!),
     enabled: params !== null,
     staleTime: 1000 * 60,
+    // Sin esto, cambiar de Asignatura hace que `data` pase por `undefined`
+    // mientras se resuelve la nueva — y como el default de "¿es
+    // formativo?" es `false`, la pestaña "Rúbricas" parpadeaba (aparecía
+    // con el default y desaparecía de nuevo apenas llegaba el dato real).
+    // Mantener el anterior visible evita ese flash intermedio.
+    placeholderData: (previousData) => previousData,
   })
 }

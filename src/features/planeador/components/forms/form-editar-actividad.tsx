@@ -353,6 +353,7 @@ function IdentificacionSection({
               <Input
                 id={field.name}
                 name={field.name}
+                placeholder="Agregar"
                 value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
                 onBlur={field.handleBlur}
@@ -626,8 +627,12 @@ function AsignaturaGradoSection({ form }: { form: FormActividad }) {
                     placeholder={hasGradoGrupo ? "Seleccione" : "Elegí grado/grupo primero"}
                   >
                     {(value) =>
-                      asignaturas.find((a) => String(a.asignaturaId) === value)?.asignaturaNombre ??
-                      asignatura ??
+                      // `||`, no `??`: `asignatura` llega `""` (no
+                      // `undefined`) cuando el detalle real no trae
+                      // ninguna todavía, y `?? "Seleccione"` no cae ahí —
+                      // se veía en blanco en vez del placeholder.
+                      asignaturas.find((a) => String(a.asignaturaId) === value)?.asignaturaNombre ||
+                      asignatura ||
                       "Seleccione"
                     }
                   </SelectValue>
