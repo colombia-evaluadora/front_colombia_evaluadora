@@ -13,18 +13,14 @@
 export type ActividadStatus = "pending" | "in-progress" | "completed" | "cancelled"
 
 /**
- * Tipos de actividad pedagógica que se pueden registrar en el Planeador.
- * El orden importa: es el mismo orden en que se muestran en el `<Select>` del
- * formulario (`form-editar-actividad.tsx`) y en el dropdown de filtros.
+ * Tipo de actividad pedagógica — el `<Select>` del formulario
+ * (`form-editar-actividad.tsx`) y el dropdown de filtros ofrecen lo que
+ * traiga el catálogo real `TIPO_ACTIVIDAD` (`useTipoActividadCatalogQuery`),
+ * que NO está acotado a un puñado de valores fijos: confirmado contra el
+ * backend real, trae opciones como "Trabajo en clase" que no encajan en
+ * ningún union corto — por eso es `string` y no un union literal.
  */
-export type ActividadTipo =
-  | "Proyecto"
-  | "Exposición"
-  | "Práctica"
-  | "Ensayo"
-  | "Debate"
-  | "Simulación"
-  | "Otro"
+export type ActividadTipo = string
 
 export type Modalidad = "Presencial" | "Virtual" | "Mixta"
 
