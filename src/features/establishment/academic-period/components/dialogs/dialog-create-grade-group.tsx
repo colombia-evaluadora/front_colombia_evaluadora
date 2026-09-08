@@ -5,12 +5,12 @@ import { ControlPointIcon, PencilIcon, SpinnerIcon } from "@/components/ui/icons
 
 import { useNotify } from "@/components/notice/notice-context"
 import { NoticeBanner, type NoticeVariant } from "@/components/notice/notice-banner"
+import { ConfirmDiscardDialog } from "@/components/confirm-discard-dialog"
 import { getErrorMessage } from "@/lib/api-client"
 
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -154,13 +154,33 @@ export function CreateGradeGroupDialog({
     },
   })
 
+  const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false)
+
+  function closeDialog() {
+    setOpen(false)
+    setNotice(null)
+    form.reset()
+  }
+
+  function requestClose() {
+    if (isSaving) return
+    if (JSON.stringify(form.state.values) !== JSON.stringify(defaultValues)) {
+      setConfirmDiscardOpen(true)
+      return
+    }
+    closeDialog()
+  }
+
   return (
     <Dialog
       open={open}
       onOpenChange={(next) => {
-        setOpen(next)
-        setNotice(null)
-        if (!next) form.reset()
+        if (next) {
+          setOpen(true)
+          setNotice(null)
+        } else {
+          requestClose()
+        }
       }}
     >
       <DialogTrigger
@@ -345,11 +365,20 @@ export function CreateGradeGroupDialog({
               ) : null
             }
           </form.Subscribe>
-          <DialogClose render={<Button size="sm" type="button" variant="fill" color="neutral" />}>
+          <Button size="sm" type="button" variant="fill" color="neutral" onClick={requestClose}>
             Cancelar
-          </DialogClose>
+          </Button>
         </DialogFooter>
       </DialogContent>
+
+      <ConfirmDiscardDialog
+        open={confirmDiscardOpen}
+        onOpenChange={setConfirmDiscardOpen}
+        onConfirm={() => {
+          setConfirmDiscardOpen(false)
+          closeDialog()
+        }}
+      />
     </Dialog>
   )
 }
