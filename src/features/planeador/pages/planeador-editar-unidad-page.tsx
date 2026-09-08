@@ -135,6 +135,7 @@ function EditarUnidadPageContent({
                 <UnidadInfoGeneralFields
                   draft={current}
                   onChange={(patch) => setDraft({ ...current, ...patch })}
+                  unidadId={unidad.id}
                 />
               }
             />

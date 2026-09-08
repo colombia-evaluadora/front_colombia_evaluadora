@@ -16,16 +16,16 @@ import { evalCol } from "@/lib/eval-col-client"
  * `CEVAL-DOCENTE`, y mezcla las escalas de todos los niveles de enseñanza
  * del periodo).
  *
- * OJO: la colección documenta los campos de límites (`limite_inferior`/
- * `limite_superior`/`nota_minima`/`nota_maxima`/`valoracion_simbolo`/
- * `valoracion_carita`) explícitamente en su prosa, pero NO trae una
- * respuesta real capturada — el nombre del campo "etiqueta" (Bajo/Básico/
- * Alto/Superior) no está confirmado; se asume `nombre` por ser el patrón
- * general de este backend (`SelectCategoryRow.nombre`, etc.).
+ * Shape confirmado con una captura real: la respuesta es un array PELADO
+ * (no `{rows: [...]}` — `evalCol.getRows` tolera las dos formas) y la
+ * etiqueta viene en `valoracion_nombre`, no `nombre` — el backend real
+ * también trae mayúsculas/minúsculas inconsistentes entre valoraciones
+ * ("BAJO" vs "basico" vs "alto " con espacio de sobra), de ahí el
+ * `.trim()` en el mapeo.
  */
 export interface UnidadValoracionRow {
   pk_tescala_valoracion: number
-  nombre: string
+  valoracion_nombre: string
   limite_inferior: number | null
   limite_superior: number | null
   nota_minima: number | null
@@ -45,10 +45,20 @@ export interface UnidadValoracion {
   valoracionCarita: string | null
 }
 
+/** "BAJO" / "basico" / "alto " → "Bajo" / "Basico" / "Alto" — el backend
+ *  real trae mayúsculas/minúsculas inconsistentes entre valoraciones de una
+ *  misma escala; se normaliza a "Título" para que la tabla y el modal de
+ *  "Agregar criterio" no muestren una mezcla de casos. */
+function normalizarCase(value: string): string {
+  const trimmed = value.trim()
+  if (!trimmed) return trimmed
+  return trimmed[0]!.toUpperCase() + trimmed.slice(1).toLowerCase()
+}
+
 function toUnidadValoracion(row: UnidadValoracionRow): UnidadValoracion {
   return {
     id: row.pk_tescala_valoracion,
-    nombre: row.nombre,
+    nombre: normalizarCase(row.valoracion_nombre),
     limiteInferior: row.limite_inferior,
     limiteSuperior: row.limite_superior,
     notaMinima: row.nota_minima,

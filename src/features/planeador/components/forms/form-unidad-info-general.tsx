@@ -19,15 +19,13 @@ import { Textarea } from "@/components/ui/textarea"
 import { InfoIcon } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
 
-import { EDUCATION_LEVELS } from "@/features/academic-management/curricular-references/api/catalogs"
-import { useCurricularReferencesQuery } from "@/features/academic-management/curricular-references/api/query/use-curricular-references"
+import { useUnidadReferenteQuery } from "@/features/planeador/api/query/use-unidad-referente-query"
 import { useDocenteGradoAsignaturaQuery } from "@/features/planeador/api/query/use-docente-grado-asignatura-query"
 import {
   ListaAgregableCaja,
   ListaAgregableCajaSelect,
 } from "@/features/planeador/components/forms/field-lista-agregable"
 import { useEnunciadosDbaQuery } from "@/features/planeador/api/query/use-enunciados-dba"
-import { nivelEducativoCodeForGradoPalabra } from "@/features/planeador/lib/grado-nivel-educativo"
 import type { UnidadInfoGeneral } from "@/features/planeador/api/mutations/update-unidad"
 import type {
   EnfoquePedagogico,
@@ -105,38 +103,23 @@ export function draftToPayload(draft: UnidadDraft): UnidadInfoGeneral {
 
 /**
  * `enfoquePedagogico` deja de ser un campo elegido a mano en este form: se
- * deriva del grado de la unidad, igual que ya hace `EvaluacionSection` (en
- * `form-editar-actividad.tsx`) para actividades SIN unidad — el grado cae
- * en un nivel educativo y, si algún Referente Curricular de ese nivel es
- * Formativo, la unidad se trata como Formativa. Sigue viviendo en
- * `UnidadTematica`/`UnidadDraft` (lo siguen leyendo la pestaña Rúbricas y
- * el bloqueo de "sumativa" en actividades), solo que ya no hay un
- * `<Select>` para tocarlo directamente acá.
+ * deriva del referente curricular REAL de la unidad
+ * (`GET /planeador/unidades/:id/referente`, `useUnidadReferenteQuery`) —
+ * reemplaza a `POST /referentes-curriculares/query`
+ * (`useCurricularReferencesQuery`), que responde 403 para `CEVAL-DOCENTE`
+ * (confirmado en vivo). Sigue viviendo en `UnidadTematica`/`UnidadDraft` (lo
+ * siguen leyendo la pestaña Rúbricas y el bloqueo de "sumativa" en
+ * actividades), solo que ya no hay un `<Select>` para tocarlo directamente
+ * acá.
  *
- * OJO — gap conocido contra el backend real: `nivelEducativoCodeForGradoPalabra`
- * solo reconoce las palabras del catálogo genérico GRADOS ("Sexto", "Séptimo"…);
- * `draft.grado` ahora es el nombre TAL CUAL lo devuelve
- * `docentes/grado-asignatura` ("Jardin I o A o Kinder", "Pre-Jardin"…), que
- * no matchea ninguna — así que para grados reales esto siempre cae en
- * "Evaluativo" por default, aunque Preescolar sea Formativo. Se corrige
- * cuando se cablee `GET /unidades/:id/referente` (fuera de este alcance).
+ * El referente se deriva del GRADO de la unidad → nivel de enseñanza, así
+ * que la ruta pide el `:id` de una unidad YA EXISTENTE — al CREAR (sin id
+ * todavía) no hay forma de consultarlo, y queda en el default histórico
+ * ("Evaluativo") hasta que la unidad se guarda y se puede editar.
  */
-function useEnfoquePedagogicoDerivado(gradoPalabra: string): EnfoquePedagogico {
-  const nivelCode = nivelEducativoCodeForGradoPalabra(gradoPalabra)
-  const nivelId = nivelCode ? EDUCATION_LEVELS.find((l) => l.code === nivelCode)?.id : undefined
-
-  const { data: referenciasResult } = useCurricularReferencesQuery({
-    filters: { educationLevels: nivelId != null ? [String(nivelId)] : [] },
-    sorting: [],
-    pageIndex: 0,
-    pageSize: 20,
-  })
-
-  const esFormativo =
-    nivelId != null &&
-    (referenciasResult?.rows ?? []).some((r) => r.pedagogicalApproach?.name === "Formativo")
-
-  return esFormativo ? "Formativo" : "Evaluativo"
+function useEnfoquePedagogicoDerivado(unidadId: number | undefined): EnfoquePedagogico {
+  const { data: referente } = useUnidadReferenteQuery(unidadId)
+  return referente?.esFormativo ? "Formativo" : "Evaluativo"
 }
 
 /**
@@ -152,11 +135,15 @@ function useEnfoquePedagogicoDerivado(gradoPalabra: string): EnfoquePedagogico {
 export function UnidadInfoGeneralFields({
   draft,
   onChange,
+  unidadId,
 }: {
   draft: UnidadDraft
   onChange: (patch: Partial<UnidadDraft>) => void
+  /** Solo presente al EDITAR — al crear todavía no hay id para consultar
+   *  `GET /unidades/:id/referente`, ver `useEnfoquePedagogicoDerivado`. */
+  unidadId?: number
 }) {
-  const enfoqueDerivado = useEnfoquePedagogicoDerivado(draft.grado)
+  const enfoqueDerivado = useEnfoquePedagogicoDerivado(unidadId)
   useEffect(() => {
     if (draft.enfoquePedagogico !== enfoqueDerivado) {
       onChange({ enfoquePedagogico: enfoqueDerivado })

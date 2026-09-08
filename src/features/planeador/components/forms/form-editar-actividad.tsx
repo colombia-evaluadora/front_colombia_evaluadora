@@ -26,10 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { useGradosCatalogQuery } from "@/features/establishment/academic-period/api/query/use-grados-catalog"
-import { EDUCATION_LEVELS } from "@/features/academic-management/curricular-references/api/catalogs"
-import { useCurricularReferencesQuery } from "@/features/academic-management/curricular-references/api/query/use-curricular-references"
-import { nivelEducativoCodeForGrado } from "@/features/planeador/lib/grado-nivel-educativo"
+import { useUnidadReferenteQuery } from "@/features/planeador/api/query/use-unidad-referente-query"
 import { useDocenteGruposQuery } from "@/features/planeador/api/query/use-docente-grupos-query"
 import { useDocenteGradoAsignaturaQuery } from "@/features/planeador/api/query/use-docente-grado-asignatura-query"
 import { useTipoActividadCatalogQuery } from "@/features/planeador/api/query/use-tipo-actividad-catalog"
@@ -1229,41 +1226,19 @@ function EvaluacionSection({
   form: FormActividad
   unidades: UnidadTematica[]
 }) {
-  // Con unidad elegida, el enfoque sale de `unidad.enfoquePedagogico` (regla
-  // de siempre: una unidad formativa bloquea "¿Es evaluación sumativa?" en
-  // "No"). SIN unidad, se deriva del GRADO elegido en "Grado / Grupo": el
-  // grado cae en un nivel educativo (`nivelEducativoCodeForGrado`) y ese
-  // nivel es el que tienen los Referentes Curriculares — si algún referente
-  // de ese nivel es Formativo, se bloquea igual, como si esa fuera la unidad
-  // (no hay vínculo real grado↔referente en el backend; ver el comentario
-  // de `nivelEducativoCodeForGrado`).
-  //
-  // OJO — gap conocido contra el backend real: `grados`/`gradoOption` acá
-  // abajo salen del catálogo GENÉRICO `/select/GRADOS` ("6°"...), pero
-  // `gradoValue` ahora es el nombre real de `docentes/grupos` ("Jardin I o
-  // A o Kinder"...) — no matchean, así que `gradoOption` siempre da
-  // `undefined` para un grado real y esto cae en "no formativo" por
-  // default (mismo gap que `useEnfoquePedagogicoDerivado` en
-  // `form-unidad-info-general.tsx`). Se corrige cuando se cablee
-  // `GET /unidades/:id/referente` (fuera de este alcance).
-  const unidadId = useSelector(form.store, (state) => state.values.unidad.id)
-  const gradoValue = useSelector(form.store, (state) => state.values.grado)
-  const { data: grados = [] } = useGradosCatalogQuery()
-  const gradoOption = grados.find((g) => g.nombre === gradoValue)
-  const nivelCode = gradoOption ? nivelEducativoCodeForGrado(gradoOption.valor) : null
-  const nivelId = nivelCode ? EDUCATION_LEVELS.find((l) => l.code === nivelCode)?.id : undefined
-
-  const { data: referenciasResult } = useCurricularReferencesQuery({
-    filters: { educationLevels: !unidadId && nivelId != null ? [String(nivelId)] : [] },
-    sorting: [],
-    pageIndex: 0,
-    pageSize: 20,
-  })
-
-  const esFormativa = unidadId
-    ? unidades.find((u) => u.id === unidadId)?.enfoquePedagogico === "Formativo"
-    : nivelId != null &&
-      (referenciasResult?.rows ?? []).some((r) => r.pedagogicalApproach?.name === "Formativo")
+  // El enfoque se deriva del referente curricular REAL de la unidad
+  // elegida (`GET /unidades/:id/referente`, `useUnidadReferenteQuery`) —
+  // reemplaza a `POST /referentes-curriculares/query`, que responde 403
+  // para `CEVAL-DOCENTE` (confirmado en vivo). Una unidad formativa
+  // bloquea "¿Es evaluación sumativa?" en "No" (regla de siempre). SIN
+  // unidad no hay forma de derivarlo (el referente sale del grado DE LA
+  // UNIDAD, no de un grado suelto): se trata como no formativa — coincide
+  // con el backend real, que sin unidad ni siquiera ofrece evaluación
+  // dinámica (`campos_disponibles.evaluacion.visible: false`).
+  const unidadIdRaw = useSelector(form.store, (state) => state.values.unidad.id)
+  const unidadId = unidadIdRaw || undefined
+  const { data: referente } = useUnidadReferenteQuery(unidadId)
+  const esFormativa = referente?.esFormativo ?? false
 
   // Catálogo `INSTRUMENTO_EVALUACION` (`TLISTA_VALOR`) — antes hardcodeado
   // acá mismo.

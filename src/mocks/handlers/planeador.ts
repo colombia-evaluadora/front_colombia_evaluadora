@@ -60,6 +60,10 @@ const UNIDAD_LIST_URL = "/api/eval-col/planeador/unidades"
 const UNIDAD_DETAIL_URL = "/api/eval-col/planeador/unidades/:id"
 const UNIDAD_CRITERIO_CREATE_URL = "/api/eval-col/planeador/unidades/:id/criterios"
 const UNIDAD_VALORACIONES_URL = "/api/eval-col/planeador/unidades/:id/valoraciones"
+const UNIDAD_REFERENTE_URL = "/api/eval-col/planeador/unidades/:id/referente"
+const UNIDAD_ACTIVIDADES_VINCULADAS_URL = "/api/eval-col/planeador/unidades/:id/actividades"
+const UNIDAD_ACTIVIDADES_DISPONIBLES_URL =
+  "/api/eval-col/planeador/unidades/:id/actividades-disponibles"
 const UNIDAD_ACTIVIDAD_LINK_URL =
   "/api/eval-col/planeador/unidades/:id/actividades/:actividadId"
 const UNIDAD_ACTIVIDAD_UNLINK_URL = "/api/eval-col/planeador/unidades/actividades/:actividadId"
@@ -277,9 +281,9 @@ export const planeadorHandlers = [
   // el modal en mock.
   http.get(UNIDAD_VALORACIONES_URL, async () => {
     await delay(150)
-    const rows = ["Bajo", "Básico", "Alto", "Superior"].map((nombre, index) => ({
+    const rows = ["Bajo", "Básico", "Alto", "Superior"].map((valoracion_nombre, index) => ({
       pk_tescala_valoracion: index + 1,
-      nombre,
+      valoracion_nombre,
       limite_inferior: null,
       limite_superior: null,
       nota_minima: null,
@@ -287,6 +291,82 @@ export const planeadorHandlers = [
       valoracion_simbolo: null,
       valoracion_carita: null,
     }))
+    return HttpResponse.json({ rows })
+  }),
+
+  // Referente curricular de la unidad — el mock deriva el enfoque directo
+  // del propio `enfoquePedagogico` de la unidad (ya lo trae el seed), sin
+  // replicar el recorrido real grado → nivel de enseñanza → referente.
+  http.get(UNIDAD_REFERENTE_URL, async ({ params }) => {
+    await delay(150)
+    const id = Number(params.id)
+    const unidad = unidadesTematicasDb.find((row) => row.id === id)
+    if (!unidad) {
+      return HttpResponse.json({ message: "Unidad temática no encontrada." }, { status: 404 })
+    }
+    return HttpResponse.json({
+      rows: [
+        {
+          referente: { id: 1 },
+          enfoque_valor: unidad.enfoquePedagogico === "Formativo" ? "FORMATIVO" : "EVALUATIVO",
+          tipo_evaluacion_valor: "CUANTITATIVA_CUALITATIVA",
+        },
+      ],
+    })
+  }),
+
+  // Actividades ya vinculadas a la unidad — el mock reusa `unidad.actividades`
+  // (la lista de vínculos que ya tenía el modelo mock) pero reshapeada al
+  // shape REAL de fila (`toUnidadActividad` en `use-unidad-actividades-query.ts`
+  // espera snake_case, no el `UnidadActividad` del mock directo).
+  http.get(UNIDAD_ACTIVIDADES_VINCULADAS_URL, async ({ params }) => {
+    await delay(150)
+    const id = Number(params.id)
+    const unidad = unidadesTematicasDb.find((row) => row.id === id)
+    if (!unidad) {
+      return HttpResponse.json({ message: "Unidad temática no encontrada." }, { status: 404 })
+    }
+    const rows = unidad.actividades.map((a) => ({
+      pk_tactividad: a.actividadId,
+      titulo: a.nombre,
+      es_evaluativa: a.tipo === "Sumativa" ? "S" : "N",
+      instrumento_evaluacion: a.instrumento,
+      grupo: a.grupo,
+      ponderacion: a.ponderacion,
+    }))
+    return HttpResponse.json({ rows })
+  }),
+
+  // Actividades disponibles para vincular: las de `planeadorDb` que NO
+  // aparecen todavía en el `actividades[]` de NINGUNA unidad — aproxima
+  // "huérfana" para el mock (que no modela `FK_TUNIDAD` como el real).
+  // `porcentaje_disponible` es el mismo para todas las filas: lo que le
+  // queda a ESTA unidad, igual que calcularía el real para su grupo.
+  http.get(UNIDAD_ACTIVIDADES_DISPONIBLES_URL, async ({ params, request }) => {
+    await delay(150)
+    const id = Number(params.id)
+    const unidad = unidadesTematicasDb.find((row) => row.id === id)
+    if (!unidad) {
+      return HttpResponse.json({ message: "Unidad temática no encontrada." }, { status: 404 })
+    }
+    const url = new URL(request.url)
+    const search = (url.searchParams.get("search") ?? "").trim().toLowerCase()
+    const vinculadasIds = new Set(
+      unidadesTematicasDb.flatMap((u) => u.actividades.map((a) => a.actividadId)),
+    )
+    const comprometido = unidad.actividades.reduce((acc, a) => acc + a.ponderacion, 0)
+    const porcentajeDisponible = Math.max(0, 100 - comprometido)
+    const rows = planeadorDb
+      .filter((a) => !vinculadasIds.has(a.id))
+      .filter((a) => !search || a.nombre.toLowerCase().includes(search))
+      .map((a) => ({
+        pk_tactividad: a.id,
+        titulo: a.nombre,
+        es_evaluativa: a.esEvaluativa ? "S" : "N",
+        instrumento_evaluacion: a.instrumento,
+        grupo: a.grupo,
+        porcentaje_disponible: porcentajeDisponible,
+      }))
     return HttpResponse.json({ rows })
   }),
 
