@@ -14,17 +14,22 @@ import { Textarea } from "@/components/ui/textarea"
 import { CheckIcon, PlusCircleIcon, XIcon } from "@/components/ui/icons"
 
 import { useAddCriterioUnidad } from "@/features/planeador/api/mutations/add-criterio-unidad"
-import { useNivelesDesempenoNombres } from "@/features/planeador/api/query/use-niveles-desempeno"
+import {
+  useUnidadValoracionesQuery,
+  type UnidadValoracion,
+} from "@/features/planeador/api/query/use-unidad-valoraciones-query"
 import type { CriterioUnidad } from "@/features/planeador/api/types/unidad-tematica"
 
 type CriterioDraft = Omit<CriterioUnidad, "id">
 
-/** Un `NivelDesempenoCriterio` por nombre, en el mismo orden — arranca cada
- *  uno con `descripcion` vacía para que el docente la complete. */
-function draftVacio(nombresNiveles: string[]): CriterioDraft {
+/** Un `NivelDesempenoCriterio` por valoración de la escala, en el mismo
+ *  orden — arranca cada uno con `descripcion` vacía para que el docente la
+ *  complete, ya con el `pk_tescala_valoracion` real que exige
+ *  `POST .../criterios`. */
+function draftVacio(valoraciones: UnidadValoracion[]): CriterioDraft {
   return {
     nombre: "",
-    niveles: nombresNiveles.map((nombre) => ({ nombre, descripcion: "" })),
+    niveles: valoraciones.map((v) => ({ nombre: v.nombre, descripcion: "", valoracionId: v.id })),
   }
 }
 
@@ -45,11 +50,6 @@ function isDraftVacio(draft: CriterioDraft): boolean {
 
 interface DialogAgregarCriterioProps {
   unidadId: number
-  /** Grado de la unidad (en palabras, "Sexto") — de ahí sale el nivel
-   *  educativo con el que se busca la escala de valoración configurada
-   *  para nombrar (y contar) los niveles de desempeño (ver
-   *  `useNivelesDesempenoNombres`). */
-  gradoPalabra: string
   open: boolean
   onOpenChange: (open: boolean) => void
 }
@@ -72,25 +72,19 @@ interface DialogAgregarCriterioProps {
  * cargar el siguiente sin tener que reabrirlo; "Vincular y cerrar"
  * persiste y cierra. "Cancelar" descarta el draft sin guardar nada.
  */
-export function DialogAgregarCriterio({
-  unidadId,
-  gradoPalabra,
-  open,
-  onOpenChange,
-}: DialogAgregarCriterioProps) {
-  const { nombres: nombresNiveles } = useNivelesDesempenoNombres(gradoPalabra)
-  const [draft, setDraft] = useState<CriterioDraft>(() => draftVacio(nombresNiveles))
+export function DialogAgregarCriterio({ unidadId, open, onOpenChange }: DialogAgregarCriterioProps) {
+  const { data: valoraciones = [] } = useUnidadValoracionesQuery(unidadId)
+  const [draft, setDraft] = useState<CriterioDraft>(() => draftVacio(valoraciones))
   const addCriterio = useAddCriterioUnidad()
 
-  // Si `nombresNiveles` cambia (la escala configurada terminó de cargar, o
-  // el docente reabrió el modal para OTRA unidad con distinto nivel
-  // educativo) mientras el modal está CERRADO, el próximo draft arranca
-  // con la forma correcta. No se resincroniza con el modal abierto para no
-  // pisar lo que el docente ya venga escribiendo si la data async
-  // resuelve a mitad de la carga.
+  // Si `valoraciones` cambia (la query terminó de cargar, o el docente
+  // reabrió el modal para OTRA unidad con otra escala) mientras el modal
+  // está CERRADO, el próximo draft arranca con la forma correcta. No se
+  // resincroniza con el modal abierto para no pisar lo que el docente ya
+  // venga escribiendo si la data async resuelve a mitad de la carga.
   useEffect(() => {
-    if (!open) setDraft(draftVacio(nombresNiveles))
-  }, [nombresNiveles, open])
+    if (!open) setDraft(draftVacio(valoraciones))
+  }, [valoraciones, open])
 
   function updateDraft(patch: Partial<Omit<CriterioDraft, "niveles">>) {
     setDraft((prev) => ({ ...prev, ...patch }))
@@ -108,7 +102,7 @@ export function DialogAgregarCriterio({
     onOpenChange(next)
     // Al cerrar (por cualquier vía: Cancelar, X, click afuera) el draft
     // no debe sobrevivir a la próxima apertura.
-    if (!next) setDraft(draftVacio(nombresNiveles))
+    if (!next) setDraft(draftVacio(valoraciones))
   }
 
   function vincular(onDone: () => void) {
@@ -175,7 +169,7 @@ export function DialogAgregarCriterio({
                 size="sm"
                 type="button"
                 disabled={!completo || addCriterio.isPending}
-                onClick={() => vincular(() => setDraft(draftVacio(nombresNiveles)))}
+                onClick={() => vincular(() => setDraft(draftVacio(valoraciones)))}
               >
                 <PlusCircleIcon data-icon="inline-start" />
                 Vincular y agregar otro

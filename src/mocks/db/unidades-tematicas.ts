@@ -1,4 +1,5 @@
 import { nextId } from "@/mocks/db/next-id"
+import { planeadorDb } from "@/mocks/db/planeador"
 import type {
   CriterioUnidad,
   UnidadActividad,
@@ -305,26 +306,71 @@ export function addCriterioToUnidad(
 
 /**
  * Vincula una actividad ya existente (de `planeadorDb`) a la unidad, con
- * su peso dentro de ella. Devuelve `null` si la unidad no existe o si la
- * actividad ya estaba vinculada (mismo `actividadId`) — el handler
- * traduce el primer caso a 404 y el segundo a un mensaje de conflicto,
- * para no terminar con el mismo vínculo duplicado si el usuario hace
- * doble click en "Vincular".
+ * su peso dentro de ella. `nombre`/`tipo`/`instrumento`/`grupo` se derivan
+ * acá de `planeadorDb` (mismo criterio que el contrato real: el cliente
+ * solo manda `PONDERACION`, no esos campos) — antes los mandaba el
+ * cliente, pero el body real de `PUT .../actividades/:act` solo trae
+ * `PONDERACION`/`PERMITIR_MOVER_DE_UNIDAD`. Devuelve `null` si la unidad o
+ * la actividad no existen, o si la actividad ya estaba vinculada (mismo
+ * `actividadId`) — el handler traduce el primer caso a 404 y el segundo a
+ * un mensaje de conflicto, para no terminar con el mismo vínculo
+ * duplicado si el usuario hace doble click en "Vincular".
  */
 export function addActividadToUnidad(
   unidadId: number,
-  actividad: Omit<UnidadActividad, "id">,
+  actividadId: number,
+  ponderacion: number,
 ): UnidadActividad | null | "duplicado" {
   const unidad = unidadesTematicasDb.find((row) => row.id === unidadId)
   if (!unidad) return null
-  if (unidad.actividades.some((a) => a.actividadId === actividad.actividadId)) {
+  if (unidad.actividades.some((a) => a.actividadId === actividadId)) {
     return "duplicado"
   }
+  const origen = planeadorDb.find((a) => a.id === actividadId)
+  if (!origen) return null
 
   const id = nextId(unidadesTematicasDb.flatMap((u) => u.actividades.map((a) => a.id)))
-  const created: UnidadActividad = { ...actividad, id }
+  const created: UnidadActividad = {
+    id,
+    actividadId,
+    nombre: origen.nombre,
+    tipo: origen.esEvaluativa ? "Sumativa" : "Formativa",
+    instrumento: origen.instrumento,
+    grupo: origen.grupo,
+    ponderacion,
+  }
   unidad.actividades.push(created)
   return created
+}
+
+/**
+ * Desvincula una actividad de su unidad (vuelve a ser huérfana). Devuelve
+ * `false` si no estaba vinculada a ninguna unidad.
+ */
+export function unlinkActividadFromUnidad(actividadId: number): boolean {
+  for (const unidad of unidadesTematicasDb) {
+    const index = unidad.actividades.findIndex((a) => a.actividadId === actividadId)
+    if (index !== -1) {
+      unidad.actividades.splice(index, 1)
+      return true
+    }
+  }
+  return false
+}
+
+/**
+ * Edición rápida del peso de una actividad ya vinculada. Devuelve `false`
+ * si esa actividad no está vinculada a ninguna unidad.
+ */
+export function updatePonderacionActividad(actividadId: number, ponderacion: number): boolean {
+  for (const unidad of unidadesTematicasDb) {
+    const vinculo = unidad.actividades.find((a) => a.actividadId === actividadId)
+    if (vinculo) {
+      vinculo.ponderacion = ponderacion
+      return true
+    }
+  }
+  return false
 }
 
 /**

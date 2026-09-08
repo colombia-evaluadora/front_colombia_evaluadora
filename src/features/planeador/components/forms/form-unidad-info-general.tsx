@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+import { useEffect, useMemo } from "react"
 
 import {
   Field,
@@ -19,19 +19,13 @@ import { Textarea } from "@/components/ui/textarea"
 import { InfoIcon } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
 
-import { EDUCATION_LEVELS } from "@/features/academic-management/curricular-references/api/catalogs"
-import { useCurricularReferencesQuery } from "@/features/academic-management/curricular-references/api/query/use-curricular-references"
-import { useGradosCatalogQuery } from "@/features/establishment/academic-period/api/query/use-grados-catalog"
-import { ASIGNATURA_OPTIONS } from "@/features/planeador/components/forms/form-editar-actividad"
+import { useUnidadReferenteQuery } from "@/features/planeador/api/query/use-unidad-referente-query"
+import { useDocenteGradoAsignaturaQuery } from "@/features/planeador/api/query/use-docente-grado-asignatura-query"
 import {
   ListaAgregableCaja,
   ListaAgregableCajaSelect,
 } from "@/features/planeador/components/forms/field-lista-agregable"
 import { useEnunciadosDbaQuery } from "@/features/planeador/api/query/use-enunciados-dba"
-import {
-  nivelEducativoCodeForGradoPalabra,
-  palabraGradoDesdeNombreCatalogo,
-} from "@/features/planeador/lib/grado-nivel-educativo"
 import type { UnidadInfoGeneral } from "@/features/planeador/api/mutations/update-unidad"
 import type {
   EnfoquePedagogico,
@@ -97,6 +91,8 @@ export function draftFromUnidad(unidad: UnidadTematica): UnidadDraft {
     metodoCalculo: unidad.metodoCalculo,
     grado: unidad.grado,
     asignatura: unidad.asignatura,
+    gradoId: unidad.gradoId,
+    asignaturaId: unidad.asignaturaId,
     enunciadosDba: unidad.enunciadosDba,
   }
 }
@@ -107,30 +103,23 @@ export function draftToPayload(draft: UnidadDraft): UnidadInfoGeneral {
 
 /**
  * `enfoquePedagogico` deja de ser un campo elegido a mano en este form: se
- * deriva del grado de la unidad, igual que ya hace `EvaluacionSection` (en
- * `form-editar-actividad.tsx`) para actividades SIN unidad — el grado cae
- * en un nivel educativo y, si algún Referente Curricular de ese nivel es
- * Formativo, la unidad se trata como Formativa. Sigue viviendo en
- * `UnidadTematica`/`UnidadDraft` (lo siguen leyendo la pestaña Rúbricas y
- * el bloqueo de "sumativa" en actividades), solo que ya no hay un
- * `<Select>` para tocarlo directamente acá.
+ * deriva del referente curricular REAL de la unidad
+ * (`GET /planeador/unidades/:id/referente`, `useUnidadReferenteQuery`) —
+ * reemplaza a `POST /referentes-curriculares/query`
+ * (`useCurricularReferencesQuery`), que responde 403 para `CEVAL-DOCENTE`
+ * (confirmado en vivo). Sigue viviendo en `UnidadTematica`/`UnidadDraft` (lo
+ * siguen leyendo la pestaña Rúbricas y el bloqueo de "sumativa" en
+ * actividades), solo que ya no hay un `<Select>` para tocarlo directamente
+ * acá.
+ *
+ * El referente se deriva del GRADO de la unidad → nivel de enseñanza, así
+ * que la ruta pide el `:id` de una unidad YA EXISTENTE — al CREAR (sin id
+ * todavía) no hay forma de consultarlo, y queda en el default histórico
+ * ("Evaluativo") hasta que la unidad se guarda y se puede editar.
  */
-function useEnfoquePedagogicoDerivado(gradoPalabra: string): EnfoquePedagogico {
-  const nivelCode = nivelEducativoCodeForGradoPalabra(gradoPalabra)
-  const nivelId = nivelCode ? EDUCATION_LEVELS.find((l) => l.code === nivelCode)?.id : undefined
-
-  const { data: referenciasResult } = useCurricularReferencesQuery({
-    filters: { educationLevels: nivelId != null ? [String(nivelId)] : [] },
-    sorting: [],
-    pageIndex: 0,
-    pageSize: 20,
-  })
-
-  const esFormativo =
-    nivelId != null &&
-    (referenciasResult?.rows ?? []).some((r) => r.pedagogicalApproach?.name === "Formativo")
-
-  return esFormativo ? "Formativo" : "Evaluativo"
+function useEnfoquePedagogicoDerivado(unidadId: number | undefined): EnfoquePedagogico {
+  const { data: referente } = useUnidadReferenteQuery(unidadId)
+  return referente?.esFormativo ? "Formativo" : "Evaluativo"
 }
 
 /**
@@ -146,11 +135,15 @@ function useEnfoquePedagogicoDerivado(gradoPalabra: string): EnfoquePedagogico {
 export function UnidadInfoGeneralFields({
   draft,
   onChange,
+  unidadId,
 }: {
   draft: UnidadDraft
   onChange: (patch: Partial<UnidadDraft>) => void
+  /** Solo presente al EDITAR — al crear todavía no hay id para consultar
+   *  `GET /unidades/:id/referente`, ver `useEnfoquePedagogicoDerivado`. */
+  unidadId?: number
 }) {
-  const enfoqueDerivado = useEnfoquePedagogicoDerivado(draft.grado)
+  const enfoqueDerivado = useEnfoquePedagogicoDerivado(unidadId)
   useEffect(() => {
     if (draft.enfoquePedagogico !== enfoqueDerivado) {
       onChange({ enfoquePedagogico: enfoqueDerivado })
@@ -158,18 +151,27 @@ export function UnidadInfoGeneralFields({
   }, [draft.enfoquePedagogico, enfoqueDerivado, onChange])
 
   const { enunciados: enunciadosDisponibles, isPending: isPendingEnunciados } =
-    useEnunciadosDbaQuery(draft.grado)
+    useEnunciadosDbaQuery(unidadId)
 
-  const { data: grados = [] } = useGradosCatalogQuery()
-  // `UnidadTematica.grado` guarda el grado EN PALABRAS ("Sexto"), no el
-  // `nombre` del catálogo ("6°") — mismo formato que ya usa el mock y que
-  // compara `IdentificacionSection` (`form-editar-actividad.tsx`) al
-  // filtrar "Unidad temática asociada" por el grado de la actividad. El
-  // Select muestra el catálogo pero convierte con
-  // `palabraGradoDesdeNombreCatalogo` antes de guardar, para no romper esa
-  // comparación.
-  const gradoOptionSeleccionada = grados.find(
-    (g) => palabraGradoDesdeNombreCatalogo(g.nombre) === draft.grado,
+  // Grado/Asignatura salen de `GET /planeador/docentes/grado-asignatura`
+  // (mismo endpoint real que ya usa el filtro de la Planilla): son los
+  // pares que ESTE docente realmente dicta, con sus `PK_TGRADO`/
+  // `PK_TASIGNATURA` reales — el catálogo genérico `/select/GRADOS`
+  // devolvía grados que no necesariamente le correspondían al docente.
+  const { data: docenteGradoAsignatura = [] } = useDocenteGradoAsignaturaQuery()
+  const grados = useMemo(() => {
+    const porId = new Map<number, { id: number; nombre: string }>()
+    for (const par of docenteGradoAsignatura) {
+      if (!porId.has(par.gradoId)) {
+        porId.set(par.gradoId, { id: par.gradoId, nombre: par.gradoNombre })
+      }
+    }
+    return [...porId.values()]
+  }, [docenteGradoAsignatura])
+
+  const asignaturas = useMemo(
+    () => docenteGradoAsignatura.filter((par) => par.gradoId === draft.gradoId),
+    [docenteGradoAsignatura, draft.gradoId],
   )
 
   return (
@@ -186,31 +188,38 @@ export function UnidadInfoGeneralFields({
         <Field variant="outlined">
           <FieldLabel>Grado</FieldLabel>
           <Select
-            value={gradoOptionSeleccionada?.nombre ?? ""}
+            value={draft.gradoId != null ? String(draft.gradoId) : ""}
             onValueChange={(v) => {
               if (!v) return
-              const palabra = palabraGradoDesdeNombreCatalogo(v)
-              if (!palabra) return
+              const grado = grados.find((g) => String(g.id) === v)
+              if (!grado) return
               // Asignatura depende del grado (mismo criterio que
               // `AsignaturaGradoSection` en `form-editar-actividad.tsx`):
               // cambiar de grado invalida la asignatura ya elegida.
-              onChange({ grado: palabra, asignatura: "" })
+              onChange({
+                gradoId: grado.id,
+                grado: grado.nombre,
+                asignaturaId: undefined,
+                asignatura: "",
+              })
             }}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Seleccione" />
+              {/* El catálogo `grados` solo trae lo que este docente dicta:
+                  una unidad de otro docente (o de un grado que este ya no
+                  tiene asignado) no matchea ningún `SelectItem` — sin este
+                  respaldo el `<SelectValue>` mostraba el id crudo (`3744`)
+                  en vez del nombre real que sí trae `draft.grado`. */}
+              <SelectValue placeholder="Seleccione">
+                {(value) =>
+                  grados.find((g) => String(g.id) === value)?.nombre ?? draft.grado ?? "Seleccione"
+                }
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
-              {/* El `value` sigue siendo `g.nombre` (el crudo del catálogo,
-                  "0°"/"6°"…) —lo que compara `gradoOptionSeleccionada` de
-                  arriba—, pero lo que VE el docente es la palabra
-                  ("Preescolar"/"Sexto"…), igual que el resto de Planeador
-                  muestra `UnidadTematica.grado` (que ya guarda la palabra).
-                  Antes se mostraba el crudo del catálogo ("0°") en vez de
-                  "Preescolar", inconsistente con el resto de la pantalla. */}
               {grados.map((g) => (
-                <SelectItem key={g.id} value={g.nombre}>
-                  {palabraGradoDesdeNombreCatalogo(g.nombre) ?? g.nombre}
+                <SelectItem key={g.id} value={String(g.id)}>
+                  {g.nombre}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -219,17 +228,28 @@ export function UnidadInfoGeneralFields({
         <Field variant="outlined">
           <FieldLabel>Asignatura</FieldLabel>
           <Select
-            value={draft.asignatura}
-            onValueChange={(v) => v && onChange({ asignatura: v })}
-            disabled={!draft.grado}
+            value={draft.asignaturaId != null ? String(draft.asignaturaId) : ""}
+            onValueChange={(v) => {
+              if (!v) return
+              const par = asignaturas.find((a) => String(a.asignaturaId) === v)
+              if (!par) return
+              onChange({ asignaturaId: par.asignaturaId, asignatura: par.asignaturaNombre })
+            }}
+            disabled={!draft.gradoId}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Seleccione" />
+              <SelectValue placeholder="Seleccione">
+                {(value) =>
+                  asignaturas.find((a) => String(a.asignaturaId) === value)?.asignaturaNombre ??
+                  draft.asignatura ??
+                  "Seleccione"
+                }
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
-              {ASIGNATURA_OPTIONS.map((nombre) => (
-                <SelectItem key={nombre} value={nombre}>
-                  {nombre}
+              {asignaturas.map((a) => (
+                <SelectItem key={a.asignaturaId} value={String(a.asignaturaId)}>
+                  {a.asignaturaNombre}
                 </SelectItem>
               ))}
             </SelectContent>

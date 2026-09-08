@@ -22,3 +22,12 @@ export function useTipoActividadCatalogQuery() {
     staleTime: Infinity,
   })
 }
+
+/** No es un hook: se llama directo desde `create-actividad.ts`/
+ *  `update-actividad.ts`, que necesitan el `pk_lista_valor` real
+ *  (`FK_TLV_TIPO_ACTIVIDAD`) en el momento de armar el body, no en el
+ *  render del form (que solo usa el nombre para el `<Select>`). */
+export async function resolveTipoActividadId(tipo: ActividadTipo): Promise<number | undefined> {
+  const rows = await fetchSelectCategory("TIPO_ACTIVIDAD")
+  return rows.find((row) => row.nombre === tipo)?.pk_lista_valor
+}
