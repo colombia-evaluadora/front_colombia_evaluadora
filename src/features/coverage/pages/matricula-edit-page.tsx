@@ -142,6 +142,56 @@ function MatriculaEditPageContent() {
     }
   }, [data, values])
 
+  const guardianDocumentType = values?.guardian.documentType ?? ""
+  const guardianDocumentNumber = values?.guardian.documentNumber ?? ""
+  useEffect(() => {
+    const original = initialGuardianDocumentRef.current
+    const changed =
+      original != null &&
+      (guardianDocumentType !== original.documentType || guardianDocumentNumber !== original.documentNumber)
+    if (!changed) return
+
+    const documentTypeId = Number(guardianDocumentType)
+    const trimmed = guardianDocumentNumber.trim()
+    if (!documentTypeId || trimmed.length < 6) return
+
+    let cancelled = false
+    const timeout = setTimeout(() => {
+      findMatriculaUsuarioPorDocumento(documentTypeId, trimmed)
+        .then((found) => {
+          if (cancelled || !found) return
+          setValues((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  guardian: {
+                    ...prev.guardian,
+                    firstName: found.firstName,
+                    secondName: found.secondName,
+                    lastName: found.lastName,
+                    secondLastName: found.secondLastName,
+                  },
+                  guardianContact: {
+                    ...prev.guardianContact,
+                    phone: found.phone,
+                    email: found.email,
+                  },
+                }
+              : prev,
+          )
+        })
+        .catch(() => {
+          // Sin cuenta encontrada no se bloquea nada acá -- el guardado
+          // real (`performSave`) decide si crea una persona nueva.
+        })
+    }, 600)
+
+    return () => {
+      cancelled = true
+      clearTimeout(timeout)
+    }
+  }, [guardianDocumentType, guardianDocumentNumber])
+
   const { data: dependentCatalogs } = useMatriculaDependentCatalogsQuery({
     campus: values?.academic.campus || undefined,
     shift: values?.academic.shift || undefined,
