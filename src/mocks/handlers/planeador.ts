@@ -146,7 +146,7 @@ function filtrarPorDiaActivo<T>(
   if (!dia) return { rows, dia: null, diaAnterior: null, diaSiguiente: null }
   const ventanas = rows.map(ventanaDe)
   return {
-    rows: rows.filter((row, i) => estaVigente(ventanas[i]!, dia)),
+    rows: rows.filter((_row, i) => estaVigente(ventanas[i]!, dia)),
     dia,
     diaAnterior: diaOcupadoCercano(ventanas, dia, -1),
     diaSiguiente: diaOcupadoCercano(ventanas, dia, 1),
