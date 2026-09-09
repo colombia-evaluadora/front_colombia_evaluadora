@@ -45,6 +45,10 @@ interface UnidadRealRow {
    *  estado entre sus actividades. `estadoDerivadoToStatus` ya sabe
    *  traducirlos porque es el mismo union que `ActividadStatus`. */
   estado?: string
+  /** Ver el comentario de `UnidadTematica.referenteVigente` — mismo campo
+   *  en listado y detalle (colección Postman `planeador-delta-cambios`,
+   *  punto 6). */
+  referente_vigente?: boolean
   total_actividades?: number
   /** ISO con hora (`"2026-09-01T00:00:00.000Z"`). `formatDate`/
    *  `parseLocalDate` ya toleran el sufijo de hora (`.slice(0, 10)`), así
@@ -106,6 +110,7 @@ function toUnidadTematica(row: UnidadRealRow): UnidadTematica {
     criterios: [],
     actividades: [],
     totalActividades: row.total_actividades,
+    referenteVigente: row.referente_vigente,
   }
 }
 

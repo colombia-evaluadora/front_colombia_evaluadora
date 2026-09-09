@@ -121,6 +121,16 @@ export interface UnidadTematica {
    *  con `.length`. */
   totalActividades?: number
   /**
+   * `false` = la unidad guarda un referente curricular que ya no resuelve
+   * (lo desactivaron: `ACTIVE=false` o `ESTADO='I'`) — confirmado real,
+   * colección Postman `planeador-delta-cambios`, punto 6. Distinto de "no
+   * se acoge a ninguno" (`gradoId`/referente en null con esto en `true`):
+   * una unidad con referente muerto no puede ofrecer enunciados/evidencias.
+   * `undefined` en mock y en respuestas de antes de este cambio — ahí no
+   * hay aviso porque no hay de dónde derivarlo.
+   */
+  referenteVigente?: boolean
+  /**
    * Textos de los enunciados de Derechos Básicos de Aprendizaje (DBA)
    * elegidos para esta unidad. Se ofrecen para elegir según el Referente
    * Curricular que le corresponde al `grado` (por nivel educativo) — ver
