@@ -22,9 +22,12 @@ export interface MenuSource {
  *
  * Dos reglas que salen del dato real:
  *
- * - **Un grupo puede no tener ruta propia** (`path: null` en 26 de las 30
- *   raíces). Hereda la de su primer ítem, que es a donde lleva al abrirlo —
- *   misma convención que usa el alta de menús.
+ * - **Un grupo (raíz, `idParent === null`) nunca tiene ruta propia
+ *   navegable** — es un contenedor, no una pantalla. Siempre hereda la de su
+ *   primer hijo, que es a donde lleva al abrirlo. Se ignora el `path` propio
+ *   del grupo aunque el backend lo traiga cargado: visto en real, un valor
+ *   suelto ahí (que ni siquiera correspondía a ninguno de sus hijos) mandaba
+ *   a una URL que no existe en el front.
  * - **`visible: false` no se pinta.** Es el interruptor que maneja la pantalla
  *   de configuración de roles y menús; un grupo oculto se lleva a sus ítems.
  *
@@ -47,7 +50,7 @@ export function toNavItemDtos(menus: MenuSource[]): NavItemDto[] {
     .filter((menu) => menu.idParent === null)
     .map((menu): NavItemDto | null => {
       const children = (childrenByParent.get(menu.id) ?? []).filter((child) => child.path)
-      const url = menu.path ?? children[0]?.path ?? null
+      const url = children[0]?.path ?? null
       if (url === null) return null
 
       return {

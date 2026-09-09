@@ -3,7 +3,7 @@ import type { CatalogItem } from "@/features/establishment/employees/api/types/c
 export interface CurricularReference {
   id: number
   name: string
-  educationLevel: CatalogItem | null
+  educationLevels: CatalogItem[]
   description: string
   level1: string
   level2: string
@@ -25,7 +25,6 @@ export interface CurricularReferencesQueryFilters {
   educationLevels?: string[]
   pedagogicalApproaches?: string[]
   evaluationTypes?: string[]
-  /** "true" / "false" como texto — mismo criterio que el resto de filtros de catálogo. */
   active?: string
 }
 

@@ -10,20 +10,32 @@ import { cn } from "@/lib/utils"
 
 import { paths } from "@/config/paths"
 import type { EstadoSesion } from "@/features/academic-management/asistencia/api/types/asistencia"
-import { ESTADO_SESION_COLOR, ESTADO_SESION_ICON, formatGrado, peorEstado } from "@/features/academic-management/asistencia/api/ui-mappings"
+import { ESTADO_SESION_COLOR, ESTADO_SESION_ICON, formatGrado, formatHoraRango, peorEstado } from "@/features/academic-management/asistencia/api/ui-mappings"
 import { AsistenciaDayCellRectorPopover } from "@/features/academic-management/asistencia/components/asistencia-day-cell-rector-popover"
 
 export interface AsistenciaDayEntry {
   id: string
   fecha: string
-  bloque: number
+  /** `null` = toma suelta sin bloque (`TASISTENCIA.BLOQUE` nulo). */
+  bloque: number | null
   fkGrupo: number
   grupo: string
   grado: string
   jornada: string
   fkAsignatura: number
   asignatura: string
+  horaInicio: string | null
+  horaFin: string | null
   estado: EstadoSesion
+  /** Grupo de Preescolar: la sesión es `actividad`, no `asignatura`. */
+  esFormativa: boolean
+  fkActividad: number | null
+  actividad: string | null
+}
+
+/** Nombre a mostrar: la actividad si la sesión es formativa, la asignatura si no. */
+export function nombreSesion(entry: Pick<AsistenciaDayEntry, "esFormativa" | "actividad" | "asignatura">): string {
+  return entry.esFormativa ? (entry.actividad ?? "Actividad") : entry.asignatura
 }
 
 interface AsistenciaMonthGridProps {
@@ -58,7 +70,7 @@ export function AsistenciaMonthGrid({
     <div
       data-slot="asistencia-month-grid"
       className={cn(
-        "w-full overflow-hidden rounded-lg border bg-card [--cell-radius:var(--radius)] [--cell-size:--spacing(24)]",
+        "w-full overflow-hidden rounded-lg border bg-card [--asistencia-cell-max-width:200px] [--cell-radius:var(--radius)] [--cell-size:--spacing(24)]",
         defaultClassNames.root,
       )}
     >
@@ -79,20 +91,20 @@ export function AsistenciaMonthGrid({
             date.toLocaleString("es-CO", { weekday: "short" }).replace(".", "").slice(0, 3),
         }}
         classNames={{
-          root: cn("w-full", defaultClassNames.root),
-          months: cn("relative flex flex-col", defaultClassNames.months),
+          root: cn("w-full overflow-x-auto", defaultClassNames.root),
+          months: cn("relative flex min-w-[840px] flex-col", defaultClassNames.months),
           month: cn("flex w-full flex-col", defaultClassNames.month),
           month_caption: "hidden",
           caption_label: "hidden",
           button_previous: "hidden",
           button_next: "hidden",
           month_grid: cn("w-full border-collapse", defaultClassNames.month_grid),
-          weekdays: cn("flex w-full border-b border-muted-22", defaultClassNames.weekdays),
+          weekdays: cn("flex w-full min-w-[840px] border-b border-muted-22", defaultClassNames.weekdays),
           weekday: cn(
-            "flex-1 border-r border-muted-22 py-2.5 text-center text-xs font-normal tracking-wide text-muted-foreground uppercase select-none last:border-r-0",
+            "max-w-(--asistencia-cell-max-width) min-w-0 flex-1 border-r border-muted-22 py-2.5 text-center text-xs font-normal tracking-wide text-muted-foreground uppercase select-none last:border-r-0",
             defaultClassNames.weekday,
           ),
-          week: cn("flex w-full", defaultClassNames.week),
+          week: cn("flex w-full min-w-[840px]", defaultClassNames.week),
           today: "",
         }}
         components={{
@@ -105,7 +117,7 @@ export function AsistenciaMonthGrid({
               <td
                 {...tdProps}
                 className={cn(
-                  "min-w-0 flex-1 overflow-hidden border-r border-b border-muted-22 p-0 align-top last:border-r-0",
+                  "max-w-(--asistencia-cell-max-width) min-w-0 flex-1 overflow-hidden border-r border-b border-muted-22 p-0 align-top last:border-r-0",
                   isOutside && "bg-muted/20",
                   className,
                 )}
@@ -148,17 +160,19 @@ export function AsistenciaMonthGrid({
                                     <span aria-hidden className="shrink-0 text-muted-foreground/40">
                                       |
                                     </span>
-                                    <span className="truncate">{cantidad} clases</span>
+                                    <span className="min-w-0 flex-1 truncate">{cantidad} clases</span>
                                   </li>
                                 )
                               })
-                            : items.map(({ id, grado, grupo, jornada, asignatura, estado }) => {
+                            : items.map((item) => {
+                                const { id, grado, grupo, jornada, estado } = item
+                                const nombre = nombreSesion(item)
                                 const EstadoIcon = ESTADO_SESION_ICON[estado]
                                 return (
                                   <li
                                     key={id}
                                     className="flex min-w-0 shrink-0 items-center gap-1 text-xs leading-tight"
-                                    title={`${grado}${grupo} (${jornada}) · ${asignatura}`}
+                                    title={`${grado}${grupo} (${jornada}) · ${nombre}`}
                                   >
                                     <EstadoIcon
                                       className={cn("size-3 shrink-0", ESTADO_SESION_COLOR[estado])}
@@ -170,7 +184,7 @@ export function AsistenciaMonthGrid({
                                     <span aria-hidden className="shrink-0 text-muted-foreground/40">
                                       |
                                     </span>
-                                    <span className="truncate">{asignatura}</span>
+                                    <span className="min-w-0 flex-1 truncate">{nombre}</span>
                                   </li>
                                 )
                               })}
@@ -279,12 +293,16 @@ function DayCellPopover({
         <ul className="flex max-h-80 flex-col gap-3 overflow-y-auto pr-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {items.map((item) => {
             const marcado = markedEntryIds.has(item.id)
+            const horaRango = formatHoraRango(item.horaInicio, item.horaFin)
             return (
               <li key={item.id} className="flex flex-col gap-1">
                 <span className="text-xs font-semibold text-muted-foreground">
                   {item.grado}{item.grupo} ({item.jornada})
                 </span>
-                <span className="text-sm font-medium">{item.asignatura}</span>
+                <div className="flex flex-wrap items-baseline justify-between gap-x-2">
+                  <span className="text-sm font-medium">{nombreSesion(item)}</span>
+                  {horaRango && <span className="shrink-0 text-xs text-muted-foreground">{horaRango}</span>}
+                </div>
                 <button
                   type="button"
                   disabled={markingEntryId !== null}

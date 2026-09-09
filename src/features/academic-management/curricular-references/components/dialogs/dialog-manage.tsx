@@ -12,6 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { ConfirmDiscardDialog } from "@/components/confirm-discard-dialog"
 import { getErrorMessage } from "@/lib/api-client"
 import { CurricularReferenceDetailsForm } from "@/features/academic-management/curricular-references/components/forms/form-curricular-reference-details"
 import { useCreate } from "@/features/academic-management/curricular-references/api/mutations/use-create"
@@ -40,7 +41,7 @@ const EMPTY_AREAS: CurricularReferenceArea[] = []
 function createInitialValues(): CurricularReferenceDraft {
   return {
     name: "",
-    educationLevel: null,
+    educationLevels: [],
     description: "",
     level1: "",
     level2: "",
@@ -56,10 +57,9 @@ function createInitialValues(): CurricularReferenceDraft {
 
 const curricularReferenceSchema = z.object({
   name: z.string().trim().min(1, "Ingresa el nombre del referente."),
-  educationLevel: z
-    .object({ id: z.number().nullish() })
-    .nullish()
-    .refine((item) => item?.id != null, { message: "Selecciona el nivel educativo." }),
+  educationLevels: z
+    .array(z.object({ id: z.number() }))
+    .min(1, "Selecciona al menos un nivel educativo."),
   description: z.string().trim().min(1, "Ingresa la descripción o finalidad."),
   level1: z.string().trim().min(1, "Ingresa el nivel 1."),
   level2: z.string().trim().min(1, "Ingresa el nivel 2."),
@@ -107,6 +107,7 @@ export function ManageCurricularReferenceDialog({
 
   const [notice, setNotice] = useState<{ id: number; message: string; variant: NoticeVariant } | null>(null)
   const noticeIdRef = useRef(0)
+  const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false)
 
   function notifyInDialog(message: string, variant: NoticeVariant = "error") {
     noticeIdRef.current += 1
@@ -118,6 +119,8 @@ export function ManageCurricularReferenceDialog({
   useEffect(() => {
     if (!open) {
       populatedRef.current = false
+      setNotice(null)
+      setConfirmDiscardOpen(false)
       return
     }
     if (populatedRef.current) return
@@ -149,14 +152,6 @@ export function ManageCurricularReferenceDialog({
 
   const createMutation = useCreate({
     mutationConfig: {
-      onSuccess: (result) => {
-        if (result.status === "error") {
-          notifyInDialog(result.message ?? "No fue posible guardar el referente curricular.")
-          return
-        }
-        notify("El referente curricular se creó correctamente.")
-        onOpenChange(false)
-      },
       onError: (error) => {
         notifyInDialog(getErrorMessage(error) || "No fue posible guardar el referente curricular.")
       },
@@ -165,14 +160,6 @@ export function ManageCurricularReferenceDialog({
 
   const updateMutation = useUpdate({
     mutationConfig: {
-      onSuccess: (result) => {
-        if (result.status === "error") {
-          notifyInDialog(result.message ?? "No fue posible guardar el referente curricular.")
-          return
-        }
-        notify("El referente curricular se actualizó correctamente.")
-        onOpenChange(false)
-      },
       onError: (error) => {
         notifyInDialog(getErrorMessage(error) || "No fue posible actualizar el referente curricular.")
       },
@@ -198,31 +185,52 @@ export function ManageCurricularReferenceDialog({
     }
 
     if (isEditMode && curricularReference) {
-      await updateMutation.mutateAsync({
+      const result = await updateMutation.mutateAsync({
         id: curricularReference.id,
         values: formValues,
         previousActive: curricularReference.active,
       })
+      if (result.status === "error") {
+        notifyInDialog(result.message ?? "No fue posible guardar el referente curricular.")
+        return
+      }
+
+      notify("El referente curricular se actualizó correctamente.")
+      onOpenChange(false)
       return
     }
 
-    await createMutation.mutateAsync(formValues)
+    const result = await createMutation.mutateAsync(formValues)
+    if (result.status === "error") {
+      notifyInDialog(result.message ?? "No fue posible guardar el referente curricular.")
+      return
+    }
+
+    notify("El referente curricular se creó correctamente.")
+    onOpenChange(false)
   }
 
   const isPending = createMutation.isPending || updateMutation.isPending
   const isLoadingDetail = isEditMode && isDetailPending
 
-  const hasRequiredFields = curricularReferenceSchema.safeParse(formValues).success
-  const hasChanges = isEditMode
-    ? JSON.stringify(formValues) !== JSON.stringify(initialValuesRef.current)
-    : true
-  const canSave = !isLoadingDetail && hasRequiredFields && hasChanges
+  const isDirty = JSON.stringify(formValues) !== JSON.stringify(initialValuesRef.current)
+  const hasChanges = isEditMode ? isDirty : true
+  const canSave = !isLoadingDetail && hasChanges
+
+  function requestClose() {
+    if (isPending) return
+    if (isDirty) {
+      setConfirmDiscardOpen(true)
+      return
+    }
+    onOpenChange(false)
+  }
 
   return (
     <Dialog
       open={open}
       onOpenChange={(next) => {
-        if (!isPending) onOpenChange(next)
+        if (!next) requestClose()
       }}
     >
       <DialogContent
@@ -281,13 +289,22 @@ export function ManageCurricularReferenceDialog({
             variant="fill"
             color="neutral"
             disabled={isPending}
-            onClick={() => onOpenChange(false)}
+            onClick={requestClose}
           >
             <XIcon data-icon="inline-start" />
             Cerrar
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      <ConfirmDiscardDialog
+        open={confirmDiscardOpen}
+        onOpenChange={setConfirmDiscardOpen}
+        onConfirm={() => {
+          setConfirmDiscardOpen(false)
+          onOpenChange(false)
+        }}
+      />
     </Dialog>
   )
 }

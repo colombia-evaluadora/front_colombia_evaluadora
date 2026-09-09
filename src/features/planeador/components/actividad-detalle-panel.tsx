@@ -20,14 +20,15 @@ const ACCIONES = [
   { label: "Marcar", Icon: CheckIcon },
   { label: "Aprobar", Icon: ClipboardCheckIcon },
   // "Descargar" NO va acá: el export por actividad ya vive en la card
-  // (menú PDF / Excel conectado a `useExportActividad`). Tenerlo también
-  // en el header del panel dejaba dos disparadores de exportación en la
-  // misma pantalla, y el del panel no tenía handler.
+  // (botón conectado a `useExportarActividadesJson`, el mismo endpoint
+  // JSON del "Exportar todo" del toolbar). Tenerlo también en el header
+  // del panel dejaba dos disparadores de exportación en la misma
+  // pantalla, y el del panel no tenía handler.
   { label: "Eliminar", Icon: TrashIcon },
 ] as const
 
 interface ActividadDetallePanelProps {
-  actividadId: string
+  actividadId: number
   /** Vista activa del panel: "info" muestra las secciones de detalle;
    * "grades" muestra la tabla de calificaciones con notas por criterio
    * (chulito "Marcar"); "approval" muestra la aprobación bulk por
@@ -76,7 +77,13 @@ export function ActividadDetallePanel({
   const { data: actividad, isPending, isError, refetch } = useActividadDetalleQuery(actividadId)
 
   return (
-    <div className="flex h-full min-h-0 flex-col rounded-md border bg-card">
+    // `flex-1`, no `h-full`: el padre (`planeador-page.tsx`) acota esta
+    // columna con `max-h`, no `h` — un `height: 100%` acá no siempre
+    // resuelve contra eso (necesita un alto definido, no una cota), y
+    // `flex-1` sí funciona igual de bien. Fuera de un contenedor flex
+    // (mobile, sin el `md:flex` del padre) `flex-1` no hace nada, así que
+    // no hace falta condicionarlo a `md:`.
+    <div className="flex min-h-0 flex-1 flex-col rounded-md border bg-card">
       {/* `bg-muted/10`: el mismo fondo que `TableScreenTitle` le da al
           encabezado de la pantalla, para que el header del panel se lea como
           parte del mismo sistema. */}
@@ -117,7 +124,7 @@ export function ActividadDetallePanel({
             variant="ghost"
             color="neutral"
             size="icon-sm"
-            render={<Link to={paths.app.planeadorActividadEditar.getHref(actividadId)} />}
+            render={<Link to={paths.app.planeadorActividadEditar.getHref(String(actividadId))} />}
             aria-label="Editar"
           >
             <PencilIcon />

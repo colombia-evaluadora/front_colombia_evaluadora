@@ -100,5 +100,8 @@ export function useSessionOperationsQuery(params: UseSessionOperationsQueryParam
     queryKey: ["audits", "sessions", params.sessionId, "operations", params],
     queryFn: () => fetchSessionOperations(params),
     placeholderData: (previous) => previous,
+    // Mismo criterio que `useAuditsQuery`: revalidar en cada entrada a la
+    // pantalla en vez de confiar en el cache.
+    staleTime: 0,
   })
 }

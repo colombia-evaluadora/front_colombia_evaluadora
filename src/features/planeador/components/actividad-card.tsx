@@ -1,22 +1,26 @@
 import * as React from "react"
+import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import {
   CheckIcon,
   ClipboardCheckIcon,
+  FileDownloadOutlinedIcon,
   PencilIcon,
+  SpinnerIcon,
 } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
 
 import {
-  STATUS_ACCENT,
-  STATUS_ICON,
-  STATUS_RING,
+  statusAccentFor,
+  statusIconFor,
+  statusRingFor,
 } from "@/features/planeador/api/ui-mappings"
 import type { Actividad } from "@/features/planeador/api/types/actividad"
+import { useExportarActividadesJson } from "@/features/planeador/api/mutations/exportar-actividades-json"
+import { downloadJson } from "@/features/planeador/lib/download-json"
 
 import { DialogDeleteActividad } from "@/features/planeador/components/dialogs/dialog-delete-actividad"
-import { DialogExportActividad } from "@/features/planeador/components/dialogs/dialog-export-actividad"
 
 interface Accion {
   label: string
@@ -72,9 +76,11 @@ const ACCIONES_BASE: readonly Omit<Accion, "onClick">[] = [
  * - **Editar**: navega a la pantalla de edición (`onEdit`).
  * - **Marcar**: cambia el panel a la vista de calificaciones (`onShowGrades`).
  * - **Aprobar**: cambia el panel a la vista de aprobación bulk (`onShowApproval`).
- * - **Descargar**: dispara el `DialogExportActividad`, un `Dialog` con los
- *   dos formatos (PDF / Excel) en el footer — el mismo shape que el export
- *   masivo del toolbar, apuntado a una sola actividad.
+ * - **Descargar**: sin diálogo de formato — llama al mismo
+ *   `POST /planeador/actividades/exportar` que "Exportar todo" del toolbar
+ *   (`useExportarActividadesJson`), acotado a `IDS: [actividad.id]`, y baja
+ *   el `.json` directo. No es el export PDF/Excel (ese quedó solo en el
+ *   toolbar, vía `DialogExportActividades`).
  * - **Eliminar**: dispara el `DialogDeleteActividad`, que es un `AlertDialog`
  *   con confirmación. El trigger del AlertDialog reemplaza al botón de la
  *   barra de acciones (mismo color/tamaño que los otros), así se ve parejo.
@@ -88,8 +94,18 @@ export function ActividadCard({
   onEdit,
   onDeleted,
 }: ActividadCardProps) {
-  const StatusIcon = STATUS_ICON[actividad.status]
-  const accent = STATUS_ACCENT[actividad.status]
+  const StatusIcon = statusIconFor(actividad.status)
+  const accent = statusAccentFor(actividad.status)
+
+  const exportarJson = useExportarActividadesJson({
+    mutationConfig: {
+      onSuccess: (actividadesExportadas) => {
+        downloadJson(`actividad-${actividad.id}.json`, actividadesExportadas)
+        toast.success("Actividad exportada.")
+      },
+      onError: () => toast.error("No se pudo exportar la actividad."),
+    },
+  })
 
   // Editar / Marcar / Aprobar se montan como botones planos. Descargar y
   // Eliminar tienen sus propios widgets (Dialog y AlertDialog) que
@@ -125,7 +141,7 @@ export function ActividadCard({
       {/* Barra de status del borde izquierdo. */}
       <span
         aria-hidden="true"
-        className={cn("absolute inset-y-0 left-0 w-1", STATUS_RING[actividad.status])}
+        className={cn("absolute inset-y-0 left-0 w-1", statusRingFor(actividad.status))}
       />
 
       <div className="flex items-start gap-2">
@@ -197,15 +213,28 @@ export function ActividadCard({
           </Button>
         ))}
 
-        {/* Descargar: abre el `DialogExportActividad`, que trae adentro el
-            trigger y los dos botones de formato (PDF / Excel). Antes eran
-            dos ítems sueltos de un menú desplegable; el diálogo deja el
-            paso de confirmación explícito, igual que el export masivo del
-            toolbar y que el borrado. */}
-        <DialogExportActividad
-          actividad={actividad}
-          triggerProps={{ className: "size-6" }}
-        />
+        {/* Descargar: un solo click, sin diálogo de formato — ver la nota
+            de "Descargar" en el docstring de arriba. */}
+        <Button
+          type="button"
+          variant="ghost"
+          color="neutral"
+          size="icon-sm"
+          className="size-6"
+          aria-label={`Exportar ${actividad.nombre}`}
+          disabled={exportarJson.isPending}
+          aria-busy={exportarJson.isPending}
+          onClick={(e) => {
+            e.stopPropagation()
+            exportarJson.mutate({ ids: [actividad.id] })
+          }}
+        >
+          {exportarJson.isPending ? (
+            <SpinnerIcon className="animate-spin" />
+          ) : (
+            <FileDownloadOutlinedIcon />
+          )}
+        </Button>
 
         {/* Eliminar: el `AlertDialog` del delete vive acá adentro. El
             trigger hereda el `variant/color/size` del resto de la barra

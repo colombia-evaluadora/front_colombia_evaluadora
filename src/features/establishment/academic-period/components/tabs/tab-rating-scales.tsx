@@ -50,6 +50,10 @@ import {
   parseGradingRange,
   type GradingRange,
 } from "@/features/establishment/academic-period/components/grading-range"
+import {
+  findDuplicateRatingScale,
+  ratingScaleDuplicateMessage,
+} from "@/features/establishment/academic-period/components/rating-scale-duplicates"
 import { useRowEdit } from "@/features/establishment/academic-period/hooks/use-row-edit"
 
 interface TabRatingScalesProps {
@@ -287,6 +291,12 @@ function ScalesSubTable({
       })
       return
     }
+    const duplicate = findDuplicateRatingScale(parsed.data, scales)
+    if (duplicate) {
+      const value = duplicate.field === "nombre" ? parsed.data.nombre : parsed.data.abreviacion
+      notify(ratingScaleDuplicateMessage(duplicate.field, value), { variant: "error" })
+      return
+    }
     createMutation.mutate({
       teachingLevelIds: [levelId],
       scales: [{ ...parsed.data, tipo: parsed.data.tipo as RatingScaleType }],
@@ -342,6 +352,16 @@ function ScalesSubTable({
       notify(parsed.error.issues[0]?.message ?? "Revisa los datos.", {
         variant: "error",
       })
+      return
+    }
+    const duplicate = findDuplicateRatingScale(
+      parsed.data,
+      scales,
+      (s) => s.codigo === scale.codigo,
+    )
+    if (duplicate) {
+      const value = duplicate.field === "nombre" ? parsed.data.nombre : parsed.data.abreviacion
+      notify(ratingScaleDuplicateMessage(duplicate.field, value), { variant: "error" })
       return
     }
     if (academicPeriodId == null) return

@@ -7,11 +7,11 @@ import { ControlPointIcon, PencilIcon, SpinnerIcon } from "@/components/ui/icons
 
 import { NoticeBanner, type NoticeVariant } from "@/components/notice/notice-banner"
 import { NoticeProvider } from "@/components/notice/notice-context"
+import { ConfirmDiscardDialog } from "@/components/confirm-discard-dialog"
 
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogFooter,
   DialogHeader,
@@ -106,6 +106,13 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
     grade ? (grade.tieneGradoSiguiente ? "si" : "no") : "",
   )
 
+  const savedRef = useRef({
+    teachingLevelId: grade?.teachingLevelId ?? null,
+    nombre: grade?.nombre ?? "",
+    gradoSiguiente: grade?.gradoSiguiente ?? "",
+    tieneGradoSiguiente: grade ? (grade.tieneGradoSiguiente ? "si" : "no") : "",
+  })
+
   function resetForm() {
     setGradeId(grade?.id ?? null)
     setTeachingLevelId(grade?.teachingLevelId ?? null)
@@ -113,15 +120,16 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
     setGradoSiguiente(grade?.gradoSiguiente ?? "")
     setTieneGradoSiguiente(grade ? (grade.tieneGradoSiguiente ? "si" : "no") : "")
     setNotice(null)
+    savedRef.current = {
+      teachingLevelId: grade?.teachingLevelId ?? null,
+      nombre: grade?.nombre ?? "",
+      gradoSiguiente: grade?.gradoSiguiente ?? "",
+      tieneGradoSiguiente: grade ? (grade.tieneGradoSiguiente ? "si" : "no") : "",
+    }
   }
 
   const { data: teachingLevels = [] } = useTeachingLevelsQuery()
 
-  // Catálogo global GRADOS, no depende del nivel de enseñanza elegido (ver
-  // use-grados-catalog.ts). Se guarda/manda por `valor` (lo que
-  // `fn_grado_crear`/`resolveGradoSiguienteId` matchean), pero se muestra
-  // `nombre` — mostrar el `valor` crudo (el código, "1"/"2"/...) hacía que
-  // el select pareciera listar ids en vez de nombres de grado.
   const { data: gradosCatalog = [] } = useGradosCatalogQuery()
   const gradoOptions = gradosCatalog
 
@@ -171,16 +179,16 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
           academicPeriodId,
         })
         setGradeId(created.id)
-        // El `<Input value={nombre}>` que toma el relevo post-create mostraría
-        // el código crudo del catálogo (p.ej. "1") si dejáramos el estado tal
-        // cual — el `<ComboboxFieldItem value={option.valor}>` guarda el `valor` en
-        // `nombre`, no el nombre legible. Resolvemos a nombre para que el
-        // render inmediato del form coincida con lo que el back va a devolver
-        // en el siguiente fetch (y con lo que muestra la tabla).
         const option = gradoOptions.find(
           (o) => o.valor === parsed.data.nombre,
         )
         if (option) setNombre(option.nombre)
+        savedRef.current = {
+          teachingLevelId: parsed.data.teachingLevelId,
+          nombre: option?.nombre ?? parsed.data.nombre,
+          gradoSiguiente,
+          tieneGradoSiguiente,
+        }
         notify("Grado creado. Ahora puedes configurar grupos, plan de estudio y horario.")
       } else {
         const result = await updateGrade.mutateAsync({
@@ -190,6 +198,12 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
         if (result.status === "error") {
           notify(cleanErrorMessage(result.message), { variant: "error" })
           return
+        }
+        savedRef.current = {
+          teachingLevelId: parsed.data.teachingLevelId,
+          nombre: parsed.data.nombre,
+          gradoSiguiente,
+          tieneGradoSiguiente,
         }
         await promotionRef.current?.save(gradeId)
         await scheduleRef.current?.save(gradeId)
@@ -260,12 +274,33 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
     }))
   }, [planData, areaData])
 
+  const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false)
+
+  function closeDialog() {
+    setOpen(false)
+    resetForm()
+  }
+
+  function requestClose() {
+    if (saving) return
+    const isDirty =
+      teachingLevelId !== savedRef.current.teachingLevelId ||
+      nombre !== savedRef.current.nombre ||
+      gradoSiguiente !== savedRef.current.gradoSiguiente ||
+      tieneGradoSiguiente !== savedRef.current.tieneGradoSiguiente
+    if (isDirty) {
+      setConfirmDiscardOpen(true)
+      return
+    }
+    closeDialog()
+  }
+
   return (
     <Dialog
       open={open}
       onOpenChange={(next) => {
-        setOpen(next)
-        if (!next) resetForm()
+        if (next) setOpen(true)
+        else requestClose()
       }}
     >
       <DialogTrigger
@@ -500,13 +535,20 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
               {gradeId == null ? "Crear" : "Guardar"}
             </Button>
           )}
-          <DialogClose
-            render={<Button size="sm" type="button" variant="fill" color="neutral" />}
-          >
+          <Button size="sm" type="button" variant="fill" color="neutral" onClick={requestClose}>
             Cerrar
-          </DialogClose>
+          </Button>
         </DialogFooter>
       </DialogContent>
+
+      <ConfirmDiscardDialog
+        open={confirmDiscardOpen}
+        onOpenChange={setConfirmDiscardOpen}
+        onConfirm={() => {
+          setConfirmDiscardOpen(false)
+          closeDialog()
+        }}
+      />
     </Dialog>
   )
 }

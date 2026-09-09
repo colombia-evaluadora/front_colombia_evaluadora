@@ -1,21 +1,22 @@
-import { CheckCircleFillIcon, UsersIcon, XCircleIcon } from "@/components/ui/icons"
+import { CheckCircleFillIcon, ClockIcon, UsersIcon, XCircleIcon } from "@/components/ui/icons"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 
 interface SeguimientoSummaryCardsProps {
   totalEstudiantes: number | undefined
+  asistieron: number | undefined
   ausentes: number | undefined
+  tarde: number | undefined
 }
 
 const numberFormatter = new Intl.NumberFormat("es-CO")
 const percentFormatter = new Intl.NumberFormat("es-CO", { maximumFractionDigits: 1 })
 
-/** Las 3 tarjetas del encabezado de "Seguimiento": Total / Asistieron / Ausentes. */
-export function SeguimientoSummaryCards({ totalEstudiantes, ausentes }: SeguimientoSummaryCardsProps) {
+export function SeguimientoSummaryCards({ totalEstudiantes, asistieron, ausentes, tarde }: SeguimientoSummaryCardsProps) {
   const loaded = totalEstudiantes != null && ausentes != null
-  const asistieron = loaded ? totalEstudiantes - ausentes : 0
-  const pctAsistieron = loaded && totalEstudiantes > 0 ? (asistieron / totalEstudiantes) * 100 : 0
-  const pctAusentes = loaded && totalEstudiantes > 0 ? (ausentes / totalEstudiantes) * 100 : 0
+  const asistieronLoaded = loaded && asistieron != null
+  const tardeLoaded = loaded && tarde != null
+  const pct = (n: number) => (loaded && totalEstudiantes > 0 ? (n / totalEstudiantes) * 100 : 0)
 
   const cards = [
     {
@@ -33,8 +34,8 @@ export function SeguimientoSummaryCards({ totalEstudiantes, ausentes }: Seguimie
       iconBg: "bg-green",
       cardBg: "bg-green-22",
       label: "Asistieron",
-      value: loaded ? numberFormatter.format(asistieron) : null,
-      description: loaded ? `${percentFormatter.format(pctAsistieron)}% del grupo` : null,
+      value: asistieronLoaded ? numberFormatter.format(asistieron) : null,
+      description: asistieronLoaded ? `${percentFormatter.format(pct(asistieron))}% del grupo` : null,
     },
     {
       key: "ausentes",
@@ -43,12 +44,21 @@ export function SeguimientoSummaryCards({ totalEstudiantes, ausentes }: Seguimie
       cardBg: "bg-orange-22",
       label: "Ausentes",
       value: loaded ? numberFormatter.format(ausentes) : null,
-      description: loaded ? `${percentFormatter.format(pctAusentes)}% del grupo` : null,
+      description: loaded ? `${percentFormatter.format(pct(ausentes))}% del grupo` : null,
+    },
+    {
+      key: "tarde",
+      icon: ClockIcon,
+      iconBg: "bg-yellow",
+      cardBg: "bg-yellow-22",
+      label: "Llegó tarde",
+      value: tardeLoaded ? numberFormatter.format(tarde) : null,
+      description: tardeLoaded ? `${percentFormatter.format(pct(tarde))}% del grupo` : null,
     },
   ] as const
 
   return (
-    <section aria-label="Resumen de seguimiento" className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+    <section aria-label="Resumen de seguimiento" className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
       {cards.map(({ key, icon: Icon, iconBg, cardBg, label, value, description }) => (
         <div key={key} className={cn("flex items-center gap-3 rounded-md p-3", cardBg)}>
           <span

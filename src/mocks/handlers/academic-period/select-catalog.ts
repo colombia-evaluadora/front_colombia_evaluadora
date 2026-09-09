@@ -104,6 +104,54 @@ const CATALOGS_BY_CATEGORIA: Record<string, () => SelectCategoryRow[]> = {
       valor: String(i + 1),
       accion: null,
     })),
+  // Catálogo `TIPO_ACTIVIDAD` real que resuelve `FK_TLV_TIPO_ACTIVIDAD` en
+  // `fn_actividad_crear`/`_actualizar` (V224, colección Postman
+  // `planeador-actividad`) — el Planeador ya no lo hardcodea en el `<Select>`.
+  TIPO_ACTIVIDAD: () =>
+    ["Proyecto", "Exposición", "Práctica", "Ensayo", "Debate", "Simulación", "Otro"].map(
+      (nombre, i) => ({ pk_lista_valor: i + 1, nombre, valor: nombre, accion: null }),
+    ),
+  // Catálogo `INSTRUMENTO_EVALUACION` real que resuelve
+  // `FK_TLV_INSTRUMENTO_EVALUACION` (V226/V240, colección Postman
+  // `planeador-instrumentos`).
+  INSTRUMENTO_EVALUACION: () =>
+    ["Rúbrica", "Lista de cotejo", "Escala de valoración", "Otro"].map((nombre, i) => ({
+      pk_lista_valor: i + 1,
+      nombre,
+      valor: nombre,
+      accion: null,
+    })),
+  // Catálogo `ELEMENTO_CALCULO_DEF` real — resuelve un campo de Periodos
+  // Académicos (`use-evaluation-criteria-options.ts`), sin relación con el
+  // Planeador. No confundir con `AGRUPACION_PLANILLA` (abajo): comparten el
+  // patrón "dos opciones de agrupación", pero son catálogos distintos.
+  ELEMENTO_CALCULO_DEF: () =>
+    [
+      { nombre: "Instrumentos", valor: "1" },
+      { nombre: "Actividades", valor: "2" },
+    ].map((opt, i) => ({ pk_lista_valor: i + 1, nombre: opt.nombre, valor: opt.valor, accion: null })),
+  // Catálogo `AGRUPACION_PLANILLA` real — resuelve el "Ver por" de la
+  // Planilla de calificación (agrupar columnas por unidad temática o
+  // dejarlas sueltas por actividad); el Planeador ya no lo hardcodea en el
+  // `<Select>`. Sin código numérico confirmado contra una respuesta real
+  // todavía — se empareja por nombre (`use-agrupacion-planilla-catalog.ts`).
+  AGRUPACION_PLANILLA: () =>
+    ["Actividades", "Unidad"].map((nombre, i) => ({
+      pk_lista_valor: i + 1,
+      nombre,
+      valor: nombre,
+      accion: null,
+    })),
+  // Catálogo de asistencias -- el valor 4 no existe (ver Postman de
+  // `SSO - Asistencias`).
+  TIPO_ASISTENCIA: () =>
+    [
+      { valor: 1, nombre: "Asistió" },
+      { valor: 2, nombre: "No asistió" },
+      { valor: 3, nombre: "No asistió (justificado)" },
+      { valor: 5, nombre: "Llegó tarde" },
+      { valor: 6, nombre: "Llegó tarde (justificado)" },
+    ].map((opt, i) => ({ pk_lista_valor: i + 1, nombre: opt.nombre, valor: String(opt.valor), accion: null })),
 }
 
 export const selectCatalogHandlers = [

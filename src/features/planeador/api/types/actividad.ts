@@ -13,25 +13,21 @@
 export type ActividadStatus = "pending" | "in-progress" | "completed" | "cancelled"
 
 /**
- * Tipos de actividad pedagógica que se pueden registrar en el Planeador.
- * El orden importa: es el mismo orden en que se muestran en el `<Select>` del
- * formulario (`form-editar-actividad.tsx`) y en el dropdown de filtros.
+ * Tipo de actividad pedagógica — el `<Select>` del formulario
+ * (`form-editar-actividad.tsx`) y el dropdown de filtros ofrecen lo que
+ * traiga el catálogo real `TIPO_ACTIVIDAD` (`useTipoActividadCatalogQuery`),
+ * que NO está acotado a un puñado de valores fijos: confirmado contra el
+ * backend real, trae opciones como "Trabajo en clase" que no encajan en
+ * ningún union corto — por eso es `string` y no un union literal.
  */
-export type ActividadTipo =
-  | "Proyecto"
-  | "Exposición"
-  | "Práctica"
-  | "Ensayo"
-  | "Debate"
-  | "Simulación"
-  | "Otro"
+export type ActividadTipo = string
 
 export type Modalidad = "Presencial" | "Virtual" | "Mixta"
 
 export type RecursoTipo = "URL" | "Unidad virtual" | "Archivo"
 
 export interface Recurso {
-  id: string
+  id: number
   titulo: string
   fuente: string
   tipo: RecursoTipo
@@ -53,14 +49,14 @@ export interface Recurso {
  * input numérico al lado del textarea de descripción.
  */
 export interface Nivel {
-  id: string
+  id: number
   nombre: string
   descripcion: string
   ponderacion?: number
 }
 
 export interface Criterio {
-  id: string
+  id: number
   nombre: string
   excelente: string
   /**
@@ -79,7 +75,7 @@ export interface Criterio {
 }
 
 export interface Rubrica {
-  id: string
+  id: number
   criterios: Criterio[]
 }
 
@@ -91,13 +87,13 @@ export interface Rubrica {
  * de descripción cuando `actividad.esEvaluativa` es `true`.
  */
 export interface ListaCotejoItem {
-  id: string
+  id: number
   descripcion: string
   ponderacion?: number
 }
 
 export interface ListaCotejo {
-  id: string
+  id: number
   items: ListaCotejoItem[]
 }
 
@@ -120,7 +116,7 @@ export type EscalaValoracionTipo = "Numérica" | "Cualitativa"
  *   mismo patrón que los niveles intermedios de `CriterioItem`.
  */
 export interface EscalaValoracion {
-  id: string
+  id: number
   /** Texto libre separado por coma — ej. "Puntualidad, Participación". */
   criteriosGenerales: string
   tipo: EscalaValoracionTipo
@@ -158,7 +154,7 @@ export interface InstrumentoPersonalizado {
 }
 
 export interface Unidad {
-  id: string
+  id: number
   nombre: string
 }
 
@@ -184,11 +180,11 @@ export interface Adaptacion {
   versionModificada: "no" | "archivo" | "enlace" | "biblioteca" | ""
   versionModificadaRef: string
   aplicaA: string
-  estudiantesIds: string[]
+  estudiantesIds: number[]
 }
 
 export interface Actividad {
-  id: string
+  id: number
   nombre: string
   tipo: ActividadTipo
   /**
@@ -202,6 +198,15 @@ export interface Actividad {
   asignatura: string
   grado: string
   grupo: string
+  /** `PK_TASIGNATURA`/`PK_TGRADO`/`PK_TGRUPO` reales — solo se conocen
+   *  cuando el docente ELIGE en los `<Select>` de "Grado / Grupo" y
+   *  "Asignatura" (`useDocenteGruposQuery`/`useDocenteGradoAsignaturaQuery`,
+   *  ver `AsignaturaGradoSection`). Igual que en `UnidadTematica`, si
+   *  quedan `undefined` al editar, `update-actividad.ts` no manda
+   *  `FK_TGRUPO`/`FK_TASIGNATURA` — el PUT real es parcial. */
+  asignaturaId?: number
+  gradoId?: number
+  grupoId?: number
   /** `yyyy-MM-dd`. */
   fechaInicio: string
   /** `yyyy-MM-dd`. */
@@ -267,6 +272,25 @@ export interface Actividad {
   instrumentoPersonalizado: InstrumentoPersonalizado
   /** Adaptaciones curriculares aplicadas a la actividad (lista editable). */
   adaptaciones: Adaptacion[]
+  /**
+   * "Pintado dinámico" que ya trae el detalle real (`GET .../actividades/:id`,
+   * el mismo bloque de `GET .../configuracion`, colección Postman 4.3/5.1):
+   * qué campos mostrar/exigir, con el MOTIVO de cada decisión — el backend
+   * ya resolvió TODAS las reglas de negocio (huérfana sin unidad, unidad
+   * con referente FORMATIVO, etc.), así que el front no debe re-adivinarlas
+   * armando su propia lógica a partir de grado/asignatura. Solo presente en
+   * el backend real; `undefined` en mock/una actividad recién creada.
+   */
+  camposDisponibles?: {
+    criterio: { visible: boolean; requerido: boolean; motivo: string }
+    evaluacion: {
+      visible: boolean
+      requerido: boolean
+      motivo: string
+      instrumentosPermitidos: string[]
+    }
+    ponderacion: { visible: boolean; requerido: boolean; motivo: string; modo: string | null }
+  }
 }
 
 /**

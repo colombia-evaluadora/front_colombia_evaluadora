@@ -5,12 +5,12 @@ import { ControlPointIcon, PencilIcon, SpinnerIcon } from "@/components/ui/icons
 
 import { useNotify } from "@/components/notice/notice-context"
 import { NoticeBanner, type NoticeVariant } from "@/components/notice/notice-banner"
+import { ConfirmDiscardDialog } from "@/components/confirm-discard-dialog"
 import { getErrorMessage } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogFooter,
   DialogHeader,
@@ -193,15 +193,36 @@ export function CreateStudyPlanDialog({
     },
   })
 
+  const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false)
+
+  function closeDialog() {
+    setOpen(false)
+    setNotice(null)
+    form.reset()
+    setPersonalizar(tienePersonalizacion)
+  }
+
+  function requestClose() {
+    if (isSaving) return
+    const isDirty =
+      JSON.stringify(form.state.values) !== JSON.stringify(defaultValues) ||
+      personalizar !== tienePersonalizacion
+    if (isDirty) {
+      setConfirmDiscardOpen(true)
+      return
+    }
+    closeDialog()
+  }
+
   return (
     <Dialog
       open={open}
       onOpenChange={(next) => {
-        setOpen(next)
-        setNotice(null)
-        if (!next) {
-          form.reset()
-          setPersonalizar(tienePersonalizacion)
+        if (next) {
+          setOpen(true)
+          setNotice(null)
+        } else {
+          requestClose()
         }
       }}
     >
@@ -561,11 +582,20 @@ export function CreateStudyPlanDialog({
               )
             }}
           </form.Subscribe>
-          <DialogClose render={<Button size="sm" type="button" variant="fill" color="neutral" />}>
+          <Button size="sm" type="button" variant="fill" color="neutral" onClick={requestClose}>
             Cancelar
-          </DialogClose>
+          </Button>
         </DialogFooter>
       </DialogContent>
+
+      <ConfirmDiscardDialog
+        open={confirmDiscardOpen}
+        onOpenChange={setConfirmDiscardOpen}
+        onConfirm={() => {
+          setConfirmDiscardOpen(false)
+          closeDialog()
+        }}
+      />
     </Dialog>
   )
 }

@@ -17,8 +17,29 @@ function toBoolSN(value: string | undefined | null): "S" | "N" | null {
   return null
 }
 
+/** Operación sobre "Otros documentos relevantes": borrar uno existente
+ * (`pkTmatriculaArchivo` + `fkTarchivo: null`) o agregar uno ya subido
+ * (`fkTarchivo` de un archivo existente, sin `pkTmatriculaArchivo`). */
+export interface OtroDocumentoRelevanteOperation {
+  pkTmatriculaArchivo?: number
+  fkTarchivo: number | null
+}
+
 export interface UpdateMatriculaBodyContext {
   pkTpadre: number | null
+  pkUsuarioAcudiente: number | null
+  actualizarAcudiente: boolean
+  /** Default true -- lo que ya guardaba el editar completo de la ficha. */
+  actualizarMatricula?: boolean
+  actualizarEstudiante?: boolean
+  actualizarSocioeconomico?: boolean
+  /** Reemplazar cada documento de una sola vía -- default false. */
+  tocarDocumentoIdentidad?: boolean
+  tocarCertificadoEstudios?: boolean
+  tocarCertificadoMedico?: boolean
+  tocarFoto?: boolean
+  /** Altas/bajas en "Otros documentos relevantes" -- default ninguna. */
+  otrosDocumentosRelevantes?: OtroDocumentoRelevanteOperation[]
 }
 
 export function toUpdateMatriculaBody(
@@ -27,18 +48,19 @@ export function toUpdateMatriculaBody(
 ) {
   const { academic, student, studentAddress, previousYear, originSector, conflictVictim } = values
   const { complementary, benefits, guardian, guardianAddress, guardianEmployment } = values
-  const actualizarAcudiente = context.pkTpadre != null
 
   return {
-    ACTUALIZAR_MATRICULA: true,
-    ACTUALIZAR_ESTUDIANTE: true,
-    ACTUALIZAR_ACUDIENTE: actualizarAcudiente,
-    ACTUALIZAR_SOCIOECONOMICO: true,
+    ACTUALIZAR_MATRICULA: context.actualizarMatricula ?? true,
+    ACTUALIZAR_ESTUDIANTE: context.actualizarEstudiante ?? true,
+    ACTUALIZAR_ACUDIENTE: context.actualizarAcudiente,
+    ACTUALIZAR_SOCIOECONOMICO: context.actualizarSocioeconomico ?? true,
     PK_TPADRE: context.pkTpadre,
-    TOCAR_DOCUMENTO_DE_IDENTIDAD: false,
-    TOCAR_CERTIFICADO_DE_ESTUDIOS: false,
-    TOCAR_CERTIFICADO_MEDICO: false,
-    TOCAR_FOTO: false,
+    PK_USUARIO_ACUDIENTE: context.pkUsuarioAcudiente,
+    TOCAR_DOCUMENTO_DE_IDENTIDAD: context.tocarDocumentoIdentidad ?? false,
+    TOCAR_CERTIFICADO_DE_ESTUDIOS: context.tocarCertificadoEstudios ?? false,
+    TOCAR_CERTIFICADO_MEDICO: context.tocarCertificadoMedico ?? false,
+    TOCAR_FOTO: context.tocarFoto ?? false,
+    OTROS_DOCUMENTOS_RELEVANTES: JSON.stringify(context.otrosDocumentosRelevantes ?? []),
 
     CARACTER_ESPECIALIDAD_ENFASIS: toIntOrNull(academic.specialty),
 

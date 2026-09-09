@@ -266,7 +266,10 @@ export function SelectGeneralAreasDialog({
       <DialogPortal>
         <DialogOverlay forceRender className="bg-black/30" />
       </DialogPortal>
-      <DialogContent className="sm:max-w-4xl" showCloseButton={false}>
+      <DialogContent
+        className="max-h-[85vh] overflow-y-auto sm:max-w-4xl"
+        showCloseButton={false}
+      >
         <DialogHeader>
           <DialogTitle>Seleccionar áreas o dimensiones</DialogTitle>
         </DialogHeader>

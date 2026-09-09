@@ -5,18 +5,18 @@ export type TipoAsistencia = 1 | 2 | 3 | 5 | 6
 
 export interface SesionCalendario {
   fecha: string
-  bloque: number
+  bloque: number | null
   fk_grupo: number
   grupo: string
-  // Confirmado contra `fn_asistencia_calendario`: el backend manda el
-  // nombre completo (`grado`/`jornada`, ej. "Pre-Jardín"/"Mañana") y el
-  // código corto de `TLISTA_VALOR` (`grado_valor`/`jornada_valor`, ej.
-  // "-2"/"M") -- acá se guarda el `_valor` (ver `normalizarSesion`), que es
-  // lo que se usa para agrupar/mostrar en el calendario.
   grado: string
+  grado_nombre: string
   jornada: string
+  jornada_nombre: string
   fk_asignatura: number
   asignatura: string
+  es_formativa: boolean
+  fk_tactividad: number | null
+  actividad: string | null
   hora_inicio: string | null
   hora_fin: string | null
   estado_sesion: EstadoSesion
@@ -59,16 +59,16 @@ export interface AsistenciaRegistroManual {
   fkArchivo?: number | File
 }
 
+/** Padrón de una sesión: `ASIGNATURA` (+ `BLOQUE` opcional) para un grupo normal, o `ACTIVIDAD` para uno formativo -- nunca ambos. */
 export interface AsistenciaSesionEstudiantesParams {
   GRUPO: number
-  ASIGNATURA: number
+  ASIGNATURA?: number
+  ACTIVIDAD?: number
   FECHA: string
-  BLOQUE?: number
+  BLOQUE?: number | null
 }
 
 export interface RosterEstudiante {
-  // Confirmado contra la respuesta real: NO es `fk_matricula` -- el backend
-  // manda el nombre completo de tabla (`TMATRICULA`/`TESTUDIANTE`).
   fk_tmatricula: number
   fk_testudiante: number
   estudiante: string
@@ -86,11 +86,17 @@ export interface RosterEstudiante {
   registrados: number
 }
 
+/**
+ * `ASIGNATURA` (+ `BLOQUE`, sesión por horario) o `ACTIVIDAD` (sesión
+ * formativa, sin `BLOQUE`) -- exactamente una de las dos; la función rechaza
+ * con 409 si faltan ambas (`CK_TASISTENCIA_CONTEXTO`).
+ */
 export interface AsistenciaRegistrarRequest {
   GRUPO: number
-  ASIGNATURA: number
+  ASIGNATURA?: number
+  ACTIVIDAD?: number
   FECHA: string
-  BLOQUE: number
+  BLOQUE?: number | null
   REGISTROS?: AsistenciaRegistroManual[]
   MARCAR_TODOS?: TipoAsistencia
 }
@@ -108,10 +114,10 @@ export interface AsistenciaQueryFilters {
   FECHA_HASTA?: string | null
   GRUPO?: number | null
   ASIGNATURA?: number | null
+  /** Formativo (preescolar): filtra por actividad -- `ASIGNATURA` no encuentra estas filas (`FK_TASIGNATURA` queda `NULL`). */
+  ACTIVIDAD?: number | null
   TIPO_ASISTENCIA?: TipoAsistencia | null
   SEARCH?: string | null
-  JORNADA?: string | null
-  GRADO?: string | null
 }
 
 export interface AsistenciaQueryRequest {
@@ -141,14 +147,22 @@ export interface AsistenciaQueryRow {
   soporte_nombre: string | null
   total_estudiantes: number
   ausentes: number
+  tarde: number
   total_count: number
+  /** Formativo (preescolar): la fila es de una actividad, no de `asignatura` (que llega `""`/dueña, no la sesión). */
+  es_formativa: boolean
+  fk_tactividad: number | null
+  actividad: string | null
 }
 
 
 export interface SeguimientoFiltersValues {
+  fechaDesde: string
+  fechaHasta: string
   jornada: string
   grado: string
   grupo: string
   asignatura: string
+  actividad: string
   tipoAsistencia: string
 }

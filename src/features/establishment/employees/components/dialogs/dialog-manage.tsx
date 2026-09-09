@@ -420,7 +420,7 @@ export function ManageEmployeeDialog(props: ManageEmployeeDialogProps) {
 }
 
 function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageEmployeeDialogProps) {
-  const { notify } = useNotify()
+  const { notify, dismiss } = useNotify()
   const queryClient = useQueryClient()
   const isEditMode = Boolean(employeeId)
   /**
@@ -579,6 +579,29 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
   }
 
 
+  // Deshace lo que `applyLoadedEmployee` cargó al matchear un funcionario
+  // activo por documento (línea 645 más abajo) -- SIN tocar `person`, que ya
+  // se está reescribiendo aparte (`UserDetailsForm` dispara esto al detectar
+  // que el documento cambió tras el match, `form-user-datails.tsx`). Sin
+  // esto, `createdEmployeeId` quedaba apuntando al funcionario equivocado:
+  // "Permisos"/"Información complementaria" seguían habilitados y
+  // `handleMainSave` tomaba la rama de edición (PUT) en vez de crear a la
+  // persona nueva que el usuario terminó tipeando.
+  function unmatchEmployee() {
+    setMatchedFuncionarioId(null)
+    setCreatedEmployeeId(null)
+    setPermissions([])
+    setAdditionalInfo(createInitialAdditionalInfo())
+    setPermissionDraft(createPermissionDraft())
+    setPermissionErrors({})
+    setPermissionsSaved(false)
+    setAdditionalInfoSaved(false)
+    originalPermissionIdsRef.current = new Set()
+    cleanSnapshotRef.current = null
+    permissionsSnapshotRef.current = JSON.stringify([])
+    additionalInfoSnapshotRef.current = JSON.stringify(createInitialAdditionalInfo())
+  }
+
   function resetDraft() {
     setPerson(createEmptyPerson())
     setPermissions([])
@@ -611,6 +634,8 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
     if (!open) {
       return
     }
+
+    dismiss()
 
     if (!isEditMode) {
       resetDraft()
@@ -716,7 +741,6 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
     updateMutation.isPending
 
   const hasUnsavedChanges =
-    !isEditMode ||
     cleanSnapshotRef.current === null ||
     photo !== null ||
     photoRemoved ||
@@ -789,6 +813,18 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
 
           setPerson(persistedPerson)
           setCreatedEmployeeId(registered.pkFuncionario)
+          // A propósito NO se invalida `["employees"]` acá: el funcionario
+          // recién creado todavía no tiene ningún permiso asignado, así que
+          // no debe aparecer en la tabla hasta que se le asigne al menos
+          // uno (ver `closePermissionsDialog`, que sí invalida al guardar
+          // permisos).
+          // Deja el "borrador limpio" al día con lo que ya se persistió --
+          // mismo criterio que `applyLoadedEmployee` en edición. Sin esto
+          // el botón "Guardar" quedaba habilitado para siempre después de
+          // crear, aunque no hubiera ningún cambio nuevo sin guardar.
+          cleanSnapshotRef.current = buildDraftSnapshot(persistedPerson, additionalInfo, permissions)
+          setPhoto(null)
+          setPhotoRemoved(false)
           notify(SUCCESS_MESSAGES.employee.created)
         } catch (error) {
           notify(error instanceof Error ? error.message : "No fue posible registrar el funcionario.", {
@@ -845,6 +881,11 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
       // invocaciones a handleMainSave pasen por PUT, y habilitamos los
       // botones opcionales sin cerrar el diálogo.
       setCreatedEmployeeId(result.employee.id ?? null)
+      // Mismo criterio que en el alta real: deja el snapshot al día para
+      // que "Guardar" se oculte hasta que haya un cambio de verdad.
+      cleanSnapshotRef.current = buildDraftSnapshot(persistedPerson, additionalInfo, permissions)
+      setPhoto(null)
+      setPhotoRemoved(false)
       notify(
         permissions.length === 0
           ? "Usuario guardado. Puedes asignar permisos e información complementaria."
@@ -926,15 +967,9 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
   }
 
   function removePermission(order: number) {
-    // El permiso se busca antes de filtrar: después del `setPermissions` los
-    // órdenes se renumeran y ya no habría con qué armar el mensaje.
     const removed = permissions.find((permission) => permission.order === order)
 
-    setPermissions((current) =>
-      current
-        .filter((permission) => permission.order !== order)
-        .map((permission, index) => ({ ...permission, order: index + 1 }))
-    )
+    setPermissions((current) => current.filter((permission) => permission.order !== order))
 
     notify(
       removed
@@ -1110,7 +1145,15 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
                 // (ver el bloque de `personDataChangedSinceMatch` en
                 // `handleMainSave`), y limpia cualquier carga anterior.
                 personMatchSnapshotRef.current = found ?? null
-                setMatchedFuncionarioId(null)
+                // Si veníamos de un match a otro funcionario (el usuario
+                // corrigió el documento porque no era la persona que
+                // quería), hay que deshacer también lo que ese match cargó
+                // -- no solo `matchedFuncionarioId`.
+                if (matchedFuncionarioId !== null) {
+                  unmatchEmployee()
+                } else {
+                  setMatchedFuncionarioId(null)
+                }
               }
             }}
           />

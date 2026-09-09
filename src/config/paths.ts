@@ -160,9 +160,13 @@ export const paths = {
       path: "planeador/actividades",
       getHref: () => "/app/planeador/actividades",
     },
-    planeadorDetalle: {
-      path: "planeador/actividades/$actividadId",
-      getHref: (actividadId: string) => `/app/planeador/actividades/${actividadId}`,
+    // Segmento estático `agregar`, hermano de `$actividadId`: TanStack
+    // Router resuelve los segmentos estáticos antes que los dinámicos, así
+    // que no choca con el detalle/editar (mismo criterio documentado en
+    // `establishments.add` vs `establishments.edit`).
+    planeadorActividadCrear: {
+      path: "planeador/actividades/agregar",
+      getHref: () => "/app/planeador/actividades/agregar",
     },
     planeadorActividadEditar: {
       path: "planeador/actividades/$actividadId/editar",
@@ -171,6 +175,30 @@ export const paths = {
     planeadorUnidades: {
       path: "planeador/unidades",
       getHref: () => "/app/planeador/unidades",
+    },
+    // Misma idea que `planeadorActividadCrear`/`planeadorActividadEditar`:
+    // páginas aparte, no modales — el detalle de la unidad no tiene ruta
+    // propia (vive en `?unidad=` sobre `planeadorUnidades`), así que
+    // "editar" no necesita el segmento intermedio que sí usa Actividad.
+    planeadorUnidadCrear: {
+      path: "planeador/unidades/agregar",
+      getHref: () => "/app/planeador/unidades/agregar",
+    },
+    planeadorUnidadEditar: {
+      path: "planeador/unidades/editar/$unidadId",
+      getHref: (unidadId: string) => `/app/planeador/unidades/editar/${unidadId}`,
+    },
+    // El recurso a previsualizar viaja por `search` (ver
+    // `planeadorRecursoPreviewSearchSchema`), no por params: un recurso recién
+    // agregado en el form todavía no tiene contraparte en el mock backend, así
+    // que no hay id contra el cual buscarlo.
+    planeadorRecursoPreview: {
+      path: "planeador/recursos/vista-previa",
+      getHref: () => "/app/planeador/recursos/vista-previa",
+    },
+    planeadorPlanilla: {
+      path: "planeador/planilla",
+      getHref: () => "/app/planeador/planilla",
     },
     gestionAcademicaInformes: {
       path: "gestion-academica/informes",

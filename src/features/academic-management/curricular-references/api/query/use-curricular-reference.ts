@@ -14,12 +14,17 @@ interface CurricularReferenceResponse {
   curricularReference?: CurricularReference
 }
 
+interface NivelRow {
+  id: number
+  codigo: string
+  nombre: string
+}
+
 interface CurricularReferenceRow {
   pk_referente_curricular: number
   nombre: string
   descripcion: string
-  fk_tnivel_ensenanza: number | null
-  nivel_educativo: string | null
+  niveles: NivelRow[] | string | null
   fk_tlv_enfoque_pedagogico: number | null
   enfoque_pedagogico: string | null
   fk_tlv_tipo_evaluacion: number | null
@@ -35,14 +40,21 @@ interface CurricularReferenceRow {
   active: boolean
 }
 
+function parseNiveles(niveles: CurricularReferenceRow["niveles"]): NivelRow[] {
+  if (!niveles) return []
+  const parsed = typeof niveles === "string" ? JSON.parse(niveles) : niveles
+  return Array.isArray(parsed) ? parsed : []
+}
+
 function toCurricularReference(row: CurricularReferenceRow, areas: CurricularReference["areas"]): CurricularReference {
   return {
     id: row.pk_referente_curricular,
     name: row.nombre,
-    educationLevel:
-      row.fk_tnivel_ensenanza != null
-        ? { id: row.fk_tnivel_ensenanza, code: "", name: row.nivel_educativo ?? "" }
-        : null,
+    educationLevels: parseNiveles(row.niveles).map((nivel) => ({
+      id: nivel.id,
+      code: nivel.codigo,
+      name: nivel.nombre,
+    })),
     description: row.descripcion,
     level1: row.nivel_1_etiqueta,
     level2: row.nivel_2_etiqueta,
