@@ -55,7 +55,7 @@ function toDateOnly(value: string): string {
   return value.slice(0, 10)
 }
 
-function toActividadResumen(row: ActividadMiaRow): Actividad {
+function toActividadResumen(row: ActividadMiaRow & { pk_tactividad: number }): Actividad {
   return {
     id: row.pk_tactividad,
     nombre: row.titulo,
