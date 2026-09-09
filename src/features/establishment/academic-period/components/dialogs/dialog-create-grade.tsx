@@ -327,6 +327,7 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
       <DialogContent
         className="max-h-[90dvh] overflow-y-auto p-4 sm:max-w-5xl sm:p-6"
         showCloseButton={false}
+        inert={confirmDiscardOpen}
       >
         <DialogHeader>
           <DialogTitle>{isEditing ? "Editar grado" : "Agregar grado"}</DialogTitle>

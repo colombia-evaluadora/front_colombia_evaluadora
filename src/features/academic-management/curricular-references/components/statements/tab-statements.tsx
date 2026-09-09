@@ -44,6 +44,8 @@ export function TabStatements({ reference }: TabStatementsProps) {
   )
   const [searchOpen, setSearchOpen] = useState(false)
   const [search, setSearch] = useState("")
+  const [evidenceSearchOpen, setEvidenceSearchOpen] = useState(false)
+  const [evidenceSearch, setEvidenceSearch] = useState("")
   const [selectedStatementId, setSelectedStatementId] = useState<number | null>(null)
   const [statementDialog, setStatementDialog] = useState<{ open: boolean; statement: CurricularStatement | null }>(
     { open: false, statement: null },
@@ -74,11 +76,11 @@ export function TabStatements({ reference }: TabStatementsProps) {
     selectedStatementId,
   )
   const hasReferenceAreas = reference.areas.length > 0
-  const ALL_AREAS = 0
-  const areaLabels = hasReferenceAreas
-    ? Object.fromEntries(reference.areas.map((area) => [area.id, area.name]))
-    : { [ALL_AREAS]: "Todas las áreas" }
-  const sortedEvidences = sortBySortKey(evidences, evidenceSort)
+  const areaLabels = Object.fromEntries(reference.areas.map((area) => [area.id, area.name]))
+  const filteredEvidences = evidences.filter((evidence) =>
+    evidence.text.toLowerCase().includes(evidenceSearch.trim().toLowerCase()),
+  )
+  const sortedEvidences = sortBySortKey(filteredEvidences, evidenceSort)
 
   const evidencePageCount = Math.max(1, Math.ceil(sortedEvidences.length / evidencePageSize))
   const clampedEvidencePageIndex = Math.min(evidencePageIndex, evidencePageCount - 1)
@@ -89,39 +91,31 @@ export function TabStatements({ reference }: TabStatementsProps) {
 
   useEffect(() => {
     setEvidencePageIndex(0)
-  }, [selectedStatementId, evidenceSort])
+  }, [selectedStatementId, evidenceSort, evidenceSearch])
 
   return (
     <div className="flex flex-col gap-4">
-      <Field orientation="vertical" variant="outlined" className="w-full">
-        <FieldLabel htmlFor="statement-area">Áreas o dimensiones</FieldLabel>
-        <ComboboxField
-          items={areaLabels}
-          value={areaId === null ? ALL_AREAS : areaId}
-          onValueChange={(value) => {
-            if (value == null) {
-              setAreaId(undefined)
-              return
-            }
-            setAreaId(value === ALL_AREAS ? null : (value as number))
-          }}
-        >
-          <ComboboxFieldTrigger id="statement-area" size="sm" className="h-12 w-full [&_svg]:size-5">
-            <ComboboxFieldValue placeholder="Seleccionar" />
-          </ComboboxFieldTrigger>
-          <ComboboxFieldContent>
-            {hasReferenceAreas ? (
-              reference.areas.map((area) => (
+      {hasReferenceAreas && (
+        <Field orientation="vertical" variant="outlined" className="w-full">
+          <FieldLabel htmlFor="statement-area">Áreas o dimensiones</FieldLabel>
+          <ComboboxField
+            items={areaLabels}
+            value={areaId}
+            onValueChange={(value) => setAreaId(value == null ? undefined : (value as number))}
+          >
+            <ComboboxFieldTrigger id="statement-area" size="sm" className="h-12 w-full [&_svg]:size-5">
+              <ComboboxFieldValue placeholder="Seleccionar" />
+            </ComboboxFieldTrigger>
+            <ComboboxFieldContent>
+              {reference.areas.map((area) => (
                 <ComboboxFieldItem key={area.id} value={area.id}>
                   {area.name}
                 </ComboboxFieldItem>
-              ))
-            ) : (
-              <ComboboxFieldItem value={ALL_AREAS}>Todas las áreas</ComboboxFieldItem>
-            )}
-          </ComboboxFieldContent>
-        </ComboboxField>
-      </Field>
+              ))}
+            </ComboboxFieldContent>
+          </ComboboxField>
+        </Field>
+      )}
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-[20rem_1fr]">
       <div className="flex flex-col gap-3">
@@ -230,17 +224,51 @@ export function TabStatements({ reference }: TabStatementsProps) {
           <p className="font-heading text-[17px] font-bold">
             {level2Label}s del {level1Label.toLowerCase()}
           </p>
-          <Button
-            type="button"
-            variant="fill"
-            color="primary"
-            size="sm"
-            disabled={selectedStatementId == null}
-            onClick={() => setEvidenceDialog({ open: true, evidence: null })}
-          >
-            <ControlPointIcon data-icon="inline-start" className="size-5" />
-            Agregar {level2Label.toLowerCase()}s
-          </Button>
+          <div className="flex items-center gap-2">
+            <Popover open={evidenceSearchOpen} onOpenChange={setEvidenceSearchOpen}>
+              <PopoverTrigger
+                render={
+                  <Button
+                    type="button"
+                    variant="outline"
+                    color="primary"
+                    size="icon-sm"
+                    aria-label="Buscar"
+                    disabled={selectedStatementId == null}
+                  />
+                }
+              >
+                <MagnifyingGlassIcon />
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-72 p-2">
+                <InputGroup className="h-10 w-full rounded-full border-transparent border-b-transparent has-[[data-slot=input-group-control]:focus-visible]:border-transparent has-[[data-slot=input-group-control]:focus-visible]:border-b-transparent has-[[data-slot=input-group-control]:focus-visible]:ring-0">
+                  <InputGroupAddon align="inline-start" className="ml-2">
+                    <MagnifyingGlassIcon className="text-muted-foreground size-4" />
+                  </InputGroupAddon>
+                  <InputGroupInput
+                    autoFocus
+                    type="search"
+                    autoComplete="off"
+                    value={evidenceSearch}
+                    onChange={(event) => setEvidenceSearch(event.target.value)}
+                    placeholder="Buscar por"
+                    className="[&::-webkit-search-cancel-button]:appearance-none"
+                  />
+                </InputGroup>
+              </PopoverContent>
+            </Popover>
+            <Button
+              type="button"
+              variant="fill"
+              color="primary"
+              size="sm"
+              disabled={selectedStatementId == null}
+              onClick={() => setEvidenceDialog({ open: true, evidence: null })}
+            >
+              <ControlPointIcon data-icon="inline-start" className="size-5" />
+              Agregar {level2Label.toLowerCase()}s
+            </Button>
+          </div>
         </div>
 
         <div className="p-4">
