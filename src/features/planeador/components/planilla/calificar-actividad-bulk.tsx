@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react"
-import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
+import { useNotify } from "@/components/notice/notice-context"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
@@ -47,7 +47,12 @@ function buildBulkInputs(
   if (instrumento.instrumento === "RUBRICA") {
     return value
       .filter((n) => n.nivelId != null)
-      .map((n) => ({ ...base, tipo: "RUBRICA" as const, pkCriterio: n.criterioId, pkNivel: n.nivelId! }))
+      .map((n) => ({
+        ...base,
+        tipo: "RUBRICA" as const,
+        pkCriterio: n.criterioId,
+        pkNivel: n.nivelId!,
+      }))
   }
   if (instrumento.instrumento === "LISTA_COTEJO") {
     return value.map((n) => ({
@@ -57,7 +62,10 @@ function buildBulkInputs(
       cumplido: true,
     }))
   }
-  if (instrumento.instrumento === "ESCALA_VALORACION" && instrumento.definicion.niveles.length > 0) {
+  if (
+    instrumento.instrumento === "ESCALA_VALORACION" &&
+    instrumento.definicion.niveles.length > 0
+  ) {
     const nivelId = value[0]?.nivelId
     if (nivelId == null) return []
     return [{ ...base, tipo: "ESCALA_VALORACION" as const, pkNivel: nivelId }]
@@ -89,6 +97,7 @@ export function CalificarActividadBulk({
   )
   const [filtro, setFiltro] = useState("")
   const [guardando, setGuardando] = useState(false)
+  const { notify } = useNotify()
 
   const { data: instrumento } = useInstrumentoActividadQuery(actividadId)
   const bulkMutation = useCalificarBulkMutation()
@@ -96,9 +105,7 @@ export function CalificarActividadBulk({
   const filtrados = useMemo(() => {
     const term = filtro.trim().toLowerCase()
     if (!term) return estudiantes
-    return estudiantes.filter((e) =>
-      `${e.nombres} ${e.apellidos}`.toLowerCase().includes(term),
-    )
+    return estudiantes.filter((e) => `${e.nombres} ${e.apellidos}`.toLowerCase().includes(term))
   }, [estudiantes, filtro])
 
   function toggle(id: number) {
@@ -113,7 +120,8 @@ export function CalificarActividadBulk({
   const completitud = instrumentoCompletitud(instrumento, nota)
   const escalaNumericaOOtro =
     instrumento?.instrumento === "OTRO" ||
-    (instrumento?.instrumento === "ESCALA_VALORACION" && instrumento.definicion.niveles.length === 0)
+    (instrumento?.instrumento === "ESCALA_VALORACION" &&
+      instrumento.definicion.niveles.length === 0)
 
   async function guardar() {
     if (!instrumento || seleccionados.size === 0) return
@@ -122,10 +130,12 @@ export function CalificarActividadBulk({
     setGuardando(true)
     try {
       await Promise.all(inputs.map((input) => bulkMutation.mutateAsync(input)))
-      toast.success("Calificación en bloque guardada.")
+      notify("Calificación en bloque guardada.")
       onVolver()
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "No se pudo guardar la calificación.")
+      notify(error instanceof Error ? error.message : "No se pudo guardar la calificación.", {
+        variant: "error",
+      })
     } finally {
       setGuardando(false)
     }
@@ -155,8 +165,8 @@ export function CalificarActividadBulk({
 
       {escalaNumericaOOtro && (
         <p className="text-muted-foreground text-xs">
-          Este instrumento no admite calificación en bloque — califique estudiante por
-          estudiante desde la grilla.
+          Este instrumento no admite calificación en bloque — califique estudiante por estudiante
+          desde la grilla.
         </p>
       )}
 

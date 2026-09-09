@@ -30,6 +30,11 @@ interface ActividadCalendarioRow {
   asignatura: string | null
   area: string | null
   estado: string
+  /** Confirmado real (colección Postman `planeador-delta-cambios`, punto
+   *  3.2) — reemplaza al `pk_tactividad` que la celda del calendario
+   *  mostraba antes por error donde debía ir el grado+grupo (`"34 | MATEMA…"`
+   *  en vez de `"601 | MATEMA…"`). Ver el comentario de `Actividad.gradoGrupo`. */
+  grado_grupo: string | null
 }
 
 export interface ActividadCalendario {
@@ -42,6 +47,9 @@ export interface ActividadCalendario {
    *  tienen área general (ver la fila cruda) — nunca los dos a la vez. */
   label: string
   status: ActividadStatus
+  /** Ver `ActividadCalendarioRow.grado_grupo` — `undefined` solo si el
+   *  backend real todavía no lo manda para esta fila. */
+  gradoGrupo?: string
 }
 
 // Vienen como datetime ISO completo ("2026-09-01T00:00:00.000Z"),
@@ -61,6 +69,7 @@ function toActividadCalendario(row: ActividadCalendarioRow): ActividadCalendario
     titulo: row.titulo,
     label: row.asignatura ?? row.area ?? "",
     status: estadoDerivadoToStatus(row.estado),
+    gradoGrupo: row.grado_grupo ?? undefined,
   }
 }
 

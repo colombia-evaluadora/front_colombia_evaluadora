@@ -141,13 +141,17 @@ const CATALOGS_BY_CATEGORIA: Record<string, () => SelectCategoryRow[]> = {
   // Catálogo `AGRUPACION_PLANILLA` real — resuelve el "Ver por" de la
   // Planilla de calificación (agrupar columnas por unidad temática o
   // dejarlas sueltas por actividad); el Planeador ya no lo hardcodea en el
-  // `<Select>`. Sin código numérico confirmado contra una respuesta real
-  // todavía — se empareja por nombre (`use-agrupacion-planilla-catalog.ts`).
+  // `<Select>`. `valor` calcado de una respuesta real (colección Postman
+  // `planeador-delta-cambios`, punto 7): `ACTIVIDAD`/`UNIDAD`, no el label —
+  // `use-agrupacion-planilla-catalog.ts` empareja por acá.
   AGRUPACION_PLANILLA: () =>
-    ["Actividades", "Unidad"].map((nombre, i) => ({
+    [
+      { nombre: "Actividades", valor: "ACTIVIDAD" },
+      { nombre: "Unidad", valor: "UNIDAD" },
+    ].map(({ nombre, valor }, i) => ({
       pk_lista_valor: i + 1,
       nombre,
-      valor: nombre,
+      valor,
       accion: null,
     })),
   // Catálogo de asistencias -- el valor 4 no existe (ver Postman de

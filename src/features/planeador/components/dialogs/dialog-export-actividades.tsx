@@ -1,6 +1,6 @@
 import { useState } from "react"
-import { toast } from "sonner"
 
+import { useNotify } from "@/components/notice/notice-context"
 import {
   FileDownloadOutlinedIcon,
   FilePdfIcon,
@@ -21,10 +21,7 @@ import {
 import { Button } from "@/components/ui/button"
 
 import { useExportActividades } from "@/features/planeador/api/mutations/export-actividades"
-import type {
-  Actividad,
-  ExportFormat,
-} from "@/features/planeador/api/types/actividad"
+import type { Actividad, ExportFormat } from "@/features/planeador/api/types/actividad"
 
 interface DialogExportActividadesProps {
   /**
@@ -45,19 +42,18 @@ interface DialogExportActividadesProps {
  * `TableScreenActions` del listado —acá no se renderiza solo, para no
  * duplicar el botón si la página lo quiere posicionar a mano—.
  */
-export function DialogExportActividades({
-  rows,
-}: DialogExportActividadesProps) {
+export function DialogExportActividades({ rows }: DialogExportActividadesProps) {
   const [open, setOpen] = useState(false)
+  const { notify } = useNotify()
 
   const exportAll = useExportActividades({
     mutationConfig: {
       onSuccess: (result) => {
         if (result.status === "error") {
-          toast.error(result.message)
+          notify(result.message, { variant: "error" })
           return
         }
-        toast.success(result.message)
+        notify(result.message)
         setOpen(false)
       },
     },
@@ -90,8 +86,8 @@ export function DialogExportActividades({
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>
-            Elige un formato para exportar las {rows.length} actividad(es) que
-            coinciden con los filtros activos.
+            Elige un formato para exportar las {rows.length} actividad(es) que coinciden con los
+            filtros activos.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="sm:justify-between">

@@ -1,6 +1,6 @@
 import { useState } from "react"
-import { toast } from "sonner"
 
+import { useNotify } from "@/components/notice/notice-context"
 import {
   CheckCircleIcon,
   FileUploadOutlinedIcon,
@@ -52,6 +52,7 @@ export function DialogImportarActividadesJson({
   const [actividades, setActividades] = useState<ActividadExportada[] | null>(null)
   const [informe, setInforme] = useState<InformeImportacion | null>(null)
   const [parseError, setParseError] = useState<string | null>(null)
+  const { notify } = useNotify()
 
   const validar = useImportarActividadesJson({
     mutationConfig: {
@@ -63,9 +64,9 @@ export function DialogImportarActividadesJson({
     mutationConfig: {
       onSuccess: (data) => {
         setInforme(data)
-        if (data.aplicadas > 0) toast.success(data.mensaje)
+        if (data.aplicadas > 0) notify(data.mensaje)
       },
-      onError: () => toast.error("No se pudo importar el archivo."),
+      onError: () => notify("No se pudo importar el archivo.", { variant: "error" }),
     },
   })
 
@@ -122,8 +123,8 @@ export function DialogImportarActividadesJson({
         <DialogHeader>
           <DialogTitle>Importar actividades</DialogTitle>
           <DialogDescription>
-            Subí un archivo <code>.json</code> exportado desde el Planeador (o con el
-            mismo formato) para revisarlo antes de crear las actividades.
+            Subí un archivo <code>.json</code> exportado desde el Planeador (o con el mismo formato)
+            para revisarlo antes de crear las actividades.
           </DialogDescription>
         </DialogHeader>
 
@@ -197,7 +198,9 @@ export function DialogImportarActividadesJson({
               aria-busy={aplicar.isPending}
               onClick={handleAplicar}
             >
-              {aplicar.isPending && <SpinnerIcon data-icon="inline-start" className="animate-spin" />}
+              {aplicar.isPending && (
+                <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+              )}
               Importar{informe ? ` (${informe.validas})` : ""}
             </Button>
           )}

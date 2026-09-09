@@ -2,6 +2,7 @@ import { useMemo, useState } from "react"
 import { Link } from "@tanstack/react-router"
 
 import { Button } from "@/components/ui/button"
+import { NoticeOutlet, NoticeProvider } from "@/components/notice/notice-context"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,7 +25,12 @@ import {
   TableScreenTitle,
   TableScreenToolbar,
 } from "@/components/layout/table-screen"
-import { DotsThreeIcon, InboxIcon, MagnifyingGlassIcon, PlusCircleIcon } from "@/components/ui/icons"
+import {
+  DotsThreeIcon,
+  InboxIcon,
+  MagnifyingGlassIcon,
+  PlusCircleIcon,
+} from "@/components/ui/icons"
 import { paths } from "@/config/paths"
 
 import {
@@ -121,116 +127,119 @@ export function PlaneadorPlanillaPage() {
   }))
 
   return (
-    <TableScreen>
-      <TableScreenHeader>
-        <TableScreenTitle
-          action={
-            <div className="flex gap-0">
-              <Button
-                color="primary"
-                size="sm"
-                variant="fill"
-                aria-label="Nueva actividad"
-                className="rounded-r-none border-r-0"
-                render={<Link to={paths.app.planeadorActividadCrear.getHref()} />}
-              >
-                <PlusCircleIcon data-icon="inline-start" />
-                Nueva actividad
-              </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger
-                  render={
-                    <Button
-                      color="primary"
-                      size="sm"
-                      variant="fill"
-                      aria-label="Más opciones"
-                      className="rounded-l-none"
-                    />
-                  }
+    <NoticeProvider>
+      <TableScreen>
+        <TableScreenHeader>
+          <TableScreenTitle
+            action={
+              <div className="flex gap-0">
+                <Button
+                  color="primary"
+                  size="sm"
+                  variant="fill"
+                  aria-label="Nueva actividad"
+                  className="rounded-r-none border-r-0"
+                  render={<Link to={paths.app.planeadorActividadCrear.getHref()} />}
                 >
-                  <DotsThreeIcon />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem disabled>Exportar todo</DropdownMenuItem>
-                  <DropdownMenuItem disabled>Importar</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          }
-        >
-          Planilla de calificación
-        </TableScreenTitle>
-
-        <TableScreenToolbar>
-          <div className="grid flex-1 gap-4 sm:grid-cols-3">
-            <Field variant="outlined">
-              <FieldLabel>Ver por</FieldLabel>
-              <Select value={verPor} onValueChange={(v) => v && setVerPor(v as VerPorOption)}>
-                <SelectTrigger>
-                  <SelectValue>
-                    {(v) => opcionesVerPor.find((o) => o.key === v)?.label ?? "Actividad"}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {opcionesVerPor.map((option) => (
-                    <SelectItem key={option.key} value={option.key}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
-
-            <Field variant="outlined">
-              <FieldLabel htmlFor="buscar-planilla">Buscar</FieldLabel>
-              <div className="relative">
-                <MagnifyingGlassIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  id="buscar-planilla"
-                  placeholder={verPor === "unidad" ? "Buscar unidad" : "Buscar actividad"}
-                  value={buscar}
-                  onChange={(e) => setBuscar(e.target.value)}
-                  className="pl-9"
-                />
+                  <PlusCircleIcon data-icon="inline-start" />
+                  Nueva actividad
+                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    render={
+                      <Button
+                        color="primary"
+                        size="sm"
+                        variant="fill"
+                        aria-label="Más opciones"
+                        className="rounded-l-none"
+                      />
+                    }
+                  >
+                    <DotsThreeIcon />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem disabled>Exportar todo</DropdownMenuItem>
+                    <DropdownMenuItem disabled>Importar</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
-            </Field>
+            }
+          >
+            Planilla de calificación
+          </TableScreenTitle>
+          <NoticeOutlet className="mx-(--screen-spacing) my-4" />
 
-            <Field variant="outlined">
-              <FieldLabel>Filtro</FieldLabel>
-              <FiltroPlanillaCascada value={filtro} onChange={setFiltro} />
-            </Field>
-          </div>
-        </TableScreenToolbar>
-      </TableScreenHeader>
+          <TableScreenToolbar>
+            <div className="grid flex-1 gap-4 sm:grid-cols-3">
+              <Field variant="outlined">
+                <FieldLabel>Ver por</FieldLabel>
+                <Select value={verPor} onValueChange={(v) => v && setVerPor(v as VerPorOption)}>
+                  <SelectTrigger>
+                    <SelectValue>
+                      {(v) => opcionesVerPor.find((o) => o.key === v)?.label ?? "Actividad"}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {opcionesVerPor.map((option) => (
+                      <SelectItem key={option.key} value={option.key}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
 
-      <TableScreenBody>
-        {!filtro && (
-          <div className="flex flex-col items-center justify-center gap-3 py-24 text-center">
-            <InboxIcon className="size-10 text-muted-foreground" />
-            <p className="text-muted-foreground text-sm">Seleccione Grado, Grupo o Asignatura</p>
-          </div>
-        )}
+              <Field variant="outlined">
+                <FieldLabel htmlFor="buscar-planilla">Buscar</FieldLabel>
+                <div className="relative">
+                  <MagnifyingGlassIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="buscar-planilla"
+                    placeholder={verPor === "unidad" ? "Buscar unidad" : "Buscar actividad"}
+                    value={buscar}
+                    onChange={(e) => setBuscar(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+              </Field>
 
-        {filtro && !columnaEnBulk && (
-          <PlanillaGrid
-            columnas={columnas}
-            verPor={verPor}
-            filas={filasFiltradas}
-            onAbrirBulk={setColumnaEnBulk}
-          />
-        )}
+              <Field variant="outlined">
+                <FieldLabel>Filtro</FieldLabel>
+                <FiltroPlanillaCascada value={filtro} onChange={setFiltro} />
+              </Field>
+            </div>
+          </TableScreenToolbar>
+        </TableScreenHeader>
 
-        {filtro && columnaEnBulk && (
-          <CalificarActividadBulk
-            actividadId={columnaEnBulk.pkTactividad}
-            titulo={columnaEnBulk.titulo}
-            fecha={columnaEnBulk.fechaInicio}
-            estudiantes={estudiantesEnBulk}
-            onVolver={() => setColumnaEnBulk(null)}
-          />
-        )}
-      </TableScreenBody>
-    </TableScreen>
+        <TableScreenBody>
+          {!filtro && (
+            <div className="flex flex-col items-center justify-center gap-3 py-24 text-center">
+              <InboxIcon className="size-10 text-muted-foreground" />
+              <p className="text-muted-foreground text-sm">Seleccione Grado, Grupo o Asignatura</p>
+            </div>
+          )}
+
+          {filtro && !columnaEnBulk && (
+            <PlanillaGrid
+              columnas={columnas}
+              verPor={verPor}
+              filas={filasFiltradas}
+              onAbrirBulk={setColumnaEnBulk}
+            />
+          )}
+
+          {filtro && columnaEnBulk && (
+            <CalificarActividadBulk
+              actividadId={columnaEnBulk.pkTactividad}
+              titulo={columnaEnBulk.titulo}
+              fecha={columnaEnBulk.fechaInicio}
+              estudiantes={estudiantesEnBulk}
+              onVolver={() => setColumnaEnBulk(null)}
+            />
+          )}
+        </TableScreenBody>
+      </TableScreen>
+    </NoticeProvider>
   )
 }

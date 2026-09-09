@@ -198,6 +198,17 @@ export interface Actividad {
   asignatura: string
   grado: string
   grupo: string
+  /**
+   * Etiqueta grado+grupo ya compuesta por el backend (`grado_grupo` real,
+   * confirmado — colección Postman `planeador-delta-cambios`, punto 3): NO
+   * es `grado + " " + grupo`, porque conviven dos convenciones de
+   * `TGRUPO.NOMBRE` (el nombre ya trae el grado pegado, `"803M"`, o es solo
+   * el consecutivo, `"01"`, con el código de grado a veces negativo en
+   * Preescolar). Reemplaza al `pk_tactividad` que se mostraba antes por
+   * error en la celda del calendario (`planeador-month-grid.tsx`).
+   * `undefined` en el mock y en filas reales de antes de este cambio.
+   */
+  gradoGrupo?: string
   /** `PK_TASIGNATURA`/`PK_TGRADO`/`PK_TGRUPO` reales — solo se conocen
    *  cuando el docente ELIGE en los `<Select>` de "Grado / Grupo" y
    *  "Asignatura" (`useDocenteGruposQuery`/`useDocenteGradoAsignaturaQuery`,
