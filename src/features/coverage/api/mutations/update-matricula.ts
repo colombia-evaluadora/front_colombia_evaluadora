@@ -9,16 +9,20 @@ export interface UpdateMatriculaMutationInput {
   id: string
   values: CreateMatriculaInput
   pkTpadre: number | null
+  pkUsuarioAcudiente: number | null
+  actualizarAcudiente: boolean
 }
 
 async function updateMatricula({
   id,
   values,
   pkTpadre,
+  pkUsuarioAcudiente,
+  actualizarAcudiente,
 }: UpdateMatriculaMutationInput): Promise<MatriculaMutationResult> {
   await patchMultipart(
     `/eval-col/cobertura-academica/matricula/${id}`,
-    toUpdateMatriculaBody(values, { pkTpadre }),
+    toUpdateMatriculaBody(values, { pkTpadre, pkUsuarioAcudiente, actualizarAcudiente }),
     {},
   )
   return { status: "ok", message: "Matrícula actualizada correctamente.", matricula: null }

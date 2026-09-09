@@ -35,6 +35,8 @@ import { matriculaHandlers } from "@/mocks/handlers/matricula"
 import { curricularReferencesHandlers } from "@/mocks/handlers/academic-management/curricular-references"
 import { curricularStatementsHandlers } from "@/mocks/handlers/academic-management/curricular-statements"
 import { planeadorHandlers } from "@/mocks/handlers/planeador"
+import { planeadorDocentesHandlers } from "@/mocks/handlers/planeador/docentes"
+import { planeadorPlanillaHandlers } from "@/mocks/handlers/planeador/planilla"
 import { asistenciaHandlers } from "@/mocks/handlers/asistencia/asistencia"
 
 export const handlers = [
@@ -72,6 +74,8 @@ export const handlers = [
   ...preMatriculaHandlers,
   ...enrollmentsHandlers,
   ...planeadorHandlers,
+  ...planeadorDocentesHandlers,
+  ...planeadorPlanillaHandlers,
   ...matriculaHandlers,
   ...curricularReferencesHandlers,
   ...curricularStatementsHandlers,

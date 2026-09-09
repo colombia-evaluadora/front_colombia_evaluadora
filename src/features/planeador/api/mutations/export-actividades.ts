@@ -18,7 +18,7 @@ function exportActividades(input: ExportActividadesInput): Promise<ExportResult>
   // viaja en el body (el cliente manda el array ya filtrado, como en
   // matricula). Cuando el backend real acepte los filtros en vez de las
   // filas, basta con cambiar este `filters` por la forma `{...}` propia.
-  return api.post(`/eval-col/planeador/actividad/export-all`, input)
+  return api.post(`/eval-col/planeador/actividades/export-all`, input)
 }
 
 interface UseExportActividadesOptions {

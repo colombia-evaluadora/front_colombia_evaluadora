@@ -14,63 +14,41 @@ import {
 import { Button } from "@/components/ui/button"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
 import { PencilIcon, SpinnerIcon } from "@/components/ui/icons"
 
 import { useAsistenciaEditarMutation } from "@/features/academic-management/asistencia/api/mutations/use-asistencia-editar-mutation"
-import type { AsistenciaQueryRow, TipoAsistencia } from "@/features/academic-management/asistencia/api/types/asistencia"
-
-// Catálogo COMPLETO (1,2,3,5,6) -- a diferencia del selector de "Asistencia
-// manual" (simplificado a 3 opciones para altas nuevas), acá se está
-// editando un registro que ya puede tener un estado "justificado" (3/6): si
-// el Select solo tuviera 1/2/5, una fila justificada no matchearía ningún
-// item y el trigger quedaría en blanco.
-const TIPO_OPTIONS_COMPLETO: { value: TipoAsistencia; label: string }[] = [
-  { value: 1, label: "Asistió" },
-  { value: 2, label: "No asistió" },
-  { value: 3, label: "No asistió (justificado)" },
-  { value: 5, label: "Llegó tarde" },
-  { value: 6, label: "Llegó tarde (justificado)" },
-]
+import { useTipoAsistenciaCatalogQuery } from "@/features/academic-management/asistencia/api/query/use-tipo-asistencia-catalog-query"
+import { nombreMateriaSeguimiento } from "@/features/academic-management/asistencia/api/ui-mappings"
+import type { AsistenciaQueryRow } from "@/features/academic-management/asistencia/api/types/asistencia"
 
 interface EditarSeguimientoDialogProps {
   row: AsistenciaQueryRow
 }
 
-/** Editar UN registro de "Seguimiento" (PATCH /asistencias/:ID) — estado + observación. */
+/** Editar UN registro de "Seguimiento" (PATCH /asistencias/:ID) — solo el tipo de asistencia. */
 export function EditarSeguimientoDialog({ row }: EditarSeguimientoDialogProps) {
   const { notify } = useNotify()
   const [open, setOpen] = React.useState(false)
   const [tipo, setTipo] = React.useState(row.tipo_asistencia_valor.toString())
-  const [observacion, setObservacion] = React.useState(row.observacion ?? "")
 
   const editar = useAsistenciaEditarMutation()
+  const { data: tipoOptions = [] } = useTipoAsistenciaCatalogQuery()
 
   // El diálogo reabre siempre con el valor actual de la fila -- si se editó
   // una vez y se vuelve a abrir, no debe arrastrar el borrador anterior.
   function handleOpenChange(next: boolean) {
-    if (next) {
-      setTipo(row.tipo_asistencia_valor.toString())
-      setObservacion(row.observacion ?? "")
-    }
+    if (next) setTipo(row.tipo_asistencia_valor.toString())
     setOpen(next)
   }
 
   function handleGuardar() {
     const tipoNum = Number(tipo) as AsistenciaQueryRow["tipo_asistencia_valor"]
-    const observacionTrim = observacion.trim()
-    const teniaObservacion = (row.observacion ?? "").length > 0
 
     editar.mutate(
       {
         pkTasistencia: row.pk_tasistencia,
         body: {
           ...(tipoNum !== row.tipo_asistencia_valor && { TIPO_ASISTENCIA: tipoNum }),
-          // Vacío y antes tenía algo -> limpiar explícito (un campo ausente
-          // significa "no tocar", no "borrar" -- ver tipo `AsistenciaEditarRequest`).
-          ...(observacionTrim === "" && teniaObservacion && { LIMPIAR_OBSERVACION: true }),
-          ...(observacionTrim !== "" &&
-            observacionTrim !== (row.observacion ?? "") && { OBSERVACION: observacionTrim }),
         },
       },
       {
@@ -95,35 +73,29 @@ export function EditarSeguimientoDialog({ row }: EditarSeguimientoDialogProps) {
         <DialogHeader>
           <DialogTitle>Editar asistencia</DialogTitle>
           <DialogDescription>
-            {row.estudiante} · {row.grupo} · {row.asignatura}
+            {row.estudiante} · {row.grupo} · {nombreMateriaSeguimiento(row)}
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col gap-4">
-          <Field>
+          <Field orientation="vertical" variant="outlined" className="gap-2">
             <FieldLabel>Tipo de asistencia</FieldLabel>
-            <Select value={tipo} onValueChange={(value) => setTipo(value ?? "")}>
+            <Select
+              items={Object.fromEntries(tipoOptions.map((opt) => [opt.value.toString(), opt.label]))}
+              value={tipo}
+              onValueChange={(value) => setTipo(value ?? "")}
+            >
               <SelectTrigger variant="outlined">
                 <SelectValue placeholder="Seleccionar" />
               </SelectTrigger>
               <SelectContent>
-                {TIPO_OPTIONS_COMPLETO.map((opt) => (
+                {tipoOptions.map((opt) => (
                   <SelectItem key={opt.value} value={opt.value.toString()}>
                     {opt.label}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-          </Field>
-
-          <Field>
-            <FieldLabel>Observación</FieldLabel>
-            <Textarea
-              value={observacion}
-              onChange={(e) => setObservacion(e.target.value)}
-              placeholder="Sin observación"
-              rows={3}
-            />
           </Field>
         </div>
 

@@ -23,10 +23,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { ConfirmDiscardDialog } from "@/components/confirm-discard-dialog"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogFooter,
   DialogHeader,
@@ -135,6 +135,11 @@ export function AreaSubjectFormDialog({
     ordenReportes: areaSubject?.ordenReportes ?? 0,
   }
 
+  const savedSnapshotRef = useRef({
+    values: areaDefaults,
+    subjects: areaSubject?.subjects.map(itemToDraft) ?? [],
+  })
+
   const createAreaSubject = useCreateAreaSubject({
     mutationConfig: {
       onError: (error) => {
@@ -197,8 +202,7 @@ export function AreaSubjectFormDialog({
         academicPeriodId,
       })
 
-      setSuccessOpen(true)
-
+      savedSnapshotRef.current = { values: base, subjects }
       setSuccessOpen(true)
     },
   })
@@ -212,6 +216,21 @@ export function AreaSubjectFormDialog({
     }
   }
 
+  const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false)
+
+  function requestClose() {
+    if (isPending) return
+    const isDirty =
+      JSON.stringify(form.state.values) !== JSON.stringify(savedSnapshotRef.current.values) ||
+      JSON.stringify(subjects) !== JSON.stringify(savedSnapshotRef.current.subjects) ||
+      JSON.stringify(draft) !== JSON.stringify(emptyDraft())
+    if (isDirty) {
+      setConfirmDiscardOpen(true)
+      return
+    }
+    handleOpenChange(false)
+  }
+
   function resetEditForm() {
     form.reset()
     setSubjects(areaSubject?.subjects.map(itemToDraft) ?? [])
@@ -223,6 +242,7 @@ export function AreaSubjectFormDialog({
     setNotice(null)
     setPageIndex(0)
     nombreInternoEditedRef.current = false
+    savedSnapshotRef.current = { values: areaDefaults, subjects: areaSubject?.subjects.map(itemToDraft) ?? [] }
   }
 
   function resetCreateForm() {
@@ -232,6 +252,7 @@ export function AreaSubjectFormDialog({
     setSubjectsStarted(false)
     setDraft(emptyDraft())
     setSelectedIndexes(new Set())
+    savedSnapshotRef.current = { values: areaDefaults, subjects: [] }
 
     cancelEditSubject()
 
@@ -472,7 +493,13 @@ export function AreaSubjectFormDialog({
 
   return (
     <>
-      <Dialog open={open} onOpenChange={handleOpenChange}>
+      <Dialog
+        open={open}
+        onOpenChange={(next) => {
+          if (next) handleOpenChange(true)
+          else requestClose()
+        }}
+      >
         {isEdit ? (
           <DialogTrigger render={<Button variant="ghost" color="neutral" size="icon-sm" />}>
             <span className="sr-only">Editar área</span>
@@ -486,7 +513,10 @@ export function AreaSubjectFormDialog({
         )}
 
         <DialogContent
-          className={subjectsStarted ? "sm:max-w-6xl" : "sm:max-w-5xl"}
+          className={cn(
+            "max-h-[85vh] overflow-y-auto",
+            subjectsStarted ? "sm:max-w-6xl" : "sm:max-w-5xl",
+          )}
           showCloseButton={false}
         >
           <DialogHeader>
@@ -897,12 +927,16 @@ export function AreaSubjectFormDialog({
                 Guardar
               </Button>
             )}
-            <DialogClose
-              render={<Button size="sm" type="button" variant="fill" color="neutral" />}
+            <Button
+              size="sm"
+              type="button"
+              variant="fill"
+              color="neutral"
+              onClick={requestClose}
             >
               <XIcon data-icon="inline-start" />
               Cancelar
-            </DialogClose>
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -964,6 +998,14 @@ export function AreaSubjectFormDialog({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <ConfirmDiscardDialog
+        open={confirmDiscardOpen}
+        onOpenChange={setConfirmDiscardOpen}
+        onConfirm={() => {
+          setConfirmDiscardOpen(false)
+          handleOpenChange(false)
+        }}
+      />
     </>
   )
 }

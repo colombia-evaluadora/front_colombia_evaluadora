@@ -136,7 +136,9 @@ export function createColumns({ onEdit }: CurricularReferenceColumnsOptions): Co
       id: "educationLevel",
       meta: { label: "Nivel educativo" },
       header: ({ column }) => <DataTableColumnHeader column={column} title="Nivel educativo" />,
-      cell: ({ row }) => <WrappedTextCell text={row.original.educationLevel?.name ?? "—"} />,
+      cell: ({ row }) => (
+        <WrappedTextCell text={row.original.educationLevels.map((level) => level.name).join(", ") || "—"} />
+      ),
       enableHiding: false,
     },
     {

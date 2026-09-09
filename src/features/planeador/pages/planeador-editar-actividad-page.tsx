@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { Link, useNavigate, useParams } from "@tanstack/react-router"
+import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -16,7 +17,9 @@ import { paths } from "@/config/paths"
 import { isNotFoundError } from "@/lib/api-client"
 
 import { useActividadDetalleQuery } from "@/features/planeador/api/query/use-actividad-detalle-query"
+import { useUpdateActividad } from "@/features/planeador/api/mutations/update-actividad"
 import { EditarActividadForm } from "@/features/planeador/components/forms/form-editar-actividad"
+import type { Actividad } from "@/features/planeador/api/types/actividad"
 
 const FORM_ID = "editar-actividad-form"
 
@@ -28,15 +31,16 @@ const FORM_ID = "editar-actividad-form"
  * aparecen cuando hay cambios sin guardar (mismo patrón que el editar de
  * Establecimiento Educativo).
  *
- * El form carga la actividad vía `useActividadDetalleQuery`. La mutación
- * real queda fuera de esta iteración: los inputs son editables visualmente,
- * pero no hay endpoint ni `useUpdate` todavía.
+ * El form carga la actividad vía `useActividadDetalleQuery` y guarda con
+ * `useUpdateActividad` (`PUT /planeador/actividades/:id`, parcial).
  */
 export function PlaneadorEditarActividadPage() {
   const navigate = useNavigate()
   const { actividadId } = useParams({ strict: false }) as { actividadId?: string }
 
-  const { data: actividad, isPending, isError, error } = useActividadDetalleQuery(actividadId)
+  const { data: actividad, isPending, isError, error } = useActividadDetalleQuery(
+    actividadId ? Number(actividadId) : undefined,
+  )
 
   if (!actividadId) {
     return (
@@ -79,7 +83,19 @@ function EditarActividadPageContent({
   onClose: () => void
 }) {
   const [isDirty, setIsDirty] = useState(false)
-  const [isSaving, setIsSaving] = useState(false)
+
+  const updateMutation = useUpdateActividad({
+    mutationConfig: {
+      onSuccess: () => {
+        toast.success("Actividad actualizada correctamente.")
+        setIsDirty(false)
+        onClose()
+      },
+      onError: (error) => {
+        toast.error(error.message || "No se pudo actualizar la actividad.")
+      },
+    },
+  })
 
   return (
     <TableScreen>
@@ -118,6 +134,9 @@ function EditarActividadPageContent({
             actividad={actividad}
             formId={FORM_ID}
             onDirtyChange={setIsDirty}
+            onSubmit={(values: Actividad) =>
+              updateMutation.mutate({ actividadId: actividad.id, data: values })
+            }
           />
         )}
       </TableScreenBody>
@@ -136,20 +155,14 @@ function EditarActividadPageContent({
               color="primary"
               variant="fill"
               size="sm"
-              disabled={isSaving}
-              onClick={() => {
-                // Stub de guardado: cuando exista `useUpdateActividad`,
-                // acá arranca la mutación y se setea isSaving en consecuencia.
-                setIsSaving(true)
-                setTimeout(() => {
-                  setIsSaving(false)
-                  setIsDirty(false)
-                  onClose()
-                }, 300)
-              }}
+              disabled={updateMutation.isPending}
             >
-              {isSaving ? <SpinnerIcon data-icon="inline-start" className="animate-spin" /> : <CheckIcon data-icon="inline-start" />}
-              {isSaving ? "Guardando..." : "Guardar"}
+              {updateMutation.isPending ? (
+                <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+              ) : (
+                <CheckIcon data-icon="inline-start" />
+              )}
+              {updateMutation.isPending ? "Guardando..." : "Guardar"}
             </Button>
           </>
         ) : (

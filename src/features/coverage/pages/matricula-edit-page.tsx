@@ -22,6 +22,8 @@ import { useMatriculaCampusesQuery } from "@/features/coverage/api/query/use-mat
 import { useMatriculaDependentCatalogsQuery } from "@/features/coverage/api/query/use-matricula-dependent-catalogs-query"
 import { useUpdateMatricula } from "@/features/coverage/api/mutations/update-matricula"
 import { updatePersona } from "@/features/coverage/api/mutations/update-persona"
+import { registerMatriculaPersona } from "@/features/coverage/api/mutations/register-matricula-persona"
+import { findMatriculaUsuarioPorDocumento } from "@/features/coverage/api/query/use-matricula-usuario-por-documento"
 import { useMoveMatricula } from "@/features/coverage/api/mutations/move-matricula"
 import { useMunicipalitiesQuery } from "@/features/establishment/institution/api/query/use-municipalities"
 import { MatriculaFormBody } from "@/features/coverage/components/forms/matricula-form-body"
@@ -102,6 +104,10 @@ function MatriculaEditPageContent() {
   const initialGradeRef = useRef<string | null>(null)
   const initialSedeRef = useRef<string | null>(null)
   const initialGroupRef = useRef<string | null>(null)
+  // Documento con el que se cargó el acudiente -- si el usuario lo cambia
+  // en el formulario, ya no es "editar en sitio" sino sustituir por otra
+  // persona (ver `performSave`).
+  const initialGuardianDocumentRef = useRef<{ documentType: string; documentNumber: string } | null>(null)
   const [gradeChange, setGradeChange] = useState<{ from: number; to: number } | null>(null)
   const [gradeChangeSummary, setGradeChangeSummary] = useState<GradeChangeSummary | null>(null)
   const summaryNavigateIdRef = useRef(matriculaId)
@@ -122,6 +128,10 @@ function MatriculaEditPageContent() {
       initialGradeRef.current = resolved.academic.grade
       initialSedeRef.current = resolved.academic.campus
       initialGroupRef.current = resolved.academic.group
+      initialGuardianDocumentRef.current = {
+        documentType: resolved.guardian.documentType,
+        documentNumber: resolved.guardian.documentNumber,
+      }
     }
   }, [data, values, municipalities])
 
@@ -131,6 +141,56 @@ function MatriculaEditPageContent() {
       setValues({ ...values, academic: { ...values.academic, status: nextStatus } })
     }
   }, [data, values])
+
+  const guardianDocumentType = values?.guardian.documentType ?? ""
+  const guardianDocumentNumber = values?.guardian.documentNumber ?? ""
+  useEffect(() => {
+    const original = initialGuardianDocumentRef.current
+    const changed =
+      original != null &&
+      (guardianDocumentType !== original.documentType || guardianDocumentNumber !== original.documentNumber)
+    if (!changed) return
+
+    const documentTypeId = Number(guardianDocumentType)
+    const trimmed = guardianDocumentNumber.trim()
+    if (!documentTypeId || trimmed.length < 6) return
+
+    let cancelled = false
+    const timeout = setTimeout(() => {
+      findMatriculaUsuarioPorDocumento(documentTypeId, trimmed)
+        .then((found) => {
+          if (cancelled || !found) return
+          setValues((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  guardian: {
+                    ...prev.guardian,
+                    firstName: found.firstName,
+                    secondName: found.secondName,
+                    lastName: found.lastName,
+                    secondLastName: found.secondLastName,
+                  },
+                  guardianContact: {
+                    ...prev.guardianContact,
+                    phone: found.phone,
+                    email: found.email,
+                  },
+                }
+              : prev,
+          )
+        })
+        .catch(() => {
+          // Sin cuenta encontrada no se bloquea nada acá -- el guardado
+          // real (`performSave`) decide si crea una persona nueva.
+        })
+    }, 600)
+
+    return () => {
+      cancelled = true
+      clearTimeout(timeout)
+    }
+  }, [guardianDocumentType, guardianDocumentNumber])
 
   const { data: dependentCatalogs } = useMatriculaDependentCatalogsQuery({
     campus: values?.academic.campus || undefined,
@@ -187,6 +247,16 @@ function MatriculaEditPageContent() {
     if (!values || !data?.details) return
 
     const { pkUsuarioEstudiante, pkUsuarioAcudiente } = data.details
+    const originalGuardianDocument = initialGuardianDocumentRef.current
+    // Documento distinto al que traía la matrícula = sustituir al
+    // acudiente por otra persona (caso 3), no editar al actual.
+    const guardianReplaced =
+      originalGuardianDocument != null &&
+      (values.guardian.documentType !== originalGuardianDocument.documentType ||
+        values.guardian.documentNumber !== originalGuardianDocument.documentNumber)
+
+    let resolvedPkUsuarioAcudiente = pkUsuarioAcudiente
+    let actualizarAcudiente = false
     try {
       if (pkUsuarioEstudiante != null) {
         await updatePersona(pkUsuarioEstudiante, {
@@ -202,7 +272,30 @@ function MatriculaEditPageContent() {
           email: values.studentContact.email,
         })
       }
-      if (pkUsuarioAcudiente != null) {
+      if (guardianReplaced) {
+        // Mismo patrón que el alta: primero se busca si la persona ya
+        // tiene cuenta (autocompletar por documento); solo si no existe se
+        // crea por /register/usuario. Estos campos alimentan el alta del
+        // nuevo, no editan los datos del que sale.
+        const documentTypeId = Number(values.guardian.documentType)
+        const found = await findMatriculaUsuarioPorDocumento(documentTypeId, values.guardian.documentNumber)
+        if (found) {
+          resolvedPkUsuarioAcudiente = found.pkTusuario
+        } else {
+          const result = await registerMatriculaPersona({
+            documentTypeId,
+            documentNumber: values.guardian.documentNumber,
+            firstName: values.guardian.firstName,
+            secondName: values.guardian.secondName,
+            lastName: values.guardian.lastName,
+            secondLastName: values.guardian.secondLastName,
+            genderId: values.guardian.gender ? Number(values.guardian.gender) : undefined,
+            phone: values.guardianContact.phone,
+            email: values.guardianContact.email,
+          })
+          resolvedPkUsuarioAcudiente = result.pkTusuario
+        }
+      } else if (pkUsuarioAcudiente != null) {
         await updatePersona(pkUsuarioAcudiente, {
           documentTypeId: values.guardian.documentType,
           documentNumber: values.guardian.documentNumber,
@@ -214,6 +307,7 @@ function MatriculaEditPageContent() {
           phone: values.guardianContact.phone,
           email: values.guardianContact.email,
         })
+        actualizarAcudiente = true
       }
     } catch (error) {
       notify(getErrorMessage(error), { variant: "error" })
@@ -221,7 +315,13 @@ function MatriculaEditPageContent() {
     }
 
     updateMatricula.mutate(
-      { id: matriculaId, values, pkTpadre: data.details.pkTpadre },
+      {
+        id: matriculaId,
+        values,
+        pkTpadre: data.details.pkTpadre,
+        pkUsuarioAcudiente: resolvedPkUsuarioAcudiente,
+        actualizarAcudiente,
+      },
       {
         onSuccess: (result) => {
           if (result.status === "error") {
@@ -488,7 +588,7 @@ function MatriculaEditPageContent() {
         <>
           <TableScreenBody className="rounded-b-none border-b-0">
             <div id={EDIT_MATRICULA_FORM_ID} className="flex flex-col gap-6">
-              <MatriculaToolbar matricula={data.matricula} showModificar={false} />
+              <MatriculaToolbar matricula={data.matricula} showModificar={false} filesEditable />
               <MatriculaFormBody
                 values={values}
                 onChange={setValues}

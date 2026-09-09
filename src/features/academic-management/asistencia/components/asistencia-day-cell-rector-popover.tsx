@@ -4,11 +4,12 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { ArrowLeftIcon, CaretRightIcon, XIcon } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
 
-import type { AsistenciaDayEntry } from "@/features/academic-management/asistencia/components/asistencia-month-grid"
+import { nombreSesion, type AsistenciaDayEntry } from "@/features/academic-management/asistencia/components/asistencia-month-grid"
 import {
   ESTADO_SESION_COLOR,
   ESTADO_SESION_ICON,
   formatGrado,
+  formatHoraRango,
   peorEstado,
 } from "@/features/academic-management/asistencia/api/ui-mappings"
 
@@ -179,10 +180,14 @@ export function AsistenciaDayCellRectorPopover({ items, children }: AsistenciaDa
           <ul className="flex flex-col gap-2">
             {asignaturas.map((item) => {
               const EstadoIcon = ESTADO_SESION_ICON[item.estado]
+              const horaRango = formatHoraRango(item.horaInicio, item.horaFin)
               return (
-                <li key={item.id} className="flex items-center gap-2 text-sm">
-                  <EstadoIcon className={cn("size-3.5 shrink-0", ESTADO_SESION_COLOR[item.estado])} />
-                  <span className="min-w-0 flex-1 truncate">{item.asignatura}</span>
+                <li key={item.id} className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm">
+                  <span className="flex min-w-0 items-center gap-2">
+                    <EstadoIcon className={cn("size-3.5 shrink-0", ESTADO_SESION_COLOR[item.estado])} />
+                    <span>{nombreSesion(item)}</span>
+                  </span>
+                  {horaRango && <span className="shrink-0 text-xs text-muted-foreground">{horaRango}</span>}
                 </li>
               )
             })}

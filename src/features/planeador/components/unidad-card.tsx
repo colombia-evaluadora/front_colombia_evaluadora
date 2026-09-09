@@ -1,26 +1,28 @@
 import { Button } from "@/components/ui/button"
-import { PencilIcon, TrashIcon } from "@/components/ui/icons"
+import { PencilIcon } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
 
 import {
-  STATUS_ACCENT,
-  STATUS_ICON,
-  STATUS_RING,
+  statusAccentFor,
+  statusIconFor,
+  statusRingFor,
 } from "@/features/planeador/api/ui-mappings"
 import type { UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
 
+import { DialogDeleteUnidad } from "@/features/planeador/components/dialogs/dialog-delete-unidad"
 import { formatDate } from "@/features/planeador/lib/format-date"
 
 interface UnidadCardProps {
   unidad: UnidadTematica
   selected?: boolean
   onSelect?: () => void
+  /** Navega a la pantalla de edición de la unidad. Se dispara desde el
+   *  lápiz de la card — mismo criterio que `ActividadCard.onEdit`. */
+  onEdit?: () => void
+  /** Se ejecuta cuando termina OK el `DialogDeleteUnidad` (típicamente,
+   *  limpiar la selección si esta era la unidad abierta en el panel). */
+  onDeleted?: () => void
 }
-
-const ACCIONES = [
-  { label: "Editar", Icon: PencilIcon },
-  { label: "Eliminar", Icon: TrashIcon },
-] as const
 
 /**
  * Card del listado de unidades temáticas. Espejo de `ActividadCard` —misma
@@ -33,9 +35,15 @@ const ACCIONES = [
  * unificarlos obligaría a pasar todo por props genéricas que oscurecen qué
  * dato se está mostrando.
  */
-export function UnidadCard({ unidad, selected = false, onSelect }: UnidadCardProps) {
-  const StatusIcon = STATUS_ICON[unidad.status]
-  const accent = STATUS_ACCENT[unidad.status]
+export function UnidadCard({
+  unidad,
+  selected = false,
+  onSelect,
+  onEdit,
+  onDeleted,
+}: UnidadCardProps) {
+  const StatusIcon = statusIconFor(unidad.status)
+  const accent = statusAccentFor(unidad.status)
 
   return (
     <article
@@ -46,7 +54,7 @@ export function UnidadCard({ unidad, selected = false, onSelect }: UnidadCardPro
     >
       <span
         aria-hidden="true"
-        className={cn("absolute inset-y-0 left-0 w-1", STATUS_RING[unidad.status])}
+        className={cn("absolute inset-y-0 left-0 w-1", statusRingFor(unidad.status))}
       />
 
       <div className="flex items-start gap-2">
@@ -68,7 +76,7 @@ export function UnidadCard({ unidad, selected = false, onSelect }: UnidadCardPro
         {unidad.area}
       </p>
       <p className="text-muted-foreground text-[0.625rem] leading-snug">
-        {unidad.actividades.length} Actividades
+        {unidad.totalActividades ?? unidad.actividades.length} Actividades
       </p>
       <p className="text-muted-foreground text-[0.625rem] leading-snug">
         {formatDate(unidad.fechaInicio)} - {formatDate(unidad.fechaFin)}
@@ -88,19 +96,22 @@ export function UnidadCard({ unidad, selected = false, onSelect }: UnidadCardPro
           "group-focus-within/unidad:pointer-events-auto group-focus-within/unidad:opacity-100",
         )}
       >
-        {ACCIONES.map(({ label, Icon }) => (
-          <Button
-            key={label}
-            variant="ghost"
-            color="neutral"
-            size="icon-sm"
-            disabled
-            aria-label={label}
-            className="size-6"
-          >
-            <Icon />
-          </Button>
-        ))}
+        <Button
+          variant="ghost"
+          color="neutral"
+          size="icon-sm"
+          disabled={!onEdit}
+          onClick={onEdit}
+          aria-label={`Editar ${unidad.nombre}`}
+          className="size-6"
+        >
+          <PencilIcon />
+        </Button>
+        <DialogDeleteUnidad
+          unidad={unidad}
+          onDeleted={onDeleted}
+          triggerProps={{ className: "size-6" }}
+        />
       </div>
 
       <button

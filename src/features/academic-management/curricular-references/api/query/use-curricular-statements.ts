@@ -30,7 +30,10 @@ function toStatement(row: StatementRow, curricularReferenceId: number): Curricul
   }
 }
 
-async function fetchStatements(curricularReferenceId: number, areaId: number | null): Promise<CurricularStatement[]> {
+export async function fetchStatements(
+  curricularReferenceId: number,
+  areaId: number | null,
+): Promise<CurricularStatement[]> {
   const url = apiPath(
     `/academic-management/curricular-references/${curricularReferenceId}/statements`,
     `/referentes-curriculares/${curricularReferenceId}/enunciados`,
@@ -42,7 +45,7 @@ async function fetchStatements(curricularReferenceId: number, areaId: number | n
   }
 
   const raw = await api.get<StatementRow[] | { rows: StatementRow[] }>(url, {
-    params: { area: areaId ?? "" },
+    params: areaId != null ? { area: areaId } : {},
   })
   return unwrapRows(raw).map((row) => toStatement(row, curricularReferenceId))
 }

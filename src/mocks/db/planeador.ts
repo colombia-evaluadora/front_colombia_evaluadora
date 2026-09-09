@@ -18,11 +18,11 @@ import type { Actividad } from "@/features/planeador/api/types/actividad"
  */
 export const planeadorDb: Actividad[] = [
   {
-    id: "601",
+    id: 601,
     nombre: "Proyecto final: Diseño de prototipo 1",
     tipo: "Proyecto",
     esRecuperacion: false,
-    unidad: { id: "u1", nombre: "Unidad 1" },
+    unidad: { id: 1, nombre: "Unidad 1" },
     asignatura: "Diseño",
     grado: "3º",
     grupo: "A",
@@ -34,7 +34,7 @@ export const planeadorDb: Actividad[] = [
     materiales: "Cartulina, marcadores, tijeras, pegante, compás.",
     recursos: [
       {
-        id: "r1",
+        id: 100,
         titulo: "Recurso 1",
         fuente: "YouTube — DesignCourse",
         tipo: "URL",
@@ -42,7 +42,7 @@ export const planeadorDb: Actividad[] = [
         descripcion: "Video introductorio.",
       },
       {
-        id: "r2",
+        id: 101,
         titulo: "Recurso 2",
         fuente: "Behance",
         tipo: "Unidad virtual",
@@ -70,24 +70,24 @@ export const planeadorDb: Actividad[] = [
     ],
     adaptaciones: [],
     rubrica: {
-      id: "rb-601",
+      id: 102,
       criterios: [
         {
-          id: "c1",
+          id: 103,
           nombre: "Diseño",
           excelente: "Cumple con todos los criterios de diseño y aporta innovación.",
           ponderacion: 30,
           niveles: [],
         },
         {
-          id: "c2",
+          id: 104,
           nombre: "Funcionalidad",
           excelente: "El prototipo resuelve el problema identificado.",
           ponderacion: 40,
           niveles: [],
         },
         {
-          id: "c3",
+          id: 105,
           nombre: "Presentación",
           excelente: "Comunicación clara y profesional.",
           ponderacion: 30,
@@ -95,9 +95,9 @@ export const planeadorDb: Actividad[] = [
         },
       ],
     },
-    listaCotejo: { id: "lc-601", items: [] },
+    listaCotejo: { id: 106, items: [] },
     escalaValoracion: {
-      id: "ev-601",
+      id: 107,
       criteriosGenerales: "",
       tipo: "Cualitativa",
       interpretacionRangos: "",
@@ -112,11 +112,11 @@ export const planeadorDb: Actividad[] = [
     },
   },
   {
-    id: "602",
+    id: 602,
     nombre: "Académico Diseño de prototipo 2",
     tipo: "Práctica",
     esRecuperacion: false,
-    unidad: { id: "u1", nombre: "Unidad 1" },
+    unidad: { id: 1, nombre: "Unidad 1" },
     asignatura: "Diseño",
     grado: "3º",
     grupo: "A",
@@ -128,7 +128,7 @@ export const planeadorDb: Actividad[] = [
     materiales: "Cuaderno de bocetos, lápices de grafito.",
     recursos: [
       {
-        id: "r3",
+        id: 108,
         titulo: "Recurso 1",
         fuente: "Miro — tablero de diseño",
         tipo: "Unidad virtual",
@@ -151,17 +151,17 @@ export const planeadorDb: Actividad[] = [
     descripcionUnidad: ["Sesiones prácticas de bocetado."],
     adaptaciones: [],
     rubrica: {
-      id: "rb-602",
+      id: 109,
       criterios: [
         {
-          id: "c1",
+          id: 103,
           nombre: "Calidad del boceto",
           excelente: "Trazo limpio, proporciones correctas.",
           ponderacion: 50,
           niveles: [],
         },
         {
-          id: "c2",
+          id: 104,
           nombre: "Iteración",
           excelente: "Múltiples versiones progresivas.",
           ponderacion: 50,
@@ -169,9 +169,9 @@ export const planeadorDb: Actividad[] = [
         },
       ],
     },
-    listaCotejo: { id: "lc-602", items: [] },
+    listaCotejo: { id: 110, items: [] },
     escalaValoracion: {
-      id: "ev-602",
+      id: 111,
       criteriosGenerales: "",
       tipo: "Cualitativa",
       interpretacionRangos: "",
@@ -186,11 +186,11 @@ export const planeadorDb: Actividad[] = [
     },
   },
   {
-    id: "603",
+    id: 603,
     nombre: "Plan de estudio Diseño de prototipo 3",
     tipo: "Proyecto",
     esRecuperacion: false,
-    unidad: { id: "u1", nombre: "Unidad 1" },
+    unidad: { id: 1, nombre: "Unidad 1" },
     asignatura: "Diseño",
     grado: "3º",
     grupo: "A",
@@ -216,10 +216,10 @@ export const planeadorDb: Actividad[] = [
     descripcionUnidad: ["Etapa de planificación."],
     adaptaciones: [],
     rubrica: {
-      id: "rb-603",
+      id: 112,
       criterios: [
         {
-          id: "c1",
+          id: 103,
           nombre: "Coherencia",
           excelente: "Hitos alineados con objetivos.",
           ponderacion: 100,
@@ -227,9 +227,9 @@ export const planeadorDb: Actividad[] = [
         },
       ],
     },
-    listaCotejo: { id: "lc-603", items: [] },
+    listaCotejo: { id: 113, items: [] },
     escalaValoracion: {
-      id: "ev-603",
+      id: 114,
       criteriosGenerales: "",
       tipo: "Cualitativa",
       interpretacionRangos: "",
@@ -244,14 +244,14 @@ export const planeadorDb: Actividad[] = [
     },
   },
   {
-    id: "604",
+    id: 604,
     nombre: "Rendimiento Diseño de prototipo",
     tipo: "Otro",
     // Única del seed marcada como recuperación: es sumativa
     // (`esEvaluativa: true`), así que el toggle "Es una recuperación"
     // se muestra activado al abrir su edición — demuestra el caso "on".
     esRecuperacion: true,
-    unidad: { id: "u1", nombre: "Unidad 1" },
+    unidad: { id: 1, nombre: "Unidad 1" },
     asignatura: "Diseño",
     grado: "3º",
     grupo: "A",
@@ -277,7 +277,7 @@ export const planeadorDb: Actividad[] = [
     descripcionUnidad: ["Sesión cancelada."],
     adaptaciones: [],
     rubrica: {
-      id: "rb-604",
+      id: 115,
       criterios: [],
     },
     // Actividad sumativa con "Lista de cotejo" como instrumento: cada ítem
@@ -285,22 +285,22 @@ export const planeadorDb: Actividad[] = [
     // muestre el campo de ponderación al lado de la descripción — ver
     // `ListaCotejoItemCard` en `form-editar-actividad.tsx`.
     listaCotejo: {
-      id: "lc-604",
+      id: 116,
       items: [
         {
-          id: "lci-1",
+          id: 117,
           descripcion: "Identifica correctamente las fallas de funcionamiento del prototipo.",
           ponderacion: 60,
         },
         {
-          id: "lci-2",
+          id: 118,
           descripcion: "Registra los resultados de las pruebas con evidencia fotográfica.",
           ponderacion: 40,
         },
       ],
     },
     escalaValoracion: {
-      id: "ev-604",
+      id: 119,
       criteriosGenerales: "",
       tipo: "Cualitativa",
       interpretacionRangos: "",
@@ -315,11 +315,11 @@ export const planeadorDb: Actividad[] = [
     },
   },
   {
-    id: "605",
+    id: 605,
     nombre: "Taller de ideación",
     tipo: "Práctica",
     esRecuperacion: false,
-    unidad: { id: "u2", nombre: "Unidad 2" },
+    unidad: { id: 2, nombre: "Unidad 2" },
     asignatura: "Diseño",
     grado: "3º",
     grupo: "B",
@@ -345,12 +345,12 @@ export const planeadorDb: Actividad[] = [
     descripcionUnidad: ["Dinámica de ideación."],
     adaptaciones: [],
     rubrica: {
-      id: "rb-605",
+      id: 120,
       criterios: [],
     },
-    listaCotejo: { id: "lc-605", items: [] },
+    listaCotejo: { id: 121, items: [] },
     escalaValoracion: {
-      id: "ev-605",
+      id: 122,
       criteriosGenerales: "",
       tipo: "Cualitativa",
       interpretacionRangos: "",
@@ -365,11 +365,11 @@ export const planeadorDb: Actividad[] = [
     },
   },
   {
-    id: "606",
+    id: 606,
     nombre: "Evaluación intermedia",
     tipo: "Otro",
     esRecuperacion: false,
-    unidad: { id: "u2", nombre: "Unidad 2" },
+    unidad: { id: 2, nombre: "Unidad 2" },
     asignatura: "Diseño",
     grado: "3º",
     grupo: "B",
@@ -381,7 +381,7 @@ export const planeadorDb: Actividad[] = [
     materiales: "Enunciado impreso, computador.",
     recursos: [
       {
-        id: "r4",
+        id: 123,
         titulo: "Recurso 1",
         fuente: "Drive — enunciado",
         tipo: "Unidad virtual",
@@ -408,12 +408,12 @@ export const planeadorDb: Actividad[] = [
     descripcionUnidad: ["Evaluación de mitad de unidad."],
     adaptaciones: [],
     rubrica: {
-      id: "rb-606",
+      id: 124,
       criterios: [],
     },
-    listaCotejo: { id: "lc-606", items: [] },
+    listaCotejo: { id: 125, items: [] },
     escalaValoracion: {
-      id: "ev-606",
+      id: 126,
       criteriosGenerales: "Comprensión, Aplicación",
       tipo: "Cualitativa",
       interpretacionRangos: "",
@@ -421,19 +421,19 @@ export const planeadorDb: Actividad[] = [
       // definición pesa lo suyo, la escala no pondera como bloque único.
       niveles: [
         {
-          id: "ev-606-n1",
+          id: 127,
           nombre: "Excelente",
           descripcion: "Resuelve todos los problemas con argumentos claros y completos.",
           ponderacion: 50,
         },
         {
-          id: "ev-606-n2",
+          id: 128,
           nombre: "Aceptable",
           descripcion: "Resuelve la mayoría de los problemas, con argumentos parciales.",
           ponderacion: 30,
         },
         {
-          id: "ev-606-n3",
+          id: 129,
           nombre: "Insuficiente",
           descripcion: "No logra resolver los problemas ni argumentar la solución.",
           ponderacion: 20,
@@ -449,7 +449,7 @@ export const planeadorDb: Actividad[] = [
     },
   },
   {
-    id: "607",
+    id: 607,
     nombre: "Proyecto integrador",
     tipo: "Proyecto",
     esRecuperacion: false,
@@ -457,7 +457,7 @@ export const planeadorDb: Actividad[] = [
     // sus actividades no admiten `esEvaluativa: true`, así que esta
     // queda no-sumativa desde el seed —no la corrige el form al
     // abrirla, ya nace consistente con la regla de negocio.
-    unidad: { id: "u3", nombre: "Unidad 3" },
+    unidad: { id: 3, nombre: "Unidad 3" },
     asignatura: "Diseño",
     grado: "4º",
     grupo: "A",
@@ -483,24 +483,24 @@ export const planeadorDb: Actividad[] = [
     descripcionUnidad: ["Proyecto final."],
     adaptaciones: [],
     rubrica: {
-      id: "rb-607",
+      id: 130,
       criterios: [
         {
-          id: "c1",
+          id: 103,
           nombre: "Calidad técnica",
           excelente: "Solución robusta y escalable.",
           ponderacion: 50,
           niveles: [],
         },
         {
-          id: "c2",
+          id: 104,
           nombre: "Calidad estética",
           excelente: "Diseño visual coherente y atractivo.",
           ponderacion: 30,
           niveles: [],
         },
         {
-          id: "c3",
+          id: 105,
           nombre: "Documentación",
           excelente: "Bitácora completa y bien escrita.",
           ponderacion: 20,
@@ -508,9 +508,9 @@ export const planeadorDb: Actividad[] = [
         },
       ],
     },
-    listaCotejo: { id: "lc-607", items: [] },
+    listaCotejo: { id: 131, items: [] },
     escalaValoracion: {
-      id: "ev-607",
+      id: 132,
       criteriosGenerales: "",
       tipo: "Cualitativa",
       interpretacionRangos: "",
@@ -525,11 +525,11 @@ export const planeadorDb: Actividad[] = [
     },
   },
   {
-    id: "608",
+    id: 608,
     nombre: "Cierre y autoevaluación",
     tipo: "Otro",
     esRecuperacion: false,
-    unidad: { id: "u3", nombre: "Unidad 3" },
+    unidad: { id: 3, nombre: "Unidad 3" },
     asignatura: "Diseño",
     grado: "4º",
     grupo: "A",
@@ -555,10 +555,10 @@ export const planeadorDb: Actividad[] = [
     descripcionUnidad: ["Cierre del semestre."],
     adaptaciones: [],
     rubrica: {
-      id: "rb-608",
+      id: 133,
       criterios: [
         {
-          id: "c1",
+          id: 103,
           nombre: "Reflexión",
           excelente: "Reflexión profunda y autocrítica honesta.",
           ponderacion: 100,
@@ -566,9 +566,9 @@ export const planeadorDb: Actividad[] = [
         },
       ],
     },
-    listaCotejo: { id: "lc-608", items: [] },
+    listaCotejo: { id: 134, items: [] },
     escalaValoracion: {
-      id: "ev-608",
+      id: 135,
       criteriosGenerales: "",
       tipo: "Cualitativa",
       interpretacionRangos: "",
@@ -583,11 +583,11 @@ export const planeadorDb: Actividad[] = [
     },
   },
   {
-    id: "609",
+    id: 609,
     nombre: "Taller de comprensión lectora",
     tipo: "Práctica",
     esRecuperacion: false,
-    unidad: { id: "u1", nombre: "Unidad 1" },
+    unidad: { id: 1, nombre: "Unidad 1" },
     asignatura: "Lengua Castellana",
     grado: "3º",
     grupo: "A",
@@ -613,27 +613,27 @@ export const planeadorDb: Actividad[] = [
     descripcionUnidad: ["Taller de comprensión lectora."],
     adaptaciones: [],
     rubrica: {
-      id: "rb-609",
+      id: 136,
       criterios: [],
     },
     // Actividad NO sumativa con "Lista de cotejo": los ítems no traen
     // `ponderacion` — el form no muestra ese campo cuando `esEvaluativa`
     // es `false` (ver el mockup: "¿Es actividad evaluativa? No").
     listaCotejo: {
-      id: "lc-609",
+      id: 137,
       items: [
         {
-          id: "lci-3",
+          id: 138,
           descripcion: "Identifica la idea principal de cada párrafo del texto.",
         },
         {
-          id: "lci-4",
+          id: 139,
           descripcion: "Responde correctamente las preguntas de comprensión literal.",
         },
       ],
     },
     escalaValoracion: {
-      id: "ev-609",
+      id: 140,
       criteriosGenerales: "",
       tipo: "Cualitativa",
       interpretacionRangos: "",
@@ -648,11 +648,11 @@ export const planeadorDb: Actividad[] = [
     },
   },
   {
-    id: "610",
+    id: 610,
     nombre: "Laboratorio de ecosistemas",
     tipo: "Práctica",
     esRecuperacion: false,
-    unidad: { id: "u1", nombre: "Unidad 1" },
+    unidad: { id: 1, nombre: "Unidad 1" },
     asignatura: "Ciencias Naturales",
     grado: "3º",
     grupo: "A",
@@ -678,12 +678,12 @@ export const planeadorDb: Actividad[] = [
     descripcionUnidad: ["Laboratorio de ecosistemas."],
     adaptaciones: [],
     rubrica: {
-      id: "rb-610",
+      id: 141,
       criterios: [],
     },
-    listaCotejo: { id: "lc-610", items: [] },
+    listaCotejo: { id: 142, items: [] },
     escalaValoracion: {
-      id: "ev-610",
+      id: 143,
       criteriosGenerales: "",
       tipo: "Cualitativa",
       interpretacionRangos: "",
@@ -698,11 +698,11 @@ export const planeadorDb: Actividad[] = [
     },
   },
   {
-    id: "611",
+    id: 611,
     nombre: "Mural colaborativo",
     tipo: "Proyecto",
     esRecuperacion: false,
-    unidad: { id: "u2", nombre: "Unidad 2" },
+    unidad: { id: 2, nombre: "Unidad 2" },
     asignatura: "Artística",
     grado: "3º",
     grupo: "B",
@@ -728,12 +728,12 @@ export const planeadorDb: Actividad[] = [
     descripcionUnidad: ["Mural colaborativo."],
     adaptaciones: [],
     rubrica: {
-      id: "rb-611",
+      id: 144,
       criterios: [],
     },
-    listaCotejo: { id: "lc-611", items: [] },
+    listaCotejo: { id: 145, items: [] },
     escalaValoracion: {
-      id: "ev-611",
+      id: 146,
       criteriosGenerales: "",
       tipo: "Cualitativa",
       interpretacionRangos: "",
@@ -748,11 +748,11 @@ export const planeadorDb: Actividad[] = [
     },
   },
   {
-    id: "612",
+    id: 612,
     nombre: "Quiz de fracciones",
     tipo: "Otro",
     esRecuperacion: false,
-    unidad: { id: "u2", nombre: "Unidad 2" },
+    unidad: { id: 2, nombre: "Unidad 2" },
     asignatura: "Matemáticas",
     grado: "4º",
     grupo: "A",
@@ -782,12 +782,12 @@ export const planeadorDb: Actividad[] = [
     descripcionUnidad: ["Quiz de fracciones."],
     adaptaciones: [],
     rubrica: {
-      id: "rb-612",
+      id: 147,
       criterios: [],
     },
-    listaCotejo: { id: "lc-612", items: [] },
+    listaCotejo: { id: 148, items: [] },
     escalaValoracion: {
-      id: "ev-612",
+      id: 149,
       criteriosGenerales: "Exactitud, Procedimiento",
       tipo: "Numérica",
       valorMinimo: 1,
@@ -811,9 +811,20 @@ export const planeadorDb: Actividad[] = [
  * tener la operación encapsulada evita que el handler quede acoplado a
  * detalles del array (mismo patrón que `matricula/deleteMatriculaById`).
  */
-export function deleteActividadById(id: string): boolean {
+export function deleteActividadById(id: number): boolean {
   const index = planeadorDb.findIndex((row) => row.id === id)
   if (index === -1) return false
   planeadorDb.splice(index, 1)
   return true
+}
+
+/**
+ * Agrega una actividad nueva al frente del listado (más reciente primero,
+ * mismo criterio que `matriculaDb.unshift` en `mocks/db/matricula.ts`). El
+ * handler de creación le asigna el `id` antes de llamar a esto — acá no se
+ * genera ninguno.
+ */
+export function addActividad(actividad: Actividad): Actividad {
+  planeadorDb.unshift(actividad)
+  return actividad
 }

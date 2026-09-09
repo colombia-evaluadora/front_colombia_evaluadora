@@ -1,5 +1,6 @@
 import * as React from "react"
-import { useNavigate, useSearch } from "@tanstack/react-router"
+import { Link, useNavigate, useSearch } from "@tanstack/react-router"
+import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -24,10 +25,16 @@ import {
 } from "@/components/ui/icons"
 import { Spinner } from "@/components/ui/spinner"
 
-import { useActividadesQuery } from "@/features/planeador/api/query/use-actividades-query"
+import { useActividadesStatsQuery } from "@/features/planeador/api/query/use-actividades-stats-query"
+import { useActividadesCalendarioQuery } from "@/features/planeador/api/query/use-actividades-calendario-query"
+import { useActividadesMiasQuery } from "@/features/planeador/api/query/use-actividades-mias-query"
+import { useInstrumentoEvaluacionCatalogQuery } from "@/features/planeador/api/query/use-instrumento-evaluacion-catalog"
+import { useExportarActividadesJson } from "@/features/planeador/api/mutations/exportar-actividades-json"
 import { ActividadCard } from "@/features/planeador/components/actividad-card"
 import { ActividadDetallePanel } from "@/features/planeador/components/actividad-detalle-panel"
 import { DialogExportActividades } from "@/features/planeador/components/dialogs/dialog-export-actividades"
+import { DialogImportarActividadesJson } from "@/features/planeador/components/dialogs/dialog-importar-actividades-json"
+import { downloadJson } from "@/features/planeador/lib/download-json"
 import { PlaneadorSummaryCards } from "@/features/planeador/components/planeador-summary-cards"
 import {
   PlaneadorMonthGrid,
@@ -37,10 +44,12 @@ import { PlaneadorTabs } from "@/features/planeador/components/planeador-tabs"
 import { SearchPlaneador } from "@/features/planeador/components/search/search-planeador"
 import { usePlaneadorFilters } from "@/features/planeador/hooks/use-planeador-filters"
 import { VIEW_OPTIONS } from "@/features/planeador/components/view-options"
+import { statusToEstadoDerivado } from "@/features/planeador/lib/estado-derivado"
+import type { ActividadStatus } from "@/features/planeador/api/types/actividad"
 
 import { planeadorRoute } from "@/router"
 import { paths } from "@/config/paths"
-import { parseLocalDate } from "@/features/planeador/lib/format-date"
+import { formatDate, parseLocalDate, toDateOnly, todayDateOnly } from "@/features/planeador/lib/format-date"
 
 /**
  * Página principal del Planeador. Layout 2-columnas:
@@ -65,10 +74,26 @@ export function PlaneadorPage() {
   // Actividad abierta en el panel derecho. `undefined` => se muestra el
   // calendario.
   const actividadId = search.actividad ?? undefined
+  // Cambiar de actividad (o cerrar el panel) resetea `modo` a "info": el
+  // modo vive suelto en la URL, no por actividad, así que sin este reset
+  // seleccionar otra card conservaría "grades"/"approval" de la anterior.
+  // `setMode` pisa este `undefined` con el modo pedido en el mismo navigate.
   const setActividadId = (next: string | undefined) =>
     navigate({
       to: planeadorRoute.id,
-      search: (prev) => ({ ...prev, actividad: next }),
+      search: (prev) => ({ ...prev, actividad: next, modo: undefined }),
+      replace: true,
+    })
+
+  // Día activo de la barra "Hoy | MARTES 16 | < >" del rail (`?dia=`,
+  // paginado por día activo de `GET /actividades/mias` — colección Postman
+  // `planeador-guia-completa`, 4.1/8.3). Vive en la URL, no en estado local,
+  // por el mismo motivo que `actividadId`. Ausente en la URL == hoy.
+  const dia = search.dia ?? todayDateOnly()
+  const setDia = (next: string) =>
+    navigate({
+      to: planeadorRoute.id,
+      search: (prev) => ({ ...prev, dia: next }),
       replace: true,
     })
 
@@ -76,82 +101,115 @@ export function PlaneadorPage() {
     () => new Date(new Date().getFullYear(), new Date().getMonth(), 1),
   )
 
-  // Modo del panel de detalle por actividad. Map `id → modo` en vez de dos
-  // flags sueltos: la última acción del usuario gana (Marcar después de
-  // Aprobar cambia a grades, no se queda en approval por orden de check).
-  // Si la entrada no existe para la actividad activa, cae a "info".
-  // Los handlers también setean `actividadId` — sin ese paso, clickear el
-  // chulito estando en el calendario no abría el panel.
-  const [panelModeByActividad, setPanelModeByActividad] = React.useState<
-    Record<string, "info" | "grades" | "approval">
-  >({})
-
-  const panelMode: "info" | "grades" | "approval" =
-    actividadId !== undefined
-      ? panelModeByActividad[actividadId] ?? "info"
-      : "info"
+  // Modo del panel de detalle de la actividad abierta (`?modo=`), en la URL
+  // por el mismo motivo que `actividadId`/`dia`: enlazable y sobrevive al
+  // refresh. Ausente == "info".
+  const panelMode: "info" | "grades" | "approval" = search.modo ?? "info"
 
   // Abre el panel en una actividad y le setea el modo pedido. Se usa tanto
   // desde la card (Marcar / Aprobar) como desde los mismos botones del
   // header del panel — así el comportamiento es idéntico sin importar
   // desde dónde se disparen.
   function setMode(actividadId: string, mode: "grades" | "approval") {
-    setActividadId(actividadId)
-    setPanelModeByActividad((prev) => ({ ...prev, [actividadId]: mode }))
+    navigate({
+      to: planeadorRoute.id,
+      search: (prev) => ({ ...prev, actividad: actividadId, modo: mode }),
+      replace: true,
+    })
   }
 
+  // 3 endpoints reales en vez del hack de traer TODO con `size=500` y
+  // derivar stats/calendario/listado en el cliente (`use-actividades-query`,
+  // ya no se usa acá — ver colección Postman `planeador-pantalla-principal`).
+  const { data: statsCounts } = useActividadesStatsQuery()
+
+  // Catálogo `INSTRUMENTO_EVALUACION` (`TLISTA_VALOR`) para el filtro
+  // "Instrumento" del buscador — reemplaza la lista fija que traía antes.
+  const { data: instrumentoOptions = [] } = useInstrumentoEvaluacionCatalogQuery()
+
+  const mesDesde = React.useMemo(
+    () => toDateOnly(new Date(displayMonth.getFullYear(), displayMonth.getMonth(), 1)),
+    [displayMonth],
+  )
+  const mesHasta = React.useMemo(
+    () => toDateOnly(new Date(displayMonth.getFullYear(), displayMonth.getMonth() + 1, 0)),
+    [displayMonth],
+  )
+  const { data: calendarioActividades = [] } = useActividadesCalendarioQuery({
+    fechaDesde: mesDesde,
+    fechaHasta: mesHasta,
+  })
+
+  // `search`/`estados` ya filtran del lado del servidor — `filtro`
+  // (instrumento) queda armado para la próxima iteración, cuando llegue su
+  // catálogo.
   const {
-    data: actividades = [],
+    data: miasResult,
     isPending,
     isError,
     refetch,
-  } = useActividadesQuery()
+  } = useActividadesMiasQuery({
+    search: buscar || undefined,
+    estados: estado ? statusToEstadoDerivado(estado as ActividadStatus) : undefined,
+    size: 50,
+    offset: 0,
+    dia,
+  })
+  const filtered = miasResult?.rows ?? []
+  const diaAnterior = miasResult?.diaAnterior ?? null
+  const diaSiguiente = miasResult?.diaSiguiente ?? null
 
-  // Filtrado client-side: texto libre + estado. `filtro` (instrumento) queda
-  // armado para la próxima iteración, cuando llegue su catálogo.
-  const filtered = React.useMemo(() => {
-    const term = buscar.trim().toLowerCase()
-    return actividades.filter((a) => {
-      if (estado && a.status !== estado) return false
-      if (!term) return true
-      return [a.nombre, a.asignatura, a.unidad.nombre, a.tipo, a.grado, a.grupo]
-        .join(" ")
-        .toLowerCase()
-        .includes(term)
-    })
-  }, [actividades, buscar, estado])
+  // "Exportar todo"/"Importar" del menú "…": intercambio JSON de
+  // actividades (colección Postman
+  // `planeador-actividades-exportar-importar`), aparte del export PDF/Excel
+  // que ya cubre `DialogExportActividades`. El exportar reusa las mismas
+  // actividades ya filtradas/visibles en el rail — mismo criterio que ese
+  // otro diálogo — porque el endpoint real exige al menos un filtro (`IDS`,
+  // acá) y no admite "exportar todo" sin acotar.
+  const [importarOpen, setImportarOpen] = React.useState(false)
+  const exportarJson = useExportarActividadesJson({
+    mutationConfig: {
+      onSuccess: (actividadesExportadas) => {
+        downloadJson(
+          `actividades-planeador-${toDateOnly(new Date())}.json`,
+          actividadesExportadas,
+        )
+        toast.success(`${actividadesExportadas.length} actividad(es) exportada(s).`)
+      },
+      onError: () => toast.error("No se pudo exportar el JSON de actividades."),
+    },
+  })
 
-  // Map day-of-month → actividades, para las filas de la grilla.
-  // Sólo el día de INICIO y el día de CIERRE pintan fila (mismo criterio
-  // que el mockup) — pintar todo el rango satura la celda y las filas
-  // dejan de ser una pista visual. Un mismo día puede tener varias
-  // actividades, incluso repitiendo código; el recorte visual lo hace la
-  // grilla (muestra 3 y resume el resto), acá se arma la lista completa.
+  function handleExportarJson() {
+    if (filtered.length === 0) {
+      toast.error("No hay actividades para exportar con los filtros actuales.")
+      return
+    }
+    exportarJson.mutate({ ids: filtered.map((actividad) => actividad.id) })
+  }
+
+  // Map day-of-month → actividades, para las filas de la grilla. El
+  // endpoint devuelve por SOLAPAMIENTO (una actividad que sigue abierta
+  // aparece también en el mes donde arrancó), y ancla `fecha` al inicio (o
+  // a `fecha_desde` si el inicio cae afuera). Eso hacía que la MISMA
+  // actividad se plotara en dos meses distintos —una vez por su inicio,
+  // otra por el "sigue abierta" del mes siguiente— y se contara doble al
+  // mirar los dos meses. Acá se ancla SOLO por `fechaCierre` (cuándo
+  // vence) y se descarta lo que no cierre dentro del mes visible, así cada
+  // actividad aparece en un único mes: el de su cierre.
   const events = React.useMemo(() => {
     const map = new Map<number, DayEvent[]>()
-    const isVisible = (d: Date) =>
-      d.getFullYear() === displayMonth.getFullYear() &&
-      d.getMonth() === displayMonth.getMonth()
-    for (const a of filtered) {
-      const start = parseLocalDate(a.fechaInicio)
-      const end = parseLocalDate(a.fechaCierre)
-      if (!start || !end) continue
-      const code = a.id.slice(-3) // "601", "602"…
-      for (const d of [start, end]) {
-        if (!isVisible(d)) continue
-        const day = d.getDate()
-        const list = map.get(day) ?? []
-        // Dedup por actividad (id), no por código: dos actividades distintas
-        // pueden compartir código y ambas deben verse. Lo único que se evita
-        // es repetir la misma actividad cuando inicia y cierra el mismo día.
-        if (!list.some((e) => e.id === a.id)) {
-          list.push({ id: a.id, code, label: a.asignatura, status: a.status })
-        }
-        map.set(day, list)
-      }
+    for (const a of calendarioActividades) {
+      if (a.fechaCierre < mesDesde || a.fechaCierre > mesHasta) continue
+      const anchor = parseLocalDate(a.fechaCierre)
+      if (!anchor) continue
+      const day = anchor.getDate()
+      const list = map.get(day) ?? []
+      list.push({ id: a.id, code: String(a.id).slice(-3), label: a.label, status: a.status })
+      map.set(day, list)
     }
     return map
-  }, [filtered, displayMonth])
+  }, [calendarioActividades, mesDesde, mesHasta])
 
   return (
     <TableScreen>
@@ -165,6 +223,7 @@ export function PlaneadorPage() {
             filters={filters}
             applyFilters={applyFilters}
             clearAllFilters={clearAllFilters}
+            instrumentoOptions={instrumentoOptions}
           />
 
           {/* Las acciones de la pantalla van junto al buscador, no en el
@@ -181,9 +240,9 @@ export function PlaneadorPage() {
                 color="primary"
                 size="sm"
                 variant="fill"
-                disabled
                 aria-label="Nueva actividad"
                 className="rounded-r-none border-r-0"
+                render={<Link to={paths.app.planeadorActividadCrear.getHref()} />}
               >
                 <PlusCircleIcon data-icon="inline-start" />
                 Nueva actividad
@@ -202,17 +261,26 @@ export function PlaneadorPage() {
                 >
                   <DotsThreeIcon />
                 </DropdownMenuTrigger>
-                {/* "Recargar" ya tiene a dónde apuntar (`refetch` del query);
-                    el resto queda disabled hasta que su feature exista. */}
+                {/* "Recargar" apunta a `refetch` del query. "Exportar todo"
+                    e "Importar" son el intercambio JSON de actividades —
+                    ver el comentario junto a `exportarJson` más arriba—,
+                    no el export PDF/Excel del botón de al lado. */}
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem disabled>
+                  <DropdownMenuItem render={<Link to={paths.app.planeadorPlanilla.getHref()} />}>
                     Planilla de calificación
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => refetch()}>
                     Recargar
                   </DropdownMenuItem>
-                  <DropdownMenuItem disabled>Exportar todo</DropdownMenuItem>
-                  <DropdownMenuItem disabled>Importar</DropdownMenuItem>
+                  <DropdownMenuItem
+                    disabled={exportarJson.isPending}
+                    onClick={handleExportarJson}
+                  >
+                    Exportar todo
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setImportarOpen(true)}>
+                    Importar
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -224,20 +292,31 @@ export function PlaneadorPage() {
             <DialogExportActividades
               rows={filtered}
             />
+            {/* Controlado desde acá y no con su propio `DialogTrigger`: el
+                que lo abre es un `DropdownMenuItem`, y un diálogo anidado
+                dentro del menú se desmonta apenas el menú cierra. */}
+            <DialogImportarActividadesJson
+              open={importarOpen}
+              onOpenChange={setImportarOpen}
+            />
           </TableScreenActions>
         </TableScreenToolbar>
       </TableScreenHeader>
 
       <TableScreenBody>
-        {/* Cards de resumen por estado. Se computan sobre `actividades` (el
-            set completo, no el filtrado), así el conteo no cambia al filtrar
-            el listado de abajo — si filtrara, "Pendientes: 3" caería a
-            "Pendientes: 1" apenas el usuario tipea en el buscador y
-            perdería el sentido de "cuántas tengo en total". El link de
+        {/* Cards de resumen por estado. Salen de `/actividades/stats`, no de
+            contar el listado de abajo — así el conteo no cambia al filtrar
+            ese listado (si contara sobre `filtered`, "Pendientes: 3" caería
+            a "Pendientes: 1" apenas el usuario tipea en el buscador y
+            perdería el sentido de "cuántas tengo en total"). El link de
             cada card setea `?estado=…` en la URL para que el filter bar
             del listado muestre ese estado por defecto. */}
         <div className="mb-6">
-          <PlaneadorSummaryCards actividades={actividades} />
+          <PlaneadorSummaryCards
+            counts={
+              statsCounts ?? { pending: 0, "in-progress": 0, completed: 0, cancelled: 0 }
+            }
+          />
         </div>
 
         {/* La segunda pista va `minmax(0,1fr)` y no `1fr`: `1fr` equivale a
@@ -274,13 +353,14 @@ export function PlaneadorPage() {
                   variant="soft"
                   color="muted"
                   size="xs"
-                  disabled
+                  disabled={dia === todayDateOnly()}
                   className="h-6 rounded-none px-2 text-[11px] tracking-wide uppercase"
+                  onClick={() => setDia(todayDateOnly())}
                 >
                   Hoy
                 </Button>
                 <span className="text-muted-foreground text-[11px] font-medium tracking-wide whitespace-nowrap uppercase">
-                  {new Date().toLocaleDateString("es-CO", {
+                  {(parseLocalDate(dia) ?? new Date()).toLocaleDateString("es-CO", {
                     weekday: "long",
                     day: "2-digit",
                   })}
@@ -292,6 +372,8 @@ export function PlaneadorPage() {
                     size="icon-xs"
                     aria-label="Día anterior"
                     className="size-6 rounded-none border-r-0"
+                    disabled={!diaAnterior}
+                    onClick={() => diaAnterior && setDia(diaAnterior)}
                   >
                     <CaretLeftIcon />
                   </Button>
@@ -301,6 +383,8 @@ export function PlaneadorPage() {
                     size="icon-xs"
                     aria-label="Día siguiente"
                     className="size-6 rounded-none"
+                    disabled={!diaSiguiente}
+                    onClick={() => diaSiguiente && setDia(diaSiguiente)}
                   >
                     <CaretRightIcon />
                   </Button>
@@ -334,7 +418,7 @@ export function PlaneadorPage() {
                   <div className="text-muted-foreground px-6 py-8 text-center text-sm">
                     {buscar
                       ? `Sin actividades que coincidan con "${buscar}".`
-                      : "Sin actividades registradas."}
+                      : `Sin actividades vigentes el ${formatDate(dia)}.`}
                   </div>
                 )}
 
@@ -344,14 +428,14 @@ export function PlaneadorPage() {
                       <li key={actividad.id}>
                         <ActividadCard
                           actividad={actividad}
-                          selected={actividad.id === actividadId}
-                          onSelect={() => setActividadId(actividad.id)}
-                          onShowGrades={() => setMode(actividad.id, "grades")}
-                          onShowApproval={() => setMode(actividad.id, "approval")}
+                          selected={String(actividad.id) === actividadId}
+                          onSelect={() => setActividadId(String(actividad.id))}
+                          onShowGrades={() => setMode(String(actividad.id), "grades")}
+                          onShowApproval={() => setMode(String(actividad.id), "approval")}
                           onEdit={() =>
                             navigate({
                               to: paths.app.planeadorActividadEditar.getHref(
-                                actividad.id,
+                                String(actividad.id),
                               ),
                             })
                           }
@@ -360,7 +444,7 @@ export function PlaneadorPage() {
                           // la página vuelve a mostrar el calendario en la
                           // columna derecha (mismo path que `onClose`).
                           onDeleted={() => {
-                            if (actividadId === actividad.id) {
+                            if (actividadId === String(actividad.id)) {
                               setActividadId(undefined)
                             }
                           }}
@@ -374,30 +458,49 @@ export function PlaneadorPage() {
           </section>
 
           {/* Columna derecha: calendario por defecto, detalle de la actividad
-              cuando hay una seleccionada. El detalle es mucho más alto que el
-              calendario, así que se acota a la ventana y scrollea por dentro
-              si creciera libre arrastraría el alto de la fila —y con él el del
-              rail, que se mide contra esa misma fila. */}
+              cuando hay una seleccionada. Siempre acotada a la ventana (antes
+              solo pasaba con el detalle abierto): un mes de 6 semanas puede
+              ser más alto que el viewport, y sin este tope la página entera
+              terminaba scrolleando para mostrarlo completo —eso arrastraba
+              el header "Hoy" del rail (que no tiene su propio scroll, solo
+              la lista de abajo lo tiene) hasta quedar semi-tapado por el
+              `TableScreenHeader` sticky a mitad de scroll. Con el tope, si el
+              mes no entra, scrollea POR DENTRO de esta columna en vez de
+              arrastrar toda la página.
+
+              `max-h` + `flex flex-col`, no `h` a secas: un `height` fijo
+              obliga a la columna a medir SIEMPRE ese alto, aunque el
+              calendario (que tiene un contenido casi constante, ~6 semanas)
+              o el panel de detalle midan MENOS —eso dejaba un hueco en
+              blanco debajo del contenido real y, encima, empujaba la PÁGINA
+              entera más alta que el viewport (scroll de la página con un
+              tramo en blanco al fondo, en vez de contenerse). Con `max-h`,
+              la columna solo crece hasta el tope cuando el contenido de
+              verdad lo necesita; si es más corto, se achica con él. El hijo
+              que antes usaba `h-full` para heredar ese alto fijo ahora usa
+              `flex-1 min-h-0` (ver `ActividadDetallePanel` y el `div` de
+              abajo): con `max-h` en el padre, un `height: 100%` no siempre
+              resuelve (necesita un alto DEFINIDO, no una cota), `flex-1` sí
+              funciona igual de bien contra un contenedor acotado por
+              `max-height`. */}
           <section
             aria-label={
               actividadId
                 ? "Detalle de la actividad"
                 : "Calendario del planeador"
             }
-            className={
-              actividadId ? "md:h-[calc(100dvh-16rem)] md:min-h-0" : undefined
-            }
+            className="md:flex md:max-h-[calc(100dvh-16rem)] md:min-h-0 md:flex-col"
           >
             {actividadId ? (
               <ActividadDetallePanel
-                actividadId={actividadId}
+                actividadId={Number(actividadId)}
                 mode={panelMode}
                 onClose={() => setActividadId(undefined)}
                 onShowGrades={() => setMode(actividadId, "grades")}
                 onShowApproval={() => setMode(actividadId, "approval")}
               />
             ) : (
-              <>
+              <div className="md:min-h-0 md:flex-1 md:overflow-y-auto">
                 <PlaneadorMonthGrid
                   month={displayMonth}
                   events={events}
@@ -413,7 +516,7 @@ export function PlaneadorPage() {
                   Vista actual:{" "}
                   {VIEW_OPTIONS.find((o) => o.value === view)?.label}
                 </p>
-              </>
+              </div>
             )}
           </section>
         </div>

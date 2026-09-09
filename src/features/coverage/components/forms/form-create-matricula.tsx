@@ -16,10 +16,13 @@ import {
   Sheet,
   SheetContent,
   SheetDescription,
+  SheetFooter,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
 import {
+  ArrowCounterClockwiseIcon,
+  CheckIcon,
   EyeIcon,
   FileDownloadOutlinedIcon,
   FilePdfIcon,
@@ -28,6 +31,7 @@ import {
   FolderOpenIcon,
   ImageIcon,
   PaperclipIcon,
+  SpinnerIcon,
   TrashIcon,
 } from "@/components/ui/icons"
 import { FileUpload, FileUploadTrigger } from "@/components/ui/file-upload"
@@ -230,7 +234,10 @@ export function MatriculaSelectField({
   invalid,
   disabled,
 }: SelectFieldProps) {
-  const items = Object.fromEntries(options.map((option) => [option, labelFor(option)]))
+  const items = Object.fromEntries([
+    ["", placeholder],
+    ...options.map((option) => [option, labelFor(option)]),
+  ])
   return (
     <Field
       orientation="vertical"
@@ -252,6 +259,10 @@ export function MatriculaSelectField({
           <ComboboxFieldValue placeholder={placeholder} />
         </ComboboxFieldTrigger>
         <ComboboxFieldContent>
+          {/* Opción para deseleccionar: vuelve el campo a su placeholder. */}
+          <ComboboxFieldItem key="__empty__" value="">
+            {placeholder}
+          </ComboboxFieldItem>
           {options.map((option) => (
             <ComboboxFieldItem key={option} value={option}>
               {labelFor(option)}
@@ -298,10 +309,6 @@ export function DeptMunicipioFields({
   onChange,
   fieldSettings,
 }: DeptMunicipioFieldsProps) {
-  // `municipality` viaja como el `PK_TMUNICIPIO` real (string), no el
-  // nombre — el alta real solo manda `..._MUNICIPIO` (no `..._DEPARTAMENTO`,
-  // esa columna no existe), así que Departamento queda solo para filtrar
-  // acá en el front, sin id propio.
   const municipalities = departments.find((d) => d.name === value.department)?.municipalities ?? []
   const municipalityNameById = new Map(municipalities.map((m) => [String(m.id), m.name]))
   const departmentId = `${idPrefix}-department`
@@ -1396,6 +1403,8 @@ const SUPPORT_FILE_FIELDS: SupportFileFieldConfig[] = [
   { key: "otherDocuments", label: "Otros documentos relevantes", multiple: true },
 ]
 
+const MATRICULA_MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024
+
 function fileKey(file: File): string {
   return `${file.name}:${file.size}:${file.lastModified}`
 }
@@ -1509,10 +1518,11 @@ interface SupportFilesSheetFieldProps {
   config: SupportFileFieldConfig
   value: File[]
   onChange: (files: File[]) => void
-  /** Ya cargados en el backend para esta categoría (ver
-   * `groupExistingFilesByKey`) -- de solo lectura, se muestran antes que los
-   * que se adjunten ahora en memoria. */
   existingFiles?: MatriculaFile[]
+  editable?: boolean
+  viewOnly?: boolean
+  removedExistingIds?: Set<number>
+  onToggleRemoveExisting?: (fileId: number) => void
 }
 
 function SupportFilesSheetField({
@@ -1520,21 +1530,44 @@ function SupportFilesSheetField({
   value,
   onChange,
   existingFiles = [],
+  editable = false,
+  viewOnly = false,
+  removedExistingIds,
+  onToggleRemoveExisting,
 }: SupportFilesSheetFieldProps) {
+  const [rejection, setRejection] = useState<string | null>(null)
+
   function removeFile(file: File) {
     onChange(value.filter((f) => f !== file))
   }
 
-  const isEmpty = value.length === 0 && existingFiles.length === 0
+  const existingSuperseded = editable && !config.multiple && value.length > 0
+  const visibleExisting = existingSuperseded ? [] : existingFiles
+  const isEmpty = value.length === 0 && visibleExisting.length === 0
+  const canAttach =
+    !viewOnly && (editable ? true : config.multiple || (value.length === 0 && existingFiles.length === 0))
+  const canRemoveExisting = editable && (config.multiple || !config.required)
 
   return (
-    <FileUpload value={value} onValueChange={onChange} multiple={config.multiple} className="gap-2">
+    <FileUpload
+      value={value}
+      onValueChange={(files) => {
+        setRejection(null)
+        onChange(files)
+      }}
+      multiple={config.multiple}
+      onFileValidate={(file) =>
+        file.size > MATRICULA_MAX_FILE_SIZE_BYTES ? "supera el máximo permitido de 25 MB" : null
+      }
+      onFileReject={(file, message) => setRejection(`${file.name} ${message}`)}
+      className="gap-2"
+    >
       <div className="flex items-center justify-between gap-2">
         <span className="text-sm font-semibold text-foreground">
           {config.label}
           {config.required ? "*" : ""}
         </span>
-        {(config.multiple || (value.length === 0 && existingFiles.length === 0)) && (
+        {canAttach && (
           <FileUploadTrigger
             render={
               <Button
@@ -1550,13 +1583,20 @@ function SupportFilesSheetField({
           </FileUploadTrigger>
         )}
       </div>
+      {rejection && <p className="text-xs text-red">{rejection}</p>}
 
       {isEmpty ? (
         <SupportFileEmptyRow />
       ) : (
         <div className="flex flex-col gap-2">
-          {existingFiles.map((file) => (
-            <ExistingFileRow key={file.id} file={file} />
+          {visibleExisting.map((file) => (
+            <ExistingFileRow
+              key={file.id}
+              file={file}
+              removable={canRemoveExisting}
+              markedForRemoval={removedExistingIds?.has(file.id)}
+              onToggleRemove={onToggleRemoveExisting ? () => onToggleRemoveExisting(file.id) : undefined}
+            />
           ))}
           {value.map((file) => (
             <SupportFileRow key={fileKey(file)} file={file} onRemove={removeFile} showDownload />
@@ -1582,13 +1622,17 @@ function existingFileIcon(name: string) {
   return <FileTextIcon className="size-4 shrink-0 text-blue" />
 }
 
+interface ExistingFileRowProps {
+  file: MatriculaFile
+  removable?: boolean
+  markedForRemoval?: boolean
+  onToggleRemove?: () => void
+}
+
 // Ver/Descargar salen de `file-service` (`useArchivoViewUrl`, acuña un
 // token de vista de un solo archivo por `fk_tarchivo` -- ver `lib/files.ts`),
-// mismo mecanismo que ya usa `ArchivoImage`. Eliminar sigue deshabilitado:
-// no hay endpoint todavía para borrar un archivo ya cargado (mismo criterio
-// que "Asignaturas" en `matricula-toolbar.tsx`, se deja en la UI para no
-// rediseñar la fila cuando el backend lo soporte).
-function ExistingFileRow({ file }: { file: MatriculaFile }) {
+// mismo mecanismo que ya usa `ArchivoImage`.
+function ExistingFileRow({ file, removable, markedForRemoval, onToggleRemove }: ExistingFileRowProps) {
   const { data: url, isPending } = useArchivoViewUrl(file.archivoId)
 
   function handleView() {
@@ -1606,10 +1650,16 @@ function ExistingFileRow({ file }: { file: MatriculaFile }) {
   }
 
   return (
-    <div className="flex items-center justify-between gap-2 border-b border-border pb-1.5 text-sm">
+    <div
+      className={
+        markedForRemoval
+          ? "flex items-center justify-between gap-2 border-b border-border pb-1.5 text-sm opacity-50"
+          : "flex items-center justify-between gap-2 border-b border-border pb-1.5 text-sm"
+      }
+    >
       <span className="flex min-w-0 items-center gap-2">
         {existingFileIcon(file.name)}
-        <span className="truncate">{file.name}</span>
+        <span className={markedForRemoval ? "truncate line-through" : "truncate"}>{file.name}</span>
       </span>
       <span className="flex shrink-0 items-center gap-0.5">
         <span className="mr-1 text-xs text-muted-foreground">{formatFileSize(file.sizeBytes)}</span>
@@ -1635,16 +1685,18 @@ function ExistingFileRow({ file }: { file: MatriculaFile }) {
         >
           <FileDownloadOutlinedIcon />
         </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          color="neutral"
-          size="icon-sm"
-          disabled
-          aria-label={`Eliminar ${file.name}`}
-        >
-          <TrashIcon />
-        </Button>
+        {removable && (
+          <Button
+            type="button"
+            variant="ghost"
+            color="neutral"
+            size="icon-sm"
+            aria-label={markedForRemoval ? `Deshacer eliminar ${file.name}` : `Eliminar ${file.name}`}
+            onClick={onToggleRemove}
+          >
+            {markedForRemoval ? <ArrowCounterClockwiseIcon /> : <TrashIcon />}
+          </Button>
+        )}
       </span>
     </div>
   )
@@ -1668,7 +1720,7 @@ function matchSupportFileKey(typeLabel: string): keyof MatriculaSupportFiles {
   return "otherDocuments"
 }
 
-function groupExistingFilesByKey(
+export function groupExistingFilesByKey(
   files: MatriculaFile[],
 ): Record<keyof MatriculaSupportFiles, MatriculaFile[]> {
   const grouped: Record<keyof MatriculaSupportFiles, MatriculaFile[]> = {
@@ -1690,10 +1742,19 @@ interface SupportFilesSheetProps {
   value: MatriculaSupportFiles
   onChange: (value: MatriculaSupportFiles) => void
   /** Archivos ya cargados en el backend (solo detalle/edición) -- se
-   * muestran aparte, arriba, de solo lectura. Los campos de abajo (Adjuntar/
-   * Eliminar) siguen operando sobre `value` en memoria como siempre: todavía
-   * no hay endpoint real de subida/eliminación de archivos. */
+   * muestran aparte, arriba, de solo lectura salvo que `editable` esté
+   * activo. */
   existingFiles?: MatriculaFile[]
+  /** Editar (no alta): habilita reemplazar los de una sola vía y marcar
+   * para borrar los de "otros documentos", más el botón Guardar de abajo. */
+  editable?: boolean
+  /** Fila de la tabla: puramente de visualización (ver `SupportFilesSheetField`). */
+  viewOnly?: boolean
+  removedExistingIds?: Set<number>
+  onToggleRemoveExisting?: (fileId: number) => void
+  onSave?: () => void
+  isSaving?: boolean
+  saveDisabled?: boolean
 }
 
 export function SupportFilesSheet({
@@ -1702,6 +1763,13 @@ export function SupportFilesSheet({
   value,
   onChange,
   existingFiles,
+  editable = false,
+  viewOnly = false,
+  removedExistingIds,
+  onToggleRemoveExisting,
+  onSave,
+  isSaving = false,
+  saveDisabled = false,
 }: SupportFilesSheetProps) {
   const existingByKey = groupExistingFilesByKey(existingFiles ?? [])
   return (
@@ -1710,8 +1778,9 @@ export function SupportFilesSheet({
         <SheetHeader className="px-4">
           <SheetTitle>Archivos de soporte</SheetTitle>
           <SheetDescription>
-            Por favor cargue los siguientes documentos requeridos para completar la inscripción del
-            estudiante.
+            {viewOnly
+              ? "Documentos cargados para este estudiante."
+              : "Por favor cargue los siguientes documentos requeridos para completar la inscripción del estudiante."}
           </SheetDescription>
         </SheetHeader>
         <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-4 pb-8">
@@ -1722,9 +1791,32 @@ export function SupportFilesSheet({
               value={value[field.key]}
               onChange={(files) => onChange({ ...value, [field.key]: files })}
               existingFiles={existingByKey[field.key]}
+              editable={editable}
+              viewOnly={viewOnly}
+              removedExistingIds={removedExistingIds}
+              onToggleRemoveExisting={onToggleRemoveExisting}
             />
           ))}
         </div>
+        {onSave && (
+          <SheetFooter className="px-4">
+            <Button
+              type="button"
+              variant="fill"
+              color="primary"
+              size="sm"
+              disabled={isSaving || saveDisabled}
+              onClick={onSave}
+            >
+              {isSaving ? (
+                <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+              ) : (
+                <CheckIcon data-icon="inline-start" />
+              )}
+              Guardar
+            </Button>
+          </SheetFooter>
+        )}
       </SheetContent>
     </Sheet>
   )

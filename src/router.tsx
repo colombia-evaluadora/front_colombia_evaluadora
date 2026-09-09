@@ -33,7 +33,7 @@ import {
 } from "@/features/administration/audits/api/schema"
 import { academicPeriodsSearchSchema } from "@/features/establishment/academic-period/api/schema"
 import {
-  planeadorDetalleSearchSchema,
+  planeadorRecursoPreviewSearchSchema,
   planeadorSearchSchema,
   planeadorUnidadesSearchSchema,
 } from "@/features/planeador/api/schema"
@@ -138,17 +138,33 @@ const PlaneadorPage = lazyRouteComponent(
   () => import("@/features/planeador/pages/planeador-page"),
   "PlaneadorPage"
 )
-const PlaneadorDetallePage = lazyRouteComponent(
-  () => import("@/features/planeador/pages/planeador-detalle-page"),
-  "PlaneadorDetallePage"
-)
 const PlaneadorEditarActividadPage = lazyRouteComponent(
   () => import("@/features/planeador/pages/planeador-editar-actividad-page"),
   "PlaneadorEditarActividadPage"
 )
+const PlaneadorCrearActividadPage = lazyRouteComponent(
+  () => import("@/features/planeador/pages/planeador-crear-actividad-page"),
+  "PlaneadorCrearActividadPage"
+)
 const PlaneadorUnidadesPage = lazyRouteComponent(
   () => import("@/features/planeador/pages/planeador-unidades-page"),
   "PlaneadorUnidadesPage"
+)
+const PlaneadorCrearUnidadPage = lazyRouteComponent(
+  () => import("@/features/planeador/pages/planeador-crear-unidad-page"),
+  "PlaneadorCrearUnidadPage"
+)
+const PlaneadorEditarUnidadPage = lazyRouteComponent(
+  () => import("@/features/planeador/pages/planeador-editar-unidad-page"),
+  "PlaneadorEditarUnidadPage"
+)
+const PlaneadorRecursoPreviewPage = lazyRouteComponent(
+  () => import("@/features/planeador/pages/planeador-recurso-preview-page"),
+  "PlaneadorRecursoPreviewPage"
+)
+const PlaneadorPlanillaPage = lazyRouteComponent(
+  () => import("@/features/planeador/pages/planeador-planilla-page"),
+  "PlaneadorPlanillaPage"
 )
 
 const MatriculaPage = lazyRouteComponent(
@@ -710,6 +726,13 @@ export const planeadorRoute = createRoute({
   component: PlaneadorPage,
 })
 
+export const planeadorActividadCrearRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.planeadorActividadCrear.path,
+  staticData: { breadcrumb: [PLANEADOR_CRUMB, { label: "Agregar" }] },
+  component: PlaneadorCrearActividadPage,
+})
+
 export const planeadorUnidadesRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.planeadorUnidades.path,
@@ -718,17 +741,20 @@ export const planeadorUnidadesRoute = createRoute({
   component: PlaneadorUnidadesPage,
 })
 
-export const planeadorDetalleRoute = createRoute({
+export const planeadorUnidadCrearRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
-  path: paths.app.planeadorDetalle.path,
-  validateSearch: planeadorDetalleSearchSchema,
+  path: paths.app.planeadorUnidadCrear.path,
+  staticData: { breadcrumb: [PLANEADOR_CRUMB, { label: "Unidad temática" }, { label: "Agregar" }] },
+  component: PlaneadorCrearUnidadPage,
+})
+
+export const planeadorUnidadEditarRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.planeadorUnidadEditar.path,
   staticData: {
-    breadcrumb: (params) => [
-      PLANEADOR_CRUMB,
-      { label: `Actividad ${params.actividadId}` },
-    ],
+    breadcrumb: [PLANEADOR_CRUMB, { label: "Unidad temática" }, { label: "Editar" }],
   },
-  component: PlaneadorDetallePage,
+  component: PlaneadorEditarUnidadPage,
 })
 
 export const planeadorActividadEditarRoute = createRoute({
@@ -744,6 +770,25 @@ export const planeadorActividadEditarRoute = createRoute({
     ],
   },
   component: PlaneadorEditarActividadPage,
+})
+
+export const planeadorRecursoPreviewRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.planeadorRecursoPreview.path,
+  validateSearch: planeadorRecursoPreviewSearchSchema,
+  staticData: {
+    breadcrumb: [PLANEADOR_CRUMB, { label: "Vista previa del recurso" }],
+  },
+  component: PlaneadorRecursoPreviewPage,
+})
+
+export const planeadorPlanillaRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.planeadorPlanilla.path,
+  staticData: {
+    breadcrumb: [PLANEADOR_CRUMB, { label: "Planilla de calificación" }],
+  },
+  component: PlaneadorPlanillaPage,
 })
 
 const AsistenciaPage = lazyRouteComponent(
@@ -844,9 +889,13 @@ const routeTree = rootRoute.addChildren([
       editEstablishmentRoute,
     ]),
     planeadorRoute,
+    planeadorActividadCrearRoute,
     planeadorUnidadesRoute,
-    planeadorDetalleRoute,
+    planeadorUnidadCrearRoute,
+    planeadorUnidadEditarRoute,
     planeadorActividadEditarRoute,
+    planeadorRecursoPreviewRoute,
+    planeadorPlanillaRoute,
     asistenciaRoute,
     asistenciaSeguimientoRoute,
     asistenciaManualRoute,

@@ -6,7 +6,7 @@ import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/not
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Skeleton } from "@/components/ui/skeleton"
-import { ArrowLeftIcon } from "@/components/ui/icons"
+import { ArrowLeftIcon, CheckCircleFillIcon, CheckIcon, SpinnerIcon } from "@/components/ui/icons"
 import { DataTable } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
 import { useDataTable } from "@/hooks/use-data-table"
@@ -14,10 +14,21 @@ import { useDataTable } from "@/hooks/use-data-table"
 import { paths } from "@/config/paths"
 import { asistenciaManualRoute } from "@/router"
 import { useAsistenciaCalendarioQuery } from "@/features/academic-management/asistencia/api/query/use-asistencia-calendario-query"
-import { useAsistenciaRosterQuery } from "@/features/academic-management/asistencia/api/query/use-asistencia-roster-query"
+import { useAsistenciaRosterPorBloquesQuery } from "@/features/academic-management/asistencia/api/query/use-asistencia-roster-query"
 import { useAsistenciaRegistrarMutation } from "@/features/academic-management/asistencia/api/mutations/use-asistencia-registrar-mutation"
+import { useTipoAsistenciaCatalogQuery } from "@/features/academic-management/asistencia/api/query/use-tipo-asistencia-catalog-query"
 import { buildColumnsAsistenciaManual } from "@/features/academic-management/asistencia/components/columns-asistencia-manual"
-import type { TipoAsistencia } from "@/features/academic-management/asistencia/api/types/asistencia"
+import type {
+  AsistenciaRegistroManual,
+  RosterEstudiante,
+  TipoAsistencia,
+} from "@/features/academic-management/asistencia/api/types/asistencia"
+import { agruparPorBloquesContinuos, formatHora } from "@/features/academic-management/asistencia/api/ui-mappings"
+
+const TIPOS_ALTA_NUEVA: TipoAsistencia[] = [1, 2, 5]
+const ASISTIO: TipoAsistencia = 1
+const NO_ASISTIO: TipoAsistencia = 2
+const LLEGO_TARDE: TipoAsistencia = 5
 
 
 const PANEL_CLASS =
@@ -26,13 +37,25 @@ const PANEL_CLASS =
 interface SesionTab {
   id: string
   fkGrupo: number
+  grado: string
   grupo: string
   jornada: string
   fkAsignatura: number
   asignatura: string
-  bloque: number
+  bloque: number | null
+  bloques: (number | null)[]
+  horasPorBloque: Record<number, { horaInicio: string | null; horaFin: string | null }>
   horaInicio: string | null
   horaFin: string | null
+  /** Grupo de Preescolar: la sesión es `actividad`, no `asignatura` -- ver `registrar`/roster mas abajo. */
+  esFormativa: boolean
+  fkActividad: number | null
+  actividad: string | null
+}
+
+/** Nombre a mostrar en pestaña/encabezado: la actividad si es formativa, la asignatura si no. */
+function nombreSesion(sesion: Pick<SesionTab, "esFormativa" | "actividad" | "asignatura">): string {
+  return sesion.esFormativa ? (sesion.actividad ?? "Actividad") : sesion.asignatura
 }
 
 function formatFechaLarga(fecha: string): string {
@@ -40,60 +63,221 @@ function formatFechaLarga(fecha: string): string {
   return new Date(anio, mes - 1, dia).toLocaleDateString("es-CO", { day: "numeric", month: "long" })
 }
 
-function formatHora(timestamp: string): string {
-  // "yyyy-MM-ddTHH:mm:ss" -- se lee la hora directo del string (sin pasar
-  // por `Date`) para no arrastrar el huso horario del navegador.
-  return timestamp.slice(11, 16)
-}
-
-/** "16 febrero (7:00 - 10:00)" del mockup -- sin horas, se queda solo en la fecha. */
 function formatEncabezadoSesion(fecha: string, horaInicio: string | null, horaFin: string | null): string {
   const fechaLabel = formatFechaLarga(fecha)
   if (!horaInicio || !horaFin) return fechaLabel
   return `${fechaLabel} (${formatHora(horaInicio)} - ${formatHora(horaFin)})`
 }
 
+function resolverArchivo(
+  bloque: number | null,
+  fkMatricula: number,
+  soporte: Record<number, File>,
+  soporteEliminado: Record<number, boolean>,
+  rosterPorBloque: Map<number | null, RosterEstudiante[]>,
+): File | number | undefined {
+  if (soporteEliminado[fkMatricula]) return undefined
+  const nuevo = soporte[fkMatricula]
+  if (nuevo) return nuevo
+  const existente = rosterPorBloque.get(bloque)?.find((r) => r.fk_tmatricula === fkMatricula)?.fk_soporte_archivo
+  return existente ?? undefined
+}
+
+function registrosPorBloque(
+  bloques: (number | null)[],
+  seleccion: Record<number, TipoAsistencia>,
+  bloqueTarde: Record<number, number>,
+  soporte: Record<number, File>,
+  soporteEliminado: Record<number, boolean>,
+  rosterPorBloque: Map<number | null, RosterEstudiante[]>,
+): Map<number | null, AsistenciaRegistroManual[]> {
+  const porBloque = new Map<number | null, AsistenciaRegistroManual[]>(bloques.map((b) => [b, []]))
+  const bloquesNumericos = bloques.filter((b): b is number => b !== null)
+
+  for (const [fkMatriculaStr, tipo] of Object.entries(seleccion)) {
+    const fkMatricula = Number(fkMatriculaStr)
+
+    if (tipo === LLEGO_TARDE && bloquesNumericos.length > 1) {
+      const bloqueLlegada = bloqueTarde[fkMatricula] ?? bloquesNumericos[0]
+      for (const bloque of bloquesNumericos) {
+        const tipoBloque: TipoAsistencia =
+          bloque < bloqueLlegada ? NO_ASISTIO : bloque === bloqueLlegada ? LLEGO_TARDE : ASISTIO
+        // El soporte de la tardanza va SOLO en el bloque marcado "Llegó
+        // tarde" -- los bloques "No asistió"/"Asistió" generados por la
+        // cascada no llevan justificación propia.
+        const archivo =
+          tipoBloque === LLEGO_TARDE
+            ? resolverArchivo(bloque, fkMatricula, soporte, soporteEliminado, rosterPorBloque)
+            : undefined
+        porBloque.get(bloque)!.push({
+          fkMatricula,
+          tipoAsistencia: tipoBloque,
+          ...(archivo !== undefined && { fkArchivo: archivo }),
+        })
+      }
+      continue
+    }
+
+    // El soporte solo aplica a No asistió / Llegó tarde (única combinación
+    // que la UI deja elegir) -- si `tipo` cambió a Asistió sin pasar por
+    // "Marcar todo" (que sí limpia el borrador), un archivo que haya quedado
+    // en `soporte` de una selección anterior no se re-envía.
+    const admiteSoporte = tipo === NO_ASISTIO || tipo === LLEGO_TARDE
+    for (const bloque of bloques) {
+      const archivo = admiteSoporte
+        ? resolverArchivo(bloque, fkMatricula, soporte, soporteEliminado, rosterPorBloque)
+        : undefined
+      porBloque.get(bloque)!.push({
+        fkMatricula,
+        tipoAsistencia: tipo,
+        ...(archivo !== undefined && { fkArchivo: archivo }),
+      })
+    }
+  }
+
+  return porBloque
+}
+
+function registroAutoritativo(
+  bloques: (number | null)[],
+  rosterPorBloque: Map<number | null, RosterEstudiante[]>,
+  fkMatricula: number,
+): { bloque: number | null; row: RosterEstudiante } | undefined {
+  let candidato: { bloque: number | null; row: RosterEstudiante } | undefined
+  for (const bloque of bloques) {
+    const row = rosterPorBloque.get(bloque)?.find((r) => r.fk_tmatricula === fkMatricula)
+    if (!row || row.tipo_asistencia_valor == null) continue
+    if (row.tipo_asistencia_valor === LLEGO_TARDE) return { bloque, row }
+    candidato ??= { bloque, row }
+  }
+  return candidato
+}
+
 function SesionTabContent({ sesion, fecha }: { sesion: SesionTab; fecha: string }) {
   const { notify } = useNotify()
-  const { data: roster, isPending, isError, refetch } = useAsistenciaRosterQuery({
-    GRUPO: sesion.fkGrupo,
-    ASIGNATURA: sesion.fkAsignatura,
-    FECHA: fecha,
-    BLOQUE: sesion.bloque,
-  })
+  const {
+    porBloque: rosterPorBloque,
+    isPending,
+    isError,
+    refetch,
+  } = useAsistenciaRosterPorBloquesQuery(
+    {
+      GRUPO: sesion.fkGrupo,
+      FECHA: fecha,
+      // Sesión formativa (preescolar): el padrón/registro se identifican por
+      // ACTIVIDAD, no por ASIGNATURA+BLOQUE.
+      ...(sesion.esFormativa
+        ? { ACTIVIDAD: sesion.fkActividad ?? undefined }
+        : { ASIGNATURA: sesion.fkAsignatura }),
+    },
+    sesion.bloques,
+  )
   const [seleccion, setSeleccion] = React.useState<Record<number, TipoAsistencia>>({})
   const [soporte, setSoporte] = React.useState<Record<number, File>>({})
+  const [soporteEliminado, setSoporteEliminado] = React.useState<Record<number, boolean>>({})
+  const [bloqueTarde, setBloqueTarde] = React.useState<Record<number, number>>({})
   const registrar = useAsistenciaRegistrarMutation()
+  const { data: tipoOptionsCompleto = [] } = useTipoAsistenciaCatalogQuery()
+  const tipoOptions = React.useMemo(
+    () => tipoOptionsCompleto.filter((opt) => TIPOS_ALTA_NUEVA.includes(opt.value)),
+    [tipoOptionsCompleto],
+  )
 
-  const roster_ = React.useMemo(() => roster ?? [], [roster])
+  // El padrón (nombre/documento) es el mismo en cualquier bloque; el primero
+  // alcanza para eso. Lo que SÍ varía por bloque es el estado guardado, así
+  // que cada fila se reemplaza por su registro autoritativo (abajo) antes de
+  // pasarla a la tabla.
+  const primerBloqueRoster = React.useMemo(
+    () => rosterPorBloque.get(sesion.bloque) ?? [],
+    [rosterPorBloque, sesion.bloque],
+  )
+  const autoritativos = React.useMemo(() => {
+    const mapa = new Map<number, { bloque: number | null; row: RosterEstudiante }>()
+    for (const base of primerBloqueRoster) {
+      const encontrado = registroAutoritativo(sesion.bloques, rosterPorBloque, base.fk_tmatricula)
+      if (encontrado) mapa.set(base.fk_tmatricula, encontrado)
+    }
+    return mapa
+  }, [primerBloqueRoster, rosterPorBloque, sesion.bloques])
 
+  const roster_ = React.useMemo(
+    () => primerBloqueRoster.map((base) => autoritativos.get(base.fk_tmatricula)?.row ?? base),
+    [primerBloqueRoster, autoritativos],
+  )
+
+  const baseline = React.useRef<Record<number, TipoAsistencia>>({})
+  const bloqueTardeBaseline = React.useRef<Record<number, number>>({})
   const precargado = React.useRef(false)
   React.useEffect(() => {
-    if (precargado.current || !roster) return
-    const inicial: Record<number, TipoAsistencia> = {}
-    for (const est of roster) {
-      if (est.tipo_asistencia_valor != null) inicial[est.fk_tmatricula] = est.tipo_asistencia_valor
+    if (precargado.current || isPending) return
+    const inicialSeleccion: Record<number, TipoAsistencia> = {}
+    const inicialBloqueTarde: Record<number, number> = {}
+    for (const [fkMatricula, { bloque, row }] of autoritativos) {
+      if (row.tipo_asistencia_valor == null) continue
+      inicialSeleccion[fkMatricula] = row.tipo_asistencia_valor
+      // Sin bloque real no hay "en cuál bloque llegó" que preseleccionar
+      // (sesión suelta o de un solo bloque -- el selector ni se muestra).
+      if (row.tipo_asistencia_valor === LLEGO_TARDE && bloque !== null) {
+        inicialBloqueTarde[fkMatricula] = bloque
+      }
     }
-    if (Object.keys(inicial).length > 0) setSeleccion(inicial)
+    baseline.current = inicialSeleccion
+    bloqueTardeBaseline.current = inicialBloqueTarde
+    if (Object.keys(inicialSeleccion).length > 0) setSeleccion(inicialSeleccion)
+    if (Object.keys(inicialBloqueTarde).length > 0) setBloqueTarde(inicialBloqueTarde)
     precargado.current = true
-  }, [roster])
+  }, [isPending, autoritativos])
   const columns = React.useMemo(
     () =>
       buildColumnsAsistenciaManual({
         fechaLabel: formatEncabezadoSesion(fecha, sesion.horaInicio, sesion.horaFin),
+        tipoOptions,
         seleccion,
-        onChange: (fkMatricula, tipo) => setSeleccion((prev) => ({ ...prev, [fkMatricula]: tipo })),
+        onChange: (fkMatricula, tipo) =>
+          setSeleccion((prev) => ({ ...prev, [fkMatricula]: tipo })),
         soporte,
-        onSoporteChange: (fkMatricula, archivo) =>
+        onSoporteChange: (fkMatricula, archivo) => {
           setSoporte((prev) => {
             if (!archivo) {
               const { [fkMatricula]: _omitido, ...resto } = prev
               return resto
             }
             return { ...prev, [fkMatricula]: archivo }
-          }),
+          })
+          if (archivo) {
+            setSoporteEliminado((prev) => {
+              if (!prev[fkMatricula]) return prev
+              const { [fkMatricula]: _omitido, ...resto } = prev
+              return resto
+            })
+          }
+        },
+        soporteEliminado,
+        onSoporteEliminar: (fkMatricula) => {
+          setSoporte((prev) => {
+            const { [fkMatricula]: _omitido, ...resto } = prev
+            return resto
+          })
+          setSoporteEliminado((prev) => ({ ...prev, [fkMatricula]: true }))
+        },
+        bloques: sesion.bloques.filter((b): b is number => b !== null),
+        horasPorBloque: sesion.horasPorBloque,
+        bloqueTarde,
+        onBloqueTardeChange: (fkMatricula, bloque) =>
+          setBloqueTarde((prev) => ({ ...prev, [fkMatricula]: bloque })),
       }),
-    [fecha, sesion.horaInicio, sesion.horaFin, seleccion, soporte],
+    [
+      fecha,
+      sesion.horaInicio,
+      sesion.horaFin,
+      sesion.bloques,
+      sesion.horasPorBloque,
+      tipoOptions,
+      seleccion,
+      soporte,
+      soporteEliminado,
+      bloqueTarde,
+    ],
   )
 
   const [pageIndex, setPageIndex] = React.useState(0)
@@ -122,45 +306,98 @@ function SesionTabContent({ sesion, fecha }: { sesion: SesionTab; fecha: string 
     setSorting: () => {},
   })
 
-  function handleGuardar() {
-    const registros = Object.entries(seleccion).map(([fkMatricula, tipoAsistencia]) => {
-      const archivo = soporte[Number(fkMatricula)]
-      return {
-        fkMatricula: Number(fkMatricula),
-        tipoAsistencia,
-        ...(archivo && { fkArchivo: archivo }),
-      }
-    })
-    if (registros.length === 0) {
-      notify("Selecciona al menos un estudiante.", { variant: "error" })
+  const faltantes = roster_.filter((est) => seleccion[est.fk_tmatricula] == null).length
+  const faltaBloqueTarde =
+    sesion.bloques.length > 1 &&
+    roster_.some(
+      (est) => seleccion[est.fk_tmatricula] === LLEGO_TARDE && bloqueTarde[est.fk_tmatricula] == null,
+    )
+  const puedeGuardar = roster_.length > 0 && faltantes === 0 && !faltaBloqueTarde
+  const esDirty =
+    Object.keys(soporte).length > 0 ||
+    Object.keys(soporteEliminado).length > 0 ||
+    roster_.some(
+      (est) =>
+        seleccion[est.fk_tmatricula] !== baseline.current[est.fk_tmatricula] ||
+        bloqueTarde[est.fk_tmatricula] !== bloqueTardeBaseline.current[est.fk_tmatricula],
+    )
+  const mostrarGuardar = puedeGuardar && esDirty
+
+
+  function handleMarcarTodoAsistio() {
+    setSeleccion(
+      Object.fromEntries(roster_.map((est) => [est.fk_tmatricula, ASISTIO as TipoAsistencia])),
+    )
+    setBloqueTarde({})
+    setSoporte({})
+    setSoporteEliminado({})
+  }
+
+  async function handleGuardar() {
+    if (!puedeGuardar) {
+      notify(
+        faltaBloqueTarde
+          ? "Selecciona en qué bloque llegó cada estudiante marcado como Llegó tarde."
+          : "Marca la asistencia de todos los estudiantes antes de guardar.",
+        { variant: "error" },
+      )
       return
     }
-    registrar.mutate(
-      {
-        GRUPO: sesion.fkGrupo,
-        ASIGNATURA: sesion.fkAsignatura,
-        FECHA: fecha,
-        BLOQUE: sesion.bloque,
-        REGISTROS: registros,
-      },
-      {
-        onSuccess: () => {
-          notify("Asistencia guardada.")
-          setSoporte({})
-        },
-      },
+    const porBloque = registrosPorBloque(
+      sesion.bloques,
+      seleccion,
+      bloqueTarde,
+      soporte,
+      soporteEliminado,
+      rosterPorBloque,
     )
+    try {
+      await Promise.all(
+        [...porBloque.entries()].map(([bloque, registros]) =>
+          registrar.mutateAsync({
+            GRUPO: sesion.fkGrupo,
+            FECHA: fecha,
+            REGISTROS: registros,
+            // Sesión formativa: ACTIVIDAD y sin BLOQUE (no cuelga del
+            // horario) -- sesión normal: ASIGNATURA + BLOQUE de siempre.
+            ...(sesion.esFormativa
+              ? { ACTIVIDAD: sesion.fkActividad ?? undefined }
+              : { ASIGNATURA: sesion.fkAsignatura, BLOQUE: bloque }),
+          }),
+        ),
+      )
+      notify("Asistencia guardada.")
+      baseline.current = seleccion
+      bloqueTardeBaseline.current = bloqueTarde
+      setSoporte({})
+      setSoporteEliminado({})
+    } catch {
+      notify("Ocurrió un error al guardar la asistencia.", { variant: "error" })
+    }
   }
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center gap-2 text-sm">
-        <span className="font-semibold">{sesion.grupo}</span>
-        <span className="rounded-sm bg-muted px-1 text-[10px] font-semibold text-muted-foreground">
-          {sesion.jornada}
-        </span>
-        <span className="text-muted-foreground">·</span>
-        <span className="font-medium">{sesion.asignatura}</span>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <span className="font-semibold">{sesion.grado}{sesion.grupo}</span>
+          <span className="rounded-sm bg-muted px-1 text-[10px] font-semibold text-muted-foreground">
+            {sesion.jornada}
+          </span>
+          <span className="text-muted-foreground">·</span>
+          <span className="font-medium">{nombreSesion(sesion)}</span>
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          color="primary"
+          size="sm"
+          disabled={roster_.length === 0}
+          onClick={handleMarcarTodoAsistio}
+        >
+          <CheckCircleFillIcon data-icon="inline-start" />
+          Marcar todo como Asistió
+        </Button>
       </div>
 
       <DataTable
@@ -188,24 +425,30 @@ function SesionTabContent({ sesion, fecha }: { sesion: SesionTab; fecha: string 
 
       <div className="flex items-center justify-between gap-4">
         <span className="text-xs text-muted-foreground">
-          {Object.keys(seleccion).length} de {roster?.length ?? 0} estudiantes marcados
+          {Object.keys(seleccion).length} de {roster_.length} estudiantes marcados
         </span>
-        <Button
-          type="button"
-          color="primary"
-          size="sm"
-          disabled={registrar.isPending}
-          aria-busy={registrar.isPending}
-          onClick={handleGuardar}
-        >
-          Guardar
-        </Button>
+        {mostrarGuardar && (
+          <Button
+            type="button"
+            color="primary"
+            size="sm"
+            disabled={registrar.isPending}
+            aria-busy={registrar.isPending}
+            onClick={handleGuardar}
+          >
+            {registrar.isPending ? (
+              <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+            ) : (
+              <CheckIcon data-icon="inline-start" />
+            )}
+            Guardar
+          </Button>
+        )}
       </div>
     </div>
   )
 }
 
-/** Pantalla "Asistencia manual" -- abierta desde el popover de una celda del calendario. */
 export function AsistenciaManualPage() {
   const { fecha, sede } = asistenciaManualRoute.useSearch()
   const [anio, mes] = fecha.split("-").map(Number)
@@ -213,24 +456,26 @@ export function AsistenciaManualPage() {
   const { data: sesiones, isPending } = useAsistenciaCalendarioQuery({ SEDE: sede, ANIO: anio, MES: mes })
 
   const sesionesDelDia: SesionTab[] = React.useMemo(() => {
-    const porClave = new Map<string, SesionTab>()
-    for (const s of sesiones ?? []) {
-      if (s.fecha !== fecha) continue
-      const key = `${s.fk_grupo}-${s.fk_asignatura}`
-      if (porClave.has(key)) continue
-      porClave.set(key, {
-        id: key,
-        fkGrupo: s.fk_grupo,
-        grupo: s.grupo,
-        jornada: s.jornada,
-        fkAsignatura: s.fk_asignatura,
-        asignatura: s.asignatura,
-        bloque: s.bloque,
-        horaInicio: s.hora_inicio,
-        horaFin: s.hora_fin,
-      })
-    }
-    return [...porClave.values()]
+    const delDia = (sesiones ?? []).filter((s) => s.fecha === fecha)
+    return agruparPorBloquesContinuos(delDia).map((b) => ({
+      // Una actividad no tiene bloque -- se identifica sola, distinta de
+      // cualquier otra sesión del mismo grupo/asignatura ese día.
+      id: b.esFormativa ? `${b.fkGrupo}-actividad-${b.fkActividad}` : `${b.fkGrupo}-${b.fkAsignatura}-${b.bloque}`,
+      fkGrupo: b.fkGrupo,
+      grado: b.grado,
+      grupo: b.grupo,
+      jornada: b.jornada,
+      fkAsignatura: b.fkAsignatura,
+      asignatura: b.asignatura,
+      bloque: b.bloque,
+      bloques: b.bloques,
+      esFormativa: b.esFormativa,
+      fkActividad: b.fkActividad,
+      actividad: b.actividad,
+      horasPorBloque: b.horasPorBloque,
+      horaInicio: b.horaInicio,
+      horaFin: b.horaFin,
+    }))
   }, [sesiones, fecha])
 
   const [activeTab, setActiveTab] = React.useState<string | undefined>(undefined)
@@ -272,7 +517,7 @@ export function AsistenciaManualPage() {
             <TabsList variant="folder">
               {sesionesDelDia.map((sesion) => (
                 <TabsTrigger key={sesion.id} value={sesion.id}>
-                  {sesion.grupo} · {sesion.asignatura}
+                  {sesion.grado}{sesion.grupo} · {nombreSesion(sesion)}
                 </TabsTrigger>
               ))}
             </TabsList>

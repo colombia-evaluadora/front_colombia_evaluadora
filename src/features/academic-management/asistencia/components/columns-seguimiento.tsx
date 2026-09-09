@@ -4,9 +4,14 @@ import { DataTableColumnHeader } from "@/components/data-table"
 import { PaperclipIcon } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
 
-import { TIPO_ASISTENCIA_DOT } from "@/features/academic-management/asistencia/api/ui-mappings"
+import { nombreMateriaSeguimiento, TIPO_ASISTENCIA_DOT } from "@/features/academic-management/asistencia/api/ui-mappings"
 import { EditarSeguimientoDialog } from "@/features/academic-management/asistencia/components/dialog-editar-seguimiento"
 import type { AsistenciaQueryRow } from "@/features/academic-management/asistencia/api/types/asistencia"
+
+function formatFecha(fecha: string): string {
+  const [anio, mes, dia] = fecha.slice(0, 10).split("-")
+  return `${dia}/${mes}/${anio}`
+}
 
 export const columnsSeguimiento: ColumnDef<AsistenciaQueryRow>[] = [
   {
@@ -32,32 +37,44 @@ export const columnsSeguimiento: ColumnDef<AsistenciaQueryRow>[] = [
     ),
   },
   {
-    id: "observacion",
-    accessorKey: "observacion",
-    meta: { label: "Observación" },
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Observación" />,
-    cell: ({ row }) => (
-      <span className="text-muted-foreground">{row.original.observacion ?? "-"}</span>
-    ),
+    id: "asignatura",
+    accessorKey: "asignatura",
+    meta: { label: "Asignatura" },
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Asignatura" />,
+    cell: ({ row }) => nombreMateriaSeguimiento(row.original),
+  },
+  {
+    id: "grupo",
+    accessorKey: "grupo",
+    meta: { label: "Grado" },
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Grado" />,
+  },
+  {
+    id: "fecha",
+    accessorKey: "fecha",
+    meta: { label: "Fecha" },
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Fecha" />,
+    cell: ({ row }) => formatFecha(row.original.fecha),
   },
   {
     id: "soporte",
-    // Sin `accessorKey`: no viene de un solo campo -- combina
-    // `tiene_soporte` y `soporte_nombre`.
     meta: { label: "Soporte" },
     header: ({ column }) => <DataTableColumnHeader column={column} title="Soporte" />,
     enableSorting: false,
-    cell: ({ row }) => (
-      <span
-        className={cn(
-          "flex items-center gap-1.5",
-          row.original.tiene_soporte ? "text-foreground" : "text-muted-foreground",
-        )}
-      >
-        <PaperclipIcon className="size-4 shrink-0" />
-        {row.original.tiene_soporte ? row.original.soporte_nombre : "Sin soporte"}
-      </span>
-    ),
+    cell: ({ row }) => {
+      if (row.original.tipo_asistencia_valor === 1) return null
+      return (
+        <span
+          className={cn(
+            "flex items-center gap-1.5",
+            row.original.tiene_soporte ? "text-foreground" : "text-muted-foreground",
+          )}
+        >
+          <PaperclipIcon className="size-4 shrink-0" />
+          {row.original.tiene_soporte ? row.original.soporte_nombre : "Sin soporte"}
+        </span>
+      )
+    },
   },
   {
     id: "actions",

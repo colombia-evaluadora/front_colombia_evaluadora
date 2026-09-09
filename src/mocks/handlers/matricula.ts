@@ -16,6 +16,7 @@ import {
 } from "@/mocks/db/matricula-field-config"
 import { CAMPUSES, GRADES } from "@/mocks/db/reservations"
 import { jornadasDb } from "@/mocks/db/academic-period/jornadas"
+import { formatGrade } from "@/features/coverage/api/ui-mappings"
 import type {
   BulkMatriculaChangeRequest,
   BulkMatriculaChangeResult,
@@ -323,11 +324,14 @@ export const matriculaHandlers = [
     )
 
     return HttpResponse.json({
+      // Sin "codigo" -- el back real tampoco lo trae acá. El nombre debe
+      // coincidir con el catálogo GRADOS de `select-catalog.ts` (mismo
+      // `formatGrade`) para que el join por nombre en `fetchGrados`
+      // encuentre el código ordinal.
       rows: grados.map((codigo, index) => ({
         id: mixHash(hashString(`grado-${periodoId}-${codigo}`)) % 1000000,
-        nombre: `Grado ${codigo}`,
-        grado: `Grado ${codigo}`,
-        codigo,
+        nombre: formatGrade(codigo),
+        grado: formatGrade(codigo),
         teaching_level_id: 1,
         teaching_level_name: "",
         grado_siguiente: null,
@@ -424,7 +428,7 @@ export const matriculaHandlers = [
           }
         : null
 
-    return HttpResponse.json<CreateMatriculaResult>({ matricula, homologation })
+    return HttpResponse.json<CreateMatriculaResult>({ matricula, homologation, failedOtherDocuments: [] })
   }),
 
   // Endpoint real (`eval-col`, no `coverage`) — ver colección Postman "SSO —
