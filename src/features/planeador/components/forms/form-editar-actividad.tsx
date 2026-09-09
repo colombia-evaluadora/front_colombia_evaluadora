@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { useUnidadReferenteQuery } from "@/features/planeador/api/query/use-unidad-referente-query"
+import { useUnidadDetalleQuery } from "@/features/planeador/api/query/use-unidades-query"
 import { useReferenteCurricularQuery } from "@/features/planeador/api/query/use-referente-curricular-query"
 import { useDocenteGruposQuery } from "@/features/planeador/api/query/use-docente-grupos-query"
 import { useDocenteGradoAsignaturaQuery } from "@/features/planeador/api/query/use-docente-grado-asignatura-query"
@@ -37,6 +38,10 @@ import {
   ListaAgregableCajaSelect,
 } from "@/features/planeador/components/forms/field-lista-agregable"
 import { useEnunciadosDbaQuery } from "@/features/planeador/api/query/use-enunciados-dba"
+import {
+  EnunciadosEvidenciasChecklist,
+  UnidadFicha,
+} from "@/features/planeador/components/unidad-evidencias-section"
 import {
   METODO_CALCULO_INFO,
   METODO_CALCULO_OPTIONS,
@@ -242,7 +247,7 @@ export function EditarActividadForm({
     contenidos: string[]
     objetivos: string[]
     descripcion: string
-    enunciadosDba: string[]
+    enunciadosDba: { id: number; text: string }[]
     metodoCalculo: MetodoCalculo
     gradoId: number | undefined
     grado: string
@@ -300,7 +305,11 @@ export function EditarActividadForm({
           <AsignaturaGradoSection form={form} />
         </div>
       </Card>
-      <UnidadSection form={form} unidades={unidades} />
+      <UnidadSection
+        form={form}
+        unidades={unidades}
+        evidenciasOriginales={esNueva ? [] : actividad.evidenciasIds}
+      />
       <MaterialesSection form={form} />
       <RecursosSection form={form} />
       <ProgramacionSection form={form} />
@@ -384,7 +393,7 @@ function IdentificacionSection({
     contenidos: string[]
     objetivos: string[]
     descripcion: string
-    enunciadosDba: string[]
+    enunciadosDba: { id: number; text: string }[]
     metodoCalculo: MetodoCalculo
     gradoId: number | undefined
     grado: string
@@ -575,48 +584,119 @@ function IdentificacionSection({
 }
 
 /**
- * Ficha de solo lectura de la unidad temática elegida arriba en
- * "Unidad temática asociada" — contenidos, objetivos y descripción
- * sacados de esa `UnidadTematica`, no de la actividad. Se arma en vivo:
- * lee el `id` actual del field `unidad` vía `form.Subscribe` (no un prop
- * estático) para que cambiar la unidad en el select actualice esta
- * ficha de una, y no queda pegada a la unidad con la que se abrió el
- * form. Sin unidad elegida no hay nada que mostrar —no aplica un
- * fieldset con "Seleccione" ni placeholders vacíos.
+ * Ficha de la unidad elegida arriba en "Unidad temática asociada" + la
+ * sección de checkboxes de evidencias (nivel 2) de sus enunciados ya
+ * relacionados (`useUnidadReferenteQuery`). Se arma en vivo: lee el `id`
+ * actual del field `unidad` vía `form.Subscribe` (no un prop estático) para
+ * que cambiar la unidad en el select la actualice de una. Sin unidad
+ * elegida no hay nada que mostrar.
+ *
+ * La descripción/objetivos/contenidos de la ficha salen de
+ * `useUnidadDetalleQuery`, NO de `unidades` (la lista que ya trae el form
+ * para el `<Select>`): el listado real (`GET /planeador/unidades`) solo
+ * confirma `area`/`descripcion`/fechas/`total_actividades` (ver el
+ * comentario de `UnidadRealRow` en `use-unidades-query.ts`) — `objetivos`/
+ * `contenidos` pueden faltar ahí aunque la unidad sí los tenga, y solo el
+ * detalle por `:id` los trae de forma confiable.
+ *
+ * La selección de evidencias viaja en el propio form (`values.evidenciasIds`)
+ * y se guarda junto con el resto al submit, igual que cualquier otro campo.
+ * Al EDITAR una actividad ya creada, `evidenciasOriginales` marca cuáles ya
+ * estaban relacionadas: esas quedan tildadas pero no se pueden destildar (no
+ * hay endpoint confirmado para desvincular una evidencia, solo para agregar
+ * una nueva — ver el comentario de `Actividad.evidenciasIds`).
  */
 function UnidadSection({
   form,
   unidades,
+  evidenciasOriginales,
 }: {
   form: FormActividad
   unidades: UnidadTematica[]
+  evidenciasOriginales: number[]
 }) {
+  const gradoId = useSelector(form.store, (state) => state.values.gradoId)
+  const asignaturaId = useSelector(form.store, (state) => state.values.asignaturaId)
+
   return (
     <form.Subscribe selector={(state) => state.values.unidad}>
       {(unidad) => {
         const seleccionada = unidades.find((u) => u.id === unidad.id)
         if (!seleccionada) return null
         return (
-          <fieldset className="rounded-md border bg-card px-4 pb-4">
-            <legend className="px-1.5 text-sm font-semibold">{seleccionada.nombre}</legend>
-            <div className="space-y-3">
-              <div>
-                <p className="mb-1 text-sm font-semibold">Contenidos:</p>
-                <BulletList items={seleccionada.contenidos} />
-              </div>
-              <div>
-                <p className="mb-1 text-sm font-semibold">Objetivos:</p>
-                <BulletList items={seleccionada.objetivos} />
-              </div>
-              <div>
-                <p className="mb-1 text-sm font-semibold">Descripción:</p>
-                <p className="text-muted-foreground text-sm">{seleccionada.descripcion || "—"}</p>
-              </div>
-            </div>
-          </fieldset>
+          <form.Field name="evidenciasIds">
+            {(field) => (
+              <UnidadFichaYEvidencias
+                unidadId={seleccionada.id}
+                nombreFallback={seleccionada.nombre}
+                gradoId={gradoId}
+                asignaturaId={asignaturaId}
+                seleccionadas={field.state.value}
+                onToggle={(evidenciaId) => {
+                  const actual = field.state.value
+                  field.handleChange(
+                    actual.includes(evidenciaId)
+                      ? actual.filter((id) => id !== evidenciaId)
+                      : [...actual, evidenciaId],
+                  )
+                }}
+                disabledIds={evidenciasOriginales}
+              />
+            )}
+          </form.Field>
         )
       }}
     </form.Subscribe>
+  )
+}
+
+/** Separado de `UnidadSection` solo para poder llamar
+ *  `useUnidadDetalleQuery`/`useReferenteCurricularQuery` de forma
+ *  incondicional (reglas de hooks) — `UnidadSection` decide arriba si hay
+ *  unidad elegida antes de montar esto. */
+function UnidadFichaYEvidencias({
+  unidadId,
+  nombreFallback,
+  gradoId,
+  asignaturaId,
+  seleccionadas,
+  onToggle,
+  disabledIds,
+}: {
+  unidadId: number
+  nombreFallback: string
+  gradoId: number | undefined
+  asignaturaId: number | undefined
+  seleccionadas: number[]
+  onToggle: (evidenciaId: number) => void
+  disabledIds: number[]
+}) {
+  const { data: unidad } = useUnidadDetalleQuery(unidadId)
+  // El árbol de evidencias a ofrecer sale del referente curricular de
+  // GRADO + ASIGNATURA (`GET /planeador/referente-curricular`), no de la
+  // unidad — cambiar de asignatura cambia el referente y con él las
+  // evidencias disponibles, sin importar qué unidad siga elegida.
+  const { data: referente } = useReferenteCurricularQuery(gradoId, asignaturaId)
+
+  return (
+    <div className="flex flex-col gap-4">
+      <UnidadFicha
+        nombre={unidad?.nombre ?? nombreFallback}
+        descripcion={unidad?.descripcion ?? ""}
+        objetivos={unidad?.objetivos ?? []}
+        contenidos={unidad?.contenidos ?? []}
+      />
+      {referente && referente.enunciados.length > 0 && (
+        <EnunciadosEvidenciasChecklist
+          nivel1Etiqueta={referente.nivel1Etiqueta}
+          nivel2Etiqueta={referente.nivel2Etiqueta}
+          enunciados={referente.enunciados}
+          seleccionadas={seleccionadas}
+          onToggle={onToggle}
+          disabledIds={disabledIds}
+        />
+      )}
+    </div>
   )
 }
 
@@ -3103,19 +3183,6 @@ function SeguimientoSection({ form }: { form: FormActividad }) {
 // Helpers
 // ────────────────────────────────────────────────────────────────────────────
 
-function BulletList({ items }: { items: string[] }) {
-  if (items.length === 0) {
-    return <p className="text-muted-foreground text-sm">—</p>
-  }
-  return (
-    <ul className="text-muted-foreground list-disc space-y-1 pl-5 text-sm">
-      {items.map((item) => (
-        <li key={item}>{item}</li>
-      ))}
-    </ul>
-  )
-}
-
 /** Id numérico aleatorio para items nuevos (recursos/criterios/niveles) que
  *  todavía no pasaron por el backend — que es quien asigna el PK real. */
 function cryptoId(): number {
@@ -3139,7 +3206,7 @@ function CrearUnidadPopover({
     contenidos: string[]
     objetivos: string[]
     descripcion: string
-    enunciadosDba: string[]
+    enunciadosDba: { id: number; text: string }[]
     metodoCalculo: MetodoCalculo
   }) => void
   /** Se aplica al `Button` del trigger para encadenarlo visualmente con
@@ -3159,7 +3226,7 @@ function CrearUnidadPopover({
   const [contenidos, setContenidos] = React.useState<string[]>([])
   const [objetivos, setObjetivos] = React.useState<string[]>([])
   const [descripcion, setDescripcion] = React.useState("")
-  const [enunciadosDba, setEnunciadosDba] = React.useState<string[]>([])
+  const [enunciadosDba, setEnunciadosDba] = React.useState<{ id: number; text: string }[]>([])
   const [metodoCalculo, setMetodoCalculo] = React.useState<MetodoCalculo>("Ponderado")
 
   const { enunciados: enunciadosDisponibles, isPending: isPendingEnunciados } = useEnunciadosDbaQuery(
@@ -3276,7 +3343,7 @@ function CrearUnidadPopover({
               description="Selecciona los enunciados de DBA asociados a esta unidad."
               columnLabel="Enunciados"
               items={enunciadosDba}
-              options={enunciadosDisponibles.map((e) => e.text)}
+              options={enunciadosDisponibles}
               onChange={setEnunciadosDba}
               disabled={!hasGradoAsignatura}
               isPending={isPendingEnunciados}

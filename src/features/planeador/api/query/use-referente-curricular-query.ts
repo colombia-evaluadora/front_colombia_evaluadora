@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 
-import { evalCol } from "@/lib/eval-col-client"
+import { api } from "@/lib/api-client"
 import type { UnidadReferente } from "@/features/planeador/api/query/use-unidad-referente-query"
 
 /**
@@ -41,6 +41,11 @@ interface ReferenteCurricularRow {
   es_evaluativo?: boolean
   enfoque_valor?: "EVALUATIVO" | "FORMATIVO" | null
   tipo_evaluacion_valor?: string | null
+  /** Rótulo dinámico de cada nivel del árbol — "Propósito"/"Imprescindible"
+   *  en Preescolar, "Enunciado"/"Evidencia" en Primaria (colección Postman
+   *  `planeador-flujo-unidad-actividad`, paso 1/3). Nunca hardcodear. */
+  nivel_1_etiqueta?: string | null
+  nivel_2_etiqueta?: string | null
   /** Confirmado contra una respuesta real: el texto de cada enunciado (y de
    *  cada evidencia anidada) viene en `texto`, no `nombre`/`descripcion`. */
   enunciados?: ReferenteEnunciadoRow[]
@@ -58,6 +63,10 @@ export interface ReferenteEnunciado {
 }
 
 export interface ReferenteCurricular extends UnidadReferente {
+  /** Default "Enunciado"/"Evidencia" cuando el backend no los manda (sin
+   *  referente todavía) — nunca un literal hardcodeado en la UI. */
+  nivel1Etiqueta: string
+  nivel2Etiqueta: string
   enunciados: ReferenteEnunciado[]
 }
 
@@ -65,6 +74,8 @@ const SIN_REFERENTE: ReferenteCurricular = {
   tieneReferente: false,
   esFormativo: false,
   tipoEvaluacion: null,
+  nivel1Etiqueta: "Enunciado",
+  nivel2Etiqueta: "Evidencia",
   enunciados: [],
 }
 
@@ -76,6 +87,8 @@ function toReferente(row: ReferenteCurricularRow | undefined): ReferenteCurricul
     tieneReferente: true,
     esFormativo,
     tipoEvaluacion: row.tipo_evaluacion_valor ?? null,
+    nivel1Etiqueta: row.nivel_1_etiqueta ?? "Enunciado",
+    nivel2Etiqueta: row.nivel_2_etiqueta ?? "Evidencia",
     enunciados: (row.enunciados ?? []).map((enunciado) => ({
       id: enunciado.pk,
       text: enunciado.texto,
@@ -90,14 +103,33 @@ function toReferente(row: ReferenteCurricularRow | undefined): ReferenteCurricul
 export const referenteCurricularQueryKey = (gradoId: number, asignaturaId: number | undefined) =>
   ["planeador", "referente-curricular", gradoId, asignaturaId ?? null] as const
 
+/**
+ * A diferencia del resto de las rutas de `eval-col` (que siempre envuelven
+ * en `{rows: [...]}`, ver `eval-col-client.ts`), esta responde el referente
+ * como un OBJETO SUELTO — confirmado contra una respuesta real, sin `rows`
+ * ni array. `evalCol.getRows` reducía eso a `[]` (no matchea ni "es
+ * array" ni "tiene `.rows`"), así que el árbol de enunciados/evidencias
+ * llegaba siempre vacío. Se tolera igual un array o un `{rows: [...]}` por
+ * si la forma varía según el caso (más de un referente que aplica, la
+ * relación es N:N — ver el comentario de la función de arriba).
+ */
+function firstRow(body: unknown): ReferenteCurricularRow | undefined {
+  if (Array.isArray(body)) return body[0] as ReferenteCurricularRow | undefined
+  if (body != null && typeof body === "object" && "rows" in body) {
+    const rows = (body as { rows?: unknown }).rows
+    return Array.isArray(rows) ? (rows[0] as ReferenteCurricularRow | undefined) : undefined
+  }
+  return body as ReferenteCurricularRow | undefined
+}
+
 async function fetchReferenteCurricular(
   gradoId: number,
   asignaturaId: number | undefined,
 ): Promise<ReferenteCurricular> {
   const query = new URLSearchParams({ grado: String(gradoId) })
   if (asignaturaId != null) query.set("asignatura", String(asignaturaId))
-  const rows = await evalCol.getRows<ReferenteCurricularRow>(`/planeador/referente-curricular?${query}`)
-  return toReferente(rows[0])
+  const body = await api.get(`/eval-col/planeador/referente-curricular?${query}`)
+  return toReferente(firstRow(body))
 }
 
 /**

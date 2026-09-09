@@ -195,6 +195,17 @@ export interface Actividad {
    */
   esRecuperacion: boolean
   unidad: Unidad
+  /**
+   * Ids de las evidencias (nivel 2 del referente curricular de la unidad,
+   * `useUnidadReferenteQuery`) marcadas para esta actividad — solo tiene
+   * sentido con `unidad.id !== 0`: una actividad huérfana no tiene de
+   * dónde sacarlas. Se mandan en `POST /planeador/actividades` como
+   * `EVIDENCIAS: [ids]` (colección Postman
+   * `planeador-flujo-unidad-actividad`, paso 7); agregar una nueva a una
+   * actividad ya creada usa `POST .../actividades/:id/evidencias` en vez
+   * del PUT general (ver `agregar-evidencia-actividad.ts`).
+   */
+  evidenciasIds: number[]
   asignatura: string
   grado: string
   grupo: string
