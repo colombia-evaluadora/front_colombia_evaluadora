@@ -207,7 +207,7 @@ export function CreateGradeGroupDialog({
       <DialogPortal>
         <DialogOverlay forceRender className="bg-transparent" />
       </DialogPortal>
-      <DialogContent className="sm:max-w-3xl" showCloseButton={false}>
+      <DialogContent className="sm:max-w-3xl" showCloseButton={false} inert={confirmDiscardOpen}>
         <DialogHeader>
           <DialogTitle>{isEditing ? "Editar grupo" : "Agregar grupo"}</DialogTitle>
           <DialogDescription>Completa los datos del grupo.</DialogDescription>

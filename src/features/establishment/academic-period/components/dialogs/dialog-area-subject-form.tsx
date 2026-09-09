@@ -518,6 +518,7 @@ export function AreaSubjectFormDialog({
             subjectsStarted ? "sm:max-w-6xl" : "sm:max-w-5xl",
           )}
           showCloseButton={false}
+          inert={confirmOpen || successOpen || confirmDiscardOpen}
         >
           <DialogHeader>
             <DialogTitle>{isEdit ? "Editar área/asignatura" : "Agregar área/asignatura"}</DialogTitle>
