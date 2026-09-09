@@ -48,11 +48,11 @@ function GeneralInfoTab({ reference }: { reference: CurricularReference }) {
       <p className="text-sm font-bold">Estructura del referente</p>
 
       <div className="grid grid-cols-1 gap-x-8 gap-y-4 md:grid-cols-2">
-        <InfoField label="Nivel 1 *">{reference.level1 || "—"}</InfoField>
-        <InfoField label="Nivel 2 *">{reference.level2 || "—"}</InfoField>
+        <InfoField label="Nivel 1">{reference.level1 || "—"}</InfoField>
+        <InfoField label="Nivel 2">{reference.level2 || "—"}</InfoField>
 
-        <InfoField label="Enfoque pedagógico *">{reference.pedagogicalApproach?.name ?? "—"}</InfoField>
-        <InfoField label="Tipo de evaluación *">{reference.evaluationType?.name ?? "—"}</InfoField>
+        <InfoField label="Enfoque pedagógico">{reference.pedagogicalApproach?.name ?? "—"}</InfoField>
+        <InfoField label="Tipo de evaluación">{reference.evaluationType?.name ?? "—"}</InfoField>
 
         <InfoField label="Áreas o dimensiones">
           {reference.areas.length === 0 ? (
@@ -67,7 +67,7 @@ function GeneralInfoTab({ reference }: { reference: CurricularReference }) {
             </div>
           )}
         </InfoField>
-        <InfoField label="Instrumento *">{reference.instrument || "—"}</InfoField>
+        <InfoField label="Instrumento">{reference.instrument || "—"}</InfoField>
 
         <InfoField label="Información adicional del instrumento">
           {reference.instrumentDescription || "—"}
