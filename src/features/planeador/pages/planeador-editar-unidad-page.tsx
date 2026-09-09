@@ -1,8 +1,8 @@
 import { useState } from "react"
 import { Link, useNavigate, useParams } from "@tanstack/react-router"
-import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
+import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
 import {
   TableScreen,
   TableScreenBody,
@@ -38,21 +38,26 @@ export function PlaneadorEditarUnidadPage() {
   const navigate = useNavigate()
   const { unidadId } = useParams({ strict: false }) as { unidadId?: string }
 
-  const { data: unidad, isPending, isError, error } = useUnidadDetalleQuery(
-    unidadId ? Number(unidadId) : undefined,
-  )
+  const {
+    data: unidad,
+    isPending,
+    isError,
+    error,
+  } = useUnidadDetalleQuery(unidadId ? Number(unidadId) : undefined)
 
   if (isNotFoundError(error)) {
     return <NotFoundPage />
   }
 
   return (
-    <EditarUnidadPageContent
-      isPending={isPending}
-      isError={isError}
-      unidad={unidad}
-      onClose={() => navigate({ to: paths.app.planeadorUnidades.getHref() })}
-    />
+    <NoticeProvider>
+      <EditarUnidadPageContent
+        isPending={isPending}
+        isError={isError}
+        unidad={unidad}
+        onClose={() => navigate({ to: paths.app.planeadorUnidades.getHref() })}
+      />
+    </NoticeProvider>
   )
 }
 
@@ -68,19 +73,22 @@ function EditarUnidadPageContent({
   onClose: () => void
 }) {
   const [draft, setDraft] = useState<UnidadDraft | null>(null)
+  const { notify } = useNotify()
 
   const updateMutation = useUpdateUnidad({
     mutationConfig: {
       onSuccess: (result) => {
         if (result.status === "error") {
-          toast.error(result.message ?? "No se pudo actualizar la unidad temática.")
+          notify(result.message ?? "No se pudo actualizar la unidad temática.", {
+            variant: "error",
+          })
           return
         }
-        toast.success("Unidad temática actualizada correctamente.")
+        notify("Unidad temática actualizada correctamente.")
         onClose()
       },
       onError: () => {
-        toast.error("No se pudo actualizar la unidad temática.")
+        notify("No se pudo actualizar la unidad temática.", { variant: "error" })
       },
     },
   })
@@ -107,6 +115,7 @@ function EditarUnidadPageContent({
         >
           Editar unidad
         </TableScreenTitle>
+        <NoticeOutlet className="mx-(--screen-spacing) my-4" />
       </TableScreenHeader>
       <TableScreenBody className="rounded-b-none border-b-0">
         {isPending && (

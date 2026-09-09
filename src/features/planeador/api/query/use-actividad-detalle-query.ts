@@ -35,6 +35,16 @@ interface ActividadDetalleRow {
   unidad: string | null
   fk_tgrupo: number | null
   grupo: string | null
+  /** Confirmado real (colección Postman `planeador-delta-cambios`, punto
+   *  3.3): antes el detalle NO traía el grado de la actividad (solo
+   *  `fk_tgrupo`) — `AsignaturaGradoSection` en `form-editar-actividad.tsx`
+   *  lo resolvía cruzando `grupoId` contra el catálogo del propio docente
+   *  como workaround. Ahora llega directo; ese cruce queda como respaldo
+   *  para una actividad de un grupo que el docente autenticado no dicta. */
+  fk_tgrado: number | null
+  grado: string | null
+  grado_codigo: string | null
+  grado_grupo: string | null
   fk_tlv_tipo_actividad: number | null
   tipo_actividad: string | null
   fk_tlv_jerarquia: number | null
@@ -110,13 +120,15 @@ function toActividadDetalle(row: ActividadDetalleRow): Actividad {
     // `unidad`/`fk_tunidad` vienen `null` (no un objeto) cuando la
     // actividad es huérfana — `{id: 0, nombre: ""}` es el sentinel que ya
     // usa el resto del front para "sin unidad".
-    unidad: row.fk_tunidad != null ? { id: row.fk_tunidad, nombre: row.unidad ?? "" } : { id: 0, nombre: "" },
+    unidad:
+      row.fk_tunidad != null
+        ? { id: row.fk_tunidad, nombre: row.unidad ?? "" }
+        : { id: 0, nombre: "" },
     asignatura: row.asignatura ?? "",
-    // El detalle real NO trae el grado de la actividad (solo `fk_tgrupo`) —
-    // cruzarlo contra `docentes/grupos` para resolverlo queda pendiente;
-    // por ahora vacío, igual que otros campos no confirmados del resumen.
-    grado: "",
+    grado: row.grado ?? "",
+    gradoId: row.fk_tgrado ?? undefined,
     grupo: row.grupo ?? "",
+    gradoGrupo: row.grado_grupo ?? undefined,
     fechaInicio: toDateOnly(row.fecha_inicio),
     fechaCierre: toDateOnly(row.fecha_cierre),
     status: estadoDerivadoToStatus(row.estado),
@@ -168,8 +180,7 @@ function actividadDetalleUrl(id: number): string {
   return `/planeador/actividades/${id}`
 }
 
-export const actividadDetalleQueryKey = (id: number) =>
-  ["planeador", "actividad", id] as const
+export const actividadDetalleQueryKey = (id: number) => ["planeador", "actividad", id] as const
 
 /**
  * Detalle de una actividad. El sobre `{rows: [...]}` es igual en mock y

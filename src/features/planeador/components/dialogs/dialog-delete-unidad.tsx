@@ -1,6 +1,6 @@
 import { useState } from "react"
-import { toast } from "sonner"
 
+import { useNotify } from "@/components/notice/notice-context"
 import { CheckIcon, SpinnerIcon, TrashIcon, XIcon } from "@/components/ui/icons"
 import {
   AlertDialog,
@@ -37,20 +37,21 @@ interface DialogDeleteUnidadProps {
  */
 export function DialogDeleteUnidad({ unidad, onDeleted, triggerProps }: DialogDeleteUnidadProps) {
   const [open, setOpen] = useState(false)
+  const { notify } = useNotify()
 
   const deleteMutation = useDeleteUnidad({
     mutationConfig: {
       onSuccess: (result) => {
         if (result.status === "error") {
-          toast.error(result.message)
+          notify(result.message, { variant: "error" })
           return
         }
-        toast.success("Unidad temática eliminada correctamente.")
+        notify("Unidad temática eliminada correctamente.")
         setOpen(false)
         onDeleted?.()
       },
       onError: () => {
-        toast.error("No se pudo eliminar la unidad temática.")
+        notify("No se pudo eliminar la unidad temática.", { variant: "error" })
       },
     },
   })

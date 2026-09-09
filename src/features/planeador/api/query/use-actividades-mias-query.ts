@@ -37,6 +37,14 @@ interface ActividadMiaRow {
   fecha_cierre: string
   asignatura: string | null
   grupo: string | null
+  /** Confirmado real (colección Postman `planeador-delta-cambios`, punto
+   *  3.1): antes el resumen no traía grado, solo `grupo` — ahora llegan
+   *  estos cuatro, con `grado_grupo` ya resuelto por el backend (ver el
+   *  comentario de `Actividad.gradoGrupo`). */
+  fk_tgrado: number | null
+  grado: string | null
+  grado_codigo: string | null
+  grado_grupo: string | null
   unidad: string | null
   instrumento_evaluacion: string | null
   ponderacion: number | null
@@ -66,10 +74,9 @@ function toActividadResumen(row: ActividadMiaRow & { pk_tactividad: number }): A
     esRecuperacion: false,
     unidad: { id: 0, nombre: row.unidad ?? "" },
     asignatura: row.asignatura ?? "",
-    // El resumen no trae grado — la card lo muestra igual junto a
-    // asignatura/grupo, así que queda vacío en vez de inventado.
-    grado: "",
+    grado: row.grado ?? "",
     grupo: row.grupo ?? "",
+    gradoGrupo: row.grado_grupo ?? undefined,
     fechaInicio: toDateOnly(row.fecha_inicio),
     fechaCierre: toDateOnly(row.fecha_cierre),
     status: estadoDerivadoToStatus(row.estado),
@@ -150,9 +157,7 @@ async function fetchActividadesMias(
   query.set("size", String(params.size ?? 20))
   query.set("offset", String(params.offset ?? 0))
 
-  const rawRows = await evalCol.getRows<ActividadMiaRow>(
-    `/planeador/actividades/mias?${query}`,
-  )
+  const rawRows = await evalCol.getRows<ActividadMiaRow>(`/planeador/actividades/mias?${query}`)
   const first = rawRows[0]
   // Fila-centinela de un día vacío: todas las columnas de negocio vienen
   // NULL (`pk_tactividad` incluido) y `total_count: 0` — no es una

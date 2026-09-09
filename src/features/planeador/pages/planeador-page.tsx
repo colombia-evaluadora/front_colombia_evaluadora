@@ -1,8 +1,8 @@
 import * as React from "react"
 import { Link, useNavigate, useSearch } from "@tanstack/react-router"
-import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
+import { NoticeProvider, useNotify } from "@/components/notice/notice-context"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,12 +17,7 @@ import {
   TableScreenTitle,
   TableScreenToolbar,
 } from "@/components/layout/table-screen"
-import {
-  PlusCircleIcon,
-  DotsThreeIcon,
-  CaretLeftIcon,
-  CaretRightIcon,
-} from "@/components/ui/icons"
+import { PlusCircleIcon, DotsThreeIcon, CaretLeftIcon, CaretRightIcon } from "@/components/ui/icons"
 import { Spinner } from "@/components/ui/spinner"
 
 import { useActividadesStatsQuery } from "@/features/planeador/api/query/use-actividades-stats-query"
@@ -49,7 +44,12 @@ import type { ActividadStatus } from "@/features/planeador/api/types/actividad"
 
 import { planeadorRoute } from "@/router"
 import { paths } from "@/config/paths"
-import { formatDate, parseLocalDate, toDateOnly, todayDateOnly } from "@/features/planeador/lib/format-date"
+import {
+  formatDate,
+  parseLocalDate,
+  toDateOnly,
+  todayDateOnly,
+} from "@/features/planeador/lib/format-date"
 
 /**
  * Página principal del Planeador. Layout 2-columnas:
@@ -61,13 +61,21 @@ import { formatDate, parseLocalDate, toDateOnly, todayDateOnly } from "@/feature
  * porque no aporta nada persistirlo entre sesiones.
  */
 export function PlaneadorPage() {
+  return (
+    <NoticeProvider>
+      <PlaneadorPageContent />
+    </NoticeProvider>
+  )
+}
+
+function PlaneadorPageContent() {
   const navigate = useNavigate()
   const search = useSearch({ from: planeadorRoute.id })
+  const { notify } = useNotify()
 
   // Búsqueda y filtros avanzados, todos en la URL. Ver
   // `use-planeador-filters`.
-  const { filters, applyFilters, clearAllFilters, activeFilterCount } =
-    usePlaneadorFilters()
+  const { filters, applyFilters, clearAllFilters, activeFilterCount } = usePlaneadorFilters()
   const buscar = filters.buscar
   const estado = filters.estado
   const view = filters.vista || "actividad"
@@ -170,19 +178,16 @@ export function PlaneadorPage() {
   const exportarJson = useExportarActividadesJson({
     mutationConfig: {
       onSuccess: (actividadesExportadas) => {
-        downloadJson(
-          `actividades-planeador-${toDateOnly(new Date())}.json`,
-          actividadesExportadas,
-        )
-        toast.success(`${actividadesExportadas.length} actividad(es) exportada(s).`)
+        downloadJson(`actividades-planeador-${toDateOnly(new Date())}.json`, actividadesExportadas)
+        notify(`${actividadesExportadas.length} actividad(es) exportada(s).`)
       },
-      onError: () => toast.error("No se pudo exportar el JSON de actividades."),
+      onError: () => notify("No se pudo exportar el JSON de actividades.", { variant: "error" }),
     },
   })
 
   function handleExportarJson() {
     if (filtered.length === 0) {
-      toast.error("No hay actividades para exportar con los filtros actuales.")
+      notify("No hay actividades para exportar con los filtros actuales.", { variant: "error" })
       return
     }
     exportarJson.mutate({ ids: filtered.map((actividad) => actividad.id) })
@@ -205,7 +210,16 @@ export function PlaneadorPage() {
       if (!anchor) continue
       const day = anchor.getDate()
       const list = map.get(day) ?? []
-      list.push({ id: a.id, code: String(a.id).slice(-3), label: a.label, status: a.status })
+      // `gradoGrupo` es el "601" del prototipo (grado+grupo, ya resuelto por
+      // el backend) — antes se mostraba el `pk_tactividad` acá por error
+      // ("34 | MATEMA…" en vez de "601 | MATEMA…"); se cae a él solo si el
+      // backend todavía no manda `grado_grupo` para esta fila.
+      list.push({
+        id: a.id,
+        code: a.gradoGrupo ?? String(a.id).slice(-3),
+        label: a.label,
+        status: a.status,
+      })
       map.set(day, list)
     }
     return map
@@ -269,13 +283,8 @@ export function PlaneadorPage() {
                   <DropdownMenuItem render={<Link to={paths.app.planeadorPlanilla.getHref()} />}>
                     Planilla de calificación
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => refetch()}>
-                    Recargar
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    disabled={exportarJson.isPending}
-                    onClick={handleExportarJson}
-                  >
+                  <DropdownMenuItem onClick={() => refetch()}>Recargar</DropdownMenuItem>
+                  <DropdownMenuItem disabled={exportarJson.isPending} onClick={handleExportarJson}>
                     Exportar todo
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setImportarOpen(true)}>
@@ -289,16 +298,11 @@ export function PlaneadorPage() {
                 viajan como `filters` y el backend reporta cuántas se
                 exportaron. El trigger que el diálogo trae adentro reemplaza
                 al `<Button>` de export que estaba disabled. */}
-            <DialogExportActividades
-              rows={filtered}
-            />
+            <DialogExportActividades rows={filtered} />
             {/* Controlado desde acá y no con su propio `DialogTrigger`: el
                 que lo abre es un `DropdownMenuItem`, y un diálogo anidado
                 dentro del menú se desmonta apenas el menú cierra. */}
-            <DialogImportarActividadesJson
-              open={importarOpen}
-              onOpenChange={setImportarOpen}
-            />
+            <DialogImportarActividadesJson open={importarOpen} onOpenChange={setImportarOpen} />
           </TableScreenActions>
         </TableScreenToolbar>
       </TableScreenHeader>
@@ -313,9 +317,7 @@ export function PlaneadorPage() {
             del listado muestre ese estado por defecto. */}
         <div className="mb-6">
           <PlaneadorSummaryCards
-            counts={
-              statsCounts ?? { pending: 0, "in-progress": 0, completed: 0, cancelled: 0 }
-            }
+            counts={statsCounts ?? { pending: 0, "in-progress": 0, completed: 0, cancelled: 0 }}
           />
         </div>
 
@@ -337,10 +339,7 @@ export function PlaneadorPage() {
               queda estirado a esa altura, que es contra lo que el `flex-1` de
               la lista puede medir. Bajo `md` (una sola columna) vuelve al
               flujo normal y la lista se muestra completa. */}
-          <section
-            aria-label="Listado de actividades"
-            className="relative min-h-0"
-          >
+          <section aria-label="Listado de actividades" className="relative min-h-0">
             <div className="flex flex-col gap-3 md:absolute md:inset-0">
               {/* Header del rail: chip "Hoy" a la izquierda, el día al centro y
                 las dos flechas a la derecha. El `Button` del DS ya trae el
@@ -400,15 +399,8 @@ export function PlaneadorPage() {
 
                 {isError && (
                   <div className="flex flex-col items-center gap-2 px-6 py-8 text-center">
-                    <p className="text-red text-sm">
-                      Ocurrió un error al cargar las actividades.
-                    </p>
-                    <Button
-                      variant="outline"
-                      color="neutral"
-                      size="sm"
-                      onClick={() => refetch()}
-                    >
+                    <p className="text-red text-sm">Ocurrió un error al cargar las actividades.</p>
+                    <Button variant="outline" color="neutral" size="sm" onClick={() => refetch()}>
                       Reintentar
                     </Button>
                   </div>
@@ -434,9 +426,7 @@ export function PlaneadorPage() {
                           onShowApproval={() => setMode(String(actividad.id), "approval")}
                           onEdit={() =>
                             navigate({
-                              to: paths.app.planeadorActividadEditar.getHref(
-                                String(actividad.id),
-                              ),
+                              to: paths.app.planeadorActividadEditar.getHref(String(actividad.id)),
                             })
                           }
                           // Si la actividad que se borró era la abierta en
@@ -484,11 +474,7 @@ export function PlaneadorPage() {
               funciona igual de bien contra un contenedor acotado por
               `max-height`. */}
           <section
-            aria-label={
-              actividadId
-                ? "Detalle de la actividad"
-                : "Calendario del planeador"
-            }
+            aria-label={actividadId ? "Detalle de la actividad" : "Calendario del planeador"}
             className="md:flex md:max-h-[calc(100dvh-16rem)] md:min-h-0 md:flex-col"
           >
             {actividadId ? (
@@ -505,16 +491,13 @@ export function PlaneadorPage() {
                   month={displayMonth}
                   events={events}
                   onMonthChange={(next) =>
-                    setDisplayMonth(
-                      new Date(next.getFullYear(), next.getMonth(), 1),
-                    )
+                    setDisplayMonth(new Date(next.getFullYear(), next.getMonth(), 1))
                   }
                 />
                 {/* viewOption no se usa en la UI todavía; se deja armado para
                     cuando llegue la implementación de "Ver por Unidad" / etc. */}
                 <p className="text-muted-foreground sr-only">
-                  Vista actual:{" "}
-                  {VIEW_OPTIONS.find((o) => o.value === view)?.label}
+                  Vista actual: {VIEW_OPTIONS.find((o) => o.value === view)?.label}
                 </p>
               </div>
             )}
