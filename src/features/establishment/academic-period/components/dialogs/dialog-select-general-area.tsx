@@ -29,14 +29,10 @@ import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table"
 import { useGeneralAreasQuery } from "@/features/establishment/academic-period/api/query/use-general-areas"
 import type { GeneralArea } from "@/features/establishment/academic-period/api/types/general-area"
 
-// Grilla de áreas: 3 columnas × 15 filas por página → 45 áreas por página.
 const COLUMNS = 3
-const ROWS = 15
+const ROWS = 6
 const PAGE_SIZE = COLUMNS * ROWS
 
-// Mismo cálculo de ventana de páginas que `components/pagination.tsx` (no se
-// puede reusar directo: ese componente asume paginación server-side con
-// selector de "Entradas", que acá no aplica).
 function buildPageRange(current: number, total: number): (number | "ellipsis")[] {
   const window = new Set<number>([1, total, current - 1, current, current + 1])
   const items: (number | "ellipsis")[] = []
@@ -138,73 +134,80 @@ export function SelectGeneralAreaDialog({
         <DialogOverlay forceRender className="bg-black/30" />
       </DialogPortal>
       <DialogContent
-        className="max-h-[85vh] overflow-y-auto sm:max-w-4xl"
+        className="flex max-h-[85vh] flex-col overflow-hidden sm:max-w-4xl"
         showCloseButton={false}
       >
-        <DialogHeader>
+        <DialogHeader className="shrink-0">
           <DialogTitle>Agregar área</DialogTitle>
         </DialogHeader>
 
-        {/* Buscador */}
-        <div className="relative">
-          <MagnifyingGlassIcon className="absolute top-1/2 left-2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            autoFocus
-            placeholder="Buscar área..."
-            value={search}
-            onChange={(e) => handleSearch(e.target.value)}
-            className="pl-8"
-          />
+        {/* Único bloque con scroll: título, paginación y "Cancelar" quedan
+            fijos afuera — así la grilla de áreas no empuja el botón fuera de
+            la pantalla en modales altos. */}
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <div className="flex flex-col gap-4">
+            {/* Buscador */}
+            <div className="relative">
+              <MagnifyingGlassIcon className="absolute top-1/2 left-2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                autoFocus
+                placeholder="Buscar área..."
+                value={search}
+                onChange={(e) => handleSearch(e.target.value)}
+                className="pl-8"
+              />
+            </div>
+
+            {/* Grilla de áreas: 3 columnas, estilo tabla de áreas. */}
+            <div className="min-w-0">
+              <Table className="table-fixed">
+                <TableBody>
+                  {grid.length === 0 ? (
+                    <TableRow className="hover:bg-transparent">
+                      <TableCell colSpan={COLUMNS} className="h-24 text-center text-muted-foreground">
+                        No se encontraron áreas.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    grid.map((rowAreas, r) => (
+                      <TableRow key={r} className="hover:bg-transparent">
+                        {Array.from({ length: COLUMNS }).map((_, c) => {
+                          const area = rowAreas[c]
+                          if (!area) {
+                            return <TableCell key={c} className="border-r p-0 last:border-r-0" />
+                          }
+                          const selected = area.nombre === value
+                          return (
+                            <TableCell key={c} className="border-r p-0 last:border-r-0">
+                              <button
+                                type="button"
+                                title={area.nombre}
+                                onClick={() => handleSelect(area.nombre)}
+                                className={cn(
+                                  "flex w-full min-w-0 items-center gap-2 px-3 py-2.5 text-left text-sm transition-colors hover:bg-muted/50",
+                                  selected && "bg-muted font-medium text-primary hover:bg-muted",
+                                )}
+                              >
+                                {selected && <CheckIcon className="size-4 shrink-0" />}
+                                <span className="min-w-0 flex-1 truncate">{area.nombre}</span>
+                              </button>
+                            </TableCell>
+                          )
+                        })}
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
         </div>
 
-        {/* Grilla de áreas: 3 columnas, estilo tabla de áreas. */}
-        <div className="min-w-0">
-          <Table className="table-fixed">
-            <TableBody>
-              {grid.length === 0 ? (
-                <TableRow className="hover:bg-transparent">
-                  <TableCell colSpan={COLUMNS} className="h-24 text-center text-muted-foreground">
-                    No se encontraron áreas.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                grid.map((rowAreas, r) => (
-                  <TableRow key={r} className="hover:bg-transparent">
-                    {Array.from({ length: COLUMNS }).map((_, c) => {
-                      const area = rowAreas[c]
-                      if (!area) {
-                        return <TableCell key={c} className="border-r p-0 last:border-r-0" />
-                      }
-                      const selected = area.nombre === value
-                      return (
-                        <TableCell key={c} className="border-r p-0 last:border-r-0">
-                          <button
-                            type="button"
-                            title={area.nombre}
-                            onClick={() => handleSelect(area.nombre)}
-                            className={cn(
-                              "flex w-full min-w-0 items-center gap-2 px-3 py-2.5 text-left text-sm transition-colors hover:bg-muted/50",
-                              selected && "bg-muted font-medium text-primary hover:bg-muted",
-                            )}
-                          >
-                            {selected && <CheckIcon className="size-4 shrink-0" />}
-                            <span className="min-w-0 flex-1 truncate">{area.nombre}</span>
-                          </button>
-                        </TableCell>
-                      )
-                    })}
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-
-        {/* Paginación (3 × 15 = 45 áreas por página) — mismo diseño que la
+        {/* Paginación (3 × 6 = 18 áreas por página) — mismo diseño que la
             paginación compartida (números de página, elipsis, activa en
             fill primario), pero sin selector de "Entradas" (el tamaño de
             página es fijo acá) y con Atrás/Siguiente solo ícono. */}
-        <div className="flex items-center justify-center gap-2">
+        <div className="flex shrink-0 items-center justify-center gap-2">
           <UIPagination className="mx-0 w-auto justify-center">
             <PaginationContent>
               <PaginationItem>
@@ -261,7 +264,7 @@ export function SelectGeneralAreaDialog({
           </UIPagination>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="shrink-0">
           <DialogClose
             render={<Button size="sm" type="button" variant="fill" color="neutral" />}
           >
