@@ -1,7 +1,7 @@
 import * as React from "react"
-import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
+import { useNotify } from "@/components/notice/notice-context"
 import {
   CheckIcon,
   ClipboardCheckIcon,
@@ -11,11 +11,7 @@ import {
 } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
 
-import {
-  statusAccentFor,
-  statusIconFor,
-  statusRingFor,
-} from "@/features/planeador/api/ui-mappings"
+import { statusAccentFor, statusIconFor, statusRingFor } from "@/features/planeador/api/ui-mappings"
 import type { Actividad } from "@/features/planeador/api/types/actividad"
 import { useExportarActividadesJson } from "@/features/planeador/api/mutations/exportar-actividades-json"
 import { downloadJson } from "@/features/planeador/lib/download-json"
@@ -96,14 +92,15 @@ export function ActividadCard({
 }: ActividadCardProps) {
   const StatusIcon = statusIconFor(actividad.status)
   const accent = statusAccentFor(actividad.status)
+  const { notify } = useNotify()
 
   const exportarJson = useExportarActividadesJson({
     mutationConfig: {
       onSuccess: (actividadesExportadas) => {
         downloadJson(`actividad-${actividad.id}.json`, actividadesExportadas)
-        toast.success("Actividad exportada.")
+        notify("Actividad exportada.")
       },
-      onError: () => toast.error("No se pudo exportar la actividad."),
+      onError: () => notify("No se pudo exportar la actividad.", { variant: "error" }),
     },
   })
 
@@ -113,10 +110,8 @@ export function ActividadCard({
   // loop para no duplicar el control visual.
   const acciones: Accion[] = ACCIONES_BASE.map((accion) => {
     if (accion.label === "Editar" && onEdit) return { ...accion, onClick: onEdit }
-    if (accion.label === "Marcar" && onShowGrades)
-      return { ...accion, onClick: onShowGrades }
-    if (accion.label === "Aprobar" && onShowApproval)
-      return { ...accion, onClick: onShowApproval }
+    if (accion.label === "Marcar" && onShowGrades) return { ...accion, onClick: onShowGrades }
+    if (accion.label === "Aprobar" && onShowApproval) return { ...accion, onClick: onShowApproval }
     return accion
   })
 
@@ -154,20 +149,22 @@ export function ActividadCard({
         >
           <StatusIcon className="size-3.5" />
         </span>
-        <h3 className="min-w-0 text-xs leading-snug font-bold break-words">
-          {actividad.nombre}
-        </h3>
+        <h3 className="min-w-0 text-xs leading-snug font-bold break-words">{actividad.nombre}</h3>
       </div>
 
       <p className="text-muted-foreground text-[0.625rem] leading-snug">
-        {actividad.asignatura} {actividad.grado} {actividad.grupo}
+        {/* `gradoGrupo` ya viene resuelto por el backend (ver el comentario
+            de `Actividad.gradoGrupo`) — concatenar `grado`+`grupo` a mano
+            puede duplicar el grado dentro del nombre del grupo (`"803M"`)
+            o pegar mal un código negativo de Preescolar. Se cae a la
+            concatenación solo si el backend todavía no lo manda. */}
+        {actividad.asignatura}{" "}
+        {actividad.gradoGrupo ?? [actividad.grado, actividad.grupo].filter(Boolean).join(" ")}
       </p>
       <p className="text-muted-foreground text-[0.625rem] leading-snug">
         {actividad.evaluados}/{actividad.totalEstudiantes} estudiantes evaluados
       </p>
-      {porcentaje !== null && (
-        <p className={cn("text-xs font-bold", accent)}>{porcentaje}%</p>
-      )}
+      {porcentaje !== null && <p className={cn("text-xs font-bold", accent)}>{porcentaje}%</p>}
 
       {/* Acciones: barra flotante anclada ABAJO —arriba tapaba el título,
           que es lo primero que se lee—. Fondo con el mismo token sólido que

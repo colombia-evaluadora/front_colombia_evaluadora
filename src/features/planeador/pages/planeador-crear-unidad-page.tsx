@@ -1,8 +1,8 @@
 import { useState } from "react"
 import { Link, useNavigate } from "@tanstack/react-router"
-import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
+import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
 import {
   TableScreen,
   TableScreenBody,
@@ -35,17 +35,26 @@ const FORM_ID = "crear-unidad-form"
  * siempre) — no tiene sentido pedirlos acá, antes de que la unidad exista.
  */
 export function PlaneadorCrearUnidadPage() {
+  return (
+    <NoticeProvider>
+      <PlaneadorCrearUnidadPageContent />
+    </NoticeProvider>
+  )
+}
+
+function PlaneadorCrearUnidadPageContent() {
   const navigate = useNavigate()
+  const { notify } = useNotify()
   const [draft, setDraft] = useState<UnidadDraft>(UNIDAD_DRAFT_VACIO)
 
   const createMutation = useCreateUnidad({
     mutationConfig: {
       onSuccess: () => {
-        toast.success("Unidad temática creada correctamente.")
+        notify("Unidad temática creada correctamente.")
         navigate({ to: paths.app.planeadorUnidades.getHref() })
       },
       onError: () => {
-        toast.error("No se pudo crear la unidad temática.")
+        notify("No se pudo crear la unidad temática.", { variant: "error" })
       },
     },
   })
@@ -68,6 +77,7 @@ export function PlaneadorCrearUnidadPage() {
         >
           Nueva unidad
         </TableScreenTitle>
+        <NoticeOutlet className="mx-(--screen-spacing) my-4" />
       </TableScreenHeader>
       <TableScreenBody className="rounded-b-none border-b-0">
         <form

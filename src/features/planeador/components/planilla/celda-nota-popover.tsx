@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
-import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
+import { useNotify } from "@/components/notice/notice-context"
 import { CheckIcon, PencilIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 import {
   Popover,
@@ -95,6 +95,7 @@ export function CeldaNotaPopover({
 }: CeldaNotaPopoverProps) {
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState<NotaCriterio[]>([])
+  const { notify } = useNotify()
 
   const { data: instrumento } = useInstrumentoActividadQuery(actividadId)
   const { data: notaActual } = useNotaEstudianteQuery(open ? pkTactividadEstudiante : undefined)
@@ -106,11 +107,11 @@ export function CeldaNotaPopover({
   const calificar = useCalificarCeldaMutation({
     mutationConfig: {
       onSuccess: () => {
-        toast.success("Nota guardada.")
+        notify("Nota guardada.")
         setOpen(false)
       },
       onError: (error) => {
-        toast.error(error.message || "No se pudo guardar la nota.")
+        notify(error.message || "No se pudo guardar la nota.", { variant: "error" })
       },
     },
   })

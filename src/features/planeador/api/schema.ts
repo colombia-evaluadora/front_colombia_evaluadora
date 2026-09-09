@@ -55,9 +55,6 @@ export const planeadorUnidadesSearchSchema = z.object({
   estado: z.string().optional().catch(undefined),
   vista: z.string().optional().catch(undefined),
   unidad: z.string().optional().catch(undefined),
-  /** Mismo día activo que `planeadorSearchSchema.dia`, para `GET /unidades`
-   *  (`?dia=`). Ausente = hoy. */
-  dia: z.string().optional().catch(undefined),
 })
 export type PlaneadorUnidadesSearch = z.infer<typeof planeadorUnidadesSearchSchema>
 

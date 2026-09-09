@@ -1,8 +1,8 @@
 import { useState } from "react"
 import { Link, useNavigate, useParams } from "@tanstack/react-router"
-import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
+import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
 import {
   TableScreen,
   TableScreenBody,
@@ -38,9 +38,12 @@ export function PlaneadorEditarActividadPage() {
   const navigate = useNavigate()
   const { actividadId } = useParams({ strict: false }) as { actividadId?: string }
 
-  const { data: actividad, isPending, isError, error } = useActividadDetalleQuery(
-    actividadId ? Number(actividadId) : undefined,
-  )
+  const {
+    data: actividad,
+    isPending,
+    isError,
+    error,
+  } = useActividadDetalleQuery(actividadId ? Number(actividadId) : undefined)
 
   if (!actividadId) {
     return (
@@ -62,12 +65,14 @@ export function PlaneadorEditarActividadPage() {
   }
 
   return (
-    <EditarActividadPageContent
-      isPending={isPending}
-      isError={isError}
-      actividad={actividad}
-      onClose={() => navigate({ to: paths.app.planeadorActividades.getHref() })}
-    />
+    <NoticeProvider>
+      <EditarActividadPageContent
+        isPending={isPending}
+        isError={isError}
+        actividad={actividad}
+        onClose={() => navigate({ to: paths.app.planeadorActividades.getHref() })}
+      />
+    </NoticeProvider>
   )
 }
 
@@ -83,16 +88,17 @@ function EditarActividadPageContent({
   onClose: () => void
 }) {
   const [isDirty, setIsDirty] = useState(false)
+  const { notify } = useNotify()
 
   const updateMutation = useUpdateActividad({
     mutationConfig: {
       onSuccess: () => {
-        toast.success("Actividad actualizada correctamente.")
+        notify("Actividad actualizada correctamente.")
         setIsDirty(false)
         onClose()
       },
       onError: (error) => {
-        toast.error(error.message || "No se pudo actualizar la actividad.")
+        notify(error.message || "No se pudo actualizar la actividad.", { variant: "error" })
       },
     },
   })
@@ -114,6 +120,7 @@ function EditarActividadPageContent({
         >
           Planeador
         </TableScreenTitle>
+        <NoticeOutlet className="mx-(--screen-spacing) my-4" />
       </TableScreenHeader>
       <TableScreenBody className="rounded-b-none border-b-0">
         {isPending && (

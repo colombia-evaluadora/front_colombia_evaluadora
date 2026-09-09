@@ -1,6 +1,6 @@
 import { useState } from "react"
-import { toast } from "sonner"
 
+import { useNotify } from "@/components/notice/notice-context"
 import { CheckIcon, SpinnerIcon, TrashIcon, XIcon } from "@/components/ui/icons"
 import {
   AlertDialog,
@@ -45,20 +45,21 @@ export function DialogDeleteActividad({
   triggerProps?: React.ComponentProps<typeof Button>
 }) {
   const [open, setOpen] = useState(false)
+  const { notify } = useNotify()
 
   const deleteMutation = useDeleteActividad({
     mutationConfig: {
       onSuccess: (result) => {
         if (result.status === "error") {
-          toast.error(result.message)
+          notify(result.message, { variant: "error" })
           return
         }
-        toast.success("Actividad eliminada correctamente.")
+        notify("Actividad eliminada correctamente.")
         setOpen(false)
         onDeleted?.()
       },
       onError: () => {
-        toast.error("No se pudo eliminar la actividad.")
+        notify("No se pudo eliminar la actividad.", { variant: "error" })
       },
     },
   })
@@ -83,8 +84,8 @@ export function DialogDeleteActividad({
         <AlertDialogHeader>
           <AlertDialogTitle>Eliminar actividad</AlertDialogTitle>
           <AlertDialogDescription>
-            Se eliminará permanentemente la actividad &ldquo;{actividad.nombre}&rdquo;.
-            Esta acción no se puede deshacer.
+            Se eliminará permanentemente la actividad &ldquo;{actividad.nombre}&rdquo;. Esta acción
+            no se puede deshacer.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
