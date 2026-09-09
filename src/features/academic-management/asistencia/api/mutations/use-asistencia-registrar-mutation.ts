@@ -12,7 +12,7 @@ interface SubirSoporteResponse {
   pk_tarchivo: number
 }
 
-async function subirSoporte(file: File): Promise<number> {
+export async function subirSoporte(file: File): Promise<number> {
   const raw = await postMultipart<{ rows: SubirSoporteResponse[] } | SubirSoporteResponse>(
     "/eval-col/asistencias/soporte",
     {},

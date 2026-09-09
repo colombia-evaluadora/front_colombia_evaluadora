@@ -31,12 +31,8 @@ import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table"
 import { useGeneralAreasQuery } from "@/features/establishment/academic-period/api/query/use-general-areas"
 import type { GeneralArea } from "@/features/establishment/academic-period/api/types/general-area"
 
-// Mismo diseño que `SelectGeneralAreaDialog` (buscador + grilla paginada de
-// 3×15): con ~300 áreas generales, un dropdown con checkboxes se vuelve
-// inmanejable — el usuario pidió reusar el selector con buscador que ya
-// existe en Área/Asignatura, en versión multi-selección.
 const COLUMNS = 3
-const ROWS = 15
+const ROWS = 6
 const PAGE_SIZE = COLUMNS * ROWS
 
 function buildPageRange(current: number, total: number): (number | "ellipsis")[] {
