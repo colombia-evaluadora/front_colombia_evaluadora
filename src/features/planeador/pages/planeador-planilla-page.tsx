@@ -2,7 +2,7 @@ import { useMemo, useState } from "react"
 import { Link } from "@tanstack/react-router"
 
 import { Button } from "@/components/ui/button"
-import { NoticeOutlet, NoticeProvider } from "@/components/notice/notice-context"
+import { NoticeProvider } from "@/components/notice/notice-context"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -168,7 +168,6 @@ export function PlaneadorPlanillaPage() {
           >
             Planilla de calificación
           </TableScreenTitle>
-          <NoticeOutlet className="mx-(--screen-spacing) my-4" />
 
           <TableScreenToolbar>
             <div className="grid flex-1 gap-4 sm:grid-cols-3">

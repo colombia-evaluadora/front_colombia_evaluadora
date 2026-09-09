@@ -12,6 +12,7 @@ import {
   GraduationCapIcon,
   PencilIcon,
   PlusIcon,
+  WarningIcon,
 } from "@/components/ui/icons"
 import { Spinner } from "@/components/ui/spinner"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -214,6 +215,21 @@ function ResumenItem({
 function InformacionGeneral({ unidad }: { unidad: UnidadTematica }) {
   return (
     <div className="flex flex-col gap-6">
+      {/* `referenteVigente === false`: el referente curricular que esta
+          unidad guarda ya no está activo (lo desactivaron en el catálogo) —
+          no puede ofrecer enunciados/evidencias hasta que se le asigne uno
+          vigente (ver el comentario de `UnidadTematica.referenteVigente`).
+          `undefined` (mock, o backend viejo) no muestra nada. */}
+      {unidad.referenteVigente === false && (
+        <div className="border-orange bg-orange-22 text-orange flex items-start gap-2 rounded-md border p-3 text-sm">
+          <WarningIcon className="size-4 shrink-0 translate-y-0.5" aria-hidden="true" />
+          <p>
+            El referente curricular de esta unidad ya no está activo. No puede ofrecer enunciados ni
+            evidencias hasta que se le asigne uno vigente.
+          </p>
+        </div>
+      )}
+
       {/* `divide-x` en vez de bordes por columna: dibuja las separatrices
           entre columnas sin una línea suelta al final de la fila. */}
       <div className="divide-border grid gap-6 md:grid-cols-3 md:gap-0 md:divide-x">

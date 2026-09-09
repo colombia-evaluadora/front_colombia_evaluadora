@@ -2,7 +2,7 @@ import * as React from "react"
 import { Link, useNavigate, useSearch } from "@tanstack/react-router"
 
 import { Button } from "@/components/ui/button"
-import { NoticeOutlet, NoticeProvider } from "@/components/notice/notice-context"
+import { NoticeProvider } from "@/components/notice/notice-context"
 import {
   TableScreen,
   TableScreenActions,
@@ -73,7 +73,6 @@ export function PlaneadorUnidadesPage() {
           <TableScreenTitle>Planeador</TableScreenTitle>
 
           <PlaneadorTabs />
-          <NoticeOutlet className="mx-(--screen-spacing) my-4" />
 
           <TableScreenToolbar>
             <SearchPlaneador

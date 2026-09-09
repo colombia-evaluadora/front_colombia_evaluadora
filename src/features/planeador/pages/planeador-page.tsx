@@ -2,7 +2,7 @@ import * as React from "react"
 import { Link, useNavigate, useSearch } from "@tanstack/react-router"
 
 import { Button } from "@/components/ui/button"
-import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
+import { NoticeProvider, useNotify } from "@/components/notice/notice-context"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -230,7 +230,6 @@ function PlaneadorPageContent() {
       <TableScreenHeader>
         <TableScreenTitle>Planeador</TableScreenTitle>
         <PlaneadorTabs />
-        <NoticeOutlet className="mx-(--screen-spacing) my-4" />
 
         <TableScreenToolbar>
           <SearchPlaneador
