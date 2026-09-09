@@ -1,27 +1,61 @@
-import { Link, useNavigate, useRouterState } from "@tanstack/react-router"
+import { Link, useNavigate, useRouterState, useSearch } from "@tanstack/react-router"
 
 import { TableScreenTabs } from "@/components/layout/table-screen"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { paths } from "@/config/paths"
 
-/**
- * Las dos vistas del Planeador. Son rutas hermanas y no estado local, igual
- * que las de "Registro de actividad": así cada pestaña es enlazable, el botón
- * de atrás funciona y el ítem del menú se marca activo en cualquiera de las
- * dos (el prefijo `planeador` a secas no es una ruta).
- */
-const VIEWS = [
-  { label: "Actividades", to: paths.app.planeadorActividades.getHref() },
-  { label: "Unidad temática", to: paths.app.planeadorUnidades.getHref() },
-]
+import { useUnidadesTabsQuery } from "@/features/planeador/api/query/use-unidades-tabs-query"
 
+const ACTIVIDADES_KEY = "actividades"
+
+/**
+ * Fallback mientras carga (o si el backend/mock todavía no expone
+ * `/unidades/tabs`, o el docente solo dicta en un nivel educativo): UNA
+ * sola pestaña "Unidad temática", sin filtrar por `?instrumento=` — mismo
+ * comportamiento que antes de este endpoint existir.
+ */
+const UNIDAD_TAB_FALLBACK = "Unidad temática"
+
+/**
+ * Las vistas del Planeador. "Actividades" es fija; la de "Unidad temática"
+ * en realidad puede ser VARIAS — una por cada referente curricular
+ * (`instrumento`) de los niveles educativos que dicta el docente
+ * autenticado (`GET /planeador/unidades/tabs`, colección Postman
+ * `planeador-flujo-unidad-actividad`): un docente de Preescolar ve
+ * "Proyecto pedagógico", uno de Primaria "Unidad temática", uno con
+ * grados de los dos niveles ve las dos pestañas. Elegir una filtra el
+ * listado de unidades a los grados/asignaturas de ese referente (ver
+ * `planeador-unidades-page.tsx`) — encodeado en la URL como
+ * `?instrumento=`, no como parte del path, porque todas viven en la misma
+ * ruta (`planeadorUnidadesRoute`).
+ */
 export function PlaneadorTabs() {
   const navigate = useNavigate()
   const pathname = useRouterState({ select: (state) => state.location.pathname })
+  // `strict: false`: este componente se monta tanto en la ruta de
+  // Actividades como en la de Unidades, y solo la segunda declara
+  // `?instrumento=` en su search schema.
+  const search = useSearch({ strict: false }) as { instrumento?: string }
 
-  // La pestaña activa la manda la URL, no un estado propio: así el enlace
-  // directo y el botón de atrás la dejan bien sin sincronizar nada.
-  const active = VIEWS.find((view) => pathname.startsWith(view.to))?.to ?? VIEWS[0].to
+  const { data: unidadTabs } = useUnidadesTabsQuery()
+  const instrumentos = unidadTabs?.length ? unidadTabs.map((t) => t.instrumento) : [UNIDAD_TAB_FALLBACK]
+
+  const views = [
+    { key: ACTIVIDADES_KEY, label: "Actividades", to: paths.app.planeadorActividades.getHref(), instrumento: undefined as string | undefined },
+    ...instrumentos.map((instrumento) => ({
+      key: `unidad:${instrumento}`,
+      label: instrumento,
+      to: paths.app.planeadorUnidades.getHref(),
+      instrumento,
+    })),
+  ]
+
+  const enUnidades = pathname.startsWith(paths.app.planeadorUnidades.getHref())
+  const activeUnidadTab = enUnidades
+    ? (views.find((v) => v.key !== ACTIVIDADES_KEY && v.instrumento === search.instrumento) ??
+      views.find((v) => v.key !== ACTIVIDADES_KEY))
+    : undefined
+  const active = activeUnidadTab?.key ?? ACTIVIDADES_KEY
 
   return (
     <TableScreenTabs>
@@ -30,7 +64,11 @@ export function PlaneadorTabs() {
           teclado, que mueven la pestaña activa sin disparar el click. */}
       <Tabs
         value={active}
-        onValueChange={(value) => navigate({ to: value as string })}
+        onValueChange={(value) => {
+          const view = views.find((v) => v.key === value)
+          if (!view) return
+          navigate({ to: view.to, search: view.instrumento ? { instrumento: view.instrumento } : undefined })
+        }}
         aria-label="Vistas del planeador"
       >
         {/* `mb-px` negativo en vez del que trae la variante: ese está calculado
@@ -40,14 +78,14 @@ export function PlaneadorTabs() {
             sigue hacia abajo—, no el `bg-background` que la variante usa
             cuando vive sobre un panel. */}
         <TabsList variant="folder" className="-mb-px">
-          {VIEWS.map(({ label, to }) => (
+          {views.map((view) => (
             <TabsTrigger
-              key={to}
-              value={to}
-              render={<Link to={to} />}
+              key={view.key}
+              value={view.key}
+              render={<Link to={view.to} search={view.instrumento ? { instrumento: view.instrumento } : undefined} />}
               className="data-active:bg-card dark:data-active:bg-card"
             >
-              {label}
+              {view.label}
             </TabsTrigger>
           ))}
         </TabsList>

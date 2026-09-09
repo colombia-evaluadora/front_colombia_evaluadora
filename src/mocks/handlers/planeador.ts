@@ -47,6 +47,19 @@ function gradoGrupoMock(grado: string, grupo: string): string {
   return grupo.startsWith(grado) ? grupo : `${grado} ${grupo}`
 }
 
+// Mismo esquema de ids sintéticos por hash que `docentes/grupos` y
+// `docentes/grado-asignatura` (`hashString`, ver mocks/handlers/planeador/
+// docentes.ts) — `unidadesTematicasDb` solo guarda el nombre del grado/
+// asignatura, no un id propio, así que se deriva acá para que
+// `UnidadTematica.gradoId` exista en mock (lo necesita el filtrado por
+// pestaña de `GET /unidades/tabs`, ver `use-unidades-tabs-query.ts`).
+function gradoIdMock(grado: string): number {
+  return hashString(`grado-${grado}`) % 1000000
+}
+function asignaturaIdMock(asignatura: string): number {
+  return hashString(`asignatura-${asignatura}`) % 1000000
+}
+
 /**
  * Endpoints del Planeador bajo `/api/eval-col` — mismo prefijo que el resto
  * del microservicio (roles, menús, planes). El path se duplica acá con la
@@ -78,6 +91,10 @@ const ACTIVIDAD_EXPORT_ALL_URL = "/api/eval-col/planeador/actividades/export-all
 const ACTIVIDAD_EXPORTAR_JSON_URL = "/api/eval-col/planeador/actividades/exportar"
 const ACTIVIDAD_IMPORTAR_JSON_URL = "/api/eval-col/planeador/actividades/importar"
 const UNIDAD_LIST_URL = "/api/eval-col/planeador/unidades"
+// Registrada ANTES que `UNIDAD_DETAIL_URL` (`/unidades/:id`) por el mismo
+// motivo que `ACTIVIDAD_STATS_URL`/etc. arriba: si no, "tabs" calzaría ahí
+// como si fuera un id.
+const UNIDAD_TABS_URL = "/api/eval-col/planeador/unidades/tabs"
 const UNIDAD_DETAIL_URL = "/api/eval-col/planeador/unidades/:id"
 const UNIDAD_CRITERIO_CREATE_URL = "/api/eval-col/planeador/unidades/:id/criterios"
 const UNIDAD_VALORACIONES_URL = "/api/eval-col/planeador/unidades/:id/valoraciones"
@@ -547,6 +564,8 @@ export const planeadorHandlers = [
     return HttpResponse.json({
       rows: page.rows.map((row) => ({
         ...row,
+        gradoId: gradoIdMock(row.grado),
+        asignaturaId: asignaturaIdMock(row.asignatura),
         dia: porDia.dia,
         dia_anterior: porDia.diaAnterior,
         dia_siguiente: porDia.diaSiguiente,
@@ -554,6 +573,33 @@ export const planeadorHandlers = [
       pageCount: page.pageCount,
       totalCount: page.totalCount,
     })
+  }),
+
+  // Rótulo(s) dinámico(s) de la pestaña "Unidad temática" — una fila por
+  // referente/nivel educativo presente en `unidadesTematicasDb`
+  // (`enfoquePedagogico` hace de proxy del referente en el mock, que no
+  // modela uno aparte): "Evaluativo" -> "Unidad temática" (Primaria/
+  // Bachillerato), "Formativo" -> "Proyecto pedagógico" (Preescolar). Con
+  // un solo enfoque presente entre las unidades del docente, llega una
+  // sola fila — el front cae al comportamiento de una sola pestaña sin
+  // filtrar (ver `planeador-tabs.tsx`).
+  http.get(UNIDAD_TABS_URL, async () => {
+    await delay(120)
+    const porEnfoque = new Map<string, { grados: Set<number>; asignaturas: Set<number> }>()
+    for (const unidad of unidadesTematicasDb) {
+      const instrumento = unidad.enfoquePedagogico === "Formativo" ? "Proyecto pedagógico" : "Unidad temática"
+      const entry = porEnfoque.get(instrumento) ?? { grados: new Set(), asignaturas: new Set() }
+      entry.grados.add(gradoIdMock(unidad.grado))
+      entry.asignaturas.add(asignaturaIdMock(unidad.asignatura))
+      porEnfoque.set(instrumento, entry)
+    }
+    const rows = Array.from(porEnfoque.entries()).map(([instrumento, { grados, asignaturas }]) => ({
+      instrumento,
+      instrumento_info_adicional: null,
+      grados: Array.from(grados),
+      asignaturas: Array.from(asignaturas),
+    }))
+    return HttpResponse.json({ rows })
   }),
 
   http.get(UNIDAD_DETAIL_URL, async ({ params }) => {
@@ -566,7 +612,9 @@ export const planeadorHandlers = [
         { status: 404 },
       )
     }
-    return HttpResponse.json({ rows: [found] })
+    return HttpResponse.json({
+      rows: [{ ...found, gradoId: gradoIdMock(found.grado), asignaturaId: asignaturaIdMock(found.asignatura) }],
+    })
   }),
 
   // Agregar criterio a la rúbrica de una unidad. El diálogo manda los

@@ -21,10 +21,14 @@ interface UpdateActividadInput {
  * grado/grupo/asignatura en este form (`gradoId`/`grupoId`/`asignaturaId`
  * resueltos) — si no los tocó, se omiten.
  *
- * Mismo alcance acotado que `create-actividad.ts`: no toca unidad
- * (`DESVINCULAR_UNIDAD`/`FK_TUNIDAD` se delegan en la carpeta 2, todavía
- * sin UI para reasignar unidad desde acá), materiales, adaptaciones,
- * recuperación, evidencias ni criterios.
+ * `FK_TUNIDAD` sí viaja siempre —mismo criterio que `create-actividad.ts`—:
+ * como el PUT es parcial, omitirlo cuando el docente QUITÓ la unidad
+ * dejaría la anterior pegada en el backend, así que una unidad "sin
+ * elegir" (`unidad.id === 0`, el sentinel del form) manda `DESVINCULAR_UNIDAD`
+ * en vez de simplemente no mandar nada.
+ *
+ * Mismo alcance acotado que `create-actividad.ts` fuera de esto: no toca
+ * materiales, adaptaciones, recuperación, evidencias ni criterios.
  */
 async function updateActividad({ actividadId, data }: UpdateActividadInput): Promise<unknown> {
   if (env.ENABLE_API_MOCKING) {
@@ -38,6 +42,11 @@ async function updateActividad({ actividadId, data }: UpdateActividadInput): Pro
   }
   if (data.grupoId != null) body.FK_TGRUPO = data.grupoId
   if (data.asignaturaId != null) body.FK_TASIGNATURA = data.asignaturaId
+  if (data.unidad.id !== 0) {
+    body.FK_TUNIDAD = data.unidad.id
+  } else {
+    body.DESVINCULAR_UNIDAD = true
+  }
   const tipoActividadId = await resolveTipoActividadId(data.tipo)
   if (tipoActividadId != null) body.FK_TLV_TIPO_ACTIVIDAD = tipoActividadId
   if (data.esEvaluativa && data.ponderacion > 0) body.PONDERACION = data.ponderacion
