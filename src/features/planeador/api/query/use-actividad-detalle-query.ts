@@ -144,6 +144,7 @@ function toActividadDetalle(row: ActividadDetalleRow): Actividad {
     esEvaluativa: row.es_evaluativa === "S",
     instrumento: row.instrumento_evaluacion ?? "",
     ponderacion: row.ponderacion ?? 0,
+    notaMaxima: row.nota_maxima ?? undefined,
     generaEvidencias: row.genera_evidencias === "S",
     tipoEvidencia: row.tipo_evidencia ?? "",
     requiereValidacion: row.requiere_validacion_coordinador === "S",

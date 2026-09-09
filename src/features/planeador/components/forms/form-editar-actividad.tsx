@@ -491,6 +491,10 @@ function IdentificacionSection({
                           // "Modalidad".
                           if (value === "__none__") {
                             field.handleChange({ id: 0, nombre: "" })
+                            // Sin unidad no hay `metodoCalculo` que decida
+                            // ponderación/puntaje — mismo criterio de abajo.
+                            form.setFieldValue("ponderacion", 0)
+                            form.setFieldValue("notaMaxima", undefined)
                             return
                           }
                           const next = unidadesDelGrado.find((u) => String(u.id) === value)
@@ -505,6 +509,15 @@ function IdentificacionSection({
                           if (next.enfoquePedagogico === "Formativo") {
                             form.setFieldValue("esEvaluativa", false)
                           }
+                          // `ponderacion`/`notaMaxima` son alternativos y
+                          // dependen del `metodoCalculo` de la unidad elegida
+                          // (ver `EvaluacionSection` más abajo) — sin
+                          // limpiarlos acá, un valor tipeado con la unidad
+                          // ANTERIOR (p. ej. un % de "Ponderado") queda pegado
+                          // y se manda igual al guardar aunque la unidad
+                          // NUEVA no lo pida (o pida el otro campo).
+                          if (next.metodoCalculo !== "Ponderado") form.setFieldValue("ponderacion", 0)
+                          if (next.metodoCalculo !== "Suma de puntos") form.setFieldValue("notaMaxima", undefined)
                         }}
                       >
                         <SelectTrigger id={field.name}>
@@ -1541,43 +1554,70 @@ function EvaluacionSection({
           comentario del `<Select>` de arriba. */}
       <InstrumentoEvaluacionSection form={form} unidades={unidades} />
 
-      {/* Ponderación va AL FINAL, después de la definición del
+      {/* Ponderación/Puntaje va AL FINAL, después de la definición del
           instrumento (Rúbrica/Lista de cotejo). La lectura del form es:
             1. ¿Es sumativa?  →  2. ¿Con qué instrumento?  →
             3. definición del instrumento  →  4. ¿Cuánto pesa?
           Si la respuesta a (1) es "No", (4) desaparece (no aplica).
 
           Además de `esEvaluativa`, (4) también depende del `metodoCalculo`
-          de la unidad temática elegida — mismo criterio de dos vías que
+          de la unidad temática elegida — mismo criterio de tres vías que
           `esPonderado` en `DialogAgregarActividad` (ver el comentario de
-          ese componente): el % SOLO tiene sentido cuando la unidad usa
-          cálculo "Ponderado". Con "Promedio simple" cada actividad pesa
-          igual y con "Suma de puntos" no hay nada que repartir, así que
-          el campo no se muestra en ninguno de los dos casos —no hay un
-          input de "Puntaje" separado, ese valor no se pide acá. */}
+          ese componente), pero completo acá:
+            - "Ponderado"     → el docente escribe el % (`ponderacion`).
+            - "Suma de puntos" → el docente escribe el puntaje máximo
+              (`notaMaxima`) y el sistema calcula el % resultante — no
+              coexiste con `ponderacion`, son campos alternativos.
+            - "Promedio simple" → ninguno de los dos aplica: cada
+              actividad pesa igual, no hay nada que repartir ni puntuar. */}
       <form.Subscribe selector={(state) => [state.values.esEvaluativa, state.values.unidad.id] as const}>
         {([esEvaluativa, unidadId]) => {
-          const esPonderado = unidades.find((u) => u.id === unidadId)?.metodoCalculo === "Ponderado"
-          if (!esEvaluativa || !esPonderado) return null
-          return (
-            <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2">
-              <form.Field name="ponderacion">
-                {(ponderacionField) => (
-                  <Field variant="outlined">
-                    <FieldLabel htmlFor={ponderacionField.name}>Ponderación (%)</FieldLabel>
-                    <Input
-                      id={ponderacionField.name}
-                      type="number"
-                      min={0}
-                      max={100}
-                      value={ponderacionField.state.value}
-                      onChange={(e) => ponderacionField.handleChange(Number(e.target.value))}
-                    />
-                  </Field>
-                )}
-              </form.Field>
-            </div>
-          )
+          if (!esEvaluativa) return null
+          const metodoCalculo = unidades.find((u) => u.id === unidadId)?.metodoCalculo
+          if (metodoCalculo === "Ponderado") {
+            return (
+              <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2">
+                <form.Field name="ponderacion">
+                  {(ponderacionField) => (
+                    <Field variant="outlined">
+                      <FieldLabel htmlFor={ponderacionField.name}>Ponderación (%)</FieldLabel>
+                      <Input
+                        id={ponderacionField.name}
+                        type="number"
+                        min={0}
+                        max={100}
+                        value={ponderacionField.state.value}
+                        onChange={(e) => ponderacionField.handleChange(Number(e.target.value))}
+                      />
+                    </Field>
+                  )}
+                </form.Field>
+              </div>
+            )
+          }
+          if (metodoCalculo === "Suma de puntos") {
+            return (
+              <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2">
+                <form.Field name="notaMaxima">
+                  {(notaMaximaField) => (
+                    <Field variant="outlined">
+                      <FieldLabel htmlFor={notaMaximaField.name}>Puntaje máximo</FieldLabel>
+                      <Input
+                        id={notaMaximaField.name}
+                        type="number"
+                        min={0}
+                        value={notaMaximaField.state.value ?? ""}
+                        onChange={(e) =>
+                          notaMaximaField.handleChange(e.target.value === "" ? undefined : Number(e.target.value))
+                        }
+                      />
+                    </Field>
+                  )}
+                </form.Field>
+              </div>
+            )
+          }
+          return null
         }}
       </form.Subscribe>
     </Card>

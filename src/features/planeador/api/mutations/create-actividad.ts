@@ -47,7 +47,16 @@ async function createActividad(actividad: Actividad): Promise<unknown> {
   if (actividad.unidad.id !== 0) {
     body.FK_TUNIDAD = actividad.unidad.id
   }
-  if (actividad.esEvaluativa && actividad.ponderacion > 0) {
+  // Alternativos, no coexisten (ver el comentario de `Actividad.notaMaxima`):
+  // `PONDERACION` cuando la unidad calcula por "Ponderado", `NOTA_MAXIMA`
+  // cuando calcula por "Suma de puntos" — con "Promedio simple" ninguno de
+  // los dos se manda. El form ya solo deja cargado el que corresponde (ver
+  // el `onValueChange` de "Unidad temática asociada" en
+  // `form-editar-actividad.tsx`), así que acá alcanza con mirar cuál trae
+  // valor.
+  if (actividad.esEvaluativa && actividad.notaMaxima != null) {
+    body.NOTA_MAXIMA = actividad.notaMaxima
+  } else if (actividad.esEvaluativa && actividad.ponderacion > 0) {
     body.PONDERACION = actividad.ponderacion
   }
   return api.post("/eval-col/planeador/actividades", body)
