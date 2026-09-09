@@ -118,13 +118,20 @@ function TabHeader({
   description,
   actionLabel,
   onAction,
+  action,
 }: {
   title: string
   description?: string
-  actionLabel: string
-  /** Sin esto el botón queda `disabled` — mismo criterio que el resto de
-   *  la app para las acciones que todavía no tienen flujo propio. */
+  actionLabel?: string
+  /** Sin esto (y sin `action`) el botón queda `disabled` — mismo criterio
+   *  que el resto de la app para las acciones que todavía no tienen flujo
+   *  propio. */
   onAction?: () => void
+  /** Reemplaza el botón por defecto con un nodo propio — para acciones que
+   *  abren un `Popover` autocontenido (ej. `DialogAgregarActividad`) en vez
+   *  de un `onClick` simple: ahí el trigger y el contenido viven juntos, no
+   *  se puede armar con `actionLabel`/`onAction`. */
+  action?: React.ReactNode
 }) {
   return (
     <div className="mb-4 flex items-start justify-between gap-4">
@@ -134,17 +141,19 @@ function TabHeader({
           <p className="text-muted-foreground text-sm">{description}</p>
         )}
       </div>
-      <Button
-        color="primary"
-        variant="fill"
-        size="sm"
-        disabled={!onAction}
-        onClick={onAction}
-        className="shrink-0"
-      >
-        <PlusIcon data-icon="inline-start" />
-        {actionLabel}
-      </Button>
+      {action ?? (
+        <Button
+          color="primary"
+          variant="fill"
+          size="sm"
+          disabled={!onAction}
+          onClick={onAction}
+          className="shrink-0"
+        >
+          <PlusIcon data-icon="inline-start" />
+          {actionLabel}
+        </Button>
+      )}
     </div>
   )
 }
@@ -312,7 +321,6 @@ export function Actividades({ unidad }: { unidad: UnidadTematica }) {
   // (viven en este endpoint aparte, ver `use-unidad-actividades-query.ts`).
   const { data: actividadesVinculadas = [], isPending, isError, refetch } = useUnidadActividadesQuery(unidad.id)
   const { sorted, sorting, setSorting } = useSortedRows(actividadesVinculadas)
-  const [dialogOpen, setDialogOpen] = React.useState(false)
 
   const { table } = useDataTable({
     columns,
@@ -332,8 +340,7 @@ export function Actividades({ unidad }: { unidad: UnidadTematica }) {
       <TabHeader
         title="Actividades de la unidad"
         description="Las actividades vinculadas y su peso dentro de la unidad."
-        actionLabel="Vincular actividad"
-        onAction={() => setDialogOpen(true)}
+        action={<DialogAgregarActividad unidad={unidad} />}
       />
       <DataTable
         table={table}
@@ -342,7 +349,6 @@ export function Actividades({ unidad }: { unidad: UnidadTematica }) {
         onRetry={refetch}
         emptyMessage="Esta unidad todavía no tiene actividades vinculadas."
       />
-      <DialogAgregarActividad unidad={unidad} open={dialogOpen} onOpenChange={setDialogOpen} />
     </div>
   )
 }

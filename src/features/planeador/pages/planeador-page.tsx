@@ -469,14 +469,30 @@ export function PlaneadorPage() {
               la lista de abajo lo tiene) hasta quedar semi-tapado por el
               `TableScreenHeader` sticky a mitad de scroll. Con el tope, si el
               mes no entra, scrollea POR DENTRO de esta columna en vez de
-              arrastrar toda la página. */}
+              arrastrar toda la página.
+
+              `max-h` + `flex flex-col`, no `h` a secas: un `height` fijo
+              obliga a la columna a medir SIEMPRE ese alto, aunque el
+              calendario (que tiene un contenido casi constante, ~6 semanas)
+              o el panel de detalle midan MENOS —eso dejaba un hueco en
+              blanco debajo del contenido real y, encima, empujaba la PÁGINA
+              entera más alta que el viewport (scroll de la página con un
+              tramo en blanco al fondo, en vez de contenerse). Con `max-h`,
+              la columna solo crece hasta el tope cuando el contenido de
+              verdad lo necesita; si es más corto, se achica con él. El hijo
+              que antes usaba `h-full` para heredar ese alto fijo ahora usa
+              `flex-1 min-h-0` (ver `ActividadDetallePanel` y el `div` de
+              abajo): con `max-h` en el padre, un `height: 100%` no siempre
+              resuelve (necesita un alto DEFINIDO, no una cota), `flex-1` sí
+              funciona igual de bien contra un contenedor acotado por
+              `max-height`. */}
           <section
             aria-label={
               actividadId
                 ? "Detalle de la actividad"
                 : "Calendario del planeador"
             }
-            className="md:h-[calc(100dvh-16rem)] md:min-h-0"
+            className="md:flex md:max-h-[calc(100dvh-16rem)] md:min-h-0 md:flex-col"
           >
             {actividadId ? (
               <ActividadDetallePanel
@@ -487,7 +503,7 @@ export function PlaneadorPage() {
                 onShowApproval={() => setMode(actividadId, "approval")}
               />
             ) : (
-              <div className="md:h-full md:overflow-y-auto">
+              <div className="md:min-h-0 md:flex-1 md:overflow-y-auto">
                 <PlaneadorMonthGrid
                   month={displayMonth}
                   events={events}

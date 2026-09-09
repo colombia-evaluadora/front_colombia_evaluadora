@@ -220,6 +220,24 @@ export function PlaneadorUnidadesPage() {
                           unidad={unidad}
                           selected={String(unidad.id) === unidadId}
                           onSelect={() => setUnidadId(String(unidad.id))}
+                          onEdit={() =>
+                            navigate({
+                              to: paths.app.planeadorUnidadEditar.getHref(String(unidad.id)),
+                            })
+                          }
+                          // Si la unidad borrada era la abierta en el panel,
+                          // limpiamos `?unidad=` — mismo criterio que
+                          // `onDeleted` del panel (cae a la primera de la
+                          // lista filtrada).
+                          onDeleted={() => {
+                            if (unidadId === String(unidad.id)) {
+                              navigate({
+                                to: planeadorUnidadesRoute.id,
+                                search: (prev) => ({ ...prev, unidad: undefined }),
+                                replace: true,
+                              })
+                            }
+                          }}
                         />
                       </li>
                     ))}
