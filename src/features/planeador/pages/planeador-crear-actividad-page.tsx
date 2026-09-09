@@ -73,6 +73,7 @@ export function PlaneadorCrearActividadPage() {
         <EditarActividadForm
           actividad={actividad}
           formId={FORM_ID}
+          esNueva
           onSubmit={(values: Actividad) => createMutation.mutate(values)}
         />
       </TableScreenBody>
