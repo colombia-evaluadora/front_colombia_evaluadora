@@ -170,6 +170,12 @@ function MatriculaEditPageContent() {
                     secondName: found.secondName,
                     lastName: found.lastName,
                     secondLastName: found.secondLastName,
+                    // Sin esto el género se quedaba con el del acudiente que
+                    // SALE, que es peor que dejarlo vacío: si la persona nueva
+                    // no tiene cuenta, `performSave` llama a
+                    // `registerMatriculaPersona` con `values.guardian.gender`
+                    // y la registraría con el género del anterior.
+                    gender: found.gender,
                   },
                   guardianContact: {
                     ...prev.guardianContact,
