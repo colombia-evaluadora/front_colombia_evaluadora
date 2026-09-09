@@ -642,6 +642,8 @@ function AsignaturaGradoSection({ form }: { form: FormActividad }) {
   const asignatura = useSelector(form.store, (state) => state.values.asignatura)
   const hasGradoGrupo = gradoId != null && grupoId != null
 
+  const asignaturaId = useSelector(form.store, (state) => state.values.asignaturaId)
+
   // El detalle real de la actividad (`toActividadDetalle`) NO trae
   // `fk_tgrado` —solo `fk_tgrupo`—, así que al abrir el form de EDITAR
   // `gradoId` llega vacío aunque `grupoId` sí esté, y eso dejaba "Asignatura
@@ -650,13 +652,36 @@ function AsignaturaGradoSection({ form }: { form: FormActividad }) {
   // Acá se resuelve el `gradoId`/`grado` que falta cruzando `grupoId` contra
   // el catálogo `docentes/grupos` del propio docente, que sí trae el grado
   // de cada uno de sus grupos.
+  //
+  // Ese cruce por GRUPO solo resuelve si el grupo de la actividad es uno
+  // que ESTE docente dicta — para una actividad de un grupo ajeno (dato de
+  // otro docente/de prueba, el caso que rompía "¿es formativo?" en
+  // `CrearUnidadPopover` acá abajo: sin `gradoId` nunca puede derivarlo ni
+  // crear la unidad nueva), `combo` nunca aparece y `gradoId` se queda
+  // `undefined` para siempre, aunque el detalle sí traiga `fk_tasignatura`
+  // (`asignaturaId`, éste sí siempre presente — ver `toActividadDetalle`).
+  // Ahí se intenta un segundo cruce, por ASIGNATURA en vez de por grupo,
+  // contra `docentes/grado-asignatura`: mismo catálogo del propio docente,
+  // pero una asignatura suele repetirse en más grados que un grupo puntual,
+  // así que tiene más chance de matchear.
   useEffect(() => {
-    if (gradoId != null || grupoId == null) return
-    const combo = docenteGrupos.find((g) => g.grupoId === grupoId)
-    if (!combo) return
-    form.setFieldValue("gradoId", combo.gradoId)
-    form.setFieldValue("grado", combo.gradoNombre)
-  }, [gradoId, grupoId, docenteGrupos, form])
+    if (gradoId != null) return
+    if (grupoId != null) {
+      const combo = docenteGrupos.find((g) => g.grupoId === grupoId)
+      if (combo) {
+        form.setFieldValue("gradoId", combo.gradoId)
+        form.setFieldValue("grado", combo.gradoNombre)
+        return
+      }
+    }
+    if (asignaturaId != null) {
+      const par = docenteGradoAsignatura.find((p) => p.asignaturaId === asignaturaId)
+      if (par) {
+        form.setFieldValue("gradoId", par.gradoId)
+        form.setFieldValue("grado", par.gradoNombre)
+      }
+    }
+  }, [gradoId, grupoId, asignaturaId, docenteGrupos, docenteGradoAsignatura, form])
 
   const asignaturas = docenteGradoAsignatura.filter((par) => par.gradoId === gradoId)
 
@@ -1466,35 +1491,49 @@ function EvaluacionSection({
           )}
         </form.Field>
 
-        <form.Field name="instrumento">
-          {(field) => (
-            <Field variant="outlined">
-              <FieldLabel htmlFor={field.name}>Instrumento de evaluación</FieldLabel>
-              <Select value={field.state.value} onValueChange={(v) => v && field.handleChange(v)} >
-                <SelectTrigger id={field.name}>
-                  <SelectValue>
-                    {(value) => (value === "Otro" ? "Otro (personalizado)" : (value as string))}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {instrumentos.map((instrumento) => (
-                    <SelectItem key={instrumento} value={instrumento}>
-                      {instrumento === "Otro" ? "Otro (personalizado)" : instrumento}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
-          )}
-        </form.Field>
+        {/* Igual que "¿Es evaluación sumativa?": el backend real solo
+            ofrece evaluación (`campos_disponibles.evaluacion.visible`)
+            cuando la unidad tiene referente EVALUATIVO. Antes este select
+            —y toda la definición de instrumento de abajo— se mostraban
+            siempre, sin importar `esFormativa`: se podía armar una rúbrica
+            entera para una actividad formativa y recién el backend la
+            rechazaba al guardar ("El instrumento de evaluación no aplica:
+            el referente curricular de la unidad no es EVALUATIVO"). Ocultar
+            la sección entera evita ofrecer algo que nunca se va a poder
+            guardar. */}
+        {!esFormativa && (
+          <form.Field name="instrumento">
+            {(field) => (
+              <Field variant="outlined">
+                <FieldLabel htmlFor={field.name}>Instrumento de evaluación</FieldLabel>
+                <Select value={field.state.value} onValueChange={(v) => v && field.handleChange(v)} >
+                  <SelectTrigger id={field.name}>
+                    <SelectValue>
+                      {(value) => (value === "Otro" ? "Otro (personalizado)" : (value as string))}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {instrumentos.map((instrumento) => (
+                      <SelectItem key={instrumento} value={instrumento}>
+                        {instrumento === "Otro" ? "Otro (personalizado)" : instrumento}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+            )}
+          </form.Field>
+        )}
 
       </div>
 
       {/* La definición del instrumento (Rúbrica o Lista de cotejo) vive
           adentro del mismo card de "Evaluación", entre el `instrumento`
           elegido arriba y la `Ponderación (%)` de abajo — antes era un
-          `Card` hermano y suelto, separado de este. */}
-      <InstrumentoEvaluacionSection form={form} />
+          `Card` hermano y suelto, separado de este. Oculta con el mismo
+          criterio que el `<Select>` de arriba: sin referente EVALUATIVO no
+          hay instrumento que definir. */}
+      {!esFormativa && <InstrumentoEvaluacionSection form={form} />}
 
       {/* Ponderación va AL FINAL, después de la definición del
           instrumento (Rúbrica/Lista de cotejo). La lectura del form es:
@@ -2268,58 +2307,70 @@ function CriterioItem({
           recibe el mismo campo de ponderación que cada nivel intermedio,
           en la misma 4ª columna. Mismo `cn` condicional que la lista de
           niveles de abajo, para que los dos bloques usen exactamente el
-          mismo grid template y las columnas queden alineadas entre sí. */}
-      <div
-        className={cn(
-          "mt-4 grid items-start gap-3",
-          esEvaluativa
-            ? "sm:grid-cols-[minmax(7rem,auto)_minmax(0,1fr)_9rem_auto]"
-            : "sm:grid-cols-[minmax(7rem,auto)_minmax(0,1fr)_auto]",
-        )}
-      >
-        <p className="pt-2 text-sm font-semibold">Excelente</p>
-        <Textarea
-          className={TEXTAREA_OUTLINED}
-          rows={2}
-          value={criterio.excelente}
-          onChange={(e) => onChange({ ...criterio, excelente: e.target.value })}
-        />
-        {/* Input de ponderación de "Excelente" — mismo campo y mismo
-            manejo del `undefined` que el de cada nivel intermedio (ver
-            más abajo): string vacío no se guarda como `0`. */}
-        {esEvaluativa && (
-          <Field variant="outlined">
-            <FieldLabel htmlFor={`${criterio.id}-excelente-ponderacion`}>
-              Puntaje
-            </FieldLabel>
-            <Input
-              id={`${criterio.id}-excelente-ponderacion`}
-              type="number"
-              min={0}
-              max={100}
-              value={criterio.excelentePonderacion ?? ""}
-              onChange={(e) => {
-                const raw = e.target.value
-                onChange({
-                  ...criterio,
-                  excelentePonderacion: raw === "" ? undefined : Number(raw),
-                })
-              }}
-            />
-          </Field>
-        )}
-        {/* Tachito a la derecha del textarea (mismo patrón que la captura). */}
-        <Button
-          variant="ghost"
-          color="neutral"
-          size="icon-sm"
-          type="button"
-          aria-label="Quitar excelente"
-          onClick={() => onChange({ ...criterio, excelente: "" })}
+          mismo grid template y las columnas queden alineadas entre sí.
+
+          Solo se muestra con contenido: antes el tachito de la derecha
+          solo vaciaba el texto (`excelente: ""`) pero la fila —label +
+          textarea vacío + tachito— seguía ahí, así que "eliminar" no se
+          sentía como eliminar nada. Un criterio recién creado tampoco
+          arranca con este bloque a la vista; para agregar un nivel
+          "Excelente" alcanza con escribirlo en "Agregar nivel" de abajo,
+          que ya es exactamente la misma fila (label + descripción +
+          puntaje + tachito que si borra de verdad). */}
+      {(criterio.excelente !== "" || criterio.excelentePonderacion != null) && (
+        <div
+          className={cn(
+            "mt-4 grid items-start gap-3",
+            esEvaluativa
+              ? "sm:grid-cols-[minmax(7rem,auto)_minmax(0,1fr)_9rem_auto]"
+              : "sm:grid-cols-[minmax(7rem,auto)_minmax(0,1fr)_auto]",
+          )}
         >
-          <TrashIcon />
-        </Button>
-      </div>
+          <p className="pt-2 text-sm font-semibold">Excelente</p>
+          <Textarea
+            className={TEXTAREA_OUTLINED}
+            rows={2}
+            value={criterio.excelente}
+            onChange={(e) => onChange({ ...criterio, excelente: e.target.value })}
+          />
+          {/* Input de ponderación de "Excelente" — mismo campo y mismo
+              manejo del `undefined` que el de cada nivel intermedio (ver
+              más abajo): string vacío no se guarda como `0`. */}
+          {esEvaluativa && (
+            <Field variant="outlined">
+              <FieldLabel htmlFor={`${criterio.id}-excelente-ponderacion`}>
+                Puntaje
+              </FieldLabel>
+              <Input
+                id={`${criterio.id}-excelente-ponderacion`}
+                type="number"
+                min={0}
+                max={100}
+                value={criterio.excelentePonderacion ?? ""}
+                onChange={(e) => {
+                  const raw = e.target.value
+                  onChange({
+                    ...criterio,
+                    excelentePonderacion: raw === "" ? undefined : Number(raw),
+                  })
+                }}
+              />
+            </Field>
+          )}
+          {/* Tachito a la derecha del textarea — quita el bloque entero
+              (texto Y puntaje), no solo el texto. */}
+          <Button
+            variant="ghost"
+            color="neutral"
+            size="icon-sm"
+            type="button"
+            aria-label="Quitar excelente"
+            onClick={() => onChange({ ...criterio, excelente: "", excelentePonderacion: undefined })}
+          >
+            <TrashIcon />
+          </Button>
+        </div>
+      )}
 
       {/* Lista de niveles ya creados. Cada nivel sigue el mismo patrón que
           el bloque "Excelente" de arriba: el `nombre` (la etiqueta que el

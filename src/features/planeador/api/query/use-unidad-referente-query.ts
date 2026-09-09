@@ -27,6 +27,7 @@ interface UnidadReferenteRow {
   referente?: { id: number } | null
   fk_referente_curricular?: number | null
   enfoque_valor?: "EVALUATIVO" | "FORMATIVO" | null
+  es_evaluativo?: boolean | null
   tipo_evaluacion_valor?: string | null
 }
 
@@ -40,11 +41,23 @@ const SIN_REFERENTE: UnidadReferente = { tieneReferente: false, esFormativo: fal
 
 function toUnidadReferente(row: UnidadReferenteRow | undefined): UnidadReferente {
   const tieneReferente =
-    row != null && (row.referente != null || row.fk_referente_curricular != null || row.enfoque_valor != null)
+    row != null &&
+    (row.referente != null ||
+      row.fk_referente_curricular != null ||
+      row.enfoque_valor != null ||
+      row.es_evaluativo != null)
   if (!tieneReferente) return SIN_REFERENTE
+  // Misma tolerancia a las dos banderas que `use-referente-curricular-
+  // query.ts` (3.0): esta ruta (3.1) documenta el mismo par
+  // `enfoque_valor`/`es_evaluativo`, y una unidad real puede traer solo
+  // `es_evaluativo` — quedarse solo con `enfoque_valor` dejaba `esFormativo`
+  // en `false` para esas respuestas y el "¿Es evaluación sumativa?" nunca
+  // se bloqueaba ni se autocorregía.
+  const esFormativo =
+    typeof row!.es_evaluativo === "boolean" ? !row!.es_evaluativo : row!.enfoque_valor === "FORMATIVO"
   return {
     tieneReferente: true,
-    esFormativo: row!.enfoque_valor === "FORMATIVO",
+    esFormativo,
     tipoEvaluacion: row!.tipo_evaluacion_valor ?? null,
   }
 }
