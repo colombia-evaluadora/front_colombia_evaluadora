@@ -1,16 +1,15 @@
 import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import {
+  Popover,
+  PopoverContent,
+  PopoverHeader,
+  PopoverTitle,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 import {
   Table,
   TableBody,
@@ -19,7 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { InfoIcon, MagnifyingGlassIcon, PlusCircleIcon, XIcon } from "@/components/ui/icons"
+import { InfoIcon, MagnifyingGlassIcon, PlusCircleIcon, PlusIcon } from "@/components/ui/icons"
 
 import { useUnidadActividadesDisponiblesQuery } from "@/features/planeador/api/query/use-unidad-actividades-disponibles-query"
 import { useLinkActividadUnidad } from "@/features/planeador/api/mutations/link-actividad-unidad"
@@ -27,13 +26,15 @@ import type { UnidadTematica } from "@/features/planeador/api/types/unidad-temat
 
 interface DialogAgregarActividadProps {
   unidad: UnidadTematica
-  open: boolean
-  onOpenChange: (open: boolean) => void
 }
 
 /**
- * Modal "Agregar actividad" de la pestaña Actividades. Lista las
- * "actividades disponibles" reales para esta unidad
+ * Popover "Vincular actividad" de la pestaña Actividades — mismo patrón que
+ * `CrearUnidadPopover` (`form-editar-actividad.tsx`): autocontenido, con su
+ * propio trigger y estado de apertura, en vez de un `Dialog` controlado
+ * desde el caller (`TabHeader` ya no necesita `dialogOpen`/`setDialogOpen`).
+ *
+ * Lista las "actividades disponibles" reales para esta unidad
  * (`GET /unidades/:id/actividades-disponibles`, `useUnidadActividadesDisponiblesQuery`)
  * — huérfanas de la misma asignatura y (vía su grupo) del mismo grado que
  * la unidad; el backend ya las devuelve sin las que estén vinculadas, así
@@ -48,11 +49,12 @@ interface DialogAgregarActividadProps {
  * en blanco. `porcentajeDisponible` viene YA CALCULADO por fila (unidad +
  * grupo de esa actividad), no hace falta pedirlo aparte (1.5).
  */
-export function DialogAgregarActividad({ unidad, open, onOpenChange }: DialogAgregarActividadProps) {
+export function DialogAgregarActividad({ unidad }: DialogAgregarActividadProps) {
+  const [open, setOpen] = useState(false)
   const [search, setSearch] = useState("")
   // Borrador de porcentaje por actividad — vive acá, no en el form de la
   // fila: cada tecleo no debe disparar nada hasta que se confirma con
-  // "Vincular". Se limpia por completo al cerrar el modal.
+  // "Vincular". Se limpia por completo al cerrar el popover.
   const [pesos, setPesos] = useState<Record<string, string>>({})
 
   const { data: disponibles = [] } = useUnidadActividadesDisponiblesQuery(unidad.id, search)
@@ -61,7 +63,7 @@ export function DialogAgregarActividad({ unidad, open, onOpenChange }: DialogAgr
   const esPonderado = unidad.metodoCalculo === "Ponderado"
 
   function handleOpenChange(next: boolean) {
-    onOpenChange(next)
+    setOpen(next)
     if (!next) {
       setSearch("")
       setPesos({})
@@ -88,23 +90,32 @@ export function DialogAgregarActividad({ unidad, open, onOpenChange }: DialogAgr
   }
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent
-        className="flex max-h-[85vh] flex-col overflow-hidden sm:max-w-3xl"
-        showCloseButton
+    <Popover open={open} onOpenChange={handleOpenChange}>
+      <PopoverTrigger
+        render={<Button color="primary" variant="fill" size="sm" className="shrink-0" />}
       >
-        <DialogHeader className="shrink-0">
-          <DialogTitle>Agregar actividad</DialogTitle>
-        </DialogHeader>
+        <PlusIcon data-icon="inline-start" />
+        Vincular actividad
+      </PopoverTrigger>
+      <PopoverContent
+        align="end"
+        side="bottom"
+        sideOffset={8}
+        // Bastante más ancho que el default (`w-72`): esto es una tabla
+        // completa, no un mini-form como `CrearUnidadPopover`.
+        className="flex max-h-[70vh] w-[min(46rem,90vw)] flex-col overflow-hidden"
+      >
+        <PopoverHeader className="shrink-0">
+          <PopoverTitle>Vincular actividad</PopoverTitle>
+        </PopoverHeader>
 
-        {/* Único bloque con scroll: título y "Cerrar" quedan fijos afuera —
-            así una lista larga de actividades no empuja el resto del modal
-            fuera de la pantalla. */}
-        {/* El scroll vive en ESTE div (solo `overflow-y-auto` + `min-h-0` para
-            poder encogerse dentro del alto fijo del modal); el `<table>` de
-            adentro se mide raro si comparte el mismo flex container que lo
-            recorta — por eso el contenido va en un div de bloque aparte, no
-            directamente acá. */}
+        {/* Único bloque con scroll: título queda fijo afuera — así una
+            lista larga de actividades no empuja el resto del popover fuera
+            de la pantalla. El scroll vive en ESTE div (solo
+            `overflow-y-auto` + `min-h-0`); el `<table>` de adentro se mide
+            raro si comparte el mismo flex container que lo recorta — por
+            eso el contenido va en un div de bloque aparte, no directamente
+            acá. */}
         <div className="min-h-0 flex-1 overflow-y-auto">
           <div className="flex flex-col gap-4">
             <div className="flex items-end justify-between gap-4">
@@ -144,21 +155,43 @@ export function DialogAgregarActividad({ unidad, open, onOpenChange }: DialogAgr
               actividad creada previamente para vincularla a esta unidad.
             </p>
 
-            <Table>
+            {/* `table-fixed` + un ancho por columna: sin esto, "Instrumento"
+                (nombres largos, ej. "Escala de valoración") y "Disponible
+                para asignar: X%" (con `whitespace-nowrap` por default de
+                `TableCell`) empujaban la tabla más ancha que el popover y
+                aparecía scroll horizontal — quedaba la columna Actividad
+                cortada apenas se scrolleaba para ver el %. Con ancho fijo,
+                el contenido largo envuelve (`whitespace-normal` en cada
+                celda) en vez de desbordar. El input de "(%)" y el
+                "Disponible para asignar"/botón "Vincular" van en columnas
+                SEPARADAS (la segunda con header vacío): compartir celda
+                hacía que el texto largo se envolviera debajo del input y
+                empujara la fila más alta de lo necesario. */}
+            <Table className="table-fixed">
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <TableHead>Actividad</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Instrumento</TableHead>
-                  <TableHead>Grupo</TableHead>
-                  {esPonderado && <TableHead className="text-right">(%)</TableHead>}
+                  <TableHead className="w-[28%]">Actividad</TableHead>
+                  <TableHead className="w-[13%]">Tipo</TableHead>
+                  <TableHead className="w-[18%]">Instrumento</TableHead>
+                  <TableHead className="w-[11%]">Grupo</TableHead>
+                  {esPonderado && (
+                    <>
+                      <TableHead className="w-[10%] text-right">(%)</TableHead>
+                      {/* Header vacío a propósito: esta columna solo muestra
+                          "Disponible para asignar" o el botón "Vincular" —
+                          ninguno de los dos es un encabezado real. Separarla
+                          del input evita que el texto largo se envuelva
+                          DEBAJO del input y lo empuje de su columna. */}
+                      <TableHead className="w-[20%]" />
+                    </>
+                  )}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {disponibles.length === 0 ? (
                   <TableRow className="hover:bg-transparent">
                     <TableCell
-                      colSpan={esPonderado ? 5 : 4}
+                      colSpan={esPonderado ? 6 : 4}
                       className="h-20 text-center text-muted-foreground"
                     >
                       {search
@@ -174,14 +207,18 @@ export function DialogAgregarActividad({ unidad, open, onOpenChange }: DialogAgr
                     return (
                       <TableRow key={actividad.id}>
                         <TableCell className="font-semibold whitespace-normal">
-                          {actividad.nombre}
+                          {/* Máximo 2 líneas — un nombre largo desalineaba la
+                              fila entera contra las columnas de al lado. */}
+                          <span className="line-clamp-2" title={actividad.nombre}>
+                            {actividad.nombre}
+                          </span>
                         </TableCell>
-                        <TableCell>{actividad.tipo}</TableCell>
-                        <TableCell>{actividad.instrumento}</TableCell>
-                        <TableCell>{actividad.grupo}</TableCell>
+                        <TableCell className="whitespace-normal">{actividad.tipo}</TableCell>
+                        <TableCell className="whitespace-normal">{actividad.instrumento}</TableCell>
+                        <TableCell className="whitespace-normal">{actividad.grupo}</TableCell>
                         {esPonderado && (
-                          <TableCell>
-                            <div className="flex items-center justify-end gap-2 whitespace-nowrap">
+                          <>
+                            <TableCell>
                               <Input
                                 variant="outlined"
                                 type="number"
@@ -195,8 +232,14 @@ export function DialogAgregarActividad({ unidad, open, onOpenChange }: DialogAgr
                                     [actividad.id]: e.target.value,
                                   }))
                                 }
-                                className="w-16 text-right"
+                                className="ml-auto w-16 text-right"
                               />
+                            </TableCell>
+                            {/* Columna aparte (header vacío) para no envolver
+                                el texto largo DEBAJO del input de arriba —
+                                antes compartían celda y la fila crecía más
+                                de lo que el input necesitaba. */}
+                            <TableCell className="whitespace-normal">
                               {/* El botón "Vincular" solo aparece con un peso
                                   tipeado — sin eso, vincular no tiene sentido
                                   (quedaría en 0%, indistinguible de "no
@@ -216,12 +259,12 @@ export function DialogAgregarActividad({ unidad, open, onOpenChange }: DialogAgr
                                   Vincular
                                 </Button>
                               ) : (
-                                <span className="text-muted-foreground text-xs whitespace-nowrap">
+                                <span className="text-muted-foreground text-xs">
                                   Disponible para asignar: {disponible}%
                                 </span>
                               )}
-                            </div>
-                          </TableCell>
+                            </TableCell>
+                          </>
                         )}
                         {!esPonderado && (
                           <TableCell className="text-right">
@@ -256,14 +299,7 @@ export function DialogAgregarActividad({ unidad, open, onOpenChange }: DialogAgr
             )}
           </div>
         </div>
-
-        <DialogFooter className="shrink-0 sm:justify-end">
-          <DialogClose render={<Button size="sm" type="button" variant="fill" color="neutral" />}>
-            <XIcon data-icon="inline-start" />
-            Cerrar
-          </DialogClose>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      </PopoverContent>
+    </Popover>
   )
 }

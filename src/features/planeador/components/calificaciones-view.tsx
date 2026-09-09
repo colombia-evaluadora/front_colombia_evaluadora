@@ -1,15 +1,9 @@
-import { useId, useState } from "react"
+import { useId } from "react"
+import { useQueryClient } from "@tanstack/react-query"
 
 import { Button } from "@/components/ui/button"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import {
-  Popover,
-  PopoverContent,
-  PopoverHeader,
-  PopoverTitle,
-  PopoverTrigger,
-} from "@/components/ui/popover"
 import {
   Select,
   SelectContent,
@@ -20,25 +14,19 @@ import {
 import { Spinner } from "@/components/ui/spinner"
 import {
   CheckCircleIcon,
-  CheckIcon,
   ClockIcon,
   PaperclipIcon,
-  PencilIcon,
+  RemoveCircleOutlineIcon,
   WarningCircleIcon,
-  XIcon,
 } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
 
-import { useCalificacionesQuery } from "@/features/planeador/api/query/use-calificaciones-query"
+import { calificacionesQueryKey, useCalificacionesQuery } from "@/features/planeador/api/query/use-calificaciones-query"
 import type { Actividad } from "@/features/planeador/api/types/actividad"
-import type {
-  CalificacionEstudiante,
-  EstadoAsistencia,
-  NotaCriterio,
-} from "@/features/planeador/api/types/calificacion"
+import type { CalificacionEstudiante, EstadoAsistencia } from "@/features/planeador/api/types/calificacion"
 import { itemsPonderables, porcentajeFinal } from "@/features/planeador/api/types/calificacion"
 import { formatDate } from "@/features/planeador/lib/format-date"
-import { InstrumentoGradingFields } from "@/features/planeador/components/planilla/instrumento-grading-fields"
+import { DialogCalificarActividad } from "@/features/planeador/components/dialogs/dialog-calificar-actividad"
 
 interface CalificacionesViewProps {
   actividad: Actividad
@@ -46,27 +34,23 @@ interface CalificacionesViewProps {
 
 /**
  * Calificaciones de una actividad: tabla con un renglón por estudiante del
- * grupo, asistencia a la fecha de la actividad y nota final calculada a
- * partir de los criterios de la rúbrica. Reemplaza a `DetailSections` en el
- * panel de detalle del Planeador — el viejo read-only se queda en el código
- * por si se quiere volver a mostrar, pero el punto de entrada del panel
- * apunta ahora a esta vista.
+ * grupo, asistencia a la fecha de la actividad y nota final. Reemplaza a
+ * `DetailSections` en el panel de detalle del Planeador — el viejo
+ * read-only se queda en el código por si se quiere volver a mostrar, pero
+ * el punto de entrada del panel apunta ahora a esta vista.
  *
- * El "Agregar" en la columna NOTA es solo el placeholder del campo:
- * cuando todavía no se cargó ninguna nota, no hay porcentaje que mostrar.
- * El porcentaje se calcula con `porcentajeFinal()` —suma ponderada contra
- * los criterios efectivamente calificados, no contra el total— y se ve al
- * lado del nombre del estudiante en la columna, en vez de estar en la
- * cabecera como "nota de la sección".
+ * El "Agregar" en la columna NOTA es solo el placeholder del campo: cuando
+ * todavía no se cargó ninguna nota, no hay porcentaje que mostrar. Se
+ * prefiere `estudiante.calificacion` (el agregado que ya trae el backend
+ * real) sobre recalcularlo con `porcentajeFinal()` a partir de `notas` —
+ * esta última sigue siendo el fallback del mock, que no manda ese campo.
+ * El lápiz de "Calificar" abre `DialogCalificarActividad`, que sí pega
+ * contra el backend real e invalida este listado al guardar.
  */
 export function CalificacionesView({ actividad }: CalificacionesViewProps) {
   const { data: calificaciones = [], isPending, isError, refetch } =
     useCalificacionesQuery(actividad.id)
-
-  // Ediciones locales del popover por celda — mismo nivel que el resto de
-  // las vistas de calificación del Planeador: no hay mutación/endpoint de
-  // escritura todavía, así que se pierden al recargar.
-  const [overrides, setOverrides] = useState<Map<number, NotaCriterio[]>>(new Map())
+  const queryClient = useQueryClient()
 
   if (isPending) {
     return (
@@ -117,9 +101,8 @@ export function CalificacionesView({ actividad }: CalificacionesViewProps) {
               key={estudiante.id}
               actividad={actividad}
               estudiante={estudiante}
-              notas={overrides.get(estudiante.id) ?? estudiante.notas}
-              onGuardar={(next) =>
-                setOverrides((prev) => new Map(prev).set(estudiante.id, next))
+              onGuardado={() =>
+                queryClient.invalidateQueries({ queryKey: calificacionesQueryKey(actividad.id) })
               }
             />
           ))}
@@ -132,21 +115,20 @@ export function CalificacionesView({ actividad }: CalificacionesViewProps) {
 interface CalificacionRowProps {
   actividad: Actividad
   estudiante: CalificacionEstudiante
-  notas: NotaCriterio[]
-  onGuardar: (next: NotaCriterio[]) => void
+  onGuardado: () => void
 }
 
-function CalificacionRow({ actividad, estudiante, notas, onGuardar }: CalificacionRowProps) {
-  const porcentaje = porcentajeFinal(notas, itemsPonderables(actividad))
+function CalificacionRow({ actividad, estudiante, onGuardado }: CalificacionRowProps) {
+  const porcentaje =
+    estudiante.calificacion ?? porcentajeFinal(estudiante.notas, itemsPonderables(actividad))
   const mostrarJustificacion =
     estudiante.asistencia.estado === "llego-tarde" ||
     estudiante.asistencia.estado === "no-asistio"
+  const nombreCompleto = `${estudiante.nombres} ${estudiante.apellidos}`.trim()
 
   return (
     <tr className="transition-colors">
-      <td className="px-4 py-3 align-middle font-medium">
-        {estudiante.nombres} {estudiante.apellidos}
-      </td>
+      <td className="px-4 py-3 align-middle font-medium">{nombreCompleto}</td>
       <td className="px-4 py-3">
         <div className="flex items-center gap-2">
           <AsistenciaSelect estado={estudiante.asistencia.estado} />
@@ -166,87 +148,17 @@ function CalificacionRow({ actividad, estudiante, notas, onGuardar }: Calificaci
         )}
       </td>
       <td className="px-2 py-3 align-middle">
-        <CeldaNotaPopoverLocal
+        <DialogCalificarActividad
           actividadId={actividad.id}
-          estudianteNombre={`${estudiante.nombres} ${estudiante.apellidos}`}
-          notaActual={notas}
-          onGuardar={onGuardar}
+          actividadNombre={actividad.nombre}
+          asignatura={actividad.asignatura}
+          pkTactividadEstudiante={estudiante.id}
+          estudianteNombre={nombreCompleto}
+          fecha={actividad.fechaInicio}
+          onGuardado={onGuardado}
         />
       </td>
     </tr>
-  )
-}
-
-/**
- * Popover de calificación puntual de esta vista — a diferencia del de la
- * Planilla (`CeldaNotaPopover`), acá NO pega contra el backend: esta
- * pantalla vive sobre `useCalificacionesQuery`, que consulta un endpoint
- * cuyo shape real no coincide todavía con lo que espera este componente
- * (flagged en `use-calificaciones-query.ts`) — hasta que se remapee, el
- * guardado sigue siendo local (`onGuardar` solo actualiza el estado en
- * memoria de `CalificacionesView`), igual que antes.
- */
-function CeldaNotaPopoverLocal({
-  actividadId,
-  estudianteNombre,
-  notaActual,
-  onGuardar,
-}: {
-  actividadId: number
-  estudianteNombre: string
-  notaActual: NotaCriterio[]
-  onGuardar: (next: NotaCriterio[]) => void
-}) {
-  const [open, setOpen] = useState(false)
-  const [draft, setDraft] = useState<NotaCriterio[]>(notaActual)
-
-  return (
-    <Popover
-      open={open}
-      onOpenChange={(next) => {
-        setOpen(next)
-        if (next) setDraft(notaActual)
-      }}
-    >
-      <PopoverTrigger
-        render={
-          <Button
-            variant="ghost"
-            color="neutral"
-            size="icon-xs"
-            aria-label={`Calificar a ${estudianteNombre}`}
-          />
-        }
-      >
-        <PencilIcon className="size-3.5" />
-      </PopoverTrigger>
-      <PopoverContent align="end" side="bottom" className="w-80">
-        <PopoverHeader>
-          <PopoverTitle>Calificar</PopoverTitle>
-        </PopoverHeader>
-
-        <InstrumentoGradingFields actividadId={actividadId} value={draft} onChange={setDraft} />
-
-        <div className="flex items-center justify-end gap-2">
-          <Button
-            variant="fill"
-            color="primary"
-            size="sm"
-            onClick={() => {
-              onGuardar(draft)
-              setOpen(false)
-            }}
-          >
-            <CheckIcon data-icon="inline-start" />
-            Guardar
-          </Button>
-          <Button variant="fill" color="neutral" size="sm" onClick={() => setOpen(false)}>
-            <XIcon data-icon="inline-start" />
-            Cancelar
-          </Button>
-        </div>
-      </PopoverContent>
-    </Popover>
   )
 }
 
@@ -298,6 +210,14 @@ const ASISTENCIA_OPTIONS = [
     label: "No asistió",
     Icon: WarningCircleIcon,
     iconClass: "text-red",
+  },
+  // Caso real confirmado: sin registro de asistencia ese día todavía (se
+  // toma en otro módulo) — no es "no asistió", es "todavía no se sabe".
+  {
+    value: "sin-registrar",
+    label: "Sin registrar",
+    Icon: RemoveCircleOutlineIcon,
+    iconClass: "text-muted-foreground",
   },
 ] as const
 

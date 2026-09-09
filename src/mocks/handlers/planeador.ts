@@ -30,6 +30,8 @@ import type {
   FilaInformeImportacion,
 } from "@/features/planeador/api/types/actividad-intercambio"
 import { statusToEstadoDerivado } from "@/features/planeador/lib/estado-derivado"
+import { parseLocalDate, toDateOnly } from "@/features/planeador/lib/format-date"
+import { hashString } from "@/mocks/handlers/planeador/docentes"
 
 /**
  * Endpoints del Planeador bajo `/api/eval-col` — mismo prefijo que el resto
@@ -66,6 +68,7 @@ const UNIDAD_DETAIL_URL = "/api/eval-col/planeador/unidades/:id"
 const UNIDAD_CRITERIO_CREATE_URL = "/api/eval-col/planeador/unidades/:id/criterios"
 const UNIDAD_VALORACIONES_URL = "/api/eval-col/planeador/unidades/:id/valoraciones"
 const UNIDAD_REFERENTE_URL = "/api/eval-col/planeador/unidades/:id/referente"
+const REFERENTE_CURRICULAR_URL = "/api/eval-col/planeador/referente-curricular"
 const UNIDAD_ACTIVIDADES_VINCULADAS_URL = "/api/eval-col/planeador/unidades/:id/actividades"
 const UNIDAD_ACTIVIDADES_DISPONIBLES_URL =
   "/api/eval-col/planeador/unidades/:id/actividades-disponibles"
@@ -92,6 +95,61 @@ function paginate<T>(rows: T[], url: URL) {
     rows: rows.slice(offset, offset + size),
     pageCount: Math.max(1, Math.ceil(total / size)),
     totalCount: total,
+  }
+}
+
+/** Ventana `[inicio, cierre]` (`yyyy-MM-dd`) de una fila con actividad
+ *  propia, o de una unidad (derivada del min/max de sus actividades
+ *  vinculadas — igual que el backend real, que no guarda fechas propias en
+ *  la unidad). `null` cuando no hay ventana que evaluar (unidad sin
+ *  actividades vinculadas). */
+interface Ventana {
+  inicio: string
+  cierre: string
+}
+
+function estaVigente(ventana: Ventana | null, dia: string): boolean {
+  return ventana != null && ventana.inicio <= dia && ventana.cierre >= dia
+}
+
+/** Día ocupado (alguna `ventana` lo cubre) más cercano a `desde`, saltando
+ *  los vacíos, en la dirección pedida — mismo contrato que `dia_anterior`/
+ *  `dia_siguiente` del backend real. Acota la búsqueda a ~2 años para no
+ *  loopear para siempre si no queda ninguno de ese lado. */
+function diaOcupadoCercano(
+  ventanas: (Ventana | null)[],
+  desde: string,
+  direccion: 1 | -1,
+): string | null {
+  const base = parseLocalDate(desde)
+  if (!base) return null
+  for (let i = 1; i <= 730; i++) {
+    const candidato = new Date(base)
+    candidato.setDate(candidato.getDate() + i * direccion)
+    const candidatoStr = toDateOnly(candidato)
+    if (ventanas.some((v) => estaVigente(v, candidatoStr))) return candidatoStr
+  }
+  return null
+}
+
+/**
+ * Paginado por "día activo" (`?dia=`, colecciones Postman `planeador-unidad`
+ * 2.1 y `planeador-actividad` 4.1/8.3): filtra `rows` a las vigentes ese día
+ * y calcula `dia_anterior`/`dia_siguiente`. Sin `dia`, no filtra y deja los
+ * tres campos en `null` — mismo contrato que el real ("nada cambia").
+ */
+function filtrarPorDiaActivo<T>(
+  rows: T[],
+  ventanaDe: (row: T) => Ventana | null,
+  dia: string | null,
+): { rows: T[]; dia: string | null; diaAnterior: string | null; diaSiguiente: string | null } {
+  if (!dia) return { rows, dia: null, diaAnterior: null, diaSiguiente: null }
+  const ventanas = rows.map(ventanaDe)
+  return {
+    rows: rows.filter((row, i) => estaVigente(ventanas[i]!, dia)),
+    dia,
+    diaAnterior: diaOcupadoCercano(ventanas, dia, -1),
+    diaSiguiente: diaOcupadoCercano(ventanas, dia, 1),
   }
 }
 
@@ -307,6 +365,7 @@ export const planeadorHandlers = [
     const search = (url.searchParams.get("search") ?? "").trim().toLowerCase()
     const estadosParam = url.searchParams.get("estados")
     const estadosDerivados = estadosParam ? estadosParam.split(",") : null
+    const dia = url.searchParams.get("dia")
 
     const filtered = planeadorDb.filter((row) => {
       if (estadosDerivados && !estadosDerivados.includes(statusToEstadoDerivado(row.status))) {
@@ -319,7 +378,42 @@ export const planeadorHandlers = [
         .includes(search)
     })
 
-    const page = paginate(filtered, url)
+    const porDia = filtrarPorDiaActivo(
+      filtered,
+      (row) => ({ inicio: row.fechaInicio, cierre: row.fechaCierre }),
+      dia,
+    )
+
+    const page = paginate(porDia.rows, url)
+    // Día vacío: una sola fila centinela con todo en `null` salvo la
+    // navegación — mismo contrato que el real (ver `use-actividades-mias-
+    // query.ts`, que la reconoce por `pk_tactividad === null`).
+    if (dia && page.rows.length === 0) {
+      return HttpResponse.json({
+        rows: [
+          {
+            pk_tactividad: null,
+            titulo: null,
+            estado: null,
+            fecha_inicio: null,
+            fecha_cierre: null,
+            asignatura: null,
+            grupo: null,
+            unidad: null,
+            instrumento_evaluacion: null,
+            ponderacion: null,
+            es_evaluativa: null,
+            estudiantes_asignados: null,
+            estudiantes_evaluados: null,
+            total_count: 0,
+            dia: porDia.dia,
+            dia_anterior: porDia.diaAnterior,
+            dia_siguiente: porDia.diaSiguiente,
+          },
+        ],
+      })
+    }
+
     const rows = page.rows.map((row) => ({
       pk_tactividad: row.id,
       titulo: row.nombre,
@@ -335,6 +429,9 @@ export const planeadorHandlers = [
       estudiantes_asignados: row.totalEstudiantes,
       estudiantes_evaluados: row.evaluados,
       total_count: page.totalCount,
+      dia: porDia.dia,
+      dia_anterior: porDia.diaAnterior,
+      dia_siguiente: porDia.diaSiguiente,
     }))
     return HttpResponse.json({ rows })
   }),
@@ -393,8 +490,52 @@ export const planeadorHandlers = [
   // el cliente las consuma con `evalCol.getRows` sin casos especiales.
   http.get(UNIDAD_LIST_URL, async ({ request }) => {
     await delay(150)
-    const page = paginate(unidadesTematicasDb, new URL(request.url))
-    return HttpResponse.json(page)
+    const url = new URL(request.url)
+    const dia = url.searchParams.get("dia")
+
+    // La unidad no tiene fechas propias: se derivan del min/max de sus
+    // actividades vinculadas, igual que el backend real (ver el comentario
+    // de `Ventana` arriba).
+    const ventanaDeUnidad = (unidad: UnidadTematica): Ventana | null => {
+      const actividades = unidad.actividades
+        .map((a) => planeadorDb.find((p) => p.id === a.actividadId))
+        .filter((a): a is Actividad => a != null)
+      if (actividades.length === 0) return null
+      return {
+        inicio: actividades.reduce((min, a) => (a.fechaInicio < min ? a.fechaInicio : min), actividades[0]!.fechaInicio),
+        cierre: actividades.reduce((max, a) => (a.fechaCierre > max ? a.fechaCierre : max), actividades[0]!.fechaCierre),
+      }
+    }
+
+    const porDia = filtrarPorDiaActivo(unidadesTematicasDb, ventanaDeUnidad, dia)
+    const page = paginate(porDia.rows, url)
+
+    // Día vacío: misma fila centinela que `/actividades/mias` (ver
+    // `use-unidades-query.ts`, que la reconoce por `pk_tunidad === null`).
+    if (dia && page.rows.length === 0) {
+      return HttpResponse.json({
+        rows: [
+          {
+            pk_tunidad: null,
+            total_count: 0,
+            dia: porDia.dia,
+            dia_anterior: porDia.diaAnterior,
+            dia_siguiente: porDia.diaSiguiente,
+          },
+        ],
+      })
+    }
+
+    return HttpResponse.json({
+      rows: page.rows.map((row) => ({
+        ...row,
+        dia: porDia.dia,
+        dia_anterior: porDia.diaAnterior,
+        dia_siguiente: porDia.diaSiguiente,
+      })),
+      pageCount: page.pageCount,
+      totalCount: page.totalCount,
+    })
   }),
 
   http.get(UNIDAD_DETAIL_URL, async ({ params }) => {
@@ -466,6 +607,46 @@ export const planeadorHandlers = [
           referente: { id: 1 },
           enfoque_valor: unidad.enfoquePedagogico === "Formativo" ? "FORMATIVO" : "EVALUATIVO",
           tipo_evaluacion_valor: "CUANTITATIVA_CUALITATIVA",
+        },
+      ],
+    })
+  }),
+
+  // Referente curricular derivable de GRADO + ASIGNATURA directo, sin
+  // unidad todavía (colección Postman 3.0) — usado por `EvaluacionSection`
+  // para "¿es formativa?" en una actividad huérfana. El mock no modela un
+  // catálogo de referentes aparte: reusa cualquier unidad existente que
+  // matchee grado+asignatura (mismo esquema de ids sintéticos por hash que
+  // `/docentes/grado-asignatura`) para heredar su enfoque y enunciados; sin
+  // ninguna que matchee, cae al default histórico "Evaluativo".
+  http.get(REFERENTE_CURRICULAR_URL, async ({ request }) => {
+    await delay(150)
+    const url = new URL(request.url)
+    const gradoIdParam = url.searchParams.get("grado")
+    if (!gradoIdParam) {
+      return HttpResponse.json({ message: "grado es obligatorio" }, { status: 400 })
+    }
+    const gradoId = Number(gradoIdParam)
+    const asignaturaIdParam = url.searchParams.get("asignatura")
+    const asignaturaId = asignaturaIdParam ? Number(asignaturaIdParam) : null
+
+    const unidad = unidadesTematicasDb.find((u) => {
+      if (hashString(`grado-${u.grado}`) % 1000000 !== gradoId) return false
+      if (asignaturaId == null) return true
+      return hashString(`asignatura-${u.asignatura}`) % 1000000 === asignaturaId
+    })
+
+    return HttpResponse.json({
+      rows: [
+        {
+          especificidad: 0,
+          enfoque_valor: unidad?.enfoquePedagogico === "Formativo" ? "FORMATIVO" : "EVALUATIVO",
+          tipo_evaluacion_valor: "CUANTITATIVA_CUALITATIVA",
+          enunciados: (unidad?.enunciadosDba ?? []).map((texto, index) => ({
+            pk: index + 1,
+            texto,
+            evidencias: [],
+          })),
         },
       ],
     })

@@ -51,6 +51,11 @@ interface UnidadRealRow {
    *  que se guardan tal cual. */
   fecha_inicio?: string
   fecha_fin?: string
+  // Presentes (no NULL) solo cuando se manda `?dia=` — sin él, "nada
+  // cambia del comportamiento anterior" (colección Postman 2.1).
+  dia?: string | null
+  dia_anterior?: string | null
+  dia_siguiente?: string | null
 }
 
 /** `"Ponderar Actividades o Descriptores"` → `"Ponderado"`, etc. — el
@@ -104,25 +109,73 @@ function toUnidadTematica(row: UnidadRealRow): UnidadTematica {
   }
 }
 
-export const unidadesQueryKey = () => ["planeador", "unidades"] as const
+export interface UseUnidadesParams {
+  /** `yyyy-MM-dd` — paginado por día activo (colección Postman 2.1): solo
+   *  unidades con alguna actividad vigente ese día. Sin esto, el listado no
+   *  cambia (comportamiento previo). */
+  dia?: string
+}
 
-async function fetchUnidades(): Promise<UnidadTematica[]> {
+export interface UnidadesResult {
+  rows: UnidadTematica[]
+  /** `dia_anterior`/`dia_siguiente` que trae la respuesta cuando se pide
+   *  `?dia=` — el día OCUPADO más cercano a cada lado (saltando vacíos),
+   *  `null` cuando no hay más por ese lado. `undefined` si no se pidió
+   *  `?dia=`. */
+  diaAnterior?: string | null
+  diaSiguiente?: string | null
+}
+
+/** Fila-centinela de un día vacío (2.1): `pk_tunidad` viene NULL junto con
+ *  todas las demás columnas de negocio, pero trae `dia_anterior`/
+ *  `dia_siguiente` para no dejar al usuario sin cómo salir del día vacío. */
+interface UnidadSentinelRow {
+  pk_tunidad: null
+  total_count: number
+  dia_anterior?: string | null
+  dia_siguiente?: string | null
+}
+
+function isSentinel(row: unknown): row is UnidadSentinelRow {
+  return (row as { pk_tunidad?: unknown } | null)?.pk_tunidad === null
+}
+
+export const unidadesQueryKey = (params: UseUnidadesParams = {}) =>
+  ["planeador", "unidades", params] as const
+
+async function fetchUnidades(params: UseUnidadesParams): Promise<UnidadesResult> {
+  const query = new URLSearchParams({ size: String(PAGE_SIZE), offset: "0" })
+  if (params.dia) query.set("dia", params.dia)
+
   // `evalCol.getRows` desenvuelve el sobre `{rows: [...]}` del gateway —
   // eso es idéntico en mock y real (el motor real SIEMPRE envuelve así).
   // Lo que cambia es la forma de cada fila adentro: el mock ya entrega
   // `UnidadTematica` completa; el real entrega `UnidadRealRow` y hay que
-  // traducirla.
-  const rows = await evalCol.getRows<UnidadTematica | UnidadRealRow>(
-    `${UNIDAD_LIST_URL}?size=${PAGE_SIZE}&offset=0`,
+  // traducirla. La fila-centinela de día vacío usa la misma forma
+  // (`pk_tunidad: null`) en los dos modos.
+  const rows = await evalCol.getRows<UnidadTematica | UnidadRealRow | UnidadSentinelRow>(
+    `${UNIDAD_LIST_URL}?${query}`,
   )
-  if (env.ENABLE_API_MOCKING) return rows as UnidadTematica[]
-  return (rows as UnidadRealRow[]).map(toUnidadTematica)
+  const first = rows[0]
+  if (params.dia && rows.length === 1 && isSentinel(first)) {
+    return { rows: [], diaAnterior: first.dia_anterior ?? null, diaSiguiente: first.dia_siguiente ?? null }
+  }
+
+  const mapped = env.ENABLE_API_MOCKING
+    ? (rows as UnidadTematica[])
+    : (rows as UnidadRealRow[]).map(toUnidadTematica)
+  const diaRow = first as UnidadRealRow | undefined
+  return {
+    rows: mapped,
+    diaAnterior: params.dia ? (diaRow?.dia_anterior ?? null) : undefined,
+    diaSiguiente: params.dia ? (diaRow?.dia_siguiente ?? null) : undefined,
+  }
 }
 
-export function useUnidadesQuery() {
+export function useUnidadesQuery(params: UseUnidadesParams = {}) {
   return useQuery({
-    queryKey: unidadesQueryKey(),
-    queryFn: fetchUnidades,
+    queryKey: unidadesQueryKey(params),
+    queryFn: () => fetchUnidades(params),
     // Mantiene la lista anterior mientras se revalida — evita el flash a
     // "Sin unidades" al volver a la pestaña.
     placeholderData: (previous) => previous,

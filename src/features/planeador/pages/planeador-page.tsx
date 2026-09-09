@@ -49,16 +49,7 @@ import type { ActividadStatus } from "@/features/planeador/api/types/actividad"
 
 import { planeadorRoute } from "@/router"
 import { paths } from "@/config/paths"
-import { parseLocalDate } from "@/features/planeador/lib/format-date"
-
-/** `yyyy-MM-dd` local — sin pasar por UTC, que corría el día en zonas
- *  horarias negativas cerca de medianoche. */
-function toDateOnly(date: Date): string {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, "0")
-  const day = String(date.getDate()).padStart(2, "0")
-  return `${year}-${month}-${day}`
-}
+import { formatDate, parseLocalDate, toDateOnly, todayDateOnly } from "@/features/planeador/lib/format-date"
 
 /**
  * Página principal del Planeador. Layout 2-columnas:
@@ -83,10 +74,26 @@ export function PlaneadorPage() {
   // Actividad abierta en el panel derecho. `undefined` => se muestra el
   // calendario.
   const actividadId = search.actividad ?? undefined
+  // Cambiar de actividad (o cerrar el panel) resetea `modo` a "info": el
+  // modo vive suelto en la URL, no por actividad, así que sin este reset
+  // seleccionar otra card conservaría "grades"/"approval" de la anterior.
+  // `setMode` pisa este `undefined` con el modo pedido en el mismo navigate.
   const setActividadId = (next: string | undefined) =>
     navigate({
       to: planeadorRoute.id,
-      search: (prev) => ({ ...prev, actividad: next }),
+      search: (prev) => ({ ...prev, actividad: next, modo: undefined }),
+      replace: true,
+    })
+
+  // Día activo de la barra "Hoy | MARTES 16 | < >" del rail (`?dia=`,
+  // paginado por día activo de `GET /actividades/mias` — colección Postman
+  // `planeador-guia-completa`, 4.1/8.3). Vive en la URL, no en estado local,
+  // por el mismo motivo que `actividadId`. Ausente en la URL == hoy.
+  const dia = search.dia ?? todayDateOnly()
+  const setDia = (next: string) =>
+    navigate({
+      to: planeadorRoute.id,
+      search: (prev) => ({ ...prev, dia: next }),
       replace: true,
     })
 
@@ -94,28 +101,21 @@ export function PlaneadorPage() {
     () => new Date(new Date().getFullYear(), new Date().getMonth(), 1),
   )
 
-  // Modo del panel de detalle por actividad. Map `id → modo` en vez de dos
-  // flags sueltos: la última acción del usuario gana (Marcar después de
-  // Aprobar cambia a grades, no se queda en approval por orden de check).
-  // Si la entrada no existe para la actividad activa, cae a "info".
-  // Los handlers también setean `actividadId` — sin ese paso, clickear el
-  // chulito estando en el calendario no abría el panel.
-  const [panelModeByActividad, setPanelModeByActividad] = React.useState<
-    Record<string, "info" | "grades" | "approval">
-  >({})
-
-  const panelMode: "info" | "grades" | "approval" =
-    actividadId !== undefined
-      ? panelModeByActividad[actividadId] ?? "info"
-      : "info"
+  // Modo del panel de detalle de la actividad abierta (`?modo=`), en la URL
+  // por el mismo motivo que `actividadId`/`dia`: enlazable y sobrevive al
+  // refresh. Ausente == "info".
+  const panelMode: "info" | "grades" | "approval" = search.modo ?? "info"
 
   // Abre el panel en una actividad y le setea el modo pedido. Se usa tanto
   // desde la card (Marcar / Aprobar) como desde los mismos botones del
   // header del panel — así el comportamiento es idéntico sin importar
   // desde dónde se disparen.
   function setMode(actividadId: string, mode: "grades" | "approval") {
-    setActividadId(actividadId)
-    setPanelModeByActividad((prev) => ({ ...prev, [actividadId]: mode }))
+    navigate({
+      to: planeadorRoute.id,
+      search: (prev) => ({ ...prev, actividad: actividadId, modo: mode }),
+      replace: true,
+    })
   }
 
   // 3 endpoints reales en vez del hack de traer TODO con `size=500` y
@@ -153,8 +153,11 @@ export function PlaneadorPage() {
     estados: estado ? statusToEstadoDerivado(estado as ActividadStatus) : undefined,
     size: 50,
     offset: 0,
+    dia,
   })
   const filtered = miasResult?.rows ?? []
+  const diaAnterior = miasResult?.diaAnterior ?? null
+  const diaSiguiente = miasResult?.diaSiguiente ?? null
 
   // "Exportar todo"/"Importar" del menú "…": intercambio JSON de
   // actividades (colección Postman
@@ -186,13 +189,19 @@ export function PlaneadorPage() {
   }
 
   // Map day-of-month → actividades, para las filas de la grilla. El
-  // endpoint ya resuelve un solo día de anclaje por actividad (`fecha`,
-  // filtrando por solapamiento con el mes pedido) — no hace falta volver a
-  // filtrar por mes visible ni plotear inicio/cierre a mano acá.
+  // endpoint devuelve por SOLAPAMIENTO (una actividad que sigue abierta
+  // aparece también en el mes donde arrancó), y ancla `fecha` al inicio (o
+  // a `fecha_desde` si el inicio cae afuera). Eso hacía que la MISMA
+  // actividad se plotara en dos meses distintos —una vez por su inicio,
+  // otra por el "sigue abierta" del mes siguiente— y se contara doble al
+  // mirar los dos meses. Acá se ancla SOLO por `fechaCierre` (cuándo
+  // vence) y se descarta lo que no cierre dentro del mes visible, así cada
+  // actividad aparece en un único mes: el de su cierre.
   const events = React.useMemo(() => {
     const map = new Map<number, DayEvent[]>()
     for (const a of calendarioActividades) {
-      const anchor = parseLocalDate(a.fecha)
+      if (a.fechaCierre < mesDesde || a.fechaCierre > mesHasta) continue
+      const anchor = parseLocalDate(a.fechaCierre)
       if (!anchor) continue
       const day = anchor.getDate()
       const list = map.get(day) ?? []
@@ -200,7 +209,7 @@ export function PlaneadorPage() {
       map.set(day, list)
     }
     return map
-  }, [calendarioActividades])
+  }, [calendarioActividades, mesDesde, mesHasta])
 
   return (
     <TableScreen>
@@ -344,13 +353,14 @@ export function PlaneadorPage() {
                   variant="soft"
                   color="muted"
                   size="xs"
-                  disabled
+                  disabled={dia === todayDateOnly()}
                   className="h-6 rounded-none px-2 text-[11px] tracking-wide uppercase"
+                  onClick={() => setDia(todayDateOnly())}
                 >
                   Hoy
                 </Button>
                 <span className="text-muted-foreground text-[11px] font-medium tracking-wide whitespace-nowrap uppercase">
-                  {new Date().toLocaleDateString("es-CO", {
+                  {(parseLocalDate(dia) ?? new Date()).toLocaleDateString("es-CO", {
                     weekday: "long",
                     day: "2-digit",
                   })}
@@ -362,6 +372,8 @@ export function PlaneadorPage() {
                     size="icon-xs"
                     aria-label="Día anterior"
                     className="size-6 rounded-none border-r-0"
+                    disabled={!diaAnterior}
+                    onClick={() => diaAnterior && setDia(diaAnterior)}
                   >
                     <CaretLeftIcon />
                   </Button>
@@ -371,6 +383,8 @@ export function PlaneadorPage() {
                     size="icon-xs"
                     aria-label="Día siguiente"
                     className="size-6 rounded-none"
+                    disabled={!diaSiguiente}
+                    onClick={() => diaSiguiente && setDia(diaSiguiente)}
                   >
                     <CaretRightIcon />
                   </Button>
@@ -404,7 +418,7 @@ export function PlaneadorPage() {
                   <div className="text-muted-foreground px-6 py-8 text-center text-sm">
                     {buscar
                       ? `Sin actividades que coincidan con "${buscar}".`
-                      : "Sin actividades registradas."}
+                      : `Sin actividades vigentes el ${formatDate(dia)}.`}
                   </div>
                 )}
 
@@ -452,14 +466,30 @@ export function PlaneadorPage() {
               la lista de abajo lo tiene) hasta quedar semi-tapado por el
               `TableScreenHeader` sticky a mitad de scroll. Con el tope, si el
               mes no entra, scrollea POR DENTRO de esta columna en vez de
-              arrastrar toda la página. */}
+              arrastrar toda la página.
+
+              `max-h` + `flex flex-col`, no `h` a secas: un `height` fijo
+              obliga a la columna a medir SIEMPRE ese alto, aunque el
+              calendario (que tiene un contenido casi constante, ~6 semanas)
+              o el panel de detalle midan MENOS —eso dejaba un hueco en
+              blanco debajo del contenido real y, encima, empujaba la PÁGINA
+              entera más alta que el viewport (scroll de la página con un
+              tramo en blanco al fondo, en vez de contenerse). Con `max-h`,
+              la columna solo crece hasta el tope cuando el contenido de
+              verdad lo necesita; si es más corto, se achica con él. El hijo
+              que antes usaba `h-full` para heredar ese alto fijo ahora usa
+              `flex-1 min-h-0` (ver `ActividadDetallePanel` y el `div` de
+              abajo): con `max-h` en el padre, un `height: 100%` no siempre
+              resuelve (necesita un alto DEFINIDO, no una cota), `flex-1` sí
+              funciona igual de bien contra un contenedor acotado por
+              `max-height`. */}
           <section
             aria-label={
               actividadId
                 ? "Detalle de la actividad"
                 : "Calendario del planeador"
             }
-            className="md:h-[calc(100dvh-16rem)] md:min-h-0"
+            className="md:flex md:max-h-[calc(100dvh-16rem)] md:min-h-0 md:flex-col"
           >
             {actividadId ? (
               <ActividadDetallePanel
@@ -470,7 +500,7 @@ export function PlaneadorPage() {
                 onShowApproval={() => setMode(actividadId, "approval")}
               />
             ) : (
-              <div className="md:h-full md:overflow-y-auto">
+              <div className="md:min-h-0 md:flex-1 md:overflow-y-auto">
                 <PlaneadorMonthGrid
                   month={displayMonth}
                   events={events}

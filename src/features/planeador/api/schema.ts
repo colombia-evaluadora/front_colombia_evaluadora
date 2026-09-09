@@ -20,6 +20,13 @@ export const planeadorSearchSchema = z.object({
   // estado local— para que el detalle sea enlazable y sobreviva al refresh,
   // igual que el resto de los filtros del listado.
   actividad: z.string().optional().catch(undefined),
+  /** Día activo de la barra "Hoy | MARTES 16 | < >" (`yyyy-MM-dd`), que
+   *  pagina el rail por `?dia=` (`GET /actividades/mias`). Ausente = hoy. */
+  dia: z.string().optional().catch(undefined),
+  /** Modo del panel de detalle de `actividad`: info (default) | grades
+   *  (botón "Marcar") | approval (botón "Aprobar"). Va en la URL por el
+   *  mismo motivo que `actividad` — enlazable y sobrevive al refresh. */
+  modo: z.enum(["info", "grades", "approval"]).optional().catch(undefined),
 })
 export type PlaneadorSearch = z.infer<typeof planeadorSearchSchema>
 
@@ -38,15 +45,6 @@ export type PlaneadorFiltersFormInput = z.input<typeof planeadorFiltersFormSchem
 export type PlaneadorFiltersFormValues = z.infer<typeof planeadorFiltersFormSchema>
 
 /**
- * Search schema del detalle. Solo `buscar` se preserva al volver a la lista
- * — el resto es estado del listado y se reinicia al entrar.
- */
-export const planeadorDetalleSearchSchema = z.object({
-  buscar: z.string().optional().catch(undefined),
-})
-export type PlaneadorDetalleSearch = z.infer<typeof planeadorDetalleSearchSchema>
-
-/**
  * Search schema de la pestaña "Unidad temática". `unidad` es la que está
  * abierta en el panel derecho; si falta, la página cae a la primera de la
  * lista.
@@ -57,6 +55,9 @@ export const planeadorUnidadesSearchSchema = z.object({
   estado: z.string().optional().catch(undefined),
   vista: z.string().optional().catch(undefined),
   unidad: z.string().optional().catch(undefined),
+  /** Mismo día activo que `planeadorSearchSchema.dia`, para `GET /unidades`
+   *  (`?dia=`). Ausente = hoy. */
+  dia: z.string().optional().catch(undefined),
 })
 export type PlaneadorUnidadesSearch = z.infer<typeof planeadorUnidadesSearchSchema>
 

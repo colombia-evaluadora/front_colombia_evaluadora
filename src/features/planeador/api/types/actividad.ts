@@ -272,6 +272,25 @@ export interface Actividad {
   instrumentoPersonalizado: InstrumentoPersonalizado
   /** Adaptaciones curriculares aplicadas a la actividad (lista editable). */
   adaptaciones: Adaptacion[]
+  /**
+   * "Pintado dinámico" que ya trae el detalle real (`GET .../actividades/:id`,
+   * el mismo bloque de `GET .../configuracion`, colección Postman 4.3/5.1):
+   * qué campos mostrar/exigir, con el MOTIVO de cada decisión — el backend
+   * ya resolvió TODAS las reglas de negocio (huérfana sin unidad, unidad
+   * con referente FORMATIVO, etc.), así que el front no debe re-adivinarlas
+   * armando su propia lógica a partir de grado/asignatura. Solo presente en
+   * el backend real; `undefined` en mock/una actividad recién creada.
+   */
+  camposDisponibles?: {
+    criterio: { visible: boolean; requerido: boolean; motivo: string }
+    evaluacion: {
+      visible: boolean
+      requerido: boolean
+      motivo: string
+      instrumentosPermitidos: string[]
+    }
+    ponderacion: { visible: boolean; requerido: boolean; motivo: string; modo: string | null }
+  }
 }
 
 /**

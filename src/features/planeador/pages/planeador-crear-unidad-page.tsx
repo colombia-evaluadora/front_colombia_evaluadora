@@ -78,6 +78,7 @@ export function PlaneadorCrearUnidadPage() {
           }}
         >
           <UnidadFormTabs
+            esFormativo={draft.enfoquePedagogico === "Formativo"}
             infoGeneralContent={
               <UnidadInfoGeneralFields
                 draft={draft}
