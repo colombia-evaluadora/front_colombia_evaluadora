@@ -22,7 +22,11 @@ import type { Actividad } from "@/features/planeador/api/types/actividad"
  * `useActividadDetalleQuery`, que sí trae todo.
  */
 interface ActividadMiaRow {
-  pk_tactividad: number
+  // `null` únicamente en la fila-centinela de un día vacío (ver `?dia=`
+  // abajo): ese día no tiene ninguna actividad vigente, pero la fila igual
+  // llega para traer `dia_anterior`/`dia_siguiente` y no dejar al usuario
+  // sin forma de salir del día vacío.
+  pk_tactividad: number | null
   titulo: string
   estado: string
   // Vienen como datetime ISO completo ("2026-09-01T00:00:00.000Z"),
@@ -40,13 +44,18 @@ interface ActividadMiaRow {
   estudiantes_asignados: number
   estudiantes_evaluados: number
   total_count: number
+  // Presentes (no NULL) solo cuando se manda `?dia=` — sin él, "nada cambia
+  // del comportamiento anterior" y vienen NULL (colección Postman 4.1/8.3).
+  dia?: string | null
+  dia_anterior?: string | null
+  dia_siguiente?: string | null
 }
 
 function toDateOnly(value: string): string {
   return value.slice(0, 10)
 }
 
-function toActividadResumen(row: ActividadMiaRow): Actividad {
+function toActividadResumen(row: ActividadMiaRow & { pk_tactividad: number }): Actividad {
   return {
     id: row.pk_tactividad,
     nombre: row.titulo,
@@ -110,11 +119,21 @@ export interface UseActividadesMiasParams {
   diasGracia?: number
   size?: number
   offset?: number
+  /** `yyyy-MM-dd` — paginado por día activo (colección Postman 4.1/8.3):
+   *  solo actividades cuya ventana `[fechaInicio, fechaCierre]` CUBRE ese
+   *  día. Sin esto, el listado no cambia (comportamiento previo). */
+  dia?: string
 }
 
 interface ActividadesMiasResult {
   rows: Actividad[]
   totalCount: number
+  /** Día `dia_anterior`/`dia_siguiente` que trae la respuesta cuando se pide
+   *  `?dia=` — el día OCUPADO más cercano a cada lado (saltando vacíos),
+   *  `null` cuando no hay más por ese lado. `undefined` si no se pidió
+   *  `?dia=` (no hay de dónde sacarlos). */
+  diaAnterior?: string | null
+  diaSiguiente?: string | null
 }
 
 async function fetchActividadesMias(
@@ -127,15 +146,25 @@ async function fetchActividadesMias(
   if (params.unidad != null) query.set("unidad", String(params.unidad))
   if (params.estados) query.set("estados", params.estados)
   if (params.diasGracia != null) query.set("dias_gracia", String(params.diasGracia))
+  if (params.dia) query.set("dia", params.dia)
   query.set("size", String(params.size ?? 20))
   query.set("offset", String(params.offset ?? 0))
 
   const rawRows = await evalCol.getRows<ActividadMiaRow>(
     `/planeador/actividades/mias?${query}`,
   )
+  const first = rawRows[0]
+  // Fila-centinela de un día vacío: todas las columnas de negocio vienen
+  // NULL (`pk_tactividad` incluido) y `total_count: 0` — no es una
+  // actividad real, se descarta del listado pero sus `dia_*` sí sirven.
+  const realRows = rawRows.filter(
+    (row): row is ActividadMiaRow & { pk_tactividad: number } => row.pk_tactividad !== null,
+  )
   return {
-    rows: rawRows.map(toActividadResumen),
-    totalCount: rawRows[0]?.total_count ?? 0,
+    rows: realRows.map(toActividadResumen),
+    totalCount: first?.total_count ?? 0,
+    diaAnterior: params.dia ? (first?.dia_anterior ?? null) : undefined,
+    diaSiguiente: params.dia ? (first?.dia_siguiente ?? null) : undefined,
   }
 }
 

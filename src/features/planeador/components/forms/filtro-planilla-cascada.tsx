@@ -59,6 +59,17 @@ export function FiltroPlanillaCascada({ value, onChange }: FiltroPlanillaCascada
   const [asignaturaIdDraft, setAsignaturaIdDraft] = useState<number | null>(
     value?.asignaturaId ?? null,
   )
+  // Borrador de la última columna (rango de fechas), separado de `value`
+  // por el mismo motivo que las tres anteriores: sin esto, el resaltado de
+  // "seleccionado" quedaba pegado al periodo del filtro YA aplicado, así
+  // que cambiar de asignatura (sin tocar todavía el periodo) lo mostraba
+  // como elegido para la asignatura NUEVA aunque nunca se hubiera
+  // confirmado — el usuario no veía necesidad de volver a clickearlo, y
+  // como `onChange` solo dispara con ese click, el filtro real nunca se
+  // actualizaba y la búsqueda se quedaba con los resultados de antes.
+  const [periodoIdDraft, setPeriodoIdDraft] = useState<number | null>(
+    value?.periodoEvaluacion.id ?? null,
+  )
 
   const { data: docenteGrupos = [] } = useDocenteGruposQuery()
   const { data: docenteGradoAsignatura = [] } = useDocenteGradoAsignaturaQuery()
@@ -100,6 +111,7 @@ export function FiltroPlanillaCascada({ value, onChange }: FiltroPlanillaCascada
       setGradoIdDraft(value?.gradoId ?? null)
       setGrupoIdDraft(value?.grupoId ?? null)
       setAsignaturaIdDraft(value?.asignaturaId ?? null)
+      setPeriodoIdDraft(value?.periodoEvaluacion.id ?? null)
     }
   }
 
@@ -107,11 +119,18 @@ export function FiltroPlanillaCascada({ value, onChange }: FiltroPlanillaCascada
     setGradoIdDraft(gradoId)
     setGrupoIdDraft(null)
     setAsignaturaIdDraft(null)
+    setPeriodoIdDraft(null)
   }
 
   function elegirGrupo(grupoId: number) {
     setGrupoIdDraft(grupoId)
     setAsignaturaIdDraft(null)
+    setPeriodoIdDraft(null)
+  }
+
+  function elegirAsignatura(asignaturaId: number) {
+    setAsignaturaIdDraft(asignaturaId)
+    setPeriodoIdDraft(null)
   }
 
   function elegirPeriodo(periodo: EvaluationPeriod) {
@@ -119,6 +138,7 @@ export function FiltroPlanillaCascada({ value, onChange }: FiltroPlanillaCascada
     const grupo = grupos.find((g) => g.grupoId === grupoIdDraft)
     const asignatura = asignaturas.find((a) => a.asignaturaId === asignaturaIdDraft)
     if (!grado || !grupo || !asignatura) return
+    setPeriodoIdDraft(periodo.id)
     onChange({
       gradoId: grado.id,
       gradoNombre: grado.nombre,
@@ -186,7 +206,7 @@ export function FiltroPlanillaCascada({ value, onChange }: FiltroPlanillaCascada
               label: asignatura.asignaturaNombre,
             }))}
             selectedKey={asignaturaIdDraft}
-            onSelect={setAsignaturaIdDraft}
+            onSelect={elegirAsignatura}
           />
         )}
 
@@ -196,7 +216,7 @@ export function FiltroPlanillaCascada({ value, onChange }: FiltroPlanillaCascada
               key: periodo.id,
               label: `${formatDate(periodo.startDate)} | ${formatDate(periodo.endDate)}`,
             }))}
-            selectedKey={value?.periodoEvaluacion.id ?? null}
+            selectedKey={periodoIdDraft}
             onSelect={(key) => {
               const periodo = periodosVigentes.find((p) => p.id === key)
               if (periodo) elegirPeriodo(periodo)

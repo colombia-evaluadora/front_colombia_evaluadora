@@ -26,3 +26,21 @@ export function parseLocalDate(value: string | null | undefined): Date | undefin
   const date = new Date(Number(year), Number(month) - 1, Number(day))
   return Number.isNaN(date.getTime()) ? undefined : date
 }
+
+/**
+ * `Date` local → `yyyy-MM-dd`, SIN pasar por UTC (`toISOString` corre el día
+ * en zonas horarias negativas cerca de medianoche). Usado por el `?dia=` de
+ * `/actividades/mias` y `/unidades` (paginado por día activo) y por la
+ * grilla mensual del calendario.
+ */
+export function toDateOnly(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  const day = String(date.getDate()).padStart(2, "0")
+  return `${year}-${month}-${day}`
+}
+
+/** Hoy, como `yyyy-MM-dd` local. */
+export function todayDateOnly(): string {
+  return toDateOnly(new Date())
+}

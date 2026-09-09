@@ -35,8 +35,11 @@ interface CeldaNotaPopoverProps {
 
 /** Arma el body de `calificar` según el instrumento REAL de la actividad —
  *  `null` cuando todavía no hay suficiente para mandar un request válido
- *  (instrumento sin definir, o el docente no eligió nada todavía). */
-function buildCalificarCeldaInput(
+ *  (instrumento sin definir, o el docente no eligió nada todavía). Exportada
+ *  porque `DialogCalificarActividad` (vista "Calificaciones: <actividad>")
+ *  la reusa tal cual, sin duplicar la conversión `NotaCriterio[]` ->
+ *  `CalificarCeldaInput`. */
+export function buildCalificarCeldaInput(
   instrumento: InstrumentoActividad,
   value: NotaCriterio[],
   pkTactividadEstudiante: number,

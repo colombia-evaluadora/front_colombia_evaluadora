@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { Link } from "@tanstack/react-router"
 import type { ColumnDef } from "@tanstack/react-table"
 import { toast } from "sonner"
 
@@ -17,6 +18,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { CheckIcon, EyeIcon, LinkBreakIcon, PencilIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
+import { paths } from "@/config/paths"
+import { planeadorRoute } from "@/router"
 
 import { useUpdatePonderacionActividadUnidad } from "@/features/planeador/api/mutations/update-ponderacion-actividad-unidad"
 import { useUnlinkActividadUnidad } from "@/features/planeador/api/mutations/unlink-actividad-unidad"
@@ -214,18 +217,66 @@ export function createUnidadActividadesColumns(
       header: () => <span className="sr-only">Acciones</span>,
       cell: ({ row }) => (
         <div className="flex items-center justify-end gap-1">
-          <Button variant="ghost" color="neutral" size="icon-sm" disabled aria-label="Ver actividad">
+          {/* `actividad.actividadId`, no `actividad.id` (el vínculo) — ver
+              el comentario de `UnidadActividad` en `unidad-tematica.ts`. */}
+          {/* "Ver" va al listado principal del Planeador con la actividad
+              seleccionada (`?actividad=`), que abre el mismo panel embebido
+              que al hacer click en su card — no a la página standalone
+              `planeadorDetalle` (esa es un drill-down aparte, con su propio
+              "Volver al Planeador"; acá el usuario ya está viendo el
+              detalle de una UNIDAD, así que "Ver" tiene que llevarlo a la
+              vista con la que el resto de la app ya muestra una
+              actividad). */}
+          <Button
+            variant="ghost"
+            color="neutral"
+            size="icon-sm"
+            aria-label={`Ver ${row.original.nombre}`}
+            render={
+              <Link
+                to={planeadorRoute.id}
+                search={{ actividad: String(row.original.actividadId) }}
+              />
+            }
+          >
             <EyeIcon />
           </Button>
-          <Button variant="ghost" color="neutral" size="icon-sm" disabled aria-label="Editar actividad">
+          <Button
+            variant="ghost"
+            color="neutral"
+            size="icon-sm"
+            aria-label={`Editar ${row.original.nombre}`}
+            render={
+              <Link
+                to={paths.app.planeadorActividadEditar.getHref(String(row.original.actividadId))}
+              />
+            }
+          >
             <PencilIcon />
+          </Button>
+          {/* Chulito: abre el panel del listado principal directo en modo
+              "Marcar" (`?modo=grades`), la misma vista que el botón ✓ del
+              header de `ActividadDetallePanel`. */}
+          <Button
+            variant="ghost"
+            color="neutral"
+            size="icon-sm"
+            aria-label={`Calificar ${row.original.nombre}`}
+            render={
+              <Link
+                to={planeadorRoute.id}
+                search={{ actividad: String(row.original.actividadId), modo: "grades" }}
+              />
+            }
+          >
+            <CheckIcon />
           </Button>
           <BotonDesvincular actividad={row.original} unidadId={unidadId} />
         </div>
       ),
       enableSorting: false,
       enableHiding: false,
-      size: 176,
+      size: 208,
     },
   ]
 }

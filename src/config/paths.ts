@@ -168,10 +168,6 @@ export const paths = {
       path: "planeador/actividades/agregar",
       getHref: () => "/app/planeador/actividades/agregar",
     },
-    planeadorDetalle: {
-      path: "planeador/actividades/$actividadId",
-      getHref: (actividadId: string) => `/app/planeador/actividades/${actividadId}`,
-    },
     planeadorActividadEditar: {
       path: "planeador/actividades/$actividadId/editar",
       getHref: (actividadId: string) => `/app/planeador/actividades/${actividadId}/editar`,

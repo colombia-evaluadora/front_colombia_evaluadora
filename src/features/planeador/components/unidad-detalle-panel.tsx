@@ -19,6 +19,7 @@ import { useDataTable } from "@/hooks/use-data-table"
 import { paths } from "@/config/paths"
 
 import { useUnidadDetalleQuery } from "@/features/planeador/api/query/use-unidades-query"
+import { useReferenteCurricularQuery } from "@/features/planeador/api/query/use-referente-curricular-query"
 import { useUnidadActividadesQuery } from "@/features/planeador/api/query/use-unidad-actividades-query"
 import { useNivelesDesempenoNombres } from "@/features/planeador/api/query/use-niveles-desempeno"
 import { createUnidadActividadesColumns } from "@/features/planeador/components/table/columns-unidad-actividades"
@@ -38,14 +39,19 @@ type PanelTab = "general" | "rubricas" | "actividades"
  * hay nada que definir ahí — se saca en vez de mostrarla deshabilitada
  * (misma idea que "¿Es evaluación sumativa?" en el form de Actividad,
  * que se bloquea en "No" para el mismo tipo de unidad).
+ *
+ * Recibe `esFormativo` ya resuelto (no lee `unidad.enfoquePedagogico`): ese
+ * campo viene hardcodeado en `"Evaluativo"` para toda unidad real
+ * (`toUnidadTematica` no tiene de dónde sacarlo) — el enfoque de verdad se
+ * deriva en vivo por Grado+Asignatura, ver `UnidadTabs` más abajo.
  */
-function getVisibleTabs(unidad: UnidadTematica): { value: PanelTab; label: string }[] {
+function getVisibleTabs(esFormativo: boolean): { value: PanelTab; label: string }[] {
   const tabs: { value: PanelTab; label: string }[] = [
     { value: "general", label: "Información general" },
     { value: "rubricas", label: "Rúbricas" },
     { value: "actividades", label: "Actividades" },
   ]
-  if (unidad.enfoquePedagogico === "Formativo") {
+  if (esFormativo) {
     return tabs.filter((tab) => tab.value !== "rubricas")
   }
   return tabs
@@ -112,13 +118,20 @@ function TabHeader({
   description,
   actionLabel,
   onAction,
+  action,
 }: {
   title: string
   description?: string
-  actionLabel: string
-  /** Sin esto el botón queda `disabled` — mismo criterio que el resto de
-   *  la app para las acciones que todavía no tienen flujo propio. */
+  actionLabel?: string
+  /** Sin esto (y sin `action`) el botón queda `disabled` — mismo criterio
+   *  que el resto de la app para las acciones que todavía no tienen flujo
+   *  propio. */
   onAction?: () => void
+  /** Reemplaza el botón por defecto con un nodo propio — para acciones que
+   *  abren un `Popover` autocontenido (ej. `DialogAgregarActividad`) en vez
+   *  de un `onClick` simple: ahí el trigger y el contenido viven juntos, no
+   *  se puede armar con `actionLabel`/`onAction`. */
+  action?: React.ReactNode
 }) {
   return (
     <div className="mb-4 flex items-start justify-between gap-4">
@@ -128,17 +141,19 @@ function TabHeader({
           <p className="text-muted-foreground text-sm">{description}</p>
         )}
       </div>
-      <Button
-        color="primary"
-        variant="fill"
-        size="sm"
-        disabled={!onAction}
-        onClick={onAction}
-        className="shrink-0"
-      >
-        <PlusIcon data-icon="inline-start" />
-        {actionLabel}
-      </Button>
+      {action ?? (
+        <Button
+          color="primary"
+          variant="fill"
+          size="sm"
+          disabled={!onAction}
+          onClick={onAction}
+          className="shrink-0"
+        >
+          <PlusIcon data-icon="inline-start" />
+          {actionLabel}
+        </Button>
+      )}
     </div>
   )
 }
@@ -306,7 +321,6 @@ export function Actividades({ unidad }: { unidad: UnidadTematica }) {
   // (viven en este endpoint aparte, ver `use-unidad-actividades-query.ts`).
   const { data: actividadesVinculadas = [], isPending, isError, refetch } = useUnidadActividadesQuery(unidad.id)
   const { sorted, sorting, setSorting } = useSortedRows(actividadesVinculadas)
-  const [dialogOpen, setDialogOpen] = React.useState(false)
 
   const { table } = useDataTable({
     columns,
@@ -326,8 +340,7 @@ export function Actividades({ unidad }: { unidad: UnidadTematica }) {
       <TabHeader
         title="Actividades de la unidad"
         description="Las actividades vinculadas y su peso dentro de la unidad."
-        actionLabel="Vincular actividad"
-        onAction={() => setDialogOpen(true)}
+        action={<DialogAgregarActividad unidad={unidad} />}
       />
       <DataTable
         table={table}
@@ -336,7 +349,6 @@ export function Actividades({ unidad }: { unidad: UnidadTematica }) {
         onRetry={refetch}
         emptyMessage="Esta unidad todavía no tiene actividades vinculadas."
       />
-      <DialogAgregarActividad unidad={unidad} open={dialogOpen} onOpenChange={setDialogOpen} />
     </div>
   )
 }
@@ -348,6 +360,13 @@ export function Actividades({ unidad }: { unidad: UnidadTematica }) {
  * y hace click en una unidad Formativo en la lista de la izquierda):
  * sin esto, `Tabs` quedaría con un `value` que no matchea ningún
  * `TabsTrigger` visible y no se vería ningún contenido.
+ *
+ * El enfoque (¿es Formativo?) se deriva en vivo por Grado+Asignatura
+ * (`useReferenteCurricularQuery`, mismo hook que ya usa el form de
+ * edición) en vez de leer `unidad.enfoquePedagogico` — ese campo viene
+ * hardcodeado en `"Evaluativo"` para toda unidad real, así que sin esto la
+ * pestaña "Rúbricas" se veía siempre acá, aunque el form de edición ya la
+ * ocultara bien para la misma unidad.
  */
 function UnidadTabs({
   unidad,
@@ -358,7 +377,9 @@ function UnidadTabs({
   tab: PanelTab
   onTabChange: (tab: PanelTab) => void
 }) {
-  const visibleTabs = React.useMemo(() => getVisibleTabs(unidad), [unidad])
+  const { data: referente } = useReferenteCurricularQuery(unidad.gradoId, unidad.asignaturaId)
+  const esFormativo = referente?.esFormativo ?? false
+  const visibleTabs = React.useMemo(() => getVisibleTabs(esFormativo), [esFormativo])
 
   React.useEffect(() => {
     if (!visibleTabs.some((t) => t.value === tab)) {
@@ -379,7 +400,7 @@ function UnidadTabs({
       <TabsContent value="general" className={PANEL}>
         <InformacionGeneral unidad={unidad} />
       </TabsContent>
-      {unidad.enfoquePedagogico !== "Formativo" && (
+      {!esFormativo && (
         <TabsContent value="rubricas" className={PANEL}>
           <Rubricas unidad={unidad} />
         </TabsContent>

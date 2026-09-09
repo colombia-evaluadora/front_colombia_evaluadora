@@ -33,7 +33,6 @@ import {
 } from "@/features/administration/audits/api/schema"
 import { academicPeriodsSearchSchema } from "@/features/establishment/academic-period/api/schema"
 import {
-  planeadorDetalleSearchSchema,
   planeadorRecursoPreviewSearchSchema,
   planeadorSearchSchema,
   planeadorUnidadesSearchSchema,
@@ -138,10 +137,6 @@ const AddEstablishmentPage = lazyRouteComponent(
 const PlaneadorPage = lazyRouteComponent(
   () => import("@/features/planeador/pages/planeador-page"),
   "PlaneadorPage"
-)
-const PlaneadorDetallePage = lazyRouteComponent(
-  () => import("@/features/planeador/pages/planeador-detalle-page"),
-  "PlaneadorDetallePage"
 )
 const PlaneadorEditarActividadPage = lazyRouteComponent(
   () => import("@/features/planeador/pages/planeador-editar-actividad-page"),
@@ -762,19 +757,6 @@ export const planeadorUnidadEditarRoute = createRoute({
   component: PlaneadorEditarUnidadPage,
 })
 
-export const planeadorDetalleRoute = createRoute({
-  getParentRoute: () => appLayoutRoute,
-  path: paths.app.planeadorDetalle.path,
-  validateSearch: planeadorDetalleSearchSchema,
-  staticData: {
-    breadcrumb: (params) => [
-      PLANEADOR_CRUMB,
-      { label: `Actividad ${params.actividadId}` },
-    ],
-  },
-  component: PlaneadorDetallePage,
-})
-
 export const planeadorActividadEditarRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.planeadorActividadEditar.path,
@@ -911,7 +893,6 @@ const routeTree = rootRoute.addChildren([
     planeadorUnidadesRoute,
     planeadorUnidadCrearRoute,
     planeadorUnidadEditarRoute,
-    planeadorDetalleRoute,
     planeadorActividadEditarRoute,
     planeadorRecursoPreviewRoute,
     planeadorPlanillaRoute,

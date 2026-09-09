@@ -131,6 +131,7 @@ function EditarUnidadPageContent({
           >
             <UnidadFormTabs
               unidad={unidad}
+              esFormativo={current.enfoquePedagogico === "Formativo"}
               infoGeneralContent={
                 <UnidadInfoGeneralFields
                   draft={current}

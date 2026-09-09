@@ -25,6 +25,7 @@ import { PlaneadorTabs } from "@/features/planeador/components/planeador-tabs"
 import { UnidadCard } from "@/features/planeador/components/unidad-card"
 import { UnidadDetallePanel } from "@/features/planeador/components/unidad-detalle-panel"
 import { useUnidadesFilters } from "@/features/planeador/hooks/use-planeador-filters"
+import { formatDate, parseLocalDate, todayDateOnly } from "@/features/planeador/lib/format-date"
 
 import { planeadorUnidadesRoute } from "@/router"
 
@@ -42,7 +43,26 @@ export function PlaneadorUnidadesPage() {
   const { filters, applyFilters, clearAllFilters, activeFilterCount } =
     useUnidadesFilters()
 
-  const { data: unidades = [], isPending, isError, refetch } = useUnidadesQuery()
+  // Día activo de la barra "Hoy | MARTES 16 | < >" (`?dia=`, paginado por
+  // día activo de `GET /unidades` — colección Postman `planeador-guia-
+  // completa`, 2.1). Mismo criterio que `planeador-page.tsx`.
+  const dia = search.dia ?? todayDateOnly()
+  const setDia = (next: string) =>
+    navigate({
+      to: planeadorUnidadesRoute.id,
+      search: (prev) => ({ ...prev, dia: next }),
+      replace: true,
+    })
+
+  const {
+    data: unidadesResult,
+    isPending,
+    isError,
+    refetch,
+  } = useUnidadesQuery({ dia })
+  const unidades = unidadesResult?.rows ?? []
+  const diaAnterior = unidadesResult?.diaAnterior ?? null
+  const diaSiguiente = unidadesResult?.diaSiguiente ?? null
 
   const filtered = React.useMemo(() => {
     const term = buscar.trim().toLowerCase()
@@ -119,11 +139,18 @@ export function PlaneadorUnidadesPage() {
           <section aria-label="Listado de unidades temáticas" className="relative min-h-0">
             <div className="flex flex-col gap-3 md:absolute md:inset-0">
               <div className="flex items-center justify-between gap-1">
-                <Button variant="soft" color="muted" size="xs" disabled className="rounded-none">
+                <Button
+                  variant="soft"
+                  color="muted"
+                  size="xs"
+                  disabled={dia === todayDateOnly()}
+                  className="rounded-none"
+                  onClick={() => setDia(todayDateOnly())}
+                >
                   Hoy
                 </Button>
                 <span className="text-muted-foreground text-xs font-medium tracking-wide whitespace-nowrap uppercase">
-                  {new Date().toLocaleDateString("es-CO", {
+                  {(parseLocalDate(dia) ?? new Date()).toLocaleDateString("es-CO", {
                     weekday: "long",
                     day: "2-digit",
                   })}
@@ -135,6 +162,8 @@ export function PlaneadorUnidadesPage() {
                     size="icon-xs"
                     aria-label="Día anterior"
                     className="rounded-none border-r-0"
+                    disabled={!diaAnterior}
+                    onClick={() => diaAnterior && setDia(diaAnterior)}
                   >
                     <CaretLeftIcon />
                   </Button>
@@ -144,6 +173,8 @@ export function PlaneadorUnidadesPage() {
                     size="icon-xs"
                     aria-label="Día siguiente"
                     className="rounded-none"
+                    disabled={!diaSiguiente}
+                    onClick={() => diaSiguiente && setDia(diaSiguiente)}
                   >
                     <CaretRightIcon />
                   </Button>
@@ -177,7 +208,7 @@ export function PlaneadorUnidadesPage() {
                   <div className="text-muted-foreground px-6 py-8 text-center text-sm">
                     {buscar
                       ? `Sin unidades que coincidan con "${buscar}".`
-                      : "Sin unidades registradas."}
+                      : `Sin unidades con actividades vigentes el ${formatDate(dia)}.`}
                   </div>
                 )}
 
@@ -189,6 +220,24 @@ export function PlaneadorUnidadesPage() {
                           unidad={unidad}
                           selected={String(unidad.id) === unidadId}
                           onSelect={() => setUnidadId(String(unidad.id))}
+                          onEdit={() =>
+                            navigate({
+                              to: paths.app.planeadorUnidadEditar.getHref(String(unidad.id)),
+                            })
+                          }
+                          // Si la unidad borrada era la abierta en el panel,
+                          // limpiamos `?unidad=` — mismo criterio que
+                          // `onDeleted` del panel (cae a la primera de la
+                          // lista filtrada).
+                          onDeleted={() => {
+                            if (unidadId === String(unidad.id)) {
+                              navigate({
+                                to: planeadorUnidadesRoute.id,
+                                search: (prev) => ({ ...prev, unidad: undefined }),
+                                replace: true,
+                              })
+                            }
+                          }}
                         />
                       </li>
                     ))}

@@ -11,8 +11,12 @@
 
 import type { Actividad, Nivel } from "@/features/planeador/api/types/actividad"
 
-/** Estado posible de la asistencia a la fecha de la actividad. */
-export type EstadoAsistencia = "asistio" | "llego-tarde" | "no-asistio"
+/** Estado posible de la asistencia a la fecha de la actividad. `"sin-
+ *  registrar"` es el real confirmado: "Los campos de asistencia vienen
+ *  todos NULL si no hay registro ese día — no es un error" (colección
+ *  Postman, 7.8) — la asistencia se toma en otro módulo, así que llegar acá
+ *  sin registro todavía es la normalidad, no una falla. */
+export type EstadoAsistencia = "asistio" | "llego-tarde" | "no-asistio" | "sin-registrar"
 
 export type Estudiante = {
   id: number
@@ -44,6 +48,12 @@ export type NotaCriterio = {
 export type CalificacionEstudiante = Estudiante & {
   asistencia: Asistencia
   notas: NotaCriterio[]
+  /** Porcentaje 0-100 YA CALCULADO por el backend real (`calificacion` de
+   *  `GET .../calificaciones`) — cuando está presente, se prefiere sobre
+   *  recalcularlo de `notas` con `porcentajeFinal` (que asume el desglose
+   *  por criterio, que el real no siempre trae acá). `undefined` en mock,
+   *  donde sí alcanza con `notas` + `porcentajeFinal`. */
+  calificacion?: number | null
 }
 
 /** Un criterio de rúbrica, ítem de lista de cotejo, o el único "ítem
@@ -157,7 +167,12 @@ export function nivelesDe(criterio: {
   niveles: Nivel[]
 }): NivelElegible[] {
   const niveles: NivelElegible[] = []
-  if (criterio.excelente !== undefined) {
+  // `excelente` es `string` (nunca `undefined`) en el form de autoría — un
+  // criterio recién creado, o uno donde el docente lo "eliminó" (ver
+  // `CriterioItem` en `form-editar-actividad.tsx`), lo deja en `""`. Antes
+  // `!== undefined` daba `true` siempre, así que un "Excelente" vacío
+  // igual contaba como nivel elegible al calificar.
+  if (criterio.excelente !== undefined && criterio.excelente !== "") {
     niveles.push({ label: "Excelente", valor: criterio.excelentePonderacion ?? 100 })
   }
   for (const nivel of criterio.niveles) {
