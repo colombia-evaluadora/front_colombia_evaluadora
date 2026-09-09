@@ -16,6 +16,7 @@ import { Spinner } from "@/components/ui/spinner"
 import { paths } from "@/config/paths"
 
 import { useUnidadesQuery } from "@/features/planeador/api/query/use-unidades-query"
+import { useUnidadesTabsQuery } from "@/features/planeador/api/query/use-unidades-tabs-query"
 import { SearchPlaneador } from "@/features/planeador/components/search/search-planeador"
 import { PlaneadorTabs } from "@/features/planeador/components/planeador-tabs"
 import { UnidadCard } from "@/features/planeador/components/unidad-card"
@@ -45,13 +46,28 @@ export function PlaneadorUnidadesPage() {
   const { data: unidadesResult, isPending, isError, refetch } = useUnidadesQuery()
   const unidades = unidadesResult?.rows ?? []
 
+  // La pestaña "Unidad temática" puede ser varias (una por referente
+  // curricular/nivel educativo, `GET /planeador/unidades/tabs` — ver
+  // `planeador-tabs.tsx`): con más de una, el listado se acota a los
+  // grados de la pestaña activa (`?instrumento=`). Con una sola (el caso
+  // más común, un docente de un solo nivel) no hay nada que acotar.
+  const { data: unidadTabs = [] } = useUnidadesTabsQuery()
+  const tabActiva =
+    unidadTabs.length > 1
+      ? (unidadTabs.find((t) => t.instrumento === search.instrumento) ?? unidadTabs[0])
+      : undefined
+
   const filtered = React.useMemo(() => {
+    const porInstrumento =
+      tabActiva && tabActiva.gradoIds.length > 0
+        ? unidades.filter((u) => u.gradoId != null && tabActiva.gradoIds.includes(u.gradoId))
+        : unidades
     const term = buscar.trim().toLowerCase()
-    if (!term) return unidades
-    return unidades.filter((u) =>
+    if (!term) return porInstrumento
+    return porInstrumento.filter((u) =>
       [u.nombre, u.area, u.asignatura, u.grado].join(" ").toLowerCase().includes(term),
     )
-  }, [unidades, buscar])
+  }, [unidades, buscar, tabActiva])
 
   // Unidad abierta en el panel. Si la URL no trae ninguna —o trae una que ya
   // no está en la lista filtrada— se cae a la primera, para que la columna

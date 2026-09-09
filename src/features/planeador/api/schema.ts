@@ -55,6 +55,11 @@ export const planeadorUnidadesSearchSchema = z.object({
   estado: z.string().optional().catch(undefined),
   vista: z.string().optional().catch(undefined),
   unidad: z.string().optional().catch(undefined),
+  /** Pestaña de "Unidad temática" activa cuando el docente dicta en más de
+   *  un nivel educativo (`GET /planeador/unidades/tabs` trae más de una
+   *  fila) — el `instrumento` de esa fila, usado para filtrar el listado
+   *  a sus grados/asignaturas. Ver `planeador-tabs.tsx`. */
+  instrumento: z.string().optional().catch(undefined),
 })
 export type PlaneadorUnidadesSearch = z.infer<typeof planeadorUnidadesSearchSchema>
 
