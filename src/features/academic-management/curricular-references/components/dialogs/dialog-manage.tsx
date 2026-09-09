@@ -236,6 +236,7 @@ export function ManageCurricularReferenceDialog({
       <DialogContent
         className="w-[min(95vw,48rem)] max-w-none sm:max-w-192 max-h-[85vh] overflow-y-auto overflow-x-hidden"
         showCloseButton={false}
+        inert={confirmDiscardOpen}
       >
         <DialogHeader>
           <DialogTitle>{isEditMode ? "Editar referente curricular" : "Agregar referente curricular"}</DialogTitle>
