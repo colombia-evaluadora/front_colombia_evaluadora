@@ -47,7 +47,12 @@ async function updateActividad({ actividadId, data }: UpdateActividadInput): Pro
   if (data.asignaturaId != null) body.FK_TASIGNATURA = data.asignaturaId
   const tipoActividadId = await resolveTipoActividadId(data.tipo)
   if (tipoActividadId != null) body.FK_TLV_TIPO_ACTIVIDAD = tipoActividadId
-  if (data.esEvaluativa && data.ponderacion > 0) body.PONDERACION = data.ponderacion
+  // Alternativos, no coexisten (ver el comentario de `Actividad.notaMaxima`
+  // y el mismo branch en `create-actividad.ts`): `NOTA_MAXIMA` cuando la
+  // unidad calcula por "Suma de puntos", `PONDERACION` cuando calcula por
+  // "Ponderado" — el form ya deja cargado solo el que corresponde.
+  if (data.esEvaluativa && data.notaMaxima != null) body.NOTA_MAXIMA = data.notaMaxima
+  else if (data.esEvaluativa && data.ponderacion > 0) body.PONDERACION = data.ponderacion
   return api.put(`/eval-col/planeador/actividades/${actividadId}`, body)
 }
 
