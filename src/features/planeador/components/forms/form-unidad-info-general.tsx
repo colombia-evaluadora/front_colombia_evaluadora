@@ -39,7 +39,10 @@ import type {
 export const TEXTAREA_OUTLINED =
   "rounded-md border border-input px-3 py-2 hover:border-ring focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/20 aria-invalid:border-red aria-invalid:focus-visible:border-red aria-invalid:focus-visible:ring-red/20"
 
-const METODO_CALCULO_INFO: Record<MetodoCalculo, { label: string; description: string }> = {
+// Exportado: `CrearUnidadPopover` (form-editar-actividad.tsx) reusa el
+// mismo label corto para su `<Select>` compacto de método de cálculo —
+// una sola fuente para el texto en vez de repetirlo.
+export const METODO_CALCULO_INFO: Record<MetodoCalculo, { label: string; description: string }> = {
   Ponderado: {
     label: "Ponderar actividades",
     description: "Cada actividad tiene un porcentaje asignado según su peso.",
@@ -53,7 +56,7 @@ const METODO_CALCULO_INFO: Record<MetodoCalculo, { label: string; description: s
     description: "Se suman los puntajes obtenidos en todas las actividades",
   },
 }
-const METODO_CALCULO_OPTIONS = Object.keys(METODO_CALCULO_INFO) as MetodoCalculo[]
+export const METODO_CALCULO_OPTIONS = Object.keys(METODO_CALCULO_INFO) as MetodoCalculo[]
 
 /** Mismos campos que `UnidadInfoGeneral` — `objetivos`/`contenidos` ya
  *  vienen como array ahí, así que el borrador no necesita transformarlos
