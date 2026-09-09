@@ -5,10 +5,7 @@ import { fetchSelectCategory } from "@/features/establishment/academic-period/ap
 
 /** Las dos únicas formas de agrupar columnas que entiende la Planilla —
  *  "Actividades" las deja sueltas, "Unidad" las agrupa bajo la unidad
- *  temática de cada actividad (`PlanillaColumna.unidad`). No hay código
- *  numérico confirmado contra una respuesta real todavía (a diferencia de
- *  otros catálogos de este módulo) — se empareja solo por el nombre, sin
- *  asumir un `valor` que nadie vio en vivo. */
+ *  temática de cada actividad (`PlanillaColumna.unidad`). */
 export type AgrupacionPlanillaKey = "actividad" | "unidad"
 
 export interface AgrupacionPlanillaOption {
@@ -16,10 +13,19 @@ export interface AgrupacionPlanillaOption {
   label: string
 }
 
+/**
+ * Confirmado real (colección Postman `planeador-delta-cambios`, punto 7):
+ * `valor` es exactamente `"ACTIVIDAD"` / `"UNIDAD"`, estable entre bases —
+ * la propia colección advierte comparar por acá y no por `pk_lista_valor`
+ * (los pks no son estables). Antes se emparejaba por prefijo del `nombre`
+ * (el label), el mismo tipo de fragilidad que rompió "Otro (personalizado)"
+ * en `use-instrumento-evaluacion-catalog.ts` cuando el label cambió sin
+ * avisar y el código seguía comparando contra el texto viejo.
+ */
 function toKey(row: SelectCategoryRow): AgrupacionPlanillaKey | null {
-  const nombre = row.nombre.trim().toLowerCase()
-  if (nombre.startsWith("activ")) return "actividad"
-  if (nombre.startsWith("unidad")) return "unidad"
+  const valor = row.valor.trim().toUpperCase()
+  if (valor === "ACTIVIDAD") return "actividad"
+  if (valor === "UNIDAD") return "unidad"
   return null
 }
 

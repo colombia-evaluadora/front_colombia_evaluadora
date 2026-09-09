@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
-import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
+import { useNotify } from "@/components/notice/notice-context"
 import {
   Dialog,
   DialogClose,
@@ -66,8 +66,10 @@ export function DialogCalificarActividad({
 }: DialogCalificarActividadProps) {
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState<NotaCriterio[]>([])
+  const { notify } = useNotify()
 
-  const { data: instrumento, isPending: isPendingInstrumento } = useInstrumentoActividadQuery(actividadId)
+  const { data: instrumento, isPending: isPendingInstrumento } =
+    useInstrumentoActividadQuery(actividadId)
   const { data: notaActual } = useNotaEstudianteQuery(open ? pkTactividadEstudiante : undefined)
 
   useEffect(() => {
@@ -77,12 +79,12 @@ export function DialogCalificarActividad({
   const calificar = useCalificarCeldaMutation({
     mutationConfig: {
       onSuccess: () => {
-        toast.success("Nota guardada.")
+        notify("Nota guardada.")
         setOpen(false)
         onGuardado?.()
       },
       onError: (error) => {
-        toast.error(error.message || "No se pudo guardar la nota.")
+        notify(error.message || "No se pudo guardar la nota.", { variant: "error" })
       },
     },
   })
@@ -139,7 +141,11 @@ export function DialogCalificarActividad({
               <Spinner /> Cargando…
             </div>
           ) : instrumento?.instrumento === "RUBRICA" ? (
-            <RubricaExpandida criterios={instrumento.definicion} value={draft} onChange={setDraft} />
+            <RubricaExpandida
+              criterios={instrumento.definicion}
+              value={draft}
+              onChange={setDraft}
+            />
           ) : (
             <InstrumentoGradingFields actividadId={actividadId} value={draft} onChange={setDraft} />
           )}

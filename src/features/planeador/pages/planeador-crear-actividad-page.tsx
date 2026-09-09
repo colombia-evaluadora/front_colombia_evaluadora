@@ -1,8 +1,8 @@
 import { useState } from "react"
 import { Link, useNavigate } from "@tanstack/react-router"
-import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
+import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
 import {
   TableScreen,
   TableScreenBody,
@@ -33,7 +33,16 @@ const FORM_ID = "crear-actividad-form"
  * `add-establishment-page`).
  */
 export function PlaneadorCrearActividadPage() {
+  return (
+    <NoticeProvider>
+      <PlaneadorCrearActividadPageContent />
+    </NoticeProvider>
+  )
+}
+
+function PlaneadorCrearActividadPageContent() {
   const navigate = useNavigate()
+  const { notify } = useNotify()
   // Lazy initializer: se arma UNA sola vez al montar la página, no en cada
   // render — si no, cada re-render generaría una actividad (y unos ids)
   // distintos y el form perdería lo que el usuario ya tipeó.
@@ -42,11 +51,11 @@ export function PlaneadorCrearActividadPage() {
   const createMutation = useCreateActividad({
     mutationConfig: {
       onSuccess: () => {
-        toast.success("Actividad creada correctamente.")
+        notify("Actividad creada correctamente.")
         navigate({ to: paths.app.planeadorActividades.getHref() })
       },
       onError: () => {
-        toast.error("No se pudo crear la actividad.")
+        notify("No se pudo crear la actividad.", { variant: "error" })
       },
     },
   })
@@ -68,6 +77,7 @@ export function PlaneadorCrearActividadPage() {
         >
           Planeador
         </TableScreenTitle>
+        <NoticeOutlet className="mx-(--screen-spacing) my-4" />
       </TableScreenHeader>
       <TableScreenBody className="rounded-b-none border-b-0">
         <EditarActividadForm

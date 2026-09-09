@@ -34,6 +34,20 @@ import { parseLocalDate, toDateOnly } from "@/features/planeador/lib/format-date
 import { hashString } from "@/mocks/handlers/planeador/docentes"
 
 /**
+ * Emula el `grado_grupo` real (colección Postman `planeador-delta-cambios`,
+ * punto 3): si el nombre del grupo ya empieza por el grado (`"803M"`) se usa
+ * tal cual; si no (sembrados a mano, `"01"`) se compone con el grado
+ * (`"Pre-Jardin 01"`). El mock no tiene un código de grado separado del
+ * nombre, así que compara contra el nombre — suficiente para no repetir el
+ * bug que este campo existe para evitar.
+ */
+function gradoGrupoMock(grado: string, grupo: string): string {
+  if (!grado) return grupo
+  if (!grupo) return grado
+  return grupo.startsWith(grado) ? grupo : `${grado} ${grupo}`
+}
+
+/**
  * Endpoints del Planeador bajo `/api/eval-col` — mismo prefijo que el resto
  * del microservicio (roles, menús, planes). El path se duplica acá con la
  * forma `/api/eval-col/...` (en lugar del helper `apiPath(mock, real)` que
@@ -350,6 +364,7 @@ export const planeadorHandlers = [
         asignatura: row.asignatura,
         area: null,
         estado: statusToEstadoDerivado(row.status),
+        grado_grupo: gradoGrupoMock(row.grado, row.grupo),
       }))
     return HttpResponse.json({ rows })
   }),
@@ -421,6 +436,9 @@ export const planeadorHandlers = [
       fecha_inicio: row.fechaInicio,
       fecha_cierre: row.fechaCierre,
       asignatura: row.asignatura,
+      grado: row.grado,
+      grado_codigo: null,
+      grado_grupo: gradoGrupoMock(row.grado, row.grupo),
       grupo: row.grupo,
       unidad: row.unidad.nombre || null,
       instrumento_evaluacion: row.instrumento,

@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button"
-import { PencilIcon } from "@/components/ui/icons"
+import { PencilIcon, WarningIcon } from "@/components/ui/icons"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 
 import {
@@ -70,6 +71,23 @@ export function UnidadCard({
         <h3 className="min-w-0 text-xs leading-snug font-bold break-words">
           {unidad.nombre}
         </h3>
+        {/* `referenteVigente === false`: la unidad guarda un referente
+            curricular que ya se desactivó — no puede ofrecer enunciados/
+            evidencias (ver el comentario de `UnidadTematica.referenteVigente`).
+            `undefined` (mock, o backend viejo) no muestra nada: no hay de
+            dónde derivar el aviso. */}
+        {unidad.referenteVigente === false && (
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <span className="shrink-0">
+                  <WarningIcon className="text-orange size-3.5" aria-label="Referente curricular inactivo" />
+                </span>
+              }
+            />
+            <TooltipContent>El referente curricular de esta unidad ya no está activo.</TooltipContent>
+          </Tooltip>
+        )}
       </div>
 
       <p className="text-muted-foreground text-[0.625rem] leading-snug">

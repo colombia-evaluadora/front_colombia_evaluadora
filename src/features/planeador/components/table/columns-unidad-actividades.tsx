@@ -1,9 +1,9 @@
 import { useState } from "react"
 import { Link } from "@tanstack/react-router"
 import type { ColumnDef } from "@tanstack/react-table"
-import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
+import { useNotify } from "@/components/notice/notice-context"
 import { Input } from "@/components/ui/input"
 import { DataTableColumnHeader } from "@/components/data-table"
 import {
@@ -17,7 +17,14 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { CheckIcon, EyeIcon, LinkBreakIcon, PencilIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
+import {
+  CheckIcon,
+  EyeIcon,
+  LinkBreakIcon,
+  PencilIcon,
+  SpinnerIcon,
+  XIcon,
+} from "@/components/ui/icons"
 import { paths } from "@/config/paths"
 import { planeadorRoute } from "@/router"
 
@@ -37,14 +44,15 @@ function CeldaPonderacion({
 }) {
   const [editando, setEditando] = useState(false)
   const [valor, setValor] = useState(String(actividad.ponderacion))
+  const { notify } = useNotify()
   const mutation = useUpdatePonderacionActividadUnidad({
     unidadId,
     mutationConfig: {
       onSuccess: () => {
-        toast.success("Ponderación actualizada.")
+        notify("Ponderación actualizada.")
         setEditando(false)
       },
-      onError: () => toast.error("No se pudo actualizar la ponderación."),
+      onError: () => notify("No se pudo actualizar la ponderación.", { variant: "error" }),
     },
   })
 
@@ -94,26 +102,29 @@ function CeldaPonderacion({
         onClick={guardar}
         aria-label="Guardar ponderación"
       >
-        {mutation.isPending ? (
-          <SpinnerIcon className="animate-spin" />
-        ) : (
-          <CheckIcon />
-        )}
+        {mutation.isPending ? <SpinnerIcon className="animate-spin" /> : <CheckIcon />}
       </Button>
     </div>
   )
 }
 
-function BotonDesvincular({ actividad, unidadId }: { actividad: UnidadActividad; unidadId: number }) {
+function BotonDesvincular({
+  actividad,
+  unidadId,
+}: {
+  actividad: UnidadActividad
+  unidadId: number
+}) {
   const [open, setOpen] = useState(false)
+  const { notify } = useNotify()
   const unlink = useUnlinkActividadUnidad({
     unidadId,
     mutationConfig: {
       onSuccess: () => {
-        toast.success("Actividad desvinculada.")
+        notify("Actividad desvinculada.")
         setOpen(false)
       },
-      onError: () => toast.error("No se pudo desvincular la actividad."),
+      onError: () => notify("No se pudo desvincular la actividad.", { variant: "error" }),
     },
   })
 
@@ -121,7 +132,12 @@ function BotonDesvincular({ actividad, unidadId }: { actividad: UnidadActividad;
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger
         render={
-          <Button variant="ghost" color="neutral" size="icon-sm" aria-label="Desvincular actividad" />
+          <Button
+            variant="ghost"
+            color="neutral"
+            size="icon-sm"
+            aria-label="Desvincular actividad"
+          />
         }
       >
         <LinkBreakIcon />
@@ -130,8 +146,8 @@ function BotonDesvincular({ actividad, unidadId }: { actividad: UnidadActividad;
         <AlertDialogHeader>
           <AlertDialogTitle>Desvincular actividad</AlertDialogTitle>
           <AlertDialogDescription>
-            &ldquo;{actividad.nombre}&rdquo; volverá a quedar sin unidad (huérfana). Podés
-            volver a vincularla más adelante.
+            &ldquo;{actividad.nombre}&rdquo; volverá a quedar sin unidad (huérfana). Podés volver a
+            vincularla más adelante.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
