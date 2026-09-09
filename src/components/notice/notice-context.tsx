@@ -88,9 +88,17 @@ export function NoticeProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     activeNoticeProviders += 1
     setSuppressGlobalErrorToast(true)
-    if (pendingNotice) {
-      const queued = pendingNotice
-      pendingNotice = null
+    // `pendingNotice` es una variable de MÓDULO, compartida por cualquier
+    // `NoticeProvider` que esté montado al mismo tiempo (StrictMode
+    // re-invoca este efecto, y dos pantallas pueden solaparse un instante
+    // durante la navegación) — chequear `if (pendingNotice)` y leerla de
+    // nuevo en la línea siguiente no es atómico: otro montaje puede
+    // vaciarla en el medio y dejar `queued` en `null` justo antes de
+    // `queued.message`. Se captura y se vacía en una sola operación, y se
+    // chequea la copia LOCAL (no la global) antes de usarla.
+    const queued = pendingNotice
+    pendingNotice = null
+    if (queued) {
       notify(queued.message, queued.options)
     }
     return () => {

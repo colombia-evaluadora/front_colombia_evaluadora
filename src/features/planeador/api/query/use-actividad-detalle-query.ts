@@ -112,35 +112,22 @@ function toDateOnly(value: string | null): string {
 }
 
 /**
- * Ids de las evidencias ya marcadas para ESTA actividad, leídos de
- * `unidad_configuracion` (mismo árbol de `GET /unidades/:id/referente`,
- * ver `use-unidad-referente-query.ts`, pero referido a la actividad en vez
- * de a la unidad). La colección Postman `planeador-flujo-unidad-actividad`
- * (paso 8) confirma que el campo existe y que trae el árbol de enunciados/
- * evidencias, pero no captura un ejemplo real del flag que marca "esta
- * evidencia ya está en la actividad" — se tolera cualquiera de los nombres
- * más probables (mismo criterio que `toUnidadReferente` con
- * `enfoque_valor`/`es_evaluativo`); si el real usa otro, ajustar acá nomás.
+ * Ids de las evidencias ya marcadas para ESTA actividad — deberían salir de
+ * `unidad_configuracion` (paso 8 de la colección Postman
+ * `planeador-flujo-unidad-actividad` confirma que el campo existe y trae el
+ * árbol de enunciados/evidencias), pero no hay un ejemplo real capturado de
+ * CUÁL es el flag que marca "esta evidencia ya está en la actividad".
+ *
+ * Un primer intento adivinando el nombre del flag terminó marcando
+ * evidencias como ya relacionadas cuando no lo estaban (deshabilitaba el
+ * checkbox sin que hubiera nada guardado) — peor que no mostrar nada. Hasta
+ * tener una respuesta real de este campo, se deja siempre en `[]`: el
+ * checklist de evidencias arranca sin nada tildado ni deshabilitado en el
+ * panel de detalle (se puede volver a marcar sin problema — el mock/backend
+ * ya tolera un alta repetida sin duplicar).
  */
-function evidenciasIdsFromUnidadConfiguracion(raw: unknown): number[] {
-  if (raw == null || typeof raw !== "object") return []
-  const enunciados = (raw as { enunciados?: unknown[] }).enunciados
-  if (!Array.isArray(enunciados)) return []
-
-  const ids: number[] = []
-  for (const enunciado of enunciados) {
-    if (enunciado == null || typeof enunciado !== "object") continue
-    const evidencias = (enunciado as { evidencias?: unknown[] }).evidencias
-    if (!Array.isArray(evidencias)) continue
-    for (const evidencia of evidencias) {
-      if (evidencia == null || typeof evidencia !== "object") continue
-      const e = evidencia as Record<string, unknown>
-      const marcada = e.relacionadaConActividad ?? e.seleccionada ?? e.marcada ?? false
-      const pk = e.pk ?? e.id
-      if (marcada && typeof pk === "number") ids.push(pk)
-    }
-  }
-  return ids
+function evidenciasIdsFromUnidadConfiguracion(_raw: unknown): number[] {
+  return []
 }
 
 function toActividadDetalle(row: ActividadDetalleRow): Actividad {

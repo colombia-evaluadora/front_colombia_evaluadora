@@ -1,14 +1,15 @@
 import { useQuery } from "@tanstack/react-query"
 
-import { evalCol } from "@/lib/eval-col-client"
+import { api } from "@/lib/api-client"
 
 /**
  * `GET /planeador/unidades/:id/referente` (confirmado real, colección
- * Postman `planeador-guia-completa`, 3.1) — reemplaza a
- * `POST /referentes-curriculares/query` (`useCurricularReferencesQuery`)
- * como fuente del enfoque pedagógico de una unidad: ese endpoint genérico
- * responde 403 para `CEVAL-DOCENTE` (confirmado en vivo), este, bajo el
- * propio módulo Planeador, sí es accesible al docente.
+ * Postman `planeador-guia-completa`, 3.1 / `planeador-flujo-unidad-
+ * actividad`, paso 5) — reemplaza a `POST /referentes-curriculares/query`
+ * (`useCurricularReferencesQuery`) como fuente del enfoque pedagógico de
+ * una unidad: ese endpoint genérico responde 403 para `CEVAL-DOCENTE`
+ * (confirmado en vivo), este, bajo el propio módulo Planeador, sí es
+ * accesible al docente.
  *
  * El referente NO se elige a mano: se deriva del GRADO de la unidad → nivel
  * de enseñanza → referente de ese nivel — por eso esta ruta pide el `:id`
@@ -17,27 +18,55 @@ import { evalCol } from "@/lib/eval-col-client"
  * consultarla; en esos casos se usa el default histórico ("Evaluativo",
  * no formativo) hasta que la unidad exista.
  *
- * Solo se mapea acá lo que hace falta para "¿es formativa?" (`enfoque_valor`).
- * El árbol de enunciados/evidencias para marcar en la actividad NO sale de
- * acá: sale de `GET /planeador/referente-curricular` (grado + asignatura),
- * confirmado con una respuesta real — ver `use-referente-curricular-
- * query.ts` y `EnunciadosEvidenciasChecklist`.
+ * Además de "¿es formativa?" (`enfoque_valor`), se mapean los enunciados
+ * (nivel 1) que la unidad YA relacionó, con el `pk` de la RELACIÓN
+ * (`pkTunidadEnunciado`, distinto del `pk` del enunciado): es lo que pide
+ * `PATCH /planeador/unidades/enunciados/:pkTunidadEnunciado` para
+ * desvincular uno cuando el docente lo saca del picker de "Derechos
+ * Básicos de Aprendizaje" al editar la unidad (`unlink-enunciado-unidad.ts`).
+ * El árbol de EVIDENCIAS para marcar en la actividad NO sale de acá: sale
+ * de `GET /planeador/referente-curricular` (grado + asignatura), confirmado
+ * con una respuesta real — ver `use-referente-curricular-query.ts`.
  */
+interface UnidadReferenteEnunciadoRow {
+  pk: number
+  texto: string
+  relacionadoConUnidad?: boolean
+  pkTunidadEnunciado?: number | null
+}
+
 interface UnidadReferenteRow {
   referente?: { id: number } | null
   fk_referente_curricular?: number | null
   enfoque_valor?: "EVALUATIVO" | "FORMATIVO" | null
   es_evaluativo?: boolean | null
   tipo_evaluacion_valor?: string | null
+  enunciados?: UnidadReferenteEnunciadoRow[]
+}
+
+export interface UnidadReferenteEnunciado {
+  id: number
+  text: string
+  /** `pkTunidadEnunciado` — el pk de la RELACIÓN unidad↔enunciado, no el
+   *  del enunciado. Es lo que pide el `PATCH` de desvincular. */
+  pkRelacion: number
 }
 
 export interface UnidadReferente {
   tieneReferente: boolean
   esFormativo: boolean
   tipoEvaluacion: string | null
+  /** Solo los YA relacionados (`relacionadoConUnidad`) — los demás no
+   *  tienen `pkTunidadEnunciado` con qué desvincularlos. */
+  enunciados: UnidadReferenteEnunciado[]
 }
 
-const SIN_REFERENTE: UnidadReferente = { tieneReferente: false, esFormativo: false, tipoEvaluacion: null }
+const SIN_REFERENTE: UnidadReferente = {
+  tieneReferente: false,
+  esFormativo: false,
+  tipoEvaluacion: null,
+  enunciados: [],
+}
 
 function toUnidadReferente(row: UnidadReferenteRow | undefined): UnidadReferente {
   const tieneReferente =
@@ -59,15 +88,31 @@ function toUnidadReferente(row: UnidadReferenteRow | undefined): UnidadReferente
     tieneReferente: true,
     esFormativo,
     tipoEvaluacion: row!.tipo_evaluacion_valor ?? null,
+    enunciados: (row!.enunciados ?? [])
+      .filter((e) => e.relacionadoConUnidad && e.pkTunidadEnunciado != null)
+      .map((e) => ({ id: e.pk, text: e.texto, pkRelacion: e.pkTunidadEnunciado! })),
   }
 }
 
 export const unidadReferenteQueryKey = (unidadId: number) =>
   ["planeador", "unidad", unidadId, "referente"] as const
 
+/** Misma forma "objeto suelto, no `{rows}`" confirmada para
+ *  `/referente-curricular` — se tolera igual acá por si esta ruta hermana
+ *  comparte el mismo comportamiento (ver el comentario de `firstRow` en
+ *  `use-referente-curricular-query.ts`). */
+function firstRow(body: unknown): UnidadReferenteRow | undefined {
+  if (Array.isArray(body)) return body[0] as UnidadReferenteRow | undefined
+  if (body != null && typeof body === "object" && "rows" in body) {
+    const rows = (body as { rows?: unknown }).rows
+    return Array.isArray(rows) ? (rows[0] as UnidadReferenteRow | undefined) : undefined
+  }
+  return body as UnidadReferenteRow | undefined
+}
+
 async function fetchUnidadReferente(unidadId: number): Promise<UnidadReferente> {
-  const rows = await evalCol.getRows<UnidadReferenteRow>(`/planeador/unidades/${unidadId}/referente`)
-  return toUnidadReferente(rows[0])
+  const body = await api.get(`/eval-col/planeador/unidades/${unidadId}/referente`)
+  return toUnidadReferente(firstRow(body))
 }
 
 export function useUnidadReferenteQuery(unidadId: number | undefined) {

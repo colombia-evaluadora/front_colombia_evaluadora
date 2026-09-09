@@ -38,9 +38,7 @@ function Definition({
   // se apila normal.
   return (
     <div className={`row-span-2 grid grid-rows-subgrid gap-1 ${className ?? ""}`}>
-      <dt className="text-muted-foreground text-xs font-semibold uppercase">
-        {term}
-      </dt>
+      <dt className="text-muted-foreground text-xs font-semibold uppercase">{term}</dt>
       <dd className="text-sm">{children}</dd>
     </div>
   )
@@ -102,13 +100,9 @@ export function DetailSections({ actividad }: DetailSectionsProps) {
       {/* 1) Identificación de la actividad */}
       <Section title="Identificación de la actividad">
         <DefinitionGrid cols={3}>
-          <Definition term="Nombre de la actividad">
-            {actividad.nombre}
-          </Definition>
+          <Definition term="Nombre de la actividad">{actividad.nombre}</Definition>
           <Definition term="Tipo de actividad">{actividad.tipo}</Definition>
-          <Definition term="Unidad temática asociada">
-            {actividad.unidad.nombre}
-          </Definition>
+          <Definition term="Unidad temática asociada">{actividad.unidad.nombre}</Definition>
         </DefinitionGrid>
 
         {/* 2) Unidad N — anidada dentro de identificación, igual que en el
@@ -120,9 +114,7 @@ export function DetailSections({ actividad }: DetailSectionsProps) {
         )}
 
         <DefinitionGrid cols={2} className="mt-4">
-          <Definition term="Asignatura / materia">
-            {actividad.asignatura}
-          </Definition>
+          <Definition term="Asignatura / materia">{actividad.asignatura}</Definition>
           <Definition term="Grado / Grupo">
             {actividad.grado} {actividad.grupo}
           </Definition>
@@ -165,9 +157,7 @@ export function DetailSections({ actividad }: DetailSectionsProps) {
                       </a>
                     </span>
                   </Definition>
-                  <Definition term="Descripción / nota">
-                    {recurso.descripcion}
-                  </Definition>
+                  <Definition term="Descripción / nota">{recurso.descripcion}</Definition>
                 </div>
               </li>
             ))}
@@ -181,9 +171,7 @@ export function DetailSections({ actividad }: DetailSectionsProps) {
             y 2 columnas hacía que la segunda fila no alineara con la de
             arriba. */}
         <DefinitionGrid cols={3}>
-          <Definition term="Fecha inicio">
-            {formatDate(actividad.fechaInicio)}
-          </Definition>
+          <Definition term="Fecha inicio">{formatDate(actividad.fechaInicio)}</Definition>
           <Definition term="Fecha de entrega o cierre">
             {formatDate(actividad.fechaCierre)}
           </Definition>
@@ -206,9 +194,7 @@ export function DetailSections({ actividad }: DetailSectionsProps) {
           <Definition term="¿Es actividad evaluativa?">
             {actividad.esEvaluativa ? "Sí" : "No"}
           </Definition>
-          <Definition term="Instrumento de evaluación">
-            {actividad.instrumento}
-          </Definition>
+          <Definition term="Instrumento de evaluación">{actividad.instrumento}</Definition>
         </DefinitionGrid>
 
         {/* 7) Definición de Rúbricas: va dentro de Evaluación —es el
@@ -225,9 +211,7 @@ export function DetailSections({ actividad }: DetailSectionsProps) {
                 <li key={criterio.id}>
                   <h4 className="text-sm font-semibold">Criterio {index + 1}</h4>
                   <div className="mt-2 space-y-3">
-                    <Definition term="Nombre del criterio">
-                      {criterio.nombre}
-                    </Definition>
+                    <Definition term="Nombre del criterio">{criterio.nombre}</Definition>
                     {/* "Excelente" va al lado de su descripción, no encima:
                         es una etiqueta corta con un texto largo al costado. */}
                     <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1">
@@ -252,9 +236,7 @@ export function DetailSections({ actividad }: DetailSectionsProps) {
           <Definition term="¿Genera evidencias?">
             {actividad.generaEvidencias ? "Sí" : "No"}
           </Definition>
-          <Definition term="Tipo de evidencia">
-            {actividad.tipoEvidencia}
-          </Definition>
+          <Definition term="Tipo de evidencia">{actividad.tipoEvidencia}</Definition>
           <Definition term="¿Requiere validación del coordinador?">
             {actividad.requiereValidacion ? "Sí" : "No"}
           </Definition>
@@ -296,10 +278,22 @@ function UnidadFichaYEvidenciasDetalle({
   // actividad, no de la unidad.
   const { data: referente } = useReferenteCurricularQuery(actividad.gradoId, actividad.asignaturaId)
   const [pendingId, setPendingId] = useState<number | null>(null)
+  // `actividad.evidenciasIds` siempre llega `[]` (ver el comentario de
+  // `evidenciasIdsFromUnidadConfiguracion`): sin un ejemplo real del campo
+  // que marca "ya relacionada" en el backend, no hay de dónde precargar el
+  // estado guardado. Lo que SÍ se puede sostener es lo agregado en esta
+  // misma sesión: sin este estado local, cada `agregarEvidencia` exitoso
+  // invalida el detalle, el refetch vuelve a traer `evidenciasIds: []`, y
+  // el checkbox recién tildado se destildaba solo.
+  const [agregadasEnSesion, setAgregadasEnSesion] = useState<number[]>([])
+  const seleccionadas = [...actividad.evidenciasIds, ...agregadasEnSesion]
 
   const agregarEvidencia = useAgregarEvidenciaActividad({
     mutationConfig: {
-      onSuccess: () => setPendingId(null),
+      onSuccess: (_data, variables) => {
+        setPendingId(null)
+        setAgregadasEnSesion((prev) => [...prev, variables.evidenciaId])
+      },
       onError: (error) => {
         setPendingId(null)
         notify(getErrorMessage(error), { variant: "error" })
@@ -332,9 +326,9 @@ function UnidadFichaYEvidenciasDetalle({
           nivel1Etiqueta={referente.nivel1Etiqueta}
           nivel2Etiqueta={referente.nivel2Etiqueta}
           enunciados={referente.enunciados}
-          seleccionadas={actividad.evidenciasIds}
+          seleccionadas={seleccionadas}
           onToggle={handleToggle}
-          disabledIds={actividad.evidenciasIds}
+          disabledIds={seleccionadas}
           pendingId={pendingId}
         />
       )}
