@@ -183,24 +183,34 @@ export function SelectGeneralAreasDialog({
   const visibleChips = selectedNames.slice(0, visibleCount)
   const extra = selectedNames.length - visibleChips.length
 
+  function removeSelected(areaId: number) {
+    onChange(value.filter((id) => id !== areaId))
+  }
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger
-        render={
-          <button
-            type="button"
-            id={id}
-            aria-invalid={invalid}
-            className={cn(
-              inputVariants({ variant: resolvedVariant }),
-              inputTriggerVariants({ variant: resolvedVariant }),
-              "flex h-auto min-h-11 items-center justify-between gap-1.5 text-left",
-              resolvedVariant === "outlined" && "bg-background",
-            )}
-          />
-        }
+      <div
+        className={cn(
+          inputVariants({ variant: resolvedVariant }),
+          inputTriggerVariants({ variant: resolvedVariant }),
+          "relative flex h-auto min-h-11 items-center gap-1.5 text-left",
+          resolvedVariant === "outlined" && "bg-background",
+        )}
       >
-        <div ref={containerRef} className="flex min-w-0 flex-1 items-center gap-1 overflow-hidden">
+        <DialogTrigger
+          render={
+            <button
+              type="button"
+              id={id}
+              aria-invalid={invalid}
+              className="absolute inset-0 z-0 cursor-pointer bg-transparent outline-none"
+            />
+          }
+        />
+        <div
+          ref={containerRef}
+          className="pointer-events-none relative z-10 flex min-w-0 flex-1 items-center gap-1 overflow-hidden"
+        >
           {selectedNames.length === 0 ? (
             <span className="text-muted-foreground">{placeholder}</span>
           ) : (
@@ -208,6 +218,7 @@ export function SelectGeneralAreasDialog({
               {visibleChips.map((name, i) => {
                 const isLastVisible = i === visibleChips.length - 1
                 const canTruncate = isLastVisible && truncatedLast
+                const areaId = value.find((id) => areaById.get(id)?.nombre === name)
                 return (
                   <Badge
                     key={name}
@@ -220,6 +231,20 @@ export function SelectGeneralAreasDialog({
                     title={name}
                   >
                     {canTruncate ? <span className="block truncate">{name}</span> : name}
+                    {areaId != null && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          removeSelected(areaId)
+                        }}
+                        aria-label={`Quitar ${name}`}
+                        data-icon="inline-end"
+                        className="pointer-events-auto inline-flex cursor-pointer items-center hover:text-foreground"
+                      >
+                        <XIcon className="size-3" />
+                      </button>
+                    )}
                   </Badge>
                 )
               })}
@@ -250,6 +275,17 @@ export function SelectGeneralAreasDialog({
               className="text-xs normal-case tracking-normal"
             >
               {name}
+              {/* Mismo botón "X" que el chip real: si no se mide acá, el
+                  cálculo de cuántos chips caben queda corto y el visible
+                  termina recortado a una sola letra para hacerle lugar. */}
+              <button
+                type="button"
+                tabIndex={-1}
+                data-icon="inline-end"
+                className="pointer-events-none inline-flex items-center"
+              >
+                <XIcon className="size-3" />
+              </button>
             </Badge>
           ))}
           <Badge
@@ -261,79 +297,86 @@ export function SelectGeneralAreasDialog({
             +{selectedNames.length}
           </Badge>
         </div>
-        <CaretDownIcon className="size-3.5 shrink-0 text-muted-foreground" />
-      </DialogTrigger>
+        <CaretDownIcon className="pointer-events-none relative z-10 size-3.5 shrink-0 text-muted-foreground" />
+      </div>
       <DialogPortal>
         <DialogOverlay forceRender className="bg-black/30" />
       </DialogPortal>
       <DialogContent
-        className="max-h-[85vh] overflow-y-auto sm:max-w-4xl"
+        className="flex max-h-[85vh] flex-col overflow-hidden sm:max-w-4xl"
         showCloseButton={false}
       >
-        <DialogHeader>
+        <DialogHeader className="shrink-0">
           <DialogTitle>Seleccionar áreas o dimensiones</DialogTitle>
         </DialogHeader>
 
-        <div className="relative">
-          <MagnifyingGlassIcon className="absolute top-1/2 left-2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            autoFocus
-            placeholder="Buscar área..."
-            value={search}
-            onChange={(e) => handleSearch(e.target.value)}
-            className="pl-8"
-          />
+        {/* Único bloque con scroll: título, paginación y acciones quedan
+            fijos afuera — así la grilla de áreas no empuja el botón
+            "Aceptar" fuera de la pantalla en modales altos. */}
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <div className="flex flex-col gap-4">
+            <div className="relative">
+              <MagnifyingGlassIcon className="absolute top-1/2 left-2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                autoFocus
+                placeholder="Buscar área..."
+                value={search}
+                onChange={(e) => handleSearch(e.target.value)}
+                className="pl-8"
+              />
+            </div>
+
+            {draft.length > 0 && (
+              <p className="text-muted-foreground text-sm">
+                {draft.length === 1 ? "1 área seleccionada" : `${draft.length} áreas seleccionadas`}
+              </p>
+            )}
+
+            <div className="min-w-0">
+              <Table className="table-fixed">
+                <TableBody>
+                  {grid.length === 0 ? (
+                    <TableRow className="hover:bg-transparent">
+                      <TableCell colSpan={COLUMNS} className="h-24 text-center text-muted-foreground">
+                        No se encontraron áreas.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    grid.map((rowAreas, r) => (
+                      <TableRow key={r} className="hover:bg-transparent">
+                        {Array.from({ length: COLUMNS }).map((_, c) => {
+                          const area = rowAreas[c]
+                          if (!area) {
+                            return <TableCell key={c} className="border-r p-0 last:border-r-0" />
+                          }
+                          const selected = draft.includes(area.id)
+                          return (
+                            <TableCell key={c} className="border-r p-0 last:border-r-0">
+                              <button
+                                type="button"
+                                title={area.nombre}
+                                onClick={() => toggle(area.id)}
+                                className={cn(
+                                  "flex w-full min-w-0 items-center gap-2 px-3 py-2.5 text-left text-sm transition-colors hover:bg-muted/50",
+                                  selected && "bg-muted font-medium text-primary hover:bg-muted",
+                                )}
+                              >
+                                <Checkbox checked={selected} className="pointer-events-none shrink-0" />
+                                <span className="min-w-0 flex-1 truncate">{area.nombre}</span>
+                              </button>
+                            </TableCell>
+                          )
+                        })}
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
         </div>
 
-        {draft.length > 0 && (
-          <p className="text-muted-foreground text-sm">
-            {draft.length === 1 ? "1 área seleccionada" : `${draft.length} áreas seleccionadas`}
-          </p>
-        )}
-
-        <div className="min-w-0">
-          <Table className="table-fixed">
-            <TableBody>
-              {grid.length === 0 ? (
-                <TableRow className="hover:bg-transparent">
-                  <TableCell colSpan={COLUMNS} className="h-24 text-center text-muted-foreground">
-                    No se encontraron áreas.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                grid.map((rowAreas, r) => (
-                  <TableRow key={r} className="hover:bg-transparent">
-                    {Array.from({ length: COLUMNS }).map((_, c) => {
-                      const area = rowAreas[c]
-                      if (!area) {
-                        return <TableCell key={c} className="border-r p-0 last:border-r-0" />
-                      }
-                      const selected = draft.includes(area.id)
-                      return (
-                        <TableCell key={c} className="border-r p-0 last:border-r-0">
-                          <button
-                            type="button"
-                            title={area.nombre}
-                            onClick={() => toggle(area.id)}
-                            className={cn(
-                              "flex w-full min-w-0 items-center gap-2 px-3 py-2.5 text-left text-sm transition-colors hover:bg-muted/50",
-                              selected && "bg-muted font-medium text-primary hover:bg-muted",
-                            )}
-                          >
-                            <Checkbox checked={selected} className="pointer-events-none shrink-0" />
-                            <span className="min-w-0 flex-1 truncate">{area.nombre}</span>
-                          </button>
-                        </TableCell>
-                      )
-                    })}
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-
-        <div className="flex items-center justify-center gap-2">
+        <div className="flex shrink-0 items-center justify-center gap-2">
           <UIPagination className="mx-0 w-auto justify-center">
             <PaginationContent>
               <PaginationItem>
@@ -390,7 +433,7 @@ export function SelectGeneralAreasDialog({
           </UIPagination>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="shrink-0">
           <Button size="sm" type="button" color="primary" onClick={handleAccept}>
             <CheckIcon data-icon="inline-start" />
             Aceptar
