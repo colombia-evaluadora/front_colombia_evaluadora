@@ -2,7 +2,7 @@ import { useState } from "react"
 import { Link, useNavigate, useParams } from "@tanstack/react-router"
 
 import { Button } from "@/components/ui/button"
-import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
+import { NoticeOutlet, NoticeProvider, queueNotice, useNotify } from "@/components/notice/notice-context"
 import {
   TableScreen,
   TableScreenBody,
@@ -14,7 +14,7 @@ import { NotFoundPage } from "@/components/layout/not-found-page"
 import { CheckIcon, SpinnerIcon } from "@/components/ui/icons"
 import { Spinner } from "@/components/ui/spinner"
 import { paths } from "@/config/paths"
-import { isNotFoundError } from "@/lib/api-client"
+import { getErrorMessage, isNotFoundError } from "@/lib/api-client"
 
 import { useActividadDetalleQuery } from "@/features/planeador/api/query/use-actividad-detalle-query"
 import { useUnidadesQuery } from "@/features/planeador/api/query/use-unidades-query"
@@ -101,12 +101,16 @@ function EditarActividadPageContent({
   const updateMutation = useUpdateActividad({
     mutationConfig: {
       onSuccess: () => {
-        notify("Actividad actualizada correctamente.")
+        // `onClose` navega de vuelta al Planeador: un `notify()` acá
+        // actualizaría el `NoticeProvider` de ESTA pantalla, que se
+        // desmonta antes de que el aviso llegue a pintarse. `queueNotice`
+        // lo deja para que lo muestre el `NoticeProvider` del Planeador.
+        queueNotice("Actividad actualizada correctamente.")
         setIsDirty(false)
         onClose()
       },
       onError: (error) => {
-        notify(error.message || "No se pudo actualizar la actividad.", { variant: "error" })
+        notify(getErrorMessage(error), { variant: "error" })
       },
     },
   })
@@ -152,10 +156,7 @@ function EditarActividadPageContent({
           })
         }
       } catch (error) {
-        notify(
-          error instanceof Error ? error.message : "No se pudo actualizar la unidad de la actividad.",
-          { variant: "error" },
-        )
+        notify(getErrorMessage(error), { variant: "error" })
         return
       }
     }

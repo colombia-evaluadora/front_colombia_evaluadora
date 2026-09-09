@@ -2,7 +2,7 @@ import { useState } from "react"
 import { Link, useNavigate, useParams } from "@tanstack/react-router"
 
 import { Button } from "@/components/ui/button"
-import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
+import { NoticeOutlet, NoticeProvider, queueNotice, useNotify } from "@/components/notice/notice-context"
 import {
   TableScreen,
   TableScreenBody,
@@ -84,7 +84,10 @@ function EditarUnidadPageContent({
           })
           return
         }
-        notify("Unidad temática actualizada correctamente.")
+        // `onClose` navega de vuelta al listado de unidades — un `notify()`
+        // acá se perdería con el `NoticeProvider` de esta pantalla al
+        // desmontarse.
+        queueNotice("Unidad temática actualizada correctamente.")
         onClose()
       },
       onError: () => {

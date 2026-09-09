@@ -51,18 +51,28 @@ export function useNotify(): NoticeDispatch {
 
 let activeNoticeProviders = 0
 
+/**
+ * Aviso encolado para el `NoticeProvider` que monte a continuación —
+ * variable de módulo, no estado de React: sobrevive porque es una SPA (no
+ * hay reload de página entre rutas), pero SÍ se pierde el `NoticeProvider`
+ * actual, que es por pantalla.
+ *
+ * Existe para el patrón "guardar y navegar" (crear/editar actividad o
+ * unidad, `onSuccess` → `notify(...)` → `navigate(...)`): un `notify()`
+ * normal ahí actualiza el estado del `NoticeProvider` de la pantalla que se
+ * está por DESMONTAR, así que el aviso nunca llega a pintarse. `queueNotice`
+ * lo guarda para que el `NoticeProvider` de la pantalla de DESTINO lo
+ * muestre apenas se monta.
+ */
+let pendingNotice: { message: string; options?: NotifyOptions } | null = null
+
+export function queueNotice(message: string, options?: NotifyOptions) {
+  pendingNotice = { message, options }
+}
+
 export function NoticeProvider({ children }: { children: ReactNode }) {
   const [notice, setNotice] = useState<ActiveNotice | null>(null)
   const idRef = useRef(0)
-
-  useEffect(() => {
-    activeNoticeProviders += 1
-    setSuppressGlobalErrorToast(true)
-    return () => {
-      activeNoticeProviders -= 1
-      if (activeNoticeProviders === 0) setSuppressGlobalErrorToast(false)
-    }
-  }, [])
 
   const notify = useCallback((message: string, options?: NotifyOptions) => {
     const variant = options?.variant ?? "success"
@@ -74,6 +84,20 @@ export function NoticeProvider({ children }: { children: ReactNode }) {
       autoCloseMs: options?.autoCloseMs ?? DEFAULT_AUTO_CLOSE[variant],
     })
   }, [])
+
+  useEffect(() => {
+    activeNoticeProviders += 1
+    setSuppressGlobalErrorToast(true)
+    if (pendingNotice) {
+      const queued = pendingNotice
+      pendingNotice = null
+      notify(queued.message, queued.options)
+    }
+    return () => {
+      activeNoticeProviders -= 1
+      if (activeNoticeProviders === 0) setSuppressGlobalErrorToast(false)
+    }
+  }, [notify])
 
   const dismiss = useCallback(() => setNotice(null), [])
 

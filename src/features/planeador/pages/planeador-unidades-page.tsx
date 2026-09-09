@@ -57,6 +57,13 @@ export function PlaneadorUnidadesPage() {
       ? (unidadTabs.find((t) => t.instrumento === search.instrumento) ?? unidadTabs[0])
       : undefined
 
+  // "Agregar unidad" no sirve para todos los docentes: el rótulo de esta
+  // pestaña varía por referente curricular (`instrumento` — "Unidad
+  // temática" en Primaria, "Proyecto pedagógico" en Preescolar, ver
+  // `planeador-tabs.tsx`), así que el botón usa el mismo nombre que la
+  // pestaña activa en vez de "unidad" fijo.
+  const tabLabel = (tabActiva?.instrumento ?? unidadTabs[0]?.instrumento ?? "Unidad temática").toLowerCase()
+
   const filtered = React.useMemo(() => {
     const porInstrumento =
       tabActiva && tabActiva.gradoIds.length > 0
@@ -105,11 +112,11 @@ export function PlaneadorUnidadesPage() {
                 color="primary"
                 size="sm"
                 variant="fill"
-                aria-label="Agregar unidad"
+                aria-label={`Agregar ${tabLabel}`}
                 render={<Link to={paths.app.planeadorUnidadCrear.getHref()} />}
               >
                 <PlusCircleIcon data-icon="inline-start" />
-                Agregar unidad
+                Agregar {tabLabel}
               </Button>
               <Button
                 variant="outline"
