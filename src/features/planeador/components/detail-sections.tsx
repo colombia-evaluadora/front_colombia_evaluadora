@@ -1,6 +1,19 @@
+import { useState } from "react"
+import { useNavigate } from "@tanstack/react-router"
+
 import type { Actividad } from "@/features/planeador/api/types/actividad"
 
 import { formatDate } from "@/features/planeador/lib/format-date"
+import { paths } from "@/config/paths"
+import { useNotify } from "@/components/notice/notice-context"
+import { getErrorMessage } from "@/lib/api-client"
+import { useUnidadDetalleQuery } from "@/features/planeador/api/query/use-unidades-query"
+import { useReferenteCurricularQuery } from "@/features/planeador/api/query/use-referente-curricular-query"
+import { useAgregarEvidenciaActividad } from "@/features/planeador/api/mutations/agregar-evidencia-actividad"
+import {
+  EnunciadosEvidenciasChecklist,
+  UnidadFicha,
+} from "@/features/planeador/components/unidad-evidencias-section"
 
 /**
  * Helpers de layout: `Definition` es un par término/definición; `DefinitionGrid`
@@ -52,19 +65,6 @@ function DefinitionGrid({
   )
 }
 
-function BulletList({ items }: { items: string[] }) {
-  if (items.length === 0) {
-    return <p className="text-muted-foreground text-sm">—</p>
-  }
-  return (
-    <ul className="list-disc space-y-1 pl-5 text-sm">
-      {items.map((item) => (
-        <li key={item}>{item}</li>
-      ))}
-    </ul>
-  )
-}
-
 /**
  * Card de sección: el título va DENTRO de la card, arriba del contenido. Es
  * el tratamiento de todas las secciones de primer nivel del detalle.
@@ -83,35 +83,6 @@ function Section({
       <h3 className="mb-3 text-base font-semibold">{title}</h3>
       {children}
     </section>
-  )
-}
-
-/**
- * Recuadro con el título montado sobre el borde superior. Va solo en el
- * desglose de la unidad, que es el único que lleva ese tratamiento.
- *
- * Es un `<fieldset>` con `<legend>` y no un `div` + `span` posicionado: el
- * navegador ya recorta el borde detrás de la leyenda por su cuenta, así que
- * no hay que pintarle un fondo al título para tapar la línea —y no se rompe
- * cuando el título ocupa dos renglones o cuando el fondo de la card cambia
- * con el tema.
- */
-function FloatingBox({
-  title,
-  children,
-  className,
-}: {
-  title: React.ReactNode
-  children: React.ReactNode
-  className?: string
-}) {
-  return (
-    <fieldset
-      className={`rounded-md border bg-card px-4 pb-4 ${className ?? ""}`}
-    >
-      <legend className="px-1.5 text-sm font-semibold">{title}</legend>
-      {children}
-    </fieldset>
   )
 }
 
@@ -141,23 +112,12 @@ export function DetailSections({ actividad }: DetailSectionsProps) {
         </DefinitionGrid>
 
         {/* 2) Unidad N — anidada dentro de identificación, igual que en el
-            mockup: es el desglose de la unidad que se nombra arriba. */}
-        <FloatingBox title={actividad.unidad.nombre} className="mt-4">
-          <div className="space-y-4">
-            <div>
-              <p className="mb-2 text-sm font-semibold">Contenidos:</p>
-              <BulletList items={actividad.contenidos} />
-            </div>
-            <div>
-              <p className="mb-2 text-sm font-semibold">Objetivos:</p>
-              <BulletList items={actividad.objetivos} />
-            </div>
-            <div>
-              <p className="mb-2 text-sm font-semibold">Descripción:</p>
-              <BulletList items={actividad.descripcionUnidad} />
-            </div>
-          </div>
-        </FloatingBox>
+            mockup: es el desglose de la unidad que se nombra arriba. Solo
+            se muestra con unidad elegida — una actividad huérfana
+            (`unidad.id === 0`) no tiene ficha ni evidencias que ofrecer. */}
+        {actividad.unidad.id !== 0 && (
+          <UnidadFichaYEvidenciasDetalle actividad={actividad} className="mt-4" />
+        )}
 
         <DefinitionGrid cols={2} className="mt-4">
           <Definition term="Asignatura / materia">
@@ -303,6 +263,81 @@ export function DetailSections({ actividad }: DetailSectionsProps) {
           {actividad.observaciones}
         </Definition>
       </Section>
+    </div>
+  )
+}
+
+/**
+ * Ficha de la unidad + checklist de evidencias del panel de detalle
+ * (solo lectura de la actividad en sí, pero acá SÍ se guarda al toque:
+ * tildar una evidencia nueva la manda de una vía `POST .../evidencias`,
+ * sin botón "Guardar" aparte — mismo criterio que "Marcar todo como
+ * Asistió" en Asistencia). El lápiz de la ficha va a editar la UNIDAD
+ * (descripción/objetivos/contenidos son datos de la unidad, no de esta
+ * actividad).
+ *
+ * Igual que en `form-editar-actividad.tsx`, la descripción/objetivos/
+ * contenidos salen de `useUnidadDetalleQuery` y no de la actividad —
+ * `actividad.contenidos`/`objetivos`/`descripcionUnidad` quedan siempre
+ * vacíos contra el backend real (`toActividadDetalle` los deja en `[]`).
+ */
+function UnidadFichaYEvidenciasDetalle({
+  actividad,
+  className,
+}: {
+  actividad: Actividad
+  className?: string
+}) {
+  const navigate = useNavigate()
+  const { notify } = useNotify()
+  const { data: unidad } = useUnidadDetalleQuery(actividad.unidad.id)
+  // Mismo criterio que en `form-editar-actividad.tsx`: el árbol de
+  // evidencias sale del referente curricular de GRADO + ASIGNATURA de la
+  // actividad, no de la unidad.
+  const { data: referente } = useReferenteCurricularQuery(actividad.gradoId, actividad.asignaturaId)
+  const [pendingId, setPendingId] = useState<number | null>(null)
+
+  const agregarEvidencia = useAgregarEvidenciaActividad({
+    mutationConfig: {
+      onSuccess: () => setPendingId(null),
+      onError: (error) => {
+        setPendingId(null)
+        notify(getErrorMessage(error), { variant: "error" })
+      },
+    },
+  })
+
+  function handleToggle(evidenciaId: number) {
+    // Ya relacionada: `EnunciadosEvidenciasChecklist` la manda acá
+    // deshabilitada (ver `disabledIds`), así que este toggle es siempre
+    // un alta nueva — no hace falta distinguir agregar de quitar.
+    setPendingId(evidenciaId)
+    agregarEvidencia.mutate({ actividadId: actividad.id, evidenciaId })
+  }
+
+  return (
+    <div className={className}>
+      <UnidadFicha
+        nombre={unidad?.nombre ?? actividad.unidad.nombre}
+        descripcion={unidad?.descripcion ?? ""}
+        objetivos={unidad?.objetivos ?? []}
+        contenidos={unidad?.contenidos ?? []}
+        onEditar={() =>
+          navigate({ to: paths.app.planeadorUnidadEditar.getHref(String(actividad.unidad.id)) })
+        }
+      />
+      {referente && referente.enunciados.length > 0 && (
+        <EnunciadosEvidenciasChecklist
+          className="mt-4"
+          nivel1Etiqueta={referente.nivel1Etiqueta}
+          nivel2Etiqueta={referente.nivel2Etiqueta}
+          enunciados={referente.enunciados}
+          seleccionadas={actividad.evidenciasIds}
+          onToggle={handleToggle}
+          disabledIds={actividad.evidenciasIds}
+          pendingId={pendingId}
+        />
+      )}
     </div>
   )
 }

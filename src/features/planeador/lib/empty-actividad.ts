@@ -27,6 +27,7 @@ export function crearActividadVacia(): Actividad {
     esRecuperacion: false,
     // `0` es el sentinel de "sin unidad" — ningún PK real es 0.
     unidad: { id: 0, nombre: "" },
+    evidenciasIds: [],
     asignatura: "",
     grado: "",
     grupo: "",

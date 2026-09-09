@@ -60,6 +60,32 @@ function asignaturaIdMock(asignatura: string): number {
   return hashString(`asignatura-${asignatura}`) % 1000000
 }
 
+// Rótulos dinámicos de los dos niveles del árbol de referente curricular
+// (colección Postman `planeador-flujo-unidad-actividad`: "Propósito"/
+// "Imprescindible" en Preescolar, "Enunciado"/"Evidencia" en Primaria). El
+// mock no modela "nivel educativo" aparte — se aproxima con el mismo campo
+// que ya distingue las unidades formativas (Preescolar tiende a serlo) para
+// que la UI tenga ALGO dinámico que mostrar en vez de un literal fijo.
+function nivelEtiquetasMock(enfoquePedagogico: "Evaluativo" | "Formativo"): {
+  nivel1: string
+  nivel2: string
+} {
+  return enfoquePedagogico === "Formativo"
+    ? { nivel1: "Propósito", nivel2: "Imprescindible" }
+    : { nivel1: "Enunciado", nivel2: "Evidencia" }
+}
+
+// Evidencias (nivel 2) de ejemplo para un enunciado — el mock no tiene un
+// catálogo real de evidencias por enunciado, así que arma un par de textos
+// plausibles a partir del propio texto del enunciado, solo para que la
+// sección de checkboxes de la actividad tenga algo real que ofrecer.
+function evidenciasMock(enunciadoId: number, enunciadoTexto: string) {
+  return [
+    { pk: enunciadoId * 100 + 1, texto: `Aplica: ${enunciadoTexto}` },
+    { pk: enunciadoId * 100 + 2, texto: `Refuerza: ${enunciadoTexto}` },
+  ]
+}
+
 /**
  * Endpoints del Planeador bajo `/api/eval-col` — mismo prefijo que el resto
  * del microservicio (roles, menús, planes). El path se duplica acá con la
@@ -85,6 +111,7 @@ const ACTIVIDAD_MIAS_URL = "/api/eval-col/planeador/actividades/mias"
 const ACTIVIDAD_DETAIL_URL = "/api/eval-col/planeador/actividades/:id"
 const ACTIVIDAD_CALIFICACIONES_URL =
   "/api/eval-col/planeador/actividades/:id/calificaciones"
+const ACTIVIDAD_EVIDENCIAS_URL = "/api/eval-col/planeador/actividades/:id/evidencias"
 const ACTIVIDAD_CREATE_URL = "/api/eval-col/planeador/actividades"
 const ACTIVIDAD_DELETE_URL = "/api/eval-col/planeador/actividades/:id"
 const ACTIVIDAD_EXPORT_ALL_URL = "/api/eval-col/planeador/actividades/export-all"
@@ -292,6 +319,7 @@ function actividadFromImportRow(raw: Record<string, unknown>, id: number): Activ
     tipo: String(raw.tipo ?? ""),
     esRecuperacion: false,
     unidad: { id: 0, nombre: String(raw.unidad ?? "") },
+    evidenciasIds: [],
     asignatura: String(raw.asignatura ?? ""),
     grado: String(raw.grado ?? ""),
     grupo: String(raw.grupo ?? ""),
@@ -503,6 +531,26 @@ export const planeadorHandlers = [
     return HttpResponse.json({ status: "ok", actividad: planeadorDb[index] })
   }),
 
+  // Agrega UNA evidencia a una actividad ya creada — mismo camino real que
+  // documenta la colección Postman `planeador-flujo-unidad-actividad`
+  // (nota del paso 7) para cuando no se marcó al crear. No hay endpoint
+  // real confirmado para quitar una ya relacionada, así que el mock
+  // tampoco lo modela (ver `Actividad.evidenciasIds`).
+  http.post(ACTIVIDAD_EVIDENCIAS_URL, async ({ params, request }) => {
+    await delay(200)
+    const id = Number(params.id)
+    const index = planeadorDb.findIndex((row) => row.id === id)
+    if (index === -1) {
+      return HttpResponse.json({ message: "Actividad no encontrada." }, { status: 404 })
+    }
+    const body = (await request.json()) as { FK_TLV_EVIDENCIA: number }
+    const actual = planeadorDb[index]!
+    if (!actual.evidenciasIds.includes(body.FK_TLV_EVIDENCIA)) {
+      actual.evidenciasIds = [...actual.evidenciasIds, body.FK_TLV_EVIDENCIA]
+    }
+    return HttpResponse.json({ status: "ok" })
+  }),
+
   // Calificaciones de la actividad: una fila por estudiante con asistencia
   // y notas por criterio. Mismo sobre `{rows: [...]}` que el resto, para
   // que `evalCol.getRows` lo desempaquete sin casos especiales.
@@ -702,16 +750,19 @@ export const planeadorHandlers = [
       return hashString(`asignatura-${u.asignatura}`) % 1000000 === asignaturaId
     })
 
+    const { nivel1, nivel2 } = nivelEtiquetasMock(unidad?.enfoquePedagogico ?? "Evaluativo")
     return HttpResponse.json({
       rows: [
         {
           especificidad: 0,
           enfoque_valor: unidad?.enfoquePedagogico === "Formativo" ? "FORMATIVO" : "EVALUATIVO",
           tipo_evaluacion_valor: "CUANTITATIVA_CUALITATIVA",
-          enunciados: (unidad?.enunciadosDba ?? []).map((texto, index) => ({
-            pk: index + 1,
-            texto,
-            evidencias: [],
+          nivel_1_etiqueta: nivel1,
+          nivel_2_etiqueta: nivel2,
+          enunciados: (unidad?.enunciadosDba ?? []).map((enunciado) => ({
+            pk: enunciado.id,
+            texto: enunciado.text,
+            evidencias: evidenciasMock(enunciado.id, enunciado.text),
           })),
         },
       ],

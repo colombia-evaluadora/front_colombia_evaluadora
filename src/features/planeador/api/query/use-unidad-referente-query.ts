@@ -18,10 +18,10 @@ import { evalCol } from "@/lib/eval-col-client"
  * no formativo) hasta que la unidad exista.
  *
  * Solo se mapea acá lo que hace falta para "¿es formativa?" (`enfoque_valor`).
- * El árbol completo de enunciados/evidencias (`nivel_1_etiqueta`/
- * `nivel_2_etiqueta`/`enunciados[]`) queda fuera de este hook — es la parte
- * de "referente curricular completo" (marcar evidencias en la actividad)
- * que todavía no tiene UI en el front.
+ * El árbol de enunciados/evidencias para marcar en la actividad NO sale de
+ * acá: sale de `GET /planeador/referente-curricular` (grado + asignatura),
+ * confirmado con una respuesta real — ver `use-referente-curricular-
+ * query.ts` y `EnunciadosEvidenciasChecklist`.
  */
 interface UnidadReferenteRow {
   referente?: { id: number } | null

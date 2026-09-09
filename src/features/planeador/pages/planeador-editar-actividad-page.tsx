@@ -21,6 +21,7 @@ import { useUnidadesQuery } from "@/features/planeador/api/query/use-unidades-qu
 import { useUpdateActividad } from "@/features/planeador/api/mutations/update-actividad"
 import { useLinkActividadUnidad } from "@/features/planeador/api/mutations/link-actividad-unidad"
 import { useUnlinkActividadUnidad } from "@/features/planeador/api/mutations/unlink-actividad-unidad"
+import { useAgregarEvidenciaActividad } from "@/features/planeador/api/mutations/agregar-evidencia-actividad"
 import { EditarActividadForm } from "@/features/planeador/components/forms/form-editar-actividad"
 import type { Actividad } from "@/features/planeador/api/types/actividad"
 
@@ -128,6 +129,15 @@ function EditarActividadPageContent({
   // ya tenía una.
   const linkActividad = useLinkActividadUnidad()
   const unlinkActividad = useUnlinkActividadUnidad({ unidadId: actividad?.unidad.id ?? 0 })
+  // Solo AGREGA evidencias nuevas (ver el comentario de `Actividad.
+  // evidenciasIds`): no hay endpoint confirmado para desvincular una ya
+  // relacionada, así que el checklist del form las deja tildadas y
+  // deshabilitadas — nunca aparecen en el diff de `handleSubmit`.
+  const agregarEvidencia = useAgregarEvidenciaActividad({
+    mutationConfig: {
+      onError: (error) => notify(getErrorMessage(error), { variant: "error" }),
+    },
+  })
   const isSavingUnidad = linkActividad.isPending || unlinkActividad.isPending
 
   async function handleSubmit(values: Actividad) {
@@ -162,6 +172,15 @@ function EditarActividadPageContent({
     }
 
     updateMutation.mutate({ actividadId: actividad.id, data: values })
+
+    // Evidencias marcadas en este submit que todavía no estaban
+    // relacionadas — cada una es su propio `POST`, no hay bulk confirmado.
+    const evidenciasNuevas = values.evidenciasIds.filter(
+      (id) => !actividad.evidenciasIds.includes(id),
+    )
+    for (const evidenciaId of evidenciasNuevas) {
+      agregarEvidencia.mutate({ actividadId: actividad.id, evidenciaId })
+    }
   }
 
   return (

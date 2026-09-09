@@ -111,6 +111,38 @@ function toDateOnly(value: string | null): string {
   return value ? value.slice(0, 10) : ""
 }
 
+/**
+ * Ids de las evidencias ya marcadas para ESTA actividad, leídos de
+ * `unidad_configuracion` (mismo árbol de `GET /unidades/:id/referente`,
+ * ver `use-unidad-referente-query.ts`, pero referido a la actividad en vez
+ * de a la unidad). La colección Postman `planeador-flujo-unidad-actividad`
+ * (paso 8) confirma que el campo existe y que trae el árbol de enunciados/
+ * evidencias, pero no captura un ejemplo real del flag que marca "esta
+ * evidencia ya está en la actividad" — se tolera cualquiera de los nombres
+ * más probables (mismo criterio que `toUnidadReferente` con
+ * `enfoque_valor`/`es_evaluativo`); si el real usa otro, ajustar acá nomás.
+ */
+function evidenciasIdsFromUnidadConfiguracion(raw: unknown): number[] {
+  if (raw == null || typeof raw !== "object") return []
+  const enunciados = (raw as { enunciados?: unknown[] }).enunciados
+  if (!Array.isArray(enunciados)) return []
+
+  const ids: number[] = []
+  for (const enunciado of enunciados) {
+    if (enunciado == null || typeof enunciado !== "object") continue
+    const evidencias = (enunciado as { evidencias?: unknown[] }).evidencias
+    if (!Array.isArray(evidencias)) continue
+    for (const evidencia of evidencias) {
+      if (evidencia == null || typeof evidencia !== "object") continue
+      const e = evidencia as Record<string, unknown>
+      const marcada = e.relacionadaConActividad ?? e.seleccionada ?? e.marcada ?? false
+      const pk = e.pk ?? e.id
+      if (marcada && typeof pk === "number") ids.push(pk)
+    }
+  }
+  return ids
+}
+
 function toActividadDetalle(row: ActividadDetalleRow): Actividad {
   return {
     id: row.pk_tactividad,
@@ -124,6 +156,7 @@ function toActividadDetalle(row: ActividadDetalleRow): Actividad {
       row.fk_tunidad != null
         ? { id: row.fk_tunidad, nombre: row.unidad ?? "" }
         : { id: 0, nombre: "" },
+    evidenciasIds: evidenciasIdsFromUnidadConfiguracion(row.unidad_configuracion),
     asignatura: row.asignatura ?? "",
     grado: row.grado ?? "",
     gradoId: row.fk_tgrado ?? undefined,
