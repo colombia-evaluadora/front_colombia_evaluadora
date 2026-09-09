@@ -122,6 +122,9 @@ const UNIDAD_LIST_URL = "/api/eval-col/planeador/unidades"
 // motivo que `ACTIVIDAD_STATS_URL`/etc. arriba: si no, "tabs" calzaría ahí
 // como si fuera un id.
 const UNIDAD_TABS_URL = "/api/eval-col/planeador/unidades/tabs"
+// Mismo motivo que `UNIDAD_TABS_URL`: registrada antes que `UNIDAD_DETAIL_URL`
+// para que "enunciados" no calce ahí como si fuera un `:id`.
+const UNIDAD_ENUNCIADO_UNLINK_URL = "/api/eval-col/planeador/unidades/enunciados/:id"
 const UNIDAD_DETAIL_URL = "/api/eval-col/planeador/unidades/:id"
 const UNIDAD_CRITERIO_CREATE_URL = "/api/eval-col/planeador/unidades/:id/criterios"
 const UNIDAD_VALORACIONES_URL = "/api/eval-col/planeador/unidades/:id/valoraciones"
@@ -650,6 +653,22 @@ export const planeadorHandlers = [
     return HttpResponse.json({ rows })
   }),
 
+  // Desvincula un enunciado ya relacionado — el mock reusa el pk del
+  // enunciado como si fuera el de la relación (ver el comentario de
+  // `UNIDAD_REFERENTE_URL` sobre `pkTunidadEnunciado`).
+  http.patch(UNIDAD_ENUNCIADO_UNLINK_URL, async ({ params }) => {
+    await delay(150)
+    const pkRelacion = Number(params.id)
+    for (const unidad of unidadesTematicasDb) {
+      const index = unidad.enunciadosDba.findIndex((e) => e.id === pkRelacion)
+      if (index !== -1) {
+        unidad.enunciadosDba.splice(index, 1)
+        break
+      }
+    }
+    return HttpResponse.json({ status: "ok" })
+  }),
+
   http.get(UNIDAD_DETAIL_URL, async ({ params }) => {
     await delay(120)
     const id = Number(params.id)
@@ -721,6 +740,15 @@ export const planeadorHandlers = [
           referente: { id: 1 },
           enfoque_valor: unidad.enfoquePedagogico === "Formativo" ? "FORMATIVO" : "EVALUATIVO",
           tipo_evaluacion_valor: "CUANTITATIVA_CUALITATIVA",
+          // `pkTunidadEnunciado` (pk de la RELACIÓN) — el mock no tiene una
+          // tabla de vínculo aparte, así que reusa el pk del enunciado:
+          // alcanza para poder probar el desvincular en mock.
+          enunciados: unidad.enunciadosDba.map((enunciado) => ({
+            pk: enunciado.id,
+            texto: enunciado.text,
+            relacionadoConUnidad: true,
+            pkTunidadEnunciado: enunciado.id,
+          })),
         },
       ],
     })

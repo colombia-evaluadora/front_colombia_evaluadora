@@ -62,7 +62,7 @@ export interface ReferenteEnunciado {
   evidencias: ReferenteEvidencia[]
 }
 
-export interface ReferenteCurricular extends UnidadReferente {
+export interface ReferenteCurricular extends Omit<UnidadReferente, "enunciados"> {
   /** Default "Enunciado"/"Evidencia" cuando el backend no los manda (sin
    *  referente todavía) — nunca un literal hardcodeado en la UI. */
   nivel1Etiqueta: string
