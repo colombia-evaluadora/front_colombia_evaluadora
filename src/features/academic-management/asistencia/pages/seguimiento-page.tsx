@@ -4,7 +4,7 @@ import { Link } from "@tanstack/react-router"
 import { DataTable } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
 import { Button } from "@/components/ui/button"
-import { CalendarBlankIcon, FileDownloadOutlinedIcon, FunnelIcon } from "@/components/ui/icons"
+import { CalendarBlankIcon, FunnelIcon } from "@/components/ui/icons"
 import { TableScreen, TableScreenBody, TableScreenHeader, TableScreenTitle } from "@/components/layout/table-screen"
 import { NoticeOutlet, NoticeProvider } from "@/components/notice/notice-context"
 import { useDataTable } from "@/hooks/use-data-table"
@@ -18,6 +18,7 @@ import { useTipoAsistenciaCatalogQuery } from "@/features/academic-management/as
 import { SeguimientoSummaryCards } from "@/features/academic-management/asistencia/components/seguimiento-summary-cards"
 import { columnsSeguimiento } from "@/features/academic-management/asistencia/components/columns-seguimiento"
 import { SearchSeguimiento } from "@/features/academic-management/asistencia/components/search/search-seguimiento"
+import { ExportSeguimientoDialog } from "@/features/academic-management/asistencia/components/dialog-export-seguimiento"
 import { catalogosDeSesiones, EMPTY_SEGUIMIENTO_FILTERS } from "@/features/academic-management/asistencia/api/ui-mappings"
 import type { SeguimientoFiltersValues, TipoAsistencia } from "@/features/academic-management/asistencia/api/types/asistencia"
 
@@ -88,17 +89,21 @@ function SeguimientoTable({ sede }: { sede: number }) {
   )
 
   const [primary] = sorting
+  // Mismo objeto para el listado paginado y para el reporte (dialog-export-seguimiento):
+  // el reporte lo genera reporting-service con la MISMA fn_asistencia_listar_seguimiento
+  // sin paginar, así que tiene que ver exactamente lo que ve la tabla.
+  const queryFilters = {
+    FECHA_DESDE: filters.fechaDesde || null,
+    FECHA_HASTA: filters.fechaHasta || null,
+    SEARCH: search || null,
+    GRUPO: filters.grupo ? Number(filters.grupo) : null,
+    ASIGNATURA: filters.asignatura ? Number(filters.asignatura) : null,
+    ACTIVIDAD: filters.actividad ? Number(filters.actividad) : null,
+    TIPO_ASISTENCIA: filters.tipoAsistencia ? (Number(filters.tipoAsistencia) as TipoAsistencia) : null,
+  }
   const { data, isPending, isError, refetch } = useAsistenciaSeguimientoQuery(
     {
-      FILTERS: {
-        FECHA_DESDE: filters.fechaDesde || null,
-        FECHA_HASTA: filters.fechaHasta || null,
-        SEARCH: search || null,
-        GRUPO: filters.grupo ? Number(filters.grupo) : null,
-        ASIGNATURA: filters.asignatura ? Number(filters.asignatura) : null,
-        ACTIVIDAD: filters.actividad ? Number(filters.actividad) : null,
-        TIPO_ASISTENCIA: filters.tipoAsistencia ? (Number(filters.tipoAsistencia) as TipoAsistencia) : null,
-      },
+      FILTERS: queryFilters,
       SORTING: { ID: primary?.id ?? null, DESC: primary ? primary.desc : null },
       PAGEINDEX: pageIndex,
       PAGESIZE: pageSize,
@@ -164,16 +169,9 @@ function SeguimientoTable({ sede }: { sede: number }) {
           tipoAsistenciaOptions={tipoAsistenciaOptions}
         />
 
-        <Button
-          type="button"
-          variant="outline"
-          color="neutral"
-          size="icon-sm"
-          aria-label="Exportar seguimiento"
-          className="ml-auto"
-        >
-          <FileDownloadOutlinedIcon />
-        </Button>
+        <div className="ml-auto">
+          <ExportSeguimientoDialog filters={queryFilters} />
+        </div>
       </div>
 
       {hasFilter ? (

@@ -43,6 +43,7 @@ export type ReportKey =
   | "areas"
   | "escalas"
   | "asignaciones"
+  | "asistencia"
 
 interface ReportInput {
   format: ExportFormat
