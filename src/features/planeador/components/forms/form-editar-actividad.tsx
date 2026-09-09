@@ -172,6 +172,17 @@ interface EditarActividadFormProps {
    * real en vez de bifurcar el componente entero por "crear" vs "editar".
    */
   onSubmit?: (values: Actividad) => void
+  /**
+   * `true` en el alta (`crearActividadVacia`), donde `actividad.id` es un
+   * id de BORRADOR (`draftId()`, un número aleatorio) que nunca existió en
+   * el backend — no un `PK_TACTIVIDAD` real todavía. Sin esta bandera, el
+   * form disparaba igual `GET /actividades/:id/calificaciones` con ese id
+   * inventado (confirmado en vivo: 403, porque esa actividad no existe),
+   * para una lista de estudiantes que en el alta ni siquiera tiene sentido
+   * pedir todavía. Default `false`: la edición confía en que `actividad`
+   * viene de `useActividadDetalleQuery`, con un id real.
+   */
+  esNueva?: boolean
 }
 
 /**
@@ -186,14 +197,16 @@ export function EditarActividadForm({
   onDirtyChange,
   formId,
   onSubmit,
+  esNueva = false,
 }: EditarActividadFormProps) {
   const { data: unidadesResult } = useUnidadesQuery()
   const unidadesQuery = unidadesResult?.rows ?? []
   // Estudiantes del grupo de la actividad — mismo query que alimenta la
   // vista de calificaciones. Se usa acá para el checklist "Seleccionar
   // estudiantes (múltiple)" cuando una adaptación aplica a "Estudiantes
-  // específicos" (ver `AdaptacionItem`).
-  const { data: estudiantes = [] } = useCalificacionesQuery(actividad.id)
+  // específicos" (ver `AdaptacionItem`). `undefined` en el alta: ver la
+  // nota de `esNueva` en `EditarActividadFormProps`.
+  const { data: estudiantes = [] } = useCalificacionesQuery(esNueva ? undefined : actividad.id)
 
   // Unidades creadas al vuelo desde `CrearUnidadPopover`. No vienen del
   // query (no hay endpoint de creación todavía) así que viven en estado
@@ -280,7 +293,7 @@ export function EditarActividadForm({
       <MaterialesSection form={form} />
       <RecursosSection form={form} />
       <ProgramacionSection form={form} />
-      <EvaluacionSection form={form} unidades={unidades} />
+      <EvaluacionSection form={form} unidades={unidades} camposDisponibles={actividad.camposDisponibles} />
       <AdaptacionesSection form={form} estudiantes={estudiantes} />
       <SeguimientoSection form={form} />
     </form>
@@ -647,9 +660,21 @@ function AsignaturaGradoSection({ form }: { form: FormActividad }) {
             <Field variant="outlined">
               <FieldLabel htmlFor={field.name}>Asignatura / materia</FieldLabel>
               <Select
-                value={field.state.value != null ? String(field.state.value) : ""}
+                // `__none__` es el sentinel de "sin elegir" — mismo patrón
+                // que "Unidad temática asociada". Sin un valor propio para
+                // ese estado, no había forma de VOLVER a "sin asignatura"
+                // una vez elegida una: y sin asignatura (ni grado) el
+                // enfoque no se puede derivar, así que "¿Es evaluación
+                // sumativa?" queda libre (ver `EvaluacionSection`) en vez
+                // de bloqueado por una unidad/referente que ya no aplica.
+                value={field.state.value != null ? String(field.state.value) : "__none__"}
                 onValueChange={(v) => {
                   if (!v) return
+                  if (v === "__none__") {
+                    field.handleChange(undefined)
+                    form.setFieldValue("asignatura", "")
+                    return
+                  }
                   const par = asignaturas.find((a) => String(a.asignaturaId) === v)
                   if (!par) return
                   field.handleChange(par.asignaturaId)
@@ -662,17 +687,20 @@ function AsignaturaGradoSection({ form }: { form: FormActividad }) {
                     placeholder={hasGradoGrupo ? "Seleccione" : "Elegí grado/grupo primero"}
                   >
                     {(value) =>
-                      // `||`, no `??`: `asignatura` llega `""` (no
-                      // `undefined`) cuando el detalle real no trae
-                      // ninguna todavía, y `?? "Seleccione"` no cae ahí —
-                      // se veía en blanco en vez del placeholder.
-                      asignaturas.find((a) => String(a.asignaturaId) === value)?.asignaturaNombre ||
-                      asignatura ||
-                      "Seleccione"
+                      value === "__none__"
+                        ? "Seleccione"
+                        : // `||`, no `??`: `asignatura` llega `""` (no
+                          // `undefined`) cuando el detalle real no trae
+                          // ninguna todavía, y `?? "Seleccione"` no cae ahí —
+                          // se veía en blanco en vez del placeholder.
+                          (asignaturas.find((a) => String(a.asignaturaId) === value)?.asignaturaNombre ||
+                            asignatura ||
+                            "Seleccione")
                     }
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="__none__">Seleccione</SelectItem>
                   {asignaturas.map((a) => (
                     <SelectItem key={a.asignaturaId} value={String(a.asignaturaId)}>
                       {a.asignaturaNombre}
@@ -687,9 +715,23 @@ function AsignaturaGradoSection({ form }: { form: FormActividad }) {
         <Field variant="outlined">
           <FieldLabel htmlFor="grado-grupo">Grado / Grupo</FieldLabel>
           <Select
-            value={grupoId != null ? String(grupoId) : ""}
+            // `__none__` es el sentinel de "sin elegir" — mismo criterio
+            // que Asignatura arriba (y que "Unidad temática asociada"):
+            // permite volver a "sin grado/grupo" en vez de quedar pegado a
+            // la primera combinación elegida.
+            value={grupoId != null ? String(grupoId) : "__none__"}
             onValueChange={(v) => {
               if (!v) return
+              if (v === "__none__") {
+                form.setFieldValue("gradoId", undefined)
+                form.setFieldValue("grado", "")
+                form.setFieldValue("grupoId", undefined)
+                form.setFieldValue("grupo", "")
+                form.setFieldValue("asignaturaId", undefined)
+                form.setFieldValue("asignatura", "")
+                form.setFieldValue("unidad", { id: 0, nombre: "" })
+                return
+              }
               const combo = docenteGrupos.find((g) => String(g.grupoId) === v)
               if (!combo) return
               form.setFieldValue("gradoId", combo.gradoId)
@@ -706,6 +748,7 @@ function AsignaturaGradoSection({ form }: { form: FormActividad }) {
             <SelectTrigger id="grado-grupo">
               <SelectValue placeholder="Seleccione">
                 {(value) => {
+                  if (value === "__none__") return "Seleccione"
                   const combo = docenteGrupos.find((g) => String(g.grupoId) === value)
                   if (combo) return `${combo.gradoNombre}/${grupoLabel(combo)}`
                   return [grado, grupo].filter(Boolean).join("/") || "Seleccione"
@@ -713,6 +756,7 @@ function AsignaturaGradoSection({ form }: { form: FormActividad }) {
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="__none__">Seleccione</SelectItem>
               {docenteGrupos.map((g) => (
                 <SelectItem key={g.grupoId} value={String(g.grupoId)}>
                   {g.gradoNombre}/{grupoLabel(g)}
@@ -1314,35 +1358,67 @@ function ProgramacionSection({ form }: { form: FormActividad }) {
 function EvaluacionSection({
   form,
   unidades,
+  camposDisponibles,
 }: {
   form: FormActividad
   unidades: UnidadTematica[]
+  /** `Actividad.camposDisponibles.evaluacion` del detalle real — ver el
+   *  comentario de más abajo sobre por qué manda para actividades sin
+   *  unidad en vez de re-derivar la regla acá. */
+  camposDisponibles: Actividad["camposDisponibles"]
 }) {
-  // El enfoque se deriva del referente curricular REAL de la unidad
-  // elegida (`GET /unidades/:id/referente`, `useUnidadReferenteQuery`) —
+  // Con unidad, el enfoque sale del referente curricular REAL de esa
+  // unidad (`GET /unidades/:id/referente`, `useUnidadReferenteQuery`) —
   // reemplaza a `POST /referentes-curriculares/query`, que responde 403
   // para `CEVAL-DOCENTE` (confirmado en vivo). Una unidad formativa
   // bloquea "¿Es evaluación sumativa?" en "No" (regla de siempre).
   //
-  // SIN unidad (actividad huérfana) el referente NO queda sin poder
-  // derivarse: el mismo árbol se resuelve directo de GRADO + ASIGNATURA
-  // (`GET /referente-curricular`, `useReferenteCurricularQuery` — 3.0 de
-  // la colección), sin necesidad de que exista una unidad todavía. Antes
-  // acá se asumía "no formativa" sin unidad; eso dejaba marcar como
-  // sumativa una actividad huérfana de un grado/asignatura cuyo referente
-  // real es formativo.
+  // SIN unidad (actividad huérfana) hay DOS casos, no uno:
+  //
+  // - Editando una huérfana YA EXISTENTE: el propio detalle real
+  //   (`GET .../actividades/:id`) ya trae la respuesta resuelta en
+  //   `campos_disponibles.evaluacion` (mismo bloque que `GET .../
+  //   configuracion`, carpeta 5) — "visualización construida por
+  //   endpoint", se usa tal cual en vez de re-derivar con
+  //   `useReferenteCurricularQuery(gradoId, asignaturaId)`, que ahí puede
+  //   fallar: `gradoId` depende de cruzar `grupoId` contra el catálogo de
+  //   grupos DEL DOCENTE AUTENTICADO (`AsignaturaGradoSection`), y si la
+  //   actividad es de un grupo que este docente no dicta (dato de otro
+  //   docente/de prueba), ese cruce nunca resuelve y `gradoId` se queda
+  //   `undefined` para siempre.
+  // - Creando una actividad NUEVA (`crearActividadVacia`): todavía no hay
+  //   detalle real, así que `campos_disponibles` es `undefined` — no
+  //   "sin dato = no formativa", sino que hace falta resolverlo por otra
+  //   vía. Acá SÍ funciona `useReferenteCurricularQuery(gradoId,
+  //   asignaturaId)`, porque en el alta el docente elige Grado/Grupo de
+  //   SU PROPIO catálogo (no de una actividad ajena), así que `gradoId`
+  //   siempre resuelve.
   const unidadIdRaw = useSelector(form.store, (state) => state.values.unidad.id)
   const unidadId = unidadIdRaw || undefined
   const gradoId = useSelector(form.store, (state) => state.values.gradoId)
   const asignaturaId = useSelector(form.store, (state) => state.values.asignaturaId)
 
+  // Grado/Asignatura ahora se pueden volver a dejar en "Seleccione" (ver
+  // `AsignaturaGradoSection`) — pero `camposDisponibles` es una foto FIJA
+  // del detalle con el que se abrió el form, tomada cuando SÍ tenían un
+  // grado/asignatura. Sin este chequeo, limpiar los dos de vuelta a
+  // "Seleccione" seguía bloqueando "¿Es evaluación sumativa?" con esa foto
+  // vieja, como si el grado/asignatura que ya no está siguiera aplicando.
+  const sinGradoNiAsignatura = gradoId == null && asignaturaId == null
+  const sinUnidadNiDetalle = unidadId == null && camposDisponibles == null
   const { data: referenteDeUnidad } = useUnidadReferenteQuery(unidadId)
   const { data: referenteDeGradoAsignatura } = useReferenteCurricularQuery(
-    unidadId == null ? gradoId : undefined,
-    unidadId == null ? asignaturaId : undefined,
+    sinUnidadNiDetalle ? gradoId : undefined,
+    sinUnidadNiDetalle ? asignaturaId : undefined,
   )
-  const referente = unidadId != null ? referenteDeUnidad : referenteDeGradoAsignatura
-  const esFormativa = referente?.esFormativo ?? false
+
+  const bloqueadaPorOrfandad =
+    unidadId == null &&
+    !sinGradoNiAsignatura &&
+    (camposDisponibles != null
+      ? camposDisponibles.evaluacion.visible === false
+      : (referenteDeGradoAsignatura?.esFormativo ?? false))
+  const esFormativa = unidadId != null ? (referenteDeUnidad?.esFormativo ?? false) : bloqueadaPorOrfandad
 
   // `disabled={esFormativa}` de abajo solo bloquea el control — no corrige
   // el VALOR. Sin esto, una actividad que ya traía `esEvaluativa: true` al

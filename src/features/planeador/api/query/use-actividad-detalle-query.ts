@@ -13,8 +13,11 @@ import type { Actividad } from "@/features/planeador/api/types/actividad"
  * accederle `.nombre` directo, como hacía `detail-sections.tsx`, revienta
  * con "Cannot read properties of null"), y trae `campos_disponibles`/
  * `unidad_configuracion` (el mismo bloque de "pintado dinámico" de
- * `GET .../configuracion`, carpeta 5 — todavía no cableado en el front,
- * queda sin usar acá).
+ * `GET .../configuracion`, carpeta 5). `campos_disponibles` SÍ se mapea
+ * (`Actividad.camposDisponibles`, ver `EvaluacionSection` en
+ * `form-editar-actividad.tsx`, que lo usa para actividades huérfanas en vez
+ * de re-derivar la regla con `referente-curricular`); `unidad_configuracion`
+ * queda sin usar todavía.
  *
  * Ojo con lo que esta fila NO trae: ni rastro de `rubrica`/`listaCotejo`/
  * `escalaValoracion` — el instrumento de la actividad vive en
@@ -72,9 +75,26 @@ interface ActividadDetalleRow {
   materiales: unknown[]
   adaptaciones: unknown[]
   recuperacion: unknown
-  campos_disponibles: unknown
+  campos_disponibles: CamposDisponiblesRow | null
   unidad_configuracion: unknown
   active: boolean
+}
+
+/** Confirmado contra una respuesta real (actividad huérfana, sin unidad):
+ *  `evaluacion.visible: false` con motivo "La actividad no tiene unidad
+ *  relacionada" — el backend ya resuelve ahí "¿corresponde mostrar/exigir
+ *  esto?" con las reglas de negocio completas (huérfana, unidad con
+ *  referente FORMATIVO, etc.), no solo un derivado de grado/asignatura. */
+interface CampoDisponibleRow {
+  visible: boolean
+  requerido: boolean
+  motivo: string
+}
+
+interface CamposDisponiblesRow {
+  criterio: CampoDisponibleRow
+  evaluacion: CampoDisponibleRow & { instrumentosPermitidos: string[] }
+  ponderacion: CampoDisponibleRow & { modo: string | null }
 }
 
 function toDateOnly(value: string | null): string {
@@ -140,6 +160,7 @@ function toActividadDetalle(row: ActividadDetalleRow): Actividad {
     adaptaciones: [],
     asignaturaId: row.fk_tasignatura ?? undefined,
     grupoId: row.fk_tgrupo ?? undefined,
+    camposDisponibles: row.campos_disponibles ?? undefined,
   }
 }
 
