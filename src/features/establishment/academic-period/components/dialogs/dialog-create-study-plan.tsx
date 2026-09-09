@@ -250,7 +250,7 @@ export function CreateStudyPlanDialog({
       <DialogPortal>
         <DialogOverlay forceRender className="bg-black/30" />
       </DialogPortal>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl" inert={confirmDiscardOpen}>
         <DialogHeader>
           <DialogTitle>
             {isEditing ? "Editar plan de estudio" : "Agregar plan de estudio"}
