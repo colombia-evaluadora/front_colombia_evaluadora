@@ -1539,7 +1539,7 @@ function EvaluacionSection({
           elegido arriba y la `Ponderación (%)` de abajo — antes era un
           `Card` hermano y suelto, separado de este. Sin condición: ver el
           comentario del `<Select>` de arriba. */}
-      <InstrumentoEvaluacionSection form={form} />
+      <InstrumentoEvaluacionSection form={form} unidades={unidades} />
 
       {/* Ponderación va AL FINAL, después de la definición del
           instrumento (Rúbrica/Lista de cotejo). La lectura del form es:
@@ -1595,16 +1595,22 @@ function EvaluacionSection({
  * pierde lo cargado en los otros: si el usuario prueba "Lista de
  * cotejo" y vuelve a "Rúbrica", sus criterios siguen ahí.
  */
-function InstrumentoEvaluacionSection({ form }: { form: FormActividad }) {
+function InstrumentoEvaluacionSection({
+  form,
+  unidades,
+}: {
+  form: FormActividad
+  unidades: UnidadTematica[]
+}) {
   return (
     <form.Subscribe selector={(state) => state.values.instrumento}>
       {(instrumento) =>
         instrumento === "Lista de cotejo" ? (
           <ListaCotejoSection form={form} />
         ) : instrumento === "Escala de valoración" ? (
-          <EscalaValoracionSection form={form} />
+          <EscalaValoracionSection form={form} unidades={unidades} />
         ) : instrumento === "Otro" ? (
-          <InstrumentoPersonalizadoSection form={form} />
+          <InstrumentoPersonalizadoSection form={form} unidades={unidades} />
         ) : (
           <RubricasSection form={form} />
         )
@@ -1793,7 +1799,45 @@ function nextNivelCualitativoNombre(existingCount: number): string {
   return NIVELES_CUALITATIVOS_DEFAULT[existingCount] ?? `Nivel ${existingCount + 1}`
 }
 
-function EscalaValoracionSection({ form }: { form: FormActividad }) {
+/**
+ * Punto de partida de la Escala Cualitativa: si la actividad está vinculada
+ * a una unidad que YA tiene su propia Rúbrica definida (pestaña "Rúbricas"
+ * de la unidad, `unidad.criterios` — cada uno con un nivel de desempeño por
+ * columna, ver `CriterioUnidad`), se reusan esos MISMOS nombres de nivel
+ * ("Bajo"/"Básico"/"Alto"/"Superior" o los que traiga la escala de
+ * valoración configurada para el nivel educativo de la unidad) y, como
+ * descripción, lo que el docente ya escribió ahí para cada nivel —juntando
+ * las de todos los criterios cuando hay más de uno, así no arranca en
+ * blanco algo que ya se definió a nivel unidad. Es solo un DRAFT: son
+ * niveles independientes de los de la unidad, así que el docente puede
+ * editarlos o borrarlos sin que eso toque la Rúbrica de la unidad.
+ *
+ * Sin unidad, o con una unidad que todavía no tiene criterios cargados, cae
+ * al default fijo `NIVELES_CUALITATIVOS_DEFAULT`.
+ */
+function nivelesCualitativosDesdeUnidad(
+  unidad: UnidadTematica | undefined,
+): { nombre: string; descripcion: string }[] | null {
+  const primerCriterio = unidad?.criterios[0]
+  if (!primerCriterio || primerCriterio.niveles.length === 0) return null
+  return primerCriterio.niveles.map((nivel) => {
+    const descripciones = unidad!.criterios
+      .map((criterio) => criterio.niveles.find((n) => n.nombre === nivel.nombre)?.descripcion.trim())
+      .filter((descripcion): descripcion is string => !!descripcion)
+    return { nombre: nivel.nombre, descripcion: descripciones.join(" / ") }
+  })
+}
+
+function EscalaValoracionSection({
+  form,
+  unidades,
+}: {
+  form: FormActividad
+  unidades: UnidadTematica[]
+}) {
+  const unidadId = useSelector(form.store, (state) => state.values.unidad.id) || undefined
+  const unidadActual = unidades.find((u) => u.id === unidadId)
+
   return (
     <Card className="gap-4 p-4">
       <h3 className="text-base font-semibold">Definición Escala de Valoración</h3>
@@ -1850,11 +1894,13 @@ function EscalaValoracionSection({ form }: { form: FormActividad }) {
                             // no se pisa nada.
                             const niveles =
                               tipo === "Cualitativa" && escala.niveles.length === 0
-                                ? NIVELES_CUALITATIVOS_DEFAULT.map((nombre) => ({
-                                    id: cryptoId(),
-                                    nombre,
-                                    descripcion: "",
-                                  }))
+                                ? (
+                                    nivelesCualitativosDesdeUnidad(unidadActual) ??
+                                    NIVELES_CUALITATIVOS_DEFAULT.map((nombre) => ({
+                                      nombre,
+                                      descripcion: "",
+                                    }))
+                                  ).map((nivel) => ({ id: cryptoId(), ...nivel }))
                                 : escala.niveles
                             updateEscala({ tipo, niveles })
                           }}
@@ -1941,7 +1987,24 @@ function EscalaValoracionSection({ form }: { form: FormActividad }) {
                             size="icon-sm"
                             type="button"
                             aria-label="Agregar definición cualitativa"
-                            onClick={() =>
+                            onClick={() => {
+                              // Lista vacía (p. ej. una actividad que ya
+                              // traía `tipo: "Cualitativa"` guardado, sin
+                              // pasar por el `RadioGroup` de arriba): el "+"
+                              // siembra todo el set por defecto de una, no
+                              // un único nivel — mismo criterio que cambiar
+                              // "Escala" a Cualitativa por primera vez.
+                              if (escala.niveles.length === 0) {
+                                const niveles = (
+                                  nivelesCualitativosDesdeUnidad(unidadActual) ??
+                                  NIVELES_CUALITATIVOS_DEFAULT.map((nombre) => ({
+                                    nombre,
+                                    descripcion: "",
+                                  }))
+                                ).map((nivel) => ({ id: cryptoId(), ...nivel }))
+                                updateEscala({ niveles })
+                                return
+                              }
                               updateEscala({
                                 niveles: [
                                   ...escala.niveles,
@@ -1952,7 +2015,7 @@ function EscalaValoracionSection({ form }: { form: FormActividad }) {
                                   },
                                 ],
                               })
-                            }
+                            }}
                           >
                             <PlusCircleIcon />
                           </Button>
@@ -2067,7 +2130,13 @@ function EscalaValoracionSection({ form }: { form: FormActividad }) {
  * elegido directamente — mismos campos, mismas reglas de negocio, el
  * mismo `rubrica`/`listaCotejo`/`escalaValoracion` del form.
  */
-function InstrumentoPersonalizadoSection({ form }: { form: FormActividad }) {
+function InstrumentoPersonalizadoSection({
+  form,
+  unidades,
+}: {
+  form: FormActividad
+  unidades: UnidadTematica[]
+}) {
   return (
     <Card className="gap-4 p-4">
       <h3 className="text-base font-semibold">Definición del instrumento personalizado</h3>
@@ -2149,7 +2218,7 @@ function InstrumentoPersonalizadoSection({ form }: { form: FormActividad }) {
               ) : value.metodoValoracion === "Lista de cotejo" ? (
                 <ListaCotejoSection form={form} />
               ) : value.metodoValoracion === "Escala de valoración" ? (
-                <EscalaValoracionSection form={form} />
+                <EscalaValoracionSection form={form} unidades={unidades} />
               ) : null}
 
               <div className="flex flex-col gap-2">
