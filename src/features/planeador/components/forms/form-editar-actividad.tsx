@@ -48,6 +48,7 @@ import {
   FileUploadOutlinedIcon,
   FolderOpenIcon,
   ImageIcon,
+  InfoIcon,
   InsertLinkOutlinedIcon,
   PermMediaOutlinedIcon,
   PlusCircleIcon,
@@ -2960,79 +2961,98 @@ function CrearUnidadPopover({
         align="end"
         side="bottom"
         sideOffset={8}
-        className="w-80"
+        // `gap-0` anula el `gap-4` parejo que trae `PopoverContent` por
+        // default: acá el espaciado lo maneja cada bloque a mano (título,
+        // scroll, footer), no una grilla uniforme de hijos sueltos —así
+        // el título y el botón "Guardar" quedan fijos y solo el cuerpo
+        // largo (contenidos/objetivos/DBA) scrollea por dentro en vez de
+        // estirar el popover fuera de la pantalla.
+        className="w-96 gap-0 p-0"
       >
-        <h3 className="text-base font-semibold">Crear nueva unidad temática</h3>
+        <h3 className="border-b px-4 py-3 text-base font-semibold">
+          Crear nueva unidad temática
+        </h3>
 
         {!hasGradoAsignatura && (
-          <p className="text-muted-foreground text-xs">
+          <div className="border-blue-stroke bg-blue-22 text-blue m-4 flex items-start gap-2 rounded-md border p-3 text-xs">
+            <InfoIcon className="mt-0.5 size-4 shrink-0" />
             Elegí Grado/Grupo y Asignatura de la actividad primero.
-          </p>
+          </div>
         )}
 
-        <Field variant="outlined">
-          <FieldLabel>Nombre de la unidad</FieldLabel>
-          <Input
-            placeholder="Agregar"
-            value={nombre}
-            onChange={(e) => setNombre(e.target.value)}
-          />
-        </Field>
+        <div className="scrollbar-slim flex max-h-[60vh] flex-col gap-5 overflow-y-auto p-4">
+          <Field variant="outlined">
+            <FieldLabel>Nombre de la unidad</FieldLabel>
+            <Input
+              placeholder="Agregar"
+              value={nombre}
+              onChange={(e) => setNombre(e.target.value)}
+            />
+          </Field>
 
-        <ListaAgregableField
-          label="Contenidos temáticos vinculados"
-          items={contenidos}
-          onChange={setContenidos}
-        />
+          <Field variant="outlined">
+            <FieldLabel>Descripción breve</FieldLabel>
+            <Textarea
+              rows={3}
+              placeholder="Propósito pedagógico y dinámica general"
+              value={descripcion}
+              onChange={(e) => setDescripcion(e.target.value)}
+              className={TEXTAREA_OUTLINED}
+            />
+          </Field>
 
-        <ListaAgregableField
-          label="Objetivos específicos relacionados"
-          items={objetivos}
-          onChange={setObjetivos}
-        />
+          {/* Objetivos/Contenidos agrupados en una sola sección con
+              separador: son las dos listas "libres" de la unidad, antes de
+              DBA (que sí depende de un catálogo) y del método de cálculo
+              (que es una decisión aparte, de negocio). */}
+          <div className="flex flex-col gap-4 border-t pt-4">
+            <ListaAgregableField
+              label="Objetivos específicos relacionados"
+              items={objetivos}
+              onChange={setObjetivos}
+            />
 
-        <Field variant="outlined">
-          <FieldLabel>Descripción breve</FieldLabel>
-          <Textarea
-            rows={3}
-            placeholder="Propósito pedagógico y dinámica general"
-            value={descripcion}
-            onChange={(e) => setDescripcion(e.target.value)}
-            className={TEXTAREA_OUTLINED}
-          />
-        </Field>
+            <ListaAgregableField
+              label="Contenidos temáticos vinculados"
+              items={contenidos}
+              onChange={setContenidos}
+            />
+          </div>
 
-        <ListaAgregableCajaSelect
-          title="Derechos Básicos de Aprendizaje"
-          description="Selecciona los enunciados de DBA asociados a esta unidad."
-          columnLabel="Enunciados"
-          items={enunciadosDba}
-          options={enunciadosDisponibles.map((e) => e.text)}
-          onChange={setEnunciadosDba}
-          disabled={!hasGradoAsignatura}
-          isPending={isPendingEnunciados}
-        />
+          <div className="border-t pt-4">
+            <ListaAgregableCajaSelect
+              title="Derechos Básicos de Aprendizaje"
+              description="Selecciona los enunciados de DBA asociados a esta unidad."
+              columnLabel="Enunciados"
+              items={enunciadosDba}
+              options={enunciadosDisponibles.map((e) => e.text)}
+              onChange={setEnunciadosDba}
+              disabled={!hasGradoAsignatura}
+              isPending={isPendingEnunciados}
+            />
+          </div>
 
-        <Field variant="outlined">
-          <FieldLabel>Método de cálculo</FieldLabel>
-          <Select
-            value={metodoCalculo}
-            onValueChange={(v) => v && setMetodoCalculo(v as MetodoCalculo)}
-          >
-            <SelectTrigger>
-              <SelectValue>{(v) => METODO_CALCULO_INFO[v as MetodoCalculo]?.label ?? v}</SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {METODO_CALCULO_OPTIONS.map((option) => (
-                <SelectItem key={option} value={option}>
-                  {METODO_CALCULO_INFO[option].label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </Field>
+          <Field variant="outlined" className="border-t pt-4">
+            <FieldLabel>Método de cálculo</FieldLabel>
+            <Select
+              value={metodoCalculo}
+              onValueChange={(v) => v && setMetodoCalculo(v as MetodoCalculo)}
+            >
+              <SelectTrigger>
+                <SelectValue>{(v) => METODO_CALCULO_INFO[v as MetodoCalculo]?.label ?? v}</SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {METODO_CALCULO_OPTIONS.map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {METODO_CALCULO_INFO[option].label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+        </div>
 
-        <div className="flex justify-end">
+        <div className="flex justify-end border-t p-4">
           <Button
             variant="fill"
             color="primary"
