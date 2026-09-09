@@ -254,12 +254,29 @@ export function createUnidadActividadesColumns(
           >
             <PencilIcon />
           </Button>
+          {/* Chulito: abre el panel del listado principal directo en modo
+              "Marcar" (`?modo=grades`), la misma vista que el botón ✓ del
+              header de `ActividadDetallePanel`. */}
+          <Button
+            variant="ghost"
+            color="neutral"
+            size="icon-sm"
+            aria-label={`Calificar ${row.original.nombre}`}
+            render={
+              <Link
+                to={planeadorRoute.id}
+                search={{ actividad: String(row.original.actividadId), modo: "grades" }}
+              />
+            }
+          >
+            <CheckIcon />
+          </Button>
           <BotonDesvincular actividad={row.original} unidadId={unidadId} />
         </div>
       ),
       enableSorting: false,
       enableHiding: false,
-      size: 176,
+      size: 208,
     },
   ]
 }

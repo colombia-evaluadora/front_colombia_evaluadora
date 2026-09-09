@@ -23,6 +23,10 @@ export const planeadorSearchSchema = z.object({
   /** Día activo de la barra "Hoy | MARTES 16 | < >" (`yyyy-MM-dd`), que
    *  pagina el rail por `?dia=` (`GET /actividades/mias`). Ausente = hoy. */
   dia: z.string().optional().catch(undefined),
+  /** Modo del panel de detalle de `actividad`: info (default) | grades
+   *  (botón "Marcar") | approval (botón "Aprobar"). Va en la URL por el
+   *  mismo motivo que `actividad` — enlazable y sobrevive al refresh. */
+  modo: z.enum(["info", "grades", "approval"]).optional().catch(undefined),
 })
 export type PlaneadorSearch = z.infer<typeof planeadorSearchSchema>
 

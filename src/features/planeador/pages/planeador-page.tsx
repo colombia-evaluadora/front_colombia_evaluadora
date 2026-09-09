@@ -74,10 +74,14 @@ export function PlaneadorPage() {
   // Actividad abierta en el panel derecho. `undefined` => se muestra el
   // calendario.
   const actividadId = search.actividad ?? undefined
+  // Cambiar de actividad (o cerrar el panel) resetea `modo` a "info": el
+  // modo vive suelto en la URL, no por actividad, así que sin este reset
+  // seleccionar otra card conservaría "grades"/"approval" de la anterior.
+  // `setMode` pisa este `undefined` con el modo pedido en el mismo navigate.
   const setActividadId = (next: string | undefined) =>
     navigate({
       to: planeadorRoute.id,
-      search: (prev) => ({ ...prev, actividad: next }),
+      search: (prev) => ({ ...prev, actividad: next, modo: undefined }),
       replace: true,
     })
 
@@ -97,28 +101,21 @@ export function PlaneadorPage() {
     () => new Date(new Date().getFullYear(), new Date().getMonth(), 1),
   )
 
-  // Modo del panel de detalle por actividad. Map `id → modo` en vez de dos
-  // flags sueltos: la última acción del usuario gana (Marcar después de
-  // Aprobar cambia a grades, no se queda en approval por orden de check).
-  // Si la entrada no existe para la actividad activa, cae a "info".
-  // Los handlers también setean `actividadId` — sin ese paso, clickear el
-  // chulito estando en el calendario no abría el panel.
-  const [panelModeByActividad, setPanelModeByActividad] = React.useState<
-    Record<string, "info" | "grades" | "approval">
-  >({})
-
-  const panelMode: "info" | "grades" | "approval" =
-    actividadId !== undefined
-      ? panelModeByActividad[actividadId] ?? "info"
-      : "info"
+  // Modo del panel de detalle de la actividad abierta (`?modo=`), en la URL
+  // por el mismo motivo que `actividadId`/`dia`: enlazable y sobrevive al
+  // refresh. Ausente == "info".
+  const panelMode: "info" | "grades" | "approval" = search.modo ?? "info"
 
   // Abre el panel en una actividad y le setea el modo pedido. Se usa tanto
   // desde la card (Marcar / Aprobar) como desde los mismos botones del
   // header del panel — así el comportamiento es idéntico sin importar
   // desde dónde se disparen.
   function setMode(actividadId: string, mode: "grades" | "approval") {
-    setActividadId(actividadId)
-    setPanelModeByActividad((prev) => ({ ...prev, [actividadId]: mode }))
+    navigate({
+      to: planeadorRoute.id,
+      search: (prev) => ({ ...prev, actividad: actividadId, modo: mode }),
+      replace: true,
+    })
   }
 
   // 3 endpoints reales en vez del hack de traer TODO con `size=500` y
