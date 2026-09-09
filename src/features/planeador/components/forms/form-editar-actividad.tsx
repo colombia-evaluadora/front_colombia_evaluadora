@@ -304,7 +304,12 @@ export function EditarActividadForm({
       <MaterialesSection form={form} />
       <RecursosSection form={form} />
       <ProgramacionSection form={form} />
-      <EvaluacionSection form={form} unidades={unidades} camposDisponibles={actividad.camposDisponibles} />
+      <EvaluacionSection
+        form={form}
+        unidades={unidades}
+        camposDisponibles={actividad.camposDisponibles}
+        actividadUnidadId={actividad.unidad.id}
+      />
       <AdaptacionesSection form={form} estudiantes={estudiantes} />
       <SeguimientoSection form={form} />
     </form>
@@ -1390,44 +1395,44 @@ function EvaluacionSection({
   form,
   unidades,
   camposDisponibles,
+  actividadUnidadId,
 }: {
   form: FormActividad
   unidades: UnidadTematica[]
-  /** `Actividad.camposDisponibles.evaluacion` del detalle real — ver el
-   *  comentario de más abajo sobre por qué manda para actividades sin
-   *  unidad en vez de re-derivar la regla acá. */
+  /** `Actividad.camposDisponibles.evaluacion` del detalle real — foto FIJA
+   *  tomada para la unidad con la que se abrió el form (`actividadUnidadId`).
+   *  Ver el comentario de más abajo sobre cuándo manda esta foto en vez de
+   *  re-derivar la regla en vivo. */
   camposDisponibles: Actividad["camposDisponibles"]
+  /** `actividad.unidad.id` tal como vino en el detalle real (`0` = sin
+   *  unidad, mismo sentinel que el resto del form) — para saber si
+   *  `camposDisponibles` sigue aplicando o quedó obsoleto porque el usuario
+   *  cambió de unidad en el form (ver `camposDisponiblesAplica`). */
+  actividadUnidadId: number
 }) {
-  // Con unidad, el enfoque sale del referente curricular REAL de esa
-  // unidad (`GET /unidades/:id/referente`, `useUnidadReferenteQuery`) —
-  // reemplaza a `POST /referentes-curriculares/query`, que responde 403
-  // para `CEVAL-DOCENTE` (confirmado en vivo). Una unidad formativa
-  // bloquea "¿Es evaluación sumativa?" en "No" (regla de siempre).
-  //
-  // SIN unidad (actividad huérfana) hay DOS casos, no uno:
-  //
-  // - Editando una huérfana YA EXISTENTE: el propio detalle real
-  //   (`GET .../actividades/:id`) ya trae la respuesta resuelta en
-  //   `campos_disponibles.evaluacion` (mismo bloque que `GET .../
-  //   configuracion`, carpeta 5) — "visualización construida por
-  //   endpoint", se usa tal cual en vez de re-derivar con
-  //   `useReferenteCurricularQuery(gradoId, asignaturaId)`, que ahí puede
-  //   fallar: `gradoId` depende de cruzar `grupoId` contra el catálogo de
-  //   grupos DEL DOCENTE AUTENTICADO (`AsignaturaGradoSection`), y si la
-  //   actividad es de un grupo que este docente no dicta (dato de otro
-  //   docente/de prueba), ese cruce nunca resuelve y `gradoId` se queda
-  //   `undefined` para siempre.
-  // - Creando una actividad NUEVA (`crearActividadVacia`): todavía no hay
-  //   detalle real, así que `campos_disponibles` es `undefined` — no
-  //   "sin dato = no formativa", sino que hace falta resolverlo por otra
-  //   vía. Acá SÍ funciona `useReferenteCurricularQuery(gradoId,
-  //   asignaturaId)`, porque en el alta el docente elige Grado/Grupo de
-  //   SU PROPIO catálogo (no de una actividad ajena), así que `gradoId`
-  //   siempre resuelve.
   const unidadIdRaw = useSelector(form.store, (state) => state.values.unidad.id)
   const unidadId = unidadIdRaw || undefined
   const gradoId = useSelector(form.store, (state) => state.values.gradoId)
   const asignaturaId = useSelector(form.store, (state) => state.values.asignaturaId)
+
+  // `campos_disponibles.evaluacion` (mismo bloque que `GET .../
+  // configuracion`, carpeta 5) es la respuesta YA RESUELTA por el backend
+  // con TODAS sus reglas de negocio (huérfana, unidad sin referente,
+  // referente FORMATIVO, grado de preescolar, …) — manda sobre cualquier
+  // re-derivación en el cliente, CON o SIN unidad: antes esta foto solo se
+  // usaba para actividades huérfanas y, con unidad, se re-derivaba en vivo
+  // con `useUnidadReferenteQuery(unidadId)` (`GET /unidades/:id/referente`)
+  // — pero para una actividad cuya propia unidad SÍ tiene un referente
+  // FORMATIVO confirmado (`campos_disponibles.evaluacion.visible: false`),
+  // esa re-derivación podía no coincidir y dejaba "¿Es evaluación
+  // sumativa?" sin bloquear pese a que el backend ya lo tenía resuelto.
+  //
+  // Sigue aplicando solo mientras la unidad elegida en el form sea la MISMA
+  // con la que se tomó la foto (`unidadId === actividadUnidadId`, sentinel
+  // `undefined`/`0` incluido para el caso huérfano): si el usuario cambia
+  // de unidad —o le agrega una a una huérfana— la foto quedó vieja y hace
+  // falta resolver en vivo contra la unidad nueva.
+  const camposDisponiblesAplica = camposDisponibles != null && (unidadId ?? 0) === actividadUnidadId
 
   // Grado/Asignatura ahora se pueden volver a dejar en "Seleccione" (ver
   // `AsignaturaGradoSection`) — pero `camposDisponibles` es una foto FIJA
@@ -1436,20 +1441,26 @@ function EvaluacionSection({
   // "Seleccione" seguía bloqueando "¿Es evaluación sumativa?" con esa foto
   // vieja, como si el grado/asignatura que ya no está siguiera aplicando.
   const sinGradoNiAsignatura = gradoId == null && asignaturaId == null
-  const sinUnidadNiDetalle = unidadId == null && camposDisponibles == null
-  const { data: referenteDeUnidad } = useUnidadReferenteQuery(unidadId)
+  // SIN unidad Y sin foto vigente hay dos casos: editando una huérfana cuya
+  // foto quedó vieja (grado/asignatura recién cambiados en el form), o
+  // dando de alta una actividad nueva (`crearActividadVacia`, todavía sin
+  // detalle real) — en ambos se resuelve en vivo por grado/asignatura, que
+  // en el alta siempre resuelve porque el docente elige de su propio
+  // catálogo (ver `AsignaturaGradoSection`).
+  const sinUnidadNiDetalle = unidadId == null && !camposDisponiblesAplica
+  const { data: referenteDeUnidad } = useUnidadReferenteQuery(
+    !camposDisponiblesAplica && unidadId != null ? unidadId : undefined,
+  )
   const { data: referenteDeGradoAsignatura } = useReferenteCurricularQuery(
     sinUnidadNiDetalle ? gradoId : undefined,
     sinUnidadNiDetalle ? asignaturaId : undefined,
   )
 
-  const bloqueadaPorOrfandad =
-    unidadId == null &&
-    !sinGradoNiAsignatura &&
-    (camposDisponibles != null
-      ? camposDisponibles.evaluacion.visible === false
-      : (referenteDeGradoAsignatura?.esFormativo ?? false))
-  const esFormativa = unidadId != null ? (referenteDeUnidad?.esFormativo ?? false) : bloqueadaPorOrfandad
+  const esFormativa = camposDisponiblesAplica
+    ? camposDisponibles!.evaluacion.visible === false
+    : unidadId != null
+      ? (referenteDeUnidad?.esFormativo ?? false)
+      : !sinGradoNiAsignatura && (referenteDeGradoAsignatura?.esFormativo ?? false)
 
   // `disabled={esFormativa}` de abajo solo bloquea el control — no corrige
   // el VALOR. Sin esto, una actividad que ya traía `esEvaluativa: true` al
@@ -1491,49 +1502,44 @@ function EvaluacionSection({
           )}
         </form.Field>
 
-        {/* Igual que "¿Es evaluación sumativa?": el backend real solo
-            ofrece evaluación (`campos_disponibles.evaluacion.visible`)
-            cuando la unidad tiene referente EVALUATIVO. Antes este select
-            —y toda la definición de instrumento de abajo— se mostraban
-            siempre, sin importar `esFormativa`: se podía armar una rúbrica
-            entera para una actividad formativa y recién el backend la
-            rechazaba al guardar ("El instrumento de evaluación no aplica:
-            el referente curricular de la unidad no es EVALUATIVO"). Ocultar
-            la sección entera evita ofrecer algo que nunca se va a poder
-            guardar. */}
-        {!esFormativa && (
-          <form.Field name="instrumento">
-            {(field) => (
-              <Field variant="outlined">
-                <FieldLabel htmlFor={field.name}>Instrumento de evaluación</FieldLabel>
-                <Select value={field.state.value} onValueChange={(v) => v && field.handleChange(v)} >
-                  <SelectTrigger id={field.name}>
-                    <SelectValue>
-                      {(value) => (value === "Otro" ? "Otro (personalizado)" : (value as string))}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {instrumentos.map((instrumento) => (
-                      <SelectItem key={instrumento} value={instrumento}>
-                        {instrumento === "Otro" ? "Otro (personalizado)" : instrumento}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
-            )}
-          </form.Field>
-        )}
+        {/* El instrumento (y su definición, más abajo) se muestran
+            SIEMPRE, sin importar `esEvaluativa`/`esFormativa`: una
+            actividad puesta en "No" —a mano, o forzada por un referente
+            formativo— puede seguir teniendo una Rúbrica/Lista de cotejo ya
+            guardada (p. ej. si el referente de la unidad cambió después de
+            crearla), y ocultarla de golpe la tapaba sin forma de
+            verla/editarla. Lo único que deja de aplicar con "No" es el
+            puntaje/ponderación (ver el `form.Subscribe` de más abajo). */}
+        <form.Field name="instrumento">
+          {(field) => (
+            <Field variant="outlined">
+              <FieldLabel htmlFor={field.name}>Instrumento de evaluación</FieldLabel>
+              <Select value={field.state.value} onValueChange={(v) => v && field.handleChange(v)} >
+                <SelectTrigger id={field.name}>
+                  <SelectValue>
+                    {(value) => (value === "Otro" ? "Otro (personalizado)" : (value as string))}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {instrumentos.map((instrumento) => (
+                    <SelectItem key={instrumento} value={instrumento}>
+                      {instrumento === "Otro" ? "Otro (personalizado)" : instrumento}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+          )}
+        </form.Field>
 
       </div>
 
       {/* La definición del instrumento (Rúbrica o Lista de cotejo) vive
           adentro del mismo card de "Evaluación", entre el `instrumento`
           elegido arriba y la `Ponderación (%)` de abajo — antes era un
-          `Card` hermano y suelto, separado de este. Oculta con el mismo
-          criterio que el `<Select>` de arriba: sin referente EVALUATIVO no
-          hay instrumento que definir. */}
-      {!esFormativa && <InstrumentoEvaluacionSection form={form} />}
+          `Card` hermano y suelto, separado de este. Sin condición: ver el
+          comentario del `<Select>` de arriba. */}
+      <InstrumentoEvaluacionSection form={form} />
 
       {/* Ponderación va AL FINAL, después de la definición del
           instrumento (Rúbrica/Lista de cotejo). La lectura del form es:
@@ -2289,6 +2295,7 @@ function CriterioItem({
       <Field variant="outlined" className="mt-3">
         <FieldLabel>Nombre del criterio</FieldLabel>
         <Input
+          placeholder="Ej: Expresión oral de ideas y experiencias"
           value={criterio.nombre}
           onChange={(e) => onChange({ ...criterio, nombre: e.target.value })}
         />
@@ -2330,6 +2337,7 @@ function CriterioItem({
           <Textarea
             className={TEXTAREA_OUTLINED}
             rows={2}
+            placeholder="Describe el desempeño esperado en este nivel"
             value={criterio.excelente}
             onChange={(e) => onChange({ ...criterio, excelente: e.target.value })}
           />
@@ -2400,6 +2408,7 @@ function CriterioItem({
             <Textarea
               className={TEXTAREA_OUTLINED}
               rows={2}
+              placeholder="Describe el desempeño esperado en este nivel"
               value={nivel.descripcion}
               onChange={(e) => {
                 const next = criterio.niveles.slice()
