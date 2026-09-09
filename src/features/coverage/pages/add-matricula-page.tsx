@@ -275,6 +275,13 @@ function AddMatriculaPageContent() {
               secondName: found.secondName,
               lastName: found.lastName,
               secondLastName: found.secondLastName,
+              // El género tiene que ir en el parche aunque venga vacío. Es el
+              // único campo de catálogo que trae el autocompletado, y omitirlo
+              // no lo deja "sin tocar": deja el del acudiente ANTERIOR pegado a
+              // una persona distinta. Un `""` limpia el select y obliga a
+              // elegirlo, que es lo correcto — el 44% de los TUSUARIO no tienen
+              // género guardado.
+              gender: found.gender,
             },
             guardianContact: {
               ...prev.guardianContact,
