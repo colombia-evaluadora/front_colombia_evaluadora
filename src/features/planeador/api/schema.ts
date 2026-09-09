@@ -41,15 +41,6 @@ export type PlaneadorFiltersFormInput = z.input<typeof planeadorFiltersFormSchem
 export type PlaneadorFiltersFormValues = z.infer<typeof planeadorFiltersFormSchema>
 
 /**
- * Search schema del detalle. Solo `buscar` se preserva al volver a la lista
- * — el resto es estado del listado y se reinicia al entrar.
- */
-export const planeadorDetalleSearchSchema = z.object({
-  buscar: z.string().optional().catch(undefined),
-})
-export type PlaneadorDetalleSearch = z.infer<typeof planeadorDetalleSearchSchema>
-
-/**
  * Search schema de la pestaña "Unidad temática". `unidad` es la que está
  * abierta en el panel derecho; si falta, la página cae a la primera de la
  * lista.

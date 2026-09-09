@@ -287,9 +287,20 @@ export function EditarActividadForm({
           normal, es su recuperación"), así que se responde antes de
           completar cualquier otro campo. */}
       <EsRecuperacionToggle form={form} />
-      <IdentificacionSection form={form} unidades={unidades} onCrearUnidad={crearUnidad} />
+      {/* Identificación + Asignatura/Grado en UNA sola grilla —antes vivían
+          en dos `<Card>` separadas y se veían como dos cajas sueltas, aunque
+          las dos son "de dónde depende la actividad" (Nombre/Tipo/Unidad
+          arriba, Asignatura/Grado abajo, mismo grid). Cada sección sigue
+          siendo su propio componente (hooks/lógica separados), pero acá
+          comparten un solo `<Card>` y un solo `grid`. */}
+      <Card className="gap-4 p-4">
+        <h3 className="text-base font-semibold">Identificación de la actividad</h3>
+        <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
+          <IdentificacionSection form={form} unidades={unidades} onCrearUnidad={crearUnidad} />
+          <AsignaturaGradoSection form={form} />
+        </div>
+      </Card>
       <UnidadSection form={form} unidades={unidades} />
-      <AsignaturaGradoSection form={form} />
       <MaterialesSection form={form} />
       <RecursosSection form={form} />
       <ProgramacionSection form={form} />
@@ -380,9 +391,7 @@ function IdentificacionSection({
   const { data: tiposActividad = [] } = useTipoActividadCatalogQuery()
 
   return (
-    <Card className="gap-4 p-4">
-      <h3 className="text-base font-semibold">Identificación de la actividad</h3>
-      <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
+    <>
         <form.Field name="nombre">
           {(field) => (
             <Field variant="outlined">
@@ -543,8 +552,7 @@ function IdentificacionSection({
             )
           }}
         </form.Subscribe>
-      </div>
-    </Card>
+    </>
   )
 }
 
@@ -653,8 +661,7 @@ function AsignaturaGradoSection({ form }: { form: FormActividad }) {
   const asignaturas = docenteGradoAsignatura.filter((par) => par.gradoId === gradoId)
 
   return (
-    <Card className="gap-4 p-4">
-      <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2">
+    <>
         <form.Field name="asignaturaId">
           {(field) => (
             <Field variant="outlined">
@@ -765,8 +772,7 @@ function AsignaturaGradoSection({ form }: { form: FormActividad }) {
             </SelectContent>
           </Select>
         </Field>
-      </div>
-    </Card>
+    </>
   )
 }
 

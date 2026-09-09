@@ -77,7 +77,13 @@ export function ActividadDetallePanel({
   const { data: actividad, isPending, isError, refetch } = useActividadDetalleQuery(actividadId)
 
   return (
-    <div className="flex h-full min-h-0 flex-col rounded-md border bg-card">
+    // `flex-1`, no `h-full`: el padre (`planeador-page.tsx`) acota esta
+    // columna con `max-h`, no `h` — un `height: 100%` acá no siempre
+    // resuelve contra eso (necesita un alto definido, no una cota), y
+    // `flex-1` sí funciona igual de bien. Fuera de un contenedor flex
+    // (mobile, sin el `md:flex` del padre) `flex-1` no hace nada, así que
+    // no hace falta condicionarlo a `md:`.
+    <div className="flex min-h-0 flex-1 flex-col rounded-md border bg-card">
       {/* `bg-muted/10`: el mismo fondo que `TableScreenTitle` le da al
           encabezado de la pantalla, para que el header del panel se lea como
           parte del mismo sistema. */}
