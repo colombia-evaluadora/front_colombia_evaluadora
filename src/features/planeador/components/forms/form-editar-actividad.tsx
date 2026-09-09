@@ -27,11 +27,20 @@ import {
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { useUnidadReferenteQuery } from "@/features/planeador/api/query/use-unidad-referente-query"
+import { useReferenteCurricularQuery } from "@/features/planeador/api/query/use-referente-curricular-query"
 import { useDocenteGruposQuery } from "@/features/planeador/api/query/use-docente-grupos-query"
 import { useDocenteGradoAsignaturaQuery } from "@/features/planeador/api/query/use-docente-grado-asignatura-query"
 import { useTipoActividadCatalogQuery } from "@/features/planeador/api/query/use-tipo-actividad-catalog"
 import { useInstrumentoEvaluacionCatalogQuery } from "@/features/planeador/api/query/use-instrumento-evaluacion-catalog"
-import { ListaAgregableField } from "@/features/planeador/components/forms/field-lista-agregable"
+import {
+  ListaAgregableField,
+  ListaAgregableCajaSelect,
+} from "@/features/planeador/components/forms/field-lista-agregable"
+import { useEnunciadosDbaQuery } from "@/features/planeador/api/query/use-enunciados-dba"
+import {
+  METODO_CALCULO_INFO,
+  METODO_CALCULO_OPTIONS,
+} from "@/features/planeador/components/forms/form-unidad-info-general"
 import {
   EyeIcon,
   FileDownloadOutlinedIcon,
@@ -60,7 +69,7 @@ import type {
   Nivel,
   Recurso,
 } from "@/features/planeador/api/types/actividad"
-import type { UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
+import type { MetodoCalculo, UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
 import type { Estudiante } from "@/features/planeador/api/types/calificacion"
 import { useUnidadesQuery } from "@/features/planeador/api/query/use-unidades-query"
 import { useCalificacionesQuery } from "@/features/planeador/api/query/use-calificaciones-query"
@@ -219,6 +228,12 @@ export function EditarActividadForm({
     contenidos: string[]
     objetivos: string[]
     descripcion: string
+    enunciadosDba: string[]
+    metodoCalculo: MetodoCalculo
+    gradoId: number | undefined
+    grado: string
+    asignaturaId: number | undefined
+    asignatura: string
   }): UnidadTematica {
     const nueva: UnidadTematica = {
       id: cryptoId(),
@@ -231,10 +246,12 @@ export function EditarActividadForm({
       descripcion: data.descripcion,
       objetivos: data.objetivos,
       contenidos: data.contenidos,
-      metodoCalculo: "Ponderado",
-      grado: "",
-      asignatura: "",
-      enunciadosDba: [],
+      metodoCalculo: data.metodoCalculo,
+      grado: data.grado,
+      asignatura: data.asignatura,
+      gradoId: data.gradoId,
+      asignaturaId: data.asignaturaId,
+      enunciadosDba: data.enunciadosDba,
       criterios: [],
       actividades: [],
     }
@@ -337,6 +354,12 @@ function IdentificacionSection({
     contenidos: string[]
     objetivos: string[]
     descripcion: string
+    enunciadosDba: string[]
+    metodoCalculo: MetodoCalculo
+    gradoId: number | undefined
+    grado: string
+    asignaturaId: number | undefined
+    asignatura: string
   }) => UnidadTematica
 }) {
   // Catálogo `TIPO_ACTIVIDAD` (`TLISTA_VALOR`) — antes hardcodeado acá mismo.
@@ -477,6 +500,8 @@ function IdentificacionSection({
                     </Field>
                     <CrearUnidadPopover
                       className="rounded-l-none border-l-0"
+                      gradoId={form.getFieldValue("gradoId")}
+                      asignaturaId={form.getFieldValue("asignaturaId")}
                       onCreate={(data) => {
                         // `onCrearUnidad` agrega la unidad a `unidadesCreadas`
                         // (arriba en `EditarActividadForm`) y la devuelve: recién
@@ -485,7 +510,16 @@ function IdentificacionSection({
                         // "huérfano" (antes se armaba un id acá mismo y nunca se
                         // sumaba a `unidades` — el Select no lo encontraba y
                         // mostraba "Seleccione" en vez del nombre tipeado).
-                        const nueva = onCrearUnidad(data)
+                        // Grado/Asignatura de la nueva unidad son los mismos
+                        // que ya eligió esta actividad — el popover no vuelve
+                        // a pedirlos.
+                        const nueva = onCrearUnidad({
+                          ...data,
+                          gradoId: form.getFieldValue("gradoId"),
+                          grado,
+                          asignaturaId: form.getFieldValue("asignaturaId"),
+                          asignatura,
+                        })
                         field.handleChange({ id: nueva.id, nombre: nueva.nombre })
                       }}
                     />
@@ -1287,15 +1321,38 @@ function EvaluacionSection({
   // elegida (`GET /unidades/:id/referente`, `useUnidadReferenteQuery`) —
   // reemplaza a `POST /referentes-curriculares/query`, que responde 403
   // para `CEVAL-DOCENTE` (confirmado en vivo). Una unidad formativa
-  // bloquea "¿Es evaluación sumativa?" en "No" (regla de siempre). SIN
-  // unidad no hay forma de derivarlo (el referente sale del grado DE LA
-  // UNIDAD, no de un grado suelto): se trata como no formativa — coincide
-  // con el backend real, que sin unidad ni siquiera ofrece evaluación
-  // dinámica (`campos_disponibles.evaluacion.visible: false`).
+  // bloquea "¿Es evaluación sumativa?" en "No" (regla de siempre).
+  //
+  // SIN unidad (actividad huérfana) el referente NO queda sin poder
+  // derivarse: el mismo árbol se resuelve directo de GRADO + ASIGNATURA
+  // (`GET /referente-curricular`, `useReferenteCurricularQuery` — 3.0 de
+  // la colección), sin necesidad de que exista una unidad todavía. Antes
+  // acá se asumía "no formativa" sin unidad; eso dejaba marcar como
+  // sumativa una actividad huérfana de un grado/asignatura cuyo referente
+  // real es formativo.
   const unidadIdRaw = useSelector(form.store, (state) => state.values.unidad.id)
   const unidadId = unidadIdRaw || undefined
-  const { data: referente } = useUnidadReferenteQuery(unidadId)
+  const gradoId = useSelector(form.store, (state) => state.values.gradoId)
+  const asignaturaId = useSelector(form.store, (state) => state.values.asignaturaId)
+
+  const { data: referenteDeUnidad } = useUnidadReferenteQuery(unidadId)
+  const { data: referenteDeGradoAsignatura } = useReferenteCurricularQuery(
+    unidadId == null ? gradoId : undefined,
+    unidadId == null ? asignaturaId : undefined,
+  )
+  const referente = unidadId != null ? referenteDeUnidad : referenteDeGradoAsignatura
   const esFormativa = referente?.esFormativo ?? false
+
+  // `disabled={esFormativa}` de abajo solo bloquea el control — no corrige
+  // el VALOR. Sin esto, una actividad que ya traía `esEvaluativa: true` al
+  // abrir el form (o cuya unidad recién se supo formativa cuando terminó de
+  // resolver `useUnidadReferenteQuery`, que es asíncrono) se quedaba
+  // marcada como sumativa aunque el select apareciera bloqueado en "Sí" —
+  // y ese valor viajaba igual al guardar. La regla es "formativa nunca
+  // sumativa" siempre, no solo mientras el usuario toca el select.
+  useEffect(() => {
+    if (esFormativa) form.setFieldValue("esEvaluativa", false)
+  }, [esFormativa, form])
 
   // Catálogo `INSTRUMENTO_EVALUACION` (`TLISTA_VALOR`) — antes hardcodeado
   // acá mismo.
@@ -2822,34 +2879,56 @@ function cryptoId(): number {
 function CrearUnidadPopover({
   onCreate,
   className,
+  gradoId,
+  asignaturaId,
 }: {
   onCreate: (data: {
     nombre: string
     contenidos: string[]
     objetivos: string[]
     descripcion: string
+    enunciadosDba: string[]
+    metodoCalculo: MetodoCalculo
   }) => void
   /** Se aplica al `Button` del trigger para encadenarlo visualmente con
    * un control adyacente (split-button): típico `rounded-l-none border-l-0`
    * para pegarse a un `Select`/`Input` por la izquierda. */
   className?: string
+  /** Grado/Asignatura de la actividad que abre este popover — la unidad
+   *  nueva nace con los mismos (una unidad se identifica por esos dos, ver
+   *  `IdentificacionSection`), así que acá no se vuelven a pedir. También
+   *  gobiernan "Derechos" (`useEnunciadosDbaQuery`) y si se puede guardar:
+   *  sin ellos no hay contra qué resolver el referente de la unidad. */
+  gradoId: number | undefined
+  asignaturaId: number | undefined
 }) {
   const [open, setOpen] = React.useState(false)
   const [nombre, setNombre] = React.useState("")
   const [contenidos, setContenidos] = React.useState<string[]>([])
   const [objetivos, setObjetivos] = React.useState<string[]>([])
   const [descripcion, setDescripcion] = React.useState("")
+  const [enunciadosDba, setEnunciadosDba] = React.useState<string[]>([])
+  const [metodoCalculo, setMetodoCalculo] = React.useState<MetodoCalculo>("Ponderado")
+
+  const { enunciados: enunciadosDisponibles, isPending: isPendingEnunciados } = useEnunciadosDbaQuery(
+    gradoId,
+    asignaturaId,
+  )
+
+  const hasGradoAsignatura = gradoId != null && asignaturaId != null
 
   const reset = () => {
     setNombre("")
     setContenidos([])
     setObjetivos([])
     setDescripcion("")
+    setEnunciadosDba([])
+    setMetodoCalculo("Ponderado")
   }
 
   const guardar = () => {
-    if (!nombre.trim()) return
-    onCreate({ nombre: nombre.trim(), contenidos, objetivos, descripcion })
+    if (!nombre.trim() || !hasGradoAsignatura) return
+    onCreate({ nombre: nombre.trim(), contenidos, objetivos, descripcion, enunciadosDba, metodoCalculo })
     reset()
     setOpen(false)
   }
@@ -2885,6 +2964,12 @@ function CrearUnidadPopover({
       >
         <h3 className="text-base font-semibold">Crear nueva unidad temática</h3>
 
+        {!hasGradoAsignatura && (
+          <p className="text-muted-foreground text-xs">
+            Elegí Grado/Grupo y Asignatura de la actividad primero.
+          </p>
+        )}
+
         <Field variant="outlined">
           <FieldLabel>Nombre de la unidad</FieldLabel>
           <Input
@@ -2915,6 +3000,36 @@ function CrearUnidadPopover({
             onChange={(e) => setDescripcion(e.target.value)}
             className={TEXTAREA_OUTLINED}
           />
+        </Field>
+
+        <ListaAgregableCajaSelect
+          title="Derechos Básicos de Aprendizaje"
+          description="Selecciona los enunciados de DBA asociados a esta unidad."
+          columnLabel="Enunciados"
+          items={enunciadosDba}
+          options={enunciadosDisponibles.map((e) => e.text)}
+          onChange={setEnunciadosDba}
+          disabled={!hasGradoAsignatura}
+          isPending={isPendingEnunciados}
+        />
+
+        <Field variant="outlined">
+          <FieldLabel>Método de cálculo</FieldLabel>
+          <Select
+            value={metodoCalculo}
+            onValueChange={(v) => v && setMetodoCalculo(v as MetodoCalculo)}
+          >
+            <SelectTrigger>
+              <SelectValue>{(v) => METODO_CALCULO_INFO[v as MetodoCalculo]?.label ?? v}</SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {METODO_CALCULO_OPTIONS.map((option) => (
+                <SelectItem key={option} value={option}>
+                  {METODO_CALCULO_INFO[option].label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </Field>
 
         <div className="flex justify-end">

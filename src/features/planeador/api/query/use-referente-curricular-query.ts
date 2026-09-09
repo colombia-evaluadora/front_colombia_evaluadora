@@ -1,22 +1,28 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
-
 import type { UnidadReferente } from "@/features/planeador/api/query/use-unidad-referente-query"
 
 /**
  * `GET /planeador/referente-curricular?grado=&asignatura=` (confirmado
- * real, colección Postman `planeador-guia-completa`, 3.0) — mismo árbol y
- * mismas banderas que `GET /unidades/:id/referente` (3.1,
- * `use-unidad-referente-query.ts`), pero resoluble desde GRADO+ASIGNATURA
- * sin que exista todavía una unidad: mientras se está creando (o editando
- * antes de guardar) el form solo tiene lo que el docente ya eligió en los
- * selects, no un `:id` contra el que pedir 3.1.
+ * real, colección Postman `planeador-guia-completa`, 3.0) — el mismo árbol
+ * que `GET /unidades/:id/referente` (3.1), pero derivable de GRADO +
+ * ASIGNATURA directo, SIN que exista una unidad todavía. Sirve para
+ * "¿es formativa?" en una actividad huérfana (sin unidad) o antes de crear
+ * la unidad: `useUnidadReferenteQuery` por sí solo asumía "no formativa"
+ * en ese caso por no tener de dónde derivarlo — esta ruta es justamente
+ * ese "de dónde".
  *
- * Devuelve un ARREGLO ordenado por `especificidad` (los referentes
- * acotados al área de la asignatura primero, los universales después) —
- * el primero de la lista es el que aplica; nunca hay que elegir "a mano"
- * cuál usar.
+ * Devuelve un ARRAY (la relación referente↔nivel es N:N), ya ordenado por
+ * especificidad: los acotados al área de la asignatura primero
+ * (`especificidad` 0), los universales después (1) — se usa el primero sin
+ * volver a ordenar acá. `?asignatura=` es opcional (filtra por área, no es
+ * llave) pero se manda siempre que se conozca: sin ella se devuelven todos
+ * los referentes del nivel de enseñanza, no solo el del área que aplica.
+ *
+ * La descripción de 3.0 documenta las mismas dos banderas que 3.1
+ * (`enfoque_valor`/`es_evaluativo`) — acá se tolera cualquiera de las dos
+ * formas por si esta ruta solo expone una.
  */
 interface ReferenteEvidenciaRow {
   pk: number
@@ -31,9 +37,9 @@ interface ReferenteEnunciadoRow {
 
 interface ReferenteCurricularRow {
   pk_referente_curricular?: number
-  /** A diferencia de 3.1 (`enfoque_valor: "EVALUATIVO" | "FORMATIVO"`), acá
-   *  el enfoque llega como booleano directo. */
+  especificidad?: number
   es_evaluativo?: boolean
+  enfoque_valor?: "EVALUATIVO" | "FORMATIVO" | null
   tipo_evaluacion_valor?: string | null
   /** Confirmado contra una respuesta real: el texto de cada enunciado (y de
    *  cada evidencia anidada) viene en `texto`, no `nombre`/`descripcion`. */
@@ -62,12 +68,13 @@ const SIN_REFERENTE: ReferenteCurricular = {
   enunciados: [],
 }
 
-function toReferenteCurricular(rows: ReferenteCurricularRow[]): ReferenteCurricular {
-  const row = rows[0]
+function toReferente(row: ReferenteCurricularRow | undefined): ReferenteCurricular {
   if (!row) return SIN_REFERENTE
+  const esFormativo =
+    typeof row.es_evaluativo === "boolean" ? !row.es_evaluativo : row.enfoque_valor === "FORMATIVO"
   return {
     tieneReferente: true,
-    esFormativo: row.es_evaluativo === false,
+    esFormativo,
     tipoEvaluacion: row.tipo_evaluacion_valor ?? null,
     enunciados: (row.enunciados ?? []).map((enunciado) => ({
       id: enunciado.pk,
@@ -80,40 +87,32 @@ function toReferenteCurricular(rows: ReferenteCurricularRow[]): ReferenteCurricu
   }
 }
 
-export interface UseReferenteCurricularParams {
-  gradoId: number
-  asignaturaId?: number
-}
-
-export const referenteCurricularQueryKey = (params: UseReferenteCurricularParams) =>
-  ["planeador", "referente-curricular", params] as const
+export const referenteCurricularQueryKey = (gradoId: number, asignaturaId: number | undefined) =>
+  ["planeador", "referente-curricular", gradoId, asignaturaId ?? null] as const
 
 async function fetchReferenteCurricular(
-  params: UseReferenteCurricularParams,
+  gradoId: number,
+  asignaturaId: number | undefined,
 ): Promise<ReferenteCurricular> {
-  const query = new URLSearchParams({ grado: String(params.gradoId) })
-  if (params.asignaturaId != null) query.set("asignatura", String(params.asignaturaId))
-  const rows = await evalCol.getRows<ReferenteCurricularRow>(
-    `/planeador/referente-curricular?${query}`,
-  )
-  return toReferenteCurricular(rows)
+  const query = new URLSearchParams({ grado: String(gradoId) })
+  if (asignaturaId != null) query.set("asignatura", String(asignaturaId))
+  const rows = await evalCol.getRows<ReferenteCurricularRow>(`/planeador/referente-curricular?${query}`)
+  return toReferente(rows[0])
 }
 
 /**
- * `asignaturaId` es opcional (solo acota por área); `gradoId` es
- * obligatorio — sin grado no hay nivel de enseñanza del que derivar nada.
+ * `gradoId` en `undefined` deshabilita la consulta — así el llamador puede
+ * apagarla sin condicional propio cuando ya tiene el referente por otra vía
+ * (p. ej. `useUnidadReferenteQuery` cuando sí hay unidad elegida).
  */
-export function useReferenteCurricularQuery(
-  gradoId: number | undefined,
-  asignaturaId: number | undefined,
-) {
-  const params: UseReferenteCurricularParams | null = gradoId != null ? { gradoId, asignaturaId } : null
+export function useReferenteCurricularQuery(gradoId: number | undefined, asignaturaId: number | undefined) {
   return useQuery({
-    queryKey: params
-      ? referenteCurricularQueryKey(params)
-      : (["planeador", "referente-curricular", "none"] as const),
-    queryFn: () => fetchReferenteCurricular(params!),
-    enabled: params !== null,
+    queryKey:
+      gradoId != null
+        ? referenteCurricularQueryKey(gradoId, asignaturaId)
+        : (["planeador", "referente-curricular", "none"] as const),
+    queryFn: () => fetchReferenteCurricular(gradoId!, asignaturaId),
+    enabled: gradoId != null,
     staleTime: 1000 * 60,
     // Sin esto, cambiar de Asignatura hace que `data` pase por `undefined`
     // mientras se resuelve la nueva — y como el default de "¿es

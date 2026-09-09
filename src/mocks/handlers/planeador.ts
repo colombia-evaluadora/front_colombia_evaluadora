@@ -31,6 +31,7 @@ import type {
 } from "@/features/planeador/api/types/actividad-intercambio"
 import { statusToEstadoDerivado } from "@/features/planeador/lib/estado-derivado"
 import { parseLocalDate, toDateOnly } from "@/features/planeador/lib/format-date"
+import { hashString } from "@/mocks/handlers/planeador/docentes"
 
 /**
  * Endpoints del Planeador bajo `/api/eval-col` — mismo prefijo que el resto
@@ -67,6 +68,7 @@ const UNIDAD_DETAIL_URL = "/api/eval-col/planeador/unidades/:id"
 const UNIDAD_CRITERIO_CREATE_URL = "/api/eval-col/planeador/unidades/:id/criterios"
 const UNIDAD_VALORACIONES_URL = "/api/eval-col/planeador/unidades/:id/valoraciones"
 const UNIDAD_REFERENTE_URL = "/api/eval-col/planeador/unidades/:id/referente"
+const REFERENTE_CURRICULAR_URL = "/api/eval-col/planeador/referente-curricular"
 const UNIDAD_ACTIVIDADES_VINCULADAS_URL = "/api/eval-col/planeador/unidades/:id/actividades"
 const UNIDAD_ACTIVIDADES_DISPONIBLES_URL =
   "/api/eval-col/planeador/unidades/:id/actividades-disponibles"
@@ -605,6 +607,46 @@ export const planeadorHandlers = [
           referente: { id: 1 },
           enfoque_valor: unidad.enfoquePedagogico === "Formativo" ? "FORMATIVO" : "EVALUATIVO",
           tipo_evaluacion_valor: "CUANTITATIVA_CUALITATIVA",
+        },
+      ],
+    })
+  }),
+
+  // Referente curricular derivable de GRADO + ASIGNATURA directo, sin
+  // unidad todavía (colección Postman 3.0) — usado por `EvaluacionSection`
+  // para "¿es formativa?" en una actividad huérfana. El mock no modela un
+  // catálogo de referentes aparte: reusa cualquier unidad existente que
+  // matchee grado+asignatura (mismo esquema de ids sintéticos por hash que
+  // `/docentes/grado-asignatura`) para heredar su enfoque y enunciados; sin
+  // ninguna que matchee, cae al default histórico "Evaluativo".
+  http.get(REFERENTE_CURRICULAR_URL, async ({ request }) => {
+    await delay(150)
+    const url = new URL(request.url)
+    const gradoIdParam = url.searchParams.get("grado")
+    if (!gradoIdParam) {
+      return HttpResponse.json({ message: "grado es obligatorio" }, { status: 400 })
+    }
+    const gradoId = Number(gradoIdParam)
+    const asignaturaIdParam = url.searchParams.get("asignatura")
+    const asignaturaId = asignaturaIdParam ? Number(asignaturaIdParam) : null
+
+    const unidad = unidadesTematicasDb.find((u) => {
+      if (hashString(`grado-${u.grado}`) % 1000000 !== gradoId) return false
+      if (asignaturaId == null) return true
+      return hashString(`asignatura-${u.asignatura}`) % 1000000 === asignaturaId
+    })
+
+    return HttpResponse.json({
+      rows: [
+        {
+          especificidad: 0,
+          enfoque_valor: unidad?.enfoquePedagogico === "Formativo" ? "FORMATIVO" : "EVALUATIVO",
+          tipo_evaluacion_valor: "CUANTITATIVA_CUALITATIVA",
+          enunciados: (unidad?.enunciadosDba ?? []).map((texto, index) => ({
+            pk: index + 1,
+            texto,
+            evidencias: [],
+          })),
         },
       ],
     })

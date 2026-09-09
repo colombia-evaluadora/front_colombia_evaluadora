@@ -192,13 +192,19 @@ export function PlaneadorPage() {
   }
 
   // Map day-of-month → actividades, para las filas de la grilla. El
-  // endpoint ya resuelve un solo día de anclaje por actividad (`fecha`,
-  // filtrando por solapamiento con el mes pedido) — no hace falta volver a
-  // filtrar por mes visible ni plotear inicio/cierre a mano acá.
+  // endpoint devuelve por SOLAPAMIENTO (una actividad que sigue abierta
+  // aparece también en el mes donde arrancó), y ancla `fecha` al inicio (o
+  // a `fecha_desde` si el inicio cae afuera). Eso hacía que la MISMA
+  // actividad se plotara en dos meses distintos —una vez por su inicio,
+  // otra por el "sigue abierta" del mes siguiente— y se contara doble al
+  // mirar los dos meses. Acá se ancla SOLO por `fechaCierre` (cuándo
+  // vence) y se descarta lo que no cierre dentro del mes visible, así cada
+  // actividad aparece en un único mes: el de su cierre.
   const events = React.useMemo(() => {
     const map = new Map<number, DayEvent[]>()
     for (const a of calendarioActividades) {
-      const anchor = parseLocalDate(a.fecha)
+      if (a.fechaCierre < mesDesde || a.fechaCierre > mesHasta) continue
+      const anchor = parseLocalDate(a.fechaCierre)
       if (!anchor) continue
       const day = anchor.getDate()
       const list = map.get(day) ?? []
@@ -206,7 +212,7 @@ export function PlaneadorPage() {
       map.set(day, list)
     }
     return map
-  }, [calendarioActividades])
+  }, [calendarioActividades, mesDesde, mesHasta])
 
   return (
     <TableScreen>
