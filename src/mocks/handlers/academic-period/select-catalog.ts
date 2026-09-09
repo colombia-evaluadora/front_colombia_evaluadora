@@ -113,12 +113,20 @@ const CATALOGS_BY_CATEGORIA: Record<string, () => SelectCategoryRow[]> = {
     ),
   // Catálogo `INSTRUMENTO_EVALUACION` real que resuelve
   // `FK_TLV_INSTRUMENTO_EVALUACION` (V226/V240, colección Postman
-  // `planeador-instrumentos`).
+  // `planeador-instrumentos`). `nombre`/`valor` calcados de una respuesta
+  // real: el label de "Otro" es "Otro (personalizado)", no "Otro" —
+  // `use-instrumento-evaluacion-catalog.ts` resuelve por `valor`
+  // precisamente porque el label no coincide con el código.
   INSTRUMENTO_EVALUACION: () =>
-    ["Rúbrica", "Lista de cotejo", "Escala de valoración", "Otro"].map((nombre, i) => ({
+    [
+      { nombre: "Rúbrica", valor: "RUBRICA" },
+      { nombre: "Lista de cotejo", valor: "LISTA_COTEJO" },
+      { nombre: "Escala de valoración", valor: "ESCALA_VALORACION" },
+      { nombre: "Otro (personalizado)", valor: "OTRO" },
+    ].map(({ nombre, valor }, i) => ({
       pk_lista_valor: i + 1,
       nombre,
-      valor: nombre,
+      valor,
       accion: null,
     })),
   // Catálogo `ELEMENTO_CALCULO_DEF` real — resuelve un campo de Periodos
