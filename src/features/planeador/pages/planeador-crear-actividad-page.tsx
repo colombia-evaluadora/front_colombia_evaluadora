@@ -2,7 +2,7 @@ import { useState } from "react"
 import { Link, useNavigate } from "@tanstack/react-router"
 
 import { Button } from "@/components/ui/button"
-import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
+import { NoticeOutlet, NoticeProvider, queueNotice, useNotify } from "@/components/notice/notice-context"
 import {
   TableScreen,
   TableScreenBody,
@@ -51,7 +51,9 @@ function PlaneadorCrearActividadPageContent() {
   const createMutation = useCreateActividad({
     mutationConfig: {
       onSuccess: () => {
-        notify("Actividad creada correctamente.")
+        // `navigate` deja el Planeador — un `notify()` acá se perdería con
+        // el `NoticeProvider` de esta pantalla al desmontarse.
+        queueNotice("Actividad creada correctamente.")
         navigate({ to: paths.app.planeadorActividades.getHref() })
       },
       onError: () => {

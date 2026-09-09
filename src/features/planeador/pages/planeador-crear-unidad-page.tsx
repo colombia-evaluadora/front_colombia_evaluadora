@@ -2,7 +2,7 @@ import { useState } from "react"
 import { Link, useNavigate } from "@tanstack/react-router"
 
 import { Button } from "@/components/ui/button"
-import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
+import { NoticeOutlet, NoticeProvider, queueNotice, useNotify } from "@/components/notice/notice-context"
 import {
   TableScreen,
   TableScreenBody,
@@ -50,7 +50,9 @@ function PlaneadorCrearUnidadPageContent() {
   const createMutation = useCreateUnidad({
     mutationConfig: {
       onSuccess: () => {
-        notify("Unidad temática creada correctamente.")
+        // `navigate` deja esta pantalla — un `notify()` acá se perdería con
+        // el `NoticeProvider` de esta pantalla al desmontarse.
+        queueNotice("Unidad temática creada correctamente.")
         navigate({ to: paths.app.planeadorUnidades.getHref() })
       },
       onError: () => {

@@ -21,11 +21,14 @@ interface UpdateActividadInput {
  * grado/grupo/asignatura en este form (`gradoId`/`grupoId`/`asignaturaId`
  * resueltos) — si no los tocó, se omiten.
  *
- * `FK_TUNIDAD` sí viaja siempre —mismo criterio que `create-actividad.ts`—:
- * como el PUT es parcial, omitirlo cuando el docente QUITÓ la unidad
- * dejaría la anterior pegada en el backend, así que una unidad "sin
- * elegir" (`unidad.id === 0`, el sentinel del form) manda `DESVINCULAR_UNIDAD`
- * en vez de simplemente no mandar nada.
+ * No toca `FK_TUNIDAD`: reasignar la unidad de la actividad se resuelve
+ * ANTES de llamar a este mutation, en `handleSubmit` de
+ * `planeador-editar-actividad-page.tsx`, contra las rutas dedicadas
+ * (`useLinkActividadUnidad`/`useUnlinkActividadUnidad`) — son las únicas que
+ * conocen la `ponderacion` que exige esa unidad. Mandar `FK_TUNIDAD` acá
+ * también duplicaba la escritura y el backend terminaba validando la
+ * `PONDERACION` de esta actividad (el peso en la nota final, campo
+ * distinto) contra la unidad recién vinculada, con 400 de por medio.
  *
  * Mismo alcance acotado que `create-actividad.ts` fuera de esto: no toca
  * materiales, adaptaciones, recuperación, evidencias ni criterios.
@@ -42,11 +45,6 @@ async function updateActividad({ actividadId, data }: UpdateActividadInput): Pro
   }
   if (data.grupoId != null) body.FK_TGRUPO = data.grupoId
   if (data.asignaturaId != null) body.FK_TASIGNATURA = data.asignaturaId
-  if (data.unidad.id !== 0) {
-    body.FK_TUNIDAD = data.unidad.id
-  } else {
-    body.DESVINCULAR_UNIDAD = true
-  }
   const tipoActividadId = await resolveTipoActividadId(data.tipo)
   if (tipoActividadId != null) body.FK_TLV_TIPO_ACTIVIDAD = tipoActividadId
   if (data.esEvaluativa && data.ponderacion > 0) body.PONDERACION = data.ponderacion
