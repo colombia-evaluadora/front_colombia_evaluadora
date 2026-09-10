@@ -1,0 +1,71 @@
+# =============================================================================
+# deploy-test.yml — despliega `dev` al Worker de test.
+#
+# Flujo de ramas (calcado del SSO):
+#
+#   feature/CU-xxxx → dev → test → main
+#                      │            │
+#                      │            └── tag v* → release.yml → production
+#                      └── ESTE workflow → Worker de test
+#
+#   `dev`  integración: las ramas de tarea entran por PR y es lo que corre
+#          en el Worker de test.
+#   `test` marca de promoción: "esto pasó QA". No despliega.
+#   `main` releases, con tag por versión. Despliega vía release.yml.
+#
+# ---- Por qué `workflow_run` y no `push` -------------------------------------
+#
+# El gate es `workflow_run` sobre CI para que nunca se despliegue un commit
+# cuyos checks fallaron. Un `push: [dev]` directo desplegaría en paralelo al
+# CI, sin esperar su resultado.
+#
+# La condición NO filtra por `head_branch == 'dev'`: en un `workflow_run`,
+# `github.event.workflow_run.head_branch` apunta a la rama donde vive ESTE
+# fichero (la default, `main`), no a la del push que disparó CI. En el SSO ese
+# filtro nunca hacía match y el deploy jamás se auto-disparaba. El filtro real
+# es indirecto: CI solo corre en `dev` (ver su bloque `on:`), así que un
+# `workflow_run` con `event == 'push'` sólo puede venir de `dev`.
+#
+# `workflow_dispatch` queda para re-desplegar a mano; usa el HEAD de la rama
+# elegida y NO espera a CI — úsalo consciente de eso.
+# =============================================================================
+
+name: Deploy test
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Un deploy a la vez; el siguiente espera en cola. `cancel-in-progress: false`
+# porque cortar un `wrangler deploy` a mitad es peor que esperar.
+concurrency:
+  group: deploy-test
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    # Tres triggers posibles, y solo dos deben desplegar:
+    #   1. workflow_dispatch — redespliegue manual.
+    #   2. workflow_run      — CI verde Y disparado por un push (no por un
+    #                          pull_request: un PR contra `dev` todavía no
+    #                          está integrado, desplegarlo pisaría `dev` con
+    #                          código sin mergear).
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push')
+    uses: ./.github/workflows/deploy.yml
+    with:
+      environment: test
+      # El SHA exacto que pasó CI, no el HEAD de la rama: entre que CI
+      # terminó y este workflow arranca puede haber entrado otro push, y
+      # desplegar ese otro commit significaría publicar algo que ningún
+      # check verificó. En `workflow_dispatch` no hay run previo del que
+      # sacarlo, así que ahí sí va el HEAD de la rama elegida.
+      ref: ${{ github.event.workflow_run.head_sha || github.ref }}
+    secrets: inherit

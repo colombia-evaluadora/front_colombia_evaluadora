@@ -1,0 +1,156 @@
+# =============================================================================
+# deploy.yml — workflow REUTILIZABLE que construye el SPA y lo despliega a un
+# Worker de Cloudflare.
+#
+# No se dispara solo: lo invocan `deploy-test.yml` (push a dev → Worker de
+# test) y `release.yml` (tag v* → Worker de producción). Toda la lógica de
+# despliegue vive AQUÍ y solo aquí, por el mismo motivo que en el SSO: dos
+# copias divergen y la de producción termina siendo la vieja.
+#
+# ---- Secretos: por ENTORNO, no por repositorio ------------------------------
+#
+# Misma convención que `colombia-evaluadora/SSO`: los NOMBRES son idénticos en
+# `test` y en `production`, lo que cambia es el VALOR. Eso es lo que permite
+# que este fichero no sepa a qué cuenta ni a qué Worker apunta.
+#
+#   CLOUDFLARE_API_TOKEN   token con Workers Scripts: Edit (secreto)
+#   CLOUDFLARE_ACCOUNT_ID  cuenta de Cloudflare donde vive el Worker (secreto)
+#   ENV_FILE               contenido completo del `.env` de build (secreto)
+#
+# Y una VARIABLE de entorno, opcional (no secreto — se ve en los logs a
+# propósito, es configuración, no credencial):
+#
+#   API_PROXY_TARGET   backend al que el Worker reenvía `/api/*`. Es un `var`
+#                      del Worker (runtime), no del bundle: lo resuelve el
+#                      servidor, el navegador nunca lo ve. Si no está, manda
+#                      el valor de `env.<entorno>.vars` de wrangler.jsonc.
+#
+# El NOMBRE del Worker y su custom domain NO son variables: viven en
+# `env.test` / `env.production` de wrangler.jsonc, porque el dominio hay que
+# declararlo ahí para que wrangler lo provisione (`custom_domain: true`).
+#
+# Se pueblan con ./scripts/setup-environment-secrets.sh.
+#
+# ---- AVISO IMPORTANTE sobre ENV_FILE ----------------------------------------
+#
+# Acá ENV_FILE NO es lo mismo que en el SSO. En el SSO es el `.env` de runtime
+# del servidor: nunca sale de la máquina. Acá es el `.env` de BUILD de Vite, y
+# todo lo que empiece por `VITE_APP_` queda LITERALMENTE ESCRITO dentro del
+# JavaScript que se le manda al navegador.
+#
+#   → Cualquiera que abra devtools puede leerlo.
+#   → NO pongas acá tokens, claves de API, ni nada que no publicarías.
+#
+# Se guarda igual como secreto de GitHub por higiene (no ensuciar el repo con
+# URLs de infraestructura), pero eso no lo convierte en confidencial. Los
+# secretos de verdad del sistema viven en el backend, detrás del gateway.
+#
+# ---- Rollback ---------------------------------------------------------------
+#
+# Cloudflare guarda las versiones anteriores de cada Worker:
+#   wrangler deployments list --name <worker>
+#   wrangler rollback <version-id> --name <worker>
+# O relanzar `release.yml` con `workflow_dispatch` sobre el tag anterior.
+# =============================================================================
+
+name: Deploy (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: 'GitHub Environment del que salen los secretos (test | production).'
+        required: true
+        type: string
+      ref:
+        description: 'Commit o tag a desplegar.'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: deploy to ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    # El environment aporta DOS cosas, no una: de él salen los secretos, y
+    # de él son las reglas de protección. `production` exige revisor y solo
+    # admite tags v*, así que un release se para acá hasta que alguien lo
+    # aprueba.
+    environment: ${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.25.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # ───────── .env de build ─────────
+      #
+      # ENV_FILE entra como variable de entorno y NO interpolado dentro del
+      # script (`${{ secrets.X }}` dentro de un `run:` acaba en el fichero
+      # temporal que el runner escribe en disco; basta un `set -x` de más
+      # para que salga en el log). Mismo criterio que el Setup SSH del SSO.
+      - name: Write .env
+        env:
+          ENV_FILE: ${{ secrets.ENV_FILE }}
+        run: |
+          set -euo pipefail
+          if [ -z "${ENV_FILE:-}" ]; then
+            echo "::error::Falta ENV_FILE en el entorno '${{ inputs.environment }}'."
+            echo "Puéblalo con: ./scripts/setup-environment-secrets.sh ${{ inputs.environment }} --env-file <ruta>"
+            exit 1
+          fi
+          printf '%s\n' "$ENV_FILE" > .env
+          # Solo los NOMBRES de clave al log. Sirve para diagnosticar un
+          # deploy con el .env incompleto sin volcar los valores.
+          echo "Claves presentes en .env:"
+          grep -oE '^[A-Za-z_0-9]+=' .env | tr -d '=' | sed 's/^/  - /'
+
+      - name: Build
+        run: pnpm build
+
+      # ───────── Deploy ─────────
+      #
+      # `--env` y no `--name`: el bloque `env.<entorno>` de wrangler.jsonc es
+      # el que trae el nombre del Worker Y su custom domain
+      # (`routes` con `custom_domain: true`). Con `--name` suelto, wrangler
+      # publica el Worker pero no ata el dominio, así que
+      # productionv2.colombiaevaluadora.com nunca se crearía.
+      #
+      # `--var` pisa el `API_PROXY_TARGET` de la config con el de la variable
+      # del environment de GitHub, si está definida. Así el backend se puede
+      # rotar desde Settings sin tocar el repo — algo que ya pasó dos veces
+      # (ver el comentario del `vars` en wrangler.jsonc). Si no está, manda
+      # el valor commiteado.
+      - name: Deploy to Cloudflare Workers
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          API_PROXY_TARGET: ${{ vars.API_PROXY_TARGET }}
+        run: |
+          set -euo pipefail
+          if [ -z "${CLOUDFLARE_API_TOKEN:-}" ] || [ -z "${CLOUDFLARE_ACCOUNT_ID:-}" ]; then
+            echo "::error::Faltan CLOUDFLARE_API_TOKEN o CLOUDFLARE_ACCOUNT_ID en el entorno '${{ inputs.environment }}'."
+            echo "Puéblalos con: ./scripts/setup-environment-secrets.sh ${{ inputs.environment }} ..."
+            exit 1
+          fi
+
+          ARGS=(deploy --env "${{ inputs.environment }}")
+          if [ -n "${API_PROXY_TARGET:-}" ]; then
+            ARGS+=(--var "API_PROXY_TARGET:$API_PROXY_TARGET")
+          fi
+
+          echo "Desplegando entorno '${{ inputs.environment }}' desde ${{ inputs.ref }}"
+          pnpm exec wrangler "${ARGS[@]}"
