@@ -72,7 +72,7 @@ export function ExportSelectedTableOperationsDialog({
         </span>
         <span className="sr-only md:not-sr-only">Exportar ({count})</span>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>

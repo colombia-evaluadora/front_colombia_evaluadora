@@ -26,6 +26,21 @@ function MatriculaGradeCell({ grade }: { grade: number }) {
 
 const NOT_EDITABLE_STATUSES: MatriculaStatus[] = ["Reubicado", "Promovido"]
 
+export const MATRICULA_EXPORT_COLUMN_KEYS: Partial<Record<string, string>> = {
+  documentNumber: "document_number",
+  firstName: "first_name",
+  lastName: "last_name",
+  institution: "institution",
+  campus: "campus",
+  shift: "shift",
+  educationLevel: "education_level",
+  grade: "grade",
+  group: "grupo",
+  enrollmentDate: "enrollment_date",
+  guardian: "guardian",
+  status: "status",
+}
+
 export const columnsMatricula: ColumnDef<Matricula>[] = [
   {
     id: "select",

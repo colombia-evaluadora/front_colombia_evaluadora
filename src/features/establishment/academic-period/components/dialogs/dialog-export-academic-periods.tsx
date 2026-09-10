@@ -67,7 +67,7 @@ export function ExportAcademicPeriodsDialog({ filters }: ExportAcademicPeriodsDi
       >
         <FileDownloadOutlinedIcon aria-hidden="true" />
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>

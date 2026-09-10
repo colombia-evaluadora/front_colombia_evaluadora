@@ -66,7 +66,7 @@ export function ExportRatingScalesDialog({ academicPeriodId }: ExportRatingScale
       >
         <FileDownloadOutlinedIcon />
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>

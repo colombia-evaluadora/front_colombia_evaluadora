@@ -82,7 +82,7 @@ export function DialogExportActividades({ rows }: DialogExportActividadesProps) 
           </Button>
         }
       />
-      <DialogContent>
+      <DialogContent showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>

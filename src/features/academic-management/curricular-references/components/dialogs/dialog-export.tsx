@@ -54,7 +54,7 @@ export function ExportCurricularReferencesDialog({ filters }: ExportCurricularRe
           </Button>
         }
       />
-      <DialogContent>
+      <DialogContent showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>

@@ -26,9 +26,12 @@ import type { ExportFormat, MatriculaQueryRequest } from "@/features/coverage/ap
 
 interface ExportMatriculaDialogProps {
   filters: MatriculaQueryRequest["filters"]
+  /** Columnas visibles de la tabla, ya traducidas a claves del reporte (ver
+   * `MATRICULA_EXPORT_COLUMN_KEYS` en `columns-matricula.tsx`). */
+  columns: string[]
 }
 
-export function ExportMatriculaDialog({ filters }: ExportMatriculaDialogProps) {
+export function ExportMatriculaDialog({ filters, columns }: ExportMatriculaDialogProps) {
   const [open, setOpen] = useState(false)
   const { notify } = useNotify()
 
@@ -49,7 +52,7 @@ export function ExportMatriculaDialog({ filters }: ExportMatriculaDialogProps) {
   })
 
   function handleExport(format: ExportFormat) {
-    exportAll.mutate({ filters, format })
+    exportAll.mutate({ filters, format, columns })
   }
 
   const pendingFormat = exportAll.isPending ? exportAll.variables?.format : undefined
@@ -68,12 +71,12 @@ export function ExportMatriculaDialog({ filters }: ExportMatriculaDialogProps) {
           </Button>
         }
       />
-      <DialogContent>
+      <DialogContent showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>
             Elige un formato para exportar todos los estudiantes que coincidan con los filtros
-            activos.
+            activos, con las columnas que tengas visibles en la tabla.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="sm:justify-between">

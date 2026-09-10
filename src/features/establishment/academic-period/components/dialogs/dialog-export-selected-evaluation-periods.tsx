@@ -76,7 +76,7 @@ export function ExportSelectedEvaluationPeriodsDialog({
           ({count})
         </span>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>

@@ -74,7 +74,7 @@ export function ExportSelectedEstablishmentsDialog({
           </Button>
         }
       />
-      <DialogContent>
+      <DialogContent showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>
