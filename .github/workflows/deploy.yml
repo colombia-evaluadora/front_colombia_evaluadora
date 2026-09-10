@@ -7,15 +7,29 @@
 # despliegue vive AQUÍ y solo aquí, por el mismo motivo que en el SSO: dos
 # copias divergen y la de producción termina siendo la vieja.
 #
-# ---- Secretos: por ENTORNO, no por repositorio ------------------------------
+# ---- Dónde vive cada secreto, y por qué -------------------------------------
 #
-# Misma convención que `colombia-evaluadora/SSO`: los NOMBRES son idénticos en
-# `test` y en `production`, lo que cambia es el VALOR. Eso es lo que permite
-# que este fichero no sepa a qué cuenta ni a qué Worker apunta.
+# DE REPOSITORIO (mismo valor para los tres entornos):
 #
-#   CLOUDFLARE_API_TOKEN   token con Workers Scripts: Edit (secreto)
-#   CLOUDFLARE_ACCOUNT_ID  cuenta de Cloudflare donde vive el Worker (secreto)
-#   ENV_FILE               contenido completo del `.env` de build (secreto)
+#   CLOUDFLARE_API_TOKEN   token con Workers Scripts: Edit + Zone Workers
+#                          Routes: Edit sobre colombiaevaluadora.com
+#   CLOUDFLARE_ACCOUNT_ID  la cuenta de Cloudflare
+#
+# DE ENTORNO (el valor CAMBIA en cada uno — es lo que justifica el scope):
+#
+#   ENV_FILE               el `.env` de build. En `dev` lleva
+#                          ENABLE_API_MOCKING=active; en test/production
+#                          apunta a su backend.
+#
+# El SSO los tiene todos por entorno porque allá TODOS difieren: SSH_TARGET y
+# SSH_KEY son de dos Linodes distintos. Acá los tres Workers viven en la MISMA
+# cuenta de Cloudflare, así que token y account id son el mismo valor: tenerlos
+# por entorno serían seis copias del mismo secreto —seis sitios que rotar y que
+# se desincronizan— sin ganar aislamiento, porque un token compartido entre
+# entornos no aísla nada aunque esté scopeado.
+#
+# Un secreto de entorno PISA al de repositorio si coinciden en nombre. No hay
+# duplicados a propósito: cada uno vive en un sitio y solo uno.
 #
 # Y una VARIABLE de entorno, opcional (no secreto — se ve en los logs a
 # propósito, es configuración, no credencial):

@@ -15,10 +15,20 @@
 #
 # ─── Lo que crea ─────────────────────────────────────────────────────
 #
-# SECRETOS (cifrados, enmascarados en los logs):
-#   CLOUDFLARE_API_TOKEN   token con Workers Scripts: Edit
-#   CLOUDFLARE_ACCOUNT_ID  cuenta donde vive el Worker
+# SECRETO DE ENTORNO (cifrado, enmascarado en los logs):
 #   ENV_FILE               contenido completo del .env de build
+#
+# Es el UNICO que va por entorno, porque es el unico cuyo VALOR cambia: en
+# `dev` lleva ENABLE_API_MOCKING=active, en test/production apunta a su
+# backend.
+#
+# CLOUDFLARE_API_TOKEN y CLOUDFLARE_ACCOUNT_ID NO se configuran aca: van
+# como secretos de REPOSITORIO, porque los tres Workers viven en la misma
+# cuenta de Cloudflare y el valor es identico. Por entorno serian seis
+# copias del mismo secreto sin ganar aislamiento. Se cargan una sola vez:
+#
+#   gh secret set CLOUDFLARE_API_TOKEN  --repo <repo>
+#   gh secret set CLOUDFLARE_ACCOUNT_ID --repo <repo>
 #
 # VARIABLES (visibles en los logs — son configuración, no credenciales):
 #   API_PROXY_TARGET       backend al que el Worker reenvía /api/*. Opcional:
@@ -44,14 +54,12 @@
 #
 # ─── Uso ─────────────────────────────────────────────────────────────
 #
-#   ./scripts/setup-environment-secrets.sh test \
-#       --account-id <cloudflare-account-id> \
+#   ./scripts/setup-environment-secrets.sh dev \
 #       --api-proxy-target http://172-233-184-248.ip.linodeusercontent.com:8080 \
-#       --env-file ./.env.test \
-#       --token            # lo pide por stdin, no se pasa por argumento
+#       --env-file ./.env.dev
 #
 # Ningún valor sensible viaja como argumento: los argumentos son visibles en
-# `ps` y quedan en el historial del shell. El token va SIEMPRE por stdin.
+# `ps` y quedan en el historial del shell.
 #
 set -euo pipefail
 
@@ -60,28 +68,26 @@ REPO="${REPO:-colombia-evaluadora/front_colombia_evaluadora}"
 ENTORNO="${1:-}"
 shift || true
 
-ACCOUNT_ID=""
 API_PROXY_TARGET=""
 ENV_FILE_PATH=""
-PEDIR_TOKEN=0
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --account-id)        ACCOUNT_ID="$2"; shift 2 ;;
         --api-proxy-target)  API_PROXY_TARGET="$2"; shift 2 ;;
         --env-file)          ENV_FILE_PATH="$2"; shift 2 ;;
-        --token)             PEDIR_TOKEN=1; shift ;;
-        -h|--help)           sed -n '2,58p' "$0"; exit 0 ;;
+        -h|--help)           sed -n '2,64p' "$0"; exit 0 ;;
         *) echo "Opción desconocida: $1" >&2; exit 2 ;;
     esac
 done
 
-if [[ "$ENTORNO" != "test" && "$ENTORNO" != "production" ]]; then
-    echo "Uso: $0 <test|production> [opciones]" >&2
-    echo "     --token                    pide el CLOUDFLARE_API_TOKEN por stdin" >&2
-    echo "     --account-id ID            CLOUDFLARE_ACCOUNT_ID" >&2
+if [[ "$ENTORNO" != "dev" && "$ENTORNO" != "test" && "$ENTORNO" != "production" ]]; then
+    echo "Uso: $0 <dev|test|production> [opciones]" >&2
     echo "     --api-proxy-target URL     backend del proxy /api/* (variable)" >&2
     echo "     --env-file RUTA            .env de build para ese entorno" >&2
+    echo >&2
+    echo "El token y el account id NO van por entorno: son secretos de repo." >&2
+    echo "  gh secret set CLOUDFLARE_API_TOKEN  --repo $REPO" >&2
+    echo "  gh secret set CLOUDFLARE_ACCOUNT_ID --repo $REPO" >&2
     exit 2
 fi
 
@@ -101,23 +107,18 @@ fi
 
 echo "Entorno: $ENTORNO  (repo $REPO)"
 
-# ─── CLOUDFLARE_API_TOKEN ────────────────────────────────────────────
-if [[ "$PEDIR_TOKEN" -eq 1 ]]; then
-    # -s: no se hace eco en la terminal. Y nunca como argumento: `ps` los
-    # muestra y el shell los guarda en el historial.
-    read -rsp "CLOUDFLARE_API_TOKEN (no se muestra): " TOKEN
-    echo
-    [[ -n "$TOKEN" ]] || { echo "Token vacío." >&2; exit 1; }
-    printf '%s' "$TOKEN" | gh secret set CLOUDFLARE_API_TOKEN --env "$ENTORNO" --repo "$REPO"
-    unset TOKEN
-    echo "  CLOUDFLARE_API_TOKEN   ok  (secreto)"
-fi
-
-# ─── CLOUDFLARE_ACCOUNT_ID ───────────────────────────────────────────
-if [[ -n "$ACCOUNT_ID" ]]; then
-    printf '%s' "$ACCOUNT_ID" | gh secret set CLOUDFLARE_ACCOUNT_ID --env "$ENTORNO" --repo "$REPO"
-    echo "  CLOUDFLARE_ACCOUNT_ID  ok  (secreto)"
-fi
+# ─── Aviso si quedaron duplicados del token a nivel entorno ──────────
+#
+# Un secreto de entorno PISA al de repositorio. Si alguien dejó una copia
+# vieja acá, el deploy usaría esa y rotar el de repo no tendría efecto —
+# un fallo silencioso y difícil de ver.
+for SOBRANTE in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID; do
+    if gh api "repos/$REPO/environments/$ENTORNO/secrets/$SOBRANTE" >/dev/null 2>&1; then
+        echo "  AVISO: '$SOBRANTE' existe como secreto del entorno '$ENTORNO'." >&2
+        echo "         Pisa al de repositorio. Borralo con:" >&2
+        echo "           gh secret delete $SOBRANTE --env $ENTORNO --repo $REPO" >&2
+    fi
+done
 
 # ─── ENV_FILE ────────────────────────────────────────────────────────
 verificar_env() {
