@@ -21,8 +21,13 @@ import type { Actividad } from "@/features/planeador/api/types/actividad"
  *
  * Fuera de alcance por ahora (necesitan sus propios endpoints — 4.7/4.8/
  * 4.9/4.11 — y el segundo depende del referente): MATERIALES, ADAPTACIONES,
- * RECUPERACION, EVIDENCIAS, CRITERIOS. `ASIGNAR_TODO_EL_GRUPO` queda en
- * `true`: el form no tiene todavía un selector de estudiantes puntuales.
+ * RECUPERACION, CRITERIOS. `ASIGNAR_TODO_EL_GRUPO` queda en `true`: el form
+ * no tiene todavía un selector de estudiantes puntuales.
+ *
+ * `EVIDENCIAS` (ids de nivel 2 del referente curricular de la unidad, ver
+ * `use-unidad-referente-query.ts`) SÍ viaja acá — confirmado por la
+ * colección Postman `planeador-flujo-unidad-actividad`, paso 7, que la
+ * manda directo en este mismo body junto con `FK_TUNIDAD`.
  */
 async function createActividad(actividad: Actividad): Promise<unknown> {
   if (env.ENABLE_API_MOCKING) {
@@ -46,8 +51,20 @@ async function createActividad(actividad: Actividad): Promise<unknown> {
   }
   if (actividad.unidad.id !== 0) {
     body.FK_TUNIDAD = actividad.unidad.id
+    if (actividad.evidenciasIds.length > 0) {
+      body.EVIDENCIAS = actividad.evidenciasIds
+    }
   }
-  if (actividad.esEvaluativa && actividad.ponderacion > 0) {
+  // Alternativos, no coexisten (ver el comentario de `Actividad.notaMaxima`):
+  // `PONDERACION` cuando la unidad calcula por "Ponderado", `NOTA_MAXIMA`
+  // cuando calcula por "Suma de puntos" — con "Promedio simple" ninguno de
+  // los dos se manda. El form ya solo deja cargado el que corresponde (ver
+  // el `onValueChange` de "Unidad temática asociada" en
+  // `form-editar-actividad.tsx`), así que acá alcanza con mirar cuál trae
+  // valor.
+  if (actividad.esEvaluativa && actividad.notaMaxima != null) {
+    body.NOTA_MAXIMA = actividad.notaMaxima
+  } else if (actividad.esEvaluativa && actividad.ponderacion > 0) {
     body.PONDERACION = actividad.ponderacion
   }
   return api.post("/eval-col/planeador/actividades", body)

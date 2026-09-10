@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { useNotify } from "@/components/notice/notice-context"
+import { getErrorMessage } from "@/lib/api-client"
 import { CheckIcon, PencilIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 import {
   Popover,
@@ -111,7 +112,7 @@ export function CeldaNotaPopover({
         setOpen(false)
       },
       onError: (error) => {
-        notify(error.message || "No se pudo guardar la nota.", { variant: "error" })
+        notify(getErrorMessage(error), { variant: "error" })
       },
     },
   })

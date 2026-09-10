@@ -2,6 +2,7 @@ import { useMemo, useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { useNotify } from "@/components/notice/notice-context"
+import { getErrorMessage } from "@/lib/api-client"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
@@ -133,9 +134,7 @@ export function CalificarActividadBulk({
       notify("Calificación en bloque guardada.")
       onVolver()
     } catch (error) {
-      notify(error instanceof Error ? error.message : "No se pudo guardar la calificación.", {
-        variant: "error",
-      })
+      notify(getErrorMessage(error), { variant: "error" })
     } finally {
       setGuardando(false)
     }

@@ -131,14 +131,16 @@ export interface UnidadTematica {
    */
   referenteVigente?: boolean
   /**
-   * Textos de los enunciados de Derechos Básicos de Aprendizaje (DBA)
-   * elegidos para esta unidad. Se ofrecen para elegir según el Referente
-   * Curricular que le corresponde al `grado` (por nivel educativo) — ver
-   * `useEnunciadosDbaQuery` —, pero acá se guarda el texto plano, no el id
-   * del enunciado: mismo criterio que `objetivos`/`contenidos`, así el
-   * form los agrega/quita con el mismo widget (`ListaAgregableCaja`).
+   * Enunciados de Derechos Básicos de Aprendizaje (DBA) elegidos para esta
+   * unidad. Se ofrecen según el Referente Curricular que le corresponde al
+   * `grado` (por nivel educativo) — ver `useEnunciadosDbaQuery`. A
+   * diferencia de `objetivos`/`contenidos` (texto libre), acá SÍ hace falta
+   * el `id` real de cada enunciado: es lo que `POST /planeador/unidades`
+   * manda como `ENUNCIADOS: [ids]` (`create-unidad.ts`) y lo que la
+   * actividad necesita para saber qué evidencias (nivel 2, hijas de estos
+   * enunciados) puede ofrecer para marcar.
    */
-  enunciadosDba: string[]
+  enunciadosDba: { id: number; text: string }[]
   criterios: CriterioUnidad[]
   actividades: UnidadActividad[]
 }

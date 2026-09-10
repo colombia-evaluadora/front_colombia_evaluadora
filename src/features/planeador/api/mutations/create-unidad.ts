@@ -20,9 +20,14 @@ import type { UnidadInfoGeneral } from "@/features/planeador/api/mutations/updat
  * un body a medias que el backend rechazaría igual.
  *
  * `FK_REFERENTE_CURRICULAR` es opcional y NO se manda: se deriva en la
- * práctica del grado → nivel de enseñanza (`GET .../referente`), que
- * todavía no está cableado en el front (queda para cuando se aborde el
- * "referente curricular" completo).
+ * práctica del grado → nivel de enseñanza (`GET .../referente`) — mandar
+ * uno que no aplique al nivel del grado da 409 (confirmado, colección
+ * Postman `planeador-flujo-unidad-actividad`, paso 4).
+ *
+ * `ENUNCIADOS` son los ids de los enunciados de DBA (nivel 1) que el
+ * docente marcó (`useEnunciadosDbaQuery`/`ListaAgregableCajaSelect`, ver
+ * `form-unidad-info-general.tsx`) — son justo los que la actividad podrá
+ * usar después para ofrecer sus evidencias (nivel 2, hijas de estos).
  */
 async function createUnidad(data: UnidadInfoGeneral): Promise<unknown> {
   if (env.ENABLE_API_MOCKING) {
@@ -32,7 +37,7 @@ async function createUnidad(data: UnidadInfoGeneral): Promise<unknown> {
     throw new Error("Elegí un grado y una asignatura antes de guardar.")
   }
   const calculoDefinitivaId = await resolveCalculoDefinitivaId(data.metodoCalculo)
-  return api.post("/eval-col/planeador/unidades", {
+  const body: Record<string, unknown> = {
     NOMBRE: data.nombre,
     DESCRIPCION: data.descripcion,
     FK_TASIGNATURA: data.asignaturaId,
@@ -40,7 +45,11 @@ async function createUnidad(data: UnidadInfoGeneral): Promise<unknown> {
     FK_TLV_CALCULO_DEFINITIVA: calculoDefinitivaId,
     OBJETIVOS: data.objetivos,
     CONTENIDOS: data.contenidos,
-  })
+  }
+  if (data.enunciadosDba.length > 0) {
+    body.ENUNCIADOS = data.enunciadosDba.map((enunciado) => enunciado.id)
+  }
+  return api.post("/eval-col/planeador/unidades", body)
 }
 
 interface UseCreateUnidadOptions {

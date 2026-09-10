@@ -16,6 +16,7 @@ import { Spinner } from "@/components/ui/spinner"
 import { paths } from "@/config/paths"
 
 import { useUnidadesQuery } from "@/features/planeador/api/query/use-unidades-query"
+import { useUnidadesTabsQuery } from "@/features/planeador/api/query/use-unidades-tabs-query"
 import { SearchPlaneador } from "@/features/planeador/components/search/search-planeador"
 import { PlaneadorTabs } from "@/features/planeador/components/planeador-tabs"
 import { UnidadCard } from "@/features/planeador/components/unidad-card"
@@ -45,13 +46,35 @@ export function PlaneadorUnidadesPage() {
   const { data: unidadesResult, isPending, isError, refetch } = useUnidadesQuery()
   const unidades = unidadesResult?.rows ?? []
 
+  // La pestaña "Unidad temática" puede ser varias (una por referente
+  // curricular/nivel educativo, `GET /planeador/unidades/tabs` — ver
+  // `planeador-tabs.tsx`): con más de una, el listado se acota a los
+  // grados de la pestaña activa (`?instrumento=`). Con una sola (el caso
+  // más común, un docente de un solo nivel) no hay nada que acotar.
+  const { data: unidadTabs = [] } = useUnidadesTabsQuery()
+  const tabActiva =
+    unidadTabs.length > 1
+      ? (unidadTabs.find((t) => t.instrumento === search.instrumento) ?? unidadTabs[0])
+      : undefined
+
+  // "Agregar unidad" no sirve para todos los docentes: el rótulo de esta
+  // pestaña varía por referente curricular (`instrumento` — "Unidad
+  // temática" en Primaria, "Proyecto pedagógico" en Preescolar, ver
+  // `planeador-tabs.tsx`), así que el botón usa el mismo nombre que la
+  // pestaña activa en vez de "unidad" fijo.
+  const tabLabel = (tabActiva?.instrumento ?? unidadTabs[0]?.instrumento ?? "Unidad temática").toLowerCase()
+
   const filtered = React.useMemo(() => {
+    const porInstrumento =
+      tabActiva && tabActiva.gradoIds.length > 0
+        ? unidades.filter((u) => u.gradoId != null && tabActiva.gradoIds.includes(u.gradoId))
+        : unidades
     const term = buscar.trim().toLowerCase()
-    if (!term) return unidades
-    return unidades.filter((u) =>
+    if (!term) return porInstrumento
+    return porInstrumento.filter((u) =>
       [u.nombre, u.area, u.asignatura, u.grado].join(" ").toLowerCase().includes(term),
     )
-  }, [unidades, buscar])
+  }, [unidades, buscar, tabActiva])
 
   // Unidad abierta en el panel. Si la URL no trae ninguna —o trae una que ya
   // no está en la lista filtrada— se cae a la primera, para que la columna
@@ -89,11 +112,11 @@ export function PlaneadorUnidadesPage() {
                 color="primary"
                 size="sm"
                 variant="fill"
-                aria-label="Agregar unidad"
+                aria-label={`Agregar ${tabLabel}`}
                 render={<Link to={paths.app.planeadorUnidadCrear.getHref()} />}
               >
                 <PlusCircleIcon data-icon="inline-start" />
-                Agregar unidad
+                Agregar {tabLabel}
               </Button>
               <Button
                 variant="outline"

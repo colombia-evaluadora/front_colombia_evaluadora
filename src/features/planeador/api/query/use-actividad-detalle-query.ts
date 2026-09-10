@@ -111,6 +111,25 @@ function toDateOnly(value: string | null): string {
   return value ? value.slice(0, 10) : ""
 }
 
+/**
+ * Ids de las evidencias ya marcadas para ESTA actividad — deberían salir de
+ * `unidad_configuracion` (paso 8 de la colección Postman
+ * `planeador-flujo-unidad-actividad` confirma que el campo existe y trae el
+ * árbol de enunciados/evidencias), pero no hay un ejemplo real capturado de
+ * CUÁL es el flag que marca "esta evidencia ya está en la actividad".
+ *
+ * Un primer intento adivinando el nombre del flag terminó marcando
+ * evidencias como ya relacionadas cuando no lo estaban (deshabilitaba el
+ * checkbox sin que hubiera nada guardado) — peor que no mostrar nada. Hasta
+ * tener una respuesta real de este campo, se deja siempre en `[]`: el
+ * checklist de evidencias arranca sin nada tildado ni deshabilitado en el
+ * panel de detalle (se puede volver a marcar sin problema — el mock/backend
+ * ya tolera un alta repetida sin duplicar).
+ */
+function evidenciasIdsFromUnidadConfiguracion(_raw: unknown): number[] {
+  return []
+}
+
 function toActividadDetalle(row: ActividadDetalleRow): Actividad {
   return {
     id: row.pk_tactividad,
@@ -124,6 +143,7 @@ function toActividadDetalle(row: ActividadDetalleRow): Actividad {
       row.fk_tunidad != null
         ? { id: row.fk_tunidad, nombre: row.unidad ?? "" }
         : { id: 0, nombre: "" },
+    evidenciasIds: evidenciasIdsFromUnidadConfiguracion(row.unidad_configuracion),
     asignatura: row.asignatura ?? "",
     grado: row.grado ?? "",
     gradoId: row.fk_tgrado ?? undefined,
@@ -144,6 +164,7 @@ function toActividadDetalle(row: ActividadDetalleRow): Actividad {
     esEvaluativa: row.es_evaluativa === "S",
     instrumento: row.instrumento_evaluacion ?? "",
     ponderacion: row.ponderacion ?? 0,
+    notaMaxima: row.nota_maxima ?? undefined,
     generaEvidencias: row.genera_evidencias === "S",
     tipoEvidencia: row.tipo_evidencia ?? "",
     requiereValidacion: row.requiere_validacion_coordinador === "S",

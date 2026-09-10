@@ -21,10 +21,17 @@ interface UpdateActividadInput {
  * grado/grupo/asignatura en este form (`gradoId`/`grupoId`/`asignaturaId`
  * resueltos) — si no los tocó, se omiten.
  *
- * Mismo alcance acotado que `create-actividad.ts`: no toca unidad
- * (`DESVINCULAR_UNIDAD`/`FK_TUNIDAD` se delegan en la carpeta 2, todavía
- * sin UI para reasignar unidad desde acá), materiales, adaptaciones,
- * recuperación, evidencias ni criterios.
+ * No toca `FK_TUNIDAD`: reasignar la unidad de la actividad se resuelve
+ * ANTES de llamar a este mutation, en `handleSubmit` de
+ * `planeador-editar-actividad-page.tsx`, contra las rutas dedicadas
+ * (`useLinkActividadUnidad`/`useUnlinkActividadUnidad`) — son las únicas que
+ * conocen la `ponderacion` que exige esa unidad. Mandar `FK_TUNIDAD` acá
+ * también duplicaba la escritura y el backend terminaba validando la
+ * `PONDERACION` de esta actividad (el peso en la nota final, campo
+ * distinto) contra la unidad recién vinculada, con 400 de por medio.
+ *
+ * Mismo alcance acotado que `create-actividad.ts` fuera de esto: no toca
+ * materiales, adaptaciones, recuperación, evidencias ni criterios.
  */
 async function updateActividad({ actividadId, data }: UpdateActividadInput): Promise<unknown> {
   if (env.ENABLE_API_MOCKING) {
@@ -40,7 +47,12 @@ async function updateActividad({ actividadId, data }: UpdateActividadInput): Pro
   if (data.asignaturaId != null) body.FK_TASIGNATURA = data.asignaturaId
   const tipoActividadId = await resolveTipoActividadId(data.tipo)
   if (tipoActividadId != null) body.FK_TLV_TIPO_ACTIVIDAD = tipoActividadId
-  if (data.esEvaluativa && data.ponderacion > 0) body.PONDERACION = data.ponderacion
+  // Alternativos, no coexisten (ver el comentario de `Actividad.notaMaxima`
+  // y el mismo branch en `create-actividad.ts`): `NOTA_MAXIMA` cuando la
+  // unidad calcula por "Suma de puntos", `PONDERACION` cuando calcula por
+  // "Ponderado" — el form ya deja cargado solo el que corresponde.
+  if (data.esEvaluativa && data.notaMaxima != null) body.NOTA_MAXIMA = data.notaMaxima
+  else if (data.esEvaluativa && data.ponderacion > 0) body.PONDERACION = data.ponderacion
   return api.put(`/eval-col/planeador/actividades/${actividadId}`, body)
 }
 
