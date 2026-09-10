@@ -23,6 +23,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { Pagination } from "@/components/pagination"
 
+import { toSentenceCase } from "@/features/academic-management/curricular-references/api/ui-mappings"
 import { useCurricularStatementsQuery } from "@/features/academic-management/curricular-references/api/query/use-curricular-statements"
 import { useCurricularEvidencesQuery } from "@/features/academic-management/curricular-references/api/query/use-curricular-evidences"
 import { ManageStatementDialog } from "@/features/academic-management/curricular-references/components/statements/dialog-manage-statement"
@@ -37,11 +38,12 @@ interface TabStatementsProps {
 }
 
 export function TabStatements({ reference }: TabStatementsProps) {
-  const level1Label = reference.level1 || "Enunciado"
-  const level2Label = reference.level2 || "Evidencia"
+  const level1Label = toSentenceCase(reference.level1 || "Enunciado")
+  const level2Label = toSentenceCase(reference.level2 || "Evidencia")
   const [areaId, setAreaId] = useState<number | null | undefined>(
     reference.areas.length > 0 ? reference.areas[0].id : null,
   )
+  const [onlyUnassigned, setOnlyUnassigned] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [search, setSearch] = useState("")
   const [evidenceSearchOpen, setEvidenceSearchOpen] = useState(false)
@@ -62,21 +64,27 @@ export function TabStatements({ reference }: TabStatementsProps) {
     areaId,
   )
 
-  const filteredStatements = statements.filter((statement) =>
-    statement.text.toLowerCase().includes(search.trim().toLowerCase()),
+  const filteredStatements = statements.filter(
+    (statement) =>
+      statement.text.toLowerCase().includes(search.trim().toLowerCase()) &&
+      (!onlyUnassigned || statement.areaId === null),
   )
 
   useEffect(() => {
     if (filteredStatements.some((statement) => statement.id === selectedStatementId)) return
     setSelectedStatementId(filteredStatements[0]?.id ?? null)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statements, areaId])
+  }, [statements, areaId, onlyUnassigned])
 
   const { data: evidences = [], isPending: isEvidencesPending } = useCurricularEvidencesQuery(
     selectedStatementId,
   )
   const hasReferenceAreas = reference.areas.length > 0
-  const areaLabels = Object.fromEntries(reference.areas.map((area) => [area.id, area.name]))
+  const UNASSIGNED_AREA = -1
+  const areaLabels = {
+    [UNASSIGNED_AREA]: "Sin asignar",
+    ...Object.fromEntries(reference.areas.map((area) => [area.id, toSentenceCase(area.name)])),
+  }
   const filteredEvidences = evidences.filter((evidence) =>
     evidence.text.toLowerCase().includes(evidenceSearch.trim().toLowerCase()),
   )
@@ -100,16 +108,30 @@ export function TabStatements({ reference }: TabStatementsProps) {
           <FieldLabel htmlFor="statement-area">Áreas o dimensiones</FieldLabel>
           <ComboboxField
             items={areaLabels}
-            value={areaId}
-            onValueChange={(value) => setAreaId(value == null ? undefined : (value as number))}
+            value={onlyUnassigned ? UNASSIGNED_AREA : areaId}
+            onValueChange={(value) => {
+              if (value == null) {
+                setAreaId(undefined)
+                setOnlyUnassigned(false)
+                return
+              }
+              if (value === UNASSIGNED_AREA) {
+                setAreaId(null)
+                setOnlyUnassigned(true)
+                return
+              }
+              setAreaId(value as number)
+              setOnlyUnassigned(false)
+            }}
           >
             <ComboboxFieldTrigger id="statement-area" size="sm" className="h-12 w-full [&_svg]:size-5">
               <ComboboxFieldValue placeholder="Seleccionar" />
             </ComboboxFieldTrigger>
             <ComboboxFieldContent>
+              <ComboboxFieldItem value={UNASSIGNED_AREA}>Sin asignar</ComboboxFieldItem>
               {reference.areas.map((area) => (
                 <ComboboxFieldItem key={area.id} value={area.id}>
-                  {area.name}
+                  {toSentenceCase(area.name)}
                 </ComboboxFieldItem>
               ))}
             </ComboboxFieldContent>
@@ -118,8 +140,8 @@ export function TabStatements({ reference }: TabStatementsProps) {
       )}
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-[20rem_1fr]">
-      <div className="flex flex-col gap-3">
-        <div className="flex items-center gap-2">
+      <div className="min-w-0 flex flex-col gap-3">
+        <div className="flex min-w-0 items-center gap-2">
           <Popover open={searchOpen} onOpenChange={setSearchOpen}>
             <PopoverTrigger
               render={
@@ -150,11 +172,14 @@ export function TabStatements({ reference }: TabStatementsProps) {
             variant="fill"
             color="primary"
             size="sm"
+            className="min-w-0 shrink"
             disabled={areaId === undefined}
             onClick={() => setStatementDialog({ open: true, statement: null })}
           >
-            <ControlPointIcon data-icon="inline-start" className="size-5" />
-            Agregar {level1Label.toLowerCase()}
+            <ControlPointIcon data-icon="inline-start" className="size-5 shrink-0" />
+            <span className="truncate" title={`Agregar ${level1Label.toLowerCase()}`}>
+              Agregar {level1Label.toLowerCase()}
+            </span>
           </Button>
         </div>
 
@@ -165,7 +190,7 @@ export function TabStatements({ reference }: TabStatementsProps) {
               <Skeleton className="h-16 w-full" />
             </>
           ) : filteredStatements.length === 0 ? (
-            <p className="text-muted-foreground rounded-lg border p-4 text-center text-sm">
+            <p className="text-muted-foreground rounded-lg border p-4 text-center text-sm break-words">
               {areaId === undefined ? "Selecciona un área." : `Sin ${level1Label.toLowerCase()}s.`}
             </p>
           ) : (
@@ -181,7 +206,7 @@ export function TabStatements({ reference }: TabStatementsProps) {
                     selected ? "border-primary bg-primary/5" : "border-border hover:bg-muted/40",
                   )}
                 >
-                  <p className="font-bold">{statement.text}</p>
+                  <p className="break-words font-bold">{statement.text}</p>
                   <div className="flex items-center justify-between">
                     <Badge variant="soft" color={statement.active ? "success" : "destructive"}>
                       {statement.active ? "Activo" : "Inactivo"}
@@ -220,11 +245,14 @@ export function TabStatements({ reference }: TabStatementsProps) {
       </div>
 
       <div className="overflow-hidden rounded-lg border border-border">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-table-screen-title px-4 py-2">
-          <p className="font-heading text-[17px] font-bold">
+        <div className="flex items-center justify-between gap-2 border-b border-border bg-table-screen-title px-4 py-2">
+          <p
+            className="min-w-0 flex-1 truncate font-heading text-[17px] font-bold"
+            title={`${level2Label}s del ${level1Label.toLowerCase()}`}
+          >
             {level2Label}s del {level1Label.toLowerCase()}
           </p>
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             <Popover open={evidenceSearchOpen} onOpenChange={setEvidenceSearchOpen}>
               <PopoverTrigger
                 render={
@@ -262,21 +290,24 @@ export function TabStatements({ reference }: TabStatementsProps) {
               variant="fill"
               color="primary"
               size="sm"
+              className="min-w-0 max-w-48"
               disabled={selectedStatementId == null}
               onClick={() => setEvidenceDialog({ open: true, evidence: null })}
             >
-              <ControlPointIcon data-icon="inline-start" className="size-5" />
-              Agregar {level2Label.toLowerCase()}s
+              <ControlPointIcon data-icon="inline-start" className="size-5 shrink-0" />
+              <span className="truncate" title={`Agregar ${level2Label.toLowerCase()}s`}>
+                Agregar {level2Label.toLowerCase()}s
+              </span>
             </Button>
           </div>
         </div>
 
         <div className="p-4">
         <div className="max-h-[28rem] overflow-y-auto">
-        <Table>
+        <Table className="table-fixed">
           <TableHeader className="sticky top-0 z-10 bg-background">
             <TableRow className="hover:bg-transparent">
-              <TableHead className="w-12 text-foreground">
+              <TableHead className="w-16 text-foreground">
                 <div className="flex justify-center">
                   <TableSortableHeader
                     title="#"
@@ -289,12 +320,13 @@ export function TabStatements({ reference }: TabStatementsProps) {
               <TableHead className="text-foreground">
                 <TableSortableHeader
                   title={level2Label}
+                  titleClassName="max-w-40 truncate"
                   sortKey="text"
                   sort={evidenceSort}
                   onSortChange={setEvidenceSort}
                 />
               </TableHead>
-              <TableHead className="text-foreground">
+              <TableHead className="w-32 text-foreground">
                 <TableSortableHeader
                   title="Estado"
                   sortKey="active"
@@ -310,7 +342,7 @@ export function TabStatements({ reference }: TabStatementsProps) {
           <TableBody>
             {selectedStatementId == null ? (
               <TableRow className="hover:bg-transparent">
-                <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
+                <TableCell colSpan={3} className="h-24 text-center text-muted-foreground break-words">
                   Selecciona un {level1Label.toLowerCase()} para ver sus {level2Label.toLowerCase()}s.
                 </TableCell>
               </TableRow>
@@ -322,7 +354,7 @@ export function TabStatements({ reference }: TabStatementsProps) {
               </TableRow>
             ) : sortedEvidences.length === 0 ? (
               <TableRow className="hover:bg-transparent">
-                <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                <TableCell colSpan={4} className="h-24 text-center text-muted-foreground break-words">
                   Sin {level2Label.toLowerCase()}s.
                 </TableCell>
               </TableRow>
@@ -332,7 +364,7 @@ export function TabStatements({ reference }: TabStatementsProps) {
                   <TableCell className="text-center font-bold">
                     {clampedEvidencePageIndex * evidencePageSize + index + 1}
                   </TableCell>
-                  <TableCell>{evidence.text}</TableCell>
+                  <TableCell className="break-words">{evidence.text}</TableCell>
                   <TableCell>
                     <Badge
                       variant="soft"
@@ -387,8 +419,10 @@ export function TabStatements({ reference }: TabStatementsProps) {
         onOpenChange={(open) => setStatementDialog((prev) => ({ ...prev, open }))}
         curricularReferenceId={reference.id}
         areaId={areaId}
+        areas={reference.areas}
         statement={statementDialog.statement}
         levelLabel={level1Label}
+        onCreated={setSelectedStatementId}
       />
 
       {selectedStatementId != null && (
