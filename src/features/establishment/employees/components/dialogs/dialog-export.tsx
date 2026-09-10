@@ -68,7 +68,7 @@ export function ExportEmployeesDialog({ filters }: ExportEmployeesDialogProps) {
           </Button>
         }
       />
-      <DialogContent>
+      <DialogContent showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>

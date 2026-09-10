@@ -18,7 +18,7 @@ import { NoticeProvider } from "@/components/notice/notice-context"
 
 import { useMatriculaFilters } from "@/features/coverage/hooks/use-matricula-filters"
 import { useMatriculaQuery } from "@/features/coverage/api/query/use-matricula-query"
-import { columnsMatricula } from "@/features/coverage/components/table/columns-matricula"
+import { columnsMatricula, MATRICULA_EXPORT_COLUMN_KEYS } from "@/features/coverage/components/table/columns-matricula"
 import { SearchMatricula } from "@/features/coverage/components/search/search-matricula"
 import { ExportMatriculaDialog } from "@/features/coverage/components/dialogs/dialog-export-matricula"
 import { ExportSelectedMatriculaDialog } from "@/features/coverage/components/dialogs/dialog-export-selected-matricula"
@@ -76,6 +76,16 @@ export function MatriculaDataTable({ title, action, titleAction }: MatriculaData
     table.getRow(id)?.toggleSelected(false)
   }
 
+  // Columnas visibles de la tabla EN ESE MOMENTO, traducidas a las claves que
+  // espera el reporte -- así "Exportar" saca exactamente lo que se ve en
+  // pantalla, ni una columna oculta de más. `getVisibleLeafColumns` ya
+  // respeta el orden de `columnsMatricula` (no el de cuándo se activó cada
+  // una), que es el mismo orden en que aparecen como encabezados de la tabla.
+  const exportColumns = table
+    .getVisibleLeafColumns()
+    .map((column) => MATRICULA_EXPORT_COLUMN_KEYS[column.id])
+    .filter((key) => key !== undefined)
+
   return (
     <NoticeProvider>
       <TableScreen>
@@ -106,7 +116,7 @@ export function MatriculaDataTable({ title, action, titleAction }: MatriculaData
               ) : (
                 <>
                   {action}
-                  <ExportMatriculaDialog filters={queryFilters} />
+                  <ExportMatriculaDialog filters={queryFilters} columns={exportColumns} />
                 </>
               )}
             </TableScreenActions>

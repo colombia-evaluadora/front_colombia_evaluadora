@@ -208,6 +208,7 @@ function EvaluationCriteriaForm({
           return
         }
         notify(SUCCESS_MESSAGES.evaluationCriteria.updated)
+        form.reset(form.state.values)
       },
       onError: (error) => {
         notify(getErrorMessage(error), { variant: "error" })

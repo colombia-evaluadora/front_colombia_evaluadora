@@ -73,7 +73,7 @@ export function ExportSeguimientoDialog({ filters }: ExportSeguimientoDialogProp
         }
       />
 
-      <DialogContent>
+      <DialogContent showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Exportar reporte de asistencia</DialogTitle>
           <DialogDescription>

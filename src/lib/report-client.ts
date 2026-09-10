@@ -44,6 +44,7 @@ export type ReportKey =
   | "escalas"
   | "asignaciones"
   | "asistencia"
+  | "matricula"
 
 interface ReportInput {
   format: ExportFormat
@@ -51,6 +52,15 @@ interface ReportInput {
   filters?: unknown
   /** El orden de la tabla, si se quiere respetar en el reporte. */
   sorting?: unknown
+  /**
+   * Claves de columna a incluir, EN ORDEN -- típicamente las columnas que la
+   * tabla tiene visibles en ese momento (`table.getVisibleLeafColumns()`).
+   * `reporting-service` las filtra contra el catálogo YA declarado para ese
+   * reporte (`ReportRequest.columns`): una clave que no esté ahí se ignora,
+   * nunca se agrega una columna nueva por este camino. Vacío u omitido =
+   * todas las configuradas (comportamiento de siempre).
+   */
+  columns?: string[]
 }
 
 const ETIQUETA_FORMATO: Record<ExportFormat, string> = {
@@ -66,7 +76,7 @@ const ETIQUETA_FORMATO: Record<ExportFormat, string> = {
  */
 export async function downloadReport(
   key: ReportKey,
-  { format, filters, sorting }: ReportInput,
+  { format, filters, sorting, columns }: ReportInput,
 ): Promise<ExportResult> {
   try {
     // El genérico explícito NO es decorativo: `api-client` tiene un
@@ -76,12 +86,11 @@ export async function downloadReport(
     // desenvuelve nada — así que sin el genérico el resultado quedaba
     // `unknown`. Pidiendo `AxiosResponse<Blob>` el tipo vuelve a coincidir
     // con lo que realmente llega en runtime.
-    console.log(`[reportApi] POST ${env.API_URL}/reportes/${key}`, { format, filters, sorting })
-
     const response = await reportApi.post<AxiosResponse<Blob>>(`/reportes/${key}`, {
       format,
       filters,
       sorting,
+      columns,
     })
 
     const blob = response.data as Blob
