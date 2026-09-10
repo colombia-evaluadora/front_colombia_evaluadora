@@ -303,7 +303,7 @@ export function UnidadInfoGeneralFields({
         description="Selecciona los enunciados de DBA asociados a esta unidad."
         columnLabel="Enunciados"
         items={draft.enunciadosDba}
-        options={enunciadosDisponibles.map((e) => e.text)}
+        options={enunciadosDisponibles}
         onChange={(enunciadosDba) => onChange({ enunciadosDba })}
         disabled={!draft.grado}
         isPending={isPendingEnunciados}

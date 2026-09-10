@@ -47,6 +47,45 @@ function gradoGrupoMock(grado: string, grupo: string): string {
   return grupo.startsWith(grado) ? grupo : `${grado} ${grupo}`
 }
 
+// Mismo esquema de ids sintéticos por hash que `docentes/grupos` y
+// `docentes/grado-asignatura` (`hashString`, ver mocks/handlers/planeador/
+// docentes.ts) — `unidadesTematicasDb` solo guarda el nombre del grado/
+// asignatura, no un id propio, así que se deriva acá para que
+// `UnidadTematica.gradoId` exista en mock (lo necesita el filtrado por
+// pestaña de `GET /unidades/tabs`, ver `use-unidades-tabs-query.ts`).
+function gradoIdMock(grado: string): number {
+  return hashString(`grado-${grado}`) % 1000000
+}
+function asignaturaIdMock(asignatura: string): number {
+  return hashString(`asignatura-${asignatura}`) % 1000000
+}
+
+// Rótulos dinámicos de los dos niveles del árbol de referente curricular
+// (colección Postman `planeador-flujo-unidad-actividad`: "Propósito"/
+// "Imprescindible" en Preescolar, "Enunciado"/"Evidencia" en Primaria). El
+// mock no modela "nivel educativo" aparte — se aproxima con el mismo campo
+// que ya distingue las unidades formativas (Preescolar tiende a serlo) para
+// que la UI tenga ALGO dinámico que mostrar en vez de un literal fijo.
+function nivelEtiquetasMock(enfoquePedagogico: "Evaluativo" | "Formativo"): {
+  nivel1: string
+  nivel2: string
+} {
+  return enfoquePedagogico === "Formativo"
+    ? { nivel1: "Propósito", nivel2: "Imprescindible" }
+    : { nivel1: "Enunciado", nivel2: "Evidencia" }
+}
+
+// Evidencias (nivel 2) de ejemplo para un enunciado — el mock no tiene un
+// catálogo real de evidencias por enunciado, así que arma un par de textos
+// plausibles a partir del propio texto del enunciado, solo para que la
+// sección de checkboxes de la actividad tenga algo real que ofrecer.
+function evidenciasMock(enunciadoId: number, enunciadoTexto: string) {
+  return [
+    { pk: enunciadoId * 100 + 1, texto: `Aplica: ${enunciadoTexto}` },
+    { pk: enunciadoId * 100 + 2, texto: `Refuerza: ${enunciadoTexto}` },
+  ]
+}
+
 /**
  * Endpoints del Planeador bajo `/api/eval-col` — mismo prefijo que el resto
  * del microservicio (roles, menús, planes). El path se duplica acá con la
@@ -72,12 +111,20 @@ const ACTIVIDAD_MIAS_URL = "/api/eval-col/planeador/actividades/mias"
 const ACTIVIDAD_DETAIL_URL = "/api/eval-col/planeador/actividades/:id"
 const ACTIVIDAD_CALIFICACIONES_URL =
   "/api/eval-col/planeador/actividades/:id/calificaciones"
+const ACTIVIDAD_EVIDENCIAS_URL = "/api/eval-col/planeador/actividades/:id/evidencias"
 const ACTIVIDAD_CREATE_URL = "/api/eval-col/planeador/actividades"
 const ACTIVIDAD_DELETE_URL = "/api/eval-col/planeador/actividades/:id"
 const ACTIVIDAD_EXPORT_ALL_URL = "/api/eval-col/planeador/actividades/export-all"
 const ACTIVIDAD_EXPORTAR_JSON_URL = "/api/eval-col/planeador/actividades/exportar"
 const ACTIVIDAD_IMPORTAR_JSON_URL = "/api/eval-col/planeador/actividades/importar"
 const UNIDAD_LIST_URL = "/api/eval-col/planeador/unidades"
+// Registrada ANTES que `UNIDAD_DETAIL_URL` (`/unidades/:id`) por el mismo
+// motivo que `ACTIVIDAD_STATS_URL`/etc. arriba: si no, "tabs" calzaría ahí
+// como si fuera un id.
+const UNIDAD_TABS_URL = "/api/eval-col/planeador/unidades/tabs"
+// Mismo motivo que `UNIDAD_TABS_URL`: registrada antes que `UNIDAD_DETAIL_URL`
+// para que "enunciados" no calce ahí como si fuera un `:id`.
+const UNIDAD_ENUNCIADO_UNLINK_URL = "/api/eval-col/planeador/unidades/enunciados/:id"
 const UNIDAD_DETAIL_URL = "/api/eval-col/planeador/unidades/:id"
 const UNIDAD_CRITERIO_CREATE_URL = "/api/eval-col/planeador/unidades/:id/criterios"
 const UNIDAD_VALORACIONES_URL = "/api/eval-col/planeador/unidades/:id/valoraciones"
@@ -275,6 +322,7 @@ function actividadFromImportRow(raw: Record<string, unknown>, id: number): Activ
     tipo: String(raw.tipo ?? ""),
     esRecuperacion: false,
     unidad: { id: 0, nombre: String(raw.unidad ?? "") },
+    evidenciasIds: [],
     asignatura: String(raw.asignatura ?? ""),
     grado: String(raw.grado ?? ""),
     grupo: String(raw.grupo ?? ""),
@@ -486,6 +534,26 @@ export const planeadorHandlers = [
     return HttpResponse.json({ status: "ok", actividad: planeadorDb[index] })
   }),
 
+  // Agrega UNA evidencia a una actividad ya creada — mismo camino real que
+  // documenta la colección Postman `planeador-flujo-unidad-actividad`
+  // (nota del paso 7) para cuando no se marcó al crear. No hay endpoint
+  // real confirmado para quitar una ya relacionada, así que el mock
+  // tampoco lo modela (ver `Actividad.evidenciasIds`).
+  http.post(ACTIVIDAD_EVIDENCIAS_URL, async ({ params, request }) => {
+    await delay(200)
+    const id = Number(params.id)
+    const index = planeadorDb.findIndex((row) => row.id === id)
+    if (index === -1) {
+      return HttpResponse.json({ message: "Actividad no encontrada." }, { status: 404 })
+    }
+    const body = (await request.json()) as { FK_TLV_EVIDENCIA: number }
+    const actual = planeadorDb[index]!
+    if (!actual.evidenciasIds.includes(body.FK_TLV_EVIDENCIA)) {
+      actual.evidenciasIds = [...actual.evidenciasIds, body.FK_TLV_EVIDENCIA]
+    }
+    return HttpResponse.json({ status: "ok" })
+  }),
+
   // Calificaciones de la actividad: una fila por estudiante con asistencia
   // y notas por criterio. Mismo sobre `{rows: [...]}` que el resto, para
   // que `evalCol.getRows` lo desempaquete sin casos especiales.
@@ -547,6 +615,8 @@ export const planeadorHandlers = [
     return HttpResponse.json({
       rows: page.rows.map((row) => ({
         ...row,
+        gradoId: gradoIdMock(row.grado),
+        asignaturaId: asignaturaIdMock(row.asignatura),
         dia: porDia.dia,
         dia_anterior: porDia.diaAnterior,
         dia_siguiente: porDia.diaSiguiente,
@@ -554,6 +624,49 @@ export const planeadorHandlers = [
       pageCount: page.pageCount,
       totalCount: page.totalCount,
     })
+  }),
+
+  // Rótulo(s) dinámico(s) de la pestaña "Unidad temática" — una fila por
+  // referente/nivel educativo presente en `unidadesTematicasDb`
+  // (`enfoquePedagogico` hace de proxy del referente en el mock, que no
+  // modela uno aparte): "Evaluativo" -> "Unidad temática" (Primaria/
+  // Bachillerato), "Formativo" -> "Proyecto pedagógico" (Preescolar). Con
+  // un solo enfoque presente entre las unidades del docente, llega una
+  // sola fila — el front cae al comportamiento de una sola pestaña sin
+  // filtrar (ver `planeador-tabs.tsx`).
+  http.get(UNIDAD_TABS_URL, async () => {
+    await delay(120)
+    const porEnfoque = new Map<string, { grados: Set<number>; asignaturas: Set<number> }>()
+    for (const unidad of unidadesTematicasDb) {
+      const instrumento = unidad.enfoquePedagogico === "Formativo" ? "Proyecto pedagógico" : "Unidad temática"
+      const entry = porEnfoque.get(instrumento) ?? { grados: new Set(), asignaturas: new Set() }
+      entry.grados.add(gradoIdMock(unidad.grado))
+      entry.asignaturas.add(asignaturaIdMock(unidad.asignatura))
+      porEnfoque.set(instrumento, entry)
+    }
+    const rows = Array.from(porEnfoque.entries()).map(([instrumento, { grados, asignaturas }]) => ({
+      instrumento,
+      instrumento_info_adicional: null,
+      grados: Array.from(grados),
+      asignaturas: Array.from(asignaturas),
+    }))
+    return HttpResponse.json({ rows })
+  }),
+
+  // Desvincula un enunciado ya relacionado — el mock reusa el pk del
+  // enunciado como si fuera el de la relación (ver el comentario de
+  // `UNIDAD_REFERENTE_URL` sobre `pkTunidadEnunciado`).
+  http.patch(UNIDAD_ENUNCIADO_UNLINK_URL, async ({ params }) => {
+    await delay(150)
+    const pkRelacion = Number(params.id)
+    for (const unidad of unidadesTematicasDb) {
+      const index = unidad.enunciadosDba.findIndex((e) => e.id === pkRelacion)
+      if (index !== -1) {
+        unidad.enunciadosDba.splice(index, 1)
+        break
+      }
+    }
+    return HttpResponse.json({ status: "ok" })
   }),
 
   http.get(UNIDAD_DETAIL_URL, async ({ params }) => {
@@ -566,7 +679,9 @@ export const planeadorHandlers = [
         { status: 404 },
       )
     }
-    return HttpResponse.json({ rows: [found] })
+    return HttpResponse.json({
+      rows: [{ ...found, gradoId: gradoIdMock(found.grado), asignaturaId: asignaturaIdMock(found.asignatura) }],
+    })
   }),
 
   // Agregar criterio a la rúbrica de una unidad. El diálogo manda los
@@ -625,6 +740,15 @@ export const planeadorHandlers = [
           referente: { id: 1 },
           enfoque_valor: unidad.enfoquePedagogico === "Formativo" ? "FORMATIVO" : "EVALUATIVO",
           tipo_evaluacion_valor: "CUANTITATIVA_CUALITATIVA",
+          // `pkTunidadEnunciado` (pk de la RELACIÓN) — el mock no tiene una
+          // tabla de vínculo aparte, así que reusa el pk del enunciado:
+          // alcanza para poder probar el desvincular en mock.
+          enunciados: unidad.enunciadosDba.map((enunciado) => ({
+            pk: enunciado.id,
+            texto: enunciado.text,
+            relacionadoConUnidad: true,
+            pkTunidadEnunciado: enunciado.id,
+          })),
         },
       ],
     })
@@ -654,16 +778,19 @@ export const planeadorHandlers = [
       return hashString(`asignatura-${u.asignatura}`) % 1000000 === asignaturaId
     })
 
+    const { nivel1, nivel2 } = nivelEtiquetasMock(unidad?.enfoquePedagogico ?? "Evaluativo")
     return HttpResponse.json({
       rows: [
         {
           especificidad: 0,
           enfoque_valor: unidad?.enfoquePedagogico === "Formativo" ? "FORMATIVO" : "EVALUATIVO",
           tipo_evaluacion_valor: "CUANTITATIVA_CUALITATIVA",
-          enunciados: (unidad?.enunciadosDba ?? []).map((texto, index) => ({
-            pk: index + 1,
-            texto,
-            evidencias: [],
+          nivel_1_etiqueta: nivel1,
+          nivel_2_etiqueta: nivel2,
+          enunciados: (unidad?.enunciadosDba ?? []).map((enunciado) => ({
+            pk: enunciado.id,
+            texto: enunciado.text,
+            evidencias: evidenciasMock(enunciado.id, enunciado.text),
           })),
         },
       ],

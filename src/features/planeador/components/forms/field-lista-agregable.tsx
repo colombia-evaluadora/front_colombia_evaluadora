@@ -235,16 +235,24 @@ export function ListaAgregableCaja({
   )
 }
 
+/** Opción con id real — a diferencia de `ListaAgregableCaja` (texto libre),
+ *  acá el catálogo importa por su `id` (lo que el backend real espera
+ *  mandar, ej. `ENUNCIADOS: [ids]`), no solo por su texto. */
+export interface ListaAgregableOpcion {
+  id: number
+  text: string
+}
+
 interface ListaAgregableCajaSelectProps {
   title: string
   description?: string
   /** Encabezado de la única columna de la caja (ej. "ENUNCIADOS"). */
   columnLabel: string
-  items: string[]
+  items: ListaAgregableOpcion[]
   /** Opciones que puede ofrecer el `<Select>` de abajo (ya sin las que
    *  están en `items` — ver `disponibles` acá adentro). */
-  options: string[]
-  onChange: (items: string[]) => void
+  options: ListaAgregableOpcion[]
+  onChange: (items: ListaAgregableOpcion[]) => void
   /** El `<Select>` se deshabilita mientras esto sea `true` —falta elegir
    *  lo que determina las `options` (acá, el Grado de la unidad)—, no
    *  tiene sentido dejarlo tocar antes de eso. */
@@ -264,6 +272,10 @@ interface ListaAgregableCajaSelectProps {
  * que le corresponden al Grado de la unidad, ver `useEnunciadosDbaQuery`).
  * Elegir una opción la agrega de una —no hace falta un botón "Agregar"
  * aparte— y esa opción desaparece de la lista para no ofrecer duplicados.
+ *
+ * Trabaja con `{id, text}` y no `string[]` porque el `id` es lo que el
+ * backend real necesita de vuelta (`ENUNCIADOS: [ids]`) — el texto solo
+ * sirve para mostrarlo.
  */
 export function ListaAgregableCajaSelect({
   title,
@@ -276,7 +288,7 @@ export function ListaAgregableCajaSelect({
   isPending = false,
   placeholder = "Seleccione",
 }: ListaAgregableCajaSelectProps) {
-  const disponibles = options.filter((option) => !items.includes(option))
+  const disponibles = options.filter((option) => !items.some((item) => item.id === option.id))
 
   function quitar(index: number) {
     onChange(items.filter((_, i) => i !== index))
@@ -300,16 +312,16 @@ export function ListaAgregableCajaSelect({
           <ul className="divide-y">
             {items.map((item, index) => (
               <li
-                key={index}
+                key={item.id}
                 className="group/item flex items-center justify-between gap-2 px-3 py-2 text-sm"
               >
-                <span className="min-w-0 break-words">{item}</span>
+                <span className="min-w-0 break-words">{item.text}</span>
                 <Button
                   type="button"
                   variant="ghost"
                   color="neutral"
                   size="icon-sm"
-                  aria-label={`Quitar "${item}"`}
+                  aria-label={`Quitar "${item.text}"`}
                   className="opacity-0 transition-opacity group-hover/item:opacity-100 group-focus-within/item:opacity-100"
                   onClick={() => quitar(index)}
                 >
@@ -327,7 +339,10 @@ export function ListaAgregableCajaSelect({
         // no "recuerda" la última elegida, cada apertura arranca en el
         // placeholder — es un alta, no una edición de un campo único).
         value=""
-        onValueChange={(value) => value && onChange([...items, value])}
+        onValueChange={(value) => {
+          const elegido = disponibles.find((option) => String(option.id) === value)
+          if (elegido) onChange([...items, elegido])
+        }}
         disabled={disabled || isPending || disponibles.length === 0}
       >
         {/* `variant="outlined"` a mano: este `<Select>` no vive dentro de
@@ -341,8 +356,8 @@ export function ListaAgregableCajaSelect({
         </SelectTrigger>
         <SelectContent>
           {disponibles.map((option) => (
-            <SelectItem key={option} value={option}>
-              {option}
+            <SelectItem key={option.id} value={String(option.id)}>
+              {option.text}
             </SelectItem>
           ))}
         </SelectContent>

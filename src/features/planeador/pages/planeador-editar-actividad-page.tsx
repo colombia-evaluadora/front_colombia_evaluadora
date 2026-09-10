@@ -2,7 +2,7 @@ import { useState } from "react"
 import { Link, useNavigate, useParams } from "@tanstack/react-router"
 
 import { Button } from "@/components/ui/button"
-import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
+import { NoticeOutlet, NoticeProvider, queueNotice, useNotify } from "@/components/notice/notice-context"
 import {
   TableScreen,
   TableScreenBody,
@@ -14,10 +14,14 @@ import { NotFoundPage } from "@/components/layout/not-found-page"
 import { CheckIcon, SpinnerIcon } from "@/components/ui/icons"
 import { Spinner } from "@/components/ui/spinner"
 import { paths } from "@/config/paths"
-import { isNotFoundError } from "@/lib/api-client"
+import { getErrorMessage, isNotFoundError } from "@/lib/api-client"
 
 import { useActividadDetalleQuery } from "@/features/planeador/api/query/use-actividad-detalle-query"
+import { useUnidadesQuery } from "@/features/planeador/api/query/use-unidades-query"
 import { useUpdateActividad } from "@/features/planeador/api/mutations/update-actividad"
+import { useLinkActividadUnidad } from "@/features/planeador/api/mutations/link-actividad-unidad"
+import { useUnlinkActividadUnidad } from "@/features/planeador/api/mutations/unlink-actividad-unidad"
+import { useAgregarEvidenciaActividad } from "@/features/planeador/api/mutations/agregar-evidencia-actividad"
 import { EditarActividadForm } from "@/features/planeador/components/forms/form-editar-actividad"
 import type { Actividad } from "@/features/planeador/api/types/actividad"
 
@@ -90,18 +94,94 @@ function EditarActividadPageContent({
   const [isDirty, setIsDirty] = useState(false)
   const { notify } = useNotify()
 
+  // Para resolver si la unidad NUEVA (si el docente la cambió en el
+  // select) calcula por "Ponderado" — ver el comentario de `handleSubmit`.
+  const { data: unidadesResult } = useUnidadesQuery()
+  const unidades = unidadesResult?.rows ?? []
+
   const updateMutation = useUpdateActividad({
     mutationConfig: {
       onSuccess: () => {
-        notify("Actividad actualizada correctamente.")
+        // `onClose` navega de vuelta al Planeador: un `notify()` acá
+        // actualizaría el `NoticeProvider` de ESTA pantalla, que se
+        // desmonta antes de que el aviso llegue a pintarse. `queueNotice`
+        // lo deja para que lo muestre el `NoticeProvider` del Planeador.
+        queueNotice("Actividad actualizada correctamente.")
         setIsDirty(false)
         onClose()
       },
       onError: (error) => {
-        notify(error.message || "No se pudo actualizar la actividad.", { variant: "error" })
+        notify(getErrorMessage(error), { variant: "error" })
       },
     },
   })
+
+  // `update-actividad.ts` (`PUT /actividades/:id`) nunca manda `FK_TUNIDAD`:
+  // reasignar la unidad de una actividad ya vinculada se delega acá, en las
+  // rutas dedicadas de la carpeta 2 (`PUT .../unidades/:id/actividades/:act`
+  // para vincular/mover, `PATCH .../unidades/actividades/:act` para
+  // desvincular) — antes el `<Select>` de "Unidad temática asociada" del
+  // form dejaba elegir otra unidad sin que el guardado hiciera nada con
+  // eso, y encima el PUT seguía mandando `PONDERACION` calculado contra la
+  // unidad NUEVA (todavía no aplicada) mientras el backend seguía
+  // validándola contra la unidad VIEJA (la única que de verdad seguía
+  // vinculada) — de ahí el 400 al cambiar de unidad en una actividad que
+  // ya tenía una.
+  const linkActividad = useLinkActividadUnidad()
+  const unlinkActividad = useUnlinkActividadUnidad({ unidadId: actividad?.unidad.id ?? 0 })
+  // Solo AGREGA evidencias nuevas (ver el comentario de `Actividad.
+  // evidenciasIds`): no hay endpoint confirmado para desvincular una ya
+  // relacionada, así que el checklist del form las deja tildadas y
+  // deshabilitadas — nunca aparecen en el diff de `handleSubmit`.
+  const agregarEvidencia = useAgregarEvidenciaActividad({
+    mutationConfig: {
+      onError: (error) => notify(getErrorMessage(error), { variant: "error" }),
+    },
+  })
+  const isSavingUnidad = linkActividad.isPending || unlinkActividad.isPending
+
+  async function handleSubmit(values: Actividad) {
+    if (!actividad) return
+    const unidadAnteriorId = actividad.unidad.id
+    const unidadNuevaId = values.unidad.id
+
+    if (unidadNuevaId !== unidadAnteriorId) {
+      try {
+        if (unidadNuevaId === 0) {
+          await unlinkActividad.mutateAsync(actividad.id)
+        } else {
+          const unidadNueva = unidades.find((u) => u.id === unidadNuevaId)
+          const esPonderado = unidadNueva?.metodoCalculo === "Ponderado"
+          await linkActividad.mutateAsync({
+            unidadId: unidadNuevaId,
+            actividadId: actividad.id,
+            // Mismo criterio que `DialogAgregarActividad.handleVincular`:
+            // solo se manda la ponderación tipeada si la unidad NUEVA
+            // calcula por "Ponderado" — con Promedio simple/Sumatoria el
+            // backend rechaza un peso puesto a mano.
+            ponderacion: esPonderado ? values.ponderacion : 0,
+            // Obligatorio en `true` cuando la actividad YA estaba en OTRA
+            // unidad (no una huérfana que recién se vincula).
+            permitirMoverDeUnidad: unidadAnteriorId !== 0,
+          })
+        }
+      } catch (error) {
+        notify(getErrorMessage(error), { variant: "error" })
+        return
+      }
+    }
+
+    updateMutation.mutate({ actividadId: actividad.id, data: values })
+
+    // Evidencias marcadas en este submit que todavía no estaban
+    // relacionadas — cada una es su propio `POST`, no hay bulk confirmado.
+    const evidenciasNuevas = values.evidenciasIds.filter(
+      (id) => !actividad.evidenciasIds.includes(id),
+    )
+    for (const evidenciaId of evidenciasNuevas) {
+      agregarEvidencia.mutate({ actividadId: actividad.id, evidenciaId })
+    }
+  }
 
   return (
     <TableScreen>
@@ -141,9 +221,7 @@ function EditarActividadPageContent({
             actividad={actividad}
             formId={FORM_ID}
             onDirtyChange={setIsDirty}
-            onSubmit={(values: Actividad) =>
-              updateMutation.mutate({ actividadId: actividad.id, data: values })
-            }
+            onSubmit={handleSubmit}
           />
         )}
       </TableScreenBody>
@@ -162,14 +240,14 @@ function EditarActividadPageContent({
               color="primary"
               variant="fill"
               size="sm"
-              disabled={updateMutation.isPending}
+              disabled={updateMutation.isPending || isSavingUnidad}
             >
-              {updateMutation.isPending ? (
+              {updateMutation.isPending || isSavingUnidad ? (
                 <SpinnerIcon data-icon="inline-start" className="animate-spin" />
               ) : (
                 <CheckIcon data-icon="inline-start" />
               )}
-              {updateMutation.isPending ? "Guardando..." : "Guardar"}
+              {updateMutation.isPending || isSavingUnidad ? "Guardando..." : "Guardar"}
             </Button>
           </>
         ) : (

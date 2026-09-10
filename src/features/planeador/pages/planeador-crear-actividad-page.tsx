@@ -2,7 +2,7 @@ import { useState } from "react"
 import { Link, useNavigate } from "@tanstack/react-router"
 
 import { Button } from "@/components/ui/button"
-import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
+import { NoticeOutlet, NoticeProvider, queueNotice, useNotify } from "@/components/notice/notice-context"
 import {
   TableScreen,
   TableScreenBody,
@@ -25,12 +25,9 @@ const FORM_ID = "crear-actividad-form"
  * (`planeador-editar-actividad-page.tsx`): mismo `<TableScreen>`, mismo
  * `EditarActividadForm` (que ahora acepta un `onSubmit` justo para este
  * caso: la edición todavía no tiene `useUpdateActividad`, pero el alta ya
- * manda la actividad completa a `useCreateActividad`).
- *
- * A diferencia de editar, el footer no espera a que el form esté "dirty"
- * para mostrar el aviso + el botón: un form en blanco nunca arranca
- * "guardado", así que siempre hay algo que confirmar (mismo criterio que
- * `add-establishment-page`).
+ * manda la actividad completa a `useCreateActividad`), y el mismo criterio
+ * de footer sticky: el aviso + "Guardar" solo aparecen cuando hay cambios
+ * sin guardar (`isDirty`, vía `onDirtyChange` del form).
  */
 export function PlaneadorCrearActividadPage() {
   return (
@@ -43,6 +40,7 @@ export function PlaneadorCrearActividadPage() {
 function PlaneadorCrearActividadPageContent() {
   const navigate = useNavigate()
   const { notify } = useNotify()
+  const [isDirty, setIsDirty] = useState(false)
   // Lazy initializer: se arma UNA sola vez al montar la página, no en cada
   // render — si no, cada re-render generaría una actividad (y unos ids)
   // distintos y el form perdería lo que el usuario ya tipeó.
@@ -51,7 +49,9 @@ function PlaneadorCrearActividadPageContent() {
   const createMutation = useCreateActividad({
     mutationConfig: {
       onSuccess: () => {
-        notify("Actividad creada correctamente.")
+        // `navigate` deja el Planeador — un `notify()` acá se perdería con
+        // el `NoticeProvider` de esta pantalla al desmontarse.
+        queueNotice("Actividad creada correctamente.")
         navigate({ to: paths.app.planeadorActividades.getHref() })
       },
       onError: () => {
@@ -84,27 +84,34 @@ function PlaneadorCrearActividadPageContent() {
           actividad={actividad}
           formId={FORM_ID}
           esNueva
+          onDirtyChange={setIsDirty}
           onSubmit={(values: Actividad) => createMutation.mutate(values)}
         />
       </TableScreenBody>
 
       <TableScreenFooter>
-        <p className="text-sm">Completa los datos y guarda para crear la actividad.</p>
-        <Button
-          type="submit"
-          form={FORM_ID}
-          color="primary"
-          variant="fill"
-          size="sm"
-          disabled={createMutation.isPending}
-        >
-          {createMutation.isPending ? (
-            <SpinnerIcon data-icon="inline-start" className="animate-spin" />
-          ) : (
-            <CheckIcon data-icon="inline-start" />
-          )}
-          {createMutation.isPending ? "Guardando..." : "Guardar"}
-        </Button>
+        {isDirty ? (
+          <>
+            <p className="text-sm">Completa los datos y guarda para crear la actividad.</p>
+            <Button
+              type="submit"
+              form={FORM_ID}
+              color="primary"
+              variant="fill"
+              size="sm"
+              disabled={createMutation.isPending}
+            >
+              {createMutation.isPending ? (
+                <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+              ) : (
+                <CheckIcon data-icon="inline-start" />
+              )}
+              {createMutation.isPending ? "Guardando..." : "Guardar"}
+            </Button>
+          </>
+        ) : (
+          <span />
+        )}
       </TableScreenFooter>
     </TableScreen>
   )

@@ -73,6 +73,7 @@ function toActividadResumen(row: ActividadMiaRow & { pk_tactividad: number }): A
     tipo: "Otro",
     esRecuperacion: false,
     unidad: { id: 0, nombre: row.unidad ?? "" },
+    evidenciasIds: [],
     asignatura: row.asignatura ?? "",
     grado: row.grado ?? "",
     grupo: row.grupo ?? "",

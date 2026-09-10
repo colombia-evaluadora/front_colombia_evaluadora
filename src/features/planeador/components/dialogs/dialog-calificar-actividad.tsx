@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { useNotify } from "@/components/notice/notice-context"
+import { getErrorMessage } from "@/lib/api-client"
 import {
   Dialog,
   DialogClose,
@@ -84,7 +85,7 @@ export function DialogCalificarActividad({
         onGuardado?.()
       },
       onError: (error) => {
-        notify(error.message || "No se pudo guardar la nota.", { variant: "error" })
+        notify(getErrorMessage(error), { variant: "error" })
       },
     },
   })

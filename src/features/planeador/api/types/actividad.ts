@@ -195,6 +195,17 @@ export interface Actividad {
    */
   esRecuperacion: boolean
   unidad: Unidad
+  /**
+   * Ids de las evidencias (nivel 2 del referente curricular de la unidad,
+   * `useUnidadReferenteQuery`) marcadas para esta actividad — solo tiene
+   * sentido con `unidad.id !== 0`: una actividad huérfana no tiene de
+   * dónde sacarlas. Se mandan en `POST /planeador/actividades` como
+   * `EVIDENCIAS: [ids]` (colección Postman
+   * `planeador-flujo-unidad-actividad`, paso 7); agregar una nueva a una
+   * actividad ya creada usa `POST .../actividades/:id/evidencias` en vez
+   * del PUT general (ver `agregar-evidencia-actividad.ts`).
+   */
+  evidenciasIds: number[]
   asignatura: string
   grado: string
   grupo: string
@@ -246,9 +257,20 @@ export interface Actividad {
   esEvaluativa: boolean
   instrumento: string
   /** Peso de la actividad en la nota final (0-100). Solo aplica —y solo se
-   *  muestra en el form— cuando `esEvaluativa` es `true`: una actividad no
-   *  sumativa no pondera nada. */
+   *  muestra en el form— cuando `esEvaluativa` es `true` Y la unidad calcula
+   *  por "Ponderado": con "Promedio simple"/"Suma de puntos" este campo no
+   *  se pide (ver `notaMaxima` para el caso de Sumatoria). */
   ponderacion: number
+  /**
+   * Puntaje máximo de la actividad, cuando la unidad calcula por "Suma de
+   * puntos" (Sumatoria) — ahí no se reparte un %, se captura el puntaje y
+   * el sistema calcula la ponderación resultante (`NOTA_MAXIMA` real, ver
+   * `ActividadDetalleRow` en `use-actividad-detalle-query.ts`). Alternativa
+   * a `ponderacion` (que es el campo de "Ponderado"), no coexisten: solo
+   * una de las dos se pide según `metodoCalculo` de la unidad elegida.
+   * `undefined` cuando no aplica, para no mandar un 0 con significado.
+   */
+  notaMaxima?: number
   generaEvidencias: boolean
   tipoEvidencia: string
   requiereValidacion: boolean

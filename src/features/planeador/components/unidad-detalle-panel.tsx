@@ -9,6 +9,9 @@ import { Button } from "@/components/ui/button"
 import {
   BookIcon,
   CalendarBlankIcon,
+  ClipboardCheckIcon,
+  ClipboardTextIcon,
+  FolderOpenIcon,
   GraduationCapIcon,
   PencilIcon,
   PlusIcon,
@@ -46,11 +49,19 @@ type PanelTab = "general" | "rubricas" | "actividades"
  * (`toUnidadTematica` no tiene de dónde sacarlo) — el enfoque de verdad se
  * deriva en vivo por Grado+Asignatura, ver `UnidadTabs` más abajo.
  */
-function getVisibleTabs(esFormativo: boolean): { value: PanelTab; label: string }[] {
-  const tabs: { value: PanelTab; label: string }[] = [
-    { value: "general", label: "Información general" },
-    { value: "rubricas", label: "Rúbricas" },
-    { value: "actividades", label: "Actividades" },
+interface PanelTabDef {
+  value: PanelTab
+  label: string
+  Icon: React.ComponentType<{ className?: string; "data-icon"?: string }>
+}
+
+// Mismos íconos que `UnidadFormTabs` (alta/edición de unidad) para que las
+// pestañas se vean iguales en las dos pantallas.
+function getVisibleTabs(esFormativo: boolean): PanelTabDef[] {
+  const tabs: PanelTabDef[] = [
+    { value: "general", label: "Información general", Icon: ClipboardTextIcon },
+    { value: "rubricas", label: "Rúbricas", Icon: FolderOpenIcon },
+    { value: "actividades", label: "Actividades", Icon: ClipboardCheckIcon },
   ]
   if (esFormativo) {
     return tabs.filter((tab) => tab.value !== "rubricas")
@@ -406,9 +417,12 @@ function UnidadTabs({
   return (
     <Tabs value={tab} onValueChange={(value) => onTabChange(value as PanelTab)} className="w-full min-w-0">
       <TabsList variant="folder">
-        {visibleTabs.map(({ value, label }) => (
+        {visibleTabs.map(({ value, label, Icon }) => (
           <TabsTrigger key={value} value={value}>
-            {label}
+            <span className="inline-flex items-center gap-1.5">
+              <Icon data-icon="inline-start" />
+              {label}
+            </span>
           </TabsTrigger>
         ))}
       </TabsList>

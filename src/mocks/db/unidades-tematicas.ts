@@ -41,7 +41,10 @@ export const unidadesTematicasDb: UnidadTematica[] = [
     grado: "Sexto",
     asignatura: "Metodología de la investigación",
     enunciadosDba: [
-      "Fortalecer la comunicación oral y la escucha activa en diferentes contextos.",
+      {
+        id: 1,
+        text: "Fortalecer la comunicación oral y la escucha activa en diferentes contextos.",
+      },
     ],
     criterios: [
       {

@@ -2,7 +2,7 @@ import { useState } from "react"
 import { Link, useNavigate } from "@tanstack/react-router"
 
 import { Button } from "@/components/ui/button"
-import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
+import { NoticeOutlet, NoticeProvider, queueNotice, useNotify } from "@/components/notice/notice-context"
 import {
   TableScreen,
   TableScreenBody,
@@ -21,6 +21,11 @@ import {
   type UnidadDraft,
 } from "@/features/planeador/components/forms/form-unidad-info-general"
 import { UnidadFormTabs } from "@/features/planeador/components/forms/unidad-form-tabs"
+import {
+  articuloDefinido,
+  mensajeUnidadGuardada,
+  useUnidadInstrumentoLabel,
+} from "@/features/planeador/lib/unidad-instrumento-label"
 
 const FORM_ID = "crear-unidad-form"
 
@@ -46,15 +51,28 @@ function PlaneadorCrearUnidadPageContent() {
   const navigate = useNavigate()
   const { notify } = useNotify()
   const [draft, setDraft] = useState<UnidadDraft>(UNIDAD_DRAFT_VACIO)
+  // Rótulo dinámico ("Unidad temática"/"Proyecto pedagógico"/…, ver
+  // `planeador-tabs.tsx`) para el mensaje de éxito — el mismo texto fijo
+  // "Unidad temática" no tenía sentido para un docente de Preescolar.
+  const instrumento = useUnidadInstrumentoLabel(draft.gradoId)
+  // Sin form-library acá (`draft` es estado plano): "hay cambios" se
+  // resuelve comparando contra el borrador vacío con el que arrancó la
+  // página — mismo criterio de footer sticky que
+  // `planeador-editar-actividad-page.tsx` (`isDirty`).
+  const isDirty = JSON.stringify(draft) !== JSON.stringify(UNIDAD_DRAFT_VACIO)
 
   const createMutation = useCreateUnidad({
     mutationConfig: {
       onSuccess: () => {
-        notify("Unidad temática creada correctamente.")
+        // `navigate` deja esta pantalla — un `notify()` acá se perdería con
+        // el `NoticeProvider` de esta pantalla al desmontarse.
+        queueNotice(mensajeUnidadGuardada("creado", instrumento))
         navigate({ to: paths.app.planeadorUnidades.getHref() })
       },
       onError: () => {
-        notify("No se pudo crear la unidad temática.", { variant: "error" })
+        notify(`No se pudo crear ${articuloDefinido(instrumento)} ${instrumento.toLowerCase()}.`, {
+          variant: "error",
+        })
       },
     },
   })
@@ -100,22 +118,28 @@ function PlaneadorCrearUnidadPageContent() {
       </TableScreenBody>
 
       <TableScreenFooter>
-        <p className="text-sm">Completa los datos y guarda para crear la unidad.</p>
-        <Button
-          type="submit"
-          form={FORM_ID}
-          color="primary"
-          variant="fill"
-          size="sm"
-          disabled={!draft.nombre.trim() || createMutation.isPending}
-        >
-          {createMutation.isPending ? (
-            <SpinnerIcon data-icon="inline-start" className="animate-spin" />
-          ) : (
-            <CheckIcon data-icon="inline-start" />
-          )}
-          {createMutation.isPending ? "Guardando..." : "Guardar"}
-        </Button>
+        {isDirty ? (
+          <>
+            <p className="text-sm">Completa los datos y guarda para crear {articuloDefinido(instrumento)} {instrumento.toLowerCase()}.</p>
+            <Button
+              type="submit"
+              form={FORM_ID}
+              color="primary"
+              variant="fill"
+              size="sm"
+              disabled={!draft.nombre.trim() || createMutation.isPending}
+            >
+              {createMutation.isPending ? (
+                <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+              ) : (
+                <CheckIcon data-icon="inline-start" />
+              )}
+              {createMutation.isPending ? "Guardando..." : "Guardar"}
+            </Button>
+          </>
+        ) : (
+          <span />
+        )}
       </TableScreenFooter>
     </TableScreen>
   )
