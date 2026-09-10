@@ -364,7 +364,7 @@ export function TabStatements({ reference }: TabStatementsProps) {
                   <TableCell className="text-center font-bold">
                     {clampedEvidencePageIndex * evidencePageSize + index + 1}
                   </TableCell>
-                  <TableCell className="break-words">{evidence.text}</TableCell>
+                  <TableCell className="whitespace-normal break-words">{evidence.text}</TableCell>
                   <TableCell>
                     <Badge
                       variant="soft"

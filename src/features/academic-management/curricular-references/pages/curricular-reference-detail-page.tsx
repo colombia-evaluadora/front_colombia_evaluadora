@@ -36,9 +36,14 @@ const PANEL_CLASS =
 
 function InfoField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div>
+    // `min-w-0`: como ítem de un grid de 2 columnas, sin esto el ancho
+    // default (`auto`) deja que un valor largo sin espacios (una URL, por
+    // ejemplo) empuje la columna más allá de su ancho y se monte sobre la
+    // columna vecina — `break-words` no alcanza a cortar la línea si el
+    // contenedor nunca se deja encoger.
+    <div className="min-w-0">
       <p className="text-sm font-bold">{label}</p>
-      <div className="text-sm">{children}</div>
+      <div className="text-sm break-words">{children}</div>
     </div>
   )
 }
@@ -147,7 +152,9 @@ function CurricularReferenceDetailPageContent() {
           <div className="flex flex-col gap-4 text-sm">
             <div className="relative">
               <div className="flex flex-wrap items-center gap-2">
-                <h2 className="font-heading text-lg font-bold">{reference.name}</h2>
+                <h2 className="max-w-full pr-10 font-heading text-lg font-bold break-words">
+                  {reference.name}
+                </h2>
                 {reference.educationLevels.map((level) => (
                   <Badge
                     key={level.id}
@@ -166,7 +173,9 @@ function CurricularReferenceDetailPageContent() {
                 </Badge>
               </div>
               {reference.description ? (
-                <p className="mt-2 text-sm text-muted-foreground">{reference.description}</p>
+                <p className="mt-2 max-w-full pr-10 text-sm break-words text-muted-foreground">
+                  {reference.description}
+                </p>
               ) : null}
 
               <Button

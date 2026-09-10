@@ -147,7 +147,7 @@ export function ManageStatementDialog({
               aria-invalid={Boolean(error)}
               onChange={(event) => setText(event.target.value)}
               placeholder={`Escribe el ${levelLabel.toLowerCase()}...`}
-              className="min-h-32 rounded-md border border-input px-3 py-2"
+              className="field-sizing-fixed max-w-full min-h-32 rounded-md border border-input px-3 py-2 break-all"
             />
             <CharacterCounter value={text} max={400} />
             <FieldError>{error}</FieldError>
