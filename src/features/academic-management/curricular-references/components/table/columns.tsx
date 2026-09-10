@@ -15,6 +15,7 @@ import {
   curricularReferenceStatusBadge,
   curricularReferenceStatusLabel,
   curricularReferenceStatusPeriod,
+  toSentenceCase,
 } from "@/features/academic-management/curricular-references/api/ui-mappings"
 import { DeleteCurricularReferenceDialog } from "@/features/academic-management/curricular-references/components/dialogs/dialog-delete"
 
@@ -110,7 +111,7 @@ function StatusCell({ reference }: { reference: CurricularReference }) {
 
   return (
     <div className="flex flex-col items-start">
-      <Badge {...curricularReferenceStatusBadge(reference.active)}>
+      <Badge {...curricularReferenceStatusBadge(reference.active)} className="normal-case tracking-normal">
         {curricularReferenceStatusLabel(reference.active)}
       </Badge>
       <p className="text-muted-foreground mt-1 text-xs">{period.from}</p>
@@ -137,7 +138,9 @@ export function createColumns({ onEdit }: CurricularReferenceColumnsOptions): Co
       meta: { label: "Nivel educativo" },
       header: ({ column }) => <DataTableColumnHeader column={column} title="Nivel educativo" />,
       cell: ({ row }) => (
-        <WrappedTextCell text={row.original.educationLevels.map((level) => level.name).join(", ") || "—"} />
+        <WrappedTextCell
+          text={row.original.educationLevels.map((level) => toSentenceCase(level.name)).join(", ") || "—"}
+        />
       ),
       enableHiding: false,
     },
@@ -159,7 +162,11 @@ export function createColumns({ onEdit }: CurricularReferenceColumnsOptions): Co
       id: "pedagogicalApproach",
       meta: { label: "Enfoque pedagógico" },
       header: ({ column }) => <DataTableColumnHeader column={column} title="Enfoque pedagógico" />,
-      cell: ({ row }) => <WrappedTextCell text={row.original.pedagogicalApproach?.name ?? "—"} />,
+      cell: ({ row }) => (
+        <WrappedTextCell
+          text={row.original.pedagogicalApproach ? toSentenceCase(row.original.pedagogicalApproach.name) : "—"}
+        />
+      ),
       enableHiding: false,
     },
     {
@@ -167,7 +174,9 @@ export function createColumns({ onEdit }: CurricularReferenceColumnsOptions): Co
       id: "evaluationType",
       meta: { label: "Tipo de evaluación" },
       header: ({ column }) => <DataTableColumnHeader column={column} title="Tipo de evaluación" />,
-      cell: ({ row }) => <WrappedTextCell text={row.original.evaluationType?.name ?? "—"} />,
+      cell: ({ row }) => (
+        <WrappedTextCell text={row.original.evaluationType ? toSentenceCase(row.original.evaluationType.name) : "—"} />
+      ),
       enableHiding: false,
     },
     {

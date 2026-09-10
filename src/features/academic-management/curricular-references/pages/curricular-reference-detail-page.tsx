@@ -22,6 +22,7 @@ import { useCurricularReferenceQuery } from "@/features/academic-management/curr
 import {
   curricularReferenceStatusBadge,
   curricularReferenceStatusLabel,
+  toSentenceCase,
 } from "@/features/academic-management/curricular-references/api/ui-mappings"
 import { ManageCurricularReferenceDialog } from "@/features/academic-management/curricular-references/components/dialogs/dialog-manage"
 import { useEducationLevelsQuery } from "@/features/academic-management/curricular-references/api/query/use-education-levels"
@@ -31,7 +32,7 @@ import { TabStatements } from "@/features/academic-management/curricular-referen
 import type { CurricularReference } from "@/features/academic-management/curricular-references/api/types/curricular-reference"
 
 const PANEL_CLASS =
-  "rounded-b-lg rounded-tr-lg border bg-background p-4 group-data-[tabs-filled=true]/tabs:rounded-tr-none"
+  "rounded-b-lg rounded-tr-lg border bg-background p-3 group-data-[tabs-filled=true]/tabs:rounded-tr-none"
 
 function InfoField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -44,24 +45,33 @@ function InfoField({ label, children }: { label: string; children: React.ReactNo
 
 function GeneralInfoTab({ reference }: { reference: CurricularReference }) {
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-3">
       <p className="text-sm font-bold">Estructura del referente</p>
 
-      <div className="grid grid-cols-1 gap-x-8 gap-y-4 md:grid-cols-2">
-        <InfoField label="Nivel 1">{reference.level1 || "—"}</InfoField>
-        <InfoField label="Nivel 2">{reference.level2 || "—"}</InfoField>
+      <div className="grid grid-cols-1 gap-x-6 gap-y-3 md:grid-cols-2">
+        <InfoField label="Nivel 1">{reference.level1 ? toSentenceCase(reference.level1) : "—"}</InfoField>
+        <InfoField label="Nivel 2">{reference.level2 ? toSentenceCase(reference.level2) : "—"}</InfoField>
 
-        <InfoField label="Enfoque pedagógico">{reference.pedagogicalApproach?.name ?? "—"}</InfoField>
-        <InfoField label="Tipo de evaluación">{reference.evaluationType?.name ?? "—"}</InfoField>
+        <InfoField label="Enfoque pedagógico">
+          {reference.pedagogicalApproach ? toSentenceCase(reference.pedagogicalApproach.name) : "—"}
+        </InfoField>
+        <InfoField label="Tipo de evaluación">
+          {reference.evaluationType ? toSentenceCase(reference.evaluationType.name) : "—"}
+        </InfoField>
 
         <InfoField label="Áreas o dimensiones">
           {reference.areas.length === 0 ? (
             "—"
           ) : (
-            <div className="mt-1 flex flex-wrap gap-1">
+            <div className="mt-1 flex flex-wrap gap-1.5">
               {reference.areas.map((area) => (
-                <Badge key={area.id} variant="soft" color="muted">
-                  {area.name}
+                <Badge
+                  key={area.id}
+                  variant="soft"
+                  color="muted"
+                  className="rounded-full px-2.5 py-0.5 text-xs normal-case tracking-normal"
+                >
+                  {toSentenceCase(area.name)}
                 </Badge>
               ))}
             </div>
@@ -139,13 +149,18 @@ function CurricularReferenceDetailPageContent() {
               <div className="flex flex-wrap items-center gap-2">
                 <h2 className="font-heading text-lg font-bold">{reference.name}</h2>
                 {reference.educationLevels.map((level) => (
-                  <Badge key={level.id} variant="soft" color="muted" className="rounded-full px-3 py-1 text-sm">
-                    {level.name}
+                  <Badge
+                    key={level.id}
+                    variant="soft"
+                    color="muted"
+                    className="rounded-full px-3 py-1 text-sm normal-case tracking-normal"
+                  >
+                    {toSentenceCase(level.name)}
                   </Badge>
                 ))}
                 <Badge
                   {...curricularReferenceStatusBadge(reference.active)}
-                  className="rounded-full px-3 py-1 text-sm"
+                  className="rounded-full px-3 py-1 text-sm normal-case tracking-normal"
                 >
                   {curricularReferenceStatusLabel(reference.active)}
                 </Badge>
@@ -177,9 +192,11 @@ function CurricularReferenceDetailPageContent() {
                 </TabsTrigger>
                 {reference.level1 ? (
                   <TabsTrigger value="level1" className="[&[data-active]_svg]:text-primary">
-                    <span className="inline-flex items-center gap-1.5">
-                      <FileTextIcon />
-                      {reference.level1}
+                    <span className="inline-flex max-w-48 items-center gap-1.5">
+                      <FileTextIcon className="shrink-0" />
+                      <span className="truncate" title={toSentenceCase(reference.level1)}>
+                        {toSentenceCase(reference.level1)}
+                      </span>
                     </span>
                   </TabsTrigger>
                 ) : null}

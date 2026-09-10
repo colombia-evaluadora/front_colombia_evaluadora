@@ -57,10 +57,10 @@ export function DeleteEvidenceDialog({ evidence, levelLabel }: DeleteEvidenceDia
       >
         <TrashIcon />
       </AlertDialogTrigger>
-      <AlertDialogContent>
+      <AlertDialogContent className="sm:max-w-xl">
         <AlertDialogHeader>
           <AlertDialogTitle>Eliminar</AlertDialogTitle>
-          <AlertDialogDescription>
+          <AlertDialogDescription className="break-words hyphens-auto" lang="es">
             Se eliminará permanentemente esta {levelLabel.toLowerCase()}. Esta acción no se puede deshacer.
           </AlertDialogDescription>
         </AlertDialogHeader>

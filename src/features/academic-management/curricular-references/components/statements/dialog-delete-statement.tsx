@@ -59,10 +59,10 @@ export function DeleteStatementDialog({ statement, levelLabel, onDeleted }: Dele
       >
         <TrashIcon />
       </AlertDialogTrigger>
-      <AlertDialogContent>
+      <AlertDialogContent className="sm:max-w-xl">
         <AlertDialogHeader>
           <AlertDialogTitle>Eliminar</AlertDialogTitle>
-          <AlertDialogDescription>
+          <AlertDialogDescription className="break-words hyphens-auto" lang="es">
             Se eliminará permanentemente este {levelLabel.toLowerCase()} y sus evidencias asociadas. Esta
             acción no se puede deshacer.
           </AlertDialogDescription>
