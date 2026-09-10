@@ -17,6 +17,15 @@ interface StatementResult {
   status?: "ok" | "error"
   message?: string
   statement?: CurricularStatement
+  id?: number
+}
+
+interface CreateStatementResponse {
+  status?: "ok" | "error"
+  message?: string
+  statement?: CurricularStatement
+  pkReferenteEnunciadoCreado?: number
+  id?: number
 }
 
 function statementsUrl(curricularReferenceId: number) {
@@ -30,21 +39,27 @@ function enunciadoUrl(id: number) {
   return apiPath(`/academic-management/curricular-statements/${id}`, `/referentes-curriculares/enunciados/${id}`)
 }
 
-function createStatement(input: {
+async function createStatement(input: {
   curricularReferenceId: number
   areaId: number | null
   text: string
   active: boolean
-}) {
+}): Promise<StatementResult> {
   const url = statementsUrl(input.curricularReferenceId)
   if (env.ENABLE_API_MOCKING) {
     return api.post<StatementResult>(url, { areaId: input.areaId, text: input.text, active: input.active })
   }
-  return api.post<StatementResult>(url, {
+  const raw = await api.post<CreateStatementResponse>(url, {
     TEXTO: input.text,
     AREA_ID: input.areaId,
     ESTADO: input.active ? "A" : "I",
   })
+  return {
+    status: raw.status,
+    message: raw.message,
+    statement: raw.statement,
+    id: raw.statement?.id ?? raw.pkReferenteEnunciadoCreado ?? raw.id,
+  }
 }
 
 export function useCreateStatement(options: { mutationConfig?: MutationConfig<typeof createStatement> } = {}) {
@@ -68,6 +83,7 @@ function updateStatement({ id, values }: { id: number; values: Partial<Curricula
   return api.patch<StatementResult>(url, {
     ...(values.text != null ? { TEXTO: values.text } : {}),
     ...(values.active != null ? { ESTADO: values.active ? "A" : "I" } : {}),
+    ...(values.areaId === undefined ? {} : values.areaId === null ? { LIMPIAR_AREA: true } : { AREA_ID: values.areaId }),
   })
 }
 

@@ -1,3 +1,8 @@
+export function toSentenceCase(value: string): string {
+  const lower = value.toLowerCase()
+  return lower.charAt(0).toUpperCase() + lower.slice(1)
+}
+
 type BadgeColor = "success" | "destructive"
 
 interface BadgeProps {
@@ -13,15 +18,6 @@ export function curricularReferenceStatusLabel(active: boolean): string {
   return active ? "Activo" : "Inactivo"
 }
 
-/**
- * Vigencia que se muestra debajo del badge de estado, como hasta 2 líneas
- * (`from` arriba, `to` abajo):
- * - Activo: `from` = "Desde <año de alta>", sin `to`.
- * - Inactivo que llegó a estar activo: `from` = "Desde <alta>", `to` =
- *   "Hasta <año en que se desactivó>".
- * - Inactivo que nació así y nunca se activó (sin `deactivatedYear`): solo
- *   el año de alta en `from`, sin "Desde"/`to`.
- */
 export interface CurricularReferenceStatusPeriod {
   from: string
   to: string | null

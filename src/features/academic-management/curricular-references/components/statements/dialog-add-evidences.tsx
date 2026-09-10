@@ -99,16 +99,18 @@ export function AddEvidencesDialog({
 
   return (
     <Dialog open={open} onOpenChange={(next) => !isPending && onOpenChange(next)}>
-      <DialogContent showCloseButton={false}>
+      <DialogContent showCloseButton={false} className="sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>
+          <DialogTitle className="break-words hyphens-auto" lang="es">
             {isEditMode ? `Editar ${levelLabel.toLowerCase()}` : `Agregar ${levelLabel.toLowerCase()}`}
           </DialogTitle>
         </DialogHeader>
 
         <form id="add-evidences-form" onSubmit={handleSubmit}>
           <Field orientation="vertical" variant="outlined" data-invalid={error ? "true" : undefined}>
-            <FieldLabel htmlFor="evidence-text">{levelLabel} *</FieldLabel>
+            <FieldLabel htmlFor="evidence-text" className="right-2.5 w-auto break-words hyphens-auto" lang="es">
+              {levelLabel} *
+            </FieldLabel>
             <Textarea
               id="evidence-text"
               value={text}
@@ -159,7 +161,7 @@ export function AddEvidencesDialog({
             onClick={() => onOpenChange(false)}
           >
             <XIcon data-icon="inline-start" />
-            Cancelar
+            Cerrar
           </Button>
         </DialogFooter>
       </DialogContent>
