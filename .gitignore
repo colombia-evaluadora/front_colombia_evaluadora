@@ -16,6 +16,10 @@ storybook-static
 # Envrionment variables
 .env
 .env.*
+# La plantilla SÍ se versiona: documenta qué claves espera el build y es
+# contra lo que `scripts/setup-environment-secrets.sh` valida el ENV_FILE
+# de cada entorno. No contiene valores reales (ver su cabecera).
+!.env.example
 
 # Editor directories and files
 .vscode/*

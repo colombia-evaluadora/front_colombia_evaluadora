@@ -29,4 +29,75 @@
     // HTTPS, así que desde el navegador sería mixed content).
     "API_PROXY_TARGET": "http://172-233-184-248.ip.linodeusercontent.com:8080",
   },
+
+  // ───────── Entornos con nombre ─────────
+  //
+  // `wrangler deploy --env test|production` (lo que hace `.github/workflows/
+  // deploy.yml`). Sin `--env`, se despliega la config de arriba: ese es el
+  // caso de `wrangler dev` en local.
+  //
+  // Lo que NO se hereda del bloque de arriba y por eso se repite en cada
+  // entorno: `vars` y `routes`. Lo que SÍ se hereda: `main`, `assets`,
+  // `compatibility_date`.
+  //
+  // OJO con `name`: si no se declara explícitamente, wrangler le pega el
+  // sufijo del entorno (`colombiaevaluadorav2-test`). Para `test` eso
+  // crearía un Worker NUEVO y dejaría huérfano el custom domain que ya
+  // está atado a `colombiaevaluadorav2` — por eso va escrito a mano.
+  "env": {
+    // Vitrina: la app entera contra MSW, sin backend detrás. El flag que la
+    // pone en ese modo es `VITE_APP_ENABLE_API_MOCKING=active`, y NO se
+    // configura acá — es una variable de BUILD (Vite la hornea en el
+    // bundle), así que vive en el secreto ENV_FILE del environment `dev`.
+    //
+    // Con mocks activos el service worker de MSW intercepta `/api/*` DENTRO
+    // del navegador, así que esas peticiones nunca llegan al Worker ni al
+    // `API_PROXY_TARGET` de abajo. Se deja igual apuntando al backend de
+    // test como red de seguridad: si alguien despliega acá un build con el
+    // flag en `inactive`, el proxy responde en vez de reventar con
+    // "Cannot read properties of undefined" en `worker/index.js`.
+    "dev": {
+      "name": "colombiaevaluadorav2-dev",
+      "routes": [
+        { "pattern": "devv2.colombiaevaluadora.com", "custom_domain": true },
+      ],
+      "vars": {
+        "API_PROXY_TARGET": "http://172-233-184-248.ip.linodeusercontent.com:8080",
+      },
+    },
+    "test": {
+      // El Worker que ya existe y ya sirve testv2.colombiaevaluadora.com.
+      "name": "colombiaevaluadorav2",
+      // `custom_domain: true` es lo que distingue un dominio propio de una
+      // route: wrangler crea/mantiene el registro DNS y el certificado. Como
+      // este ya está atado, la operación es idempotente (no lo recrea).
+      "routes": [
+        { "pattern": "testv2.colombiaevaluadora.com", "custom_domain": true },
+      ],
+      "vars": {
+        "API_PROXY_TARGET": "http://172-233-184-248.ip.linodeusercontent.com:8080",
+      },
+    },
+    "production": {
+      "name": "colombiaevaluadorav2-production",
+      // AVISO: este dominio todavía NO existe. El PRIMER deploy a production
+      // lo crea — wrangler añade el registro DNS en la zona
+      // colombiaevaluadora.com y emite el certificado. Es un cambio real de
+      // infraestructura, y ocurre recién cuando alguien apruebe el deploy en
+      // el environment `production` (tag v* + revisor).
+      //
+      // Para eso el CLOUDFLARE_API_TOKEN necesita, además de
+      // "Workers Scripts: Edit", el permiso "Zone → Workers Routes: Edit"
+      // sobre colombiaevaluadora.com. Sin él, el deploy falla al atar el
+      // dominio (el Worker sí se publica, el dominio no).
+      "routes": [
+        { "pattern": "productionv2.colombiaevaluadora.com", "custom_domain": true },
+      ],
+      // HTTPS y por hostname (sslip.io resuelve a 2.25.181.178). No usar la
+      // IP pelada: un `fetch` de Worker a IP da "error code: 1003".
+      "vars": {
+        "API_PROXY_TARGET": "https://2-25-181-178.sslip.io",
+      },
+    },
+  },
 }
