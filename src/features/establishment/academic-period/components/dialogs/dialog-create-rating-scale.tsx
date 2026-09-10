@@ -809,12 +809,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                                   onValueChange={(value) => value && patchEditRow({ tipo: value })}
                                 >
                                   <ComboboxFieldTrigger aria-label="Tipo" className="min-w-32">
-                                    <ComboboxFieldValue>
-                                      {(value) =>
-                                        tipoOptions.find((o) => o.key === value)?.label ??
-                                        "Seleccionar"
-                                      }
-                                    </ComboboxFieldValue>
+                                    <ComboboxFieldValue placeholder="Seleccionar" />
                                   </ComboboxFieldTrigger>
                                   <ComboboxFieldContent>
                                     <ComboboxGroup>
