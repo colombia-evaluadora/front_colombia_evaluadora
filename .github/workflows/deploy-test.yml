@@ -1,41 +1,37 @@
 # =============================================================================
-# deploy-test.yml — despliega `dev` al Worker de test.
+# deploy-test.yml — despliega `test` al Worker de pruebas (backend real).
 #
-# Flujo de ramas (calcado del SSO):
+# Flujo de ramas:
 #
 #   feature/CU-xxxx → dev → test → main
-#                      │            │
-#                      │            └── tag v* → release.yml → production
-#                      └── ESTE workflow → Worker de test
+#                      │      │      │
+#                      │      │      └── tag v* → release.yml → productionv2
+#                      │      └── ESTE workflow → testv2 (backend real)
+#                      └── deploy-dev.yml → devv2 (MSW, sin backend)
 #
-#   `dev`  integración: las ramas de tarea entran por PR y es lo que corre
-#          en el Worker de test.
-#   `test` marca de promoción: "esto pasó QA". No despliega.
-#   `main` releases, con tag por versión. Despliega vía release.yml.
+#   `dev`  integración. Despliega a devv2 con mocks.
+#   `test` marca de promoción: "esto pasó QA con el backend real". Es el
+#          entorno que mira el cliente.
+#   `main` releases, con tag por versión.
 #
-# ---- Por qué `workflow_run` y no `push` -------------------------------------
+# ---- Por qué `push` acá y `workflow_run` en dev ------------------------
 #
-# El gate es `workflow_run` sobre CI para que nunca se despliegue un commit
-# cuyos checks fallaron. Un `push: [dev]` directo desplegaría en paralelo al
-# CI, sin esperar su resultado.
+# CI corre SOLO en `dev` (ver su bloque `on:`), a propósito: `test` recibe
+# merges YA verificados ahí, y re-verificarlos duplica minutos sin añadir
+# señal. Como no hay run de CI sobre `test` al que engancharse, el trigger
+# es el push directo.
 #
-# La condición NO filtra por `head_branch == 'dev'`: en un `workflow_run`,
-# `github.event.workflow_run.head_branch` apunta a la rama donde vive ESTE
-# fichero (la default, `main`), no a la del push que disparó CI. En el SSO ese
-# filtro nunca hacía match y el deploy jamás se auto-disparaba. El filtro real
-# es indirecto: CI solo corre en `dev` (ver su bloque `on:`), así que un
-# `workflow_run` con `event == 'push'` sólo puede venir de `dev`.
-#
-# `workflow_dispatch` queda para re-desplegar a mano; usa el HEAD de la rama
-# elegida y NO espera a CI — úsalo consciente de eso.
+# La contrapartida asumida: si alguien pushea a `test` algo que no pasó por
+# `dev`, se despliega sin checks. El control es de proceso (la promoción va
+# por PR desde `dev`, ver `scripts/promote-test-to-main.sh`), no técnico —
+# con plan free y repo privado no hay branch protection que lo imponga.
 # =============================================================================
 
 name: Deploy test
 
 on:
-  workflow_run:
-    workflows: [CI]
-    types: [completed]
+  push:
+    branches: [test]
   workflow_dispatch:
 
 permissions:
@@ -49,23 +45,8 @@ concurrency:
 
 jobs:
   deploy:
-    # Tres triggers posibles, y solo dos deben desplegar:
-    #   1. workflow_dispatch — redespliegue manual.
-    #   2. workflow_run      — CI verde Y disparado por un push (no por un
-    #                          pull_request: un PR contra `dev` todavía no
-    #                          está integrado, desplegarlo pisaría `dev` con
-    #                          código sin mergear).
-    if: >-
-      github.event_name == 'workflow_dispatch' ||
-      (github.event.workflow_run.conclusion == 'success' &&
-       github.event.workflow_run.event == 'push')
     uses: ./.github/workflows/deploy.yml
     with:
       environment: test
-      # El SHA exacto que pasó CI, no el HEAD de la rama: entre que CI
-      # terminó y este workflow arranca puede haber entrado otro push, y
-      # desplegar ese otro commit significaría publicar algo que ningún
-      # check verificó. En `workflow_dispatch` no hay run previo del que
-      # sacarlo, así que ahí sí va el HEAD de la rama elegida.
-      ref: ${{ github.event.workflow_run.head_sha || github.ref }}
+      ref: ${{ github.sha }}
     secrets: inherit
