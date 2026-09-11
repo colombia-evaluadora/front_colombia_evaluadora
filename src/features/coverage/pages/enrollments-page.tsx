@@ -34,39 +34,37 @@ export function EnrollmentsPage() {
     ? RESERVATION_STATUS_BADGE[period.reservationEnabled ? "active" : "inactive"]
     : { variant: "soft" as const, color: "muted" as const }
 
-  return (
-    <div className="flex flex-col gap-6">
-      <section className="flex flex-col gap-4 border-b border-border pb-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <h1 className="text-3xl font-semibold tracking-tight text-foreground">Inscripciones</h1>
-          <EnrollmentsSettingsSheet period={period} isLoading={isPending} isError={isError} />
-        </div>
-        <div className="flex flex-wrap items-center gap-4 text-sm">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <CalendarIcon className="size-4 text-primary" />
-            <span className="font-medium text-foreground">Periodo de inscripciones:</span>
-            {isPending ? (
-              <span className="inline-flex items-center gap-2 text-muted-foreground">
-                <SpinnerIcon className="size-4 animate-spin" />
-                Cargando fechas…
-              </span>
-            ) : period ? (
-              <>
-                <span className="tabular-nums">{formatDate(period.startDate)}</span>
-                <ArrowRightIcon className="size-4 text-muted-foreground" />
-                <span className="tabular-nums">{formatDate(period.endDate)}</span>
-              </>
-            ) : (
-              <span>Sin periodo configurado</span>
-            )}
-          </div>
-          <Badge {...periodStatus}>
-            Estado: {period ? (period.reservationEnabled ? "Activo" : "Inactivo") : "Sin datos"}
-          </Badge>
-        </div>
-      </section>
-
-      <EnrollmentsTable title="Inscripciones recibidas" />
+  const periodDescription = (
+    <div className="flex flex-wrap items-center gap-4">
+      <div className="flex items-center gap-2 text-muted-foreground">
+        <CalendarIcon className="size-4 text-primary" />
+        <span className="font-medium text-foreground">Periodo de inscripciones:</span>
+        {isPending ? (
+          <span className="inline-flex items-center gap-2 text-muted-foreground">
+            <SpinnerIcon className="size-4 animate-spin" />
+            Cargando fechas…
+          </span>
+        ) : period ? (
+          <>
+            <span className="tabular-nums">{formatDate(period.startDate)}</span>
+            <ArrowRightIcon className="size-4 text-muted-foreground" />
+            <span className="tabular-nums">{formatDate(period.endDate)}</span>
+          </>
+        ) : (
+          <span>Sin periodo configurado</span>
+        )}
+      </div>
+      <Badge {...periodStatus}>
+        Estado: {period ? (period.reservationEnabled ? "Activo" : "Inactivo") : "Sin datos"}
+      </Badge>
     </div>
+  )
+
+  return (
+    <EnrollmentsTable
+      title="Inscripciones recibidas"
+      periodInfo={periodDescription}
+      action={<EnrollmentsSettingsSheet period={period} isLoading={isPending} isError={isError} />}
+    />
   )
 }

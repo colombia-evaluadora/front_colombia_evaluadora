@@ -2,46 +2,16 @@ import { useState, type ReactNode } from "react"
 import { toast } from "sonner"
 
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
+import { Field, FieldLabel } from "@/components/ui/field"
+import { CaretDownIcon, GearIcon, InfoIcon } from "@/components/ui/icons"
+import { inputTriggerVariants, inputVariants } from "@/components/ui/input"
+import { cn } from "@/lib/utils"
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion"
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import {
-  CalendarIcon,
-  ArrowRightIcon,
-  CaretDownIcon,
-  GearIcon,
-  InfoIcon,
-  SpinnerIcon,
-  XIcon,
-} from "@/components/ui/icons"
-import {
-  Popover,
-  PopoverContent,
-  PopoverHeader,
-  PopoverTitle,
-  PopoverTrigger,
-} from "@/components/ui/popover"
+  TableSortableHeader,
+  sortBySortKey,
+  type TableSort,
+} from "@/components/table-sort-header"
 import {
   Select,
   SelectContent,
@@ -73,12 +43,12 @@ import { getErrorMessage } from "@/lib/api-client"
 import { useMenuPermission } from "@/features/navigation/api/use-menu-permission"
 import { useRolesQuery } from "@/features/administration/roles-menus/api/query/use-roles-query"
 import { useAcademicPeriodQuery } from "@/features/establishment/academic-period/api/query/use-academic-period"
-import { useTeachingLevelsQuery } from "@/features/establishment/academic-period/api/query/use-teaching-levels"
 import { useUpdateAcademicPeriodReservation } from "@/features/establishment/academic-period/api/mutations/update-academic-period-reservation"
 import { useReservationCatalogsQuery } from "@/features/coverage/api/query/use-reservation-catalogs-query"
 import { useReservationsQuery } from "@/features/coverage/api/query/use-reservations-query"
+import { SubjectsMultiSelect } from "@/features/establishment/academic-period/components/subjects-multi-select"
+import { DateRangeField, type DateRange } from "@/features/establishment/academic-period/components/date-range-field"
 import { formatGrade, GRADE_OPTIONS } from "@/features/coverage/api/ui-mappings"
-import type { EducationLevel } from "@/features/coverage/api/types/reservation"
 import type {
   AcademicPeriod,
   AcademicPeriodDetail,
@@ -112,21 +82,6 @@ const ADDITIONAL_ROLES: Role[] = [
   { id: 6, name: "Acudiente" },
 ]
 
-function formatDate(value: string): string {
-  const [year, month, day] = value.slice(0, 10).split("-")
-  if (!year || !month || !day) return value
-  return `${day}/${month}/${year}`
-}
-
-function getEducationLevelKey(name: string): EducationLevel | null {
-  const normalized = name.toLocaleLowerCase()
-  if (normalized === "preescolar") return "PREESCOLAR"
-  if (normalized === "básica primaria") return "BASICA_PRIMARIA"
-  if (normalized === "secundaria") return "BASICA_SECUNDARIA"
-  if (normalized === "educación media") return "MEDIA"
-  return null
-}
-
 function toUpdateRequest(
   detail: AcademicPeriodDetail,
   reservationEnabled: boolean,
@@ -149,9 +104,17 @@ function toUpdateRequest(
   }
 }
 
-function Section({ title, children }: { title: string; children: ReactNode }) {
+function Section({
+  title,
+  children,
+  className,
+}: {
+  title: string
+  children: ReactNode
+  className?: string
+}) {
   return (
-    <section className="space-y-4">
+    <section className={cn("space-y-4", className)}>
       <h3 className="text-base font-semibold">{title}</h3>
       {children}
     </section>
@@ -170,16 +133,15 @@ export function EnrollmentsSettingsSheet({
   isError,
 }: EnrollmentsSettingsSheetProps) {
   const [sheetOpen, setSheetOpen] = useState(false)
-  const [confirmationOpen, setConfirmationOpen] = useState(false)
-  const [confirmationTarget, setConfirmationTarget] = useState<boolean | null>(null)
-  const [shouldFetch, setShouldFetch] = useState(false)
-  const [confirmationVisible, setConfirmationVisible] = useState(false)
+  const [toggleNotice, setToggleNotice] = useState<{ enabled: boolean } | null>(null)
   const [errorMessage, setErrorMessage] = useState("")
   const [editRoleNames, setEditRoleNames] = useState(["Administrador", "Coordinador", "Acudiente"])
   const [readRoleNames, setReadRoleNames] = useState(["Administrador", "Coordinador", "Acudiente"])
-  const [offerOpen, setOfferOpen] = useState(false)
-  const [selectedTeachingLevels, setSelectedTeachingLevels] = useState<EducationLevel[]>([])
   const [gradeCounts, setGradeCounts] = useState<Record<number, number>>({})
+  const [gradeCountsBaseline, setGradeCountsBaseline] = useState<Record<number, number>>({})
+  const [gradesSheetOpen, setGradesSheetOpen] = useState(false)
+  const [gradeSort, setGradeSort] = useState<TableSort<"label" | "count">>(null)
+  const [dateRangeOverride, setDateRangeOverride] = useState<DateRange | null>(null)
 
   const { puedeEditar, isLoading: isPermissionLoading } = useMenuPermission("PERIODOS_ACADEMICOS")
   const { data: user } = useUser()
@@ -190,14 +152,11 @@ export function EnrollmentsSettingsSheet({
   const {
     data: detail,
     isFetching,
-    isError: isDetailError,
-    error: detailError,
-  } = useAcademicPeriodQuery(shouldFetch && period ? period.id : undefined)
+  } = useAcademicPeriodQuery(sheetOpen && period ? period.id : undefined)
   const { data: roles = [] } = useRolesQuery()
-  const { data: teachingLevels = [] } = useTeachingLevelsQuery()
   const { data: reservationCatalogs } = useReservationCatalogsQuery()
   const { data: reservationsData } = useReservationsQuery({
-    filters: { levels: selectedTeachingLevels },
+    filters: {},
     sorting: [],
     pageIndex: 0,
     pageSize: 1000,
@@ -207,12 +166,11 @@ export function EnrollmentsSettingsSheet({
     (role, index, allRoles) =>
       allRoles.findIndex((candidate) => candidate.name === role.name) === index,
   )
-  const selectableTeachingLevels = teachingLevels.filter(
-    (level) => getEducationLevelKey(level.nombre) !== null,
-  )
-  const teachingLevelKeys = selectableTeachingLevels
-    .map((level) => getEducationLevelKey(level.nombre))
-    .filter((level): level is EducationLevel => level !== null)
+  const roleSelectOptions = roleOptions.map((role) => ({ id: role.name, label: role.name }))
+  const dateRange = dateRangeOverride ?? {
+    startDate: period?.startDate ?? "",
+    endDate: period?.endDate ?? "",
+  }
   const gradeOptions = reservationCatalogs?.grades.length
     ? reservationCatalogs.grades
     : GRADE_OPTIONS
@@ -224,86 +182,48 @@ export function EnrollmentsSettingsSheet({
       reservationsData?.rows.filter((reservation) => reservation.grade === grade).length ??
       0,
   }))
+  const sortedGradeRows = sortBySortKey(gradeRows, gradeSort)
 
   const updateReservation = useUpdateAcademicPeriodReservation({
     mutationConfig: {
-      onSuccess: (result) => {
-        setConfirmationOpen(false)
-        setConfirmationTarget(null)
-        setShouldFetch(false)
+      onSuccess: (result, variables) => {
         if (result.status === "error") {
           setErrorMessage(result.message)
+          setToggleNotice(null)
           return
         }
         setErrorMessage("")
-        setConfirmationVisible(true)
+        setToggleNotice({ enabled: variables.body.RESERVA === "S" })
         toast.success("La configuración de Inscripciones se actualizó correctamente.")
       },
       onError: (error) => {
-        setConfirmationOpen(false)
-        setConfirmationTarget(null)
-        setShouldFetch(false)
         setErrorMessage(getErrorMessage(error))
+        setToggleNotice(null)
       },
     },
   })
 
   function handleToggle(checked: boolean) {
-    if (!period || !canToggle || checked === period.reservationEnabled) return
-    setConfirmationTarget(checked)
-    setConfirmationVisible(false)
+    if (!period || !canToggle || !detail || checked === period.reservationEnabled) return
     setErrorMessage("")
-    setShouldFetch(true)
-    setConfirmationOpen(true)
-  }
-
-  function handleConfirm() {
-    if (!period || !detail || confirmationTarget === null) return
+    setToggleNotice(null)
     updateReservation.mutate({
       id: period.id,
-      body: toUpdateRequest(detail, confirmationTarget),
+      body: toUpdateRequest(detail, checked),
     })
-  }
-
-  function toggleEditRole(name: string) {
-    setEditRoleNames((current) =>
-      current.includes(name) ? current.filter((role) => role !== name) : [...current, name],
-    )
-  }
-
-  function toggleReadRole(name: string) {
-    setReadRoleNames((current) =>
-      current.includes(name) ? current.filter((role) => role !== name) : [...current, name],
-    )
-  }
-
-  function setAllEditRoles(selected: boolean) {
-    setEditRoleNames(selected ? roleOptions.map((role) => role.name) : [])
-  }
-
-  function setAllReadRoles(selected: boolean) {
-    setReadRoleNames(selected ? roleOptions.map((role) => role.name) : [])
-  }
-
-  function toggleTeachingLevel(level: EducationLevel) {
-    setSelectedTeachingLevels((current) =>
-      current.includes(level) ? current.filter((item) => item !== level) : [...current, level],
-    )
-  }
-
-  function setAllTeachingLevels(selected: boolean) {
-    setSelectedTeachingLevels(selected ? [...teachingLevelKeys] : [])
   }
 
   function updateGradeCount(grade: number, value: string) {
     setGradeCounts((current) => ({ ...current, [grade]: Number(value) }))
   }
 
+  function saveGradeCounts() {
+    setGradeCountsBaseline(gradeCounts)
+    toast.success("Los cupos por grado se actualizaron correctamente.")
+  }
+
+  const hasGradeChanges = JSON.stringify(gradeCounts) !== JSON.stringify(gradeCountsBaseline)
   const isBusy = updateReservation.isPending || isFetching
-  const allRolesSelected = roleOptions.length > 0 && editRoleNames.length === roleOptions.length
-  const allReadRolesSelected = roleOptions.length > 0 && readRoleNames.length === roleOptions.length
-  const allTeachingLevelsSelected =
-    teachingLevelKeys.length > 0 && selectedTeachingLevels.length === teachingLevelKeys.length
 
   return (
     <>
@@ -312,10 +232,9 @@ export function EnrollmentsSettingsSheet({
         onOpenChange={(open) => {
           setSheetOpen(open)
           if (!open) {
-            setConfirmationVisible(false)
+            setToggleNotice(null)
             setErrorMessage("")
-            setConfirmationTarget(null)
-            setShouldFetch(false)
+            setDateRangeOverride(null)
           }
         }}
       >
@@ -335,26 +254,47 @@ export function EnrollmentsSettingsSheet({
         </SheetTrigger>
         <SheetContent
           side="right"
-          showCloseButton={false}
-          className="flex w-full flex-col gap-0 sm:max-w-none"
+          className="flex w-full flex-col gap-0 data-[side=right]:sm:max-w-lg"
         >
-          <SheetHeader className="border-b px-6 py-7">
+          <SheetHeader className="pb-3">
             <SheetTitle className="text-2xl font-heading">Opciones de configuración</SheetTitle>
-            <SheetDescription className="mt-2 text-base leading-relaxed">
-              Configura el periodo que se muestra en Inscripciones y habilita o deshabilita sus
-              reservas.
-            </SheetDescription>
           </SheetHeader>
 
           <div className="flex-1 overflow-y-auto px-6 pb-7">
-            <div className="flex min-h-14 items-center justify-between gap-4">
+            {toggleNotice ? (
+              toggleNotice.enabled ? (
+                <Alert className="mb-3 border-transparent bg-green-22 text-foreground after:bg-green [&>svg]:text-green">
+                  <InfoIcon />
+                  <AlertDescription>
+                    Se ha habilitado las inscripciones. La oferta educativa y las consultas de
+                    Inscripciones ya reflejan el nuevo estado.
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <Alert className="mb-3 border-amber-200 bg-amber-50 text-amber-800 after:bg-amber-500 [&>svg]:text-amber-600">
+                  <InfoIcon />
+                  <AlertDescription>
+                    Se ha deshabilitado las inscripciones. Tenga en cuenta que aún hay estudiantes
+                    pendientes por confirmar su situación.
+                  </AlertDescription>
+                </Alert>
+              )
+            ) : null}
+            {errorMessage ? (
+              <Alert className="mb-3" variant="destructive">
+                <InfoIcon />
+                <AlertDescription>{errorMessage}</AlertDescription>
+              </Alert>
+            ) : null}
+
+            <div className="flex min-h-14 items-center gap-2">
               <p className="text-base font-medium">Habilitar / Deshabilitar inscripción</p>
               <Switch
                 checked={period?.reservationEnabled ?? false}
-                disabled={!canToggle}
+                disabled={!canToggle || !detail || isBusy}
                 onCheckedChange={(checked) => handleToggle(checked)}
                 aria-label="Habilitar o deshabilitar inscripción"
-                className="h-5 w-10 [&_[data-slot=switch-thumb]]:size-4"
+                className="rounded-full border-2! border-primary! bg-background! data-[size=default]:h-4! data-checked:bg-background! data-unchecked:border-primary! data-unchecked:bg-background! [&_[data-slot=switch-thumb]]:rounded-full [&_[data-slot=switch-thumb]]:scale-75 [&_[data-slot=switch-thumb]]:bg-primary! [&_[data-slot=switch-thumb]]:shadow-sm [&_[data-slot=switch-thumb]]:dark:bg-primary!"
               />
             </div>
 
@@ -372,316 +312,150 @@ export function EnrollmentsSettingsSheet({
                 </AlertDescription>
               </Alert>
             ) : null}
-            {confirmationVisible ? (
-              <Alert className="mt-2 border-transparent bg-green-22 text-foreground after:bg-green [&>svg]:text-green">
-                <InfoIcon />
-                <AlertDescription>
-                  La oferta educativa y las consultas de Inscripciones ya reflejan el nuevo estado.
-                </AlertDescription>
-              </Alert>
-            ) : null}
-            {errorMessage ? (
-              <Alert className="mt-2" variant="destructive">
-                <InfoIcon />
-                <AlertDescription>{errorMessage}</AlertDescription>
-              </Alert>
-            ) : null}
 
-            <div className="mt-3 flex min-h-12 items-center gap-3 rounded-md border px-3">
-              <div className="min-w-0 space-y-0.5">
-                <p className="text-xs text-muted-foreground">Fecha de inicio y final</p>
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="tabular-nums">
-                    {period ? formatDate(period.startDate) : "—"}
-                  </span>
-                  <ArrowRightIcon className="size-4 text-muted-foreground" />
-                  <span className="tabular-nums">{period ? formatDate(period.endDate) : "—"}</span>
-                </div>
-              </div>
-              <CalendarIcon className="ml-auto size-5 text-primary/80" />
-            </div>
+            <Field variant="outlined" className="mt-1">
+              <FieldLabel>Fecha de inicio y final</FieldLabel>
+              <DateRangeField
+                value={dateRange}
+                onChange={setDateRangeOverride}
+                disabled={!canManage || !period}
+              />
+            </Field>
 
-            <Section title="Agregar rol">
-              <div className="space-y-2">
-                <div className="rounded-md border p-2.5">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger
-                      render={
-                        <button
-                          type="button"
-                          className="flex w-full items-center justify-between gap-2 text-left"
-                          disabled={!canManage}
-                        />
-                      }
-                    >
-                      <span className="text-base font-semibold">Editar</span>
-                      <CaretDownIcon className="size-4 text-muted-foreground" />
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" className="min-w-64 normal-case">
-                      <DropdownMenuCheckboxItem
-                        checked={allRolesSelected}
-                        onCheckedChange={(checked) => setAllEditRoles(checked === true)}
-                        disabled={!canManage}
-                      >
-                        Seleccionar todos
-                      </DropdownMenuCheckboxItem>
-                      {roleOptions.map((role) => (
-                        <DropdownMenuCheckboxItem
-                          key={role.id}
-                          checked={editRoleNames.includes(role.name)}
-                          onCheckedChange={() => toggleEditRole(role.name)}
-                          disabled={!canManage}
-                          className="normal-case"
-                        >
-                          {role.name}
-                        </DropdownMenuCheckboxItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                  <div className="mt-1.5 flex flex-wrap gap-2">
-                    {editRoleNames.length > 0 ? (
-                      editRoleNames.map((name) => (
-                        <button
-                          key={name}
-                          type="button"
-                          className="inline-flex h-7 items-center gap-1 rounded-md bg-muted px-2 text-[11px] font-semibold tracking-wide text-muted-foreground"
-                          aria-label={`Quitar ${name} de editar`}
-                          onClick={() => toggleEditRole(name)}
-                          disabled={!canManage}
-                        >
-                          {name}
-                          <XIcon className="size-3" />
-                        </button>
-                      ))
-                    ) : (
-                      <span className="text-sm text-muted-foreground">Ningún rol seleccionado</span>
-                    )}
-                  </div>
-                </div>
-                <div className="rounded-md border p-2.5">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger
-                      render={
-                        <button
-                          type="button"
-                          className="flex w-full items-center justify-between gap-2 text-left"
-                          disabled={!canManage}
-                        />
-                      }
-                    >
-                      <span className="text-base font-semibold">Leer</span>
-                      <CaretDownIcon className="size-4 text-muted-foreground" />
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" className="min-w-64 normal-case">
-                      <DropdownMenuCheckboxItem
-                        checked={allReadRolesSelected}
-                        onCheckedChange={(checked) => setAllReadRoles(checked === true)}
-                        disabled={!canManage}
-                      >
-                        Seleccionar todos
-                      </DropdownMenuCheckboxItem>
-                      {roleOptions.map((role) => (
-                        <DropdownMenuCheckboxItem
-                          key={role.id}
-                          checked={readRoleNames.includes(role.name)}
-                          onCheckedChange={() => toggleReadRole(role.name)}
-                          disabled={!canManage}
-                          className="normal-case"
-                        >
-                          {role.name}
-                        </DropdownMenuCheckboxItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                  <div className="mt-1.5 flex flex-wrap gap-2">
-                    {readRoleNames.length > 0 ? (
-                      readRoleNames.map((name) => (
-                        <button
-                          key={name}
-                          type="button"
-                          className="inline-flex h-7 items-center gap-1 rounded-md bg-muted px-2 text-[11px] font-semibold tracking-wide text-muted-foreground"
-                          aria-label={`Quitar ${name} de leer`}
-                          onClick={() => toggleReadRole(name)}
-                          disabled={!canManage}
-                        >
-                          {name}
-                          <XIcon className="size-3" />
-                        </button>
-                      ))
-                    ) : (
-                      <span className="text-sm text-muted-foreground">Ningún rol seleccionado</span>
-                    )}
-                  </div>
-                </div>
+            <Section title="Agregar rol" className="mt-6">
+              <div className="space-y-4">
+                <Field variant="outlined">
+                  <FieldLabel>Editar</FieldLabel>
+                  <SubjectsMultiSelect
+                    options={roleSelectOptions}
+                    value={editRoleNames}
+                    onChange={setEditRoleNames}
+                    placeholder="Seleccionar roles"
+                    emptyMessage="No hay roles disponibles."
+                    disabled={!canManage}
+                  />
+                </Field>
+                <Field variant="outlined">
+                  <FieldLabel>Leer</FieldLabel>
+                  <SubjectsMultiSelect
+                    options={roleSelectOptions}
+                    value={readRoleNames}
+                    onChange={setReadRoleNames}
+                    placeholder="Seleccionar roles"
+                    emptyMessage="No hay roles disponibles."
+                    disabled={!canManage}
+                  />
+                </Field>
               </div>
             </Section>
 
-            <Section title="Oferta educativa">
-              <Popover open={offerOpen} onOpenChange={setOfferOpen}>
-                <PopoverTrigger
-                  render={
-                    <button
-                      type="button"
-                      className="flex items-center gap-2 text-base font-semibold"
-                    />
-                  }
+            <Section title="Oferta educativa" className="mt-6">
+              <Field variant="outlined">
+                <FieldLabel>Grados</FieldLabel>
+                <button
+                  type="button"
+                  onClick={() => setGradesSheetOpen(true)}
+                  className={cn(
+                    inputVariants({ variant: "outlined" }),
+                    inputTriggerVariants({ variant: "outlined" }),
+                    "relative flex h-auto min-h-11 flex-wrap items-center gap-2 pr-8 text-left",
+                  )}
                 >
-                  Oferta educativa
-                  <CaretDownIcon className="size-4 text-muted-foreground" />
-                </PopoverTrigger>
-                <PopoverContent
-                  align="start"
-                  side="right"
-                  className="w-[min(22rem,calc(100vw-2rem))] gap-0 p-0"
-                >
-                  <PopoverHeader className="border-b px-4 py-3">
-                    <PopoverTitle className="text-base normal-case">Oferta educativa</PopoverTitle>
-                  </PopoverHeader>
-                  <div className="max-h-[70dvh] overflow-y-auto p-3">
-                    <div className="space-y-2 border-b pb-3">
-                      <label className="flex items-center gap-2 text-sm">
-                        <Checkbox
-                          checked={allTeachingLevelsSelected}
-                          onCheckedChange={(checked) => setAllTeachingLevels(checked === true)}
-                          disabled={!canManage}
-                        />
-                        Seleccionar todos
-                      </label>
-                      {selectableTeachingLevels.map((level) => {
-                        const levelKey = getEducationLevelKey(level.nombre)
-                        if (!levelKey) return null
-                        return (
-                          <label
-                            key={level.id}
-                            className="flex items-center gap-2 text-sm normal-case"
-                          >
-                            <Checkbox
-                              checked={selectedTeachingLevels.includes(levelKey)}
-                              onCheckedChange={() => toggleTeachingLevel(levelKey)}
-                              disabled={!canManage}
-                            />
-                            {level.nombre}
-                          </label>
-                        )
-                      })}
-                    </div>
-                    <Table className="mt-3 text-sm" containerClassName="rounded-md border">
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="normal-case">Grados</TableHead>
-                          <TableHead className="normal-case">Cantidad</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {gradeRows.map((row) => (
-                          <TableRow key={row.grade}>
-                            <TableCell>{row.label}</TableCell>
-                            <TableCell>
-                              <Select
-                                value={String(row.count)}
-                                onValueChange={(value) => {
-                                  if (value) updateGradeCount(row.grade, value)
-                                }}
-                                disabled={!canManage}
-                              >
-                                <SelectTrigger size="sm" className="h-8 w-20">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {quantityOptions(row.count).map((quantity) => (
-                                    <SelectItem key={quantity} value={String(quantity)}>
-                                      {quantity}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </PopoverContent>
-              </Popover>
-              <Alert className="border-transparent bg-green-22 text-foreground after:bg-green [&>svg]:text-green">
-                <InfoIcon />
-                <AlertDescription>
-                  La oferta educativa ha sido actualizada correctamente.
-                </AlertDescription>
-              </Alert>
-              <Accordion defaultValue={["grades"]} className="rounded-md border">
-                <AccordionItem value="grades">
-                  <AccordionTrigger className="px-4 py-3 text-base font-semibold">
-                    Grados
-                  </AccordionTrigger>
-                  <AccordionContent className="px-4 pb-4">
-                    <div className="grid grid-cols-2 gap-2">
-                      {gradeRows.map((row) => (
-                        <span
-                          key={row.grade}
-                          className="inline-flex min-h-7 items-center gap-1 rounded-md bg-muted px-2 text-[11px] font-semibold tracking-wide text-muted-foreground"
-                        >
-                          <span>{row.label}</span>
-                          <span className="rounded-xs bg-background px-1.5 text-[10px]">
-                            {row.count}
-                          </span>
-                        </span>
-                      ))}
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
+                  {gradeRows.map((row) => (
+                    <span
+                      key={row.grade}
+                      className="inline-flex w-fit items-center gap-2 rounded-md bg-muted-22 px-3 py-1.5 text-sm font-medium text-muted-foreground"
+                    >
+                      {row.label}
+                      <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs text-muted-foreground">
+                        {row.count}
+                      </span>
+                    </span>
+                  ))}
+                  <CaretDownIcon className="absolute top-3 right-3 size-4 shrink-0 text-muted-foreground" />
+                </button>
+              </Field>
             </Section>
           </div>
+        </SheetContent>
+      </Sheet>
 
-          <div className="shrink-0 flex justify-center p-6">
+      <Sheet
+        open={gradesSheetOpen}
+        onOpenChange={(open) => {
+          setGradesSheetOpen(open)
+          if (open) setGradeCountsBaseline(gradeCounts)
+        }}
+      >
+        <SheetContent side="right" className="flex w-full flex-col gap-0 sm:max-w-sm">
+          <SheetHeader className="pb-3">
+            <SheetTitle className="text-2xl font-heading">Oferta educativa</SheetTitle>
+          </SheetHeader>
+
+          <div className="flex-1 overflow-y-auto px-6 pb-7">
+            <Table containerClassName="rounded-md border">
+              <TableHeader>
+                <TableRow className="hover:bg-transparent has-aria-expanded:bg-transparent">
+                  <TableHead className="text-foreground">
+                    <TableSortableHeader
+                      title="Grados"
+                      sortKey="label"
+                      sort={gradeSort}
+                      onSortChange={setGradeSort}
+                    />
+                  </TableHead>
+                  <TableHead className="text-foreground">
+                    <TableSortableHeader
+                      title="Cantidad"
+                      sortKey="count"
+                      sort={gradeSort}
+                      onSortChange={setGradeSort}
+                    />
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {sortedGradeRows.map((row) => (
+                  <TableRow key={row.grade}>
+                    <TableCell className="py-1.5">{row.label}</TableCell>
+                    <TableCell className="py-1.5">
+                      <Select
+                        value={String(row.count)}
+                        onValueChange={(value) => {
+                          if (value) updateGradeCount(row.grade, value)
+                        }}
+                        disabled={!canManage}
+                      >
+                        <SelectTrigger variant="outlined" size="sm" className="w-24">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {quantityOptions(row.count).map((quantity) => (
+                            <SelectItem key={quantity} value={String(quantity)}>
+                              {quantity}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          <div className="shrink-0 flex justify-center gap-2 p-6">
+            {hasGradeChanges ? (
+              <Button size="sm" color="primary" onClick={saveGradeCounts}>
+                Guardar
+              </Button>
+            ) : null}
             <SheetClose render={<Button size="sm" variant="fill" color="neutral" />}>
               Cerrar
             </SheetClose>
           </div>
         </SheetContent>
       </Sheet>
-
-      <AlertDialog
-        open={confirmationOpen}
-        onOpenChange={(open) => {
-          setConfirmationOpen(open)
-          if (!open) {
-            setConfirmationTarget(null)
-            setShouldFetch(false)
-          }
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {confirmationTarget ? "Activar inscripción" : "Desactivar inscripción"}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {confirmationTarget
-                ? "Al activar este periodo, los usuarios podrán realizar reservas y las consultas relacionadas mostrarán el estado Activo. La acción quedará registrada en el historial del sistema."
-                : "Al desactivar este periodo, los usuarios no podrán realizar nuevas reservas y las consultas relacionadas mostrarán el estado Inactivo. La acción quedará registrada en el historial del sistema."}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          {isDetailError ? (
-            <p className="text-sm text-destructive">{getErrorMessage(detailError)}</p>
-          ) : null}
-          <AlertDialogFooter>
-            <AlertDialogAction
-              color="primary"
-              disabled={!detail || isBusy}
-              aria-busy={isBusy}
-              onClick={handleConfirm}
-            >
-              {isBusy ? <SpinnerIcon className="animate-spin" /> : null}
-              {confirmationTarget ? "Activar" : "Desactivar"}
-            </AlertDialogAction>
-            <AlertDialogCancel variant="fill" color="neutral" disabled={isBusy}>
-              Cancelar
-            </AlertDialogCancel>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   )
 }

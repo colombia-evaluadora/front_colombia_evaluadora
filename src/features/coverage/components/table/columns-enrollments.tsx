@@ -1,10 +1,8 @@
 import type { ColumnDef } from "@tanstack/react-table"
 
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { DataTableColumnHeader } from "@/components/data-table"
 import { Checkbox } from "@/components/ui/checkbox"
-import { EyeIcon } from "@/components/ui/icons"
 
 import { formatGrade } from "@/features/coverage/api/ui-mappings"
 import {
@@ -12,8 +10,7 @@ import {
   ENROLLMENT_STATUS_LABELS,
 } from "@/features/coverage/api/ui-mappings-enrollments"
 import type { Enrollment } from "@/features/coverage/api/types/enrollment"
-import { paths } from "@/config/paths"
-import { useNavigate } from "@tanstack/react-router"
+import { DetailEnrollmentDialog } from "@/features/coverage/components/dialogs/dialog-detail-enrollment"
 
 export const columnsEnrollments: ColumnDef<Enrollment>[] = [
   {
@@ -96,33 +93,13 @@ export const columnsEnrollments: ColumnDef<Enrollment>[] = [
   {
     id: "actions",
     header: () => <span className="sr-only">Acciones</span>,
-    cell: ({ row }) => {
-      return <ViewEnrollmentButton id={row.original.id} row={row.original} />
-    },
+    cell: ({ row }) => (
+      <div className="flex items-center justify-end gap-1">
+        <DetailEnrollmentDialog enrollment={row.original} />
+      </div>
+    ),
     enableSorting: false,
     enableHiding: false,
     size: 64,
   },
 ]
-
-function ViewEnrollmentButton({ id, row }: { id: string; row: Enrollment }) {
-  const navigate = useNavigate()
-  return (
-    <div className="flex items-center justify-end gap-1">
-      <Button
-        type="button"
-        variant="ghost"
-        color="neutral"
-        size="icon-sm"
-        aria-label={`Ver detalle de ${row.firstName} ${row.lastName}`}
-        onClick={() => {
-          navigate({
-            to: paths.app.coberturaInscritoDetalle.getHref(id),
-          })
-        }}
-      >
-        <EyeIcon />
-      </Button>
-    </div>
-  )
-}
