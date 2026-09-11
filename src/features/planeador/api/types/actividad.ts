@@ -206,6 +206,19 @@ export interface Actividad {
    * del PUT general (ver `agregar-evidencia-actividad.ts`).
    */
   evidenciasIds: number[]
+  /**
+   * Ids de criterios de la RÚBRICA DE LA UNIDAD (`UnidadTematica.criterios`,
+   * `TCRITERIO_UNIDAD` — no la rúbrica propia de la actividad, `rubrica`)
+   * marcados para relacionar con esta actividad — solo tiene sentido con
+   * `unidad.id !== 0`. A diferencia de `evidenciasIds`, NO viaja en
+   * `POST /planeador/actividades` (no confirmado en ese body): siempre es
+   * `POST .../actividades/:id/criterios` aparte, con la actividad ya creada
+   * (ver `agregar-criterio-unidad-actividad.ts`). Igual que `evidenciasIds`,
+   * no hay forma confirmada de saber cuáles ya estaban relacionadas al abrir
+   * el detalle real, así que siempre arranca en `[]` — el checklist del form
+   * solo puede AGREGAR, no reflejar lo ya guardado.
+   */
+  criteriosUnidadIds: number[]
   asignatura: string
   grado: string
   grupo: string
