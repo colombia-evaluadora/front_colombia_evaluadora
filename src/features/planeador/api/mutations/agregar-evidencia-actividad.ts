@@ -11,15 +11,20 @@ interface AgregarEvidenciaInput {
 
 /**
  * `POST /planeador/actividades/:id/evidencias` (confirmado real, colección
- * Postman `planeador-flujo-unidad-actividad`, nota del paso 7: "también se
- * pueden relacionar después, de una en una"). Es el único camino confirmado
+ * Postman `planeador-guia-completa`, 4.11). Es el único camino confirmado
  * para agregar una evidencia a una actividad YA creada — no hay endpoint
  * confirmado para quitar una ya relacionada, así que no existe su opuesto
  * acá (ver el comentario de `Actividad.evidenciasIds`).
+ *
+ * La evidencia (nivel 2 de `TREFERENTE_ENUNCIADO`) viaja como
+ * `FK_REFERENTE_ENUNCIADO` — NO `FK_TLV_EVIDENCIA`, que no es un campo real
+ * del body (confirmado contra la captura de 4.11: el backend la rechazaba
+ * en silencio con ese nombre, dejando el checkbox marcado en el front sin
+ * relación real del lado del servidor).
  */
 function agregarEvidenciaActividad({ actividadId, evidenciaId }: AgregarEvidenciaInput): Promise<unknown> {
   return api.post(`/eval-col/planeador/actividades/${actividadId}/evidencias`, {
-    FK_TLV_EVIDENCIA: evidenciaId,
+    FK_REFERENTE_ENUNCIADO: evidenciaId,
   })
 }
 
