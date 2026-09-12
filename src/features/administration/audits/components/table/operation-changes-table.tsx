@@ -43,7 +43,7 @@ export function OperationChangesTable({ changes }: OperationChangesTableProps) {
           </TableHead>
         </TableRow>
       </TableHeader>
-      <TableBody className="h-50 overflow-y-auto">
+      <TableBody>
         {changes.map((change) => {
           // Para el revert lo que importa es el "antes" — "después" e
           // "actual" son contexto. Estilizamos solo "actual" para que el

@@ -52,7 +52,17 @@ export const columns: ColumnDef<SessionOperation>[] = [
     meta: { label: "Tabla" },
     header: ({ column }) => <DataTableColumnHeader column={column} title="Tabla" />,
     cell: ({ row }) => (
-      <Badge variant="soft" color="muted">
+      // A diferencia de INSERT/UPDATE/DELETE (valores cortos y fijos), el
+      // nombre de tabla es un identificador de largo variable
+      // (`tpropiedad_juridica`) que estiraba la píldora hasta verse
+      // desproporcionada al lado de los badges cortos. Se acota el ancho y
+      // se trunca; el nombre completo queda en el `title`.
+      <Badge
+        variant="soft"
+        color="muted"
+        className="max-w-36 truncate"
+        title={row.original.tableSlug}
+      >
         {row.original.tableSlug}
       </Badge>
     ),
