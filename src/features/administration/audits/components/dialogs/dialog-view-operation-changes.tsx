@@ -83,12 +83,35 @@ export function ViewOperationChangesDialog({
       </DialogTrigger>
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
+          {/* El título es FIJO. `entityName` no sirve de título: con datos
+              reales es un texto de largo arbitrario que crece en cada
+              reversión (el backend le concatena
+              "REVERSIÓN (active): … [request original <uuid>]" cada vez), y
+              como título empujaba el header a cuatro líneas y tapaba el
+              resto. Va abajo, como un dato más, acotado a dos líneas. */}
           <div className="flex flex-wrap items-center gap-2">
-            <DialogTitle>{data ? data.entityName : "Detalle de cambios"}</DialogTitle>
+            <DialogTitle>Detalle de cambios</DialogTitle>
             {data && <Badge {...OPERATION_TYPE_BADGE[data.operation]}>{operationLabel}</Badge>}
           </div>
-          <DialogDescription>{data ? `${data.entityId}` : "Cargando…"}</DialogDescription>
-          <div className="flex justify-between gap-2">
+          <DialogDescription className="sr-only">
+            Campos modificados por la operación y su valor anterior.
+          </DialogDescription>
+
+          {data && (
+            <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
+              {/* Sin prefijar "#": según la tabla, `entityId` ya viene con
+                  numeral ("#947") o sin él ("4196"). */}
+              <dt className="text-muted-foreground">Registro</dt>
+              <dd className="font-medium">{data.entityId}</dd>
+
+              <dt className="text-muted-foreground">Detalle</dt>
+              <dd className="line-clamp-2 wrap-break-word" title={data.entityName}>
+                {data.entityName}
+              </dd>
+            </dl>
+          )}
+
+          <div className="flex items-center justify-between gap-2">
             <p className="text-muted-foreground text-sm">{summary}</p>
 
             <label className="flex cursor-pointer items-center gap-2 text-xs">
