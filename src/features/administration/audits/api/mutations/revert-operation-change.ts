@@ -97,8 +97,12 @@ export function useRevertOperationChange({ mutationConfig }: UseRevertOperationC
 
   return useMutation({
     mutationFn: revertOperationChange,
+    ...mutationConfig,
     // Refresca el detalle de cambios después de revertir para que la UI
-    // muestre los campos como "ya revertidos" (before === after).
+    // muestre los campos como "ya revertidos" (before === after). Va DESPUÉS
+    // del spread de `mutationConfig`: si quedara antes, `...mutationConfig`
+    // pisaría este `onSuccess` entero (el `onSuccess` del caller reemplaza,
+    // no se fusiona) y el `invalidateQueries` nunca correría.
     onSuccess: (data, variables, onMutateResult, context) => {
       queryClient.invalidateQueries({
         queryKey: [
@@ -111,6 +115,5 @@ export function useRevertOperationChange({ mutationConfig }: UseRevertOperationC
       })
       mutationConfig?.onSuccess?.(data, variables, onMutateResult, context)
     },
-    ...mutationConfig,
   })
 }
