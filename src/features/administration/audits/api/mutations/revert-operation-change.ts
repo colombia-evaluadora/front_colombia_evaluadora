@@ -17,17 +17,20 @@ interface RevertOperationChangeVariables {
 }
 
 /**
- * Respuesta real de `POST /sso-admin/audit/revert` (`AuditRevertResponse`).
- * `applied=false` es lo que devuelve un dry-run — acá siempre se ejecuta de
- * verdad, así que un `false` significaría que no se escribió nada.
+ * Respuesta real de `POST /sso-admin/audit/revert` (`AuditRevertResponse`),
+ * confirmada contra el backend de test. `applied=false` es lo que devuelve
+ * un dry-run — acá siempre se ejecuta de verdad, así que un `false`
+ * significaría que no se escribió nada.
  */
 interface RealAuditRevertResponse {
   applied: boolean
   tabla: string
+  /** "u" (update), "i" (insert), "d" (delete) — la operación revertida. */
+  operacionOriginal: string
   pkColumn: string
   pkValue: string
-  activeBefore: boolean
-  activeAfter: boolean
+  /** Columnas que el backend restauró, con su valor antes/después. */
+  cambios: { columna: string; antes: unknown; despues: unknown }[]
   originalRequestId: string | null
   originalEtiqueta: string | null
   originalAppUser: string | null
@@ -82,9 +85,9 @@ async function revertOperationChange({
   return {
     status: response.applied ? "ok" : "error",
     message: response.message,
-    // El backend no dice cuántas columnas tocó: `applied` es un sí/no sobre
-    // la fila entera.
-    revertedFields: response.applied ? 1 : 0,
+    // `cambios` trae una entrada por columna restaurada — es el conteo real,
+    // no un sí/no sobre la fila.
+    revertedFields: response.applied ? (response.cambios?.length ?? 1) : 0,
   }
 }
 
@@ -98,21 +101,21 @@ export function useRevertOperationChange({ mutationConfig }: UseRevertOperationC
   return useMutation({
     mutationFn: revertOperationChange,
     ...mutationConfig,
-    // Refresca el detalle de cambios después de revertir para que la UI
-    // muestre los campos como "ya revertidos" (before === after). Va DESPUÉS
-    // del spread de `mutationConfig`: si quedara antes, `...mutationConfig`
-    // pisaría este `onSuccess` entero (el `onSuccess` del caller reemplaza,
-    // no se fusiona) y el `invalidateQueries` nunca correría.
+    // Refresca lo que el revert acaba de cambiar. Va DESPUÉS del spread de
+    // `mutationConfig`: si quedara antes, `...mutationConfig` pisaría este
+    // `onSuccess` entero (el del caller reemplaza, no se fusiona) y el
+    // `invalidateQueries` nunca correría.
     onSuccess: (data, variables, onMutateResult, context) => {
+      // Prefijo sin el `operationId`: además del detalle de cambios
+      // (`…/operations/:id/changes`) alcanza al listado de operaciones de la
+      // tabla y a sus stats, que también cambian — el revert deja una
+      // operación NUEVA registrada en la auditoría.
       queryClient.invalidateQueries({
-        queryKey: [
-          "audit-tables",
-          variables.tableSlug,
-          "operations",
-          variables.operationId,
-          "changes",
-        ],
+        queryKey: ["audit-tables", variables.tableSlug, "operations"],
       })
+      // El mismo revert puede dispararse desde la vista de una SESIÓN, cuyo
+      // listado vive bajo otra clave y no cuelga de `audit-tables`.
+      queryClient.invalidateQueries({ queryKey: ["audits", "sessions"] })
       mutationConfig?.onSuccess?.(data, variables, onMutateResult, context)
     },
   })

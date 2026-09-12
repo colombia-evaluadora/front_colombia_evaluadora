@@ -154,6 +154,7 @@ export function ViewOperationChangesDialog({
             tableSlug={tableSlug}
             operationId={operationId}
             fieldIndexes={revertibleIndexes}
+            onReverted={() => setOpen(false)}
           />
           <DialogClose
             render={<Button size="sm" type="button" variant="fill" color="neutral" />}
