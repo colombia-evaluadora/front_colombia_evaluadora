@@ -76,6 +76,7 @@ import {
   type AreaSubjectFormValues,
 } from "@/features/establishment/academic-period/api/schema"
 import { useRowEdit } from "@/features/establishment/academic-period/hooks/use-row-edit"
+import { DEFAULT_SUBJECT_COLOR } from "@/features/establishment/academic-period/components/schedule-data"
 
 const FORM_ID = "area-subject-form"
 
@@ -106,6 +107,7 @@ export function AreaSubjectFormDialog({
     () => areaSubject?.subjects.map(itemToDraft) ?? [],
   )
   const [draft, setDraft] = useState<SubjectDraft>(emptyDraft())
+  const [draftInvalidFields, setDraftInvalidFields] = useState<Set<keyof SubjectDraft>>(new Set())
   const [selectedIndexes, setSelectedIndexes] = useState<Set<number>>(new Set())
   const {
     editingKey: editingIndex,
@@ -236,6 +238,7 @@ export function AreaSubjectFormDialog({
     setSubjects(areaSubject?.subjects.map(itemToDraft) ?? [])
     setSubjectsStarted(true)
     setDraft(emptyDraft())
+    setDraftInvalidFields(new Set())
     setSelectedIndexes(new Set())
     cancelEditSubject()
     setSort(null)
@@ -251,6 +254,7 @@ export function AreaSubjectFormDialog({
     setSubjects([])
     setSubjectsStarted(false)
     setDraft(emptyDraft())
+    setDraftInvalidFields(new Set())
     setSelectedIndexes(new Set())
     savedSnapshotRef.current = { values: areaDefaults, subjects: [] }
 
@@ -291,29 +295,51 @@ export function AreaSubjectFormDialog({
           nombreInterno: area.nombreInterno,
           abreviacion: area.abreviacion,
           ordenReportes: 1,
-          color: "",
+          color: DEFAULT_SUBJECT_COLOR,
           especialidad: "",
         }
         : emptyDraft(),
     )
+    setDraftInvalidFields(new Set())
     setSubjectsStarted(true)
     setConfirmOpen(false)
   }
 
   function patchDraft(patch: Partial<SubjectDraft>) {
     setDraft((prev) => ({ ...prev, ...patch }))
+    if (draftInvalidFields.size > 0) {
+      setDraftInvalidFields((prev) => {
+        const next = new Set(prev)
+        for (const key of Object.keys(patch)) next.delete(key as keyof SubjectDraft)
+        return next
+      })
+    }
   }
 
-  // Todos los campos del borrador completos salvo `especialidad`, la única
-  // opcional — el botón de agregar recién aparece cuando esto se cumple.
-  function isDraftComplete(value: SubjectDraft): boolean {
+  // El botón de agregar aparece apenas se toca algún campo del borrador —
+  // la validación completa (y el resaltado de lo que falte) ocurre recién
+  // al presionar el botón, en `commitDraft`.
+  function isDraftTouched(value: SubjectDraft): boolean {
     return (
-      value.asignaturaGeneral.trim() !== "" &&
-      value.nombreInterno.trim() !== "" &&
-      value.abreviacion.trim() !== "" &&
-      Number.isFinite(value.ordenReportes) &&
-      value.color.trim() !== ""
+      value.asignaturaGeneral.trim() !== "" ||
+      value.nombreInterno.trim() !== "" ||
+      value.abreviacion.trim() !== "" ||
+      Number.isFinite(value.ordenReportes) ||
+      value.color.trim() !== "" ||
+      value.especialidad.trim() !== ""
     )
+  }
+
+  // Campos obligatorios salvo `especialidad`: asignaturaGeneral, nombreInterno,
+  // abreviación, orden y color son todos requeridos de forma independiente.
+  function getMissingDraftFields(value: SubjectDraft): Set<keyof SubjectDraft> {
+    const missing = new Set<keyof SubjectDraft>()
+    if (!value.asignaturaGeneral.trim()) missing.add("asignaturaGeneral")
+    if (!value.nombreInterno.trim()) missing.add("nombreInterno")
+    if (!value.abreviacion.trim()) missing.add("abreviacion")
+    if (!Number.isFinite(value.ordenReportes)) missing.add("ordenReportes")
+    if (!value.color.trim()) missing.add("color")
+    return missing
   }
 
   // El backend (`fn_subject_guardar_bulk`) rechaza abreviaciones repetidas
@@ -351,10 +377,10 @@ export function AreaSubjectFormDialog({
   }
 
   function commitDraft() {
-    if (!draft.asignaturaGeneral.trim() && !draft.nombreInterno.trim()) {
-      showNotice("Elige una asignatura general o completa el nombre interno.", {
-        variant: "error",
-      })
+    const missing = getMissingDraftFields(draft)
+    if (missing.size > 0) {
+      setDraftInvalidFields(missing)
+      showNotice("Completa los campos obligatorios resaltados.", { variant: "error" })
       return
     }
     if (findDuplicateAbreviacion(draft.abreviacion)) {
@@ -372,6 +398,7 @@ export function AreaSubjectFormDialog({
     }
     setSubjects((prev) => [...prev, draft])
     setDraft(emptyDraft())
+    setDraftInvalidFields(new Set())
     showNotice("Asignatura agregada exitosamente.")
   }
 
@@ -466,8 +493,8 @@ export function AreaSubjectFormDialog({
 
   function saveEditSubject() {
     if (editingIndex === null || !editDraft) return
-    if (!editDraft.asignaturaGeneral.trim() && !editDraft.nombreInterno.trim()) {
-      showNotice("Elige una asignatura general o completa el nombre interno.", {
+    if (!editDraft.asignaturaGeneral.trim() || !editDraft.nombreInterno.trim()) {
+      showNotice("Elige una asignatura general y completa el nombre interno.", {
         variant: "error",
       })
       return
@@ -875,10 +902,11 @@ export function AreaSubjectFormDialog({
                           draft={draft}
                           onPatch={patchDraft}
                           academicPeriodId={academicPeriodId}
+                          invalidFields={draftInvalidFields}
                         />
                         {actionsSpacerCell}
                         <TableCell className={ACTIONS_CELL_CLASS}>
-                          {isDraftComplete(draft) && (
+                          {isDraftTouched(draft) && (
                             <div className={actionsOverlayClass(true)}>
                               <Button
                                 type="button"

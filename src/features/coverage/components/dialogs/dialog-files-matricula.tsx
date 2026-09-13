@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 
 import { Button } from "@/components/ui/button"
@@ -7,8 +7,10 @@ import { useNotify } from "@/components/notice/notice-context"
 
 import { getErrorMessage } from "@/lib/api-client"
 import { useMatriculaDetailQuery } from "@/features/coverage/api/query/use-matricula-detail-query"
+import { useMatriculaFieldConfigQuery } from "@/features/coverage/api/query/use-matricula-field-config-query"
 import { useUpdateMatriculaFiles } from "@/features/coverage/api/mutations/update-matricula-files"
 import { addMatriculaDocumento } from "@/features/coverage/api/mutations/add-matricula-documento"
+import { buildMatriculaFieldSettings } from "@/features/coverage/utils/matricula-field-settings"
 import {
   SupportFilesSheet,
   groupExistingFilesByKey,
@@ -48,6 +50,11 @@ export function FilesMatriculaDialog({ matricula, trigger = "icon", editable = f
   // Solo se pide mientras el sheet está abierto -- evita una consulta por
   // fila de la tabla apenas se renderiza.
   const { data } = useMatriculaDetailQuery(open ? matricula.id : undefined)
+  const { data: fieldConfig } = useMatriculaFieldConfigQuery()
+  const fieldSettings = useMemo(
+    () => (fieldConfig ? buildMatriculaFieldSettings(fieldConfig) : undefined),
+    [fieldConfig],
+  )
   const fullName = `${matricula.firstName} ${matricula.lastName}`
 
   const updateFiles = useUpdateMatriculaFiles()
@@ -169,6 +176,7 @@ export function FilesMatriculaDialog({ matricula, trigger = "icon", editable = f
         onSave={editable ? handleSave : undefined}
         isSaving={isSaving}
         saveDisabled={!hasPendingChanges}
+        fieldSettings={fieldSettings}
       />
     </>
   )

@@ -1390,17 +1390,23 @@ export interface MatriculaSupportFiles {
 
 interface SupportFileFieldConfig {
   key: keyof MatriculaSupportFiles
+  /** Id del catálogo (`MATRICULA_FIELD_CATALOG`, sección "Archivo de
+   * soporte") — de acá salen `requerido`/`visible` vía `fieldSettings`. */
+  fieldId: string
   label: string
-  required?: boolean
   multiple?: boolean
 }
 
-const SUPPORT_FILE_FIELDS: SupportFileFieldConfig[] = [
-  { key: "studentIdDocument", label: "Documento de identidad del estudiante", required: true },
-  { key: "previousYearCertificate", label: "Certificado de estudios del año anterior", required: true },
-  { key: "medicalCertificate", label: "Certificado médico del estudiante" },
-  { key: "studentPhoto", label: "Foto del estudiante" },
-  { key: "otherDocuments", label: "Otros documentos relevantes", multiple: true },
+export const SUPPORT_FILE_FIELDS: SupportFileFieldConfig[] = [
+  { key: "studentIdDocument", fieldId: "file-student-id-document", label: "Documento de identidad del estudiante" },
+  {
+    key: "previousYearCertificate",
+    fieldId: "file-previous-year-certificate",
+    label: "Certificado de estudios del año anterior",
+  },
+  { key: "medicalCertificate", fieldId: "file-medical-certificate", label: "Certificado médico del estudiante" },
+  { key: "studentPhoto", fieldId: "file-student-photo", label: "Foto del estudiante" },
+  { key: "otherDocuments", fieldId: "file-other-documents", label: "Otros documentos relevantes", multiple: true },
 ]
 
 const MATRICULA_MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024
@@ -1518,6 +1524,7 @@ interface SupportFilesSheetFieldProps {
   config: SupportFileFieldConfig
   value: File[]
   onChange: (files: File[]) => void
+  required?: boolean
   existingFiles?: MatriculaFile[]
   editable?: boolean
   viewOnly?: boolean
@@ -1529,6 +1536,7 @@ function SupportFilesSheetField({
   config,
   value,
   onChange,
+  required = false,
   existingFiles = [],
   editable = false,
   viewOnly = false,
@@ -1546,7 +1554,7 @@ function SupportFilesSheetField({
   const isEmpty = value.length === 0 && visibleExisting.length === 0
   const canAttach =
     !viewOnly && (editable ? true : config.multiple || (value.length === 0 && existingFiles.length === 0))
-  const canRemoveExisting = editable && (config.multiple || !config.required)
+  const canRemoveExisting = editable && (config.multiple || !required)
 
   return (
     <FileUpload
@@ -1565,7 +1573,7 @@ function SupportFilesSheetField({
       <div className="flex items-center justify-between gap-2">
         <span className="text-sm font-semibold text-foreground">
           {config.label}
-          {config.required ? "*" : ""}
+          {required ? "*" : ""}
         </span>
         {canAttach && (
           <FileUploadTrigger
@@ -1755,6 +1763,7 @@ interface SupportFilesSheetProps {
   onSave?: () => void
   isSaving?: boolean
   saveDisabled?: boolean
+  fieldSettings?: MatriculaFieldSettingsMap
 }
 
 export function SupportFilesSheet({
@@ -1770,8 +1779,10 @@ export function SupportFilesSheet({
   onSave,
   isSaving = false,
   saveDisabled = false,
+  fieldSettings,
 }: SupportFilesSheetProps) {
   const existingByKey = groupExistingFilesByKey(existingFiles ?? [])
+  const visibleFields = SUPPORT_FILE_FIELDS.filter((field) => isFieldVisible(fieldSettings, field.fieldId))
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full gap-0 data-[side=right]:sm:max-w-lg">
@@ -1784,12 +1795,13 @@ export function SupportFilesSheet({
           </SheetDescription>
         </SheetHeader>
         <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-4 pb-8">
-          {SUPPORT_FILE_FIELDS.map((field) => (
+          {visibleFields.map((field) => (
             <SupportFilesSheetField
               key={field.key}
               config={field}
               value={value[field.key]}
               onChange={(files) => onChange({ ...value, [field.key]: files })}
+              required={isFieldRequired(fieldSettings, field.fieldId)}
               existingFiles={existingByKey[field.key]}
               editable={editable}
               viewOnly={viewOnly}
@@ -1827,14 +1839,17 @@ interface SupportFilesSectionProps {
   onChange: (value: MatriculaSupportFiles) => void
   /** Claves de `MatriculaSupportFiles` obligatorias sin cargar. */
   invalidFields?: string[]
+  fieldSettings?: MatriculaFieldSettingsMap
 }
 
 export function MatriculaSupportFilesSection({
   value,
   onChange,
   invalidFields = [],
+  fieldSettings,
 }: SupportFilesSectionProps) {
   const [open, setOpen] = useState(false)
+  const visibleFields = SUPPORT_FILE_FIELDS.filter((field) => isFieldVisible(fieldSettings, field.fieldId))
 
   return (
     <MatriculaFormSection title="Archivo de soporte" columns={2}>
@@ -1845,15 +1860,16 @@ export function MatriculaSupportFilesSection({
         </FieldDescription>
       </div>
 
-      {SUPPORT_FILE_FIELDS.map((field) => {
+      {visibleFields.map((field) => {
         const files = value[field.key]
+        const required = isFieldRequired(fieldSettings, field.fieldId)
         const invalid = files.length === 0 && invalidFields.includes(field.key)
         return (
           <div key={field.key} className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between gap-2">
               <span className={invalid ? "font-semibold text-red" : "font-semibold text-foreground"}>
                 {field.label}
-                {field.required ? "*" : ""}
+                {required ? "*" : ""}
               </span>
               {(field.multiple || files.length === 0) && (
                 <Button
@@ -1882,7 +1898,13 @@ export function MatriculaSupportFilesSection({
         )
       })}
 
-      <SupportFilesSheet open={open} onOpenChange={setOpen} value={value} onChange={onChange} />
+      <SupportFilesSheet
+        open={open}
+        onOpenChange={setOpen}
+        value={value}
+        onChange={onChange}
+        fieldSettings={fieldSettings}
+      />
     </MatriculaFormSection>
   )
 }
