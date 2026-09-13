@@ -196,7 +196,7 @@ function makePersonSchema(required: boolean) {
 
       /**
        * Persona SIN `id` todavía (nunca tuvo rector/secretaria enlazado, o
-       * el GET no trajo uno): al guardar va a `POST /register/funcionario`
+       * el GET no trajo uno): al guardar va a `POST /register/cval/funcionario`
        * (`RegisterUsuarioRequest`, auth-center), que exige `@NotBlank` en
        * `email` y `password` — son la cuenta y el login del funcionario,
        * no hay forma de omitirlos (a diferencia de fecha de nacimiento,

@@ -257,7 +257,7 @@ function isBlankValue(value: string | null | undefined): boolean {
  * Datos mínimos para dar de alta a la persona: los cuatro con asterisco, más
  * correo, género y contraseña — no llevan asterisco en el formulario
  * (`UserDetailsForm` lo comparte con otras pantallas donde son opcionales),
- * pero acá son obligatorios de verdad: `/register/funcionario`
+ * pero acá son obligatorios de verdad: `/register/cval/funcionario`
  * (`RegisterUsuarioRequest`, auth-center) y `fn_usu_crear` (SQL) los exigen
  * — correo/contraseña son la cuenta y el login del funcionario, y género
  * (REV: se había sacado, el negocio volvió a pedirlo) nunca dejó de ser
@@ -308,7 +308,7 @@ const employeePersonSchema = z
     require("firstName", person.firstName, "Ingresa el primer nombre.")
     require("lastName", person.lastName, "Ingresa el primer apellido.")
 
-    // Persona SIN `id` todavía: va a `POST /register/funcionario`, que
+    // Persona SIN `id` todavía: va a `POST /register/cval/funcionario`, que
     // exige `@NotBlank` en email/password (mismo criterio que rector/
     // secretaria en `makePersonSchema`, ver ese archivo). Persona CON `id`
     // va a PUT (tolera estos campos vacíos, nunca resetea la contraseña),
@@ -458,7 +458,7 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
   // Estado UI: vive fuera de `Person` porque no es parte del modelo de negocio.
   const [confirmPassword, setConfirmPassword] = useState("")
   // Foto elegida en el form, todavía sin subir: viaja como `fkTarchivoFoto`
-  // del multipart, tanto en el alta (/register/funcionario) como en el PATCH.
+  // del multipart, tanto en el alta (/register/cval/funcionario) como en el PATCH.
   const [photo, setPhoto] = useState<File | null>(null)
   const [photoRemoved, setPhotoRemoved] = useState(false)
   // PK_TFUNCIONARIO que devolvió el autocompletado por documento cuando la
@@ -758,7 +758,7 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
     }
 
     // 1) Garantizar que la persona exista (POST /person en mock;
-    //    POST /register/funcionario en real — ver más abajo, ese además
+    //    POST /register/cval/funcionario en real — ver más abajo, ese además
     //    ya crea el TFUNCIONARIO, así que el flujo real se bifurca acá).
     let persistedPerson = draft
 
@@ -773,7 +773,7 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
       setPersonErrors({})
 
       if (!env.ENABLE_API_MOCKING && !activeEmployeeId) {
-        // Backend real: /register/funcionario (auth-center, Java) crea
+        // Backend real: /register/cval/funcionario (auth-center, Java) crea
         // TUSUARIO + TFUNCIONARIO (`fn_fun_crear` reusa el TUSUARIO si
         // `accountExists` era `true`). TFUNCIONARIO ya no es una fila por
         // establecimiento, así que no hace falta indicar a cuál pertenece
@@ -851,7 +851,7 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
     // /employees con catálogos vacíos si el usuario no entró ni permisos
     // ni información complementaria. A partir de ese momento los botones
     // opcionales quedan disponibles sin cerrar el diálogo.
-    // (Solo mock: en real, este paso ya lo cubrió /register/funcionario
+    // (Solo mock: en real, este paso ya lo cubrió /register/cval/funcionario
     // arriba — no hay un POST /employees separado.)
     const payload: Employee = {
       // Sin `id` cuando todavía no existe: lo asigna el backend al crear.
