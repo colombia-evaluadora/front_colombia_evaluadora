@@ -75,7 +75,7 @@ export function ExportSelectedMatriculaDialog({
           </Button>
         }
       />
-      <DialogContent>
+      <DialogContent showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>

@@ -68,7 +68,7 @@ export function ExportEstablishmentsDialog({ filters }: ExportEstablishmentsDial
           </Button>
         }
       />
-      <DialogContent>
+      <DialogContent showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>

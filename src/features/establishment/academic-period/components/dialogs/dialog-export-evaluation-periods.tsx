@@ -72,7 +72,7 @@ export function ExportEvaluationPeriodsDialog({
       >
         <FileDownloadOutlinedIcon />
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>

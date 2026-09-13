@@ -61,7 +61,7 @@ export function ExportAuditSessionDialog({ filters }: ExportAuditSessionDialogPr
         <FileDownloadOutlinedIcon data-icon="inline-start" />
         <span className="sr-only md:not-sr-only">Exportar</span>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>

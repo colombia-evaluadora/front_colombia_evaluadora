@@ -68,7 +68,7 @@ export function ExportReservationsDialog({ filters }: ExportReservationsDialogPr
           </Button>
         }
       />
-      <DialogContent>
+      <DialogContent showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>

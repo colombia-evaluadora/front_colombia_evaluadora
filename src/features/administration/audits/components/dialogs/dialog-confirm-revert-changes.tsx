@@ -18,13 +18,14 @@ import { Button } from "@/components/ui/button"
 import { useRevertOperationChange } from "@/features/administration/audits/api/mutations/revert-operation-change"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
-import { NoticeProvider } from "@/components/notice/notice-context"
 import { NoticeBanner, type NoticeVariant } from "@/components/notice/notice-banner"
 
 interface DialogConfirmRevertChangesProps {
   tableSlug: string
   operationId: string
   fieldIndexes: number[]
+  /** Se llama cuando el revert se aplicó: el padre cierra su propio dialog. */
+  onReverted?: () => void
 }
 
 /**
@@ -32,28 +33,33 @@ interface DialogConfirmRevertChangesProps {
  * revert. Recibe el `operationId` (y el slug) desde el dialog padre — la
  * acción destructiva nunca se dispara sin paso explícito por acá.
  *
- * El propio dialog monta su `NoticeProvider`: los avisos del revert son del
- * diálogo (no del listado de operaciones que está atrás), y tener un
- * `NoticeBanner` adentro del modal —encima del overlay— evita que el toast
- * global quede escondido por el backdrop.
+ * Los ERRORES se muestran en un `NoticeBanner` propio, adentro del modal:
+ * un toast global quedaría detrás del overlay. Ese banner se maneja con
+ * estado local (`notice`), no hace falta un `NoticeProvider` para él.
+ *
+ * El ÉXITO sí va al aviso de la PÁGINA (`useNotify` del provider de arriba):
+ * el modal se cierra, así que un banner adentro se iría con él. Antes este
+ * componente montaba su propio `NoticeProvider` sin un `NoticeOutlet`
+ * adentro, así que ese `notify()` de éxito no lo renderizaba nadie — el
+ * mensaje del backend ("Reversión aplicada.") se perdía en el vacío.
  */
 export function DialogConfirmRevertChanges({
   tableSlug,
   operationId,
   fieldIndexes,
+  onReverted,
 }: DialogConfirmRevertChangesProps) {
   const [open, setOpen] = useState(false)
 
   return (
-    <NoticeProvider>
-      <DialogConfirmRevertChangesInner
-        open={open}
-        onOpenChange={setOpen}
-        tableSlug={tableSlug}
-        operationId={operationId}
-        fieldIndexes={fieldIndexes}
-      />
-    </NoticeProvider>
+    <DialogConfirmRevertChangesInner
+      open={open}
+      onOpenChange={setOpen}
+      tableSlug={tableSlug}
+      operationId={operationId}
+      fieldIndexes={fieldIndexes}
+      onReverted={onReverted}
+    />
   )
 }
 
@@ -63,6 +69,7 @@ function DialogConfirmRevertChangesInner({
   tableSlug,
   operationId,
   fieldIndexes,
+  onReverted,
 }: DialogConfirmRevertChangesProps & {
   open: boolean
   onOpenChange: (next: boolean) => void
@@ -88,8 +95,12 @@ function DialogConfirmRevertChangesInner({
           return
         }
         setNotice(null)
+        // `result.message` es el del backend ("Reversión aplicada.").
         notify(result.message)
         onOpenChange(false)
+        // Cierra también el dialog de detalle que está detrás: sus datos
+        // acaban de cambiar y quedarse ahí sugiere que no pasó nada.
+        onReverted?.()
       },
       onError: (error) => {
         notifyInDialog(getErrorMessage(error))

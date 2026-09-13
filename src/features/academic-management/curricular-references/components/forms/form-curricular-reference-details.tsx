@@ -18,7 +18,7 @@ import type { CatalogItem } from "@/features/establishment/employees/api/types/c
 import type { CurricularReferenceDraft } from "@/features/academic-management/curricular-references/api/types/curricular-reference"
 
 const TEXTAREA_OUTLINE_CLASS =
-  "rounded-md border border-input px-3 py-2 hover:border-ring focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/20 aria-invalid:border-red aria-invalid:focus-visible:border-red aria-invalid:focus-visible:ring-red/20"
+  "field-sizing-fixed max-w-full rounded-md border border-input px-3 py-2 break-all hover:border-ring focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/20 aria-invalid:border-red aria-invalid:focus-visible:border-red aria-invalid:focus-visible:ring-red/20"
 
 interface CurricularReferenceDetailsFormProps {
   value: CurricularReferenceDraft

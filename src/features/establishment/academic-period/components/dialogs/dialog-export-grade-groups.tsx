@@ -73,7 +73,7 @@ export function ExportGradeGroupsDialog({ filters }: ExportGradeGroupsDialogProp
       <DialogPortal>
         <DialogOverlay forceRender className="bg-black/30" />
       </DialogPortal>
-      <DialogContent>
+      <DialogContent showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>Elige un formato para exportar todos los grupos.</DialogDescription>

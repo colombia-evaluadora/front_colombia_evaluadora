@@ -69,7 +69,7 @@ export function ExportAcademicAssignmentsDialog({
       >
         <FileDownloadOutlinedIcon />
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>

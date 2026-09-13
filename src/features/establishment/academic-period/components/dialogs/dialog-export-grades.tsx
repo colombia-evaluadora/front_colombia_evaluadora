@@ -64,7 +64,7 @@ export function ExportGradesDialog({ academicPeriodId }: ExportGradesDialogProps
       >
         <FileDownloadOutlinedIcon />
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>

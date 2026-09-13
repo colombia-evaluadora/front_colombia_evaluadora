@@ -67,7 +67,7 @@ export function ExportAreaSubjectsDialog({ academicPeriodId }: ExportAreaSubject
       >
         <FileDownloadOutlinedIcon />
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
           <DialogDescription>
