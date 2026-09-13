@@ -18,7 +18,7 @@ import { env } from "@/config/env"
  * en la tabla `query` necesita ese prefijo en la URL real que sale del
  * front, aunque el `path_template` registrado ahí NO lo incluya (el gateway
  * lo saca antes de matchear contra `path_template`). Los endpoints que no
- * pasan por ese motor — como `/register/funcionario`, servido directo por
+ * pasan por ese motor — como `/register/cval/funcionario`, servido directo por
  * `auth-center` — no lo llevan, así que no lo pongas a mano en un
  * `realPath`; queda centralizado acá.
  *
