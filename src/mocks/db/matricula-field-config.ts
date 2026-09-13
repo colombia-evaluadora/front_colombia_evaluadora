@@ -17,7 +17,7 @@ export const matriculaFieldConfigDb: MatriculaFieldConfig = {
       fkCampo: fkCampoSeq++,
       nombre: field.label,
       editable: !field.locked,
-      requerido: Boolean(field.locked),
+      requerido: Boolean(field.locked || field.defaultRequired),
       visible: true,
     })),
   })),

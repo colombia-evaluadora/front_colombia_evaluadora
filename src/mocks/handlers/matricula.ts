@@ -324,14 +324,14 @@ export const matriculaHandlers = [
     )
 
     return HttpResponse.json({
-      // Sin "codigo" -- el back real tampoco lo trae acá. El nombre debe
-      // coincidir con el catálogo GRADOS de `select-catalog.ts` (mismo
-      // `formatGrade`) para que el join por nombre en `fetchGrados`
-      // encuentre el código ordinal.
+      // `codigo` es `TGRADO.CODIGO` (confirmado contra una respuesta real,
+      // ver `fetchGrados`): ya es el valor ordinal del grado, no hace falta
+      // resolverlo por nombre contra el catálogo `GRADOS`.
       rows: grados.map((codigo, index) => ({
         id: mixHash(hashString(`grado-${periodoId}-${codigo}`)) % 1000000,
         nombre: formatGrade(codigo),
         grado: formatGrade(codigo),
+        codigo,
         teaching_level_id: 1,
         teaching_level_name: "",
         grado_siguiente: null,

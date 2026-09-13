@@ -10,12 +10,15 @@ import { CreateStudyPlanDialog } from "@/features/establishment/academic-period/
 interface CreateStudyPlanColumnsOptions {
   academicPeriodId?: number
   gradeId?: number
+  isPreescolar?: boolean
 }
 
 export function createStudyPlanColumns({
   academicPeriodId,
   gradeId,
+  isPreescolar,
 }: CreateStudyPlanColumnsOptions = {}): ColumnDef<StudyPlanItem>[] {
+  const subjectColumnLabel = isPreescolar ? "Dimensiones" : "Asignaturas"
   return [
     {
       id: "select",
@@ -43,8 +46,8 @@ export function createStudyPlanColumns({
     {
       id: "asignatura",
       accessorKey: "asignatura",
-      meta: { label: "Asignaturas" },
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Asignaturas" />,
+      meta: { label: subjectColumnLabel },
+      header: ({ column }) => <DataTableColumnHeader column={column} title={subjectColumnLabel} />,
       cell: ({ row }) => <span className="font-medium">{row.original.asignatura}</span>,
     },
     {
@@ -86,6 +89,7 @@ export function createStudyPlanColumns({
             item={row.original}
             academicPeriodId={academicPeriodId}
             gradeId={gradeId}
+            isPreescolar={isPreescolar}
           />
           <DeleteStudyPlanDialog item={row.original} />
         </div>

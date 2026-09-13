@@ -214,9 +214,10 @@ export function ColorPicker({ value, onChange, className }: ColorPickerProps) {
 interface ColorPickerPopoverProps {
   value: string
   onChange: (hex: string) => void
+  invalid?: boolean
 }
 
-export function ColorPickerPopover({ value, onChange }: ColorPickerPopoverProps) {
+export function ColorPickerPopover({ value, onChange, invalid }: ColorPickerPopoverProps) {
   const [open, setOpen] = useState(false)
   const resolvedVariant = useInputVariant()
 
@@ -227,6 +228,7 @@ export function ColorPickerPopover({ value, onChange }: ColorPickerPopoverProps)
           <button
             type="button"
             aria-label="Color"
+            aria-invalid={invalid}
             className={cn(
               inputVariants({ variant: resolvedVariant }),
               inputTriggerVariants({ variant: resolvedVariant }),
