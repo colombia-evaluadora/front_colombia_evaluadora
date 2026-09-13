@@ -17,7 +17,7 @@ interface AvailableStudyPlanSubjectsResponse {
 // `GET /eval-col/grados/:ID/plan-disponibles` (`fn_plan_asignaturas_disponibles_listar`,
 // id_query 78) — asignaturas del periodo del grado que aún no están en su
 // plan de estudio.
-async function fetchAvailableStudyPlanSubjects(
+export async function fetchAvailableStudyPlanSubjects(
   gradeId: number
 ): Promise<AvailableStudyPlanSubject[]> {
   const raw: AvailableStudyPlanSubjectsResponse = await api.get(

@@ -436,7 +436,12 @@ function AddMatriculaPageContent() {
             fieldSettings={fieldSettings}
           />
 
-          <MatriculaSupportFilesSection value={files} onChange={setFiles} invalidFields={missingFields} />
+          <MatriculaSupportFilesSection
+            value={files}
+            onChange={setFiles}
+            invalidFields={missingFields}
+            fieldSettings={fieldSettings}
+          />
         </div>
       </TableScreenBody>
 

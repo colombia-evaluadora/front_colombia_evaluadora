@@ -1,11 +1,10 @@
 /**
- * Catálogo de campos del formulario de matrícula (sin "Archivo de soporte" —
- * eso no se parametriza acá). El catálogo REAL de "Configuración de
- * parámetros requeridos" lo devuelve el backend (`fn_matricula_config_
- * obtener`, ver `use-matricula-field-config-query.ts`) — esto queda solo
- * como fixture para el mock (`mocks/db/matricula-field-config.ts`), armado
- * con las mismas 13 secciones que documenta la colección Postman de
- * referencia para que MSW se vea igual de real.
+ * Catálogo de campos del formulario de matrícula. El catálogo REAL de
+ * "Configuración de parámetros requeridos" lo devuelve el backend
+ * (`fn_matricula_config_obtener`, ver `use-matricula-field-config-query.ts`)
+ * — esto queda solo como fixture para el mock (`mocks/db/matricula-field-
+ * config.ts`), armado con las mismas 14 secciones que trae el backend real
+ * para que MSW se vea igual de real.
  */
 export interface MatriculaFieldCatalogEntry {
   /** Solo se usa para fabricar `fkCampo` en el mock — no viaja al backend. */
@@ -16,6 +15,13 @@ export interface MatriculaFieldCatalogEntry {
    * identificar al estudiante ni la sede. Queda fijo en `required: true,
    * visible: true` y sus switches se ven pero deshabilitados. */
   locked?: boolean
+  /** Solo para el fixture del mock (`mocks/db/matricula-field-config.ts`):
+   * `requerido` inicial cuando el campo no está `locked` — copia el default
+   * confirmado contra el backend real (Documento de Identidad y Certificado
+   * del año anterior vienen `requerido: true` de fábrica). Sin esto el mock
+   * simula todo como opcional y el sheet de archivos se ve distinto en dev
+   * que contra el backend real. */
+  defaultRequired?: boolean
 }
 
 export interface MatriculaFieldCatalogSection {
@@ -177,6 +183,26 @@ export const MATRICULA_FIELD_CATALOG: MatriculaFieldCatalogSection[] = [
       { id: "guardian-employment-entity-address", label: "Dirección de la entidad acudiente" },
       { id: "guardian-employment-entity-phone", label: "Teléfono de la entidad acudiente" },
       { id: "guardian-employment-entity-position", label: "Cargo entidad acudiente" },
+    ],
+  },
+  {
+    // Orden confirmado contra la respuesta real de `fn_matricula_config_
+    // obtener` (colegio "colegio chino", 2026-09-13): Foto, Certificado
+    // Médico, Documento de Identidad, Otros Documentos, Certificado del año
+    // anterior — no es el mismo orden en que aparecen los campos en
+    // `SUPPORT_FILE_FIELDS` (`form-create-matricula.tsx`), así que el mapeo
+    // id↔clave de `MatriculaSupportFiles` se arma a mano ahí, no por índice.
+    title: "Archivo de soporte",
+    fields: [
+      { id: "file-student-photo", label: "Foto del Estudiante" },
+      { id: "file-medical-certificate", label: "Certificado Medico" },
+      { id: "file-student-id-document", label: "Documento de Identidad", defaultRequired: true },
+      { id: "file-other-documents", label: "Otros Documentos Relevantes" },
+      {
+        id: "file-previous-year-certificate",
+        label: "Certificado de Estudios del Año Anterior",
+        defaultRequired: true,
+      },
     ],
   },
 ]

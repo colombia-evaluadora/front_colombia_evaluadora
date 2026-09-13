@@ -8,10 +8,19 @@ import { unwrapRows } from "@/lib/response-envelope"
 // `TETNIA`/resguardo no es `TLISTA_VALOR`: tiene su propia tabla y su propio
 // endpoint (igual que discapacidades y municipios, ver `use-disability-
 // types.ts`) — no lo cubre el catálogo genérico `/select/:categoria`.
+// El endpoint devuelve una fila por RESGUARDO (no por etnia): una misma
+// etnia puede tener varios resguardos, cada uno con su propio pk. El campo
+// que persiste el formulario es `fk_tresguardo`/`ETNIA_RESGUARDO`, así que
+// el id de cada opción tiene que ser `pk_resguardo` (único), no `pk_etnia`
+// (se repite entre resguardos de la misma etnia) — confirmado contra la
+// respuesta real de `/eval-col/catalogos/etnias`.
 interface RealEtniaRow {
+  pk_resguardo: number
+  codigo_resguardo: string
+  nombre_resguardo: string
   pk_etnia: number
-  codigo: string
-  nombre: string
+  nombre_etnia: string
+  etiqueta: string
 }
 
 async function fetchEtnias(): Promise<CatalogItem[]> {
@@ -23,9 +32,9 @@ async function fetchEtnias(): Promise<CatalogItem[]> {
     | RealEtniaRow[]
   const rows = unwrapRows<RealEtniaRow>(response)
   return rows.map((row) => ({
-    id: row.pk_etnia,
-    code: row.codigo,
-    name: row.nombre,
+    id: row.pk_resguardo,
+    code: row.codigo_resguardo,
+    name: row.etiqueta,
   }))
 }
 
