@@ -15,9 +15,6 @@ interface UpdateGradeGroupInput {
   values: UpdateGradeGroupRequest
 }
 
-// `PUT /eval-col/grupos/:ID` (`fn_grupo_actualizar`, id_query 63 — PUT desde
-// V68, no PATCH). Usa el PK real (`PK_TGRUPO`), no `codigo` — `TGRUPO.CODIGO`
-// no lo usa esta función (el "codigo" que ve el front es en realidad NOMBRE).
 async function updateGradeGroup({
   id,
   sedeId,
@@ -27,7 +24,7 @@ async function updateGradeGroup({
     resolveMetodologiaId(values.metodologia),
     resolveDirectorId(sedeId, values.director),
   ])
-  return api.put(`/eval-col/grupos/${id}`, {
+  return api.put<MutationResult>(`/eval-col/grupos/${id}`, {
     NOMBRE: values.codigo,
     FK_MODELO_PEDAGOGICO: fkModeloPedagogico,
     CAPACIDAD: values.cupo,

@@ -37,20 +37,14 @@ async function gradeUsesSubject(gradeId: number, nombreInterno: string): Promise
   return (raw.rows ?? []).some((row) => row.asignatura === nombreInterno)
 }
 
-/**
- * Quitar una asignatura del área es local hasta que se guarda — no hay
- * endpoint que diga "¿esta asignatura está en algún plan de estudio?" sin
- * recorrer grado por grado (`plan-asignaturas` es por grado). Se consulta
- * bajo demanda (al confirmar el quitar), no al abrir el diálogo.
- *
- * Devuelve el nombre del primer grado donde aparece, o `null` si no está en
- * uso en ninguno.
- */
 export async function findGradeUsingSubject(
   academicPeriodId: number,
-  nombreInterno: string
+  nombreInterno: string,
+  excludeGradeId?: number
 ): Promise<string | null> {
-  const grades = await fetchGradeNames(academicPeriodId)
+  const grades = (await fetchGradeNames(academicPeriodId)).filter(
+    (grade) => grade.id !== excludeGradeId
+  )
   const results = await Promise.all(
     grades.map(async (grade) => ({
       grade,

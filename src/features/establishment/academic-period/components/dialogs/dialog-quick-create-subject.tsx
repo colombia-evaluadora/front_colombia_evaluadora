@@ -1,9 +1,7 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 
-import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { getErrorMessage } from "@/lib/api-client"
-import { useNotify } from "@/components/notice/notice-context"
 import { NoticeBanner, type NoticeVariant } from "@/components/notice/notice-banner"
 import { Button } from "@/components/ui/button"
 import {
@@ -25,6 +23,7 @@ import { EspecialidadSelect } from "@/features/establishment/academic-period/com
 import { SelectGeneralAreaDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-select-general-area"
 import { useGeneralAreasQuery } from "@/features/establishment/academic-period/api/query/use-general-areas"
 import { useEspecialidadesQuery } from "@/features/establishment/academic-period/api/query/use-especialidades"
+import { usePeriodAreasQuery } from "@/features/establishment/academic-period/api/query/use-period-areas"
 import { useSubjectDetailsQuery } from "@/features/establishment/academic-period/api/query/use-subject-details-query"
 import { useCreateAreaSubject } from "@/features/establishment/academic-period/api/mutations/create-area-subject"
 import { createSubject } from "@/features/establishment/academic-period/api/mutations/create-subject"
@@ -34,9 +33,7 @@ interface QuickCreateSubjectDialogProps {
   academicPeriodId?: number
   open: boolean
   onOpenChange: (open: boolean) => void
-  onCreated: (subject: { id: number; nombreInterno: string }) => void
-  // Solución temporal de front: en preescolar se rotula como "dimensión" en
-  // vez de "asignatura" — mismo modelo de datos, solo cambia el texto.
+  onSaved: (subject: { id: number; nombreInterno: string }) => void
   isPreescolar?: boolean
 }
 
@@ -44,77 +41,77 @@ const EMPTY_AREA_SELECTION: AreaSelection = { mode: "new", nombre: "" }
 
 // Modal de creación rápida abierto desde el selector de "Asignaturas" del
 // Plan de Estudio (comportamiento tipo `especialidad-select.tsx`: listado +
-// "Crear" al fondo). A diferencia de `AreaSubjectFormDialog` (que siempre
-// crea un área nueva), acá el usuario puede elegir un área ya existente del
-// período — evita el error de "ya existe un área con ese nombre" cuando lo
-// que realmente hace falta es agregarle una asignatura nueva a un área que
-// ya está creada.
+// "Crear" al fondo). Solo crea -- editar una asignatura existente vive
+// inline en `subject-inline-edit-fields.tsx` (ver `dialog-create-study-
+// plan.tsx`), no acá.
 export function QuickCreateSubjectDialog({
   academicPeriodId,
   open,
   onOpenChange,
-  onCreated,
+  onSaved,
   isPreescolar,
 }: QuickCreateSubjectDialogProps) {
-  const { notify } = useNotify()
   const queryClient = useQueryClient()
   const subjectWord = isPreescolar ? "dimensión" : "asignatura"
   const subjectWordCap = isPreescolar ? "Dimensión" : "Asignatura"
 
   const [notice, setNotice] = useState<{ message: string; variant: NoticeVariant } | null>(null)
-  const [areaSelection, setAreaSelection] = useState<AreaSelection>(EMPTY_AREA_SELECTION)
-
-  // Campos del área (solo cuando `areaSelection.mode === "new"`). El orden
-  // se reutiliza también para la asignatura homónima que se crea junto con
-  // ella (creadas a la vez, no tiene sentido preguntarlo dos veces); el
-  // color sí es propio de la asignatura (TAREA no tiene columna de color).
-  const [areaGeneral, setAreaGeneral] = useState("")
+  const [asignaturaGeneral, setAsignaturaGeneral] = useState("")
+  const [nombre, setNombre] = useState("")
   const [abreviacion, setAbreviacion] = useState("")
   const [ordenReportes, setOrdenReportes] = useState<number>(NaN)
-  const [colorNuevaAsignatura, setColorNuevaAsignatura] = useState(DEFAULT_SUBJECT_COLOR)
-
-  // Campos de la asignatura (solo cuando `areaSelection.mode === "existing"`).
-  const [asignaturaGeneral, setAsignaturaGeneral] = useState("")
-  const [nombreAsignatura, setNombreAsignatura] = useState("")
-  const [abreviacionAsignatura, setAbreviacionAsignatura] = useState("")
-  const [ordenReportesAsignatura, setOrdenReportesAsignatura] = useState<number>(NaN)
-  const [colorAsignatura, setColorAsignatura] = useState(DEFAULT_SUBJECT_COLOR)
-  const [especialidadAsignatura, setEspecialidadAsignatura] = useState("")
-  const [especialidadNuevaAsignatura, setEspecialidadNuevaAsignatura] = useState("")
+  const [color, setColor] = useState(DEFAULT_SUBJECT_COLOR)
+  const [especialidad, setEspecialidad] = useState("")
+  const [areaSelection, setAreaSelection] = useState<AreaSelection>(EMPTY_AREA_SELECTION)
 
   const [submitted, setSubmitted] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
 
   const { data: generalAreas = [] } = useGeneralAreasQuery()
-  const areaGeneralNameToId = (nombre: string): number | null => {
-    const match = generalAreas.find((a) => a.nombre === nombre)
+  const areaGeneralNameToId = (nombreArea: string): number | null => {
+    const match = generalAreas.find((a) => a.nombre === nombreArea)
     return match ? match.id : null
   }
+  const fallbackGeneralAreaId = generalAreas[0]?.id
 
   const createAreaSubject = useCreateAreaSubject()
   const { data: subjectDetails = [] } = useSubjectDetailsQuery(academicPeriodId)
   const { data: especialidades = [] } = useEspecialidadesQuery(academicPeriodId)
-  const especialidadNombreToId = (nombre: string): number | undefined =>
-    especialidades.find((e) => e.label === nombre)?.id
+  const { data: periodAreas = [] } = usePeriodAreasQuery(academicPeriodId)
+  const especialidadNombreToId = (nombreEsp: string): number | undefined =>
+    especialidades.find((e) => e.label === nombreEsp)?.id
+
+  const nombreTrim = nombre.trim()
+
+  // En preescolar el área no se elige: se busca una ya creada con el mismo
+  // nombre de la dimensión, o se crea una nueva si no existe ninguna.
+  const preescolarExistingArea = isPreescolar
+    ? periodAreas.find((a) => a.label.trim().toUpperCase() === nombreTrim.toUpperCase())
+    : undefined
+
+  const resolvedAreaId = isPreescolar
+    ? preescolarExistingArea?.id
+    : areaSelection.mode === "existing"
+      ? areaSelection.id
+      : undefined
   const existingAreaSubjects =
-    areaSelection.mode === "existing"
-      ? subjectDetails.filter((s) => s.areaId === areaSelection.id)
-      : []
+    resolvedAreaId != null ? subjectDetails.filter((s) => s.areaId === resolvedAreaId) : []
+
+  useEffect(() => {
+    if (!open) return
+    reset()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
 
   function reset() {
     setNotice(null)
-    setAreaSelection(EMPTY_AREA_SELECTION)
-    setAreaGeneral("")
+    setAsignaturaGeneral("")
+    setNombre("")
     setAbreviacion("")
     setOrdenReportes(NaN)
-    setColorNuevaAsignatura(DEFAULT_SUBJECT_COLOR)
-    setAsignaturaGeneral("")
-    setNombreAsignatura("")
-    setAbreviacionAsignatura("")
-    setOrdenReportesAsignatura(NaN)
-    setColorAsignatura(DEFAULT_SUBJECT_COLOR)
-    setEspecialidadAsignatura("")
-    setEspecialidadNuevaAsignatura("")
+    setColor(DEFAULT_SUBJECT_COLOR)
+    setEspecialidad("")
+    setAreaSelection(EMPTY_AREA_SELECTION)
     setSubmitted(false)
   }
 
@@ -123,32 +120,21 @@ export function QuickCreateSubjectDialog({
     reset()
   }
 
-  const isNewArea = areaSelection.mode === "new"
-  const areaNombre = areaSelection.nombre.trim()
+  const hasAreaSelection =
+    isPreescolar || areaSelection.mode === "existing" || areaSelection.nombre.trim() !== ""
 
-  const missingNewAreaFields =
-    isNewArea &&
-    (!areaNombre ||
-      !areaGeneral ||
-      !abreviacion ||
-      Number.isNaN(ordenReportes) ||
-      !colorNuevaAsignatura.trim())
-  const missingExistingAreaFields =
-    !isNewArea &&
-    (!asignaturaGeneral ||
-      !nombreAsignatura.trim() ||
-      !abreviacionAsignatura.trim() ||
-      Number.isNaN(ordenReportesAsignatura) ||
-      !colorAsignatura.trim())
-  // El backend (`fn_subject_crear`) rechaza abreviaciones repetidas dentro
-  // de la misma área — se valida acá también para avisar antes de guardar,
-  // ya que la lista de asignaturas del área ya está cargada en el modal.
+  const missingFields =
+    (!isPreescolar && !asignaturaGeneral) ||
+    !nombreTrim ||
+    !abreviacion.trim() ||
+    Number.isNaN(ordenReportes) ||
+    !color.trim() ||
+    !hasAreaSelection
+
   const duplicateAbreviacion = existingAreaSubjects.find(
-    (s) => s.abreviacion.trim().toUpperCase() === abreviacionAsignatura.trim().toUpperCase(),
+    (s) => s.abreviacion.trim().toUpperCase() === abreviacion.trim().toUpperCase(),
   )
-  const canSubmit = isNewArea
-    ? !missingNewAreaFields
-    : !missingExistingAreaFields && !duplicateAbreviacion
+  const canSubmit = !missingFields && !duplicateAbreviacion
 
   async function handleSubmit() {
     setSubmitted(true)
@@ -164,50 +150,42 @@ export function QuickCreateSubjectDialog({
     setIsSaving(true)
     setNotice(null)
     try {
-      let subjectId: number
-      let createdName: string
+      const subjectGeneralId = isPreescolar
+        ? fallbackGeneralAreaId
+        : (areaGeneralNameToId(asignaturaGeneral) ?? undefined)
+      if (subjectGeneralId == null) return
 
-      if (isNewArea) {
-        const areaGeneralId = areaGeneralNameToId(areaGeneral)
-        if (areaGeneralId == null) return
+      let areaId = resolvedAreaId
+      if (areaId == null) {
+        // El área no existe todavía: se crea reutilizando lo que ya se
+        // completó para la asignatura (nombre, abreviación, orden,
+        // clasificación general) — no se pregunta por separado.
+        const areaNombre = isPreescolar ? nombreTrim : areaSelection.mode === "new" ? areaSelection.nombre.trim() : ""
         const areaResult = await createAreaSubject.mutateAsync({
-          areaGeneral: String(areaGeneralId),
+          areaGeneral: String(subjectGeneralId),
           nombreInterno: areaNombre,
           abreviacion,
           ordenReportes,
           subjects: [],
           academicPeriodId,
         })
-        subjectId = await createSubject({
-          areaId: areaResult.codigo,
-          areaGeneralId,
-          nombreInterno: areaNombre,
-          abreviacion,
-          ordenReportes,
-          color: colorNuevaAsignatura,
-          enfasisId: especialidadNombreToId(especialidadNuevaAsignatura),
-        })
-        createdName = areaNombre
-      } else {
-        const areaGeneralId = areaGeneralNameToId(asignaturaGeneral)
-        if (areaGeneralId == null) return
-        subjectId = await createSubject({
-          areaId: areaSelection.id,
-          areaGeneralId,
-          nombreInterno: nombreAsignatura.trim(),
-          abreviacion: abreviacionAsignatura.trim(),
-          ordenReportes: ordenReportesAsignatura,
-          color: colorAsignatura,
-          enfasisId: especialidadNombreToId(especialidadAsignatura),
-        })
-        createdName = nombreAsignatura.trim()
+        areaId = areaResult.codigo
       }
+
+      const subjectId = await createSubject({
+        areaId,
+        areaGeneralId: subjectGeneralId,
+        nombreInterno: nombreTrim,
+        abreviacion: abreviacion.trim(),
+        ordenReportes,
+        color,
+        enfasisId: isPreescolar ? undefined : especialidadNombreToId(especialidad),
+      })
 
       queryClient.invalidateQueries({ queryKey: ["area-subjects"] })
       queryClient.invalidateQueries({ queryKey: ["subjects"] })
       queryClient.invalidateQueries({ queryKey: ["period-areas", academicPeriodId] })
-      notify(SUCCESS_MESSAGES.areaSubject.created)
-      onCreated({ id: subjectId, nombreInterno: createdName })
+      onSaved({ id: subjectId, nombreInterno: nombreTrim })
       close()
     } catch (error) {
       setNotice({ message: getErrorMessage(error), variant: "error" })
@@ -243,187 +221,98 @@ export function QuickCreateSubjectDialog({
         />
 
         <div className="flex min-w-0 flex-col gap-4">
-          <Field variant="outlined" data-invalid={submitted && !areaNombre && isNewArea}>
-            <FieldLabel>Área*</FieldLabel>
-            <AreaSelect
-              academicPeriodId={academicPeriodId}
-              value={areaSelection}
-              onChange={setAreaSelection}
+          {!isPreescolar && (
+            <Field variant="outlined" data-invalid={submitted && !asignaturaGeneral}>
+              <FieldLabel>{subjectWordCap} general*</FieldLabel>
+              <SelectGeneralAreaDialog
+                value={asignaturaGeneral}
+                onChange={setAsignaturaGeneral}
+                invalid={submitted && !asignaturaGeneral}
+              />
+            </Field>
+          )}
+
+          <Field variant="outlined" data-invalid={submitted && !nombreTrim}>
+            <FieldLabel>Nombre de la {subjectWord}*</FieldLabel>
+            <Input
+              maxLength={130}
+              placeholder="Agregar"
+              value={nombre}
+              onChange={(e) => setNombre(e.target.value.toUpperCase())}
+              className="uppercase placeholder:normal-case"
+              aria-invalid={submitted && !nombreTrim}
             />
           </Field>
 
-          {areaSelection.mode === "existing" ? (
-            <>
-              {existingAreaSubjects.length > 0 && (
-                <div className="min-w-0 rounded-md border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-                  <p className="mb-1 font-medium text-foreground">
-                    Esta área ya tiene{" "}
-                    {existingAreaSubjects.length === 1
-                      ? `esta ${subjectWord}`
-                      : `estas ${subjectWord}s`}
-                    :
-                  </p>
-                  <ul className="flex max-h-28 min-w-0 flex-col gap-0.5 overflow-y-auto">
-                    {existingAreaSubjects.map((s) => {
-                      const text = `${s.ordenReportes}. ${s.nombreInterno} (${s.abreviacion})${s.especialidad ? ` · ${s.especialidad}` : ""}`
-                      return (
-                        <li key={s.id} className="flex min-w-0 items-center gap-1.5">
-                          <span
-                            className="inline-block size-2.5 shrink-0 rounded-full ring-1 ring-foreground/10"
-                            style={{
-                              backgroundColor: s.color
-                                ? s.color.startsWith("#")
-                                  ? s.color
-                                  : `#${s.color}`
-                                : "transparent",
-                            }}
-                          />
-                          <span className="min-w-0 flex-1 truncate" title={text}>
-                            {text}
-                          </span>
-                        </li>
-                      )
-                    })}
-                  </ul>
-                </div>
-              )}
-              <Field variant="outlined" data-invalid={submitted && !asignaturaGeneral}>
-                <FieldLabel>{subjectWordCap} general*</FieldLabel>
-                <SelectGeneralAreaDialog
-                  value={asignaturaGeneral}
-                  onChange={setAsignaturaGeneral}
-                  invalid={submitted && !asignaturaGeneral}
-                />
-              </Field>
-              <Field variant="outlined" data-invalid={submitted && !nombreAsignatura.trim()}>
-                <FieldLabel>Nombre de la {subjectWord}*</FieldLabel>
-                <Input
-                  maxLength={130}
-                  placeholder="Agregar"
-                  value={nombreAsignatura}
-                  onChange={(e) => setNombreAsignatura(e.target.value.toUpperCase())}
-                  className="uppercase placeholder:normal-case"
-                  aria-invalid={submitted && !nombreAsignatura.trim()}
-                />
-              </Field>
-              <div className="grid grid-cols-3 gap-4">
-                <Field
-                  variant="outlined"
-                  data-invalid={submitted && (!abreviacionAsignatura.trim() || !!duplicateAbreviacion)}
-                >
-                  <FieldLabel>Abreviación*</FieldLabel>
-                  <Input
-                    maxLength={30}
-                    placeholder="Agregar"
-                    value={abreviacionAsignatura}
-                    onChange={(e) => setAbreviacionAsignatura(e.target.value.toUpperCase())}
-                    className="uppercase placeholder:normal-case"
-                    aria-invalid={submitted && (!abreviacionAsignatura.trim() || !!duplicateAbreviacion)}
-                  />
-                </Field>
-                <Field
-                  variant="outlined"
-                  data-invalid={submitted && Number.isNaN(ordenReportesAsignatura)}
-                >
-                  <FieldLabel>Orden*</FieldLabel>
-                  <Input
-                    type="number"
-                    min={0}
-                    max={9999}
-                    step={1}
-                    placeholder="Agregar"
-                    value={Number.isNaN(ordenReportesAsignatura) ? "" : ordenReportesAsignatura}
-                    onKeyDown={(e) => {
-                      if (["-", "+", ".", ",", "e", "E"].includes(e.key)) e.preventDefault()
-                    }}
-                    onChange={(e) => {
-                      const v = e.target.valueAsNumber
-                      if (e.target.value === "" || !Number.isNaN(v)) setOrdenReportesAsignatura(v)
-                    }}
-                    aria-invalid={submitted && Number.isNaN(ordenReportesAsignatura)}
-                  />
-                </Field>
-                <Field variant="outlined" data-invalid={submitted && !colorAsignatura.trim()}>
-                  <FieldLabel>Color*</FieldLabel>
-                  <ColorPickerPopover
-                    value={colorAsignatura}
-                    onChange={setColorAsignatura}
-                    invalid={submitted && !colorAsignatura.trim()}
-                  />
-                </Field>
-              </div>
-              <Field variant="outlined">
-                <FieldLabel>Especialidad</FieldLabel>
-                <EspecialidadSelect
-                  value={especialidadAsignatura}
-                  academicPeriodId={academicPeriodId}
-                  onChange={setEspecialidadAsignatura}
-                />
-              </Field>
-            </>
-          ) : areaNombre ? (
-            <>
-              <Field variant="outlined" data-invalid={submitted && !areaGeneral}>
-                <FieldLabel>Área general*</FieldLabel>
-                <SelectGeneralAreaDialog
-                  value={areaGeneral}
-                  onChange={setAreaGeneral}
-                  invalid={submitted && !areaGeneral}
-                />
-              </Field>
-              <div className="grid grid-cols-3 gap-4">
-                <Field variant="outlined" data-invalid={submitted && !abreviacion}>
-                  <FieldLabel>Abreviación*</FieldLabel>
-                  <Input
-                    maxLength={30}
-                    placeholder="Agregar"
-                    value={abreviacion}
-                    onChange={(e) => setAbreviacion(e.target.value)}
-                    aria-invalid={submitted && !abreviacion}
-                  />
-                </Field>
-                <Field variant="outlined" data-invalid={submitted && Number.isNaN(ordenReportes)}>
-                  <FieldLabel>Orden*</FieldLabel>
-                  <Input
-                    type="number"
-                    min={0}
-                    max={9999}
-                    step={1}
-                    placeholder="Agregar"
-                    value={Number.isNaN(ordenReportes) ? "" : ordenReportes}
-                    onKeyDown={(e) => {
-                      if (["-", "+", ".", ",", "e", "E"].includes(e.key)) e.preventDefault()
-                    }}
-                    onChange={(e) => {
-                      const v = e.target.valueAsNumber
-                      if (e.target.value === "" || !Number.isNaN(v)) setOrdenReportes(v)
-                    }}
-                    aria-invalid={submitted && Number.isNaN(ordenReportes)}
-                  />
-                </Field>
-                <Field variant="outlined" data-invalid={submitted && !colorNuevaAsignatura.trim()}>
-                  <FieldLabel>Color*</FieldLabel>
-                  <ColorPickerPopover
-                    value={colorNuevaAsignatura}
-                    onChange={setColorNuevaAsignatura}
-                    invalid={submitted && !colorNuevaAsignatura.trim()}
-                  />
-                </Field>
-              </div>
-              <Field variant="outlined">
-                <FieldLabel>Especialidad</FieldLabel>
-                <EspecialidadSelect
-                  value={especialidadNuevaAsignatura}
-                  academicPeriodId={academicPeriodId}
-                  onChange={setEspecialidadNuevaAsignatura}
-                />
-              </Field>
-              <p className="text-xs text-muted-foreground">
-                Se creará la {subjectWord} "{areaNombre}" dentro de esta área nueva, con el mismo orden y color de
-                arriba.
-              </p>
-            </>
-          ) : null}
+          <div className="grid grid-cols-3 gap-4">
+            <Field
+              variant="outlined"
+              data-invalid={submitted && (!abreviacion.trim() || !!duplicateAbreviacion)}
+            >
+              <FieldLabel>Abreviación*</FieldLabel>
+              <Input
+                maxLength={30}
+                placeholder="Agregar"
+                value={abreviacion}
+                onChange={(e) => setAbreviacion(e.target.value.toUpperCase())}
+                className="uppercase placeholder:normal-case"
+                aria-invalid={submitted && (!abreviacion.trim() || !!duplicateAbreviacion)}
+              />
+            </Field>
+            <Field variant="outlined" data-invalid={submitted && Number.isNaN(ordenReportes)}>
+              <FieldLabel>Orden*</FieldLabel>
+              <Input
+                type="number"
+                min={0}
+                max={9999}
+                step={1}
+                placeholder="Agregar"
+                value={Number.isNaN(ordenReportes) ? "" : ordenReportes}
+                onKeyDown={(e) => {
+                  if (["-", "+", ".", ",", "e", "E"].includes(e.key)) e.preventDefault()
+                }}
+                onChange={(e) => {
+                  const v = e.target.valueAsNumber
+                  if (e.target.value === "" || !Number.isNaN(v)) setOrdenReportes(v)
+                }}
+                aria-invalid={submitted && Number.isNaN(ordenReportes)}
+              />
+            </Field>
+            <Field variant="outlined" data-invalid={submitted && !color.trim()}>
+              <FieldLabel>Color*</FieldLabel>
+              <ColorPickerPopover value={color} onChange={setColor} invalid={submitted && !color.trim()} />
+            </Field>
+          </div>
+
+          {!isPreescolar && (
+            <Field variant="outlined">
+              <FieldLabel>Especialidad</FieldLabel>
+              <EspecialidadSelect
+                value={especialidad}
+                academicPeriodId={academicPeriodId}
+                onChange={setEspecialidad}
+              />
+            </Field>
+          )}
+
+          {!isPreescolar && (
+            <Field variant="outlined" data-invalid={submitted && !hasAreaSelection}>
+              <FieldLabel>Área*</FieldLabel>
+              <AreaSelect
+                academicPeriodId={academicPeriodId}
+                value={areaSelection}
+                onChange={setAreaSelection}
+              />
+            </Field>
+          )}
+
+          {isPreescolar && (
+            <p className="text-xs text-muted-foreground">
+              {preescolarExistingArea
+                ? `Se agregará dentro del área "${preescolarExistingArea.label}" (ya creada).`
+                : `Se creará un área nueva llamada "${nombreTrim || "…"}" para esta dimensión.`}
+            </p>
+          )}
         </div>
 
         <DialogFooter>
