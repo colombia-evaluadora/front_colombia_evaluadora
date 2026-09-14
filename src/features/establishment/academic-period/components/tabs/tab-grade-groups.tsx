@@ -25,7 +25,10 @@ export function TabGradeGroups({ gradeId, academicPeriodId }: TabGradeGroupsProp
   const [pageIndex, setPageIndex] = useState(0)
   const [pageSize, setPageSize] = useState(10)
 
-  const columns = useMemo(() => createGradeGroupColumns({ academicPeriodId }), [academicPeriodId])
+  const columns = useMemo(
+    () => createGradeGroupColumns({ academicPeriodId }),
+    [academicPeriodId],
+  )
 
   const { data, isPending, isError, refetch } = useGradeGroupsQuery({
     filters: {},

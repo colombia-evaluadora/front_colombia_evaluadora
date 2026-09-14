@@ -2,7 +2,13 @@ import { useRef, useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { useForm, useSelector } from "@tanstack/react-form"
-import { ControlPointIcon, PencilIcon, PlusIcon, SpinnerIcon } from "@/components/ui/icons"
+import {
+  CaretDownIcon,
+  ControlPointIcon,
+  PencilIcon,
+  PlusIcon,
+  SpinnerIcon,
+} from "@/components/ui/icons"
 
 import { useNotify } from "@/components/notice/notice-context"
 import { NoticeBanner, type NoticeVariant } from "@/components/notice/notice-banner"
@@ -25,12 +31,14 @@ import { Input } from "@/components/ui/input"
 import {
   InputGroup,
   InputGroupAddon,
+  InputGroupButton,
   InputGroupInput,
   InputGroupText,
 } from "@/components/ui/input-group"
 import { Switch } from "@/components/ui/switch"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import {
+  Combobox,
   ComboboxField,
   ComboboxFieldContent,
   ComboboxFieldItem,
@@ -38,14 +46,16 @@ import {
   ComboboxFieldValue,
   ComboboxGroup,
 } from "@/components/ui/combobox"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-
 import {
   availableStudyPlanSubjectsQueryKey,
   useAvailableStudyPlanSubjectsQuery,
 } from "../../api/query/use-available-study-plan-subjects-query"
 import { useSubjectDetailsQuery } from "@/features/establishment/academic-period/api/query/use-subject-details-query"
 import { QuickCreateSubjectDialog } from "./dialog-quick-create-subject"
+import {
+  SubjectInlineEditFields,
+  type SubjectInlineEditFieldsHandle,
+} from "@/features/establishment/academic-period/components/subject-inline-edit-fields"
 import { useCreateStudyPlanItem } from "@/features/establishment/academic-period/api/mutations/create-study-plan"
 import { useUpdateStudyPlanItem } from "@/features/establishment/academic-period/api/mutations/update-study-plan"
 import { useEvaluationCriteriaQuery } from "@/features/establishment/academic-period/api/query/use-evaluation-criteria"
@@ -93,6 +103,9 @@ export function CreateStudyPlanDialog({
   const queryClient = useQueryClient()
   const [open, setOpen] = useState(false)
   const [createSubjectOpen, setCreateSubjectOpen] = useState(false)
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const pickerAnchorRef = useRef<HTMLDivElement>(null)
+  const [subjectName, setSubjectName] = useState(item?.asignatura ?? "")
 
   const [notice, setNotice] = useState<{
     id: number
@@ -130,13 +143,9 @@ export function CreateStudyPlanDialog({
       }
     : EMPTY
 
-  // Solo las asignaturas del grado que aún no están en el plan. Al editar, la
-  // asignatura del renglón no viene en "disponibles" (la consulta la excluye
-  // porque ya está asignada), así que la agregamos por `id` para que el
-  // select pueda mostrarla como valor actual.
   const { data: availableSubjects = [] } = useAvailableStudyPlanSubjectsQuery(
     gradeId,
-    academicPeriodId
+    academicPeriodId,
   )
   const asignaturaOptions = (() => {
     if (item && !availableSubjects.some((s) => s.id === item.asignaturaId)) {
@@ -153,13 +162,10 @@ export function CreateStudyPlanDialog({
   const createStudyPlanItem = useCreateStudyPlanItem({
     mutationConfig: {
       onSuccess: () => {
-        // La tabla del tab "Plan de estudio" vive en el mismo
-        // `NoticeProvider` anidado que este diálogo (ver
-        // `dialog-create-grade.tsx`), así que el aviso compartido cae ahí —
-        // no en la página de atrás.
         notify("Asignatura agregada al plan de estudio.")
         form.reset()
         setPersonalizar(false)
+        setSubjectName("")
         setOpen(false)
       },
       onError: (error) => {
@@ -185,11 +191,15 @@ export function CreateStudyPlanDialog({
   })
 
   const isSaving = createStudyPlanItem.isPending || updateStudyPlanItem.isPending
+  const subjectFieldsRef = useRef<SubjectInlineEditFieldsHandle>(null)
 
   const form = useForm({
     defaultValues,
     validators: { onSubmit: studyPlanFormSchema },
-    onSubmit: ({ value }) => {
+    onSubmit: async ({ value }) => {
+      const subjectSaved = await subjectFieldsRef.current?.save()
+      if (subjectSaved === false) return
+
       const values = studyPlanFormSchema.parse(value)
       const payload: StudyPlanFormValues = personalizar
         ? values
@@ -212,15 +222,13 @@ export function CreateStudyPlanDialog({
 
   const submissionAttempts = useSelector(form.store, (state) => state.submissionAttempts)
 
-  // Tras crear la asignatura desde `QuickCreateSubjectDialog`, refresca el
-  // catálogo de disponibles y de detalles, y la selecciona automáticamente
-  // por su id real (el endpoint individual `fn_subject_crear` lo devuelve).
   async function handleSubjectCreated(created: { id: number; nombreInterno: string }) {
     await queryClient.invalidateQueries({
       queryKey: availableStudyPlanSubjectsQueryKey(gradeId, academicPeriodId),
     })
     queryClient.invalidateQueries({ queryKey: ["subject-details", academicPeriodId] })
     form.setFieldValue("asignaturaId", created.id)
+    setSubjectName(created.nombreInterno)
   }
 
   const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false)
@@ -230,6 +238,7 @@ export function CreateStudyPlanDialog({
     setNotice(null)
     form.reset()
     setPersonalizar(tienePersonalizacion)
+    setSubjectName(item?.asignatura ?? "")
   }
 
   function requestClose() {
@@ -307,32 +316,109 @@ export function CreateStudyPlanDialog({
           }}
           className="flex min-w-0 flex-col gap-4"
         >
-          <div className="grid gap-4 sm:grid-cols-3">
-            <form.Field name="asignaturaId">
-              {(field) => {
-                const isInvalid =
-                  (field.state.meta.isTouched || submissionAttempts > 0) && !field.state.meta.isValid
-                return (
-                  <Field variant="outlined" data-invalid={isInvalid}>
-                    <FieldLabel htmlFor={field.name}>
-                      {isPreescolar ? "Dimensiones*" : "Asignaturas*"}
-                    </FieldLabel>
+          <form.Field name="asignaturaId">
+            {(field) => {
+              const isInvalid =
+                (field.state.meta.isTouched || submissionAttempts > 0) && !field.state.meta.isValid
+              const hasValue = !!field.state.value
+              const nameMissing = hasValue && submissionAttempts > 0 && !subjectName.trim()
+              const errors = nameMissing
+                ? [...field.state.meta.errors, { message: "El nombre es obligatorio" }]
+                : field.state.meta.errors
+              return (
+                <Field variant="outlined" data-invalid={isInvalid || nameMissing}>
+                  <FieldLabel htmlFor={field.name}>
+                    {isPreescolar ? "Dimensiones*" : "Asignaturas*"}
+                  </FieldLabel>
+                  {hasValue ? (
+                    <div ref={pickerAnchorRef}>
+                      <InputGroup className="h-11 rounded-md border border-input px-3 hover:border-ring has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20 has-[[data-slot][aria-invalid=true]]:border-red">
+                        <InputGroupInput
+                          id={field.name}
+                          maxLength={130}
+                          placeholder="Seleccionar"
+                          className="px-0 uppercase placeholder:normal-case"
+                          aria-invalid={isInvalid || nameMissing}
+                          value={subjectName}
+                          onBlur={field.handleBlur}
+                          onChange={(e) => setSubjectName(e.target.value.toUpperCase())}
+                        />
+                        <InputGroupAddon align="inline-end">
+                          <Combobox
+                            open={pickerOpen}
+                            onOpenChange={setPickerOpen}
+                            value={String(field.state.value)}
+                            onValueChange={(value) => {
+                              if (value === CREATE_SUBJECT_VALUE) {
+                                setPickerOpen(false)
+                                setCreateSubjectOpen(true)
+                                return
+                              }
+                              if (!value) return
+                              const id = Number(value)
+                              field.handleChange(id)
+                              setSubjectName(
+                                asignaturaOptions.find((o) => o.id === id)?.label ?? "",
+                              )
+                              setPickerOpen(false)
+                            }}
+                          >
+                            <InputGroupButton
+                              variant="ghost"
+                              size="icon-xs"
+                              aria-label="Mostrar opciones"
+                              onClick={() => setPickerOpen((o) => !o)}
+                            >
+                              <CaretDownIcon className="pointer-events-none size-3.5" />
+                            </InputGroupButton>
+                            <ComboboxFieldContent anchor={pickerAnchorRef}>
+                              <ComboboxGroup>
+                                {asignaturaOptions.length === 0 ? (
+                                  <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                                    {isPreescolar
+                                      ? "No hay dimensiones disponibles para este grado."
+                                      : "No hay asignaturas disponibles para este grado."}
+                                  </div>
+                                ) : (
+                                  asignaturaOptions.map((option) => (
+                                    <ComboboxFieldItem
+                                      key={option.id}
+                                      value={String(option.id)}
+                                      title={option.label}
+                                    >
+                                      {option.label}
+                                    </ComboboxFieldItem>
+                                  ))
+                                )}
+                                <ComboboxFieldItem value={CREATE_SUBJECT_VALUE}>
+                                  <span className="inline-flex items-center gap-1.5">
+                                    <PlusIcon />
+                                    Crear {subjectWord}
+                                  </span>
+                                </ComboboxFieldItem>
+                              </ComboboxGroup>
+                            </ComboboxFieldContent>
+                          </Combobox>
+                        </InputGroupAddon>
+                      </InputGroup>
+                    </div>
+                  ) : (
                     <ComboboxField
-                      value={field.state.value ? String(field.state.value) : ""}
+                      value=""
                       onValueChange={(value) => {
                         if (value === CREATE_SUBJECT_VALUE) {
                           setCreateSubjectOpen(true)
                           return
                         }
-                        if (value) field.handleChange(Number(value))
+                        if (!value) return
+                        const id = Number(value)
+                        field.handleChange(id)
+                        setSubjectName(asignaturaOptions.find((o) => o.id === id)?.label ?? "")
                       }}
                     >
                       <ComboboxFieldTrigger id={field.name} aria-invalid={isInvalid}>
                         <ComboboxFieldValue placeholder="Seleccionar">
-                          {(value) =>
-                            asignaturaOptions.find((o) => String(o.id) === value)?.label ??
-                            "Seleccionar"
-                          }
+                          {() => "Seleccionar"}
                         </ComboboxFieldValue>
                       </ComboboxFieldTrigger>
                       <ComboboxFieldContent>
@@ -363,170 +449,156 @@ export function CreateStudyPlanDialog({
                         </ComboboxGroup>
                       </ComboboxFieldContent>
                     </ComboboxField>
-                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                    <QuickCreateSubjectDialog
-                      academicPeriodId={academicPeriodId}
-                      open={createSubjectOpen}
-                      onOpenChange={setCreateSubjectOpen}
-                      onCreated={handleSubjectCreated}
-                      isPreescolar={isPreescolar}
-                    />
-                  </Field>
-                )
-              }}
-            </form.Field>
-
-            <form.Field name="intensidadHoraria">
-              {(field) => {
-                const isInvalid =
-                  (field.state.meta.isTouched || submissionAttempts > 0) && !field.state.meta.isValid
-                return (
-                  <Field variant="outlined" data-invalid={isInvalid}>
-                    <FieldLabel htmlFor={field.name}>Intensidad horaria*</FieldLabel>
-                    <Input
-                      id={field.name}
-                      type="number"
-                      min={1}
-                      max={99}
-                      step={1}
-                      placeholder="Agregar"
-                      aria-invalid={isInvalid}
-                      value={Number.isNaN(field.state.value) ? "" : field.state.value}
-                      onBlur={field.handleBlur}
-                      onKeyDown={(e) => {
-                        if (["-", "+", ".", ",", "e", "E"].includes(e.key)) {
-                          e.preventDefault()
-                        }
-                      }}
-                      onChange={(e) => {
-                        const value = e.target.valueAsNumber
-                        if (e.target.value === "" || !Number.isNaN(value)) {
-                          field.handleChange(value)
-                        }
-                      }}
-                    />
-                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                  </Field>
-                )
-              }}
-            </form.Field>
-
-            <form.Field name="influenciaArea">
-              {(field) => {
-                const isInvalid =
-                  (field.state.meta.isTouched || submissionAttempts > 0) && !field.state.meta.isValid
-                return (
-                  <Field variant="outlined" data-invalid={isInvalid}>
-                    <FieldLabel htmlFor={field.name}>Influencia área*</FieldLabel>
-                    <InputGroup className="h-11 rounded-md border border-input px-3 hover:border-ring has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20 has-[[data-slot][aria-invalid=true]]:border-red">
-                      <InputGroupInput
-                        id={field.name}
-                        type="number"
-                        min={0}
-                        max={100}
-                        placeholder="Agregar"
-                        className="px-0"
-                        aria-invalid={isInvalid}
-                        value={Number.isNaN(field.state.value) ? "" : field.state.value}
-                        onBlur={field.handleBlur}
-                        // INFLUENCIA_AREA admite decimales (NUMERIC(5,2)), solo
-                        // se bloquea signo/notación científica.
-                        onKeyDown={(e) => {
-                          if (["-", "+", "e", "E"].includes(e.key)) e.preventDefault()
-                        }}
-                        onChange={(e) => {
-                          const value = e.target.valueAsNumber
-                          if (e.target.value === "" || !Number.isNaN(value)) {
-                            field.handleChange(value)
-                          }
-                        }}
-                      />
-                      <InputGroupAddon align="inline-end">
-                        <InputGroupText>%</InputGroupText>
-                      </InputGroupAddon>
-                    </InputGroup>
-                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                  </Field>
-                )
-              }}
-            </form.Field>
-
-            <form.Field name="numeroCreditos">
-              {(field) => {
-                const isInvalid =
-                  (field.state.meta.isTouched || submissionAttempts > 0) && !field.state.meta.isValid
-                return (
-                  <Field variant="outlined" data-invalid={isInvalid}>
-                    <FieldLabel htmlFor={field.name}>Número de créditos *</FieldLabel>
-                    <Input
-                      id={field.name}
-                      type="number"
-                      min={0}
-                      step={1}
-                      placeholder="Agregar"
-                      aria-invalid={isInvalid}
-                      value={Number.isNaN(field.state.value) ? "" : field.state.value}
-                      onBlur={field.handleBlur}
-                      // NUMERO_CREDITO es entero, sin decimales ni negativos.
-                      onKeyDown={(e) => {
-                        if (["-", "+", ".", ",", "e", "E"].includes(e.key)) {
-                          e.preventDefault()
-                        }
-                      }}
-                      onChange={(e) => {
-                        const value = e.target.valueAsNumber
-                        if (e.target.value === "" || !Number.isNaN(value)) {
-                          field.handleChange(value)
-                        }
-                      }}
-                    />
-                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                  </Field>
-                )
-              }}
-            </form.Field>
-          </div>
+                  )}
+                  {(isInvalid || nameMissing) && <FieldError errors={errors} />}
+                  <QuickCreateSubjectDialog
+                    academicPeriodId={academicPeriodId}
+                    open={createSubjectOpen}
+                    onOpenChange={setCreateSubjectOpen}
+                    onSaved={handleSubjectCreated}
+                    isPreescolar={isPreescolar}
+                  />
+                </Field>
+              )
+            }}
+          </form.Field>
 
           <form.Subscribe selector={(state) => state.values.asignaturaId}>
             {(asignaturaId) => {
               const selected = subjectDetails.find((s) => s.id === asignaturaId)
               if (!selected) return null
               return (
-                <Table containerClassName="min-w-0">
-                  <TableHeader>
-                    <TableRow className="hover:bg-transparent">
-                      <TableHead>Área</TableHead>
-                      <TableHead>Nombre interno</TableHead>
-                      <TableHead>Abreviación</TableHead>
-                      <TableHead>Color</TableHead>
-                      <TableHead>Especialidad</TableHead>
-                      <TableHead>Orden</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    <TableRow className="hover:bg-transparent">
-                      <TableCell>{selected.areaNombre || "—"}</TableCell>
-                      <TableCell>{selected.nombreInterno || "—"}</TableCell>
-                      <TableCell>{selected.abreviacion || "—"}</TableCell>
-                      <TableCell>
-                        {selected.color ? (
-                          <span
-                            className="inline-block size-4 rounded-full ring-1 ring-foreground/10"
-                            style={{
-                              backgroundColor: selected.color.startsWith("#")
-                                ? selected.color
-                                : `#${selected.color}`,
-                            }}
-                          />
-                        ) : (
-                          "—"
-                        )}
-                      </TableCell>
-                      <TableCell>{selected.especialidad || "—"}</TableCell>
-                      <TableCell>{selected.ordenReportes}</TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
+                <SubjectInlineEditFields
+                  key={selected.id}
+                  ref={subjectFieldsRef}
+                  subject={selected}
+                  nombre={subjectName}
+                  onNombreChange={setSubjectName}
+                  academicPeriodId={academicPeriodId}
+                  isPreescolar={isPreescolar}
+                  notify={notifyInDialog}
+                  onSaved={(saved) => {
+                    queryClient.invalidateQueries({
+                      queryKey: ["subject-details", academicPeriodId],
+                    })
+                    if (saved.id !== asignaturaId) form.setFieldValue("asignaturaId", saved.id)
+                  }}
+                >
+                  <div className="grid gap-4 sm:grid-cols-3">
+                    <form.Field name="intensidadHoraria">
+                      {(field) => {
+                        const isInvalid =
+                          (field.state.meta.isTouched || submissionAttempts > 0) &&
+                          !field.state.meta.isValid
+                        return (
+                          <Field variant="outlined" data-invalid={isInvalid}>
+                            <FieldLabel htmlFor={field.name}>Intensidad horaria*</FieldLabel>
+                            <Input
+                              id={field.name}
+                              type="number"
+                              min={1}
+                              max={99}
+                              step={1}
+                              placeholder="Agregar"
+                              aria-invalid={isInvalid}
+                              value={Number.isNaN(field.state.value) ? "" : field.state.value}
+                              onBlur={field.handleBlur}
+                              onKeyDown={(e) => {
+                                if (["-", "+", ".", ",", "e", "E"].includes(e.key)) {
+                                  e.preventDefault()
+                                }
+                              }}
+                              onChange={(e) => {
+                                const value = e.target.valueAsNumber
+                                if (e.target.value === "" || !Number.isNaN(value)) {
+                                  field.handleChange(value)
+                                }
+                              }}
+                            />
+                            {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                          </Field>
+                        )
+                      }}
+                    </form.Field>
+
+                    <form.Field name="influenciaArea">
+                      {(field) => {
+                        const isInvalid =
+                          (field.state.meta.isTouched || submissionAttempts > 0) &&
+                          !field.state.meta.isValid
+                        return (
+                          <Field variant="outlined" data-invalid={isInvalid}>
+                            <FieldLabel htmlFor={field.name}>Influencia área*</FieldLabel>
+                            <InputGroup className="h-11 rounded-md border border-input px-3 hover:border-ring has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20 has-[[data-slot][aria-invalid=true]]:border-red">
+                              <InputGroupInput
+                                id={field.name}
+                                type="number"
+                                min={0}
+                                max={100}
+                                placeholder="Agregar"
+                                className="px-0"
+                                aria-invalid={isInvalid}
+                                value={Number.isNaN(field.state.value) ? "" : field.state.value}
+                                onBlur={field.handleBlur}
+                                // INFLUENCIA_AREA admite decimales (NUMERIC(5,2)), solo
+                                // se bloquea signo/notación científica.
+                                onKeyDown={(e) => {
+                                  if (["-", "+", "e", "E"].includes(e.key)) e.preventDefault()
+                                }}
+                                onChange={(e) => {
+                                  const value = e.target.valueAsNumber
+                                  if (e.target.value === "" || !Number.isNaN(value)) {
+                                    field.handleChange(value)
+                                  }
+                                }}
+                              />
+                              <InputGroupAddon align="inline-end">
+                                <InputGroupText>%</InputGroupText>
+                              </InputGroupAddon>
+                            </InputGroup>
+                            {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                          </Field>
+                        )
+                      }}
+                    </form.Field>
+
+                    <form.Field name="numeroCreditos">
+                      {(field) => {
+                        const isInvalid =
+                          (field.state.meta.isTouched || submissionAttempts > 0) &&
+                          !field.state.meta.isValid
+                        return (
+                          <Field variant="outlined" data-invalid={isInvalid}>
+                            <FieldLabel htmlFor={field.name}>Número de créditos *</FieldLabel>
+                            <Input
+                              id={field.name}
+                              type="number"
+                              min={0}
+                              step={1}
+                              placeholder="Agregar"
+                              aria-invalid={isInvalid}
+                              value={Number.isNaN(field.state.value) ? "" : field.state.value}
+                              onBlur={field.handleBlur}
+                              // NUMERO_CREDITO es entero, sin decimales ni negativos.
+                              onKeyDown={(e) => {
+                                if (["-", "+", ".", ",", "e", "E"].includes(e.key)) {
+                                  e.preventDefault()
+                                }
+                              }}
+                              onChange={(e) => {
+                                const value = e.target.valueAsNumber
+                                if (e.target.value === "" || !Number.isNaN(value)) {
+                                  field.handleChange(value)
+                                }
+                              }}
+                            />
+                            {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                          </Field>
+                        )
+                      }}
+                    </form.Field>
+                  </div>
+                </SubjectInlineEditFields>
               )
             }}
           </form.Subscribe>
