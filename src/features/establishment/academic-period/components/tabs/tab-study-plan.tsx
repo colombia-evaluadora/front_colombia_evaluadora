@@ -66,6 +66,10 @@ export function TabStudyPlan({ academicPeriodId, gradeId, isPreescolar }: TabStu
     () => new Map((data?.rows ?? []).map((row) => [row.codigo, row.asignatura])),
     [data],
   )
+  const asignaturaIdsById = useMemo(
+    () => new Map((data?.rows ?? []).map((row) => [row.codigo, row.asignaturaId])),
+    [data],
+  )
 
   return (
     <>
@@ -78,6 +82,7 @@ export function TabStudyPlan({ academicPeriodId, gradeId, isPreescolar }: TabStu
               itemCount={selectedIds.length}
               itemIds={selectedItemIds}
               namesById={namesById}
+              asignaturaIdsById={asignaturaIdsById}
               resetSelection={resetSelection}
             />
             <ExportSelectedStudyPlanItemsDialog
@@ -111,6 +116,7 @@ export function TabStudyPlan({ academicPeriodId, gradeId, isPreescolar }: TabStu
             : "Aún no hay asignaturas en el plan de estudio."
         }
         errorMessage="Ocurrió un error al cargar el plan de estudio."
+        containerClassName="max-h-96 overflow-y-auto"
       />
       {data && (
         <Pagination

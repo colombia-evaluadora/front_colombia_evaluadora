@@ -9,10 +9,7 @@ import type {
 import { teacherAssignmentsQueryKey } from "@/features/establishment/academic-period/api/query/use-teacher-assignments"
 import { assignmentSubjectsQueryKey } from "@/features/establishment/academic-period/api/query/use-assignment-subjects"
 
-// `POST /eval-col/asignaciones` (`fn_asignacion_guardar`, id_query 82) —
-// reemplaza TODAS las asignaciones del docente en el periodo (borra las
-// activas y reinserta `subjectIds`), no un diff.
-function saveTeacherAssignments({
+export function saveTeacherAssignments({
   academicPeriodId,
   funcionarioId,
   subjectIds,
@@ -43,10 +40,6 @@ export function useSaveTeacherAssignments({
           variables.funcionarioId
         ),
       })
-      // El pool (`fn_asignacion_pool`) trae quién tiene cada materia
-      // (`funcionarioId`) — sin invalidarlo, una materia que se le acaba de
-      // quitar a este docente sigue apareciendo "ocupada" por él (con datos
-      // viejos) para cualquier otro docente hasta que se recargue la pestaña.
       queryClient.invalidateQueries({
         queryKey: assignmentSubjectsQueryKey(variables.academicPeriodId),
       })
