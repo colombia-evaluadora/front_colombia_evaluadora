@@ -154,6 +154,54 @@ const CATALOGS_BY_CATEGORIA: Record<string, () => SelectCategoryRow[]> = {
       valor,
       accion: null,
     })),
+  // Catálogo `TIPO_RECURSO` real que resuelve `tipoRecurso` de
+  // `PUT /planeador/actividades/:id/materiales` (colección Postman
+  // `planeador-guia-completa`, 4.7) — `use-tipo-recurso-catalog.ts` resuelve
+  // por `nombre` (substring), no hay `valor` confirmado todavía.
+  TIPO_RECURSO: () =>
+    [
+      { nombre: "URL / Sitio web", valor: "URL" },
+      { nombre: "Archivo", valor: "ARCHIVO" },
+      { nombre: "Unidad virtual / Repositorio", valor: "REPOSITORIO" },
+    ].map(({ nombre, valor }, i) => ({ pk_lista_valor: i + 1, nombre, valor, accion: null })),
+  // Catálogo `TIPO_ESCALA` real — resuelve `tipoEscala` de
+  // `PUT /planeador/actividades/:id/instrumento` cuando el instrumento es
+  // "Escala de valoración" (colección Postman
+  // `planeador-instrumentos-tipos-completo`, 3.3/4.2: NUMERICA/CUALITATIVA).
+  TIPO_ESCALA: () =>
+    [
+      { nombre: "Numérica", valor: "NUMERICA" },
+      { nombre: "Cualitativa", valor: "CUALITATIVA" },
+    ].map(({ nombre, valor }, i) => ({ pk_lista_valor: i + 1, nombre, valor, accion: null })),
+  // Catálogo `TIPO_EVIDENCIA_OTRO` real — resuelve `tipoEvidencia` cuando el
+  // instrumento es "Otro" (misma colección, 5.3: ARCHIVO | ENLACE |
+  // OBSERVACION_DIRECTA | REGISTRO_CAMPO).
+  TIPO_EVIDENCIA_OTRO: () =>
+    [
+      { nombre: "Archivo", valor: "ARCHIVO" },
+      { nombre: "Enlace", valor: "ENLACE" },
+      { nombre: "Observación directa", valor: "OBSERVACION_DIRECTA" },
+      { nombre: "Registro en campo", valor: "REGISTRO_CAMPO" },
+    ].map(({ nombre, valor }, i) => ({ pk_lista_valor: i + 1, nombre, valor, accion: null })),
+  // Catálogo `TIPO_ADAPTACION` real — resuelve `tipoAdaptacion` de
+  // `PUT /planeador/actividades/:id/adaptaciones` (colección Postman
+  // `planeador-guia-completa`, 4.8).
+  TIPO_ADAPTACION: () =>
+    [
+      "Discapacidad visual",
+      "Discapacidad auditiva",
+      "Dificultades cognitivas",
+      "Estilo de aprendizaje",
+      "Modalidad",
+      "Nivel de desempeño",
+      "Otro",
+    ].map((nombre, i) => ({ pk_lista_valor: i + 1, nombre, valor: nombre, accion: null })),
+  // Catálogo `APLICA_A` real — resuelve `aplicaA` de la misma ruta.
+  APLICA_A: () =>
+    [
+      { nombre: "A todo el grupo", valor: "TODO_EL_GRUPO" },
+      { nombre: "Estudiantes específicos", valor: "ESTUDIANTES_SELECCIONADOS" },
+    ].map(({ nombre, valor }, i) => ({ pk_lista_valor: i + 1, nombre, valor, accion: null })),
   // Catálogo de asistencias -- el valor 4 no existe (ver Postman de
   // `SSO - Asistencias`).
   TIPO_ASISTENCIA: () =>

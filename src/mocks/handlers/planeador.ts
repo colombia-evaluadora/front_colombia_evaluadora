@@ -112,6 +112,9 @@ const ACTIVIDAD_DETAIL_URL = "/api/eval-col/planeador/actividades/:id"
 const ACTIVIDAD_CALIFICACIONES_URL =
   "/api/eval-col/planeador/actividades/:id/calificaciones"
 const ACTIVIDAD_EVIDENCIAS_URL = "/api/eval-col/planeador/actividades/:id/evidencias"
+const ACTIVIDAD_CRITERIOS_URL = "/api/eval-col/planeador/actividades/:id/criterios"
+const ACTIVIDAD_MATERIALES_URL = "/api/eval-col/planeador/actividades/:id/materiales"
+const ACTIVIDAD_ADAPTACIONES_URL = "/api/eval-col/planeador/actividades/:id/adaptaciones"
 const ACTIVIDAD_CREATE_URL = "/api/eval-col/planeador/actividades"
 const ACTIVIDAD_DELETE_URL = "/api/eval-col/planeador/actividades/:id"
 const ACTIVIDAD_EXPORT_ALL_URL = "/api/eval-col/planeador/actividades/export-all"
@@ -129,6 +132,8 @@ const UNIDAD_DETAIL_URL = "/api/eval-col/planeador/unidades/:id"
 const UNIDAD_CRITERIO_CREATE_URL = "/api/eval-col/planeador/unidades/:id/criterios"
 const UNIDAD_VALORACIONES_URL = "/api/eval-col/planeador/unidades/:id/valoraciones"
 const UNIDAD_REFERENTE_URL = "/api/eval-col/planeador/unidades/:id/referente"
+const UNIDAD_CONFIGURACION_ACTIVIDAD_URL =
+  "/api/eval-col/planeador/unidades/:id/configuracion-actividad"
 const REFERENTE_CURRICULAR_URL = "/api/eval-col/planeador/referente-curricular"
 const UNIDAD_ACTIVIDADES_VINCULADAS_URL = "/api/eval-col/planeador/unidades/:id/actividades"
 const UNIDAD_ACTIVIDADES_DISPONIBLES_URL =
@@ -323,6 +328,7 @@ function actividadFromImportRow(raw: Record<string, unknown>, id: number): Activ
     esRecuperacion: false,
     unidad: { id: 0, nombre: String(raw.unidad ?? "") },
     evidenciasIds: [],
+    criteriosUnidadIds: [],
     asignatura: String(raw.asignatura ?? ""),
     grado: String(raw.grado ?? ""),
     grupo: String(raw.grupo ?? ""),
@@ -546,13 +552,88 @@ export const planeadorHandlers = [
     if (index === -1) {
       return HttpResponse.json({ message: "Actividad no encontrada." }, { status: 404 })
     }
-    const body = (await request.json()) as { FK_TLV_EVIDENCIA: number }
+    const body = (await request.json()) as { FK_REFERENTE_ENUNCIADO: number }
     const actual = planeadorDb[index]!
-    if (!actual.evidenciasIds.includes(body.FK_TLV_EVIDENCIA)) {
-      actual.evidenciasIds = [...actual.evidenciasIds, body.FK_TLV_EVIDENCIA]
+    if (!actual.evidenciasIds.includes(body.FK_REFERENTE_ENUNCIADO)) {
+      actual.evidenciasIds = [...actual.evidenciasIds, body.FK_REFERENTE_ENUNCIADO]
     }
     return HttpResponse.json({ status: "ok" })
   }),
+
+  // Agrega UN criterio de la rúbrica de la UNIDAD a la actividad (colección
+  // Postman `planeador-guia-completa`, 4.9). Mismo criterio que el POST de
+  // evidencias: no hay endpoint real confirmado para quitar una ya
+  // relacionada (ver `Actividad.criteriosUnidadIds`), así que el mock
+  // tampoco lo modela.
+  http.post(ACTIVIDAD_CRITERIOS_URL, async ({ params, request }) => {
+    await delay(200)
+    const id = Number(params.id)
+    const index = planeadorDb.findIndex((row) => row.id === id)
+    if (index === -1) {
+      return HttpResponse.json({ message: "Actividad no encontrada." }, { status: 404 })
+    }
+    const body = (await request.json()) as { FK_TCRITERIO_UNIDAD: number }
+    const actual = planeadorDb[index]!
+    if (!actual.criteriosUnidadIds.includes(body.FK_TCRITERIO_UNIDAD)) {
+      actual.criteriosUnidadIds = [...actual.criteriosUnidadIds, body.FK_TCRITERIO_UNIDAD]
+    }
+    return HttpResponse.json({ status: "ok" })
+  }),
+
+  // Reemplazo COMPLETO de los materiales de apoyo (colección Postman
+  // `planeador-guia-completa`, 4.7) — `MATERIALES` viaja como STRING
+  // serializado (regla de los campos JSONB del motor), acá se parsea de
+  // vuelta a array. El mock no reversa `tipoRecurso` (id numérico) a
+  // `Recurso.tipo` (label): como el front nunca manda "Archivo" acá
+  // (`update-materiales-actividad.ts` los deja afuera del body), alcanza
+  // con asumir "URL" — el resto de los campos sí se preservan.
+  http.put(ACTIVIDAD_MATERIALES_URL, async ({ params, request }) => {
+    await delay(200)
+    const id = Number(params.id)
+    const index = planeadorDb.findIndex((row) => row.id === id)
+    if (index === -1) {
+      return HttpResponse.json({ message: "Actividad no encontrada." }, { status: 404 })
+    }
+    const body = (await request.json()) as { MATERIALES: string }
+    const materiales = JSON.parse(body.MATERIALES) as { url?: string; descripcion?: string }[]
+    const actual = planeadorDb[index]!
+    actual.recursos = materiales.map((material, i) => ({
+      id: nextId(actual.recursos.map((r) => r.id)) + i,
+      titulo: material.url ?? "",
+      fuente: material.url ?? "",
+      tipo: "URL",
+      url: material.url ?? "",
+      descripcion: material.descripcion ?? "",
+    }))
+    return HttpResponse.json({ status: "ok" })
+  }),
+
+  // Reemplazo de adaptaciones curriculares. A diferencia de `.../materiales`
+  // (que sí reconstruye `recursos` desde el body — ahí el mock no tenía otra
+  // fuente), acá el PUT/POST principal de la actividad YA manda
+  // `adaptaciones` completo con fidelidad total (`versionModificadaRef`/
+  // `estudiantesIds` incluidos, ver `env.ENABLE_API_MOCKING` en
+  // `create-actividad.ts`/`update-actividad.ts`) — reconstruir de vuelta acá
+  // desde el body reducido (`tipoAdaptacion`/`descripcion`/
+  // `usaVersionModificada`/`aplicaA`, sin esos dos campos) los PERDERÍA.
+  // Alcanza con confirmar la operación, igual que el mock de `.../instrumento`.
+  http.put(ACTIVIDAD_ADAPTACIONES_URL, async ({ params }) => {
+    await delay(200)
+    const id = Number(params.id)
+    const found = planeadorDb.find((row) => row.id === id)
+    if (!found) {
+      return HttpResponse.json({ message: "Actividad no encontrada." }, { status: 404 })
+    }
+    return HttpResponse.json({ status: "ok" })
+  }),
+
+  // NOTA: `PUT/GET /actividades/:id/instrumento` NO se registra acá — ya
+  // existe en `mocks/handlers/planeador/planilla.ts` (`INSTRUMENTO_URL`),
+  // que deriva `definicion` de `rubrica`/`listaCotejo`/`escalaValoracion` del
+  // propio mock (`instrumentoActividadDe`). Registrar OTRO handler para la
+  // misma ruta acá ganaría por orden (`planeadorHandlers` se registra antes
+  // que `planeadorPlanillaHandlers` en `mocks/handlers/index.ts`) y dejaría
+  // sin efecto al de planilla.
 
   // Calificaciones de la actividad: una fila por estudiante con asistencia
   // y notas por criterio. Mismo sobre `{rows: [...]}` que el resto, para
@@ -749,6 +830,70 @@ export const planeadorHandlers = [
             relacionadoConUnidad: true,
             pkTunidadEnunciado: enunciado.id,
           })),
+        },
+      ],
+    })
+  }),
+
+  // Qué pintar/exigir en el form de NUEVA actividad, con la unidad ya
+  // elegida pero SIN actividad todavía (colección Postman
+  // `planeador-flujo-unidad-actividad`, paso 6) — mismo `campos_disponibles`
+  // que ya trae el detalle real de actividad, para que `EvaluacionSection`
+  // use la misma fuente de verdad al crear que al editar. `ES_EVALUATIVA`
+  // es lo único que no sale de la unidad: lo que el usuario acaba de marcar
+  // en el `<Select>` de "¿Es evaluación sumativa?".
+  http.get(UNIDAD_CONFIGURACION_ACTIVIDAD_URL, async ({ params, request }) => {
+    await delay(150)
+    const id = Number(params.id)
+    const unidad = unidadesTematicasDb.find((row) => row.id === id)
+    if (!unidad) {
+      return HttpResponse.json({ message: "Unidad temática no encontrada." }, { status: 404 })
+    }
+    const esEvaluativa = new URL(request.url).searchParams.get("ES_EVALUATIVA") === "S"
+    const esFormativa = unidad.enfoquePedagogico === "Formativo"
+    const evaluacionVisible = esEvaluativa && !esFormativa
+    const ponderacionVisible = evaluacionVisible && unidad.metodoCalculo !== "Promedio simple"
+    return HttpResponse.json({
+      rows: [
+        {
+          configuracion: {
+            campos_disponibles: {
+              criterio: {
+                visible: !esFormativa,
+                requerido: false,
+                motivo: esFormativa
+                  ? "La unidad tiene enfoque formativo: no se califica con criterios."
+                  : "Opcional: la actividad puede sumar criterios de la rúbrica de la unidad.",
+              },
+              evaluacion: {
+                visible: evaluacionVisible,
+                requerido: evaluacionVisible,
+                motivo: esFormativa
+                  ? "La unidad tiene enfoque formativo: se observa, no se califica."
+                  : esEvaluativa
+                    ? "La actividad es sumativa: hace falta un instrumento de evaluación."
+                    : "La actividad no es sumativa: no hace falta instrumento.",
+                instrumentosPermitidos: ["Rúbrica", "Lista de cotejo", "Escala de valoración", "Otro"],
+              },
+              ponderacion: {
+                visible: ponderacionVisible,
+                requerido: ponderacionVisible,
+                motivo: !evaluacionVisible
+                  ? "No aplica sin evaluación sumativa."
+                  : unidad.metodoCalculo === "Promedio simple"
+                    ? "La unidad promedia simple: cada actividad pesa igual, no hay nada que repartir."
+                    : unidad.metodoCalculo === "Suma de puntos"
+                      ? "La unidad suma puntos: se captura el puntaje máximo y el % lo calcula el sistema."
+                      : "La unidad calcula por ponderación: hace falta asignar el % de esta actividad.",
+                modo:
+                  unidad.metodoCalculo === "Ponderado"
+                    ? "PORCENTAJE"
+                    : unidad.metodoCalculo === "Suma de puntos"
+                      ? "PUNTAJE"
+                      : null,
+              },
+            },
+          },
         },
       ],
     })
@@ -1134,32 +1279,40 @@ export const planeadorHandlers = [
       })
     }
 
-    if (conError > 0) {
-      return HttpResponse.json({
-        modo: "aplicacion",
-        total: filas.length,
-        validas,
-        conError,
-        aplicadas: 0,
-        mensaje: `No se importó nada: ${conError} de ${filas.length} actividades tienen problemas. La importación es todo o nada`,
-        filas,
-      })
-    }
-
-    const filasAplicadas: FilaInformeImportacion[] = body.ACTIVIDADES.map((raw, indice) => {
+    // Aplicar es fila por fila, igual que el backend real desde V340: las
+    // que la validación rechazó se omiten conservando sus errores, y el
+    // resto entra. Antes esto devolvía `aplicadas: 0` en cuanto había una
+    // sola fila mala ("la importación es todo o nada"), que ya no es cierto.
+    const filasAplicadas: FilaInformeImportacion[] = filas.map((fila, indice) => {
+      if (fila.estado === "error") {
+        return { ...fila, estado: "omitida" }
+      }
       const id = nextId(planeadorDb.map((actividad) => actividad.id))
-      const creada = actividadFromImportRow(raw, id)
+      const creada = actividadFromImportRow(body.ACTIVIDADES[indice], id)
       addActividad(creada)
-      return { estado: "ok", indice, nombre: creada.nombre, pkTactividad: id }
+      return { estado: "importada", indice, nombre: creada.nombre, pkTactividad: id }
     })
+
+    const aplicadas = filasAplicadas.filter((fila) => fila.estado === "importada").length
+    const omitidas = filasAplicadas.length - aplicadas
 
     return HttpResponse.json({
       modo: "aplicacion",
       total: filasAplicadas.length,
-      validas: filasAplicadas.length,
-      conError: 0,
-      aplicadas: filasAplicadas.length,
-      mensaje: `${filasAplicadas.length} actividades importadas`,
+      validas,
+      conError,
+      aplicadas,
+      omitidas,
+      // El mock no simula fallos al crear: todo lo que pasa la validación
+      // entra. En el real esta rama existe (una actividad que ya existe, por
+      // ejemplo) y llega como `fallida`.
+      fallidas: 0,
+      mensaje:
+        aplicadas === 0
+          ? `No se importó ninguna actividad: ${omitidas} de ${filasAplicadas.length} con problemas`
+          : omitidas === 0
+            ? `${aplicadas} actividades importadas`
+            : `${aplicadas} de ${filasAplicadas.length} actividades importadas; ${omitidas} con problemas (ver filas)`,
       filas: filasAplicadas,
     })
   }),

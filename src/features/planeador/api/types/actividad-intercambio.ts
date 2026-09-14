@@ -52,8 +52,22 @@ export interface ImportarActividadesDestino {
   referenteCurricularId?: number
 }
 
+/**
+ * Estado de una fila del informe. Los dos primeros los devuelve el paso de
+ * validación; los tres últimos, el de aplicación (V340):
+ *
+ * - `ok`        — validación: la actividad es importable.
+ * - `error`     — validación: tiene problemas y no se va a intentar.
+ * - `importada` — aplicación: se creó.
+ * - `omitida`   — aplicación: la validación ya la había rechazado, ni se
+ *                 intentó. Conserva sus `errores`.
+ * - `fallida`   — aplicación: pasó la validación pero el servidor la rechazó
+ *                 al crearla. Trae el motivo en `errores`.
+ */
+export type EstadoFilaImportacion = "ok" | "error" | "importada" | "omitida" | "fallida"
+
 export interface FilaInformeImportacion {
-  estado: "ok" | "error"
+  estado: EstadoFilaImportacion
   indice: number
   nombre: string
   errores?: string[]
@@ -71,8 +85,17 @@ export interface InformeImportacion {
   modo: "validacion" | "aplicacion"
   total: number
   validas: number
+  /** Filas que la validación rechazó. Ya NO significa "no se importará
+   *  nada": desde V340 la importación es fila por fila y esas se omiten
+   *  mientras el resto entra. */
   conError: number
   aplicadas: number
+  /** Solo en `modo: "aplicacion"` (V340): filas que la validación ya había
+   *  rechazado y por eso no se intentaron. */
+  omitidas?: number
+  /** Solo en `modo: "aplicacion"` (V340): filas que pasaron la validación
+   *  pero el servidor rechazó al crearlas. */
+  fallidas?: number
   mensaje: string
   filas: FilaInformeImportacion[]
   unidadesCreadas?: UnidadCreadaImportacion[]
