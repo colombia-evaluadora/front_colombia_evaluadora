@@ -185,6 +185,7 @@ export function TabAcademicAssignments({ academicPeriodId }: TabAcademicAssignme
         onRetry={refetch}
         emptyMessage="Sin docentes."
         errorMessage="Ocurrió un error al cargar los docentes."
+        cellClassName="py-1.5"
         renderSubRow={(row) => {
           const employee = row.original as EmployeeListItem
           if (expanded?.id !== employee.id) return null

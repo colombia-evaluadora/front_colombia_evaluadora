@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
 
-import { useSedeOptionsQuery } from "@/features/establishment/academic-period/api/query/use-sede-options"
+import { useSedesOpcionesQuery } from "@/features/academic-management/asistencia/api/query/use-sedes-opciones-query"
 
 interface AsistenciaSedeSelectorProps {
   sedeId: number | null
@@ -22,7 +22,7 @@ const SCROLL_STEP = 160
 
 
 export function AsistenciaSedeSelector({ sedeId, onChange }: AsistenciaSedeSelectorProps) {
-  const { data: sedes, isPending } = useSedeOptionsQuery()
+  const { data: sedes, isPending } = useSedesOpcionesQuery()
   const scrollRef = React.useRef<HTMLDivElement>(null)
   const buttonRefs = React.useRef(new Map<number, HTMLButtonElement>())
   const [canScrollLeft, setCanScrollLeft] = React.useState(false)

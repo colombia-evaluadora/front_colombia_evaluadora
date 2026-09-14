@@ -17,6 +17,8 @@ import {
 } from "@/mocks/db/unidades-tematicas"
 import { nextId } from "@/mocks/db/next-id"
 import { getCalificacionesByActividad } from "@/mocks/db/calificaciones"
+import { campusesDb } from "@/mocks/db/campuses"
+import { establishmentsRowsDb } from "@/mocks/db/establishments"
 
 import type {
   Actividad,
@@ -25,6 +27,7 @@ import type {
 } from "@/features/planeador/api/types/actividad"
 import { EXPORT_FORMAT_LABELS } from "@/features/planeador/api/types/actividad"
 import type { NivelDesempenoCriterio, UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
+import type { SedesOptionsResponse } from "@/features/establishment/academic-period/api/types/sede-option"
 import type {
   ActividadExportada,
   FilaInformeImportacion,
@@ -146,6 +149,7 @@ const UNIDAD_ACTIVIDAD_PONDERACION_URL =
 const UNIDAD_CREATE_URL = "/api/eval-col/planeador/unidades"
 const UNIDAD_UPDATE_URL = "/api/eval-col/planeador/unidades/:id"
 const UNIDAD_DELETE_URL = "/api/eval-col/planeador/unidades/:id"
+const SEDES_OPCIONES_URL = "/api/eval-col/planeador/sedes/opciones"
 
 /**
  * Recorta `rows` según `?size=`/`?offset=` de la query string (el contrato
@@ -1314,6 +1318,30 @@ export const planeadorHandlers = [
             ? `${aplicadas} actividades importadas`
             : `${aplicadas} de ${filasAplicadas.length} actividades importadas; ${omitidas} con problemas (ver filas)`,
       filas: filasAplicadas,
+    })
+  }),
+
+  // Mismo DTO crudo (TSEDE) que `/eval-col/establecimientos/sedes/opciones`
+  // (ver `mocks/handlers/campuses.ts`), pero bajo Planeador: Asistencia migró
+  // acá porque el rol docente no siempre tiene acceso al endpoint de
+  // Establecimiento — ver `use-sedes-opciones-query.ts`.
+  http.get(SEDES_OPCIONES_URL, async () => {
+    await delay(150)
+
+    return HttpResponse.json<SedesOptionsResponse>({
+      rows: campusesDb.map((campus, index) => ({
+        pk_sede: campus.id,
+        codigo: campus.dane,
+        nombre: campus.name,
+        fk_tlv_zona: campus.zone?.id ?? 0,
+        zona_nombre: campus.zone?.name ?? "",
+        barrio: campus.neighborhood,
+        comuna: campus.commune,
+        direccion: campus.address,
+        telefono: campus.phone,
+        fk_establecimiento:
+          establishmentsRowsDb[index % establishmentsRowsDb.length]?.id ?? 0,
+      })),
     })
   }),
 ]

@@ -91,7 +91,7 @@ export function createStudyPlanColumns({
             gradeId={gradeId}
             isPreescolar={isPreescolar}
           />
-          <DeleteStudyPlanDialog item={row.original} />
+          <DeleteStudyPlanDialog item={row.original} isPreescolar={isPreescolar} />
         </div>
       ),
       enableSorting: false,
