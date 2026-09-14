@@ -30,10 +30,22 @@ interface DeleteStudyPlanDialogProps {
   isPreescolar?: boolean
 }
 
+// Con 3 acciones en vez de 2 (Eliminar / Remover / Cerrar), elegir una ya no
+// es un solo clic: pasa por una segunda pantalla de confirmación puntual
+// ("¿Estás seguro de...?") antes de ejecutar, para que un clic apurado no
+// dispare de una un borrado permanente.
+type PendingAction = "eliminar" | "remover" | null
+
 export function DeleteStudyPlanDialog({ item, isPreescolar }: DeleteStudyPlanDialogProps) {
   const [open, setOpen] = useState(false)
+  const [pending, setPending] = useState<PendingAction>(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const [checkingBlock, setCheckingBlock] = useState(false)
+  // Dos niveles: "Remover" solo se bloquea por lo que bloquea fn_plan_eliminar
+  // en sí (docente/horario en un grupo de este grado); "Eliminar" además se
+  // bloquea por lo que bloquea fn_subject_soft_delete (alcance más amplio).
+  const [canRemove, setCanRemove] = useState(true)
+  const [canDelete, setCanDelete] = useState(true)
   const [blockedReason, setBlockedReason] = useState<string | null>(null)
   const { notify } = useNotify()
   const queryClient = useQueryClient()
@@ -43,14 +55,19 @@ export function DeleteStudyPlanDialog({ item, isPreescolar }: DeleteStudyPlanDia
 
   useEffect(() => {
     if (!open) {
+      setCanRemove(true)
+      setCanDelete(true)
       setBlockedReason(null)
       return
     }
     let cancelled = false
     setCheckingBlock(true)
     checkPlanDeleteRestrictions(item.codigo)
-      .then(({ puedeEliminar, motivo }) => {
-        if (!cancelled) setBlockedReason(puedeEliminar ? null : motivo)
+      .then(({ puedeEliminar, puedeRemover, motivo }) => {
+        if (cancelled) return
+        setCanDelete(puedeEliminar)
+        setCanRemove(puedeRemover)
+        setBlockedReason(puedeEliminar ? null : motivo)
       })
       .finally(() => {
         if (!cancelled) setCheckingBlock(false)
@@ -62,10 +79,11 @@ export function DeleteStudyPlanDialog({ item, isPreescolar }: DeleteStudyPlanDia
 
   function resetAndClose() {
     setOpen(false)
+    setPending(null)
   }
 
   async function handleEliminar() {
-    if (blockedReason) return
+    if (!canDelete) return
     setIsProcessing(true)
     try {
       let planResult
@@ -100,6 +118,7 @@ export function DeleteStudyPlanDialog({ item, isPreescolar }: DeleteStudyPlanDia
   }
 
   async function handleQuitar() {
+    if (!canRemove) return
     setIsProcessing(true)
     try {
       const planResult = await deleteStudyPlanItem.mutateAsync(item.codigo)
@@ -132,47 +151,81 @@ export function DeleteStudyPlanDialog({ item, isPreescolar }: DeleteStudyPlanDia
         <AlertDialogOverlay forceRender className="bg-black/30" />
       </AlertDialogPortal>
       <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>{item.asignatura}</AlertDialogTitle>
-          <AlertDialogDescription>
-            {blockedReason
-              ? `No se puede eliminar por completo: ${blockedReason}. "Remover" solo la quita de este plan, conservándola para reutilizarla.`
-              : `"Eliminar" la borra por completo. "Remover" solo la quita de este plan, conservándola para reutilizarla. Ninguna de las dos se puede deshacer.`}
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogAction
-            color="destructive"
-            disabled={isProcessing || checkingBlock || !!blockedReason}
-            aria-busy={isProcessing}
-            title={blockedReason ?? undefined}
-            onClick={handleEliminar}
-          >
-            {isProcessing ? (
-              <SpinnerIcon data-icon="inline-start" className="animate-spin" />
-            ) : (
-              <TrashIcon data-icon="inline-start" />
-            )}
-            Eliminar
-          </AlertDialogAction>
-          <AlertDialogAction
-            color="primary"
-            disabled={isProcessing}
-            aria-busy={isProcessing}
-            onClick={handleQuitar}
-          >
-            {isProcessing ? (
-              <SpinnerIcon data-icon="inline-start" className="animate-spin" />
-            ) : (
-              <CheckIcon data-icon="inline-start" />
-            )}
-            Remover
-          </AlertDialogAction>
-          <AlertDialogCancel variant="fill" color="neutral" disabled={isProcessing}>
-            <XIcon data-icon="inline-start" />
-            Cerrar
-          </AlertDialogCancel>
-        </AlertDialogFooter>
+        {pending === null ? (
+          <>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{item.asignatura}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {!canRemove
+                  ? `No se puede remover ni eliminar: ${blockedReason}.`
+                  : blockedReason
+                    ? `No se puede eliminar por completo: ${blockedReason}. "Remover" solo la quita de este plan, conservándola para reutilizarla.`
+                    : `"Eliminar" la borra por completo. "Remover" solo la quita de este plan, conservándola para reutilizarla. Ninguna de las dos se puede deshacer.`}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <Button
+                color="destructive"
+                disabled={checkingBlock || !canDelete}
+                title={!canDelete ? (blockedReason ?? undefined) : undefined}
+                onClick={() => setPending("eliminar")}
+              >
+                <TrashIcon data-icon="inline-start" />
+                Eliminar
+              </Button>
+              <Button
+                color="destructive"
+                className="opacity-70"
+                disabled={checkingBlock || !canRemove}
+                title={!canRemove ? (blockedReason ?? undefined) : undefined}
+                onClick={() => setPending("remover")}
+              >
+                <CheckIcon data-icon="inline-start" />
+                Remover
+              </Button>
+              <AlertDialogCancel variant="fill" color="neutral">
+                <XIcon data-icon="inline-start" />
+                Cerrar
+              </AlertDialogCancel>
+            </AlertDialogFooter>
+          </>
+        ) : (
+          <>
+            <AlertDialogHeader>
+              <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+              <AlertDialogDescription>
+                {pending === "eliminar"
+                  ? `Vas a eliminar ${item.asignatura} por completo. Esta acción no se puede deshacer.`
+                  : `Vas a remover ${item.asignatura} de este plan de estudio. Esta acción no se puede deshacer.`}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogAction
+                color="destructive"
+                className={pending === "remover" ? "opacity-70" : undefined}
+                disabled={isProcessing}
+                aria-busy={isProcessing}
+                onClick={pending === "eliminar" ? handleEliminar : handleQuitar}
+              >
+                {isProcessing ? (
+                  <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+                ) : (
+                  <CheckIcon data-icon="inline-start" />
+                )}
+                Sí, {pending === "eliminar" ? "eliminar" : "remover"}
+              </AlertDialogAction>
+              <Button
+                variant="fill"
+                color="neutral"
+                disabled={isProcessing}
+                onClick={() => setPending(null)}
+              >
+                <XIcon data-icon="inline-start" />
+                Volver
+              </Button>
+            </AlertDialogFooter>
+          </>
+        )}
       </AlertDialogContent>
     </AlertDialog>
   )

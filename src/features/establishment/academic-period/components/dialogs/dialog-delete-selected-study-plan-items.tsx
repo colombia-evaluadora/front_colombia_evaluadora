@@ -34,6 +34,8 @@ interface DeleteSelectedStudyPlanItemsDialogProps {
   resetSelection: () => void
 }
 
+type PendingAction = "eliminar" | "remover" | null
+
 export function DeleteSelectedStudyPlanItemsDialog({
   itemCount,
   itemIds,
@@ -42,6 +44,7 @@ export function DeleteSelectedStudyPlanItemsDialog({
   resetSelection,
 }: DeleteSelectedStudyPlanItemsDialogProps) {
   const [open, setOpen] = useState(false)
+  const [pending, setPending] = useState<PendingAction>(null)
   const [submitting, setSubmitting] = useState(false)
   const bulkDelete = useDeleteStudyPlanItemsBulk()
   const { notify } = useNotify()
@@ -49,6 +52,7 @@ export function DeleteSelectedStudyPlanItemsDialog({
 
   function close() {
     setOpen(false)
+    setPending(null)
     resetSelection()
   }
 
@@ -156,46 +160,68 @@ export function DeleteSelectedStudyPlanItemsDialog({
         <AlertDialogOverlay forceRender className="bg-black/30" />
       </AlertDialogPortal>
       <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>{itemCount} seleccionada(s)</AlertDialogTitle>
-          <AlertDialogDescription>
-            "Eliminar" las borra por completo (solo las que no estén en uso en otro lado).
-            "Remover" solo las quita de este plan, conservándolas para reutilizarlas. Ninguna de
-            las dos se puede deshacer.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogAction
-            color="destructive"
-            disabled={submitting}
-            aria-busy={submitting}
-            onClick={handleEliminar}
-          >
-            {submitting ? (
-              <SpinnerIcon data-icon="inline-start" className="animate-spin" />
-            ) : (
-              <TrashIcon data-icon="inline-start" />
-            )}
-            Eliminar
-          </AlertDialogAction>
-          <AlertDialogAction
-            color="primary"
-            disabled={submitting}
-            aria-busy={submitting}
-            onClick={handleQuitar}
-          >
-            {submitting ? (
-              <SpinnerIcon data-icon="inline-start" className="animate-spin" />
-            ) : (
-              <CheckIcon data-icon="inline-start" />
-            )}
-            Remover
-          </AlertDialogAction>
-          <AlertDialogCancel variant="fill" color="neutral" disabled={submitting}>
-            <XIcon data-icon="inline-start" />
-            Cerrar
-          </AlertDialogCancel>
-        </AlertDialogFooter>
+        {pending === null ? (
+          <>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{itemCount} seleccionada(s)</AlertDialogTitle>
+              <AlertDialogDescription>
+                "Eliminar" las borra por completo (solo las que no estén en uso en otro lado).
+                "Remover" solo las quita de este plan, conservándolas para reutilizarlas. Ninguna
+                de las dos se puede deshacer.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <Button color="destructive" onClick={() => setPending("eliminar")}>
+                <TrashIcon data-icon="inline-start" />
+                Eliminar
+              </Button>
+              <Button color="destructive" className="opacity-70" onClick={() => setPending("remover")}>
+                <CheckIcon data-icon="inline-start" />
+                Remover
+              </Button>
+              <AlertDialogCancel variant="fill" color="neutral">
+                <XIcon data-icon="inline-start" />
+                Cerrar
+              </AlertDialogCancel>
+            </AlertDialogFooter>
+          </>
+        ) : (
+          <>
+            <AlertDialogHeader>
+              <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+              <AlertDialogDescription>
+                {pending === "eliminar"
+                  ? `Vas a eliminar ${itemCount} asignatura(s) por completo. Esta acción no se puede deshacer.`
+                  : `Vas a remover ${itemCount} asignatura(s) de este plan de estudio. Esta acción no se puede deshacer.`}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogAction
+                color="destructive"
+                className={pending === "remover" ? "opacity-70" : undefined}
+                disabled={submitting}
+                aria-busy={submitting}
+                onClick={pending === "eliminar" ? handleEliminar : handleQuitar}
+              >
+                {submitting ? (
+                  <SpinnerIcon data-icon="inline-start" className="animate-spin" />
+                ) : (
+                  <CheckIcon data-icon="inline-start" />
+                )}
+                Sí, {pending === "eliminar" ? "eliminar" : "remover"}
+              </AlertDialogAction>
+              <Button
+                variant="fill"
+                color="neutral"
+                disabled={submitting}
+                onClick={() => setPending(null)}
+              >
+                <XIcon data-icon="inline-start" />
+                Volver
+              </Button>
+            </AlertDialogFooter>
+          </>
+        )}
       </AlertDialogContent>
     </AlertDialog>
   )
