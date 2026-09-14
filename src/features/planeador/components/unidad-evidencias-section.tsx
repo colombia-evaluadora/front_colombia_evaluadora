@@ -4,6 +4,7 @@ import { InfoIcon, PencilIcon, SpinnerIcon } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
 
 import type { ReferenteEnunciado } from "@/features/planeador/api/query/use-referente-curricular-query"
+import type { CriterioUnidad } from "@/features/planeador/api/types/unidad-tematica"
 
 function BulletList({ items }: { items: string[] }) {
   if (items.length === 0) {
@@ -178,6 +179,65 @@ export function EnunciadosEvidenciasChecklist({
       <div className="border-blue-stroke bg-blue-22 text-blue flex items-start gap-2 rounded-md border p-3 text-sm">
         <InfoIcon className="mt-0.5 size-4 shrink-0" />
         Seleccione los {pluralizar(nivel2Etiqueta)} que trabajarán en esta actividad.
+      </div>
+    </div>
+  )
+}
+
+interface CriteriosUnidadChecklistProps {
+  criterios: CriterioUnidad[]
+  /** Ids de criterios de la unidad tildados para esta actividad. */
+  seleccionados: number[]
+  onToggle: (criterioId: number) => void
+  /** Igual que `disabledIds` en `EnunciadosEvidenciasChecklist`: no hay
+   *  endpoint confirmado para desvincular un criterio ya relacionado
+   *  (`PATCH /actividades/criterios/:id` pide el pk de la RELACIÓN, que acá
+   *  no se conoce), así que un criterio ya marcado queda tildado sin poder
+   *  destildarse. */
+  disabledIds?: number[]
+  className?: string
+}
+
+/**
+ * Checklist "Criterios de la unidad": relaciona criterios de la RÚBRICA DE
+ * LA UNIDAD (`UnidadTematica.criterios`, `TCRITERIO_UNIDAD`) con esta
+ * actividad puntual — distinto de la rúbrica PROPIA de la actividad
+ * (`RubricasSection`/`InstrumentoEvaluacionSection`, que define la
+ * evaluación con `PUT .../instrumento`). Solo tiene sentido con una unidad
+ * elegida que ya tenga criterios cargados en su pestaña "Rúbricas".
+ */
+export function CriteriosUnidadChecklist({
+  criterios,
+  seleccionados,
+  onToggle,
+  disabledIds = [],
+  className,
+}: CriteriosUnidadChecklistProps) {
+  if (criterios.length === 0) return null
+
+  return (
+    <div className={cn("flex flex-col gap-3", className)}>
+      <h4 className="text-sm font-semibold">Criterios de la unidad</h4>
+      <ul className="flex flex-col gap-2">
+        {criterios.map((criterio) => {
+          const checked = seleccionados.includes(criterio.id)
+          const disabled = disabledIds.includes(criterio.id)
+          return (
+            <li key={criterio.id} className="flex items-start gap-2">
+              <Checkbox
+                checked={checked}
+                disabled={disabled}
+                onCheckedChange={() => onToggle(criterio.id)}
+                aria-label={criterio.nombre}
+              />
+              <span className="text-sm">{criterio.nombre}</span>
+            </li>
+          )
+        })}
+      </ul>
+      <div className="border-blue-stroke bg-blue-22 text-blue flex items-start gap-2 rounded-md border p-3 text-sm">
+        <InfoIcon className="mt-0.5 size-4 shrink-0" />
+        Seleccione los criterios de la rúbrica de la unidad que aplican a esta actividad.
       </div>
     </div>
   )

@@ -75,7 +75,12 @@ export function DialogAgregarActividad({ unidad }: DialogAgregarActividadProps) 
     const ponderacion = esPonderado ? Number(pesoRaw) || 0 : 0
 
     linkActividad.mutate(
-      { unidadId: unidad.id, actividadId, ponderacion },
+      {
+        unidadId: unidad.id,
+        actividadId,
+        ponderacion,
+        omitirPonderacion: unidad.metodoCalculo !== "Ponderado",
+      },
       {
         onSuccess: (data) => {
           if (data.status === "error") return
@@ -226,12 +231,20 @@ export function DialogAgregarActividad({ unidad }: DialogAgregarActividadProps) 
                                 max={disponible}
                                 placeholder="0"
                                 value={peso}
-                                onChange={(e) =>
+                                onChange={(e) => {
+                                  const raw = e.target.value
+                                  // Recorta al disponible de la fila: sin esto
+                                  // se podía tipear (o pegar) un % que sumado
+                                  // al resto de la unidad pasara de 100 —
+                                  // `max` del input HTML no bloquea el tecleo,
+                                  // solo marca `:invalid`.
+                                  const clamped =
+                                    raw === "" ? "" : String(Math.min(Number(raw) || 0, disponible))
                                   setPesos((prev) => ({
                                     ...prev,
-                                    [actividad.id]: e.target.value,
+                                    [actividad.id]: clamped,
                                   }))
-                                }
+                                }}
                                 className="ml-auto w-16 text-right"
                               />
                             </TableCell>

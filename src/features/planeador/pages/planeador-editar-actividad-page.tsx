@@ -17,11 +17,19 @@ import { paths } from "@/config/paths"
 import { getErrorMessage, isNotFoundError } from "@/lib/api-client"
 
 import { useActividadDetalleQuery } from "@/features/planeador/api/query/use-actividad-detalle-query"
+import { useInstrumentoActividadFormQuery } from "@/features/planeador/api/query/use-instrumento-actividad-form-query"
 import { useUnidadesQuery } from "@/features/planeador/api/query/use-unidades-query"
 import { useUpdateActividad } from "@/features/planeador/api/mutations/update-actividad"
 import { useLinkActividadUnidad } from "@/features/planeador/api/mutations/link-actividad-unidad"
 import { useUnlinkActividadUnidad } from "@/features/planeador/api/mutations/unlink-actividad-unidad"
 import { useAgregarEvidenciaActividad } from "@/features/planeador/api/mutations/agregar-evidencia-actividad"
+import { useUpdateMaterialesActividad } from "@/features/planeador/api/mutations/update-materiales-actividad"
+import {
+  tieneDefinicionInstrumento,
+  useUpdateInstrumentoActividad,
+} from "@/features/planeador/api/mutations/update-instrumento-actividad"
+import { useUpdateAdaptacionesActividad } from "@/features/planeador/api/mutations/update-adaptaciones-actividad"
+import { useAgregarCriterioUnidadActividad } from "@/features/planeador/api/mutations/agregar-criterio-unidad-actividad"
 import { EditarActividadForm } from "@/features/planeador/components/forms/form-editar-actividad"
 import type { Actividad } from "@/features/planeador/api/types/actividad"
 
@@ -99,6 +107,21 @@ function EditarActividadPageContent({
   const { data: unidadesResult } = useUnidadesQuery()
   const unidades = unidadesResult?.rows ?? []
 
+  // Precarga la rúbrica/lista de cotejo/escala/personalizado YA GUARDADA
+  // (el detalle real no la trae, ver `use-instrumento-actividad-form-query.ts`)
+  // ANTES de montar `EditarActividadForm`: el form solo lee `defaultValues`
+  // una vez al montar (`useForm`), así que aplicarla después con
+  // `setFieldValue` marcaría el form "sucio" apenas termina de cargar, sin
+  // que el docente haya tocado nada.
+  const esEvaluativa = actividad?.esEvaluativa ?? false
+  const { data: instrumentoForm, isPending: isPendingInstrumento } = useInstrumentoActividadFormQuery(
+    actividad?.id,
+    esEvaluativa,
+  )
+  const isPendingCompleto = isPending || (esEvaluativa && isPendingInstrumento)
+  const actividadParaForm =
+    actividad && (!esEvaluativa || instrumentoForm) ? { ...actividad, ...(instrumentoForm ?? {}) } : undefined
+
   const updateMutation = useUpdateActividad({
     mutationConfig: {
       onSuccess: () => {
@@ -138,6 +161,44 @@ function EditarActividadPageContent({
       onError: (error) => notify(getErrorMessage(error), { variant: "error" }),
     },
   })
+  // Reemplazo completo (`PUT .../materiales`) — se llama solo cuando la
+  // lista de recursos cambió (ver `handleSubmit`), no en cada guardado.
+  const updateMateriales = useUpdateMaterialesActividad({
+    mutationConfig: {
+      onSuccess: ({ recursosOmitidos }) => {
+        if (recursosOmitidos.length > 0) {
+          notify(
+            `No se guardaron estos materiales de tipo "Archivo" (todavía no hay carga de archivos): ${recursosOmitidos.join(", ")}.`,
+            { variant: "error" },
+          )
+        }
+      },
+      onError: (error) => notify(getErrorMessage(error), { variant: "error" }),
+    },
+  })
+  // Igual que `updateMateriales`: se llama solo cuando HAY algo que definir
+  // (ver `tieneDefinicionInstrumento` — el detalle real no precarga la
+  // rúbrica/lista de cotejo/escala ya guardada, así que "vacío" acá
+  // significa "el docente no tocó esta sección", no "la borró a propósito").
+  const updateInstrumento = useUpdateInstrumentoActividad({
+    mutationConfig: {
+      onError: (error) => notify(getErrorMessage(error), { variant: "error" }),
+    },
+  })
+  // Reemplazo completo (`PUT .../adaptaciones`) — mismo criterio que
+  // `updateMateriales`: solo se llama si la lista cambió.
+  const updateAdaptaciones = useUpdateAdaptacionesActividad({
+    mutationConfig: {
+      onError: (error) => notify(getErrorMessage(error), { variant: "error" }),
+    },
+  })
+  // Solo AGREGA criterios nuevos — mismo criterio que `agregarEvidencia`
+  // (ver el comentario de `Actividad.criteriosUnidadIds`).
+  const agregarCriterio = useAgregarCriterioUnidadActividad({
+    mutationConfig: {
+      onError: (error) => notify(getErrorMessage(error), { variant: "error" }),
+    },
+  })
   const isSavingUnidad = linkActividad.isPending || unlinkActividad.isPending
 
   async function handleSubmit(values: Actividad) {
@@ -157,9 +218,11 @@ function EditarActividadPageContent({
             actividadId: actividad.id,
             // Mismo criterio que `DialogAgregarActividad.handleVincular`:
             // solo se manda la ponderación tipeada si la unidad NUEVA
-            // calcula por "Ponderado" — con Promedio simple/Sumatoria el
-            // backend rechaza un peso puesto a mano.
+            // calcula por "Ponderado" — con Promedio simple/Suma de puntos
+            // el backend rechaza que se mande `PONDERACION` (ni siquiera en
+            // `0`), por eso `omitirPonderacion` la saca del body entero.
             ponderacion: esPonderado ? values.ponderacion : 0,
+            omitirPonderacion: !esPonderado,
             // Obligatorio en `true` cuando la actividad YA estaba en OTRA
             // unidad (no una huérfana que recién se vincula).
             permitirMoverDeUnidad: unidadAnteriorId !== 0,
@@ -180,6 +243,32 @@ function EditarActividadPageContent({
     )
     for (const evidenciaId of evidenciasNuevas) {
       agregarEvidencia.mutate({ actividadId: actividad.id, evidenciaId })
+    }
+
+    // `PUT .../materiales` reemplaza TODA la lista — solo se llama si de
+    // verdad cambió, para no pegarle al backend en cada guardado cuando el
+    // docente tocó otro campo (ej. fechas) y dejó los recursos intactos.
+    if (JSON.stringify(values.recursos) !== JSON.stringify(actividad.recursos)) {
+      updateMateriales.mutate({ actividadId: actividad.id, recursos: values.recursos })
+    }
+
+    if (values.esEvaluativa && tieneDefinicionInstrumento(values)) {
+      updateInstrumento.mutate({ actividadId: actividad.id, actividad: values })
+    }
+
+    // `PUT .../adaptaciones` reemplaza TODA la lista — mismo criterio de
+    // "solo si cambió" que `updateMateriales`.
+    if (JSON.stringify(values.adaptaciones) !== JSON.stringify(actividad.adaptaciones)) {
+      updateAdaptaciones.mutate({ actividadId: actividad.id, adaptaciones: values.adaptaciones })
+    }
+
+    // Criterios de la unidad marcados en este submit que todavía no estaban
+    // relacionados — mismo criterio que las evidencias nuevas de arriba.
+    const criteriosNuevos = values.criteriosUnidadIds.filter(
+      (id) => !actividad.criteriosUnidadIds.includes(id),
+    )
+    for (const criterioUnidadId of criteriosNuevos) {
+      agregarCriterio.mutate({ actividadId: actividad.id, criterioUnidadId })
     }
   }
 
@@ -203,7 +292,7 @@ function EditarActividadPageContent({
         <NoticeOutlet className="mx-(--screen-spacing) my-4" />
       </TableScreenHeader>
       <TableScreenBody className="rounded-b-none border-b-0">
-        {isPending && (
+        {isPendingCompleto && (
           <div className="text-muted-foreground flex items-center justify-center gap-2 px-6 py-12 text-sm">
             <Spinner /> Cargando actividad…
           </div>
@@ -215,10 +304,10 @@ function EditarActividadPageContent({
           </p>
         )}
 
-        {actividad && (
+        {!isPendingCompleto && actividadParaForm && (
           <EditarActividadForm
-            key={actividad.id}
-            actividad={actividad}
+            key={actividadParaForm.id}
+            actividad={actividadParaForm}
             formId={FORM_ID}
             onDirtyChange={setIsDirty}
             onSubmit={handleSubmit}
