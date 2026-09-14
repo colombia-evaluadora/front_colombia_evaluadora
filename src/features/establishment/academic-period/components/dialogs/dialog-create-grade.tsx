@@ -130,6 +130,19 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
 
   const { data: teachingLevels = [] } = useTeachingLevelsQuery()
 
+  // Solución temporal de front: en preescolar el plan de estudio se maneja
+  // por "dimensiones" en vez de "asignaturas" — mismo modelo de datos, solo
+  // cambia el rótulo. Comparación case-insensitive porque el nombre real
+  // viene del backend (catálogo `niveles-ensenanza`), no es un enum fijo.
+  const isPreescolar = (
+    teachingLevels.find((l) => l.id === teachingLevelId)?.nombre ??
+    grade?.teachingLevelName ??
+    ""
+  )
+    .trim()
+    .toLowerCase()
+    .includes("preescolar")
+
   const { data: gradosCatalog = [] } = useGradosCatalogQuery()
   const gradoOptions = gradosCatalog
 
@@ -500,7 +513,11 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
 
             <TabsContent value="plan" className={PANEL}>
               <NoticeProvider>
-                <TabStudyPlan academicPeriodId={academicPeriodId} gradeId={gradeId} />
+                <TabStudyPlan
+                  academicPeriodId={academicPeriodId}
+                  gradeId={gradeId}
+                  isPreescolar={isPreescolar}
+                />
               </NoticeProvider>
             </TabsContent>
 

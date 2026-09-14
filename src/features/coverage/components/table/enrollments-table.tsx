@@ -19,14 +19,17 @@ import { useEnrollmentsQuery } from "@/features/coverage/api/query/use-enrollmen
 import { useEnrollmentFilters } from "@/features/coverage/hooks/use-enrollment-filters"
 import { columnsEnrollments } from "@/features/coverage/components/table/columns-enrollments"
 import { SearchEnrollments } from "@/features/coverage/components/search/search-enrollments"
+import { AddEnrollmentDialog } from "@/features/coverage/components/dialogs/dialog-add-enrollment"
 import { Button } from "@/components/ui/button"
 import { FileDownloadOutlinedIcon } from "@/components/ui/icons"
 
 interface EnrollmentsTableProps {
   title: ReactNode
+  periodInfo?: ReactNode
+  action?: ReactNode
 }
 
-export function EnrollmentsTable({ title }: EnrollmentsTableProps) {
+export function EnrollmentsTable({ title, periodInfo, action }: EnrollmentsTableProps) {
   const { pageIndex, pageSize, goToPage, setPageSize, sorting, setSorting } = useTablePagination()
   const { filters, queryFilters, applyFilters, clearAllFilters, activeFilterCount } =
     useEnrollmentFilters()
@@ -53,7 +56,10 @@ export function EnrollmentsTable({ title }: EnrollmentsTableProps) {
   return (
     <TableScreen>
       <TableScreenHeader>
-        <TableScreenTitle>{title}</TableScreenTitle>
+        <TableScreenTitle action={action}>{title}</TableScreenTitle>
+        {periodInfo ? (
+          <div className="px-(--screen-spacing) pt-4 pb-0">{periodInfo}</div>
+        ) : null}
         <TableScreenToolbar>
           <SearchEnrollments
             activeFilterCount={activeFilterCount}
@@ -63,6 +69,7 @@ export function EnrollmentsTable({ title }: EnrollmentsTableProps) {
           />
 
           <TableScreenActions>
+            <AddEnrollmentDialog />
             <Button
               size="icon-sm"
               variant="outline"

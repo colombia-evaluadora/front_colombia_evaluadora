@@ -5,7 +5,7 @@ import type {
   MatriculaDeptMunicipio,
   MatriculaResidence,
 } from "@/features/coverage/api/types/matricula"
-import type { MatriculaSupportFiles } from "@/features/coverage/components/forms/form-create-matricula"
+import { SUPPORT_FILE_FIELDS, type MatriculaSupportFiles } from "@/features/coverage/components/forms/form-create-matricula"
 import type { Municipality } from "@/features/establishment/institution/api/types/location"
 import { MATRICULA_FIELD_CATALOG } from "@/features/coverage/utils/matricula-field-catalog"
 import { isFieldRequired, isFieldVisible, type MatriculaFieldSettingsMap } from "@/features/coverage/utils/matricula-field-settings"
@@ -122,18 +122,17 @@ export function createEmptySupportFiles(): MatriculaSupportFiles {
 }
 
 // Ids de campo (coinciden con los `id`/clave que usa cada sección en
-// `form-create-matricula.tsx`, incluidas las dos claves de
+// `form-create-matricula.tsx`, incluidas las claves de
 // `MatriculaSupportFiles`) → etiqueta legible para el aviso. Los ids son lo
 // que se le pasa a cada sección como `invalidFields` para pintar el input en
 // rojo; las etiquetas son solo para el mensaje. Sale del catálogo — mismo
-// texto que ya muestra cada campo — más los dos archivos de soporte, que no
-// tienen entrada en el catálogo (no se parametrizan).
+// texto que ya muestra cada campo — más los archivos de soporte, que se
+// validan por su clave (`MatriculaSupportFiles`), no por el id del catálogo.
 export const REQUIRED_MATRICULA_FIELD_LABELS: Record<string, string> = {
   ...Object.fromEntries(
     MATRICULA_FIELD_CATALOG.flatMap((section) => section.fields).map((field) => [field.id, field.label]),
   ),
-  studentIdDocument: "Documento de identidad del estudiante",
-  previousYearCertificate: "Certificado de estudios del año anterior",
+  ...Object.fromEntries(SUPPORT_FILE_FIELDS.map((field) => [field.key, field.label])),
 }
 
 // Getter por campo NO bloqueado (los bloqueados ya se validan a mano abajo,
@@ -220,8 +219,10 @@ export function validateMatricula(
 ): string[] {
   const missing: string[] = []
   if (files) {
-    if (files.studentIdDocument.length === 0) missing.push("studentIdDocument")
-    if (files.previousYearCertificate.length === 0) missing.push("previousYearCertificate")
+    for (const field of SUPPORT_FILE_FIELDS) {
+      if (!isFieldRequired(fieldSettings, field.fieldId) || !isFieldVisible(fieldSettings, field.fieldId)) continue
+      if (files[field.key].length === 0) missing.push(field.key)
+    }
   }
   if (!values.academic.campus) missing.push("matricula-campus")
   if (!values.academic.shift) missing.push("matricula-shift")

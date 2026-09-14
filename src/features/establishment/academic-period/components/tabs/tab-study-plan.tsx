@@ -18,9 +18,12 @@ import { ExportStudyPlanDialog } from "@/features/establishment/academic-period/
 interface TabStudyPlanProps {
   academicPeriodId?: number
   gradeId?: number
+  // Solución temporal de front: en preescolar el plan de estudio se rotula
+  // como "dimensiones" en vez de "asignaturas" — mismo modelo de datos.
+  isPreescolar?: boolean
 }
 
-export function TabStudyPlan({ academicPeriodId, gradeId }: TabStudyPlanProps) {
+export function TabStudyPlan({ academicPeriodId, gradeId, isPreescolar }: TabStudyPlanProps) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [pageIndex, setPageIndex] = useState(0)
   const [pageSize, setPageSize] = useState(10)
@@ -41,8 +44,8 @@ export function TabStudyPlan({ academicPeriodId, gradeId }: TabStudyPlanProps) {
   }
 
   const columns = useMemo(
-    () => createStudyPlanColumns({ academicPeriodId, gradeId }),
-    [academicPeriodId, gradeId],
+    () => createStudyPlanColumns({ academicPeriodId, gradeId, isPreescolar }),
+    [academicPeriodId, gradeId, isPreescolar],
   )
 
   const { table, selectedIds, hasSelection, resetSelection } = useDataTable({
@@ -85,7 +88,11 @@ export function TabStudyPlan({ academicPeriodId, gradeId }: TabStudyPlanProps) {
           </>
         ) : (
           <>
-            <CreateStudyPlanDialog academicPeriodId={academicPeriodId} gradeId={gradeId} />
+            <CreateStudyPlanDialog
+              academicPeriodId={academicPeriodId}
+              gradeId={gradeId}
+              isPreescolar={isPreescolar}
+            />
             <ExportStudyPlanDialog academicPeriodId={academicPeriodId} />
           </>
         )}
@@ -98,7 +105,11 @@ export function TabStudyPlan({ academicPeriodId, gradeId }: TabStudyPlanProps) {
         isPending={isPending}
         isError={isError}
         onRetry={refetch}
-        emptyMessage="Aún no hay asignaturas en el plan de estudio."
+        emptyMessage={
+          isPreescolar
+            ? "Aún no hay dimensiones en el plan de estudio."
+            : "Aún no hay asignaturas en el plan de estudio."
+        }
         errorMessage="Ocurrió un error al cargar el plan de estudio."
       />
       {data && (

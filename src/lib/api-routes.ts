@@ -18,15 +18,15 @@ import { env } from "@/config/env"
  * en la tabla `query` necesita ese prefijo en la URL real que sale del
  * front, aunque el `path_template` registrado ahí NO lo incluya (el gateway
  * lo saca antes de matchear contra `path_template`). Los endpoints que no
- * pasan por ese motor — como `/register/funcionario`, servido directo por
+ * pasan por ese motor — como `/register/cval/funcionario`, servido directo por
  * `auth-center` — no lo llevan, así que no lo pongas a mano en un
  * `realPath`; queda centralizado acá.
  *
  * `/eval-col` no es el único prefijo posible: cada instancia del motor de
  * queries se registra con su propio `requesturi`. La auditoría corre en una
- * instancia aparte —`audit-clickhouse`, `requesturi: /api/audit-ch/**`
- * (V84), de SOLO LECTURA sobre ClickHouse— así que sus endpoints llevan
- * `/audit-ch`. De ahí el tercer parámetro; el default sigue siendo
+ * instancia aparte — `audit-clickhouse-cval`, `requesturi: /api/audit-cval/**`
+ * (V356/V357), de SOLO LECTURA sobre ClickHouse— así que sus endpoints llevan
+ * `/audit-cval`. De ahí el tercer parámetro; el default sigue siendo
  * `/eval-col` para no tocar los call sites que ya existen.
  *
  * @param mockPath Ruta que ya intercepta el handler de MSW.
@@ -39,5 +39,14 @@ export function apiPath(mockPath: string, realPath: string, prefix = "/eval-col"
   return env.ENABLE_API_MOCKING ? mockPath : `${prefix}${realPath}`
 }
 
-/** Prefijo de la instancia query-service dedicada a auditoría (V84). */
-export const AUDIT_API_PREFIX = "/audit-ch"
+/**
+ * Prefijo de la instancia query-service dedicada a auditoría de Colombia
+ * Evaluadora. V357 renombró el microservicio `audit-clickhouse` ->
+ * `audit-clickhouse-cval` y su `requesturi` de `/api/audit-ch/**` a
+ * `/api/audit-cval/**` (para quedar simétrico con `/api/audit-pigse/**` de
+ * front_pigse) -- `/audit-ch` ya NO existe como prefijo ruteado por el
+ * gateway desde entonces. Este valor había quedado desactualizado (bug
+ * real, sin relación con V362): la auditoría real de CEVAL resolvía 404
+ * contra el gateway.
+ */
+export const AUDIT_API_PREFIX = "/audit-cval"

@@ -4,7 +4,6 @@ import { api } from "@/lib/api-client"
 import { useSedeJornadasActivasQuery } from "@/features/establishment/employees/api/query/use-sede-jornadas"
 import { useSedeOptionsQuery } from "@/features/establishment/academic-period/api/query/use-sede-options"
 import { usePeriodoResolverMatriculaQuery } from "@/features/coverage/api/query/use-periodo-resolver-matricula"
-import { fetchSelectCategory } from "@/features/establishment/academic-period/api/query/fetch-select-category"
 import type {
   MatriculaDependentCatalogsRequest,
   MatriculaDependentCatalogsResponse,
@@ -15,9 +14,17 @@ import type {
 
 const CATALOG_PAGE_SIZE = 200
 
+// `codigo` es `TGRADO.CODIGO`: se deriva del `VALOR` del catálogo `GRADOS`
+// una sola vez al crear el grado y queda fijo (no cambia en edición, ver
+// `docs/modulo-43-grado.md`) — ya es el mismo número que antes se buscaba
+// haciendo un segundo llamado a `fetchSelectCategory("GRADOS")` y
+// matcheando por `nombre`. Ese join por texto además era frágil (mismo
+// problema que otros matches por nombre en este código: nada garantiza que
+// el texto no difiera). Se usa directo, sin la consulta extra.
 interface GradoRow {
   id: number
   nombre: string
+  codigo: number | string
   total_count: number
 }
 interface GradosRawResponse {
@@ -25,19 +32,15 @@ interface GradosRawResponse {
 }
 
 export async function fetchGrados(periodoId: number): Promise<(MatriculaGradoOption & { id: number })[]> {
-  const [raw, catalogRows] = await Promise.all([
-    api.query<GradosRawResponse>(`/eval-col/grados/query/${periodoId}`, {
-      FILTRO: null,
-      PAGE_INDEX: 0,
-      PAGE_SIZE: CATALOG_PAGE_SIZE,
-      SORTING_ID: null,
-      SORTING_DESC: null,
-    }),
-    fetchSelectCategory("GRADOS"),
-  ])
-  const valorByNombre = new Map(catalogRows.map((row) => [row.nombre, row.valor]))
+  const raw = await api.query<GradosRawResponse>(`/eval-col/grados/query/${periodoId}`, {
+    FILTRO: null,
+    PAGE_INDEX: 0,
+    PAGE_SIZE: CATALOG_PAGE_SIZE,
+    SORTING_ID: null,
+    SORTING_DESC: null,
+  })
   return (raw.rows ?? [])
-    .map((row) => ({ id: row.id, nombre: row.nombre, valor: Number(valorByNombre.get(row.nombre)) }))
+    .map((row) => ({ id: row.id, nombre: row.nombre, valor: Number(row.codigo) }))
     .filter((row) => !Number.isNaN(row.valor))
     .sort((a, b) => a.valor - b.valor)
 }

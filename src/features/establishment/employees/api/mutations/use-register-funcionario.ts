@@ -4,7 +4,7 @@ import { postMultipart } from "@/lib/files"
 import type { Person } from "@/features/establishment/employees/api/types/person"
 
 /**
- * Contrato real de POST /register/funcionario (auth-center, Java —
+ * Contrato real de POST /register/cval/funcionario (auth-center, Java —
  * RegisterUsuarioRequest/RegisterResponse en
  * auth-center/src/main/java/com/co/eurekatic/auth/web/dto). Crea `public.users`
  * + TUSUARIO + TFUNCIONARIO (con FK_ESTABLECIMIENTO NULL, "pendiente de
@@ -63,11 +63,12 @@ function toRegisterFuncionarioRequest(person: Person) {
  * `FILE:perfilUsuario` en `param_types`; cualquier otro lo rechaza
  * `file-service` con 400 antes de tocar S3.
  *
- * Con foto la petición va por `file-service` (`/files/register/funcionario`),
- * que sube el binario, lo registra en `TARCHIVO` y sustituye el campo por su
- * `pk_tarchivo` antes de reenviar a auth-center. Ojo con la URL: este destino
- * es un `endpoint` de auth-center, no una `query`, así que **no lleva prefijo
- * de microservicio** — ni `/auth` ni `/eval-col`, a diferencia de la ruta
+ * Con foto la petición va por `file-service`
+ * (`/files/register/cval/funcionario`), que sube el binario, lo registra en
+ * `TARCHIVO` y sustituye el campo por su `pk_tarchivo` antes de reenviar a
+ * auth-center. Ojo con la URL: este destino es un `endpoint` de auth-center,
+ * no una `query`, así que no lleva prefijo de *microservicio* (`/eval-col`) —
+ * pero sí lleva el segmento `/cval` de aplicación (V361), igual que la ruta
  * directa de abajo.
  */
 export async function registerFuncionario(
@@ -77,7 +78,7 @@ export async function registerFuncionario(
   const body = toRegisterFuncionarioRequest(person)
 
   if (foto) {
-    return postMultipart<RegisterFuncionarioResult>("/register/funcionario", body, {
+    return postMultipart<RegisterFuncionarioResult>("/register/cval/funcionario", body, {
       fkTarchivoFoto: foto,
     })
   }
@@ -85,10 +86,16 @@ export async function registerFuncionario(
   // El gateway enruta hacia auth-center por `requesturi: /api/auth/**`
   // (tabla `microservice`) — sin el segmento `/auth` la petición no
   // matchea ese patrón y el gateway responde 404 antes de llegar al
-  // servicio, aunque el endpoint (`/register/funcionario`) sí está
+  // servicio, aunque el endpoint (`/register/cval/funcionario`) sí está
   // registrado ahí. Confirmado probando ambas formas contra el backend
   // real.
-  return api.post("/auth/register/funcionario", body)
+  //
+  // V361 — antes esto era `/register/funcionario`, sin marca de app: se
+  // renombró a `/register/cval/funcionario` para quedar simétrico con
+  // `/register/pigse/funcionario` (front_pigse). Ver V361 en
+  // sso/postgres/migrations (UPDATE de public.endpoint.path, role_endpoint y
+  // endpoint_microservice se conservan porque cuelgan de endpoint_id).
+  return api.post("/auth/register/cval/funcionario", body)
 }
 
 // `enlazarFuncionarioEstablecimiento` (POST /funcionario/enlazar-establecimiento,

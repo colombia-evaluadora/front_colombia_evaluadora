@@ -287,7 +287,7 @@ export function AddEstablishmentPage() {
     person: Person
     /**
      * PK_TFUNCIONARIO del funcionario recién REGISTRADO en este submit —
-     * solo cuando de verdad se llamó a `/register/funcionario` acá (persona
+     * solo cuando de verdad se llamó a `/register/cval/funcionario` acá (persona
      * sin `id` previo, ver más abajo). Es el candidato a rollback si el paso
      * siguiente (crear/actualizar el establecimiento) falla —
      * `cancelarPendientesRegistrados`, en `handleSubmit`. `null` en mock, y
@@ -319,7 +319,7 @@ export function AddEstablishmentPage() {
    *   esa persona en esta pantalla): se usa `createEmptyEmployeeShell()`,
    *   cuyos catálogos en `null` el COALESCE de `fn_fun_actualizar` traduce
    *   como "no cambiar nada de esto".
-   * - Real, persona NUEVA (`person.id` ausente): POST /register/funcionario
+   * - Real, persona NUEVA (`person.id` ausente): POST /register/cval/funcionario
    *   (auth-center, Java) — crea TUSUARIO + TFUNCIONARIO (`fn_fun_crear`
    *   reusa el TUSUARIO si `accountExists` era `true`, o crea uno nuevo si
    *   no). El vínculo con el EE lo pone `fn_est_crear`/`fn_est_actualizar`
@@ -427,7 +427,7 @@ export function AddEstablishmentPage() {
 
     // Persistimos rector/secretaria antes del establecimiento para que
     // los `Person` queden con `id` en `personsDb` (mock) o con el
-    // `pkFuncionario` que devolvió /register/funcionario (real, solo si
+    // `pkFuncionario` que devolvió /register/cval/funcionario (real, solo si
     // eran nuevos — si ya existían, `persistPersonIfAny` los actualiza en
     // el mismo paso y no hay nada que enlazar después).
     let nextPrincipal = formValues.principal
