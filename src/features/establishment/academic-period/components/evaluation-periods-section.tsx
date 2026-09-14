@@ -11,11 +11,6 @@ const TabEvaluationPeriods = lazy(() =>
     (m) => ({ default: m.TabEvaluationPeriods }),
   ),
 )
-const TabAreaSubject = lazy(() =>
-  import("@/features/establishment/academic-period/components/tabs/tab-area-subject").then(
-    (m) => ({ default: m.TabAreaSubject }),
-  ),
-)
 const TabPromotionCriteria = lazy(() =>
   import("@/features/establishment/academic-period/components/tabs/tab-promotion-criteria").then(
     (m) => ({ default: m.TabPromotionCriteria }),
@@ -53,7 +48,6 @@ function TabFallback() {
 
 const TABS: { value: string; label: string }[] = [
   { value: "evaluacion", label: "Periodos de evaluación" },
-  { value: "area", label: "Área/asignatura" },
   { value: "promocion", label: "Criterios de promoción" },
   { value: "criterios", label: "Criterios de evaluación" },
   { value: "escalas", label: "Escalas de valoración" },
@@ -88,13 +82,6 @@ export function EvaluationPeriodsSection({
         <NoticeProvider>
           <Suspense fallback={<TabFallback />}>
             <TabEvaluationPeriods academicPeriodId={academicPeriodId} />
-          </Suspense>
-        </NoticeProvider>
-      </TabsContent>
-      <TabsContent value="area" className={panel}>
-        <NoticeProvider>
-          <Suspense fallback={<TabFallback />}>
-            <TabAreaSubject academicPeriodId={academicPeriodId} />
           </Suspense>
         </NoticeProvider>
       </TabsContent>

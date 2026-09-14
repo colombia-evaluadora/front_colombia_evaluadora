@@ -10,13 +10,7 @@ import {
 import { resolveMetodologiaId } from "@/features/establishment/academic-period/api/mutations/resolve-metodologia-id"
 import { resolveDirectorId } from "@/features/establishment/academic-period/api/mutations/resolve-director-id"
 
-// Body PLANO con las llaves de `fn_grupo_crear`
-// (`POST /eval-col/grados/:ID/grupos`, id_query 62). `jornada` no se manda —
-// el backend la deriva del período del grado. `codigo` viaja como `NOMBRE`
-// (`TGRUPO.CODIGO` no lo usa esta función).
-async function createGradeGroup(
-  input: CreateGradeGroupRequest
-): Promise<{ id: number }> {
+async function createGradeGroup(input: CreateGradeGroupRequest): Promise<{ id: number }> {
   const [fkModeloPedagogico, fkFuncionario] = await Promise.all([
     resolveMetodologiaId(input.metodologia),
     resolveDirectorId(input.sedeId, input.director),
