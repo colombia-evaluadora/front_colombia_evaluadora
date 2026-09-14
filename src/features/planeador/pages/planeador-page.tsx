@@ -22,7 +22,10 @@ import { Spinner } from "@/components/ui/spinner"
 
 import { useActividadesStatsQuery } from "@/features/planeador/api/query/use-actividades-stats-query"
 import { useActividadesCalendarioQuery } from "@/features/planeador/api/query/use-actividades-calendario-query"
-import { useActividadesMiasQuery } from "@/features/planeador/api/query/use-actividades-mias-query"
+import {
+  fetchTodasLasActividadesMias,
+  useActividadesMiasQuery,
+} from "@/features/planeador/api/query/use-actividades-mias-query"
 import { useInstrumentoEvaluacionCatalogQuery } from "@/features/planeador/api/query/use-instrumento-evaluacion-catalog"
 import { useExportarActividadesJson } from "@/features/planeador/api/mutations/exportar-actividades-json"
 import { ActividadCard } from "@/features/planeador/components/actividad-card"
@@ -170,11 +173,23 @@ function PlaneadorPageContent() {
   // "Exportar todo"/"Importar" del menú "…": intercambio JSON de
   // actividades (colección Postman
   // `planeador-actividades-exportar-importar`), aparte del export PDF/Excel
-  // que ya cubre `DialogExportActividades`. El exportar reusa las mismas
-  // actividades ya filtradas/visibles en el rail — mismo criterio que ese
-  // otro diálogo — porque el endpoint real exige al menos un filtro (`IDS`,
-  // acá) y no admite "exportar todo" sin acotar.
+  // que ya cubre `DialogExportActividades`.
+  //
+  // "Exportar todo" exporta TODAS las actividades del docente, no las del
+  // rail. Antes mandaba `filtered`, que es lo que se está viendo — y eso va
+  // acotado por `dia` (el día activo, por defecto hoy), por `search` y por
+  // `estados`, además de paginado de a 50. El resultado era que el botón
+  // decía "todo" y exportaba las vigentes de un día: con un docente de
+  // prueba de 20 actividades, un día cualquiera devolvía 8 y con texto en el
+  // buscador llegó a devolver 1.
+  //
+  // El endpoint exige al menos un filtro y no admite "exportar todo" sin
+  // acotar, así que se sigue mandando `IDS`; lo que cambia es de dónde
+  // salen: de una consulta aparte sin ninguno de esos filtros. El backend no
+  // recorta nada por su cuenta (no tiene parámetro de fecha) — devuelve
+  // exactamente las que se le nombran.
   const [importarOpen, setImportarOpen] = React.useState(false)
+  const [exportandoTodo, setExportandoTodo] = React.useState(false)
   const exportarJson = useExportarActividadesJson({
     mutationConfig: {
       onSuccess: (actividadesExportadas) => {
@@ -185,12 +200,20 @@ function PlaneadorPageContent() {
     },
   })
 
-  function handleExportarJson() {
-    if (filtered.length === 0) {
-      notify("No hay actividades para exportar con los filtros actuales.", { variant: "error" })
-      return
+  async function handleExportarJson() {
+    setExportandoTodo(true)
+    try {
+      const todas = await fetchTodasLasActividadesMias()
+      if (todas.length === 0) {
+        notify("No tienes actividades para exportar.", { variant: "error" })
+        return
+      }
+      exportarJson.mutate({ ids: todas.map((actividad) => actividad.id) })
+    } catch {
+      notify("No se pudo obtener la lista de actividades para exportar.", { variant: "error" })
+    } finally {
+      setExportandoTodo(false)
     }
-    exportarJson.mutate({ ids: filtered.map((actividad) => actividad.id) })
   }
 
   // Map day-of-month → actividades, para las filas de la grilla. El
@@ -284,7 +307,10 @@ function PlaneadorPageContent() {
                     Planilla de calificación
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => refetch()}>Recargar</DropdownMenuItem>
-                  <DropdownMenuItem disabled={exportarJson.isPending} onClick={handleExportarJson}>
+                  <DropdownMenuItem
+                    disabled={exportandoTodo || exportarJson.isPending}
+                    onClick={handleExportarJson}
+                  >
                     Exportar todo
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setImportarOpen(true)}>

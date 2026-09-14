@@ -7,8 +7,10 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
+import { DatePicker } from "@/components/date-picker"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { cn } from "@/lib/utils"
+import { parseDateValue, formatDateValue } from "@/lib/date-value"
 import { toDigitsOnly, toDigitsOrRangeInput } from "@/lib/text-input"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
@@ -1389,29 +1391,32 @@ function ProgramacionSection({ form }: { form: FormActividad }) {
           {(field) => (
             <Field variant="outlined">
               <FieldLabel htmlFor={field.name}>Fecha inicio</FieldLabel>
-              <Input
+              <DatePicker
                 id={field.name}
-                type="date"
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
+                value={parseDateValue(field.state.value)}
+                onChange={(date) => field.handleChange(formatDateValue(date))}
               />
             </Field>
           )}
         </form.Field>
 
-        <form.Field name="fechaCierre">
-          {(field) => (
-            <Field variant="outlined">
-              <FieldLabel htmlFor={field.name}>Fecha de entrega o cierre</FieldLabel>
-              <Input
-                id={field.name}
-                type="date"
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-              />
-            </Field>
+        <form.Subscribe selector={(state) => state.values.fechaInicio}>
+          {(fechaInicio) => (
+            <form.Field name="fechaCierre">
+              {(field) => (
+                <Field variant="outlined">
+                  <FieldLabel htmlFor={field.name}>Fecha de entrega o cierre</FieldLabel>
+                  <DatePicker
+                    id={field.name}
+                    value={parseDateValue(field.state.value)}
+                    onChange={(date) => field.handleChange(formatDateValue(date))}
+                    minDate={parseDateValue(fechaInicio)}
+                  />
+                </Field>
+              )}
+            </form.Field>
           )}
-        </form.Field>
+        </form.Subscribe>
 
         <form.Field name="duracionEstimada">
           {(field) => (
