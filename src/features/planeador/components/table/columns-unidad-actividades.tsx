@@ -38,9 +38,15 @@ import type { UnidadActividad } from "@/features/planeador/api/types/unidad-tema
 function CeldaPonderacion({
   actividad,
   unidadId,
+  maxDisponible,
 }: {
   actividad: UnidadActividad
   unidadId: number
+  /** Tope real para esta fila: `100 - (suma de ponderación del RESTO de
+   *  actividades de la unidad)` — no un `100` fijo. Sin esto, subir el % de
+   *  una actividad hasta 100 mientras otras ya suman podía dejar la unidad
+   *  por encima del 100% total. */
+  maxDisponible: number
 }) {
   const [editando, setEditando] = useState(false)
   const [valor, setValor] = useState(String(actividad.ponderacion))
@@ -73,7 +79,7 @@ function CeldaPonderacion({
 
   function guardar() {
     const next = Number(valor)
-    if (Number.isNaN(next) || next < 0 || next > 100) return
+    if (Number.isNaN(next) || next < 0 || next > maxDisponible) return
     mutation.mutate({ actividadId: actividad.actividadId, ponderacion: next })
   }
 
@@ -83,10 +89,16 @@ function CeldaPonderacion({
         variant="outlined"
         type="number"
         min={0}
-        max={100}
+        max={maxDisponible}
         autoFocus
         value={valor}
-        onChange={(e) => setValor(e.target.value)}
+        onChange={(e) => {
+          const raw = e.target.value
+          // Mismo recorte que `DialogAgregarActividad`: `max` del input HTML
+          // no bloquea el tecleo, solo marca `:invalid` — hay que clampear
+          // a mano para que no se pueda pasar del 100% de la unidad.
+          setValor(raw === "" ? "" : String(Math.min(Number(raw) || 0, maxDisponible)))
+        }}
         onKeyDown={(e) => {
           if (e.key === "Enter") guardar()
           if (e.key === "Escape") setEditando(false)
@@ -181,11 +193,16 @@ function BotonDesvincular({
  * `unidadId` (para invalidar su detalle) y `esPonderado` (la columna "(%)"
  * solo se edita en línea cuando la unidad calcula por "Ponderado" — con
  * "Promedio simple"/"Suma de puntos" el backend rechaza que se mande) viajan
- * como parámetros porque las celdas necesitan ambos.
+ * como parámetros porque las celdas necesitan ambos. `totalPonderacion` es
+ * la suma de `ponderacion` de TODAS las actividades ya vinculadas (la pasa
+ * el caller, que ya tiene la lista completa) — de ahí sale el tope real de
+ * cada fila (`100 - totalPonderacion + actividad.ponderacion`, sumando de
+ * vuelta lo que la fila YA aporta al total).
  */
 export function createUnidadActividadesColumns(
   unidadId: number,
   esPonderado: boolean,
+  totalPonderacion: number,
 ): ColumnDef<UnidadActividad>[] {
   return [
     {
@@ -223,7 +240,11 @@ export function createUnidadActividadesColumns(
       header: ({ column }) => <DataTableColumnHeader column={column} title="(%)" />,
       cell: ({ row }) =>
         esPonderado ? (
-          <CeldaPonderacion actividad={row.original} unidadId={unidadId} />
+          <CeldaPonderacion
+            actividad={row.original}
+            unidadId={unidadId}
+            maxDisponible={Math.max(0, 100 - totalPonderacion + row.original.ponderacion)}
+          />
         ) : (
           <span>{row.original.ponderacion}</span>
         ),

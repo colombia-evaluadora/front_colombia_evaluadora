@@ -13,6 +13,8 @@ import { cn } from "@/lib/utils"
 import { parseDateValue, formatDateValue } from "@/lib/date-value"
 import { toDigitsOnly, toDigitsOrRangeInput } from "@/lib/text-input"
 import { Input } from "@/components/ui/input"
+import { DatePicker } from "@/components/date-picker"
+import { formatDateValue, parseDateValue } from "@/lib/date-value"
 import { Switch } from "@/components/ui/switch"
 import {
   Popover,
@@ -28,8 +30,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { useUnidadReferenteQuery } from "@/features/planeador/api/query/use-unidad-referente-query"
 import { useUnidadDetalleQuery } from "@/features/planeador/api/query/use-unidades-query"
+import { useConfiguracionActividadQuery } from "@/features/planeador/api/query/use-configuracion-actividad-query"
 import { useReferenteCurricularQuery } from "@/features/planeador/api/query/use-referente-curricular-query"
 import { useDocenteGruposQuery } from "@/features/planeador/api/query/use-docente-grupos-query"
 import { useDocenteGradoAsignaturaQuery } from "@/features/planeador/api/query/use-docente-grado-asignatura-query"
@@ -41,6 +43,7 @@ import {
 } from "@/features/planeador/components/forms/field-lista-agregable"
 import { useEnunciadosDbaQuery } from "@/features/planeador/api/query/use-enunciados-dba"
 import {
+  CriteriosUnidadChecklist,
   EnunciadosEvidenciasChecklist,
   UnidadFicha,
 } from "@/features/planeador/components/unidad-evidencias-section"
@@ -61,6 +64,7 @@ import {
   PlusCircleIcon,
   PlusIcon,
   RemoveCircleOutlineIcon,
+  SpinnerIcon,
   TrashIcon,
 } from "@/components/ui/icons"
 import { paths } from "@/config/paths"
@@ -81,6 +85,7 @@ import type { MetodoCalculo, UnidadTematica } from "@/features/planeador/api/typ
 import type { Estudiante } from "@/features/planeador/api/types/calificacion"
 import { useUnidadesQuery } from "@/features/planeador/api/query/use-unidades-query"
 import { useCalificacionesQuery } from "@/features/planeador/api/query/use-calificaciones-query"
+import { useCreateUnidad } from "@/features/planeador/api/mutations/create-unidad"
 
 import { DialogBibliotecaRecursos } from "@/features/planeador/components/dialogs/dialog-biblioteca-recursos"
 
@@ -215,14 +220,14 @@ export function EditarActividadForm({
   // nota de `esNueva` en `EditarActividadFormProps`.
   const { data: estudiantes = [] } = useCalificacionesQuery(esNueva ? undefined : actividad.id)
 
-  // Unidades creadas al vuelo desde `CrearUnidadPopover`. No vienen del
-  // query (no hay endpoint de creación todavía) así que viven en estado
-  // local del form y se unen a las del query para que la nueva unidad
-  // aparezca en el `<Select>` apenas se guarda —si solo actualizáramos
-  // el campo `unidad` de la actividad, el Select no la encuentra en su
-  // lista de opciones y muestra "Seleccione" en vez del nombre tipeado.
+  // Unidades creadas al vuelo desde `CrearUnidadPopover`. `useCreateUnidad`
+  // ya las persiste de verdad (`POST /planeador/unidades`), pero invalidar
+  // el query e esperar el refetch dejaría al `<Select>` sin la unidad nueva
+  // por un instante — se guarda también acá, con el id REAL que devolvió el
+  // backend, para que aparezca en la lista de opciones de inmediato.
   const [unidadesCreadas, setUnidadesCreadas] = useState<UnidadTematica[]>([])
   const unidades = [...unidadesQuery, ...unidadesCreadas]
+  const createUnidadMutation = useCreateUnidad()
 
   const form = useForm({
     defaultValues: actividad,
@@ -238,13 +243,13 @@ export function EditarActividadForm({
     onDirtyChange?.(isDirty)
   }, [isDirty, onDirtyChange])
 
-  // Arma la `UnidadTematica` nueva con lo que capturó el popover y el
-  // resto de los campos en blanco/default (no hay endpoint de creación
-  // todavía —ver comentario de `unidadesCreadas`—, así que el resto de
-  // la ficha se completa después, editando la unidad ya creada). La
-  // agrega a `unidadesCreadas` y la devuelve para que quien la pidió
-  // (el `<Select>` de "Unidad temática asociada") la asigne de una.
-  function crearUnidad(data: {
+  // Crea la unidad de verdad (`POST /planeador/unidades`, `useCreateUnidad`)
+  // con lo que capturó el popover, la agrega a `unidadesCreadas` con el id
+  // REAL que devolvió el backend y la devuelve para que quien la pidió (el
+  // `<Select>` de "Unidad temática asociada") la asigne de una. El resto de
+  // la ficha (fechas derivadas, criterios, actividades) se completa después,
+  // editando la unidad ya creada — acá solo va "Información general".
+  async function crearUnidad(data: {
     nombre: string
     contenidos: string[]
     objetivos: string[]
@@ -255,13 +260,12 @@ export function EditarActividadForm({
     grado: string
     asignaturaId: number | undefined
     asignatura: string
-  }): UnidadTematica {
-    const nueva: UnidadTematica = {
-      id: cryptoId(),
+  }): Promise<UnidadTematica> {
+    const infoGeneral = {
       nombre: data.nombre,
       area: "",
-      enfoquePedagogico: "Evaluativo",
-      status: "pending",
+      enfoquePedagogico: "Evaluativo" as const,
+      status: "pending" as const,
       fechaInicio: "",
       fechaFin: "",
       descripcion: data.descripcion,
@@ -273,12 +277,18 @@ export function EditarActividadForm({
       gradoId: data.gradoId,
       asignaturaId: data.asignaturaId,
       enunciadosDba: data.enunciadosDba,
-      criterios: [],
-      actividades: [],
     }
+    const { id } = await createUnidadMutation.mutateAsync(infoGeneral)
+    const nueva: UnidadTematica = { ...infoGeneral, id, criterios: [], actividades: [] }
     setUnidadesCreadas((prev) => [...prev, nueva])
     return nueva
   }
+
+  const { camposEfectivos, esFormativa } = useCamposEvaluacionEfectivos(
+    form,
+    actividad.camposDisponibles,
+    actividad.unidad.id,
+  )
 
   return (
     <form
@@ -311,6 +321,7 @@ export function EditarActividadForm({
         form={form}
         unidades={unidades}
         evidenciasOriginales={esNueva ? [] : actividad.evidenciasIds}
+        criteriosUnidadOriginales={esNueva ? [] : actividad.criteriosUnidadIds}
       />
       <MaterialesSection form={form} />
       <RecursosSection form={form} />
@@ -318,11 +329,22 @@ export function EditarActividadForm({
       <EvaluacionSection
         form={form}
         unidades={unidades}
-        camposDisponibles={actividad.camposDisponibles}
-        actividadUnidadId={actividad.unidad.id}
+        camposEfectivos={camposEfectivos}
+        esFormativa={esFormativa}
       />
-      <AdaptacionesSection form={form} estudiantes={estudiantes} />
-      <SeguimientoSection form={form} />
+      {/* Adaptaciones y Seguimiento se desactivan junto con Evaluación
+          cuando el referente de la unidad es FORMATIVO — regla de negocio
+          confirmada: una unidad formativa no lleva instrumentos ni
+          ponderación, y tampoco adaptaciones/seguimiento (que existen para
+          hacerle ajustes a una evaluación sumativa). Mismo `esFormativa`
+          que ya usa `EvaluacionSection`, calculado una sola vez acá arriba
+          para no triplicar las queries de `campos_disponibles`. */}
+      {!esFormativa && (
+        <>
+          <AdaptacionesSection form={form} estudiantes={estudiantes} />
+          <SeguimientoSection form={form} />
+        </>
+      )}
     </form>
   )
 }
@@ -401,7 +423,7 @@ function IdentificacionSection({
     grado: string
     asignaturaId: number | undefined
     asignatura: string
-  }) => UnidadTematica
+  }) => Promise<UnidadTematica>
 }) {
   // Catálogo `TIPO_ACTIVIDAD` (`TLISTA_VALOR`) — antes hardcodeado acá mismo.
   const { data: tiposActividad = [] } = useTipoActividadCatalogQuery()
@@ -554,18 +576,15 @@ function IdentificacionSection({
                       className="rounded-l-none border-l-0"
                       gradoId={form.getFieldValue("gradoId")}
                       asignaturaId={form.getFieldValue("asignaturaId")}
-                      onCreate={(data) => {
-                        // `onCrearUnidad` agrega la unidad a `unidadesCreadas`
-                        // (arriba en `EditarActividadForm`) y la devuelve: recién
-                        // ahí queda en la lista que consume este `<Select>`, así
-                        // que el campo se puede asignar por id sin quedar
-                        // "huérfano" (antes se armaba un id acá mismo y nunca se
-                        // sumaba a `unidades` — el Select no lo encontraba y
-                        // mostraba "Seleccione" en vez del nombre tipeado).
-                        // Grado/Asignatura de la nueva unidad son los mismos
-                        // que ya eligió esta actividad — el popover no vuelve
-                        // a pedirlos.
-                        const nueva = onCrearUnidad({
+                      onCreate={async (data) => {
+                        // `onCrearUnidad` crea la unidad DE VERDAD (`POST
+                        // /planeador/unidades`) y la devuelve con su id real:
+                        // recién ahí queda en la lista que consume este
+                        // `<Select>`, así que el campo se puede asignar por
+                        // id sin quedar "huérfano". Grado/Asignatura de la
+                        // nueva unidad son los mismos que ya eligió esta
+                        // actividad — el popover no vuelve a pedirlos.
+                        const nueva = await onCrearUnidad({
                           ...data,
                           gradoId: form.getFieldValue("gradoId"),
                           grado,
@@ -612,10 +631,12 @@ function UnidadSection({
   form,
   unidades,
   evidenciasOriginales,
+  criteriosUnidadOriginales,
 }: {
   form: FormActividad
   unidades: UnidadTematica[]
   evidenciasOriginales: number[]
+  criteriosUnidadOriginales: number[]
 }) {
   const gradoId = useSelector(form.store, (state) => state.values.gradoId)
   const asignaturaId = useSelector(form.store, (state) => state.values.asignaturaId)
@@ -627,23 +648,37 @@ function UnidadSection({
         if (!seleccionada) return null
         return (
           <form.Field name="evidenciasIds">
-            {(field) => (
-              <UnidadFichaYEvidencias
-                unidadId={seleccionada.id}
-                nombreFallback={seleccionada.nombre}
-                gradoId={gradoId}
-                asignaturaId={asignaturaId}
-                seleccionadas={field.state.value}
-                onToggle={(evidenciaId) => {
-                  const actual = field.state.value
-                  field.handleChange(
-                    actual.includes(evidenciaId)
-                      ? actual.filter((id) => id !== evidenciaId)
-                      : [...actual, evidenciaId],
-                  )
-                }}
-                disabledIds={evidenciasOriginales}
-              />
+            {(evidenciasField) => (
+              <form.Field name="criteriosUnidadIds">
+                {(criteriosField) => (
+                  <UnidadFichaYEvidencias
+                    unidadId={seleccionada.id}
+                    nombreFallback={seleccionada.nombre}
+                    gradoId={gradoId}
+                    asignaturaId={asignaturaId}
+                    seleccionadas={evidenciasField.state.value}
+                    onToggle={(evidenciaId) => {
+                      const actual = evidenciasField.state.value
+                      evidenciasField.handleChange(
+                        actual.includes(evidenciaId)
+                          ? actual.filter((id) => id !== evidenciaId)
+                          : [...actual, evidenciaId],
+                      )
+                    }}
+                    disabledIds={evidenciasOriginales}
+                    criteriosSeleccionados={criteriosField.state.value}
+                    onToggleCriterio={(criterioId) => {
+                      const actual = criteriosField.state.value
+                      criteriosField.handleChange(
+                        actual.includes(criterioId)
+                          ? actual.filter((id) => id !== criterioId)
+                          : [...actual, criterioId],
+                      )
+                    }}
+                    criteriosDisabledIds={criteriosUnidadOriginales}
+                  />
+                )}
+              </form.Field>
             )}
           </form.Field>
         )
@@ -664,6 +699,9 @@ function UnidadFichaYEvidencias({
   seleccionadas,
   onToggle,
   disabledIds,
+  criteriosSeleccionados,
+  onToggleCriterio,
+  criteriosDisabledIds,
 }: {
   unidadId: number
   nombreFallback: string
@@ -672,6 +710,9 @@ function UnidadFichaYEvidencias({
   seleccionadas: number[]
   onToggle: (evidenciaId: number) => void
   disabledIds: number[]
+  criteriosSeleccionados: number[]
+  onToggleCriterio: (criterioId: number) => void
+  criteriosDisabledIds: number[]
 }) {
   const { data: unidad } = useUnidadDetalleQuery(unidadId)
   // El árbol de evidencias a ofrecer sale del referente curricular de
@@ -696,6 +737,14 @@ function UnidadFichaYEvidencias({
           seleccionadas={seleccionadas}
           onToggle={onToggle}
           disabledIds={disabledIds}
+        />
+      )}
+      {unidad && unidad.criterios.length > 0 && (
+        <CriteriosUnidadChecklist
+          criterios={unidad.criterios}
+          seleccionados={criteriosSeleccionados}
+          onToggle={onToggleCriterio}
+          disabledIds={criteriosDisabledIds}
         />
       )}
     </div>
@@ -1392,6 +1441,7 @@ function ProgramacionSection({ form }: { form: FormActividad }) {
             <Field variant="outlined">
               <FieldLabel htmlFor={field.name}>Fecha inicio</FieldLabel>
               <DatePicker
+                mode="date"
                 id={field.name}
                 value={parseDateValue(field.state.value)}
                 onChange={(date) => field.handleChange(formatDateValue(date))}
@@ -1407,6 +1457,7 @@ function ProgramacionSection({ form }: { form: FormActividad }) {
                 <Field variant="outlined">
                   <FieldLabel htmlFor={field.name}>Fecha de entrega o cierre</FieldLabel>
                   <DatePicker
+                    mode="date"
                     id={field.name}
                     value={parseDateValue(field.state.value)}
                     onChange={(date) => field.handleChange(formatDateValue(date))}
@@ -1489,42 +1540,36 @@ function ProgramacionSection({ form }: { form: FormActividad }) {
   )
 }
 
-function EvaluacionSection({
-  form,
-  unidades,
-  camposDisponibles,
-  actividadUnidadId,
-}: {
-  form: FormActividad
-  unidades: UnidadTematica[]
-  /** `Actividad.camposDisponibles.evaluacion` del detalle real — foto FIJA
-   *  tomada para la unidad con la que se abrió el form (`actividadUnidadId`).
-   *  Ver el comentario de más abajo sobre cuándo manda esta foto en vez de
-   *  re-derivar la regla en vivo. */
-  camposDisponibles: Actividad["camposDisponibles"]
-  /** `actividad.unidad.id` tal como vino en el detalle real (`0` = sin
-   *  unidad, mismo sentinel que el resto del form) — para saber si
-   *  `camposDisponibles` sigue aplicando o quedó obsoleto porque el usuario
-   *  cambió de unidad en el form (ver `camposDisponiblesAplica`). */
-  actividadUnidadId: number
-}) {
+/**
+ * `campos_disponibles.evaluacion` (mismo bloque que `GET .../configuracion`,
+ * carpeta 5) es la respuesta YA RESUELTA por el backend con TODAS sus
+ * reglas de negocio (huérfana, unidad sin referente, referente FORMATIVO,
+ * grado de preescolar, …) — manda sobre cualquier re-derivación en el
+ * cliente, CON o SIN unidad: antes esta foto solo se usaba para actividades
+ * huérfanas y, con unidad, se re-derivaba en vivo con
+ * `useUnidadReferenteQuery(unidadId)` (`GET /unidades/:id/referente`, que
+ * solo trae "¿es formativa?", no obligatoriedad) — pero para una actividad
+ * cuya propia unidad SÍ tiene un referente FORMATIVO confirmado
+ * (`campos_disponibles.evaluacion.visible: false`), esa re-derivación podía
+ * no coincidir y dejaba "¿Es evaluación sumativa?" sin bloquear pese a que
+ * el backend ya lo tenía resuelto.
+ *
+ * Se calcula UNA sola vez en `EditarActividadForm` (en vez de adentro de
+ * `EvaluacionSection`) porque `esFormativa` también apaga Adaptaciones y
+ * Seguimiento — regla de negocio confirmada: una unidad formativa nunca
+ * lleva instrumentos, ponderación, adaptaciones ni seguimiento.
+ */
+function useCamposEvaluacionEfectivos(
+  form: FormActividad,
+  camposDisponibles: Actividad["camposDisponibles"],
+  actividadUnidadId: number,
+) {
   const unidadIdRaw = useSelector(form.store, (state) => state.values.unidad.id)
   const unidadId = unidadIdRaw || undefined
   const gradoId = useSelector(form.store, (state) => state.values.gradoId)
   const asignaturaId = useSelector(form.store, (state) => state.values.asignaturaId)
+  const esEvaluativaValue = useSelector(form.store, (state) => state.values.esEvaluativa)
 
-  // `campos_disponibles.evaluacion` (mismo bloque que `GET .../
-  // configuracion`, carpeta 5) es la respuesta YA RESUELTA por el backend
-  // con TODAS sus reglas de negocio (huérfana, unidad sin referente,
-  // referente FORMATIVO, grado de preescolar, …) — manda sobre cualquier
-  // re-derivación en el cliente, CON o SIN unidad: antes esta foto solo se
-  // usaba para actividades huérfanas y, con unidad, se re-derivaba en vivo
-  // con `useUnidadReferenteQuery(unidadId)` (`GET /unidades/:id/referente`)
-  // — pero para una actividad cuya propia unidad SÍ tiene un referente
-  // FORMATIVO confirmado (`campos_disponibles.evaluacion.visible: false`),
-  // esa re-derivación podía no coincidir y dejaba "¿Es evaluación
-  // sumativa?" sin bloquear pese a que el backend ya lo tenía resuelto.
-  //
   // Sigue aplicando solo mientras la unidad elegida en el form sea la MISMA
   // con la que se tomó la foto (`unidadId === actividadUnidadId`, sentinel
   // `undefined`/`0` incluido para el caso huérfano): si el usuario cambia
@@ -1546,34 +1591,69 @@ function EvaluacionSection({
   // en el alta siempre resuelve porque el docente elige de su propio
   // catálogo (ver `AsignaturaGradoSection`).
   const sinUnidadNiDetalle = unidadId == null && !camposDisponiblesAplica
-  const { data: referenteDeUnidad } = useUnidadReferenteQuery(
+  // Con unidad elegida (alta de actividad, o huérfana recién vinculada) se
+  // resuelve en vivo contra `GET /unidades/:id/configuracion-actividad`
+  // (`useConfiguracionActividadQuery`) — la MISMA fuente `campos_disponibles`
+  // que ya usa el detalle real, en vez de la vieja `useUnidadReferenteQuery`
+  // que solo traía "¿es formativa?" sin decir qué es obligatorio.
+  const { data: configuracionEnVivo } = useConfiguracionActividadQuery(
     !camposDisponiblesAplica && unidadId != null ? unidadId : undefined,
+    esEvaluativaValue,
   )
   const { data: referenteDeGradoAsignatura } = useReferenteCurricularQuery(
     sinUnidadNiDetalle ? gradoId : undefined,
     sinUnidadNiDetalle ? asignaturaId : undefined,
   )
 
-  const esFormativa = camposDisponiblesAplica
-    ? camposDisponibles!.evaluacion.visible === false
-    : unidadId != null
-      ? (referenteDeUnidad?.esFormativo ?? false)
-      : !sinGradoNiAsignatura && (referenteDeGradoAsignatura?.esFormativo ?? false)
+  // Fuente de verdad efectiva para "qué mostrar/exigir": la foto fija del
+  // detalle si sigue aplicando, si no la configuración en vivo por unidad
+  // (alta, o huérfana recién vinculada) — la usa tanto `esFormativa` como
+  // los asteriscos de "obligatorio" y el catálogo de instrumentos permitidos.
+  const camposEfectivos = camposDisponiblesAplica ? camposDisponibles : configuracionEnVivo
 
+  const esFormativa = camposEfectivos
+    ? camposEfectivos.evaluacion.visible === false
+    : !sinGradoNiAsignatura && (referenteDeGradoAsignatura?.esFormativo ?? false)
+
+  return { camposEfectivos, esFormativa }
+}
+
+function EvaluacionSection({
+  form,
+  unidades,
+  camposEfectivos,
+  esFormativa,
+}: {
+  form: FormActividad
+  unidades: UnidadTematica[]
+  /** Ver `useCamposEvaluacionEfectivos`, calculado una sola vez en
+   *  `EditarActividadForm`. */
+  camposEfectivos: ReturnType<typeof useCamposEvaluacionEfectivos>["camposEfectivos"]
+  esFormativa: boolean
+}) {
   // `disabled={esFormativa}` de abajo solo bloquea el control — no corrige
   // el VALOR. Sin esto, una actividad que ya traía `esEvaluativa: true` al
   // abrir el form (o cuya unidad recién se supo formativa cuando terminó de
-  // resolver `useUnidadReferenteQuery`, que es asíncrono) se quedaba
-  // marcada como sumativa aunque el select apareciera bloqueado en "Sí" —
-  // y ese valor viajaba igual al guardar. La regla es "formativa nunca
-  // sumativa" siempre, no solo mientras el usuario toca el select.
+  // resolver la query en vivo, que es asíncrona) se quedaba marcada como
+  // sumativa aunque el select apareciera bloqueado en "Sí" — y ese valor
+  // viajaba igual al guardar. La regla es "formativa nunca sumativa"
+  // siempre, no solo mientras el usuario toca el select.
   useEffect(() => {
     if (esFormativa) form.setFieldValue("esEvaluativa", false)
   }, [esFormativa, form])
 
   // Catálogo `INSTRUMENTO_EVALUACION` (`TLISTA_VALOR`) — antes hardcodeado
-  // acá mismo.
+  // acá mismo. Filtrado por `camposEfectivos.evaluacion.instrumentosPermitidos`
+  // (regla confirmada: un referente EVALUATIVO solo permite ciertos
+  // instrumentos, no el catálogo completo) — sin foto/config resuelta
+  // todavía, o con la lista vacía, se muestra el catálogo completo en vez
+  // de dejar el select sin opciones.
   const { data: instrumentos = [] } = useInstrumentoEvaluacionCatalogQuery()
+  const instrumentosPermitidos = camposEfectivos?.evaluacion.instrumentosPermitidos
+  const instrumentosDisponibles =
+    instrumentosPermitidos && instrumentosPermitidos.length > 0
+      ? instrumentos.filter((instrumento) => instrumentosPermitidos.includes(instrumento))
+      : instrumentos
 
   return (
     <Card className="gap-4 p-4">
@@ -1600,111 +1680,121 @@ function EvaluacionSection({
           )}
         </form.Field>
 
-        {/* El instrumento (y su definición, más abajo) se muestran
-            SIEMPRE, sin importar `esEvaluativa`/`esFormativa`: una
-            actividad puesta en "No" —a mano, o forzada por un referente
-            formativo— puede seguir teniendo una Rúbrica/Lista de cotejo ya
-            guardada (p. ej. si el referente de la unidad cambió después de
-            crearla), y ocultarla de golpe la tapaba sin forma de
-            verla/editarla. Lo único que deja de aplicar con "No" es el
-            puntaje/ponderación (ver el `form.Subscribe` de más abajo). */}
-        <form.Field name="instrumento">
-          {(field) => (
-            <Field variant="outlined">
-              <FieldLabel htmlFor={field.name}>Instrumento de evaluación</FieldLabel>
-              <Select value={field.state.value} onValueChange={(v) => v && field.handleChange(v)} >
-                <SelectTrigger id={field.name}>
-                  <SelectValue>
-                    {(value) => (value === "Otro" ? "Otro (personalizado)" : (value as string))}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {instrumentos.map((instrumento) => (
-                    <SelectItem key={instrumento} value={instrumento}>
-                      {instrumento === "Otro" ? "Otro (personalizado)" : instrumento}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
-          )}
-        </form.Field>
+        {/* El instrumento (y su definición, más abajo) solo aplican con un
+            referente EVALUATIVO — regla de negocio confirmada: "referente
+            formativo: la actividad nunca tendrá instrumentos de
+            evaluación". Antes se mostraban siempre (para no tapar una
+            Rúbrica/Lista de cotejo ya guardada si el referente cambiaba
+            después de crearla), pero esa excepción quedó descartada: una
+            unidad formativa no lleva instrumento, punto. */}
+        {!esFormativa && (
+          <form.Field name="instrumento">
+            {(field) => (
+              <Field variant="outlined">
+                <FieldLabel htmlFor={field.name}>
+                  Instrumento de evaluación{camposEfectivos?.evaluacion.requerido ? " *" : ""}
+                </FieldLabel>
+                <Select value={field.state.value} onValueChange={(v) => v && field.handleChange(v)} >
+                  <SelectTrigger id={field.name}>
+                    <SelectValue>
+                      {(value) => (value === "Otro" ? "Otro (personalizado)" : (value as string))}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {instrumentosDisponibles.map((instrumento) => (
+                      <SelectItem key={instrumento} value={instrumento}>
+                        {instrumento === "Otro" ? "Otro (personalizado)" : instrumento}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+            )}
+          </form.Field>
+        )}
 
       </div>
 
-      {/* La definición del instrumento (Rúbrica o Lista de cotejo) vive
-          adentro del mismo card de "Evaluación", entre el `instrumento`
-          elegido arriba y la `Ponderación (%)` de abajo — antes era un
-          `Card` hermano y suelto, separado de este. Sin condición: ver el
-          comentario del `<Select>` de arriba. */}
-      <InstrumentoEvaluacionSection form={form} unidades={unidades} />
+      {esFormativa ? null : (
+        <>
+          {/* La definición del instrumento (Rúbrica o Lista de cotejo) vive
+              adentro del mismo card de "Evaluación", entre el `instrumento`
+              elegido arriba y la `Ponderación (%)` de abajo — antes era un
+              `Card` hermano y suelto, separado de este. */}
+          <InstrumentoEvaluacionSection form={form} unidades={unidades} />
 
-      {/* Ponderación/Puntaje va AL FINAL, después de la definición del
-          instrumento (Rúbrica/Lista de cotejo). La lectura del form es:
-            1. ¿Es sumativa?  →  2. ¿Con qué instrumento?  →
-            3. definición del instrumento  →  4. ¿Cuánto pesa?
-          Si la respuesta a (1) es "No", (4) desaparece (no aplica).
+          {/* Ponderación/Puntaje va AL FINAL, después de la definición del
+              instrumento (Rúbrica/Lista de cotejo). La lectura del form es:
+                1. ¿Es sumativa?  →  2. ¿Con qué instrumento?  →
+                3. definición del instrumento  →  4. ¿Cuánto pesa?
+              Si la respuesta a (1) es "No", (4) desaparece (no aplica).
 
-          Además de `esEvaluativa`, (4) también depende del `metodoCalculo`
-          de la unidad temática elegida — mismo criterio de tres vías que
-          `esPonderado` en `DialogAgregarActividad` (ver el comentario de
-          ese componente), pero completo acá:
-            - "Ponderado"     → el docente escribe el % (`ponderacion`).
-            - "Suma de puntos" → el docente escribe el puntaje máximo
-              (`notaMaxima`) y el sistema calcula el % resultante — no
-              coexiste con `ponderacion`, son campos alternativos.
-            - "Promedio simple" → ninguno de los dos aplica: cada
-              actividad pesa igual, no hay nada que repartir ni puntuar. */}
-      <form.Subscribe selector={(state) => [state.values.esEvaluativa, state.values.unidad.id] as const}>
-        {([esEvaluativa, unidadId]) => {
-          if (!esEvaluativa) return null
-          const metodoCalculo = unidades.find((u) => u.id === unidadId)?.metodoCalculo
-          if (metodoCalculo === "Ponderado") {
-            return (
-              <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2">
-                <form.Field name="ponderacion">
-                  {(ponderacionField) => (
-                    <Field variant="outlined">
-                      <FieldLabel htmlFor={ponderacionField.name}>Ponderación (%)</FieldLabel>
-                      <Input
-                        id={ponderacionField.name}
-                        type="number"
-                        min={0}
-                        max={100}
-                        value={ponderacionField.state.value}
-                        onChange={(e) => ponderacionField.handleChange(Number(e.target.value))}
-                      />
-                    </Field>
-                  )}
-                </form.Field>
-              </div>
-            )
-          }
-          if (metodoCalculo === "Suma de puntos") {
-            return (
-              <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2">
-                <form.Field name="notaMaxima">
-                  {(notaMaximaField) => (
-                    <Field variant="outlined">
-                      <FieldLabel htmlFor={notaMaximaField.name}>Puntaje máximo</FieldLabel>
-                      <Input
-                        id={notaMaximaField.name}
-                        type="number"
-                        min={0}
-                        value={notaMaximaField.state.value ?? ""}
-                        onChange={(e) =>
-                          notaMaximaField.handleChange(e.target.value === "" ? undefined : Number(e.target.value))
-                        }
-                      />
-                    </Field>
-                  )}
-                </form.Field>
-              </div>
-            )
-          }
-          return null
-        }}
-      </form.Subscribe>
+              Además de `esEvaluativa`, (4) también depende del `metodoCalculo`
+              de la unidad temática elegida — mismo criterio de tres vías que
+              `esPonderado` en `DialogAgregarActividad` (ver el comentario de
+              ese componente), pero completo acá:
+                - "Ponderado"     → el docente escribe el % (`ponderacion`).
+                - "Suma de puntos" → el docente escribe el puntaje máximo
+                  (`notaMaxima`) y el sistema calcula el % resultante — no
+                  coexiste con `ponderacion`, son campos alternativos.
+                - "Promedio simple" → ninguno de los dos aplica: cada
+                  actividad pesa igual, no hay nada que repartir ni puntuar. */}
+          <form.Subscribe selector={(state) => [state.values.esEvaluativa, state.values.unidad.id] as const}>
+            {([esEvaluativa, unidadId]) => {
+              if (!esEvaluativa) return null
+              const metodoCalculo = unidades.find((u) => u.id === unidadId)?.metodoCalculo
+              if (metodoCalculo === "Ponderado") {
+                return (
+                  <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2">
+                    <form.Field name="ponderacion">
+                      {(ponderacionField) => (
+                        <Field variant="outlined">
+                          <FieldLabel htmlFor={ponderacionField.name}>
+                            Ponderación (%){camposEfectivos?.ponderacion.requerido ? " *" : ""}
+                          </FieldLabel>
+                          <Input
+                            id={ponderacionField.name}
+                            type="number"
+                            min={0}
+                            max={100}
+                            value={ponderacionField.state.value}
+                            onChange={(e) => ponderacionField.handleChange(Number(e.target.value))}
+                          />
+                        </Field>
+                      )}
+                    </form.Field>
+                  </div>
+                )
+              }
+              if (metodoCalculo === "Suma de puntos") {
+                return (
+                  <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2">
+                    <form.Field name="notaMaxima">
+                      {(notaMaximaField) => (
+                        <Field variant="outlined">
+                          <FieldLabel htmlFor={notaMaximaField.name}>
+                            Puntaje máximo{camposEfectivos?.ponderacion.requerido ? " *" : ""}
+                          </FieldLabel>
+                          <Input
+                            id={notaMaximaField.name}
+                            type="number"
+                            min={0}
+                            value={notaMaximaField.state.value ?? ""}
+                            onChange={(e) =>
+                              notaMaximaField.handleChange(e.target.value === "" ? undefined : Number(e.target.value))
+                            }
+                          />
+                        </Field>
+                      )}
+                    </form.Field>
+                  </div>
+                )
+              }
+              return null
+            }}
+          </form.Subscribe>
+        </>
+      )}
     </Card>
   )
 }
@@ -3213,7 +3303,7 @@ function CrearUnidadPopover({
     descripcion: string
     enunciadosDba: { id: number; text: string }[]
     metodoCalculo: MetodoCalculo
-  }) => void
+  }) => Promise<void>
   /** Se aplica al `Button` del trigger para encadenarlo visualmente con
    * un control adyacente (split-button): típico `rounded-l-none border-l-0`
    * para pegarse a un `Select`/`Input` por la izquierda. */
@@ -3233,6 +3323,7 @@ function CrearUnidadPopover({
   const [descripcion, setDescripcion] = React.useState("")
   const [enunciadosDba, setEnunciadosDba] = React.useState<{ id: number; text: string }[]>([])
   const [metodoCalculo, setMetodoCalculo] = React.useState<MetodoCalculo>("Ponderado")
+  const [isSaving, setIsSaving] = React.useState(false)
 
   const { enunciados: enunciadosDisponibles, isPending: isPendingEnunciados } = useEnunciadosDbaQuery(
     gradoId,
@@ -3250,11 +3341,20 @@ function CrearUnidadPopover({
     setMetodoCalculo("Ponderado")
   }
 
-  const guardar = () => {
-    if (!nombre.trim() || !hasGradoAsignatura) return
-    onCreate({ nombre: nombre.trim(), contenidos, objetivos, descripcion, enunciadosDba, metodoCalculo })
-    reset()
-    setOpen(false)
+  // Async: `onCreate` pega contra el backend real (`POST /planeador/unidades`).
+  // Si falla (el toast global del interceptor ya avisa del error), el
+  // popover se queda abierto con lo tipeado — cerrarlo/limpiarlo igual habría
+  // hecho parecer que la unidad se creó cuando no.
+  const guardar = async () => {
+    if (!nombre.trim() || !hasGradoAsignatura || isSaving) return
+    setIsSaving(true)
+    try {
+      await onCreate({ nombre: nombre.trim(), contenidos, objetivos, descripcion, enunciadosDba, metodoCalculo })
+      reset()
+      setOpen(false)
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   return (
@@ -3380,10 +3480,12 @@ function CrearUnidadPopover({
             variant="fill"
             color="primary"
             size="sm"
+            type="button"
             onClick={guardar}
-            disabled={!nombre.trim()}
+            disabled={!nombre.trim() || isSaving}
           >
-            Guardar unidad
+            {isSaving && <SpinnerIcon data-icon="inline-start" className="animate-spin" />}
+            {isSaving ? "Guardando..." : "Guardar unidad"}
           </Button>
         </div>
       </PopoverContent>

@@ -74,6 +74,7 @@ function toActividadResumen(row: ActividadMiaRow & { pk_tactividad: number }): A
     esRecuperacion: false,
     unidad: { id: 0, nombre: row.unidad ?? "" },
     evidenciasIds: [],
+    criteriosUnidadIds: [],
     asignatura: row.asignatura ?? "",
     grado: row.grado ?? "",
     grupo: row.grupo ?? "",
