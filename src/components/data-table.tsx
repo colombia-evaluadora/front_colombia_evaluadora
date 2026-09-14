@@ -88,6 +88,10 @@ interface DataTableProps {
   /** Clases extra para `growColumnId`, a nivel de th/td. */
   growColumnClassName?: string
   insideSubRow?: boolean
+  /** Clases para el contenedor con scroll de `Table` (borde/radio ya viven
+   *  ahí — ver `containerClassName` en `ui/table.tsx`). Sirve para ponerle
+   *  alto máximo con scroll vertical propio a la tabla. */
+  containerClassName?: string
 }
 
 export function DataTable({
@@ -104,6 +108,7 @@ export function DataTable({
   growColumnId,
   growColumnClassName,
   insideSubRow = false,
+  containerClassName,
 }: DataTableProps) {
   const visibleColumns = table.getAllColumns().filter((c) => c.getIsVisible())
   const skeletonRowCount = table.getState().pagination.pageSize
@@ -194,7 +199,7 @@ export function DataTable({
     // El borde, el radio y el scroll horizontal los pone el contenedor propio
     // de `Table`; acá no se envuelve en otro scroller para no anidar dos.
     <div className="w-full">
-      <UITable className="w-full">
+      <UITable className="w-full" containerClassName={containerClassName}>
         <TableHeader>
           {/* El encabezado no lleva fondo propio ni hover: comparte el de la
               tabla en reposo, igual que una fila sin el puntero encima. */}

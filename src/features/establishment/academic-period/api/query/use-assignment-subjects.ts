@@ -9,34 +9,19 @@ interface AssignmentSubjectRow {
   grado_grupo: string
   jornada: string
   jornada_name: string
-  // PK_TFUNCIONARIO que ya tiene este grupo-asignatura en el periodo, o
-  // `null` si está libre (V89).
   funcionario_id: number | null
+  bloqueado_preescolar: boolean | null
 }
 interface AssignmentSubjectsResponse {
   rows: AssignmentSubjectRow[]
 }
 
-// Pool de asignaturas asignables del periodo: grado × grupo × plan de estudio.
-// `GET /eval-col/asignaciones/pool/:ACADEMIC_PERIOD_ID` (`fn_asignacion_pool`,
-// id_query 83 — el periodo pasó de query string a path param porque
-// `:CONTEXT.USER_ID` resuelto en el filtro de visibilidad hacía que, con
-// `ACADEMIC_PERIOD_ID` como query param opcional, algo en el camino lo
-// perdiera y el pool volviera vacío contra la API real). El pool trae TODO
-// el par grupo-asignatura, asignado o no, más quién lo tiene
-// (`funcionario_id`, V89) — `tab-academic-assignments.tsx` decide
-// "disponible" (funcionarioId == null) vs "actual de este docente"
-// (id ∈ savedIds) en el cliente. Filtrar acá con `soloSinDocente=true`
-// ocultaría también las materias del propio docente que se está editando.
 async function fetchAssignmentSubjects(
   academicPeriodId: number
 ): Promise<AssignmentSubject[]> {
   const raw: AssignmentSubjectsResponse = await api.get(
     `/eval-col/asignaciones/pool/${academicPeriodId}`
   )
-  // `fn_asignacion_pool` a veces repite el mismo par grupo:asignatura
-  // (join duplicado en el backend) — se deduplica acá por `id` para no
-  // romper las keys de React en `assignment-transfer.tsx`.
   const seen = new Set<string>()
   const rows: AssignmentSubjectRow[] = []
   for (const row of raw.rows ?? []) {
@@ -51,6 +36,7 @@ async function fetchAssignmentSubjects(
     jornada: row.jornada,
     jornadaName: row.jornada_name,
     funcionarioId: row.funcionario_id != null ? String(row.funcionario_id) : undefined,
+    bloqueadoPreescolar: row.bloqueado_preescolar ?? false,
   }))
 }
 

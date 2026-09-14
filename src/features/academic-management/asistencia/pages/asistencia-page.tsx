@@ -9,7 +9,7 @@ import { ClipboardCheckIcon } from "@/components/ui/icons"
 import { paths } from "@/config/paths"
 import { asistenciaRoute } from "@/router"
 import { useAuth } from "@/features/auth/hooks/use-auth"
-import { useSedeOptionsQuery } from "@/features/establishment/academic-period/api/query/use-sede-options"
+import { useSedesOpcionesQuery } from "@/features/academic-management/asistencia/api/query/use-sedes-opciones-query"
 import { useAsistenciaCalendarioQuery } from "@/features/academic-management/asistencia/api/query/use-asistencia-calendario-query"
 import { useAsistenciaResumenHorasQuery } from "@/features/academic-management/asistencia/api/query/use-asistencia-resumen-horas-query"
 import { useAsistenciaRegistrarMutation } from "@/features/academic-management/asistencia/api/mutations/use-asistencia-registrar-mutation"
@@ -45,7 +45,7 @@ function AsistenciaPageContent() {
   const { notify } = useNotify()
   const { user } = useAuth()
   const isDocente = user?.roles.includes(DOCENTE_ROLE) ?? false
-  const { data: sedes } = useSedeOptionsQuery()
+  const { data: sedes } = useSedesOpcionesQuery()
   const navigate = useNavigate()
   const search = asistenciaRoute.useSearch()
   const [sedeId, setSedeIdState] = React.useState<number | null>(search.sede ?? null)

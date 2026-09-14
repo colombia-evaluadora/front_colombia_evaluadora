@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { ArrowLeftIcon, ArrowRightIcon, FolderOpenIcon } from "@/components/ui/icons"
+import { ArrowLeftIcon, ArrowRightIcon, FolderOpenIcon, LockIcon } from "@/components/ui/icons"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -150,8 +150,12 @@ export function AssignmentTransfer({
               type="button"
               color="primary"
               size="sm"
-              disabled={filteredAssigned.length === 0}
-              onClick={() => onUnassign(filteredAssigned.map((s) => s.id))}
+              disabled={filteredAssigned.every((s) => s.bloqueadoPreescolar)}
+              onClick={() =>
+                onUnassign(
+                  filteredAssigned.filter((s) => !s.bloqueadoPreescolar).map((s) => s.id),
+                )
+              }
             >
               <ArrowLeftIcon weight="bold" data-icon="inline-start" />
               Mover todas
@@ -183,10 +187,20 @@ export function AssignmentTransfer({
                         variant="ghost"
                         size="icon-sm"
                         className="text-muted-foreground"
-                        aria-label={`Quitar ${s.nombre} ${s.gradoGrupo} ${s.jornada}`}
+                        disabled={s.bloqueadoPreescolar}
+                        aria-label={
+                          s.bloqueadoPreescolar
+                            ? `${s.nombre} ${s.gradoGrupo} ${s.jornada} — asignada automáticamente al director de grupo, no se puede quitar acá`
+                            : `Quitar ${s.nombre} ${s.gradoGrupo} ${s.jornada}`
+                        }
+                        title={
+                          s.bloqueadoPreescolar
+                            ? "Asignada automáticamente al director de grupo — no se puede quitar acá"
+                            : undefined
+                        }
                         onClick={() => onUnassign([s.id])}
                       >
-                        <ArrowLeftIcon />
+                        {s.bloqueadoPreescolar ? <LockIcon /> : <ArrowLeftIcon />}
                       </Button>
                       <span className="flex flex-1 items-center gap-2 truncate text-sm font-semibold">
                         {s.nombre}
