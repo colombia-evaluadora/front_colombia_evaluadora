@@ -74,6 +74,7 @@ function toActividadResumen(row: ActividadMiaRow & { pk_tactividad: number }): A
     esRecuperacion: false,
     unidad: { id: 0, nombre: row.unidad ?? "" },
     evidenciasIds: [],
+    criteriosUnidadIds: [],
     asignatura: row.asignatura ?? "",
     grado: row.grado ?? "",
     grupo: row.grupo ?? "",
@@ -172,6 +173,32 @@ async function fetchActividadesMias(
     diaAnterior: params.dia ? (first?.dia_anterior ?? null) : undefined,
     diaSiguiente: params.dia ? (first?.dia_siguiente ?? null) : undefined,
   }
+}
+
+/** Primer tanteo de `fetchTodasLasActividadesMias`. Con menos que esto casi
+ *  siempre hacen falta dos viajes; con más, se pide de sobra en el caso
+ *  normal. El segundo viaje solo ocurre si el docente supera esta cifra. */
+const TAMANO_TANTEO = 200
+
+/**
+ * TODAS las actividades del docente, sin los filtros del rail.
+ *
+ * El listado de la pantalla va acotado por `dia` (el día activo de la barra
+ * "Hoy | ‹ ›", que por defecto es hoy), `search` y `estados`, y además
+ * paginado de a 50. Eso está bien para el rail, pero "Exportar todo" no
+ * puede salir de ahí: exportaría solo las actividades vigentes en el día
+ * que se esté mirando.
+ *
+ * Así que esto pide la misma lista SIN ninguno de esos filtros. El backend
+ * devuelve `total_count` en cada fila, así que se tantea con
+ * {@link TAMANO_TANTEO} y solo si el docente tiene más se repite el pedido
+ * con el total exacto — en la práctica, un solo viaje.
+ */
+export async function fetchTodasLasActividadesMias(): Promise<Actividad[]> {
+  const primera = await fetchActividadesMias({ size: TAMANO_TANTEO, offset: 0 })
+  if (primera.totalCount <= primera.rows.length) return primera.rows
+  const completa = await fetchActividadesMias({ size: primera.totalCount, offset: 0 })
+  return completa.rows
 }
 
 export const actividadesMiasQueryKey = (params: UseActividadesMiasParams) =>

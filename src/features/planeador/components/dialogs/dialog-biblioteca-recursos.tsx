@@ -90,7 +90,13 @@ export function DialogBibliotecaRecursos({
   // Trae TODAS las actividades del docente. Acá no paginamos contra el
   // backend porque la lista mock es chica (~12) y la galería se arma en
   // el cliente; cuando llegue el endpoint real con paginación se ajusta.
-  const { data: actividades = [] } = useActividadesQuery()
+  //
+  // `enabled: open` — este modal vive siempre montado (el padre solo
+  // alterna `open`, no lo desmonta) para poder abrirse sin remontar, así
+  // que sin este gate el `GET .../actividades` completo (`size=500`) se
+  // disparaba cada vez que se abría el form de una actividad, aunque el
+  // docente nunca tocara "Biblioteca de recursos".
+  const { data: actividades = [] } = useActividadesQuery(open)
 
   // Aplana: de cada actividad, todos sus `recursos`. Cada item queda
   // etiquetado con el nombre de la actividad de origen para que el

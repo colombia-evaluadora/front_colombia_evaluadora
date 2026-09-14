@@ -3,7 +3,10 @@ import { useQuery } from "@tanstack/react-query"
 import { evalCol } from "@/lib/eval-col-client"
 import { env } from "@/config/env"
 import { estadoDerivadoToStatus } from "@/features/planeador/lib/estado-derivado"
-import type { Actividad } from "@/features/planeador/api/types/actividad"
+import { fetchTipoRecursoOptions, type TipoRecursoOption } from "@/features/planeador/api/query/use-tipo-recurso-catalog"
+import { fetchTipoAdaptacionOptions, type TipoAdaptacionOption } from "@/features/planeador/api/query/use-tipo-adaptacion-catalog"
+import { fetchAplicaAOptions, type AplicaAOption } from "@/features/planeador/api/query/use-aplica-a-catalog"
+import type { Actividad, Adaptacion, Recurso, RecursoTipo } from "@/features/planeador/api/types/actividad"
 
 /**
  * `GET /planeador/actividades/:id` (confirmado real, colección Postman
@@ -130,7 +133,104 @@ function evidenciasIdsFromUnidadConfiguracion(_raw: unknown): number[] {
   return []
 }
 
-function toActividadDetalle(row: ActividadDetalleRow): Actividad {
+/**
+ * `row.materiales` no tiene un ejemplo real capturado con datos (siempre
+ * vino `[]` — ver el comentario largo de `interface ActividadDetalleRow`),
+ * así que no hay forma de confirmar los nombres EXACTOS de sus campos. En
+ * vez de dejarlo en `[]` (como antes, perdiendo lo guardado por
+ * `useUpdateMaterialesActividad`), se lee de forma tolerante asumiendo que
+ * el backend devuelve el mismo JSONB que `PUT .../materiales` guardó
+ * (`{tipoRecurso, url, descripcion}`, ver `update-materiales-actividad.ts`)
+ * — probando también la variante `snake_case` por si el motor la normaliza
+ * al leer, igual que hace el resto de esta fila con sus pares
+ * `fk_x`/`x` ya confirmados.
+ *
+ * Los recursos de tipo "Archivo" nunca llegan a guardarse (ver
+ * `recursosOmitidos` en `update-materiales-actividad.ts`), así que no hace
+ * falta resolver `fkTarchivo` acá.
+ */
+function recursoFromMaterialRaw(raw: unknown, tipoRecursoOptions: TipoRecursoOption[], index: number): Recurso {
+  const item = (raw ?? {}) as Record<string, unknown>
+  const tipoRaw = item.tipoRecurso ?? item.tipo_recurso
+  let tipo: RecursoTipo = "URL"
+  if (typeof tipoRaw === "number") {
+    tipo = tipoRecursoOptions.find((option) => option.id === tipoRaw)?.tipo ?? "URL"
+  } else if (typeof tipoRaw === "string") {
+    const lower = tipoRaw.toLowerCase()
+    if (lower.includes("archivo")) tipo = "Archivo"
+    else if (lower.includes("virtual") || lower.includes("repositorio")) tipo = "Unidad virtual"
+  }
+  const url = item.url ?? item.URL
+  const descripcion = item.descripcion ?? item.DESCRIPCION
+  return {
+    // Ni el body de `PUT .../materiales` ni (hasta donde se confirmó) el
+    // detalle traen un id propio por recurso — solo sirve de key en la
+    // lista, así que el índice alcanza (mismo criterio que `syntheticId`
+    // en `use-instrumento-actividad-form-query.ts`).
+    id: index,
+    titulo: "",
+    fuente: "",
+    tipo,
+    url: typeof url === "string" ? url : "",
+    descripcion: typeof descripcion === "string" ? descripcion : "",
+  }
+}
+
+/**
+ * `row.adaptaciones` tiene el mismo problema que `row.materiales`: sin
+ * ejemplo real con datos, pero el confirmado body de
+ * `PUT .../adaptaciones` (`update-adaptaciones-actividad.ts`) da la mejor
+ * pista de sus campos: `{tipoAdaptacion, descripcion, usaVersionModificada,
+ * aplicaA}`. Se lee tolerando `snake_case` igual que los materiales.
+ *
+ * `versionModificadaRef`/`estudiantesIds` NO tienen campo confirmado ni
+ * para guardar ni para leer (mismo gap documentado en
+ * `update-adaptaciones-actividad.ts`) — quedan vacíos en vez de inventar en
+ * cuál de los tres tipos ("archivo"/"enlace"/"biblioteca") cayó, que sería
+ * peor que no mostrar nada.
+ */
+function adaptacionFromRaw(
+  raw: unknown,
+  tipoAdaptacionOptions: TipoAdaptacionOption[],
+  aplicaAOptions: AplicaAOption[],
+): Adaptacion {
+  const item = (raw ?? {}) as Record<string, unknown>
+  const tipoRaw = item.tipoAdaptacion ?? item.tipo_adaptacion
+  const tipo =
+    typeof tipoRaw === "number"
+      ? (tipoAdaptacionOptions.find((option) => option.id === tipoRaw)?.tipo ?? "")
+      : typeof tipoRaw === "string"
+        ? tipoRaw
+        : ""
+  const descripcionRaw = item.descripcion ?? item.DESCRIPCION
+  const aplicaRaw = item.aplicaA ?? item.aplica_a
+  const aplicaA =
+    typeof aplicaRaw === "number"
+      ? (aplicaAOptions.find((option) => option.id === aplicaRaw)?.valor ?? "")
+      : typeof aplicaRaw === "string"
+        ? aplicaRaw
+        : ""
+  return {
+    tipo,
+    descripcion: typeof descripcionRaw === "string" ? descripcionRaw : "",
+    // `usaVersionModificadaRaw === "S"` solo dice que SÍ hay una versión
+    // modificada, no cuál de las tres variantes ("archivo"/"enlace"/
+    // "biblioteca") — mostrar cualquiera de ellas fijo sería afirmar un
+    // dato que no se tiene, así que se deja en "no" (sin el campo auxiliar)
+    // en vez de arriesgar el tipo equivocado.
+    versionModificada: "no",
+    versionModificadaRef: "",
+    aplicaA,
+    estudiantesIds: [],
+  }
+}
+
+function toActividadDetalle(
+  row: ActividadDetalleRow,
+  tipoRecursoOptions: TipoRecursoOption[],
+  tipoAdaptacionOptions: TipoAdaptacionOption[],
+  aplicaAOptions: AplicaAOption[],
+): Actividad {
   return {
     id: row.pk_tactividad,
     nombre: row.titulo,
@@ -144,6 +244,10 @@ function toActividadDetalle(row: ActividadDetalleRow): Actividad {
         ? { id: row.fk_tunidad, nombre: row.unidad ?? "" }
         : { id: 0, nombre: "" },
     evidenciasIds: evidenciasIdsFromUnidadConfiguracion(row.unidad_configuracion),
+    // Mismo motivo que `evidenciasIds`: no hay un ejemplo real confirmado de
+    // qué campo marca "este criterio de la unidad ya está relacionado con
+    // la actividad" — arranca en `[]`, el checklist solo agrega.
+    criteriosUnidadIds: [],
     asignatura: row.asignatura ?? "",
     grado: row.grado ?? "",
     gradoId: row.fk_tgrado ?? undefined,
@@ -155,9 +259,7 @@ function toActividadDetalle(row: ActividadDetalleRow): Actividad {
     evaluados: row.estudiantes_evaluados,
     totalEstudiantes: row.estudiantes_asignados,
     materiales: row.material_requerido ?? "",
-    // Shape real de `materiales`/`recursos` sin confirmar (el ejemplo real
-    // vino vacío, `[]`) — se deja vacío en vez de adivinar el mapeo.
-    recursos: [],
+    recursos: row.materiales.map((raw, index) => recursoFromMaterialRaw(raw, tipoRecursoOptions, index)),
     duracionEstimada: row.duracion_estimada != null ? String(row.duracion_estimada) : "",
     semana: row.semana_cronograma ?? "",
     modalidad: (row.modalidad ?? "Presencial") as Actividad["modalidad"],
@@ -190,7 +292,7 @@ function toActividadDetalle(row: ActividadDetalleRow): Actividad {
       requiereArchivo: row.requiere_archivo === "S",
       requiereRespuestaTexto: row.requiere_texto === "S",
     },
-    adaptaciones: [],
+    adaptaciones: row.adaptaciones.map((raw) => adaptacionFromRaw(raw, tipoAdaptacionOptions, aplicaAOptions)),
     asignaturaId: row.fk_tasignatura ?? undefined,
     grupoId: row.fk_tgrupo ?? undefined,
     camposDisponibles: row.campos_disponibles ?? undefined,
@@ -220,7 +322,12 @@ async function fetchActividadDetalle(id: number): Promise<Actividad> {
   if (env.ENABLE_API_MOCKING) {
     return { ...(first as Actividad), recursos: (first as Actividad).recursos ?? [] }
   }
-  return toActividadDetalle(first as ActividadDetalleRow)
+  const [tipoRecursoOptions, tipoAdaptacionOptions, aplicaAOptions] = await Promise.all([
+    fetchTipoRecursoOptions(),
+    fetchTipoAdaptacionOptions(),
+    fetchAplicaAOptions(),
+  ])
+  return toActividadDetalle(first as ActividadDetalleRow, tipoRecursoOptions, tipoAdaptacionOptions, aplicaAOptions)
 }
 
 export function useActividadDetalleQuery(id: number | undefined) {
