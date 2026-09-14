@@ -24,10 +24,19 @@ async function fetchActividades(): Promise<Actividad[]> {
   return rows.map(normalizeActividad)
 }
 
-export function useActividadesQuery() {
+/**
+ * `enabled` (default `true`) lo usa `DialogBibliotecaRecursos` para no
+ * traer TODAS las actividades del docente (`size=500`) apenas se monta el
+ * form de la actividad — el modal vive siempre montado (solo oculto) para
+ * poder abrirse sin remontar, así que sin este gate el `GET .../actividades`
+ * completo se disparaba en cada alta/edición aunque el docente nunca
+ * abriera "Biblioteca de recursos".
+ */
+export function useActividadesQuery(enabled = true) {
   return useQuery({
     queryKey: actividadesQueryKey(),
     queryFn: fetchActividades,
+    enabled,
     // Mantiene la lista anterior mientras se revalida — evita el flash a
     // "Sin actividades" cuando se navega de vuelta al listado.
     placeholderData: (previous) => previous,

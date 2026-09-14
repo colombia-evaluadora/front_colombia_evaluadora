@@ -339,14 +339,21 @@ export function Rubricas({ unidad }: { unidad: UnidadTematica }) {
 
 /** Exportado por el mismo motivo que `Rubricas` — ver su comentario. */
 export function Actividades({ unidad }: { unidad: UnidadTematica }) {
-  const columns = React.useMemo(
-    () => createUnidadActividadesColumns(unidad.id, unidad.metodoCalculo === "Ponderado"),
-    [unidad.id, unidad.metodoCalculo],
-  )
   // `GET /unidades/:id/actividades` (real) — ya no se lee `unidad.actividades`
   // del detalle: ese campo queda siempre vacío contra el backend real
   // (viven en este endpoint aparte, ver `use-unidad-actividades-query.ts`).
   const { data: actividadesVinculadas = [], isPending, isError, refetch } = useUnidadActividadesQuery(unidad.id)
+  // Suma de TODAS las ponderaciones ya vinculadas — el tope de cada fila al
+  // editar en línea sale de acá (ver `createUnidadActividadesColumns`), no
+  // de un `100` fijo por fila.
+  const totalPonderacion = React.useMemo(
+    () => actividadesVinculadas.reduce((sum, a) => sum + a.ponderacion, 0),
+    [actividadesVinculadas],
+  )
+  const columns = React.useMemo(
+    () => createUnidadActividadesColumns(unidad.id, unidad.metodoCalculo === "Ponderado", totalPonderacion),
+    [unidad.id, unidad.metodoCalculo, totalPonderacion],
+  )
   const { sorted, sorting, setSorting } = useSortedRows(actividadesVinculadas)
 
   const { table } = useDataTable({

@@ -1,11 +1,13 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
+import { evalCol } from "@/lib/eval-col-client"
 import { env } from "@/config/env"
 import type { MutationConfig } from "@/lib/react-query"
 import { unidadesQueryKey } from "@/features/planeador/api/query/use-unidades-query"
 import { resolveCalculoDefinitivaId } from "@/features/planeador/api/query/use-calculo-definitiva-catalog"
 import type { UnidadInfoGeneral } from "@/features/planeador/api/mutations/update-unidad"
+import type { UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
 
 /**
  * `POST /planeador/unidades` (confirmado real, colección Postman
@@ -29,9 +31,17 @@ import type { UnidadInfoGeneral } from "@/features/planeador/api/mutations/updat
  * `form-unidad-info-general.tsx`) — son justo los que la actividad podrá
  * usar después para ofrecer sus evidencias (nivel 2, hijas de estos).
  */
-async function createUnidad(data: UnidadInfoGeneral): Promise<unknown> {
+interface CreateUnidadResponse {
+  /** PK real de la unidad recién creada — lo necesita quien la crea al
+   *  vuelo desde el form de actividad (`CrearUnidadPopover`) para poder
+   *  seleccionarla de una en el `<Select>` de "Unidad temática asociada". */
+  id: number
+}
+
+async function createUnidad(data: UnidadInfoGeneral): Promise<CreateUnidadResponse> {
   if (env.ENABLE_API_MOCKING) {
-    return api.post("/eval-col/planeador/unidades", data)
+    const created = await api.post<UnidadTematica>("/eval-col/planeador/unidades", data)
+    return { id: created.id }
   }
   if (data.gradoId == null || data.asignaturaId == null) {
     throw new Error("Elegí un grado y una asignatura antes de guardar.")
@@ -49,7 +59,13 @@ async function createUnidad(data: UnidadInfoGeneral): Promise<unknown> {
   if (data.enunciadosDba.length > 0) {
     body.ENUNCIADOS = data.enunciadosDba.map((enunciado) => enunciado.id)
   }
-  return api.post("/eval-col/planeador/unidades", body)
+  // El motor devuelve `{"rows":[{"<nombre_función>": <pk>}]}` — el pk es el
+  // primer (y único) campo de la fila (confirmado, colección Postman
+  // `planeador-flujo-unidad-actividad`, paso 4).
+  const row = await evalCol.postRow<Record<string, number>>("/planeador/unidades", body)
+  const [pk] = Object.values(row)
+  if (pk == null) throw new Error("La creación de la unidad no devolvió su identificador.")
+  return { id: pk }
 }
 
 interface UseCreateUnidadOptions {
