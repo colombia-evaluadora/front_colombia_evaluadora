@@ -5,6 +5,7 @@ import {
   CheckCircleIcon,
   FileUploadOutlinedIcon,
   SpinnerIcon,
+  WarningIcon,
   XCircleIcon,
 } from "@/components/ui/icons"
 import {
@@ -41,9 +42,15 @@ interface DialogImportarActividadesJsonProps {
  *
  * Dos pasos, no uno: elegir el archivo dispara automáticamente el paso 1
  * (`SOLO_VALIDAR: true`, no escribe nada) para mostrar el informe fila por
- * fila; "Importar" solo se habilita si `conError` da 0 —si no, aplicar
- * respondería `aplicadas: 0` sin escribir nada, porque el paso 2 es todo o
- * nada—.
+ * fila; después "Importar" aplica.
+ *
+ * "Importar" se habilita si hay al menos una fila válida, aunque otras
+ * tengan problemas. Antes exigía `conError === 0` porque el paso 2 era todo
+ * o nada: una sola fila mala hacía que no se escribiera ninguna, así que
+ * dejar aplicar habría sido engañoso. Desde V340 el backend importa fila por
+ * fila —omite las que ya rechazó la validación, aísla las que fallan al
+ * crearse— así que ese gate dejaba fuera el caso que más se da: reimportar
+ * un archivo del que solo alguna actividad ya existía.
  */
 export function DialogImportarActividadesJson({
   open,
@@ -64,7 +71,10 @@ export function DialogImportarActividadesJson({
     mutationConfig: {
       onSuccess: (data) => {
         setInforme(data)
-        if (data.aplicadas > 0) notify(data.mensaje)
+        // Siempre se avisa, no solo cuando entró algo: con la importación
+        // fila por fila el resultado normal es parcial, y el mensaje del
+        // servidor ya dice cuántas entraron y cuántas no.
+        notify(data.mensaje, data.aplicadas > 0 ? undefined : { variant: "error" })
       },
       onError: () => notify("No se pudo importar el archivo.", { variant: "error" }),
     },
@@ -108,8 +118,13 @@ export function DialogImportarActividadesJson({
     aplicar.mutate({ actividades, soloValidar: false })
   }
 
-  const yaAplicado = informe?.modo === "aplicacion" && informe.aplicadas > 0
-  const puedeAplicar = informe != null && informe.conError === 0 && !yaAplicado
+  // Cualquier respuesta del paso 2 cierra el flujo, se haya importado todo,
+  // parte o nada: el informe ya dice qué pasó con cada fila y reintentar a
+  // ciegas el mismo archivo no arregla nada. Para volver a probar está
+  // "Elegir otro archivo".
+  const yaAplicado = informe?.modo === "aplicacion"
+  // Basta con que quede algo importable: las demás se omiten, no bloquean.
+  const puedeAplicar = informe != null && informe.validas > 0 && !yaAplicado
 
   return (
     <Dialog
@@ -156,8 +171,14 @@ export function DialogImportarActividadesJson({
                   key={fila.indice}
                   className="flex items-start gap-2 border-b py-1.5 last:border-0"
                 >
-                  {fila.estado === "ok" ? (
+                  {/* `omitida` se distingue de `fallida`: la primera ni se
+                      intentó (la validación ya la había rechazado), la
+                      segunda se intentó y el servidor la rechazó. Para el
+                      usuario son cosas distintas y el motivo va debajo. */}
+                  {fila.estado === "ok" || fila.estado === "importada" ? (
                     <CheckCircleIcon className="text-green mt-0.5 size-4 shrink-0" />
+                  ) : fila.estado === "omitida" ? (
+                    <WarningIcon className="text-yellow mt-0.5 size-4 shrink-0" />
                   ) : (
                     <XCircleIcon className="text-red mt-0.5 size-4 shrink-0" />
                   )}

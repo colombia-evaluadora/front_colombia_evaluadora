@@ -1134,32 +1134,40 @@ export const planeadorHandlers = [
       })
     }
 
-    if (conError > 0) {
-      return HttpResponse.json({
-        modo: "aplicacion",
-        total: filas.length,
-        validas,
-        conError,
-        aplicadas: 0,
-        mensaje: `No se importó nada: ${conError} de ${filas.length} actividades tienen problemas. La importación es todo o nada`,
-        filas,
-      })
-    }
-
-    const filasAplicadas: FilaInformeImportacion[] = body.ACTIVIDADES.map((raw, indice) => {
+    // Aplicar es fila por fila, igual que el backend real desde V340: las
+    // que la validación rechazó se omiten conservando sus errores, y el
+    // resto entra. Antes esto devolvía `aplicadas: 0` en cuanto había una
+    // sola fila mala ("la importación es todo o nada"), que ya no es cierto.
+    const filasAplicadas: FilaInformeImportacion[] = filas.map((fila, indice) => {
+      if (fila.estado === "error") {
+        return { ...fila, estado: "omitida" }
+      }
       const id = nextId(planeadorDb.map((actividad) => actividad.id))
-      const creada = actividadFromImportRow(raw, id)
+      const creada = actividadFromImportRow(body.ACTIVIDADES[indice], id)
       addActividad(creada)
-      return { estado: "ok", indice, nombre: creada.nombre, pkTactividad: id }
+      return { estado: "importada", indice, nombre: creada.nombre, pkTactividad: id }
     })
+
+    const aplicadas = filasAplicadas.filter((fila) => fila.estado === "importada").length
+    const omitidas = filasAplicadas.length - aplicadas
 
     return HttpResponse.json({
       modo: "aplicacion",
       total: filasAplicadas.length,
-      validas: filasAplicadas.length,
-      conError: 0,
-      aplicadas: filasAplicadas.length,
-      mensaje: `${filasAplicadas.length} actividades importadas`,
+      validas,
+      conError,
+      aplicadas,
+      omitidas,
+      // El mock no simula fallos al crear: todo lo que pasa la validación
+      // entra. En el real esta rama existe (una actividad que ya existe, por
+      // ejemplo) y llega como `fallida`.
+      fallidas: 0,
+      mensaje:
+        aplicadas === 0
+          ? `No se importó ninguna actividad: ${omitidas} de ${filasAplicadas.length} con problemas`
+          : omitidas === 0
+            ? `${aplicadas} actividades importadas`
+            : `${aplicadas} de ${filasAplicadas.length} actividades importadas; ${omitidas} con problemas (ver filas)`,
       filas: filasAplicadas,
     })
   }),
