@@ -8,8 +8,15 @@ interface LinkActividadInput {
   actividadId: number
   /** `null` no toca el peso actual (semántica real de `PONDERACION` NULL) —
    *  siempre se manda un número acá porque el modal de vincular no ofrece
-   *  "dejarlo como estaba" para una actividad que recién se vincula. */
+   *  "dejarlo como estaba" para una actividad que recién se vincula. Se
+   *  ignora por completo cuando `omitirPonderacion` (ver abajo). */
   ponderacion: number
+  /** `true` cuando la unidad NO calcula por "Ponderado" — es decir,
+   *  "Promedio simple" o "Suma de puntos" — ahí el backend rechaza que se
+   *  mande `PONDERACION` (ver el comentario de `createUnidadActividadesColumns`
+   *  en `columns-unidad-actividades.tsx`: con esos dos métodos el % no se
+   *  edita a mano). */
+  omitirPonderacion?: boolean
   /** Obligatorio en `true` solo si la actividad YA estaba vinculada a OTRA
    *  unidad — vincular una huérfana no lo necesita. El modal actual (ver
    *  `DialogAgregarActividad`) solo ofrece huérfanas, así que siempre manda
@@ -26,12 +33,14 @@ function linkActividadUnidad({
   unidadId,
   actividadId,
   ponderacion,
+  omitirPonderacion,
   permitirMoverDeUnidad,
 }: LinkActividadInput): Promise<LinkActividadResponse> {
-  return api.put(`/eval-col/planeador/unidades/${unidadId}/actividades/${actividadId}`, {
-    PONDERACION: ponderacion,
+  const body: Record<string, unknown> = {
     PERMITIR_MOVER_DE_UNIDAD: permitirMoverDeUnidad ?? false,
-  })
+  }
+  if (!omitirPonderacion) body.PONDERACION = ponderacion
+  return api.put(`/eval-col/planeador/unidades/${unidadId}/actividades/${actividadId}`, body)
 }
 
 interface UseLinkActividadUnidadOptions {

@@ -7,6 +7,7 @@ import type { MutationConfig } from "@/lib/react-query"
 import { actividadesQueryKey } from "@/features/planeador/api/query/use-actividades-query"
 import { actividadDetalleQueryKey } from "@/features/planeador/api/query/use-actividad-detalle-query"
 import { resolveTipoActividadId } from "@/features/planeador/api/query/use-tipo-actividad-catalog"
+import { resolveInstrumentoEvaluacionId } from "@/features/planeador/api/query/use-instrumento-evaluacion-catalog"
 import type { Actividad } from "@/features/planeador/api/types/actividad"
 
 interface UpdateActividadInput {
@@ -42,6 +43,7 @@ async function updateActividad({ actividadId, data }: UpdateActividadInput): Pro
     ES_EVALUATIVA: data.esEvaluativa ? "S" : "N",
     FECHA_INICIO: data.fechaInicio,
     FECHA_CIERRE: data.fechaCierre,
+    MATERIAL_REQUERIDO: data.materiales,
   }
   if (data.grupoId != null) body.FK_TGRUPO = data.grupoId
   if (data.asignaturaId != null) body.FK_TASIGNATURA = data.asignaturaId
@@ -53,6 +55,14 @@ async function updateActividad({ actividadId, data }: UpdateActividadInput): Pro
   // "Ponderado" — el form ya deja cargado solo el que corresponde.
   if (data.esEvaluativa && data.notaMaxima != null) body.NOTA_MAXIMA = data.notaMaxima
   else if (data.esEvaluativa && data.ponderacion > 0) body.PONDERACION = data.ponderacion
+  // Necesario ANTES de poder (re)definir la estructura del instrumento
+  // (`PUT .../instrumento`, `update-instrumento-actividad.ts`): ese endpoint
+  // exige que `TACTIVIDAD.FK_TLV_INSTRUMENTO_EVALUACION` ya coincida con lo
+  // que se está definiendo (400/22023 si no calza).
+  if (data.esEvaluativa) {
+    const instrumentoId = await resolveInstrumentoEvaluacionId(data.instrumento)
+    if (instrumentoId != null) body.FK_TLV_INSTRUMENTO_EVALUACION = instrumentoId
+  }
   return api.put(`/eval-col/planeador/actividades/${actividadId}`, body)
 }
 

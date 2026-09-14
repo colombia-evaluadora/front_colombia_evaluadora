@@ -36,3 +36,30 @@ export function useInstrumentoEvaluacionCatalogQuery() {
     staleTime: Infinity,
   })
 }
+
+export interface InstrumentoEvaluacionOption {
+  id: number
+  nombre: string
+}
+
+/** No es un hook: se llama directo desde las mutaciones de crear/editar
+ *  actividad y definir instrumento, que necesitan el `id` real al armar el
+ *  body — mismo criterio que `resolveCalculoDefinitivaId`. */
+async function fetchInstrumentoEvaluacionOptions(): Promise<InstrumentoEvaluacionOption[]> {
+  const rows = await fetchSelectCategory("INSTRUMENTO_EVALUACION")
+  return rows.map((row) => ({
+    id: row.pk_lista_valor,
+    nombre: INSTRUMENTO_EVALUACION_POR_CODIGO[row.valor] ?? row.nombre,
+  }))
+}
+
+/**
+ * Resuelve `FK_TLV_INSTRUMENTO_EVALUACION` (al crear/editar la actividad) y
+ * `metodoValoracion` del instrumento "Otro" (`PUT .../instrumento`, colección
+ * Postman `planeador-instrumentos-tipos-completo`, 5.3 — restringido a
+ * RUBRICA|LISTA_COTEJO|ESCALA_VALORACION, el front nunca pide "Otro" acá).
+ */
+export async function resolveInstrumentoEvaluacionId(nombre: string): Promise<number | undefined> {
+  const options = await fetchInstrumentoEvaluacionOptions()
+  return options.find((o) => o.nombre === nombre)?.id
+}

@@ -1,9 +1,7 @@
 import { useEffect, useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 
-import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { getErrorMessage } from "@/lib/api-client"
-import { useNotify } from "@/components/notice/notice-context"
 import { NoticeBanner, type NoticeVariant } from "@/components/notice/notice-banner"
 import { Button } from "@/components/ui/button"
 import {
@@ -26,13 +24,9 @@ import { SelectGeneralAreaDialog } from "@/features/establishment/academic-perio
 import { useGeneralAreasQuery } from "@/features/establishment/academic-period/api/query/use-general-areas"
 import { useEspecialidadesQuery } from "@/features/establishment/academic-period/api/query/use-especialidades"
 import { usePeriodAreasQuery } from "@/features/establishment/academic-period/api/query/use-period-areas"
-import {
-  useSubjectDetailsQuery,
-  type SubjectDetail,
-} from "@/features/establishment/academic-period/api/query/use-subject-details-query"
+import { useSubjectDetailsQuery } from "@/features/establishment/academic-period/api/query/use-subject-details-query"
 import { useCreateAreaSubject } from "@/features/establishment/academic-period/api/mutations/create-area-subject"
 import { createSubject } from "@/features/establishment/academic-period/api/mutations/create-subject"
-import { updateSubject } from "@/features/establishment/academic-period/api/mutations/update-subject"
 import { DEFAULT_SUBJECT_COLOR } from "@/features/establishment/academic-period/components/schedule-data"
 
 interface QuickCreateSubjectDialogProps {
@@ -40,25 +34,26 @@ interface QuickCreateSubjectDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSaved: (subject: { id: number; nombreInterno: string }) => void
-  subject?: SubjectDetail
   isPreescolar?: boolean
 }
 
 const EMPTY_AREA_SELECTION: AreaSelection = { mode: "new", nombre: "" }
 
+// Modal de creación rápida abierto desde el selector de "Asignaturas" del
+// Plan de Estudio (comportamiento tipo `especialidad-select.tsx`: listado +
+// "Crear" al fondo). Solo crea -- editar una asignatura existente vive
+// inline en `subject-inline-edit-fields.tsx` (ver `dialog-create-study-
+// plan.tsx`), no acá.
 export function QuickCreateSubjectDialog({
   academicPeriodId,
   open,
   onOpenChange,
   onSaved,
-  subject,
   isPreescolar,
 }: QuickCreateSubjectDialogProps) {
-  const { notify } = useNotify()
   const queryClient = useQueryClient()
   const subjectWord = isPreescolar ? "dimensión" : "asignatura"
   const subjectWordCap = isPreescolar ? "Dimensión" : "Asignatura"
-  const isEditing = subject != null
 
   const [notice, setNotice] = useState<{ message: string; variant: NoticeVariant } | null>(null)
   const [asignaturaGeneral, setAsignaturaGeneral] = useState("")
@@ -88,39 +83,25 @@ export function QuickCreateSubjectDialog({
 
   const nombreTrim = nombre.trim()
 
+  // En preescolar el área no se elige: se busca una ya creada con el mismo
+  // nombre de la dimensión, o se crea una nueva si no existe ninguna.
   const preescolarExistingArea = isPreescolar
     ? periodAreas.find((a) => a.label.trim().toUpperCase() === nombreTrim.toUpperCase())
     : undefined
 
-  const resolvedAreaId = isEditing
-    ? subject.areaId
-    : isPreescolar
-      ? preescolarExistingArea?.id
-      : areaSelection.mode === "existing"
-        ? areaSelection.id
-        : undefined
+  const resolvedAreaId = isPreescolar
+    ? preescolarExistingArea?.id
+    : areaSelection.mode === "existing"
+      ? areaSelection.id
+      : undefined
   const existingAreaSubjects =
-    resolvedAreaId != null
-      ? subjectDetails.filter((s) => s.areaId === resolvedAreaId && s.id !== subject?.id)
-      : []
+    resolvedAreaId != null ? subjectDetails.filter((s) => s.areaId === resolvedAreaId) : []
 
   useEffect(() => {
     if (!open) return
-    if (subject) {
-      setNotice(null)
-      setAsignaturaGeneral(generalAreas.find((a) => a.id === subject.asignaturaGeneralId)?.nombre ?? "")
-      setNombre(subject.nombreInterno)
-      setAbreviacion(subject.abreviacion)
-      setOrdenReportes(subject.ordenReportes)
-      setColor(subject.color || DEFAULT_SUBJECT_COLOR)
-      setEspecialidad(subject.especialidad ?? "")
-      setAreaSelection({ mode: "existing", id: subject.areaId, nombre: subject.areaNombre })
-      setSubmitted(false)
-    } else {
-      reset()
-    }
+    reset()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, subject, generalAreas])
+  }, [open])
 
   function reset() {
     setNotice(null)
@@ -140,7 +121,7 @@ export function QuickCreateSubjectDialog({
   }
 
   const hasAreaSelection =
-    isEditing || isPreescolar || areaSelection.mode === "existing" || areaSelection.nombre.trim() !== ""
+    isPreescolar || areaSelection.mode === "existing" || areaSelection.nombre.trim() !== ""
 
   const missingFields =
     (!isPreescolar && !asignaturaGeneral) ||
@@ -169,31 +150,10 @@ export function QuickCreateSubjectDialog({
     setIsSaving(true)
     setNotice(null)
     try {
-      // Al editar en preescolar, se conserva la clasificación general que ya
-      // tenía la asignatura en vez de recalcular otro valor "al azar".
       const subjectGeneralId = isPreescolar
-        ? (isEditing ? subject.asignaturaGeneralId : fallbackGeneralAreaId) ?? undefined
-        : areaGeneralNameToId(asignaturaGeneral) ?? undefined
+        ? fallbackGeneralAreaId
+        : (areaGeneralNameToId(asignaturaGeneral) ?? undefined)
       if (subjectGeneralId == null) return
-
-      if (isEditing) {
-        await updateSubject({
-          subjectId: subject.id,
-          areaGeneralId: subjectGeneralId,
-          nombreInterno: nombreTrim,
-          abreviacion: abreviacion.trim(),
-          ordenReportes,
-          color,
-          enfasisId: isPreescolar ? undefined : especialidadNombreToId(especialidad),
-        })
-        queryClient.invalidateQueries({ queryKey: ["area-subjects"] })
-        queryClient.invalidateQueries({ queryKey: ["subjects"] })
-        queryClient.invalidateQueries({ queryKey: ["subject-details", academicPeriodId] })
-        notify(SUCCESS_MESSAGES.areaSubject.updated)
-        onSaved({ id: subject.id, nombreInterno: nombreTrim })
-        close()
-        return
-      }
 
       let areaId = resolvedAreaId
       if (areaId == null) {
@@ -225,7 +185,6 @@ export function QuickCreateSubjectDialog({
       queryClient.invalidateQueries({ queryKey: ["area-subjects"] })
       queryClient.invalidateQueries({ queryKey: ["subjects"] })
       queryClient.invalidateQueries({ queryKey: ["period-areas", academicPeriodId] })
-      notify(SUCCESS_MESSAGES.areaSubject.created)
       onSaved({ id: subjectId, nombreInterno: nombreTrim })
       close()
     } catch (error) {
@@ -252,9 +211,7 @@ export function QuickCreateSubjectDialog({
       </DialogPortal>
       <DialogContent className="sm:max-w-lg" showCloseButton={false}>
         <DialogHeader>
-          <DialogTitle>
-          {isEditing ? "Editar" : "Crear"} {subjectWord}
-        </DialogTitle>
+          <DialogTitle>Crear {subjectWord}</DialogTitle>
         </DialogHeader>
 
         <NoticeBanner
@@ -338,16 +295,7 @@ export function QuickCreateSubjectDialog({
             </Field>
           )}
 
-          {!isPreescolar && isEditing && (
-            <Field variant="outlined">
-              <FieldLabel>Área</FieldLabel>
-              <p className="text-sm text-muted-foreground">
-                {subject.areaNombre} — no se puede cambiar de área editando la {subjectWord}.
-              </p>
-            </Field>
-          )}
-
-          {!isPreescolar && !isEditing && (
+          {!isPreescolar && (
             <Field variant="outlined" data-invalid={submitted && !hasAreaSelection}>
               <FieldLabel>Área*</FieldLabel>
               <AreaSelect
@@ -358,7 +306,7 @@ export function QuickCreateSubjectDialog({
             </Field>
           )}
 
-          {isPreescolar && !isEditing && (
+          {isPreescolar && (
             <p className="text-xs text-muted-foreground">
               {preescolarExistingArea
                 ? `Se agregará dentro del área "${preescolarExistingArea.label}" (ya creada).`

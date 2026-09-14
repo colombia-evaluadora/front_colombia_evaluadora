@@ -44,6 +44,7 @@ export function useUpdateStudyPlanItem({ mutationConfig }: UseUpdateStudyPlanIte
     ...mutationConfig,
     onSuccess: (...args) => {
       queryClient.invalidateQueries({ queryKey: ["study-plans"] })
+      queryClient.invalidateQueries({ queryKey: ["study-plan-available"] })
       mutationConfig?.onSuccess?.(...args)
     },
   })
