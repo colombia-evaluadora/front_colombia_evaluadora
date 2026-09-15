@@ -166,15 +166,18 @@ export function TransferGradesDialog({
   return (
     <>
       <Dialog open>
-        <DialogContent showCloseButton={false} className="sm:max-w-3xl">
-          <DialogHeader className="flex-row items-start justify-between gap-4 space-y-0">
+        <DialogContent
+          showCloseButton={false}
+          className="flex max-h-[90vh] flex-col overflow-hidden p-0 sm:max-w-3xl"
+        >
+          <DialogHeader className="shrink-0 flex-row items-start justify-between gap-4 space-y-0 px-6 pt-6">
             <DialogTitle>Trasladar calificaciones</DialogTitle>
             <span className="shrink-0 text-xs text-muted-foreground">
               Última actualización: {lastUpdated}
             </span>
           </DialogHeader>
 
-          <DialogDescription className="-mt-4">
+          <DialogDescription className="-mt-4 shrink-0 px-6">
             {step === "periodo" ? (
               <>
                 Este estudiante viene de otro establecimiento y tiene calificaciones registradas.
@@ -192,6 +195,12 @@ export function TransferGradesDialog({
             )}
           </DialogDescription>
 
+          {/* Único bloque con scroll: header y footer quedan fijos afuera —
+              el `DialogContent` no tenía `max-h`/límite de altura antes, así
+              que la tabla de asignaturas (potencialmente larga) podía
+              empujar todo el diálogo (título + footer) fuera de la
+              pantalla. */}
+          <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-6">
           <ol className="flex items-center justify-center gap-3">
             <li className="flex flex-col items-center gap-1">
               <span
@@ -448,8 +457,9 @@ export function TransferGradesDialog({
               </div>
             </>
           )}
+          </div>
 
-          <DialogFooter>
+          <DialogFooter className="shrink-0 px-6 pb-6">
             {step === "asignaturas" && (
               <Button
                 type="button"

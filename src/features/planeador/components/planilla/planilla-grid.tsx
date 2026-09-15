@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { CaretDownIcon, CaretUpIcon, ClipboardCheckIcon, ProhibitIcon } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
 
@@ -235,16 +236,23 @@ function ColumnaHeader({
             de la actividad puede ser largo y una sola línea recortaba
             demasiado texto útil. */}
         <span className="line-clamp-2 min-w-0 flex-1 normal-case">{columna.titulo}</span>
-        <Button
-          variant="ghost"
-          color="neutral"
-          size="icon-xs"
-          className="shrink-0"
-          onClick={() => onAbrirBulk(columna)}
-          aria-label={`Calificar "${columna.titulo}" en bloque`}
-        >
-          <ClipboardCheckIcon className="size-4" />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                variant="ghost"
+                color="neutral"
+                size="icon-xs"
+                className="shrink-0"
+                onClick={() => onAbrirBulk(columna)}
+                aria-label={`Calificar "${columna.titulo}" en bloque`}
+              />
+            }
+          >
+            <ClipboardCheckIcon className="size-4" />
+          </TooltipTrigger>
+          <TooltipContent>Calificar "{columna.titulo}" en bloque</TooltipContent>
+        </Tooltip>
       </div>
     </th>
   )

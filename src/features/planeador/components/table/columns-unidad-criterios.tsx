@@ -1,6 +1,7 @@
 import type { ColumnDef } from "@tanstack/react-table"
 
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { DataTableColumnHeader } from "@/components/data-table"
 import { PencilIcon, TrashIcon } from "@/components/ui/icons"
 
@@ -59,12 +60,38 @@ export function createUnidadCriteriosColumns(
       header: () => <span className="sr-only">Acciones</span>,
       cell: () => (
         <div className="flex items-center justify-end gap-1">
-          <Button variant="ghost" color="neutral" size="icon-sm" disabled aria-label="Editar criterio">
-            <PencilIcon />
-          </Button>
-          <Button variant="ghost" color="neutral" size="icon-sm" disabled aria-label="Eliminar criterio">
-            <TrashIcon />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  color="neutral"
+                  size="icon-sm"
+                  disabled
+                  aria-label="Editar criterio"
+                />
+              }
+            >
+              <PencilIcon />
+            </TooltipTrigger>
+            <TooltipContent>Editar criterio</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  color="neutral"
+                  size="icon-sm"
+                  disabled
+                  aria-label="Eliminar criterio"
+                />
+              }
+            >
+              <TrashIcon />
+            </TooltipTrigger>
+            <TooltipContent>Eliminar criterio</TooltipContent>
+          </Tooltip>
         </div>
       ),
       enableSorting: false,
