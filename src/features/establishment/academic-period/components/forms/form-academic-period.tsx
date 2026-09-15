@@ -85,6 +85,7 @@ export function AcademicPeriodForm({
   const { data: sedes = [] } = useSedeOptionsQuery()
   const { data: jornadas = [] } = useJornadasQuery()
   const { data: statusOptions = [] } = useAcademicPeriodStatusesQuery()
+  const isCreating = currentPeriodId == null
 
   const form = useForm({
     defaultValues: initialValues,
@@ -98,17 +99,19 @@ export function AcademicPeriodForm({
   })
 
   const isDefaultValue = useSelector(form.store, (state) => state.isDefaultValue)
-  // Sin esto, un campo que nunca se tocó (p.ej. cargado de un periodo
-  // existente con un valor que ya no pasa el schema) bloqueaba "Guardar" en
-  // silencio: `isInvalid` solo miraba `isTouched`, así que ni el borde rojo
-  // ni el mensaje aparecían — el click no hacía nada y no había forma de
-  // saber por qué. Tras un intento de submit, se muestran los errores de
-  // todos los campos, se hayan tocado o no.
   const submissionAttempts = useSelector(form.store, (state) => state.submissionAttempts)
 
   useEffect(() => {
     onDirtyChange?.(!isDefaultValue)
   }, [isDefaultValue, onDirtyChange])
+
+  // Al crear, el periodo siempre arranca en "Inscripciones" — solo se puede
+  // cambiar de estado después, editando el periodo ya creado.
+  useEffect(() => {
+    if (!isCreating || form.state.values.statusId) return
+    const inscripciones = statusOptions.find((o) => o.key === "I")
+    if (inscripciones) form.setFieldValue("statusId", inscripciones.id)
+  }, [isCreating, statusOptions, form])
 
 
   const isFormValid = useSelector(
@@ -339,6 +342,7 @@ export function AcademicPeriodForm({
                 <Select
                   value={field.state.value ? String(field.state.value) : ""}
                   onValueChange={(value) => value && field.handleChange(Number(value))}
+                  disabled={isCreating}
                   // `onBlur` en el trigger disparaba `handleBlur` apenas se
                   // abría el popup (el foco se mueve a la lista), marcando
                   // `isTouched` — y por lo tanto el borde/mensaje en rojo—
