@@ -532,7 +532,7 @@ function IdentificacionSection({
                       variant="outlined"
                       className="min-w-0 flex-1 [&_[data-slot=select-trigger]]:rounded-r-none [&_[data-slot=select-trigger]]:border-r-0"
                     >
-                      <FieldLabel htmlFor={field.name}>{instrumentoLabel} asociada</FieldLabel>
+                      <FieldLabel htmlFor={field.name}>{instrumentoLabel}</FieldLabel>
                       <Select
                         // `Select` siempre trabaja con `value` string — el id real
                         // es numérico, así que se convierte acá. `0` es el
