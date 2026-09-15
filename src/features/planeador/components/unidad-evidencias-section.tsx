@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { InfoIcon, PencilIcon, SpinnerIcon } from "@/components/ui/icons"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 
 import type { ReferenteEnunciado } from "@/features/planeador/api/query/use-referente-curricular-query"
@@ -55,16 +56,23 @@ export function UnidadFicha({
       <legend className="flex w-full items-center justify-between gap-2 px-1.5 text-sm font-semibold">
         <span>Unidad temática seleccionada: {nombre}</span>
         {onEditar && (
-          <Button
-            type="button"
-            variant="ghost"
-            color="neutral"
-            size="icon-xs"
-            aria-label={`Editar ${nombre}`}
-            onClick={onEditar}
-          >
-            <PencilIcon />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  type="button"
+                  variant="ghost"
+                  color="neutral"
+                  size="icon-xs"
+                  aria-label={`Editar ${nombre}`}
+                  onClick={onEditar}
+                />
+              }
+            >
+              <PencilIcon />
+            </TooltipTrigger>
+            <TooltipContent>{`Editar ${nombre}`}</TooltipContent>
+          </Tooltip>
         )}
       </legend>
       <div className="grid gap-4 sm:grid-cols-3">

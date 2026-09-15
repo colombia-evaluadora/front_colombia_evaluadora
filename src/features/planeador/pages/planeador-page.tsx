@@ -2,6 +2,7 @@ import * as React from "react"
 import { Link, useNavigate, useSearch } from "@tanstack/react-router"
 
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { NoticeProvider, useNotify } from "@/components/notice/notice-context"
 import {
   DropdownMenu,
@@ -391,28 +392,42 @@ function PlaneadorPageContent() {
                   })}
                 </span>
                 <div className="flex gap-0">
-                  <Button
-                    variant="outline"
-                    color="neutral"
-                    size="icon-xs"
-                    aria-label="Día anterior"
-                    className="size-6 rounded-none border-r-0"
-                    disabled={!diaAnterior}
-                    onClick={() => diaAnterior && setDia(diaAnterior)}
-                  >
-                    <CaretLeftIcon />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    color="neutral"
-                    size="icon-xs"
-                    aria-label="Día siguiente"
-                    className="size-6 rounded-none"
-                    disabled={!diaSiguiente}
-                    onClick={() => diaSiguiente && setDia(diaSiguiente)}
-                  >
-                    <CaretRightIcon />
-                  </Button>
+                  <Tooltip>
+                    <TooltipTrigger
+                      render={
+                        <Button
+                          variant="outline"
+                          color="neutral"
+                          size="icon-xs"
+                          aria-label="Día anterior"
+                          className="size-6 rounded-none border-r-0"
+                          disabled={!diaAnterior}
+                          onClick={() => diaAnterior && setDia(diaAnterior)}
+                        />
+                      }
+                    >
+                      <CaretLeftIcon />
+                    </TooltipTrigger>
+                    <TooltipContent>Día anterior</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger
+                      render={
+                        <Button
+                          variant="outline"
+                          color="neutral"
+                          size="icon-xs"
+                          aria-label="Día siguiente"
+                          className="size-6 rounded-none"
+                          disabled={!diaSiguiente}
+                          onClick={() => diaSiguiente && setDia(diaSiguiente)}
+                        />
+                      }
+                    >
+                      <CaretRightIcon />
+                    </TooltipTrigger>
+                    <TooltipContent>Día siguiente</TooltipContent>
+                  </Tooltip>
                 </div>
               </div>
 

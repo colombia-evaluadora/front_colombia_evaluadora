@@ -14,6 +14,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { useDeleteActividad } from "@/features/planeador/api/mutations/delete-actividad"
 import type { Actividad } from "@/features/planeador/api/types/actividad"
@@ -66,20 +67,27 @@ export function DialogDeleteActividad({
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger
-        render={
-          <Button
-            type="button"
-            variant="ghost"
-            color="neutral"
-            size="icon-sm"
-            aria-label={`Eliminar ${actividad.nombre}`}
-            {...triggerProps}
-          />
-        }
-      >
-        <TrashIcon />
-      </AlertDialogTrigger>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <AlertDialogTrigger
+              render={
+                <Button
+                  type="button"
+                  variant="ghost"
+                  color="neutral"
+                  size="icon-sm"
+                  aria-label={`Eliminar ${actividad.nombre}`}
+                  {...triggerProps}
+                />
+              }
+            />
+          }
+        >
+          <TrashIcon />
+        </TooltipTrigger>
+        <TooltipContent>{`Eliminar ${actividad.nombre}`}</TooltipContent>
+      </Tooltip>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Eliminar actividad</AlertDialogTitle>
