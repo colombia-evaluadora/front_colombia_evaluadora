@@ -65,6 +65,7 @@ import {
   studyPlanFormSchema,
   type StudyPlanFormValues,
 } from "@/features/establishment/academic-period/api/schema"
+import { pluralizeSubjectLabel } from "@/features/establishment/academic-period/lib/pluralize-subject-label"
 
 const EMPTY: StudyPlanFormValues = {
   asignaturaId: 0,
@@ -85,9 +86,8 @@ interface CreateStudyPlanDialogProps {
   academicPeriodId?: number
   gradeId?: number
   item?: StudyPlanItem
-  // Solución temporal de front: en preescolar se rotula como "dimensión" en
-  // vez de "asignatura" — mismo modelo de datos, solo cambia el texto.
   isPreescolar?: boolean
+  subjectLabel?: string
 }
 
 export function CreateStudyPlanDialog({
@@ -95,9 +95,11 @@ export function CreateStudyPlanDialog({
   gradeId,
   item,
   isPreescolar,
+  subjectLabel = "Asignatura",
 }: CreateStudyPlanDialogProps) {
   const isEditing = item != null
-  const subjectWord = isPreescolar ? "dimensión" : "asignatura"
+  const subjectWord = subjectLabel.toLowerCase()
+  const subjectLabelPlural = pluralizeSubjectLabel(subjectLabel)
 
   const { notify } = useNotify()
   const queryClient = useQueryClient()
@@ -299,10 +301,6 @@ export function CreateStudyPlanDialog({
             {isEditing ? "Editar plan de estudio" : "Agregar plan de estudio"}
           </DialogTitle>
         </DialogHeader>
-
-        {/* Único bloque con scroll: header y footer quedan fijos afuera —
-            antes `overflow-y-auto` vivía en el `DialogContent` entero, así
-            que scrollear el form se llevaba el título y los botones con él. */}
         <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-6">
         <NoticeBanner
           notice={notice}
@@ -331,9 +329,7 @@ export function CreateStudyPlanDialog({
                 : field.state.meta.errors
               return (
                 <Field variant="outlined" data-invalid={isInvalid || nameMissing}>
-                  <FieldLabel htmlFor={field.name}>
-                    {isPreescolar ? "Dimensiones*" : "Asignaturas*"}
-                  </FieldLabel>
+                  <FieldLabel htmlFor={field.name}>{subjectLabelPlural}*</FieldLabel>
                   {hasValue ? (
                     <div ref={pickerAnchorRef}>
                       <InputGroup className="h-11 rounded-md border border-input px-3 hover:border-ring has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20 has-[[data-slot][aria-invalid=true]]:border-red">
@@ -379,9 +375,7 @@ export function CreateStudyPlanDialog({
                               <ComboboxGroup>
                                 {asignaturaOptions.length === 0 ? (
                                   <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                                    {isPreescolar
-                                      ? "No hay dimensiones disponibles para este grado."
-                                      : "No hay asignaturas disponibles para este grado."}
+                                    No hay opciones disponibles para este grado.
                                   </div>
                                 ) : (
                                   asignaturaOptions.map((option) => (
@@ -429,9 +423,7 @@ export function CreateStudyPlanDialog({
                         <ComboboxGroup>
                           {asignaturaOptions.length === 0 ? (
                             <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                              {isPreescolar
-                                ? "No hay dimensiones disponibles para este grado."
-                                : "No hay asignaturas disponibles para este grado."}
+                              No hay opciones disponibles para este grado.
                             </div>
                           ) : (
                             asignaturaOptions.map((option) => (
@@ -461,6 +453,7 @@ export function CreateStudyPlanDialog({
                     onOpenChange={setCreateSubjectOpen}
                     onSaved={handleSubjectCreated}
                     isPreescolar={isPreescolar}
+                    subjectLabel={subjectLabel}
                   />
                 </Field>
               )
@@ -480,6 +473,7 @@ export function CreateStudyPlanDialog({
                   onNombreChange={setSubjectName}
                   academicPeriodId={academicPeriodId}
                   isPreescolar={isPreescolar}
+                  subjectLabel={subjectLabel}
                   notify={notifyInDialog}
                   onSaved={(saved) => {
                     queryClient.invalidateQueries({
@@ -544,8 +538,6 @@ export function CreateStudyPlanDialog({
                                 aria-invalid={isInvalid}
                                 value={Number.isNaN(field.state.value) ? "" : field.state.value}
                                 onBlur={field.handleBlur}
-                                // INFLUENCIA_AREA admite decimales (NUMERIC(5,2)), solo
-                                // se bloquea signo/notación científica.
                                 onKeyDown={(e) => {
                                   if (["-", "+", "e", "E"].includes(e.key)) e.preventDefault()
                                 }}
@@ -583,7 +575,6 @@ export function CreateStudyPlanDialog({
                               aria-invalid={isInvalid}
                               value={Number.isNaN(field.state.value) ? "" : field.state.value}
                               onBlur={field.handleBlur}
-                              // NUMERO_CREDITO es entero, sin decimales ni negativos.
                               onKeyDown={(e) => {
                                 if (["-", "+", ".", ",", "e", "E"].includes(e.key)) {
                                   e.preventDefault()

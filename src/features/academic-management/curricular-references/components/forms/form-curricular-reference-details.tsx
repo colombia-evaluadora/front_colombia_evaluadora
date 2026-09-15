@@ -13,6 +13,7 @@ import {
 import { useGeneralAreasQuery } from "@/features/establishment/academic-period/api/query/use-general-areas"
 import { SelectGeneralAreasDialog } from "@/features/academic-management/curricular-references/components/dialogs/dialog-select-general-areas"
 import { SubjectsMultiSelect } from "@/features/establishment/academic-period/components/subjects-multi-select"
+import { SubjectLabelSelect } from "@/features/academic-management/curricular-references/components/forms/subject-label-select"
 
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 import type { CurricularReferenceDraft } from "@/features/academic-management/curricular-references/api/types/curricular-reference"
@@ -112,49 +113,7 @@ export function CurricularReferenceDetailsForm({
         </Field>
       </div>
 
-      <div>
-        <p className="text-sm font-bold">Estructura del referente</p>
-      </div>
-
       <div className="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2">
-        <Field
-          orientation="vertical"
-          variant="outlined"
-          className="w-full"
-          data-invalid={errors["level1"] ? "true" : undefined}
-        >
-          <FieldLabel htmlFor="curricular-reference-level1">Nivel 1 *</FieldLabel>
-          <Input
-            id="curricular-reference-level1"
-            size="sm"
-            maxLength={60}
-            value={value.level1}
-            aria-invalid={Boolean(errors["level1"])}
-            onChange={(event) => onChange({ ...value, level1: event.target.value })}
-            placeholder="Ej. Enunciado / Propósito"
-          />
-          <FieldError>{errors["level1"]}</FieldError>
-        </Field>
-
-        <Field
-          orientation="vertical"
-          variant="outlined"
-          className="w-full"
-          data-invalid={errors["level2"] ? "true" : undefined}
-        >
-          <FieldLabel htmlFor="curricular-reference-level2">Nivel 2 *</FieldLabel>
-          <Input
-            id="curricular-reference-level2"
-            size="sm"
-            maxLength={60}
-            value={value.level2}
-            aria-invalid={Boolean(errors["level2"])}
-            onChange={(event) => onChange({ ...value, level2: event.target.value })}
-            placeholder="Ej. Evidencia / Imprescindible"
-          />
-          <FieldError>{errors["level2"]}</FieldError>
-        </Field>
-
         <Field
           orientation="vertical"
           variant="outlined"
@@ -220,7 +179,57 @@ export function CurricularReferenceDetailsForm({
           </ComboboxField>
           <FieldError>{errors["evaluationType"]}</FieldError>
         </Field>
+      </div>
 
+      <div>
+        <p className="text-sm font-bold">Estructura del referente</p>
+      </div>
+
+      <div className="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2">
+        <Field
+          orientation="vertical"
+          variant="outlined"
+          className="w-full"
+          data-invalid={errors["level1"] ? "true" : undefined}
+        >
+          <FieldLabel htmlFor="curricular-reference-level1">Nivel 1 *</FieldLabel>
+          <Input
+            id="curricular-reference-level1"
+            size="sm"
+            maxLength={60}
+            value={value.level1}
+            aria-invalid={Boolean(errors["level1"])}
+            onChange={(event) => onChange({ ...value, level1: event.target.value })}
+            placeholder="Ej. Enunciado / Propósito"
+          />
+          <FieldError>{errors["level1"]}</FieldError>
+        </Field>
+
+        <Field
+          orientation="vertical"
+          variant="outlined"
+          className="w-full"
+          data-invalid={errors["level2"] ? "true" : undefined}
+        >
+          <FieldLabel htmlFor="curricular-reference-level2">Nivel 2 *</FieldLabel>
+          <Input
+            id="curricular-reference-level2"
+            size="sm"
+            maxLength={60}
+            value={value.level2}
+            aria-invalid={Boolean(errors["level2"])}
+            onChange={(event) => onChange({ ...value, level2: event.target.value })}
+            placeholder="Ej. Evidencia / Imprescindible"
+          />
+          <FieldError>{errors["level2"]}</FieldError>
+        </Field>
+      </div>
+
+      <div>
+        <p className="text-sm font-bold">Áreas/dimensiones</p>
+      </div>
+
+      <div className="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2">
         <Field orientation="vertical" variant="outlined" className="w-full">
           <FieldLabel htmlFor="curricular-reference-areas">Áreas o dimensiones</FieldLabel>
           <SelectGeneralAreasDialog
@@ -236,6 +245,16 @@ export function CurricularReferenceDetailsForm({
               })
             }
             placeholder="Seleccione"
+          />
+        </Field>
+
+        <Field orientation="vertical" variant="outlined" className="w-full">
+          <FieldLabel htmlFor="curricular-reference-subject-label">Personalizar</FieldLabel>
+          <SubjectLabelSelect
+            id="curricular-reference-subject-label"
+            value={value.subjectLabel}
+            onChange={(option) => onChange({ ...value, subjectLabel: option })}
+            placeholder="Automático según el nivel"
           />
         </Field>
 
