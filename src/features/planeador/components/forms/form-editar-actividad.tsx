@@ -855,9 +855,36 @@ function AsignaturaGradoSection({ form }: { form: FormActividad }) {
       if (par) {
         form.setFieldValue("gradoId", par.gradoId)
         form.setFieldValue("grado", par.gradoNombre)
+        return
       }
     }
-  }, [gradoId, grupoId, asignaturaId, docenteGrupos, docenteGradoAsignatura, form])
+    // Alta de actividad DESDE una Unidad (`CrearActividadForm` en
+    // `planeador-crear-actividad-page.tsx`, `unidadId` de la URL): ahí solo
+    // hay `grado`/`asignatura` (los NOMBRES) precargados, sin ningún id —
+    // `UnidadTematica.gradoId`/`.asignaturaId` casi nunca vienen del backend
+    // real (ver su comentario en `unidad-tematica.ts`). Se cruzan los DOS
+    // nombres juntos contra `docentes/grado-asignatura` (un solo match,
+    // a diferencia de los cruces de arriba que solo tienen UN dato) y,
+    // encontrado el par, se elige de una el PRIMER grupo de ese grado
+    // (`docentes/grupos`) para que "Asignatura / materia" quede habilitado
+    // (depende de Grado+Grupo, no solo de Grado) — el docente sigue
+    // pudiendo cambiar el grupo después, "Unidad temática asociada" no se
+    // toca (ya viene elegida) porque esa sí depende solo de grado/asignatura.
+    if (grado && asignatura) {
+      const par = docenteGradoAsignatura.find(
+        (p) => p.gradoNombre === grado && p.asignaturaNombre === asignatura,
+      )
+      if (par) {
+        form.setFieldValue("gradoId", par.gradoId)
+        form.setFieldValue("asignaturaId", par.asignaturaId)
+        const combo = docenteGrupos.find((g) => g.gradoId === par.gradoId)
+        if (combo) {
+          form.setFieldValue("grupoId", combo.grupoId)
+          form.setFieldValue("grupo", grupoLabel(combo))
+        }
+      }
+    }
+  }, [gradoId, grupoId, asignaturaId, grado, asignatura, docenteGrupos, docenteGradoAsignatura, form])
 
   const asignaturas = docenteGradoAsignatura.filter((par) => par.gradoId === gradoId)
 
