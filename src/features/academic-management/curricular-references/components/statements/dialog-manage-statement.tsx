@@ -138,7 +138,7 @@ export function ManageStatementDialog({
         <form
           id="manage-statement-form"
           onSubmit={handleSubmit}
-          className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden"
+          className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-1"
         >
           <Field orientation="vertical" variant="outlined" data-invalid={error ? "true" : undefined}>
             <FieldLabel htmlFor="statement-text" className="right-2.5 w-auto break-words hyphens-auto" lang="es">

@@ -178,7 +178,7 @@ export function DialogBibliotecaRecursos({
             antes el `DialogContent` no tenía `max-h`/límite de altura, así
             que una página llena de tarjetas de recurso podía empujar el
             título y los botones fuera de la pantalla. */}
-        <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
+        <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-1">
         {/* Buscador: `<Field variant="outlined">` con label flotante.
             El ícono `MagnifyingGlassIcon` ya no se necesita como addon —
             con el label flotante se vería redundante (la etiqueta

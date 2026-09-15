@@ -405,6 +405,11 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
           "flex max-h-[85vh] flex-col overflow-hidden",
           hasParentChoice ? "sm:max-w-2xl" : "sm:max-w-sm",
         )}
+        // La X solo se oculta cuando el footer con "Cancelar" ya está
+        // visible (`hasParentChoice`, ver el `DialogFooter` condicional más
+        // abajo) -- sin menú padre elegido todavía no hay footer, y la X
+        // sigue siendo la única forma de cerrar.
+        showCloseButton={!hasParentChoice}
       >
         <DialogHeader className="shrink-0">
           <DialogTitle>{isEditing ? "Editar menú" : "Agregar menú"}</DialogTitle>
@@ -414,7 +419,7 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
             "Submenús" deja agregar filas sin tope (`setDrafts`), y sin esto
             el `DialogContent` (sin max-h) crecía sin límite y se llevaba el
             título/botones con él. */}
-        <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden flex min-w-0 flex-col gap-4">
+        <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-1 flex min-w-0 flex-col gap-4">
           {/* Mismo tratamiento que el diálogo de escalas de valoración: sobre la
               grilla de dos columnas, el campo ocupa el ancho entero mientras es
               la única pregunta y baja a media columna cuando el diálogo crece. */}

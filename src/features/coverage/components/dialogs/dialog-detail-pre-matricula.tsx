@@ -312,7 +312,7 @@ export function DetailPreMatriculaDialog({
             antes `overflow-y-auto` vivía en el `DialogContent` entero, así
             que scrollear el detalle se llevaba el título y los botones con
             él. */}
-        <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden flex flex-col gap-4">
+        <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-1 flex flex-col gap-4">
           {/* ── Datos del estudiante ─────────────────────────────────────────── */}
           <Section title="Datos del estudiante">
             <div className="grid grid-cols-4 gap-x-4 gap-y-4">

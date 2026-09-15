@@ -141,7 +141,7 @@ export function GradeChangeDialog({
           </p>
         </DialogHeader>
 
-        <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden flex flex-col gap-4">
+        <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-1 flex flex-col gap-4">
           <Field variant="outlined">
             <FieldLabel>Seleccione cómo desea realizar el cambio</FieldLabel>
             <RadioGroup

@@ -95,7 +95,7 @@ export function AsignarCupoDialog({
             el aviso de reprobados (`reprobados.map`, sin tope) puede crecer
             con un lote grande de asignación y antes empujaba todo el
             diálogo fuera de la pantalla. */}
-        <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
+        <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-1">
         {reprobados.length > 0 && (
           <Alert variant="destructive">
             <WarningIcon />

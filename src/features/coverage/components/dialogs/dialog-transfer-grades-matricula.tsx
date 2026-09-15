@@ -200,7 +200,7 @@ export function TransferGradesDialog({
               que la tabla de asignaturas (potencialmente larga) podía
               empujar todo el diálogo (título + footer) fuera de la
               pantalla. */}
-          <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
+          <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-1">
           <ol className="flex items-center justify-center gap-3">
             <li className="flex flex-col items-center gap-1">
               <span

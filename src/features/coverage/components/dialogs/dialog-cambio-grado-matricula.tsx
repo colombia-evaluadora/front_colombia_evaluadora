@@ -137,7 +137,7 @@ export function CambioGradoMatriculaDialog({
           )}
         </DialogHeader>
 
-        <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden flex flex-col gap-4">
+        <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-1 flex flex-col gap-4">
           {!sameOrigin && (
             <div className="flex items-start gap-3 rounded-md border border-blue-stroke bg-blue-22 px-4 py-3 text-sm text-foreground">
               <InfoIcon className="size-5 shrink-0 text-blue" />

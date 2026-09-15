@@ -297,7 +297,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
         <div
           className={cn(
             "flex min-w-0 flex-col gap-4",
-            continued && "scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden",
+            continued && "scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-1",
           )}
         >
           <NoticeBanner

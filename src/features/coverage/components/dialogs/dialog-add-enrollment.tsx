@@ -320,7 +320,7 @@ export function AddEnrollmentDialog() {
             fijos afuera — antes `overflow-y-auto` vivía en el
             `DialogContent` entero, así que scrollear un paso largo del
             wizard se llevaba el título y los botones con él. */}
-        <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
+        <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-1">
         {step === 3 && selectedCampus ? (
           <div className="flex items-start gap-3">
             <CheckCircleFillIcon className="size-6 shrink-0 text-green" />

@@ -350,7 +350,7 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
             antes `overflow-y-auto` vivía en el `DialogContent` entero, así
             que scrollear (los campos + las pestañas de abajo) se llevaba el
             título y los botones con él. */}
-        <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
+        <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-1">
         <div className="grid gap-x-4 gap-y-2 sm:grid-cols-2 lg:grid-cols-4">
           <Field
             variant="outlined"

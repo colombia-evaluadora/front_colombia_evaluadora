@@ -1118,7 +1118,7 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
           {/* Único bloque con scroll: header y footer quedan fijos afuera —
               antes `overflow-y-auto` vivía en el `DialogContent` entero, así
               que scrollear el form se llevaba el título y los botones con él. */}
-          <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
+          <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-1">
             <NoticeOutlet className="mb-2" />
 
             <UserDetailsForm
@@ -1251,7 +1251,7 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
               antes `overflow-y-auto` vivía en el `DialogContent` entero, así
               que scrollear (el form + la tabla de permisos) se llevaba el
               título y los botones con él. */}
-          <div className="scrollbar-slim flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overflow-x-hidden">
+          <div className="scrollbar-slim flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overflow-x-hidden pr-1">
           {/* Fila fluida: los campos crecen y bajan de línea solos, y el botón
               ocupa solo lo que mide en vez de reservar una columna entera.
               `gap-y` chico: al envolver, es el espacio entre ambas filas de
@@ -1588,7 +1588,7 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
             <DialogTitle>Información complementaria</DialogTitle>
           </DialogHeader>
 
-          <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
+          <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-1">
             <NoticeOutlet className="mb-2" />
 
             <EmployeeAdditionalInfoForm

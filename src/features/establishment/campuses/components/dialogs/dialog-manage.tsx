@@ -246,7 +246,7 @@ export function ManageCampusDialog({
           <DialogTitle>{isEditMode ? "Editar sede" : "Agregar sede"}</DialogTitle>
         </DialogHeader>
 
-        <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
+        <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-1">
           <NoticeBanner
             notice={notice}
             onClose={() => setNotice(null)}

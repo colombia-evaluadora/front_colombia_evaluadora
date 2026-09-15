@@ -106,7 +106,7 @@ export function CambioSedeMatriculaDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden flex flex-col gap-4">
+        <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-1 flex flex-col gap-4">
           <div className="rounded-md border border-input bg-muted/30 p-4">
             <p className="mb-1 text-sm font-semibold text-foreground">
               Cambios a aplicar - Cambio de sede:

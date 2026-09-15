@@ -423,7 +423,7 @@ export function ModificarMatriculaDialog({
               antes `overflow-y-auto` vivía en el `DialogContent` entero, así
               que scrollear la tabla de estudiantes se llevaba el título y
               los botones con él. */}
-          <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden flex flex-col gap-4">
+          <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-1 flex flex-col gap-4">
             <div
               ref={studentsCardRef}
               className="flex flex-col gap-2 rounded-md border border-input p-4"

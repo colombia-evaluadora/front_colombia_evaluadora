@@ -87,7 +87,7 @@ export function GroupChangeDialog({
           )}
         </DialogHeader>
 
-        <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden flex flex-col gap-4">
+        <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-1 flex flex-col gap-4">
           {hasGrades && (
             <Field variant="outlined">
               <FieldLabel>¿Qué desea hacer con las calificaciones?</FieldLabel>

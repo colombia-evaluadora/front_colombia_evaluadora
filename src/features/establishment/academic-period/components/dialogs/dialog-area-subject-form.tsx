@@ -554,7 +554,7 @@ export function AreaSubjectFormDialog({
           {/* Único bloque con scroll: header y footer quedan fijos afuera —
               antes `overflow-y-auto` vivía en el `DialogContent` entero, así
               que scrollear el form se llevaba el título y los botones con él. */}
-          <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden flex min-w-0 flex-col gap-6">
+          <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-1 flex min-w-0 flex-col gap-6">
             <form
               id={FORM_ID}
               onSubmit={(e) => {
