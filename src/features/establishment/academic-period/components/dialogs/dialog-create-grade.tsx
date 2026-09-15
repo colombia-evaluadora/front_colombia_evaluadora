@@ -338,11 +338,11 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
         )}
       </DialogTrigger>
       <DialogContent
-        className="flex max-h-[90dvh] flex-col overflow-hidden p-4 sm:max-w-5xl sm:p-6"
+        className="flex max-h-[90dvh] flex-col overflow-hidden p-0 sm:max-w-5xl"
         showCloseButton={false}
         inert={confirmDiscardOpen}
       >
-        <DialogHeader className="shrink-0">
+        <DialogHeader className="shrink-0 px-4 pt-4 sm:px-6 sm:pt-6">
           <DialogTitle>{isEditing ? "Editar grado" : "Agregar grado"}</DialogTitle>
         </DialogHeader>
 
@@ -350,7 +350,7 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
             antes `overflow-y-auto` vivía en el `DialogContent` entero, así
             que scrollear (los campos + las pestañas de abajo) se llevaba el
             título y los botones con él. */}
-        <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-1">
+        <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-4 sm:px-6">
         <div className="grid gap-x-4 gap-y-2 sm:grid-cols-2 lg:grid-cols-4">
           <Field
             variant="outlined"
@@ -541,7 +541,7 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
         )}
         </div>
 
-        <DialogFooter className="shrink-0">
+        <DialogFooter className="shrink-0 px-4 pb-4 sm:px-6 sm:pb-6">
           {(gradeId != null ||
             (teachingLevelId != null &&
               nombre.trim() !== "" &&

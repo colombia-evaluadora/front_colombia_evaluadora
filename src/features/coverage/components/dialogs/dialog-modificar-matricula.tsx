@@ -412,10 +412,10 @@ export function ModificarMatriculaDialog({
           Modificar
         </DialogTrigger>
         <DialogContent
-          className="flex max-h-[90vh] flex-col overflow-hidden sm:max-w-3xl"
+          className="flex max-h-[90vh] flex-col overflow-hidden p-0 sm:max-w-3xl"
           showCloseButton={false}
         >
-          <DialogHeader className="shrink-0">
+          <DialogHeader className="shrink-0 px-6 pt-6">
             <DialogTitle>Modificar</DialogTitle>
           </DialogHeader>
 
@@ -423,7 +423,7 @@ export function ModificarMatriculaDialog({
               antes `overflow-y-auto` vivía en el `DialogContent` entero, así
               que scrollear la tabla de estudiantes se llevaba el título y
               los botones con él. */}
-          <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-1 flex flex-col gap-4">
+          <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-6 flex flex-col gap-4">
             <div
               ref={studentsCardRef}
               className="flex flex-col gap-2 rounded-md border border-input p-4"
@@ -690,7 +690,7 @@ export function ModificarMatriculaDialog({
             </Field>
           </div>
 
-          <DialogFooter className="shrink-0 sm:justify-end">
+          <DialogFooter className="shrink-0 px-6 pb-6 sm:justify-end">
             <Button
               type="button"
               color="primary"

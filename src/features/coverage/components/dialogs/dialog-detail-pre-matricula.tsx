@@ -255,9 +255,9 @@ export function DetailPreMatriculaDialog({
 
       <DialogContent
         showCloseButton={false}
-        className="flex sm:max-w-5xl max-h-[90vh] flex-col overflow-hidden"
+        className="flex sm:max-w-5xl max-h-[90vh] flex-col overflow-hidden p-0"
       >
-        <DialogHeader className="shrink-0 flex-row items-center justify-between">
+        <DialogHeader className="shrink-0 flex-row items-center justify-between px-6 pt-6">
           <DialogTitle>Pre-Matrícula</DialogTitle>
           <div className="flex items-center gap-1">
             {editing ? (
@@ -312,7 +312,7 @@ export function DetailPreMatriculaDialog({
             antes `overflow-y-auto` vivía en el `DialogContent` entero, así
             que scrollear el detalle se llevaba el título y los botones con
             él. */}
-        <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-1 flex flex-col gap-4">
+        <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-6 flex flex-col gap-4">
           {/* ── Datos del estudiante ─────────────────────────────────────────── */}
           <Section title="Datos del estudiante">
             <div className="grid grid-cols-4 gap-x-4 gap-y-4">
@@ -572,7 +572,7 @@ export function DetailPreMatriculaDialog({
           </Section>
         </div>
 
-        <DialogFooter className="shrink-0 sm:justify-center">
+        <DialogFooter className="shrink-0 px-6 pb-6 sm:justify-center">
           <DialogClose render={<Button size="sm" variant="fill" color="neutral" />}>
             Cerrar
           </DialogClose>

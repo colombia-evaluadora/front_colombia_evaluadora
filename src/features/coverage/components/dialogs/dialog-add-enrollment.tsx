@@ -308,19 +308,26 @@ export function AddEnrollmentDialog() {
 
       <DialogContent
         showCloseButton={false}
-        className="flex max-h-[90vh] flex-col overflow-hidden sm:max-w-4xl"
+        className="flex max-h-[90vh] flex-col overflow-hidden p-0 sm:max-w-4xl"
       >
         {step < 3 && (
-          <DialogHeader className="shrink-0">
+          <DialogHeader className="shrink-0 px-6 pt-6">
             <DialogTitle>Agregar inscripción</DialogTitle>
           </DialogHeader>
         )}
 
         {/* Único bloque con scroll: header y los botones de abajo quedan
-            fijos afuera — antes `overflow-y-auto` vivía en el
-            `DialogContent` entero, así que scrollear un paso largo del
-            wizard se llevaba el título y los botones con él. */}
-        <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-1">
+            fijos afuera, con su propio padding -- el `DialogContent` ya no
+            tiene padding propio (`p-0`), así que el scroll queda al borde
+            REAL del diálogo y es este `div` el que aporta el `px-6`. En el
+            paso 3 no hay `DialogHeader` (arriba), así que este `div` es el
+            PRIMER elemento del diálogo y necesita su propio `pt-6`. */}
+        <div
+          className={cn(
+            "scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-6",
+            step >= 3 && "pt-6",
+          )}
+        >
         {step === 3 && selectedCampus ? (
           <div className="flex items-start gap-3">
             <CheckCircleFillIcon className="size-6 shrink-0 text-green" />
@@ -596,7 +603,7 @@ export function AddEnrollmentDialog() {
         ) : null}
         </div>
 
-        <div className="flex shrink-0 justify-end gap-2">
+        <div className="flex shrink-0 justify-end gap-2 px-6 pb-6">
           {step === 0 ? (
             <>
               {canContinueStudent ? (

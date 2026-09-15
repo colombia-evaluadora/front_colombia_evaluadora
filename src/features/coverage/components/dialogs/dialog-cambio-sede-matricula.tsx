@@ -98,15 +98,15 @@ export function CambioSedeMatriculaDialog({
 
   return (
     <Dialog open={open} onOpenChange={(next) => !next && handleClose()}>
-      <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden sm:max-w-xl" showCloseButton={false}>
-        <DialogHeader className="shrink-0">
+      <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden p-0 sm:max-w-xl" showCloseButton={false}>
+        <DialogHeader className="shrink-0 px-6 pt-6">
           <DialogTitle className="flex items-center gap-2">
             <BankIcon className="size-5 text-primary" />
             Cambio de sede
           </DialogTitle>
         </DialogHeader>
 
-        <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-1 flex flex-col gap-4">
+        <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-6 flex flex-col gap-4">
           <div className="rounded-md border border-input bg-muted/30 p-4">
             <p className="mb-1 text-sm font-semibold text-foreground">
               Cambios a aplicar - Cambio de sede:
@@ -204,7 +204,7 @@ export function CambioSedeMatriculaDialog({
           )}
         </div>
 
-        <DialogFooter className="shrink-0 sm:justify-end">
+        <DialogFooter className="shrink-0 px-6 pb-6 sm:justify-end">
           {onBack && (
             <Button type="button" variant="outline" color="primary" size="sm" onClick={onBack}>
               <ArrowLeftIcon data-icon="inline-start" />

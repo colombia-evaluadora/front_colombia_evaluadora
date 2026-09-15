@@ -402,7 +402,7 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
           que sí necesitan las cinco columnas. */}
       <DialogContent
         className={cn(
-          "flex max-h-[85vh] flex-col overflow-hidden",
+          "flex max-h-[85vh] flex-col overflow-hidden p-0",
           hasParentChoice ? "sm:max-w-2xl" : "sm:max-w-sm",
         )}
         // La X solo se oculta cuando el footer con "Cancelar" ya está
@@ -411,15 +411,19 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
         // sigue siendo la única forma de cerrar.
         showCloseButton={!hasParentChoice}
       >
-        <DialogHeader className="shrink-0">
+        <DialogHeader className="shrink-0 px-6 pt-6">
           <DialogTitle>{isEditing ? "Editar menú" : "Agregar menú"}</DialogTitle>
         </DialogHeader>
 
-        {/* Único bloque con scroll: header y footer quedan fijos afuera —
-            "Submenús" deja agregar filas sin tope (`setDrafts`), y sin esto
-            el `DialogContent` (sin max-h) crecía sin límite y se llevaba el
+        {/* Único bloque con scroll: header y footer quedan fijos afuera, con
+            su propio padding -- el `DialogContent` ya no tiene padding
+            propio (`p-0`), así que el scroll queda al borde REAL del
+            diálogo (no flotando adentro del padding) y es este `div` el que
+            aporta el `px-6` para que el contenido no toque el scrollbar.
+            "Submenús" deja agregar filas sin tope (`setDrafts`), y sin el
+            `max-h` de arriba el diálogo crecía sin límite y se llevaba el
             título/botones con él. */}
-        <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-1 flex min-w-0 flex-col gap-4">
+        <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-6 flex min-w-0 flex-col gap-4">
           {/* Mismo tratamiento que el diálogo de escalas de valoración: sobre la
               grilla de dos columnas, el campo ocupa el ancho entero mientras es
               la única pregunta y baja a media columna cuando el diálogo crece. */}
@@ -688,7 +692,7 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
             allá de la X del encabezado, así que el pie recién aparece con la
             primera respuesta. */}
         {hasParentChoice && (
-          <DialogFooter className="shrink-0">
+          <DialogFooter className="shrink-0 px-6 pb-6">
             <Button
               size="sm"
               type="button"

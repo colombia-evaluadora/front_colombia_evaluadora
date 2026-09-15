@@ -239,14 +239,14 @@ export function ManageCampusDialog({
       }}
     >
       <DialogContent
-        className="flex w-[min(95vw,56rem)] max-w-none sm:max-w-224 max-h-[85vh] flex-col overflow-hidden"
+        className="flex w-[min(95vw,56rem)] max-w-none sm:max-w-224 max-h-[85vh] flex-col overflow-hidden p-0"
         showCloseButton={false}
       >
-        <DialogHeader className="shrink-0">
+        <DialogHeader className="shrink-0 px-6 pt-6">
           <DialogTitle>{isEditMode ? "Editar sede" : "Agregar sede"}</DialogTitle>
         </DialogHeader>
 
-        <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-1">
+        <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-6">
           <NoticeBanner
             notice={notice}
             onClose={() => setNotice(null)}
@@ -266,7 +266,7 @@ export function ManageCampusDialog({
           </form>
         </div>
 
-        <DialogFooter className="shrink-0 justify-end gap-2">
+        <DialogFooter className="shrink-0 justify-end gap-2 px-6 pb-6">
           <Button
             size="sm"
             type="submit"
