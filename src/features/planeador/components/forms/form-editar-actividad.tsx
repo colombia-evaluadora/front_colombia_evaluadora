@@ -224,7 +224,15 @@ export function EditarActividadForm({
   // por un instante — se guarda también acá, con el id REAL que devolvió el
   // backend, para que aparezca en la lista de opciones de inmediato.
   const [unidadesCreadas, setUnidadesCreadas] = useState<UnidadTematica[]>([])
-  const unidades = [...unidadesQuery, ...unidadesCreadas]
+  // Dedupe por `id`: si `unidadesQuery` ya refrescó y trae una unidad que
+  // también sigue en `unidadesCreadas` (creada un momento antes en esta
+  // misma sesión de formulario), se descarta la copia local -- sin esto
+  // la misma unidad aparecía dos veces en el `<Select>` apenas el query
+  // real se ponía al día.
+  const unidadesCreadasPendientes = unidadesCreadas.filter(
+    (creada) => !unidadesQuery.some((real) => real.id === creada.id),
+  )
+  const unidades = [...unidadesQuery, ...unidadesCreadasPendientes]
   const createUnidadMutation = useCreateUnidad()
 
   const form = useForm({
