@@ -308,14 +308,19 @@ export function AddEnrollmentDialog() {
 
       <DialogContent
         showCloseButton={false}
-        className="max-h-[90vh] overflow-y-auto scrollbar-slim sm:max-w-4xl"
+        className="flex max-h-[90vh] flex-col overflow-hidden sm:max-w-4xl"
       >
         {step < 3 && (
-          <DialogHeader>
+          <DialogHeader className="shrink-0">
             <DialogTitle>Agregar inscripción</DialogTitle>
           </DialogHeader>
         )}
 
+        {/* Único bloque con scroll: header y los botones de abajo quedan
+            fijos afuera — antes `overflow-y-auto` vivía en el
+            `DialogContent` entero, así que scrollear un paso largo del
+            wizard se llevaba el título y los botones con él. */}
+        <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
         {step === 3 && selectedCampus ? (
           <div className="flex items-start gap-3">
             <CheckCircleFillIcon className="size-6 shrink-0 text-green" />
@@ -589,8 +594,9 @@ export function AddEnrollmentDialog() {
             </div>
           </div>
         ) : null}
+        </div>
 
-        <div className="flex justify-end gap-2">
+        <div className="flex shrink-0 justify-end gap-2">
           {step === 0 ? (
             <>
               {canContinueStudent ? (

@@ -125,8 +125,8 @@ export function GradeChangeDialog({
         if (!next) handleCancel()
       }}
     >
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl" showCloseButton={false}>
-        <DialogHeader>
+      <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden sm:max-w-2xl" showCloseButton={false}>
+        <DialogHeader className="shrink-0">
           <DialogTitle className="flex items-center gap-2">
             {isSuperior ? (
               <ChartLineUpIcon className="size-5 text-primary" />
@@ -141,7 +141,7 @@ export function GradeChangeDialog({
           </p>
         </DialogHeader>
 
-        <div className="flex flex-col gap-4">
+        <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden flex flex-col gap-4">
           <Field variant="outlined">
             <FieldLabel>Seleccione cómo desea realizar el cambio</FieldLabel>
             <RadioGroup
@@ -247,7 +247,7 @@ export function GradeChangeDialog({
           </div>
         </div>
 
-        <DialogFooter className="sm:justify-end">
+        <DialogFooter className="shrink-0 sm:justify-end">
           <Button
             type="button"
             color="primary"

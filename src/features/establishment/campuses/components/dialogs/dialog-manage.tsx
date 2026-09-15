@@ -239,32 +239,34 @@ export function ManageCampusDialog({
       }}
     >
       <DialogContent
-        className="w-[min(95vw,56rem)] max-w-none sm:max-w-224 max-h-[85vh] overflow-y-auto overflow-x-hidden"
+        className="flex w-[min(95vw,56rem)] max-w-none sm:max-w-224 max-h-[85vh] flex-col overflow-hidden"
         showCloseButton={false}
       >
-        <DialogHeader>
+        <DialogHeader className="shrink-0">
           <DialogTitle>{isEditMode ? "Editar sede" : "Agregar sede"}</DialogTitle>
         </DialogHeader>
 
-        <NoticeBanner
-          notice={notice}
-          onClose={() => setNotice(null)}
-          variant={notice?.variant}
-          autoCloseMs={notice?.variant === "error" ? undefined : 4000}
-          className="mb-2"
-        />
-
-        <form id="campus-form" onSubmit={handleSubmit}>
-          <CampusDetailsForm
-            value={formValues}
-            onChange={handleFormChange}
-            zones={zones}
-            errors={fieldErrors}
-            establishmentPicker={showEstablishmentPicker ? { establishments } : undefined}
+        <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
+          <NoticeBanner
+            notice={notice}
+            onClose={() => setNotice(null)}
+            variant={notice?.variant}
+            autoCloseMs={notice?.variant === "error" ? undefined : 4000}
+            className="mb-2"
           />
-        </form>
 
-        <DialogFooter className="justify-end gap-2">
+          <form id="campus-form" onSubmit={handleSubmit}>
+            <CampusDetailsForm
+              value={formValues}
+              onChange={handleFormChange}
+              zones={zones}
+              errors={fieldErrors}
+              establishmentPicker={showEstablishmentPicker ? { establishments } : undefined}
+            />
+          </form>
+        </div>
+
+        <DialogFooter className="shrink-0 justify-end gap-2">
           <Button
             size="sm"
             type="submit"
