@@ -278,14 +278,29 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
         Agregar
       </DialogTrigger>
       <DialogContent
-        className={continued ? "max-h-[90dvh] overflow-y-auto sm:max-w-4xl" : "sm:max-w-md"}
+        className={
+          continued
+            ? "flex max-h-[90dvh] flex-col overflow-hidden p-0 sm:max-w-4xl"
+            : "sm:max-w-md"
+        }
         showCloseButton={false}
       >
-        <DialogHeader>
+        <DialogHeader className={continued ? "shrink-0 px-6 pt-6" : undefined}>
           <DialogTitle>Agregar escalas de valoración</DialogTitle>
         </DialogHeader>
 
-        <div className="flex min-w-0 flex-col gap-4">
+        {/* Único bloque con scroll SOLO en el paso "continued" (la tabla de
+            escalas, potencialmente larga), con su propio padding -- el
+            `DialogContent` ya no tiene padding propio en ese paso (`p-0`),
+            así que el scroll queda al borde REAL del diálogo. El primer
+            paso (elegir niveles) es corto y nunca necesitó scroll, sigue
+            usando el padding base del `DialogContent`. */}
+        <div
+          className={cn(
+            "flex min-w-0 flex-col gap-4",
+            continued && "scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-6",
+          )}
+        >
           <NoticeBanner
             notice={localNotice}
             onClose={() => setLocalNotice(null)}
@@ -909,7 +924,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
           )}
         </div>
 
-        <DialogFooter className="sm:justify-end">
+        <DialogFooter className={cn("sm:justify-end", continued && "shrink-0 px-6 pb-6")}>
           {continued ? (
             <Button
               size="sm"

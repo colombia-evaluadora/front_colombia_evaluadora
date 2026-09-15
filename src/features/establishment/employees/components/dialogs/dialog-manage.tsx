@@ -1108,61 +1108,66 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
     <>
       <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent
-          className="w-[min(95vw,56rem)] max-w-none sm:max-w-224 max-h-[85vh] overflow-y-auto overflow-x-hidden"
+          className="flex w-[min(95vw,56rem)] max-w-none sm:max-w-224 max-h-[85vh] flex-col overflow-hidden p-0"
           showCloseButton={false}
         >
-          <DialogHeader>
+          <DialogHeader className="shrink-0 px-6 pt-6">
             <DialogTitle>{mainTitle}</DialogTitle>
           </DialogHeader>
 
-          <NoticeOutlet className="mb-2" />
+          {/* Único bloque con scroll: header y footer quedan fijos afuera —
+              antes `overflow-y-auto` vivía en el `DialogContent` entero, así
+              que scrollear el form se llevaba el título y los botones con él. */}
+          <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-6">
+            <NoticeOutlet className="mb-2" />
 
-          <UserDetailsForm
-            value={person}
-            onChange={setPerson}
-            fieldPrefix={EMPLOYEE_FIELD_PREFIX}
-            errors={personErrors}
-            invalidFields={Object.keys(personErrors)}
-            showValidation
-            confirmPassword={confirmPassword}
-            onConfirmPasswordChange={setConfirmPassword}
-            photo={photo}
-            onPhotoChange={(file) => {
-              setPhoto(file)
-              if (file) setPhotoRemoved(false)
-            }}
-            onRemovePhoto={() => setPhotoRemoved(true)}
-            onMatched={(found) => {
-              if (found?.id) {
-                // Ya es funcionario activo -- el efecto de arriba
-                // (`matchedEmployeeQuery`) lo carga completo y trata el
-                // resto del diálogo como edición.
-                setMatchedFuncionarioId(found.id)
-                personMatchSnapshotRef.current = null
-              } else {
-                // Solo existe la cuenta (o no hay match): guarda el
-                // snapshot para poder detectar ediciones antes de guardar
-                // (ver el bloque de `personDataChangedSinceMatch` en
-                // `handleMainSave`), y limpia cualquier carga anterior.
-                personMatchSnapshotRef.current = found ?? null
-                // Si veníamos de un match a otro funcionario (el usuario
-                // corrigió el documento porque no era la persona que
-                // quería), hay que deshacer también lo que ese match cargó
-                // -- no solo `matchedFuncionarioId`.
-                if (matchedFuncionarioId !== null) {
-                  unmatchEmployee()
+            <UserDetailsForm
+              value={person}
+              onChange={setPerson}
+              fieldPrefix={EMPLOYEE_FIELD_PREFIX}
+              errors={personErrors}
+              invalidFields={Object.keys(personErrors)}
+              showValidation
+              confirmPassword={confirmPassword}
+              onConfirmPasswordChange={setConfirmPassword}
+              photo={photo}
+              onPhotoChange={(file) => {
+                setPhoto(file)
+                if (file) setPhotoRemoved(false)
+              }}
+              onRemovePhoto={() => setPhotoRemoved(true)}
+              onMatched={(found) => {
+                if (found?.id) {
+                  // Ya es funcionario activo -- el efecto de arriba
+                  // (`matchedEmployeeQuery`) lo carga completo y trata el
+                  // resto del diálogo como edición.
+                  setMatchedFuncionarioId(found.id)
+                  personMatchSnapshotRef.current = null
                 } else {
-                  setMatchedFuncionarioId(null)
+                  // Solo existe la cuenta (o no hay match): guarda el
+                  // snapshot para poder detectar ediciones antes de guardar
+                  // (ver el bloque de `personDataChangedSinceMatch` en
+                  // `handleMainSave`), y limpia cualquier carga anterior.
+                  personMatchSnapshotRef.current = found ?? null
+                  // Si veníamos de un match a otro funcionario (el usuario
+                  // corrigió el documento porque no era la persona que
+                  // quería), hay que deshacer también lo que ese match cargó
+                  // -- no solo `matchedFuncionarioId`.
+                  if (matchedFuncionarioId !== null) {
+                    unmatchEmployee()
+                  } else {
+                    setMatchedFuncionarioId(null)
+                  }
                 }
-              }
-            }}
-          />
+              }}
+            />
+          </div>
 
           {/* `sm:justify-between` y no solo `justify-between`: el `DialogFooter`
               trae `sm:justify-end` propio y, al ser una clase con variante,
               `twMerge` no la funde con la pelada — sin el `sm:` los dos grupos
               se iban juntos a la derecha en escritorio. */}
-          <DialogFooter className="flex-row flex-wrap items-center justify-between gap-3 sm:justify-between">
+          <DialogFooter className="shrink-0 px-6 pb-6 flex-row flex-wrap items-center justify-between gap-3 sm:justify-between">
             {/*
               Los dos accesos opcionales se recorren en orden: permisos primero
               y, solo cuando ya hay al menos uno, aparece la información
@@ -1235,13 +1240,18 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
 
       <Dialog open={permissionsDialogOpen} onOpenChange={handlePermissionsDialogOpenChange}>
         <DialogContent
-          className="w-[min(95vw,56rem)] max-w-none sm:max-w-224 max-h-[85vh] overflow-y-auto overflow-x-hidden"
+          className="flex w-[min(95vw,56rem)] max-w-none sm:max-w-224 max-h-[85vh] flex-col overflow-hidden p-0"
           showCloseButton={false}
         >
-          <DialogHeader>
+          <DialogHeader className="shrink-0 px-6 pt-6">
             <DialogTitle>Asignar permisos</DialogTitle>
           </DialogHeader>
 
+          {/* Único bloque con scroll: header y footer quedan fijos afuera —
+              antes `overflow-y-auto` vivía en el `DialogContent` entero, así
+              que scrollear (el form + la tabla de permisos) se llevaba el
+              título y los botones con él. */}
+          <div className="scrollbar-slim flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overflow-x-hidden px-6">
           {/* Fila fluida: los campos crecen y bajan de línea solos, y el botón
               ocupa solo lo que mide en vez de reservar una columna entera.
               `gap-y` chico: al envolver, es el espacio entre ambas filas de
@@ -1540,8 +1550,9 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
               </TableBody>
             </Table>
           )}
+          </div>
 
-          <DialogFooter className="justify-end sm:justify-end">
+          <DialogFooter className="shrink-0 justify-end px-6 pb-6 sm:justify-end">
             {hasPermissionsChanges && (
               <Button
                 variant="fill"
@@ -1570,21 +1581,23 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
 
       <Dialog open={additionalInfoDialogOpen} onOpenChange={handleAdditionalInfoDialogOpenChange}>
         <DialogContent
-          className="w-[min(95vw,56rem)] max-w-none sm:max-w-224 max-h-[85vh] overflow-y-auto overflow-x-hidden"
+          className="flex w-[min(95vw,56rem)] max-w-none sm:max-w-224 max-h-[85vh] flex-col overflow-hidden p-0"
           showCloseButton={false}
         >
-          <DialogHeader>
+          <DialogHeader className="shrink-0 px-6 pt-6">
             <DialogTitle>Información complementaria</DialogTitle>
           </DialogHeader>
 
-          <NoticeOutlet className="mb-2" />
+          <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-6">
+            <NoticeOutlet className="mb-2" />
 
-          <EmployeeAdditionalInfoForm
-            value={additionalInfo}
-            onChange={setAdditionalInfo}
-          />
+            <EmployeeAdditionalInfoForm
+              value={additionalInfo}
+              onChange={setAdditionalInfo}
+            />
+          </div>
 
-          <DialogFooter className="justify-end sm:justify-end">
+          <DialogFooter className="shrink-0 justify-end px-6 pb-6 sm:justify-end">
             {hasAdditionalInfoChanges && (
               <Button
                 variant="fill"

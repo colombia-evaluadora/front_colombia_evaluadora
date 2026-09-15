@@ -15,6 +15,7 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { CheckIcon, PencilIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 import { Spinner } from "@/components/ui/spinner"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { useInstrumentoActividadQuery } from "@/features/planeador/api/query/use-instrumento-actividad-query"
 import { useNotaEstudianteQuery } from "@/features/planeador/api/query/use-nota-estudiante-query"
@@ -101,18 +102,25 @@ export function DialogCalificarActividad({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger
-        render={
-          <Button
-            variant="ghost"
-            color="neutral"
-            size="icon-xs"
-            aria-label={`Calificar a ${estudianteNombre}`}
-          />
-        }
-      >
-        <PencilIcon className="size-3.5" />
-      </DialogTrigger>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <DialogTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  color="neutral"
+                  size="icon-xs"
+                  aria-label={`Calificar a ${estudianteNombre}`}
+                />
+              }
+            />
+          }
+        >
+          <PencilIcon className="size-3.5" />
+        </TooltipTrigger>
+        <TooltipContent>{`Calificar a ${estudianteNombre}`}</TooltipContent>
+      </Tooltip>
       <DialogContent className="flex max-h-[85vh] flex-col overflow-hidden sm:max-w-2xl">
         <DialogHeader className="shrink-0">
           <DialogTitle>Calificar actividad</DialogTitle>

@@ -19,6 +19,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { useExportActividades } from "@/features/planeador/api/mutations/export-actividades"
 import type { Actividad, ExportFormat } from "@/features/planeador/api/types/actividad"
@@ -67,21 +68,28 @@ export function DialogExportActividades({ rows }: DialogExportActividadesProps) 
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger
-        render={
-          <Button
-            variant="outline"
-            color="muted"
-            size="icon-sm"
-            aria-label="Exportar actividades filtradas"
-          >
-            {/* El ícono `FileDownload` es el mismo que ya usa la card y el
-                botón grande del toolbar; mantener uno solo en la app ayuda
-                a que se reconozca como "exportar" sin necesidad de label. */}
-            <FileDownloadOutlinedIcon />
-          </Button>
-        }
-      />
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <DialogTrigger
+              render={
+                <Button
+                  variant="outline"
+                  color="muted"
+                  size="icon-sm"
+                  aria-label="Exportar actividades filtradas"
+                />
+              }
+            />
+          }
+        >
+          {/* El ícono `FileDownload` es el mismo que ya usa la card y el
+              botón grande del toolbar; mantener uno solo en la app ayuda
+              a que se reconozca como "exportar" sin necesidad de label. */}
+          <FileDownloadOutlinedIcon />
+        </TooltipTrigger>
+        <TooltipContent>Exportar actividades filtradas</TooltipContent>
+      </Tooltip>
       <DialogContent showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>

@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { PlusCircleIcon, PlusIcon, TrashIcon } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
 
@@ -57,17 +58,24 @@ export function ListaAgregableField({
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between gap-2">
         <h4 className="text-sm font-semibold">{label}</h4>
-        <Button
-          type="button"
-          variant="fill"
-          color="primary"
-          size="icon-sm"
-          aria-label={`Agregar a "${label}"`}
-          disabled={!draft.trim()}
-          onClick={agregar}
-        >
-          <PlusIcon />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                type="button"
+                variant="fill"
+                color="primary"
+                size="icon-sm"
+                aria-label={`Agregar a "${label}"`}
+                disabled={!draft.trim()}
+                onClick={agregar}
+              />
+            }
+          >
+            <PlusIcon />
+          </TooltipTrigger>
+          <TooltipContent>{`Agregar a "${label}"`}</TooltipContent>
+        </Tooltip>
       </div>
 
       <Input
@@ -91,16 +99,23 @@ export function ListaAgregableField({
               className="flex items-center justify-between gap-2 rounded-md border bg-card px-2.5 py-2 text-sm"
             >
               <span className="min-w-0 break-words">{item}</span>
-              <Button
-                type="button"
-                variant="ghost"
-                color="neutral"
-                size="icon-sm"
-                aria-label={`Quitar "${item}"`}
-                onClick={() => quitar(index)}
-              >
-                <TrashIcon />
-              </Button>
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      color="neutral"
+                      size="icon-sm"
+                      aria-label={`Quitar "${item}"`}
+                      onClick={() => quitar(index)}
+                    />
+                  }
+                >
+                  <TrashIcon />
+                </TooltipTrigger>
+                <TooltipContent>{`Quitar "${item}"`}</TooltipContent>
+              </Tooltip>
             </li>
           ))}
         </ul>
@@ -193,17 +208,24 @@ export function ListaAgregableCaja({
                 className="group/item flex items-center justify-between gap-2 px-3 py-2 text-sm"
               >
                 <span className="min-w-0 break-words">{item}</span>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  color="neutral"
-                  size="icon-sm"
-                  aria-label={`Quitar "${item}"`}
-                  className="opacity-0 transition-opacity group-hover/item:opacity-100 group-focus-within/item:opacity-100"
-                  onClick={() => quitar(index)}
-                >
-                  <TrashIcon />
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger
+                    render={
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        color="neutral"
+                        size="icon-sm"
+                        aria-label={`Quitar "${item}"`}
+                        className="opacity-0 transition-opacity group-hover/item:opacity-100 group-focus-within/item:opacity-100"
+                        onClick={() => quitar(index)}
+                      />
+                    }
+                  >
+                    <TrashIcon />
+                  </TooltipTrigger>
+                  <TooltipContent>{`Quitar "${item}"`}</TooltipContent>
+                </Tooltip>
               </li>
             ))}
           </ul>
@@ -316,17 +338,24 @@ export function ListaAgregableCajaSelect({
                 className="group/item flex items-center justify-between gap-2 px-3 py-2 text-sm"
               >
                 <span className="min-w-0 break-words">{item.text}</span>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  color="neutral"
-                  size="icon-sm"
-                  aria-label={`Quitar "${item.text}"`}
-                  className="opacity-0 transition-opacity group-hover/item:opacity-100 group-focus-within/item:opacity-100"
-                  onClick={() => quitar(index)}
-                >
-                  <TrashIcon />
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger
+                    render={
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        color="neutral"
+                        size="icon-sm"
+                        aria-label={`Quitar "${item.text}"`}
+                        className="opacity-0 transition-opacity group-hover/item:opacity-100 group-focus-within/item:opacity-100"
+                        onClick={() => quitar(index)}
+                      />
+                    }
+                  >
+                    <TrashIcon />
+                  </TooltipTrigger>
+                  <TooltipContent>{`Quitar "${item.text}"`}</TooltipContent>
+                </Tooltip>
               </li>
             ))}
           </ul>

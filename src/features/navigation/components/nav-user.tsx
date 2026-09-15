@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useUser, useLogout } from "@/lib/auth"
 
 export function NavUser() {
@@ -35,38 +36,52 @@ export function NavUser() {
   if (!user) {
     return (
       <DropdownMenu>
-        <DropdownMenuTrigger
-          render={
-            <button
-              type="button"
-              aria-label="Cuenta"
-              className="flex size-8 items-center justify-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            />
-          }
-        >
-          <Avatar className="rounded-lg">
-            <AvatarFallback className="rounded-lg">?</AvatarFallback>
-          </Avatar>
-        </DropdownMenuTrigger>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <DropdownMenuTrigger
+                render={
+                  <button
+                    type="button"
+                    aria-label="Cuenta"
+                    className="flex size-8 items-center justify-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  />
+                }
+              />
+            }
+          >
+            <Avatar className="rounded-lg">
+              <AvatarFallback className="rounded-lg">?</AvatarFallback>
+            </Avatar>
+          </TooltipTrigger>
+          <TooltipContent>Cuenta</TooltipContent>
+        </Tooltip>
       </DropdownMenu>
     )
   }
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger
-        render={
-          <button
-            type="button"
-            aria-label="Cuenta de usuario"
-            className="flex items-center gap-2 rounded-full p-0 outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          />
-        }
-      >
-        <Avatar className="size-10 rounded-full">
-          <AvatarFallback className="rounded-full">{user.initials}</AvatarFallback>
-        </Avatar>
-      </DropdownMenuTrigger>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <DropdownMenuTrigger
+              render={
+                <button
+                  type="button"
+                  aria-label="Cuenta de usuario"
+                  className="flex items-center gap-2 rounded-full p-0 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                />
+              }
+            />
+          }
+        >
+          <Avatar className="size-10 rounded-full">
+            <AvatarFallback className="rounded-full">{user.initials}</AvatarFallback>
+          </Avatar>
+        </TooltipTrigger>
+        <TooltipContent>{user.name}</TooltipContent>
+      </Tooltip>
       <DropdownMenuContent align="end" side="bottom" className="min-w-56">
         <DropdownMenuGroup>
           <DropdownMenuLabel className="p-0 font-normal">

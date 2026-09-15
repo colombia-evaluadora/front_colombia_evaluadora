@@ -86,11 +86,17 @@ export function AsignarCupoDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent showCloseButton={false}>
-        <DialogHeader>
+      <DialogContent showCloseButton={false} className="flex max-h-[85vh] flex-col overflow-hidden p-0">
+        <DialogHeader className="shrink-0 px-6 pt-6">
           <DialogTitle>Confirmar asignación de cupo</DialogTitle>
         </DialogHeader>
 
+        {/* Único bloque con scroll: header y footer quedan fijos afuera, con
+            su propio padding -- el aviso de reprobados (`reprobados.map`,
+            sin tope) puede crecer con un lote grande de asignación, y el
+            `DialogContent` ya no tiene padding propio (`p-0`), así que el
+            scroll queda al borde REAL del diálogo. */}
+        <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-6">
         {reprobados.length > 0 && (
           <Alert variant="destructive">
             <WarningIcon />
@@ -166,8 +172,9 @@ export function AsignarCupoDialog({
             </ComboboxField>
           </Field>
         </div>
+        </div>
 
-        <DialogFooter>
+        <DialogFooter className="shrink-0 px-6 pb-6">
           <Button size="sm" color="primary" onClick={handleConfirm}>
             <CheckIcon data-icon="inline-start" />
             Aceptar
