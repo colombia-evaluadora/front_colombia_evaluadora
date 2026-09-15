@@ -6,12 +6,6 @@ import type {
   AcademicPeriodStatus,
 } from "@/features/establishment/academic-period/api/types/academic-period"
 
-// Fila cruda de `GET /eval-col/periodos-academicos/:ID` (`fn_periodo_detalle`,
-// id_query 22) — snake_case, envuelta en `{rows: [...]}` como todo lo demás
-// en este catálogo (confirmado con una llamada de prueba real: este hook
-// antes NO desenvolvía ni mapeaba nada, así que `detail` llegaba siendo
-// `{rows: [...]}` en vez del objeto esperado — rompía todo lo que depende de
-// `academicPeriod` en toda la app).
 interface AcademicPeriodDetailRow {
   id: number
   sede_id: number
@@ -72,9 +66,12 @@ function toAcademicPeriodDetail(row: AcademicPeriodDetailRow): AcademicPeriodDet
       jornadaId: row.jornada_id,
       reservationEnabled: row.reserva === "S",
       defaultBlocksCount: row.default_blocks_count,
-      scheduleStartTime: row.schedule_start_time,
-      scheduleEndTime: row.schedule_end_time,
-      breaks: row.descansos ?? [],
+      scheduleStartTime: row.schedule_start_time?.slice(0, 5) ?? null,
+      scheduleEndTime: row.schedule_end_time?.slice(0, 5) ?? null,
+      breaks: (row.descansos ?? []).map((b) => ({
+        startTime: b.startTime.slice(0, 5),
+        endTime: b.endTime.slice(0, 5),
+      })),
     },
   }
 }

@@ -32,6 +32,7 @@ import { useSedePreviousPeriodsQuery } from "@/features/establishment/academic-p
 import { useAcademicPeriodQuery } from "@/features/establishment/academic-period/api/query/use-academic-period"
 import {
   academicPeriodFormSchema,
+  timeToMinutes,
   type AcademicPeriodFormInput,
   type AcademicPeriodFormValues,
 } from "../../api/schema"
@@ -428,6 +429,7 @@ export function AcademicPeriodForm({
                           field.handleChange(value)
                           field.handleBlur()
                         }}
+                        onClose={() => document.getElementById("scheduleEndTime")?.focus()}
                         placeholder="Agregar"
                         aria-invalid={isInvalid}
                       />
@@ -517,9 +519,9 @@ export function AcademicPeriodForm({
                   (b) =>
                     !b.startTime ||
                     !b.endTime ||
-                    b.startTime >= b.endTime ||
-                    (scheduleStartTime && b.startTime < scheduleStartTime) ||
-                    (scheduleEndTime && b.endTime > scheduleEndTime),
+                    timeToMinutes(b.startTime) >= timeToMinutes(b.endTime) ||
+                    (scheduleStartTime && timeToMinutes(b.startTime) < timeToMinutes(scheduleStartTime)) ||
+                    (scheduleEndTime && timeToMinutes(b.endTime) > timeToMinutes(scheduleEndTime)),
                 )
                 const isInvalid = (field.state.meta.isTouched || submissionAttempts > 0) && !field.state.meta.isValid
                 return (

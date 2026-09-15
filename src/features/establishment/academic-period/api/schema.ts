@@ -1,7 +1,11 @@
 import { z } from "zod"
 
-// Códigos reales de ESTADOPERIODO — ver AcademicPeriodStatus en types/academic-period.ts.
 export const ACADEMIC_PERIOD_STATUSES = ["A", "C", "I", "P", "N"] as const
+
+export function timeToMinutes(value: string): number {
+  const [h, m] = value.split(":").map(Number)
+  return (h || 0) * 60 + (m || 0)
+}
 
 export const academicPeriodFormSchema = z
   .object({
@@ -29,7 +33,7 @@ export const academicPeriodFormSchema = z
           startTime: z.string().min(1),
           endTime: z.string().min(1),
         })
-        .refine((b) => !b.startTime || !b.endTime || b.startTime < b.endTime, {
+        .refine((b) => !b.startTime || !b.endTime || timeToMinutes(b.startTime) < timeToMinutes(b.endTime), {
           message: "La hora de inicio del descanso es posterior o igual a la hora final",
           path: ["startTime"],
         }),
@@ -58,7 +62,7 @@ export const academicPeriodFormSchema = z
     (data) =>
       !data.scheduleStartTime ||
       !data.scheduleEndTime ||
-      data.scheduleStartTime < data.scheduleEndTime,
+      timeToMinutes(data.scheduleStartTime) < timeToMinutes(data.scheduleEndTime),
     {
       message: "La hora de inicio es posterior o igual a la hora final",
       path: ["scheduleStartTime"],
@@ -67,7 +71,10 @@ export const academicPeriodFormSchema = z
   .refine(
     (data) =>
       data.breaks.every(
-        (b) => !b.startTime || !data.scheduleStartTime || b.startTime >= data.scheduleStartTime,
+        (b) =>
+          !b.startTime ||
+          !data.scheduleStartTime ||
+          timeToMinutes(b.startTime) >= timeToMinutes(data.scheduleStartTime),
       ),
     {
       message:
@@ -78,7 +85,10 @@ export const academicPeriodFormSchema = z
   .refine(
     (data) =>
       data.breaks.every(
-        (b) => !b.endTime || !data.scheduleEndTime || b.endTime <= data.scheduleEndTime,
+        (b) =>
+          !b.endTime ||
+          !data.scheduleEndTime ||
+          timeToMinutes(b.endTime) <= timeToMinutes(data.scheduleEndTime),
       ),
     {
       message: "La hora final del descanso debe ser anterior o igual a la hora final de la jornada",
@@ -91,7 +101,10 @@ export const academicPeriodFormSchema = z
         if (!b.startTime || !b.endTime) return true
         return data.breaks.every((other, j) => {
           if (j >= i || !other.startTime || !other.endTime) return true
-          return b.startTime >= other.endTime || b.endTime <= other.startTime
+          return (
+            timeToMinutes(b.startTime) >= timeToMinutes(other.endTime) ||
+            timeToMinutes(b.endTime) <= timeToMinutes(other.startTime)
+          )
         })
       }),
     {
