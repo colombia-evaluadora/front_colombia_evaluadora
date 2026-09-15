@@ -33,6 +33,7 @@ import {
 } from "@/features/administration/audits/api/schema"
 import { academicPeriodsSearchSchema } from "@/features/establishment/academic-period/api/schema"
 import {
+  planeadorActividadCrearSearchSchema,
   planeadorRecursoPreviewSearchSchema,
   planeadorSearchSchema,
   planeadorUnidadesSearchSchema,
@@ -729,6 +730,7 @@ export const planeadorRoute = createRoute({
 export const planeadorActividadCrearRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.planeadorActividadCrear.path,
+  validateSearch: planeadorActividadCrearSearchSchema,
   staticData: { breadcrumb: [PLANEADOR_CRUMB, { label: "Agregar" }] },
   component: PlaneadorCrearActividadPage,
 })

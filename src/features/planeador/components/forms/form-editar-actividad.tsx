@@ -29,6 +29,8 @@ import {
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { useUnidadDetalleQuery } from "@/features/planeador/api/query/use-unidades-query"
+import { useUnidadesTabsQuery } from "@/features/planeador/api/query/use-unidades-tabs-query"
+import { UNIDAD_TAB_FALLBACK } from "@/features/planeador/components/planeador-tabs"
 import { useConfiguracionActividadQuery } from "@/features/planeador/api/query/use-configuracion-actividad-query"
 import { useReferenteCurricularQuery } from "@/features/planeador/api/query/use-referente-curricular-query"
 import { useDocenteGruposQuery } from "@/features/planeador/api/query/use-docente-grupos-query"
@@ -224,7 +226,15 @@ export function EditarActividadForm({
   // por un instante — se guarda también acá, con el id REAL que devolvió el
   // backend, para que aparezca en la lista de opciones de inmediato.
   const [unidadesCreadas, setUnidadesCreadas] = useState<UnidadTematica[]>([])
-  const unidades = [...unidadesQuery, ...unidadesCreadas]
+  // Dedupe por `id`: si `unidadesQuery` ya refrescó y trae una unidad que
+  // también sigue en `unidadesCreadas` (creada un momento antes en esta
+  // misma sesión de formulario), se descarta la copia local -- sin esto
+  // la misma unidad aparecía dos veces en el `<Select>` apenas el query
+  // real se ponía al día.
+  const unidadesCreadasPendientes = unidadesCreadas.filter(
+    (creada) => !unidadesQuery.some((real) => real.id === creada.id),
+  )
+  const unidades = [...unidadesQuery, ...unidadesCreadasPendientes]
   const createUnidadMutation = useCreateUnidad()
 
   const form = useForm({
@@ -426,6 +436,17 @@ function IdentificacionSection({
   // Catálogo `TIPO_ACTIVIDAD` (`TLISTA_VALOR`) — antes hardcodeado acá mismo.
   const { data: tiposActividad = [] } = useTipoActividadCatalogQuery()
 
+  // El rótulo "Unidad temática asociada" está hardcodeado, pero el
+  // instrumento real depende del nivel educativo del Grado elegido — mismo
+  // dato que `PlaneadorTabs` usa para las pestañas ("Unidad temática" en
+  // Primaria, "Proyecto pedagógico" en Preescolar, …): un docente de
+  // Preescolar editando una actividad de Proyecto Pedagógico veía el
+  // select seguir diciendo "Unidad temática asociada". Acá el Grado (y su
+  // Asignatura) ya están elegidos, así que hay a lo sumo UN instrumento
+  // aplicable (a diferencia de las pestañas, que muestran TODOS los que
+  // dicta el docente) — se busca por `gradoId` dentro de `unidadTabs`.
+  const { data: unidadTabs } = useUnidadesTabsQuery()
+
   return (
     <>
         <form.Field name="nombre">
@@ -468,7 +489,7 @@ function IdentificacionSection({
         </form.Field>
 
         <form.Subscribe
-          selector={(state) => `${state.values.grado}/${state.values.asignatura}`}
+          selector={(state) => `${state.values.grado}/${state.values.asignatura}/${state.values.gradoId}`}
         >
           {() => {
             // "Unidad temática asociada" depende de Grado + Asignatura, no
@@ -491,6 +512,14 @@ function IdentificacionSection({
               ? unidades.filter((u) => u.grado === grado && u.asignatura === asignatura)
               : []
 
+            // Instrumento (rótulo real) del Grado ya elegido — ver el
+            // comentario sobre `unidadTabs` más arriba. Sin Grado/Asignatura
+            // todavía elegidos cae al mismo fallback que `PlaneadorTabs`.
+            const gradoId = form.getFieldValue("gradoId")
+            const instrumentoLabel =
+              (gradoId != null && unidadTabs?.find((t) => t.gradoIds.includes(gradoId))?.instrumento) ||
+              UNIDAD_TAB_FALLBACK
+
             return (
               <form.Field name="unidad">
                 {(field) => (
@@ -503,7 +532,7 @@ function IdentificacionSection({
                       variant="outlined"
                       className="min-w-0 flex-1 [&_[data-slot=select-trigger]]:rounded-r-none [&_[data-slot=select-trigger]]:border-r-0"
                     >
-                      <FieldLabel htmlFor={field.name}>Unidad temática asociada</FieldLabel>
+                      <FieldLabel htmlFor={field.name}>{instrumentoLabel} asociada</FieldLabel>
                       <Select
                         // `Select` siempre trabaja con `value` string — el id real
                         // es numérico, así que se convierte acá. `0` es el
@@ -826,9 +855,36 @@ function AsignaturaGradoSection({ form }: { form: FormActividad }) {
       if (par) {
         form.setFieldValue("gradoId", par.gradoId)
         form.setFieldValue("grado", par.gradoNombre)
+        return
       }
     }
-  }, [gradoId, grupoId, asignaturaId, docenteGrupos, docenteGradoAsignatura, form])
+    // Alta de actividad DESDE una Unidad (`CrearActividadForm` en
+    // `planeador-crear-actividad-page.tsx`, `unidadId` de la URL): ahí solo
+    // hay `grado`/`asignatura` (los NOMBRES) precargados, sin ningún id —
+    // `UnidadTematica.gradoId`/`.asignaturaId` casi nunca vienen del backend
+    // real (ver su comentario en `unidad-tematica.ts`). Se cruzan los DOS
+    // nombres juntos contra `docentes/grado-asignatura` (un solo match,
+    // a diferencia de los cruces de arriba que solo tienen UN dato) y,
+    // encontrado el par, se elige de una el PRIMER grupo de ese grado
+    // (`docentes/grupos`) para que "Asignatura / materia" quede habilitado
+    // (depende de Grado+Grupo, no solo de Grado) — el docente sigue
+    // pudiendo cambiar el grupo después, "Unidad temática asociada" no se
+    // toca (ya viene elegida) porque esa sí depende solo de grado/asignatura.
+    if (grado && asignatura) {
+      const par = docenteGradoAsignatura.find(
+        (p) => p.gradoNombre === grado && p.asignaturaNombre === asignatura,
+      )
+      if (par) {
+        form.setFieldValue("gradoId", par.gradoId)
+        form.setFieldValue("asignaturaId", par.asignaturaId)
+        const combo = docenteGrupos.find((g) => g.gradoId === par.gradoId)
+        if (combo) {
+          form.setFieldValue("grupoId", combo.grupoId)
+          form.setFieldValue("grupo", grupoLabel(combo))
+        }
+      }
+    }
+  }, [gradoId, grupoId, asignaturaId, grado, asignatura, docenteGrupos, docenteGradoAsignatura, form])
 
   const asignaturas = docenteGradoAsignatura.filter((par) => par.gradoId === gradoId)
 
