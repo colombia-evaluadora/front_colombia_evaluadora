@@ -1108,17 +1108,17 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
     <>
       <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent
-          className="flex w-[min(95vw,56rem)] max-w-none sm:max-w-224 max-h-[85vh] flex-col overflow-hidden"
+          className="flex w-[min(95vw,56rem)] max-w-none sm:max-w-224 max-h-[85vh] flex-col overflow-hidden p-0"
           showCloseButton={false}
         >
-          <DialogHeader className="shrink-0">
+          <DialogHeader className="shrink-0 px-6 pt-6">
             <DialogTitle>{mainTitle}</DialogTitle>
           </DialogHeader>
 
           {/* Único bloque con scroll: header y footer quedan fijos afuera —
               antes `overflow-y-auto` vivía en el `DialogContent` entero, así
               que scrollear el form se llevaba el título y los botones con él. */}
-          <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-1">
+          <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-6">
             <NoticeOutlet className="mb-2" />
 
             <UserDetailsForm
@@ -1167,7 +1167,7 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
               trae `sm:justify-end` propio y, al ser una clase con variante,
               `twMerge` no la funde con la pelada — sin el `sm:` los dos grupos
               se iban juntos a la derecha en escritorio. */}
-          <DialogFooter className="shrink-0 flex-row flex-wrap items-center justify-between gap-3 sm:justify-between">
+          <DialogFooter className="shrink-0 px-6 pb-6 flex-row flex-wrap items-center justify-between gap-3 sm:justify-between">
             {/*
               Los dos accesos opcionales se recorren en orden: permisos primero
               y, solo cuando ya hay al menos uno, aparece la información
@@ -1240,10 +1240,10 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
 
       <Dialog open={permissionsDialogOpen} onOpenChange={handlePermissionsDialogOpenChange}>
         <DialogContent
-          className="flex w-[min(95vw,56rem)] max-w-none sm:max-w-224 max-h-[85vh] flex-col overflow-hidden"
+          className="flex w-[min(95vw,56rem)] max-w-none sm:max-w-224 max-h-[85vh] flex-col overflow-hidden p-0"
           showCloseButton={false}
         >
-          <DialogHeader className="shrink-0">
+          <DialogHeader className="shrink-0 px-6 pt-6">
             <DialogTitle>Asignar permisos</DialogTitle>
           </DialogHeader>
 
@@ -1251,7 +1251,7 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
               antes `overflow-y-auto` vivía en el `DialogContent` entero, así
               que scrollear (el form + la tabla de permisos) se llevaba el
               título y los botones con él. */}
-          <div className="scrollbar-slim flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overflow-x-hidden pr-1">
+          <div className="scrollbar-slim flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overflow-x-hidden px-6">
           {/* Fila fluida: los campos crecen y bajan de línea solos, y el botón
               ocupa solo lo que mide en vez de reservar una columna entera.
               `gap-y` chico: al envolver, es el espacio entre ambas filas de
@@ -1552,7 +1552,7 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
           )}
           </div>
 
-          <DialogFooter className="shrink-0 justify-end sm:justify-end">
+          <DialogFooter className="shrink-0 justify-end px-6 pb-6 sm:justify-end">
             {hasPermissionsChanges && (
               <Button
                 variant="fill"
@@ -1581,14 +1581,14 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
 
       <Dialog open={additionalInfoDialogOpen} onOpenChange={handleAdditionalInfoDialogOpenChange}>
         <DialogContent
-          className="flex w-[min(95vw,56rem)] max-w-none sm:max-w-224 max-h-[85vh] flex-col overflow-hidden"
+          className="flex w-[min(95vw,56rem)] max-w-none sm:max-w-224 max-h-[85vh] flex-col overflow-hidden p-0"
           showCloseButton={false}
         >
-          <DialogHeader className="shrink-0">
+          <DialogHeader className="shrink-0 px-6 pt-6">
             <DialogTitle>Información complementaria</DialogTitle>
           </DialogHeader>
 
-          <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-1">
+          <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-6">
             <NoticeOutlet className="mb-2" />
 
             <EmployeeAdditionalInfoForm
@@ -1597,7 +1597,7 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
             />
           </div>
 
-          <DialogFooter className="shrink-0 justify-end sm:justify-end">
+          <DialogFooter className="shrink-0 justify-end px-6 pb-6 sm:justify-end">
             {hasAdditionalInfoChanges && (
               <Button
                 variant="fill"

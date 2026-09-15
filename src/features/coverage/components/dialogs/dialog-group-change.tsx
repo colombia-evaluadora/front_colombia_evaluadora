@@ -67,8 +67,8 @@ export function GroupChangeDialog({
         if (!next) handleCancel()
       }}
     >
-      <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden sm:max-w-xl" showCloseButton={false}>
-        <DialogHeader className="shrink-0">
+      <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden p-0 sm:max-w-xl" showCloseButton={false}>
+        <DialogHeader className="shrink-0 px-6 pt-6">
           <DialogTitle className="flex items-center gap-2">
             <UsersThreeIcon className="size-5 text-primary" />
             Cambio de grupo
@@ -87,7 +87,7 @@ export function GroupChangeDialog({
           )}
         </DialogHeader>
 
-        <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-1 flex flex-col gap-4">
+        <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-6 flex flex-col gap-4">
           {hasGrades && (
             <Field variant="outlined">
               <FieldLabel>¿Qué desea hacer con las calificaciones?</FieldLabel>
@@ -114,7 +114,7 @@ export function GroupChangeDialog({
           </div>
         </div>
 
-        <DialogFooter className="shrink-0 sm:justify-end">
+        <DialogFooter className="shrink-0 px-6 pb-6 sm:justify-end">
           <Button type="button" color="primary" size="sm" onClick={handleConfirm}>
             <CheckIcon data-icon="inline-start" />
             Confirmar cambio

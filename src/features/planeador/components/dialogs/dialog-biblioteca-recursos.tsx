@@ -164,10 +164,10 @@ export function DialogBibliotecaRecursos({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="flex max-h-[85vh] flex-col overflow-hidden sm:max-w-4xl"
+        className="flex max-h-[85vh] flex-col overflow-hidden p-0 sm:max-w-4xl"
         showCloseButton={false}
       >
-        <DialogHeader className="shrink-0">
+        <DialogHeader className="shrink-0 px-6 pt-6">
           <DialogTitle>Biblioteca de recursos</DialogTitle>
           <p className="text-muted-foreground text-sm">
             Recursos que ya subiste en otras actividades. Elegí uno para agregarlo sin volver a cargarlo.
@@ -178,7 +178,7 @@ export function DialogBibliotecaRecursos({
             antes el `DialogContent` no tenía `max-h`/límite de altura, así
             que una página llena de tarjetas de recurso podía empujar el
             título y los botones fuera de la pantalla. */}
-        <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-1">
+        <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-6">
         {/* Buscador: `<Field variant="outlined">` con label flotante.
             El ícono `MagnifyingGlassIcon` ya no se necesita como addon —
             con el label flotante se vería redundante (la etiqueta
@@ -269,7 +269,7 @@ export function DialogBibliotecaRecursos({
         )}
         </div>
 
-        <DialogFooter className="shrink-0">
+        <DialogFooter className="shrink-0 px-6 pb-6">
           {/* El footer acá es solo "Cerrar" — la selección es single-shot
               (cada card click agrega y cierra), no hay draft que confirmar
               como en el dialog de áreas. Diferencia explícita con

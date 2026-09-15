@@ -280,24 +280,25 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
       <DialogContent
         className={
           continued
-            ? "flex max-h-[90dvh] flex-col overflow-hidden sm:max-w-4xl"
+            ? "flex max-h-[90dvh] flex-col overflow-hidden p-0 sm:max-w-4xl"
             : "sm:max-w-md"
         }
         showCloseButton={false}
       >
-        <DialogHeader className={continued ? "shrink-0" : undefined}>
+        <DialogHeader className={continued ? "shrink-0 px-6 pt-6" : undefined}>
           <DialogTitle>Agregar escalas de valoración</DialogTitle>
         </DialogHeader>
 
         {/* Único bloque con scroll SOLO en el paso "continued" (la tabla de
-            escalas, potencialmente larga) — antes `overflow-y-auto` vivía en
-            el `DialogContent` entero, así que scrollear la tabla se llevaba
-            el título y los botones con él. El primer paso (elegir niveles)
-            es corto y nunca necesitó scroll. */}
+            escalas, potencialmente larga), con su propio padding -- el
+            `DialogContent` ya no tiene padding propio en ese paso (`p-0`),
+            así que el scroll queda al borde REAL del diálogo. El primer
+            paso (elegir niveles) es corto y nunca necesitó scroll, sigue
+            usando el padding base del `DialogContent`. */}
         <div
           className={cn(
             "flex min-w-0 flex-col gap-4",
-            continued && "scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-1",
+            continued && "scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-6",
           )}
         >
           <NoticeBanner
@@ -923,7 +924,7 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
           )}
         </div>
 
-        <DialogFooter className={cn("sm:justify-end", continued && "shrink-0")}>
+        <DialogFooter className={cn("sm:justify-end", continued && "shrink-0 px-6 pb-6")}>
           {continued ? (
             <Button
               size="sm"
