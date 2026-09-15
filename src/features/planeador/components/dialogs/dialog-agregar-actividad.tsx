@@ -1,6 +1,8 @@
 import { useState } from "react"
+import { Link } from "@tanstack/react-router"
 
 import { Button } from "@/components/ui/button"
+import { paths } from "@/config/paths"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
@@ -137,18 +139,24 @@ export function DialogAgregarActividad({ unidad }: DialogAgregarActividadProps) 
                   />
                 </div>
               </Field>
-              {/* Crear una actividad nueva desde acá (en vez de elegir una ya
-                  existente) todavía no tiene flujo propio — "Nueva actividad"
-                  está deshabilitado en toda la app por la misma razón (ver
-                  `planeador-page.tsx`). Queda visible para no esconder que la
-                  función existe en el diseño, pendiente de esa iteración. */}
+              {/* Crear una actividad nueva DESDE esta unidad: abre el alta
+                  (misma ruta que "Nueva actividad" del listado general) con
+                  Grado, Asignatura y la unidad misma ya preseleccionados —
+                  ver `unidadId` en `planeadorActividadCrearSearchSchema` y
+                  el efecto de resolución en `AsignaturaGradoSection`
+                  (`form-editar-actividad.tsx`). */}
               <Button
                 variant="fill"
                 color="primary"
                 size="sm"
                 type="button"
-                disabled
                 className="shrink-0"
+                render={
+                  <Link
+                    to={paths.app.planeadorActividadCrear.getHref()}
+                    search={{ unidadId: String(unidad.id) }}
+                  />
+                }
               >
                 <PlusCircleIcon data-icon="inline-start" />
                 Agregar actividad

@@ -70,6 +70,18 @@ export type PlaneadorUnidadesSearch = z.infer<typeof planeadorUnidadesSearchSche
  * —no como el literal `RecursoTipo`— porque `zod` no puede validar un
  * union literal arbitrario tipado en otro archivo sin duplicarlo acá.
  */
+/**
+ * Search schema del alta de Actividad. `unidadId` llega cuando se abre esta
+ * pantalla desde "Agregar actividad" dentro de una Unidad temática
+ * (`DialogAgregarActividad`) — el form de alta preselecciona Grado,
+ * Asignatura Y la unidad misma en vez de arrancar en blanco (ver
+ * `planeador-crear-actividad-page.tsx`).
+ */
+export const planeadorActividadCrearSearchSchema = z.object({
+  unidadId: z.string().optional().catch(undefined),
+})
+export type PlaneadorActividadCrearSearch = z.infer<typeof planeadorActividadCrearSearchSchema>
+
 export const planeadorRecursoPreviewSearchSchema = z.object({
   tipo: z.string().optional().catch(undefined),
   url: z.string().optional().catch(undefined),
