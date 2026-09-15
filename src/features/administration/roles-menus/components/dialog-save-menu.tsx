@@ -423,7 +423,17 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
             "Submenús" deja agregar filas sin tope (`setDrafts`), y sin el
             `max-h` de arriba el diálogo crecía sin límite y se llevaba el
             título/botones con él. */}
-        <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-6 flex min-w-0 flex-col gap-4">
+        <div
+          className={cn(
+            "scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-6 flex min-w-0 flex-col gap-4",
+            // Sin `hasParentChoice` el `DialogFooter` de abajo no se
+            // renderiza (ver más abajo) -- este `div` queda como el ÚLTIMO
+            // elemento del diálogo y necesita su propio `pb-6`, o el campo
+            // "Menú padre" (y su popover "Sin resultados") quedan pegados
+            // al borde real de abajo, sin respiro.
+            !hasParentChoice && "pb-6",
+          )}
+        >
           {/* Mismo tratamiento que el diálogo de escalas de valoración: sobre la
               grilla de dos columnas, el campo ocupa el ancho entero mientras es
               la única pregunta y baja a media columna cuando el diálogo crece. */}
