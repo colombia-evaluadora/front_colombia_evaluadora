@@ -14,7 +14,7 @@ const ACTIVIDADES_KEY = "actividades"
  * sola pestaña "Unidad temática", sin filtrar por `?instrumento=` — mismo
  * comportamiento que antes de este endpoint existir.
  */
-const UNIDAD_TAB_FALLBACK = "Unidad temática"
+export const UNIDAD_TAB_FALLBACK = "Unidad temática"
 
 /**
  * Las vistas del Planeador. "Actividades" es fija; la de "Unidad temática"

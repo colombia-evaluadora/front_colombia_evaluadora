@@ -29,6 +29,8 @@ import {
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { useUnidadDetalleQuery } from "@/features/planeador/api/query/use-unidades-query"
+import { useUnidadesTabsQuery } from "@/features/planeador/api/query/use-unidades-tabs-query"
+import { UNIDAD_TAB_FALLBACK } from "@/features/planeador/components/planeador-tabs"
 import { useConfiguracionActividadQuery } from "@/features/planeador/api/query/use-configuracion-actividad-query"
 import { useReferenteCurricularQuery } from "@/features/planeador/api/query/use-referente-curricular-query"
 import { useDocenteGruposQuery } from "@/features/planeador/api/query/use-docente-grupos-query"
@@ -434,6 +436,17 @@ function IdentificacionSection({
   // Catálogo `TIPO_ACTIVIDAD` (`TLISTA_VALOR`) — antes hardcodeado acá mismo.
   const { data: tiposActividad = [] } = useTipoActividadCatalogQuery()
 
+  // El rótulo "Unidad temática asociada" está hardcodeado, pero el
+  // instrumento real depende del nivel educativo del Grado elegido — mismo
+  // dato que `PlaneadorTabs` usa para las pestañas ("Unidad temática" en
+  // Primaria, "Proyecto pedagógico" en Preescolar, …): un docente de
+  // Preescolar editando una actividad de Proyecto Pedagógico veía el
+  // select seguir diciendo "Unidad temática asociada". Acá el Grado (y su
+  // Asignatura) ya están elegidos, así que hay a lo sumo UN instrumento
+  // aplicable (a diferencia de las pestañas, que muestran TODOS los que
+  // dicta el docente) — se busca por `gradoId` dentro de `unidadTabs`.
+  const { data: unidadTabs } = useUnidadesTabsQuery()
+
   return (
     <>
         <form.Field name="nombre">
@@ -476,7 +489,7 @@ function IdentificacionSection({
         </form.Field>
 
         <form.Subscribe
-          selector={(state) => `${state.values.grado}/${state.values.asignatura}`}
+          selector={(state) => `${state.values.grado}/${state.values.asignatura}/${state.values.gradoId}`}
         >
           {() => {
             // "Unidad temática asociada" depende de Grado + Asignatura, no
@@ -499,6 +512,14 @@ function IdentificacionSection({
               ? unidades.filter((u) => u.grado === grado && u.asignatura === asignatura)
               : []
 
+            // Instrumento (rótulo real) del Grado ya elegido — ver el
+            // comentario sobre `unidadTabs` más arriba. Sin Grado/Asignatura
+            // todavía elegidos cae al mismo fallback que `PlaneadorTabs`.
+            const gradoId = form.getFieldValue("gradoId")
+            const instrumentoLabel =
+              (gradoId != null && unidadTabs?.find((t) => t.gradoIds.includes(gradoId))?.instrumento) ||
+              UNIDAD_TAB_FALLBACK
+
             return (
               <form.Field name="unidad">
                 {(field) => (
@@ -511,7 +532,7 @@ function IdentificacionSection({
                       variant="outlined"
                       className="min-w-0 flex-1 [&_[data-slot=select-trigger]]:rounded-r-none [&_[data-slot=select-trigger]]:border-r-0"
                     >
-                      <FieldLabel htmlFor={field.name}>Unidad temática asociada</FieldLabel>
+                      <FieldLabel htmlFor={field.name}>{instrumentoLabel} asociada</FieldLabel>
                       <Select
                         // `Select` siempre trabaja con `value` string — el id real
                         // es numérico, así que se convierte acá. `0` es el
