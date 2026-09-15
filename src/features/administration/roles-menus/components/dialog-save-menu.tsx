@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { z } from "zod"
 
 import { useNotify } from "@/components/notice/notice-context"
+import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -399,12 +400,40 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
       {/* Mientras la única pregunta es el menú padre, el diálogo se queda del
           ancho de esa pregunta; recién al contestarla aparecen los submenús,
           que sí necesitan las cinco columnas. */}
-      <DialogContent className={hasParentChoice ? "sm:max-w-2xl" : "sm:max-w-sm"}>
-        <DialogHeader>
+      <DialogContent
+        className={cn(
+          "flex max-h-[85vh] flex-col overflow-hidden p-0",
+          hasParentChoice ? "sm:max-w-2xl" : "sm:max-w-sm",
+        )}
+        // La X solo se oculta cuando el footer con "Cancelar" ya está
+        // visible (`hasParentChoice`, ver el `DialogFooter` condicional más
+        // abajo) -- sin menú padre elegido todavía no hay footer, y la X
+        // sigue siendo la única forma de cerrar.
+        showCloseButton={!hasParentChoice}
+      >
+        <DialogHeader className="shrink-0 px-6 pt-6">
           <DialogTitle>{isEditing ? "Editar menú" : "Agregar menú"}</DialogTitle>
         </DialogHeader>
 
-        <div className="flex min-w-0 flex-col gap-4">
+        {/* Único bloque con scroll: header y footer quedan fijos afuera, con
+            su propio padding -- el `DialogContent` ya no tiene padding
+            propio (`p-0`), así que el scroll queda al borde REAL del
+            diálogo (no flotando adentro del padding) y es este `div` el que
+            aporta el `px-6` para que el contenido no toque el scrollbar.
+            "Submenús" deja agregar filas sin tope (`setDrafts`), y sin el
+            `max-h` de arriba el diálogo crecía sin límite y se llevaba el
+            título/botones con él. */}
+        <div
+          className={cn(
+            "scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-6 flex min-w-0 flex-col gap-4",
+            // Sin `hasParentChoice` el `DialogFooter` de abajo no se
+            // renderiza (ver más abajo) -- este `div` queda como el ÚLTIMO
+            // elemento del diálogo y necesita su propio `pb-6`, o el campo
+            // "Menú padre" (y su popover "Sin resultados") quedan pegados
+            // al borde real de abajo, sin respiro.
+            !hasParentChoice && "pb-6",
+          )}
+        >
           {/* Mismo tratamiento que el diálogo de escalas de valoración: sobre la
               grilla de dos columnas, el campo ocupa el ancho entero mientras es
               la única pregunta y baja a media columna cuando el diálogo crece. */}
@@ -673,7 +702,7 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
             allá de la X del encabezado, así que el pie recién aparece con la
             primera respuesta. */}
         {hasParentChoice && (
-          <DialogFooter>
+          <DialogFooter className="shrink-0 px-6 pb-6">
             <Button
               size="sm"
               type="button"

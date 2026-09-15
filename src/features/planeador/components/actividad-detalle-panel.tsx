@@ -7,6 +7,7 @@ import {
   TrashIcon,
 } from "@/components/ui/icons"
 import { Spinner } from "@/components/ui/spinner"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { Link } from "@tanstack/react-router"
 import { paths } from "@/config/paths"
 
@@ -94,15 +95,22 @@ export function ActividadDetallePanel({
               `size-6` explícito pisa el `size-5` del preset —la base lo
               permite con `:not([class*='size-'])`— para que la flecha no
               quede chica al lado del título en negrita. */}
-          <Button
-            variant="ghost"
-            color="neutral"
-            size="icon-sm"
-            onClick={onClose}
-            aria-label="Cerrar detalle"
-          >
-            <ArrowLeftIcon className="size-6" />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  color="neutral"
+                  size="icon-sm"
+                  onClick={onClose}
+                  aria-label="Cerrar detalle"
+                />
+              }
+            >
+              <ArrowLeftIcon className="size-6" />
+            </TooltipTrigger>
+            <TooltipContent>Cerrar detalle</TooltipContent>
+          </Tooltip>
           <div className="min-w-0">
             <h2 className="truncate text-base font-bold">
               {actividad?.nombre ?? "Cargando…"}
@@ -120,15 +128,22 @@ export function ActividadDetallePanel({
           {/* Editar navega a la ruta de edición propia; Marcar cambia el panel
               a la vista de calificaciones; las demás siguen deshabilitadas
               (sin endpoints en esta iteración). */}
-          <Button
-            variant="ghost"
-            color="neutral"
-            size="icon-sm"
-            render={<Link to={paths.app.planeadorActividadEditar.getHref(String(actividadId))} />}
-            aria-label="Editar"
-          >
-            <PencilIcon />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  color="neutral"
+                  size="icon-sm"
+                  render={<Link to={paths.app.planeadorActividadEditar.getHref(String(actividadId))} />}
+                  aria-label="Editar"
+                />
+              }
+            >
+              <PencilIcon />
+            </TooltipTrigger>
+            <TooltipContent>Editar</TooltipContent>
+          </Tooltip>
           {ACCIONES.filter((a) => a.label !== "Editar").map(({ label, Icon }) => {
             const handler =
               label === "Marcar"
@@ -137,17 +152,23 @@ export function ActividadDetallePanel({
                   ? onShowApproval
                   : undefined
             return (
-              <Button
-                key={label}
-                variant="ghost"
-                color="neutral"
-                size="icon-sm"
-                disabled={!handler}
-                onClick={handler}
-                aria-label={label}
-              >
-                <Icon />
-              </Button>
+              <Tooltip key={label}>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      variant="ghost"
+                      color="neutral"
+                      size="icon-sm"
+                      disabled={!handler}
+                      onClick={handler}
+                      aria-label={label}
+                    />
+                  }
+                >
+                  <Icon />
+                </TooltipTrigger>
+                <TooltipContent>{label}</TooltipContent>
+              </Tooltip>
             )
           })}
         </div>
