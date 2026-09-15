@@ -534,6 +534,18 @@ function PlaneadorPageContent() {
                   onMonthChange={(next) =>
                     setDisplayMonth(new Date(next.getFullYear(), next.getMonth(), 1))
                   }
+                  // Click en un día del calendario: abre el alta de
+                  // Actividad con ESE día como fecha de inicio Y cierre —
+                  // el docente puede cambiarlas después, es solo un punto
+                  // de partida (mismo criterio que `unidadId` en
+                  // `planeadorActividadCrearSearchSchema`).
+                  onDayClick={(date) => {
+                    const fecha = toDateOnly(date)
+                    navigate({
+                      to: paths.app.planeadorActividadCrear.getHref(),
+                      search: { fechaInicio: fecha, fechaCierre: fecha },
+                    })
+                  }}
                 />
                 {/* viewOption no se usa en la UI todavía; se deja armado para
                     cuando llegue la implementación de "Ver por Unidad" / etc. */}
