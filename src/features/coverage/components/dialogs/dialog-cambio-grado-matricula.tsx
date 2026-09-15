@@ -119,8 +119,8 @@ export function CambioGradoMatriculaDialog({
 
   return (
     <Dialog open={open} onOpenChange={(next) => !next && handleClose()}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl" showCloseButton={false}>
-        <DialogHeader>
+      <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden sm:max-w-2xl" showCloseButton={false}>
+        <DialogHeader className="shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <ChartLineUpIcon className="size-5 text-primary" />
             Cambio de grado
@@ -137,7 +137,7 @@ export function CambioGradoMatriculaDialog({
           )}
         </DialogHeader>
 
-        <div className="flex flex-col gap-4">
+        <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden flex flex-col gap-4">
           {!sameOrigin && (
             <div className="flex items-start gap-3 rounded-md border border-blue-stroke bg-blue-22 px-4 py-3 text-sm text-foreground">
               <InfoIcon className="size-5 shrink-0 text-blue" />
@@ -272,7 +272,7 @@ export function CambioGradoMatriculaDialog({
           </Field>
         </div>
 
-        <DialogFooter className="sm:justify-end">
+        <DialogFooter className="shrink-0 sm:justify-end">
           <Button type="button" variant="outline" color="primary" size="sm" onClick={handleBack}>
             <ArrowLeftIcon data-icon="inline-start" />
             Anterior

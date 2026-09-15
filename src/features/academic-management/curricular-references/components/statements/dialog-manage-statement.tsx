@@ -128,14 +128,18 @@ export function ManageStatementDialog({
 
   return (
     <Dialog open={open} onOpenChange={(next) => !isPending && onOpenChange(next)}>
-      <DialogContent showCloseButton={false} className="max-h-[85vh] overflow-y-auto sm:max-w-xl">
-        <DialogHeader>
+      <DialogContent showCloseButton={false} className="flex max-h-[85vh] flex-col overflow-hidden sm:max-w-xl">
+        <DialogHeader className="shrink-0">
           <DialogTitle className="break-words hyphens-auto" lang="es">
             {isEditMode ? `Editar ${levelLabel.toLowerCase()}` : `Agregar ${levelLabel.toLowerCase()}`}
           </DialogTitle>
         </DialogHeader>
 
-        <form id="manage-statement-form" onSubmit={handleSubmit}>
+        <form
+          id="manage-statement-form"
+          onSubmit={handleSubmit}
+          className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden"
+        >
           <Field orientation="vertical" variant="outlined" data-invalid={error ? "true" : undefined}>
             <FieldLabel htmlFor="statement-text" className="right-2.5 w-auto break-words hyphens-auto" lang="es">
               {levelLabel} *
@@ -195,7 +199,7 @@ export function ManageStatementDialog({
           </Field>
         </form>
 
-        <DialogFooter className="justify-end gap-2">
+        <DialogFooter className="shrink-0 justify-end gap-2">
           {canSave && (
             <Button
               size="sm"

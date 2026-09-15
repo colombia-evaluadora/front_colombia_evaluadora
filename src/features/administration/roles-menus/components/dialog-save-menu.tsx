@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { z } from "zod"
 
 import { useNotify } from "@/components/notice/notice-context"
+import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -399,12 +400,21 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
       {/* Mientras la única pregunta es el menú padre, el diálogo se queda del
           ancho de esa pregunta; recién al contestarla aparecen los submenús,
           que sí necesitan las cinco columnas. */}
-      <DialogContent className={hasParentChoice ? "sm:max-w-2xl" : "sm:max-w-sm"}>
-        <DialogHeader>
+      <DialogContent
+        className={cn(
+          "flex max-h-[85vh] flex-col overflow-hidden",
+          hasParentChoice ? "sm:max-w-2xl" : "sm:max-w-sm",
+        )}
+      >
+        <DialogHeader className="shrink-0">
           <DialogTitle>{isEditing ? "Editar menú" : "Agregar menú"}</DialogTitle>
         </DialogHeader>
 
-        <div className="flex min-w-0 flex-col gap-4">
+        {/* Único bloque con scroll: header y footer quedan fijos afuera —
+            "Submenús" deja agregar filas sin tope (`setDrafts`), y sin esto
+            el `DialogContent` (sin max-h) crecía sin límite y se llevaba el
+            título/botones con él. */}
+        <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden flex min-w-0 flex-col gap-4">
           {/* Mismo tratamiento que el diálogo de escalas de valoración: sobre la
               grilla de dos columnas, el campo ocupa el ancho entero mientras es
               la única pregunta y baja a media columna cuando el diálogo crece. */}
@@ -673,7 +683,7 @@ export function DialogSaveMenu({ open, onOpenChange, roots, menu }: DialogSaveMe
             allá de la X del encabezado, así que el pie recién aparece con la
             primera respuesta. */}
         {hasParentChoice && (
-          <DialogFooter>
+          <DialogFooter className="shrink-0">
             <Button
               size="sm"
               type="button"

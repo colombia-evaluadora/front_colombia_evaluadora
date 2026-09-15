@@ -234,11 +234,11 @@ export function ManageCurricularReferenceDialog({
       }}
     >
       <DialogContent
-        className="w-[min(95vw,48rem)] max-w-none sm:max-w-192 max-h-[85vh] overflow-y-auto overflow-x-hidden"
+        className="flex w-[min(95vw,48rem)] max-w-none sm:max-w-192 max-h-[85vh] flex-col overflow-hidden"
         showCloseButton={false}
         inert={confirmDiscardOpen}
       >
-        <DialogHeader>
+        <DialogHeader className="shrink-0">
           <DialogTitle>{isEditMode ? "Editar referente curricular" : "Agregar referente curricular"}</DialogTitle>
           <DialogDescription>
             {isEditMode
@@ -247,30 +247,35 @@ export function ManageCurricularReferenceDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <NoticeBanner
-          notice={notice}
-          onClose={() => setNotice(null)}
-          variant={notice?.variant}
-          autoCloseMs={notice?.variant === "error" ? undefined : 4000}
-          className="mb-2"
-        />
+        {/* Único bloque con scroll: header y footer quedan fijos afuera —
+            antes `overflow-y-auto` vivía en el `DialogContent` entero, así
+            que scrollear el form se llevaba el título y los botones con él. */}
+        <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
+          <NoticeBanner
+            notice={notice}
+            onClose={() => setNotice(null)}
+            variant={notice?.variant}
+            autoCloseMs={notice?.variant === "error" ? undefined : 4000}
+            className="mb-2"
+          />
 
-        {isLoadingDetail ? (
-          <Skeleton className="h-64 w-full" />
-        ) : (
-          <form id="curricular-reference-form" onSubmit={handleSubmit}>
-            <CurricularReferenceDetailsForm
-              value={formValues}
-              onChange={handleFormChange}
-              educationLevels={educationLevels}
-              pedagogicalApproaches={pedagogicalApproaches}
-              evaluationTypes={evaluationTypes}
-              errors={fieldErrors}
-            />
-          </form>
-        )}
+          {isLoadingDetail ? (
+            <Skeleton className="h-64 w-full" />
+          ) : (
+            <form id="curricular-reference-form" onSubmit={handleSubmit}>
+              <CurricularReferenceDetailsForm
+                value={formValues}
+                onChange={handleFormChange}
+                educationLevels={educationLevels}
+                pedagogicalApproaches={pedagogicalApproaches}
+                evaluationTypes={evaluationTypes}
+                errors={fieldErrors}
+              />
+            </form>
+          )}
+        </div>
 
-        <DialogFooter className="justify-end gap-2">
+        <DialogFooter className="shrink-0 justify-end gap-2">
           {canSave && (
             <Button
               size="sm"
