@@ -2,6 +2,7 @@ import * as React from "react"
 import { Link, useNavigate, useSearch } from "@tanstack/react-router"
 
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { NoticeProvider } from "@/components/notice/notice-context"
 import {
   TableScreen,
@@ -118,15 +119,22 @@ export function PlaneadorUnidadesPage() {
                 <PlusCircleIcon data-icon="inline-start" />
                 Agregar {tabLabel}
               </Button>
-              <Button
-                variant="outline"
-                color="muted"
-                size="icon-sm"
-                disabled
-                aria-label="Exportar unidades filtradas"
-              >
-                <FileDownloadOutlinedIcon />
-              </Button>
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      variant="outline"
+                      color="muted"
+                      size="icon-sm"
+                      disabled
+                      aria-label="Exportar unidades filtradas"
+                    />
+                  }
+                >
+                  <FileDownloadOutlinedIcon />
+                </TooltipTrigger>
+                <TooltipContent>Exportar unidades filtradas</TooltipContent>
+              </Tooltip>
             </TableScreenActions>
           </TableScreenToolbar>
         </TableScreenHeader>

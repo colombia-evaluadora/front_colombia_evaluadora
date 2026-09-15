@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
 import { CheckIcon, PencilIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
@@ -128,18 +129,25 @@ export function CeldaNotaPopover({
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger
-        render={
-          <Button
-            variant="ghost"
-            color="neutral"
-            size="icon-xs"
-            aria-label={`Calificar a ${estudianteNombre}`}
-          />
-        }
-      >
-        <PencilIcon className="size-3.5" />
-      </PopoverTrigger>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <PopoverTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  color="neutral"
+                  size="icon-xs"
+                  aria-label={`Calificar a ${estudianteNombre}`}
+                />
+              }
+            />
+          }
+        >
+          <PencilIcon className="size-3.5" />
+        </TooltipTrigger>
+        <TooltipContent>Calificar a {estudianteNombre}</TooltipContent>
+      </Tooltip>
       <PopoverContent align="end" side="bottom" className="w-80">
         <PopoverHeader>
           <PopoverTitle>Instrumento: {instrumento?.instrumentoNombre ?? "…"}</PopoverTitle>

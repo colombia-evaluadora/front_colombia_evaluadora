@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/icons"
 import { Spinner } from "@/components/ui/spinner"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useDataTable } from "@/hooks/use-data-table"
 import { paths } from "@/config/paths"
 
@@ -471,15 +472,22 @@ export function UnidadDetallePanel({ unidadId, onDeleted }: UnidadDetallePanelPr
           <div className="flex shrink-0 items-center gap-0.5">
             {/* Página aparte, no modal — mismo criterio que "Editar" de
                 Actividad (`planeador-editar-actividad-page.tsx`). */}
-            <Button
-              variant="ghost"
-              color="neutral"
-              size="icon-sm"
-              aria-label="Editar"
-              render={<Link to={paths.app.planeadorUnidadEditar.getHref(String(unidad.id))} />}
-            >
-              <PencilIcon />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    variant="ghost"
+                    color="neutral"
+                    size="icon-sm"
+                    aria-label="Editar"
+                    render={<Link to={paths.app.planeadorUnidadEditar.getHref(String(unidad.id))} />}
+                  />
+                }
+              >
+                <PencilIcon />
+              </TooltipTrigger>
+              <TooltipContent>Editar</TooltipContent>
+            </Tooltip>
             <DialogDeleteUnidad unidad={unidad} onDeleted={onDeleted} />
           </div>
         )}

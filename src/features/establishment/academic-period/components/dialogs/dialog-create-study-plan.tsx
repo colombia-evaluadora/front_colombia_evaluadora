@@ -290,16 +290,20 @@ export function CreateStudyPlanDialog({
         <DialogOverlay forceRender className="bg-black/30" />
       </DialogPortal>
       <DialogContent
-        className="max-h-[90vh] overflow-y-auto sm:max-w-3xl"
+        className="flex max-h-[90vh] flex-col overflow-hidden p-0 sm:max-w-3xl"
         inert={confirmDiscardOpen}
         showCloseButton={false}
       >
-        <DialogHeader>
+        <DialogHeader className="shrink-0 px-6 pt-6">
           <DialogTitle>
             {isEditing ? "Editar plan de estudio" : "Agregar plan de estudio"}
           </DialogTitle>
         </DialogHeader>
 
+        {/* Único bloque con scroll: header y footer quedan fijos afuera —
+            antes `overflow-y-auto` vivía en el `DialogContent` entero, así
+            que scrollear el form se llevaba el título y los botones con él. */}
+        <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-6">
         <NoticeBanner
           notice={notice}
           onClose={() => setNotice(null)}
@@ -750,8 +754,9 @@ export function CreateStudyPlanDialog({
             </form.Field>
           </div>
         </form>
+        </div>
 
-        <DialogFooter>
+        <DialogFooter className="shrink-0 px-6 pb-6">
           <Button
             size="sm"
             type="submit"
