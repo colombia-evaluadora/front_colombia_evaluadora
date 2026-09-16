@@ -12,10 +12,6 @@ interface UpdateStudyPlanItemInput {
   values: UpdateStudyPlanItemRequest
 }
 
-// `PUT /eval-col/plan-asignaturas/:ID` (`fn_plan_actualizar`, id_query 73 —
-// PUT desde V68). `FK_FORMATO_CALIF`/`FK_CRITERIO_NOTA` se mandan siempre
-// (no con COALESCE del lado backend): NULL = "volver a heredar del periodo",
-// que es justo lo que significa `personalizar = false` en el diálogo.
 async function updateStudyPlanItem({
   codigo,
   values,
@@ -45,6 +41,7 @@ export function useUpdateStudyPlanItem({ mutationConfig }: UseUpdateStudyPlanIte
     onSuccess: (...args) => {
       queryClient.invalidateQueries({ queryKey: ["study-plans"] })
       queryClient.invalidateQueries({ queryKey: ["study-plan-available"] })
+      queryClient.invalidateQueries({ queryKey: ["assignment-subjects"] })
       mutationConfig?.onSuccess?.(...args)
     },
   })

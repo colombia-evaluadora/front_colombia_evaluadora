@@ -68,6 +68,15 @@ export function createGradeGroupColumns({
       ),
     },
     {
+      id: "cupo",
+      accessorKey: "cupo",
+      meta: { label: "Cupo" },
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Cupo" />,
+      cell: ({ row }) => (
+        <span className="tabular-nums">{row.original.cupo ?? "—"}</span>
+      ),
+    },
+    {
       id: "actions",
       header: () => <span className="sr-only">Acciones</span>,
       cell: ({ row }) => (

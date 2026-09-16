@@ -254,7 +254,7 @@ export function CurricularReferenceDetailsForm({
             id="curricular-reference-subject-label"
             value={value.subjectLabel}
             onChange={(option) => onChange({ ...value, subjectLabel: option })}
-            placeholder="Automático según el nivel"
+            placeholder="Seleccione"
           />
         </Field>
 

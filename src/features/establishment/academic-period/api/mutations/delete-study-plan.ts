@@ -21,11 +21,8 @@ export function useDeleteStudyPlanItem({ mutationConfig }: UseDeleteStudyPlanIte
     ...mutationConfig,
     onSuccess: (...args) => {
       queryClient.invalidateQueries({ queryKey: ["study-plans"] })
-      // Al eliminar un ítem del plan, esa asignatura vuelve a estar
-      // "disponible" para agregarla de nuevo — sin esto el combobox de
-      // Agregar plan de estudio no la mostraba hasta cerrar y reabrir el
-      // diálogo del grado.
       queryClient.invalidateQueries({ queryKey: ["study-plan-available"] })
+      queryClient.invalidateQueries({ queryKey: ["assignment-subjects"] })
       mutationConfig?.onSuccess?.(...args)
     },
   })
