@@ -28,9 +28,11 @@ import { statusRingFor } from "@/features/planeador/api/ui-mappings"
  * visual pedido.
  *
  * Los classNames del DayPicker siguen el patrón del wrapper `Calendar`
- * existente: `month_grid: w-full border-collapse`, `weekdays: flex`,
- * `week: flex w-full`, `weekday: flex-1` — sin esto la grilla colapsa a
- * una sola columna en lugar de 7.
+ * existente: `months: w-full`, `month_grid: w-full border-collapse`,
+ * `weekdays: flex`, `week: flex w-full`, `weekday: flex-1` — sin el `w-full`
+ * en `months` el contenedor de semanas se encoge a su ancho intrínseco
+ * (una columna angosta) en vez de ocupar toda la card, dejando el resto
+ * en blanco.
  *
  * Marco: todo (barra del mes + fila de días + celdas) vive dentro de una
  * card con `border` y `overflow-hidden`; las líneas internas las pinta cada
@@ -149,7 +151,7 @@ export function PlaneadorMonthGrid({
         }}
         classNames={{
           root: cn("w-full", defaultClassNames.root),
-          months: cn("relative flex flex-col", defaultClassNames.months),
+          months: cn("relative flex w-full flex-col", defaultClassNames.months),
           month: cn("flex w-full flex-col", defaultClassNames.month),
           month_caption: "hidden",
           caption_label: "hidden",
