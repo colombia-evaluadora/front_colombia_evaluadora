@@ -109,15 +109,20 @@ export function PlaneadorUnidadesPage() {
               con su "…" van pegados como un control partido y el exportar va
               al lado, así todas las acciones del listado quedan juntas. */}
             <TableScreenActions>
+              {/* El rótulo sale del referente curricular (400 caracteres
+                posibles) y el Button es `shrink-0`: sin `min-w-0` + tope y
+                recorte, uno largo estiraba la barra entera fuera de pantalla. */}
               <Button
                 color="primary"
                 size="sm"
                 variant="fill"
+                className="min-w-0 max-w-[18rem] shrink"
                 aria-label={`Agregar ${tabLabel}`}
+                title={`Agregar ${tabLabel}`}
                 render={<Link to={paths.app.planeadorUnidadCrear.getHref()} />}
               >
                 <PlusCircleIcon data-icon="inline-start" />
-                Agregar {tabLabel}
+                <span className="truncate">Agregar {tabLabel}</span>
               </Button>
               <Tooltip>
                 <TooltipTrigger

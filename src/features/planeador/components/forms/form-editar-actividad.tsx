@@ -552,7 +552,9 @@ function UnidadAsociadaSection({
                       variant="outlined"
                       className="min-w-0 flex-1 [&_[data-slot=select-trigger]]:rounded-r-none [&_[data-slot=select-trigger]]:border-r-0"
                     >
-                      <FieldLabel htmlFor={field.name}>{instrumentoLabel}</FieldLabel>
+                      <FieldLabel htmlFor={field.name} className="truncate" title={instrumentoLabel}>
+                        {instrumentoLabel}
+                      </FieldLabel>
                       <Select
                         // `Select` siempre trabaja con `value` string — el id real
                         // es numérico, así que se convierte acá. `0` es el
@@ -3658,7 +3660,10 @@ function CrearUnidadPopover({
         // estirar el popover fuera de la pantalla.
         className="w-96 gap-0 p-0"
       >
-        <h3 className="border-b px-4 py-3 text-base font-semibold">
+        {/* `line-clamp-2` + `title`: el rótulo sale del referente curricular y
+          admite 400 caracteres, que dentro de un popover de ancho fijo se
+          convertían en un título de quince líneas empujando el formulario. */}
+        <h3 className="line-clamp-2 border-b px-4 py-3 text-base font-semibold" title={crearLabel}>
           {crearLabel}
         </h3>
 
