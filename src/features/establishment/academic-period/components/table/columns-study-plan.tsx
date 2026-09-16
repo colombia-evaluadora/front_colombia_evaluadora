@@ -77,9 +77,9 @@ export function createStudyPlanColumns({
     {
       id: "influyeDesempeno",
       accessorKey: "influyeDesempeno",
-      meta: { label: "Influye en el desempeño académico (S/N)" },
+      meta: { label: "Influye en el desempeño académico" },
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Influye en el desempeño académico (S/N)" />
+        <DataTableColumnHeader column={column} title="Influye en el desempeño académico" />
       ),
       cell: ({ row }) => <span>{row.original.influyeDesempeno ? "S" : "N"}</span>,
     },

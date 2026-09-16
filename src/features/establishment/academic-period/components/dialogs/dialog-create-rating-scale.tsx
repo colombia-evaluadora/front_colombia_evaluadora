@@ -63,7 +63,9 @@ import {
 } from "@/features/establishment/academic-period/components/grading-range"
 import {
   findDuplicateRatingScale,
+  findOverlappingRatingScale,
   ratingScaleDuplicateMessage,
+  ratingScaleOverlapMessage,
 } from "@/features/establishment/academic-period/components/rating-scale-duplicates"
 import { TeachingLevelsMultiSelect } from "@/features/establishment/academic-period/components/teaching-levels-multi-select"
 import {
@@ -177,6 +179,14 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
         showLocalNotice(ratingScaleDuplicateMessage(duplicate.field, duplicateValue), "error")
         return
       }
+      const overlapping = findOverlappingRatingScale(parsed.data, [
+        ...relevantExistingScalesRef.current,
+        ...draftsRef.current,
+      ])
+      if (overlapping) {
+        showLocalNotice(ratingScaleOverlapMessage(overlapping), "error")
+        return
+      }
       setDrafts((prev) => [...prev, parsed.data])
       showLocalNotice("Escala agregada a la lista.", "info")
       formApi.reset(makeEmptyDraft(r))
@@ -212,6 +222,14 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
     if (duplicate) {
       const value = duplicate.field === "nombre" ? parsed.data.nombre : parsed.data.abreviacion
       showLocalNotice(ratingScaleDuplicateMessage(duplicate.field, value), "error")
+      return
+    }
+    const overlapping = findOverlappingRatingScale(parsed.data, [
+      ...relevantExistingScales,
+      ...otherDrafts,
+    ])
+    if (overlapping) {
+      showLocalNotice(ratingScaleOverlapMessage(overlapping), "error")
       return
     }
     setDrafts((prev) => prev.map((d, i) => (i === editingIndex ? parsed.data : d)))

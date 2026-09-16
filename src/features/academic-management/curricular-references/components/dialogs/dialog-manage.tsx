@@ -22,6 +22,7 @@ import {
   useCurricularReferenceAreasQuery,
   type CurricularReferenceArea,
 } from "@/features/academic-management/curricular-references/api/query/use-curricular-reference-areas"
+import { useSubjectLabelOptionsQuery } from "@/features/academic-management/curricular-references/api/query/use-subject-label-options"
 import type { CurricularReferenceDraft } from "@/features/academic-management/curricular-references/api/types/curricular-reference"
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 import { useNotify } from "@/components/notice/notice-context"
@@ -117,6 +118,7 @@ export function ManageCurricularReferenceDialog({
   const { data: referenceAreas = EMPTY_AREAS, isPending: isAreasPending } = useCurricularReferenceAreasQuery(
     curricularReferenceId ?? NaN,
   )
+  const { data: subjectLabelOptions } = useSubjectLabelOptionsQuery()
   const populatedRef = useRef(false)
 
   useEffect(() => {
@@ -152,6 +154,15 @@ export function ManageCurricularReferenceDialog({
     setFieldErrors({})
     populatedRef.current = true
   }, [open, isEditMode, curricularReference, referenceAreas, isAreasPending])
+  useEffect(() => {
+    if (!open || isEditMode || !populatedRef.current) return
+    if (formValues.subjectLabel != null) return
+    const asignatura = subjectLabelOptions?.find((option) => option.name === "Asignatura")
+    if (!asignatura) return
+    const subjectLabel: CatalogItem = { id: asignatura.id, code: "", name: asignatura.name }
+    setFormValues((prev) => ({ ...prev, subjectLabel }))
+    initialValuesRef.current = { ...initialValuesRef.current, subjectLabel }
+  }, [open, isEditMode, subjectLabelOptions, formValues.subjectLabel])
 
   const createMutation = useCreate({
     mutationConfig: {

@@ -52,7 +52,9 @@ import {
 } from "@/features/establishment/academic-period/components/grading-range"
 import {
   findDuplicateRatingScale,
+  findOverlappingRatingScale,
   ratingScaleDuplicateMessage,
+  ratingScaleOverlapMessage,
 } from "@/features/establishment/academic-period/components/rating-scale-duplicates"
 import { useRowEdit } from "@/features/establishment/academic-period/hooks/use-row-edit"
 
@@ -80,9 +82,6 @@ export function TabRatingScales({ academicPeriodId }: TabRatingScalesProps) {
 
   const scales = data?.rows ?? []
 
-  // La tabla se arma a partir de las escalas existentes: un nivel aparece
-  // reciÃ©n cuando se le agrega al menos una escala. Si no hay escalas, no
-  // hay filas (la tabla arranca vacÃ­a).
   const levels = useMemo(() => {
     const map = new Map<number, TeachingLevel>()
     for (const scale of scales) {
@@ -144,8 +143,6 @@ export function TabRatingScales({ academicPeriodId }: TabRatingScalesProps) {
     [selectedIds],
   )
 
-  // El bulk delete de escalas falla por `teachingLevelId`, no por código de
-  // escala — el nombre que le sirve al usuario en el aviso es el del nivel.
   const levelNamesById = useMemo(
     () => new Map(levels.map((level) => [level.id, level.nombre])),
     [levels],
@@ -157,8 +154,6 @@ export function TabRatingScales({ academicPeriodId }: TabRatingScalesProps) {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* El `border-b` cierra la barra de acciones igual que el `hr` de
-          `TableScreenHeader` en las pantallas de listado. */}
       <div className="flex items-center justify-end gap-2 border-b border-border pb-4">
         {hasSelection ? (
           <>
@@ -244,9 +239,6 @@ function ScalesSubTable({
   const { data: symbols = [] } = useRatingSymbolsQuery()
   const { data: tipoOptions = [] } = useRatingScaleTypesQuery()
   const [sorting, setSorting] = useState<SortingState>([])
-
-  // Borrador de la fila de alta: siempre visible al pie de la subtabla para
-  // crear una escala directamente en este nivel de enseÃ±anza.
   const [addDraft, setAddDraft] = useState<ScaleDraft>(() => makeEmptyScaleDraft(range))
   function patchAddDraft(patch: Partial<ScaleDraft>) {
     setAddDraft((prev) => ({ ...prev, ...patch }))
@@ -266,9 +258,6 @@ function ScalesSubTable({
     },
   })
 
-  // Todos los campos completos antes de mostrar el botón de alta — mismo
-  // criterio que ya usa el diálogo de escalas en lote (`canSubmit` ahí) y el
-  // de área/asignatura (`isDraftComplete`).
   function isAddDraftComplete(value: ScaleDraft): boolean {
     return (
       value.nombre.trim() !== "" &&
@@ -282,8 +271,6 @@ function ScalesSubTable({
   }
 
   function commitDraft() {
-    // Mismas reglas que el alta desde el diÃ¡logo: notas dentro del rango del
-    // periodo (y mÃ­nima â‰¤ mÃ¡xima).
     const parsed = makeRatingScaleGradesSchema(range).safeParse(addDraft)
     if (!parsed.success) {
       notify(parsed.error.issues[0]?.message ?? "Revisa los datos.", {
@@ -297,6 +284,11 @@ function ScalesSubTable({
       notify(ratingScaleDuplicateMessage(duplicate.field, value), { variant: "error" })
       return
     }
+    const overlapping = findOverlappingRatingScale(parsed.data, scales)
+    if (overlapping) {
+      notify(ratingScaleOverlapMessage(overlapping), { variant: "error" })
+      return
+    }
     createMutation.mutate({
       teachingLevelIds: [levelId],
       scales: [{ ...parsed.data, tipo: parsed.data.tipo as RatingScaleType }],
@@ -304,8 +296,6 @@ function ScalesSubTable({
     })
   }
 
-  // La subtabla ordena en memoria: las escalas del nivel ya vienen todas
-  // cargadas, no hay ida al backend por columna.
   const sortedScales = useMemo(() => {
     if (!sorting.length) return scales
     const [{ id, desc }] = sorting
@@ -345,8 +335,6 @@ function ScalesSubTable({
 
   function saveEdit(scale: RatingScale) {
     if (!draft) return
-    // Mismas reglas que el alta: las notas deben caer dentro del rango del
-    // periodo (y mÃ­nima â‰¤ mÃ¡xima).
     const parsed = makeRatingScaleGradesSchema(range).safeParse(draft)
     if (!parsed.success) {
       notify(parsed.error.issues[0]?.message ?? "Revisa los datos.", {
@@ -364,12 +352,16 @@ function ScalesSubTable({
       notify(ratingScaleDuplicateMessage(duplicate.field, value), { variant: "error" })
       return
     }
+    const overlapping = findOverlappingRatingScale(
+      parsed.data,
+      scales.filter((s) => s.codigo !== scale.codigo),
+    )
+    if (overlapping) {
+      notify(ratingScaleOverlapMessage(overlapping), { variant: "error" })
+      return
+    }
     if (academicPeriodId == null) return
     updateMutation.mutate({
-      // `scale.codigo` solo guarda la banda del primer nivel visto al
-      // agrupar (ver comentario de `RatingScale.bandaIdsByLevel`) — acá hay
-      // que resolver la banda de ESTE nivel, o se termina editando la banda
-      // de otro nivel de enseñanza.
       codigo: bandaIdForLevel(scale, levelId),
       academicPeriodId,
       values: {
@@ -380,9 +372,6 @@ function ScalesSubTable({
     })
   }
 
-  // Sin `useMemo`: las celdas cierran sobre el borrador en ediciÃ³n, asÃ­ que
-  // las columnas tienen que rearmarse en cada render. El archivo va con
-  // `use no memo` justamente por esto.
   const columns = createRatingScaleDetailColumns({
     range,
     symbols,
@@ -397,7 +386,6 @@ function ScalesSubTable({
     isSaving: updateMutation.isPending,
   })
 
-  // Sin paginaciÃ³n: el nivel trae todas sus escalas de una.
   const { table, selectedIds, hasSelection, resetSelection } = useDataTable({
     columns,
     data: sortedScales,
@@ -411,10 +399,6 @@ function ScalesSubTable({
     setSorting,
   })
 
-  // `getRowId` de esta subtabla usa `scale.codigo` (identidad de fila dentro
-  // del nivel), pero el PK a mandar al backend es el de la banda de ESTE
-  // nivel puntual (`bandaIdForLevel`) — no siempre coinciden (ver comentario
-  // de `RatingScale.bandaIdsByLevel`).
   const selectedValoracionIds = useMemo(
     () =>
       selectedIds
@@ -424,9 +408,6 @@ function ScalesSubTable({
     [selectedIds, scales, levelId],
   )
 
-  // El bulk delete de valoraciones falla por PK de banda — el nombre que le
-  // sirve al usuario en el aviso es el de la banda misma (ver `nombre` de
-  // `RatingScale`, no confundir con el nombre del nivel de enseÃ±anza).
   const valoracionNamesById = useMemo(
     () => new Map(scales.map((scale) => [bandaIdForLevel(scale, levelId), scale.nombre])),
     [scales, levelId],
@@ -434,9 +415,6 @@ function ScalesSubTable({
 
   return (
     <div className="-m-4 bg-background p-4">
-      {/* Banner de selección: mismo estilo que la tabla de asignaturas del
-          alta de área/asignatura (`dialog-area-subject-form.tsx`) — conteo a
-          la izquierda, papelera de confirmación a la derecha. */}
       {hasSelection && (
         <div className="mb-2 flex items-center justify-between rounded-md border border-border bg-muted/30 px-3 py-1 text-sm">
           <span>
@@ -452,8 +430,6 @@ function ScalesSubTable({
           />
         </div>
       )}
-      {/* Los controles de la fila en ediciÃ³n usan la variante `outlined`: cada
-          input queda recuadrado y se distingue del hover de la fila. */}
       <FieldVariantContext.Provider value="outlined">
         <div className="[&_[data-slot=input]]:bg-background [&_[data-slot=select-trigger]]:bg-background">
           <DataTable
@@ -466,8 +442,6 @@ function ScalesSubTable({
             insideSubRow
             footerRow={({ spacer, actionsCellClassName, actionsOverlayClassName }) => (
               <>
-                {/* Alineada con la columna de selecciÃ³n, que la fila de alta
-                    no tiene: nada que seleccionar todavÃ­a. */}
                 <TableCell />
                 <TableCell>
                   <Input
