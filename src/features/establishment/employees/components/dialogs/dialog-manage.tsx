@@ -1247,15 +1247,7 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
             <DialogTitle>Asignar permisos</DialogTitle>
           </DialogHeader>
 
-          {/* Único bloque con scroll: header y footer quedan fijos afuera —
-              antes `overflow-y-auto` vivía en el `DialogContent` entero, así
-              que scrollear (el form + la tabla de permisos) se llevaba el
-              título y los botones con él. */}
-          <div className="scrollbar-slim flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overflow-x-hidden px-6">
-          {/* Fila fluida: los campos crecen y bajan de línea solos, y el botón
-              ocupa solo lo que mide en vez de reservar una columna entera.
-              `gap-y` chico: al envolver, es el espacio entre ambas filas de
-              campos, y `gap-4` completo se sentía como un salto de más. */}
+          <div className="scrollbar-slim flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overflow-x-hidden px-6 pt-2">
           <div className="flex flex-wrap items-end gap-x-4 gap-y-0">
             <Field
               orientation="vertical"
@@ -1274,9 +1266,6 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
                   setPermissionDraft((prev) => ({ ...prev, order: event.target.value }))
                 }
               />
-              {/* Sin reserva de alto: el mensaje de error, cuando aparece,
-                  corre la fila hacia abajo en vez de dejar un hueco en blanco
-                  permanente entre las dos filas de campos. */}
               <FieldError>{permissionErrors["order"]}</FieldError>
             </Field>
 
@@ -1362,11 +1351,6 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
               >
                 <ComboboxFieldTrigger
                   aria-invalid={Boolean(permissionErrors["workScheduleId"])}
-                  // El combobox queda deshabilitado en este caso, así que el
-                  // mensaje no se puede mostrar adentro del desplegable —
-                  // nunca llega a abrirse—. Va truncado como placeholder del
-                  // propio input, con el texto completo en el `title`, en vez
-                  // de una línea aparte que empujaba la fila de abajo.
                   title={
                     permissionDraft.campusId != null && workScheduleItems.length === 0 && !isLoadingSedeJornadas
                       ? workScheduleEmptyMessage
@@ -1413,8 +1397,6 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
                 items={permissionStatusItems}
               >
                 <SelectTrigger aria-invalid={Boolean(permissionErrors["status"])}>
-                  {/* El valor elegido se muestra como el mismo badge que la
-                      columna Estado de la tabla de abajo. */}
                   <SelectValue placeholder="Seleccionar">
                     {(value) => {
                       const badge = PERMISSION_STATUS_BADGE[value as PermissionStatus]
@@ -1455,20 +1437,11 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
             </div>
           </div>
 
-          {/* El aviso va entre el formulario y la tabla: es la respuesta a lo
-              que se acaba de hacer con los campos de arriba, y queda pegado al
-              listado que cambió. */}
           <NoticeOutlet />
 
-          {/* La tabla aparece recién con el primer permiso: vacía no aportaba
-              nada más que un encabezado y una fila de "aún no hay". */}
           {permissions.length > 0 && (
             <Table containerClassName="max-h-[36vh] overflow-y-auto">
               <TableHeader>
-                {/* El encabezado no lleva fondo propio ni hover: comparte el de
-                    la tabla en reposo, igual que una fila sin el puntero
-                    encima. `has-aria-expanded` cubre el rato en que un menú de
-                    orden está abierto. */}
                 <TableRow className="hover:bg-transparent has-aria-expanded:bg-transparent">
                   <TableHead className="text-foreground">
                     <TableSortableHeader
@@ -1510,8 +1483,6 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
                       onSortChange={setPermissionSort}
                     />
                   </TableHead>
-                  {/* La columna de acciones no rotula —el `th` solo reserva el
-                      ancho del bloque— y el título queda para lectores. */}
                   {PERMISSION_ACTIONS_SPACER_HEAD}
                   <TableHead className="w-px text-foreground">
                     <span className="sr-only">Acciones</span>
