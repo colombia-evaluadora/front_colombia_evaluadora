@@ -63,6 +63,11 @@ export interface ReferenteEnunciado {
 }
 
 export interface ReferenteCurricular extends Omit<UnidadReferente, "enunciados"> {
+  /** `pk_referente_curricular` — para resolver datos adicionales del
+   *  referente por id (ej. `nombre_asignatura` vía `use-subject-label-
+   *  resolution.ts`), sin volver a pedir grado+asignatura. `null` cuando no
+   *  hay referente vigente para el nivel del grado. */
+  id: number | null
   /** Default "Enunciado"/"Evidencia" cuando el backend no los manda (sin
    *  referente todavía) — nunca un literal hardcodeado en la UI. */
   nivel1Etiqueta: string
@@ -74,6 +79,7 @@ const SIN_REFERENTE: ReferenteCurricular = {
   tieneReferente: false,
   esFormativo: false,
   tipoEvaluacion: null,
+  id: null,
   nivel1Etiqueta: "Enunciado",
   nivel2Etiqueta: "Evidencia",
   enunciados: [],
@@ -87,6 +93,7 @@ function toReferente(row: ReferenteCurricularRow | undefined): ReferenteCurricul
     tieneReferente: true,
     esFormativo,
     tipoEvaluacion: row.tipo_evaluacion_valor ?? null,
+    id: row.pk_referente_curricular ?? null,
     nivel1Etiqueta: row.nivel_1_etiqueta ?? "Enunciado",
     nivel2Etiqueta: row.nivel_2_etiqueta ?? "Evidencia",
     enunciados: (row.enunciados ?? []).map((enunciado) => ({

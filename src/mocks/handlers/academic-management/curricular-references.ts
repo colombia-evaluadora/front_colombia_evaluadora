@@ -6,6 +6,11 @@ import {
   takeNextCurricularReferenceId,
   upsertCurricularReference,
 } from "@/mocks/db/academic-management/curricular-references"
+import {
+  nextSubjectLabelOptionId,
+  subjectLabelOptionsDb,
+} from "@/mocks/db/academic-management/subject-label-options"
+import { EDUCATION_LEVELS } from "@/features/academic-management/curricular-references/api/catalogs"
 
 import type {
   CurricularReference,
@@ -152,6 +157,27 @@ export const curricularReferencesHandlers = [
     return HttpResponse.json({ status: "ok", curricularReference })
   }),
 
+  http.get("*/api/academic-management/curricular-references/:id/nombre-asignatura", async ({ params }) => {
+    await delay(120)
+
+    const idParam = Array.isArray(params.id) ? params.id[0] : params.id
+    const id = idParam ? Number(idParam) : NaN
+    const reference = curricularReferencesDb.find((item) => item.id === id && item.active)
+
+    if (!reference) return HttpResponse.json([])
+
+    if (reference.subjectLabel) {
+      return HttpResponse.json([{ nombre_asignatura: reference.subjectLabel.name }])
+    }
+
+    const preescolarId = EDUCATION_LEVELS.find((level) => level.code === "PREESCOLAR")?.id
+    const soloPreescolar =
+      reference.educationLevels.length > 0 &&
+      reference.educationLevels.every((level) => level.id === preescolarId)
+
+    return HttpResponse.json([{ nombre_asignatura: soloPreescolar ? "Dimensión" : "Asignatura" }])
+  }),
+
   http.get("*/api/academic-management/curricular-references/:id/areas", async ({ params }) => {
     await delay(150)
 
@@ -252,6 +278,75 @@ export const curricularReferencesHandlers = [
 
     return HttpResponse.json({ status: "ok", message: "Referente curricular eliminado." })
   }),
+
+  http.get("*/api/academic-management/curricular-references/personalizar-asignatura", async () => {
+    await delay(150)
+
+    const rows = subjectLabelOptionsDb
+      .filter((row) => row.activo)
+      .map((row) => ({
+        pk_lista_valor: row.id,
+        valor: row.valor,
+        es_semilla: row.esSemilla,
+        en_uso: curricularReferencesDb.filter((reference) => reference.subjectLabel?.id === row.id).length,
+      }))
+
+    return HttpResponse.json(rows)
+  }),
+
+  http.post("*/api/academic-management/curricular-references/personalizar-asignatura", async ({ request }) => {
+    await delay(250)
+
+    const body = (await request.json()) as { VALOR?: string }
+    const valor = (body.VALOR ?? "").trim()
+
+    if (!valor) {
+      return HttpResponse.json({ status: "error", message: "El valor es obligatorio." }, { status: 422 })
+    }
+    const duplicated = subjectLabelOptionsDb.some(
+      (row) => row.activo && row.valor.toLowerCase() === valor.toLowerCase(),
+    )
+    if (duplicated) {
+      return HttpResponse.json({ status: "error", message: "Ese valor ya existe." }, { status: 409 })
+    }
+
+    const id = nextSubjectLabelOptionId()
+    subjectLabelOptionsDb.push({ id, valor, esSemilla: false, activo: true })
+
+    return HttpResponse.json({ pk_lista_valor_creado: id })
+  }),
+
+  http.patch(
+    "*/api/academic-management/curricular-references/personalizar-asignatura/:id",
+    async ({ params }) => {
+      await delay(250)
+
+      const idParam = Array.isArray(params.id) ? params.id[0] : params.id
+      const id = idParam ? Number(idParam) : NaN
+      const option = subjectLabelOptionsDb.find((row) => row.id === id)
+
+      if (!option) {
+        return HttpResponse.json({ status: "error", message: "Valor no encontrado." }, { status: 404 })
+      }
+      if (option.esSemilla) {
+        return HttpResponse.json(
+          { status: "error", message: "Los valores básicos no se pueden eliminar." },
+          { status: 422 },
+        )
+      }
+      const inUse = curricularReferencesDb.some((reference) => reference.subjectLabel?.id === id)
+      if (inUse) {
+        return HttpResponse.json(
+          { status: "error", message: "Este valor está en uso por al menos un referente." },
+          { status: 409 },
+        )
+      }
+
+      option.activo = false
+
+      return HttpResponse.json({ status: "ok", message: "Valor eliminado." })
+    },
+  ),
 
   http.post("*/api/academic-management/curricular-references/export", async ({ request }) => {
     await delay(600)
