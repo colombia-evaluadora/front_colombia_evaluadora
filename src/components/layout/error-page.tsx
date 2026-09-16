@@ -8,8 +8,12 @@ import { Button } from "@/components/ui/button"
 // tenía la app abierta ANTES de ese deploy sigue con el `index.html` viejo
 // en memoria y, al navegar a una ruta con carga perezosa, pide un chunk que
 // ya no existe -- Vite lo reporta como este mensaje puntual (no un 404 crudo).
-// No es un bug de la app: recargar la pestaña trae el `index.html` nuevo
-// (fetch real al servidor, no el módulo ya cargado) y el error desaparece.
+// No es un bug de la app: recargar la pestaña resuelve esto porque
+// Cloudflare Workers Assets (`wrangler.jsonc`, sin `_headers` propio) sirve
+// `index.html` con `Cache-Control: no-cache` por default -- el reload SÍ
+// revalida contra el servidor y trae el `index.html` del deploy actual, que
+// ya apunta a los chunks nuevos. Si algún día se agrega un `_headers` que
+// cachee `index.html`, esto deja de funcionar.
 const CHUNK_LOAD_ERROR_PATTERN = /failed to fetch dynamically imported module|error loading dynamically imported module/i
 
 function isChunkLoadError(error: unknown): boolean {
