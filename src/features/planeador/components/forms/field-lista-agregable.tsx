@@ -4,6 +4,12 @@ import { Button } from "@/components/ui/button"
 import { FieldDescription, FieldSet } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from "@/components/ui/input-group"
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -24,11 +30,15 @@ interface ListaAgregableFieldProps {
 /**
  * Lista de texto libre que se arma de a un ítem por vez: el input de abajo
  * agrega (Enter o el botón "+" del título) en vez de guardar todo como un
- * solo texto separado por coma — cada ítem agregado aparece como su propia
- * fila, con su tachito para sacarlo. Mismo idioma que "Materiales de apoyo"
- * en `form-editar-actividad.tsx`: título + botón "+" en la misma fila, el
- * input abajo es `outline` simple (sin el label flotando encima del
- * borde) — no un `Field variant="outlined"`.
+ * solo texto separado por coma. Mismo idioma que "Materiales de apoyo" en
+ * `form-editar-actividad.tsx`: título + botón "+" en la misma fila, el input
+ * abajo es `outline` simple (sin el label flotando encima del borde) — no un
+ * `Field variant="outlined"`.
+ *
+ * Cada ítem ya agregado aparece como su propia fila, pero NO como texto
+ * estático: es otro `InputGroup` editable (con su botón de eliminar
+ * adentro), para que corregir un ítem sea escribir encima en vez de
+ * borrarlo y volver a tipearlo entero.
  *
  * Mismo widget para "Contenidos"/"Objetivos" en `CrearUnidadPopover` (el
  * popover de alta rápida desde el form de Actividad) y en
@@ -52,6 +62,10 @@ export function ListaAgregableField({
 
   function quitar(index: number) {
     onChange(items.filter((_, i) => i !== index))
+  }
+
+  function editar(index: number, value: string) {
+    onChange(items.map((item, i) => (i === index ? value : item)))
   }
 
   return (
@@ -94,28 +108,32 @@ export function ListaAgregableField({
       {items.length > 0 && (
         <ul className="flex flex-col gap-1.5">
           {items.map((item, index) => (
-            <li
-              key={index}
-              className="flex items-center justify-between gap-2 rounded-md border bg-card px-2.5 py-2 text-sm"
-            >
-              <span className="min-w-0 break-words">{item}</span>
-              <Tooltip>
-                <TooltipTrigger
-                  render={
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      color="neutral"
-                      size="icon-sm"
-                      aria-label={`Quitar "${item}"`}
-                      onClick={() => quitar(index)}
-                    />
-                  }
-                >
-                  <TrashIcon />
-                </TooltipTrigger>
-                <TooltipContent>{`Quitar "${item}"`}</TooltipContent>
-              </Tooltip>
+            <li key={index}>
+              <InputGroup className="h-auto rounded-md border border-input bg-card px-1 py-0.5">
+                <InputGroupInput
+                  aria-label={`Editar ítem ${index + 1} de "${label}"`}
+                  value={item}
+                  onChange={(e) => editar(index, e.target.value)}
+                />
+                <InputGroupAddon align="inline-end">
+                  <Tooltip>
+                    <TooltipTrigger
+                      render={
+                        <InputGroupButton
+                          size="icon-sm"
+                          variant="ghost"
+                          color="neutral"
+                          aria-label={`Quitar "${item}"`}
+                          onClick={() => quitar(index)}
+                        />
+                      }
+                    >
+                      <TrashIcon />
+                    </TooltipTrigger>
+                    <TooltipContent>{`Quitar "${item}"`}</TooltipContent>
+                  </Tooltip>
+                </InputGroupAddon>
+              </InputGroup>
             </li>
           ))}
         </ul>
@@ -139,11 +157,11 @@ interface ListaAgregableCajaProps {
 /**
  * Variante "caja" del mismo widget de arriba: título + descripción afuera,
  * un bloque con borde que solo tiene el encabezado de columna y los ítems
- * ya agregados (separados por líneas, tachito solo al hover — mismo
- * idioma que las filas de acción de `DataTable`), y el input de alta
- * AFUERA de esa caja, en su propia fila — no como última fila dentro del
- * borde: el input es para cargar el próximo ítem, no uno ya guardado, así
- * que no pertenece visualmente a la lista.
+ * ya agregados —cada uno es un `InputGroup` editable con su botón de
+ * eliminar, igual que en `ListaAgregableField`, no texto estático—, y el
+ * input de alta AFUERA de esa caja, en su propia fila — no como última fila
+ * dentro del borde: el input es para cargar el próximo ítem, no uno ya
+ * guardado, así que no pertenece visualmente a la lista.
  *
  * El botón "Agregar…" al lado del input solo aparece con texto tipeado
  * (mismo criterio que "Vincular" en `dialog-agregar-actividad.tsx`): un
@@ -178,6 +196,10 @@ export function ListaAgregableCaja({
     onChange(items.filter((_, i) => i !== index))
   }
 
+  function editar(index: number, value: string) {
+    onChange(items.map((item, i) => (i === index ? value : item)))
+  }
+
   return (
     <FieldSet className="gap-2">
       {/* `<legend>` a mano, no `FieldLegend`: esa lleva `text-xs uppercase`
@@ -203,29 +225,32 @@ export function ListaAgregableCaja({
         {items.length > 0 && (
           <ul className="divide-y">
             {items.map((item, index) => (
-              <li
-                key={index}
-                className="group/item flex items-center justify-between gap-2 px-3 py-2 text-sm"
-              >
-                <span className="min-w-0 break-words">{item}</span>
-                <Tooltip>
-                  <TooltipTrigger
-                    render={
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        color="neutral"
-                        size="icon-sm"
-                        aria-label={`Quitar "${item}"`}
-                        className="opacity-0 transition-opacity group-hover/item:opacity-100 group-focus-within/item:opacity-100"
-                        onClick={() => quitar(index)}
-                      />
-                    }
-                  >
-                    <TrashIcon />
-                  </TooltipTrigger>
-                  <TooltipContent>{`Quitar "${item}"`}</TooltipContent>
-                </Tooltip>
+              <li key={index} className="px-1 py-0.5">
+                <InputGroup className="h-auto border-none px-2 py-1">
+                  <InputGroupInput
+                    aria-label={`Editar ${columnLabel.toLowerCase()} ${index + 1}`}
+                    value={item}
+                    onChange={(e) => editar(index, e.target.value)}
+                  />
+                  <InputGroupAddon align="inline-end">
+                    <Tooltip>
+                      <TooltipTrigger
+                        render={
+                          <InputGroupButton
+                            size="icon-sm"
+                            variant="ghost"
+                            color="neutral"
+                            aria-label={`Quitar "${item}"`}
+                            onClick={() => quitar(index)}
+                          />
+                        }
+                      >
+                        <TrashIcon />
+                      </TooltipTrigger>
+                      <TooltipContent>{`Quitar "${item}"`}</TooltipContent>
+                    </Tooltip>
+                  </InputGroupAddon>
+                </InputGroup>
               </li>
             ))}
           </ul>
