@@ -1,7 +1,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo } from "react"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import type { AnyFieldApi } from "@tanstack/react-form"
-import { useForm } from "@tanstack/react-form"
+import { useForm, useSelector } from "@tanstack/react-form"
 
 import { useNotify, NoticeOutlet } from "@/components/notice/notice-context"
 import { Button } from "@/components/ui/button"
@@ -37,13 +37,13 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
 const EMPTY: PromotionApprovalValues = {
-  curriculumNode: "",
+  curriculumNode: "AS",
 
-  maxFailedRecovery: 0,
-  absencePercentage: 0,
-  maxLeveledSubjects: 0,
+  maxFailedRecovery: 2,
+  absencePercentage: 25,
+  maxLeveledSubjects: 2,
 
-  applyAverageApproval: true,
+  applyAverageApproval: false,
 
   basePercentage: 25,
   minimumSubjectPercentage: 25,
@@ -54,7 +54,15 @@ const EMPTY: PromotionApprovalValues = {
 
 const FORM_ID = "approval-parameters-form"
 
-function PercentInput({ value, onChange }: { value: number; onChange: (value: number) => void }) {
+function PercentInput({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: number
+  onChange: (value: number) => void
+  disabled?: boolean
+}) {
   return (
     <InputGroup className="h-11 rounded-md border border-input px-3 hover:border-ring has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20 has-[[data-slot][aria-invalid=true]]:border-red">
       <InputGroupInput
@@ -64,6 +72,7 @@ function PercentInput({ value, onChange }: { value: number; onChange: (value: nu
         placeholder="Agregar"
         className="px-0"
         value={Number.isNaN(value) ? "" : value}
+        disabled={disabled}
         onKeyDown={(event) => {
           if (["-", "+", "e", "E"].includes(event.key)) {
             event.preventDefault()
@@ -180,8 +189,6 @@ const PromotionCriteriaForm = forwardRef<PromotionCriteriaHandle, PromotionCrite
     const isGradeScope = gradeId != null
     const { notify } = useNotify()
 
-    // `items` mapea cada `value` al label que `ComboboxFieldValue` renderiza solo. Se
-    // arma desde las opciones del back (`key` → `label`).
     const curriculumNodeItems = useMemo<Record<string, string>>(
       () => Object.fromEntries(curriculumNodes.map((o) => [o.key, o.label])),
       [curriculumNodes],
@@ -235,6 +242,18 @@ const PromotionCriteriaForm = forwardRef<PromotionCriteriaHandle, PromotionCrite
         },
       }),
       [updatePromotionCriteria, form, academicPeriodId],
+    )
+
+    const maxFailedRecovery = useSelector(form.store, (state) => state.values.maxFailedRecovery)
+    useEffect(() => {
+      if (form.state.values.maxLeveledSubjects > maxFailedRecovery) {
+        form.setFieldValue("maxLeveledSubjects", maxFailedRecovery)
+      }
+    }, [maxFailedRecovery, form])
+
+    const applyAverageApproval = useSelector(
+      form.store,
+      (state) => state.values.applyAverageApproval,
     )
 
     return (
@@ -295,7 +314,7 @@ const PromotionCriteriaForm = forwardRef<PromotionCriteriaHandle, PromotionCrite
                   onChange={(e) => {
                     const raw = e.target.value
                     const parsed = Number(raw)
-                    if (raw === "" || !Number.isNaN(parsed)) field.handleChange(parsed)
+                    if (raw === "" || !Number.isNaN(parsed)) field.handleChange(Math.min(parsed, 99))
                   }}
                   className="h-11"
                 />
@@ -328,7 +347,7 @@ const PromotionCriteriaForm = forwardRef<PromotionCriteriaHandle, PromotionCrite
                 <Input
                   type="number"
                   min={0}
-                  max={999}
+                  max={maxFailedRecovery}
                   step={1}
                   placeholder="Agregar"
                   value={field.state.value}
@@ -338,7 +357,9 @@ const PromotionCriteriaForm = forwardRef<PromotionCriteriaHandle, PromotionCrite
                   onChange={(e) => {
                     const raw = e.target.value
                     const parsed = Number(raw)
-                    if (raw === "" || !Number.isNaN(parsed)) field.handleChange(parsed)
+                    if (raw === "" || !Number.isNaN(parsed)) {
+                      field.handleChange(Math.min(parsed, maxFailedRecovery))
+                    }
                   }}
                   className="h-11"
                 />
@@ -382,6 +403,7 @@ const PromotionCriteriaForm = forwardRef<PromotionCriteriaHandle, PromotionCrite
                 <PercentInput
                   value={field.state.value}
                   onChange={(value) => field.handleChange(value)}
+                  disabled={!applyAverageApproval}
                 />
               </Field>
             )}
@@ -395,6 +417,7 @@ const PromotionCriteriaForm = forwardRef<PromotionCriteriaHandle, PromotionCrite
                 <PercentInput
                   value={field.state.value}
                   onChange={(value) => field.handleChange(value)}
+                  disabled={!applyAverageApproval}
                 />
               </Field>
             )}
@@ -415,13 +438,14 @@ const PromotionCriteriaForm = forwardRef<PromotionCriteriaHandle, PromotionCrite
                   step={1}
                   placeholder="Agregar"
                   value={field.state.value}
+                  disabled={!applyAverageApproval}
                   onKeyDown={(e) => {
                     if (["-", "+", ".", ",", "e", "E"].includes(e.key)) e.preventDefault()
                   }}
                   onChange={(e) => {
                     const raw = e.target.value
                     const parsed = Number(raw)
-                    if (raw === "" || !Number.isNaN(parsed)) field.handleChange(parsed)
+                    if (raw === "" || !Number.isNaN(parsed)) field.handleChange(Math.min(parsed, 99))
                   }}
                   className="h-11"
                 />
@@ -436,9 +460,6 @@ const PromotionCriteriaForm = forwardRef<PromotionCriteriaHandle, PromotionCrite
 
         <form.Field name="requiredSubjects">
           {(field) => (
-            // Si el nodo curricular es "AR" (área) las obligatorias se eligen
-            // entre las áreas del período; si es "AS" (asignatura), entre las
-            // asignaturas — mismo campo, distinta fuente de opciones.
             <form.Subscribe selector={(state) => state.values.curriculumNode}>
               {(curriculumNode) => (
                 <RequiredSubjectsField
