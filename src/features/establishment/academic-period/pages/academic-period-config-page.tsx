@@ -160,7 +160,11 @@ function AcademicPeriodConfigPageContent() {
 
   const isSaving = createPeriod.isPending || updatePeriod.isPending
   const showSecondForm = saved || (isEditing && !!detail)
-  const showSaveAction = isEditing ? isFormDirty || isSaving : isFormValid || isSaving
+  // Al editar: solo aparece si hay algo que guardar. Al agregar: siempre
+  // visible, deshabilitado hasta llenar lo obligatorio — no tiene sentido
+  // que desaparezca ahí, no hay "nada que guardar" de por medio, solo
+  // campos sin completar.
+  const showSaveAction = isEditing ? isFormDirty || isSaving : true
 
   const configBody = (
     <Accordion
@@ -200,7 +204,7 @@ function AcademicPeriodConfigPageContent() {
                     variant="fill"
                     color="primary"
                     form={FORM_ID}
-                    disabled={isSaving}
+                    disabled={isSaving || (!isEditing && !isFormValid)}
                     aria-busy={isSaving}
                   >
                     {isSaving ? (
@@ -213,8 +217,8 @@ function AcademicPeriodConfigPageContent() {
                         ? "Guardando..."
                         : "Guardar"
                       : isSaving
-                        ? "Agregando..."
-                        : "Agregar periodo"}
+                        ? "Guardando..."
+                        : "Guardar"}
                   </Button>
                 </div>
               )}

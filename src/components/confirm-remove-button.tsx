@@ -39,9 +39,12 @@ export function ConfirmRemoveButton({
 
   async function handleConfirm() {
     setPending(true)
-    const result = await onConfirm()
-    setPending(false)
-    if (result !== false) setOpen(false)
+    try {
+      const result = await onConfirm()
+      if (result !== false) setOpen(false)
+    } finally {
+      setPending(false)
+    }
   }
 
   return (

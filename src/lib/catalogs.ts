@@ -24,6 +24,7 @@ export const CATALOGS = {
   LEGAL_TYPES: "legal-types",
   ZONES: "zones",
   DISABILITIES: "disabilities",
+  DISABILITIES_ATTENDED: "disabilities-attended",
   LICENSE_STATUSES: "license-statuses",
   ENTITY_STATUSES: "entity-statuses",
 } as const

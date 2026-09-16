@@ -3,6 +3,7 @@ import type { ColumnDef, Table } from "@tanstack/react-table"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { DataTableColumnHeader } from "@/components/data-table"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { RESERVATION_STATUS_BADGE } from "@/features/establishment/academic-period/api/ui-mappings"
 import type {
@@ -31,6 +32,8 @@ function ReservationStatusCell({ enabled }: { enabled: boolean }) {
     </Badge>
   )
 }
+
+const VISIBLE_BREAKS = 2
 
 function formatDate(value: string): string {
   const [year, month, day] = value.slice(0, 10).split("-")
@@ -110,6 +113,73 @@ export const columns: ColumnDef<AcademicPeriod>[] = [
     meta: { label: "Fecha finalización" },
     header: ({ column }) => <DataTableColumnHeader column={column} title="Fecha finalización" />,
     cell: ({ row }) => <span>{formatDate(row.original.endDate)}</span>,
+  },
+  {
+    id: "enrollmentDeadline",
+    accessorKey: "enrollmentDeadline",
+    meta: { label: "Fecha límite de matrícula" },
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Fecha límite de matrícula" />,
+    cell: ({ row }) => <span>{formatDate(row.original.enrollmentDeadline)}</span>,
+  },
+  {
+    id: "previousPeriodName",
+    accessorKey: "previousPeriodName",
+    meta: { label: "Periodo anterior" },
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Periodo anterior" />,
+    cell: ({ row }) => <span>{row.original.previousPeriodName ?? "—"}</span>,
+  },
+  {
+    id: "schedule",
+    accessorKey: "scheduleStartTime",
+    meta: { label: "Horario" },
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Horario" />,
+    cell: ({ row }) => {
+      const { scheduleStartTime, scheduleEndTime } = row.original
+      return <span>{scheduleStartTime && scheduleEndTime ? `${scheduleStartTime} - ${scheduleEndTime}` : "—"}</span>
+    },
+  },
+  {
+    id: "defaultBlocksCount",
+    accessorKey: "defaultBlocksCount",
+    meta: { label: "Bloques por defecto" },
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Bloques por defecto" />,
+    cell: ({ row }) => <span>{row.original.defaultBlocksCount ?? "—"}</span>,
+  },
+  {
+    id: "breaks",
+    accessorKey: "breaks",
+    meta: { label: "Descansos" },
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Descansos" />,
+    cell: ({ row }) => {
+      const breaks = row.original.breaks ?? []
+      if (breaks.length === 0) return <span>—</span>
+      const visible = breaks.slice(0, VISIBLE_BREAKS)
+      const remaining = breaks.slice(VISIBLE_BREAKS)
+      const extra = remaining.length
+      return (
+        <div className="flex flex-nowrap items-center gap-1">
+          {visible.map((b) => (
+            <Badge key={`${b.startTime}-${b.endTime}`} variant="outline" color="neutral">
+              {b.startTime}-{b.endTime}
+            </Badge>
+          ))}
+          {extra > 0 ? (
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Badge variant="outline" color="neutral" className="cursor-default">
+                    +{extra}
+                  </Badge>
+                }
+              />
+              <TooltipContent>
+                {remaining.map((b) => `${b.startTime}-${b.endTime}`).join(", ")}
+              </TooltipContent>
+            </Tooltip>
+          ) : null}
+        </div>
+      )
+    },
   },
   {
     id: "actions",
