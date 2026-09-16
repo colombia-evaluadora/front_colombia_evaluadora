@@ -9,6 +9,7 @@ import { useDataTable } from "@/hooks/use-data-table"
 import { NoticeOutlet } from "@/components/notice/notice-context"
 
 import { useStudyPlansQuery } from "@/features/establishment/academic-period/api/query/use-study-plans"
+import { useStudyPlanSubjectLabel } from "@/features/establishment/academic-period/api/query/use-study-plan-subject-label"
 import { createStudyPlanColumns } from "@/features/establishment/academic-period/components/table/columns-study-plan"
 import { CreateStudyPlanDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-create-study-plan"
 import { DeleteSelectedStudyPlanItemsDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-delete-selected-study-plan-items"
@@ -18,8 +19,6 @@ import { ExportStudyPlanDialog } from "@/features/establishment/academic-period/
 interface TabStudyPlanProps {
   academicPeriodId?: number
   gradeId?: number
-  // Solución temporal de front: en preescolar el plan de estudio se rotula
-  // como "dimensiones" en vez de "asignaturas" — mismo modelo de datos.
   isPreescolar?: boolean
 }
 
@@ -43,9 +42,11 @@ export function TabStudyPlan({ academicPeriodId, gradeId, isPreescolar }: TabStu
     setPageIndex(0)
   }
 
+  const subjectLabel = useStudyPlanSubjectLabel(gradeId, Boolean(isPreescolar))
+
   const columns = useMemo(
-    () => createStudyPlanColumns({ academicPeriodId, gradeId, isPreescolar }),
-    [academicPeriodId, gradeId, isPreescolar],
+    () => createStudyPlanColumns({ academicPeriodId, gradeId, isPreescolar, subjectLabel }),
+    [academicPeriodId, gradeId, isPreescolar, subjectLabel],
   )
 
   const { table, selectedIds, hasSelection, resetSelection } = useDataTable({
@@ -73,8 +74,6 @@ export function TabStudyPlan({ academicPeriodId, gradeId, isPreescolar }: TabStu
 
   return (
     <>
-      {/* Mismo diseño que la tabla de grados: botón rojo "Eliminar (n)" +
-          exportar con selección; agregar sin selección. */}
       <div className="mb-2 flex items-center justify-end gap-2 border-b border-border pb-2">
         {hasSelection ? (
           <>
@@ -97,6 +96,7 @@ export function TabStudyPlan({ academicPeriodId, gradeId, isPreescolar }: TabStu
               academicPeriodId={academicPeriodId}
               gradeId={gradeId}
               isPreescolar={isPreescolar}
+              subjectLabel={subjectLabel}
             />
             <ExportStudyPlanDialog academicPeriodId={academicPeriodId} />
           </>
@@ -110,11 +110,7 @@ export function TabStudyPlan({ academicPeriodId, gradeId, isPreescolar }: TabStu
         isPending={isPending}
         isError={isError}
         onRetry={refetch}
-        emptyMessage={
-          isPreescolar
-            ? "Aún no hay dimensiones en el plan de estudio."
-            : "Aún no hay asignaturas en el plan de estudio."
-        }
+        emptyMessage="Aún no hay elementos en el plan de estudio."
         errorMessage="Ocurrió un error al cargar el plan de estudio."
         containerClassName="max-h-96 overflow-y-auto"
       />

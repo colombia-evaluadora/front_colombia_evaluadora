@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from "react"
+import { useEffect, useRef, useState, type SubmitEvent } from "react"
 import { z } from "zod"
 
 import { Button } from "@/components/ui/button"
@@ -47,6 +47,7 @@ function createInitialValues(): CurricularReferenceDraft {
     level2: "",
     pedagogicalApproach: null,
     evaluationType: null,
+    subjectLabel: null,
     areas: [],
     instrument: "",
     instrumentDescription: "",
@@ -173,7 +174,7 @@ export function ManageCurricularReferenceDialog({
     }
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
 
     const errors = validateCurricularReference(formValues)
@@ -247,11 +248,6 @@ export function ManageCurricularReferenceDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {/* Único bloque con scroll: header y footer quedan fijos afuera, con
-            su propio padding -- el `DialogContent` ya no tiene padding
-            propio (`p-0`), así que el scroll queda al borde REAL del
-            diálogo (no flotando adentro del padding) y es este `div` el
-            que aporta el `px-6`. */}
         <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-6">
           <NoticeBanner
             notice={notice}

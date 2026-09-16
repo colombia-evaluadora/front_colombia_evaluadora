@@ -92,9 +92,6 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
     setNotice({ id: noticeIdRef.current, message, variant: options?.variant ?? "success" })
   }
 
-  // Una vez creado el grado (o si venimos editando uno existente) el diálogo
-  // pasa a modo edición: cambia el título y las acciones. Igual que en periodo
-  // académico, "agregar" se transforma en "editar" al persistir.
   const isEditing = gradeId != null
 
   const [teachingLevelId, setTeachingLevelId] = useState<number | null>(
@@ -346,11 +343,7 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
           <DialogTitle>{isEditing ? "Editar grado" : "Agregar grado"}</DialogTitle>
         </DialogHeader>
 
-        {/* Único bloque con scroll: header y footer quedan fijos afuera —
-            antes `overflow-y-auto` vivía en el `DialogContent` entero, así
-            que scrollear (los campos + las pestañas de abajo) se llevaba el
-            título y los botones con él. */}
-        <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-4 sm:px-6">
+        <div className="scrollbar-slim flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overflow-x-hidden px-4 pt-2 sm:px-6">
         <div className="grid gap-x-4 gap-y-2 sm:grid-cols-2 lg:grid-cols-4">
           <Field
             variant="outlined"

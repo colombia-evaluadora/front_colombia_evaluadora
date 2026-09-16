@@ -34,6 +34,7 @@ interface CurricularReferenceRow {
   instrumento_info_adicional: string | null
   enfoque_pedagogico: string | null
   tipo_evaluacion: string | null
+  nombre_asignatura: string | null
   estado: "A" | "I"
   anio_vigencia_desde: number
   anio_vigencia_hasta: number | null
@@ -65,6 +66,7 @@ function toCurricularReference(row: CurricularReferenceRow): CurricularReference
     level2: "",
     pedagogicalApproach: displayOnlyCatalogItem(row.enfoque_pedagogico),
     evaluationType: displayOnlyCatalogItem(row.tipo_evaluacion),
+    subjectLabel: displayOnlyCatalogItem(row.nombre_asignatura),
     areas: [],
     instrument: row.instrumento,
     instrumentDescription: row.instrumento_info_adicional ?? "",

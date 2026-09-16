@@ -29,6 +29,8 @@ interface CurricularReferenceRow {
   enfoque_pedagogico: string | null
   fk_tlv_tipo_evaluacion: number | null
   tipo_evaluacion: string | null
+  fk_tlv_nombre_asignatura: number | null
+  nombre_asignatura: string | null
   nivel_1_etiqueta: string
   nivel_2_etiqueta: string
   instrumento: string
@@ -65,6 +67,10 @@ function toCurricularReference(row: CurricularReferenceRow, areas: CurricularRef
     evaluationType:
       row.fk_tlv_tipo_evaluacion != null
         ? { id: row.fk_tlv_tipo_evaluacion, code: "", name: row.tipo_evaluacion ?? "" }
+        : null,
+    subjectLabel:
+      row.fk_tlv_nombre_asignatura != null
+        ? { id: row.fk_tlv_nombre_asignatura, code: "", name: row.nombre_asignatura ?? "" }
         : null,
     areas,
     instrument: row.instrumento,
