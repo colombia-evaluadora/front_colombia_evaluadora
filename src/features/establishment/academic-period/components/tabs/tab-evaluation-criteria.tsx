@@ -96,7 +96,7 @@ const EMPTY: EvaluationCriteriaValues = {
   studentWithoutGradesPerformance: "",
   maxRecoveryGrade: 0,
   roundingMode: "",
-  initialGrade: 0,
+  initialGrade: 1,
 }
 
 const FORM_ID = "evaluation-criteria-form"
@@ -280,24 +280,24 @@ function EvaluationCriteriaForm({
                       <Input
                         id={field.name}
                         type="number"
-                        min={0}
+                        min={parseGradingRange(gradingFormatLabel(form.state.values.gradingFormat)).min}
                         max={parseGradingRange(gradingFormatLabel(form.state.values.gradingFormat)).max}
-                        step={0.1}
+                        step={1}
                         placeholder="Agregar"
                         value={Number.isNaN(field.state.value) ? "" : field.state.value}
                         onKeyDown={(e) => {
-                          if (["-", "+", "e", "E"].includes(e.key)) {
+                          if (["-", "+", ".", ",", "e", "E"].includes(e.key)) {
                             e.preventDefault()
                           }
                         }}
                         onChange={(e) => {
-                          const raw = e.target.valueAsNumber
+                          const raw = Math.round(e.target.valueAsNumber)
                           if (e.target.value !== "" && Number.isNaN(raw)) return
-                          const max = parseGradingRange(
+                          const { min, max } = parseGradingRange(
                             gradingFormatLabel(form.state.values.gradingFormat)
-                          ).max
-                          if (Number.isFinite(raw) && raw > max) {
-                            field.handleChange(max)
+                          )
+                          if (Number.isFinite(raw)) {
+                            field.handleChange(Math.min(Math.max(raw, min), max))
                             return
                           }
                           field.handleChange(raw)
@@ -315,17 +315,13 @@ function EvaluationCriteriaForm({
                         onValueChange={(value) => {
                           if (value == null) return
                           if (cfg.name === "gradingFormat") {
-                            const oldMax = parseGradingRange(gradingFormatLabel(field.state.value as string)).max
-                            const newMax = parseGradingRange(gradingFormatLabel(value)).max
-                            if (oldMax !== newMax) {
-                              const rescale = (n: number) =>
-                                Number.isFinite(n) ? Math.round((n / oldMax) * newMax * 10) / 10 : n
-                              form.setFieldValue("initialGrade", rescale(form.state.values.initialGrade))
-                              form.setFieldValue(
-                                "maxRecoveryGrade",
-                                rescale(form.state.values.maxRecoveryGrade),
-                              )
-                            }
+                            const { min: newMin, max: newMax } = parseGradingRange(
+                              gradingFormatLabel(value),
+                            )
+                            form.setFieldValue("maxRecoveryGrade", newMax)
+                            form.setFieldValue("initialGrade", (current) =>
+                              Math.min(Math.max(current, newMin), newMax),
+                            )
                           }
                           field.handleChange(value)
                         }}
