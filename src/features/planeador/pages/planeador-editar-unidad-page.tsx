@@ -152,7 +152,7 @@ function EditarUnidadPageContent({
             </Button>
           }
         >
-          Editar unidad
+          {`Editar ${instrumento.toLowerCase()}`}
         </TableScreenTitle>
         <NoticeOutlet className="mx-(--screen-spacing) my-4" />
       </TableScreenHeader>
