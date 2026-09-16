@@ -55,6 +55,12 @@ function PlaneadorCrearUnidadPageContent() {
   // `planeador-tabs.tsx`) para el mensaje de éxito — el mismo texto fijo
   // "Unidad temática" no tenía sentido para un docente de Preescolar.
   const instrumento = useUnidadInstrumentoLabel(draft.gradoId)
+  // "Nueva unidad temática"/"Nuevo proyecto pedagógico" — mismo criterio de
+  // género que `mensajeUnidadGuardada` (arriba). El título de la pantalla y
+  // su descripción venían fijos en "unidad"/"unidad temática", igual que el
+  // resto de textos de acá antes de este cambio.
+  const esMasculino = articuloDefinido(instrumento) === "el"
+  const nuevoInstrumento = `Nuevo${esMasculino ? "" : "a"} ${instrumento.toLowerCase()}`
   // Sin form-library acá (`draft` es estado plano): "hay cambios" se
   // resuelve comparando contra el borrador vacío con el que arrancó la
   // página — mismo criterio de footer sticky que
@@ -81,7 +87,7 @@ function PlaneadorCrearUnidadPageContent() {
     <TableScreen>
       <TableScreenHeader>
         <TableScreenTitle
-          description="Completa la información para crear una nueva unidad temática"
+          description={`Completa la información para crear ${esMasculino ? "un" : "una"} ${instrumento.toLowerCase()}`}
           action={
             <Button
               color="neutral"
@@ -93,7 +99,7 @@ function PlaneadorCrearUnidadPageContent() {
             </Button>
           }
         >
-          Nueva unidad
+          {nuevoInstrumento}
         </TableScreenTitle>
         <NoticeOutlet className="mx-(--screen-spacing) my-4" />
       </TableScreenHeader>

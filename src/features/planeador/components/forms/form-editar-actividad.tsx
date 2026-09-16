@@ -32,6 +32,9 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useUnidadDetalleQuery } from "@/features/planeador/api/query/use-unidades-query"
 import { useUnidadesTabsQuery } from "@/features/planeador/api/query/use-unidades-tabs-query"
 import { UNIDAD_TAB_FALLBACK } from "@/features/planeador/components/planeador-tabs"
+import { articuloDefinido } from "@/features/planeador/lib/unidad-instrumento-label"
+import { useNotify } from "@/components/notice/notice-context"
+import { getErrorMessage } from "@/lib/api-client"
 import { useConfiguracionActividadQuery } from "@/features/planeador/api/query/use-configuracion-actividad-query"
 import { useReferenteCurricularQuery } from "@/features/planeador/api/query/use-referente-curricular-query"
 import { useDocenteGruposQuery } from "@/features/planeador/api/query/use-docente-grupos-query"
@@ -323,8 +326,9 @@ export function EditarActividadForm({
       <Card className="gap-4 p-4">
         <h3 className="text-base font-semibold">Identificación de la actividad</h3>
         <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
-          <IdentificacionSection form={form} unidades={unidades} onCrearUnidad={crearUnidad} />
+          <IdentificacionSection form={form} />
           <AsignaturaGradoSection form={form} />
+          <UnidadAsociadaSection form={form} unidades={unidades} onCrearUnidad={crearUnidad} />
         </div>
       </Card>
       <UnidadSection
@@ -415,39 +419,9 @@ function EsRecuperacionToggle({ form }: { form: FormActividad }) {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type FormActividad = ReturnType<typeof useForm<Actividad, any, any, any, any, any, any, any, any, any, any, any>>
 
-function IdentificacionSection({
-  form,
-  unidades,
-  onCrearUnidad,
-}: {
-  form: FormActividad
-  unidades: UnidadTematica[]
-  onCrearUnidad: (data: {
-    nombre: string
-    contenidos: string[]
-    objetivos: string[]
-    descripcion: string
-    enunciadosDba: { id: number; text: string }[]
-    metodoCalculo: MetodoCalculo
-    gradoId: number | undefined
-    grado: string
-    asignaturaId: number | undefined
-    asignatura: string
-  }) => Promise<UnidadTematica>
-}) {
+function IdentificacionSection({ form }: { form: FormActividad }) {
   // Catálogo `TIPO_ACTIVIDAD` (`TLISTA_VALOR`) — antes hardcodeado acá mismo.
   const { data: tiposActividad = [] } = useTipoActividadCatalogQuery()
-
-  // El rótulo "Unidad temática asociada" está hardcodeado, pero el
-  // instrumento real depende del nivel educativo del Grado elegido — mismo
-  // dato que `PlaneadorTabs` usa para las pestañas ("Unidad temática" en
-  // Primaria, "Proyecto pedagógico" en Preescolar, …): un docente de
-  // Preescolar editando una actividad de Proyecto Pedagógico veía el
-  // select seguir diciendo "Unidad temática asociada". Acá el Grado (y su
-  // Asignatura) ya están elegidos, así que hay a lo sumo UN instrumento
-  // aplicable (a diferencia de las pestañas, que muestran TODOS los que
-  // dicta el docente) — se busca por `gradoId` dentro de `unidadTabs`.
-  const { data: unidadTabs } = useUnidadesTabsQuery()
 
   return (
     <>
@@ -489,7 +463,49 @@ function IdentificacionSection({
             </Field>
           )}
         </form.Field>
+    </>
+  )
+}
 
+/**
+ * "Unidad temática asociada" / "Proyecto pedagógico" — depende de Grado +
+ * Asignatura (`AsignaturaGradoSection`), así que se renderiza DESPUÉS en el
+ * grid: mostrarlo antes de esos dos invertía la dependencia real (el select
+ * arranca deshabilitado hasta elegir ambos).
+ */
+function UnidadAsociadaSection({
+  form,
+  unidades,
+  onCrearUnidad,
+}: {
+  form: FormActividad
+  unidades: UnidadTematica[]
+  onCrearUnidad: (data: {
+    nombre: string
+    contenidos: string[]
+    objetivos: string[]
+    descripcion: string
+    enunciadosDba: { id: number; text: string }[]
+    metodoCalculo: MetodoCalculo
+    gradoId: number | undefined
+    grado: string
+    asignaturaId: number | undefined
+    asignatura: string
+  }) => Promise<UnidadTematica>
+}) {
+  // El rótulo "Unidad temática asociada" está hardcodeado, pero el
+  // instrumento real depende del nivel educativo del Grado elegido — mismo
+  // dato que `PlaneadorTabs` usa para las pestañas ("Unidad temática" en
+  // Primaria, "Proyecto pedagógico" en Preescolar, …): un docente de
+  // Preescolar editando una actividad de Proyecto Pedagógico veía el
+  // select seguir diciendo "Unidad temática asociada". Acá el Grado (y su
+  // Asignatura) ya están elegidos, así que hay a lo sumo UN instrumento
+  // aplicable (a diferencia de las pestañas, que muestran TODOS los que
+  // dicta el docente) — se busca por `gradoId` dentro de `unidadTabs`.
+  const { data: unidadTabs } = useUnidadesTabsQuery()
+
+  return (
+    <>
         <form.Subscribe
           selector={(state) => `${state.values.grado}/${state.values.asignatura}/${state.values.gradoId}`}
         >
@@ -603,6 +619,7 @@ function IdentificacionSection({
                     </Field>
                     <CrearUnidadPopover
                       className="rounded-l-none border-l-0"
+                      instrumentoLabel={instrumentoLabel}
                       gradoId={form.getFieldValue("gradoId")}
                       asignaturaId={form.getFieldValue("asignaturaId")}
                       onCreate={async (data) => {
@@ -893,63 +910,10 @@ function AsignaturaGradoSection({ form }: { form: FormActividad }) {
 
   return (
     <>
-        <form.Field name="asignaturaId">
-          {(field) => (
-            <Field variant="outlined">
-              <FieldLabel htmlFor={field.name}>{subjectLabel}</FieldLabel>
-              <Select
-                // `__none__` es el sentinel de "sin elegir" — mismo patrón
-                // que "Unidad temática asociada". Sin un valor propio para
-                // ese estado, no había forma de VOLVER a "sin asignatura"
-                // una vez elegida una: y sin asignatura (ni grado) el
-                // enfoque no se puede derivar, así que "¿Es evaluación
-                // sumativa?" queda libre (ver `EvaluacionSection`) en vez
-                // de bloqueado por una unidad/referente que ya no aplica.
-                value={field.state.value != null ? String(field.state.value) : "__none__"}
-                onValueChange={(v) => {
-                  if (!v) return
-                  if (v === "__none__") {
-                    field.handleChange(undefined)
-                    form.setFieldValue("asignatura", "")
-                    return
-                  }
-                  const par = asignaturas.find((a) => String(a.asignaturaId) === v)
-                  if (!par) return
-                  field.handleChange(par.asignaturaId)
-                  form.setFieldValue("asignatura", par.asignaturaNombre)
-                }}
-                disabled={!hasGradoGrupo}
-              >
-                <SelectTrigger id={field.name}>
-                  <SelectValue
-                    placeholder={hasGradoGrupo ? "Seleccione" : "Elegí grado/grupo primero"}
-                  >
-                    {(value) =>
-                      value === "__none__"
-                        ? "Seleccione"
-                        : // `||`, no `??`: `asignatura` llega `""` (no
-                          // `undefined`) cuando el detalle real no trae
-                          // ninguna todavía, y `?? "Seleccione"` no cae ahí —
-                          // se veía en blanco en vez del placeholder.
-                          (asignaturas.find((a) => String(a.asignaturaId) === value)?.asignaturaNombre ||
-                            asignatura ||
-                            "Seleccione")
-                    }
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">Seleccione</SelectItem>
-                  {asignaturas.map((a) => (
-                    <SelectItem key={a.asignaturaId} value={String(a.asignaturaId)}>
-                      {a.asignaturaNombre}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
-          )}
-        </form.Field>
-
+        {/* Grado/Grupo primero: Asignatura (y "Unidad temática asociada" en
+            `UnidadAsociadaSection`) dependen de él y están deshabilitados
+            hasta elegirlo — mostrarlo después invertía la relación de
+            dependencia y confundía sobre qué elegir primero. */}
         <Field variant="outlined">
           <FieldLabel htmlFor="grado-grupo">Grado / Grupo</FieldLabel>
           <Select
@@ -1003,6 +967,64 @@ function AsignaturaGradoSection({ form }: { form: FormActividad }) {
             </SelectContent>
           </Select>
         </Field>
+
+        <form.Field name="asignaturaId">
+          {(field) => (
+            <Field variant="outlined">
+              <FieldLabel htmlFor={field.name}>{subjectLabel}</FieldLabel>
+              <Select
+                // `__none__` es el sentinel de "sin elegir" — mismo criterio
+                // que Grado/Grupo arriba (y que "Unidad temática asociada").
+                // Sin un valor propio para ese estado, no había forma de
+                // VOLVER a "sin asignatura" una vez elegida una: y sin
+                // asignatura (ni grado) el enfoque no se puede derivar, así
+                // que "¿Es evaluación sumativa?" queda libre (ver
+                // `EvaluacionSection`) en vez de bloqueado por una unidad/
+                // referente que ya no aplica.
+                value={field.state.value != null ? String(field.state.value) : "__none__"}
+                onValueChange={(v) => {
+                  if (!v) return
+                  if (v === "__none__") {
+                    field.handleChange(undefined)
+                    form.setFieldValue("asignatura", "")
+                    return
+                  }
+                  const par = asignaturas.find((a) => String(a.asignaturaId) === v)
+                  if (!par) return
+                  field.handleChange(par.asignaturaId)
+                  form.setFieldValue("asignatura", par.asignaturaNombre)
+                }}
+                disabled={!hasGradoGrupo}
+              >
+                <SelectTrigger id={field.name}>
+                  <SelectValue
+                    placeholder={hasGradoGrupo ? "Seleccione" : "Elegí grado/grupo primero"}
+                  >
+                    {(value) =>
+                      value === "__none__"
+                        ? "Seleccione"
+                        : // `||`, no `??`: `asignatura` llega `""` (no
+                          // `undefined`) cuando el detalle real no trae
+                          // ninguna todavía, y `?? "Seleccione"` no cae ahí —
+                          // se veía en blanco en vez del placeholder.
+                          (asignaturas.find((a) => String(a.asignaturaId) === value)?.asignaturaNombre ||
+                            asignatura ||
+                            "Seleccione")
+                    }
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">Seleccione</SelectItem>
+                  {asignaturas.map((a) => (
+                    <SelectItem key={a.asignaturaId} value={String(a.asignaturaId)}>
+                      {a.asignaturaNombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+          )}
+        </form.Field>
     </>
   )
 }
@@ -3462,6 +3484,7 @@ function cryptoId(): number {
 function CrearUnidadPopover({
   onCreate,
   className,
+  instrumentoLabel = UNIDAD_TAB_FALLBACK,
   gradoId,
   asignaturaId,
 }: {
@@ -3477,6 +3500,12 @@ function CrearUnidadPopover({
    * un control adyacente (split-button): típico `rounded-l-none border-l-0`
    * para pegarse a un `Select`/`Input` por la izquierda. */
   className?: string
+  /** Rótulo real del instrumento ("Proyecto pedagógico" en Preescolar,
+   *  "Unidad temática" en el resto) — mismo dato que ya resuelve
+   *  `UnidadAsociadaSection` para el `<Select>` de al lado. Sin esto el
+   *  título/tooltip/botón de este popover decían "unidad temática" fijo
+   *  incluso creando un proyecto pedagógico. */
+  instrumentoLabel?: string
   /** Grado/Asignatura de la actividad que abre este popover — la unidad
    *  nueva nace con los mismos (una unidad se identifica por esos dos, ver
    *  `IdentificacionSection`), así que acá no se vuelven a pedir. También
@@ -3493,6 +3522,8 @@ function CrearUnidadPopover({
   const [enunciadosDba, setEnunciadosDba] = React.useState<{ id: number; text: string }[]>([])
   const [metodoCalculo, setMetodoCalculo] = React.useState<MetodoCalculo>("Ponderado")
   const [isSaving, setIsSaving] = React.useState(false)
+  const { notify } = useNotify()
+  const crearLabel = `Crear nuevo${articuloDefinido(instrumentoLabel) === "el" ? "" : "a"} ${instrumentoLabel.toLowerCase()}`
 
   const { enunciados: enunciadosDisponibles, isPending: isPendingEnunciados } = useEnunciadosDbaQuery(
     gradoId,
@@ -3511,9 +3542,10 @@ function CrearUnidadPopover({
   }
 
   // Async: `onCreate` pega contra el backend real (`POST /planeador/unidades`).
-  // Si falla (el toast global del interceptor ya avisa del error), el
-  // popover se queda abierto con lo tipeado — cerrarlo/limpiarlo igual habría
-  // hecho parecer que la unidad se creó cuando no.
+  // Si falla, se avisa con `notify` acá mismo (no hay interceptor global que
+  // lo haga por este camino) y el popover se queda abierto con lo tipeado —
+  // cerrarlo/limpiarlo igual habría hecho parecer que la unidad se creó
+  // cuando no, dejando al usuario sin saber por qué "Guardar" no hizo nada.
   const guardar = async () => {
     if (!nombre.trim() || !hasGradoAsignatura || isSaving) return
     setIsSaving(true)
@@ -3521,6 +3553,8 @@ function CrearUnidadPopover({
       await onCreate({ nombre: nombre.trim(), contenidos, objetivos, descripcion, enunciadosDba, metodoCalculo })
       reset()
       setOpen(false)
+    } catch (error) {
+      notify(getErrorMessage(error), { variant: "error" })
     } finally {
       setIsSaving(false)
     }
@@ -3540,7 +3574,7 @@ function CrearUnidadPopover({
                   variant="fill"
                   color="primary"
                   size="icon-sm"
-                  aria-label="Crear nueva unidad temática"
+                  aria-label={crearLabel}
                   // `size-11` para igualar la altura del `SelectTrigger` (h-11);
                   // `shrink-0` para que el flex del call site no lo aplaste.
                   // Si el call site pasa `className` (típico `rounded-l-none
@@ -3554,7 +3588,7 @@ function CrearUnidadPopover({
         >
           <PlusCircleIcon />
         </TooltipTrigger>
-        <TooltipContent>Crear nueva unidad temática</TooltipContent>
+        <TooltipContent>{crearLabel}</TooltipContent>
       </Tooltip>
       <PopoverContent
         align="end"
@@ -3569,7 +3603,7 @@ function CrearUnidadPopover({
         className="w-96 gap-0 p-0"
       >
         <h3 className="border-b px-4 py-3 text-base font-semibold">
-          Crear nueva unidad temática
+          {crearLabel}
         </h3>
 
         {!hasGradoAsignatura && (

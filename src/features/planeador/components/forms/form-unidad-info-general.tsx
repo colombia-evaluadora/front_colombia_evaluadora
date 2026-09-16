@@ -199,9 +199,13 @@ export function UnidadInfoGeneralFields({
         <Field variant="outlined">
           <FieldLabel>Grado</FieldLabel>
           <Select
-            value={draft.gradoId != null ? String(draft.gradoId) : ""}
+            value={draft.gradoId != null ? String(draft.gradoId) : "__none__"}
             onValueChange={(v) => {
               if (!v) return
+              if (v === "__none__") {
+                onChange({ gradoId: undefined, grado: "", asignaturaId: undefined, asignatura: "" })
+                return
+              }
               const grado = grados.find((g) => String(g.id) === v)
               if (!grado) return
               // Asignatura depende del grado (mismo criterio que
@@ -223,14 +227,28 @@ export function UnidadInfoGeneralFields({
                   en vez del nombre real que sí trae `draft.grado`. */}
               <SelectValue placeholder="Seleccione">
                 {(value) =>
-                  // `||`, no `??`: `draft.grado` llega `""` (no
-                  // `undefined`) en una unidad sin grado todavía, y
-                  // `?? "Seleccione"` no cae ahí — se veía en blanco.
-                  grados.find((g) => String(g.id) === value)?.nombre || draft.grado || "Seleccione"
+                  value === "__none__"
+                    ? "Seleccione"
+                    : // `||`, no `??`: `draft.grado` llega `""` (no
+                      // `undefined`) en una unidad sin grado todavía, y
+                      // `?? "Seleccione"` no cae ahí — se veía en blanco.
+                      (grados.find((g) => String(g.id) === value)?.nombre || draft.grado || "Seleccione")
                 }
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
+              {/* Sin esto, un docente sin grados asignados (`grados` vacío)
+                  abría un popover completamente en blanco, sin ninguna
+                  opción ni explicación — parecía roto en vez de "no tienes
+                  grados asignados". El `__none__` va siempre primero, igual
+                  que en el `<Select>` de Asignatura de `AsignaturaGradoSection`
+                  (`form-editar-actividad.tsx`). */}
+              <SelectItem value="__none__">Seleccione</SelectItem>
+              {grados.length === 0 && (
+                <SelectItem value="__sin_grados__" disabled>
+                  No tienes grados asignados
+                </SelectItem>
+              )}
               {grados.map((g) => (
                 <SelectItem key={g.id} value={String(g.id)}>
                   {g.nombre}
@@ -242,9 +260,13 @@ export function UnidadInfoGeneralFields({
         <Field variant="outlined">
           <FieldLabel>{subjectLabel}</FieldLabel>
           <Select
-            value={draft.asignaturaId != null ? String(draft.asignaturaId) : ""}
+            value={draft.asignaturaId != null ? String(draft.asignaturaId) : "__none__"}
             onValueChange={(v) => {
               if (!v) return
+              if (v === "__none__") {
+                onChange({ asignaturaId: undefined, asignatura: "" })
+                return
+              }
               const par = asignaturas.find((a) => String(a.asignaturaId) === v)
               if (!par) return
               onChange({ asignaturaId: par.asignaturaId, asignatura: par.asignaturaNombre })
@@ -254,13 +276,21 @@ export function UnidadInfoGeneralFields({
             <SelectTrigger>
               <SelectValue placeholder="Seleccione">
                 {(value) =>
-                  asignaturas.find((a) => String(a.asignaturaId) === value)?.asignaturaNombre ||
-                  draft.asignatura ||
-                  "Seleccione"
+                  value === "__none__"
+                    ? "Seleccione"
+                    : (asignaturas.find((a) => String(a.asignaturaId) === value)?.asignaturaNombre ||
+                      draft.asignatura ||
+                      "Seleccione")
                 }
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="__none__">Seleccione</SelectItem>
+              {draft.gradoId != null && asignaturas.length === 0 && (
+                <SelectItem value="__sin_asignaturas__" disabled>
+                  No tienes asignaturas en este grado
+                </SelectItem>
+              )}
               {asignaturas.map((a) => (
                 <SelectItem key={a.asignaturaId} value={String(a.asignaturaId)}>
                   {a.asignaturaNombre}
