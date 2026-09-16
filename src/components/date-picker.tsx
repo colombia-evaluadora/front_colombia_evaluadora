@@ -30,6 +30,7 @@ type PickerBaseProps = VariantProps<typeof inputVariants> & {
   maxDate?: Date
   /** Primer día seleccionable -- los anteriores quedan deshabilitados. Por ejemplo, el "Hasta" de un rango usa `minDate` = la fecha "Desde" elegida. */
   minDate?: Date
+  disabledRanges?: { from: Date; to: Date }[]
   onClose?: () => void
 }
 
@@ -89,6 +90,7 @@ function DatePicker(props: DatePickerProps) {
     disabled,
     maxDate,
     minDate,
+    disabledRanges,
     onClose,
     "aria-invalid": ariaInvalid,
     "aria-describedby": ariaDescribedby,
@@ -197,15 +199,11 @@ function DatePicker(props: DatePickerProps) {
               selected={dateValue}
               onSelect={handleSelectDate}
               locale={es}
-              disabled={
-                maxDate && minDate
-                  ? [{ after: maxDate }, { before: minDate }]
-                  : maxDate
-                    ? { after: maxDate }
-                    : minDate
-                      ? { before: minDate }
-                      : undefined
-              }
+              disabled={[
+                ...(maxDate ? [{ after: maxDate }] : []),
+                ...(minDate ? [{ before: minDate }] : []),
+                ...(disabledRanges ?? []),
+              ]}
             />
             {/* En `datetime` la hora va detrás de un botón: el panel de reloj
                 no entra al lado del calendario sin desbordar el popover. */}
