@@ -35,25 +35,22 @@ interface QuickCreateSubjectDialogProps {
   onOpenChange: (open: boolean) => void
   onSaved: (subject: { id: number; nombreInterno: string }) => void
   isPreescolar?: boolean
+  subjectLabel?: string
 }
 
 const EMPTY_AREA_SELECTION: AreaSelection = { mode: "new", nombre: "" }
 
-// Modal de creación rápida abierto desde el selector de "Asignaturas" del
-// Plan de Estudio (comportamiento tipo `especialidad-select.tsx`: listado +
-// "Crear" al fondo). Solo crea -- editar una asignatura existente vive
-// inline en `subject-inline-edit-fields.tsx` (ver `dialog-create-study-
-// plan.tsx`), no acá.
 export function QuickCreateSubjectDialog({
   academicPeriodId,
   open,
   onOpenChange,
   onSaved,
   isPreescolar,
+  subjectLabel = "Asignatura",
 }: QuickCreateSubjectDialogProps) {
   const queryClient = useQueryClient()
-  const subjectWord = isPreescolar ? "dimensión" : "asignatura"
-  const subjectWordCap = isPreescolar ? "Dimensión" : "Asignatura"
+  const subjectWord = subjectLabel.toLowerCase()
+  const subjectWordCap = subjectLabel
 
   const [notice, setNotice] = useState<{ message: string; variant: NoticeVariant } | null>(null)
   const [asignaturaGeneral, setAsignaturaGeneral] = useState("")
@@ -83,8 +80,6 @@ export function QuickCreateSubjectDialog({
 
   const nombreTrim = nombre.trim()
 
-  // En preescolar el área no se elige: se busca una ya creada con el mismo
-  // nombre de la dimensión, o se crea una nueva si no existe ninguna.
   const preescolarExistingArea = isPreescolar
     ? periodAreas.find((a) => a.label.trim().toUpperCase() === nombreTrim.toUpperCase())
     : undefined

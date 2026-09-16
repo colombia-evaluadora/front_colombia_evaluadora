@@ -6,19 +6,22 @@ import { DataTableColumnHeader } from "@/components/data-table"
 import type { StudyPlanItem } from "@/features/establishment/academic-period/api/types/study-plan"
 import { DeleteStudyPlanDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-delete-study-plan"
 import { CreateStudyPlanDialog } from "@/features/establishment/academic-period/components/dialogs/dialog-create-study-plan"
+import { pluralizeSubjectLabel } from "@/features/establishment/academic-period/lib/pluralize-subject-label"
 
 interface CreateStudyPlanColumnsOptions {
   academicPeriodId?: number
   gradeId?: number
   isPreescolar?: boolean
+  subjectLabel?: string
 }
 
 export function createStudyPlanColumns({
   academicPeriodId,
   gradeId,
   isPreescolar,
+  subjectLabel = "Asignatura",
 }: CreateStudyPlanColumnsOptions = {}): ColumnDef<StudyPlanItem>[] {
-  const subjectColumnLabel = isPreescolar ? "Dimensiones" : "Asignaturas"
+  const subjectColumnLabel = pluralizeSubjectLabel(subjectLabel)
   return [
     {
       id: "select",
@@ -90,8 +93,9 @@ export function createStudyPlanColumns({
             academicPeriodId={academicPeriodId}
             gradeId={gradeId}
             isPreescolar={isPreescolar}
+            subjectLabel={subjectLabel}
           />
-          <DeleteStudyPlanDialog item={row.original} isPreescolar={isPreescolar} />
+          <DeleteStudyPlanDialog item={row.original} subjectLabel={subjectLabel} />
         </div>
       ),
       enableSorting: false,
