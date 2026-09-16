@@ -171,6 +171,19 @@ function PlaneadorPageContent() {
   const diaAnterior = miasResult?.diaAnterior ?? null
   const diaSiguiente = miasResult?.diaSiguiente ?? null
 
+  // Mismos criterios que ya filtran `/actividades/mias` arriba, en la forma
+  // que espera el reporte real `planeador-actividades` (ver
+  // `export-actividades.ts`) — así el PDF/Excel exportado coincide con lo
+  // que el rail está mostrando.
+  const exportFilters = React.useMemo(
+    () => ({
+      SEARCH: buscar || undefined,
+      ESTADOS: estado ? [statusToEstadoDerivado(estado as ActividadStatus)] : undefined,
+      DIA: dia,
+    }),
+    [buscar, estado, dia],
+  )
+
   // "Exportar todo"/"Importar" del menú "…": intercambio JSON de
   // actividades (colección Postman
   // `planeador-actividades-exportar-importar`), aparte del export PDF/Excel
@@ -321,11 +334,12 @@ function PlaneadorPageContent() {
               </DropdownMenu>
             </div>
             {/* El export general reusa el mismo diálogo que el listado de
-                Cobertura (`DialogExportActividades`): las filas ya filtradas
-                viajan como `filters` y el backend reporta cuántas se
-                exportaron. El trigger que el diálogo trae adentro reemplaza
-                al `<Button>` de export que estaba disabled. */}
-            <DialogExportActividades rows={filtered} />
+                Cobertura (`DialogExportActividades`): los mismos criterios
+                que ya filtran el rail viajan como `filters` (SEARCH/ESTADOS/
+                DIA) al reporte real, y el backend reporta cuántas filas
+                salieron. El trigger que el diálogo trae adentro reemplaza al
+                `<Button>` de export que estaba disabled. */}
+            <DialogExportActividades rows={filtered} filters={exportFilters} />
             {/* Controlado desde acá y no con su propio `DialogTrigger`: el
                 que lo abre es un `DropdownMenuItem`, y un diálogo anidado
                 dentro del menú se desmonta apenas el menú cierra. */}

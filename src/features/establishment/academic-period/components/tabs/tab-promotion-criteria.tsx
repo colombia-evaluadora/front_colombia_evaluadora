@@ -47,7 +47,7 @@ const EMPTY: PromotionApprovalValues = {
 
   basePercentage: 25,
   minimumSubjectPercentage: 25,
-  maxFailedForAverage: 5,
+  maxFailedForAverage: 1,
 
   requiredSubjects: [],
 }

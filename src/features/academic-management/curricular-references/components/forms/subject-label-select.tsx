@@ -1,7 +1,8 @@
 import { useState } from "react"
 
-import { CaretDownIcon, CheckIcon, PlusIcon, SpinnerIcon, TrashIcon } from "@/components/ui/icons"
+import { CaretDownIcon, CheckIcon, PlusIcon, SpinnerIcon } from "@/components/ui/icons"
 import { Button } from "@/components/ui/button"
+import { ConfirmRemoveButton } from "@/components/confirm-remove-button"
 import { inputTriggerVariants, inputVariants, useInputVariant } from "@/components/ui/input"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -62,6 +63,15 @@ export function SubjectLabelSelect({
     createOption.mutate(valor)
   }
 
+  async function confirmarEliminar(optionId: number) {
+    try {
+      await deleteOption.mutateAsync(optionId)
+    } catch {
+      // El error ya queda visible en el banner del popover (onError de arriba).
+    }
+    return true
+  }
+
   return (
     <Popover
       open={open}
@@ -86,7 +96,7 @@ export function SubjectLabelSelect({
           />
         }
       >
-        <span className="flex-1 truncate">{value?.name || placeholder}</span>
+        <span className="min-w-0 flex-1 truncate">{value?.name || placeholder}</span>
         <CaretDownIcon className="size-3.5 shrink-0 text-muted-foreground" />
       </PopoverTrigger>
       <PopoverContent align="start" className="w-64 p-1">
@@ -110,19 +120,15 @@ export function SubjectLabelSelect({
                   {option.id === value?.id && <CheckIcon className="size-4 shrink-0" />}
                 </button>
                 {!option.isSeed && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    color="neutral"
+                  <ConfirmRemoveButton
                     size="icon-xs"
                     className="size-5 [&_svg:not([class*='size-'])]:size-3"
-                    aria-label={`Eliminar ${option.name}`}
-                    disabled={deleteOption.isPending || option.inUse}
-                    title={option.inUse ? "En uso: no se puede eliminar" : undefined}
-                    onClick={() => deleteOption.mutate(option.id)}
-                  >
-                    <TrashIcon />
-                  </Button>
+                    label={`Eliminar ${option.name}`}
+                    title="Eliminar valor"
+                    description={`¿Eliminar "${option.name}"? Esta acción no se puede deshacer.`}
+                    disabled={deleteOption.isPending}
+                    onConfirm={() => confirmarEliminar(option.id)}
+                  />
                 )}
               </div>
             ))}

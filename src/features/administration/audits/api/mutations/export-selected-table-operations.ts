@@ -1,9 +1,7 @@
 import { useMutation } from "@tanstack/react-query"
 
-import { env } from "@/config/env"
-import { api } from "@/lib/api-client"
+import { downloadReport } from "@/lib/report-client"
 import type { MutationConfig } from "@/lib/react-query"
-import { AUDIT_EXPORT_UNAVAILABLE } from "@/features/administration/audits/api/real-mapping"
 import type { ExportFormat, ExportResult } from "@/features/administration/audits/api/types/audit"
 
 interface ExportSelectedTableOperationsInput {
@@ -14,13 +12,15 @@ interface ExportSelectedTableOperationsInput {
 
 function exportSelectedTableOperations({
   tableSlug,
-  ...body
+  ids,
+  format,
 }: ExportSelectedTableOperationsInput): Promise<ExportResult> {
-  // Sin endpoint de reportes de auditoría en el backend real — ver
-  // AUDIT_EXPORT_UNAVAILABLE.
-  if (!env.ENABLE_API_MOCKING) return Promise.resolve(AUDIT_EXPORT_UNAVAILABLE)
-
-  return api.post(`/audit-tables/${tableSlug}/operations/export`, body)
+  // Mismo reporte que "exportar todo" (`export-table-operations.ts`), con
+  // `IDS` (CSV de `<lsn>-<seq>`) en vez de los filtros de la pantalla.
+  return downloadReport("auditoria-tabla-operaciones", {
+    format,
+    filters: { SLUG: tableSlug, IDS: ids.join(",") },
+  })
 }
 
 interface UseExportSelectedTableOperationsOptions {

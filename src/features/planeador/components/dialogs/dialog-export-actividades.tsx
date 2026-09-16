@@ -21,16 +21,17 @@ import {
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
-import { useExportActividades } from "@/features/planeador/api/mutations/export-actividades"
+import {
+  useExportActividades,
+  type PlaneadorActividadesReportFilters,
+} from "@/features/planeador/api/mutations/export-actividades"
 import type { Actividad, ExportFormat } from "@/features/planeador/api/types/actividad"
 
 interface DialogExportActividadesProps {
-  /**
-   * Filas ya filtradas en el cliente (lo que se está viendo en el rail).
-   * El handler mock las recibe para contar y reportar la cantidad; en el
-   * backend real, este mismo shape se traducirá al filtro del query.
-   */
+  /** Filas ya filtradas en el cliente (lo que se está viendo en el rail) — solo para el conteo del texto. */
   rows: Actividad[]
+  /** Los mismos criterios que produjeron `rows`, en la forma que espera el reporte real. */
+  filters: PlaneadorActividadesReportFilters
 }
 
 /**
@@ -43,7 +44,7 @@ interface DialogExportActividadesProps {
  * `TableScreenActions` del listado —acá no se renderiza solo, para no
  * duplicar el botón si la página lo quiere posicionar a mano—.
  */
-export function DialogExportActividades({ rows }: DialogExportActividadesProps) {
+export function DialogExportActividades({ rows, filters }: DialogExportActividadesProps) {
   const [open, setOpen] = useState(false)
   const { notify } = useNotify()
 
@@ -61,7 +62,7 @@ export function DialogExportActividades({ rows }: DialogExportActividadesProps) 
   })
 
   function handleExport(format: ExportFormat) {
-    exportAll.mutate({ filters: rows, format })
+    exportAll.mutate({ filters, format })
   }
 
   const pendingFormat = exportAll.isPending ? exportAll.variables?.format : undefined
