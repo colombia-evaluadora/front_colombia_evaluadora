@@ -38,6 +38,7 @@ function rows<T>(data: T[], init?: ResponseInit) {
 
 /** Orden del menú de cada rol: la lista de ids tal como se guardó. */
 const roleMenuOrder = new Map<number, number[]>()
+const roleMenuReadOnly = new Map<number, Set<number>>()
 
 // Códigos confirmados contra `{{baseUrl}}/eval-col/usuarios/permisos-menu`
 // real; el resto del catálogo mock no los tiene todavía, así que se derivan
@@ -256,8 +257,8 @@ export const rolesHandlers = [
   }),
 
   // El orden de esta lista ES el orden en que el rol ve su menú, distinto del
-  // `menuOrder` del catálogo. Se guarda aparte para no perderlo al releer.
-  // Cada fila llega como `{id}`: una columna sola no colapsa a escalar.
+  // `menuOrder` del catálogo. Se guarda aparte para no perderlo al releer,
+  // junto con el flag `soloLectura` de cada menú.
   http.get("/api/eval-col/roles/:roleId/menus", async ({ params }) => {
     await delay(150)
     const roleId = Number(params.roleId)
@@ -274,7 +275,8 @@ export const rolesHandlers = [
           ...assigned.filter((id) => !saved.includes(id)),
         ]
 
-    return rows(ids.map((id) => ({ id })))
+    const readOnly = roleMenuReadOnly.get(roleId)
+    return rows(ids.map((id) => ({ id, soloLectura: readOnly?.has(id) ?? false })))
   }),
 
   http.put("/api/eval-col/roles/:roleId/menus", async ({ params, request }) => {
@@ -302,6 +304,10 @@ export const rolesHandlers = [
     }
 
     roleMenuOrder.set(roleId, menuIds)
+    roleMenuReadOnly.set(
+      roleId,
+      new Set(menus.filter((menu) => menu.soloLectura).map((menu) => menu.id)),
+    )
 
     return rows<UpdateRoleMenusResult>([
       { status: "success", message: "Menús actualizados." },
