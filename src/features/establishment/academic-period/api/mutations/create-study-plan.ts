@@ -8,8 +8,6 @@ import {
   type WriteResultResponse,
 } from "@/features/establishment/academic-period/api/mutations/extract-write-result"
 
-// Body PLANO con las llaves de `fn_plan_agregar`
-// (`POST /eval-col/grados/:ID/plan-asignaturas`, id_query 72).
 async function createStudyPlanItem(
   input: CreateStudyPlanItemRequest
 ): Promise<{ id: number }> {
@@ -42,6 +40,7 @@ export function useCreateStudyPlanItem({ mutationConfig }: UseCreateStudyPlanIte
     onSuccess: (...args) => {
       queryClient.invalidateQueries({ queryKey: ["study-plans"] })
       queryClient.invalidateQueries({ queryKey: ["study-plan-available"] })
+      queryClient.invalidateQueries({ queryKey: ["assignment-subjects"] })
       mutationConfig?.onSuccess?.(...args)
     },
   })

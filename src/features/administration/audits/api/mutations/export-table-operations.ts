@@ -1,9 +1,8 @@
 import { useMutation } from "@tanstack/react-query"
 
-import { env } from "@/config/env"
-import { api } from "@/lib/api-client"
+import { downloadReport } from "@/lib/report-client"
 import type { MutationConfig } from "@/lib/react-query"
-import { AUDIT_EXPORT_UNAVAILABLE } from "@/features/administration/audits/api/real-mapping"
+import { toAuditoriaTablaOperacionesReportFilters } from "@/features/administration/audits/api/real-mapping"
 import type { ExportFormat, ExportResult } from "@/features/administration/audits/api/types/audit"
 import type { TableOperationsQueryRequest } from "@/features/administration/audits/api/types/audit-table"
 
@@ -15,13 +14,17 @@ interface ExportTableOperationsInput {
 
 function exportTableOperations({
   tableSlug,
-  ...body
+  filters,
+  format,
 }: ExportTableOperationsInput): Promise<ExportResult> {
-  // Sin endpoint de reportes de auditoría en el backend real — ver
-  // AUDIT_EXPORT_UNAVAILABLE.
-  if (!env.ENABLE_API_MOCKING) return Promise.resolve(AUDIT_EXPORT_UNAVAILABLE)
-
-  return api.post(`/audit-tables/${tableSlug}/operations/export-all`, body)
+  // `POST /reportes/auditoria-tabla-operaciones` (colección Postman
+  // `auditoria-export-pdf-excel`, V405) — `SLUG` es obligatorio y va en el
+  // body, no en la ruta (a diferencia del listado real,
+  // `/audit-tables/:SLUG/operations/query`): sin él el reporte sale vacío.
+  return downloadReport("auditoria-tabla-operaciones", {
+    format,
+    filters: toAuditoriaTablaOperacionesReportFilters(tableSlug, filters),
+  })
 }
 
 interface UseExportTableOperationsOptions {

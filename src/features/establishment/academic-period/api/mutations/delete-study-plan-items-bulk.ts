@@ -26,9 +26,8 @@ export function useDeleteStudyPlanItemsBulk({
     ...mutationConfig,
     onSuccess: (...args) => {
       queryClient.invalidateQueries({ queryKey: ["study-plans"] })
-      // Mismo motivo que en delete-study-plan.ts: las asignaturas eliminadas
-      // vuelven a estar disponibles para agregarse de nuevo.
       queryClient.invalidateQueries({ queryKey: ["study-plan-available"] })
+      queryClient.invalidateQueries({ queryKey: ["assignment-subjects"] })
       mutationConfig?.onSuccess?.(...args)
     },
   })

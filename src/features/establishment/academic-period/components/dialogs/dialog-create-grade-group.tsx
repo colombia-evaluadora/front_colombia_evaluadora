@@ -329,7 +329,6 @@ export function CreateGradeGroupDialog({
                   placeholder="Agregar"
                   value={Number.isNaN(field.state.value) ? "" : field.state.value}
                   onBlur={field.handleBlur}
-                  // CAPACIDAD es NUMERIC(2,0) — entero, sin decimales ni negativos.
                   onKeyDown={(e) => {
                     if (["-", "+", ".", ",", "e", "E"].includes(e.key)) {
                       e.preventDefault()
@@ -338,7 +337,7 @@ export function CreateGradeGroupDialog({
                   onChange={(e) => {
                     const value = e.target.valueAsNumber
                     if (e.target.value === "" || !Number.isNaN(value)) {
-                      field.handleChange(value)
+                      field.handleChange(Number.isFinite(value) ? Math.min(value, 99) : value)
                     }
                   }}
                 />

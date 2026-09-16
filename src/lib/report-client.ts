@@ -45,6 +45,10 @@ export type ReportKey =
   | "asignaciones"
   | "asistencia"
   | "matricula"
+  | "planeador-actividades"
+  | "auditoria-sesiones"
+  | "auditoria-tabla-operaciones"
+  | "auditoria-sesion-operaciones"
 
 interface ReportInput {
   format: ExportFormat

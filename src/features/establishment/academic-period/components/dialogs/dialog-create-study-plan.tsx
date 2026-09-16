@@ -131,6 +131,12 @@ export function CreateStudyPlanDialog({
   const formatoHeredado = criteria?.gradingFormat ?? ""
   const criterioHeredado = criteria?.subjectGradeCriteria ?? ""
 
+  const areaCriteriaLabel =
+    criteriaOptions?.areaGradeCriteria.find((o) => o.key === criteria?.areaGradeCriteria)
+      ?.label ?? ""
+  const esCriterioPorcentaje = areaCriteriaLabel.toLowerCase().includes("porcentaje")
+  const showInfluenciaArea = !isPreescolar && esCriterioPorcentaje
+
   const defaultValues: StudyPlanFormValues = item
     ? {
         asignaturaId: item.asignaturaId,
@@ -203,7 +209,7 @@ export function CreateStudyPlanDialog({
       if (subjectSaved === false) return
 
       const values = studyPlanFormSchema.parse(value)
-      if (isPreescolar) values.influenciaArea = 0
+      if (!showInfluenciaArea) values.influenciaArea = 100
       const payload: StudyPlanFormValues = personalizar
         ? values
         : { ...values, formatoCalificacion: "", criterioNota: "" }
@@ -483,7 +489,7 @@ export function CreateStudyPlanDialog({
                     if (saved.id !== asignaturaId) form.setFieldValue("asignaturaId", saved.id)
                   }}
                 >
-                  <div className={cn("grid gap-4", isPreescolar ? "sm:grid-cols-2" : "sm:grid-cols-3")}>
+                  <div className={cn("grid gap-4", showInfluenciaArea ? "sm:grid-cols-3" : "sm:grid-cols-2")}>
                     <form.Field name="intensidadHoraria">
                       {(field) => {
                         const isInvalid =
@@ -520,7 +526,7 @@ export function CreateStudyPlanDialog({
                       }}
                     </form.Field>
 
-                    {!isPreescolar && (
+                    {showInfluenciaArea && (
                       <form.Field name="influenciaArea">
                         {(field) => {
                           const isInvalid =
@@ -621,7 +627,7 @@ export function CreateStudyPlanDialog({
             <form.Field name="influyeDesempeno">
               {(field) => (
                 <Field variant="outlined">
-                  <FieldLabel>Influye en el desempeño académico (S/N)</FieldLabel>
+                  <FieldLabel>Influye en el desempeño académico</FieldLabel>
                   <RadioGroup
                     className="flex min-h-11 items-center gap-6 rounded-md border border-input px-3"
                     disabled={!personalizar}
@@ -644,7 +650,7 @@ export function CreateStudyPlanDialog({
             <form.Field name="matriculaObligatoria">
               {(field) => (
                 <Field variant="outlined">
-                  <FieldLabel>Matrícula obligatoria (S/N)</FieldLabel>
+                  <FieldLabel>Matrícula obligatoria</FieldLabel>
                   <RadioGroup
                     className="flex min-h-11 items-center gap-6 rounded-md border border-input px-3"
                     disabled={!personalizar}
@@ -667,7 +673,7 @@ export function CreateStudyPlanDialog({
             <form.Field name="aprobacionObligatoria">
               {(field) => (
                 <Field variant="outlined">
-                  <FieldLabel>Aprobación obligatoria (S/N)</FieldLabel>
+                  <FieldLabel>Aprobación obligatoria</FieldLabel>
                   <RadioGroup
                     className="flex min-h-11 items-center gap-6 rounded-md border border-input px-3"
                     disabled={!personalizar}
