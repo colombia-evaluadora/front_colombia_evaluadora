@@ -2,7 +2,7 @@ import * as React from "react"
 
 import { Badge } from "@/components/ui/badge"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
-import { CaretDownIcon, CaretUpIcon, InfoIcon } from "@/components/ui/icons"
+import { CaretDownIcon, InfoIcon } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
 
 import type { HistorialCambio } from "@/features/academic-management/reports/api/types"
@@ -11,6 +11,7 @@ interface HistorialCambiosSheetProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   cambios: HistorialCambio[]
+  cargando?: boolean
 }
 
 function etiquetaDia(fechaIso: string, hoy: Date): string {
@@ -20,6 +21,12 @@ function etiquetaDia(fechaIso: string, hoy: Date): string {
   if (diffDias === 0) return "Hoy"
   if (diffDias === 1) return "Ayer"
   return fecha.toLocaleDateString("es-CO", { day: "2-digit", month: "2-digit", year: "numeric" })
+}
+
+function hora(momento: string): string {
+  const fecha = new Date(momento)
+  if (Number.isNaN(fecha.getTime())) return momento
+  return fecha.toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })
 }
 
 function agruparPorDia(cambios: HistorialCambio[]): { etiqueta: string; cambios: HistorialCambio[] }[] {
@@ -34,8 +41,12 @@ function agruparPorDia(cambios: HistorialCambio[]): { etiqueta: string; cambios:
   return Array.from(grupos, ([etiqueta, cambios]) => ({ etiqueta, cambios }))
 }
 
-
-export function HistorialCambiosSheet({ open, onOpenChange, cambios }: HistorialCambiosSheetProps) {
+export function HistorialCambiosSheet({
+  open,
+  onOpenChange,
+  cambios,
+  cargando,
+}: HistorialCambiosSheetProps) {
   const grupos = React.useMemo(() => agruparPorDia(cambios), [cambios])
 
   return (
@@ -47,7 +58,10 @@ export function HistorialCambiosSheet({ open, onOpenChange, cambios }: Historial
         </SheetHeader>
 
         <div className="flex flex-1 flex-col gap-6 overflow-auto px-8 pb-4">
-          {grupos.length === 0 && (
+          {cargando && (
+            <p className="py-8 text-center text-sm text-muted-foreground">Cargando historial…</p>
+          )}
+          {!cargando && grupos.length === 0 && (
             <p className="py-8 text-center text-sm text-muted-foreground">
               No hay cambios recientes para lo seleccionado.
             </p>
@@ -76,49 +90,54 @@ export function HistorialCambiosSheet({ open, onOpenChange, cambios }: Historial
 
 function EntradaHistorial({ cambio }: { cambio: HistorialCambio }) {
   const [expandido, setExpandido] = React.useState(false)
-  const subio = cambio.tendencia === "subio"
-  const plural = cambio.cantidadCambios !== 1
+  const plural = cambio.estudiantes !== 1
 
   return (
     <div className="flex gap-3">
-      <span
-        className={cn(
-          "relative z-10 mt-2 size-2 shrink-0 rounded-full",
-          subio ? "bg-green" : "bg-red",
-        )}
-      />
+      <span className="relative z-10 mt-2 size-2 shrink-0 rounded-full bg-primary" />
       <div className="flex-1 rounded-lg border border-border p-3">
         <div className="flex items-center justify-between gap-2">
-          <Badge variant="soft" color={subio ? "success" : "destructive"}>
+          <Badge variant="soft" color="neutral">
             {cambio.grupoNombre}
           </Badge>
-          <span className="text-xs text-muted-foreground">{cambio.hora}</span>
+          <span className="text-xs text-muted-foreground">{hora(cambio.momento)}</span>
         </div>
-        <div className="mt-1.5 flex items-center gap-1 font-semibold">
-          {cambio.asignatura}
-          {subio ? (
-            <CaretUpIcon className="text-green" />
-          ) : (
-            <CaretDownIcon className="text-red" />
-          )}
-        </div>
+        <p className="mt-1.5 font-semibold">{cambio.asignaturaNombre ?? "Informe completo"}</p>
         <p className="mt-0.5 text-sm text-muted-foreground">
-          Se {plural ? "actualizaron" : "actualizó"} {cambio.cantidadCambios}{" "}
-          {plural ? "calificaciones" : "calificación"}
+          Se {plural ? "consolidaron" : "consolidó"} {cambio.estudiantes}{" "}
+          {plural ? "estudiantes" : "estudiante"} · {cambio.periodoNombre}
         </p>
-        <p className="mt-0.5 text-xs text-muted-foreground">por {cambio.usuario}</p>
-        <button
-          type="button"
-          onClick={() => setExpandido((v) => !v)}
-          className="mt-2 flex w-full items-center justify-between rounded-md border border-border px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-muted/40"
-        >
-          Cambios: {cambio.cantidadCambios}
-          <CaretDownIcon className={cn("size-3.5 transition-transform", expandido && "rotate-180")} />
-        </button>
-        {expandido && (
-          <p className="mt-1.5 text-xs text-muted-foreground italic">
-            Detalle por estudiante próximamente — ve a la planilla de {cambio.asignatura} para revisarlo.
-          </p>
+        {cambio.usuario && (
+          <p className="mt-0.5 text-xs text-muted-foreground">por {cambio.usuario}</p>
+        )}
+        {cambio.detalle.length > 0 && (
+          <>
+            <button
+              type="button"
+              onClick={() => setExpandido((v) => !v)}
+              className="mt-2 flex w-full items-center justify-between rounded-md border border-border px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-muted/40"
+            >
+              Cambios: {cambio.detalle.length}
+              <CaretDownIcon className={cn("size-3.5 transition-transform", expandido && "rotate-180")} />
+            </button>
+            {expandido && (
+              <ul className="mt-1.5 flex flex-col gap-1">
+                {cambio.detalle.map((detalle) => (
+                  <li
+                    key={detalle.matriculaId}
+                    className="flex items-center justify-between gap-2 text-xs"
+                  >
+                    <span className="min-w-0 truncate">{detalle.estudiante}</span>
+                    <span className="shrink-0 text-muted-foreground">
+                      {detalle.promedio != null
+                        ? detalle.promedio.toLocaleString("es-CO", { minimumFractionDigits: 1 })
+                        : "—"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </>
         )}
       </div>
     </div>

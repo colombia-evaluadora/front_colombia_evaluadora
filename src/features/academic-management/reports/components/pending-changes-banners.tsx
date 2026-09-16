@@ -13,7 +13,16 @@ import {
 } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 
-import type { CambiosPendientesInfo } from "@/features/academic-management/reports/api/types"
+import type {
+  CambioPendiente,
+  PlanillaPendiente,
+} from "@/features/academic-management/reports/api/types"
+
+export interface DestinoPlanilla {
+  grupoId: number
+  asignaturaId: number
+  periodoId: number
+}
 
 interface BannerProps {
   color: "destructive" | "orange"
@@ -48,43 +57,119 @@ function Banner({ color, titulo, descripcion, children }: BannerProps) {
   )
 }
 
-interface PendingChangesBannersProps {
-  planillasPendientes: number
-  cambiosPendientes: CambiosPendientesInfo
-  onVerPlanillasPendientes: () => void
-  onIrAPlanilla: (docenteId: number) => void
+interface FilaAlerta {
+  key: string
+  docente: string
+  asignatura: string
+  grupo: string
+  detalle: string
+  destino: DestinoPlanilla
 }
 
-/**
- * Dos estados que un administrador necesita ver antes de confiar en el
- * informe del período: docentes que ni siquiera han calificado, y docentes
- * que calificaron tarde (después del cierre) y cuyo cambio aún no se ha
- * aprobado. Ninguno de los dos bloquea la pantalla — son avisos, la decisión
- * de aprobar/rechazar cada cambio queda fuera de este mockup.
- */
+function ListaAlerta({
+  titulo,
+  descripcion,
+  filas,
+  onIr,
+}: {
+  titulo: string
+  descripcion: string
+  filas: FilaAlerta[]
+  onIr: (destino: DestinoPlanilla) => void
+}) {
+  return (
+    <PopoverContent align="end" className="w-96">
+      <PopoverClose aria-label="Cerrar">
+        <XIcon className="size-4" />
+      </PopoverClose>
+      <PopoverHeader className="pr-6">
+        <PopoverTitle className="text-base normal-case">{titulo}</PopoverTitle>
+        <PopoverDescription className="text-xs">{descripcion}</PopoverDescription>
+      </PopoverHeader>
+
+      <div className="flex max-h-80 flex-col gap-2 overflow-y-auto">
+        {filas.map((fila) => (
+          <div key={fila.key} className="flex items-center gap-2.5 rounded-md border border-border p-2">
+            <Avatar size="sm">
+              <AvatarFallback>{fila.docente.charAt(0)}</AvatarFallback>
+            </Avatar>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold text-primary">{fila.docente}</p>
+              <p className="truncate text-xs text-muted-foreground">
+                {fila.asignatura} · {fila.detalle}
+              </p>
+            </div>
+            <Badge variant="soft" color="neutral">
+              {fila.grupo}
+            </Badge>
+            <Button
+              type="button"
+              variant="outline"
+              color="primary"
+              size="xs"
+              onClick={() => onIr(fila.destino)}
+            >
+              Ir
+              <ArrowRightIcon data-icon="inline-end" />
+            </Button>
+          </div>
+        ))}
+      </div>
+    </PopoverContent>
+  )
+}
+
+interface PendingChangesBannersProps {
+  planillasPendientes: PlanillaPendiente[]
+  cambiosPendientes: CambioPendiente[]
+  onIrAPlanilla: (destino: DestinoPlanilla) => void
+}
+
 export function PendingChangesBanners({
   planillasPendientes,
   cambiosPendientes,
-  onVerPlanillasPendientes,
   onIrAPlanilla,
 }: PendingChangesBannersProps) {
-  if (planillasPendientes === 0 && cambiosPendientes.totalDocentes === 0) return null
+  if (planillasPendientes.length === 0 && cambiosPendientes.length === 0) return null
+
+  // El contador del botón naranja suma estudiantes afectados, no filas: una
+  // misma planilla puede tocar a varios.
+  const estudiantesAfectados = cambiosPendientes.reduce((t, c) => t + c.estudiantesAfectados, 0)
+  const gruposConCambios = new Set(cambiosPendientes.map((c) => c.grupoId)).size
 
   return (
     <div className="mb-4 flex flex-col gap-3">
-      {planillasPendientes > 0 && (
+      {planillasPendientes.length > 0 && (
         <Banner
           color="destructive"
           titulo="Docentes con planillas pendientes de calificar"
           descripcion="Algunos docentes no han registrado calificaciones en sus grupos y asignaturas para este periodo."
         >
-          <Button variant="outline" color="destructive" size="sm" onClick={onVerPlanillasPendientes}>
-            Ver planillas pendientes ({planillasPendientes})
-          </Button>
+          <Popover>
+            <PopoverTrigger render={<Button variant="outline" color="destructive" size="sm" />}>
+              Ver planillas pendientes ({planillasPendientes.length})
+            </PopoverTrigger>
+            <ListaAlerta
+              titulo={`Planillas sin calificar (${planillasPendientes.length})`}
+              descripcion="Períodos ya terminados sin ninguna nota ni observación registrada."
+              filas={planillasPendientes.map((p) => ({
+                key: `${p.grupoId}-${p.asignaturaId}-${p.periodoId}`,
+                docente: p.docente ?? "Sin docente asignado",
+                asignatura: p.asignaturaNombre,
+                grupo: p.grupoNombre,
+                detalle:
+                  p.actividades === 0
+                    ? "sin actividades creadas"
+                    : `${p.actividades} actividades sin calificar`,
+                destino: { grupoId: p.grupoId, asignaturaId: p.asignaturaId, periodoId: p.periodoId },
+              }))}
+              onIr={onIrAPlanilla}
+            />
+          </Popover>
         </Banner>
       )}
 
-      {cambiosPendientes.totalDocentes > 0 && (
+      {cambiosPendientes.length > 0 && (
         <Banner
           color="orange"
           titulo="Docentes con cambios pendientes de aprobación"
@@ -101,56 +186,21 @@ export function PendingChangesBanners({
                 />
               }
             >
-              Ver cambios pendientes ({cambiosPendientes.totalDocentes})
+              Ver cambios pendientes ({estudiantesAfectados})
             </PopoverTrigger>
-            <PopoverContent align="end" className="w-96">
-              <PopoverClose aria-label="Cerrar">
-                <XIcon className="size-4" />
-              </PopoverClose>
-              <PopoverHeader className="pr-6">
-                <PopoverTitle className="text-base normal-case">
-                  Grupos con cambios ({cambiosPendientes.grupos.length})
-                </PopoverTitle>
-                <PopoverDescription className="text-xs">
-                  Docentes que realizaron cambios en los grupos seleccionados.
-                </PopoverDescription>
-              </PopoverHeader>
-
-              <div className="flex flex-col gap-2">
-                {cambiosPendientes.grupos.map((docente) => (
-                  <div
-                    key={docente.id}
-                    className="flex items-center gap-2.5 rounded-md border border-border p-2"
-                  >
-                    <Avatar size="sm">
-                      <AvatarFallback>{docente.nombreDocente.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold text-primary">{docente.nombreDocente}</p>
-                      <p className="truncate text-xs text-muted-foreground">{docente.asignatura}</p>
-                    </div>
-                    <Badge variant="soft" color="neutral">
-                      {docente.gradoGrupo}
-                    </Badge>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      color="primary"
-                      size="xs"
-                      onClick={() => onIrAPlanilla(docente.id)}
-                    >
-                      Ir
-                      <ArrowRightIcon data-icon="inline-end" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex items-start gap-2 rounded-md bg-primary-22 px-3 py-2 text-xs text-primary">
-                <InfoIcon className="mt-0.5 size-3.5 shrink-0" />
-                Los cambios están pendientes de revisión y aprobación por el administrador.
-              </div>
-            </PopoverContent>
+            <ListaAlerta
+              titulo={`Grupos con cambios (${gruposConCambios})`}
+              descripcion="Docentes que realizaron cambios en los grupos seleccionados."
+              filas={cambiosPendientes.map((c) => ({
+                key: `${c.grupoId}-${c.asignaturaId}-${c.periodoId}`,
+                docente: c.docente ?? "Sin docente asignado",
+                asignatura: c.asignaturaNombre,
+                grupo: c.grupoNombre,
+                detalle: `${c.estudiantesAfectados} estudiante${c.estudiantesAfectados === 1 ? "" : "s"}`,
+                destino: { grupoId: c.grupoId, asignaturaId: c.asignaturaId, periodoId: c.periodoId },
+              }))}
+              onIr={onIrAPlanilla}
+            />
           </Popover>
         </Banner>
       )}
