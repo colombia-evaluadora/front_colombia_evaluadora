@@ -214,8 +214,6 @@ export const SubjectInlineEditFields = forwardRef<
         </Field>
       </div>
 
-      {children}
-
       {!isPreescolar && (
         <Field variant="outlined">
           <FieldLabel>Especialidad</FieldLabel>
@@ -227,14 +225,7 @@ export const SubjectInlineEditFields = forwardRef<
         </Field>
       )}
 
-      {!isPreescolar && (
-        <Field variant="outlined">
-          <FieldLabel>Área</FieldLabel>
-          <p className="text-sm text-muted-foreground">
-            {subject.areaNombre} — no se puede cambiar de área editando la {subjectWord}.
-          </p>
-        </Field>
-      )}
+      {children}
     </div>
   )
 })

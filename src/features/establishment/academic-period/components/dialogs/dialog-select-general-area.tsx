@@ -2,7 +2,9 @@ import { useMemo, useState } from "react"
 import { CaretDownIcon, CheckIcon, MagnifyingGlassIcon, XIcon } from "@/components/ui/icons"
 
 import { cn } from "@/lib/utils"
+import { getErrorMessage } from "@/lib/api-client"
 import { Button } from "@/components/ui/button"
+import { ConfirmRemoveButton } from "@/components/confirm-remove-button"
 import {
   Dialog,
   DialogClose,
@@ -27,6 +29,7 @@ import {
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table"
 
 import { useGeneralAreasQuery } from "@/features/establishment/academic-period/api/query/use-general-areas"
+import { useDeleteAreaSubject } from "@/features/establishment/academic-period/api/mutations/delete-area-subject"
 import type { GeneralArea } from "@/features/establishment/academic-period/api/types/general-area"
 
 const COLUMNS = 3
@@ -71,10 +74,12 @@ export function SelectGeneralAreaDialog({
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState("")
   const [pageIndex, setPageIndex] = useState(0)
+  const [error, setError] = useState<string | null>(null)
 
   const resolvedVariant = useInputVariant()
 
   const { data: areas = [] } = useGeneralAreasQuery()
+  const deleteArea = useDeleteAreaSubject()
 
   // Búsqueda por nombre (client-side: el catálogo se trae completo).
   const filtered = useMemo(() => {
@@ -98,6 +103,22 @@ export function SelectGeneralAreaDialog({
     setOpen(false)
   }
 
+  async function handleDelete(area: GeneralArea): Promise<boolean> {
+    try {
+      const result = await deleteArea.mutateAsync(area.id)
+      if (result.status === "error") {
+        setError(result.message)
+        return true
+      }
+    } catch (err) {
+      setError(getErrorMessage(err))
+      return true
+    }
+    setError(null)
+    if (value === area.nombre) onChange("")
+    return true
+  }
+
   return (
     <Dialog
       open={open}
@@ -106,10 +127,10 @@ export function SelectGeneralAreaDialog({
         if (!next) {
           setSearch("")
           setPageIndex(0)
+          setError(null)
         }
       }}
     >
-      {/* Disparador con el mismo aspecto que un SelectTrigger del formulario. */}
       <DialogTrigger
         render={
           <button
@@ -141,11 +162,11 @@ export function SelectGeneralAreaDialog({
           <DialogTitle>Agregar área</DialogTitle>
         </DialogHeader>
 
-        {/* Único bloque con scroll: título, paginación y "Cancelar" quedan
-            fijos afuera — así la grilla de áreas no empuja el botón fuera de
-            la pantalla en modales altos. */}
+
         <div className="min-h-0 flex-1 overflow-y-auto">
           <div className="flex flex-col gap-4">
+            {error && <p className="text-sm text-red">{error}</p>}
+
             {/* Buscador */}
             <div className="relative">
               <MagnifyingGlassIcon className="absolute top-1/2 left-2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -158,7 +179,6 @@ export function SelectGeneralAreaDialog({
               />
             </div>
 
-            {/* Grilla de áreas: 3 columnas, estilo tabla de áreas. */}
             <div className="min-w-0">
               <Table className="table-fixed">
                 <TableBody>
@@ -179,18 +199,31 @@ export function SelectGeneralAreaDialog({
                           const selected = area.nombre === value
                           return (
                             <TableCell key={c} className="border-r p-0 last:border-r-0">
-                              <button
-                                type="button"
-                                title={area.nombre}
-                                onClick={() => handleSelect(area.nombre)}
+                              <div
                                 className={cn(
-                                  "flex w-full min-w-0 items-center gap-2 px-3 py-2.5 text-left text-sm transition-colors hover:bg-muted/50",
-                                  selected && "bg-muted font-medium text-primary hover:bg-muted",
+                                  "flex min-w-0 items-center hover:bg-muted/50",
+                                  selected && "bg-muted hover:bg-muted",
                                 )}
                               >
-                                {selected && <CheckIcon className="size-4 shrink-0" />}
-                                <span className="min-w-0 flex-1 truncate">{area.nombre}</span>
-                              </button>
+                                <button
+                                  type="button"
+                                  title={area.nombre}
+                                  onClick={() => handleSelect(area.nombre)}
+                                  className={cn(
+                                    "flex min-w-0 flex-1 items-center gap-2 px-3 py-2.5 text-left text-sm",
+                                    selected && "font-medium text-primary",
+                                  )}
+                                >
+                                  {selected && <CheckIcon className="size-4 shrink-0" />}
+                                  <span className="min-w-0 flex-1 truncate">{area.nombre}</span>
+                                </button>
+                                <ConfirmRemoveButton
+                                  label={`Eliminar ${area.nombre}`}
+                                  description={`Se eliminará permanentemente el área ${area.nombre}. Esta acción no se puede deshacer.`}
+                                  className="mr-1 shrink-0 text-muted-foreground hover:text-foreground"
+                                  onConfirm={() => handleDelete(area)}
+                                />
+                              </div>
                             </TableCell>
                           )
                         })}
@@ -203,10 +236,6 @@ export function SelectGeneralAreaDialog({
           </div>
         </div>
 
-        {/* Paginación (3 × 6 = 18 áreas por página) — mismo diseño que la
-            paginación compartida (números de página, elipsis, activa en
-            fill primario), pero sin selector de "Entradas" (el tamaño de
-            página es fijo acá) y con Atrás/Siguiente solo ícono. */}
         <div className="flex shrink-0 items-center justify-center gap-2">
           <UIPagination className="mx-0 w-auto justify-center">
             <PaginationContent>

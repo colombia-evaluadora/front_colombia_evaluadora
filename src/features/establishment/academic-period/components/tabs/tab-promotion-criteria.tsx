@@ -100,6 +100,7 @@ interface TabPromotionCriteriaProps {
 
 export interface PromotionCriteriaHandle {
   save: (gradeId: number) => Promise<void>
+  isDirty: () => boolean
 }
 
 export const TabPromotionCriteria = forwardRef<PromotionCriteriaHandle, TabPromotionCriteriaProps>(
@@ -240,6 +241,7 @@ const PromotionCriteriaForm = forwardRef<PromotionCriteriaHandle, PromotionCrite
             values: form.state.values,
           })
         },
+        isDirty: () => form.state.isDirty,
       }),
       [updatePromotionCriteria, form, academicPeriodId],
     )

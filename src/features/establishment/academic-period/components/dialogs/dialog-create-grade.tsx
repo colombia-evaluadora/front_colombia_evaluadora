@@ -294,14 +294,21 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
     resetForm()
   }
 
+  const isHeaderDirty =
+    teachingLevelId !== savedRef.current.teachingLevelId ||
+    nombre !== savedRef.current.nombre ||
+    gradoSiguiente !== savedRef.current.gradoSiguiente ||
+    tieneGradoSiguiente !== savedRef.current.tieneGradoSiguiente
+  const isHeaderValid =
+    teachingLevelId != null &&
+    nombre.trim() !== "" &&
+    tieneGradoSiguiente !== "" &&
+    (!hasNextGrade || gradoSiguiente.trim() !== "")
+  const canSaveHeader = isHeaderValid && (gradeId == null || isHeaderDirty)
+
   function requestClose() {
     if (saving) return
-    const isDirty =
-      teachingLevelId !== savedRef.current.teachingLevelId ||
-      nombre !== savedRef.current.nombre ||
-      gradoSiguiente !== savedRef.current.gradoSiguiente ||
-      tieneGradoSiguiente !== savedRef.current.tieneGradoSiguiente
-    if (isDirty) {
+    if (isHeaderDirty || promotionRef.current?.isDirty()) {
       setConfirmDiscardOpen(true)
       return
     }
@@ -474,6 +481,23 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
             </>
           )}
         </div>
+
+        {canSaveHeader && (
+          <div className="flex justify-end">
+            <Button
+              size="sm"
+              type="button"
+              color="primary"
+              onClick={handleSaveGrade}
+              disabled={saving}
+              aria-busy={saving}
+            >
+              {saving && <SpinnerIcon data-icon="inline-start" className="animate-spin" />}
+              {gradeId == null ? "Crear" : "Guardar"}
+            </Button>
+          </div>
+        )}
+
         <NoticeBanner
           notice={notice}
           onClose={() => setNotice(null)}
@@ -504,7 +528,6 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
               <NoticeProvider>
                 <TabPromotionCriteria
                   ref={promotionRef}
-                  hideSubmit
                   gradeId={gradeId}
                   academicPeriodId={academicPeriodId}
                 />
@@ -536,23 +559,6 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
         )}
 
         <DialogFooter>
-          {(gradeId != null ||
-            (teachingLevelId != null &&
-              nombre.trim() !== "" &&
-              tieneGradoSiguiente !== "" &&
-              (!hasNextGrade || gradoSiguiente.trim() !== ""))) && (
-            <Button
-              size="sm"
-              type="button"
-              color="primary"
-              onClick={handleSaveGrade}
-              disabled={saving}
-              aria-busy={saving}
-            >
-              {saving && <SpinnerIcon data-icon="inline-start" className="animate-spin" />}
-              {gradeId == null ? "Crear" : "Guardar"}
-            </Button>
-          )}
           <Button size="sm" type="button" variant="fill" color="neutral" onClick={requestClose}>
             Cerrar
           </Button>

@@ -31,7 +31,7 @@ import {
   ComboboxGroup,
 } from "@/components/ui/combobox"
 
-import { useSedeFuncionariosQuery } from "@/features/establishment/academic-period/api/query/use-sede-funcionarios"
+import { useAssignmentTeachersQuery } from "@/features/establishment/academic-period/api/query/use-assignment-teachers"
 
 import { useCreateGradeGroup } from "@/features/establishment/academic-period/api/mutations/create-grade-group"
 import { useUpdateGradeGroup } from "@/features/establishment/academic-period/api/mutations/update-grade-group"
@@ -88,10 +88,15 @@ export function CreateGradeGroupDialog({
     gradeGroup?.jornada ??
     ""
 
-  const { data: sedeFuncionarios = [] } = useSedeFuncionariosQuery(academicPeriod?.sedeId)
+  const { data: assignmentTeachers } = useAssignmentTeachersQuery({
+    academicPeriodId,
+    sorting: [],
+    pageIndex: 0,
+    pageSize: 200,
+  })
   const teacherNames = useMemo(
-    () => sedeFuncionarios.map((f) => f.nombre),
-    [sedeFuncionarios],
+    () => (assignmentTeachers?.rows ?? []).map((t) => t.name),
+    [assignmentTeachers],
   )
 
   const defaultValues: GradeGroupFormValues = gradeGroup
@@ -106,9 +111,6 @@ export function CreateGradeGroupDialog({
   const createGradeGroup = useCreateGradeGroup({
     mutationConfig: {
       onSuccess: () => {
-        // La tabla del tab "Grupo" vive en el mismo `NoticeProvider` anidado
-        // que este diálogo (ver `dialog-create-grade.tsx`), así que el
-        // aviso compartido cae ahí — no en la página de atrás.
         notify(SUCCESS_MESSAGES.gradeGroup.created)
         form.reset()
         setOpen(false)

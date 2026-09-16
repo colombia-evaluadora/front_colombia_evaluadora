@@ -23,6 +23,8 @@ export function useDeleteAreaSubject({ mutationConfig }: UseDeleteAreaSubjectOpt
       queryClient.invalidateQueries({ queryKey: ["subjects"] })
       queryClient.invalidateQueries({ queryKey: ["especialidades"] })
       queryClient.invalidateQueries({ queryKey: ["study-plans"] })
+      queryClient.invalidateQueries({ queryKey: ["general-areas"] })
+      queryClient.invalidateQueries({ queryKey: ["period-areas"] })
       mutationConfig?.onSuccess?.(...args)
     },
   })
