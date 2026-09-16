@@ -225,6 +225,7 @@ export function PlaneadorPlanillaPage() {
               verPor={verPor}
               filas={filasFiltradas}
               onAbrirBulk={setColumnaEnBulk}
+              gradoId={filtro.gradoId}
             />
           )}
 
