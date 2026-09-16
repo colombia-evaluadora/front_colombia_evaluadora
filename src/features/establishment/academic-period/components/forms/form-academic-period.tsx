@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef } from "react"
+import { addDays } from "date-fns"
 import { useForm, useSelector } from "@tanstack/react-form"
 
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
@@ -193,20 +194,30 @@ export function AcademicPeriodForm({
           {(field) => {
             const isInvalid = (field.state.meta.isTouched || submissionAttempts > 0) && !field.state.meta.isValid
             return (
-              <Field variant="outlined" data-invalid={isInvalid}>
-                <FieldLabel htmlFor={field.name}>Fin del período académico*</FieldLabel>
-                <DatePicker
-                  mode="date"
-                  id={field.name}
-                  value={parseDateValue(field.state.value)}
-                  onChange={(date) => {
-                    field.handleChange(formatDateValue(date))
-                    field.handleBlur()
-                  }}
-                  aria-invalid={isInvalid}
-                />
-                {isInvalid && <FieldError errors={field.state.meta.errors} />}
-              </Field>
+              <form.Subscribe selector={(state) => state.values.startDate}>
+                {(startDate) => {
+                  const minEndDate = startDate
+                    ? addDays(parseDateValue(startDate) as Date, 1)
+                    : undefined
+                  return (
+                    <Field variant="outlined" data-invalid={isInvalid}>
+                      <FieldLabel htmlFor={field.name}>Fin del período académico*</FieldLabel>
+                      <DatePicker
+                        mode="date"
+                        id={field.name}
+                        value={parseDateValue(field.state.value)}
+                        onChange={(date) => {
+                          field.handleChange(formatDateValue(date))
+                          field.handleBlur()
+                        }}
+                        minDate={minEndDate}
+                        aria-invalid={isInvalid}
+                      />
+                      {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                    </Field>
+                  )
+                }}
+              </form.Subscribe>
             )
           }}
         </form.Field>
@@ -224,9 +235,6 @@ export function AcademicPeriodForm({
                 {({ startDate, endDate }) => {
                   const start = parseDateValue(startDate)
                   const end = parseDateValue(endDate)
-                  const current = parseDateValue(field.state.value)
-                  const outOfRange =
-                    !!current && ((!!start && current < start) || (!!end && current > end))
                   return (
                     <Field variant="outlined" data-invalid={isInvalid}>
                       <FieldLabel htmlFor={field.name}>Fecha límite de matrícula*</FieldLabel>
@@ -238,16 +246,11 @@ export function AcademicPeriodForm({
                           field.handleChange(formatDateValue(date))
                           field.handleBlur()
                         }}
+                        minDate={start}
+                        maxDate={end}
                         aria-invalid={isInvalid}
                       />
-                      {isInvalid ? (
-                        <FieldError errors={field.state.meta.errors} />
-                      ) : outOfRange ? (
-                        <p role="alert" className="text-muted-foreground text-xs">
-                          La fecha límite de matrícula debe estar entre la fecha de inicio y la
-                          fecha de fin del período.
-                        </p>
-                      ) : null}
+                      {isInvalid && <FieldError errors={field.state.meta.errors} />}
                     </Field>
                   )
                 }}
