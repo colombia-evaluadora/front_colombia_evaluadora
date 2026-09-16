@@ -114,7 +114,6 @@ export function ManageCampusDialog({
     setNotice({ id: noticeIdRef.current, message, variant })
   }
 
-  const { data: zones = [] } = useCatalogQuery<CatalogItem>(CATALOGS.ZONES)
   // El selector de EE solo aplica al alta (FK_TESTABLECIMIENTO es inmutable
   // después de creada la sede) — REV: antes solo se mostraba para super
   // admin (el resto de roles dependía de que el backend resolviera "el
@@ -135,6 +134,24 @@ export function ManageCampusDialog({
   // Solo pedimos la sede cuando el diálogo está abierto en modo edición: al
   // vivir montado junto a la tabla, la query se dispararía en cada render.
   const campusQuery = useCampusQuery(campusId, isEditMode && open)
+
+  // La zona de una sede se subordina a la del establecimiento (V414 en el
+  // backend): EE Urbana → sede Urbana, EE Rural → sede Rural, EE "Urbana y
+  // Rural" → cualquiera de las dos, y "Urbana y Rural" nunca es válida para
+  // una sede —describe al conjunto, no a un edificio—. Se pide el catálogo
+  // filtrado por ese EE para que el select no ofrezca justo lo que
+  // `fn_sed_crear`/`fn_sed_actualizar` van a rechazar.
+  //
+  // De dónde sale el EE: en alta, del selector que se acaba de elegir; en
+  // edición, del de la sede cargada (es inmutable, no se edita). Mientras
+  // no haya ninguno —alta sin EE elegido todavía, o el detalle aún
+  // cargando— el catálogo llega sin filtrar, exactamente como antes.
+  const zonesEstablishmentId = isEditMode
+    ? (campusQuery.data?.status === "ok" ? (campusQuery.data.campus.establishmentId ?? null) : null)
+    : formValues.establishmentId
+  const { data: zones = [] } = useCatalogQuery<CatalogItem>(CATALOGS.ZONES, {
+    establishmentId: zonesEstablishmentId,
+  })
 
   // El formulario se resetea al abrir (alta) o cuando llega la sede a editar.
   useEffect(() => {
@@ -159,6 +176,24 @@ export function ManageCampusDialog({
       setFieldErrors({})
     }
   }, [campusQuery.data, isEditMode, open, zones])
+
+  // Si la zona seleccionada dejó de estar en la lista, se limpia. Pasa en
+  // dos situaciones, y en las dos dejarla puesta mandaría al backend algo
+  // que va a rechazar:
+  //  - en alta, al cambiar de establecimiento después de haber elegido zona;
+  //  - en edición, con las sedes viejas que quedaron con una zona que la
+  //    regla nueva ya no permite (p. ej. "Urbana y Rural"). Esos datos no se
+  //    migraron a propósito: la validación es de escritura, así que la sede
+  //    sigue viva hasta que alguien la edite —y en ese momento tiene que
+  //    elegir una zona válida, que es justo lo que este limpiado fuerza.
+  useEffect(() => {
+    if (zones.length === 0) return
+
+    setFormValues((current) => {
+      if (!current.zone || zones.some((item) => item.id === current.zone!.id)) return current
+      return { ...current, zone: null }
+    })
+  }, [zones])
 
   const createMutation = useCreate({
     mutationConfig: {
