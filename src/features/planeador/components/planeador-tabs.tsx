@@ -9,10 +9,15 @@ import { useUnidadesTabsQuery } from "@/features/planeador/api/query/use-unidade
 const ACTIVIDADES_KEY = "actividades"
 
 /**
- * Fallback mientras carga (o si el backend/mock todavía no expone
- * `/unidades/tabs`, o el docente solo dicta en un nivel educativo): UNA
- * sola pestaña "Unidad temática", sin filtrar por `?instrumento=` — mismo
- * comportamiento que antes de este endpoint existir.
+ * Fallback SOLO mientras `/unidades/tabs` está cargando (`data` todavía
+ * `undefined`): una pestaña "Unidad temática" sin filtrar por
+ * `?instrumento=`, mismo comportamiento que antes de que este endpoint
+ * existiera — evita que la pestaña "parpadee" al entrar.
+ *
+ * Una vez que la respuesta llega, si viene VACÍA (el usuario no dicta ni
+ * administra ningún nivel — ver V407) NO se usa este fallback: mostrarlo
+ * ahí haría aparecer "Unidad temática" para alguien sin ningún acceso real,
+ * cuando debería quedar solo la pestaña "Actividades".
  */
 export const UNIDAD_TAB_FALLBACK = "Unidad temática"
 
@@ -37,8 +42,16 @@ export function PlaneadorTabs() {
   // `?instrumento=` en su search schema.
   const search = useSearch({ strict: false }) as { instrumento?: string }
 
-  const { data: unidadTabs } = useUnidadesTabsQuery()
-  const instrumentos = unidadTabs?.length ? unidadTabs.map((t) => t.instrumento) : [UNIDAD_TAB_FALLBACK]
+  const { data: unidadTabs, isPending } = useUnidadesTabsQuery()
+  // `undefined` (todavía cargando) -> fallback para no parpadear. `[]` (ya
+  // cargó y no hay ninguna pestaña real) -> ninguna, no el fallback: un
+  // usuario sin acceso a ningún nivel/referente debe quedar solo con
+  // "Actividades", no con un "Unidad temática" que no le corresponde.
+  const instrumentos = unidadTabs?.length
+    ? unidadTabs.map((t) => t.instrumento)
+    : isPending
+      ? [UNIDAD_TAB_FALLBACK]
+      : []
 
   const views = [
     { key: ACTIVIDADES_KEY, label: "Actividades", to: paths.app.planeadorActividades.getHref(), instrumento: undefined as string | undefined },
