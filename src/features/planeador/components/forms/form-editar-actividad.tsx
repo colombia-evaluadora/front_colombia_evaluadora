@@ -30,6 +30,7 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useUnidadDetalleQuery } from "@/features/planeador/api/query/use-unidades-query"
+import { useUnidadReferenteQuery } from "@/features/planeador/api/query/use-unidad-referente-query"
 import { useUnidadesTabsQuery } from "@/features/planeador/api/query/use-unidades-tabs-query"
 import { UNIDAD_TAB_FALLBACK } from "@/features/planeador/components/planeador-tabs"
 import { articuloDefinido } from "@/features/planeador/lib/unidad-instrumento-label"
@@ -297,7 +298,7 @@ export function EditarActividadForm({
     return nueva
   }
 
-  const { camposEfectivos, esFormativa } = useCamposEvaluacionEfectivos(
+  const { camposEfectivos, esFormativa, tipoEvaluacion } = useCamposEvaluacionEfectivos(
     form,
     actividad.camposDisponibles,
     actividad.unidad.id,
@@ -345,6 +346,7 @@ export function EditarActividadForm({
         unidades={unidades}
         camposEfectivos={camposEfectivos}
         esFormativa={esFormativa}
+        tipoEvaluacion={tipoEvaluacion}
       />
       {/* Adaptaciones y Seguimiento se desactivan junto con Evaluación
           cuando el referente de la unidad es FORMATIVO — regla de negocio
@@ -1721,6 +1723,16 @@ function useCamposEvaluacionEfectivos(
     sinUnidadNiDetalle ? asignaturaId : undefined,
   )
 
+  // `TIPO_EVALUACION` del referente (CUANTITATIVA / CUALITATIVA /
+  // CUANTITATIVA_CUALITATIVA) — con unidad elegida sale de su referente
+  // (`useUnidadReferenteQuery`, mismo dato que ya trae `esFormativo`);
+  // huérfana o de alta, del referente en vivo por grado/asignatura, igual
+  // que `esFormativa` arriba. Determina qué tipos de "Escala de
+  // valoración" puede elegir el docente (ver `EscalaValoracionSection`).
+  const { data: unidadReferente } = useUnidadReferenteQuery(unidadId)
+  const tipoEvaluacion =
+    unidadId != null ? (unidadReferente?.tipoEvaluacion ?? null) : (referenteDeGradoAsignatura?.tipoEvaluacion ?? null)
+
   // Fuente de verdad efectiva para "qué mostrar/exigir": la foto fija del
   // detalle si sigue aplicando, si no la configuración en vivo por unidad
   // (alta, o huérfana recién vinculada) — la usa tanto `esFormativa` como
@@ -1731,7 +1743,7 @@ function useCamposEvaluacionEfectivos(
     ? camposEfectivos.evaluacion.visible === false
     : !sinGradoNiAsignatura && (referenteDeGradoAsignatura?.esFormativo ?? false)
 
-  return { camposEfectivos, esFormativa }
+  return { camposEfectivos, esFormativa, tipoEvaluacion }
 }
 
 function EvaluacionSection({
@@ -1739,6 +1751,7 @@ function EvaluacionSection({
   unidades,
   camposEfectivos,
   esFormativa,
+  tipoEvaluacion,
 }: {
   form: FormActividad
   unidades: UnidadTematica[]
@@ -1746,6 +1759,8 @@ function EvaluacionSection({
    *  `EditarActividadForm`. */
   camposEfectivos: ReturnType<typeof useCamposEvaluacionEfectivos>["camposEfectivos"]
   esFormativa: boolean
+  /** `TIPO_EVALUACION` del referente — ver `EscalaValoracionSection`. */
+  tipoEvaluacion: ReturnType<typeof useCamposEvaluacionEfectivos>["tipoEvaluacion"]
 }) {
   // `disabled={esFormativa}` de abajo solo bloquea el control — no corrige
   // el VALOR. Sin esto, una actividad que ya traía `esEvaluativa: true` al
@@ -1837,7 +1852,7 @@ function EvaluacionSection({
               adentro del mismo card de "Evaluación", entre el `instrumento`
               elegido arriba y la `Ponderación (%)` de abajo — antes era un
               `Card` hermano y suelto, separado de este. */}
-          <InstrumentoEvaluacionSection form={form} unidades={unidades} />
+          <InstrumentoEvaluacionSection form={form} unidades={unidades} tipoEvaluacion={tipoEvaluacion} />
 
           {/* Ponderación/Puntaje va AL FINAL, después de la definición del
               instrumento (Rúbrica/Lista de cotejo). La lectura del form es:
@@ -1929,9 +1944,11 @@ function EvaluacionSection({
 function InstrumentoEvaluacionSection({
   form,
   unidades,
+  tipoEvaluacion,
 }: {
   form: FormActividad
   unidades: UnidadTematica[]
+  tipoEvaluacion: string | null
 }) {
   return (
     <form.Subscribe selector={(state) => state.values.instrumento}>
@@ -1939,9 +1956,9 @@ function InstrumentoEvaluacionSection({
         instrumento === "Lista de cotejo" ? (
           <ListaCotejoSection form={form} />
         ) : instrumento === "Escala de valoración" ? (
-          <EscalaValoracionSection form={form} unidades={unidades} />
+          <EscalaValoracionSection form={form} unidades={unidades} tipoEvaluacion={tipoEvaluacion} />
         ) : instrumento === "Otro" ? (
-          <InstrumentoPersonalizadoSection form={form} unidades={unidades} />
+          <InstrumentoPersonalizadoSection form={form} unidades={unidades} tipoEvaluacion={tipoEvaluacion} />
         ) : (
           <RubricasSection form={form} />
         )
@@ -2176,12 +2193,40 @@ function nivelesCualitativosDesdeUnidad(
 function EscalaValoracionSection({
   form,
   unidades,
+  tipoEvaluacion,
 }: {
   form: FormActividad
   unidades: UnidadTematica[]
+  /** `TIPO_EVALUACION` del referente de la unidad/grado-asignatura
+   *  ("CUANTITATIVA" | "CUALITATIVA" | "CUANTITATIVA_CUALITATIVA"). `null`
+   *  (todavía sin resolver, o referente sin este dato) se trata como
+   *  "ambas": no restringe nada, mismo comportamiento que antes de este
+   *  campo existir. */
+  tipoEvaluacion: string | null
 }) {
   const unidadId = useSelector(form.store, (state) => state.values.unidad.id) || undefined
   const unidadActual = unidades.find((u) => u.id === unidadId)
+
+  // Con "CUANTITATIVA" el referente solo admite escala Numérica; con
+  // "CUALITATIVA" solo Cualitativa. "CUANTITATIVA_CUALITATIVA" (o sin dato
+  // todavía) admite las dos, igual que siempre.
+  const permiteNumerica = tipoEvaluacion !== "CUALITATIVA"
+  const permiteCualitativa = tipoEvaluacion !== "CUANTITATIVA"
+
+  // Si el docente ya tenía elegida la escala que el referente acaba de
+  // dejar de admitir (cambió de unidad/grado a una con TIPO_EVALUACION más
+  // restrictivo), se corrige acá al único tipo que queda permitido — el
+  // radio de esa opción ya ni se muestra (ver abajo), así que sin esto el
+  // VALOR guardado quedaría en un tipo que el usuario no puede ni ver para
+  // volver a elegir (mismo criterio que `esFormativa` más arriba).
+  const escalaTipoActual = useSelector(form.store, (state) => state.values.escalaValoracion.tipo)
+  useEffect(() => {
+    if (escalaTipoActual === "Numérica" && !permiteNumerica) {
+      form.setFieldValue("escalaValoracion", (prev) => ({ ...prev, tipo: "Cualitativa" }))
+    } else if (escalaTipoActual === "Cualitativa" && !permiteCualitativa) {
+      form.setFieldValue("escalaValoracion", (prev) => ({ ...prev, tipo: "Numérica" }))
+    }
+  }, [escalaTipoActual, permiteNumerica, permiteCualitativa, form])
 
   return (
     <Card className="gap-4 p-4">
@@ -2250,17 +2295,26 @@ function EscalaValoracionSection({
                             updateEscala({ tipo, niveles })
                           }}
                         >
-                          <label className="flex items-center gap-2">
-                            <RadioGroupItem value="Numérica" className="data-checked:bg-primary" />
-                            Numérica
-                          </label>
-                          <label className="flex items-center gap-2">
-                            <RadioGroupItem
-                              value="Cualitativa"
-                              className="data-checked:bg-primary"
-                            />
-                            Cualitativa
-                          </label>
+                          {/* El referente puede restringir a un solo tipo
+                              (TIPO_EVALUACION CUANTITATIVA/CUALITATIVA): la
+                              opción que no admite ni se muestra, no solo se
+                              deshabilita — no tiene sentido ofrecer una
+                              escala que el referente no permite. */}
+                          {permiteNumerica && (
+                            <label className="flex items-center gap-2">
+                              <RadioGroupItem value="Numérica" className="data-checked:bg-primary" />
+                              Numérica
+                            </label>
+                          )}
+                          {permiteCualitativa && (
+                            <label className="flex items-center gap-2">
+                              <RadioGroupItem
+                                value="Cualitativa"
+                                className="data-checked:bg-primary"
+                              />
+                              Cualitativa
+                            </label>
+                          )}
                         </RadioGroup>
                       </Field>
                     </div>
@@ -2492,9 +2546,11 @@ function EscalaValoracionSection({
 function InstrumentoPersonalizadoSection({
   form,
   unidades,
+  tipoEvaluacion,
 }: {
   form: FormActividad
   unidades: UnidadTematica[]
+  tipoEvaluacion: string | null
 }) {
   return (
     <Card className="gap-4 p-4">
@@ -2577,7 +2633,7 @@ function InstrumentoPersonalizadoSection({
               ) : value.metodoValoracion === "Lista de cotejo" ? (
                 <ListaCotejoSection form={form} />
               ) : value.metodoValoracion === "Escala de valoración" ? (
-                <EscalaValoracionSection form={form} unidades={unidades} />
+                <EscalaValoracionSection form={form} unidades={unidades} tipoEvaluacion={tipoEvaluacion} />
               ) : null}
 
               <div className="flex flex-col gap-2">
