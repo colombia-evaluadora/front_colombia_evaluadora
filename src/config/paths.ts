@@ -204,6 +204,10 @@ export const paths = {
       path: "gestion-academica/informes",
       getHref: () => "/app/gestion-academica/informes",
     },
+    gestionAcademicaInformesPlanillaAprobacion: {
+      path: "gestion-academica/informes/planilla/$docenteId",
+      getHref: (docenteId: number | string) => `/app/gestion-academica/informes/planilla/${docenteId}`,
+    },
     gestionAcademicaReferentesCurriculares: {
       path: "gestion-academica/referentes-curriculares",
       getHref: () => "/app/gestion-academica/referentes-curriculares",
