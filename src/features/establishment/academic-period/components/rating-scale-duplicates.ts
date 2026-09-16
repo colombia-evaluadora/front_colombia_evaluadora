@@ -5,10 +5,6 @@ export interface RatingScaleNameFields {
 
 export type RatingScaleDuplicateField = "nombre" | "abreviacion"
 
-// Mismo criterio que `findDuplicateAbreviacion`/`findDuplicateNombreEnfasis`
-// en `dialog-area-subject-form.tsx`: comparación insensible a mayúsculas y
-// espacios. `scales` debe venir prefiltrada al nivel de enseñanza relevante —
-// la restricción de unicidad es por nivel (MantisBT 0000731/0000734).
 export function findDuplicateRatingScale<T extends RatingScaleNameFields>(
   candidate: RatingScaleNameFields,
   scales: T[],
@@ -32,4 +28,23 @@ export function ratingScaleDuplicateMessage(field: RatingScaleDuplicateField, va
   return field === "nombre"
     ? `Ya existe una escala de valoración con el nombre "${value}" en este nivel de enseñanza.`
     : `Ya existe una escala de valoración con la abreviación "${value}" en este nivel de enseñanza.`
+}
+
+export interface RatingScaleRangeFields {
+  notaMinima: number
+  notaMaxima: number
+}
+
+export function findOverlappingRatingScale<T extends RatingScaleRangeFields>(
+  candidate: RatingScaleRangeFields,
+  scales: T[],
+): T | undefined {
+  return scales.find(
+    (scale) =>
+      candidate.notaMinima <= scale.notaMaxima && scale.notaMinima <= candidate.notaMaxima,
+  )
+}
+
+export function ratingScaleOverlapMessage(scale: RatingScaleNameFields): string {
+  return `El rango de notas se solapa con la escala "${scale.nombre}" en este nivel de enseñanza.`
 }

@@ -1,9 +1,8 @@
 import { useMutation } from "@tanstack/react-query"
 
-import { env } from "@/config/env"
-import { api } from "@/lib/api-client"
+import { downloadReport } from "@/lib/report-client"
 import type { MutationConfig } from "@/lib/react-query"
-import { AUDIT_EXPORT_UNAVAILABLE } from "@/features/administration/audits/api/real-mapping"
+import { toAuditoriaSesionesReportFilters } from "@/features/administration/audits/api/real-mapping"
 import type { AuditsQueryRequest, ExportFormat, ExportResult } from "@/features/administration/audits/api/types/audit"
 
 interface ExportAuditsInput {
@@ -11,12 +10,14 @@ interface ExportAuditsInput {
   format: ExportFormat
 }
 
-function exportAudits(input: ExportAuditsInput): Promise<ExportResult> {
-  // Sin endpoint de reportes de auditoría en el backend real — ver
-  // AUDIT_EXPORT_UNAVAILABLE.
-  if (!env.ENABLE_API_MOCKING) return Promise.resolve(AUDIT_EXPORT_UNAVAILABLE)
-
-  return api.post("/audits/export-all", input)
+function exportAudits({ filters, format }: ExportAuditsInput): Promise<ExportResult> {
+  // `POST /reportes/auditoria-sesiones` (colección Postman
+  // `auditoria-export-pdf-excel`, V405) — reemplaza al `/audits/export-all`
+  // que solo existía en el mock.
+  return downloadReport("auditoria-sesiones", {
+    format,
+    filters: toAuditoriaSesionesReportFilters(filters),
+  })
 }
 
 interface UseExportAuditsOptions {

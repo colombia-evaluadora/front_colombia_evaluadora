@@ -99,14 +99,21 @@ export function AddEvidencesDialog({
 
   return (
     <Dialog open={open} onOpenChange={(next) => !isPending && onOpenChange(next)}>
-      <DialogContent showCloseButton={false} className="sm:max-w-xl">
-        <DialogHeader>
+      <DialogContent
+        showCloseButton={false}
+        className="flex max-h-[85vh] flex-col overflow-hidden p-0 sm:max-w-xl"
+      >
+        <DialogHeader className="shrink-0 px-6 pt-6">
           <DialogTitle className="break-words hyphens-auto" lang="es">
             {isEditMode ? `Editar ${levelLabel.toLowerCase()}` : `Agregar ${levelLabel.toLowerCase()}`}
           </DialogTitle>
         </DialogHeader>
 
-        <form id="add-evidences-form" onSubmit={handleSubmit}>
+        <form
+          id="add-evidences-form"
+          onSubmit={handleSubmit}
+          className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-6"
+        >
           <Field orientation="vertical" variant="outlined" data-invalid={error ? "true" : undefined}>
             <FieldLabel htmlFor="evidence-text" className="right-2.5 w-auto break-words hyphens-auto" lang="es">
               {levelLabel} *
@@ -138,7 +145,7 @@ export function AddEvidencesDialog({
           </Field>
         </form>
 
-        <DialogFooter className="justify-end gap-2">
+        <DialogFooter className="shrink-0 justify-end gap-2 px-6 pb-6">
           {canSave && (
             <Button
               size="sm"
