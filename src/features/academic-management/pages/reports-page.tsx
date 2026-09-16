@@ -13,6 +13,13 @@ import {
   PopoverTitle,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import { Field, FieldLabel } from "@/components/ui/field"
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from "@/components/ui/input-group"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import {
@@ -20,6 +27,8 @@ import {
   ClockCountdownIcon,
   FileDownloadOutlinedIcon,
   FileTextIcon,
+  FunnelIcon,
+  MagnifyingGlassIcon,
   PlusIcon,
   XIcon,
 } from "@/components/ui/icons"
@@ -38,7 +47,6 @@ import { ObservacionesTable } from "@/features/academic-management/reports/compo
 import { ObservacionSheet } from "@/features/academic-management/reports/components/observacion-sheet"
 import { PendingChangesBanners } from "@/features/academic-management/reports/components/pending-changes-banners"
 import { PeriodoFilter } from "@/features/academic-management/reports/components/periodo-filter"
-import { SearchInput } from "@/features/academic-management/reports/components/search-input"
 
 const PANEL_CLASS =
   "rounded-b-lg rounded-tr-lg border border-border bg-background p-4 group-data-[tabs-filled=true]/tabs:rounded-tr-none"
@@ -93,14 +101,47 @@ function GrupoTabContent({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <SearchInput
-          value={busqueda}
-          onValueChange={setBusqueda}
-          placeholder={preescolar ? "Buscar por nombre" : "Buscar por nombre y documento"}
-          label="Buscar estudiante"
-          className="sm:w-96"
-        />
+      <div className="flex flex-wrap items-center gap-3">
+        <Field orientation="vertical" variant="outlined" className="min-w-0 flex-1">
+          <FieldLabel htmlFor={`buscar-estudiante-${preescolar ? "preescolar" : "grados"}`}>
+            Buscar estudiante por nombre y documento
+          </FieldLabel>
+          <InputGroup className="h-10 w-full rounded-md border-input has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20">
+            <InputGroupAddon align="inline-start" className="ml-2">
+              <MagnifyingGlassIcon className="size-4 text-muted-foreground" />
+            </InputGroupAddon>
+            <InputGroupInput
+              id={`buscar-estudiante-${preescolar ? "preescolar" : "grados"}`}
+              type="search"
+              autoComplete="off"
+              placeholder="Buscar por"
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              className="min-w-32 [&::-webkit-search-cancel-button]:appearance-none"
+            />
+            <InputGroupAddon align="inline-end" className="mr-1 gap-1">
+              {busqueda !== "" && (
+                <InputGroupButton
+                  size="icon-xs"
+                  variant="ghost"
+                  color="muted"
+                  aria-label="Limpiar búsqueda"
+                  onClick={() => setBusqueda("")}
+                >
+                  <XIcon />
+                </InputGroupButton>
+              )}
+              <Tooltip>
+                <TooltipTrigger
+                  render={<InputGroupButton size="icon-xs" variant="ghost" color="muted" aria-label="Filtrar" />}
+                >
+                  <FunnelIcon />
+                </TooltipTrigger>
+                <TooltipContent>Filtrar</TooltipContent>
+              </Tooltip>
+            </InputGroupAddon>
+          </InputGroup>
+        </Field>
         {!preescolar && seleccionConPendientes && (
           <Button type="button" color="primary" size="sm" onClick={onGuardar}>
             <CheckIcon data-icon="inline-start" />

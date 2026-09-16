@@ -30,6 +30,7 @@ export function useUpdate({ mutationConfig }: UseUpdateOptions = {}) {
     onSuccess: (...args) => {
       queryClient.invalidateQueries({ queryKey: ["curricular-references"] })
       queryClient.invalidateQueries({ queryKey: ["curricular-reference"] })
+      queryClient.invalidateQueries({ queryKey: ["curricular-reference-areas"] })
       mutationConfig?.onSuccess?.(...args)
     },
   })

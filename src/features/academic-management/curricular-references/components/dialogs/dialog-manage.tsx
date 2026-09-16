@@ -114,7 +114,9 @@ export function ManageCurricularReferenceDialog({
     noticeIdRef.current += 1
     setNotice({ id: noticeIdRef.current, message, variant })
   }
-  const { data: referenceAreas = EMPTY_AREAS } = useCurricularReferenceAreasQuery(curricularReferenceId ?? NaN)
+  const { data: referenceAreas = EMPTY_AREAS, isPending: isAreasPending } = useCurricularReferenceAreasQuery(
+    curricularReferenceId ?? NaN,
+  )
   const populatedRef = useRef(false)
 
   useEffect(() => {
@@ -127,7 +129,7 @@ export function ManageCurricularReferenceDialog({
     if (populatedRef.current) return
 
     if (isEditMode) {
-      if (!curricularReference) return
+      if (!curricularReference || isAreasPending) return
       const {
         id: _id,
         createdYear: _createdYear,
@@ -149,7 +151,7 @@ export function ManageCurricularReferenceDialog({
     }
     setFieldErrors({})
     populatedRef.current = true
-  }, [open, isEditMode, curricularReference, referenceAreas])
+  }, [open, isEditMode, curricularReference, referenceAreas, isAreasPending])
 
   const createMutation = useCreate({
     mutationConfig: {
@@ -212,7 +214,7 @@ export function ManageCurricularReferenceDialog({
   }
 
   const isPending = createMutation.isPending || updateMutation.isPending
-  const isLoadingDetail = isEditMode && isDetailPending
+  const isLoadingDetail = isEditMode && (isDetailPending || isAreasPending)
 
   const isDirty = JSON.stringify(formValues) !== JSON.stringify(initialValuesRef.current)
   const hasChanges = isEditMode ? isDirty : true
