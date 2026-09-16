@@ -308,7 +308,7 @@ function EvaluationCriteriaForm({
                     ) : (
                       <ComboboxField
                         items={Object.fromEntries([
-                          ...(isClearable ? [["", "Ninguna"]] : []),
+                          ...(isClearable ? [["", "Cada nivel tendrá su escala"]] : []),
                           ...fieldOptions.map((o) => [o.key, o.label]),
                         ])}
                         value={field.state.value as string}
@@ -340,7 +340,9 @@ function EvaluationCriteriaForm({
                             </p>
                           ) : (
                             <ComboboxGroup>
-                              {isClearable && <ComboboxFieldItem value="">Ninguna</ComboboxFieldItem>}
+                              {isClearable && (
+                                <ComboboxFieldItem value="">Cada nivel tendrá su escala</ComboboxFieldItem>
+                              )}
                               {fieldOptions.map((option) => (
                                 <ComboboxFieldItem
                                   key={option.key}
