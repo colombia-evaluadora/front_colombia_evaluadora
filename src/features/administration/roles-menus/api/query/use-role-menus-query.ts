@@ -2,17 +2,19 @@ import { useQuery } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
 
-/**
- * Ids de los menús que tiene asignados el rol, en el orden guardado para ese
- * rol (que no es el `menuOrder` del catálogo).
- *
- * El backend responde `{rows:[{id}, ...]}`, no una lista de números: una fila
- * de una sola columna no colapsa a escalar. La pantalla trabaja con ids, así
- * que la lista se aplana acá.
- */
-async function fetchRoleMenus(roleId: number): Promise<number[]> {
-  const rows = await evalCol.getRows<{ id: number } | number>(`/roles/${roleId}/menus`)
-  return rows.map((row) => (typeof row === "number" ? row : row.id))
+export interface RoleMenuAssignment {
+  id: number
+  soloLectura: boolean
+}
+
+
+async function fetchRoleMenus(roleId: number): Promise<RoleMenuAssignment[]> {
+  const rows = await evalCol.getRows<{ id: number; soloLectura?: boolean } | number>(
+    `/roles/${roleId}/menus`,
+  )
+  return rows.map((row) =>
+    typeof row === "number" ? { id: row, soloLectura: false } : { id: row.id, soloLectura: row.soloLectura ?? false },
+  )
 }
 
 export const roleMenusQueryKey = (roleId: number | null) => ["role-menus", roleId]

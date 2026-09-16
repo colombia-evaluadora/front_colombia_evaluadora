@@ -5,9 +5,12 @@ import { Input, inputTriggerVariants, inputVariants, useInputVariant } from "@/c
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Button } from "@/components/ui/button"
+import { ConfirmRemoveButton } from "@/components/confirm-remove-button"
 import { cn } from "@/lib/utils"
+import { getErrorMessage } from "@/lib/api-client"
 
 import { usePeriodAreasQuery } from "@/features/establishment/academic-period/api/query/use-period-areas"
+import { useDeleteAreaSubject } from "@/features/establishment/academic-period/api/mutations/delete-area-subject"
 
 export type AreaSelection =
   | { mode: "existing"; id: number; nombre: string }
@@ -19,23 +22,15 @@ interface AreaSelectProps {
   onChange: (value: AreaSelection) => void
 }
 
-// Selector de área ya creada en el período, con opción de crear una nueva
-// al fondo — mismo patrón de `especialidad-select.tsx`. Evita que el
-// usuario intente crear un área con un nombre que ya existe (error del
-// backend por nombre único). Cuando el período aún no tiene ninguna área,
-// no tiene sentido mostrar un select vacío con solo la opción de crear: se
-// muestra directamente el input de texto.
 export function AreaSelect({ academicPeriodId, value, onChange }: AreaSelectProps) {
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState(value.mode === "new" ? value.nombre : "")
+  const [error, setError] = useState<string | null>(null)
   const resolvedVariant = useInputVariant()
 
   const { data: options = [] } = usePeriodAreasQuery(academicPeriodId)
+  const deleteArea = useDeleteAreaSubject()
 
-  // Si lo que se escribe en "Agregar nueva área" coincide con una que ya
-  // existe (mismo nombre, sin distinguir mayúsculas/espacios), no tiene
-  // sentido intentar crearla — el backend la rechazaría por nombre
-  // duplicado. En ese caso se selecciona la existente en su lugar.
   const draftMatch = options.find(
     (option) => option.label.trim().toUpperCase() === draft.trim().toUpperCase(),
   )
@@ -49,6 +44,24 @@ export function AreaSelect({ academicPeriodId, value, onChange }: AreaSelectProp
       onChange({ mode: "new", nombre })
     }
     setOpen(false)
+  }
+
+  async function handleDelete(option: { id: number; label: string }): Promise<boolean> {
+    try {
+      const result = await deleteArea.mutateAsync(option.id)
+      if (result.status === "error") {
+        setError(result.message)
+        return true
+      }
+    } catch (err) {
+      setError(getErrorMessage(err))
+      return true
+    }
+    setError(null)
+    if (value.mode === "existing" && value.id === option.id) {
+      onChange({ mode: "new", nombre: "" })
+    }
+    return true
   }
 
   if (options.length === 0) {
@@ -70,6 +83,7 @@ export function AreaSelect({ academicPeriodId, value, onChange }: AreaSelectProp
       open={open}
       onOpenChange={(next) => {
         setOpen(next)
+        setError(null)
         if (next) setDraft(value.mode === "new" ? value.nombre : "")
       }}
     >
@@ -91,22 +105,34 @@ export function AreaSelect({ academicPeriodId, value, onChange }: AreaSelectProp
         <CaretDownIcon className="size-3.5 shrink-0 text-muted-foreground" />
       </PopoverTrigger>
       <PopoverContent align="start" className="w-64 p-1">
+        {error && <p className="border-b border-border px-2 py-1.5 text-xs text-red">{error}</p>}
         <div className="max-h-64 overflow-y-auto">
           {options.map((option) => (
-            <button
+            <div
               key={option.id}
-              type="button"
-              onClick={() => {
-                onChange({ mode: "existing", id: option.id, nombre: option.label })
-                setOpen(false)
-              }}
-              className="hover:bg-foreground/10 flex w-full items-center justify-between gap-2 rounded-none border-b border-border px-2 py-1.5 text-left text-sm last:border-b-0"
+              className="hover:bg-foreground/10 flex items-center justify-between gap-1 border-b border-border pr-1 text-sm last:border-b-0"
             >
-              <span className="flex-1 truncate">{option.label}</span>
-              {value.mode === "existing" && value.id === option.id && (
-                <CheckIcon className="size-4 shrink-0" />
-              )}
-            </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onChange({ mode: "existing", id: option.id, nombre: option.label })
+                  setOpen(false)
+                }}
+                className="flex min-w-0 flex-1 items-center gap-2 rounded-none px-2 py-1.5 text-left"
+              >
+                <span className="flex-1 truncate">{option.label}</span>
+                {value.mode === "existing" && value.id === option.id && (
+                  <CheckIcon className="size-4 shrink-0" />
+                )}
+              </button>
+              <ConfirmRemoveButton
+                label={`Eliminar ${option.label}`}
+                description={`Se eliminará permanentemente el área ${option.label}. Esta acción no se puede deshacer.`}
+                size="icon-xs"
+                className="size-5 shrink-0 text-muted-foreground [&_svg:not([class*='size-'])]:size-3"
+                onConfirm={() => handleDelete(option)}
+              />
+            </div>
           ))}
         </div>
         <div className="px-1 py-1">

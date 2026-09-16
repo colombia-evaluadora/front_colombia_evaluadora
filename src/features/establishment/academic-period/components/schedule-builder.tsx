@@ -1,7 +1,11 @@
-import { forwardRef, useEffect, useImperativeHandle, useMemo, useState } from "react"
-import { MinusIcon, XIcon } from "@/components/ui/icons"
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react"
+import { MinusIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 
 import { cn } from "@/lib/utils"
+import { getErrorMessage } from "@/lib/api-client"
+import { SUCCESS_MESSAGES } from "@/lib/success-messages"
+import { useNotify, NoticeOutlet } from "@/components/notice/notice-context"
+import { Button } from "@/components/ui/button"
 import { Field, FieldLabel } from "@/components/ui/field"
 import {
   ComboboxField,
@@ -105,12 +109,14 @@ interface ScheduleBuilderProps {
 
 export interface ScheduleBuilderHandle {
   save: (gradeId: number) => Promise<void>
+  isDirty: () => boolean
 }
 
 export const ScheduleBuilder = forwardRef<
   ScheduleBuilderHandle,
   ScheduleBuilderProps
 >(function ScheduleBuilder({ jornada, subjects, gradeGroups, gradeId }, ref) {
+  const { notify } = useNotify()
   const [gradeGroup, setGradeGroup] = useState("")
   const [schedulesByGroup, setSchedulesByGroup] = useState<
     Record<string, Schedule>
@@ -118,14 +124,18 @@ export const ScheduleBuilder = forwardRef<
   const [draggingId, setDraggingId] = useState<string | null>(null)
   const [dragOver, setDragOver] = useState<string | null>(null)
   const [hydrated, setHydrated] = useState(false)
+  const [saving, setSaving] = useState(false)
+  // Snapshot del horario tal como quedó guardado — compararlo contra el
+  // estado actual es lo que decide si el botón "Guardar" debe mostrarse.
+  const savedSnapshotRef = useRef<string>("{}")
 
   const schedule = schedulesByGroup[gradeGroup] ?? {}
 
   const { data: horarioEntries } = useHorarioQuery(gradeId)
   useEffect(() => {
     if (!hydrated && horarioEntries) {
+      let byGroup: Record<string, Schedule> = {}
       if (horarioEntries.length) {
-        const byGroup: Record<string, Schedule> = {}
         for (const e of horarioEntries) {
           const dayLocal = DAYS.find((d) => d.dayId === e.diaId)?.id
           if (!dayLocal) continue
@@ -137,9 +147,12 @@ export const ScheduleBuilder = forwardRef<
         }
         setSchedulesByGroup(byGroup)
       }
+      savedSnapshotRef.current = JSON.stringify(byGroup)
       setHydrated(true)
     }
   }, [horarioEntries, hydrated])
+
+  const isDirty = JSON.stringify(schedulesByGroup) !== savedSnapshotRef.current
 
   const updateHorario = useUpdateHorario()
 
@@ -206,76 +219,107 @@ export const ScheduleBuilder = forwardRef<
     setDraggingId(null)
   }
 
+  function buildScheduleEntries(): ScheduleEntry[] {
+    const entries: ScheduleEntry[] = []
+    for (const [groupKey, groupSchedule] of Object.entries(schedulesByGroup)) {
+      const grupoId = Number(groupKey)
+      if (!Number.isFinite(grupoId)) continue
+      for (const [dayLocalId, daySlots] of Object.entries(groupSchedule)) {
+        const day = DAYS.find((d) => d.id === dayLocalId)
+        if (!day) continue
+        for (const [slotId, subjectId] of Object.entries(daySlots)) {
+          if (!subjectId) continue
+          // slotId "cN" (1-based) -> bloque 0-based
+          const blockNumber = Number(slotId.replace(/^c/, ""))
+          if (!Number.isFinite(blockNumber)) continue
+          entries.push({
+            grupoId,
+            planItemId: Number(subjectId),
+            diaId: day.dayId,
+            bloque: blockNumber - 1,
+          })
+        }
+      }
+    }
+    return entries
+  }
+
+  async function saveSchedule(id: number) {
+    await updateHorario.mutateAsync({ gradeId: id, entries: buildScheduleEntries() })
+    savedSnapshotRef.current = JSON.stringify(schedulesByGroup)
+  }
+
+  async function handleSaveClick() {
+    setSaving(true)
+    try {
+      await saveSchedule(gradeId)
+      notify(SUCCESS_MESSAGES.schedule.updated)
+    } catch (error) {
+      notify(getErrorMessage(error), { variant: "error" })
+    } finally {
+      setSaving(false)
+    }
+  }
+
   useImperativeHandle(
     ref,
-    () => ({
-      save: async (id: number) => {
-        const entries: ScheduleEntry[] = []
-        for (const [groupKey, groupSchedule] of Object.entries(
-          schedulesByGroup
-        )) {
-          const grupoId = Number(groupKey)
-          if (!Number.isFinite(grupoId)) continue
-          for (const [dayLocalId, daySlots] of Object.entries(groupSchedule)) {
-            const day = DAYS.find((d) => d.id === dayLocalId)
-            if (!day) continue
-            for (const [slotId, subjectId] of Object.entries(daySlots)) {
-              if (!subjectId) continue
-              // slotId "cN" (1-based) -> bloque 0-based
-              const blockNumber = Number(slotId.replace(/^c/, ""))
-              if (!Number.isFinite(blockNumber)) continue
-              entries.push({
-                grupoId,
-                planItemId: Number(subjectId),
-                diaId: day.dayId,
-                bloque: blockNumber - 1,
-              })
-            }
-          }
-        }
-        console.log("[horario save] entries", { gradeId: id, entries })
-        await updateHorario.mutateAsync({ gradeId: id, entries })
-      },
-    }),
-    [schedulesByGroup, updateHorario]
+    () => ({ save: saveSchedule, isDirty: () => isDirty }),
+    [saveSchedule, isDirty],
   )
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
-      <Field
-        orientation="vertical"
-        variant="outlined"
-        className="w-full gap-2 sm:w-72"
-      >
-        <FieldLabel htmlFor="schedule-grade-group">Grado/Grupo</FieldLabel>
-        <ComboboxField
-          value={gradeGroup}
-          onValueChange={(value) => value && setGradeGroup(value)}
-          disabled={gradeGroups.length === 0}
-          items={Object.fromEntries(
-            gradeGroups.map((option) => [String(option.id), option.label])
-          )}
+      <NoticeOutlet />
+      <div className="flex flex-wrap items-end justify-between gap-2">
+        <Field
+          orientation="vertical"
+          variant="outlined"
+          className="w-full gap-2 sm:w-72"
         >
-          <ComboboxFieldTrigger id="schedule-grade-group" className="w-full">
-            <ComboboxFieldValue
-              placeholder={
-                gradeGroups.length === 0
-                  ? "Sin grupos: agregá uno en la pestaña Grupo"
-                  : "Seleccionar"
-              }
-            />
-          </ComboboxFieldTrigger>
-          <ComboboxFieldContent>
-            <ComboboxGroup>
-              {gradeGroups.map((option) => (
-                <ComboboxFieldItem key={option.id} value={String(option.id)}>
-                  {option.label}
-                </ComboboxFieldItem>
-              ))}
-            </ComboboxGroup>
-          </ComboboxFieldContent>
-        </ComboboxField>
-      </Field>
+          <FieldLabel htmlFor="schedule-grade-group">Grado/Grupo</FieldLabel>
+          <ComboboxField
+            value={gradeGroup}
+            onValueChange={(value) => value && setGradeGroup(value)}
+            disabled={gradeGroups.length === 0}
+            items={Object.fromEntries(
+              gradeGroups.map((option) => [String(option.id), option.label])
+            )}
+          >
+            <ComboboxFieldTrigger id="schedule-grade-group" className="w-full">
+              <ComboboxFieldValue
+                placeholder={
+                  gradeGroups.length === 0
+                    ? "Sin grupos: agregá uno en la pestaña Grupo"
+                    : "Seleccionar"
+                }
+              />
+            </ComboboxFieldTrigger>
+            <ComboboxFieldContent>
+              <ComboboxGroup>
+                {gradeGroups.map((option) => (
+                  <ComboboxFieldItem key={option.id} value={String(option.id)}>
+                    {option.label}
+                  </ComboboxFieldItem>
+                ))}
+              </ComboboxGroup>
+            </ComboboxFieldContent>
+          </ComboboxField>
+        </Field>
+
+        {isDirty && (
+          <Button
+            size="sm"
+            type="button"
+            color="primary"
+            onClick={handleSaveClick}
+            disabled={saving}
+            aria-busy={saving}
+          >
+            {saving && <SpinnerIcon data-icon="inline-start" className="animate-spin" />}
+            Guardar
+          </Button>
+        )}
+      </div>
 
       <div className="flex flex-wrap gap-2">
         {!gradeGroup ? (

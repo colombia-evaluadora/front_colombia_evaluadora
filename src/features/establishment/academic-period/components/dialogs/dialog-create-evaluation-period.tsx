@@ -1,4 +1,5 @@
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
+import { addDays } from "date-fns"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import { useForm } from "@tanstack/react-form"
 import { CheckIcon, ControlPointIcon, PencilIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
@@ -98,10 +99,43 @@ export function CreateEvaluationPeriodDialog({
     academicPeriodId,
     enabled: open,
   })
-  const otherPeriodsWeightSum = (allPeriodsData?.rows ?? [])
-    .filter((row) => !isEditing || row.id !== period.id)
-    .reduce((sum, row) => sum + (row.peso ?? 0), 0)
+  const otherPeriods = (allPeriodsData?.rows ?? []).filter(
+    (row) => !isEditing || row.id !== period.id,
+  )
+  const otherPeriodsWeightSum = otherPeriods.reduce((sum, row) => sum + (row.peso ?? 0), 0)
   const maxAllowedWeight = Math.max(0, 100 - otherPeriodsWeightSum)
+
+  function dateWithinOtherPeriod(date: string): boolean {
+    return otherPeriods.some((p) => date >= p.startDate && date <= p.endDate)
+  }
+
+  function rangeOverlapsOtherPeriod(start: string, end: string): boolean {
+    return otherPeriods.some((p) => start <= p.endDate && p.startDate <= end)
+  }
+
+  function nextOtherPeriodStart(start: string): string | undefined {
+    return otherPeriods
+      .map((p) => p.startDate)
+      .filter((s) => s > start)
+      .sort()[0]
+  }
+
+  function hasAvailableEndDate(startDateValue: string): boolean {
+    if (!startDateValue) return true
+    const dayAfterStart = formatDateValue(addDays(parseDateValue(startDateValue) as Date, 1))
+    const nextStart = nextOtherPeriodStart(startDateValue)
+    const maxEnd = nextStart
+      ? formatDateValue(addDays(parseDateValue(nextStart) as Date, -1))
+      : academicPeriodEnd
+    return !maxEnd || dayAfterStart <= maxEnd
+  }
+
+  const otherPeriodsDateRanges = otherPeriods.map((p) => ({
+    from: parseDateValue(p.startDate) as Date,
+    to: parseDateValue(p.endDate) as Date,
+  }))
+  const academicPeriodMinDate = parseDateValue(academicPeriodStart)
+  const academicPeriodMaxDate = parseDateValue(academicPeriodEnd)
 
   const defaultValues: EvaluationPeriodFormValues = period
     ? {
@@ -168,6 +202,12 @@ export function CreateEvaluationPeriodDialog({
     setNotice(null)
     setOpen(next)
   }
+
+  useEffect(() => {
+    if (isEditing || !open || form.state.values.estadoId) return
+    const noCalificable = statusOptions.find((o) => o.key === "2")
+    if (noCalificable) form.setFieldValue("estadoId", noCalificable.id)
+  }, [isEditing, open, statusOptions, form])
 
   const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false)
 
@@ -312,6 +352,11 @@ export function CreateEvaluationPeriodDialog({
                       "La fecha de inicio no puede ser posterior a la fecha de fin del período académico.",
                   }
                 }
+                if (dateWithinOtherPeriod(value)) {
+                  return {
+                    message: "Ya existe un periodo de evaluación con esta fecha.",
+                  }
+                }
                 return undefined
               },
             }}
@@ -323,6 +368,8 @@ export function CreateEvaluationPeriodDialog({
                   {(endDate) => {
                     const outOfRange =
                       !!field.state.value && !!endDate && field.state.value >= endDate
+                    const noAvailableEndDate =
+                      !isInvalid && !!field.state.value && !hasAvailableEndDate(field.state.value)
                     return (
                       <Field variant="outlined" data-invalid={isInvalid}>
                         <FieldLabel htmlFor={field.name}>Fecha inicio*</FieldLabel>
@@ -334,10 +381,19 @@ export function CreateEvaluationPeriodDialog({
                             field.handleChange(formatDateValue(date))
                             field.handleBlur()
                           }}
+                          disabledRanges={otherPeriodsDateRanges}
+                          minDate={academicPeriodMinDate}
+                          maxDate={academicPeriodMaxDate}
                           aria-invalid={isInvalid}
                         />
                         {isInvalid ? (
                           <FieldError errors={field.state.meta.errors} />
+                        ) : noAvailableEndDate ? (
+                          <p role="alert" className="text-red text-xs">
+                            No queda ningún día disponible para la fecha de fin después de esta
+                            fecha de inicio: el siguiente día ya pertenece a otro periodo de
+                            evaluación. Elige otra fecha de inicio.
+                          </p>
                         ) : outOfRange ? (
                           <p role="alert" className="text-muted-foreground text-xs">
                             La fecha de inicio debe ser anterior a la fecha de fin del período de
@@ -369,6 +425,11 @@ export function CreateEvaluationPeriodDialog({
                       "La fecha de fin no puede ser posterior a la fecha de fin del período académico.",
                   }
                 }
+                if (dateWithinOtherPeriod(value)) {
+                  return {
+                    message: "Ya existe un periodo de evaluación con esta fecha.",
+                  }
+                }
                 return undefined
               },
             }}
@@ -376,20 +437,45 @@ export function CreateEvaluationPeriodDialog({
             {(field) => {
               const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
               return (
-                <Field variant="outlined" data-invalid={isInvalid}>
-                  <FieldLabel htmlFor={field.name}>Fecha fin*</FieldLabel>
-                  <DatePicker
-                    mode="date"
-                    id={field.name}
-                    value={parseDateValue(field.state.value)}
-                    onChange={(date) => {
-                      field.handleChange(formatDateValue(date))
-                      field.handleBlur()
-                    }}
-                    aria-invalid={isInvalid}
-                  />
-                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                </Field>
+                <form.Subscribe selector={(state) => state.values.startDate}>
+                  {(startDate) => {
+                    const dayAfterStart = startDate
+                      ? addDays(parseDateValue(startDate) as Date, 1)
+                      : undefined
+                    const minEndDate =
+                      dayAfterStart && (!academicPeriodMinDate || dayAfterStart > academicPeriodMinDate)
+                        ? dayAfterStart
+                        : academicPeriodMinDate
+                    const nextStart = startDate ? nextOtherPeriodStart(startDate) : undefined
+                    const dayBeforeNextStart = nextStart
+                      ? addDays(parseDateValue(nextStart) as Date, -1)
+                      : undefined
+                    const maxEndDate =
+                      dayBeforeNextStart &&
+                      (!academicPeriodMaxDate || dayBeforeNextStart < academicPeriodMaxDate)
+                        ? dayBeforeNextStart
+                        : academicPeriodMaxDate
+                    return (
+                      <Field variant="outlined" data-invalid={isInvalid}>
+                        <FieldLabel htmlFor={field.name}>Fecha fin*</FieldLabel>
+                        <DatePicker
+                          mode="date"
+                          id={field.name}
+                          value={parseDateValue(field.state.value)}
+                          onChange={(date) => {
+                            field.handleChange(formatDateValue(date))
+                            field.handleBlur()
+                          }}
+                          disabledRanges={otherPeriodsDateRanges}
+                          minDate={minEndDate}
+                          maxDate={maxEndDate}
+                          aria-invalid={isInvalid}
+                        />
+                        {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                      </Field>
+                    )
+                  }}
+                </form.Subscribe>
               )
             }}
           </form.Field>
@@ -413,8 +499,6 @@ export function CreateEvaluationPeriodDialog({
               return (
                 <Field variant="outlined" data-invalid={isInvalid}>
                   <FieldLabel htmlFor={field.name}>Peso porcentual (%)*</FieldLabel>
-                  {/* El sufijo "%" hace explícita la unidad del valor, que de
-                      otro modo se lee como un número suelto. */}
                   <InputGroup className="h-11 rounded-md border border-input px-3 hover:border-ring has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20 has-[[data-slot][aria-invalid=true]]:border-red">
                     <InputGroupInput
                       id={field.name}
@@ -464,10 +548,9 @@ export function CreateEvaluationPeriodDialog({
                     onValueChange={(value) =>
                       value && field.handleChange(Number(value))
                     }
+                    disabled={!isEditing}
                   >
                     <SelectTrigger id={field.name} aria-invalid={isInvalid}>
-                      {/* El valor elegido se muestra como el mismo badge soft
-                          que usa la columna Estado de la tabla. Se resuelve por id. */}
                       <SelectValue>
                         {(value) => {
                           const option = statusOptions.find(
@@ -520,13 +603,16 @@ export function CreateEvaluationPeriodDialog({
                 (!academicPeriodEnd || values.startDate <= academicPeriodEnd) &&
                 (!academicPeriodStart || values.endDate >= academicPeriodStart) &&
                 (!academicPeriodEnd || values.endDate <= academicPeriodEnd)
+              const noOverlap = !rangeOverlapsOtherPeriod(values.startDate, values.endDate)
               return (
                 <Button
                   size="sm"
                   type="submit"
                   color="primary"
                   form={FORM_ID}
-                  disabled={isSaving || !allRequiredFilled || !datesWithinAcademicPeriod}
+                  disabled={
+                    isSaving || !allRequiredFilled || !datesWithinAcademicPeriod || !noOverlap
+                  }
                   aria-busy={isSaving}
                 >
                   {isSaving ? (

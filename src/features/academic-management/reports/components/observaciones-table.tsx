@@ -58,10 +58,15 @@ export function ObservacionesTable({
             <th rowSpan={2} className="px-4 py-3 text-left align-bottom font-semibold uppercase">
               Apellidos y nombres
             </th>
-            <th rowSpan={2} className="px-2 py-3 text-center align-bottom font-semibold uppercase">
+            <th
+              rowSpan={2}
+              className="border-l border-border px-2 py-3 text-center align-bottom font-semibold uppercase"
+            >
               Pe
             </th>
-            <th className="px-3 py-3 text-left font-semibold uppercase">Observación</th>
+            <th className="border-l border-border px-3 py-3 text-left font-semibold uppercase">
+              Observación
+            </th>
           </tr>
         </thead>
         <tbody className="divide-y divide-border">
@@ -77,21 +82,21 @@ export function ObservacionesTable({
               <td className="px-4 py-3 align-top font-medium whitespace-nowrap">
                 {estudiante.nombreCompleto}
               </td>
-              <td className="px-2 py-3 text-center align-top text-muted-foreground">
-                <div className="flex flex-col gap-2.5">
+              <td className="border-l border-border p-0 text-center align-top text-muted-foreground">
+                <div className="flex flex-col divide-y divide-border">
                   {periodosOrdenados.map((periodo) => (
-                    <span key={periodo.id} className="leading-6">
+                    <span key={periodo.id} className="px-2 py-3 leading-6">
                       {periodo.id}
                     </span>
                   ))}
                 </div>
               </td>
-              <td className="px-3 py-3 align-top">
-                <div className="flex flex-col gap-2.5">
+              <td className="border-l border-border p-0 align-top">
+                <div className="flex flex-col divide-y divide-border">
                   {periodosOrdenados.map((periodo) => {
                     const texto = estudiante.observacionesPorPeriodo?.[periodo.id]
                     return (
-                      <div key={periodo.id} className="flex max-w-md items-center gap-1.5">
+                      <div key={periodo.id} className="flex max-w-md items-center gap-1.5 px-3 py-3">
                         <Tooltip>
                           <TooltipTrigger
                             render={

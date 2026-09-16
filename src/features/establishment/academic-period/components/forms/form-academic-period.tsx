@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef } from "react"
+import { addDays } from "date-fns"
 import { useForm, useSelector } from "@tanstack/react-form"
 
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
@@ -32,6 +33,7 @@ import { useSedePreviousPeriodsQuery } from "@/features/establishment/academic-p
 import { useAcademicPeriodQuery } from "@/features/establishment/academic-period/api/query/use-academic-period"
 import {
   academicPeriodFormSchema,
+  timeToMinutes,
   type AcademicPeriodFormInput,
   type AcademicPeriodFormValues,
 } from "../../api/schema"
@@ -84,6 +86,7 @@ export function AcademicPeriodForm({
   const { data: sedes = [] } = useSedeOptionsQuery()
   const { data: jornadas = [] } = useJornadasQuery()
   const { data: statusOptions = [] } = useAcademicPeriodStatusesQuery()
+  const isCreating = currentPeriodId == null
 
   const form = useForm({
     defaultValues: initialValues,
@@ -97,17 +100,19 @@ export function AcademicPeriodForm({
   })
 
   const isDefaultValue = useSelector(form.store, (state) => state.isDefaultValue)
-  // Sin esto, un campo que nunca se tocó (p.ej. cargado de un periodo
-  // existente con un valor que ya no pasa el schema) bloqueaba "Guardar" en
-  // silencio: `isInvalid` solo miraba `isTouched`, así que ni el borde rojo
-  // ni el mensaje aparecían — el click no hacía nada y no había forma de
-  // saber por qué. Tras un intento de submit, se muestran los errores de
-  // todos los campos, se hayan tocado o no.
   const submissionAttempts = useSelector(form.store, (state) => state.submissionAttempts)
 
   useEffect(() => {
     onDirtyChange?.(!isDefaultValue)
   }, [isDefaultValue, onDirtyChange])
+
+  // Al crear, el periodo siempre arranca en "Inscripciones" — solo se puede
+  // cambiar de estado después, editando el periodo ya creado.
+  useEffect(() => {
+    if (!isCreating || form.state.values.statusId) return
+    const inscripciones = statusOptions.find((o) => o.key === "I")
+    if (inscripciones) form.setFieldValue("statusId", inscripciones.id)
+  }, [isCreating, statusOptions, form])
 
 
   const isFormValid = useSelector(
@@ -189,20 +194,30 @@ export function AcademicPeriodForm({
           {(field) => {
             const isInvalid = (field.state.meta.isTouched || submissionAttempts > 0) && !field.state.meta.isValid
             return (
-              <Field variant="outlined" data-invalid={isInvalid}>
-                <FieldLabel htmlFor={field.name}>Fin del período académico*</FieldLabel>
-                <DatePicker
-                  mode="date"
-                  id={field.name}
-                  value={parseDateValue(field.state.value)}
-                  onChange={(date) => {
-                    field.handleChange(formatDateValue(date))
-                    field.handleBlur()
-                  }}
-                  aria-invalid={isInvalid}
-                />
-                {isInvalid && <FieldError errors={field.state.meta.errors} />}
-              </Field>
+              <form.Subscribe selector={(state) => state.values.startDate}>
+                {(startDate) => {
+                  const minEndDate = startDate
+                    ? addDays(parseDateValue(startDate) as Date, 1)
+                    : undefined
+                  return (
+                    <Field variant="outlined" data-invalid={isInvalid}>
+                      <FieldLabel htmlFor={field.name}>Fin del período académico*</FieldLabel>
+                      <DatePicker
+                        mode="date"
+                        id={field.name}
+                        value={parseDateValue(field.state.value)}
+                        onChange={(date) => {
+                          field.handleChange(formatDateValue(date))
+                          field.handleBlur()
+                        }}
+                        minDate={minEndDate}
+                        aria-invalid={isInvalid}
+                      />
+                      {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                    </Field>
+                  )
+                }}
+              </form.Subscribe>
             )
           }}
         </form.Field>
@@ -220,9 +235,6 @@ export function AcademicPeriodForm({
                 {({ startDate, endDate }) => {
                   const start = parseDateValue(startDate)
                   const end = parseDateValue(endDate)
-                  const current = parseDateValue(field.state.value)
-                  const outOfRange =
-                    !!current && ((!!start && current < start) || (!!end && current > end))
                   return (
                     <Field variant="outlined" data-invalid={isInvalid}>
                       <FieldLabel htmlFor={field.name}>Fecha límite de matrícula*</FieldLabel>
@@ -234,16 +246,11 @@ export function AcademicPeriodForm({
                           field.handleChange(formatDateValue(date))
                           field.handleBlur()
                         }}
+                        minDate={start}
+                        maxDate={end}
                         aria-invalid={isInvalid}
                       />
-                      {isInvalid ? (
-                        <FieldError errors={field.state.meta.errors} />
-                      ) : outOfRange ? (
-                        <p role="alert" className="text-muted-foreground text-xs">
-                          La fecha límite de matrícula debe estar entre la fecha de inicio y la
-                          fecha de fin del período.
-                        </p>
-                      ) : null}
+                      {isInvalid && <FieldError errors={field.state.meta.errors} />}
                     </Field>
                   )
                 }}
@@ -338,6 +345,7 @@ export function AcademicPeriodForm({
                 <Select
                   value={field.state.value ? String(field.state.value) : ""}
                   onValueChange={(value) => value && field.handleChange(Number(value))}
+                  disabled={isCreating}
                   // `onBlur` en el trigger disparaba `handleBlur` apenas se
                   // abría el popup (el foco se mueve a la lista), marcando
                   // `isTouched` — y por lo tanto el borde/mensaje en rojo—
@@ -428,6 +436,7 @@ export function AcademicPeriodForm({
                           field.handleChange(value)
                           field.handleBlur()
                         }}
+                        onClose={() => document.getElementById("scheduleEndTime")?.focus()}
                         placeholder="Agregar"
                         aria-invalid={isInvalid}
                       />
@@ -517,9 +526,9 @@ export function AcademicPeriodForm({
                   (b) =>
                     !b.startTime ||
                     !b.endTime ||
-                    b.startTime >= b.endTime ||
-                    (scheduleStartTime && b.startTime < scheduleStartTime) ||
-                    (scheduleEndTime && b.endTime > scheduleEndTime),
+                    timeToMinutes(b.startTime) >= timeToMinutes(b.endTime) ||
+                    (scheduleStartTime && timeToMinutes(b.startTime) < timeToMinutes(scheduleStartTime)) ||
+                    (scheduleEndTime && timeToMinutes(b.endTime) > timeToMinutes(scheduleEndTime)),
                 )
                 const isInvalid = (field.state.meta.isTouched || submissionAttempts > 0) && !field.state.meta.isValid
                 return (
