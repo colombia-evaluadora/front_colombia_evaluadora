@@ -36,6 +36,7 @@ import { useConfiguracionActividadQuery } from "@/features/planeador/api/query/u
 import { useReferenteCurricularQuery } from "@/features/planeador/api/query/use-referente-curricular-query"
 import { useDocenteGruposQuery } from "@/features/planeador/api/query/use-docente-grupos-query"
 import { useDocenteGradoAsignaturaQuery } from "@/features/planeador/api/query/use-docente-grado-asignatura-query"
+import { useStudyPlanSubjectLabel } from "@/features/establishment/academic-period/api/query/use-study-plan-subject-label"
 import { useTipoActividadCatalogQuery } from "@/features/planeador/api/query/use-tipo-actividad-catalog"
 import { useInstrumentoEvaluacionCatalogQuery } from "@/features/planeador/api/query/use-instrumento-evaluacion-catalog"
 import {
@@ -888,13 +889,14 @@ function AsignaturaGradoSection({ form }: { form: FormActividad }) {
   }, [gradoId, grupoId, asignaturaId, grado, asignatura, docenteGrupos, docenteGradoAsignatura, form])
 
   const asignaturas = docenteGradoAsignatura.filter((par) => par.gradoId === gradoId)
+  const subjectLabel = useStudyPlanSubjectLabel(gradoId, false)
 
   return (
     <>
         <form.Field name="asignaturaId">
           {(field) => (
             <Field variant="outlined">
-              <FieldLabel htmlFor={field.name}>Asignatura / materia</FieldLabel>
+              <FieldLabel htmlFor={field.name}>{subjectLabel}</FieldLabel>
               <Select
                 // `__none__` es el sentinel de "sin elegir" — mismo patrón
                 // que "Unidad temática asociada". Sin un valor propio para

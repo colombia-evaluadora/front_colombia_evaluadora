@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils"
 import type { PlanillaCelda, PlanillaColumna, PlanillaFila } from "@/features/planeador/api/types/planilla"
 import { NOTA_MINIMA_APROBATORIA, notaEnEscalaCinco } from "@/features/planeador/api/types/calificacion"
 import { CeldaNotaPopover } from "@/features/planeador/components/planilla/celda-nota-popover"
+import { useStudyPlanSubjectLabel } from "@/features/establishment/academic-period/api/query/use-study-plan-subject-label"
 
 interface PlanillaGridProps {
   columnas: PlanillaColumna[]
@@ -16,6 +17,10 @@ interface PlanillaGridProps {
   verPor: "actividad" | "unidad"
   filas: PlanillaFila[]
   onAbrirBulk: (columna: PlanillaColumna) => void
+  /** Grado del filtro aplicado — solo para el rótulo dinámico del mensaje
+   *  vacío ("Dimensión" en vez de "Asignatura" si el referente del grado
+   *  lo personalizó). */
+  gradoId?: number
 }
 
 interface GrupoUnidad {
@@ -68,11 +73,13 @@ function formatNota(porcentaje: number | null): number | null {
  * calificación puntual (`CeldaNotaPopover`), que guarda directo contra el
  * backend.
  */
-export function PlanillaGrid({ columnas, verPor, filas, onAbrirBulk }: PlanillaGridProps) {
+export function PlanillaGrid({ columnas, verPor, filas, onAbrirBulk, gradoId }: PlanillaGridProps) {
+  const subjectLabel = useStudyPlanSubjectLabel(gradoId, false)
+
   if (columnas.length === 0) {
     return (
       <div className="text-muted-foreground px-6 py-12 text-center text-sm">
-        No hay actividades para el Grado/Grupo/Asignatura/Periodo elegidos.
+        {`No hay actividades para el Grado/Grupo/${subjectLabel}/Periodo elegidos.`}
       </div>
     )
   }
