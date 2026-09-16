@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
-import { EraserIcon, EyeIcon, PlusIcon } from "@/components/ui/icons"
+import { EyeIcon, PlusIcon } from "@/components/ui/icons"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { PERIODOS } from "@/features/academic-management/reports/api/mock-data"
@@ -13,17 +13,9 @@ interface ObservacionesTableProps {
   onToggleEstudiante: (id: number) => void
   onToggleTodos: () => void
   onAbrirObservacion: (estudiante: EstudianteInforme, periodo: PeriodoId) => void
-  onLimpiar: (estudiante: EstudianteInforme, periodo: PeriodoId) => void
 }
 
-/**
- * Preescolar no califica con notas — evalúa con una sola observación de
- * texto por período, así que en vez de las columnas PR/PU/AP/RE + materia
- * por materia de primaria/secundaria hay una única columna ancha
- * "Observación". Cada fila de período muestra el inicio del texto
- * recortado (ícono de ojo, para leerla/editarla) o "Sin observación" con un
- * "+" para crearla — ambos abren el mismo panel lateral.
- */
+
 export function ObservacionesTable({
   estudiantes,
   periodos,
@@ -31,7 +23,6 @@ export function ObservacionesTable({
   onToggleEstudiante,
   onToggleTodos,
   onAbrirObservacion,
-  onLimpiar,
 }: ObservacionesTableProps) {
   const periodosOrdenados = PERIODOS.filter((p) => periodos.includes(p.id))
   const todosSeleccionados = estudiantes.length > 0 && estudiantes.every((e) => seleccionados.has(e.id))
@@ -134,25 +125,6 @@ export function ObservacionesTable({
                             <span className="text-muted-foreground">Sin observación</span>
                           )}
                         </button>
-                        {texto && (
-                          <Tooltip>
-                            <TooltipTrigger
-                              render={
-                                <Button
-                                  variant="ghost"
-                                  color="neutral"
-                                  size="icon-xs"
-                                  className="shrink-0"
-                                  aria-label="Limpiar observación"
-                                  onClick={() => onLimpiar(estudiante, periodo.id)}
-                                />
-                              }
-                            >
-                              <EraserIcon />
-                            </TooltipTrigger>
-                            <TooltipContent>Limpiar observación</TooltipContent>
-                          </Tooltip>
-                        )}
                       </div>
                     )
                   })}

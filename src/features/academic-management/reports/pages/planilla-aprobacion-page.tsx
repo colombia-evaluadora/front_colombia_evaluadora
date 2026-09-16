@@ -17,19 +17,24 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { Field, FieldLabel } from "@/components/ui/field"
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from "@/components/ui/input-group"
 import {
   ArrowLeftIcon,
-  CalendarBlankIcon,
   CaretDownIcon,
   CaretUpIcon,
   CheckCircleFillIcon,
   DotsThreeIcon,
   FileDownloadOutlinedIcon,
-  FolderOpenIcon,
   FunnelIcon,
   InfoIcon,
+  MagnifyingGlassIcon,
   XIcon,
 } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
@@ -42,7 +47,6 @@ import {
   ESTUDIANTES_PLANILLA_APROBACION,
   type EstudiantePlanilla,
 } from "@/features/academic-management/reports/api/planilla-aprobacion-mock"
-import { SearchInput } from "@/features/academic-management/reports/components/search-input"
 
 function coincide(estudiante: EstudiantePlanilla, busqueda: string): boolean {
   const texto = busqueda.trim().toLowerCase()
@@ -59,8 +63,6 @@ function formatNota(valor: number | undefined): string {
 
 function DefinitivaCelda({ estudiante }: { estudiante: EstudiantePlanilla }) {
   const { definitivaProyectada, definitivaAnterior } = estudiante
-  // Sin `definitivaAnterior` la nota no cambió desde el último cierre: no
-  // hay nada que comparar, así que no lleva flecha.
   if (definitivaAnterior == null) {
     return <span className="font-semibold">{formatNota(definitivaProyectada)}</span>
   }
@@ -187,46 +189,7 @@ function PlanillaAprobacionContent() {
   return (
     <TableScreen>
       <TableScreenHeader>
-        <TableScreenTitle
-          action={
-            <div className="flex items-center gap-2">
-              <Button color="primary" size="sm" variant="fill" onClick={handleAprobar}>
-                <CheckCircleFillIcon data-icon="inline-start" />
-                Aprobar y actualizar consolidado
-              </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger
-                  render={<Button variant="outline" color="neutral" size="icon-sm" aria-label="Más opciones" />}
-                >
-                  <DotsThreeIcon />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={handleRechazar}>Rechazar cambios</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              <Button
-                variant="outline"
-                color="neutral"
-                size="sm"
-                render={<Link to={paths.app.gestionAcademicaInformes.getHref()} />}
-              >
-                <XIcon data-icon="inline-start" />
-                Cancelar
-              </Button>
-              <Button
-                variant="outline"
-                color="neutral"
-                size="icon-sm"
-                aria-label="Descargar planilla"
-                onClick={handleDescargar}
-              >
-                <FileDownloadOutlinedIcon />
-              </Button>
-            </div>
-          }
-        >
-          Planilla de calificación
-        </TableScreenTitle>
+        <TableScreenTitle>Planilla de calificación</TableScreenTitle>
         <NoticeOutlet className="mx-(--screen-spacing) my-4" />
       </TableScreenHeader>
 
@@ -248,43 +211,107 @@ function PlanillaAprobacionContent() {
           )}
         </div>
 
-        <Tabs defaultValue="actividades">
-          <TabsList variant="folder">
-            <TabsTrigger value="actividades">
-              <CalendarBlankIcon data-icon="inline-start" />
-              Actividades
-            </TabsTrigger>
-            <TabsTrigger value="unidad">
-              <FolderOpenIcon data-icon="inline-start" />
-              Unidad temática
-            </TabsTrigger>
-          </TabsList>
-          <TabsContent value="actividades" className="rounded-b-lg rounded-tr-lg border border-border bg-background p-4">
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-              <SearchInput
-                value={busqueda}
-                onValueChange={setBusqueda}
-                placeholder="Buscar por nombre, apellido o actividad"
-                label="Buscar por nombre, apellido o actividad"
-                className="sm:w-96"
-              />
-              <TableScreenActions>
-                <Tooltip>
-                  <TooltipTrigger render={<Button variant="outline" color="neutral" size="icon-sm" aria-label="Filtrar" />}>
-                    <FunnelIcon />
-                  </TooltipTrigger>
-                  <TooltipContent>Filtrar</TooltipContent>
-                </Tooltip>
-              </TableScreenActions>
-            </div>
-            <PlanillaTable estudiantes={estudiantesFiltrados} />
-          </TabsContent>
-          <TabsContent value="unidad" className="rounded-b-lg rounded-tr-lg border border-border bg-background p-4">
-            <p className="py-8 text-center text-sm text-muted-foreground">
-              Agrupación por unidad temática próximamente.
-            </p>
-          </TabsContent>
-        </Tabs>
+        <div className="rounded-lg border border-border bg-background p-4">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <Field orientation="vertical" variant="outlined" className="w-full max-w-xl sm:w-96">
+              <FieldLabel htmlFor="planilla-aprobacion-search">
+                Buscar por nombre, apellido o actividad
+              </FieldLabel>
+              <InputGroup className="h-10 w-full rounded-md border-input has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20">
+                <InputGroupAddon align="inline-start" className="ml-2">
+                  <MagnifyingGlassIcon className="size-4 text-muted-foreground" />
+                </InputGroupAddon>
+                <InputGroupInput
+                  id="planilla-aprobacion-search"
+                  type="search"
+                  autoComplete="off"
+                  placeholder="Buscar por"
+                  value={busqueda}
+                  onChange={(e) => setBusqueda(e.target.value)}
+                  className="min-w-32 [&::-webkit-search-cancel-button]:appearance-none"
+                />
+                <InputGroupAddon align="inline-end" className="mr-1 gap-1">
+                  {busqueda !== "" && (
+                    <InputGroupButton
+                      size="icon-xs"
+                      variant="ghost"
+                      color="muted"
+                      aria-label="Limpiar búsqueda"
+                      onClick={() => setBusqueda("")}
+                    >
+                      <XIcon />
+                    </InputGroupButton>
+                  )}
+                  <Tooltip>
+                    <TooltipTrigger
+                      render={
+                        <InputGroupButton size="icon-xs" variant="ghost" color="muted" aria-label="Filtrar" />
+                      }
+                    >
+                      <FunnelIcon />
+                    </TooltipTrigger>
+                    <TooltipContent>Filtrar</TooltipContent>
+                  </Tooltip>
+                </InputGroupAddon>
+              </InputGroup>
+            </Field>
+            <TableScreenActions>
+              {/* "Aprobar y actualizar consolidado" y su "…" van pegados como
+                  un solo control partido, igual que "Nueva actividad" en el
+                  Planeador (ver `planeador-page.tsx`). */}
+              <div className="flex gap-0">
+                <Button
+                  color="primary"
+                  size="sm"
+                  variant="fill"
+                  className="rounded-r-none border-r-0"
+                  onClick={handleAprobar}
+                >
+                  <CheckCircleFillIcon data-icon="inline-start" />
+                  Aprobar y actualizar consolidado
+                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    render={
+                      <Button
+                        color="primary"
+                        size="sm"
+                        variant="fill"
+                        aria-label="Más opciones"
+                        className="rounded-l-none"
+                      />
+                    }
+                  >
+                    <DotsThreeIcon />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={handleRechazar}>Rechazar cambios</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+
+              <Button
+                variant="outline"
+                color="neutral"
+                size="sm"
+                render={<Link to={paths.app.gestionAcademicaInformes.getHref()} />}
+              >
+                <XIcon data-icon="inline-start" />
+                Cancelar
+              </Button>
+              <Button
+                variant="outline"
+                color="neutral"
+                size="icon-sm"
+                aria-label="Descargar planilla"
+                onClick={handleDescargar}
+              >
+                <FileDownloadOutlinedIcon />
+              </Button>
+            </TableScreenActions>
+          </div>
+          <PlanillaTable estudiantes={estudiantesFiltrados} />
+        </div>
       </TableScreenBody>
     </TableScreen>
   )

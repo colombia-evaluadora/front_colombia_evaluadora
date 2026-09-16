@@ -3,7 +3,14 @@ import { InfoIcon } from "@/components/ui/icons"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 
-import { COLUMNAS_ASIGNATURAS, COLUMNAS_RESUMEN, PERIODOS } from "@/features/academic-management/reports/api/mock-data"
+import {
+  COLUMNAS_ASIGNATURAS,
+  COLUMNAS_RESUMEN,
+  NOTA_MAXIMA,
+  NOTA_MINIMA_APROBATORIA,
+  PERIODOS,
+  PESOS_PERIODO,
+} from "@/features/academic-management/reports/api/mock-data"
 import type {
   ColumnaAsignatura,
   EstudianteInforme,
@@ -40,21 +47,57 @@ function valorCelda(estudiante: EstudianteInforme, periodo: PeriodoId, columna: 
   return valor != null ? valor.toLocaleString("es-CO", { minimumFractionDigits: 1 }) : "—"
 }
 
-/**
- * Gris = nota proyectada por el sistema, aún no confirmada por el docente/
- * director de grupo; negro = ya se le dio "Guardar" y queda lista para el
- * boletín. El estado es por estudiante-periodo, no por columna.
- */
+
+function calcularNotaFaltante(
+  estudiante: EstudianteInforme,
+  columna: ColumnaAsignatura,
+): { valor: number; imposible: boolean } | null {
+  let sumaConocida = 0
+  let pesoFaltante = 0
+  for (const [periodoStr, peso] of Object.entries(PESOS_PERIODO)) {
+    const periodo = Number(periodoStr) as PeriodoId
+    const valor = estudiante.notasPorPeriodo[periodo]?.asignaturas[columna.key]
+    if (valor != null) sumaConocida += valor * peso
+    else pesoFaltante += peso ?? 0
+  }
+  if (pesoFaltante === 0) return null
+  const requerido = (NOTA_MINIMA_APROBATORIA - sumaConocida) / pesoFaltante
+  return { valor: requerido, imposible: requerido > NOTA_MAXIMA }
+}
+
+
 function CeldaValor({
   estudiante,
   periodo,
   columna,
+  esAsignatura,
 }: {
   estudiante: EstudianteInforme
   periodo: PeriodoId
   columna: ColumnaAsignatura
+  esAsignatura: boolean
 }) {
-  const confirmado = estudiante.notasPorPeriodo[periodo]?.confirmado ?? true
+  const notasPeriodo = estudiante.notasPorPeriodo[periodo]
+
+  if (!notasPeriodo && esAsignatura && periodo !== 4) {
+    const faltante = calcularNotaFaltante(estudiante, columna)
+    if (faltante) {
+      return (
+        <Tooltip>
+          <TooltipTrigger className="text-amber-600 italic outline-none dark:text-amber-500">
+            {faltante.imposible ? "*" : faltante.valor.toLocaleString("es-CO", { minimumFractionDigits: 1 })}
+          </TooltipTrigger>
+          <TooltipContent>
+            {faltante.imposible
+              ? "Ni sacando la nota máxima alcanzaría a aprobar esta asignatura este año."
+              : `Nota mínima que debe sacar en este período para no perder ${columna.label}.`}
+          </TooltipContent>
+        </Tooltip>
+      )
+    }
+  }
+
+  const confirmado = notasPeriodo?.confirmado ?? true
   return (
     <span className={cn(!confirmado && "text-muted-foreground italic")} title={!confirmado ? "Nota proyectada, sin guardar" : undefined}>
       {valorCelda(estudiante, periodo, columna)}
@@ -141,7 +184,13 @@ export function GradesTable({
                 <td key={columna.key} className="px-3 py-3 text-center align-top">
                   <div className="flex flex-col gap-1.5">
                     {periodosOrdenados.map((periodo) => (
-                      <CeldaValor key={periodo.id} estudiante={estudiante} periodo={periodo.id} columna={columna} />
+                      <CeldaValor
+                        key={periodo.id}
+                        estudiante={estudiante}
+                        periodo={periodo.id}
+                        columna={columna}
+                        esAsignatura={false}
+                      />
                     ))}
                   </div>
                 </td>
@@ -150,7 +199,13 @@ export function GradesTable({
                 <td key={columna.key} className="px-3 py-3 text-center align-top">
                   <div className="flex flex-col gap-1.5">
                     {periodosOrdenados.map((periodo) => (
-                      <CeldaValor key={periodo.id} estudiante={estudiante} periodo={periodo.id} columna={columna} />
+                      <CeldaValor
+                        key={periodo.id}
+                        estudiante={estudiante}
+                        periodo={periodo.id}
+                        columna={columna}
+                        esAsignatura
+                      />
                     ))}
                   </div>
                 </td>

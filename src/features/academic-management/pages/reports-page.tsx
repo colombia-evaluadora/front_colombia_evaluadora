@@ -4,6 +4,15 @@ import { useNavigate } from "@tanstack/react-router"
 import { TableScreen, TableScreenBody, TableScreenHeader, TableScreenTitle } from "@/components/layout/table-screen"
 import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
 import { Button } from "@/components/ui/button"
+import {
+  Popover,
+  PopoverClose,
+  PopoverContent,
+  PopoverDescription,
+  PopoverHeader,
+  PopoverTitle,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import {
@@ -12,11 +21,19 @@ import {
   FileDownloadOutlinedIcon,
   FileTextIcon,
   PlusIcon,
+  XIcon,
 } from "@/components/ui/icons"
 import { paths } from "@/config/paths"
-import { CAMBIOS_PENDIENTES, GRUPOS_INFORME, PLANILLAS_PENDIENTES } from "@/features/academic-management/reports/api/mock-data"
+import {
+  CAMBIOS_PENDIENTES,
+  GRUPOS_ABIERTOS_POR_DEFECTO,
+  GRUPOS_INFORME,
+  HISTORIAL_CAMBIOS,
+  PLANILLAS_PENDIENTES,
+} from "@/features/academic-management/reports/api/mock-data"
 import type { EstudianteInforme, PeriodoId } from "@/features/academic-management/reports/api/types"
 import { GradesTable } from "@/features/academic-management/reports/components/grades-table"
+import { HistorialCambiosSheet } from "@/features/academic-management/reports/components/historial-cambios-sheet"
 import { ObservacionesTable } from "@/features/academic-management/reports/components/observaciones-table"
 import { ObservacionSheet } from "@/features/academic-management/reports/components/observacion-sheet"
 import { PendingChangesBanners } from "@/features/academic-management/reports/components/pending-changes-banners"
@@ -34,8 +51,6 @@ function coincide(estudiante: EstudianteInforme, busqueda: string): boolean {
   )
 }
 
-/** `true` si el estudiante tiene, en alguno de los `periodos` marcados arriba,
- *  una nota aún sin confirmar (gris) — bloquea guardar/generar boletín. */
 function tieneNotasSinConfirmar(estudiante: EstudianteInforme, periodos: PeriodoId[]): boolean {
   return periodos.some((p) => estudiante.notasPorPeriodo[p]?.confirmado === false)
 }
@@ -49,7 +64,6 @@ interface GrupoTabContentProps {
   onToggleTodos: (idsVisibles: number[]) => void
   onGuardar: () => void
   onGuardarObservacion: (estudianteId: number, periodo: PeriodoId, texto: string) => void
-  onLimpiarObservacion: (estudianteId: number, periodo: PeriodoId) => void
 }
 
 function GrupoTabContent({
@@ -61,7 +75,6 @@ function GrupoTabContent({
   onToggleTodos,
   onGuardar,
   onGuardarObservacion,
-  onLimpiarObservacion,
 }: GrupoTabContentProps) {
   const [busqueda, setBusqueda] = React.useState("")
   const [observacionAbierta, setObservacionAbierta] = React.useState<{
@@ -104,7 +117,6 @@ function GrupoTabContent({
             onToggleEstudiante={onToggleEstudiante}
             onToggleTodos={() => onToggleTodos(estudiantesFiltrados.map((e) => e.id))}
             onAbrirObservacion={(estudiante, periodo) => setObservacionAbierta({ estudiante, periodo })}
-            onLimpiar={(estudiante, periodo) => onLimpiarObservacion(estudiante.id, periodo)}
           />
           <ObservacionSheet
             estudiante={observacionAbierta?.estudiante ?? null}
@@ -131,11 +143,11 @@ function ReportsPageContent() {
   const { notify } = useNotify()
   const navigate = useNavigate()
   const [periodos, setPeriodos] = React.useState<PeriodoId[]>([1, 2])
-  const [activeTab, setActiveTab] = React.useState(String(GRUPOS_INFORME[0]?.id))
-
-  // Copia mutable por grupo: acá vive el gris→negro al guardar. No se toca
-  // `GRUPOS_INFORME` directo porque es la data "de catálogo" que alimenta
-  // a todas las pestañas, incluidas las que el usuario aún no abrió.
+  const [activeTab, setActiveTab] = React.useState(String(GRUPOS_ABIERTOS_POR_DEFECTO[0]))
+  const [historialAbierto, setHistorialAbierto] = React.useState(false)
+  const [gruposAbiertosIds, setGruposAbiertosIds] = React.useState<number[]>(GRUPOS_ABIERTOS_POR_DEFECTO)
+  const gruposAbiertos = GRUPOS_INFORME.filter((g) => gruposAbiertosIds.includes(g.id))
+  const gruposDisponibles = GRUPOS_INFORME.filter((g) => !gruposAbiertosIds.includes(g.id))
   const [estudiantesPorGrupo, setEstudiantesPorGrupo] = React.useState(() =>
     Object.fromEntries(GRUPOS_INFORME.map((g) => [g.id, g.estudiantes])),
   )
@@ -195,19 +207,6 @@ function ReportsPageContent() {
     notify("Observación guardada.")
   }
 
-  function handleLimpiarObservacion(grupoId: number, estudianteId: number, periodo: PeriodoId) {
-    setEstudiantesPorGrupo((prev) => ({
-      ...prev,
-      [grupoId]: prev[grupoId].map((estudiante) => {
-        if (estudiante.id !== estudianteId) return estudiante
-        const observacionesPorPeriodo = { ...estudiante.observacionesPorPeriodo }
-        delete observacionesPorPeriodo[periodo]
-        return { ...estudiante, observacionesPorPeriodo }
-      }),
-    }))
-    notify("Observación eliminada.")
-  }
-
   function handleGenerarBoletines() {
     if (seleccionActiva.size === 0) {
       notify("Selecciona al menos un estudiante para generar el boletín.", { variant: "error" })
@@ -226,8 +225,30 @@ function ReportsPageContent() {
     notify("Boletines generados correctamente.")
   }
 
+  const cambiosHistorial = React.useMemo(
+    () =>
+      HISTORIAL_CAMBIOS.filter(
+        (c) => periodos.includes(c.periodo) && gruposAbiertos.some((g) => g.nombre === c.grupoNombre),
+      ),
+    [periodos, gruposAbiertos],
+  )
+
+  function handleAgregarGrupo(grupoId: number) {
+    setGruposAbiertosIds((prev) => [...prev, grupoId])
+    setActiveTab(String(grupoId))
+  }
+
+  function handleCerrarGrupo(grupoId: number) {
+    if (gruposAbiertosIds.length <= 1) return
+    const restantes = gruposAbiertosIds.filter((id) => id !== grupoId)
+    setGruposAbiertosIds(restantes)
+    if (String(grupoId) === activeTab) {
+      setActiveTab(String(restantes[0]))
+    }
+  }
+
   function handleHistorial() {
-    notify("Aún no hay historial de generaciones para este período.", { variant: "info" })
+    setHistorialAbierto(true)
   }
 
   function handleDescargar() {
@@ -304,30 +325,82 @@ function ReportsPageContent() {
           onIrAPlanilla={handleIrAPlanilla}
         />
 
+        <HistorialCambiosSheet
+          open={historialAbierto}
+          onOpenChange={setHistorialAbierto}
+          cambios={cambiosHistorial}
+        />
+
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(String(value))}>
           <TabsList variant="folder">
-            {GRUPOS_INFORME.map((grupo) => (
+            {gruposAbiertos.map((grupo) => (
               <TabsTrigger key={grupo.id} value={String(grupo.id)}>
-                {grupo.nombre}
+                <span className="truncate">{grupo.nombre}</span>
+                {gruposAbiertos.length > 1 && (
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Cerrar pestaña ${grupo.nombre}`}
+                    className="inline-flex size-4 shrink-0 items-center justify-center rounded-sm text-muted-foreground hover:bg-muted hover:text-foreground"
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleCerrarGrupo(grupo.id)
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key !== "Enter" && e.key !== " ") return
+                      e.preventDefault()
+                      e.stopPropagation()
+                      handleCerrarGrupo(grupo.id)
+                    }}
+                  >
+                    <XIcon className="size-3" />
+                  </span>
+                )}
               </TabsTrigger>
             ))}
-            <Tooltip>
-              <TooltipTrigger
+            <Popover>
+              <PopoverTrigger
                 render={
                   <button
                     type="button"
                     className="flex w-10 shrink-0 items-center justify-center border-l border-border text-muted-foreground hover:bg-muted/40 hover:text-foreground"
                     aria-label="Agregar grado/grupo"
-                    onClick={() => notify("Selección de grados/grupos próximamente.", { variant: "info" })}
                   />
                 }
               >
                 <PlusIcon />
-              </TooltipTrigger>
-              <TooltipContent>Agregar grado/grupo</TooltipContent>
-            </Tooltip>
+              </PopoverTrigger>
+              <PopoverContent align="start" className="w-64">
+                <PopoverClose aria-label="Cerrar">
+                  <XIcon className="size-4" />
+                </PopoverClose>
+                <PopoverHeader className="pr-6">
+                  <PopoverTitle className="text-sm normal-case">Agregar grado/grupo</PopoverTitle>
+                </PopoverHeader>
+                {gruposDisponibles.length === 0 ? (
+                  <PopoverDescription className="text-xs">
+                    Ya agregaste todos los grados/grupos disponibles.
+                  </PopoverDescription>
+                ) : (
+                  <div className="flex flex-col gap-1">
+                    {gruposDisponibles.map((grupo) => (
+                      <button
+                        key={grupo.id}
+                        type="button"
+                        onClick={() => handleAgregarGrupo(grupo.id)}
+                        className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-sm hover:bg-muted/40"
+                      >
+                        {grupo.nombre}
+                        <PlusIcon className="size-3.5 text-muted-foreground" />
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </PopoverContent>
+            </Popover>
           </TabsList>
-          {GRUPOS_INFORME.map((grupo) => (
+          {gruposAbiertos.map((grupo) => (
             <TabsContent key={grupo.id} value={String(grupo.id)} className={PANEL_CLASS}>
               <GrupoTabContent
                 estudiantes={estudiantesPorGrupo[grupo.id]}
@@ -339,9 +412,6 @@ function ReportsPageContent() {
                 onGuardar={() => handleGuardar(grupo.id)}
                 onGuardarObservacion={(estudianteId, periodo, texto) =>
                   handleGuardarObservacion(grupo.id, estudianteId, periodo, texto)
-                }
-                onLimpiarObservacion={(estudianteId, periodo) =>
-                  handleLimpiarObservacion(grupo.id, estudianteId, periodo)
                 }
               />
             </TabsContent>

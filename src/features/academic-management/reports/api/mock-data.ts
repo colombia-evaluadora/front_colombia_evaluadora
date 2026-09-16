@@ -3,7 +3,9 @@ import type {
   ColumnaAsignatura,
   EstudianteInforme,
   GrupoInforme,
+  HistorialCambio,
   NotasPeriodo,
+  PeriodoId,
   PeriodoOption,
 } from "@/features/academic-management/reports/api/types"
 
@@ -31,6 +33,16 @@ export const CAMBIOS_PENDIENTES: CambiosPendientesInfo = {
     { id: 3, nombreDocente: "José Pérez", asignatura: "Educación Física", gradoGrupo: "601 M" },
   ],
 }
+
+export const NOTA_MINIMA_APROBATORIA = 3.0
+export const NOTA_MAXIMA = 5.0
+
+// Peso de cada periodo dentro del año (para calcular "nota faltante"). No
+// hay todavía un endpoint real de criterio de promoción para Informes —
+// placeholder alineado con el ejemplo 30/30/40 que dio negocio, hasta que
+// se traiga la configuración real por establecimiento/nivel. El 4 ("Final")
+// queda fuera: es la fila consolidada, no un periodo calificable.
+export const PESOS_PERIODO: Partial<Record<PeriodoId, number>> = { 1: 0.3, 2: 0.3, 3: 0.4 }
 
 export const COLUMNAS_RESUMEN: ColumnaAsignatura[] = [
   { key: "promedio", label: "PR", descripcion: "Promedio general del período" },
@@ -232,8 +244,90 @@ const ESTUDIANTES_PREESCOLAR: EstudianteInforme[] = [
   },
 ]
 
+// Cambios recientes en planillas de actividades que ya impactaron el
+// consolidado — el panel de "Historial de cambios" los agrupa por día.
+export const HISTORIAL_CAMBIOS: HistorialCambio[] = [
+  {
+    id: 1,
+    grupoNombre: "601 M",
+    asignatura: "Artística",
+    tendencia: "subio",
+    periodo: 2,
+    fecha: "2026-09-15",
+    hora: "08:14 a.m.",
+    cantidadCambios: 3,
+    usuario: "Cristian Sánchez",
+  },
+  {
+    id: 2,
+    grupoNombre: "601 M",
+    asignatura: "Matemáticas",
+    tendencia: "subio",
+    periodo: 2,
+    fecha: "2026-09-15",
+    hora: "08:00 a.m.",
+    cantidadCambios: 2,
+    usuario: "José Pérez",
+  },
+  {
+    id: 3,
+    grupoNombre: "602 M",
+    asignatura: "Lenguaje",
+    tendencia: "subio",
+    periodo: 1,
+    fecha: "2026-09-14",
+    hora: "04:15 p.m.",
+    cantidadCambios: 1,
+    usuario: "Natalia Carpintero",
+  },
+  {
+    id: 4,
+    grupoNombre: "601 M",
+    asignatura: "Inglés",
+    tendencia: "bajo",
+    periodo: 2,
+    fecha: "2026-08-07",
+    hora: "11:08 a.m.",
+    cantidadCambios: 4,
+    usuario: "Jorge Maldonado",
+  },
+]
+
+// Grupo que el docente todavía no tiene abierto como pestaña — demuestra
+// "Agregar grado/grupo" junto a las pestañas (ver `GRUPOS_DISPONIBLES_IDS`
+// más abajo, en `reports-page.tsx`).
+const ESTUDIANTES_603: EstudianteInforme[] = [
+  estudiante(
+    20,
+    "1023456720",
+    "Emmanuel David Rojas Pardo",
+    notas(3.2, 3, 6, 0, { mat: 3.0, len: 3.0, cn: 3.0, ing: 2.5, art: 3.0, ef: 3.0, inf: 3.0, rel: 3.0 }, true),
+    notas(3.4, 3, 6, 0, { mat: 3.0, len: 3.0, cn: 3.0, ing: 3.0, art: 3.0, ef: 3.0, inf: 3.0, rel: 3.0 }, false),
+  ),
+  estudiante(
+    21,
+    "1023456721",
+    "Gabriela Sofía Muñoz Cárdenas",
+    notas(4.1, 1, 8, 0, { mat: 3.0, len: 3.0, cn: 3.0, ing: 3.0, art: 3.0, ef: 3.0, inf: 3.0, rel: 3.0 }, true),
+    notas(4.2, 1, 8, 0, { mat: 3.0, len: 3.0, cn: 3.0, ing: 3.0, art: 3.0, ef: 3.0, inf: 3.0, rel: 3.0 }, false),
+  ),
+  estudiante(
+    22,
+    "1023456722",
+    "Tomás Alejandro Vega Cortés",
+    notas(2.6, 9, 5, 1, { mat: 2.5, len: 2.5, cn: 2.5, ing: 2.5, art: 3.0, ef: 2.5, inf: 3.0, rel: 3.0 }, true),
+    notas(2.8, 8, 5, 1, { mat: 2.5, len: 3.0, cn: 2.5, ing: 2.5, art: 3.0, ef: 2.5, inf: 3.0, rel: 3.0 }, false),
+  ),
+]
+
 export const GRUPOS_INFORME: GrupoInforme[] = [
   { id: 601, nombre: "601 M", estudiantes: ESTUDIANTES_601 },
   { id: 602, nombre: "602 M", estudiantes: ESTUDIANTES_602 },
   { id: 1, nombre: "00-1 M", preescolar: true, estudiantes: ESTUDIANTES_PREESCOLAR },
+  { id: 603, nombre: "603 M", estudiantes: ESTUDIANTES_603 },
 ]
+
+// Pestañas que el docente/coordinador ve abiertas por defecto al entrar —
+// el resto de `GRUPOS_INFORME` queda disponible detrás de "Agregar
+// grado/grupo" hasta que el usuario lo abra.
+export const GRUPOS_ABIERTOS_POR_DEFECTO = [601, 602, 1]
