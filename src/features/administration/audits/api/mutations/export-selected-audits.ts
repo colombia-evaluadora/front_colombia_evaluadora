@@ -1,9 +1,7 @@
 import { useMutation } from "@tanstack/react-query"
 
-import { env } from "@/config/env"
-import { api } from "@/lib/api-client"
+import { downloadReport } from "@/lib/report-client"
 import type { MutationConfig } from "@/lib/react-query"
-import { AUDIT_EXPORT_UNAVAILABLE } from "@/features/administration/audits/api/real-mapping"
 import type { ExportFormat, ExportResult } from "@/features/administration/audits/api/types/audit"
 
 interface ExportSelectedAuditsInput {
@@ -11,12 +9,15 @@ interface ExportSelectedAuditsInput {
   format: ExportFormat
 }
 
-function exportSelectedAudits(input: ExportSelectedAuditsInput): Promise<ExportResult> {
-  // Sin endpoint de reportes de auditoría en el backend real — ver
-  // AUDIT_EXPORT_UNAVAILABLE.
-  if (!env.ENABLE_API_MOCKING) return Promise.resolve(AUDIT_EXPORT_UNAVAILABLE)
-
-  return api.post("/audits/export", input)
+function exportSelectedAudits({ ids, format }: ExportSelectedAuditsInput): Promise<ExportResult> {
+  // Mismo reporte que "exportar todo" (`export-audits.ts`), pero con `IDS`
+  // (CSV de `family_id`) en vez de los filtros de la pantalla — `IDS` tiene
+  // prioridad sobre el resto en el reporte real (colección Postman
+  // `auditoria-export-pdf-excel`, punto 2).
+  return downloadReport("auditoria-sesiones", {
+    format,
+    filters: { IDS: ids.join(",") },
+  })
 }
 
 interface UseExportSelectedAuditsOptions {
