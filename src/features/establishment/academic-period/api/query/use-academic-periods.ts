@@ -96,6 +96,9 @@ interface AcademicPeriodListRow {
   default_blocks_count: number
   schedule_start_time: string
   schedule_end_time: string
+  descansos: { startTime: string; endTime: string }[]
+  previous_period_id: number | null
+  previous_period_name: string | null
   total_count: number
 }
 
@@ -113,8 +116,8 @@ function toAcademicPeriod(row: AcademicPeriodListRow): AcademicPeriod {
     id: row.id,
     sedeId: String(row.sede_id),
     sedeName: row.sede_name,
-    // El listado no trae el periodo anterior; se resuelve en el detalle.
-    previousPeriodId: null,
+    previousPeriodId: row.previous_period_id ?? null,
+    previousPeriodName: row.previous_period_name ?? null,
     // En el modelo del front `schoolYearId` es el AÑO (no el PK del año lectivo);
     // se toma de school_year_name ("2024").
     schoolYearId: Number(row.school_year_name),
@@ -133,6 +136,13 @@ function toAcademicPeriod(row: AcademicPeriodListRow): AcademicPeriod {
     // El backend ya manda `reserva` en la fila cruda del listado; lo mapeamos
     // acá para no tener que ir al detalle cuando solo se necesita el flag.
     reservationEnabled: row.reserva === "S",
+    defaultBlocksCount: row.default_blocks_count,
+    scheduleStartTime: row.schedule_start_time?.slice(0, 5) ?? null,
+    scheduleEndTime: row.schedule_end_time?.slice(0, 5) ?? null,
+    breaks: (row.descansos ?? []).map((b) => ({
+      startTime: b.startTime.slice(0, 5),
+      endTime: b.endTime.slice(0, 5),
+    })),
   }
 }
 
