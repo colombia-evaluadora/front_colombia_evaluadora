@@ -56,11 +56,15 @@ export function ErrorPage({ error, reset }: ErrorComponentProps) {
     )
   }
 
+  // Mensaje genérico siempre, sin `error.message`: al usuario final no le
+  // dice nada útil un texto técnico ("Cannot read properties of undefined
+  // (reading 'foo')") y sí puede filtrar detalles internos. El detalle real
+  // ya viaja a la consola/observabilidad para quien necesite diagnosticarlo.
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-3 p-10 text-center">
       <h1 className="text-2xl font-semibold">Algo salió mal</h1>
       <p className="text-muted-foreground">
-        {error?.message || "Ocurrió un error inesperado."}
+        Ocurrió un error inesperado. Intenta de nuevo.
       </p>
       <Button size="sm" onClick={reset} className="mt-2">
         Reintentar
