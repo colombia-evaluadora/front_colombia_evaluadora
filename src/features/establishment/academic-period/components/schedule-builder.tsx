@@ -109,6 +109,7 @@ interface ScheduleBuilderProps {
 
 export interface ScheduleBuilderHandle {
   save: (gradeId: number) => Promise<void>
+  isDirty: () => boolean
 }
 
 export const ScheduleBuilder = forwardRef<
@@ -260,45 +261,65 @@ export const ScheduleBuilder = forwardRef<
     }
   }
 
-  useImperativeHandle(ref, () => ({ save: saveSchedule }), [saveSchedule])
+  useImperativeHandle(
+    ref,
+    () => ({ save: saveSchedule, isDirty: () => isDirty }),
+    [saveSchedule, isDirty],
+  )
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
       <NoticeOutlet />
-      <Field
-        orientation="vertical"
-        variant="outlined"
-        className="w-full gap-2 sm:w-72"
-      >
-        <FieldLabel htmlFor="schedule-grade-group">Grado/Grupo</FieldLabel>
-        <ComboboxField
-          value={gradeGroup}
-          onValueChange={(value) => value && setGradeGroup(value)}
-          disabled={gradeGroups.length === 0}
-          items={Object.fromEntries(
-            gradeGroups.map((option) => [String(option.id), option.label])
-          )}
+      <div className="flex flex-wrap items-end justify-between gap-2">
+        <Field
+          orientation="vertical"
+          variant="outlined"
+          className="w-full gap-2 sm:w-72"
         >
-          <ComboboxFieldTrigger id="schedule-grade-group" className="w-full">
-            <ComboboxFieldValue
-              placeholder={
-                gradeGroups.length === 0
-                  ? "Sin grupos: agregá uno en la pestaña Grupo"
-                  : "Seleccionar"
-              }
-            />
-          </ComboboxFieldTrigger>
-          <ComboboxFieldContent>
-            <ComboboxGroup>
-              {gradeGroups.map((option) => (
-                <ComboboxFieldItem key={option.id} value={String(option.id)}>
-                  {option.label}
-                </ComboboxFieldItem>
-              ))}
-            </ComboboxGroup>
-          </ComboboxFieldContent>
-        </ComboboxField>
-      </Field>
+          <FieldLabel htmlFor="schedule-grade-group">Grado/Grupo</FieldLabel>
+          <ComboboxField
+            value={gradeGroup}
+            onValueChange={(value) => value && setGradeGroup(value)}
+            disabled={gradeGroups.length === 0}
+            items={Object.fromEntries(
+              gradeGroups.map((option) => [String(option.id), option.label])
+            )}
+          >
+            <ComboboxFieldTrigger id="schedule-grade-group" className="w-full">
+              <ComboboxFieldValue
+                placeholder={
+                  gradeGroups.length === 0
+                    ? "Sin grupos: agregá uno en la pestaña Grupo"
+                    : "Seleccionar"
+                }
+              />
+            </ComboboxFieldTrigger>
+            <ComboboxFieldContent>
+              <ComboboxGroup>
+                {gradeGroups.map((option) => (
+                  <ComboboxFieldItem key={option.id} value={String(option.id)}>
+                    {option.label}
+                  </ComboboxFieldItem>
+                ))}
+              </ComboboxGroup>
+            </ComboboxFieldContent>
+          </ComboboxField>
+        </Field>
+
+        {isDirty && (
+          <Button
+            size="sm"
+            type="button"
+            color="primary"
+            onClick={handleSaveClick}
+            disabled={saving}
+            aria-busy={saving}
+          >
+            {saving && <SpinnerIcon data-icon="inline-start" className="animate-spin" />}
+            Guardar
+          </Button>
+        )}
+      </div>
 
       <div className="flex flex-wrap gap-2">
         {!gradeGroup ? (
@@ -486,22 +507,6 @@ export const ScheduleBuilder = forwardRef<
           </tbody>
         </table>
       </div>
-      )}
-
-      {isDirty && (
-        <div className="flex justify-end">
-          <Button
-            size="sm"
-            type="button"
-            color="primary"
-            onClick={handleSaveClick}
-            disabled={saving}
-            aria-busy={saving}
-          >
-            {saving && <SpinnerIcon data-icon="inline-start" className="animate-spin" />}
-            Guardar
-          </Button>
-        </div>
       )}
     </div>
   )

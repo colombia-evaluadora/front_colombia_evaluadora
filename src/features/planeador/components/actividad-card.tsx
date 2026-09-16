@@ -9,6 +9,7 @@ import {
   PencilIcon,
   SpinnerIcon,
 } from "@/components/ui/icons"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 
 import { statusAccentFor, statusIconFor, statusRingFor } from "@/features/planeador/api/ui-mappings"
@@ -190,48 +191,61 @@ export function ActividadCard({
         )}
       >
         {acciones.map(({ label, Icon, onClick }) => (
-          <Button
-            key={label}
-            variant="ghost"
-            color="neutral"
-            size="icon-sm"
-            disabled={!onClick}
-            aria-label={label}
-            className="size-6"
-            // `stopPropagation` para que el click del action no se propague
-            // al `<button>` invisible que cubre toda la card y termine
-            // disparando `onSelect` (selección de la actividad).
-            onClick={(e) => {
-              e.stopPropagation()
-              onClick?.()
-            }}
-          >
-            <Icon />
-          </Button>
+          <Tooltip key={label}>
+            <TooltipTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  color="neutral"
+                  size="icon-sm"
+                  disabled={!onClick}
+                  aria-label={label}
+                  className="size-6"
+                  // `stopPropagation` para que el click del action no se propague
+                  // al `<button>` invisible que cubre toda la card y termine
+                  // disparando `onSelect` (selección de la actividad).
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onClick?.()
+                  }}
+                />
+              }
+            >
+              <Icon />
+            </TooltipTrigger>
+            <TooltipContent>{label}</TooltipContent>
+          </Tooltip>
         ))}
 
         {/* Descargar: un solo click, sin diálogo de formato — ver la nota
             de "Descargar" en el docstring de arriba. */}
-        <Button
-          type="button"
-          variant="ghost"
-          color="neutral"
-          size="icon-sm"
-          className="size-6"
-          aria-label={`Exportar ${actividad.nombre}`}
-          disabled={exportarJson.isPending}
-          aria-busy={exportarJson.isPending}
-          onClick={(e) => {
-            e.stopPropagation()
-            exportarJson.mutate({ ids: [actividad.id] })
-          }}
-        >
-          {exportarJson.isPending ? (
-            <SpinnerIcon className="animate-spin" />
-          ) : (
-            <FileDownloadOutlinedIcon />
-          )}
-        </Button>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                type="button"
+                variant="ghost"
+                color="neutral"
+                size="icon-sm"
+                className="size-6"
+                aria-label={`Exportar ${actividad.nombre}`}
+                disabled={exportarJson.isPending}
+                aria-busy={exportarJson.isPending}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  exportarJson.mutate({ ids: [actividad.id] })
+                }}
+              />
+            }
+          >
+            {exportarJson.isPending ? (
+              <SpinnerIcon className="animate-spin" />
+            ) : (
+              <FileDownloadOutlinedIcon />
+            )}
+          </TooltipTrigger>
+          <TooltipContent>{`Exportar ${actividad.nombre}`}</TooltipContent>
+        </Tooltip>
 
         {/* Eliminar: el `AlertDialog` del delete vive acá adentro. El
             trigger hereda el `variant/color/size` del resto de la barra

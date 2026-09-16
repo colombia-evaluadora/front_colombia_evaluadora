@@ -28,13 +28,19 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useUnidadDetalleQuery } from "@/features/planeador/api/query/use-unidades-query"
+import { useUnidadReferenteQuery } from "@/features/planeador/api/query/use-unidad-referente-query"
 import { useUnidadesTabsQuery } from "@/features/planeador/api/query/use-unidades-tabs-query"
 import { UNIDAD_TAB_FALLBACK } from "@/features/planeador/components/planeador-tabs"
+import { articuloDefinido } from "@/features/planeador/lib/unidad-instrumento-label"
+import { useNotify } from "@/components/notice/notice-context"
+import { getErrorMessage } from "@/lib/api-client"
 import { useConfiguracionActividadQuery } from "@/features/planeador/api/query/use-configuracion-actividad-query"
 import { useReferenteCurricularQuery } from "@/features/planeador/api/query/use-referente-curricular-query"
 import { useDocenteGruposQuery } from "@/features/planeador/api/query/use-docente-grupos-query"
 import { useDocenteGradoAsignaturaQuery } from "@/features/planeador/api/query/use-docente-grado-asignatura-query"
+import { useStudyPlanSubjectLabel } from "@/features/establishment/academic-period/api/query/use-study-plan-subject-label"
 import { useTipoActividadCatalogQuery } from "@/features/planeador/api/query/use-tipo-actividad-catalog"
 import { useInstrumentoEvaluacionCatalogQuery } from "@/features/planeador/api/query/use-instrumento-evaluacion-catalog"
 import {
@@ -292,7 +298,7 @@ export function EditarActividadForm({
     return nueva
   }
 
-  const { camposEfectivos, esFormativa } = useCamposEvaluacionEfectivos(
+  const { camposEfectivos, esFormativa, tipoEvaluacion } = useCamposEvaluacionEfectivos(
     form,
     actividad.camposDisponibles,
     actividad.unidad.id,
@@ -321,8 +327,9 @@ export function EditarActividadForm({
       <Card className="gap-4 p-4">
         <h3 className="text-base font-semibold">Identificación de la actividad</h3>
         <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
-          <IdentificacionSection form={form} unidades={unidades} onCrearUnidad={crearUnidad} />
+          <IdentificacionSection form={form} />
           <AsignaturaGradoSection form={form} />
+          <UnidadAsociadaSection form={form} unidades={unidades} onCrearUnidad={crearUnidad} />
         </div>
       </Card>
       <UnidadSection
@@ -339,6 +346,7 @@ export function EditarActividadForm({
         unidades={unidades}
         camposEfectivos={camposEfectivos}
         esFormativa={esFormativa}
+        tipoEvaluacion={tipoEvaluacion}
       />
       {/* Adaptaciones y Seguimiento se desactivan junto con Evaluación
           cuando el referente de la unidad es FORMATIVO — regla de negocio
@@ -413,39 +421,9 @@ function EsRecuperacionToggle({ form }: { form: FormActividad }) {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type FormActividad = ReturnType<typeof useForm<Actividad, any, any, any, any, any, any, any, any, any, any, any>>
 
-function IdentificacionSection({
-  form,
-  unidades,
-  onCrearUnidad,
-}: {
-  form: FormActividad
-  unidades: UnidadTematica[]
-  onCrearUnidad: (data: {
-    nombre: string
-    contenidos: string[]
-    objetivos: string[]
-    descripcion: string
-    enunciadosDba: { id: number; text: string }[]
-    metodoCalculo: MetodoCalculo
-    gradoId: number | undefined
-    grado: string
-    asignaturaId: number | undefined
-    asignatura: string
-  }) => Promise<UnidadTematica>
-}) {
+function IdentificacionSection({ form }: { form: FormActividad }) {
   // Catálogo `TIPO_ACTIVIDAD` (`TLISTA_VALOR`) — antes hardcodeado acá mismo.
   const { data: tiposActividad = [] } = useTipoActividadCatalogQuery()
-
-  // El rótulo "Unidad temática asociada" está hardcodeado, pero el
-  // instrumento real depende del nivel educativo del Grado elegido — mismo
-  // dato que `PlaneadorTabs` usa para las pestañas ("Unidad temática" en
-  // Primaria, "Proyecto pedagógico" en Preescolar, …): un docente de
-  // Preescolar editando una actividad de Proyecto Pedagógico veía el
-  // select seguir diciendo "Unidad temática asociada". Acá el Grado (y su
-  // Asignatura) ya están elegidos, así que hay a lo sumo UN instrumento
-  // aplicable (a diferencia de las pestañas, que muestran TODOS los que
-  // dicta el docente) — se busca por `gradoId` dentro de `unidadTabs`.
-  const { data: unidadTabs } = useUnidadesTabsQuery()
 
   return (
     <>
@@ -487,7 +465,49 @@ function IdentificacionSection({
             </Field>
           )}
         </form.Field>
+    </>
+  )
+}
 
+/**
+ * "Unidad temática asociada" / "Proyecto pedagógico" — depende de Grado +
+ * Asignatura (`AsignaturaGradoSection`), así que se renderiza DESPUÉS en el
+ * grid: mostrarlo antes de esos dos invertía la dependencia real (el select
+ * arranca deshabilitado hasta elegir ambos).
+ */
+function UnidadAsociadaSection({
+  form,
+  unidades,
+  onCrearUnidad,
+}: {
+  form: FormActividad
+  unidades: UnidadTematica[]
+  onCrearUnidad: (data: {
+    nombre: string
+    contenidos: string[]
+    objetivos: string[]
+    descripcion: string
+    enunciadosDba: { id: number; text: string }[]
+    metodoCalculo: MetodoCalculo
+    gradoId: number | undefined
+    grado: string
+    asignaturaId: number | undefined
+    asignatura: string
+  }) => Promise<UnidadTematica>
+}) {
+  // El rótulo "Unidad temática asociada" está hardcodeado, pero el
+  // instrumento real depende del nivel educativo del Grado elegido — mismo
+  // dato que `PlaneadorTabs` usa para las pestañas ("Unidad temática" en
+  // Primaria, "Proyecto pedagógico" en Preescolar, …): un docente de
+  // Preescolar editando una actividad de Proyecto Pedagógico veía el
+  // select seguir diciendo "Unidad temática asociada". Acá el Grado (y su
+  // Asignatura) ya están elegidos, así que hay a lo sumo UN instrumento
+  // aplicable (a diferencia de las pestañas, que muestran TODOS los que
+  // dicta el docente) — se busca por `gradoId` dentro de `unidadTabs`.
+  const { data: unidadTabs } = useUnidadesTabsQuery()
+
+  return (
+    <>
         <form.Subscribe
           selector={(state) => `${state.values.grado}/${state.values.asignatura}/${state.values.gradoId}`}
         >
@@ -532,7 +552,7 @@ function IdentificacionSection({
                       variant="outlined"
                       className="min-w-0 flex-1 [&_[data-slot=select-trigger]]:rounded-r-none [&_[data-slot=select-trigger]]:border-r-0"
                     >
-                      <FieldLabel htmlFor={field.name}>{instrumentoLabel} asociada</FieldLabel>
+                      <FieldLabel htmlFor={field.name}>{instrumentoLabel}</FieldLabel>
                       <Select
                         // `Select` siempre trabaja con `value` string — el id real
                         // es numérico, así que se convierte acá. `0` es el
@@ -601,6 +621,7 @@ function IdentificacionSection({
                     </Field>
                     <CrearUnidadPopover
                       className="rounded-l-none border-l-0"
+                      instrumentoLabel={instrumentoLabel}
                       gradoId={form.getFieldValue("gradoId")}
                       asignaturaId={form.getFieldValue("asignaturaId")}
                       onCreate={async (data) => {
@@ -887,66 +908,14 @@ function AsignaturaGradoSection({ form }: { form: FormActividad }) {
   }, [gradoId, grupoId, asignaturaId, grado, asignatura, docenteGrupos, docenteGradoAsignatura, form])
 
   const asignaturas = docenteGradoAsignatura.filter((par) => par.gradoId === gradoId)
+  const subjectLabel = useStudyPlanSubjectLabel(gradoId, false)
 
   return (
     <>
-        <form.Field name="asignaturaId">
-          {(field) => (
-            <Field variant="outlined">
-              <FieldLabel htmlFor={field.name}>Asignatura / materia</FieldLabel>
-              <Select
-                // `__none__` es el sentinel de "sin elegir" — mismo patrón
-                // que "Unidad temática asociada". Sin un valor propio para
-                // ese estado, no había forma de VOLVER a "sin asignatura"
-                // una vez elegida una: y sin asignatura (ni grado) el
-                // enfoque no se puede derivar, así que "¿Es evaluación
-                // sumativa?" queda libre (ver `EvaluacionSection`) en vez
-                // de bloqueado por una unidad/referente que ya no aplica.
-                value={field.state.value != null ? String(field.state.value) : "__none__"}
-                onValueChange={(v) => {
-                  if (!v) return
-                  if (v === "__none__") {
-                    field.handleChange(undefined)
-                    form.setFieldValue("asignatura", "")
-                    return
-                  }
-                  const par = asignaturas.find((a) => String(a.asignaturaId) === v)
-                  if (!par) return
-                  field.handleChange(par.asignaturaId)
-                  form.setFieldValue("asignatura", par.asignaturaNombre)
-                }}
-                disabled={!hasGradoGrupo}
-              >
-                <SelectTrigger id={field.name}>
-                  <SelectValue
-                    placeholder={hasGradoGrupo ? "Seleccione" : "Elegí grado/grupo primero"}
-                  >
-                    {(value) =>
-                      value === "__none__"
-                        ? "Seleccione"
-                        : // `||`, no `??`: `asignatura` llega `""` (no
-                          // `undefined`) cuando el detalle real no trae
-                          // ninguna todavía, y `?? "Seleccione"` no cae ahí —
-                          // se veía en blanco en vez del placeholder.
-                          (asignaturas.find((a) => String(a.asignaturaId) === value)?.asignaturaNombre ||
-                            asignatura ||
-                            "Seleccione")
-                    }
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">Seleccione</SelectItem>
-                  {asignaturas.map((a) => (
-                    <SelectItem key={a.asignaturaId} value={String(a.asignaturaId)}>
-                      {a.asignaturaNombre}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
-          )}
-        </form.Field>
-
+        {/* Grado/Grupo primero: Asignatura (y "Unidad temática asociada" en
+            `UnidadAsociadaSection`) dependen de él y están deshabilitados
+            hasta elegirlo — mostrarlo después invertía la relación de
+            dependencia y confundía sobre qué elegir primero. */}
         <Field variant="outlined">
           <FieldLabel htmlFor="grado-grupo">Grado / Grupo</FieldLabel>
           <Select
@@ -1000,6 +969,64 @@ function AsignaturaGradoSection({ form }: { form: FormActividad }) {
             </SelectContent>
           </Select>
         </Field>
+
+        <form.Field name="asignaturaId">
+          {(field) => (
+            <Field variant="outlined">
+              <FieldLabel htmlFor={field.name}>{subjectLabel}</FieldLabel>
+              <Select
+                // `__none__` es el sentinel de "sin elegir" — mismo criterio
+                // que Grado/Grupo arriba (y que "Unidad temática asociada").
+                // Sin un valor propio para ese estado, no había forma de
+                // VOLVER a "sin asignatura" una vez elegida una: y sin
+                // asignatura (ni grado) el enfoque no se puede derivar, así
+                // que "¿Es evaluación sumativa?" queda libre (ver
+                // `EvaluacionSection`) en vez de bloqueado por una unidad/
+                // referente que ya no aplica.
+                value={field.state.value != null ? String(field.state.value) : "__none__"}
+                onValueChange={(v) => {
+                  if (!v) return
+                  if (v === "__none__") {
+                    field.handleChange(undefined)
+                    form.setFieldValue("asignatura", "")
+                    return
+                  }
+                  const par = asignaturas.find((a) => String(a.asignaturaId) === v)
+                  if (!par) return
+                  field.handleChange(par.asignaturaId)
+                  form.setFieldValue("asignatura", par.asignaturaNombre)
+                }}
+                disabled={!hasGradoGrupo}
+              >
+                <SelectTrigger id={field.name}>
+                  <SelectValue
+                    placeholder={hasGradoGrupo ? "Seleccione" : "Elegí grado/grupo primero"}
+                  >
+                    {(value) =>
+                      value === "__none__"
+                        ? "Seleccione"
+                        : // `||`, no `??`: `asignatura` llega `""` (no
+                          // `undefined`) cuando el detalle real no trae
+                          // ninguna todavía, y `?? "Seleccione"` no cae ahí —
+                          // se veía en blanco en vez del placeholder.
+                          (asignaturas.find((a) => String(a.asignaturaId) === value)?.asignaturaNombre ||
+                            asignatura ||
+                            "Seleccione")
+                    }
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">Seleccione</SelectItem>
+                  {asignaturas.map((a) => (
+                    <SelectItem key={a.asignaturaId} value={String(a.asignaturaId)}>
+                      {a.asignaturaNombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+          )}
+        </form.Field>
     </>
   )
 }
@@ -1105,16 +1132,23 @@ function RecursosSection({ form }: { form: FormActividad }) {
               otros repositorios de la app). `outline` + `primary` para
               que sea un botón secundario de la cabecera (el primario es
               el toggle de colapsar, que es la acción más usada). */}
-          <Button
-            variant="outline"
-            color="primary"
-            size="icon-sm"
-            type="button"
-            onClick={() => setBibliotecaOpen(true)}
-            aria-label="Adjuntar desde biblioteca"
-          >
-            <FolderOpenIcon />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  variant="outline"
+                  color="primary"
+                  size="icon-sm"
+                  type="button"
+                  onClick={() => setBibliotecaOpen(true)}
+                  aria-label="Adjuntar desde biblioteca"
+                />
+              }
+            >
+              <FolderOpenIcon />
+            </TooltipTrigger>
+            <TooltipContent>Adjuntar desde biblioteca</TooltipContent>
+          </Tooltip>
           {/* Toggle colapsar/expandir. El ícono cambia entre los dos
               estados: `+` outline (expandir) cuando está colapsado, `-`
               fill (colapsar) cuando está expandido. Mismo idioma visual
@@ -1122,17 +1156,26 @@ function RecursosSection({ form }: { form: FormActividad }) {
               estado del colapso. Este queda como `fill` + `primary` —
               es la acción primaria de la cabecera, la biblioteca es
               secundaria. */}
-          <Button
-            variant="fill"
-            color="primary"
-            size="icon-sm"
-            type="button"
-            aria-label={collapsed ? "Expandir sección de recursos" : "Colapsar sección de recursos"}
-            aria-expanded={!collapsed}
-            onClick={() => setCollapsed((v) => !v)}
-          >
-            {collapsed ? <PlusCircleIcon /> : <RemoveCircleOutlineIcon />}
-          </Button>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  variant="fill"
+                  color="primary"
+                  size="icon-sm"
+                  type="button"
+                  aria-label={collapsed ? "Expandir sección de recursos" : "Colapsar sección de recursos"}
+                  aria-expanded={!collapsed}
+                  onClick={() => setCollapsed((v) => !v)}
+                />
+              }
+            >
+              {collapsed ? <PlusCircleIcon /> : <RemoveCircleOutlineIcon />}
+            </TooltipTrigger>
+            <TooltipContent>
+              {collapsed ? "Expandir sección de recursos" : "Colapsar sección de recursos"}
+            </TooltipContent>
+          </Tooltip>
         </div>
       </div>
 
@@ -1436,50 +1479,71 @@ function RecursoItem({
           "group-hover/recuro:opacity-100 group-has-[:focus-visible]/recuro:opacity-100",
         )}
       >
-        <Button
-          variant="ghost"
-          color="neutral"
-          size="icon-sm"
-          type="button"
-          aria-label="Ver recurso"
-          render={
-            recurso.url
-              ? (
-                <Link
-                  to={paths.app.planeadorRecursoPreview.getHref()}
-                  search={{
-                    tipo: recurso.tipo,
-                    url: recurso.url,
-                    fuente: recurso.fuente,
-                    titulo: recurso.titulo,
-                    descripcion: recurso.descripcion,
-                  }}
-                />
-              )
-              : undefined
-          }
-        >
-          <EyeIcon />
-        </Button>
-        <Button
-          variant="ghost"
-          color="neutral"
-          size="icon-sm"
-          type="button"
-          aria-label="Descargar"
-        >
-          <FileDownloadOutlinedIcon />
-        </Button>
-        <Button
-          variant="ghost"
-          color="neutral"
-          size="icon-sm"
-          type="button"
-          aria-label="Quitar de la lista"
-          onClick={onRemove}
-        >
-          <TrashIcon />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                variant="ghost"
+                color="neutral"
+                size="icon-sm"
+                type="button"
+                aria-label="Ver recurso"
+                render={
+                  recurso.url
+                    ? (
+                      <Link
+                        to={paths.app.planeadorRecursoPreview.getHref()}
+                        search={{
+                          tipo: recurso.tipo,
+                          url: recurso.url,
+                          fuente: recurso.fuente,
+                          titulo: recurso.titulo,
+                          descripcion: recurso.descripcion,
+                        }}
+                      />
+                    )
+                    : undefined
+                }
+              />
+            }
+          >
+            <EyeIcon />
+          </TooltipTrigger>
+          <TooltipContent>Ver recurso</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                variant="ghost"
+                color="neutral"
+                size="icon-sm"
+                type="button"
+                aria-label="Descargar"
+              />
+            }
+          >
+            <FileDownloadOutlinedIcon />
+          </TooltipTrigger>
+          <TooltipContent>Descargar</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                variant="ghost"
+                color="neutral"
+                size="icon-sm"
+                type="button"
+                aria-label="Quitar de la lista"
+                onClick={onRemove}
+              />
+            }
+          >
+            <TrashIcon />
+          </TooltipTrigger>
+          <TooltipContent>Quitar de la lista</TooltipContent>
+        </Tooltip>
       </div>
     </li>
   )
@@ -1659,6 +1723,16 @@ function useCamposEvaluacionEfectivos(
     sinUnidadNiDetalle ? asignaturaId : undefined,
   )
 
+  // `TIPO_EVALUACION` del referente (CUANTITATIVA / CUALITATIVA /
+  // CUANTITATIVA_CUALITATIVA) — con unidad elegida sale de su referente
+  // (`useUnidadReferenteQuery`, mismo dato que ya trae `esFormativo`);
+  // huérfana o de alta, del referente en vivo por grado/asignatura, igual
+  // que `esFormativa` arriba. Determina qué tipos de "Escala de
+  // valoración" puede elegir el docente (ver `EscalaValoracionSection`).
+  const { data: unidadReferente } = useUnidadReferenteQuery(unidadId)
+  const tipoEvaluacion =
+    unidadId != null ? (unidadReferente?.tipoEvaluacion ?? null) : (referenteDeGradoAsignatura?.tipoEvaluacion ?? null)
+
   // Fuente de verdad efectiva para "qué mostrar/exigir": la foto fija del
   // detalle si sigue aplicando, si no la configuración en vivo por unidad
   // (alta, o huérfana recién vinculada) — la usa tanto `esFormativa` como
@@ -1669,7 +1743,7 @@ function useCamposEvaluacionEfectivos(
     ? camposEfectivos.evaluacion.visible === false
     : !sinGradoNiAsignatura && (referenteDeGradoAsignatura?.esFormativo ?? false)
 
-  return { camposEfectivos, esFormativa }
+  return { camposEfectivos, esFormativa, tipoEvaluacion }
 }
 
 function EvaluacionSection({
@@ -1677,6 +1751,7 @@ function EvaluacionSection({
   unidades,
   camposEfectivos,
   esFormativa,
+  tipoEvaluacion,
 }: {
   form: FormActividad
   unidades: UnidadTematica[]
@@ -1684,6 +1759,8 @@ function EvaluacionSection({
    *  `EditarActividadForm`. */
   camposEfectivos: ReturnType<typeof useCamposEvaluacionEfectivos>["camposEfectivos"]
   esFormativa: boolean
+  /** `TIPO_EVALUACION` del referente — ver `EscalaValoracionSection`. */
+  tipoEvaluacion: ReturnType<typeof useCamposEvaluacionEfectivos>["tipoEvaluacion"]
 }) {
   // `disabled={esFormativa}` de abajo solo bloquea el control — no corrige
   // el VALOR. Sin esto, una actividad que ya traía `esEvaluativa: true` al
@@ -1775,7 +1852,7 @@ function EvaluacionSection({
               adentro del mismo card de "Evaluación", entre el `instrumento`
               elegido arriba y la `Ponderación (%)` de abajo — antes era un
               `Card` hermano y suelto, separado de este. */}
-          <InstrumentoEvaluacionSection form={form} unidades={unidades} />
+          <InstrumentoEvaluacionSection form={form} unidades={unidades} tipoEvaluacion={tipoEvaluacion} />
 
           {/* Ponderación/Puntaje va AL FINAL, después de la definición del
               instrumento (Rúbrica/Lista de cotejo). La lectura del form es:
@@ -1867,9 +1944,11 @@ function EvaluacionSection({
 function InstrumentoEvaluacionSection({
   form,
   unidades,
+  tipoEvaluacion,
 }: {
   form: FormActividad
   unidades: UnidadTematica[]
+  tipoEvaluacion: string | null
 }) {
   return (
     <form.Subscribe selector={(state) => state.values.instrumento}>
@@ -1877,9 +1956,9 @@ function InstrumentoEvaluacionSection({
         instrumento === "Lista de cotejo" ? (
           <ListaCotejoSection form={form} />
         ) : instrumento === "Escala de valoración" ? (
-          <EscalaValoracionSection form={form} unidades={unidades} />
+          <EscalaValoracionSection form={form} unidades={unidades} tipoEvaluacion={tipoEvaluacion} />
         ) : instrumento === "Otro" ? (
-          <InstrumentoPersonalizadoSection form={form} unidades={unidades} />
+          <InstrumentoPersonalizadoSection form={form} unidades={unidades} tipoEvaluacion={tipoEvaluacion} />
         ) : (
           <RubricasSection form={form} />
         )
@@ -1901,22 +1980,29 @@ function ListaCotejoSection({ form }: { form: FormActividad }) {
     <Card className="gap-4 p-4">
       <div className="flex items-center justify-between">
         <h3 className="text-base font-semibold">Definición Lista de Cotejo</h3>
-        <Button
-          variant="fill"
-          color="primary"
-          size="icon-sm"
-          type="button"
-          aria-label="Agregar ítem"
-          onClick={() => {
-            const listaCotejo = form.getFieldValue("listaCotejo") as ListaCotejo
-            form.setFieldValue("listaCotejo", {
-              ...listaCotejo,
-              items: [...listaCotejo.items, { id: cryptoId(), descripcion: "" }],
-            })
-          }}
-        >
-          <PlusCircleIcon />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                variant="fill"
+                color="primary"
+                size="icon-sm"
+                type="button"
+                aria-label="Agregar ítem"
+                onClick={() => {
+                  const listaCotejo = form.getFieldValue("listaCotejo") as ListaCotejo
+                  form.setFieldValue("listaCotejo", {
+                    ...listaCotejo,
+                    items: [...listaCotejo.items, { id: cryptoId(), descripcion: "" }],
+                  })
+                }}
+              />
+            }
+          >
+            <PlusCircleIcon />
+          </TooltipTrigger>
+          <TooltipContent>Agregar ítem</TooltipContent>
+        </Tooltip>
       </div>
 
       {/* Mismo flag que gobierna la ponderación de la rúbrica: un ítem
@@ -1985,16 +2071,23 @@ function ListaCotejoItemCard({
     <div className="rounded-md border bg-card p-3">
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-semibold">Ítem {index + 1}</h4>
-        <Button
-          variant="ghost"
-          color="neutral"
-          size="icon-sm"
-          type="button"
-          aria-label={`Quitar ítem ${index + 1}`}
-          onClick={onRemove}
-        >
-          <TrashIcon />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                variant="ghost"
+                color="neutral"
+                size="icon-sm"
+                type="button"
+                aria-label={`Quitar ítem ${index + 1}`}
+                onClick={onRemove}
+              />
+            }
+          >
+            <TrashIcon />
+          </TooltipTrigger>
+          <TooltipContent>{`Quitar ítem ${index + 1}`}</TooltipContent>
+        </Tooltip>
       </div>
 
       {/* Descripción + ponderación en la misma fila: `flex-1` en la
@@ -2100,12 +2193,40 @@ function nivelesCualitativosDesdeUnidad(
 function EscalaValoracionSection({
   form,
   unidades,
+  tipoEvaluacion,
 }: {
   form: FormActividad
   unidades: UnidadTematica[]
+  /** `TIPO_EVALUACION` del referente de la unidad/grado-asignatura
+   *  ("CUANTITATIVA" | "CUALITATIVA" | "CUANTITATIVA_CUALITATIVA"). `null`
+   *  (todavía sin resolver, o referente sin este dato) se trata como
+   *  "ambas": no restringe nada, mismo comportamiento que antes de este
+   *  campo existir. */
+  tipoEvaluacion: string | null
 }) {
   const unidadId = useSelector(form.store, (state) => state.values.unidad.id) || undefined
   const unidadActual = unidades.find((u) => u.id === unidadId)
+
+  // Con "CUANTITATIVA" el referente solo admite escala Numérica; con
+  // "CUALITATIVA" solo Cualitativa. "CUANTITATIVA_CUALITATIVA" (o sin dato
+  // todavía) admite las dos, igual que siempre.
+  const permiteNumerica = tipoEvaluacion !== "CUALITATIVA"
+  const permiteCualitativa = tipoEvaluacion !== "CUANTITATIVA"
+
+  // Si el docente ya tenía elegida la escala que el referente acaba de
+  // dejar de admitir (cambió de unidad/grado a una con TIPO_EVALUACION más
+  // restrictivo), se corrige acá al único tipo que queda permitido — el
+  // radio de esa opción ya ni se muestra (ver abajo), así que sin esto el
+  // VALOR guardado quedaría en un tipo que el usuario no puede ni ver para
+  // volver a elegir (mismo criterio que `esFormativa` más arriba).
+  const escalaTipoActual = useSelector(form.store, (state) => state.values.escalaValoracion.tipo)
+  useEffect(() => {
+    if (escalaTipoActual === "Numérica" && !permiteNumerica) {
+      form.setFieldValue("escalaValoracion", (prev) => ({ ...prev, tipo: "Cualitativa" }))
+    } else if (escalaTipoActual === "Cualitativa" && !permiteCualitativa) {
+      form.setFieldValue("escalaValoracion", (prev) => ({ ...prev, tipo: "Numérica" }))
+    }
+  }, [escalaTipoActual, permiteNumerica, permiteCualitativa, form])
 
   return (
     <Card className="gap-4 p-4">
@@ -2174,17 +2295,26 @@ function EscalaValoracionSection({
                             updateEscala({ tipo, niveles })
                           }}
                         >
-                          <label className="flex items-center gap-2">
-                            <RadioGroupItem value="Numérica" className="data-checked:bg-primary" />
-                            Numérica
-                          </label>
-                          <label className="flex items-center gap-2">
-                            <RadioGroupItem
-                              value="Cualitativa"
-                              className="data-checked:bg-primary"
-                            />
-                            Cualitativa
-                          </label>
+                          {/* El referente puede restringir a un solo tipo
+                              (TIPO_EVALUACION CUANTITATIVA/CUALITATIVA): la
+                              opción que no admite ni se muestra, no solo se
+                              deshabilita — no tiene sentido ofrecer una
+                              escala que el referente no permite. */}
+                          {permiteNumerica && (
+                            <label className="flex items-center gap-2">
+                              <RadioGroupItem value="Numérica" className="data-checked:bg-primary" />
+                              Numérica
+                            </label>
+                          )}
+                          {permiteCualitativa && (
+                            <label className="flex items-center gap-2">
+                              <RadioGroupItem
+                                value="Cualitativa"
+                                className="data-checked:bg-primary"
+                              />
+                              Cualitativa
+                            </label>
+                          )}
                         </RadioGroup>
                       </Field>
                     </div>
@@ -2250,13 +2380,16 @@ function EscalaValoracionSection({
                       <div className="mt-4">
                         <div className="mb-3 flex items-center justify-between">
                           <h4 className="text-sm font-semibold">Definiciones cualitativas</h4>
-                          <Button
-                            variant="fill"
-                            color="primary"
-                            size="icon-sm"
-                            type="button"
-                            aria-label="Agregar definición cualitativa"
-                            onClick={() => {
+                          <Tooltip>
+                          <TooltipTrigger
+                            render={
+                              <Button
+                                variant="fill"
+                                color="primary"
+                                size="icon-sm"
+                                type="button"
+                                aria-label="Agregar definición cualitativa"
+                                onClick={() => {
                               // Lista vacía (p. ej. una actividad que ya
                               // traía `tipo: "Cualitativa"` guardado, sin
                               // pasar por el `RadioGroup` de arriba): el "+"
@@ -2284,10 +2417,14 @@ function EscalaValoracionSection({
                                   },
                                 ],
                               })
-                            }}
+                                }}
+                              />
+                            }
                           >
                             <PlusCircleIcon />
-                          </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Agregar definición cualitativa</TooltipContent>
+                          </Tooltip>
                         </div>
 
                         {escala.niveles.length === 0 ? (
@@ -2351,16 +2488,23 @@ function EscalaValoracionSection({
                                     />
                                   </Field>
                                 )}
-                                <Button
-                                  variant="ghost"
-                                  color="neutral"
-                                  size="icon-sm"
-                                  type="button"
-                                  aria-label={`Quitar nivel ${nivel.nombre}`}
-                                  onClick={() => removeNivel(nIndex)}
-                                >
-                                  <TrashIcon />
-                                </Button>
+                                <Tooltip>
+                                  <TooltipTrigger
+                                    render={
+                                      <Button
+                                        variant="ghost"
+                                        color="neutral"
+                                        size="icon-sm"
+                                        type="button"
+                                        aria-label={`Quitar nivel ${nivel.nombre}`}
+                                        onClick={() => removeNivel(nIndex)}
+                                      />
+                                    }
+                                  >
+                                    <TrashIcon />
+                                  </TooltipTrigger>
+                                  <TooltipContent>{`Quitar nivel ${nivel.nombre}`}</TooltipContent>
+                                </Tooltip>
                               </li>
                             ))}
                           </ul>
@@ -2402,9 +2546,11 @@ function EscalaValoracionSection({
 function InstrumentoPersonalizadoSection({
   form,
   unidades,
+  tipoEvaluacion,
 }: {
   form: FormActividad
   unidades: UnidadTematica[]
+  tipoEvaluacion: string | null
 }) {
   return (
     <Card className="gap-4 p-4">
@@ -2487,7 +2633,7 @@ function InstrumentoPersonalizadoSection({
               ) : value.metodoValoracion === "Lista de cotejo" ? (
                 <ListaCotejoSection form={form} />
               ) : value.metodoValoracion === "Escala de valoración" ? (
-                <EscalaValoracionSection form={form} unidades={unidades} />
+                <EscalaValoracionSection form={form} unidades={unidades} tipoEvaluacion={tipoEvaluacion} />
               ) : null}
 
               <div className="flex flex-col gap-2">
@@ -2519,25 +2665,35 @@ function RubricasSection({ form }: { form: FormActividad }) {
     <Card className="gap-4 p-4">
       <div className="flex items-center justify-between">
         <h3 className="text-base font-semibold">Definición de Rúbricas</h3>
-        <Button
-          variant="fill"
-          color="primary"
-          size="icon-sm"
-          type="button"
-          aria-label="Agregar criterio"
-          onClick={() => {
-            const rubrica = form.getFieldValue("rubrica") as { id: number; criterios: Criterio[] }
-            form.setFieldValue("rubrica", {
-              ...rubrica,
-              criterios: [
-                ...rubrica.criterios,
-                { id: cryptoId(), nombre: "", excelente: "", niveles: [], ponderacion: 0 },
-              ],
-            })
-          }}
-        >
-          <PlusCircleIcon />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                variant="fill"
+                color="primary"
+                size="icon-sm"
+                type="button"
+                aria-label="Agregar criterio"
+                onClick={() => {
+                  const rubrica = form.getFieldValue("rubrica") as {
+                    id: number
+                    criterios: Criterio[]
+                  }
+                  form.setFieldValue("rubrica", {
+                    ...rubrica,
+                    criterios: [
+                      ...rubrica.criterios,
+                      { id: cryptoId(), nombre: "", excelente: "", niveles: [], ponderacion: 0 },
+                    ],
+                  })
+                }}
+              />
+            }
+          >
+            <PlusCircleIcon />
+          </TooltipTrigger>
+          <TooltipContent>Agregar criterio</TooltipContent>
+        </Tooltip>
       </div>
 
       {/* Leemos `esEvaluativa` del store del form para decidir si los
@@ -2614,16 +2770,23 @@ function CriterioItem({
     <li className="rounded-md border bg-card p-4">
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-semibold">Criterio {index + 1}</h4>
-        <Button
-          variant="ghost"
-          color="neutral"
-          size="icon-sm"
-          type="button"
-          aria-label={`Quitar criterio ${index + 1}`}
-          onClick={onRemove}
-        >
-          <TrashIcon />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                variant="ghost"
+                color="neutral"
+                size="icon-sm"
+                type="button"
+                aria-label={`Quitar criterio ${index + 1}`}
+                onClick={onRemove}
+              />
+            }
+          >
+            <TrashIcon />
+          </TooltipTrigger>
+          <TooltipContent>{`Quitar criterio ${index + 1}`}</TooltipContent>
+        </Tooltip>
       </div>
 
       {/* Cada control usa `Field variant="outlined"` con `FieldLabel`
@@ -2705,16 +2868,25 @@ function CriterioItem({
           )}
           {/* Tachito a la derecha del textarea — quita el bloque entero
               (texto Y puntaje), no solo el texto. */}
-          <Button
-            variant="ghost"
-            color="neutral"
-            size="icon-sm"
-            type="button"
-            aria-label="Quitar excelente"
-            onClick={() => onChange({ ...criterio, excelente: "", excelentePonderacion: undefined })}
-          >
-            <TrashIcon />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  color="neutral"
+                  size="icon-sm"
+                  type="button"
+                  aria-label="Quitar excelente"
+                  onClick={() =>
+                    onChange({ ...criterio, excelente: "", excelentePonderacion: undefined })
+                  }
+                />
+              }
+            >
+              <TrashIcon />
+            </TooltipTrigger>
+            <TooltipContent>Quitar excelente</TooltipContent>
+          </Tooltip>
         </div>
       )}
 
@@ -2786,20 +2958,27 @@ function CriterioItem({
                 />
               </Field>
             )}
-            <Button
-              variant="ghost"
-              color="neutral"
-              size="icon-sm"
-              type="button"
-              aria-label={`Quitar nivel ${nivel.nombre}`}
-              onClick={() => {
-                const next = criterio.niveles.slice()
-                next.splice(nIndex, 1)
-                onChange({ ...criterio, niveles: next })
-              }}
-            >
-              <TrashIcon />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    variant="ghost"
+                    color="neutral"
+                    size="icon-sm"
+                    type="button"
+                    aria-label={`Quitar nivel ${nivel.nombre}`}
+                    onClick={() => {
+                      const next = criterio.niveles.slice()
+                      next.splice(nIndex, 1)
+                      onChange({ ...criterio, niveles: next })
+                    }}
+                  />
+                }
+              >
+                <TrashIcon />
+              </TooltipTrigger>
+              <TooltipContent>{`Quitar nivel ${nivel.nombre}`}</TooltipContent>
+            </Tooltip>
           </li>
         ))}
       </ul>
@@ -2913,16 +3092,23 @@ function AdaptacionesSection({
                     ? "Si aplica, registre las adaptaciones"
                     : "Adaptaciones registradas"}
                 </p>
-                <Button
-                  variant="fill"
-                  color="primary"
-                  size="icon-sm"
-                  type="button"
-                  aria-label="Agregar adaptación"
-                  onClick={add}
-                >
-                  <PlusCircleIcon />
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger
+                    render={
+                      <Button
+                        variant="fill"
+                        color="primary"
+                        size="icon-sm"
+                        type="button"
+                        aria-label="Agregar adaptación"
+                        onClick={add}
+                      />
+                    }
+                  >
+                    <PlusCircleIcon />
+                  </TooltipTrigger>
+                  <TooltipContent>Agregar adaptación</TooltipContent>
+                </Tooltip>
               </div>
 
               {adaptaciones.length > 0 && (
@@ -2993,16 +3179,23 @@ function AdaptacionItem({
     <li className="rounded-md border bg-card p-4">
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-semibold">Adaptación {index + 1}</h4>
-        <Button
-          variant="ghost"
-          color="neutral"
-          size="icon-sm"
-          type="button"
-          aria-label={`Quitar adaptación ${index + 1}`}
-          onClick={onRemove}
-        >
-          <TrashIcon />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                variant="ghost"
+                color="neutral"
+                size="icon-sm"
+                type="button"
+                aria-label={`Quitar adaptación ${index + 1}`}
+                onClick={onRemove}
+              />
+            }
+          >
+            <TrashIcon />
+          </TooltipTrigger>
+          <TooltipContent>{`Quitar adaptación ${index + 1}`}</TooltipContent>
+        </Tooltip>
       </div>
 
       <Field variant="outlined" className="mt-3">
@@ -3347,6 +3540,7 @@ function cryptoId(): number {
 function CrearUnidadPopover({
   onCreate,
   className,
+  instrumentoLabel = UNIDAD_TAB_FALLBACK,
   gradoId,
   asignaturaId,
 }: {
@@ -3362,6 +3556,12 @@ function CrearUnidadPopover({
    * un control adyacente (split-button): típico `rounded-l-none border-l-0`
    * para pegarse a un `Select`/`Input` por la izquierda. */
   className?: string
+  /** Rótulo real del instrumento ("Proyecto pedagógico" en Preescolar,
+   *  "Unidad temática" en el resto) — mismo dato que ya resuelve
+   *  `UnidadAsociadaSection` para el `<Select>` de al lado. Sin esto el
+   *  título/tooltip/botón de este popover decían "unidad temática" fijo
+   *  incluso creando un proyecto pedagógico. */
+  instrumentoLabel?: string
   /** Grado/Asignatura de la actividad que abre este popover — la unidad
    *  nueva nace con los mismos (una unidad se identifica por esos dos, ver
    *  `IdentificacionSection`), así que acá no se vuelven a pedir. También
@@ -3378,6 +3578,8 @@ function CrearUnidadPopover({
   const [enunciadosDba, setEnunciadosDba] = React.useState<{ id: number; text: string }[]>([])
   const [metodoCalculo, setMetodoCalculo] = React.useState<MetodoCalculo>("Ponderado")
   const [isSaving, setIsSaving] = React.useState(false)
+  const { notify } = useNotify()
+  const crearLabel = `Crear nuevo${articuloDefinido(instrumentoLabel) === "el" ? "" : "a"} ${instrumentoLabel.toLowerCase()}`
 
   const { enunciados: enunciadosDisponibles, isPending: isPendingEnunciados } = useEnunciadosDbaQuery(
     gradoId,
@@ -3396,9 +3598,10 @@ function CrearUnidadPopover({
   }
 
   // Async: `onCreate` pega contra el backend real (`POST /planeador/unidades`).
-  // Si falla (el toast global del interceptor ya avisa del error), el
-  // popover se queda abierto con lo tipeado — cerrarlo/limpiarlo igual habría
-  // hecho parecer que la unidad se creó cuando no.
+  // Si falla, se avisa con `notify` acá mismo (no hay interceptor global que
+  // lo haga por este camino) y el popover se queda abierto con lo tipeado —
+  // cerrarlo/limpiarlo igual habría hecho parecer que la unidad se creó
+  // cuando no, dejando al usuario sin saber por qué "Guardar" no hizo nada.
   const guardar = async () => {
     if (!nombre.trim() || !hasGradoAsignatura || isSaving) return
     setIsSaving(true)
@@ -3406,6 +3609,8 @@ function CrearUnidadPopover({
       await onCreate({ nombre: nombre.trim(), contenidos, objetivos, descripcion, enunciadosDba, metodoCalculo })
       reset()
       setOpen(false)
+    } catch (error) {
+      notify(getErrorMessage(error), { variant: "error" })
     } finally {
       setIsSaving(false)
     }
@@ -3416,24 +3621,31 @@ function CrearUnidadPopover({
       setOpen(next)
       if (!next) reset()
     }}>
-      <PopoverTrigger
-        render={
-          <Button
-            variant="fill"
-            color="primary"
-            size="icon-sm"
-            aria-label="Crear nueva unidad temática"
-            // `size-11` para igualar la altura del `SelectTrigger` (h-11);
-            // `shrink-0` para que el flex del call site no lo aplaste.
-            // Si el call site pasa `className` (típico `rounded-l-none
-            // border-l-0` para split-button), gana sobre el `rounded-md`
-            // base porque va al final.
-            className={cn("size-11 shrink-0 rounded-md", className)}
-          />
-        }
-      >
-        <PlusCircleIcon />
-      </PopoverTrigger>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <PopoverTrigger
+              render={
+                <Button
+                  variant="fill"
+                  color="primary"
+                  size="icon-sm"
+                  aria-label={crearLabel}
+                  // `size-11` para igualar la altura del `SelectTrigger` (h-11);
+                  // `shrink-0` para que el flex del call site no lo aplaste.
+                  // Si el call site pasa `className` (típico `rounded-l-none
+                  // border-l-0` para split-button), gana sobre el `rounded-md`
+                  // base porque va al final.
+                  className={cn("size-11 shrink-0 rounded-md", className)}
+                />
+              }
+            />
+          }
+        >
+          <PlusCircleIcon />
+        </TooltipTrigger>
+        <TooltipContent>{crearLabel}</TooltipContent>
+      </Tooltip>
       <PopoverContent
         align="end"
         side="bottom"
@@ -3447,7 +3659,7 @@ function CrearUnidadPopover({
         className="w-96 gap-0 p-0"
       >
         <h3 className="border-b px-4 py-3 text-base font-semibold">
-          Crear nueva unidad temática
+          {crearLabel}
         </h3>
 
         {!hasGradoAsignatura && (

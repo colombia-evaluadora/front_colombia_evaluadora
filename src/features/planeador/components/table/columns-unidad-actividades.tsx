@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router"
 import type { ColumnDef } from "@tanstack/react-table"
 
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useNotify } from "@/components/notice/notice-context"
 import { Input } from "@/components/ui/input"
 import { DataTableColumnHeader } from "@/components/data-table"
@@ -106,16 +107,23 @@ function CeldaPonderacion({
         disabled={mutation.isPending}
         className="w-16"
       />
-      <Button
-        variant="ghost"
-        color="primary"
-        size="icon-xs"
-        disabled={mutation.isPending}
-        onClick={guardar}
-        aria-label="Guardar ponderación"
-      >
-        {mutation.isPending ? <SpinnerIcon className="animate-spin" /> : <CheckIcon />}
-      </Button>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Button
+              variant="ghost"
+              color="primary"
+              size="icon-xs"
+              disabled={mutation.isPending}
+              onClick={guardar}
+              aria-label="Guardar ponderación"
+            />
+          }
+        >
+          {mutation.isPending ? <SpinnerIcon className="animate-spin" /> : <CheckIcon />}
+        </TooltipTrigger>
+        <TooltipContent>Guardar ponderación</TooltipContent>
+      </Tooltip>
     </div>
   )
 }
@@ -142,18 +150,25 @@ function BotonDesvincular({
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger
-        render={
-          <Button
-            variant="ghost"
-            color="neutral"
-            size="icon-sm"
-            aria-label="Desvincular actividad"
-          />
-        }
-      >
-        <LinkBreakIcon />
-      </AlertDialogTrigger>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <AlertDialogTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  color="neutral"
+                  size="icon-sm"
+                  aria-label="Desvincular actividad"
+                />
+              }
+            />
+          }
+        >
+          <LinkBreakIcon />
+        </TooltipTrigger>
+        <TooltipContent>Desvincular actividad</TooltipContent>
+      </Tooltip>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Desvincular actividad</AlertDialogTitle>
@@ -264,50 +279,73 @@ export function createUnidadActividadesColumns(
               detalle de una UNIDAD, así que "Ver" tiene que llevarlo a la
               vista con la que el resto de la app ya muestra una
               actividad). */}
-          <Button
-            variant="ghost"
-            color="neutral"
-            size="icon-sm"
-            aria-label={`Ver ${row.original.nombre}`}
-            render={
-              <Link
-                to={planeadorRoute.id}
-                search={{ actividad: String(row.original.actividadId) }}
-              />
-            }
-          >
-            <EyeIcon />
-          </Button>
-          <Button
-            variant="ghost"
-            color="neutral"
-            size="icon-sm"
-            aria-label={`Editar ${row.original.nombre}`}
-            render={
-              <Link
-                to={paths.app.planeadorActividadEditar.getHref(String(row.original.actividadId))}
-              />
-            }
-          >
-            <PencilIcon />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  color="neutral"
+                  size="icon-sm"
+                  aria-label={`Ver ${row.original.nombre}`}
+                  render={
+                    <Link
+                      to={planeadorRoute.id}
+                      search={{ actividad: String(row.original.actividadId) }}
+                    />
+                  }
+                />
+              }
+            >
+              <EyeIcon />
+            </TooltipTrigger>
+            <TooltipContent>Ver {row.original.nombre}</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  color="neutral"
+                  size="icon-sm"
+                  aria-label={`Editar ${row.original.nombre}`}
+                  render={
+                    <Link
+                      to={paths.app.planeadorActividadEditar.getHref(
+                        String(row.original.actividadId),
+                      )}
+                    />
+                  }
+                />
+              }
+            >
+              <PencilIcon />
+            </TooltipTrigger>
+            <TooltipContent>Editar {row.original.nombre}</TooltipContent>
+          </Tooltip>
           {/* Chulito: abre el panel del listado principal directo en modo
               "Marcar" (`?modo=grades`), la misma vista que el botón ✓ del
               header de `ActividadDetallePanel`. */}
-          <Button
-            variant="ghost"
-            color="neutral"
-            size="icon-sm"
-            aria-label={`Calificar ${row.original.nombre}`}
-            render={
-              <Link
-                to={planeadorRoute.id}
-                search={{ actividad: String(row.original.actividadId), modo: "grades" }}
-              />
-            }
-          >
-            <CheckIcon />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  color="neutral"
+                  size="icon-sm"
+                  aria-label={`Calificar ${row.original.nombre}`}
+                  render={
+                    <Link
+                      to={planeadorRoute.id}
+                      search={{ actividad: String(row.original.actividadId), modo: "grades" }}
+                    />
+                  }
+                />
+              }
+            >
+              <CheckIcon />
+            </TooltipTrigger>
+            <TooltipContent>Calificar {row.original.nombre}</TooltipContent>
+          </Tooltip>
           <BotonDesvincular actividad={row.original} unidadId={unidadId} />
         </div>
       ),

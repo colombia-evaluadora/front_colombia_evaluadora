@@ -24,6 +24,7 @@ interface SubjectInlineEditFieldsProps {
   onNombreChange: (nombre: string) => void
   academicPeriodId?: number
   isPreescolar?: boolean
+  subjectLabel?: string
   onSaved: (subject: { id: number; nombreInterno: string }) => void
   notify: (message: string, options?: { variant?: NoticeVariant }) => void
   children?: ReactNode
@@ -37,11 +38,21 @@ export const SubjectInlineEditFields = forwardRef<
   SubjectInlineEditFieldsHandle,
   SubjectInlineEditFieldsProps
 >(function SubjectInlineEditFields(
-  { subject, nombre, onNombreChange, academicPeriodId, isPreescolar, onSaved, notify, children },
+  {
+    subject,
+    nombre,
+    onNombreChange,
+    academicPeriodId,
+    isPreescolar,
+    subjectLabel = "Asignatura",
+    onSaved,
+    notify,
+    children,
+  },
   ref,
 ) {
-  const subjectWord = isPreescolar ? "dimensión" : "asignatura"
-  const subjectWordCap = isPreescolar ? "Dimensión" : "Asignatura"
+  const subjectWord = subjectLabel.toLowerCase()
+  const subjectWordCap = subjectLabel
   const queryClient = useQueryClient()
 
   const [asignaturaGeneral, setAsignaturaGeneral] = useState("")
@@ -61,7 +72,6 @@ export const SubjectInlineEditFields = forwardRef<
     return match ? match.id : null
   }
 
-  // Snapshot de los valores originales, para saber si hay algo que guardar.
   const seededRef = useRef({
     asignaturaGeneral: "",
     nombre: "",
@@ -71,7 +81,6 @@ export const SubjectInlineEditFields = forwardRef<
     especialidad: "",
   })
 
-  // Reseedea el formulario cada vez que cambia la asignatura seleccionada.
   useEffect(() => {
     const seeded = {
       asignaturaGeneral:
@@ -90,7 +99,6 @@ export const SubjectInlineEditFields = forwardRef<
     setColor(seeded.color)
     setEspecialidad(seeded.especialidad)
     setSubmitted(false)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [subject.id, generalAreas])
 
   const nombreTrim = nombre.trim()

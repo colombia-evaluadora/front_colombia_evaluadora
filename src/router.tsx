@@ -671,6 +671,10 @@ const ReportsPage = lazyRouteComponent(
   () => import("@/features/academic-management/pages/reports-page"),
   "ReportsPage",
 )
+const PlanillaAprobacionPage = lazyRouteComponent(
+  () => import("@/features/academic-management/reports/pages/planilla-aprobacion-page"),
+  "PlanillaAprobacionPage",
+)
 const CurricularReferencesPage = lazyRouteComponent(
   () => import("@/features/academic-management/pages/curricular-references-page"),
   "CurricularReferencesPage",
@@ -688,6 +692,15 @@ export const gestionAcademicaInformesRoute = createRoute({
   path: paths.app.gestionAcademicaInformes.path,
   staticData: { breadcrumb: [GESTION_ACADEMICA_CRUMB, { label: "Informes" }] },
   component: ReportsPage,
+})
+
+const INFORMES_CRUMB = { label: "Informes", to: paths.app.gestionAcademicaInformes.getHref() }
+
+export const planillaAprobacionRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: paths.app.gestionAcademicaInformesPlanillaAprobacion.path,
+  staticData: { breadcrumb: [GESTION_ACADEMICA_CRUMB, INFORMES_CRUMB, { label: "Planilla de calificación" }] },
+  component: PlanillaAprobacionPage,
 })
 
 export const gestionAcademicaReferentesCurricularesRoute = createRoute({
@@ -881,6 +894,7 @@ const routeTree = rootRoute.addChildren([
     addEstablishmentRoute,
     editEstablishmentRoute,
     gestionAcademicaInformesRoute,
+    planillaAprobacionRoute,
     gestionAcademicaReferentesCurricularesRoute,
     gestionAcademicaReferentesCurricularesDetalleRoute,
     establishmentLayoutRoute.addChildren([

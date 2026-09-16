@@ -14,6 +14,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { useDeleteUnidad } from "@/features/planeador/api/mutations/delete-unidad"
 import type { UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
@@ -58,20 +59,27 @@ export function DialogDeleteUnidad({ unidad, onDeleted, triggerProps }: DialogDe
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger
-        render={
-          <Button
-            type="button"
-            variant="ghost"
-            color="neutral"
-            size="icon-sm"
-            aria-label={`Eliminar ${unidad.nombre}`}
-            {...triggerProps}
-          />
-        }
-      >
-        <TrashIcon />
-      </AlertDialogTrigger>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <AlertDialogTrigger
+              render={
+                <Button
+                  type="button"
+                  variant="ghost"
+                  color="neutral"
+                  size="icon-sm"
+                  aria-label={`Eliminar ${unidad.nombre}`}
+                  {...triggerProps}
+                />
+              }
+            />
+          }
+        >
+          <TrashIcon />
+        </TooltipTrigger>
+        <TooltipContent>{`Eliminar ${unidad.nombre}`}</TooltipContent>
+      </Tooltip>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Eliminar unidad temática</AlertDialogTitle>

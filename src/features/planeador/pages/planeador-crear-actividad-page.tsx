@@ -53,11 +53,17 @@ function PlaneadorCrearActividadPageContent() {
   const [isDirty, setIsDirty] = useState(false)
 
   // `unidadId` llega cuando se abre esta pantalla desde "Agregar actividad"
-  // dentro de una Unidad temática (`DialogAgregarActividad`) — ver
+  // dentro de una Unidad temática (`DialogAgregarActividad`); `fechaInicio`/
+  // `fechaCierre` cuando se abre desde un clic en una celda del calendario
+  // mensual (`PlaneadorMonthGrid` vía `planeador-page.tsx`) — ver
   // `planeadorActividadCrearSearchSchema`. `strict: false` porque esta
-  // página también se monta sin ese search (desde "Nueva actividad" del
+  // página también se monta sin ningún search (desde "Nueva actividad" del
   // listado general).
-  const { unidadId } = useSearch({ strict: false }) as { unidadId?: string }
+  const { unidadId, fechaInicio, fechaCierre } = useSearch({ strict: false }) as {
+    unidadId?: string
+    fechaInicio?: string
+    fechaCierre?: string
+  }
   // Mismo listado que ya usa `EditarActividadForm` para "Unidad temática
   // asociada" — se reusa acá solo para resolver `grado`/`asignatura` (los
   // NOMBRES; `UnidadTematica.gradoId`/`.asignaturaId` casi nunca vienen del
@@ -201,6 +207,8 @@ function PlaneadorCrearActividadPageContent() {
         ) : (
           <CrearActividadForm
             unidadPreseleccionada={unidadPreseleccionada}
+            fechaInicio={fechaInicio}
+            fechaCierre={fechaCierre}
             formId={FORM_ID}
             onDirtyChange={setIsDirty}
             onSubmit={handleSubmit}
@@ -259,29 +267,39 @@ function PlaneadorCrearActividadPageContent() {
  */
 function CrearActividadForm({
   unidadPreseleccionada,
+  fechaInicio,
+  fechaCierre,
   formId,
   onDirtyChange,
   onSubmit,
 }: {
   unidadPreseleccionada: UnidadTematica | undefined
+  /** `yyyy-MM-dd` — llega desde un clic en el calendario mensual (ver
+   *  `onDayClick` en `planeador-page.tsx`). */
+  fechaInicio?: string
+  fechaCierre?: string
   formId: string
   onDirtyChange: (dirty: boolean) => void
   onSubmit: (values: Actividad) => void | Promise<void>
 }) {
   const [actividad] = useState(() => {
-    const base = crearActividadVacia()
-    if (!unidadPreseleccionada) return base
-    // Solo `grado`/`asignatura` (los NOMBRES) y la unidad misma — los ids
-    // (`gradoId`/`asignaturaId`/`grupoId`) los resuelve el propio form
-    // cruzando estos nombres contra el catálogo del docente (mismo
-    // mecanismo que ya usa para una actividad real sin `fk_tgrado`, ver
-    // el efecto de `AsignaturaGradoSection` en `form-editar-actividad.tsx`).
-    return {
-      ...base,
-      grado: unidadPreseleccionada.grado,
-      asignatura: unidadPreseleccionada.asignatura,
-      unidad: { id: unidadPreseleccionada.id, nombre: unidadPreseleccionada.nombre },
+    let base = crearActividadVacia()
+    if (unidadPreseleccionada) {
+      // Solo `grado`/`asignatura` (los NOMBRES) y la unidad misma — los ids
+      // (`gradoId`/`asignaturaId`/`grupoId`) los resuelve el propio form
+      // cruzando estos nombres contra el catálogo del docente (mismo
+      // mecanismo que ya usa para una actividad real sin `fk_tgrado`, ver
+      // el efecto de `AsignaturaGradoSection` en `form-editar-actividad.tsx`).
+      base = {
+        ...base,
+        grado: unidadPreseleccionada.grado,
+        asignatura: unidadPreseleccionada.asignatura,
+        unidad: { id: unidadPreseleccionada.id, nombre: unidadPreseleccionada.nombre },
+      }
     }
+    if (fechaInicio) base = { ...base, fechaInicio }
+    if (fechaCierre) base = { ...base, fechaCierre }
+    return base
   })
 
   return (

@@ -248,6 +248,13 @@ function FiltroColumna<T extends string | number>({
 }: FiltroColumnaProps<T>) {
   return (
     <ul className={cn("min-w-40 border-r py-1", className)}>
+      {/* Sin esto, un docente sin nada asignado en este nivel de la cascada
+          (ej. sin grados) abría una columna completamente en blanco —
+          mismo criterio que el `__none__`/"No tienes X asignados" de los
+          `<Select>` de grado/asignatura en `form-unidad-info-general.tsx`. */}
+      {items.length === 0 && (
+        <li className="text-muted-foreground px-3 py-2 text-sm whitespace-nowrap">Sin opciones</li>
+      )}
       {items.map((item) => (
         <li key={item.key}>
           <button
