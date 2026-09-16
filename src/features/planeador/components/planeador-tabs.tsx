@@ -97,6 +97,10 @@ export function PlaneadorTabs() {
               value={view.key}
               render={<Link to={view.to} search={view.instrumento ? { instrumento: view.instrumento } : undefined} />}
               className="data-active:bg-card dark:data-active:bg-card"
+              // El rótulo lo define el referente curricular y admite 400
+              // caracteres: cuando no entra se recorta con "…", así que el
+              // nombre completo tiene que quedar disponible al pasar el mouse.
+              title={view.label}
             >
               {view.label}
             </TabsTrigger>
