@@ -1,9 +1,7 @@
 import { useMutation } from "@tanstack/react-query"
 
-import { env } from "@/config/env"
-import { api } from "@/lib/api-client"
+import { downloadReport } from "@/lib/report-client"
 import type { MutationConfig } from "@/lib/react-query"
-import { AUDIT_EXPORT_UNAVAILABLE } from "@/features/administration/audits/api/real-mapping"
 import type { ExportFormat, ExportResult } from "@/features/administration/audits/api/types/audit"
 
 interface ExportSessionOperationsInput {
@@ -16,13 +14,17 @@ interface ExportSessionOperationsInput {
 // no tiene filtros, el "export all" es simplemente pasar todos los ids.
 function exportSessionOperations({
   sessionId,
-  ...body
+  ids,
+  format,
 }: ExportSessionOperationsInput): Promise<ExportResult> {
-  // Sin endpoint de reportes de auditoría en el backend real — ver
-  // AUDIT_EXPORT_UNAVAILABLE.
-  if (!env.ENABLE_API_MOCKING) return Promise.resolve(AUDIT_EXPORT_UNAVAILABLE)
-
-  return api.post(`/audits/sessions/${sessionId}/operations/export`, body)
+  // `POST /reportes/auditoria-sesion-operaciones` (colección Postman
+  // `auditoria-export-pdf-excel`, V405) — `SESSIONID` es obligatorio y va
+  // en el body: sin él el reporte sale vacío, igual que `SLUG` en
+  // `auditoria-tabla-operaciones`.
+  return downloadReport("auditoria-sesion-operaciones", {
+    format,
+    filters: { SESSIONID: sessionId, IDS: ids.join(",") },
+  })
 }
 
 interface UseExportSessionOperationsOptions {

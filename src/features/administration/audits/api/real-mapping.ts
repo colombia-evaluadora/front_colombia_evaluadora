@@ -41,21 +41,12 @@
 import type { SortingState } from "@tanstack/react-table"
 
 import type { FieldFilter } from "@/features/administration/audits/api/schema"
-import type { ExportResult } from "@/features/administration/audits/api/types/audit"
-import type { OperationChange, OperationType } from "@/features/administration/audits/api/types/audit-table"
-
-/**
- * Los diálogos de exportación siguen existiendo, pero contra el backend real
- * no hay a quién pedirle el archivo: no hay ninguna clave de auditoría en el
- * catálogo del `reporting-service` (ver `ReportKey` en `lib/report-client.ts`)
- * ni una fila `.../reporte` en `public.query` para estos endpoints. Se
- * devuelve este resultado en vez de pegarle a un endpoint inexistente y
- * mostrar un 404 crudo.
- */
-export const AUDIT_EXPORT_UNAVAILABLE: ExportResult = {
-  status: "error",
-  message: "La exportación de auditoría todavía no está disponible en el backend.",
-}
+import type { AuditsQueryFilters, SessionOperationsFilters } from "@/features/administration/audits/api/types/audit"
+import type {
+  OperationChange,
+  OperationType,
+  TableOperationsQueryFilters,
+} from "@/features/administration/audits/api/types/audit-table"
 
 /** Ícono único que devuelve V85 mientras no exista `audit_table_catalog`. */
 export const DEFAULT_AUDIT_TABLE_ICON = "Table-Icon"
@@ -221,5 +212,86 @@ export function sortWindow<T>(rows: T[], sorting: SortingState): T[] {
     if (typeof left === "number" && typeof right === "number") return (left - right) * factor
     return String(left).localeCompare(String(right)) * factor
   })
+}
+
+/**
+ * Mapeos hacia los `filters` de los tres reportes de auditoría (colección
+ * Postman `auditoria-export-pdf-excel`, V405): claves en MAYÚSCULA, no las
+ * mismas que usa el listado (`AuditsQueryFilters`/`TableOperationsQueryFilters`
+ * en camelCase). `OPERATIONCH` acá NO es lo mismo que `toOperationCh`: el
+ * reporte espera la letra de Debezium (`c`/`u`/`d`), el listado espera la
+ * etiqueta legible (`INSERT`/`UPDATE`/`DELETE`) — dos contratos distintos
+ * para el mismo campo de la UI.
+ */
+const OPERATION_A_LETRA: Record<OperationType, "c" | "u" | "d"> = {
+  INSERT: "c",
+  UPDATE: "u",
+  DELETE: "d",
+}
+
+/** Igual que `toOperationCh`: el reporte solo acepta UN valor; con varios seleccionados se manda vacío. */
+function toOperationChLetra(operations?: OperationType[]): string | undefined {
+  return operations?.length === 1 ? OPERATION_A_LETRA[operations[0]] : undefined
+}
+
+export interface AuditoriaSesionesReportFilters {
+  AUTHOR?: string
+  STATUS?: string
+  STARTEDFROM?: string
+  STARTEDTO?: string
+}
+
+export function toAuditoriaSesionesReportFilters(
+  filters: AuditsQueryFilters,
+): AuditoriaSesionesReportFilters {
+  return {
+    AUTHOR: filters.author || undefined,
+    // Mismo criterio que `toOperationCh`: el reporte solo acepta un STATUS.
+    STATUS: filters.status?.length === 1 ? filters.status[0] : undefined,
+    STARTEDFROM: filters.startedFrom || undefined,
+    STARTEDTO: filters.startedTo || undefined,
+  }
+}
+
+export interface AuditoriaTablaOperacionesReportFilters {
+  SLUG: string
+  AUTHOR?: string
+  OPERATIONCH?: string
+  OCCURREDFROM?: string
+  OCCURREDTO?: string
+}
+
+export function toAuditoriaTablaOperacionesReportFilters(
+  tableSlug: string,
+  filters: TableOperationsQueryFilters,
+): AuditoriaTablaOperacionesReportFilters {
+  return {
+    SLUG: tableSlug,
+    AUTHOR: filters.author || undefined,
+    OPERATIONCH: toOperationChLetra(filters.operations),
+    OCCURREDFROM: filters.occurredFrom || undefined,
+    OCCURREDTO: filters.occurredTo || undefined,
+  }
+}
+
+export interface AuditoriaSesionOperacionesReportFilters {
+  SESSIONID: string
+  TABLESLUG?: string
+  OPERATIONCH?: string
+  OCCURREDFROM?: string
+  OCCURREDTO?: string
+}
+
+export function toAuditoriaSesionOperacionesReportFilters(
+  sessionId: string,
+  filters: SessionOperationsFilters,
+): AuditoriaSesionOperacionesReportFilters {
+  return {
+    SESSIONID: sessionId,
+    TABLESLUG: filters.tableSlug || undefined,
+    OPERATIONCH: toOperationChLetra(filters.operations),
+    OCCURREDFROM: filters.occurredFrom || undefined,
+    OCCURREDTO: filters.occurredTo || undefined,
+  }
 }
 
