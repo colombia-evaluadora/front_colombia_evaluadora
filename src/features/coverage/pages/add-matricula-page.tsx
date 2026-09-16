@@ -307,8 +307,8 @@ function AddMatriculaPageContent() {
       dismiss()
       return
     }
-    const labels = missingFields.map((id) => REQUIRED_MATRICULA_FIELD_LABELS[id] ?? id)
-    notify(`Faltan campos obligatorios: ${labels.join(", ")}.`, {
+    const label = REQUIRED_MATRICULA_FIELD_LABELS[missingFields[0]] ?? missingFields[0]
+    notify(`Falta el campo obligatorio: ${label}.`, {
       variant: "error",
       autoCloseMs: 0,
     })

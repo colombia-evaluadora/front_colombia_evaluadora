@@ -1,61 +1,179 @@
-export type PeriodoId = 1 | 2 | 3 | 4
+/** Tipos de los endpoints `POST /api/eval-col/informes/...`. */
 
-export interface PeriodoOption {
-  id: PeriodoId
-  label: string
-}
+export type ModoPeriodo = "real" | "requerido"
 
-export interface NotasPeriodo {
-  promedio: number
-  puesto: number
-  areasPerdidas: number
-  recuperaciones: number
-  asignaturas: Record<string, number>
-  confirmado: boolean
-}
+/** Sin criterio de evaluación configurado el backend responde `cualitativo`
+ *  — esa es la vía normal de preescolar, no un hueco de datos. */
+export type FormatoPeriodo = "numerico" | "cualitativo"
 
-export interface EstudianteInforme {
-  id: number
-  documento: string
-  nombreCompleto: string
-  jornada?: string
-  notasPorPeriodo: Partial<Record<PeriodoId, NotasPeriodo>>
-  observacionesPorPeriodo?: Partial<Record<PeriodoId, string>>
-}
+export type EstadoNota =
+  | "sin_nota"
+  /** Hay proyección y nunca se consolidó — gris. */
+  | "proyectada"
+  /** Consolidada y la proyección coincide — negro. */
+  | "guardada"
+  /** Consolidada pero la proyección difiere — negro + gris. */
+  | "cambio_propuesto"
+  /** Lo que le falta sacar (solo en `modo_periodo: "requerido"`). */
+  | "requerido"
 
-export interface GrupoInforme {
+export type ObservacionEstado = "APROBADA" | "MODIFICADA"
+
+export interface PeriodoInforme {
   id: number
   nombre: string
-  preescolar?: boolean
-  estudiantes: EstudianteInforme[]
+  fechaInicio: string
+  fechaFin: string
+  /** Es la misma condición con la que el backend arma la alerta roja — no
+   *  recalcularla por fechas desde acá. */
+  termino: boolean
+  enCurso: boolean
+  calificable: boolean
+  sede: string | null
+  jornada: string | null
 }
 
-export interface ColumnaAsignatura {
-  key: string
-  label: string
-  descripcion: string
+export interface AsignaturaInforme {
+  asignaturaId: number
+  nombre: string
+  abreviacion: string
+  area: string | null
+  orden: number
+  estado: EstadoNota
+  esNumerico: boolean
+  nota: number | null
+  /** `null` con estado `cambio_propuesto` significa "la propuesta es que ya
+   *  no hay nota": el docente dio de baja las actividades. */
+  notaPropuesta: number | null
+  valoracion: string | null
+  simbolo: string | null
+  aprobada: boolean | null
+  /** Modo requerido: ya le alcanza sin sacar nada más. */
+  yaAsegurado: boolean
+  /** Modo requerido: `false` = ya perdió pase lo que pase. El valor llega
+   *  igual aunque supere el máximo. */
+  alcanzable: boolean
 }
 
-export interface DocenteConCambioPendiente {
-  id: number
-  nombreDocente: string
-  asignatura: string
-  gradoGrupo: string
+export interface FilaInforme {
+  matriculaId: number
+  estudianteId: number
+  nombreCompleto: string
+  documento: string
+  periodoId: number
+  periodoNombre: string
+  /** Junto con `formato` deciden cómo renderizar. En preescolar
+   *  `asignaturas` llega con filas en `null`, así que mirar si viene vacío
+   *  no sirve para distinguirlo. */
+  modoPeriodo: ModoPeriodo
+  formato: FormatoPeriodo
+  esCualitativo: boolean
+  consolidado: boolean
+  promedioGuardado: number | null
+  promedioProyectado: number | null
+  puesto: number | null
+  aprobadas: number
+  reprobadas: number
+  asignaturas: AsignaturaInforme[]
+  observacion: string | null
+  observacionEstado: ObservacionEstado | null
+  observacionDesactualizada: boolean
+  tieneCambiosPropuestos: boolean
 }
 
-export interface CambiosPendientesInfo {
-  totalDocentes: number
-  grupos: DocenteConCambioPendiente[]
+export interface PlanillaPendiente {
+  grupoId: number
+  grupoNombre: string
+  asignaturaId: number
+  asignaturaNombre: string
+  periodoId: number
+  periodoNombre: string
+  funcionarioId: number | null
+  docente: string | null
+  /** `0` = el docente ni siquiera armó las actividades. */
+  actividades: number
+  docentesAsignados: number
+}
+
+export interface CambioPendiente {
+  grupoId: number
+  grupoNombre: string
+  asignaturaId: number
+  asignaturaNombre: string
+  periodoId: number
+  periodoNombre: string
+  funcionarioId: number | null
+  docente: string | null
+  estudiantesAfectados: number
+  docentesAsignados: number
+}
+
+export interface HistorialDetalle {
+  matriculaId: number
+  estudiante: string
+  documento: string
+  /** El del momento del guardado — no se recalcula al consultar. */
+  promedio: number | null
+  asignaturas: number
 }
 
 export interface HistorialCambio {
   id: number
+  grupoId: number
   grupoNombre: string
-  asignatura: string
-  tendencia: "subio" | "bajo"
-  periodo: PeriodoId
+  /** `null` = se guardó el informe completo; con valor, una sola asignatura
+   *  desde la planilla. */
+  asignaturaId: number | null
+  asignaturaNombre: string | null
+  periodoId: number
+  periodoNombre: string
+  usuario: string | null
   fecha: string
-  hora: string
-  cantidadCambios: number
-  usuario: string
+  momento: string
+  /** Por estudiante: guardar un curso de 30 son 30 cambios. */
+  estudiantes: number
+  detalle: HistorialDetalle[]
+}
+
+export type EstadoCeldaPlanilla = "CALIFICADA" | "PENDIENTE" | "NO_ASIGNADA" | "NO_CALIFICABLE"
+
+export interface CeldaPlanilla {
+  orden: number
+  actividadId: number
+  titulo: string
+  actividadEstudianteId: number | null
+  estado: EstadoCeldaPlanilla
+  porcentaje: number | null
+  nota: number | null
+  valoracion: string | null
+  observacion: string | null
+  esEvaluativa: boolean
+  ponderacion: number | null
+  notaMaxima: number | null
+  instrumento: string | null
+  fechaInicio: string | null
+  fechaCierre: string | null
+}
+
+export interface FilaPlanilla {
+  matriculaId: number
+  estudianteId: number
+  nombreCompleto: string
+  /** Ambas homologadas a la escala del colegio: la flecha se decide
+   *  comparando lo que se dibuja, no los porcentajes. */
+  definitivaGuardada: number | null
+  definitivaProyectada: number | null
+  actividades: CeldaPlanilla[]
+}
+
+export type ResultadoGuardado = "guardada" | "actualizada" | "sin_cambio" | "sin_proyeccion"
+
+export interface DetalleGuardado {
+  matriculaId: number
+  estudiante: string
+  resultado: ResultadoGuardado
+  notaAnterior: number | null
+  promedio: number | null
+  aprobadas: number | null
+  reprobadas: number | null
 }

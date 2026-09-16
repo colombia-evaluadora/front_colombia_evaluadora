@@ -204,9 +204,13 @@ export const paths = {
       path: "gestion-academica/informes",
       getHref: () => "/app/gestion-academica/informes",
     },
-    gestionAcademicaInformesPlanillaAprobacion: {
-      path: "gestion-academica/informes/planilla/$docenteId",
-      getHref: (docenteId: number | string) => `/app/gestion-academica/informes/planilla/${docenteId}`,
+    // La planilla del informe se identifica por (grupo, asignatura, período),
+    // no por docente: es la asignatura la que se consolida, y el mismo par
+    // grupo/asignatura puede tener más de un docente asignado.
+    gestionAcademicaInformesPlanilla: {
+      path: "gestion-academica/informes/planilla/$grupoId/$asignaturaId/$periodoId",
+      getHref: (grupoId: number | string, asignaturaId: number | string, periodoId: number | string) =>
+        `/app/gestion-academica/informes/planilla/${grupoId}/${asignaturaId}/${periodoId}`,
     },
     gestionAcademicaReferentesCurriculares: {
       path: "gestion-academica/referentes-curriculares",
