@@ -13,6 +13,7 @@ import {
 import { CheckIcon, SpinnerIcon } from "@/components/ui/icons"
 import { Spinner } from "@/components/ui/spinner"
 import { paths } from "@/config/paths"
+import { getErrorMessage } from "@/lib/api-client"
 
 import { useCreateActividad } from "@/features/planeador/api/mutations/create-actividad"
 import { useUpdateMaterialesActividad } from "@/features/planeador/api/mutations/update-materiales-actividad"
@@ -81,8 +82,11 @@ function PlaneadorCrearActividadPageContent() {
 
   const createMutation = useCreateActividad({
     mutationConfig: {
-      onError: () => {
-        notify("No se pudo crear la actividad.", { variant: "error" })
+      // El motivo real lo manda el backend (una validación del planeador es
+      // accionable: qué instrumento no aplica, qué unidad lo impide). Mismo
+      // criterio que la página de editar, que ya mostraba `getErrorMessage`.
+      onError: (error) => {
+        notify(getErrorMessage(error), { variant: "error" })
       },
     },
   })
@@ -92,8 +96,8 @@ function PlaneadorCrearActividadPageContent() {
       // (ver el comentario de `create-actividad.ts`): si este PUT falla, la
       // actividad YA quedó creada — se avisa aparte en vez de tratarlo como
       // si la creación entera hubiera fallado.
-      onError: () => {
-        notify("La actividad se creó, pero no se pudieron guardar sus materiales de apoyo.", {
+      onError: (error) => {
+        notify(`La actividad se creó, pero no se pudieron guardar sus materiales de apoyo: ${getErrorMessage(error)}`, {
           variant: "error",
         })
       },
@@ -101,8 +105,8 @@ function PlaneadorCrearActividadPageContent() {
   })
   const updateInstrumento = useUpdateInstrumentoActividad({
     mutationConfig: {
-      onError: () => {
-        notify("La actividad se creó, pero no se pudo guardar la definición del instrumento.", {
+      onError: (error) => {
+        notify(`La actividad se creó, pero no se pudo guardar la definición del instrumento: ${getErrorMessage(error)}`, {
           variant: "error",
         })
       },
@@ -110,10 +114,11 @@ function PlaneadorCrearActividadPageContent() {
   })
   const updateAdaptaciones = useUpdateAdaptacionesActividad({
     mutationConfig: {
-      onError: () => {
-        notify("La actividad se creó, pero no se pudieron guardar sus adaptaciones curriculares.", {
-          variant: "error",
-        })
+      onError: (error) => {
+        notify(
+          `La actividad se creó, pero no se pudieron guardar sus adaptaciones curriculares: ${getErrorMessage(error)}`,
+          { variant: "error" },
+        )
       },
     },
   })
@@ -122,10 +127,11 @@ function PlaneadorCrearActividadPageContent() {
   // edición).
   const agregarCriterio = useAgregarCriterioUnidadActividad({
     mutationConfig: {
-      onError: () =>
-        notify("La actividad se creó, pero no se pudieron relacionar todos los criterios de la unidad.", {
-          variant: "error",
-        }),
+      onError: (error) =>
+        notify(
+          `La actividad se creó, pero no se pudieron relacionar todos los criterios de la unidad: ${getErrorMessage(error)}`,
+          { variant: "error" },
+        ),
     },
   })
 
