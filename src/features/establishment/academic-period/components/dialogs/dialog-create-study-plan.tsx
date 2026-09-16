@@ -203,6 +203,7 @@ export function CreateStudyPlanDialog({
       if (subjectSaved === false) return
 
       const values = studyPlanFormSchema.parse(value)
+      if (isPreescolar) values.influenciaArea = 0
       const payload: StudyPlanFormValues = personalizar
         ? values
         : { ...values, formatoCalificacion: "", criterioNota: "" }
@@ -482,7 +483,7 @@ export function CreateStudyPlanDialog({
                     if (saved.id !== asignaturaId) form.setFieldValue("asignaturaId", saved.id)
                   }}
                 >
-                  <div className="grid gap-4 sm:grid-cols-3">
+                  <div className={cn("grid gap-4", isPreescolar ? "sm:grid-cols-2" : "sm:grid-cols-3")}>
                     <form.Field name="intensidadHoraria">
                       {(field) => {
                         const isInvalid =
@@ -519,44 +520,48 @@ export function CreateStudyPlanDialog({
                       }}
                     </form.Field>
 
-                    <form.Field name="influenciaArea">
-                      {(field) => {
-                        const isInvalid =
-                          (field.state.meta.isTouched || submissionAttempts > 0) &&
-                          !field.state.meta.isValid
-                        return (
-                          <Field variant="outlined" data-invalid={isInvalid}>
-                            <FieldLabel htmlFor={field.name}>Influencia área*</FieldLabel>
-                            <InputGroup className="h-11 rounded-md border border-input px-3 hover:border-ring has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20 has-[[data-slot][aria-invalid=true]]:border-red">
-                              <InputGroupInput
-                                id={field.name}
-                                type="number"
-                                min={0}
-                                max={100}
-                                placeholder="Agregar"
-                                className="px-0"
-                                aria-invalid={isInvalid}
-                                value={Number.isNaN(field.state.value) ? "" : field.state.value}
-                                onBlur={field.handleBlur}
-                                onKeyDown={(e) => {
-                                  if (["-", "+", "e", "E"].includes(e.key)) e.preventDefault()
-                                }}
-                                onChange={(e) => {
-                                  const value = e.target.valueAsNumber
-                                  if (e.target.value === "" || !Number.isNaN(value)) {
-                                    field.handleChange(value)
-                                  }
-                                }}
-                              />
-                              <InputGroupAddon align="inline-end">
-                                <InputGroupText>%</InputGroupText>
-                              </InputGroupAddon>
-                            </InputGroup>
-                            {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                          </Field>
-                        )
-                      }}
-                    </form.Field>
+                    {!isPreescolar && (
+                      <form.Field name="influenciaArea">
+                        {(field) => {
+                          const isInvalid =
+                            (field.state.meta.isTouched || submissionAttempts > 0) &&
+                            !field.state.meta.isValid
+                          return (
+                            <Field variant="outlined" data-invalid={isInvalid}>
+                              <FieldLabel htmlFor={field.name}>Influencia área*</FieldLabel>
+                              <InputGroup className="h-11 rounded-md border border-input px-3 hover:border-ring has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20 has-[[data-slot][aria-invalid=true]]:border-red">
+                                <InputGroupInput
+                                  id={field.name}
+                                  type="number"
+                                  min={0}
+                                  max={100}
+                                  placeholder="Agregar"
+                                  className="px-0"
+                                  aria-invalid={isInvalid}
+                                  value={Number.isNaN(field.state.value) ? "" : field.state.value}
+                                  onBlur={field.handleBlur}
+                                  // INFLUENCIA_AREA admite decimales (NUMERIC(5,2)), solo
+                                  // se bloquea signo/notación científica.
+                                  onKeyDown={(e) => {
+                                    if (["-", "+", "e", "E"].includes(e.key)) e.preventDefault()
+                                  }}
+                                  onChange={(e) => {
+                                    const value = e.target.valueAsNumber
+                                    if (e.target.value === "" || !Number.isNaN(value)) {
+                                      field.handleChange(value)
+                                    }
+                                  }}
+                                />
+                                <InputGroupAddon align="inline-end">
+                                  <InputGroupText>%</InputGroupText>
+                                </InputGroupAddon>
+                              </InputGroup>
+                              {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                            </Field>
+                          )
+                        }}
+                      </form.Field>
+                    )}
 
                     <form.Field name="numeroCreditos">
                       {(field) => {

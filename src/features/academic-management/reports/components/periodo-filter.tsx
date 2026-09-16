@@ -19,10 +19,8 @@ export function PeriodoFilter({ seleccionados, onChange }: PeriodoFilterProps) {
   }
 
   return (
-    <fieldset className="flex flex-wrap items-center gap-x-6 gap-y-3 rounded-md border border-border bg-card px-4 py-3">
-      <legend className="mb-1 px-1 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-        Período e informe
-      </legend>
+    <fieldset className="flex flex-wrap items-center gap-x-6 gap-y-2 rounded-md border border-border bg-card px-3 py-1.5">
+      <legend className="px-1 text-sm font-semibold text-muted-foreground">Período e informe</legend>
       {PERIODOS.map((periodo) => (
         <div key={periodo.id} className="flex items-center gap-2">
           <Checkbox

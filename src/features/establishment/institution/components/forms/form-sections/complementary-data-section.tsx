@@ -13,7 +13,6 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
 import type { CatalogItem } from "@/features/establishment/employees/api/types/catalog"
 import { useCatalogQuery } from "@/features/establishment/employees/api/query/use-catalogs"
-import { useDisabilityTypesQuery } from "@/features/establishment/institution/api/query/use-disability-types"
 import { CATALOGS } from "@/lib/catalogs"
 import { toSelectItemsMap, toSelectOptions } from "@/lib/catalog-options"
 import { formatDateValue, parseDateValue } from "@/lib/date-time-value"
@@ -35,7 +34,7 @@ export function ComplementaryDataFormSection({ value, onChange, invalidFields = 
     const {data: rangosTarifas = []} = useCatalogQuery<CatalogItem>(CATALOGS.RANGO_TARIFAS)
     const {data: idiomas = []} = useCatalogQuery<CatalogItem>(CATALOGS.IDIOMAS)
     const {data: costRegimen = []} = useCatalogQuery<CatalogItem>(CATALOGS.COST_REGIMEN)
-    const {data: disabilities = []} = useDisabilityTypesQuery()
+    const {data: disabilities = []} = useCatalogQuery<CatalogItem>(CATALOGS.DISABILITIES_ATTENDED)
     const {data: populationGenders = []} = useCatalogQuery<CatalogItem>(CATALOGS.POPULATION_GENDERS)
 
     const idiomaItems = toSelectOptions(idiomas)

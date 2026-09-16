@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { inputTriggerVariants, inputVariants, useInputVariant } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Separator } from "@/components/ui/separator"
 import { TimePickerPanel } from "@/components/ui/time-picker"
 import { cn } from "@/lib/utils"
 
@@ -86,9 +87,21 @@ export function BreaksField({
   onRemove: (index: number) => void
 }) {
   const resolvedVariant = useInputVariant()
+  const [open, setOpen] = useState(false)
+  const [draftStart, setDraftStart] = useState("")
+  const [draftEnd, setDraftEnd] = useState("")
+
+  function handleOpenChange(nextOpen: boolean) {
+    if (!nextOpen && draftStart && draftEnd && draftStart < draftEnd) {
+      onAdd({ startTime: draftStart, endTime: draftEnd })
+      setDraftStart("")
+      setDraftEnd("")
+    }
+    setOpen(nextOpen)
+  }
 
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={handleOpenChange}>
       <div
         className={cn(
           inputVariants({ variant: resolvedVariant }),
@@ -116,7 +129,13 @@ export function BreaksField({
       </div>
       <PopoverContent align="start" className="w-auto min-w-96">
         <div className="flex flex-col gap-2">
-          <BreakEditor onAdd={onAdd} />
+          <BreakEditor
+            startTime={draftStart}
+            endTime={draftEnd}
+            onStartTimeChange={setDraftStart}
+            onEndTimeChange={setDraftEnd}
+            onAdd={onAdd}
+          />
 
           {value.length > 0 && (
             <ul className="flex flex-col">
@@ -149,16 +168,53 @@ export function BreaksField({
   )
 }
 
-function BreakEditor({ onAdd }: { onAdd: (brk: Break) => void }) {
-  const [startTime, setStartTime] = useState("")
-  const [endTime, setEndTime] = useState("")
+function BreakEditor({
+  startTime,
+  endTime,
+  onStartTimeChange,
+  onEndTimeChange,
+  onAdd,
+}: {
+  startTime: string
+  endTime: string
+  onStartTimeChange: (value: string) => void
+  onEndTimeChange: (value: string) => void
+  onAdd: (brk: Break) => void
+}) {
+  const [startOpen, setStartOpen] = useState(false)
+  const [endOpen, setEndOpen] = useState(false)
+
+  function commitAndReset() {
+    onAdd({ startTime, endTime })
+    onStartTimeChange("")
+    onEndTimeChange("")
+  }
 
   return (
     <div className="flex w-full items-center gap-2">
       <div className="border-input flex flex-1 items-center gap-3 rounded-lg border px-3 py-2.5">
-        <BreakTimeTrigger value={startTime} onChange={setStartTime} placeholder="Hora inicio" />
+        <BreakTimeTrigger
+          value={startTime}
+          onChange={onStartTimeChange}
+          placeholder="Hora inicio"
+          open={startOpen}
+          onOpenChange={(nextOpen) => {
+            setStartOpen(nextOpen)
+            if (!nextOpen) setEndOpen(true)
+          }}
+        />
         <span className="text-muted-foreground shrink-0 text-xs">→</span>
-        <BreakTimeTrigger value={endTime} onChange={setEndTime} placeholder="Hora final" />
+        <BreakTimeTrigger
+          value={endTime}
+          onChange={onEndTimeChange}
+          placeholder="Hora final"
+          open={endOpen}
+          onOpenChange={(nextOpen) => {
+            setEndOpen(nextOpen)
+            if (!nextOpen && startTime && endTime && startTime < endTime) commitAndReset()
+          }}
+          onListoClose={() => setEndOpen(false)}
+        />
       </div>
       <Button
         type="button"
@@ -167,11 +223,7 @@ function BreakEditor({ onAdd }: { onAdd: (brk: Break) => void }) {
         className="size-10 shrink-0 rounded-lg"
         aria-label="Agregar descanso"
         disabled={!startTime || !endTime}
-        onClick={() => {
-          onAdd({ startTime, endTime })
-          setStartTime("")
-          setEndTime("")
-        }}
+        onClick={commitAndReset}
       >
         <PlusIcon weight="bold" />
       </Button>
@@ -183,13 +235,30 @@ function BreakTimeTrigger({
   value,
   onChange,
   placeholder,
+  open,
+  onOpenChange,
+  onListoClose,
 }: {
   value: string
   onChange: (value: string) => void
   placeholder: string
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onListoClose?: () => void
 }) {
+  function handleOpenChange(nextOpen: boolean) {
+    if (!nextOpen) (document.activeElement as HTMLElement | null)?.blur?.()
+    onOpenChange(nextOpen)
+  }
+
+  function handleListoClick() {
+    ;(document.activeElement as HTMLElement | null)?.blur?.()
+    if (onListoClose) onListoClose()
+    else onOpenChange(false)
+  }
+
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger
         render={
           <button
@@ -203,8 +272,18 @@ function BreakTimeTrigger({
       >
         {value ? formatTime12(value) : placeholder}
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="start">
+      <PopoverContent className="w-auto gap-0 p-0" align="start">
         <TimePickerPanel value={value || undefined} onChange={onChange} />
+        <Separator />
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          className="w-full rounded-none font-normal"
+          onClick={handleListoClick}
+        >
+          Listo
+        </Button>
       </PopoverContent>
     </Popover>
   )

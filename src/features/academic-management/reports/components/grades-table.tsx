@@ -146,17 +146,26 @@ export function GradesTable({
             <th rowSpan={2} className="px-4 py-3 text-left align-bottom font-semibold uppercase">
               Apellidos y nombres
             </th>
-            <th rowSpan={2} className="px-2 py-3 text-center align-bottom font-semibold uppercase">
+            <th
+              rowSpan={2}
+              className="border-l border-border px-2 py-3 text-center align-bottom font-semibold uppercase"
+            >
               Pe
               <InfoIcon className="ml-1 inline size-3 text-muted-foreground" />
             </th>
             {COLUMNAS_RESUMEN.map((columna) => (
-              <th key={columna.key} className="px-3 py-3 text-center font-semibold uppercase">
+              <th
+                key={columna.key}
+                className="border-l border-border px-3 py-3 text-center font-semibold uppercase"
+              >
                 <ColumnaHeader columna={columna} />
               </th>
             ))}
             {COLUMNAS_ASIGNATURAS.map((columna) => (
-              <th key={columna.key} className="px-3 py-3 text-center font-semibold uppercase">
+              <th
+                key={columna.key}
+                className="border-l border-border px-3 py-3 text-center font-semibold uppercase"
+              >
                 <ColumnaHeader columna={columna} />
               </th>
             ))}
@@ -173,39 +182,43 @@ export function GradesTable({
                 />
               </td>
               <td className="px-4 py-3 align-top font-medium whitespace-nowrap">{estudiante.nombreCompleto}</td>
-              <td className="px-2 py-3 text-center align-top text-muted-foreground">
-                <div className="flex flex-col gap-1.5">
+              <td className="border-l border-border p-0 text-center align-top text-muted-foreground">
+                <div className="flex flex-col divide-y divide-border">
                   {periodosOrdenados.map((periodo) => (
-                    <span key={periodo.id}>{periodo.id}</span>
+                    <span key={periodo.id} className="px-2 py-1.5">
+                      {periodo.id}
+                    </span>
                   ))}
                 </div>
               </td>
               {COLUMNAS_RESUMEN.map((columna) => (
-                <td key={columna.key} className="px-3 py-3 text-center align-top">
-                  <div className="flex flex-col gap-1.5">
+                <td key={columna.key} className="border-l border-border p-0 text-center align-top">
+                  <div className="flex flex-col divide-y divide-border">
                     {periodosOrdenados.map((periodo) => (
-                      <CeldaValor
-                        key={periodo.id}
-                        estudiante={estudiante}
-                        periodo={periodo.id}
-                        columna={columna}
-                        esAsignatura={false}
-                      />
+                      <div key={periodo.id} className="px-3 py-1.5">
+                        <CeldaValor
+                          estudiante={estudiante}
+                          periodo={periodo.id}
+                          columna={columna}
+                          esAsignatura={false}
+                        />
+                      </div>
                     ))}
                   </div>
                 </td>
               ))}
               {COLUMNAS_ASIGNATURAS.map((columna) => (
-                <td key={columna.key} className="px-3 py-3 text-center align-top">
-                  <div className="flex flex-col gap-1.5">
+                <td key={columna.key} className="border-l border-border p-0 text-center align-top">
+                  <div className="flex flex-col divide-y divide-border">
                     {periodosOrdenados.map((periodo) => (
-                      <CeldaValor
-                        key={periodo.id}
-                        estudiante={estudiante}
-                        periodo={periodo.id}
-                        columna={columna}
-                        esAsignatura
-                      />
+                      <div key={periodo.id} className="px-3 py-1.5">
+                        <CeldaValor
+                          estudiante={estudiante}
+                          periodo={periodo.id}
+                          columna={columna}
+                          esAsignatura
+                        />
+                      </div>
                     ))}
                   </div>
                 </td>

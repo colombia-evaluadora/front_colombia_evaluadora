@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Link } from "@tanstack/react-router"
+import { Link, useNavigate } from "@tanstack/react-router"
 
 import {
   TableScreen,
@@ -25,8 +25,8 @@ import {
   InputGroupButton,
   InputGroupInput,
 } from "@/components/ui/input-group"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import {
-  ArrowLeftIcon,
   CaretDownIcon,
   CaretUpIcon,
   CheckCircleFillIcon,
@@ -62,21 +62,49 @@ function formatNota(valor: number | undefined): string {
 }
 
 function DefinitivaCelda({ estudiante }: { estudiante: EstudiantePlanilla }) {
-  const { definitivaProyectada, definitivaAnterior } = estudiante
+  const { definitivaProyectada, definitivaAnterior, motivoCambio } = estudiante
   if (definitivaAnterior == null) {
     return <span className="font-semibold">{formatNota(definitivaProyectada)}</span>
   }
   const subio = definitivaProyectada > definitivaAnterior
   return (
-    <div className="flex flex-col gap-0.5">
-      <span
-        className={cn("inline-flex items-center gap-0.5 font-semibold", subio ? "text-green" : "text-red")}
+    <Popover>
+      <PopoverTrigger
+        render={
+          <button
+            type="button"
+            className="inline-flex items-center gap-0.5 font-semibold"
+          />
+        }
       >
-        {subio ? <CaretUpIcon /> : <CaretDownIcon />}
         {formatNota(definitivaProyectada)}
-      </span>
-      <span className="text-xs text-muted-foreground line-through">{formatNota(definitivaAnterior)}</span>
-    </div>
+        {subio ? <CaretUpIcon className="text-green" /> : <CaretDownIcon className="text-red" />}
+      </PopoverTrigger>
+      <PopoverContent className="w-64 gap-2">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-semibold">Nota anterior</span>
+          <span className="text-sm">{formatNota(definitivaAnterior)}</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-semibold">Nota actual</span>
+          <span
+            className={cn(
+              "inline-flex items-center gap-0.5 text-sm font-semibold",
+              subio ? "text-green" : "text-red",
+            )}
+          >
+            {formatNota(definitivaProyectada)}
+            {subio ? <CaretUpIcon /> : <CaretDownIcon />}
+          </span>
+        </div>
+        {motivoCambio && (
+          <p className="text-sm">
+            <span className="font-semibold">Motivo: </span>
+            {motivoCambio}
+          </p>
+        )}
+      </PopoverContent>
+    </Popover>
   )
 }
 
@@ -165,6 +193,7 @@ function PlanillaTable({ estudiantes }: { estudiantes: EstudiantePlanilla[] }) {
 
 function PlanillaAprobacionContent() {
   const { notify } = useNotify()
+  const navigate = useNavigate()
   const { docenteId } = planillaAprobacionRoute.useParams()
   const docente = DOCENTES_APROBACION.find((d) => d.id === Number(docenteId))
   const [busqueda, setBusqueda] = React.useState("")
@@ -175,7 +204,7 @@ function PlanillaAprobacionContent() {
   )
 
   function handleAprobar() {
-    notify("Cambios aprobados: el consolidado del período quedó actualizado.")
+    navigate({ to: paths.app.gestionAcademicaInformes.getHref() })
   }
 
   function handleRechazar() {
@@ -194,22 +223,11 @@ function PlanillaAprobacionContent() {
       </TableScreenHeader>
 
       <TableScreenBody>
-        <div className="mb-4 flex items-center gap-2">
-          <Button
-            variant="ghost"
-            color="neutral"
-            size="icon-xs"
-            aria-label="Volver a Informes"
-            render={<Link to={paths.app.gestionAcademicaInformes.getHref()} />}
-          >
-            <ArrowLeftIcon />
-          </Button>
-          {docente && (
-            <span className="text-sm text-muted-foreground">
-              {docente.nombreDocente} · {docente.asignatura} · {docente.gradoGrupo}
-            </span>
-          )}
-        </div>
+        {docente && (
+          <p className="mb-4 text-sm text-muted-foreground">
+            {docente.nombreDocente} · {docente.asignatura} · {docente.gradoGrupo}
+          </p>
+        )}
 
         <div className="rounded-lg border border-border bg-background p-4">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -256,9 +274,6 @@ function PlanillaAprobacionContent() {
               </InputGroup>
             </Field>
             <TableScreenActions>
-              {/* "Aprobar y actualizar consolidado" y su "…" van pegados como
-                  un solo control partido, igual que "Nueva actividad" en el
-                  Planeador (ver `planeador-page.tsx`). */}
               <div className="flex gap-0">
                 <Button
                   color="primary"

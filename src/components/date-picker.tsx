@@ -30,6 +30,8 @@ type PickerBaseProps = VariantProps<typeof inputVariants> & {
   maxDate?: Date
   /** Primer día seleccionable -- los anteriores quedan deshabilitados. Por ejemplo, el "Hasta" de un rango usa `minDate` = la fecha "Desde" elegida. */
   minDate?: Date
+  disabledRanges?: { from: Date; to: Date }[]
+  onClose?: () => void
 }
 
 type DatePickerProps = PickerBaseProps &
@@ -88,11 +90,21 @@ function DatePicker(props: DatePickerProps) {
     disabled,
     maxDate,
     minDate,
+    disabledRanges,
+    onClose,
     "aria-invalid": ariaInvalid,
     "aria-describedby": ariaDescribedby,
   } = props
 
   const [open, setOpen] = React.useState(false)
+
+  function handleOpenChange(nextOpen: boolean) {
+    if (!nextOpen) {
+      ;(document.activeElement as HTMLElement | null)?.blur?.()
+      onClose?.()
+    }
+    setOpen(nextOpen)
+  }
 
   const resolvedVariant = useInputVariant(variant)
 
@@ -124,7 +136,7 @@ function DatePicker(props: DatePickerProps) {
         : date,
     )
     // En `datetime` el popover sigue abierto: falta elegir la hora.
-    if (props.mode !== "datetime") setOpen(false)
+    if (props.mode !== "datetime") handleOpenChange(false)
   }
 
   function handleChangeTime(time: string) {
@@ -139,7 +151,7 @@ function DatePicker(props: DatePickerProps) {
   const Icon = mode === "time" ? ClockIcon : CalendarIcon
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger
         render={
           <button
@@ -167,7 +179,19 @@ function DatePicker(props: DatePickerProps) {
           borde es lo que separa el calendario de lo que hay detrás. */}
       <PopoverContent className="w-auto gap-0 border border-border p-0" align={align}>
         {mode === "time" ? (
-          <TimePickerPanel value={timeValue} onChange={handleChangeTime} />
+          <>
+            <TimePickerPanel value={timeValue} onChange={handleChangeTime} />
+            <Separator />
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="w-full rounded-none font-normal"
+              onClick={() => handleOpenChange(false)}
+            >
+              Listo
+            </Button>
+          </>
         ) : (
           <>
             <Calendar
@@ -175,15 +199,11 @@ function DatePicker(props: DatePickerProps) {
               selected={dateValue}
               onSelect={handleSelectDate}
               locale={es}
-              disabled={
-                maxDate && minDate
-                  ? [{ after: maxDate }, { before: minDate }]
-                  : maxDate
-                    ? { after: maxDate }
-                    : minDate
-                      ? { before: minDate }
-                      : undefined
-              }
+              disabled={[
+                ...(maxDate ? [{ after: maxDate }] : []),
+                ...(minDate ? [{ before: minDate }] : []),
+                ...(disabledRanges ?? []),
+              ]}
             />
             {/* En `datetime` la hora va detrás de un botón: el panel de reloj
                 no entra al lado del calendario sin desbordar el popover. */}

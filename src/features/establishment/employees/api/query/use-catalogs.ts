@@ -47,6 +47,7 @@ const catalogNames: Partial<Record<CatalogSlug, string>> = {
   [CATALOGS.LEGAL_TYPES]: "los tipos jurídicos",
   [CATALOGS.ZONES]: "las zonas",
   [CATALOGS.DISABILITIES]: "las discapacidades",
+  [CATALOGS.DISABILITIES_ATTENDED]: "las discapacidades atendidas",
   [CATALOGS.LICENSE_STATUSES]: "los estados de licencia",
   [CATALOGS.ENTITY_STATUSES]: "los estados de entidad",
 }
@@ -83,6 +84,12 @@ const CATALOG_CATEGORIAS: Partial<Record<CatalogSlug, string>> = {
   [CATALOGS.RANGO_TARIFAS]: "RANG_TARIFA",
   [CATALOGS.IDIOMAS]: "IDIOMA",
   [CATALOGS.ZONES]: "ZONA",
+  // "Discapacidades atendidas" del establecimiento — a diferencia de
+  // DISABILITIES (TDISCAPACIDAD), esta sí es TLISTA_VALOR (ver captura con
+  // pk_lista_valor 1-4 bajo esta categoría).
+  // Ojo: el nombre real de la categoría trae el typo "DISCAPACIODAD"
+  // (así está en TLISTA_VALOR, no es error nuestro).
+  [CATALOGS.DISABILITIES_ATTENDED]: "DISCAPACIODAD_ATENDIDA",
   // Confirmado 1:1 con el ejemplo de payload real que se uso para diseñar
   // este mapeo (pk_lista_valor 533="Activo", 534="Inactivo", etc.).
   [CATALOGS.ENTITY_STATUSES]: "ESTADO_ESTABLECIMIENTO",

@@ -23,6 +23,9 @@ export interface EstudiantePlanilla {
    * flecha sale verde (subió) o roja (bajó).
    */
   definitivaAnterior?: number
+  /** Por qué el docente hizo el cambio tardío — solo aplica junto con
+   *  `definitivaAnterior`, se muestra en el popover de la nota. */
+  motivoCambio?: string
   notasPorActividad: Record<string, number | undefined>
 }
 
@@ -63,6 +66,7 @@ export const ESTUDIANTES_PLANILLA_APROBACION: EstudiantePlanilla[] = [
     nombreCompleto: "Mariana Alejandra Castillo Ríos",
     definitivaProyectada: 2.5,
     definitivaAnterior: 3.0,
+    motivoCambio: "No entregó el taller de fracciones en la fecha establecida.",
     notasPorActividad: { "taller-fracciones": 2.5, "quiz-conceptos": 2.5, "participacion-clase": 2.5, "evaluacion-unidad-1": 2.5 },
   },
   {
@@ -76,6 +80,7 @@ export const ESTUDIANTES_PLANILLA_APROBACION: EstudiantePlanilla[] = [
     nombreCompleto: "Isabella Camila Herrera Díaz",
     definitivaProyectada: 3.0,
     definitivaAnterior: 2.5,
+    motivoCambio: "Presentó una actividad de recuperación de la evaluación unidad 1.",
     notasPorActividad: { "taller-fracciones": 3.0, "quiz-conceptos": 3.0, "participacion-clase": 3.0, "evaluacion-unidad-1": 2.5 },
   },
   {

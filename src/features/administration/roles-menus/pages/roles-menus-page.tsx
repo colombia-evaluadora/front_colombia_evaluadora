@@ -59,14 +59,16 @@ function RolesMenusPageContent() {
   const roleId = selectedRoleId ?? roles[0]?.id ?? null
 
   const { data: menus = [], isPending: menusPending } = useMenusQuery()
-  const { data: assignedIds = [], isPending: assignedPending } = useRoleMenusQuery(roleId)
+  const { data: roleMenus = [], isPending: assignedPending } = useRoleMenusQuery(roleId)
+  const assignedIds = useMemo(() => roleMenus.map((menu) => menu.id), [roleMenus])
 
   const tree = useMemo(() => buildMenuTree(menus), [menus])
 
   const [readOnlyIds, setReadOnlyIds] = useState<Set<number>>(new Set())
+
   useEffect(() => {
-    setReadOnlyIds(new Set())
-  }, [roleId])
+    setReadOnlyIds(new Set(roleMenus.filter((menu) => menu.soloLectura).map((menu) => menu.id)))
+  }, [roleMenus])
 
   const createRole = useCreateRole({
     mutationConfig: {

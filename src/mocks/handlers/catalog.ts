@@ -110,6 +110,10 @@ export const catalogHandlers = [
     return HttpResponse.json(DISABILITIES)
   }),
 
+  http.get(`/api/catalogs/${CATALOGS.DISABILITIES_ATTENDED}`, () => {
+    return HttpResponse.json(DISABILITIES)
+  }),
+
   http.get(`/api/catalogs/${CATALOGS.LICENSE_STATUSES}`, () => {
     return HttpResponse.json(LICENSE_STATUSES)
   }),
