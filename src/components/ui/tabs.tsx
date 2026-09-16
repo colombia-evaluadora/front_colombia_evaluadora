@@ -112,11 +112,15 @@ function TabsTrigger({ className, ...props }: TabsPrimitive.Tab.Props) {
         // etiqueta entera, pero acotada por max-w (abajo): sin ese tope una
         // etiqueta larga de verdad —el instrumento del referente curricular
         // admite 400 caracteres— reclamaba miles de px y desbordaba la franja.
+        // El tope va en rem y NO en %: al medir el fit-content de la lista, un
+        // porcentaje todavía no se puede resolver y se ignora, así que la lista
+        // se dimensionaba con la etiqueta entera, topaba contra max-w-full y
+        // dejaba un tramo de franja vacío a la derecha en vez del efecto folder.
         // El display block es lo que habilita el text-ellipsis (en un flex no aplica).
         "group-data-[variant=folder]/tabs-list:block group-data-[variant=folder]/tabs-list:min-w-16 group-data-[variant=folder]/tabs-list:flex-initial group-data-[variant=folder]/tabs-list:truncate group-data-[variant=folder]/tabs-list:text-center",
         // La activa borra su borde inferior para fundirse con el panel (que va sin
         // borde superior) y queda en blanco.
-        "group-data-[variant=folder]/tabs-list:data-active:flex-none group-data-[variant=folder]/tabs-list:data-active:max-w-[60%] group-data-[variant=folder]/tabs-list:data-active:border-b-transparent group-data-[variant=folder]/tabs-list:data-active:bg-background dark:group-data-[variant=folder]/tabs-list:data-active:border-b-transparent dark:group-data-[variant=folder]/tabs-list:data-active:bg-background",
+        "group-data-[variant=folder]/tabs-list:data-active:flex-none group-data-[variant=folder]/tabs-list:data-active:max-w-md group-data-[variant=folder]/tabs-list:data-active:border-b-transparent group-data-[variant=folder]/tabs-list:data-active:bg-background dark:group-data-[variant=folder]/tabs-list:data-active:border-b-transparent dark:group-data-[variant=folder]/tabs-list:data-active:bg-background",
         "after:absolute after:bg-foreground after:opacity-0 after:transition-opacity group-data-horizontal/tabs:after:inset-x-0 group-data-horizontal/tabs:after:bottom-[-5px] group-data-horizontal/tabs:after:h-0.5 group-data-vertical/tabs:after:inset-y-0 group-data-vertical/tabs:after:-right-1 group-data-vertical/tabs:after:w-0.5 group-data-[variant=line]/tabs-list:data-active:after:opacity-100",
         className,
       )}
