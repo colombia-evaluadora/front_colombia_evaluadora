@@ -56,6 +56,13 @@ export const evalCol = {
     return toRow<T>(await api.post(`${PREFIX}${url}`, data), url)
   },
 
+  /** POST que devuelve una lista. Los endpoints de Informes son todos POST
+   *  —incluidos los de lectura— porque cuatro reciben arreglos y en este
+   *  esquema ningún GET los acepta. */
+  async postRows<T>(url: string, data?: unknown): Promise<T[]> {
+    return toRows<T>(await api.post(`${PREFIX}${url}`, data))
+  },
+
   /** PATCH que devuelve un único recurso. */
   async patchRow<T>(url: string, data?: unknown): Promise<T> {
     return toRow<T>(await api.patch(`${PREFIX}${url}`, data), url)

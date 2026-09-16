@@ -1,132 +1,154 @@
 import { Checkbox } from "@/components/ui/checkbox"
-import { InfoIcon } from "@/components/ui/icons"
+import { CaretDownIcon, CaretUpIcon, InfoIcon } from "@/components/ui/icons"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 
-import {
-  COLUMNAS_ASIGNATURAS,
-  COLUMNAS_RESUMEN,
-  NOTA_MAXIMA,
-  NOTA_MINIMA_APROBATORIA,
-  PERIODOS,
-  PESOS_PERIODO,
-} from "@/features/academic-management/reports/api/mock-data"
+import type {
+  AsignaturaInforme,
+  FilaInforme,
+} from "@/features/academic-management/reports/api/types"
 import type {
   ColumnaAsignatura,
-  EstudianteInforme,
-  PeriodoId,
-} from "@/features/academic-management/reports/api/types"
+  EstudianteFilas,
+} from "@/features/academic-management/reports/lib/agrupar-filas"
 
 interface GradesTableProps {
-  estudiantes: EstudianteInforme[]
-  periodos: PeriodoId[]
+  estudiantes: EstudianteFilas[]
+  columnas: ColumnaAsignatura[]
   seleccionados: Set<number>
-  onToggleEstudiante: (id: number) => void
+  onToggleEstudiante: (matriculaId: number) => void
   onToggleTodos: () => void
 }
 
-function ColumnaHeader({ columna }: { columna: ColumnaAsignatura }) {
-  return (
-    <Tooltip>
-      <TooltipTrigger className="inline-flex items-center gap-1 outline-none">
-        {columna.label}
-        <InfoIcon className="size-3 text-muted-foreground" />
-      </TooltipTrigger>
-      <TooltipContent>{columna.descripcion}</TooltipContent>
-    </Tooltip>
-  )
-}
-
-function valorCelda(estudiante: EstudianteInforme, periodo: PeriodoId, columna: ColumnaAsignatura): string {
-  const notasPeriodo = estudiante.notasPorPeriodo[periodo]
-  if (!notasPeriodo) return "—"
-  const valor =
-    columna.key in notasPeriodo.asignaturas
-      ? notasPeriodo.asignaturas[columna.key]
-      : (notasPeriodo[columna.key as keyof typeof notasPeriodo] as number | undefined)
+function formatNota(valor: number | null): string {
   return valor != null ? valor.toLocaleString("es-CO", { minimumFractionDigits: 1 }) : "—"
 }
 
-
-function calcularNotaFaltante(
-  estudiante: EstudianteInforme,
-  columna: ColumnaAsignatura,
-): { valor: number; imposible: boolean } | null {
-  let sumaConocida = 0
-  let pesoFaltante = 0
-  for (const [periodoStr, peso] of Object.entries(PESOS_PERIODO)) {
-    const periodo = Number(periodoStr) as PeriodoId
-    const valor = estudiante.notasPorPeriodo[periodo]?.asignaturas[columna.key]
-    if (valor != null) sumaConocida += valor * peso
-    else pesoFaltante += peso ?? 0
-  }
-  if (pesoFaltante === 0) return null
-  const requerido = (NOTA_MINIMA_APROBATORIA - sumaConocida) / pesoFaltante
-  return { valor: requerido, imposible: requerido > NOTA_MAXIMA }
-}
-
-
-function CeldaValor({
-  estudiante,
-  periodo,
-  columna,
-  esAsignatura,
-}: {
-  estudiante: EstudianteInforme
-  periodo: PeriodoId
-  columna: ColumnaAsignatura
-  esAsignatura: boolean
-}) {
-  const notasPeriodo = estudiante.notasPorPeriodo[periodo]
-
-  if (!notasPeriodo && esAsignatura && periodo !== 4) {
-    const faltante = calcularNotaFaltante(estudiante, columna)
-    if (faltante) {
-      return (
-        <Tooltip>
-          <TooltipTrigger className="text-amber-600 italic outline-none dark:text-amber-500">
-            {faltante.imposible ? "*" : faltante.valor.toLocaleString("es-CO", { minimumFractionDigits: 1 })}
-          </TooltipTrigger>
-          <TooltipContent>
-            {faltante.imposible
-              ? "Ni sacando la nota máxima alcanzaría a aprobar esta asignatura este año."
-              : `Nota mínima que debe sacar en este período para no perder ${columna.label}.`}
-          </TooltipContent>
-        </Tooltip>
-      )
-    }
+function CeldaAsignatura({ asignatura }: { asignatura: AsignaturaInforme | undefined }) {
+  if (!asignatura || asignatura.estado === "sin_nota") {
+    return <span className="text-muted-foreground">—</span>
   }
 
-  const confirmado = notasPeriodo?.confirmado ?? true
+  if (!asignatura.esNumerico) {
+    return <span>{asignatura.simbolo ?? asignatura.valoracion ?? "—"}</span>
+  }
+
+  if (asignatura.estado === "requerido") {
+    const texto = asignatura.yaAsegurado
+      ? "✓"
+      : asignatura.alcanzable
+        ? formatNota(asignatura.nota)
+        : "*"
+    const detalle = asignatura.yaAsegurado
+      ? `Ya tiene asegurada ${asignatura.nombre}: no necesita nota en este período.`
+      : asignatura.alcanzable
+        ? `Nota mínima que debe sacar en este período para no perder ${asignatura.nombre}.`
+        : `Ni sacando la nota máxima alcanzaría a aprobar ${asignatura.nombre} este año.`
+    return (
+      <Tooltip>
+        <TooltipTrigger className="text-amber-600 italic outline-none dark:text-amber-500">
+          {texto}
+        </TooltipTrigger>
+        <TooltipContent>{detalle}</TooltipContent>
+      </Tooltip>
+    )
+  }
+
+  if (asignatura.estado === "cambio_propuesto") {
+    const subio =
+      asignatura.notaPropuesta != null &&
+      asignatura.nota != null &&
+      asignatura.notaPropuesta > asignatura.nota
+    return (
+      <Tooltip>
+        <TooltipTrigger className="inline-flex items-center gap-1 outline-none">
+          <span className="font-medium">{formatNota(asignatura.nota)}</span>
+          <span className="text-muted-foreground italic">
+            {asignatura.notaPropuesta != null ? formatNota(asignatura.notaPropuesta) : "sin nota"}
+          </span>
+          {asignatura.notaPropuesta != null &&
+            (subio ? (
+              <CaretUpIcon className="size-3 text-green" />
+            ) : (
+              <CaretDownIcon className="size-3 text-red" />
+            ))}
+        </TooltipTrigger>
+        <TooltipContent>
+          {asignatura.notaPropuesta != null
+            ? "El docente cambió la nota después de consolidar: primero la guardada, luego la propuesta."
+            : "El docente dio de baja las actividades que sustentaban esta nota."}
+        </TooltipContent>
+      </Tooltip>
+    )
+  }
+
+  const proyectada = asignatura.estado === "proyectada"
   return (
-    <span className={cn(!confirmado && "text-muted-foreground italic")} title={!confirmado ? "Nota proyectada, sin guardar" : undefined}>
-      {valorCelda(estudiante, periodo, columna)}
+    <span
+      className={cn(proyectada && "text-muted-foreground italic")}
+      title={proyectada ? "Nota proyectada, sin consolidar" : undefined}
+    >
+      {formatNota(asignatura.nota)}
     </span>
   )
 }
 
+function CeldaPromedio({ fila }: { fila: FilaInforme }) {
+  if (fila.modoPeriodo === "requerido") {
+    return (
+      <Tooltip>
+        <TooltipTrigger className="text-amber-600 italic outline-none dark:text-amber-500">
+          {formatNota(fila.promedioProyectado)}
+        </TooltipTrigger>
+        <TooltipContent>Mínimo del grado para aprobar.</TooltipContent>
+      </Tooltip>
+    )
+  }
+  const sinConsolidar = fila.promedioGuardado == null
+  return (
+    <span
+      className={cn(sinConsolidar && "text-muted-foreground italic")}
+      title={sinConsolidar ? "Promedio proyectado, sin consolidar" : undefined}
+    >
+      {formatNota(sinConsolidar ? fila.promedioProyectado : fila.promedioGuardado)}
+    </span>
+  )
+}
+
+const COLUMNAS_RESUMEN = [
+  { key: "promedio", label: "PR", descripcion: "Promedio general del período" },
+  { key: "puesto", label: "PU", descripcion: "Puesto dentro del grupo" },
+  { key: "aprobadas", label: "AP", descripcion: "Asignaturas aprobadas" },
+  { key: "reprobadas", label: "RE", descripcion: "Asignaturas reprobadas" },
+] as const
+
+function valorResumen(fila: FilaInforme, key: (typeof COLUMNAS_RESUMEN)[number]["key"]) {
+  switch (key) {
+    case "puesto":
+      return fila.puesto != null ? String(fila.puesto) : "—"
+    case "aprobadas":
+      return String(fila.aprobadas)
+    case "reprobadas":
+      return String(fila.reprobadas)
+    default:
+      return null
+  }
+}
+
 export function GradesTable({
   estudiantes,
-  periodos,
+  columnas,
   seleccionados,
   onToggleEstudiante,
   onToggleTodos,
 }: GradesTableProps) {
-  const periodosOrdenados = PERIODOS.filter((p) => periodos.includes(p.id))
-  const todosSeleccionados = estudiantes.length > 0 && estudiantes.every((e) => seleccionados.has(e.id))
-
-  if (periodosOrdenados.length === 0) {
-    return (
-      <p className="py-8 text-center text-sm text-muted-foreground">
-        Selecciona al menos un período para ver el informe.
-      </p>
-    )
-  }
+  const todosSeleccionados =
+    estudiantes.length > 0 && estudiantes.every((e) => seleccionados.has(e.matriculaId))
 
   if (estudiantes.length === 0) {
     return (
       <p className="py-8 text-center text-sm text-muted-foreground">
-        No se encontraron estudiantes para la búsqueda.
+        No se encontraron estudiantes para lo seleccionado.
       </p>
     )
   }
@@ -136,20 +158,17 @@ export function GradesTable({
       <table className="w-full min-w-max text-sm">
         <thead className="border-b bg-muted/10">
           <tr>
-            <th rowSpan={2} className="w-10 px-4 py-3 align-bottom">
+            <th className="w-10 px-4 py-3 align-bottom">
               <Checkbox
                 aria-label="Seleccionar todos"
                 checked={todosSeleccionados}
                 onCheckedChange={onToggleTodos}
               />
             </th>
-            <th rowSpan={2} className="px-4 py-3 text-left align-bottom font-semibold uppercase">
+            <th className="px-4 py-3 text-left align-bottom font-semibold uppercase">
               Apellidos y nombres
             </th>
-            <th
-              rowSpan={2}
-              className="border-l border-border px-2 py-3 text-center align-bottom font-semibold uppercase"
-            >
+            <th className="border-l border-border px-2 py-3 text-center align-bottom font-semibold uppercase">
               Pe
               <InfoIcon className="ml-1 inline size-3 text-muted-foreground" />
             </th>
@@ -158,65 +177,81 @@ export function GradesTable({
                 key={columna.key}
                 className="border-l border-border px-3 py-3 text-center font-semibold uppercase"
               >
-                <ColumnaHeader columna={columna} />
+                <Tooltip>
+                  <TooltipTrigger className="inline-flex items-center gap-1 outline-none">
+                    {columna.label}
+                    <InfoIcon className="size-3 text-muted-foreground" />
+                  </TooltipTrigger>
+                  <TooltipContent>{columna.descripcion}</TooltipContent>
+                </Tooltip>
               </th>
             ))}
-            {COLUMNAS_ASIGNATURAS.map((columna) => (
+            {columnas.map((columna) => (
               <th
-                key={columna.key}
+                key={columna.id}
                 className="border-l border-border px-3 py-3 text-center font-semibold uppercase"
               >
-                <ColumnaHeader columna={columna} />
+                <Tooltip>
+                  <TooltipTrigger className="inline-flex items-center gap-1 outline-none">
+                    {columna.abreviacion}
+                    <InfoIcon className="size-3 text-muted-foreground" />
+                  </TooltipTrigger>
+                  <TooltipContent>{columna.nombre}</TooltipContent>
+                </Tooltip>
               </th>
             ))}
           </tr>
         </thead>
         <tbody className="divide-y divide-border">
           {estudiantes.map((estudiante) => (
-            <tr key={estudiante.id} className={cn(seleccionados.has(estudiante.id) && "bg-primary/5")}>
+            <tr
+              key={estudiante.matriculaId}
+              className={cn(seleccionados.has(estudiante.matriculaId) && "bg-primary/5")}
+            >
               <td className="px-4 py-3 align-top">
                 <Checkbox
                   aria-label={`Seleccionar ${estudiante.nombreCompleto}`}
-                  checked={seleccionados.has(estudiante.id)}
-                  onCheckedChange={() => onToggleEstudiante(estudiante.id)}
+                  checked={seleccionados.has(estudiante.matriculaId)}
+                  onCheckedChange={() => onToggleEstudiante(estudiante.matriculaId)}
                 />
               </td>
-              <td className="px-4 py-3 align-top font-medium whitespace-nowrap">{estudiante.nombreCompleto}</td>
+              <td className="px-4 py-3 align-top font-medium whitespace-nowrap">
+                {estudiante.nombreCompleto}
+              </td>
               <td className="border-l border-border p-0 text-center align-top text-muted-foreground">
                 <div className="flex flex-col divide-y divide-border">
-                  {periodosOrdenados.map((periodo) => (
-                    <span key={periodo.id} className="px-2 py-1.5">
-                      {periodo.id}
+                  {estudiante.filas.map((fila) => (
+                    <span key={fila.periodoId} className="px-2 py-1.5" title={fila.periodoNombre}>
+                      {fila.periodoNombre.match(/\d+/)?.[0] ?? fila.periodoNombre}
                     </span>
                   ))}
                 </div>
               </td>
               {COLUMNAS_RESUMEN.map((columna) => (
-                <td key={columna.key} className="border-l border-border p-0 text-center align-top">
+                <td
+                  key={columna.key}
+                  className="border-l border-border p-0 text-center align-top"
+                >
                   <div className="flex flex-col divide-y divide-border">
-                    {periodosOrdenados.map((periodo) => (
-                      <div key={periodo.id} className="px-3 py-1.5">
-                        <CeldaValor
-                          estudiante={estudiante}
-                          periodo={periodo.id}
-                          columna={columna}
-                          esAsignatura={false}
-                        />
+                    {estudiante.filas.map((fila) => (
+                      <div key={fila.periodoId} className="px-3 py-1.5">
+                        {columna.key === "promedio" ? (
+                          <CeldaPromedio fila={fila} />
+                        ) : (
+                          <span>{valorResumen(fila, columna.key)}</span>
+                        )}
                       </div>
                     ))}
                   </div>
                 </td>
               ))}
-              {COLUMNAS_ASIGNATURAS.map((columna) => (
-                <td key={columna.key} className="border-l border-border p-0 text-center align-top">
+              {columnas.map((columna) => (
+                <td key={columna.id} className="border-l border-border p-0 text-center align-top">
                   <div className="flex flex-col divide-y divide-border">
-                    {periodosOrdenados.map((periodo) => (
-                      <div key={periodo.id} className="px-3 py-1.5">
-                        <CeldaValor
-                          estudiante={estudiante}
-                          periodo={periodo.id}
-                          columna={columna}
-                          esAsignatura
+                    {estudiante.filas.map((fila) => (
+                      <div key={fila.periodoId} className="px-3 py-1.5">
+                        <CeldaAsignatura
+                          asignatura={fila.asignaturas.find((a) => a.asignaturaId === columna.id)}
                         />
                       </div>
                     ))}

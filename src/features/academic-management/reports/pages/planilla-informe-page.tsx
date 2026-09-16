@@ -17,7 +17,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { Field, FieldLabel } from "@/components/ui/field"
 import {
   InputGroup,
@@ -26,6 +25,7 @@ import {
   InputGroupInput,
 } from "@/components/ui/input-group"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import {
   CaretDownIcon,
   CaretUpIcon,
@@ -35,47 +35,46 @@ import {
   FunnelIcon,
   InfoIcon,
   MagnifyingGlassIcon,
+  ProhibitIcon,
   XIcon,
 } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
 
 import { paths } from "@/config/paths"
-import { planillaAprobacionRoute } from "@/router"
-import {
-  ACTIVIDADES_PLANILLA,
-  DOCENTES_APROBACION,
-  ESTUDIANTES_PLANILLA_APROBACION,
-  type EstudiantePlanilla,
-} from "@/features/academic-management/reports/api/planilla-aprobacion-mock"
+import { planillaInformeRoute } from "@/router"
+import { useGuardarPlanillaMutation } from "@/features/academic-management/reports/api/mutations/use-guardar-planilla"
+import { usePlanillaInformeQuery } from "@/features/academic-management/reports/api/query/use-planilla-informe-query"
+import type {
+  CeldaPlanilla,
+  FilaPlanilla,
+} from "@/features/academic-management/reports/api/types"
 
-function coincide(estudiante: EstudiantePlanilla, busqueda: string): boolean {
-  const texto = busqueda.trim().toLowerCase()
-  if (!texto) return true
-  if (estudiante.nombreCompleto.toLowerCase().includes(texto)) return true
-  return ACTIVIDADES_PLANILLA.some(
-    (a) => a.titulo.toLowerCase().includes(texto) && a.key in estudiante.notasPorActividad,
-  )
-}
-
-function formatNota(valor: number | undefined): string {
+function formatNota(valor: number | null): string {
   return valor != null ? valor.toLocaleString("es-CO", { minimumFractionDigits: 1 }) : "—"
 }
 
-function DefinitivaCelda({ estudiante }: { estudiante: EstudiantePlanilla }) {
-  const { definitivaProyectada, definitivaAnterior, motivoCambio } = estudiante
-  if (definitivaAnterior == null) {
-    return <span className="font-semibold">{formatNota(definitivaProyectada)}</span>
+/** Columnas sacadas de cualquier fila: el backend garantiza que todas traen
+ *  las mismas actividades y en el mismo orden, incluidas las `NO_ASIGNADA`. */
+function columnasDe(filas: FilaPlanilla[]): CeldaPlanilla[] {
+  return [...(filas[0]?.actividades ?? [])].sort((a, b) => a.orden - b.orden)
+}
+
+function DefinitivaCelda({ fila }: { fila: FilaPlanilla }) {
+  const { definitivaGuardada, definitivaProyectada } = fila
+  const cambio =
+    definitivaGuardada != null &&
+    definitivaProyectada != null &&
+    definitivaGuardada !== definitivaProyectada
+
+  if (!cambio) {
+    return <span className="font-semibold">{formatNota(definitivaProyectada ?? definitivaGuardada)}</span>
   }
-  const subio = definitivaProyectada > definitivaAnterior
+
+  const subio = definitivaProyectada! > definitivaGuardada!
   return (
     <Popover>
       <PopoverTrigger
-        render={
-          <button
-            type="button"
-            className="inline-flex items-center gap-0.5 font-semibold"
-          />
-        }
+        render={<button type="button" className="inline-flex items-center gap-0.5 font-semibold" />}
       >
         {formatNota(definitivaProyectada)}
         {subio ? <CaretUpIcon className="text-green" /> : <CaretDownIcon className="text-red" />}
@@ -83,7 +82,7 @@ function DefinitivaCelda({ estudiante }: { estudiante: EstudiantePlanilla }) {
       <PopoverContent className="w-64 gap-2">
         <div className="flex items-center justify-between">
           <span className="text-sm font-semibold">Nota anterior</span>
-          <span className="text-sm">{formatNota(definitivaAnterior)}</span>
+          <span className="text-sm">{formatNota(definitivaGuardada)}</span>
         </div>
         <div className="flex items-center justify-between">
           <span className="text-sm font-semibold">Nota actual</span>
@@ -97,35 +96,56 @@ function DefinitivaCelda({ estudiante }: { estudiante: EstudiantePlanilla }) {
             {subio ? <CaretUpIcon /> : <CaretDownIcon />}
           </span>
         </div>
-        {motivoCambio && (
-          <p className="text-sm">
-            <span className="font-semibold">Motivo: </span>
-            {motivoCambio}
-          </p>
-        )}
+        <p className="text-xs text-muted-foreground">
+          La anterior es la consolidada; la actual es la que resulta de las actividades de hoy.
+        </p>
       </PopoverContent>
     </Popover>
   )
 }
 
-function PlanillaTable({ estudiantes }: { estudiantes: EstudiantePlanilla[] }) {
-  const [seleccionados, setSeleccionados] = React.useState<Set<number>>(new Set())
-  const todosSeleccionados = estudiantes.length > 0 && estudiantes.every((e) => seleccionados.has(e.id))
-
-  function toggle(id: number) {
-    setSeleccionados((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
+function CeldaActividad({ celda }: { celda: CeldaPlanilla | undefined }) {
+  if (!celda || celda.estado === "NO_ASIGNADA") {
+    return <span className="text-muted-foreground">·</span>
   }
-
-  function toggleTodos() {
-    setSeleccionados(todosSeleccionados ? new Set() : new Set(estudiantes.map((e) => e.id)))
+  if (celda.estado === "NO_CALIFICABLE") {
+    return celda.observacion ? (
+      <Tooltip>
+        <TooltipTrigger className="max-w-40 truncate text-left outline-none">
+          {celda.observacion}
+        </TooltipTrigger>
+        <TooltipContent>{celda.observacion}</TooltipContent>
+      </Tooltip>
+    ) : (
+      <Tooltip>
+        <TooltipTrigger className="text-muted-foreground outline-none">
+          <ProhibitIcon className="size-4" />
+        </TooltipTrigger>
+        <TooltipContent>Actividad no calificable</TooltipContent>
+      </Tooltip>
+    )
   }
+  if (celda.estado === "PENDIENTE") {
+    return <span className="text-muted-foreground">Sin calificar</span>
+  }
+  return <span>{formatNota(celda.nota)}</span>
+}
 
-  if (estudiantes.length === 0) {
+function PlanillaTable({
+  filas,
+  seleccionados,
+  onToggle,
+  onToggleTodos,
+}: {
+  filas: FilaPlanilla[]
+  seleccionados: Set<number>
+  onToggle: (matriculaId: number) => void
+  onToggleTodos: () => void
+}) {
+  const columnas = columnasDe(filas)
+  const todosSeleccionados = filas.length > 0 && filas.every((f) => seleccionados.has(f.matriculaId))
+
+  if (filas.length === 0) {
     return (
       <p className="py-8 text-center text-sm text-muted-foreground">
         No se encontraron estudiantes para la búsqueda.
@@ -139,7 +159,11 @@ function PlanillaTable({ estudiantes }: { estudiantes: EstudiantePlanilla[] }) {
         <thead className="border-b bg-muted/10">
           <tr>
             <th className="w-10 px-4 py-3">
-              <Checkbox aria-label="Seleccionar todos" checked={todosSeleccionados} onCheckedChange={toggleTodos} />
+              <Checkbox
+                aria-label="Seleccionar todos"
+                checked={todosSeleccionados}
+                onCheckedChange={onToggleTodos}
+              />
             </th>
             <th className="px-4 py-3 text-left font-semibold uppercase">Apellidos y nombres</th>
             <th className="px-3 py-3 text-left font-semibold uppercase">
@@ -148,39 +172,49 @@ function PlanillaTable({ estudiantes }: { estudiantes: EstudiantePlanilla[] }) {
                   Definit Proy.
                   <InfoIcon className="size-3 text-muted-foreground" />
                 </TooltipTrigger>
-                <TooltipContent>Definitiva proyectada con el cambio tardío ya aplicado</TooltipContent>
+                <TooltipContent>Definitiva del período según las actividades de hoy</TooltipContent>
               </Tooltip>
             </th>
-            {ACTIVIDADES_PLANILLA.map((actividad) => (
-              <th key={actividad.key} className="px-3 py-3 text-left font-semibold uppercase">
+            {columnas.map((columna) => (
+              <th key={columna.actividadId} className="px-3 py-3 text-left font-semibold uppercase">
                 <Tooltip>
-                  <TooltipTrigger className="inline-flex items-center gap-1 outline-none">
-                    {actividad.titulo}
+                  <TooltipTrigger className="inline-flex max-w-40 items-center gap-1 outline-none">
+                    <span className="truncate normal-case">{columna.titulo}</span>
                     <InfoIcon className="size-3 shrink-0 text-muted-foreground" />
                   </TooltipTrigger>
-                  <TooltipContent>{actividad.descripcion}</TooltipContent>
+                  <TooltipContent>
+                    {columna.titulo}
+                    {columna.ponderacion != null && ` · ${columna.ponderacion}%`}
+                  </TooltipContent>
                 </Tooltip>
               </th>
             ))}
           </tr>
         </thead>
         <tbody className="divide-y divide-border">
-          {estudiantes.map((estudiante) => (
-            <tr key={estudiante.id} className={cn(seleccionados.has(estudiante.id) && "bg-primary/5")}>
+          {filas.map((fila) => (
+            <tr
+              key={fila.matriculaId}
+              className={cn(seleccionados.has(fila.matriculaId) && "bg-primary/5")}
+            >
               <td className="px-4 py-3 align-top">
                 <Checkbox
-                  aria-label={`Seleccionar ${estudiante.nombreCompleto}`}
-                  checked={seleccionados.has(estudiante.id)}
-                  onCheckedChange={() => toggle(estudiante.id)}
+                  aria-label={`Seleccionar ${fila.nombreCompleto}`}
+                  checked={seleccionados.has(fila.matriculaId)}
+                  onCheckedChange={() => onToggle(fila.matriculaId)}
                 />
               </td>
-              <td className="px-4 py-3 align-top font-medium whitespace-nowrap">{estudiante.nombreCompleto}</td>
-              <td className="px-3 py-3 align-top">
-                <DefinitivaCelda estudiante={estudiante} />
+              <td className="px-4 py-3 align-top font-medium whitespace-nowrap">
+                {fila.nombreCompleto}
               </td>
-              {ACTIVIDADES_PLANILLA.map((actividad) => (
-                <td key={actividad.key} className="px-3 py-3 align-top">
-                  {formatNota(estudiante.notasPorActividad[actividad.key])}
+              <td className="px-3 py-3 align-top">
+                <DefinitivaCelda fila={fila} />
+              </td>
+              {columnas.map((columna) => (
+                <td key={columna.actividadId} className="px-3 py-3 align-top">
+                  <CeldaActividad
+                    celda={fila.actividades.find((c) => c.actividadId === columna.actividadId)}
+                  />
                 </td>
               ))}
             </tr>
@@ -191,28 +225,60 @@ function PlanillaTable({ estudiantes }: { estudiantes: EstudiantePlanilla[] }) {
   )
 }
 
-function PlanillaAprobacionContent() {
+function PlanillaInformeContent() {
   const { notify } = useNotify()
   const navigate = useNavigate()
-  const { docenteId } = planillaAprobacionRoute.useParams()
-  const docente = DOCENTES_APROBACION.find((d) => d.id === Number(docenteId))
+  const { grupoId, asignaturaId, periodoId } = planillaInformeRoute.useParams()
   const [busqueda, setBusqueda] = React.useState("")
+  const [seleccionados, setSeleccionados] = React.useState<Set<number>>(new Set())
 
-  const estudiantesFiltrados = React.useMemo(
-    () => ESTUDIANTES_PLANILLA_APROBACION.filter((e) => coincide(e, busqueda)),
-    [busqueda],
-  )
+  // `useDeferredValue` en vez de un debounce con timers: el buscador filtra
+  // filas o columnas del lado del servidor, así que cada tecla es una llamada.
+  const busquedaDiferida = React.useDeferredValue(busqueda)
 
-  function handleAprobar() {
-    navigate({ to: paths.app.gestionAcademicaInformes.getHref() })
+  const planilla = usePlanillaInformeQuery({
+    grupoId: Number(grupoId),
+    asignaturaId: Number(asignaturaId),
+    periodoId: Number(periodoId),
+    search: busquedaDiferida,
+  })
+  const guardar = useGuardarPlanillaMutation()
+
+  const filas = planilla.data ?? []
+
+  function toggle(matriculaId: number) {
+    setSeleccionados((prev) => {
+      const next = new Set(prev)
+      if (next.has(matriculaId)) next.delete(matriculaId)
+      else next.add(matriculaId)
+      return next
+    })
   }
 
-  function handleRechazar() {
-    notify("Cambios rechazados: la planilla vuelve al estado que tenía antes.", { variant: "error" })
+  function toggleTodos() {
+    const todos = filas.length > 0 && filas.every((f) => seleccionados.has(f.matriculaId))
+    setSeleccionados(todos ? new Set() : new Set(filas.map((f) => f.matriculaId)))
   }
 
-  function handleDescargar() {
-    notify("La descarga de la planilla comenzará en breve.")
+  async function handleAprobar() {
+    try {
+      const detalle = await guardar.mutateAsync({
+        grupoId: Number(grupoId),
+        asignaturaId: Number(asignaturaId),
+        periodoId: Number(periodoId),
+        matriculas: Array.from(seleccionados),
+      })
+      const consolidados = detalle.filter(
+        (d) => d.resultado === "guardada" || d.resultado === "actualizada",
+      ).length
+      if (consolidados === 0) {
+        notify("No había cambios para consolidar en esta planilla.", { variant: "info" })
+        return
+      }
+      navigate({ to: paths.app.gestionAcademicaInformes.getHref() })
+    } catch {
+      notify("No se pudieron aprobar los cambios.", { variant: "error" })
+    }
   }
 
   return (
@@ -223,16 +289,10 @@ function PlanillaAprobacionContent() {
       </TableScreenHeader>
 
       <TableScreenBody>
-        {docente && (
-          <p className="mb-4 text-sm text-muted-foreground">
-            {docente.nombreDocente} · {docente.asignatura} · {docente.gradoGrupo}
-          </p>
-        )}
-
         <div className="rounded-lg border border-border bg-background p-4">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <Field orientation="vertical" variant="outlined" className="w-full max-w-xl sm:w-96">
-              <FieldLabel htmlFor="planilla-aprobacion-search">
+              <FieldLabel htmlFor="planilla-informe-search">
                 Buscar por nombre, apellido o actividad
               </FieldLabel>
               <InputGroup className="h-10 w-full rounded-md border-input has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20">
@@ -240,7 +300,7 @@ function PlanillaAprobacionContent() {
                   <MagnifyingGlassIcon className="size-4 text-muted-foreground" />
                 </InputGroupAddon>
                 <InputGroupInput
-                  id="planilla-aprobacion-search"
+                  id="planilla-informe-search"
                   type="search"
                   autoComplete="off"
                   placeholder="Buscar por"
@@ -280,6 +340,7 @@ function PlanillaAprobacionContent() {
                   size="sm"
                   variant="fill"
                   className="rounded-r-none border-r-0"
+                  disabled={guardar.isPending}
                   onClick={handleAprobar}
                 >
                   <CheckCircleFillIcon data-icon="inline-start" />
@@ -300,7 +361,16 @@ function PlanillaAprobacionContent() {
                     <DotsThreeIcon />
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={handleRechazar}>Rechazar cambios</DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        notify(
+                          "Rechazar un cambio todavía no existe en el backend: la única forma de apagar la alerta es aprobarlo.",
+                          { variant: "info" },
+                        )
+                      }
+                    >
+                      Rechazar cambios
+                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
@@ -319,23 +389,39 @@ function PlanillaAprobacionContent() {
                 color="neutral"
                 size="icon-sm"
                 aria-label="Descargar planilla"
-                onClick={handleDescargar}
+                onClick={() =>
+                  notify("La descarga de la planilla todavía no está disponible.", { variant: "info" })
+                }
               >
                 <FileDownloadOutlinedIcon />
               </Button>
             </TableScreenActions>
           </div>
-          <PlanillaTable estudiantes={estudiantesFiltrados} />
+
+          {planilla.isPending && (
+            <p className="py-8 text-center text-sm text-muted-foreground">Cargando planilla…</p>
+          )}
+          {planilla.isError && (
+            <p className="py-8 text-center text-sm text-red">No se pudo cargar la planilla.</p>
+          )}
+          {!planilla.isPending && !planilla.isError && (
+            <PlanillaTable
+              filas={filas}
+              seleccionados={seleccionados}
+              onToggle={toggle}
+              onToggleTodos={toggleTodos}
+            />
+          )}
         </div>
       </TableScreenBody>
     </TableScreen>
   )
 }
 
-export function PlanillaAprobacionPage() {
+export function PlanillaInformePage() {
   return (
     <NoticeProvider>
-      <PlanillaAprobacionContent />
+      <PlanillaInformeContent />
     </NoticeProvider>
   )
 }
