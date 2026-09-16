@@ -27,29 +27,22 @@ import type { StudyPlanItem } from "@/features/establishment/academic-period/api
 
 interface DeleteStudyPlanDialogProps {
   item: StudyPlanItem
-  isPreescolar?: boolean
+  subjectLabel?: string
 }
 
-// Con 3 acciones en vez de 2 (Eliminar / Remover / Cerrar), elegir una ya no
-// es un solo clic: pasa por una segunda pantalla de confirmación puntual
-// ("¿Estás seguro de...?") antes de ejecutar, para que un clic apurado no
-// dispare de una un borrado permanente.
 type PendingAction = "eliminar" | "remover" | null
 
-export function DeleteStudyPlanDialog({ item, isPreescolar }: DeleteStudyPlanDialogProps) {
+export function DeleteStudyPlanDialog({ item, subjectLabel = "Asignatura" }: DeleteStudyPlanDialogProps) {
   const [open, setOpen] = useState(false)
   const [pending, setPending] = useState<PendingAction>(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const [checkingBlock, setCheckingBlock] = useState(false)
-  // Dos niveles: "Remover" solo se bloquea por lo que bloquea fn_plan_eliminar
-  // en sí (docente/horario en un grupo de este grado); "Eliminar" además se
-  // bloquea por lo que bloquea fn_subject_soft_delete (alcance más amplio).
   const [canRemove, setCanRemove] = useState(true)
   const [canDelete, setCanDelete] = useState(true)
   const [blockedReason, setBlockedReason] = useState<string | null>(null)
   const { notify } = useNotify()
   const queryClient = useQueryClient()
-  const subjectWord = isPreescolar ? "dimensión" : "asignatura"
+  const subjectWord = subjectLabel.toLowerCase()
 
   const deleteStudyPlanItem = useDeleteStudyPlanItem()
 

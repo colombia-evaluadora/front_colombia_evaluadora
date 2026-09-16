@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Link, useNavigate } from "@tanstack/react-router"
+import { Link, useNavigate, useSearch } from "@tanstack/react-router"
 
 import { Button } from "@/components/ui/button"
 import { NoticeOutlet, NoticeProvider, queueNotice, useNotify } from "@/components/notice/notice-context"
@@ -11,6 +11,7 @@ import {
   TableScreenTitle,
 } from "@/components/layout/table-screen"
 import { CheckIcon, SpinnerIcon } from "@/components/ui/icons"
+import { Spinner } from "@/components/ui/spinner"
 import { paths } from "@/config/paths"
 
 import { useCreateActividad } from "@/features/planeador/api/mutations/create-actividad"
@@ -21,9 +22,11 @@ import {
 } from "@/features/planeador/api/mutations/update-instrumento-actividad"
 import { useUpdateAdaptacionesActividad } from "@/features/planeador/api/mutations/update-adaptaciones-actividad"
 import { useAgregarCriterioUnidadActividad } from "@/features/planeador/api/mutations/agregar-criterio-unidad-actividad"
+import { useUnidadesQuery } from "@/features/planeador/api/query/use-unidades-query"
 import { EditarActividadForm } from "@/features/planeador/components/forms/form-editar-actividad"
 import { crearActividadVacia } from "@/features/planeador/lib/empty-actividad"
 import type { Actividad } from "@/features/planeador/api/types/actividad"
+import type { UnidadTematica } from "@/features/planeador/api/types/unidad-tematica"
 
 const FORM_ID = "crear-actividad-form"
 
@@ -48,10 +51,33 @@ function PlaneadorCrearActividadPageContent() {
   const navigate = useNavigate()
   const { notify } = useNotify()
   const [isDirty, setIsDirty] = useState(false)
-  // Lazy initializer: se arma UNA sola vez al montar la página, no en cada
-  // render — si no, cada re-render generaría una actividad (y unos ids)
-  // distintos y el form perdería lo que el usuario ya tipeó.
-  const [actividad] = useState(() => crearActividadVacia())
+
+  // `unidadId` llega cuando se abre esta pantalla desde "Agregar actividad"
+  // dentro de una Unidad temática (`DialogAgregarActividad`); `fechaInicio`/
+  // `fechaCierre` cuando se abre desde un clic en una celda del calendario
+  // mensual (`PlaneadorMonthGrid` vía `planeador-page.tsx`) — ver
+  // `planeadorActividadCrearSearchSchema`. `strict: false` porque esta
+  // página también se monta sin ningún search (desde "Nueva actividad" del
+  // listado general).
+  const { unidadId, fechaInicio, fechaCierre } = useSearch({ strict: false }) as {
+    unidadId?: string
+    fechaInicio?: string
+    fechaCierre?: string
+  }
+  // Mismo listado que ya usa `EditarActividadForm` para "Unidad temática
+  // asociada" — se reusa acá solo para resolver `grado`/`asignatura` (los
+  // NOMBRES; `UnidadTematica.gradoId`/`.asignaturaId` casi nunca vienen del
+  // backend real, ver su comentario) de la unidad que se preselecciona.
+  const { data: unidadesResult, isPending: isPendingUnidades } = useUnidadesQuery()
+  const unidadPreseleccionada: UnidadTematica | undefined = unidadId
+    ? unidadesResult?.rows.find((u) => String(u.id) === unidadId)
+    : undefined
+  // Sin `unidadId` en la URL no hace falta esperar nada — el form arranca
+  // en blanco de una, como siempre. CON `unidadId`, hay que esperar a que
+  // el listado cargue antes de armar la actividad inicial: si se monta
+  // `EditarActividadForm` antes, `useForm({ defaultValues })` ya leyó un
+  // `actividad` sin la unidad (se lee UNA sola vez al montar).
+  const esperandoPreseleccion = Boolean(unidadId) && isPendingUnidades
 
   const createMutation = useCreateActividad({
     mutationConfig: {
@@ -174,13 +200,20 @@ function PlaneadorCrearActividadPageContent() {
         <NoticeOutlet className="mx-(--screen-spacing) my-4" />
       </TableScreenHeader>
       <TableScreenBody className="rounded-b-none border-b-0">
-        <EditarActividadForm
-          actividad={actividad}
-          formId={FORM_ID}
-          esNueva
-          onDirtyChange={setIsDirty}
-          onSubmit={handleSubmit}
-        />
+        {esperandoPreseleccion ? (
+          <div className="text-muted-foreground flex items-center justify-center gap-2 px-6 py-12 text-sm">
+            <Spinner /> Cargando…
+          </div>
+        ) : (
+          <CrearActividadForm
+            unidadPreseleccionada={unidadPreseleccionada}
+            fechaInicio={fechaInicio}
+            fechaCierre={fechaCierre}
+            formId={FORM_ID}
+            onDirtyChange={setIsDirty}
+            onSubmit={handleSubmit}
+          />
+        )}
       </TableScreenBody>
 
       <TableScreenFooter>
@@ -221,5 +254,61 @@ function PlaneadorCrearActividadPageContent() {
         )}
       </TableScreenFooter>
     </TableScreen>
+  )
+}
+
+/**
+ * Separado de `PlaneadorCrearActividadPageContent` solo para que el
+ * `useState` de más abajo (lazy initializer, corre UNA sola vez al montar)
+ * lea `unidadPreseleccionada` YA resuelta: el padre no monta este
+ * componente hasta que `esperandoPreseleccion` es `false` (ver su
+ * `TableScreenBody`), así que acá siempre llega con el valor final —
+ * nunca con el `undefined` transitorio de mientras carga.
+ */
+function CrearActividadForm({
+  unidadPreseleccionada,
+  fechaInicio,
+  fechaCierre,
+  formId,
+  onDirtyChange,
+  onSubmit,
+}: {
+  unidadPreseleccionada: UnidadTematica | undefined
+  /** `yyyy-MM-dd` — llega desde un clic en el calendario mensual (ver
+   *  `onDayClick` en `planeador-page.tsx`). */
+  fechaInicio?: string
+  fechaCierre?: string
+  formId: string
+  onDirtyChange: (dirty: boolean) => void
+  onSubmit: (values: Actividad) => void | Promise<void>
+}) {
+  const [actividad] = useState(() => {
+    let base = crearActividadVacia()
+    if (unidadPreseleccionada) {
+      // Solo `grado`/`asignatura` (los NOMBRES) y la unidad misma — los ids
+      // (`gradoId`/`asignaturaId`/`grupoId`) los resuelve el propio form
+      // cruzando estos nombres contra el catálogo del docente (mismo
+      // mecanismo que ya usa para una actividad real sin `fk_tgrado`, ver
+      // el efecto de `AsignaturaGradoSection` en `form-editar-actividad.tsx`).
+      base = {
+        ...base,
+        grado: unidadPreseleccionada.grado,
+        asignatura: unidadPreseleccionada.asignatura,
+        unidad: { id: unidadPreseleccionada.id, nombre: unidadPreseleccionada.nombre },
+      }
+    }
+    if (fechaInicio) base = { ...base, fechaInicio }
+    if (fechaCierre) base = { ...base, fechaCierre }
+    return base
+  })
+
+  return (
+    <EditarActividadForm
+      actividad={actividad}
+      formId={formId}
+      esNueva
+      onDirtyChange={onDirtyChange}
+      onSubmit={onSubmit}
+    />
   )
 }

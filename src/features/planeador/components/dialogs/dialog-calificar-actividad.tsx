@@ -15,6 +15,7 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { CheckIcon, PencilIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 import { Spinner } from "@/components/ui/spinner"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { useInstrumentoActividadQuery } from "@/features/planeador/api/query/use-instrumento-actividad-query"
 import { useNotaEstudianteQuery } from "@/features/planeador/api/query/use-nota-estudiante-query"
@@ -26,11 +27,16 @@ import {
 } from "@/features/planeador/components/planilla/instrumento-grading-fields"
 import type { NotaCriterio } from "@/features/planeador/api/types/calificacion"
 import type { InstrumentoCriterio } from "@/features/planeador/api/types/planilla"
+import { useStudyPlanSubjectLabel } from "@/features/establishment/academic-period/api/query/use-study-plan-subject-label"
 
 interface DialogCalificarActividadProps {
   actividadId: number
   actividadNombre: string
   asignatura: string
+  /** Para resolver el rótulo dinámico ("Dimensión", "Área", …) que el
+   *  referente curricular del grado tenga personalizado — sin esto el
+   *  encabezado cae al genérico "Asignatura". */
+  gradoId?: number
   pkTactividadEstudiante: number
   estudianteNombre: string
   /** `yyyy-MM-dd` — fecha de la actividad, la que exige el backend al
@@ -60,6 +66,7 @@ export function DialogCalificarActividad({
   actividadId,
   actividadNombre,
   asignatura,
+  gradoId,
   pkTactividadEstudiante,
   estudianteNombre,
   fecha,
@@ -68,6 +75,7 @@ export function DialogCalificarActividad({
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState<NotaCriterio[]>([])
   const { notify } = useNotify()
+  const subjectLabel = useStudyPlanSubjectLabel(gradoId, false)
 
   const { data: instrumento, isPending: isPendingInstrumento } =
     useInstrumentoActividadQuery(actividadId)
@@ -101,18 +109,25 @@ export function DialogCalificarActividad({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger
-        render={
-          <Button
-            variant="ghost"
-            color="neutral"
-            size="icon-xs"
-            aria-label={`Calificar a ${estudianteNombre}`}
-          />
-        }
-      >
-        <PencilIcon className="size-3.5" />
-      </DialogTrigger>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <DialogTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  color="neutral"
+                  size="icon-xs"
+                  aria-label={`Calificar a ${estudianteNombre}`}
+                />
+              }
+            />
+          }
+        >
+          <PencilIcon className="size-3.5" />
+        </TooltipTrigger>
+        <TooltipContent>{`Calificar a ${estudianteNombre}`}</TooltipContent>
+      </Tooltip>
       <DialogContent className="flex max-h-[85vh] flex-col overflow-hidden sm:max-w-2xl">
         <DialogHeader className="shrink-0">
           <DialogTitle>Calificar actividad</DialogTitle>
@@ -131,7 +146,7 @@ export function DialogCalificarActividad({
             <p className="truncate font-semibold">{actividadNombre}</p>
           </div>
           <div className="min-w-0">
-            <p className="text-muted-foreground text-xs font-semibold uppercase">Asignatura</p>
+            <p className="text-muted-foreground text-xs font-semibold uppercase">{subjectLabel}</p>
             <p className="truncate font-semibold">{asignatura}</p>
           </div>
         </div>

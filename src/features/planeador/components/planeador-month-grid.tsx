@@ -15,19 +15,24 @@ import type { ActividadStatus } from "@/features/planeador/api/types/actividad"
 import { statusRingFor } from "@/features/planeador/api/ui-mappings"
 
 /**
- * Grilla mensual "decorativa" del Planeador: muestra un mes con las
- * actividades de cada día listadas como filas (barra de color del estado +
- * código de 3 dígitos + asignatura). NO es un selector — el click de día no
- * se usa; lo único interactivo es el título del mes, que abre un menú para
- * cambiar de mes/año. Se construye sobre `react-day-picker` directo en lugar
- * del wrapper `Calendar` del design system porque este último está acoplado
- * a DatePicker (caption + drill-down día/mes/año) y no permite el formato
+ * Grilla mensual del Planeador: muestra un mes con las actividades de cada
+ * día listadas como filas (barra de color del estado + código de 3 dígitos
+ * + asignatura). NO es un selector de un solo día para filtrar la vista —
+ * el click en una celda (`onDayClick`, opcional) abre el alta de una
+ * Actividad NUEVA con esa fecha preseleccionada, no cambia lo que se está
+ * mirando acá. Deshabilitado en días de mes vecino (`showOutsideDays`). Lo
+ * otro interactivo es el título del mes, que abre un menú para cambiar de
+ * mes/año. Se construye sobre `react-day-picker` directo en lugar del
+ * wrapper `Calendar` del design system porque este último está acoplado a
+ * DatePicker (caption + drill-down día/mes/año) y no permite el formato
  * visual pedido.
  *
  * Los classNames del DayPicker siguen el patrón del wrapper `Calendar`
- * existente: `month_grid: w-full border-collapse`, `weekdays: flex`,
- * `week: flex w-full`, `weekday: flex-1` — sin esto la grilla colapsa a
- * una sola columna en lugar de 7.
+ * existente: `months: w-full`, `month_grid: w-full border-collapse`,
+ * `weekdays: flex`, `week: flex w-full`, `weekday: flex-1` — sin el `w-full`
+ * en `months` el contenedor de semanas se encoge a su ancho intrínseco
+ * (una columna angosta) en vez de ocupar toda la card, dejando el resto
+ * en blanco.
  *
  * Marco: todo (barra del mes + fila de días + celdas) vive dentro de una
  * card con `border` y `overflow-hidden`; las líneas internas las pinta cada
@@ -54,6 +59,11 @@ interface PlaneadorMonthGridProps {
   /** Mapa `day-of-month → actividades`. La grilla muestra las primeras 3. */
   events: Map<number, DayEvent[]>
   onMonthChange: (next: Date) => void
+  /** Click en una celda de día (no en un mes vecino, ver `isOutside` más
+   *  abajo) — hoy lo usa `planeador-page.tsx` para abrir el alta de
+   *  Actividad con esa fecha preseleccionada como inicio/cierre. Opcional:
+   *  sin esto la celda vuelve a ser puramente decorativa, como antes. */
+  onDayClick?: (date: Date) => void
   locale?: Locale
 }
 
@@ -72,6 +82,7 @@ export function PlaneadorMonthGrid({
   month,
   events,
   onMonthChange,
+  onDayClick,
   locale = es,
 }: PlaneadorMonthGridProps) {
   const defaultClassNames = getDefaultClassNames()
@@ -140,7 +151,7 @@ export function PlaneadorMonthGrid({
         }}
         classNames={{
           root: cn("w-full", defaultClassNames.root),
-          months: cn("relative flex flex-col", defaultClassNames.months),
+          months: cn("relative flex w-full flex-col", defaultClassNames.months),
           month: cn("flex w-full flex-col", defaultClassNames.month),
           month_caption: "hidden",
           caption_label: "hidden",
@@ -175,6 +186,13 @@ export function PlaneadorMonthGrid({
             // en el mapa del mes visible: el usuario está mirando otro mes y
             // las actividades se verían "huérfanas" en días sin contexto.
             const items = isOutside ? [] : events.get(date.getDate()) ?? []
+            // Click de día: abre el alta de Actividad con esta fecha como
+            // inicio/cierre preseleccionado (ver `onDayClick` en
+            // `planeador-page.tsx`). Deshabilitado en días de mes vecino
+            // (`isOutside`) -- mismo criterio que las actividades, que
+            // tampoco se listan ahí: click en un día "fuera de contexto"
+            // confundiría más de lo que ayuda.
+            const clickable = Boolean(onDayClick) && !isOutside
             return (
               <td
                 {...tdProps}
@@ -190,12 +208,31 @@ export function PlaneadorMonthGrid({
                 )}
               >
                 <div
+                  role={clickable ? "button" : undefined}
+                  tabIndex={clickable ? 0 : undefined}
+                  onClick={clickable ? () => onDayClick?.(date) : undefined}
+                  onKeyDown={
+                    clickable
+                      ? (e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault()
+                            onDayClick?.(date)
+                          }
+                        }
+                      : undefined
+                  }
+                  aria-label={
+                    clickable
+                      ? `Crear actividad el ${date.toLocaleDateString("es-CO", { day: "2-digit", month: "long" })}`
+                      : undefined
+                  }
                   className={cn(
                     // `min-h` mantiene todas las celdas del mismo alto aunque
                     // el día no tenga actividades. `min-w-0` deja que las
                     // filas trunquen en vez de ensanchar la columna.
                     "flex h-full min-h-(--cell-size) w-full min-w-0 flex-col gap-1 px-2 py-1.5",
                     isOutside && "text-muted-foreground/50",
+                    clickable && "cursor-pointer transition-colors hover:bg-muted/40 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring",
                   )}
                 >
                   {/* Caja fija para el número: así todas las celdas alinean

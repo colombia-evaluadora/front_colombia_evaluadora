@@ -92,9 +92,6 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
     setNotice({ id: noticeIdRef.current, message, variant: options?.variant ?? "success" })
   }
 
-  // Una vez creado el grado (o si venimos editando uno existente) el diálogo
-  // pasa a modo edición: cambia el título y las acciones. Igual que en periodo
-  // académico, "agregar" se transforma en "editar" al persistir.
   const isEditing = gradeId != null
 
   const [teachingLevelId, setTeachingLevelId] = useState<number | null>(
@@ -338,14 +335,15 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
         )}
       </DialogTrigger>
       <DialogContent
-        className="max-h-[90dvh] overflow-y-auto p-4 sm:max-w-5xl sm:p-6"
+        className="flex max-h-[90dvh] flex-col overflow-hidden p-0 sm:max-w-5xl"
         showCloseButton={false}
         inert={confirmDiscardOpen}
       >
-        <DialogHeader>
+        <DialogHeader className="shrink-0 px-4 pt-4 sm:px-6 sm:pt-6">
           <DialogTitle>{isEditing ? "Editar grado" : "Agregar grado"}</DialogTitle>
         </DialogHeader>
 
+        <div className="scrollbar-slim flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overflow-x-hidden px-4 pt-2 sm:px-6">
         <div className="grid gap-x-4 gap-y-2 sm:grid-cols-2 lg:grid-cols-4">
           <Field
             variant="outlined"
@@ -534,8 +532,9 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
             </TabsContent>
           </Tabs>
         )}
+        </div>
 
-        <DialogFooter>
+        <DialogFooter className="shrink-0 px-4 pb-4 sm:px-6 sm:pb-6">
           {(gradeId != null ||
             (teachingLevelId != null &&
               nombre.trim() !== "" &&

@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react"
 
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -143,15 +144,22 @@ export function CalificarActividadBulk({
   return (
     <div className="flex h-full min-h-0 flex-col gap-4 rounded-md border bg-card p-3">
       <div className="flex items-center gap-2 border-b pb-3">
-        <Button
-          variant="ghost"
-          color="neutral"
-          size="icon-sm"
-          onClick={onVolver}
-          aria-label="Volver a la planilla"
-        >
-          <ArrowLeftIcon className="size-6" />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                variant="ghost"
+                color="neutral"
+                size="icon-sm"
+                onClick={onVolver}
+                aria-label="Volver a la planilla"
+              />
+            }
+          >
+            <ArrowLeftIcon className="size-6" />
+          </TooltipTrigger>
+          <TooltipContent>Volver a la planilla</TooltipContent>
+        </Tooltip>
         <div className="min-w-0">
           <h2 className="truncate text-base font-bold">Calificaciones: {titulo}</h2>
           <p className="text-muted-foreground text-xs">

@@ -541,17 +541,21 @@ export function AreaSubjectFormDialog({
 
         <DialogContent
           className={cn(
-            "max-h-[85vh] overflow-y-auto",
+            "flex max-h-[85vh] flex-col overflow-hidden p-0",
             subjectsStarted ? "sm:max-w-6xl" : "sm:max-w-5xl",
           )}
           showCloseButton={false}
           inert={confirmOpen || successOpen || confirmDiscardOpen}
         >
-          <DialogHeader>
+          <DialogHeader className="shrink-0 px-6 pt-6">
             <DialogTitle>{isEdit ? "Editar área/asignatura" : "Agregar área/asignatura"}</DialogTitle>
           </DialogHeader>
 
-          <div className="flex min-w-0 flex-col gap-6">
+          {/* Único bloque con scroll: header y footer quedan fijos afuera, con
+              su propio padding -- el `DialogContent` ya no tiene padding
+              propio (`p-0`), así que el scroll queda al borde REAL del
+              diálogo. */}
+          <div className="scrollbar-slim min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-6 flex min-w-0 flex-col gap-6">
             <form
               id={FORM_ID}
               onSubmit={(e) => {
@@ -938,7 +942,7 @@ export function AreaSubjectFormDialog({
             )}
           </div>
 
-          <DialogFooter className="sm:justify-end">
+          <DialogFooter className="shrink-0 px-6 pb-6 sm:justify-end">
             {subjectsStarted && (
               <Button
                 size="sm"

@@ -9,6 +9,7 @@ export interface CurricularReference {
   level2: string
   pedagogicalApproach: CatalogItem | null
   evaluationType: CatalogItem | null
+  subjectLabel: CatalogItem | null
   areas: CatalogItem[]
   instrument: string
   instrumentDescription: string

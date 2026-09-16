@@ -152,6 +152,7 @@ function CalificacionRow({ actividad, estudiante, onGuardado }: CalificacionRowP
           actividadId={actividad.id}
           actividadNombre={actividad.nombre}
           asignatura={actividad.asignatura}
+          gradoId={actividad.gradoId}
           pkTactividadEstudiante={estudiante.id}
           estudianteNombre={nombreCompleto}
           fecha={actividad.fechaInicio}

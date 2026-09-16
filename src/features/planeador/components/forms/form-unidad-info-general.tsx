@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils"
 
 import { useReferenteCurricularQuery } from "@/features/planeador/api/query/use-referente-curricular-query"
 import { useDocenteGradoAsignaturaQuery } from "@/features/planeador/api/query/use-docente-grado-asignatura-query"
+import { useStudyPlanSubjectLabel } from "@/features/establishment/academic-period/api/query/use-study-plan-subject-label"
 import {
   ListaAgregableCaja,
   ListaAgregableCajaSelect,
@@ -178,6 +179,12 @@ export function UnidadInfoGeneralFields({
     [docenteGradoAsignatura, draft.gradoId],
   )
 
+  // Mismo rótulo dinámico que ya usa Plan de Estudio ("Dimensión", "Área", …
+  // según lo que el referente curricular del grado tenga personalizado) —
+  // `isPreescolar` fijo en `false` porque acá no hay ese dato a mano; solo
+  // afecta el DEFECTO cuando el referente no personalizó nada.
+  const subjectLabel = useStudyPlanSubjectLabel(draft.gradoId, false)
+
   return (
     <div className="flex flex-col gap-4">
       <div className="grid gap-4 sm:grid-cols-3">
@@ -233,7 +240,7 @@ export function UnidadInfoGeneralFields({
           </Select>
         </Field>
         <Field variant="outlined">
-          <FieldLabel>Asignatura</FieldLabel>
+          <FieldLabel>{subjectLabel}</FieldLabel>
           <Select
             value={draft.asignaturaId != null ? String(draft.asignaturaId) : ""}
             onValueChange={(v) => {

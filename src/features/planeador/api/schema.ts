@@ -64,6 +64,24 @@ export const planeadorUnidadesSearchSchema = z.object({
 export type PlaneadorUnidadesSearch = z.infer<typeof planeadorUnidadesSearchSchema>
 
 /**
+ * Search schema del alta de Actividad.
+ * - `unidadId` llega cuando se abre esta pantalla desde "Agregar actividad"
+ *   dentro de una Unidad temática (`DialogAgregarActividad`) — el form de
+ *   alta preselecciona Grado, Asignatura Y la unidad misma en vez de
+ *   arrancar en blanco (ver `planeador-crear-actividad-page.tsx`).
+ * - `fechaInicio`/`fechaCierre` (`yyyy-MM-dd`) llegan cuando se abre desde
+ *   un clic en una celda del calendario mensual (`PlaneadorMonthGrid` vía
+ *   `planeador-page.tsx`) — preselecciona esa fecha como inicio Y cierre de
+ *   la actividad nueva (el docente puede cambiarlas después).
+ */
+export const planeadorActividadCrearSearchSchema = z.object({
+  unidadId: z.string().optional().catch(undefined),
+  fechaInicio: z.string().optional().catch(undefined),
+  fechaCierre: z.string().optional().catch(undefined),
+})
+export type PlaneadorActividadCrearSearch = z.infer<typeof planeadorActividadCrearSearchSchema>
+
+/**
  * El recurso completo viaja en el search de esta ruta (no hay endpoint por
  * id: un recurso recién agregado en el form de Actividad vive solo en el
  * estado del form hasta que se guarda). `tipo` llega como string suelto
