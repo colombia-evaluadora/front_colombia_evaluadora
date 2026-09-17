@@ -67,16 +67,23 @@ function ActionsCell({ employee, onEdit }: { employee: EmployeeListItem; onEdit:
   return (
     <div className="flex items-center justify-end gap-1">
       {puedeEditar ? (
-        <Button
-          type="button"
-          variant="ghost"
-          color="neutral"
-          size="icon-sm"
-          aria-label="Editar funcionario"
-          onClick={() => onEdit(employee.id)}
-        >
-          <PencilIcon />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                type="button"
+                variant="ghost"
+                color="neutral"
+                size="icon-sm"
+                aria-label="Editar funcionario"
+                onClick={() => onEdit(employee.id)}
+              />
+            }
+          >
+            <PencilIcon />
+          </TooltipTrigger>
+          <TooltipContent>Editar funcionario</TooltipContent>
+        </Tooltip>
       ) : null}
       <DeleteEmployeeDialog employee={employee} />
     </div>

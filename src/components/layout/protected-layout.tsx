@@ -7,6 +7,7 @@ import { getInitialSidebarOpen } from "@/features/navigation/lib/sidebar-cookie"
 import { Separator } from "@/components/ui/separator"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { BellIcon } from "@/components/ui/icons"
 import { AppBreadcrumb } from "@/components/layout/app-breadcrumb"
 import { ColorThemeToggle } from "@/components/color-theme-toggle"
@@ -37,15 +38,22 @@ export function ProtectedLayout() {
             <ColorThemeToggle />
             <AssistantSheet />
             <Separator orientation="vertical" className="my-auto h-4" />
-            <Button
-              variant="outline"
-              size="icon"
-              color="muted"
-              aria-label="Notificaciones"
-              className="bg-background"
-            >
-              <BellIcon />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    color="muted"
+                    aria-label="Notificaciones"
+                    className="bg-background"
+                  />
+                }
+              >
+                <BellIcon />
+              </TooltipTrigger>
+              <TooltipContent>Notificaciones</TooltipContent>
+            </Tooltip>
             <NavUser />
           </div>
         </header>

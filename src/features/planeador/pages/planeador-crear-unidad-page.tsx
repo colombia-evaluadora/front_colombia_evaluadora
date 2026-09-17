@@ -12,6 +12,7 @@ import {
 } from "@/components/layout/table-screen"
 import { CheckIcon, SpinnerIcon } from "@/components/ui/icons"
 import { paths } from "@/config/paths"
+import { getErrorMessage } from "@/lib/api-client"
 
 import { useCreateUnidad } from "@/features/planeador/api/mutations/create-unidad"
 import {
@@ -55,12 +56,15 @@ function PlaneadorCrearUnidadPageContent() {
   // `planeador-tabs.tsx`) para el mensaje de éxito — el mismo texto fijo
   // "Unidad temática" no tenía sentido para un docente de Preescolar.
   const instrumento = useUnidadInstrumentoLabel(draft.gradoId)
-  // "Nueva unidad temática"/"Nuevo proyecto pedagógico" — mismo criterio de
-  // género que `mensajeUnidadGuardada` (arriba). El título de la pantalla y
-  // su descripción venían fijos en "unidad"/"unidad temática", igual que el
-  // resto de textos de acá antes de este cambio.
+  // El título de la pantalla y su descripción venían fijos en
+  // "unidad"/"unidad temática", igual que el resto de textos de acá antes de
+  // este cambio. "Crear X" (no "Nuevo/a X") evita tener que concordar
+  // género con el instrumento — mismo criterio que ya usa el título de
+  // `planeador-editar-unidad-page.tsx` ("Editar X"). El anterior
+  // `Nuevo${esMasculino ? "" : "a"}` producía literalmente "Nuevoa unidad
+  // temática" para el caso femenino: concatenar "a" a continuación de
+  // "Nuevo" no da "Nueva".
   const esMasculino = articuloDefinido(instrumento) === "el"
-  const nuevoInstrumento = `Nuevo${esMasculino ? "" : "a"} ${instrumento.toLowerCase()}`
   // Sin form-library acá (`draft` es estado plano): "hay cambios" se
   // resuelve comparando contra el borrador vacío con el que arrancó la
   // página — mismo criterio de footer sticky que
@@ -75,10 +79,13 @@ function PlaneadorCrearUnidadPageContent() {
         queueNotice(mensajeUnidadGuardada("creado", instrumento))
         navigate({ to: paths.app.planeadorUnidades.getHref() })
       },
-      onError: () => {
-        notify(`No se pudo crear ${articuloDefinido(instrumento)} ${instrumento.toLowerCase()}.`, {
-          variant: "error",
-        })
+      // Antes esto ignoraba el `error` de la mutación y siempre mostraba
+      // este mismo texto quemado, así que un 409 por nombre duplicado o un
+      // 400 de validación real se leían igual que un fallo de red genérico
+      // — sin pista de qué corregir. `getErrorMessage` ya trae su propio
+      // fallback genérico si el backend no manda `message`.
+      onError: (error) => {
+        notify(getErrorMessage(error), { variant: "error" })
       },
     },
   })
@@ -99,7 +106,7 @@ function PlaneadorCrearUnidadPageContent() {
             </Button>
           }
         >
-          {nuevoInstrumento}
+          {`Crear ${instrumento.toLowerCase()}`}
         </TableScreenTitle>
         <NoticeOutlet className="mx-(--screen-spacing) my-4" />
       </TableScreenHeader>
@@ -126,7 +133,7 @@ function PlaneadorCrearUnidadPageContent() {
       <TableScreenFooter>
         {isDirty ? (
           <>
-            <p className="text-sm">Completa los datos y guarda para crear {articuloDefinido(instrumento)} {instrumento.toLowerCase()}.</p>
+            <p className="text-sm">Completa los datos y guarda para continuar.</p>
             <Button
               type="submit"
               form={FORM_ID}

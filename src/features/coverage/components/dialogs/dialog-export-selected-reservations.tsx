@@ -19,6 +19,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { useExportSelectedReservations } from "@/features/coverage/api/mutations/export-selected-reservations"
 import type { ExportFormat } from "@/features/coverage/api/types/reservation"
@@ -56,19 +57,26 @@ export function ExportSelectedReservationsDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger
-        render={
-          <Button
-            variant="outline"
-            color="muted"
-            size="sm"
-            aria-label={`Exportar ${selectedIds.length} reservas seleccionadas`}
-          >
-            <FileDownloadOutlinedIcon data-icon="inline-start" />
-            <span className="tabular-nums">({selectedIds.length})</span>
-          </Button>
-        }
-      />
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <DialogTrigger
+              render={
+                <Button
+                  variant="outline"
+                  color="muted"
+                  size="sm"
+                  aria-label={`Exportar ${selectedIds.length} reservas seleccionadas`}
+                />
+              }
+            />
+          }
+        >
+          <FileDownloadOutlinedIcon data-icon="inline-start" />
+          <span className="tabular-nums">({selectedIds.length})</span>
+        </TooltipTrigger>
+        <TooltipContent>{`Exportar ${selectedIds.length} reservas seleccionadas`}</TooltipContent>
+      </Tooltip>
       <DialogContent showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>

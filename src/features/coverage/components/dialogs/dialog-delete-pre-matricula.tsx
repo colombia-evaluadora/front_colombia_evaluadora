@@ -13,6 +13,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { getErrorMessage } from "@/lib/api-client"
 import { useNotify } from "@/components/notice/notice-context"
 
@@ -54,19 +55,26 @@ export function DeletePreMatriculaDialog({ preMatricula }: DeletePreMatriculaDia
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger
-        render={
-          <Button
-            type="button"
-            variant="ghost"
-            color="neutral"
-            size="icon-sm"
-            aria-label={`Eliminar registro de ${fullName}`}
-          />
-        }
-      >
-        <TrashIcon />
-      </AlertDialogTrigger>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <AlertDialogTrigger
+              render={
+                <Button
+                  type="button"
+                  variant="ghost"
+                  color="neutral"
+                  size="icon-sm"
+                  aria-label={`Eliminar registro de ${fullName}`}
+                />
+              }
+            />
+          }
+        >
+          <TrashIcon />
+        </TooltipTrigger>
+        <TooltipContent>{`Eliminar registro de ${fullName}`}</TooltipContent>
+      </Tooltip>
       <AlertDialogContent className="sm:max-w-sm">
         <AlertDialogHeader className="sm:text-center">
           <AlertDialogTitle>

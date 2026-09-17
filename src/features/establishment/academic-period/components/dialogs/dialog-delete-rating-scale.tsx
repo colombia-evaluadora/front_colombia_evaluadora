@@ -17,6 +17,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { useDeleteRatingScale } from "@/features/establishment/academic-period/api/mutations/delete-rating-scale"
 import type { RatingScale } from "@/features/establishment/academic-period/api/types/rating-scales"
@@ -48,10 +49,17 @@ export function DeleteRatingScaleDialog({ scale }: DeleteRatingScaleDialogProps)
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger render={<Button variant="ghost" color="neutral" size="icon-sm" />}>
-        <span className="sr-only">Eliminar escala de valoración</span>
-        <TrashIcon />
-      </AlertDialogTrigger>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <AlertDialogTrigger render={<Button variant="ghost" color="neutral" size="icon-sm" />} />
+          }
+        >
+          <span className="sr-only">Eliminar escala de valoración</span>
+          <TrashIcon />
+        </TooltipTrigger>
+        <TooltipContent>Eliminar escala de valoración</TooltipContent>
+      </Tooltip>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Eliminar</AlertDialogTitle>

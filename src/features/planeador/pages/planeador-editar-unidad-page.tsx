@@ -112,8 +112,10 @@ function EditarUnidadPageContent({
         queueNotice(mensajeUnidadGuardada("actualizado", instrumento))
         onClose()
       },
-      onError: () => {
-        notify(`No se pudo actualizar ${instrumento.toLowerCase()}.`, { variant: "error" })
+      // Mismo bug que tenía `planeador-crear-unidad-page.tsx`: ignoraba el
+      // `error` de la mutación y mostraba siempre este texto quemado.
+      onError: (error) => {
+        notify(getErrorMessage(error), { variant: "error" })
       },
     },
   })

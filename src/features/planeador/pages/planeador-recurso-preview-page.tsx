@@ -7,7 +7,7 @@ import {
   TableScreenTitle,
 } from "@/components/layout/table-screen"
 import { Button } from "@/components/ui/button"
-import { ArrowLeftIcon } from "@/components/ui/icons"
+import { XIcon } from "@/components/ui/icons"
 
 import type { Recurso } from "@/features/planeador/api/types/actividad"
 import { RecursoPreview } from "@/features/planeador/components/recurso-preview"
@@ -38,25 +38,41 @@ export function PlaneadorRecursoPreviewPage() {
   return (
     <TableScreen>
       <TableScreenHeader>
-        <Button
-          variant="ghost"
-          color="neutral"
-          size="sm"
-          className="w-fit"
-          type="button"
-          onClick={() => router.history.back()}
+        <TableScreenTitle
+          description={recurso.descripcion || undefined}
+          // "Volver" es la acción de navegación del encabezado — mismo slot
+          // que usan las páginas de detalle de Auditoría (`action` de
+          // `TableScreenTitle`), no un botón suelto ANTES del título: así
+          // queda alineado en la misma fila, dentro de la caja del
+          // encabezado, en vez de flotar afuera con su propio margen.
+          action={
+            <Button
+              variant="fill"
+              color="neutral"
+              size="sm"
+              type="button"
+              onClick={() => router.history.back()}
+            >
+              <XIcon data-icon="inline-start" />
+              Cerrar
+            </Button>
+          }
         >
-          <ArrowLeftIcon data-icon="inline-start" />
-          Volver
-        </Button>
-
-        <TableScreenTitle description={recurso.descripcion || undefined}>
           {recurso.titulo || recurso.fuente || recurso.url || "Vista previa del recurso"}
         </TableScreenTitle>
       </TableScreenHeader>
 
       <TableScreenBody>
-        <RecursoPreview recurso={recurso} />
+        {/* `TableScreenBody` crece (`grow`) para llenar el alto del viewport
+            —tiene sentido para una tabla, que se estira con sus filas—, pero
+            los estados vacíos (`RecursoPreviewVacio`/`EnlaceExterno`, unas
+            pocas líneas) quedaban pegados arriba con un vacío enorme debajo.
+            Centrar el contenido adentro de un `min-h` (no un `h` fijo:
+            YouTube/DocViewer ya traen su propio alto real y no deberían
+            recortarse) resuelve los dos casos con la misma envoltura. */}
+        <div className="flex min-h-[60vh] flex-col items-center justify-center">
+          <RecursoPreview recurso={recurso} />
+        </div>
       </TableScreenBody>
     </TableScreen>
   )

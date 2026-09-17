@@ -42,6 +42,9 @@ function toCampus(row: RealCampusDetailRow): Campus {
     commune: row.comuna ?? "",
     address: row.direccion ?? "",
     phone: row.telefono ?? "",
+    // No se edita (el EE de una sede es inmutable): se arrastra para
+    // poder filtrar el catálogo de zonas en edición.
+    establishmentId: row.fk_testablecimiento,
   }
 }
 

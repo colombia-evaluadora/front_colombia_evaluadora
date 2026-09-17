@@ -2,7 +2,7 @@ import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { FieldDescription, FieldSet } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
+import { Input, inputVariants } from "@/components/ui/input"
 import {
   InputGroup,
   InputGroupAddon,
@@ -19,6 +19,26 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { PlusCircleIcon, PlusIcon, TrashIcon } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
+
+/**
+ * Las filas ya agregadas son el MISMO input `outlined` que el campo con el
+ * que se agregan, no una imitación: sale de `inputVariants`, la fuente que
+ * ya usa `<Input variant="outlined">`. Antes cada fila re-derivaba ese
+ * aspecto a mano (`rounded-md border-input px-2 py-1`) encima de un
+ * `InputGroup` que viene subrayado (`rounded-none border-b-input`), así que
+ * peleaba contra dos defaults y se iba separando del original.
+ *
+ * Lo único que se agrega son las reglas de foco en `has-[…]`: el foco lo
+ * recibe el input de adentro, no el grupo, y el `focus-visible:` de
+ * `inputVariants` solo reacciona al elemento que lo lleva puesto.
+ */
+const FILA_OUTLINED = cn(
+  inputVariants({ variant: "outlined" }),
+  // El alto y el padding vertical los pone el input de adentro, que ya es
+  // `h-11 py-2`: dejar también los del grupo lo desbordaría.
+  "py-0",
+  "has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/20",
+)
 
 interface ListaAgregableFieldProps {
   label: string
@@ -109,7 +129,14 @@ export function ListaAgregableField({
         <ul className="flex flex-col gap-1.5">
           {items.map((item, index) => (
             <li key={index}>
-              <InputGroup className="h-auto rounded-md border border-input bg-card px-1 py-0.5">
+              {/* Mismo `InputGroup` "outlined" que Correo/Contraseña del
+                  login (`form-login.tsx`): borde completo + anillo de foco
+                  en las 4 esquinas, no el `border-b-input` (subrayado) que
+                  trae `InputGroup` por default — acá no hay label
+                  flotando arriba, así que sin este override se veía como un
+                  campo "estándar" (subrayado apenas visible) en vez de un
+                  campo con caja propia como el resto del form. */}
+              <InputGroup className={cn(FILA_OUTLINED, "bg-card")}>
                 <InputGroupInput
                   aria-label={`Editar ítem ${index + 1} de "${label}"`}
                   value={item}
@@ -223,10 +250,13 @@ export function ListaAgregableCaja({
           {columnLabel}
         </p>
         {items.length > 0 && (
-          <ul className="divide-y">
+          // Sin `divide-y`: cada fila ya trae su propia caja completa (ver
+          // el comentario de arriba), así que una línea divisoria extra
+          // entre cajas solo agregaba ruido visual pegado a sus bordes.
+          <ul className="flex flex-col gap-1.5 p-1.5">
             {items.map((item, index) => (
-              <li key={index} className="px-1 py-0.5">
-                <InputGroup className="h-auto border-none px-2 py-1">
+              <li key={index}>
+                <InputGroup className={FILA_OUTLINED}>
                   <InputGroupInput
                     aria-label={`Editar ${columnLabel.toLowerCase()} ${index + 1}`}
                     value={item}

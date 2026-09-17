@@ -33,7 +33,6 @@ import { useUnidadDetalleQuery } from "@/features/planeador/api/query/use-unidad
 import { useUnidadReferenteQuery } from "@/features/planeador/api/query/use-unidad-referente-query"
 import { useUnidadesTabsQuery } from "@/features/planeador/api/query/use-unidades-tabs-query"
 import { UNIDAD_TAB_FALLBACK } from "@/features/planeador/components/planeador-tabs"
-import { articuloDefinido } from "@/features/planeador/lib/unidad-instrumento-label"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
 import { useConfiguracionActividadQuery } from "@/features/planeador/api/query/use-configuracion-actividad-query"
@@ -59,12 +58,10 @@ import {
 } from "@/features/planeador/components/forms/form-unidad-info-general"
 import {
   EyeIcon,
-  FileDownloadOutlinedIcon,
   FileTextIcon,
   FileUploadOutlinedIcon,
   FolderOpenIcon,
   ImageIcon,
-  InfoIcon,
   InsertLinkOutlinedIcon,
   PermMediaOutlinedIcon,
   PlusCircleIcon,
@@ -94,6 +91,11 @@ import { useCalificacionesQuery } from "@/features/planeador/api/query/use-calif
 import { useCreateUnidad } from "@/features/planeador/api/mutations/create-unidad"
 
 import { DialogBibliotecaRecursos } from "@/features/planeador/components/dialogs/dialog-biblioteca-recursos"
+import {
+  consumeActividadFormDraft,
+  saveActividadFormDraft,
+  type ActividadFormDraftKey,
+} from "@/features/planeador/lib/actividad-form-draft"
 
 /**
  * `<Textarea>` no tiene variante `outlined` propia (a diferencia de `Input`,
@@ -243,8 +245,20 @@ export function EditarActividadForm({
   const unidades = [...unidadesQuery, ...unidadesCreadasPendientes]
   const createUnidadMutation = useCreateUnidad()
 
+  // El alta usa el sentinel "nueva" en vez de `actividad.id`: ese id es un
+  // `draftId()` aleatorio que cambia en cada montaje (ver `esNueva` más
+  // arriba), así que no sirve para encontrar el borrador guardado antes de
+  // navegar a "Ver recurso" — la edición sí puede usar su id real, estable
+  // entre navegaciones (`key={actividadParaForm.id}` en la página).
+  const draftKey: ActividadFormDraftKey = esNueva ? "nueva" : actividad.id
+  // Lazy initializer: corre una sola vez al montar, así que si venimos de
+  // "Ver recurso" (`consumeActividadFormDraft` ya borró el borrador para
+  // que no se reuse) el form arranca con lo que el docente ya había
+  // tipeado en vez de `actividad` a secas.
+  const [actividadInicial] = useState(() => consumeActividadFormDraft(draftKey) ?? actividad)
+
   const form = useForm({
-    defaultValues: actividad,
+    defaultValues: actividadInicial,
     onSubmit: ({ value }) => onSubmit?.(value),
   })
 
@@ -339,7 +353,7 @@ export function EditarActividadForm({
         criteriosUnidadOriginales={esNueva ? [] : actividad.criteriosUnidadIds}
       />
       <MaterialesSection form={form} />
-      <RecursosSection form={form} />
+      <RecursosSection form={form} draftKey={draftKey} />
       <ProgramacionSection form={form} />
       <EvaluacionSection
         form={form}
@@ -523,7 +537,16 @@ function UnidadAsociadaSection({
             // del docente) dejaba este select deshabilitado sin motivo.
             const grado = form.getFieldValue("grado")
             const asignatura = form.getFieldValue("asignatura")
-            const hasGradoAsignatura = Boolean(grado && asignatura)
+            // Misma condición que `CrearUnidadPopover` (gradoId != null &&
+            // asignaturaId != null), no `Boolean(grado && asignatura)`. Los
+            // labels pueden llegar solos desde el detalle real (que no
+            // siempre trae los ids, ver el comentario del `useEffect` en
+            // `AsignaturaGradoSection`); chequear con strings habilitaba el
+            // select de unidad y dejaba el `+` del popover bloqueado — o al
+            // revés, según el orden de la query de catálogos.
+            const gradoId = form.getFieldValue("gradoId")
+            const asignaturaId = form.getFieldValue("asignaturaId")
+            const hasGradoAsignatura = gradoId != null && asignaturaId != null
             // `grado`/`asignatura` y `UnidadTematica.grado`/`.asignatura`
             // salen ahora del mismo origen real (`docentes/grupos`/
             // `docentes/grado-asignatura`), así que se comparan directo —
@@ -535,7 +558,6 @@ function UnidadAsociadaSection({
             // Instrumento (rótulo real) del Grado ya elegido — ver el
             // comentario sobre `unidadTabs` más arriba. Sin Grado/Asignatura
             // todavía elegidos cae al mismo fallback que `PlaneadorTabs`.
-            const gradoId = form.getFieldValue("gradoId")
             const instrumentoLabel =
               (gradoId != null && unidadTabs?.find((t) => t.gradoIds.includes(gradoId))?.instrumento) ||
               UNIDAD_TAB_FALLBACK
@@ -1078,7 +1100,7 @@ const RECURSO_DRAFT_VACIO: RecursoDraft = {
   descripcion: "",
 }
 
-function RecursosSection({ form }: { form: FormActividad }) {
+function RecursosSection({ form, draftKey }: { form: FormActividad; draftKey: ActividadFormDraftKey }) {
   // Colapsa/expande el cuerpo del card. El título + los botones del header
   // (biblioteca, + agregar) quedan siempre a la vista; el toggle `-/+`
   // muestra u oculta el form de alta + la lista.
@@ -1215,6 +1237,14 @@ function RecursosSection({ form }: { form: FormActividad }) {
                           list.splice(index, 1)
                           field.handleChange(list)
                         }}
+                        // "Ver recurso" navega a una ruta aparte, que
+                        // desmonta este form entero — se guarda un borrador
+                        // con lo que el docente ya tipeó para que "Cerrar"
+                        // en la vista previa no lo mande de vuelta a un
+                        // form vacío (ver `actividad-form-draft.ts`).
+                        onVerRecurso={() =>
+                          saveActividadFormDraft(draftKey, form.state.values as Actividad)
+                        }
                       />
                     ))}
                   </ul>
@@ -1352,8 +1382,46 @@ function RecursoForm({
             <Input
               type={draft.tipo === "Archivo" ? "file" : "url"}
               placeholder={fuentePlaceholder}
-              value={draft.url}
-              onChange={(e) => onChange({ url: e.target.value })}
+              // `<input type="file">` no acepta `value` programático (el
+              // browser solo permite setearlo a `""` por seguridad —
+              // cualquier otro valor tira `InvalidStateError` y revienta
+              // el árbol). El archivo se controla vía `e.target.files`
+              // dentro de `onChange`, no hace falta pasarle `value`.
+              {...(draft.tipo === "Archivo" ? {} : { value: draft.url })}
+              onChange={(e) => {
+                // `<input type="file">` expone el archivo en
+                // `e.target.files[0]`, pero `e.target.value` es el fake
+                // path (`C:\fakepath\...`) que el browser pone por
+                // seguridad — no sirve para reproducir nada. Hay que
+                // armar un blob URL a partir del `File` real para que el
+                // preview tenga bytes que mostrarle al `<audio>` /
+                // `<video>` / visor de PDF.
+                if (draft.tipo === "Archivo") {
+                  const file = e.target.files?.[0]
+                  // Liberar el blob anterior antes de pisarlo — si el
+                  // usuario cambia de archivo no queremos dos blobs
+                  // vivos del mismo slot.
+                  if (draft.url.startsWith("blob:")) {
+                    URL.revokeObjectURL(draft.url)
+                  }
+                  if (!file) {
+                    onChange({ url: "", fuente: "" })
+                    return
+                  }
+                  const blobUrl = URL.createObjectURL(file)
+                  // El form guarda el nombre del archivo en `fuente` y se
+                  // lo pasa al resolver, que lo usa como fallback para
+                  // detectar la extensión — los blob URLs no tienen
+                  // extensión en el path y no queríamos meterla en el
+                  // hash (algunos parsers se confunden con el `#`).
+                  onChange({
+                    url: blobUrl,
+                    fuente: file.name,
+                  })
+                } else {
+                  onChange({ url: e.target.value })
+                }
+              }}
               className={FuenteIcon ? "pl-9" : undefined}
             />
           </div>
@@ -1399,9 +1467,11 @@ function RecursoForm({
 function RecursoItem({
   recurso,
   onRemove,
+  onVerRecurso,
 }: {
   recurso: Recurso
   onRemove: () => void
+  onVerRecurso: () => void
 }) {
   // Toda la presentación (ícono, color, label) sale del mapper: si mañana
   // se agrega un tipo nuevo o se cambia el color de "URL", se toca un solo
@@ -1502,6 +1572,7 @@ function RecursoItem({
                           titulo: recurso.titulo,
                           descripcion: recurso.descripcion,
                         }}
+                        onClick={onVerRecurso}
                       />
                     )
                     : undefined
@@ -1512,22 +1583,6 @@ function RecursoItem({
             <EyeIcon />
           </TooltipTrigger>
           <TooltipContent>Ver recurso</TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <Button
-                variant="ghost"
-                color="neutral"
-                size="icon-sm"
-                type="button"
-                aria-label="Descargar"
-              />
-            }
-          >
-            <FileDownloadOutlinedIcon />
-          </TooltipTrigger>
-          <TooltipContent>Descargar</TooltipContent>
         </Tooltip>
         <Tooltip>
           <TooltipTrigger
@@ -3581,12 +3636,17 @@ function CrearUnidadPopover({
   const [metodoCalculo, setMetodoCalculo] = React.useState<MetodoCalculo>("Ponderado")
   const [isSaving, setIsSaving] = React.useState(false)
   const { notify } = useNotify()
-  const crearLabel = `Crear nuevo${articuloDefinido(instrumentoLabel) === "el" ? "" : "a"} ${instrumentoLabel.toLowerCase()}`
+  // Sin "nuevo/nueva": el rótulo del instrumento lo define el referente
+  // curricular y concordar el artículo con él obligaba a una regla de género
+  // que ya venía dando "Crear nuevoa unidad temática".
+  const crearLabel = `Crear ${instrumentoLabel.toLowerCase()}`
 
-  const { enunciados: enunciadosDisponibles, isPending: isPendingEnunciados } = useEnunciadosDbaQuery(
-    gradoId,
-    asignaturaId,
-  )
+  const {
+    enunciados: enunciadosDisponibles,
+    nombre: referenteNombre,
+    descripcion: referenteDescripcion,
+    isPending: isPendingEnunciados,
+  } = useEnunciadosDbaQuery(gradoId, asignaturaId)
 
   const hasGradoAsignatura = gradoId != null && asignaturaId != null
 
@@ -3633,6 +3693,13 @@ function CrearUnidadPopover({
                   color="primary"
                   size="icon-sm"
                   aria-label={crearLabel}
+                  // Sin Grado/Asignatura elegidos, adentro no se puede
+                  // guardar nada (`guardar` corta en seco sin
+                  // `hasGradoAsignatura`) — antes el botón abría igual el
+                  // popover, y adentro aparecía un banner azul explicando
+                  // por qué no se podía usar. Deshabilitarlo acá evita
+                  // abrir un popover que no sirve para nada todavía.
+                  disabled={!hasGradoAsignatura}
                   // `size-11` para igualar la altura del `SelectTrigger` (h-11);
                   // `shrink-0` para que el flex del call site no lo aplaste.
                   // Si el call site pasa `className` (típico `rounded-l-none
@@ -3646,7 +3713,9 @@ function CrearUnidadPopover({
         >
           <PlusCircleIcon />
         </TooltipTrigger>
-        <TooltipContent>{crearLabel}</TooltipContent>
+        <TooltipContent>
+          {hasGradoAsignatura ? crearLabel : "Elegí Grado/Grupo y Asignatura de la actividad primero."}
+        </TooltipContent>
       </Tooltip>
       <PopoverContent
         align="end"
@@ -3667,16 +3736,15 @@ function CrearUnidadPopover({
           {crearLabel}
         </h3>
 
-        {!hasGradoAsignatura && (
-          <div className="border-blue-stroke bg-blue-22 text-blue m-4 flex items-start gap-2 rounded-md border p-3 text-xs">
-            <InfoIcon className="mt-0.5 size-4 shrink-0" />
-            Elegí Grado/Grupo y Asignatura de la actividad primero.
-          </div>
-        )}
+        {/* El banner de "Elegí Grado/Grupo y Asignatura primero" que vivía
+            acá ya no hace falta: el trigger de este popover está
+            deshabilitado (con tooltip que explica por qué) mientras falten,
+            así que no hay forma de llegar a ver este contenido sin
+            `hasGradoAsignatura`. */}
 
         <div className="scrollbar-slim flex max-h-[60vh] flex-col gap-5 overflow-y-auto p-4">
           <Field variant="outlined">
-            <FieldLabel>Nombre de la unidad</FieldLabel>
+            <FieldLabel>Nombre</FieldLabel>
             <Input
               placeholder="Agregar"
               value={nombre}
@@ -3715,8 +3783,8 @@ function CrearUnidadPopover({
 
           <div className="border-t pt-4">
             <ListaAgregableCajaSelect
-              title="Derechos Básicos de Aprendizaje"
-              description="Selecciona los enunciados de DBA asociados a esta unidad."
+              title={referenteNombre ?? "Derechos Básicos de Aprendizaje"}
+              description={referenteDescripcion ?? "Selecciona los enunciados asociados."}
               columnLabel="Enunciados"
               items={enunciadosDba}
               options={enunciadosDisponibles}
@@ -3756,7 +3824,7 @@ function CrearUnidadPopover({
             disabled={!nombre.trim() || isSaving}
           >
             {isSaving && <SpinnerIcon data-icon="inline-start" className="animate-spin" />}
-            {isSaving ? "Guardando..." : "Guardar unidad"}
+            {isSaving ? "Guardando..." : "Guardar"}
           </Button>
         </div>
       </PopoverContent>

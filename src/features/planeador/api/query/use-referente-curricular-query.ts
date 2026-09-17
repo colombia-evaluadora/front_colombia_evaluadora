@@ -38,6 +38,11 @@ interface ReferenteEnunciadoRow {
 interface ReferenteCurricularRow {
   pk_referente_curricular?: number
   especificidad?: number
+  /** Los devuelve `fn_refcurr_por_grado_asignatura` (V278) desde siempre —
+   *  son el rótulo y la finalidad que el colegio le puso al referente, y lo
+   *  que debe titular la sección de enunciados. */
+  referente_nombre?: string | null
+  referente_descripcion?: string | null
   es_evaluativo?: boolean
   enfoque_valor?: "EVALUATIVO" | "FORMATIVO" | null
   tipo_evaluacion_valor?: string | null
@@ -79,6 +84,8 @@ const SIN_REFERENTE: ReferenteCurricular = {
   tieneReferente: false,
   esFormativo: false,
   tipoEvaluacion: null,
+  nombre: null,
+  descripcion: null,
   id: null,
   nivel1Etiqueta: "Enunciado",
   nivel2Etiqueta: "Evidencia",
@@ -93,6 +100,8 @@ function toReferente(row: ReferenteCurricularRow | undefined): ReferenteCurricul
     tieneReferente: true,
     esFormativo,
     tipoEvaluacion: row.tipo_evaluacion_valor ?? null,
+    nombre: row.referente_nombre ?? null,
+    descripcion: row.referente_descripcion ?? null,
     id: row.pk_referente_curricular ?? null,
     nivel1Etiqueta: row.nivel_1_etiqueta ?? "Enunciado",
     nivel2Etiqueta: row.nivel_2_etiqueta ?? "Evidencia",

@@ -5,6 +5,7 @@ import { ClockIcon } from "@/components/ui/icons"
 
 import { cn } from "@/lib/utils"
 import { Button, buttonVariants } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { Input } from "@/components/ui/input"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 
@@ -97,15 +98,24 @@ export function TimePickerPanel({ value, onChange, className }: TimePickerPanelP
         <span className="text-muted-foreground text-xs font-medium uppercase tracking-wider">
           Ingresar hora
         </span>
-        <Button
-          type="button"
-          variant="fill"
-          size="icon-sm"
-          onClick={() => setView((v) => (v === "text" ? "analog" : "text"))}
-          aria-label={view === "text" ? "Cambiar a reloj analógico" : "Cambiar a ingreso manual"}
-        >
-          <ClockIcon weight="bold" />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                type="button"
+                variant="fill"
+                size="icon-sm"
+                onClick={() => setView((v) => (v === "text" ? "analog" : "text"))}
+                aria-label={view === "text" ? "Cambiar a reloj analógico" : "Cambiar a ingreso manual"}
+              />
+            }
+          >
+            <ClockIcon weight="bold" />
+          </TooltipTrigger>
+          <TooltipContent>
+            {view === "text" ? "Cambiar a reloj analógico" : "Cambiar a ingreso manual"}
+          </TooltipContent>
+        </Tooltip>
       </div>
 
       <div className="flex justify-center">

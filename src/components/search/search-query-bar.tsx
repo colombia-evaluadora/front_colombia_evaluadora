@@ -3,6 +3,7 @@ import type { ReactNode } from "react"
 import { MagnifyingGlassIcon, XIcon } from "@/components/ui/icons"
 import { AdvancedFiltersPopover } from "@/components/search/advanced-filters-popover"
 import { Field, FieldLabel } from "@/components/ui/field"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import {
   InputGroup,
   InputGroupAddon,
@@ -96,15 +97,22 @@ export function SearchQueryBar({
         {/* La X limpia todo —texto y filtros—, así que solo aparece cuando
             hay algo que limpiar. */}
         {(activeFilterCount > 0 || value !== "") && (
-          <InputGroupButton
-            size="icon-xs"
-            variant="ghost"
-            color="muted"
-            aria-label="Limpiar búsqueda y filtros"
-            onClick={onClearAll}
-          >
-            <XIcon />
-          </InputGroupButton>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <InputGroupButton
+                  size="icon-xs"
+                  variant="ghost"
+                  color="muted"
+                  aria-label="Limpiar búsqueda y filtros"
+                  onClick={onClearAll}
+                />
+              }
+            >
+              <XIcon />
+            </TooltipTrigger>
+            <TooltipContent>Limpiar búsqueda y filtros</TooltipContent>
+          </Tooltip>
         )}
 
         <AdvancedFiltersPopover

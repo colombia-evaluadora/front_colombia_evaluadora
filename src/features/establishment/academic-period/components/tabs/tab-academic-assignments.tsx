@@ -59,15 +59,21 @@ export function TabAcademicAssignments({ academicPeriodId }: TabAcademicAssignme
 
   const { data: pool = [] } = useAssignmentSubjectsQuery(academicPeriodId)
 
-  const { data: savedIds } = useTeacherAssignmentsQuery(
+  const { data: savedIds, dataUpdatedAt: savedIdsUpdatedAt } = useTeacherAssignmentsQuery(
     academicPeriodId,
     expanded == null ? undefined : String(expanded.id),
   )
+  // Resincroniza cada vez que la query trae datos nuevos (no solo la primera
+  // vez): si otra pestaña/diálogo invalida "teacher-assignments" (p.ej. un
+  // cambio de director de grupo en preescolar) mientras esta fila sigue
+  // expandida, sin esto el snapshot local se quedaba congelado con el valor
+  // de la primera carga hasta cerrar y volver a abrir la fila.
   useEffect(() => {
-    if (expanded && savedIds && assignedIds[expanded.id] === undefined) {
+    if (expanded && savedIds) {
       setAssignedIds((prev) => ({ ...prev, [expanded.id]: savedIds }))
     }
-  }, [expanded, savedIds, assignedIds])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expanded, savedIdsUpdatedAt])
 
   const saveAssignments = useSaveTeacherAssignments({
     mutationConfig: {
@@ -197,14 +203,14 @@ export function TabAcademicAssignments({ academicPeriodId }: TabAcademicAssignme
               (s.funcionarioId == null || s.funcionarioId === String(employee.id)),
           )
           return (
-            <div className="-m-4 flex max-h-[45vh] flex-col gap-4 overflow-y-auto bg-background p-4">
+            <div className="-m-4 flex flex-col gap-4 bg-background p-4">
               <AssignmentTransfer
                 available={available}
                 assigned={assigned}
                 onAssign={(nextIds) => assign(employee.id, nextIds)}
                 onUnassign={(nextIds) => unassign(employee.id, nextIds)}
               />
-              <div className="sticky bottom-0 -mx-4 -mb-4 flex justify-end border-t bg-background px-4 py-3">
+              <div className="-mx-4 -mb-4 flex justify-end border-t bg-background px-4 py-3">
                 <Button
                   type="button"
                   color="primary"

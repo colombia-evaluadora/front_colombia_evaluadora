@@ -145,9 +145,12 @@ function evidenciasIdsFromUnidadConfiguracion(_raw: unknown): number[] {
  * al leer, igual que hace el resto de esta fila con sus pares
  * `fk_x`/`x` ya confirmados.
  *
- * Los recursos de tipo "Archivo" nunca llegan a guardarse (ver
- * `recursosOmitidos` en `update-materiales-actividad.ts`), así que no hace
- * falta resolver `fkTarchivo` acá.
+ * Los recursos de tipo "Archivo" viajan como `multipart/form-data` (ver
+ * `update-materiales-actividad.ts`), pero no hay un ejemplo real de cómo el
+ * backend devuelve esos materiales en el detalle (¿`fkTarchivo`? ¿una URL de
+ * descarga?) — hasta confirmarlo, esta lectura tolerante no intenta
+ * resolverlos y caen al mismo fallback `"URL"` que cualquier campo
+ * desconocido.
  */
 function recursoFromMaterialRaw(raw: unknown, tipoRecursoOptions: TipoRecursoOption[], index: number): Recurso {
   const item = (raw ?? {}) as Record<string, unknown>

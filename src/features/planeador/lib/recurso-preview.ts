@@ -1,30 +1,47 @@
 /**
  * Clasifica la URL de un `Recurso` para decidir cómo previsualizarlo en
- * `planeador-recurso-preview-page.tsx`: como video de YouTube (vía
- * `react-youtube`), como documento (PDF/imagen/office vía
- * `@cyntler/react-doc-viewer`) o, si no se puede reconocer el tipo real
- * (p. ej. un link de Google Drive sin nombre de archivo en el path), como
- * enlace externo simple (sin intentar renderizarlo inline).
+ * `recurso-preview.tsx`:
+ *
+ * - `youtube`   → reproductor embebido (`react-player`)
+ * - `video`     → reproductor directo para `.mp4`, `.webm`, `.mov`, `.m4v`
+ * - `image`     → `<img>` plano para extensiones de imagen
+ * - `documento` → mammoth para `.docx`/`.doc` (parseo client-side), iframe
+ *                 del browser para `.pdf`. Otros formatos caen al preview web.
+ * - `web`       → screenshot vía `@microlink/react` (`fetchFromApi`) o el
+ *                 componente `<Microlink>` como fallback. Es el caso "no
+ *                 reconozco la extensión" (Drive sin nombre en la URL, sitio
+ *                 genérico, intranet).
  */
-export type RecursoPreviewKind = "youtube" | "documento" | "enlace"
+export type RecursoPreviewKind =
+  | "youtube"
+  | "video"
+  | "image"
+  | "documento"
+  | "web"
 
 export interface RecursoPreviewResolved {
   kind: RecursoPreviewKind
-  /** "youtube": el id del video. "documento": la URL (normalizada, p. ej.
-   *  Dropbox con `raw=1` para bajar el archivo real). "enlace": la URL tal
-   *  cual, solo para mostrarla/abrirla. */
+  /** `youtube`: id del video. Resto: URL (normalizada, p. ej. Dropbox con
+   *  `raw=1` para bajar el archivo real en vez del HTML de preview). */
   value: string
-  /** Solo "documento": extensión detectada con el punto (`.pdf`), por si
-   *  la URL no la trae en el path (p. ej. quedó detrás de un `?`). */
+  /** Solo `documento`: extensión detectada con punto (`.pdf`, `.docx`), para
+   *  que el componente elija mammoth vs iframe vs screenshot. */
   fileType?: string
 }
 
-// Extensiones que `DocViewer` sabe renderizar sin depender de un servicio
-// externo (Office/`doc`,`docx`,`ppt`,… sí lo usa, pero corre igual dentro
-// de la librería). Ver su README, sección "Supported file types".
-const DOC_VIEWER_EXTENSIONS = new Set([
-  "bmp", "csv", "odt", "doc", "docx", "gif", "htm", "html", "jpg", "jpeg",
-  "pdf", "png", "ppt", "pptx", "tiff", "tif", "txt", "xls", "xlsx", "mp4", "webp",
+const VIDEO_EXTS = new Set(["mp4", "webm", "mov", "m4v"])
+
+const IMAGE_EXTS = new Set([
+  "jpg", "jpeg", "png", "gif", "webp", "svg", "bmp", "tiff", "tif",
+])
+
+// `documento` cubre todo lo que NO es video ni imagen pero sí es un archivo
+// reconocible. El renderer (`recurso-preview.tsx`) decide por `fileType` qué
+// hacer: mammoth para `.docx`, iframe para `.pdf`, screenshot para el resto.
+const DOC_EXTS = new Set([
+  "pdf", "doc", "docx", "odt", "rtf",
+  "xls", "xlsx", "csv",
+  "ppt", "pptx",
 ])
 
 function safeParseUrl(value: string): URL | null {
@@ -50,8 +67,8 @@ function extractYoutubeId(url: URL): string | null {
   return null
 }
 
-/** Dropbox sirve el HTML de la página de preview por default (`dl=0`); con
- *  `raw=1` devuelve el archivo real, que es lo que necesita `DocViewer`. */
+/** Dropbox sirve el HTML de preview por default; con `raw=1` devuelve el
+ *  archivo real, que es lo que necesita mammoth/iframe para mostrar bytes. */
 function normalizeDropboxUrl(url: URL): URL {
   const next = new URL(url.toString())
   next.searchParams.delete("dl")
@@ -64,7 +81,27 @@ function getExtension(pathname: string): string {
   return match ? match[1].toLowerCase() : ""
 }
 
-export function resolveRecursoPreview(rawUrl: string): RecursoPreviewResolved | null {
+export function resolveRecursoPreview(
+  rawUrl: string,
+  fuente?: string,
+): RecursoPreviewResolved | null {
+  // `blob:` URLs no se pueden parsear con `new URL()` (no tienen host/path
+  // significativo) y tampoco traen la extensión del archivo en el path. El
+  // form (`form-editar-actividad.tsx`) las genera con `URL.createObjectURL`
+  // para los recursos tipo "Archivo" y guarda el nombre original en
+  // `fuente` — usamos eso para detectar el tipo de archivo. Si tampoco
+  // `fuente` trae extensión reconocible, devolvemos `null` para que el
+  // componente muestre el estado vacío.
+  if (rawUrl.startsWith("blob:")) {
+    const ext = getExtension(fuente ?? "")
+    if (VIDEO_EXTS.has(ext)) return { kind: "video", value: rawUrl }
+    if (IMAGE_EXTS.has(ext)) return { kind: "image", value: rawUrl }
+    if (DOC_EXTS.has(ext)) {
+      return { kind: "documento", value: rawUrl, fileType: `.${ext}` }
+    }
+    return null
+  }
+
   const url = safeParseUrl(rawUrl)
   if (!url) return null
 
@@ -76,14 +113,23 @@ export function resolveRecursoPreview(rawUrl: string): RecursoPreviewResolved | 
   const effectiveUrl = esDropbox ? normalizeDropboxUrl(url) : url
 
   const ext = getExtension(effectiveUrl.pathname)
-  if (DOC_VIEWER_EXTENSIONS.has(ext)) {
-    return { kind: "documento", value: effectiveUrl.toString(), fileType: `.${ext}` }
+  if (VIDEO_EXTS.has(ext)) {
+    return { kind: "video", value: effectiveUrl.toString() }
+  }
+  if (IMAGE_EXTS.has(ext)) {
+    return { kind: "image", value: effectiveUrl.toString() }
+  }
+  if (DOC_EXTS.has(ext)) {
+    return {
+      kind: "documento",
+      value: effectiveUrl.toString(),
+      fileType: `.${ext}`,
+    }
   }
 
-  // Sin extensión reconocible (típico de un link de Google Drive, que no
-  // trae el nombre del archivo en el path) — se muestra como enlace
-  // externo en vez de arriesgar un render roto.
-  return { kind: "enlace", value: rawUrl }
+  // Sin extensión reconocible (link de Drive sin nombre en la URL, sitio
+  // web genérico): screenshot vía Microlink.
+  return { kind: "web", value: rawUrl }
 }
 
 /** Label legible del origen del enlace, para el fallback "Abrir en…". */
