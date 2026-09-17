@@ -43,11 +43,6 @@ export function useUpdateGradeGroup({ mutationConfig }: UseUpdateGradeGroupOptio
     ...mutationConfig,
     onSuccess: (...args) => {
       queryClient.invalidateQueries({ queryKey: ["grade-groups"] })
-      // Cambiar el director del grupo re-sincroniza sus asignaciones
-      // académicas en preescolar (V285/fn_docente_director_grupo_sync) —
-      // sin esto el transfer-list de Asignaciones Académicas quedaba con
-      // datos viejos hasta recargar la página.
-      queryClient.invalidateQueries({ queryKey: ["assignment-subjects"] })
       mutationConfig?.onSuccess?.(...args)
     },
   })
