@@ -56,20 +56,27 @@ export function ReingresarMatriculaDialog({
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
-      <Tooltip>
-        <TooltipTrigger
+      {trigger === "button" ? (
+        <AlertDialogTrigger
           render={
-            <AlertDialogTrigger
-              render={
-                trigger === "button" ? (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    color="primary"
-                    size="sm"
-                    aria-label={`Reingresar a ${fullName}`}
-                  />
-                ) : (
+            <Button
+              type="button"
+              variant="outline"
+              color="primary"
+              size="sm"
+              aria-label={`Reingresar a ${fullName}`}
+            />
+          }
+        >
+          <PersonAddIcon data-icon="inline-start" />
+          Reingreso
+        </AlertDialogTrigger>
+      ) : (
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <AlertDialogTrigger
+                render={
                   <Button
                     type="button"
                     variant="ghost"
@@ -77,16 +84,15 @@ export function ReingresarMatriculaDialog({
                     size="icon-sm"
                     aria-label={`Reingresar a ${fullName}`}
                   />
-                )
-              }
-            />
-          }
-        >
-          <PersonAddIcon data-icon={trigger === "button" ? "inline-start" : undefined} />
-          {trigger === "button" && "Reingreso"}
-        </TooltipTrigger>
-        <TooltipContent>{`Reingresar a ${fullName}`}</TooltipContent>
-      </Tooltip>
+                }
+              />
+            }
+          >
+            <PersonAddIcon />
+          </TooltipTrigger>
+          <TooltipContent>{`Reingresar a ${fullName}`}</TooltipContent>
+        </Tooltip>
+      )}
       <AlertDialogContent className="sm:max-w-md">
         <AlertDialogHeader>
           <AlertDialogTitle>Confirmación de reingreso</AlertDialogTitle>

@@ -186,34 +186,24 @@ export function CreateGradeGroupDialog({
         }
       }}
     >
-      <Tooltip>
-        <TooltipTrigger
-          render={
-            <DialogTrigger
-              render={
-                isEditing ? (
-                  <Button variant="ghost" color="neutral" size="icon-sm" />
-                ) : (
-                  <Button color="primary" size="sm" />
-                )
-              }
-            />
-          }
-        >
-          {isEditing ? (
-            <>
-              <span className="sr-only">Editar grupo</span>
-              <PencilIcon />
-            </>
-          ) : (
-            <>
-              <ControlPointIcon data-icon="inline-start" />
-              Agregar
-            </>
-          )}
-        </TooltipTrigger>
-        <TooltipContent>{isEditing ? "Editar grupo" : "Agregar grupo"}</TooltipContent>
-      </Tooltip>
+      {isEditing ? (
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <DialogTrigger render={<Button variant="ghost" color="neutral" size="icon-sm" />} />
+            }
+          >
+            <span className="sr-only">Editar grupo</span>
+            <PencilIcon />
+          </TooltipTrigger>
+          <TooltipContent>Editar grupo</TooltipContent>
+        </Tooltip>
+      ) : (
+        <DialogTrigger render={<Button color="primary" size="sm" />}>
+          <ControlPointIcon data-icon="inline-start" />
+          Agregar
+        </DialogTrigger>
+      )}
       <DialogPortal>
         <DialogOverlay forceRender className="bg-transparent" />
       </DialogPortal>

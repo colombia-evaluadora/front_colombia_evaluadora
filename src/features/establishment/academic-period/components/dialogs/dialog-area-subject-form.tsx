@@ -541,13 +541,10 @@ export function AreaSubjectFormDialog({
             <TooltipContent>Editar área</TooltipContent>
           </Tooltip>
         ) : (
-          <Tooltip>
-            <TooltipTrigger render={<DialogTrigger render={<Button color="primary" size="sm" />} />}>
-              <ControlPointIcon data-icon="inline-start" />
-              Agregar
-            </TooltipTrigger>
-            <TooltipContent>Agregar área/asignatura</TooltipContent>
-          </Tooltip>
+          <DialogTrigger render={<Button color="primary" size="sm" />}>
+            <ControlPointIcon data-icon="inline-start" />
+            Agregar
+          </DialogTrigger>
         )}
 
         <DialogContent

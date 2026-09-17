@@ -53,14 +53,19 @@ export function RetirarMatriculaDialog({ matricula, trigger = "icon" }: RetirarM
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
-      <Tooltip>
-        <TooltipTrigger
-          render={
-            <AlertDialogTrigger
-              render={
-                trigger === "button" ? (
-                  <Button type="button" variant="outline" color="primary" size="sm" aria-label={`Retirar a ${fullName}`} />
-                ) : (
+      {trigger === "button" ? (
+        <AlertDialogTrigger
+          render={<Button type="button" variant="outline" color="primary" size="sm" aria-label={`Retirar a ${fullName}`} />}
+        >
+          <PersonRemoveIcon data-icon="inline-start" />
+          Retirar
+        </AlertDialogTrigger>
+      ) : (
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <AlertDialogTrigger
+                render={
                   <Button
                     type="button"
                     variant="ghost"
@@ -68,16 +73,15 @@ export function RetirarMatriculaDialog({ matricula, trigger = "icon" }: RetirarM
                     size="icon-sm"
                     aria-label={`Retirar a ${fullName}`}
                   />
-                )
-              }
-            />
-          }
-        >
-          <PersonRemoveIcon data-icon={trigger === "button" ? "inline-start" : undefined} />
-          {trigger === "button" && "Retirar"}
-        </TooltipTrigger>
-        <TooltipContent>{`Retirar a ${fullName}`}</TooltipContent>
-      </Tooltip>
+                }
+              />
+            }
+          >
+            <PersonRemoveIcon />
+          </TooltipTrigger>
+          <TooltipContent>{`Retirar a ${fullName}`}</TooltipContent>
+        </Tooltip>
+      )}
       <AlertDialogContent className="sm:max-w-md">
         <AlertDialogHeader>
           <AlertDialogTitle>Confirmación de retiro</AlertDialogTitle>

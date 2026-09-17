@@ -275,36 +275,24 @@ export function CreateStudyPlanDialog({
         }
       }}
     >
-      <Tooltip>
-        <TooltipTrigger
-          render={
-            <DialogTrigger
-              render={
-                isEditing ? (
-                  <Button variant="ghost" color="neutral" size="icon-sm" />
-                ) : (
-                  <Button color="primary" size="sm" />
-                )
-              }
-            />
-          }
-        >
-          {isEditing ? (
-            <>
-              <span className="sr-only">Editar plan de estudio</span>
-              <PencilIcon />
-            </>
-          ) : (
-            <>
-              <ControlPointIcon data-icon="inline-start" />
-              Agregar
-            </>
-          )}
-        </TooltipTrigger>
-        <TooltipContent>
-          {isEditing ? "Editar plan de estudio" : "Agregar plan de estudio"}
-        </TooltipContent>
-      </Tooltip>
+      {isEditing ? (
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <DialogTrigger render={<Button variant="ghost" color="neutral" size="icon-sm" />} />
+            }
+          >
+            <span className="sr-only">Editar plan de estudio</span>
+            <PencilIcon />
+          </TooltipTrigger>
+          <TooltipContent>Editar plan de estudio</TooltipContent>
+        </Tooltip>
+      ) : (
+        <DialogTrigger render={<Button color="primary" size="sm" />}>
+          <ControlPointIcon data-icon="inline-start" />
+          Agregar
+        </DialogTrigger>
+      )}
       <DialogPortal>
         <DialogOverlay forceRender className="bg-black/30" />
       </DialogPortal>

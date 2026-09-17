@@ -140,19 +140,22 @@ export function FilesMatriculaDialog({ matricula, trigger = "icon", editable = f
 
   return (
     <>
-      <Tooltip>
-        <TooltipTrigger
-          render={
-            trigger === "button" ? (
-              <Button
-                type="button"
-                variant="outline"
-                color="primary"
-                size="sm"
-                aria-label={`Archivos de ${fullName}`}
-                onClick={() => setOpen(true)}
-              />
-            ) : (
+      {trigger === "button" ? (
+        <Button
+          type="button"
+          variant="outline"
+          color="primary"
+          size="sm"
+          aria-label={`Archivos de ${fullName}`}
+          onClick={() => setOpen(true)}
+        >
+          <FolderOpenIcon data-icon="inline-start" />
+          Archivos
+        </Button>
+      ) : (
+        <Tooltip>
+          <TooltipTrigger
+            render={
               <Button
                 type="button"
                 variant="ghost"
@@ -161,14 +164,13 @@ export function FilesMatriculaDialog({ matricula, trigger = "icon", editable = f
                 aria-label={`Archivos de ${fullName}`}
                 onClick={() => setOpen(true)}
               />
-            )
-          }
-        >
-          <FolderOpenIcon data-icon={trigger === "button" ? "inline-start" : undefined} />
-          {trigger === "button" && "Archivos"}
-        </TooltipTrigger>
-        <TooltipContent>{`Archivos de ${fullName}`}</TooltipContent>
-      </Tooltip>
+            }
+          >
+            <FolderOpenIcon />
+          </TooltipTrigger>
+          <TooltipContent>{`Archivos de ${fullName}`}</TooltipContent>
+        </Tooltip>
+      )}
       <SupportFilesSheet
         open={open}
         onOpenChange={setOpen}

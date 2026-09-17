@@ -292,13 +292,10 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
         else reset()
       }}
     >
-      <Tooltip>
-        <TooltipTrigger render={<DialogTrigger render={<Button color="primary" size="sm" />} />}>
-          <ControlPointIcon data-icon="inline-start" />
-          Agregar
-        </TooltipTrigger>
-        <TooltipContent>Agregar escalas de valoración</TooltipContent>
-      </Tooltip>
+      <DialogTrigger render={<Button color="primary" size="sm" />}>
+        <ControlPointIcon data-icon="inline-start" />
+        Agregar
+      </DialogTrigger>
       <DialogContent
         className={
           continued
