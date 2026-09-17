@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils"
 
 import { useReferenteCurricularQuery } from "@/features/planeador/api/query/use-referente-curricular-query"
 import { useDocenteGradoAsignaturaQuery } from "@/features/planeador/api/query/use-docente-grado-asignatura-query"
+import type { UnidadTab } from "@/features/planeador/api/query/use-unidades-tabs-query"
 import { useStudyPlanSubjectLabel } from "@/features/establishment/academic-period/api/query/use-study-plan-subject-label"
 import {
   ListaAgregableCaja,
@@ -138,13 +139,24 @@ function useEnfoquePedagogicoDerivado(
  * Solo 3 campos básicos (Nombre/Asignatura/Grado): `área`, `estado` y las
  * fechas siguen existiendo en `UnidadTematica` (los sigue mostrando la
  * card del listado y el panel de detalle) pero no se editan desde acá.
+ *
+ * `tab` llega SOLO desde el alta (`planeador-crear-unidad-page.tsx`, cuando
+ * se entra por el botón "Agregar {instrumento}" de una pestaña) — acota
+ * Grado a los `PK_TGRADO` de esa pestaña (`GET /planeador/unidades/tabs`,
+ * ya con nombre real, confirmado contra el servidor de test) en vez de
+ * TODO el catálogo del docente (`docentes/grado-asignatura`), que además
+ * viene vacío para un rector/coordinador (no "dicta" nada — ver el
+ * comentario de `grados` más abajo). Sin `tab` (edición, o alta sin pasar
+ * por ese botón) el comportamiento es el de siempre.
  */
 export function UnidadInfoGeneralFields({
   draft,
   onChange,
+  tab,
 }: {
   draft: UnidadDraft
   onChange: (patch: Partial<UnidadDraft>) => void
+  tab?: UnidadTab
 }) {
   const enfoqueDerivado = useEnfoquePedagogicoDerivado(draft.gradoId, draft.asignaturaId)
   useEffect(() => {
@@ -157,6 +169,7 @@ export function UnidadInfoGeneralFields({
     enunciados: enunciadosDisponibles,
     nombre: referenteNombre,
     descripcion: referenteDescripcion,
+    nivel1Etiqueta,
     isPending: isPendingEnunciados,
   } = useEnunciadosDbaQuery(draft.gradoId, draft.asignaturaId)
 
@@ -165,8 +178,22 @@ export function UnidadInfoGeneralFields({
   // pares que ESTE docente realmente dicta, con sus `PK_TGRADO`/
   // `PK_TASIGNATURA` reales — el catálogo genérico `/select/GRADOS`
   // devolvía grados que no necesariamente le correspondían al docente.
+  //
+  // Con `tab` (alta desde "Agregar {instrumento}"): NO alcanza para un
+  // rector/coordinador — no tiene filas en `docentes/grado-asignatura`
+  // (no "dicta" nada, ver `fn_docente_unidad_tabs_listar` V407) — así que
+  // Grado se acota a `tab.grados`, que sí trae los grados reales de esa
+  // pestaña tanto para un docente como para un administrativo. `tab.
+  // asignaturas` es el mismo catálogo por INSTRUMENTO completo (no por
+  // grado puntual, el backend no lo distingue a este nivel): se usa
+  // igual, y en el caso rector/coordinador puede llegar vacío (esa rama
+  // no resuelve asignatura, confirmado contra el servidor de test) — ahí
+  // Asignatura queda con la lista vacía existente ("No tienes asignaturas
+  // en este grado"), que sigue siendo el fallback correcto: no hay de
+  // dónde sacar una.
   const { data: docenteGradoAsignatura = [] } = useDocenteGradoAsignaturaQuery()
   const grados = useMemo(() => {
+    if (tab && tab.grados.length > 0) return tab.grados
     const porId = new Map<number, { id: number; nombre: string }>()
     for (const par of docenteGradoAsignatura) {
       if (!porId.has(par.gradoId)) {
@@ -174,12 +201,14 @@ export function UnidadInfoGeneralFields({
       }
     }
     return [...porId.values()]
-  }, [docenteGradoAsignatura])
+  }, [tab, docenteGradoAsignatura])
 
-  const asignaturas = useMemo(
-    () => docenteGradoAsignatura.filter((par) => par.gradoId === draft.gradoId),
-    [docenteGradoAsignatura, draft.gradoId],
-  )
+  const asignaturas = useMemo(() => {
+    if (tab && tab.grados.length > 0) {
+      return tab.asignaturas.map((a) => ({ asignaturaId: a.id, asignaturaNombre: a.nombre }))
+    }
+    return docenteGradoAsignatura.filter((par) => par.gradoId === draft.gradoId)
+  }, [tab, docenteGradoAsignatura, draft.gradoId])
 
   // Mismo rótulo dinámico que ya usa Plan de Estudio ("Dimensión", "Área", …
   // según lo que el referente curricular del grado tenga personalizado) —
@@ -187,17 +216,17 @@ export function UnidadInfoGeneralFields({
   // afecta el DEFECTO cuando el referente no personalizó nada.
   const subjectLabel = useStudyPlanSubjectLabel(draft.gradoId, false)
 
+  // Grado + Asignatura son el punto de partida de la unidad: el resto de
+  // los campos (nombre, descripción, objetivos, contenidos, DBA, método de
+  // cálculo) no tiene sentido completarlo antes de saber a qué grado/
+  // asignatura pertenece — mismo criterio que `EditarActividadForm` en
+  // `form-editar-actividad.tsx`.
+  const hasGradoAsignatura = draft.gradoId != null && draft.asignaturaId != null
+  const disabled = !hasGradoAsignatura
+
   return (
     <div className="flex flex-col gap-4">
       <div className="grid gap-4 sm:grid-cols-3">
-        <Field variant="outlined">
-          <FieldLabel>Nombre</FieldLabel>
-          <Input
-            placeholder="Ej: Diseño de prototipo"
-            value={draft.nombre}
-            onChange={(e) => onChange({ nombre: e.target.value })}
-          />
-        </Field>
         <Field variant="outlined">
           <FieldLabel>Grado</FieldLabel>
           <Select
@@ -301,6 +330,15 @@ export function UnidadInfoGeneralFields({
             </SelectContent>
           </Select>
         </Field>
+        <Field variant="outlined">
+          <FieldLabel>Nombre</FieldLabel>
+          <Input
+            placeholder="Ej: Diseño de prototipo"
+            value={draft.nombre}
+            onChange={(e) => onChange({ nombre: e.target.value })}
+            disabled={disabled}
+          />
+        </Field>
       </div>
 
       <Field variant="outlined">
@@ -309,6 +347,7 @@ export function UnidadInfoGeneralFields({
           className={TEXTAREA_OUTLINED}
           rows={3}
           placeholder="Propósito pedagógico y dinámica general"
+          disabled={disabled}
           value={draft.descripcion}
           onChange={(e) => onChange({ descripcion: e.target.value })}
         />
@@ -321,6 +360,7 @@ export function UnidadInfoGeneralFields({
         items={draft.objetivos}
         onChange={(objetivos) => onChange({ objetivos })}
         placeholder="Escribe un nuevo objetivo"
+        disabled={disabled}
       />
 
       <ListaAgregableCaja
@@ -330,6 +370,7 @@ export function UnidadInfoGeneralFields({
         items={draft.contenidos}
         onChange={(contenidos) => onChange({ contenidos })}
         placeholder="Escribe un nuevo componente"
+        disabled={disabled}
       />
 
       {/* Enunciados de DBA ofrecidos según el Grado de la unidad: grado →
@@ -340,79 +381,90 @@ export function UnidadInfoGeneralFields({
       <ListaAgregableCajaSelect
         title={referenteNombre ?? "Derechos Básicos de Aprendizaje"}
         description={referenteDescripcion ?? "Selecciona los enunciados asociados."}
-        columnLabel="Enunciados"
+        // Nunca el literal fijo "Enunciados": este mismo picker se usa para
+        // Preescolar, donde el nivel 1 real es "Propósito", no "Enunciado"
+        // (ver el comentario de `nivel1Etiqueta` en `use-enunciados-dba.ts`).
+        columnLabel={`${nivel1Etiqueta}s`}
         items={draft.enunciadosDba}
         options={enunciadosDisponibles}
         onChange={(enunciadosDba) => onChange({ enunciadosDba })}
-        disabled={!draft.grado}
+        disabled={disabled || !draft.grado}
         isPending={isPendingEnunciados}
       />
 
-      <FieldSet className="gap-2">
-        {/* `<legend>` a mano, no `FieldLegend`: esa lleva `text-xs uppercase`
-            fijos en su clase base (ver el mismo arreglo en
-            `ListaAgregableCaja`, `field-lista-agregable.tsx`) — se ve como
-            el label chico de un field, no como título de sección. */}
-        <legend className="mb-0 text-base font-semibold">
-          Forma en que se van a calcular las actividades.
-        </legend>
-        <FieldDescription>
-          Selecciona el método que se va a utilizar para definir el resultado a partir de las
-          actividades calificadas al estudiante.
-        </FieldDescription>
+      {/* Una unidad de enfoque Formativo no admite actividades sumativas
+          (ver el bloqueo de "Es evaluativa" en `UnidadAsociadaSection`,
+          `form-editar-actividad.tsx`) — sin actividades sumativas no hay
+          nada que "calcular" a partir de ellas, así que el método de
+          cálculo no aplica y no tiene sentido pedirlo acá. */}
+      {enfoqueDerivado !== "Formativo" && (
+        <FieldSet className="gap-2">
+          {/* `<legend>` a mano, no `FieldLegend`: esa lleva `text-xs uppercase`
+              fijos en su clase base (ver el mismo arreglo en
+              `ListaAgregableCaja`, `field-lista-agregable.tsx`) — se ve como
+              el label chico de un field, no como título de sección. */}
+          <legend className="mb-0 text-base font-semibold">
+            Forma en que se van a calcular las actividades.
+          </legend>
+          <FieldDescription>
+            Selecciona el método que se va a utilizar para definir el resultado a partir de las
+            actividades calificadas al estudiante.
+          </FieldDescription>
 
-        <RadioGroup
-          value={draft.metodoCalculo}
-          onValueChange={(v) => v && onChange({ metodoCalculo: v as MetodoCalculo })}
-          className="grid gap-3 sm:grid-cols-3"
-        >
-          {METODO_CALCULO_OPTIONS.map((option) => {
-            const info = METODO_CALCULO_INFO[option]
-            const checked = draft.metodoCalculo === option
-            return (
-              <label
-                key={option}
-                className={cn(
-                  "flex cursor-pointer flex-col gap-1.5 rounded-md border p-3",
-                  checked ? "border-primary bg-primary-22" : "hover:bg-muted-22",
-                )}
-              >
-                <span className="flex items-center gap-2 text-sm font-semibold">
-                  <RadioGroupItem value={option} />
-                  {info.label}
-                </span>
-                <span className="text-muted-foreground text-sm">{info.description}</span>
-              </label>
-            )
-          })}
-        </RadioGroup>
+          <RadioGroup
+            value={draft.metodoCalculo}
+            onValueChange={(v) => v && onChange({ metodoCalculo: v as MetodoCalculo })}
+            className="grid gap-3 sm:grid-cols-3"
+            disabled={disabled}
+          >
+            {METODO_CALCULO_OPTIONS.map((option) => {
+              const info = METODO_CALCULO_INFO[option]
+              const checked = draft.metodoCalculo === option
+              return (
+                <label
+                  key={option}
+                  className={cn(
+                    "flex cursor-pointer flex-col gap-1.5 rounded-md border p-3",
+                    checked ? "border-primary bg-primary-22" : "hover:bg-muted-22",
+                  )}
+                >
+                  <span className="flex items-center gap-2 text-sm font-semibold">
+                    <RadioGroupItem value={option} />
+                    {info.label}
+                  </span>
+                  <span className="text-muted-foreground text-sm">{info.description}</span>
+                </label>
+              )
+            })}
+          </RadioGroup>
 
-        {/* Un aviso por método, mismo estilo — cada uno aclara qué le va a
-            pedir (o no) el diálogo de "Agregar actividad" al vincular. */}
-        {draft.metodoCalculo === "Ponderado" && (
-          <div className="border-blue-stroke bg-blue-22 text-blue flex items-start gap-2 rounded-md border p-3 text-xs">
-            <InfoIcon className="mt-0.5 size-4 shrink-0" />
-            Al vincular una actividad, deberás asignar el porcentaje que tendrá, ya que se usa
-            cálculo por ponderación.
-          </div>
-        )}
+          {/* Un aviso por método, mismo estilo — cada uno aclara qué le va a
+              pedir (o no) el diálogo de "Agregar actividad" al vincular. */}
+          {draft.metodoCalculo === "Ponderado" && (
+            <div className="border-blue-stroke bg-blue-22 text-blue flex items-start gap-2 rounded-md border p-3 text-xs">
+              <InfoIcon className="mt-0.5 size-4 shrink-0" />
+              Al vincular una actividad, deberás asignar el porcentaje que tendrá, ya que se usa
+              cálculo por ponderación.
+            </div>
+          )}
 
-        {draft.metodoCalculo === "Promedio simple" && (
-          <div className="border-blue-stroke bg-blue-22 text-blue flex items-start gap-2 rounded-md border p-3 text-xs">
-            <InfoIcon className="mt-0.5 size-4 shrink-0" />
-            Al vincular una actividad no necesitas asignarle un porcentaje: el resultado se
-            calcula como el promedio simple de todas las actividades vinculadas.
-          </div>
-        )}
+          {draft.metodoCalculo === "Promedio simple" && (
+            <div className="border-blue-stroke bg-blue-22 text-blue flex items-start gap-2 rounded-md border p-3 text-xs">
+              <InfoIcon className="mt-0.5 size-4 shrink-0" />
+              Al vincular una actividad no necesitas asignarle un porcentaje: el resultado se
+              calcula como el promedio simple de todas las actividades vinculadas.
+            </div>
+          )}
 
-        {draft.metodoCalculo === "Suma de puntos" && (
-          <div className="border-blue-stroke bg-blue-22 text-blue flex items-start gap-2 rounded-md border p-3 text-xs">
-            <InfoIcon className="mt-0.5 size-4 shrink-0" />
-            Al vincular una actividad, deberás asignar el puntaje que tendrá, ya que se usa
-            cálculo por suma de puntos.
-          </div>
-        )}
-      </FieldSet>
+          {draft.metodoCalculo === "Suma de puntos" && (
+            <div className="border-blue-stroke bg-blue-22 text-blue flex items-start gap-2 rounded-md border p-3 text-xs">
+              <InfoIcon className="mt-0.5 size-4 shrink-0" />
+              Al vincular una actividad, deberás asignar el puntaje que tendrá, ya que se usa
+              cálculo por suma de puntos.
+            </div>
+          )}
+        </FieldSet>
+      )}
     </div>
   )
 }

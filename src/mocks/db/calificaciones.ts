@@ -126,7 +126,7 @@ const JUSTIFICACIONES_NO_ASISTIO = [
  * ⇒ mismos nombres —la función es determinista—, así la tabla no cambia al
  * volver a abrir la actividad.
  */
-function buildEstudiantes(grado: string, grupo: string): Estudiante[] {
+export function buildEstudiantes(grado: string, grupo: string): Estudiante[] {
   const seed = `${grado}-${grupo}`.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0)
   const rand = faker.seed(seed)
   void rand

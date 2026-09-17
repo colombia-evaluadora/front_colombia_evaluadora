@@ -32,6 +32,8 @@ export function crearActividadVacia(): Actividad {
     asignatura: "",
     grado: "",
     grupo: "",
+    matriculasIds: [],
+    asignarTodoElGrupo: true,
     fechaInicio: "",
     fechaCierre: "",
     status: "pending",

@@ -298,6 +298,14 @@ function toActividadDetalle(
     adaptaciones: row.adaptaciones.map((raw) => adaptacionFromRaw(raw, tipoAdaptacionOptions, aplicaAOptions)),
     asignaturaId: row.fk_tasignatura ?? undefined,
     grupoId: row.fk_tgrupo ?? undefined,
+    // El detalle real no trae de vuelta CUÁLES matrículas quedaron
+    // asignadas (solo el conteo, `estudiantes_asignados`) — no hay endpoint
+    // confirmado para leer la selección, solo para escribirla (ver el
+    // comentario de `Actividad.matriculasIds`). Guardar de nuevo sin tocar
+    // "Estudiantes" no cambia nada: `update-actividad.ts` solo manda
+    // `FK_TMATRICULAS`/`ASIGNAR_TODO_EL_GRUPO` si el docente lo toca.
+    matriculasIds: [],
+    asignarTodoElGrupo: true,
     camposDisponibles: row.campos_disponibles ?? undefined,
   }
 }

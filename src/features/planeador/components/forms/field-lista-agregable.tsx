@@ -179,6 +179,9 @@ interface ListaAgregableCajaProps {
   items: string[]
   onChange: (items: string[]) => void
   placeholder?: string
+  /** Deshabilita el input de alta y las filas ya agregadas (editar/quitar)
+   *  — mismo criterio que `disabled` en `ListaAgregableCajaSelect`. */
+  disabled?: boolean
 }
 
 /**
@@ -209,6 +212,7 @@ export function ListaAgregableCaja({
   items,
   onChange,
   placeholder = "Agregar",
+  disabled = false,
 }: ListaAgregableCajaProps) {
   const [draft, setDraft] = useState("")
 
@@ -261,6 +265,7 @@ export function ListaAgregableCaja({
                     aria-label={`Editar ${columnLabel.toLowerCase()} ${index + 1}`}
                     value={item}
                     onChange={(e) => editar(index, e.target.value)}
+                    disabled={disabled}
                   />
                   <InputGroupAddon align="inline-end">
                     <Tooltip>
@@ -272,6 +277,7 @@ export function ListaAgregableCaja({
                             color="neutral"
                             aria-label={`Quitar "${item}"`}
                             onClick={() => quitar(index)}
+                            disabled={disabled}
                           />
                         }
                       >
@@ -300,9 +306,17 @@ export function ListaAgregableCaja({
               agregar()
             }
           }}
+          disabled={disabled}
         />
         {draft.trim() && (
-          <Button type="button" variant="fill" color="primary" size="default" onClick={agregar}>
+          <Button
+            type="button"
+            variant="fill"
+            color="primary"
+            size="default"
+            onClick={agregar}
+            disabled={disabled}
+          >
             <PlusCircleIcon data-icon="inline-start" />
             Agregar {columnLabel.toLowerCase()}
           </Button>

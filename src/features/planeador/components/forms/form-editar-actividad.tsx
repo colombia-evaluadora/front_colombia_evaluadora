@@ -11,7 +11,7 @@ import { DatePicker } from "@/components/date-picker"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { cn } from "@/lib/utils"
 import { parseDateValue, formatDateValue } from "@/lib/date-value"
-import { toDigitsOnly, toDigitsOrRangeInput } from "@/lib/text-input"
+import { toDigitsOrRangeInput, toPositiveDigitsInput } from "@/lib/text-input"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import {
@@ -31,7 +31,11 @@ import { Textarea } from "@/components/ui/textarea"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useUnidadDetalleQuery } from "@/features/planeador/api/query/use-unidades-query"
 import { useUnidadReferenteQuery } from "@/features/planeador/api/query/use-unidad-referente-query"
-import { useUnidadesTabsQuery } from "@/features/planeador/api/query/use-unidades-tabs-query"
+import {
+  instrumentoLabelFromReferente,
+  resolveInstrumentoLabel,
+  useUnidadesTabsQuery,
+} from "@/features/planeador/api/query/use-unidades-tabs-query"
 import { UNIDAD_TAB_FALLBACK } from "@/features/planeador/components/planeador-tabs"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
@@ -39,6 +43,8 @@ import { useConfiguracionActividadQuery } from "@/features/planeador/api/query/u
 import { useReferenteCurricularQuery } from "@/features/planeador/api/query/use-referente-curricular-query"
 import { useDocenteGruposQuery } from "@/features/planeador/api/query/use-docente-grupos-query"
 import { useDocenteGradoAsignaturaQuery } from "@/features/planeador/api/query/use-docente-grado-asignatura-query"
+import { useActividadMatriculasGrupoQuery } from "@/features/planeador/api/query/use-actividad-matriculas-grupo-query"
+import { EstudiantesMultiSelect } from "@/features/planeador/components/forms/estudiantes-multi-select"
 import { useStudyPlanSubjectLabel } from "@/features/establishment/academic-period/api/query/use-study-plan-subject-label"
 import { useTipoActividadCatalogQuery } from "@/features/planeador/api/query/use-tipo-actividad-catalog"
 import { useInstrumentoEvaluacionCatalogQuery } from "@/features/planeador/api/query/use-instrumento-evaluacion-catalog"
@@ -62,6 +68,7 @@ import {
   FileUploadOutlinedIcon,
   FolderOpenIcon,
   ImageIcon,
+  InfoIcon,
   InsertLinkOutlinedIcon,
   PermMediaOutlinedIcon,
   PlusCircleIcon,
@@ -318,6 +325,18 @@ export function EditarActividadForm({
     actividad.unidad.id,
   )
 
+  // Grado + Asignatura son el punto de partida de toda la actividad: el
+  // resto de los campos (nombre, tipo, unidad asociada, materiales,
+  // recursos, programación, evaluación, adaptaciones, seguimiento) no tiene
+  // sentido completarlo antes de saber a qué grado/asignatura pertenece la
+  // actividad, así que quedan deshabilitados hasta elegir los dos. Se pasa
+  // como prop explícita a cada sección (no un `<fieldset disabled>`
+  // envolvente): los controles de Base UI (`<Select>`, `<Checkbox>`,
+  // `<Switch>`, `<DatePicker>`, …) leen su propio prop `disabled`, no el
+  // `:disabled` nativo en cascada de un `<fieldset>` — confirmado en vivo,
+  // con el `<fieldset>` puesto todo seguía respondiendo al click.
+  const disabled = !useHasGradoAsignatura(form)
+
   return (
     <form
       id={formId}
@@ -331,19 +350,27 @@ export function EditarActividadForm({
           reclasifica la actividad entera ("esto no es la evaluación
           normal, es su recuperación"), así que se responde antes de
           completar cualquier otro campo. */}
-      <EsRecuperacionToggle form={form} />
+      <EsRecuperacionToggle form={form} disabled={disabled} />
       {/* Identificación + Asignatura/Grado en UNA sola grilla —antes vivían
           en dos `<Card>` separadas y se veían como dos cajas sueltas, aunque
-          las dos son "de dónde depende la actividad" (Nombre/Tipo/Unidad
-          arriba, Asignatura/Grado abajo, mismo grid). Cada sección sigue
-          siendo su propio componente (hooks/lógica separados), pero acá
-          comparten un solo `<Card>` y un solo `grid`. */}
+          las dos son "de dónde depende la actividad" (Grado/Asignatura,
+          Unidad, Nombre/Tipo, mismo grid). Cada sección sigue siendo su
+          propio componente (hooks/lógica separados), pero acá comparten un
+          solo `<Card>` y un solo `grid`. Orden: Grado/Asignatura primero (lo
+          primero que hay que elegir), después Unidad temática asociada
+          (depende de Grado/Asignatura), recién después Nombre/Tipo — el
+          resto del form. */}
       <Card className="gap-4 p-4">
         <h3 className="text-base font-semibold">Identificación de la actividad</h3>
         <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
-          <IdentificacionSection form={form} />
           <AsignaturaGradoSection form={form} />
-          <UnidadAsociadaSection form={form} unidades={unidades} onCrearUnidad={crearUnidad} />
+          <UnidadAsociadaSection
+            form={form}
+            unidades={unidades}
+            onCrearUnidad={crearUnidad}
+            disabled={disabled}
+          />
+          <IdentificacionSection form={form} disabled={disabled} />
         </div>
       </Card>
       <UnidadSection
@@ -352,15 +379,16 @@ export function EditarActividadForm({
         evidenciasOriginales={esNueva ? [] : actividad.evidenciasIds}
         criteriosUnidadOriginales={esNueva ? [] : actividad.criteriosUnidadIds}
       />
-      <MaterialesSection form={form} />
-      <RecursosSection form={form} draftKey={draftKey} />
-      <ProgramacionSection form={form} />
+      <MaterialesSection form={form} disabled={disabled} />
+      <RecursosSection form={form} draftKey={draftKey} disabled={disabled} />
+      <ProgramacionSection form={form} disabled={disabled} />
       <EvaluacionSection
         form={form}
         unidades={unidades}
         camposEfectivos={camposEfectivos}
         esFormativa={esFormativa}
         tipoEvaluacion={tipoEvaluacion}
+        disabled={disabled}
       />
       {/* Adaptaciones y Seguimiento se desactivan junto con Evaluación
           cuando el referente de la unidad es FORMATIVO — regla de negocio
@@ -371,12 +399,25 @@ export function EditarActividadForm({
           para no triplicar las queries de `campos_disponibles`. */}
       {!esFormativa && (
         <>
-          <AdaptacionesSection form={form} estudiantes={estudiantes} />
-          <SeguimientoSection form={form} />
+          <AdaptacionesSection form={form} estudiantes={estudiantes} disabled={disabled} />
+          <SeguimientoSection form={form} disabled={disabled} />
         </>
       )}
     </form>
   )
+}
+
+/**
+ * Grado + Asignatura elegidos (los DOS ids, no los nombres): el resto del
+ * form los necesita para saber si ya puede habilitarse. Centralizado acá
+ * (mismo `form.store`, ningún selector nuevo pega una query aparte) para que
+ * el componente raíz no calcule el mismo booleano de formas distintas en
+ * cada sección.
+ */
+function useHasGradoAsignatura(form: FormActividad): boolean {
+  const gradoId = useSelector(form.store, (state) => state.values.gradoId)
+  const asignaturaId = useSelector(form.store, (state) => state.values.asignaturaId)
+  return gradoId != null && asignaturaId != null
 }
 
 /**
@@ -393,7 +434,7 @@ export function EditarActividadForm({
  * `false`): si vuelve a marcar sumativa, reaparece en el estado que
  * dejó. Forzar un reset ahí sería más sorpresa que ayuda.
  */
-function EsRecuperacionToggle({ form }: { form: FormActividad }) {
+function EsRecuperacionToggle({ form, disabled }: { form: FormActividad; disabled: boolean }) {
   return (
     <form.Subscribe selector={(state) => state.values.esEvaluativa}>
       {(esEvaluativa) =>
@@ -408,6 +449,7 @@ function EsRecuperacionToggle({ form }: { form: FormActividad }) {
                   id={field.name}
                   checked={field.state.value}
                   onCheckedChange={field.handleChange}
+                  disabled={disabled}
                   className="rounded-full [&_[data-slot=switch-thumb]]:rounded-full"
                 />
                 Es una recuperación
@@ -435,7 +477,7 @@ function EsRecuperacionToggle({ form }: { form: FormActividad }) {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type FormActividad = ReturnType<typeof useForm<Actividad, any, any, any, any, any, any, any, any, any, any, any>>
 
-function IdentificacionSection({ form }: { form: FormActividad }) {
+function IdentificacionSection({ form, disabled }: { form: FormActividad; disabled: boolean }) {
   // Catálogo `TIPO_ACTIVIDAD` (`TLISTA_VALOR`) — antes hardcodeado acá mismo.
   const { data: tiposActividad = [] } = useTipoActividadCatalogQuery()
 
@@ -452,6 +494,7 @@ function IdentificacionSection({ form }: { form: FormActividad }) {
                 value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
                 onBlur={field.handleBlur}
+                disabled={disabled}
               />
             </Field>
           )}
@@ -464,6 +507,7 @@ function IdentificacionSection({ form }: { form: FormActividad }) {
               <Select
                 value={field.state.value}
                 onValueChange={(value) => field.handleChange(value as Actividad["tipo"])}
+                disabled={disabled}
               >
                 <SelectTrigger id={field.name}>
                   <SelectValue />
@@ -493,9 +537,11 @@ function UnidadAsociadaSection({
   form,
   unidades,
   onCrearUnidad,
+  disabled,
 }: {
   form: FormActividad
   unidades: UnidadTematica[]
+  disabled: boolean
   onCrearUnidad: (data: {
     nombre: string
     contenidos: string[]
@@ -558,9 +604,7 @@ function UnidadAsociadaSection({
             // Instrumento (rótulo real) del Grado ya elegido — ver el
             // comentario sobre `unidadTabs` más arriba. Sin Grado/Asignatura
             // todavía elegidos cae al mismo fallback que `PlaneadorTabs`.
-            const instrumentoLabel =
-              (gradoId != null && unidadTabs?.find((t) => t.gradoIds.includes(gradoId))?.instrumento) ||
-              UNIDAD_TAB_FALLBACK
+            const instrumentoLabel = resolveInstrumentoLabel(gradoId, unidadTabs, UNIDAD_TAB_FALLBACK)
 
             return (
               <form.Field name="unidad">
@@ -582,7 +626,7 @@ function UnidadAsociadaSection({
                         // es numérico, así que se convierte acá. `0` es el
                         // sentinel de "sin unidad" (ningún PK real es 0).
                         value={field.state.value.id === 0 ? "__none__" : String(field.state.value.id)}
-                        disabled={!hasGradoAsignatura}
+                        disabled={disabled || !hasGradoAsignatura}
                         onValueChange={(value) => {
                           // `__none__` es el placeholder "Seleccione": antes el
                           // `find` no lo encontraba en `unidades` y el `if (!next)
@@ -648,6 +692,7 @@ function UnidadAsociadaSection({
                       instrumentoLabel={instrumentoLabel}
                       gradoId={form.getFieldValue("gradoId")}
                       asignaturaId={form.getFieldValue("asignaturaId")}
+                      disabled={disabled || !hasGradoAsignatura}
                       onCreate={async (data) => {
                         // `onCrearUnidad` crea la unidad DE VERDAD (`POST
                         // /planeador/unidades`) y la devuelve con su id real:
@@ -787,11 +832,26 @@ function UnidadFichaYEvidencias({
   criteriosDisabledIds: number[]
 }) {
   const { data: unidad } = useUnidadDetalleQuery(unidadId)
-  // El árbol de evidencias a ofrecer sale del referente curricular de
-  // GRADO + ASIGNATURA (`GET /planeador/referente-curricular`), no de la
-  // unidad — cambiar de asignatura cambia el referente y con él las
-  // evidencias disponibles, sin importar qué unidad siga elegida.
+  // El árbol COMPLETO de nivel 1 (enunciados) + nivel 2 (evidencias) sale
+  // del referente curricular de GRADO + ASIGNATURA (`GET /planeador/
+  // referente-curricular`) — pero acá solo interesan los enunciados que la
+  // UNIDAD ya relacionó (`unidad.enunciadosDba`, elegidos en
+  // `UnidadInfoGeneralFields`/`CrearUnidadPopover`), no el catálogo entero:
+  // esta actividad marca evidencias de un enunciado que su unidad ya
+  // adoptó, no cualquier enunciado del nivel educativo.
   const { data: referente } = useReferenteCurricularQuery(gradoId, asignaturaId)
+  const { data: unidadTabs } = useUnidadesTabsQuery()
+  // Por `referente.id` (grado+ASIGNATURA), no por `gradoId` a secas: evita
+  // que el título diga un instrumento distinto del que en verdad tienen
+  // `nivel1Etiqueta`/`nivel2Etiqueta` de ESTE MISMO referente — ver el
+  // comentario de `instrumentoLabelFromReferente`.
+  const instrumentoLabel = instrumentoLabelFromReferente(referente?.id, unidadTabs, UNIDAD_TAB_FALLBACK)
+  const enunciadosDeLaUnidad =
+    referente && unidad
+      ? referente.enunciados.filter((enunciado) =>
+          unidad.enunciadosDba.some((elegido) => elegido.id === enunciado.id),
+        )
+      : []
 
   return (
     <div className="flex flex-col gap-4">
@@ -801,11 +861,12 @@ function UnidadFichaYEvidencias({
         objetivos={unidad?.objetivos ?? []}
         contenidos={unidad?.contenidos ?? []}
       />
-      {referente && referente.enunciados.length > 0 && (
+      {referente && enunciadosDeLaUnidad.length > 0 && (
         <EnunciadosEvidenciasChecklist
+          instrumentoLabel={instrumentoLabel}
           nivel1Etiqueta={referente.nivel1Etiqueta}
           nivel2Etiqueta={referente.nivel2Etiqueta}
-          enunciados={referente.enunciados}
+          enunciados={enunciadosDeLaUnidad}
           seleccionadas={seleccionadas}
           onToggle={onToggle}
           disabledIds={disabledIds}
@@ -864,6 +925,10 @@ function AsignaturaGradoSection({ form }: { form: FormActividad }) {
   const hasGradoGrupo = gradoId != null && grupoId != null
 
   const asignaturaId = useSelector(form.store, (state) => state.values.asignaturaId)
+  const hasGradoAsignatura = hasGradoGrupo && asignaturaId != null
+  const { data: matriculas = [], isPending: isPendingMatriculas } = useActividadMatriculasGrupoQuery(
+    hasGradoAsignatura ? grupoId : undefined,
+  )
 
   // El detalle real de la actividad (`toActividadDetalle`) NO trae
   // `fk_tgrado` —solo `fk_tgrupo`—, así que al abrir el form de EDITAR
@@ -1051,11 +1116,44 @@ function AsignaturaGradoSection({ form }: { form: FormActividad }) {
             </Field>
           )}
         </form.Field>
+
+        {/* "Estudiantes": deshabilitado hasta elegir Grado/Grupo Y
+            Asignatura — mismo criterio de dependencia que Asignatura arriba
+            (depende de Grado/Grupo) y que "Unidad temática asociada" (que
+            además depende de Asignatura). Sin elegir nadie a mano queda en
+            "todo el grupo", el comportamiento de siempre (ver el comentario
+            de `Actividad.matriculasIds`). */}
+        <form.Field name="matriculasIds">
+          {(field) => (
+            <Field variant="outlined">
+              <FieldLabel htmlFor={field.name}>Estudiantes</FieldLabel>
+              <EstudiantesMultiSelect
+                id={field.name}
+                estudiantes={matriculas}
+                value={field.state.value}
+                onChange={(matriculaIds) => {
+                  field.handleChange(matriculaIds)
+                  form.setFieldValue("asignarTodoElGrupo", matriculaIds.length === 0)
+                }}
+                disabled={!hasGradoAsignatura}
+                // `isPending` de una query DESHABILITADA (`enabled: false`)
+                // queda en `true` para siempre —react-query nunca la corre,
+                // así que nunca sale de "pending"—, así que solo cuenta como
+                // "cargando" cuando además está habilitada: si no, el
+                // trigger mostraba "Cargando…" en vez del placeholder de
+                // "elegí grado/asignatura primero" mientras el campo seguía
+                // deshabilitado.
+                isPending={hasGradoAsignatura && isPendingMatriculas}
+                placeholder={hasGradoAsignatura ? "Seleccionar" : "Elegí grado y asignatura primero"}
+              />
+            </Field>
+          )}
+        </form.Field>
     </>
   )
 }
 
-function MaterialesSection({ form }: { form: FormActividad }) {
+function MaterialesSection({ form, disabled }: { form: FormActividad; disabled: boolean }) {
   return (
     <Card className="gap-4 p-4">
       <form.Field name="materiales">
@@ -1070,6 +1168,7 @@ function MaterialesSection({ form }: { form: FormActividad }) {
               onChange={(e) => field.handleChange(e.target.value)}
               onBlur={field.handleBlur}
               rows={4}
+              disabled={disabled}
             />
           </Field>
         )}
@@ -1100,7 +1199,15 @@ const RECURSO_DRAFT_VACIO: RecursoDraft = {
   descripcion: "",
 }
 
-function RecursosSection({ form, draftKey }: { form: FormActividad; draftKey: ActividadFormDraftKey }) {
+function RecursosSection({
+  form,
+  draftKey,
+  disabled,
+}: {
+  form: FormActividad
+  draftKey: ActividadFormDraftKey
+  disabled: boolean
+}) {
   // Colapsa/expande el cuerpo del card. El título + los botones del header
   // (biblioteca, + agregar) quedan siempre a la vista; el toggle `-/+`
   // muestra u oculta el form de alta + la lista.
@@ -1166,6 +1273,7 @@ function RecursosSection({ form, draftKey }: { form: FormActividad; draftKey: Ac
                   type="button"
                   onClick={() => setBibliotecaOpen(true)}
                   aria-label="Adjuntar desde biblioteca"
+                  disabled={disabled}
                 />
               }
             >
@@ -1213,6 +1321,7 @@ function RecursosSection({ form, draftKey }: { form: FormActividad; draftKey: Ac
             draft={draft}
             onChange={updateDraft}
             onAdd={handleAddDraft}
+            disabled={disabled}
           />
 
           <form.Field name="recursos">
@@ -1245,6 +1354,7 @@ function RecursosSection({ form, draftKey }: { form: FormActividad; draftKey: Ac
                         onVerRecurso={() =>
                           saveActividadFormDraft(draftKey, form.state.values as Actividad)
                         }
+                        disabled={disabled}
                       />
                     ))}
                   </ul>
@@ -1289,10 +1399,12 @@ function RecursoForm({
   draft,
   onChange,
   onAdd,
+  disabled,
 }: {
   draft: RecursoDraft
   onChange: (patch: Partial<RecursoDraft>) => void
   onAdd: () => void
+  disabled: boolean
 }) {
   const FuenteIcon =
     draft.tipo === "Unidad virtual"
@@ -1333,6 +1445,7 @@ function RecursoForm({
                 url: v === "Archivo" ? "" : draft.url,
               })
             }
+            disabled={disabled}
           >
             <SelectTrigger>
               {/* El trigger pinta ícono + label del tipo seleccionado,
@@ -1423,6 +1536,7 @@ function RecursoForm({
                 }
               }}
               className={FuenteIcon ? "pl-9" : undefined}
+              disabled={disabled}
             />
           </div>
         </Field>
@@ -1436,6 +1550,7 @@ function RecursoForm({
           placeholder="Ej: Video introductorio (7 min)"
           value={draft.descripcion}
           onChange={(e) => onChange({ descripcion: e.target.value })}
+          disabled={disabled}
         />
       </Field>
 
@@ -1446,7 +1561,14 @@ function RecursoForm({
           la URL/fuente. */}
       {(draft.url.trim() || draft.fuente.trim()) && (
         <div className="mt-3 flex justify-end">
-          <Button variant="fill" color="primary" size="sm" type="button" onClick={onAdd}>
+          <Button
+            variant="fill"
+            color="primary"
+            size="sm"
+            type="button"
+            onClick={onAdd}
+            disabled={disabled}
+          >
             <PlusIcon data-icon="inline-start" />
             Guardar
           </Button>
@@ -1468,10 +1590,12 @@ function RecursoItem({
   recurso,
   onRemove,
   onVerRecurso,
+  disabled,
 }: {
   recurso: Recurso
   onRemove: () => void
   onVerRecurso: () => void
+  disabled: boolean
 }) {
   // Toda la presentación (ícono, color, label) sale del mapper: si mañana
   // se agrega un tipo nuevo o se cambia el color de "URL", se toca un solo
@@ -1594,6 +1718,7 @@ function RecursoItem({
                 type="button"
                 aria-label="Quitar de la lista"
                 onClick={onRemove}
+                disabled={disabled}
               />
             }
           >
@@ -1606,7 +1731,7 @@ function RecursoItem({
   )
 }
 
-function ProgramacionSection({ form }: { form: FormActividad }) {
+function ProgramacionSection({ form, disabled }: { form: FormActividad; disabled: boolean }) {
   return (
     <Card className="gap-4 p-4">
       <h3 className="text-base font-semibold">Programación</h3>
@@ -1620,6 +1745,7 @@ function ProgramacionSection({ form }: { form: FormActividad }) {
                 id={field.name}
                 value={parseDateValue(field.state.value)}
                 onChange={(date) => field.handleChange(formatDateValue(date))}
+                disabled={disabled}
               />
             </Field>
           )}
@@ -1637,6 +1763,7 @@ function ProgramacionSection({ form }: { form: FormActividad }) {
                     value={parseDateValue(field.state.value)}
                     onChange={(date) => field.handleChange(formatDateValue(date))}
                     minDate={parseDateValue(fechaInicio)}
+                    disabled={disabled}
                   />
                 </Field>
               )}
@@ -1652,13 +1779,16 @@ function ProgramacionSection({ form }: { form: FormActividad }) {
                   mismo criterio que el resto de la app (ver `text-input.ts`)
                   — un `number` acepta notación como `1e5` y no sirve para
                   un conteo simple. Solo dígitos, sin la unidad ("horas")
-                  mezclada en el valor. */}
+                  mezclada en el valor, a lo sumo 3 (hasta 999) y sin `0`
+                  (`toPositiveDigitsInput`): "0 horas/sesiones" no es una
+                  duración válida. */}
               <Input
                 id={field.name}
                 inputMode="numeric"
                 placeholder="Ej: 20"
                 value={field.state.value}
-                onChange={(e) => field.handleChange(toDigitsOnly(e.target.value))}
+                onChange={(e) => field.handleChange(toPositiveDigitsInput(e.target.value, 3))}
+                disabled={disabled}
               />
             </Field>
           )}
@@ -1677,6 +1807,7 @@ function ProgramacionSection({ form }: { form: FormActividad }) {
                 placeholder="Ej: 10-12"
                 value={field.state.value}
                 onChange={(e) => field.handleChange(toDigitsOrRangeInput(e.target.value))}
+                disabled={disabled}
               />
             </Field>
           )}
@@ -1689,6 +1820,7 @@ function ProgramacionSection({ form }: { form: FormActividad }) {
               <Select
                 value={field.state.value}
                 onValueChange={(value) => field.handleChange(value as Actividad["modalidad"])}
+                disabled={disabled}
               >
                 <SelectTrigger id={field.name}>
                   {/* Sin esta función, seleccionar "Seleccione" (value
@@ -1809,6 +1941,7 @@ function EvaluacionSection({
   camposEfectivos,
   esFormativa,
   tipoEvaluacion,
+  disabled,
 }: {
   form: FormActividad
   unidades: UnidadTematica[]
@@ -1818,6 +1951,7 @@ function EvaluacionSection({
   esFormativa: boolean
   /** `TIPO_EVALUACION` del referente — ver `EscalaValoracionSection`. */
   tipoEvaluacion: ReturnType<typeof useCamposEvaluacionEfectivos>["tipoEvaluacion"]
+  disabled: boolean
 }) {
   // `disabled={esFormativa}` de abajo solo bloquea el control — no corrige
   // el VALOR. Sin esto, una actividad que ya traía `esEvaluativa: true` al
@@ -1854,7 +1988,7 @@ function EvaluacionSection({
               <Select
                 value={field.state.value ? "si" : "no"}
                 onValueChange={(value) => field.handleChange(value === "si")}
-                disabled={esFormativa}
+                disabled={esFormativa || disabled}
               >
                 <SelectTrigger id={field.name}>
                   <SelectValue>{(value) => (value === "si" ? "Sí" : "No")}</SelectValue>
@@ -1882,10 +2016,16 @@ function EvaluacionSection({
                 <FieldLabel htmlFor={field.name}>
                   Instrumento de evaluación{camposEfectivos?.evaluacion.requerido ? " *" : ""}
                 </FieldLabel>
-                <Select value={field.state.value} onValueChange={(v) => v && field.handleChange(v)} >
+                <Select
+                  value={field.state.value}
+                  onValueChange={(v) => v && field.handleChange(v)}
+                  disabled={disabled}
+                >
                   <SelectTrigger id={field.name}>
-                    <SelectValue>
-                      {(value) => (value === "Otro" ? "Otro (personalizado)" : (value as string))}
+                    <SelectValue placeholder="Seleccione">
+                      {(value) =>
+                        !value ? "Seleccione" : value === "Otro" ? "Otro (personalizado)" : (value as string)
+                      }
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
@@ -1909,7 +2049,12 @@ function EvaluacionSection({
               adentro del mismo card de "Evaluación", entre el `instrumento`
               elegido arriba y la `Ponderación (%)` de abajo — antes era un
               `Card` hermano y suelto, separado de este. */}
-          <InstrumentoEvaluacionSection form={form} unidades={unidades} tipoEvaluacion={tipoEvaluacion} />
+          <InstrumentoEvaluacionSection
+            form={form}
+            unidades={unidades}
+            tipoEvaluacion={tipoEvaluacion}
+            disabled={disabled}
+          />
 
           {/* Ponderación/Puntaje va AL FINAL, después de la definición del
               instrumento (Rúbrica/Lista de cotejo). La lectura del form es:
@@ -1947,6 +2092,7 @@ function EvaluacionSection({
                             max={100}
                             value={ponderacionField.state.value}
                             onChange={(e) => ponderacionField.handleChange(Number(e.target.value))}
+                            disabled={disabled}
                           />
                         </Field>
                       )}
@@ -1971,10 +2117,26 @@ function EvaluacionSection({
                             onChange={(e) =>
                               notaMaximaField.handleChange(e.target.value === "" ? undefined : Number(e.target.value))
                             }
+                            disabled={disabled}
                           />
                         </Field>
                       )}
                     </form.Field>
+                  </div>
+                )
+              }
+              if (metodoCalculo === "Promedio simple") {
+                // Ni Ponderación ni Puntaje aplican con "Promediar
+                // actividades" — sin esto la sección de Evaluación
+                // terminaba en el instrumento sin ningún aviso de por qué
+                // no hay nada más que completar. Mismo texto que ya usa
+                // `UnidadInfoGeneralFields` para este método.
+                return (
+                  <div className="border-blue-stroke bg-blue-22 text-blue flex items-start gap-2 rounded-md border p-3 text-sm">
+                    <InfoIcon className="mt-0.5 size-4 shrink-0" />
+                    Esta unidad promedia sus actividades: no necesitas asignarle un porcentaje ni un
+                    puntaje a esta — el resultado se calcula como el promedio simple de todas las
+                    actividades vinculadas.
                   </div>
                 )
               }
@@ -2002,22 +2164,38 @@ function InstrumentoEvaluacionSection({
   form,
   unidades,
   tipoEvaluacion,
+  disabled,
 }: {
   form: FormActividad
   unidades: UnidadTematica[]
   tipoEvaluacion: string | null
+  disabled: boolean
 }) {
   return (
     <form.Subscribe selector={(state) => state.values.instrumento}>
       {(instrumento) =>
-        instrumento === "Lista de cotejo" ? (
-          <ListaCotejoSection form={form} />
+        // Sin instrumento elegido no hay nada que definir todavía — antes
+        // caía al mismo `else` que "Rúbrica" y mostraba de arranque la
+        // sección de Criterios sin que el docente hubiera elegido nada en
+        // "Instrumento de evaluación".
+        !instrumento ? null : instrumento === "Lista de cotejo" ? (
+          <ListaCotejoSection form={form} disabled={disabled} />
         ) : instrumento === "Escala de valoración" ? (
-          <EscalaValoracionSection form={form} unidades={unidades} tipoEvaluacion={tipoEvaluacion} />
+          <EscalaValoracionSection
+            form={form}
+            unidades={unidades}
+            tipoEvaluacion={tipoEvaluacion}
+            disabled={disabled}
+          />
         ) : instrumento === "Otro" ? (
-          <InstrumentoPersonalizadoSection form={form} unidades={unidades} tipoEvaluacion={tipoEvaluacion} />
+          <InstrumentoPersonalizadoSection
+            form={form}
+            unidades={unidades}
+            tipoEvaluacion={tipoEvaluacion}
+            disabled={disabled}
+          />
         ) : (
-          <RubricasSection form={form} />
+          <RubricasSection form={form} disabled={disabled} />
         )
       }
     </form.Subscribe>
@@ -2032,7 +2210,7 @@ function InstrumentoEvaluacionSection({
  * `esEvaluativa`). Estructura paralela a `RubricasSection`: mismo header
  * con botón "+" para agregar, mismo empty state.
  */
-function ListaCotejoSection({ form }: { form: FormActividad }) {
+function ListaCotejoSection({ form, disabled }: { form: FormActividad; disabled: boolean }) {
   return (
     <Card className="gap-4 p-4">
       <div className="flex items-center justify-between">
@@ -2046,6 +2224,7 @@ function ListaCotejoSection({ form }: { form: FormActividad }) {
                 size="icon-sm"
                 type="button"
                 aria-label="Agregar ítem"
+                disabled={disabled}
                 onClick={() => {
                   const listaCotejo = form.getFieldValue("listaCotejo") as ListaCotejo
                   form.setFieldValue("listaCotejo", {
@@ -2080,6 +2259,7 @@ function ListaCotejoSection({ form }: { form: FormActividad }) {
                       item={item}
                       index={index}
                       esEvaluativa={esEvaluativa}
+                      disabled={disabled}
                       onChange={(next) => {
                         const current = field.state.value as ListaCotejo
                         const nextItems = current.items.slice()
@@ -2115,12 +2295,14 @@ function ListaCotejoItemCard({
   item,
   index,
   esEvaluativa,
+  disabled,
   onChange,
   onRemove,
 }: {
   item: ListaCotejoItem
   index: number
   esEvaluativa: boolean
+  disabled: boolean
   onChange: (next: ListaCotejoItem) => void
   onRemove: () => void
 }) {
@@ -2137,6 +2319,7 @@ function ListaCotejoItemCard({
                 size="icon-sm"
                 type="button"
                 aria-label={`Quitar ítem ${index + 1}`}
+                disabled={disabled}
                 onClick={onRemove}
               />
             }
@@ -2163,6 +2346,7 @@ function ListaCotejoItemCard({
             rows={2}
             value={item.descripcion}
             onChange={(e) => onChange({ ...item, descripcion: e.target.value })}
+            disabled={disabled}
           />
         </Field>
 
@@ -2181,6 +2365,7 @@ function ListaCotejoItemCard({
                 // "fantasma" mientras el usuario borra para reescribir.
                 onChange({ ...item, ponderacion: raw === "" ? undefined : Number(raw) })
               }}
+              disabled={disabled}
             />
           </Field>
         )}
@@ -2251,6 +2436,7 @@ function EscalaValoracionSection({
   form,
   unidades,
   tipoEvaluacion,
+  disabled,
 }: {
   form: FormActividad
   unidades: UnidadTematica[]
@@ -2260,6 +2446,7 @@ function EscalaValoracionSection({
    *  "ambas": no restringe nada, mismo comportamiento que antes de este
    *  campo existir. */
   tipoEvaluacion: string | null
+  disabled: boolean
 }) {
   const unidadId = useSelector(form.store, (state) => state.values.unidad.id) || undefined
   const unidadActual = unidades.find((u) => u.id === unidadId)
@@ -2325,6 +2512,7 @@ function EscalaValoracionSection({
                           placeholder="Criterio A, Criterio B"
                           value={escala.criteriosGenerales}
                           onChange={(e) => updateEscala({ criteriosGenerales: e.target.value })}
+                          disabled={disabled}
                         />
                       </Field>
 
@@ -2333,6 +2521,7 @@ function EscalaValoracionSection({
                         <RadioGroup
                           className="flex min-h-11 items-center gap-6 rounded-md border border-input px-3"
                           value={escala.tipo}
+                          disabled={disabled}
                           onValueChange={(value) => {
                             const tipo = value as EscalaValoracionTipo
                             // Solo siembra si todavía no hay niveles cargados:
@@ -2394,6 +2583,7 @@ function EscalaValoracionSection({
                                   valorMinimo: raw === "" ? undefined : Number(raw),
                                 })
                               }}
+                              disabled={disabled}
                             />
                           </Field>
                           <Field variant="outlined">
@@ -2411,6 +2601,7 @@ function EscalaValoracionSection({
                                   valorMaximo: raw === "" ? undefined : Number(raw),
                                 })
                               }}
+                              disabled={disabled}
                             />
                           </Field>
                         </div>
@@ -2428,6 +2619,7 @@ function EscalaValoracionSection({
                             onChange={(e) =>
                               updateEscala({ interpretacionRangos: e.target.value })
                             }
+                            disabled={disabled}
                           />
                         </Field>
                       </>
@@ -2446,6 +2638,7 @@ function EscalaValoracionSection({
                                 size="icon-sm"
                                 type="button"
                                 aria-label="Agregar definición cualitativa"
+                                disabled={disabled}
                                 onClick={() => {
                               // Lista vacía (p. ej. una actividad que ya
                               // traía `tipo: "Cualitativa"` guardado, sin
@@ -2511,6 +2704,7 @@ function EscalaValoracionSection({
                                   variant="outlined"
                                   value={nivel.nombre}
                                   onChange={(e) => updateNivel(nIndex, { nombre: e.target.value })}
+                                  disabled={disabled}
                                 />
                                 <Input
                                   variant="outlined"
@@ -2519,6 +2713,7 @@ function EscalaValoracionSection({
                                   onChange={(e) =>
                                     updateNivel(nIndex, { descripcion: e.target.value })
                                   }
+                                  disabled={disabled}
                                 />
                                 {/* Ponderación por nivel — solo si la
                                     actividad es sumativa. Mismo patrón que
@@ -2542,6 +2737,7 @@ function EscalaValoracionSection({
                                           ponderacion: raw === "" ? undefined : Number(raw),
                                         })
                                       }}
+                                      disabled={disabled}
                                     />
                                   </Field>
                                 )}
@@ -2554,6 +2750,7 @@ function EscalaValoracionSection({
                                         size="icon-sm"
                                         type="button"
                                         aria-label={`Quitar nivel ${nivel.nombre}`}
+                                        disabled={disabled}
                                         onClick={() => removeNivel(nIndex)}
                                       />
                                     }
@@ -2604,10 +2801,12 @@ function InstrumentoPersonalizadoSection({
   form,
   unidades,
   tipoEvaluacion,
+  disabled,
 }: {
   form: FormActividad
   unidades: UnidadTematica[]
   tipoEvaluacion: string | null
+  disabled: boolean
 }) {
   return (
     <Card className="gap-4 p-4">
@@ -2630,6 +2829,7 @@ function InstrumentoPersonalizadoSection({
                   placeholder="Agregar descripción breve"
                   value={value.descripcion}
                   onChange={(e) => patch({ descripcion: e.target.value })}
+                  disabled={disabled}
                 />
               </Field>
 
@@ -2641,6 +2841,7 @@ function InstrumentoPersonalizadoSection({
                   <Select
                     value={value.tipoEvidenciaEsperada}
                     onValueChange={(v) => v && patch({ tipoEvidenciaEsperada: v })}
+                    disabled={disabled}
                   >
                     <SelectTrigger id="instrumentoPersonalizado-tipo-evidencia">
                       <SelectValue placeholder="Seleccione">
@@ -2668,6 +2869,7 @@ function InstrumentoPersonalizadoSection({
                         metodoValoracion: v as InstrumentoPersonalizado["metodoValoracion"],
                       })
                     }
+                    disabled={disabled}
                   >
                     <SelectTrigger id="instrumentoPersonalizado-metodo-valoracion">
                       <SelectValue placeholder="Seleccione" />
@@ -2686,11 +2888,16 @@ function InstrumentoPersonalizadoSection({
                   (misma sección/mismos datos que si fuera el `instrumento`
                   de arriba), antes de las preguntas de entrega. */}
               {value.metodoValoracion === "Rúbrica" ? (
-                <RubricasSection form={form} />
+                <RubricasSection form={form} disabled={disabled} />
               ) : value.metodoValoracion === "Lista de cotejo" ? (
-                <ListaCotejoSection form={form} />
+                <ListaCotejoSection form={form} disabled={disabled} />
               ) : value.metodoValoracion === "Escala de valoración" ? (
-                <EscalaValoracionSection form={form} unidades={unidades} tipoEvaluacion={tipoEvaluacion} />
+                <EscalaValoracionSection
+                  form={form}
+                  unidades={unidades}
+                  tipoEvaluacion={tipoEvaluacion}
+                  disabled={disabled}
+                />
               ) : null}
 
               <div className="flex flex-col gap-2">
@@ -2698,6 +2905,7 @@ function InstrumentoPersonalizadoSection({
                   <Checkbox
                     checked={value.requiereArchivo}
                     onCheckedChange={(next) => patch({ requiereArchivo: next === true })}
+                    disabled={disabled}
                   />
                   El estudiante debe adjuntar un archivo
                 </label>
@@ -2705,6 +2913,7 @@ function InstrumentoPersonalizadoSection({
                   <Checkbox
                     checked={value.requiereRespuestaTexto}
                     onCheckedChange={(next) => patch({ requiereRespuestaTexto: next === true })}
+                    disabled={disabled}
                   />
                   El estudiante debe escribir una respuesta (texto)
                 </label>
@@ -2717,7 +2926,7 @@ function InstrumentoPersonalizadoSection({
   )
 }
 
-function RubricasSection({ form }: { form: FormActividad }) {
+function RubricasSection({ form, disabled }: { form: FormActividad; disabled: boolean }) {
   return (
     <Card className="gap-4 p-4">
       <div className="flex items-center justify-between">
@@ -2731,6 +2940,7 @@ function RubricasSection({ form }: { form: FormActividad }) {
                 size="icon-sm"
                 type="button"
                 aria-label="Agregar criterio"
+                disabled={disabled}
                 onClick={() => {
                   const rubrica = form.getFieldValue("rubrica") as {
                     id: number
@@ -2773,6 +2983,7 @@ function RubricasSection({ form }: { form: FormActividad }) {
                       criterio={criterio}
                       index={index}
                       esEvaluativa={esEvaluativa}
+                      disabled={disabled}
                       onChange={(next) => {
                         const current = field.state.value as { id: number; criterios: Criterio[] }
                         const next_criterios = current.criterios.slice()
@@ -2801,6 +3012,7 @@ function CriterioItem({
   criterio,
   index,
   esEvaluativa,
+  disabled,
   onChange,
   onRemove,
 }: {
@@ -2814,6 +3026,7 @@ function CriterioItem({
    * no se muestra — el peso del nivel no aplica si no pondera nota.
    */
   esEvaluativa: boolean
+  disabled: boolean
   onChange: (next: Criterio) => void
   onRemove: () => void
 }) {
@@ -2836,6 +3049,7 @@ function CriterioItem({
                 size="icon-sm"
                 type="button"
                 aria-label={`Quitar criterio ${index + 1}`}
+                disabled={disabled}
                 onClick={onRemove}
               />
             }
@@ -2856,6 +3070,7 @@ function CriterioItem({
           placeholder="Ej: Expresión oral de ideas y experiencias"
           value={criterio.nombre}
           onChange={(e) => onChange({ ...criterio, nombre: e.target.value })}
+          disabled={disabled}
         />
       </Field>
 
@@ -2898,6 +3113,7 @@ function CriterioItem({
             placeholder="Describe el desempeño esperado en este nivel"
             value={criterio.excelente}
             onChange={(e) => onChange({ ...criterio, excelente: e.target.value })}
+            disabled={disabled}
           />
           {/* Input de ponderación de "Excelente" — mismo campo y mismo
               manejo del `undefined` que el de cada nivel intermedio (ver
@@ -2920,6 +3136,7 @@ function CriterioItem({
                     excelentePonderacion: raw === "" ? undefined : Number(raw),
                   })
                 }}
+                disabled={disabled}
               />
             </Field>
           )}
@@ -2934,6 +3151,7 @@ function CriterioItem({
                   size="icon-sm"
                   type="button"
                   aria-label="Quitar excelente"
+                  disabled={disabled}
                   onClick={() =>
                     onChange({ ...criterio, excelente: "", excelentePonderacion: undefined })
                   }
@@ -2982,6 +3200,7 @@ function CriterioItem({
                 next[nIndex] = { ...nivel, descripcion: e.target.value }
                 onChange({ ...criterio, niveles: next })
               }}
+              disabled={disabled}
             />
             {/* Input de ponderación por nivel — solo cuando la actividad es
                 sumativa. Mismo idioma visual que la ponderación del
@@ -3012,6 +3231,7 @@ function CriterioItem({
                     }
                     onChange({ ...criterio, niveles: next })
                   }}
+                  disabled={disabled}
                 />
               </Field>
             )}
@@ -3024,6 +3244,7 @@ function CriterioItem({
                     size="icon-sm"
                     type="button"
                     aria-label={`Quitar nivel ${nivel.nombre}`}
+                    disabled={disabled}
                     onClick={() => {
                       const next = criterio.niveles.slice()
                       next.splice(nIndex, 1)
@@ -3063,6 +3284,7 @@ function CriterioItem({
             placeholder="Agregar"
             value={nivelInput}
             onChange={(e) => setNivelInput(e.target.value)}
+            disabled={disabled}
           />
           <Button
             variant="fill"
@@ -3070,6 +3292,7 @@ function CriterioItem({
             size="default"
             className="rounded-l-none border-l-0"
             type="button"
+            disabled={disabled}
             onClick={() => {
               const value = nivelInput.trim()
               if (!value) return
@@ -3101,6 +3324,7 @@ function CriterioItem({
           max={100}
           value={criterio.ponderacion}
           onChange={(e) => onChange({ ...criterio, ponderacion: Number(e.target.value) })}
+          disabled={disabled}
         />
       </Field>
     </li>
@@ -3110,9 +3334,11 @@ function CriterioItem({
 function AdaptacionesSection({
   form,
   estudiantes,
+  disabled,
 }: {
   form: FormActividad
   estudiantes: Estudiante[]
+  disabled: boolean
 }) {
   return (
     <Card className="gap-4 p-4">
@@ -3158,6 +3384,7 @@ function AdaptacionesSection({
                         size="icon-sm"
                         type="button"
                         aria-label="Agregar adaptación"
+                        disabled={disabled}
                         onClick={add}
                       />
                     }
@@ -3176,6 +3403,7 @@ function AdaptacionesSection({
                       index={aIndex}
                       adaptacion={adapt}
                       estudiantes={estudiantes}
+                      disabled={disabled}
                       onChange={(next) => {
                         const list = adaptaciones.slice()
                         list[aIndex] = next
@@ -3223,12 +3451,14 @@ function AdaptacionItem({
   index,
   adaptacion,
   estudiantes,
+  disabled,
   onChange,
   onRemove,
 }: {
   index: number
   adaptacion: Adaptacion
   estudiantes: Estudiante[]
+  disabled: boolean
   onChange: (next: Adaptacion) => void
   onRemove: () => void
 }) {
@@ -3245,6 +3475,7 @@ function AdaptacionItem({
                 size="icon-sm"
                 type="button"
                 aria-label={`Quitar adaptación ${index + 1}`}
+                disabled={disabled}
                 onClick={onRemove}
               />
             }
@@ -3262,6 +3493,7 @@ function AdaptacionItem({
           onValueChange={(value) =>
             onChange({ ...adaptacion, tipo: (value ?? "") as Adaptacion["tipo"] })
           }
+          disabled={disabled}
         >
           <SelectTrigger>
             <SelectValue placeholder="Seleccione">
@@ -3302,6 +3534,7 @@ function AdaptacionItem({
           value={adaptacion.descripcion}
           onChange={(e) => onChange({ ...adaptacion, descripcion: e.target.value })}
           className={TEXTAREA_OUTLINED}
+          disabled={disabled}
         />
       </Field>
 
@@ -3320,6 +3553,7 @@ function AdaptacionItem({
               versionModificadaRef: "",
             })
           }
+          disabled={disabled}
         >
           <SelectTrigger>
             <SelectValue placeholder="Seleccione">
@@ -3351,6 +3585,7 @@ function AdaptacionItem({
                 onChange({ ...adaptacion, versionModificadaRef: e.target.value })
               }
               className="pl-9"
+              disabled={disabled}
             />
           </div>
         </Field>
@@ -3366,6 +3601,7 @@ function AdaptacionItem({
             onChange={(e) =>
               onChange({ ...adaptacion, versionModificadaRef: e.target.value })
             }
+            disabled={disabled}
           />
         </Field>
       )}
@@ -3378,6 +3614,7 @@ function AdaptacionItem({
             onValueChange={(value) =>
               onChange({ ...adaptacion, versionModificadaRef: (value ?? "") as string })
             }
+            disabled={disabled}
           >
             <SelectTrigger>
               <SelectValue placeholder="Seleccione">
@@ -3409,6 +3646,7 @@ function AdaptacionItem({
               estudiantesIds: next === "Estudiantes específicos" ? adaptacion.estudiantesIds : [],
             })
           }}
+          disabled={disabled}
         >
           <SelectTrigger>
             <SelectValue placeholder="Seleccione">
@@ -3456,6 +3694,7 @@ function AdaptacionItem({
                             : adaptacion.estudiantesIds.filter((id) => id !== estudiante.id),
                         })
                       }
+                      disabled={disabled}
                     />
                     {toTitleCase(`${estudiante.nombres} ${estudiante.apellidos}`)}
                   </label>
@@ -3477,7 +3716,7 @@ function AdaptacionItem({
  * vacío, igual que "Ponderación" desaparece cuando la actividad no es
  * sumativa.
  */
-function SeguimientoSection({ form }: { form: FormActividad }) {
+function SeguimientoSection({ form, disabled }: { form: FormActividad; disabled: boolean }) {
   return (
     <form.Subscribe selector={(state) => state.values.adaptaciones.length > 0}>
       {(hasAdaptaciones) =>
@@ -3494,6 +3733,7 @@ function SeguimientoSection({ form }: { form: FormActividad }) {
                 <Select
                   value={field.state.value ? "si" : "no"}
                   onValueChange={(value) => field.handleChange(value === "si")}
+                  disabled={disabled}
                 >
                   <SelectTrigger id={field.name}>
                     <SelectValue>{(value) => (value === "si" ? "Sí" : "No")}</SelectValue>
@@ -3517,7 +3757,7 @@ function SeguimientoSection({ form }: { form: FormActividad }) {
                     <Select
                       value={tipoField.state.value}
                       onValueChange={(v) => v && tipoField.handleChange(v)}
-                      disabled={!field.state.value}
+                      disabled={!field.state.value || disabled}
                     >
                       <SelectTrigger id={tipoField.name}>
                         <SelectValue />
@@ -3543,6 +3783,7 @@ function SeguimientoSection({ form }: { form: FormActividad }) {
               <Select
                 value={field.state.value ? "si" : "no"}
                 onValueChange={(value) => field.handleChange(value === "si")}
+                disabled={disabled}
               >
                 <SelectTrigger id={field.name}>
                   <SelectValue>{(value) => (value === "si" ? "Sí" : "No")}</SelectValue>
@@ -3567,6 +3808,7 @@ function SeguimientoSection({ form }: { form: FormActividad }) {
               placeholder="Ej: Reforzar con ejemplos del contexto local, revisar individualmente la participación de los estudiantes con bajo rendimiento…"
               value={field.state.value}
               onChange={(e) => field.handleChange(e.target.value)}
+              disabled={disabled}
             />
           </Field>
         )}
@@ -3600,6 +3842,7 @@ function CrearUnidadPopover({
   instrumentoLabel = UNIDAD_TAB_FALLBACK,
   gradoId,
   asignaturaId,
+  disabled = false,
 }: {
   onCreate: (data: {
     nombre: string
@@ -3626,6 +3869,10 @@ function CrearUnidadPopover({
    *  sin ellos no hay contra qué resolver el referente de la unidad. */
   gradoId: number | undefined
   asignaturaId: number | undefined
+  /** `true` mientras Grado/Asignatura de la actividad (no del popover, que no
+   *  pide ninguno de los dos) todavía no se eligieron — ver `disabled` en
+   *  `EditarActividadForm`. */
+  disabled?: boolean
 }) {
   const [open, setOpen] = React.useState(false)
   const [nombre, setNombre] = React.useState("")
@@ -3647,6 +3894,13 @@ function CrearUnidadPopover({
     descripcion: referenteDescripcion,
     isPending: isPendingEnunciados,
   } = useEnunciadosDbaQuery(gradoId, asignaturaId)
+
+  // Mismo criterio que `UnidadInfoGeneralFields`: una unidad de enfoque
+  // Formativo no tiene "Método de cálculo" (esa unidad no admite actividades
+  // sumativas, ver el comentario de `UnidadAsociadaSection` más arriba), así
+  // que el campo no tiene sentido mostrarlo acá tampoco.
+  const { data: referenteDeGradoAsignatura } = useReferenteCurricularQuery(gradoId, asignaturaId)
+  const esFormativa = referenteDeGradoAsignatura?.esFormativo ?? false
 
   const hasGradoAsignatura = gradoId != null && asignaturaId != null
 
@@ -3699,7 +3953,7 @@ function CrearUnidadPopover({
                   // popover, y adentro aparecía un banner azul explicando
                   // por qué no se podía usar. Deshabilitarlo acá evita
                   // abrir un popover que no sirve para nada todavía.
-                  disabled={!hasGradoAsignatura}
+                  disabled={disabled || !hasGradoAsignatura}
                   // `size-11` para igualar la altura del `SelectTrigger` (h-11);
                   // `shrink-0` para que el flex del call site no lo aplaste.
                   // Si el call site pasa `className` (típico `rounded-l-none
@@ -3794,24 +4048,26 @@ function CrearUnidadPopover({
             />
           </div>
 
-          <Field variant="outlined" className="border-t pt-4">
-            <FieldLabel>Método de cálculo</FieldLabel>
-            <Select
-              value={metodoCalculo}
-              onValueChange={(v) => v && setMetodoCalculo(v as MetodoCalculo)}
-            >
-              <SelectTrigger>
-                <SelectValue>{(v) => METODO_CALCULO_INFO[v as MetodoCalculo]?.label ?? v}</SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {METODO_CALCULO_OPTIONS.map((option) => (
-                  <SelectItem key={option} value={option}>
-                    {METODO_CALCULO_INFO[option].label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Field>
+          {!esFormativa && (
+            <Field variant="outlined" className="border-t pt-4">
+              <FieldLabel>Método de cálculo</FieldLabel>
+              <Select
+                value={metodoCalculo}
+                onValueChange={(v) => v && setMetodoCalculo(v as MetodoCalculo)}
+              >
+                <SelectTrigger>
+                  <SelectValue>{(v) => METODO_CALCULO_INFO[v as MetodoCalculo]?.label ?? v}</SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {METODO_CALCULO_OPTIONS.map((option) => (
+                    <SelectItem key={option} value={option}>
+                      {METODO_CALCULO_INFO[option].label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+          )}
         </div>
 
         <div className="flex justify-end border-t p-4">
