@@ -10,6 +10,7 @@ import {
   PopoverTitle,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 import { FieldVariantContext } from "@/hooks/use-field-variant"
 
@@ -69,27 +70,35 @@ export function AdvancedFiltersPopover({
 }: AdvancedFiltersPopoverProps) {
   return (
     <Popover open={open} onOpenChange={onOpenChange}>
-      <PopoverTrigger
-        render={
-          <InputGroupButton
-            size="icon-xs"
-            // Con filtros puestos el embudo se rellena (`fill muted`) para que
-            // se lea como un estado activo, no como una acción más de la barra.
-            variant={activeFilterCount > 0 ? "fill" : "ghost"}
-            color="muted"
-            aria-label="Filtros avanzados"
-            aria-pressed={activeFilterCount > 0}
-            className="relative"
-          />
-        }
-      >
-        <FunnelIcon />
-        {badgeCount > 0 && (
-          <span className="absolute -top-1 -right-1 flex size-3.5 items-center justify-center rounded-full bg-primary text-[0.55rem] font-semibold text-primary-foreground">
-            {badgeCount}
-          </span>
-        )}
-      </PopoverTrigger>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <PopoverTrigger
+              render={
+                <InputGroupButton
+                  size="icon-xs"
+                  // Con filtros puestos el embudo se rellena (`fill muted`) para
+                  // que se lea como un estado activo, no como una acción más de
+                  // la barra.
+                  variant={activeFilterCount > 0 ? "fill" : "ghost"}
+                  color="muted"
+                  aria-label="Filtros avanzados"
+                  aria-pressed={activeFilterCount > 0}
+                  className="relative"
+                />
+              }
+            />
+          }
+        >
+          <FunnelIcon />
+          {badgeCount > 0 && (
+            <span className="absolute -top-1 -right-1 flex size-3.5 items-center justify-center rounded-full bg-primary text-[0.55rem] font-semibold text-primary-foreground">
+              {badgeCount}
+            </span>
+          )}
+        </TooltipTrigger>
+        <TooltipContent>Filtros avanzados</TooltipContent>
+      </Tooltip>
 
       {/*
         En `lg`, más ancho que un popover normal para que cada sección reparta
@@ -115,16 +124,23 @@ export function AdvancedFiltersPopover({
           <PopoverTitle className="text-xl font-semibold normal-case">
             Filtros avanzados
           </PopoverTitle>
-          <Button
-            type="button"
-            variant="fill"
-            color="neutral"
-            size="icon-xs"
-            aria-label="Cerrar filtros avanzados"
-            onClick={() => onOpenChange(false)}
-          >
-            <XIcon />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  type="button"
+                  variant="fill"
+                  color="neutral"
+                  size="icon-xs"
+                  aria-label="Cerrar filtros avanzados"
+                  onClick={() => onOpenChange(false)}
+                />
+              }
+            >
+              <XIcon />
+            </TooltipTrigger>
+            <TooltipContent>Cerrar filtros avanzados</TooltipContent>
+          </Tooltip>
         </PopoverHeader>
 
         {/*
