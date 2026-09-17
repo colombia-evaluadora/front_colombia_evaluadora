@@ -33,7 +33,6 @@ import { useUnidadDetalleQuery } from "@/features/planeador/api/query/use-unidad
 import { useUnidadReferenteQuery } from "@/features/planeador/api/query/use-unidad-referente-query"
 import { useUnidadesTabsQuery } from "@/features/planeador/api/query/use-unidades-tabs-query"
 import { UNIDAD_TAB_FALLBACK } from "@/features/planeador/components/planeador-tabs"
-import { articuloDefinido } from "@/features/planeador/lib/unidad-instrumento-label"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
 import { useConfiguracionActividadQuery } from "@/features/planeador/api/query/use-configuracion-actividad-query"
@@ -59,12 +58,10 @@ import {
 } from "@/features/planeador/components/forms/form-unidad-info-general"
 import {
   EyeIcon,
-  FileDownloadOutlinedIcon,
   FileTextIcon,
   FileUploadOutlinedIcon,
   FolderOpenIcon,
   ImageIcon,
-  InfoIcon,
   InsertLinkOutlinedIcon,
   PermMediaOutlinedIcon,
   PlusCircleIcon,
@@ -1512,22 +1509,6 @@ function RecursoItem({
             <EyeIcon />
           </TooltipTrigger>
           <TooltipContent>Ver recurso</TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <Button
-                variant="ghost"
-                color="neutral"
-                size="icon-sm"
-                type="button"
-                aria-label="Descargar"
-              />
-            }
-          >
-            <FileDownloadOutlinedIcon />
-          </TooltipTrigger>
-          <TooltipContent>Descargar</TooltipContent>
         </Tooltip>
         <Tooltip>
           <TooltipTrigger
@@ -3581,12 +3562,17 @@ function CrearUnidadPopover({
   const [metodoCalculo, setMetodoCalculo] = React.useState<MetodoCalculo>("Ponderado")
   const [isSaving, setIsSaving] = React.useState(false)
   const { notify } = useNotify()
-  const crearLabel = `Crear nuevo${articuloDefinido(instrumentoLabel) === "el" ? "" : "a"} ${instrumentoLabel.toLowerCase()}`
+  // Sin "nuevo/nueva": el rótulo del instrumento lo define el referente
+  // curricular y concordar el artículo con él obligaba a una regla de género
+  // que ya venía dando "Crear nuevoa unidad temática".
+  const crearLabel = `Crear ${instrumentoLabel.toLowerCase()}`
 
-  const { enunciados: enunciadosDisponibles, isPending: isPendingEnunciados } = useEnunciadosDbaQuery(
-    gradoId,
-    asignaturaId,
-  )
+  const {
+    enunciados: enunciadosDisponibles,
+    nombre: referenteNombre,
+    descripcion: referenteDescripcion,
+    isPending: isPendingEnunciados,
+  } = useEnunciadosDbaQuery(gradoId, asignaturaId)
 
   const hasGradoAsignatura = gradoId != null && asignaturaId != null
 
@@ -3633,6 +3619,13 @@ function CrearUnidadPopover({
                   color="primary"
                   size="icon-sm"
                   aria-label={crearLabel}
+                  // Sin Grado/Asignatura elegidos, adentro no se puede
+                  // guardar nada (`guardar` corta en seco sin
+                  // `hasGradoAsignatura`) — antes el botón abría igual el
+                  // popover, y adentro aparecía un banner azul explicando
+                  // por qué no se podía usar. Deshabilitarlo acá evita
+                  // abrir un popover que no sirve para nada todavía.
+                  disabled={!hasGradoAsignatura}
                   // `size-11` para igualar la altura del `SelectTrigger` (h-11);
                   // `shrink-0` para que el flex del call site no lo aplaste.
                   // Si el call site pasa `className` (típico `rounded-l-none
@@ -3646,7 +3639,9 @@ function CrearUnidadPopover({
         >
           <PlusCircleIcon />
         </TooltipTrigger>
-        <TooltipContent>{crearLabel}</TooltipContent>
+        <TooltipContent>
+          {hasGradoAsignatura ? crearLabel : "Elegí Grado/Grupo y Asignatura de la actividad primero."}
+        </TooltipContent>
       </Tooltip>
       <PopoverContent
         align="end"
@@ -3667,16 +3662,15 @@ function CrearUnidadPopover({
           {crearLabel}
         </h3>
 
-        {!hasGradoAsignatura && (
-          <div className="border-blue-stroke bg-blue-22 text-blue m-4 flex items-start gap-2 rounded-md border p-3 text-xs">
-            <InfoIcon className="mt-0.5 size-4 shrink-0" />
-            Elegí Grado/Grupo y Asignatura de la actividad primero.
-          </div>
-        )}
+        {/* El banner de "Elegí Grado/Grupo y Asignatura primero" que vivía
+            acá ya no hace falta: el trigger de este popover está
+            deshabilitado (con tooltip que explica por qué) mientras falten,
+            así que no hay forma de llegar a ver este contenido sin
+            `hasGradoAsignatura`. */}
 
         <div className="scrollbar-slim flex max-h-[60vh] flex-col gap-5 overflow-y-auto p-4">
           <Field variant="outlined">
-            <FieldLabel>Nombre de la unidad</FieldLabel>
+            <FieldLabel>Nombre</FieldLabel>
             <Input
               placeholder="Agregar"
               value={nombre}
@@ -3715,8 +3709,8 @@ function CrearUnidadPopover({
 
           <div className="border-t pt-4">
             <ListaAgregableCajaSelect
-              title="Derechos Básicos de Aprendizaje"
-              description="Selecciona los enunciados de DBA asociados a esta unidad."
+              title={referenteNombre ?? "Derechos Básicos de Aprendizaje"}
+              description={referenteDescripcion ?? "Selecciona los enunciados asociados."}
               columnLabel="Enunciados"
               items={enunciadosDba}
               options={enunciadosDisponibles}
@@ -3756,7 +3750,7 @@ function CrearUnidadPopover({
             disabled={!nombre.trim() || isSaving}
           >
             {isSaving && <SpinnerIcon data-icon="inline-start" className="animate-spin" />}
-            {isSaving ? "Guardando..." : "Guardar unidad"}
+            {isSaving ? "Guardando..." : "Guardar"}
           </Button>
         </div>
       </PopoverContent>
