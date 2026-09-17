@@ -31,7 +31,11 @@ import { Textarea } from "@/components/ui/textarea"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useUnidadDetalleQuery } from "@/features/planeador/api/query/use-unidades-query"
 import { useUnidadReferenteQuery } from "@/features/planeador/api/query/use-unidad-referente-query"
-import { resolveInstrumentoLabel, useUnidadesTabsQuery } from "@/features/planeador/api/query/use-unidades-tabs-query"
+import {
+  instrumentoLabelFromReferente,
+  resolveInstrumentoLabel,
+  useUnidadesTabsQuery,
+} from "@/features/planeador/api/query/use-unidades-tabs-query"
 import { UNIDAD_TAB_FALLBACK } from "@/features/planeador/components/planeador-tabs"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
@@ -794,7 +798,11 @@ function UnidadFichaYEvidencias({
   // adoptó, no cualquier enunciado del nivel educativo.
   const { data: referente } = useReferenteCurricularQuery(gradoId, asignaturaId)
   const { data: unidadTabs } = useUnidadesTabsQuery()
-  const instrumentoLabel = resolveInstrumentoLabel(gradoId, unidadTabs, UNIDAD_TAB_FALLBACK)
+  // Por `referente.id` (grado+ASIGNATURA), no por `gradoId` a secas: evita
+  // que el título diga un instrumento distinto del que en verdad tienen
+  // `nivel1Etiqueta`/`nivel2Etiqueta` de ESTE MISMO referente — ver el
+  // comentario de `instrumentoLabelFromReferente`.
+  const instrumentoLabel = instrumentoLabelFromReferente(referente?.id, unidadTabs, UNIDAD_TAB_FALLBACK)
   const enunciadosDeLaUnidad =
     referente && unidad
       ? referente.enunciados.filter((enunciado) =>
