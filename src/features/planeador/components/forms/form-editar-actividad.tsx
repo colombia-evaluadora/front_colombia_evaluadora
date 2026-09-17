@@ -11,7 +11,7 @@ import { DatePicker } from "@/components/date-picker"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { cn } from "@/lib/utils"
 import { parseDateValue, formatDateValue } from "@/lib/date-value"
-import { toDigitsOnly, toDigitsOrRangeInput } from "@/lib/text-input"
+import { toDigitsOrRangeInput, toPositiveDigitsInput } from "@/lib/text-input"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import {
@@ -1652,13 +1652,15 @@ function ProgramacionSection({ form }: { form: FormActividad }) {
                   mismo criterio que el resto de la app (ver `text-input.ts`)
                   — un `number` acepta notación como `1e5` y no sirve para
                   un conteo simple. Solo dígitos, sin la unidad ("horas")
-                  mezclada en el valor. */}
+                  mezclada en el valor, a lo sumo 3 (hasta 999) y sin `0`
+                  (`toPositiveDigitsInput`): "0 horas/sesiones" no es una
+                  duración válida. */}
               <Input
                 id={field.name}
                 inputMode="numeric"
                 placeholder="Ej: 20"
                 value={field.state.value}
-                onChange={(e) => field.handleChange(toDigitsOnly(e.target.value))}
+                onChange={(e) => field.handleChange(toPositiveDigitsInput(e.target.value, 3))}
               />
             </Field>
           )}
