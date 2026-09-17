@@ -15,7 +15,7 @@ import { fetchSelectCategory } from "@/features/establishment/academic-period/ap
 // para `valor: "OTRO"` en vez del "Otro" que asumía el mock, y confiar en
 // el label rompía esa comparación (el form caía siempre a `RubricasSection`
 // sin mostrar la sección de instrumento personalizado).
-const INSTRUMENTO_EVALUACION_POR_CODIGO: Record<string, string> = {
+export const INSTRUMENTO_EVALUACION_POR_CODIGO: Record<string, string> = {
   RUBRICA: "Rúbrica",
   LISTA_COTEJO: "Lista de cotejo",
   ESCALA_VALORACION: "Escala de valoración",
@@ -40,6 +40,31 @@ export function useInstrumentoEvaluacionCatalogQuery() {
 export interface InstrumentoEvaluacionOption {
   id: number
   nombre: string
+}
+
+/**
+ * `campos_disponibles.evaluacion.instrumentosPermitidos` (`fn_actividad_
+ * instrumentos_permitidos`/`fn_unidad_configuracion_actividad`, confirmado
+ * real contra el servidor de test) NO es un array de strings — es un array
+ * de `{pk, valor, etiqueta}`, con `valor` el código estable de
+ * `TLISTA_VALOR` ("RUBRICA", "LISTA_COTEJO", …). Se resuelve por `valor`
+ * contra el mismo diccionario que ya usa el catálogo (`INSTRUMENTO_
+ * EVALUACION_POR_CODIGO`), no por `etiqueta`, para que el string resultante
+ * sea IDÉNTICO al que compara `EvaluacionSection` (`instrumentos.filter(...)`
+ * en `form-editar-actividad.tsx`) — el backend real manda `etiqueta: "Otro
+ * (personalizado)"` para `OTRO`, pero el resto del form compara contra el
+ * literal corto `"Otro"`. Tolera además un array ya en forma de strings
+ * (el mock, `src/mocks/handlers/planeador.ts`), para no duplicar esta
+ * función en dos shapes distintas según el origen de los datos.
+ */
+export function toInstrumentosPermitidos(
+  rows: (string | { pk?: number; valor?: string; etiqueta?: string })[] | undefined,
+): string[] {
+  return (rows ?? [])
+    .map((row) =>
+      typeof row === "string" ? row : (INSTRUMENTO_EVALUACION_POR_CODIGO[row.valor ?? ""] ?? row.etiqueta),
+    )
+    .filter((nombre): nombre is string => !!nombre)
 }
 
 /** No es un hook: se llama directo desde las mutaciones de crear/editar
