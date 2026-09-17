@@ -37,6 +37,7 @@ export function useCreateGradeGroup({ mutationConfig }: UseCreateGradeGroupOptio
     onSuccess: (...args) => {
       queryClient.invalidateQueries({ queryKey: ["grade-groups"] })
       queryClient.invalidateQueries({ queryKey: ["assignment-subjects"] })
+      queryClient.invalidateQueries({ queryKey: ["teacher-assignments"] })
       mutationConfig?.onSuccess?.(...args)
     },
   })

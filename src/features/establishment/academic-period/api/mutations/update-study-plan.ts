@@ -42,6 +42,7 @@ export function useUpdateStudyPlanItem({ mutationConfig }: UseUpdateStudyPlanIte
       queryClient.invalidateQueries({ queryKey: ["study-plans"] })
       queryClient.invalidateQueries({ queryKey: ["study-plan-available"] })
       queryClient.invalidateQueries({ queryKey: ["assignment-subjects"] })
+      queryClient.invalidateQueries({ queryKey: ["teacher-assignments"] })
       mutationConfig?.onSuccess?.(...args)
     },
   })

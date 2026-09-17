@@ -123,8 +123,9 @@ export function SearchSeguimiento({
     [tipoAsistenciaOptions],
   )
 
-  const cadenaIniciada = Boolean(draft.jornada || draft.grado || draft.grupo || draft.asignatura || draft.actividad)
-  const canApply = !cadenaIniciada || Boolean(draft.grupo)
+  // Asignatura/Actividad dependen de Grupo (sus opciones salen de asignaturasPorGrupo/actividadesPorGrupo),
+  // así que solo esas dos exigen tener un Grupo elegido; Jornada/Grado/Grupo se pueden usar sueltos.
+  const canApply = !(draft.asignatura || draft.actividad) || Boolean(draft.grupo)
 
   function handleApply() {
     if (!canApply) return
@@ -204,8 +205,7 @@ export function SearchSeguimiento({
       <div className="flex flex-col gap-3 px-4">
         {!canApply && (
           <p className="text-xs text-yellow">
-            Jornada y Grado son solo para ayudarte a encontrar el Grupo: elegí también un Grupo para
-            poder aplicar el filtro.
+            Asignatura y Actividad dependen del Grupo: elegí también un Grupo para poder aplicar el filtro.
           </p>
         )}
         <FieldSet>

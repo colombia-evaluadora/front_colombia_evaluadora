@@ -91,6 +91,11 @@ import { useCalificacionesQuery } from "@/features/planeador/api/query/use-calif
 import { useCreateUnidad } from "@/features/planeador/api/mutations/create-unidad"
 
 import { DialogBibliotecaRecursos } from "@/features/planeador/components/dialogs/dialog-biblioteca-recursos"
+import {
+  consumeActividadFormDraft,
+  saveActividadFormDraft,
+  type ActividadFormDraftKey,
+} from "@/features/planeador/lib/actividad-form-draft"
 
 /**
  * `<Textarea>` no tiene variante `outlined` propia (a diferencia de `Input`,
@@ -240,8 +245,20 @@ export function EditarActividadForm({
   const unidades = [...unidadesQuery, ...unidadesCreadasPendientes]
   const createUnidadMutation = useCreateUnidad()
 
+  // El alta usa el sentinel "nueva" en vez de `actividad.id`: ese id es un
+  // `draftId()` aleatorio que cambia en cada montaje (ver `esNueva` más
+  // arriba), así que no sirve para encontrar el borrador guardado antes de
+  // navegar a "Ver recurso" — la edición sí puede usar su id real, estable
+  // entre navegaciones (`key={actividadParaForm.id}` en la página).
+  const draftKey: ActividadFormDraftKey = esNueva ? "nueva" : actividad.id
+  // Lazy initializer: corre una sola vez al montar, así que si venimos de
+  // "Ver recurso" (`consumeActividadFormDraft` ya borró el borrador para
+  // que no se reuse) el form arranca con lo que el docente ya había
+  // tipeado en vez de `actividad` a secas.
+  const [actividadInicial] = useState(() => consumeActividadFormDraft(draftKey) ?? actividad)
+
   const form = useForm({
-    defaultValues: actividad,
+    defaultValues: actividadInicial,
     onSubmit: ({ value }) => onSubmit?.(value),
   })
 
@@ -336,7 +353,7 @@ export function EditarActividadForm({
         criteriosUnidadOriginales={esNueva ? [] : actividad.criteriosUnidadIds}
       />
       <MaterialesSection form={form} />
-      <RecursosSection form={form} />
+      <RecursosSection form={form} draftKey={draftKey} />
       <ProgramacionSection form={form} />
       <EvaluacionSection
         form={form}
@@ -520,7 +537,16 @@ function UnidadAsociadaSection({
             // del docente) dejaba este select deshabilitado sin motivo.
             const grado = form.getFieldValue("grado")
             const asignatura = form.getFieldValue("asignatura")
-            const hasGradoAsignatura = Boolean(grado && asignatura)
+            // Misma condición que `CrearUnidadPopover` (gradoId != null &&
+            // asignaturaId != null), no `Boolean(grado && asignatura)`. Los
+            // labels pueden llegar solos desde el detalle real (que no
+            // siempre trae los ids, ver el comentario del `useEffect` en
+            // `AsignaturaGradoSection`); chequear con strings habilitaba el
+            // select de unidad y dejaba el `+` del popover bloqueado — o al
+            // revés, según el orden de la query de catálogos.
+            const gradoId = form.getFieldValue("gradoId")
+            const asignaturaId = form.getFieldValue("asignaturaId")
+            const hasGradoAsignatura = gradoId != null && asignaturaId != null
             // `grado`/`asignatura` y `UnidadTematica.grado`/`.asignatura`
             // salen ahora del mismo origen real (`docentes/grupos`/
             // `docentes/grado-asignatura`), así que se comparan directo —
@@ -532,7 +558,6 @@ function UnidadAsociadaSection({
             // Instrumento (rótulo real) del Grado ya elegido — ver el
             // comentario sobre `unidadTabs` más arriba. Sin Grado/Asignatura
             // todavía elegidos cae al mismo fallback que `PlaneadorTabs`.
-            const gradoId = form.getFieldValue("gradoId")
             const instrumentoLabel =
               (gradoId != null && unidadTabs?.find((t) => t.gradoIds.includes(gradoId))?.instrumento) ||
               UNIDAD_TAB_FALLBACK
@@ -1075,7 +1100,7 @@ const RECURSO_DRAFT_VACIO: RecursoDraft = {
   descripcion: "",
 }
 
-function RecursosSection({ form }: { form: FormActividad }) {
+function RecursosSection({ form, draftKey }: { form: FormActividad; draftKey: ActividadFormDraftKey }) {
   // Colapsa/expande el cuerpo del card. El título + los botones del header
   // (biblioteca, + agregar) quedan siempre a la vista; el toggle `-/+`
   // muestra u oculta el form de alta + la lista.
@@ -1212,6 +1237,14 @@ function RecursosSection({ form }: { form: FormActividad }) {
                           list.splice(index, 1)
                           field.handleChange(list)
                         }}
+                        // "Ver recurso" navega a una ruta aparte, que
+                        // desmonta este form entero — se guarda un borrador
+                        // con lo que el docente ya tipeó para que "Cerrar"
+                        // en la vista previa no lo mande de vuelta a un
+                        // form vacío (ver `actividad-form-draft.ts`).
+                        onVerRecurso={() =>
+                          saveActividadFormDraft(draftKey, form.state.values as Actividad)
+                        }
                       />
                     ))}
                   </ul>
@@ -1349,8 +1382,46 @@ function RecursoForm({
             <Input
               type={draft.tipo === "Archivo" ? "file" : "url"}
               placeholder={fuentePlaceholder}
-              value={draft.url}
-              onChange={(e) => onChange({ url: e.target.value })}
+              // `<input type="file">` no acepta `value` programático (el
+              // browser solo permite setearlo a `""` por seguridad —
+              // cualquier otro valor tira `InvalidStateError` y revienta
+              // el árbol). El archivo se controla vía `e.target.files`
+              // dentro de `onChange`, no hace falta pasarle `value`.
+              {...(draft.tipo === "Archivo" ? {} : { value: draft.url })}
+              onChange={(e) => {
+                // `<input type="file">` expone el archivo en
+                // `e.target.files[0]`, pero `e.target.value` es el fake
+                // path (`C:\fakepath\...`) que el browser pone por
+                // seguridad — no sirve para reproducir nada. Hay que
+                // armar un blob URL a partir del `File` real para que el
+                // preview tenga bytes que mostrarle al `<audio>` /
+                // `<video>` / visor de PDF.
+                if (draft.tipo === "Archivo") {
+                  const file = e.target.files?.[0]
+                  // Liberar el blob anterior antes de pisarlo — si el
+                  // usuario cambia de archivo no queremos dos blobs
+                  // vivos del mismo slot.
+                  if (draft.url.startsWith("blob:")) {
+                    URL.revokeObjectURL(draft.url)
+                  }
+                  if (!file) {
+                    onChange({ url: "", fuente: "" })
+                    return
+                  }
+                  const blobUrl = URL.createObjectURL(file)
+                  // El form guarda el nombre del archivo en `fuente` y se
+                  // lo pasa al resolver, que lo usa como fallback para
+                  // detectar la extensión — los blob URLs no tienen
+                  // extensión en el path y no queríamos meterla en el
+                  // hash (algunos parsers se confunden con el `#`).
+                  onChange({
+                    url: blobUrl,
+                    fuente: file.name,
+                  })
+                } else {
+                  onChange({ url: e.target.value })
+                }
+              }}
               className={FuenteIcon ? "pl-9" : undefined}
             />
           </div>
@@ -1396,9 +1467,11 @@ function RecursoForm({
 function RecursoItem({
   recurso,
   onRemove,
+  onVerRecurso,
 }: {
   recurso: Recurso
   onRemove: () => void
+  onVerRecurso: () => void
 }) {
   // Toda la presentación (ícono, color, label) sale del mapper: si mañana
   // se agrega un tipo nuevo o se cambia el color de "URL", se toca un solo
@@ -1499,6 +1572,7 @@ function RecursoItem({
                           titulo: recurso.titulo,
                           descripcion: recurso.descripcion,
                         }}
+                        onClick={onVerRecurso}
                       />
                     )
                     : undefined

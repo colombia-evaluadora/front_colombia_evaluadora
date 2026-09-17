@@ -585,12 +585,13 @@ export const planeadorHandlers = [
   }),
 
   // Reemplazo COMPLETO de los materiales de apoyo (colección Postman
-  // `planeador-guia-completa`, 4.7) — `MATERIALES` viaja como STRING
-  // serializado (regla de los campos JSONB del motor), acá se parsea de
-  // vuelta a array. El mock no reversa `tipoRecurso` (id numérico) a
-  // `Recurso.tipo` (label): como el front nunca manda "Archivo" acá
-  // (`update-materiales-actividad.ts` los deja afuera del body), alcanza
-  // con asumir "URL" — el resto de los campos sí se preservan.
+  // `planeador-guia-completa`, 4.7) — el request viaja como
+  // `multipart/form-data`: `MATERIALES` es un campo STRING con el array
+  // serializado (regla de los campos JSONB del motor) y cada recurso tipo
+  // "Archivo" trae su binario aparte, bajo `archivo_<archivoIndex>` (ver
+  // `update-materiales-actividad.ts`). El mock no reversa `tipoRecurso` (id
+  // numérico) a `Recurso.tipo` (label) para los demás casos — alcanza con
+  // asumir "URL".
   http.put(ACTIVIDAD_MATERIALES_URL, async ({ params, request }) => {
     await delay(200)
     const id = Number(params.id)
@@ -598,17 +599,35 @@ export const planeadorHandlers = [
     if (index === -1) {
       return HttpResponse.json({ message: "Actividad no encontrada." }, { status: 404 })
     }
-    const body = (await request.json()) as { MATERIALES: string }
-    const materiales = JSON.parse(body.MATERIALES) as { url?: string; descripcion?: string }[]
+    const formData = await request.formData()
+    const materiales = JSON.parse(String(formData.get("MATERIALES"))) as {
+      url?: string
+      descripcion?: string
+      archivoIndex?: number
+    }[]
     const actual = planeadorDb[index]!
-    actual.recursos = materiales.map((material, i) => ({
-      id: nextId(actual.recursos.map((r) => r.id)) + i,
-      titulo: material.url ?? "",
-      fuente: material.url ?? "",
-      tipo: "URL",
-      url: material.url ?? "",
-      descripcion: material.descripcion ?? "",
-    }))
+    actual.recursos = materiales.map((material, i) => {
+      if (material.archivoIndex !== undefined) {
+        const archivo = formData.get(`archivo_${material.archivoIndex}`)
+        const nombre = archivo instanceof File ? archivo.name : ""
+        return {
+          id: nextId(actual.recursos.map((r) => r.id)) + i,
+          titulo: nombre,
+          fuente: nombre,
+          tipo: "Archivo",
+          url: "",
+          descripcion: material.descripcion ?? "",
+        }
+      }
+      return {
+        id: nextId(actual.recursos.map((r) => r.id)) + i,
+        titulo: material.url ?? "",
+        fuente: material.url ?? "",
+        tipo: "URL",
+        url: material.url ?? "",
+        descripcion: material.descripcion ?? "",
+      }
+    })
     return HttpResponse.json({ status: "ok" })
   }),
 
