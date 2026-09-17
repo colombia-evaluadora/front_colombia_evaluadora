@@ -14,6 +14,21 @@ export function toDigitsOnly(value: string, maxLength?: number): string {
 }
 
 /**
+ * Como `toDigitsOnly`, pero además descarta los ceros a la izquierda: para
+ * campos numéricos donde `0`/`00...` no es un valor válido (ej. "Duración
+ * estimada" de una actividad — cero horas/sesiones no significa nada), así
+ * que tipear un `0` a secas deja el campo vacío en vez de mostrar un cero
+ * inválido. Los ceros se descartan ANTES de recortar a `maxLength`, para no
+ * perder dígitos de más a la derecha (p. ej. "0007" con `maxLength: 3` debe
+ * quedar en "007"... salvo que también empiece en cero: por eso se
+ * descartan primero y da "7", no "000").
+ */
+export function toPositiveDigitsInput(value: string, maxLength?: number): string {
+  const digits = toDigitsOnly(value).replace(/^0+/, "")
+  return maxLength ? digits.slice(0, maxLength) : digits
+}
+
+/**
  * Formatea un NIT colombiano mientras se escribe: hasta 10 dígitos, con un
  * guión insertado automáticamente antes del último (el dígito de
  * verificación) — p. ej. escribiendo "9001234567" queda "900123456-7".
