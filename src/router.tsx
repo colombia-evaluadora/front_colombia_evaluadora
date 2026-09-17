@@ -36,6 +36,7 @@ import {
   planeadorActividadCrearSearchSchema,
   planeadorRecursoPreviewSearchSchema,
   planeadorSearchSchema,
+  planeadorUnidadCrearSearchSchema,
   planeadorUnidadesSearchSchema,
 } from "@/features/planeador/api/schema"
 import { establishmentsSearchSchema } from "@/features/establishment/institution/api/schema"
@@ -765,6 +766,7 @@ export const planeadorUnidadesRoute = createRoute({
 export const planeadorUnidadCrearRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.planeadorUnidadCrear.path,
+  validateSearch: planeadorUnidadCrearSearchSchema,
   staticData: { breadcrumb: [PLANEADOR_CRUMB, { label: "Unidad temática" }, { label: "Agregar" }] },
   component: PlaneadorCrearUnidadPage,
 })

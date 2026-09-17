@@ -64,6 +64,11 @@ export function PlaneadorUnidadesPage() {
   // `planeador-tabs.tsx`), así que el botón usa el mismo nombre que la
   // pestaña activa en vez de "unidad" fijo.
   const tabLabel = (tabActiva?.instrumento ?? unidadTabs[0]?.instrumento ?? "Unidad temática").toLowerCase()
+  // Mismo instrumento que decide el rótulo del botón, para que
+  // `planeador-crear-unidad-page.tsx` sepa desde el primer render (sin
+  // esperar a que el docente elija un Grado) qué instrumento está creando y
+  // pueda acotar sus `<Select>` de Grado/Asignatura a los de esa pestaña.
+  const instrumentoActivo = tabActiva?.instrumento ?? unidadTabs[0]?.instrumento
 
   const filtered = React.useMemo(() => {
     const porInstrumento =
@@ -119,7 +124,12 @@ export function PlaneadorUnidadesPage() {
                 className="min-w-0 max-w-[18rem] shrink"
                 aria-label={`Agregar ${tabLabel}`}
                 title={`Agregar ${tabLabel}`}
-                render={<Link to={paths.app.planeadorUnidadCrear.getHref()} />}
+                render={
+                  <Link
+                    to={paths.app.planeadorUnidadCrear.getHref()}
+                    search={instrumentoActivo ? { instrumento: instrumentoActivo } : undefined}
+                  />
+                }
               >
                 <PlusCircleIcon data-icon="inline-start" />
                 <span className="truncate">Agregar {tabLabel}</span>

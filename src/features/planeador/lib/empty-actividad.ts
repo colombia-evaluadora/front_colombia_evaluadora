@@ -12,11 +12,19 @@ function draftId(): number {
  * un objeto completo, no admite `Partial<Actividad>`—, así que crear una
  * actividad arranca de esta ficha en blanco en vez de `undefined`.
  *
- * `tipo`/`modalidad`/`instrumento` no tienen una opción "Seleccione" en sus
- * `<Select>` (a diferencia de `unidad`/`aplicaA`/etc.), así que acá
- * arrancan en el primer valor válido de su lista en vez de `""` — value
- * vacío ahí dejaría el trigger sin ninguna opción resaltada al abrir el
- * desplegable.
+ * `tipo`/`modalidad` no tienen una opción "Seleccione" en sus `<Select>`
+ * (a diferencia de `unidad`/`aplicaA`/etc.), así que acá arrancan en el
+ * primer valor válido de su lista en vez de `""` — value vacío ahí dejaría
+ * el trigger sin ninguna opción resaltada al abrir el desplegable.
+ *
+ * `instrumento` SÍ arranca en `""` (a propósito, distinto de los otros
+ * dos): antes arrancaba en `"Rúbrica"`, así que una actividad recién creada
+ * mostraba de entrada la sección "Definición de Criterios" sin que el
+ * docente hubiera elegido nada en "Instrumento de evaluación" — y ese valor
+ * "elegido" viajaba igual al guardar si el docente nunca tocaba el select.
+ * Con `""` el `<Select>` muestra su placeholder "Seleccione" y
+ * `InstrumentoEvaluacionSection` no pinta ninguna definición hasta que el
+ * docente elige un instrumento real.
  */
 export function crearActividadVacia(): Actividad {
   const id = draftId()
@@ -43,7 +51,7 @@ export function crearActividadVacia(): Actividad {
     semana: "",
     modalidad: "Presencial",
     esEvaluativa: false,
-    instrumento: "Rúbrica",
+    instrumento: "",
     ponderacion: 0,
     generaEvidencias: false,
     tipoEvidencia: "",
