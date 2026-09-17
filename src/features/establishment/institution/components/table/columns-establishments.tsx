@@ -4,6 +4,7 @@ import type { ColumnDef } from "@tanstack/react-table"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { PencilIcon } from "@/components/ui/icons"
 import { DataTableColumnHeader } from "@/components/data-table"
 import { paths } from "@/config/paths"
@@ -19,17 +20,24 @@ function ActionsCell({ establishment }: { establishment: Establishment }) {
   return (
     <div className="flex items-center justify-end gap-1">
       {puedeEditar ? (
-        <Button
-          type="button"
-          variant="ghost"
-          color="neutral"
-          size="icon-sm"
-          aria-label={`Editar ${establishment.name}`}
-          render={<Link to={paths.app.establishments.edit.getHref(establishment.id)} />}
-          nativeButton={false}
-        >
-          <PencilIcon />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                type="button"
+                variant="ghost"
+                color="neutral"
+                size="icon-sm"
+                aria-label={`Editar ${establishment.name}`}
+                render={<Link to={paths.app.establishments.edit.getHref(establishment.id)} />}
+                nativeButton={false}
+              />
+            }
+          >
+            <PencilIcon />
+          </TooltipTrigger>
+          <TooltipContent>{`Editar ${establishment.name}`}</TooltipContent>
+        </Tooltip>
       ) : null}
       <DeleteEstablishmentDialog establishment={establishment} />
     </div>

@@ -13,6 +13,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useNotify } from "@/components/notice/notice-context"
 
 import { getErrorMessage } from "@/lib/api-client"
@@ -55,23 +56,36 @@ export function DeleteMatriculaDialog({
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger
-        render={
-          trigger === "button" ? (
-            <Button type="button" variant="outline" color="destructive" size="icon-sm" aria-label={`Eliminar ${fullName}`} />
-          ) : (
-            <Button
-              type="button"
-              variant="ghost"
-              color="neutral"
-              size="icon-sm"
-              aria-label={`Eliminar ${fullName}`}
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <AlertDialogTrigger
+              render={
+                trigger === "button" ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    color="destructive"
+                    size="icon-sm"
+                    aria-label={`Eliminar ${fullName}`}
+                  />
+                ) : (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    color="neutral"
+                    size="icon-sm"
+                    aria-label={`Eliminar ${fullName}`}
+                  />
+                )
+              }
             />
-          )
-        }
-      >
-        <TrashIcon />
-      </AlertDialogTrigger>
+          }
+        >
+          <TrashIcon />
+        </TooltipTrigger>
+        <TooltipContent>{`Eliminar ${fullName}`}</TooltipContent>
+      </Tooltip>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Eliminar</AlertDialogTitle>

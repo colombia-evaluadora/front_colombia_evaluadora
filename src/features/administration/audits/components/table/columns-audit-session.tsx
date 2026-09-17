@@ -5,6 +5,7 @@ import { CheckIcon, ListMagnifyingGlassIcon } from "@/components/ui/icons"
 import { Avatar, AvatarBadge, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { Checkbox } from "@/components/ui/checkbox"
 import { DataTableColumnHeader } from "@/components/data-table"
 import { paths } from "@/config/paths"
@@ -137,16 +138,23 @@ export const columns: ColumnDef<AuditSession>[] = [
     id: "actions",
     header: () => <span className="sr-only">Acciones</span>,
     cell: ({ row }) => (
-      <Button
-        variant="ghost"
-        color="neutral"
-        size="icon-sm"
-        aria-label={`Ver operaciones de la sesión de ${row.original.authorName}`}
-        render={<Link to={paths.app.auditoriaSesionOperaciones.getHref(row.original.id)} />}
-        nativeButton={false}
-      >
-        <ListMagnifyingGlassIcon weight="bold" />
-      </Button>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Button
+              variant="ghost"
+              color="neutral"
+              size="icon-sm"
+              aria-label={`Ver operaciones de la sesión de ${row.original.authorName}`}
+              render={<Link to={paths.app.auditoriaSesionOperaciones.getHref(row.original.id)} />}
+              nativeButton={false}
+            />
+          }
+        >
+          <ListMagnifyingGlassIcon weight="bold" />
+        </TooltipTrigger>
+        <TooltipContent>{`Ver operaciones de la sesión de ${row.original.authorName}`}</TooltipContent>
+      </Tooltip>
     ),
     enableSorting: false,
     enableHiding: false,

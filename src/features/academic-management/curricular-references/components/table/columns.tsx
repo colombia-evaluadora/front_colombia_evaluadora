@@ -36,31 +36,45 @@ function ActionsCell({
 
   return (
     <div className="flex items-center justify-end gap-1">
-      <Button
-        type="button"
-        variant="ghost"
-        color="neutral"
-        size="icon-sm"
-        aria-label={`Ver ${label}`}
-        render={
-          <Link
-            to={paths.app.gestionAcademicaReferentesCurricularesDetalle.getHref(curricularReference.id)}
-          />
-        }
-        nativeButton={false}
-      >
-        <EyeIcon />
-      </Button>
-      <Button
-        type="button"
-        variant="ghost"
-        color="neutral"
-        size="icon-sm"
-        aria-label={`Editar ${label}`}
-        onClick={() => onEdit(curricularReference)}
-      >
-        <PencilIcon />
-      </Button>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Button
+              type="button"
+              variant="ghost"
+              color="neutral"
+              size="icon-sm"
+              aria-label={`Ver ${label}`}
+              render={
+                <Link
+                  to={paths.app.gestionAcademicaReferentesCurricularesDetalle.getHref(curricularReference.id)}
+                />
+              }
+              nativeButton={false}
+            />
+          }
+        >
+          <EyeIcon />
+        </TooltipTrigger>
+        <TooltipContent>{`Ver ${label}`}</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Button
+              type="button"
+              variant="ghost"
+              color="neutral"
+              size="icon-sm"
+              aria-label={`Editar ${label}`}
+              onClick={() => onEdit(curricularReference)}
+            />
+          }
+        >
+          <PencilIcon />
+        </TooltipTrigger>
+        <TooltipContent>{`Editar ${label}`}</TooltipContent>
+      </Tooltip>
       <DeleteCurricularReferenceDialog curricularReference={curricularReference} />
     </div>
   )
