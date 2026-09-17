@@ -740,19 +740,35 @@ export const planeadorHandlers = [
   // filtrar (ver `planeador-tabs.tsx`).
   http.get(UNIDAD_TABS_URL, async () => {
     await delay(120)
-    const porEnfoque = new Map<string, { grados: Set<number>; asignaturas: Set<number> }>()
+    // `Map` en vez de `Set`, para conservar el nombre junto al id: el
+    // contrato real (confirmado contra el servidor de test, V407) trae
+    // `[{pk, nombre}]`, no ids sueltos — el front (`use-unidades-tabs-
+    // query.ts`) los usa para poblar los `<Select>` de Grado/Asignatura al
+    // crear una unidad desde "Agregar {instrumento}" sin depender del
+    // catálogo del docente (que viene vacío para un rector/coordinador).
+    const porEnfoque = new Map<
+      string,
+      { grados: Map<number, string>; asignaturas: Map<number, string> }
+    >()
     for (const unidad of unidadesTematicasDb) {
       const instrumento = unidad.enfoquePedagogico === "Formativo" ? "Proyecto pedagógico" : "Unidad temática"
-      const entry = porEnfoque.get(instrumento) ?? { grados: new Set(), asignaturas: new Set() }
-      entry.grados.add(gradoIdMock(unidad.grado))
-      entry.asignaturas.add(asignaturaIdMock(unidad.asignatura))
+      const entry = porEnfoque.get(instrumento) ?? { grados: new Map(), asignaturas: new Map() }
+      entry.grados.set(gradoIdMock(unidad.grado), unidad.grado)
+      entry.asignaturas.set(asignaturaIdMock(unidad.asignatura), unidad.asignatura)
       porEnfoque.set(instrumento, entry)
     }
     const rows = Array.from(porEnfoque.entries()).map(([instrumento, { grados, asignaturas }]) => ({
       instrumento,
       instrumento_info_adicional: null,
-      grados: Array.from(grados),
-      asignaturas: Array.from(asignaturas),
+      // Determinístico por instrumento, mismo criterio que `gradoIdMock`/
+      // `asignaturaIdMock` — el mock no modela `TREFERENTE_CURRICULAR` real,
+      // pero necesita un `pk` estable para que `instrumentoLabelFromReferente`
+      // (`use-unidades-tabs-query.ts`) pueda matchear contra el `referente.id`
+      // que devuelve `/planeador/referente-curricular` para ESTE mismo
+      // instrumento (ver `REFERENTE_CURRICULAR_URL` más abajo).
+      pk_referente_curricular: hashString(`referente-${instrumento}`) % 1000000,
+      grados: Array.from(grados, ([pk, nombre]) => ({ pk, nombre })),
+      asignaturas: Array.from(asignaturas, ([pk, nombre]) => ({ pk, nombre })),
     }))
     return HttpResponse.json({ rows })
   }),
@@ -896,7 +912,17 @@ export const planeadorHandlers = [
                   : esEvaluativa
                     ? "La actividad es sumativa: hace falta un instrumento de evaluación."
                     : "La actividad no es sumativa: no hace falta instrumento.",
-                instrumentosPermitidos: ["Rúbrica", "Lista de cotejo", "Escala de valoración", "Otro"],
+                // `{pk, valor, etiqueta}`, no strings sueltos — mismo shape
+                // que `fn_actividad_instrumentos_permitidos` real (ver
+                // `toInstrumentosPermitidos` en `use-instrumento-evaluacion-
+                // catalog.ts`, que hace el mapeo a los strings que compara
+                // el resto del form).
+                instrumentosPermitidos: [
+                  { pk: 51998, valor: "RUBRICA", etiqueta: "Rúbrica" },
+                  { pk: 52008, valor: "LISTA_COTEJO", etiqueta: "Lista de cotejo" },
+                  { pk: 51983, valor: "ESCALA_VALORACION", etiqueta: "Escala de valoración" },
+                  { pk: 52007, valor: "OTRO", etiqueta: "Otro (personalizado)" },
+                ],
               },
               ponderacion: {
                 visible: ponderacionVisible,
@@ -947,10 +973,17 @@ export const planeadorHandlers = [
     })
 
     const { nivel1, nivel2 } = nivelEtiquetasMock(unidad?.enfoquePedagogico ?? "Evaluativo")
+    // Mismo instrumento y mismo `pk` determinístico que ya usa el handler de
+    // `UNIDAD_TABS_URL` para ESTE enfoque — sin esto `referente.id` (front)
+    // siempre daba `null` acá, y `instrumentoLabelFromReferente` no podía
+    // matchear contra ninguna pestaña real (ver su comentario en
+    // `use-unidades-tabs-query.ts`).
+    const instrumentoMock = unidad?.enfoquePedagogico === "Formativo" ? "Proyecto pedagógico" : "Unidad temática"
     return HttpResponse.json({
       rows: [
         {
           especificidad: 0,
+          pk_referente_curricular: hashString(`referente-${instrumentoMock}`) % 1000000,
           enfoque_valor: unidad?.enfoquePedagogico === "Formativo" ? "FORMATIVO" : "EVALUATIVO",
           tipo_evaluacion_valor: "CUANTITATIVA_CUALITATIVA",
           nivel_1_etiqueta: nivel1,
