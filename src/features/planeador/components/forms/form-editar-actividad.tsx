@@ -33,7 +33,6 @@ import { useUnidadDetalleQuery } from "@/features/planeador/api/query/use-unidad
 import { useUnidadReferenteQuery } from "@/features/planeador/api/query/use-unidad-referente-query"
 import { useUnidadesTabsQuery } from "@/features/planeador/api/query/use-unidades-tabs-query"
 import { UNIDAD_TAB_FALLBACK } from "@/features/planeador/components/planeador-tabs"
-import { articuloDefinido } from "@/features/planeador/lib/unidad-instrumento-label"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
 import { useConfiguracionActividadQuery } from "@/features/planeador/api/query/use-configuracion-actividad-query"
@@ -3581,7 +3580,10 @@ function CrearUnidadPopover({
   const [metodoCalculo, setMetodoCalculo] = React.useState<MetodoCalculo>("Ponderado")
   const [isSaving, setIsSaving] = React.useState(false)
   const { notify } = useNotify()
-  const crearLabel = `Crear nuevo${articuloDefinido(instrumentoLabel) === "el" ? "" : "a"} ${instrumentoLabel.toLowerCase()}`
+  // Sin "nuevo/nueva": el rótulo del instrumento lo define el referente
+  // curricular y concordar el artículo con él obligaba a una regla de género
+  // que ya venía dando "Crear nuevoa unidad temática".
+  const crearLabel = `Crear ${instrumentoLabel.toLowerCase()}`
 
   const { enunciados: enunciadosDisponibles, isPending: isPendingEnunciados } = useEnunciadosDbaQuery(
     gradoId,
@@ -3676,7 +3678,7 @@ function CrearUnidadPopover({
 
         <div className="scrollbar-slim flex max-h-[60vh] flex-col gap-5 overflow-y-auto p-4">
           <Field variant="outlined">
-            <FieldLabel>Nombre de la unidad</FieldLabel>
+            <FieldLabel>Nombre</FieldLabel>
             <Input
               placeholder="Agregar"
               value={nombre}
@@ -3756,7 +3758,7 @@ function CrearUnidadPopover({
             disabled={!nombre.trim() || isSaving}
           >
             {isSaving && <SpinnerIcon data-icon="inline-start" className="animate-spin" />}
-            {isSaving ? "Guardando..." : "Guardar unidad"}
+            {isSaving ? "Guardando..." : "Guardar"}
           </Button>
         </div>
       </PopoverContent>
