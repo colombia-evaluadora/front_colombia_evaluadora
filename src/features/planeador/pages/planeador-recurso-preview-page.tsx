@@ -7,7 +7,7 @@ import {
   TableScreenTitle,
 } from "@/components/layout/table-screen"
 import { Button } from "@/components/ui/button"
-import { ArrowLeftIcon } from "@/components/ui/icons"
+import { XIcon } from "@/components/ui/icons"
 
 import type { Recurso } from "@/features/planeador/api/types/actividad"
 import { RecursoPreview } from "@/features/planeador/components/recurso-preview"
@@ -47,14 +47,14 @@ export function PlaneadorRecursoPreviewPage() {
           // encabezado, en vez de flotar afuera con su propio margen.
           action={
             <Button
-              variant="ghost"
+              variant="fill"
               color="neutral"
               size="sm"
               type="button"
               onClick={() => router.history.back()}
             >
-              <ArrowLeftIcon data-icon="inline-start" />
-              Volver
+              <XIcon data-icon="inline-start" />
+              Cerrar
             </Button>
           }
         >
@@ -63,7 +63,16 @@ export function PlaneadorRecursoPreviewPage() {
       </TableScreenHeader>
 
       <TableScreenBody>
-        <RecursoPreview recurso={recurso} />
+        {/* `TableScreenBody` crece (`grow`) para llenar el alto del viewport
+            —tiene sentido para una tabla, que se estira con sus filas—, pero
+            los estados vacíos (`RecursoPreviewVacio`/`EnlaceExterno`, unas
+            pocas líneas) quedaban pegados arriba con un vacío enorme debajo.
+            Centrar el contenido adentro de un `min-h` (no un `h` fijo:
+            YouTube/DocViewer ya traen su propio alto real y no deberían
+            recortarse) resuelve los dos casos con la misma envoltura. */}
+        <div className="flex min-h-[60vh] flex-col items-center justify-center">
+          <RecursoPreview recurso={recurso} />
+        </div>
       </TableScreenBody>
     </TableScreen>
   )
