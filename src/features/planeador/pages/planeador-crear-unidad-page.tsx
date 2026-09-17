@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Link, useNavigate } from "@tanstack/react-router"
+import { Link, useNavigate, useSearch } from "@tanstack/react-router"
 
 import { Button } from "@/components/ui/button"
 import { NoticeOutlet, NoticeProvider, queueNotice, useNotify } from "@/components/notice/notice-context"
@@ -15,6 +15,7 @@ import { paths } from "@/config/paths"
 import { getErrorMessage } from "@/lib/api-client"
 
 import { useCreateUnidad } from "@/features/planeador/api/mutations/create-unidad"
+import { useUnidadesTabsQuery } from "@/features/planeador/api/query/use-unidades-tabs-query"
 import {
   UNIDAD_DRAFT_VACIO,
   UnidadInfoGeneralFields,
@@ -27,6 +28,7 @@ import {
   mensajeUnidadGuardada,
   useUnidadInstrumentoLabel,
 } from "@/features/planeador/lib/unidad-instrumento-label"
+import { planeadorUnidadCrearRoute } from "@/router"
 
 const FORM_ID = "crear-unidad-form"
 
@@ -52,10 +54,26 @@ function PlaneadorCrearUnidadPageContent() {
   const navigate = useNavigate()
   const { notify } = useNotify()
   const [draft, setDraft] = useState<UnidadDraft>(UNIDAD_DRAFT_VACIO)
+
+  // `?instrumento=` llega cuando se entra desde el botón "Agregar
+  // {instrumento}" de una pestaña (`planeador-unidades-page.tsx`) — permite
+  // saber DESDE EL PRIMER RENDER qué instrumento se está creando, sin
+  // esperar a que el docente elija un Grado (que es lo único de lo que
+  // `useUnidadInstrumentoLabel` puede derivarlo). Con esa pestaña identificada
+  // también se acotan los `<Select>` de Grado/Asignatura a los que caen bajo
+  // ESE instrumento (`tabDesdeAgregar.grados`/`.asignaturas`, ver
+  // `UnidadInfoGeneralFields`) en vez de todo el catálogo del docente.
+  const search = useSearch({ from: planeadorUnidadCrearRoute.id })
+  const { data: unidadTabs } = useUnidadesTabsQuery()
+  const tabDesdeAgregar = unidadTabs?.find((tab) => tab.instrumento === search.instrumento)
   // Rótulo dinámico ("Unidad temática"/"Proyecto pedagógico"/…, ver
-  // `planeador-tabs.tsx`) para el mensaje de éxito — el mismo texto fijo
-  // "Unidad temática" no tenía sentido para un docente de Preescolar.
-  const instrumento = useUnidadInstrumentoLabel(draft.gradoId)
+  // `planeador-tabs.tsx`) para el título y el mensaje de éxito — el mismo
+  // texto fijo "Unidad temática" no tenía sentido para un docente de
+  // Preescolar. Sin `?instrumento=` (entrada directa a la URL, sin pasar por
+  // el botón "Agregar") cae al criterio anterior, derivado del Grado ya
+  // elegido en el form.
+  const instrumentoPorGrado = useUnidadInstrumentoLabel(draft.gradoId)
+  const instrumento = tabDesdeAgregar?.instrumento ?? instrumentoPorGrado
   // El título de la pantalla y su descripción venían fijos en
   // "unidad"/"unidad temática", igual que el resto de textos de acá antes de
   // este cambio. "Crear X" (no "Nuevo/a X") evita tener que concordar
@@ -124,6 +142,7 @@ function PlaneadorCrearUnidadPageContent() {
               <UnidadInfoGeneralFields
                 draft={draft}
                 onChange={(patch) => setDraft((prev) => ({ ...prev, ...patch }))}
+                tab={tabDesdeAgregar}
               />
             }
           />

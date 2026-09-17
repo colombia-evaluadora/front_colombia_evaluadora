@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
 import type { Actividad } from "@/features/planeador/api/types/actividad"
+import { toInstrumentosPermitidos } from "@/features/planeador/api/query/use-instrumento-evaluacion-catalog"
 
 /**
  * `GET /planeador/unidades/:id/configuracion-actividad?ES_EVALUATIVA=S|N`
@@ -20,8 +21,17 @@ import type { Actividad } from "@/features/planeador/api/types/actividad"
  */
 type CamposDisponibles = NonNullable<Actividad["camposDisponibles"]>
 
+/** Misma fila cruda que `GET .../actividades/:id` — `evaluacion.
+ *  instrumentosPermitidos` viene como `{pk, valor, etiqueta}[]`, no
+ *  `string[]` (ver `toInstrumentosPermitidos`). */
+type CamposDisponiblesRaw = Omit<CamposDisponibles, "evaluacion"> & {
+  evaluacion: Omit<CamposDisponibles["evaluacion"], "instrumentosPermitidos"> & {
+    instrumentosPermitidos: Parameters<typeof toInstrumentosPermitidos>[0]
+  }
+}
+
 interface ConfiguracionActividadRow {
-  configuracion: { campos_disponibles: CamposDisponibles }
+  configuracion: { campos_disponibles: CamposDisponiblesRaw }
 }
 
 /** Mismo blindaje de forma que `use-unidad-referente-query.ts`: tolera
@@ -42,7 +52,15 @@ async function fetchConfiguracionActividad(
   const body = await api.get(
     `/eval-col/planeador/unidades/${unidadId}/configuracion-actividad?ES_EVALUATIVA=${esEvaluativa ? "S" : "N"}`,
   )
-  return firstRow(body)?.configuracion?.campos_disponibles
+  const campos = firstRow(body)?.configuracion?.campos_disponibles
+  if (!campos) return undefined
+  return {
+    ...campos,
+    evaluacion: {
+      ...campos.evaluacion,
+      instrumentosPermitidos: toInstrumentosPermitidos(campos.evaluacion.instrumentosPermitidos),
+    },
+  }
 }
 
 export const configuracionActividadQueryKey = (unidadId: number, esEvaluativa: boolean) =>

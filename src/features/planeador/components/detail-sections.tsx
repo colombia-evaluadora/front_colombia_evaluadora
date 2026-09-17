@@ -9,7 +9,10 @@ import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
 import { useUnidadDetalleQuery } from "@/features/planeador/api/query/use-unidades-query"
 import { useReferenteCurricularQuery } from "@/features/planeador/api/query/use-referente-curricular-query"
-import { resolveInstrumentoLabel, useUnidadesTabsQuery } from "@/features/planeador/api/query/use-unidades-tabs-query"
+import {
+  instrumentoLabelFromReferente,
+  useUnidadesTabsQuery,
+} from "@/features/planeador/api/query/use-unidades-tabs-query"
 import { useAgregarEvidenciaActividad } from "@/features/planeador/api/mutations/agregar-evidencia-actividad"
 import { UNIDAD_TAB_FALLBACK } from "@/features/planeador/components/planeador-tabs"
 import {
@@ -280,7 +283,9 @@ function UnidadFichaYEvidenciasDetalle({
   // actividad, no de la unidad.
   const { data: referente } = useReferenteCurricularQuery(actividad.gradoId, actividad.asignaturaId)
   const { data: unidadTabs } = useUnidadesTabsQuery()
-  const instrumentoLabel = resolveInstrumentoLabel(actividad.gradoId, unidadTabs, UNIDAD_TAB_FALLBACK)
+  // Por `referente.id` (grado+ASIGNATURA), no por `gradoId` a secas — ver el
+  // comentario de `instrumentoLabelFromReferente` en `use-unidades-tabs-query.ts`.
+  const instrumentoLabel = instrumentoLabelFromReferente(referente?.id, unidadTabs, UNIDAD_TAB_FALLBACK)
   // Mismo criterio que `UnidadFichaYEvidencias` en `form-editar-actividad.tsx`:
   // solo los enunciados que la UNIDAD ya relacionó (`unidad.enunciadosDba`),
   // no el catálogo entero del referente.

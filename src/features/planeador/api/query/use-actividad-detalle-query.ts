@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import { evalCol } from "@/lib/eval-col-client"
 import { env } from "@/config/env"
 import { estadoDerivadoToStatus } from "@/features/planeador/lib/estado-derivado"
+import { toInstrumentosPermitidos } from "@/features/planeador/api/query/use-instrumento-evaluacion-catalog"
 import { fetchTipoRecursoOptions, type TipoRecursoOption } from "@/features/planeador/api/query/use-tipo-recurso-catalog"
 import { fetchTipoAdaptacionOptions, type TipoAdaptacionOption } from "@/features/planeador/api/query/use-tipo-adaptacion-catalog"
 import { fetchAplicaAOptions, type AplicaAOption } from "@/features/planeador/api/query/use-aplica-a-catalog"
@@ -104,9 +105,19 @@ interface CampoDisponibleRow {
   motivo: string
 }
 
+/** `evaluacion.instrumentosPermitidos` NO es un array de strings —es un
+ *  array de `{pk, valor, etiqueta}` (`fn_actividad_instrumentos_permitidos`,
+ *  confirmado real): `valor` es el código estable de `TLISTA_VALOR`
+ *  (`RUBRICA`/`LISTA_COTEJO`/…), `etiqueta` su nombre. Sin `toInstrumentos
+ *  Permitidos` (ver `use-instrumento-evaluacion-catalog.ts`) comparando el
+ *  array crudo contra los strings de `useInstrumentoEvaluacionCatalogQuery`
+ *  nunca matcheaba nada y el `<Select>` de "Instrumento de evaluación"
+ *  quedaba vacío para cualquier referente que restringiera instrumentos. */
 interface CamposDisponiblesRow {
   criterio: CampoDisponibleRow
-  evaluacion: CampoDisponibleRow & { instrumentosPermitidos: string[] }
+  evaluacion: CampoDisponibleRow & {
+    instrumentosPermitidos: { pk?: number; valor?: string; etiqueta?: string }[]
+  }
   ponderacion: CampoDisponibleRow & { modo: string | null }
 }
 
@@ -129,8 +140,27 @@ function toDateOnly(value: string | null): string {
  * panel de detalle (se puede volver a marcar sin problema — el mock/backend
  * ya tolera un alta repetida sin duplicar).
  */
-function evidenciasIdsFromUnidadConfiguracion(_raw: unknown): number[] {
-  return []
+/**
+ * `unidad_configuracion.enunciados[].evidencias[]` ahora trae `yaRelacionada`
+ * (`fn_actividad_unidad_configuracion`, actualizada contra `TACTIVIDAD_
+ * EVIDENCIA`, confirmado real en el servidor de test) — antes cada
+ * evidencia solo traía `{pk, texto}`, sin ningún flag de "ya vinculada a
+ * esta actividad", así que el checklist siempre arrancaba sin nada tildado
+ * aunque el docente ya hubiera guardado.
+ */
+function evidenciasIdsFromUnidadConfiguracion(raw: unknown): number[] {
+  const enunciados = (raw as { enunciados?: unknown } | null | undefined)?.enunciados
+  if (!Array.isArray(enunciados)) return []
+  const ids: number[] = []
+  for (const enunciado of enunciados) {
+    const evidencias = (enunciado as { evidencias?: unknown } | null)?.evidencias
+    if (!Array.isArray(evidencias)) continue
+    for (const evidencia of evidencias) {
+      const e = evidencia as { pk?: unknown; yaRelacionada?: unknown }
+      if (e.yaRelacionada === true && typeof e.pk === "number") ids.push(e.pk)
+    }
+  }
+  return ids
 }
 
 /**
@@ -298,7 +328,15 @@ function toActividadDetalle(
     adaptaciones: row.adaptaciones.map((raw) => adaptacionFromRaw(raw, tipoAdaptacionOptions, aplicaAOptions)),
     asignaturaId: row.fk_tasignatura ?? undefined,
     grupoId: row.fk_tgrupo ?? undefined,
-    camposDisponibles: row.campos_disponibles ?? undefined,
+    camposDisponibles: row.campos_disponibles
+      ? {
+          ...row.campos_disponibles,
+          evaluacion: {
+            ...row.campos_disponibles.evaluacion,
+            instrumentosPermitidos: toInstrumentosPermitidos(row.campos_disponibles.evaluacion.instrumentosPermitidos),
+          },
+        }
+      : undefined,
   }
 }
 
