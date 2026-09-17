@@ -334,6 +334,8 @@ function actividadFromImportRow(raw: Record<string, unknown>, id: number): Activ
     unidad: { id: 0, nombre: String(raw.unidad ?? "") },
     evidenciasIds: [],
     criteriosUnidadIds: [],
+    matriculasIds: [],
+    asignarTodoElGrupo: true,
     asignatura: String(raw.asignatura ?? ""),
     grado: String(raw.grado ?? ""),
     grupo: String(raw.grupo ?? ""),
