@@ -520,7 +520,16 @@ function UnidadAsociadaSection({
             // del docente) dejaba este select deshabilitado sin motivo.
             const grado = form.getFieldValue("grado")
             const asignatura = form.getFieldValue("asignatura")
-            const hasGradoAsignatura = Boolean(grado && asignatura)
+            // Misma condición que `CrearUnidadPopover` (gradoId != null &&
+            // asignaturaId != null), no `Boolean(grado && asignatura)`. Los
+            // labels pueden llegar solos desde el detalle real (que no
+            // siempre trae los ids, ver el comentario del `useEffect` en
+            // `AsignaturaGradoSection`); chequear con strings habilitaba el
+            // select de unidad y dejaba el `+` del popover bloqueado — o al
+            // revés, según el orden de la query de catálogos.
+            const gradoId = form.getFieldValue("gradoId")
+            const asignaturaId = form.getFieldValue("asignaturaId")
+            const hasGradoAsignatura = gradoId != null && asignaturaId != null
             // `grado`/`asignatura` y `UnidadTematica.grado`/`.asignatura`
             // salen ahora del mismo origen real (`docentes/grupos`/
             // `docentes/grado-asignatura`), así que se comparan directo —
@@ -532,7 +541,6 @@ function UnidadAsociadaSection({
             // Instrumento (rótulo real) del Grado ya elegido — ver el
             // comentario sobre `unidadTabs` más arriba. Sin Grado/Asignatura
             // todavía elegidos cae al mismo fallback que `PlaneadorTabs`.
-            const gradoId = form.getFieldValue("gradoId")
             const instrumentoLabel =
               (gradoId != null && unidadTabs?.find((t) => t.gradoIds.includes(gradoId))?.instrumento) ||
               UNIDAD_TAB_FALLBACK
@@ -1349,8 +1357,46 @@ function RecursoForm({
             <Input
               type={draft.tipo === "Archivo" ? "file" : "url"}
               placeholder={fuentePlaceholder}
-              value={draft.url}
-              onChange={(e) => onChange({ url: e.target.value })}
+              // `<input type="file">` no acepta `value` programático (el
+              // browser solo permite setearlo a `""` por seguridad —
+              // cualquier otro valor tira `InvalidStateError` y revienta
+              // el árbol). El archivo se controla vía `e.target.files`
+              // dentro de `onChange`, no hace falta pasarle `value`.
+              {...(draft.tipo === "Archivo" ? {} : { value: draft.url })}
+              onChange={(e) => {
+                // `<input type="file">` expone el archivo en
+                // `e.target.files[0]`, pero `e.target.value` es el fake
+                // path (`C:\fakepath\...`) que el browser pone por
+                // seguridad — no sirve para reproducir nada. Hay que
+                // armar un blob URL a partir del `File` real para que el
+                // preview tenga bytes que mostrarle al `<audio>` /
+                // `<video>` / visor de PDF.
+                if (draft.tipo === "Archivo") {
+                  const file = e.target.files?.[0]
+                  // Liberar el blob anterior antes de pisarlo — si el
+                  // usuario cambia de archivo no queremos dos blobs
+                  // vivos del mismo slot.
+                  if (draft.url.startsWith("blob:")) {
+                    URL.revokeObjectURL(draft.url)
+                  }
+                  if (!file) {
+                    onChange({ url: "", fuente: "" })
+                    return
+                  }
+                  const blobUrl = URL.createObjectURL(file)
+                  // El form guarda el nombre del archivo en `fuente` y se
+                  // lo pasa al resolver, que lo usa como fallback para
+                  // detectar la extensión — los blob URLs no tienen
+                  // extensión en el path y no queríamos meterla en el
+                  // hash (algunos parsers se confunden con el `#`).
+                  onChange({
+                    url: blobUrl,
+                    fuente: file.name,
+                  })
+                } else {
+                  onChange({ url: e.target.value })
+                }
+              }}
               className={FuenteIcon ? "pl-9" : undefined}
             />
           </div>
