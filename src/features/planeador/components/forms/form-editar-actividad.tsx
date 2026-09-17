@@ -11,7 +11,7 @@ import { DatePicker } from "@/components/date-picker"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { cn } from "@/lib/utils"
 import { parseDateValue, formatDateValue } from "@/lib/date-value"
-import { toDigitsOnly, toDigitsOrRangeInput } from "@/lib/text-input"
+import { toDigitsOrRangeInput, toPositiveDigitsInput } from "@/lib/text-input"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import {
@@ -31,7 +31,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useUnidadDetalleQuery } from "@/features/planeador/api/query/use-unidades-query"
 import { useUnidadReferenteQuery } from "@/features/planeador/api/query/use-unidad-referente-query"
-import { useUnidadesTabsQuery } from "@/features/planeador/api/query/use-unidades-tabs-query"
+import { resolveInstrumentoLabel, useUnidadesTabsQuery } from "@/features/planeador/api/query/use-unidades-tabs-query"
 import { UNIDAD_TAB_FALLBACK } from "@/features/planeador/components/planeador-tabs"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
@@ -558,9 +558,7 @@ function UnidadAsociadaSection({
             // Instrumento (rótulo real) del Grado ya elegido — ver el
             // comentario sobre `unidadTabs` más arriba. Sin Grado/Asignatura
             // todavía elegidos cae al mismo fallback que `PlaneadorTabs`.
-            const instrumentoLabel =
-              (gradoId != null && unidadTabs?.find((t) => t.gradoIds.includes(gradoId))?.instrumento) ||
-              UNIDAD_TAB_FALLBACK
+            const instrumentoLabel = resolveInstrumentoLabel(gradoId, unidadTabs, UNIDAD_TAB_FALLBACK)
 
             return (
               <form.Field name="unidad">
@@ -787,11 +785,22 @@ function UnidadFichaYEvidencias({
   criteriosDisabledIds: number[]
 }) {
   const { data: unidad } = useUnidadDetalleQuery(unidadId)
-  // El árbol de evidencias a ofrecer sale del referente curricular de
-  // GRADO + ASIGNATURA (`GET /planeador/referente-curricular`), no de la
-  // unidad — cambiar de asignatura cambia el referente y con él las
-  // evidencias disponibles, sin importar qué unidad siga elegida.
+  // El árbol COMPLETO de nivel 1 (enunciados) + nivel 2 (evidencias) sale
+  // del referente curricular de GRADO + ASIGNATURA (`GET /planeador/
+  // referente-curricular`) — pero acá solo interesan los enunciados que la
+  // UNIDAD ya relacionó (`unidad.enunciadosDba`, elegidos en
+  // `UnidadInfoGeneralFields`/`CrearUnidadPopover`), no el catálogo entero:
+  // esta actividad marca evidencias de un enunciado que su unidad ya
+  // adoptó, no cualquier enunciado del nivel educativo.
   const { data: referente } = useReferenteCurricularQuery(gradoId, asignaturaId)
+  const { data: unidadTabs } = useUnidadesTabsQuery()
+  const instrumentoLabel = resolveInstrumentoLabel(gradoId, unidadTabs, UNIDAD_TAB_FALLBACK)
+  const enunciadosDeLaUnidad =
+    referente && unidad
+      ? referente.enunciados.filter((enunciado) =>
+          unidad.enunciadosDba.some((elegido) => elegido.id === enunciado.id),
+        )
+      : []
 
   return (
     <div className="flex flex-col gap-4">
@@ -801,11 +810,12 @@ function UnidadFichaYEvidencias({
         objetivos={unidad?.objetivos ?? []}
         contenidos={unidad?.contenidos ?? []}
       />
-      {referente && referente.enunciados.length > 0 && (
+      {referente && enunciadosDeLaUnidad.length > 0 && (
         <EnunciadosEvidenciasChecklist
+          instrumentoLabel={instrumentoLabel}
           nivel1Etiqueta={referente.nivel1Etiqueta}
           nivel2Etiqueta={referente.nivel2Etiqueta}
-          enunciados={referente.enunciados}
+          enunciados={enunciadosDeLaUnidad}
           seleccionadas={seleccionadas}
           onToggle={onToggle}
           disabledIds={disabledIds}
@@ -1652,13 +1662,15 @@ function ProgramacionSection({ form }: { form: FormActividad }) {
                   mismo criterio que el resto de la app (ver `text-input.ts`)
                   — un `number` acepta notación como `1e5` y no sirve para
                   un conteo simple. Solo dígitos, sin la unidad ("horas")
-                  mezclada en el valor. */}
+                  mezclada en el valor, a lo sumo 3 (hasta 999) y sin `0`
+                  (`toPositiveDigitsInput`): "0 horas/sesiones" no es una
+                  duración válida. */}
               <Input
                 id={field.name}
                 inputMode="numeric"
                 placeholder="Ej: 20"
                 value={field.state.value}
-                onChange={(e) => field.handleChange(toDigitsOnly(e.target.value))}
+                onChange={(e) => field.handleChange(toPositiveDigitsInput(e.target.value, 3))}
               />
             </Field>
           )}
@@ -3648,6 +3660,13 @@ function CrearUnidadPopover({
     isPending: isPendingEnunciados,
   } = useEnunciadosDbaQuery(gradoId, asignaturaId)
 
+  // Mismo criterio que `UnidadInfoGeneralFields`: una unidad de enfoque
+  // Formativo no tiene "Método de cálculo" (esa unidad no admite actividades
+  // sumativas, ver el comentario de `UnidadAsociadaSection` más arriba), así
+  // que el campo no tiene sentido mostrarlo acá tampoco.
+  const { data: referenteDeGradoAsignatura } = useReferenteCurricularQuery(gradoId, asignaturaId)
+  const esFormativa = referenteDeGradoAsignatura?.esFormativo ?? false
+
   const hasGradoAsignatura = gradoId != null && asignaturaId != null
 
   const reset = () => {
@@ -3794,24 +3813,26 @@ function CrearUnidadPopover({
             />
           </div>
 
-          <Field variant="outlined" className="border-t pt-4">
-            <FieldLabel>Método de cálculo</FieldLabel>
-            <Select
-              value={metodoCalculo}
-              onValueChange={(v) => v && setMetodoCalculo(v as MetodoCalculo)}
-            >
-              <SelectTrigger>
-                <SelectValue>{(v) => METODO_CALCULO_INFO[v as MetodoCalculo]?.label ?? v}</SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {METODO_CALCULO_OPTIONS.map((option) => (
-                  <SelectItem key={option} value={option}>
-                    {METODO_CALCULO_INFO[option].label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Field>
+          {!esFormativa && (
+            <Field variant="outlined" className="border-t pt-4">
+              <FieldLabel>Método de cálculo</FieldLabel>
+              <Select
+                value={metodoCalculo}
+                onValueChange={(v) => v && setMetodoCalculo(v as MetodoCalculo)}
+              >
+                <SelectTrigger>
+                  <SelectValue>{(v) => METODO_CALCULO_INFO[v as MetodoCalculo]?.label ?? v}</SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {METODO_CALCULO_OPTIONS.map((option) => (
+                    <SelectItem key={option} value={option}>
+                      {METODO_CALCULO_INFO[option].label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+          )}
         </div>
 
         <div className="flex justify-end border-t p-4">

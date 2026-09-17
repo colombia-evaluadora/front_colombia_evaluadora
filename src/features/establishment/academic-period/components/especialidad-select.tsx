@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button"
 import { Input, inputTriggerVariants, inputVariants, useInputVariant } from "@/components/ui/input"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 import { getErrorMessage } from "@/lib/api-client"
 
@@ -163,31 +164,45 @@ export function EspecialidadSelect({
                       }}
                       className="h-7 min-w-0 flex-1 px-2 text-sm"
                     />
-                    <Button
-                      type="button"
-                      color="primary"
-                      size="icon-xs"
-                      className="size-5 [&_svg:not([class*='size-'])]:size-3"
-                      aria-label="Guardar cambios"
-                      disabled={updateEnfasis.isPending || !editingName.trim()}
-                      onClick={saveEdit}
-                    >
-                      {updateEnfasis.isPending ? (
-                        <SpinnerIcon className="animate-spin" />
-                      ) : (
-                        <CheckIcon />
-                      )}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon-xs"
-                      className="size-5 [&_svg:not([class*='size-'])]:size-3"
-                      aria-label="Cancelar edición"
-                      onClick={() => setEditingId(null)}
-                    >
-                      <XIcon />
-                    </Button>
+                    <Tooltip>
+                      <TooltipTrigger
+                        render={
+                          <Button
+                            type="button"
+                            color="primary"
+                            size="icon-xs"
+                            className="size-5 [&_svg:not([class*='size-'])]:size-3"
+                            aria-label="Guardar cambios"
+                            disabled={updateEnfasis.isPending || !editingName.trim()}
+                            onClick={saveEdit}
+                          />
+                        }
+                      >
+                        {updateEnfasis.isPending ? (
+                          <SpinnerIcon className="animate-spin" />
+                        ) : (
+                          <CheckIcon />
+                        )}
+                      </TooltipTrigger>
+                      <TooltipContent>Guardar cambios</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger
+                        render={
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon-xs"
+                            className="size-5 [&_svg:not([class*='size-'])]:size-3"
+                            aria-label="Cancelar edición"
+                            onClick={() => setEditingId(null)}
+                          />
+                        }
+                      >
+                        <XIcon />
+                      </TooltipTrigger>
+                      <TooltipContent>Cancelar edición</TooltipContent>
+                    </Tooltip>
                   </div>
                 )
               }
@@ -210,29 +225,43 @@ export function EspecialidadSelect({
                   </button>
                   {isEditable && (
                     <div className="flex items-center gap-0.5">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        color="neutral"
-                        size="icon-xs"
-                        className="size-5 [&_svg:not([class*='size-'])]:size-3"
-                        aria-label={`Editar ${option.label}`}
-                        onClick={() => startEdit(option.id, option.label)}
-                      >
-                        <PencilIcon />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        color="neutral"
-                        size="icon-xs"
-                        className="size-5 [&_svg:not([class*='size-'])]:size-3"
-                        aria-label={`Eliminar ${option.label}`}
-                        disabled={deleteEnfasis.isPending}
-                        onClick={() => deleteEnfasis.mutate(option.id)}
-                      >
-                        <TrashIcon />
-                      </Button>
+                      <Tooltip>
+                        <TooltipTrigger
+                          render={
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              color="neutral"
+                              size="icon-xs"
+                              className="size-5 [&_svg:not([class*='size-'])]:size-3"
+                              aria-label={`Editar ${option.label}`}
+                              onClick={() => startEdit(option.id, option.label)}
+                            />
+                          }
+                        >
+                          <PencilIcon />
+                        </TooltipTrigger>
+                        <TooltipContent>{`Editar ${option.label}`}</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger
+                          render={
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              color="neutral"
+                              size="icon-xs"
+                              className="size-5 [&_svg:not([class*='size-'])]:size-3"
+                              aria-label={`Eliminar ${option.label}`}
+                              disabled={deleteEnfasis.isPending}
+                              onClick={() => deleteEnfasis.mutate(option.id)}
+                            />
+                          }
+                        >
+                          <TrashIcon />
+                        </TooltipTrigger>
+                        <TooltipContent>{`Eliminar ${option.label}`}</TooltipContent>
+                      </Tooltip>
                     </div>
                   )}
                 </div>
@@ -255,20 +284,27 @@ export function EspecialidadSelect({
                   aria-label="Nuevo énfasis"
                 />
                 <InputGroupAddon align="inline-end">
-                  <Button
-                    type="button"
-                    color="primary"
-                    size="icon-sm"
-                    aria-label="Agregar énfasis"
-                    disabled={!nuevo.trim() || createEnfasis.isPending}
-                    onClick={agregar}
-                  >
-                    {createEnfasis.isPending ? (
-                      <SpinnerIcon className="animate-spin" />
-                    ) : (
-                      <PlusIcon weight="bold" />
-                    )}
-                  </Button>
+                  <Tooltip>
+                    <TooltipTrigger
+                      render={
+                        <Button
+                          type="button"
+                          color="primary"
+                          size="icon-sm"
+                          aria-label="Agregar énfasis"
+                          disabled={!nuevo.trim() || createEnfasis.isPending}
+                          onClick={agregar}
+                        />
+                      }
+                    >
+                      {createEnfasis.isPending ? (
+                        <SpinnerIcon className="animate-spin" />
+                      ) : (
+                        <PlusIcon weight="bold" />
+                      )}
+                    </TooltipTrigger>
+                    <TooltipContent>Agregar énfasis</TooltipContent>
+                  </Tooltip>
                 </InputGroupAddon>
               </InputGroup>
             </div>

@@ -1,5 +1,4 @@
 import * as React from "react"
-import { useNavigate } from "@tanstack/react-router"
 
 import { TableScreen, TableScreenBody, TableScreenHeader, TableScreenTitle } from "@/components/layout/table-screen"
 import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
@@ -34,8 +33,8 @@ import {
   XIcon,
 } from "@/components/ui/icons"
 import { paths } from "@/config/paths"
+import { gestionAcademicaInformesRoute } from "@/router"
 
-import { useDocenteGruposQuery } from "@/features/planeador/api/query/use-docente-grupos-query"
 import { useGuardarInformeMutation } from "@/features/academic-management/reports/api/mutations/use-guardar-informe"
 import {
   useEliminarObservacionMutation,
@@ -45,9 +44,11 @@ import {
   useCambiosPendientesQuery,
   usePlanillasPendientesQuery,
 } from "@/features/academic-management/reports/api/query/use-alertas-query"
+import { useGruposPeriodoQuery } from "@/features/academic-management/reports/api/query/use-grupos-periodo-query"
 import { useHistorialQuery } from "@/features/academic-management/reports/api/query/use-historial-query"
 import { useInformeGrupoQuery } from "@/features/academic-management/reports/api/query/use-informe-grupo-query"
 import { usePeriodosInformeQuery } from "@/features/academic-management/reports/api/query/use-periodos-informe-query"
+import type { InformesSearch } from "@/features/academic-management/reports/api/schema"
 import type { FilaInforme } from "@/features/academic-management/reports/api/types"
 import {
   agruparPorEstudiante,
@@ -209,58 +210,95 @@ function GrupoTabContent({
 
 function ReportsPageContent() {
   const { notify } = useNotify()
-  const navigate = useNavigate()
+  const navigate = gestionAcademicaInformesRoute.useNavigate()
+  const search = gestionAcademicaInformesRoute.useSearch()
 
-  const [filtros, setFiltros] = React.useState<FiltrosInforme>({
-    sedeId: null,
-    anio: null,
-    jornada: null,
-  })
+  // `replace`: marcar un período o cambiar de pestaña no es un paso de
+  // navegación, y con `push` el botón atrás tendría que deshacer clic por clic.
+  const setSearch = React.useCallback(
+    (cambios: Partial<InformesSearch>) => {
+      navigate({ search: (prev) => ({ ...prev, ...cambios }), replace: true })
+    },
+    [navigate],
+  )
 
-  const periodosQuery = usePeriodosInformeQuery({
-    anio: filtros.anio ?? undefined,
-    sedeId: filtros.sedeId ?? undefined,
-  })
-  const gruposQuery = useDocenteGruposQuery()
+  const filtros = React.useMemo<FiltrosInforme>(
+    () => ({
+      sedeId: search.sede ?? null,
+      anio: search.anio ?? null,
+      jornadaId: search.jornada ?? null,
+    }),
+    [search.sede, search.anio, search.jornada],
+  )
 
-  const [periodos, setPeriodos] = React.useState<number[]>([])
-  const [gruposAbiertosIds, setGruposAbiertosIds] = React.useState<number[]>([])
-  const [activeTab, setActiveTab] = React.useState("")
+  const setFiltros = React.useCallback(
+    (nuevos: FiltrosInforme) => {
+      setSearch({
+        sede: nuevos.sedeId ?? undefined,
+        anio: nuevos.anio ?? undefined,
+        jornada: nuevos.jornadaId ?? undefined,
+      })
+    },
+    [setSearch],
+  )
+
+  const periodosQuery = usePeriodosInformeQuery(filtros)
+  const gruposQuery = useGruposPeriodoQuery(filtros)
+
+  const periodos = React.useMemo(() => search.periodos ?? [], [search.periodos])
+  const gruposAbiertosIds = React.useMemo(() => search.grupos ?? [], [search.grupos])
+  const activeTab = search.tab != null ? String(search.tab) : ""
+
+  const setPeriodos = React.useCallback(
+    (ids: number[]) => setSearch({ periodos: ids.length > 0 ? ids : undefined }),
+    [setSearch],
+  )
+  const setActiveTab = React.useCallback(
+    (id: number | undefined) => setSearch({ tab: id }),
+    [setSearch],
+  )
+  const setGruposAbiertos = React.useCallback(
+    (ids: number[], tab?: number) =>
+      setSearch({ grupos: ids.length > 0 ? ids : undefined, ...(tab != null && { tab }) }),
+    [setSearch],
+  )
+
   const [historialAbierto, setHistorialAbierto] = React.useState(false)
   const [seleccionPorGrupo, setSeleccionPorGrupo] = React.useState<Record<number, Set<number>>>({})
   const [observacionAbierta, setObservacionAbierta] = React.useState<FilaInforme | null>(null)
 
-  // La jornada no es parámetro de `/informes/periodos`: se filtra acá, y un
-  // período sin jornada aplica a todas.
-  const periodosDisponibles = React.useMemo(() => {
-    const todos = periodosQuery.data ?? []
-    if (!filtros.jornada) return todos
-    return todos.filter((p) => p.jornada == null || p.jornada === filtros.jornada)
-  }, [periodosQuery.data, filtros.jornada])
+  const periodosDisponibles = React.useMemo(() => periodosQuery.data ?? [], [periodosQuery.data])
   const grupos = React.useMemo(() => gruposQuery.data ?? [], [gruposQuery.data])
 
   // Cambiar de sede/año/jornada deja seleccionados períodos que ya no están en
   // la lista; si se vacía, el arranque vuelve a sembrar.
   React.useEffect(() => {
     if (periodosDisponibles.length === 0) return
-    setPeriodos((prev) => {
-      const validos = prev.filter((id) => periodosDisponibles.some((p) => p.id === id))
-      return validos.length === prev.length ? prev : validos
-    })
-  }, [periodosDisponibles])
-
-  // Arranque: el período en curso (o el primero que haya) y la primera pestaña.
-  React.useEffect(() => {
-    if (periodos.length > 0 || periodosDisponibles.length === 0) return
+    const validos = periodos.filter((id) => periodosDisponibles.some((p) => p.id === id))
+    if (validos.length === periodos.length && validos.length > 0) return
+    // Si no queda ninguno vigente se siembra el período en curso.
     const enCurso = periodosDisponibles.filter((p) => p.enCurso).map((p) => p.id)
-    setPeriodos(enCurso.length > 0 ? enCurso : [periodosDisponibles[0].id])
-  }, [periodosDisponibles, periodos.length])
+    setPeriodos(
+      validos.length > 0 ? validos : enCurso.length > 0 ? enCurso : [periodosDisponibles[0].id],
+    )
+  }, [periodosDisponibles, periodos, setPeriodos])
 
   React.useEffect(() => {
-    if (gruposAbiertosIds.length > 0 || grupos.length === 0) return
-    setGruposAbiertosIds([grupos[0].grupoId])
-    setActiveTab(String(grupos[0].grupoId))
-  }, [grupos, gruposAbiertosIds.length])
+    if (grupos.length === 0) return
+    const vigentes = gruposAbiertosIds.filter((id) => grupos.some((g) => g.grupoId === id))
+    const abiertos = vigentes.length > 0 ? vigentes : [grupos[0].grupoId]
+    const tabVigente = abiertos.includes(Number(activeTab)) ? undefined : abiertos[0]
+    if (vigentes.length === gruposAbiertosIds.length && vigentes.length > 0 && tabVigente == null) {
+      return
+    }
+    setGruposAbiertos(abiertos, tabVigente)
+  }, [grupos, gruposAbiertosIds, activeTab, setGruposAbiertos])
+
+  // La terna resuelve el período académico: sin ella los endpoints responden
+  // 403/404, así que las queries van `enabled: false` — y una query apagada
+  // queda en `isPending`, que sin este corte se vería como "cargando" eterno.
+  const cascadaCompleta =
+    filtros.sedeId != null && filtros.anio != null && filtros.jornadaId != null
 
   const gruposAbiertos = grupos.filter((g) => gruposAbiertosIds.includes(g.grupoId))
   const gruposDisponibles = grupos.filter((g) => !gruposAbiertosIds.includes(g.grupoId))
@@ -357,17 +395,17 @@ function ReportsPageContent() {
   }
 
   function handleAgregarGrupo(grupoId: number) {
-    setGruposAbiertosIds((prev) => [...prev, grupoId])
-    setActiveTab(String(grupoId))
+    setGruposAbiertos([...gruposAbiertosIds, grupoId], grupoId)
   }
 
   function handleCerrarGrupo(grupoId: number) {
     if (gruposAbiertosIds.length <= 1) return
     const restantes = gruposAbiertosIds.filter((id) => id !== grupoId)
-    setGruposAbiertosIds(restantes)
-    if (String(grupoId) === activeTab) setActiveTab(String(restantes[0]))
+    setGruposAbiertos(restantes, String(grupoId) === activeTab ? restantes[0] : undefined)
   }
 
+  // La planilla se lleva el estado de la pantalla para poder devolverlo:
+  // `Cancelar` y `Aprobar` vuelven acá y las pestañas siguen como estaban.
   function handleIrAPlanilla(destino: DestinoPlanilla) {
     navigate({
       to: paths.app.gestionAcademicaInformesPlanilla.getHref(
@@ -375,6 +413,7 @@ function ReportsPageContent() {
         destino.asignaturaId,
         destino.periodoId,
       ),
+      search,
     })
   }
 
@@ -396,7 +435,12 @@ function ReportsPageContent() {
             periodos={periodosDisponibles}
             seleccionados={periodos}
             onChange={setPeriodos}
-            cargando={periodosQuery.isPending}
+            cargando={cascadaCompleta && periodosQuery.isPending}
+            mensajeVacio={
+              cascadaCompleta
+                ? "No hay períodos de evaluación para esta combinación."
+                : "Seleccione sede, año y jornada."
+            }
           />
 
           <div className="flex items-center gap-2">
@@ -470,26 +514,31 @@ function ReportsPageContent() {
           onGuardar={handleGuardarObservacion}
         />
 
-        {gruposQuery.isPending && (
+        {!cascadaCompleta && (
+          <p className="py-8 text-center text-sm text-muted-foreground">
+            Seleccione sede, año y jornada para ver el informe.
+          </p>
+        )}
+        {cascadaCompleta && gruposQuery.isPending && (
           <p className="py-8 text-center text-sm text-muted-foreground">Cargando grados y grupos…</p>
         )}
-        {!gruposQuery.isPending && grupos.length === 0 && (
+        {cascadaCompleta && !gruposQuery.isPending && grupos.length === 0 && (
           <p className="py-8 text-center text-sm text-muted-foreground">
-            No hay grados ni grupos disponibles para tu usuario en este período.
+            No hay grados ni grupos para la sede, el año y la jornada seleccionados.
           </p>
         )}
 
         {gruposAbiertos.length > 0 && (
-          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(String(value))}>
+          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(Number(value))}>
             <TabsList variant="folder">
               {gruposAbiertos.map((grupo) => (
                 <TabsTrigger key={grupo.grupoId} value={String(grupo.grupoId)}>
-                  <span className="truncate">{grupo.grupoNombre}</span>
+                  <span className="truncate">{grupo.grupoEtiqueta}</span>
                   {gruposAbiertos.length > 1 && (
                     <span
                       role="button"
                       tabIndex={0}
-                      aria-label={`Cerrar pestaña ${grupo.grupoNombre}`}
+                      aria-label={`Cerrar pestaña ${grupo.grupoEtiqueta}`}
                       className="inline-flex size-4 shrink-0 items-center justify-center rounded-sm text-muted-foreground hover:bg-muted hover:text-foreground"
                       onPointerDown={(e) => e.stopPropagation()}
                       onClick={(e) => {
@@ -540,7 +589,7 @@ function ReportsPageContent() {
                           onClick={() => handleAgregarGrupo(grupo.grupoId)}
                           className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-sm hover:bg-muted/40"
                         >
-                          {grupo.grupoNombre}
+                          {grupo.grupoEtiqueta}
                           <PlusIcon className="size-3.5 text-muted-foreground" />
                         </button>
                       ))}

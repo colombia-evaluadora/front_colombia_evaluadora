@@ -229,6 +229,8 @@ function PlanillaInformeContent() {
   const { notify } = useNotify()
   const navigate = useNavigate()
   const { grupoId, asignaturaId, periodoId } = planillaInformeRoute.useParams()
+  // El estado de Informes viajó hasta acá para poder devolverlo intacto.
+  const search = planillaInformeRoute.useSearch()
   const [busqueda, setBusqueda] = React.useState("")
   const [seleccionados, setSeleccionados] = React.useState<Set<number>>(new Set())
 
@@ -275,7 +277,7 @@ function PlanillaInformeContent() {
         notify("No había cambios para consolidar en esta planilla.", { variant: "info" })
         return
       }
-      navigate({ to: paths.app.gestionAcademicaInformes.getHref() })
+      navigate({ to: paths.app.gestionAcademicaInformes.getHref(), search })
     } catch {
       notify("No se pudieron aprobar los cambios.", { variant: "error" })
     }
@@ -379,7 +381,10 @@ function PlanillaInformeContent() {
                 variant="outline"
                 color="neutral"
                 size="sm"
-                render={<Link to={paths.app.gestionAcademicaInformes.getHref()} />}
+                render={
+                  <Link to={paths.app.gestionAcademicaInformes.getHref()} search={search} />
+                }
+                nativeButton={false}
               >
                 <XIcon data-icon="inline-start" />
                 Cancelar

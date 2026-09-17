@@ -5,6 +5,7 @@ import { DataTable } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
 import { Button } from "@/components/ui/button"
 import { CalendarBlankIcon, FunnelIcon } from "@/components/ui/icons"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { TableScreen, TableScreenBody, TableScreenHeader, TableScreenTitle } from "@/components/layout/table-screen"
 import { NoticeOutlet, NoticeProvider } from "@/components/notice/notice-context"
 import { useDataTable } from "@/hooks/use-data-table"
@@ -224,16 +225,23 @@ export function SeguimientoPage() {
         <TableScreenHeader>
           <TableScreenTitle
             action={
-              <Button
-                variant="outline"
-                color="neutral"
-                size="icon-sm"
-                aria-label="Ir a Asistencia"
-                render={<Link to={paths.app.asistencia.getHref()} search={{ sede }} />}
-                nativeButton={false}
-              >
-                <CalendarBlankIcon />
-              </Button>
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      variant="outline"
+                      color="neutral"
+                      size="icon-sm"
+                      aria-label="Ir a Asistencia"
+                      render={<Link to={paths.app.asistencia.getHref()} search={{ sede }} />}
+                      nativeButton={false}
+                    />
+                  }
+                >
+                  <CalendarBlankIcon />
+                </TooltipTrigger>
+                <TooltipContent>Ir a Asistencia</TooltipContent>
+              </Tooltip>
             }
           >
             Seguimiento

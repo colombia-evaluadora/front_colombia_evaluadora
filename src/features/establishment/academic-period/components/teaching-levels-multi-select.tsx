@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { inputTriggerVariants, inputVariants, useInputVariant } from "@/components/ui/input"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 
 import type { TeachingLevel } from "@/features/establishment/academic-period/api/types/rating-scales"
@@ -138,6 +139,7 @@ export function TeachingLevelsMultiSelect({
                     data-overflow={isHidden ? "true" : undefined}
                     variant="soft"
                     color="muted"
+                    title={level.nombre}
                     className={cn(
                       "text-xs normal-case",
                       !isTruncated && !isHidden && "shrink-0",
@@ -184,14 +186,20 @@ export function TeachingLevelsMultiSelect({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="min-w-64">
         {levels.map((level) => (
-          <DropdownMenuCheckboxItem
-            key={level.id}
-            checked={value.includes(level.id)}
-            onCheckedChange={() => toggle(level.id)}
-            className="capitalize"
-          >
-            {level.nombre}
-          </DropdownMenuCheckboxItem>
+          <Tooltip key={level.id}>
+            <TooltipTrigger
+              render={
+                <DropdownMenuCheckboxItem
+                  checked={value.includes(level.id)}
+                  onCheckedChange={() => toggle(level.id)}
+                  className="capitalize"
+                />
+              }
+            >
+              {level.nombre}
+            </TooltipTrigger>
+            <TooltipContent side="right">{level.nombre}</TooltipContent>
+          </Tooltip>
         ))}
       </DropdownMenuContent>
     </DropdownMenu>

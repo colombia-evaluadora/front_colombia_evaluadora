@@ -7,6 +7,7 @@ import type {
   AsignaturaInforme,
   FilaInforme,
 } from "@/features/academic-management/reports/api/types"
+import { numeroPeriodo } from "@/features/academic-management/reports/lib/agrupar-filas"
 import type {
   ColumnaAsignatura,
   EstudianteFilas,
@@ -222,7 +223,7 @@ export function GradesTable({
                 <div className="flex flex-col divide-y divide-border">
                   {estudiante.filas.map((fila) => (
                     <span key={fila.periodoId} className="px-2 py-1.5" title={fila.periodoNombre}>
-                      {fila.periodoNombre.match(/\d+/)?.[0] ?? fila.periodoNombre}
+                      {numeroPeriodo(fila.periodoNombre)}
                     </span>
                   ))}
                 </div>

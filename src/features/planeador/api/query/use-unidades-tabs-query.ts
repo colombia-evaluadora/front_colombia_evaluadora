@@ -68,3 +68,21 @@ export function useUnidadesTabsQuery() {
     staleTime: 1000 * 60 * 5,
   })
 }
+
+/** Rótulo real del instrumento ("Unidad temática", "Proyecto pedagógico", …)
+ *  para un Grado ya elegido — se usa en cualquier lugar que hoy dice
+ *  "unidad temática" a secas (`UnidadAsociadaSection`/`UnidadFichaYEvidencias`
+ *  en `form-editar-actividad.tsx`, `UnidadFichaYEvidenciasDetalle` en
+ *  `detail-sections.tsx`), para que un docente de Preescolar vea "Proyecto
+ *  pedagógico" en vez del literal fijo de Primaria. `fallback` es
+ *  `UNIDAD_TAB_FALLBACK` (`planeador-tabs.tsx`) — se recibe como parámetro
+ *  en vez de importarlo acá para no hacer depender esta capa de query de un
+ *  componente de UI. Sin Grado (o sin match en `unidadTabs`) cae a ese
+ *  fallback. */
+export function resolveInstrumentoLabel(
+  gradoId: number | undefined,
+  unidadTabs: UnidadTab[] | undefined,
+  fallback: string,
+): string {
+  return (gradoId != null && unidadTabs?.find((t) => t.gradoIds.includes(gradoId))?.instrumento) || fallback
+}

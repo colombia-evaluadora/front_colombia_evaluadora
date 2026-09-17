@@ -34,6 +34,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { useCreateEvaluationPeriod } from "@/features/establishment/academic-period/api/mutations/create-evaluation-period"
 import { useUpdateEvaluationPeriod } from "@/features/establishment/academic-period/api/mutations/update-evaluation-period"
@@ -228,27 +229,24 @@ export function CreateEvaluationPeriodDialog({
         else requestClose()
       }}
     >
-      <DialogTrigger
-        render={
-          isEditing ? (
-            <Button variant="ghost" color="neutral" size="icon-sm" />
-          ) : (
-            <Button color="primary" size="sm" />
-          )
-        }
-      >
-        {isEditing ? (
-          <>
+      {isEditing ? (
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <DialogTrigger render={<Button variant="ghost" color="neutral" size="icon-sm" />} />
+            }
+          >
             <span className="sr-only">Editar periodo de evaluación</span>
             <PencilIcon />
-          </>
-        ) : (
-          <>
-            <ControlPointIcon data-icon="inline-start" />
-            Agregar
-          </>
-        )}
-      </DialogTrigger>
+          </TooltipTrigger>
+          <TooltipContent>Editar periodo de evaluación</TooltipContent>
+        </Tooltip>
+      ) : (
+        <DialogTrigger render={<Button color="primary" size="sm" />}>
+          <ControlPointIcon data-icon="inline-start" />
+          Agregar
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-3xl" inert={confirmDiscardOpen}>
         <DialogHeader>
           <DialogTitle>
