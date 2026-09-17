@@ -242,6 +242,25 @@ export interface Actividad {
   asignaturaId?: number
   gradoId?: number
   grupoId?: number
+  /**
+   * `PK_TMATRICULA` (no `Estudiante.id`/`PK_TESTUDIANTE`) de los
+   * estudiantes elegidos a mano en "Estudiantes" — mutuamente excluyente
+   * con `asignarTodoElGrupo` (ver ese campo). `fn_actividad_crear`/
+   * `_actualizar` (V224) ya aceptan este array en `FK_TMATRICULAS`; el
+   * padrón para elegirlos sale de `useActividadMatriculasGrupoQuery`.
+   * Vacío mientras no se elige nadie a mano (`asignarTodoElGrupo` manda en
+   * ese caso) o si el detalle real no trae de vuelta la selección (no hay
+   * endpoint confirmado para leerla al editar, solo para escribirla).
+   */
+  matriculasIds: number[]
+  /**
+   * `true` (default) = `ASIGNAR_TODO_EL_GRUPO`, todas las matrículas
+   * activas del grupo; `false` = solo `matriculasIds`. Es el comportamiento
+   * de siempre (antes de que existiera "Estudiantes" en el form, toda
+   * actividad nueva se asignaba a todo el grupo) hasta que el docente elige
+   * al menos un estudiante puntual.
+   */
+  asignarTodoElGrupo: boolean
   /** `yyyy-MM-dd`. */
   fechaInicio: string
   /** `yyyy-MM-dd`. */
