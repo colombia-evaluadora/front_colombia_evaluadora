@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { PersonAddIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useNotify } from "@/components/notice/notice-context"
 
 import { getErrorMessage } from "@/lib/api-client"
@@ -55,9 +56,9 @@ export function ReingresarMatriculaDialog({
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger
-        render={
-          trigger === "button" ? (
+      {trigger === "button" ? (
+        <AlertDialogTrigger
+          render={
             <Button
               type="button"
               variant="outline"
@@ -65,20 +66,33 @@ export function ReingresarMatriculaDialog({
               size="sm"
               aria-label={`Reingresar a ${fullName}`}
             />
-          ) : (
-            <Button
-              type="button"
-              variant="ghost"
-              color="neutral"
-              size="icon-sm"
-              aria-label={`Reingresar a ${fullName}`}
-            />
-          )
-        }
-      >
-        <PersonAddIcon data-icon={trigger === "button" ? "inline-start" : undefined} />
-        {trigger === "button" && "Reingreso"}
-      </AlertDialogTrigger>
+          }
+        >
+          <PersonAddIcon data-icon="inline-start" />
+          Reingreso
+        </AlertDialogTrigger>
+      ) : (
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <AlertDialogTrigger
+                render={
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    color="neutral"
+                    size="icon-sm"
+                    aria-label={`Reingresar a ${fullName}`}
+                  />
+                }
+              />
+            }
+          >
+            <PersonAddIcon />
+          </TooltipTrigger>
+          <TooltipContent>{`Reingresar a ${fullName}`}</TooltipContent>
+        </Tooltip>
+      )}
       <AlertDialogContent className="sm:max-w-md">
         <AlertDialogHeader>
           <AlertDialogTitle>Confirmación de reingreso</AlertDialogTitle>

@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/combobox"
 import { DataTable } from "@/components/data-table"
 import { TableCell } from "@/components/ui/table"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useDataTable } from "@/hooks/use-data-table"
 
 import { useRatingScalesQuery } from "@/features/establishment/academic-period/api/query/use-rating-scales"
@@ -560,21 +561,28 @@ function ScalesSubTable({
                 <TableCell className={actionsCellClassName}>
                   <div className={actionsOverlayClassName}>
                     {isAddDraftComplete(addDraft) && (
-                    <Button
-                      type="button"
-                      color="primary"
-                      size="icon-sm"
-                      aria-label="Agregar escala de valoraciÃ³n a este nivel"
-                      disabled={editingCodigo !== null || createMutation.isPending}
-                      aria-busy={createMutation.isPending}
-                      onClick={commitDraft}
-                    >
-                      {createMutation.isPending ? (
-                        <SpinnerIcon className="animate-spin" />
-                      ) : (
-                        <PlusIcon weight="bold" />
-                      )}
-                    </Button>
+                    <Tooltip>
+                      <TooltipTrigger
+                        render={
+                          <Button
+                            type="button"
+                            color="primary"
+                            size="icon-sm"
+                            aria-label="Agregar escala de valoración a este nivel"
+                            disabled={editingCodigo !== null || createMutation.isPending}
+                            aria-busy={createMutation.isPending}
+                            onClick={commitDraft}
+                          />
+                        }
+                      >
+                        {createMutation.isPending ? (
+                          <SpinnerIcon className="animate-spin" />
+                        ) : (
+                          <PlusIcon weight="bold" />
+                        )}
+                      </TooltipTrigger>
+                      <TooltipContent>Agregar escala de valoración a este nivel</TooltipContent>
+                    </Tooltip>
                     )}
                   </div>
                 </TableCell>

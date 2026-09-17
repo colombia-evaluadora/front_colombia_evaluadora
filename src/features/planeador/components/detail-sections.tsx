@@ -9,7 +9,9 @@ import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
 import { useUnidadDetalleQuery } from "@/features/planeador/api/query/use-unidades-query"
 import { useReferenteCurricularQuery } from "@/features/planeador/api/query/use-referente-curricular-query"
+import { resolveInstrumentoLabel, useUnidadesTabsQuery } from "@/features/planeador/api/query/use-unidades-tabs-query"
 import { useAgregarEvidenciaActividad } from "@/features/planeador/api/mutations/agregar-evidencia-actividad"
+import { UNIDAD_TAB_FALLBACK } from "@/features/planeador/components/planeador-tabs"
 import {
   EnunciadosEvidenciasChecklist,
   UnidadFicha,
@@ -277,6 +279,17 @@ function UnidadFichaYEvidenciasDetalle({
   // evidencias sale del referente curricular de GRADO + ASIGNATURA de la
   // actividad, no de la unidad.
   const { data: referente } = useReferenteCurricularQuery(actividad.gradoId, actividad.asignaturaId)
+  const { data: unidadTabs } = useUnidadesTabsQuery()
+  const instrumentoLabel = resolveInstrumentoLabel(actividad.gradoId, unidadTabs, UNIDAD_TAB_FALLBACK)
+  // Mismo criterio que `UnidadFichaYEvidencias` en `form-editar-actividad.tsx`:
+  // solo los enunciados que la UNIDAD ya relacionó (`unidad.enunciadosDba`),
+  // no el catálogo entero del referente.
+  const enunciadosDeLaUnidad =
+    referente && unidad
+      ? referente.enunciados.filter((enunciado) =>
+          unidad.enunciadosDba.some((elegido) => elegido.id === enunciado.id),
+        )
+      : []
   const [pendingId, setPendingId] = useState<number | null>(null)
   // `actividad.evidenciasIds` siempre llega `[]` (ver el comentario de
   // `evidenciasIdsFromUnidadConfiguracion`): sin un ejemplo real del campo
@@ -320,12 +333,13 @@ function UnidadFichaYEvidenciasDetalle({
           navigate({ to: paths.app.planeadorUnidadEditar.getHref(String(actividad.unidad.id)) })
         }
       />
-      {referente && referente.enunciados.length > 0 && (
+      {referente && enunciadosDeLaUnidad.length > 0 && (
         <EnunciadosEvidenciasChecklist
           className="mt-4"
+          instrumentoLabel={instrumentoLabel}
           nivel1Etiqueta={referente.nivel1Etiqueta}
           nivel2Etiqueta={referente.nivel2Etiqueta}
-          enunciados={referente.enunciados}
+          enunciados={enunciadosDeLaUnidad}
           seleccionadas={seleccionadas}
           onToggle={handleToggle}
           disabledIds={seleccionadas}
