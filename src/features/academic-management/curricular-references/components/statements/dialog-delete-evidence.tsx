@@ -12,6 +12,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { CheckIcon, SpinnerIcon, TrashIcon, XIcon } from "@/components/ui/icons"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
@@ -43,20 +44,27 @@ export function DeleteEvidenceDialog({ evidence, levelLabel }: DeleteEvidenceDia
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger
-        render={
-          <Button
-            type="button"
-            variant="ghost"
-            color="neutral"
-            size="icon-sm"
-            aria-label={`Eliminar ${levelLabel.toLowerCase()}`}
-            onClick={(event) => event.stopPropagation()}
-          />
-        }
-      >
-        <TrashIcon />
-      </AlertDialogTrigger>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <AlertDialogTrigger
+              render={
+                <Button
+                  type="button"
+                  variant="ghost"
+                  color="neutral"
+                  size="icon-sm"
+                  aria-label={`Eliminar ${levelLabel.toLowerCase()}`}
+                  onClick={(event) => event.stopPropagation()}
+                />
+              }
+            />
+          }
+        >
+          <TrashIcon />
+        </TooltipTrigger>
+        <TooltipContent>{`Eliminar ${levelLabel.toLowerCase()}`}</TooltipContent>
+      </Tooltip>
       <AlertDialogContent className="sm:max-w-xl">
         <AlertDialogHeader>
           <AlertDialogTitle>Eliminar</AlertDialogTitle>

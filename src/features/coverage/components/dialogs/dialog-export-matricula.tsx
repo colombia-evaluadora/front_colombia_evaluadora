@@ -18,6 +18,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useNotify } from "@/components/notice/notice-context"
 
 import { getErrorMessage } from "@/lib/api-client"
@@ -59,18 +60,25 @@ export function ExportMatriculaDialog({ filters, columns }: ExportMatriculaDialo
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger
-        render={
-          <Button
-            variant="outline"
-            color="muted"
-            size="icon-sm"
-            aria-label="Exportar estudiantes filtrados"
-          >
-            <FileDownloadOutlinedIcon />
-          </Button>
-        }
-      />
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <DialogTrigger
+              render={
+                <Button
+                  variant="outline"
+                  color="muted"
+                  size="icon-sm"
+                  aria-label="Exportar estudiantes filtrados"
+                />
+              }
+            />
+          }
+        >
+          <FileDownloadOutlinedIcon />
+        </TooltipTrigger>
+        <TooltipContent>Exportar estudiantes filtrados</TooltipContent>
+      </Tooltip>
       <DialogContent showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>

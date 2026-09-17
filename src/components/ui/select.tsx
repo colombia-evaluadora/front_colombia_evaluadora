@@ -11,6 +11,7 @@ import {
   useInputVariant,
   type InputVariant,
 } from "@/components/ui/input"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 /**
  * Mapa opcional `value → label` que el `Select` raíz puede pasar para que el
@@ -223,16 +224,23 @@ function SelectLabel({ className, ...props }: SelectPrimitive.GroupLabel.Props) 
   )
 }
 
-function SelectItem({ className, children, ...props }: SelectPrimitive.Item.Props) {
-  return (
-    <SelectPrimitive.Item
-      data-slot="select-item"
-      className={cn(
-        "group/select-item relative flex w-full cursor-pointer items-center gap-2.5 rounded-md py-2 pr-8 pl-3 text-sm transition-colors outline-hidden select-none data-highlighted:bg-secondary-22 data-highlighted:text-foreground not-data-[variant=destructive]:data-highlighted:**:text-foreground data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
-        className,
-      )}
-      {...props}
-    >
+const selectItemClassName =
+  "group/select-item relative flex w-full cursor-pointer items-center gap-2.5 rounded-md py-2 pr-8 pl-3 text-sm transition-colors outline-hidden select-none data-highlighted:bg-secondary-22 data-highlighted:text-foreground not-data-[variant=destructive]:data-highlighted:**:text-foreground data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5"
+
+function SelectItem({ className, children, title, ...props }: SelectPrimitive.Item.Props) {
+  // Mismo problema que resolvía `TabsTrigger` (`tabs.tsx`) con un `title`
+  // nativo: la opción se trunca con "…" (ver `ItemText` abajo), y dos
+  // opciones distintas pueden truncar exactamente igual ("Número de
+  // Identific…") y quedar indistinguibles sin ver el texto completo. Acá se
+  // usa el `Tooltip` estilizado de la app, no el `title` del navegador, para
+  // que se vea igual que el resto de los tooltips. Solo se deriva de
+  // `children` cuando es texto plano: con hijos compuestos (ícono + texto)
+  // no hay un string que mostrar, y ahí el llamador puede pasar `title` a
+  // mano, que siempre gana.
+  const label = title ?? (typeof children === "string" ? children : undefined)
+
+  const itemContent = (
+    <>
       {/*
         block + min-w-0 en vez de flex: el text-overflow no aplica al contenido
         anónimo de un flex container, así que con display:flex la opción larga se
@@ -250,7 +258,35 @@ function SelectItem({ className, children, ...props }: SelectPrimitive.Item.Prop
       >
         <CheckIcon className="pointer-events-none" />
       </SelectPrimitive.ItemIndicator>
-    </SelectPrimitive.Item>
+    </>
+  )
+
+  // Sin `label` derivable, ningún tooltip que mostrar: se deja el `Item`
+  // tal cual, sin envolver en `Tooltip` (evitaría un popup vacío al pasar
+  // el mouse por cada opción de la lista).
+  if (!label) {
+    return (
+      <SelectPrimitive.Item data-slot="select-item" className={cn(selectItemClassName, className)} {...props}>
+        {itemContent}
+      </SelectPrimitive.Item>
+    )
+  }
+
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <SelectPrimitive.Item
+            data-slot="select-item"
+            className={cn(selectItemClassName, className)}
+            {...props}
+          />
+        }
+      >
+        {itemContent}
+      </TooltipTrigger>
+      <TooltipContent side="right">{label}</TooltipContent>
+    </Tooltip>
   )
 }
 
