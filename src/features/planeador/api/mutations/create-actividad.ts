@@ -27,8 +27,8 @@ import type { Actividad } from "@/features/planeador/api/types/actividad"
  * completo (`useUpdateMaterialesActividad`, `update-materiales-actividad.ts`)
  * que el caller llama DESPUÉS de crear, ya con el id real (mismo criterio
  * que `EVIDENCIAS` nuevas al editar en `planeador-editar-actividad-page.tsx`).
- * `ASIGNAR_TODO_EL_GRUPO` queda en `true`: el form no tiene todavía un
- * selector de estudiantes puntuales.
+ * `ASIGNAR_TODO_EL_GRUPO`/`FK_TMATRICULAS` (asignación de estudiantes): ver
+ * `Actividad.matriculasIds` — el campo "Estudiantes" del form.
  *
  * `EVIDENCIAS` (ids de nivel 2 del referente curricular de la unidad, ver
  * `use-unidad-referente-query.ts`) SÍ viaja acá — confirmado por la
@@ -60,8 +60,15 @@ async function createActividad(actividad: Actividad): Promise<CreateActividadRes
     ES_EVALUATIVA: actividad.esEvaluativa ? "S" : "N",
     FECHA_INICIO: actividad.fechaInicio,
     FECHA_CIERRE: actividad.fechaCierre,
-    ASIGNAR_TODO_EL_GRUPO: true,
     MATERIAL_REQUERIDO: actividad.materiales,
+  }
+  // "Estudiantes" (mutuamente excluyentes, ver el comentario de
+  // `Actividad.matriculasIds`): sin ninguno elegido a mano, todo el grupo
+  // — mismo comportamiento que antes de que existiera este campo.
+  if (actividad.matriculasIds.length > 0) {
+    body.FK_TMATRICULAS = actividad.matriculasIds
+  } else {
+    body.ASIGNAR_TODO_EL_GRUPO = true
   }
   if (actividad.unidad.id !== 0) {
     body.FK_TUNIDAD = actividad.unidad.id

@@ -24,6 +24,12 @@ export function useEnunciadosDbaQuery(gradoId: number | undefined, asignaturaId:
     // llamador cae a su texto por defecto mientras no haya referente.
     nombre: data?.nombre ?? null,
     descripcion: data?.descripcion ?? null,
+    // Rótulo real del nivel 1 ("Enunciado" en Primaria, "Propósito" en
+    // Preescolar, …) — nunca el literal fijo "Enunciados": el `columnLabel`
+    // de la caja de "Derechos Básicos de Aprendizaje" tiene que variar
+    // igual que ya varía en el checklist de la actividad
+    // (`EnunciadosEvidenciasChecklist`, que usa este mismo campo).
+    nivel1Etiqueta: data?.nivel1Etiqueta ?? "Enunciado",
     isPending: gradoId != null && isPending,
   }
 }
