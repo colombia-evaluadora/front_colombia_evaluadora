@@ -91,6 +91,11 @@ import { useCalificacionesQuery } from "@/features/planeador/api/query/use-calif
 import { useCreateUnidad } from "@/features/planeador/api/mutations/create-unidad"
 
 import { DialogBibliotecaRecursos } from "@/features/planeador/components/dialogs/dialog-biblioteca-recursos"
+import {
+  consumeActividadFormDraft,
+  saveActividadFormDraft,
+  type ActividadFormDraftKey,
+} from "@/features/planeador/lib/actividad-form-draft"
 
 /**
  * `<Textarea>` no tiene variante `outlined` propia (a diferencia de `Input`,
@@ -240,8 +245,20 @@ export function EditarActividadForm({
   const unidades = [...unidadesQuery, ...unidadesCreadasPendientes]
   const createUnidadMutation = useCreateUnidad()
 
+  // El alta usa el sentinel "nueva" en vez de `actividad.id`: ese id es un
+  // `draftId()` aleatorio que cambia en cada montaje (ver `esNueva` más
+  // arriba), así que no sirve para encontrar el borrador guardado antes de
+  // navegar a "Ver recurso" — la edición sí puede usar su id real, estable
+  // entre navegaciones (`key={actividadParaForm.id}` en la página).
+  const draftKey: ActividadFormDraftKey = esNueva ? "nueva" : actividad.id
+  // Lazy initializer: corre una sola vez al montar, así que si venimos de
+  // "Ver recurso" (`consumeActividadFormDraft` ya borró el borrador para
+  // que no se reuse) el form arranca con lo que el docente ya había
+  // tipeado en vez de `actividad` a secas.
+  const [actividadInicial] = useState(() => consumeActividadFormDraft(draftKey) ?? actividad)
+
   const form = useForm({
-    defaultValues: actividad,
+    defaultValues: actividadInicial,
     onSubmit: ({ value }) => onSubmit?.(value),
   })
 
@@ -336,7 +353,7 @@ export function EditarActividadForm({
         criteriosUnidadOriginales={esNueva ? [] : actividad.criteriosUnidadIds}
       />
       <MaterialesSection form={form} />
-      <RecursosSection form={form} />
+      <RecursosSection form={form} draftKey={draftKey} />
       <ProgramacionSection form={form} />
       <EvaluacionSection
         form={form}
@@ -1083,7 +1100,7 @@ const RECURSO_DRAFT_VACIO: RecursoDraft = {
   descripcion: "",
 }
 
-function RecursosSection({ form }: { form: FormActividad }) {
+function RecursosSection({ form, draftKey }: { form: FormActividad; draftKey: ActividadFormDraftKey }) {
   // Colapsa/expande el cuerpo del card. El título + los botones del header
   // (biblioteca, + agregar) quedan siempre a la vista; el toggle `-/+`
   // muestra u oculta el form de alta + la lista.
@@ -1220,6 +1237,14 @@ function RecursosSection({ form }: { form: FormActividad }) {
                           list.splice(index, 1)
                           field.handleChange(list)
                         }}
+                        // "Ver recurso" navega a una ruta aparte, que
+                        // desmonta este form entero — se guarda un borrador
+                        // con lo que el docente ya tipeó para que "Cerrar"
+                        // en la vista previa no lo mande de vuelta a un
+                        // form vacío (ver `actividad-form-draft.ts`).
+                        onVerRecurso={() =>
+                          saveActividadFormDraft(draftKey, form.state.values as Actividad)
+                        }
                       />
                     ))}
                   </ul>
@@ -1442,9 +1467,11 @@ function RecursoForm({
 function RecursoItem({
   recurso,
   onRemove,
+  onVerRecurso,
 }: {
   recurso: Recurso
   onRemove: () => void
+  onVerRecurso: () => void
 }) {
   // Toda la presentación (ícono, color, label) sale del mapper: si mañana
   // se agrega un tipo nuevo o se cambia el color de "URL", se toca un solo
@@ -1545,6 +1572,7 @@ function RecursoItem({
                           titulo: recurso.titulo,
                           descripcion: recurso.descripcion,
                         }}
+                        onClick={onVerRecurso}
                       />
                     )
                     : undefined
