@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils"
 
 import { useReferenteCurricularQuery } from "@/features/planeador/api/query/use-referente-curricular-query"
 import { useDocenteGradoAsignaturaQuery } from "@/features/planeador/api/query/use-docente-grado-asignatura-query"
+import type { UnidadTab } from "@/features/planeador/api/query/use-unidades-tabs-query"
 import { useStudyPlanSubjectLabel } from "@/features/establishment/academic-period/api/query/use-study-plan-subject-label"
 import {
   ListaAgregableCaja,
@@ -138,13 +139,24 @@ function useEnfoquePedagogicoDerivado(
  * Solo 3 campos básicos (Nombre/Asignatura/Grado): `área`, `estado` y las
  * fechas siguen existiendo en `UnidadTematica` (los sigue mostrando la
  * card del listado y el panel de detalle) pero no se editan desde acá.
+ *
+ * `tab` llega SOLO desde el alta (`planeador-crear-unidad-page.tsx`, cuando
+ * se entra por el botón "Agregar {instrumento}" de una pestaña) — acota
+ * Grado a los `PK_TGRADO` de esa pestaña (`GET /planeador/unidades/tabs`,
+ * ya con nombre real, confirmado contra el servidor de test) en vez de
+ * TODO el catálogo del docente (`docentes/grado-asignatura`), que además
+ * viene vacío para un rector/coordinador (no "dicta" nada — ver el
+ * comentario de `grados` más abajo). Sin `tab` (edición, o alta sin pasar
+ * por ese botón) el comportamiento es el de siempre.
  */
 export function UnidadInfoGeneralFields({
   draft,
   onChange,
+  tab,
 }: {
   draft: UnidadDraft
   onChange: (patch: Partial<UnidadDraft>) => void
+  tab?: UnidadTab
 }) {
   const enfoqueDerivado = useEnfoquePedagogicoDerivado(draft.gradoId, draft.asignaturaId)
   useEffect(() => {
@@ -165,8 +177,22 @@ export function UnidadInfoGeneralFields({
   // pares que ESTE docente realmente dicta, con sus `PK_TGRADO`/
   // `PK_TASIGNATURA` reales — el catálogo genérico `/select/GRADOS`
   // devolvía grados que no necesariamente le correspondían al docente.
+  //
+  // Con `tab` (alta desde "Agregar {instrumento}"): NO alcanza para un
+  // rector/coordinador — no tiene filas en `docentes/grado-asignatura`
+  // (no "dicta" nada, ver `fn_docente_unidad_tabs_listar` V407) — así que
+  // Grado se acota a `tab.grados`, que sí trae los grados reales de esa
+  // pestaña tanto para un docente como para un administrativo. `tab.
+  // asignaturas` es el mismo catálogo por INSTRUMENTO completo (no por
+  // grado puntual, el backend no lo distingue a este nivel): se usa
+  // igual, y en el caso rector/coordinador puede llegar vacío (esa rama
+  // no resuelve asignatura, confirmado contra el servidor de test) — ahí
+  // Asignatura queda con la lista vacía existente ("No tienes asignaturas
+  // en este grado"), que sigue siendo el fallback correcto: no hay de
+  // dónde sacar una.
   const { data: docenteGradoAsignatura = [] } = useDocenteGradoAsignaturaQuery()
   const grados = useMemo(() => {
+    if (tab && tab.grados.length > 0) return tab.grados
     const porId = new Map<number, { id: number; nombre: string }>()
     for (const par of docenteGradoAsignatura) {
       if (!porId.has(par.gradoId)) {
@@ -174,12 +200,14 @@ export function UnidadInfoGeneralFields({
       }
     }
     return [...porId.values()]
-  }, [docenteGradoAsignatura])
+  }, [tab, docenteGradoAsignatura])
 
-  const asignaturas = useMemo(
-    () => docenteGradoAsignatura.filter((par) => par.gradoId === draft.gradoId),
-    [docenteGradoAsignatura, draft.gradoId],
-  )
+  const asignaturas = useMemo(() => {
+    if (tab && tab.grados.length > 0) {
+      return tab.asignaturas.map((a) => ({ asignaturaId: a.id, asignaturaNombre: a.nombre }))
+    }
+    return docenteGradoAsignatura.filter((par) => par.gradoId === draft.gradoId)
+  }, [tab, docenteGradoAsignatura, draft.gradoId])
 
   // Mismo rótulo dinámico que ya usa Plan de Estudio ("Dimensión", "Área", …
   // según lo que el referente curricular del grado tenga personalizado) —

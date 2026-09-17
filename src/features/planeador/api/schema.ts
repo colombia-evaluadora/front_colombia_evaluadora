@@ -1,6 +1,19 @@
 import * as z from "zod"
 
 /**
+ * Search schema del alta de Unidad. `instrumento` llega cuando se abre desde
+ * el botón "Agregar {instrumento}" de una pestaña de `planeador-tabs.tsx`
+ * (`GET /planeador/unidades/tabs`) — permite mostrar el título correcto
+ * ("Crear Proyecto pedagógico") desde el primer render, sin esperar a que el
+ * docente elija un Grado, y acotar los `<Select>` de Grado/Asignatura a los
+ * que caen bajo ESE instrumento en vez de todo el catálogo del docente.
+ */
+export const planeadorUnidadCrearSearchSchema = z.object({
+  instrumento: z.string().optional().catch(undefined),
+})
+export type PlaneadorUnidadCrearSearch = z.infer<typeof planeadorUnidadCrearSearchSchema>
+
+/**
  * Search schema del listado. La barra superior es la misma de los demás
  * listados: un solo input con la consulta —texto libre + términos
  * `instrumento:(Rúbrica)`— y el panel de filtros avanzados detrás del embudo.
