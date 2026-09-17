@@ -109,11 +109,15 @@ function TableScreenTitle({
         className,
       )}
     >
-      {/* `min-w-0` para que la bajada larga corte contra la acción en vez de
-          empujarla fuera de la fila. */}
+      {/* `min-w-0` para que el título/bajada largos corten contra `action`
+          en vez de empujarla fuera de la fila. `truncate`: un rótulo
+          dinámico largo (p. ej. un "instrumento" sin espacios) se recorta
+          con "…" en vez de desbordar la fila. */}
       <div className="min-w-0">
-        <h1 className="font-heading text-2xl font-bold">{children}</h1>
-        {description ? <p className="mt-1 text-sm text-muted-foreground">{description}</p> : null}
+        <h1 className="font-heading truncate text-2xl font-bold">{children}</h1>
+        {description ? (
+          <p className="mt-1 truncate text-sm text-muted-foreground">{description}</p>
+        ) : null}
       </div>
       {action}
     </div>
