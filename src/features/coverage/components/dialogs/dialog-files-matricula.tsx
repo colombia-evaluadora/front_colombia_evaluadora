@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query"
 
 import { Button } from "@/components/ui/button"
 import { FolderOpenIcon } from "@/components/ui/icons"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useNotify } from "@/components/notice/notice-context"
 
 import { getErrorMessage } from "@/lib/api-client"
@@ -139,30 +140,35 @@ export function FilesMatriculaDialog({ matricula, trigger = "icon", editable = f
 
   return (
     <>
-      {trigger === "button" ? (
-        <Button
-          type="button"
-          variant="outline"
-          color="primary"
-          size="sm"
-          aria-label={`Archivos de ${fullName}`}
-          onClick={() => setOpen(true)}
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            trigger === "button" ? (
+              <Button
+                type="button"
+                variant="outline"
+                color="primary"
+                size="sm"
+                aria-label={`Archivos de ${fullName}`}
+                onClick={() => setOpen(true)}
+              />
+            ) : (
+              <Button
+                type="button"
+                variant="ghost"
+                color="neutral"
+                size="icon-sm"
+                aria-label={`Archivos de ${fullName}`}
+                onClick={() => setOpen(true)}
+              />
+            )
+          }
         >
-          <FolderOpenIcon data-icon="inline-start" />
-          Archivos
-        </Button>
-      ) : (
-        <Button
-          type="button"
-          variant="ghost"
-          color="neutral"
-          size="icon-sm"
-          aria-label={`Archivos de ${fullName}`}
-          onClick={() => setOpen(true)}
-        >
-          <FolderOpenIcon />
-        </Button>
-      )}
+          <FolderOpenIcon data-icon={trigger === "button" ? "inline-start" : undefined} />
+          {trigger === "button" && "Archivos"}
+        </TooltipTrigger>
+        <TooltipContent>{`Archivos de ${fullName}`}</TooltipContent>
+      </Tooltip>
       <SupportFilesSheet
         open={open}
         onOpenChange={setOpen}

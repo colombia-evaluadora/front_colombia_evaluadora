@@ -34,6 +34,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { useCreateEvaluationPeriod } from "@/features/establishment/academic-period/api/mutations/create-evaluation-period"
 import { useUpdateEvaluationPeriod } from "@/features/establishment/academic-period/api/mutations/update-evaluation-period"
@@ -228,27 +229,36 @@ export function CreateEvaluationPeriodDialog({
         else requestClose()
       }}
     >
-      <DialogTrigger
-        render={
-          isEditing ? (
-            <Button variant="ghost" color="neutral" size="icon-sm" />
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <DialogTrigger
+              render={
+                isEditing ? (
+                  <Button variant="ghost" color="neutral" size="icon-sm" />
+                ) : (
+                  <Button color="primary" size="sm" />
+                )
+              }
+            />
+          }
+        >
+          {isEditing ? (
+            <>
+              <span className="sr-only">Editar periodo de evaluación</span>
+              <PencilIcon />
+            </>
           ) : (
-            <Button color="primary" size="sm" />
-          )
-        }
-      >
-        {isEditing ? (
-          <>
-            <span className="sr-only">Editar periodo de evaluación</span>
-            <PencilIcon />
-          </>
-        ) : (
-          <>
-            <ControlPointIcon data-icon="inline-start" />
-            Agregar
-          </>
-        )}
-      </DialogTrigger>
+            <>
+              <ControlPointIcon data-icon="inline-start" />
+              Agregar
+            </>
+          )}
+        </TooltipTrigger>
+        <TooltipContent>
+          {isEditing ? "Editar periodo de evaluación" : "Agregar periodo de evaluación"}
+        </TooltipContent>
+      </Tooltip>
       <DialogContent className="sm:max-w-3xl" inert={confirmDiscardOpen}>
         <DialogHeader>
           <DialogTitle>

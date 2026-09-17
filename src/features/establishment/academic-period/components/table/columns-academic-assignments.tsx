@@ -4,6 +4,7 @@ import { CaretDownIcon, CaretRightIcon } from "@/components/ui/icons"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { DataTableColumnHeader } from "@/components/data-table"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { renderStatusCell } from "@/features/establishment/employees/components/table/columns-employees"
 import type { EmployeeListItem } from "@/features/establishment/employees/api/types/employee"
@@ -24,15 +25,22 @@ export function createAcademicAssignmentColumns({
       cell: ({ row }) => {
         const isOpen = expandedId === row.original.id
         return (
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label={isOpen ? "Contraer" : "Expandir"}
-            aria-expanded={isOpen}
-            onClick={() => onToggleExpand(row.original)}
-          >
-            {isOpen ? <CaretDownIcon weight="bold" /> : <CaretRightIcon weight="bold" />}
-          </Button>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label={isOpen ? "Contraer" : "Expandir"}
+                  aria-expanded={isOpen}
+                  onClick={() => onToggleExpand(row.original)}
+                />
+              }
+            >
+              {isOpen ? <CaretDownIcon weight="bold" /> : <CaretRightIcon weight="bold" />}
+            </TooltipTrigger>
+            <TooltipContent>{isOpen ? "Contraer" : "Expandir"}</TooltipContent>
+          </Tooltip>
         )
       },
       enableSorting: false,

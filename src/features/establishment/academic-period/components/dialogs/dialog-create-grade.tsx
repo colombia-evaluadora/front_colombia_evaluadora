@@ -30,6 +30,7 @@ import {
   ComboboxGroup,
 } from "@/components/ui/combobox"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { useCreateGrade } from "@/features/establishment/academic-period/api/mutations/create-grade"
 import { useUpdateGrade } from "@/features/establishment/academic-period/api/mutations/update-grade"
@@ -320,27 +321,34 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
         else requestClose()
       }}
     >
-      <DialogTrigger
-        render={
-          isEditing ? (
-            <Button variant="ghost" color="neutral" size="icon-sm" />
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <DialogTrigger
+              render={
+                isEditing ? (
+                  <Button variant="ghost" color="neutral" size="icon-sm" />
+                ) : (
+                  <Button color="primary" size="sm" />
+                )
+              }
+            />
+          }
+        >
+          {isEditing ? (
+            <>
+              <span className="sr-only">Editar grado</span>
+              <PencilIcon />
+            </>
           ) : (
-            <Button color="primary" size="sm" />
-          )
-        }
-      >
-        {isEditing ? (
-          <>
-            <span className="sr-only">Editar grado</span>
-            <PencilIcon />
-          </>
-        ) : (
-          <>
-            <ControlPointIcon data-icon="inline-start" />
-            Agregar
-          </>
-        )}
-      </DialogTrigger>
+            <>
+              <ControlPointIcon data-icon="inline-start" />
+              Agregar
+            </>
+          )}
+        </TooltipTrigger>
+        <TooltipContent>{isEditing ? "Editar grado" : "Agregar grado"}</TooltipContent>
+      </Tooltip>
       <DialogContent
         className="flex max-h-[90dvh] flex-col overflow-hidden p-0 sm:max-w-5xl"
         showCloseButton={false}

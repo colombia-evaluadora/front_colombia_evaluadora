@@ -30,6 +30,7 @@ import {
   ComboboxFieldValue,
   ComboboxGroup,
 } from "@/components/ui/combobox"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { useAssignmentTeachersQuery } from "@/features/establishment/academic-period/api/query/use-assignment-teachers"
 
@@ -185,27 +186,34 @@ export function CreateGradeGroupDialog({
         }
       }}
     >
-      <DialogTrigger
-        render={
-          isEditing ? (
-            <Button variant="ghost" color="neutral" size="icon-sm" />
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <DialogTrigger
+              render={
+                isEditing ? (
+                  <Button variant="ghost" color="neutral" size="icon-sm" />
+                ) : (
+                  <Button color="primary" size="sm" />
+                )
+              }
+            />
+          }
+        >
+          {isEditing ? (
+            <>
+              <span className="sr-only">Editar grupo</span>
+              <PencilIcon />
+            </>
           ) : (
-            <Button color="primary" size="sm" />
-          )
-        }
-      >
-        {isEditing ? (
-          <>
-            <span className="sr-only">Editar grupo</span>
-            <PencilIcon />
-          </>
-        ) : (
-          <>
-            <ControlPointIcon data-icon="inline-start" />
-            Agregar
-          </>
-        )}
-      </DialogTrigger>
+            <>
+              <ControlPointIcon data-icon="inline-start" />
+              Agregar
+            </>
+          )}
+        </TooltipTrigger>
+        <TooltipContent>{isEditing ? "Editar grupo" : "Agregar grupo"}</TooltipContent>
+      </Tooltip>
       <DialogPortal>
         <DialogOverlay forceRender className="bg-transparent" />
       </DialogPortal>

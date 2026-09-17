@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { PersonAddIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useNotify } from "@/components/notice/notice-context"
 
 import { getErrorMessage } from "@/lib/api-client"
@@ -55,30 +56,37 @@ export function ReingresarMatriculaDialog({
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger
-        render={
-          trigger === "button" ? (
-            <Button
-              type="button"
-              variant="outline"
-              color="primary"
-              size="sm"
-              aria-label={`Reingresar a ${fullName}`}
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <AlertDialogTrigger
+              render={
+                trigger === "button" ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    color="primary"
+                    size="sm"
+                    aria-label={`Reingresar a ${fullName}`}
+                  />
+                ) : (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    color="neutral"
+                    size="icon-sm"
+                    aria-label={`Reingresar a ${fullName}`}
+                  />
+                )
+              }
             />
-          ) : (
-            <Button
-              type="button"
-              variant="ghost"
-              color="neutral"
-              size="icon-sm"
-              aria-label={`Reingresar a ${fullName}`}
-            />
-          )
-        }
-      >
-        <PersonAddIcon data-icon={trigger === "button" ? "inline-start" : undefined} />
-        {trigger === "button" && "Reingreso"}
-      </AlertDialogTrigger>
+          }
+        >
+          <PersonAddIcon data-icon={trigger === "button" ? "inline-start" : undefined} />
+          {trigger === "button" && "Reingreso"}
+        </TooltipTrigger>
+        <TooltipContent>{`Reingresar a ${fullName}`}</TooltipContent>
+      </Tooltip>
       <AlertDialogContent className="sm:max-w-md">
         <AlertDialogHeader>
           <AlertDialogTitle>Confirmación de reingreso</AlertDialogTitle>

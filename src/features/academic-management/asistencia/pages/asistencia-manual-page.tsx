@@ -6,6 +6,7 @@ import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/not
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { ArrowLeftIcon, CheckCircleFillIcon, CheckIcon, SpinnerIcon } from "@/components/ui/icons"
 import { DataTable } from "@/components/data-table"
 import { Pagination } from "@/components/pagination"
@@ -491,16 +492,23 @@ export function AsistenciaManualPage() {
 
         <TableScreenBody>
         <div className="mb-4 flex items-center gap-2">
-          <Button
-            variant="ghost"
-            color="neutral"
-            size="icon-xs"
-            aria-label="Volver a Asistencia"
-            render={<Link to={paths.app.asistencia.getHref()} search={{ sede }} />}
-            nativeButton={false}
-          >
-            <ArrowLeftIcon />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  color="neutral"
+                  size="icon-xs"
+                  aria-label="Volver a Asistencia"
+                  render={<Link to={paths.app.asistencia.getHref()} search={{ sede }} />}
+                  nativeButton={false}
+                />
+              }
+            >
+              <ArrowLeftIcon />
+            </TooltipTrigger>
+            <TooltipContent>Volver a Asistencia</TooltipContent>
+          </Tooltip>
           <h2 className="text-base font-semibold">Asistencia manual</h2>
         </div>
 

@@ -52,6 +52,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { useGeneralAreasQuery } from "../../api/query/use-general-areas"
 import { findGradeUsingSubject } from "@/features/establishment/academic-period/api/mutations/find-subject-usage"
@@ -528,15 +529,25 @@ export function AreaSubjectFormDialog({
         }}
       >
         {isEdit ? (
-          <DialogTrigger render={<Button variant="ghost" color="neutral" size="icon-sm" />}>
-            <span className="sr-only">Editar área</span>
-            <PencilIcon />
-          </DialogTrigger>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <DialogTrigger render={<Button variant="ghost" color="neutral" size="icon-sm" />} />
+              }
+            >
+              <span className="sr-only">Editar área</span>
+              <PencilIcon />
+            </TooltipTrigger>
+            <TooltipContent>Editar área</TooltipContent>
+          </Tooltip>
         ) : (
-          <DialogTrigger render={<Button color="primary" size="sm" />}>
-            <ControlPointIcon data-icon="inline-start" />
-            Agregar
-          </DialogTrigger>
+          <Tooltip>
+            <TooltipTrigger render={<DialogTrigger render={<Button color="primary" size="sm" />} />}>
+              <ControlPointIcon data-icon="inline-start" />
+              Agregar
+            </TooltipTrigger>
+            <TooltipContent>Agregar área/asignatura</TooltipContent>
+          </Tooltip>
         )}
 
         <DialogContent
@@ -805,25 +816,39 @@ export function AreaSubjectFormDialog({
                               {actionsSpacerCell}
                               <TableCell className={ACTIONS_CELL_CLASS}>
                                 <div className={actionsOverlayClass(true)}>
-                                  <Button
-                                    type="button"
-                                    color="primary"
-                                    size="icon-sm"
-                                    aria-label="Guardar cambios"
-                                    onClick={saveEditSubject}
-                                  >
-                                    <CheckIcon className="size-3" />
-                                  </Button>
-                                  <Button
-                                    type="button"
-                                    variant="fill"
-                                    color="neutral"
-                                    size="icon-sm"
-                                    aria-label="Cancelar edición"
-                                    onClick={cancelEditSubject}
-                                  >
-                                    <XIcon className="size-3" />
-                                  </Button>
+                                  <Tooltip>
+                                    <TooltipTrigger
+                                      render={
+                                        <Button
+                                          type="button"
+                                          color="primary"
+                                          size="icon-sm"
+                                          aria-label="Guardar cambios"
+                                          onClick={saveEditSubject}
+                                        />
+                                      }
+                                    >
+                                      <CheckIcon className="size-3" />
+                                    </TooltipTrigger>
+                                    <TooltipContent>Guardar cambios</TooltipContent>
+                                  </Tooltip>
+                                  <Tooltip>
+                                    <TooltipTrigger
+                                      render={
+                                        <Button
+                                          type="button"
+                                          variant="fill"
+                                          color="neutral"
+                                          size="icon-sm"
+                                          aria-label="Cancelar edición"
+                                          onClick={cancelEditSubject}
+                                        />
+                                      }
+                                    >
+                                      <XIcon className="size-3" />
+                                    </TooltipTrigger>
+                                    <TooltipContent>Cancelar edición</TooltipContent>
+                                  </Tooltip>
                                 </div>
                               </TableCell>
                             </TableRow>
@@ -874,17 +899,24 @@ export function AreaSubjectFormDialog({
                             {actionsSpacerCell}
                             <TableCell className={ACTIONS_CELL_CLASS}>
                               <div className={actionsOverlayClass()}>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  color="neutral"
-                                  size="icon-sm"
-                                  aria-label={`Editar asignatura ${index + 1}`}
-                                  disabled={editingIndex !== null}
-                                  onClick={() => startEditSubject(realIndex)}
-                                >
-                                  <PencilIcon />
-                                </Button>
+                                <Tooltip>
+                                  <TooltipTrigger
+                                    render={
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        color="neutral"
+                                        size="icon-sm"
+                                        aria-label={`Editar asignatura ${index + 1}`}
+                                        disabled={editingIndex !== null}
+                                        onClick={() => startEditSubject(realIndex)}
+                                      />
+                                    }
+                                  >
+                                    <PencilIcon />
+                                  </TooltipTrigger>
+                                  <TooltipContent>{`Editar asignatura ${index + 1}`}</TooltipContent>
+                                </Tooltip>
                                 <ConfirmRemoveButton
                                   label={`Quitar asignatura ${index + 1}`}
                                   description={
@@ -912,15 +944,22 @@ export function AreaSubjectFormDialog({
                         <TableCell className={ACTIONS_CELL_CLASS}>
                           {isDraftTouched(draft) && (
                             <div className={actionsOverlayClass(true)}>
-                              <Button
-                                type="button"
-                                color="primary"
-                                size="icon-sm"
-                                aria-label="Agregar asignatura a la lista"
-                                onClick={commitDraft}
-                              >
-                                <PlusIcon weight="bold" />
-                              </Button>
+                              <Tooltip>
+                                <TooltipTrigger
+                                  render={
+                                    <Button
+                                      type="button"
+                                      color="primary"
+                                      size="icon-sm"
+                                      aria-label="Agregar asignatura a la lista"
+                                      onClick={commitDraft}
+                                    />
+                                  }
+                                >
+                                  <PlusIcon weight="bold" />
+                                </TooltipTrigger>
+                                <TooltipContent>Agregar asignatura a la lista</TooltipContent>
+                              </Tooltip>
                             </div>
                           )}
                         </TableCell>
