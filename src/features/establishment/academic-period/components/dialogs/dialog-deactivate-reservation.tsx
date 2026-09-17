@@ -18,6 +18,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { useUpdateAcademicPeriodReservation } from "@/features/establishment/academic-period/api/mutations/update-academic-period-reservation"
 import { useAcademicPeriodQuery } from "@/features/establishment/academic-period/api/query/use-academic-period"
@@ -103,23 +104,30 @@ export function DeactivateReservationDialog({ period }: DeactivateReservationDia
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger
-        render={
-          <Button
-            variant="ghost"
-            color="neutral"
-            size="icon-sm"
-            disabled={!canDeactivate}
-            aria-label="Desactivar periodo de reserva de cupos"
-          />
-        }
-      >
-        <span className="sr-only">Desactivar reserva de cupos</span>
-        {/* Icono "ojo tachado" = acción de desactivar visualmente el periodo
-            para usuarios externos (reservas). Se podría cambiar por un
-            candado si se prefiere metáfora de "bloqueo". */}
-        <XIcon />
-      </AlertDialogTrigger>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <AlertDialogTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  color="neutral"
+                  size="icon-sm"
+                  disabled={!canDeactivate}
+                  aria-label="Desactivar periodo de reserva de cupos"
+                />
+              }
+            />
+          }
+        >
+          <span className="sr-only">Desactivar reserva de cupos</span>
+          {/* Icono "ojo tachado" = acción de desactivar visualmente el periodo
+              para usuarios externos (reservas). Se podría cambiar por un
+              candado si se prefiere metáfora de "bloqueo". */}
+          <XIcon />
+        </TooltipTrigger>
+        <TooltipContent>Desactivar periodo de reserva de cupos</TooltipContent>
+      </Tooltip>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Desactivar reserva de cupos</AlertDialogTitle>

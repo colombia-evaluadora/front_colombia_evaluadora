@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { inputTriggerVariants, inputVariants, useInputVariant } from "@/components/ui/input"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 
 interface SubjectOptionLike<T extends string | number> {
@@ -147,16 +148,21 @@ export function SubjectsMultiSelect<T extends string | number>({
           <p className="text-muted-foreground px-2 py-1.5 text-sm">{emptyMessage}</p>
         ) : (
           options.map((option) => (
-            <DropdownMenuCheckboxItem
-              key={option.id}
-              checked={value.includes(option.id)}
-              onCheckedChange={() => toggle(option.id)}
-              disabled={disabled}
-              className="capitalize"
-              title={option.label}
-            >
-              {option.label}
-            </DropdownMenuCheckboxItem>
+            <Tooltip key={option.id}>
+              <TooltipTrigger
+                render={
+                  <DropdownMenuCheckboxItem
+                    checked={value.includes(option.id)}
+                    onCheckedChange={() => toggle(option.id)}
+                    disabled={disabled}
+                    className="capitalize"
+                  />
+                }
+              >
+                {option.label}
+              </TooltipTrigger>
+              <TooltipContent side="right">{option.label}</TooltipContent>
+            </Tooltip>
           ))
         )}
       </DropdownMenuContent>

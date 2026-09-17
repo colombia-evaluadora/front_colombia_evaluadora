@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query"
 
 import { Button } from "@/components/ui/button"
 import { FolderOpenIcon } from "@/components/ui/icons"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useNotify } from "@/components/notice/notice-context"
 
 import { getErrorMessage } from "@/lib/api-client"
@@ -152,16 +153,23 @@ export function FilesMatriculaDialog({ matricula, trigger = "icon", editable = f
           Archivos
         </Button>
       ) : (
-        <Button
-          type="button"
-          variant="ghost"
-          color="neutral"
-          size="icon-sm"
-          aria-label={`Archivos de ${fullName}`}
-          onClick={() => setOpen(true)}
-        >
-          <FolderOpenIcon />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                type="button"
+                variant="ghost"
+                color="neutral"
+                size="icon-sm"
+                aria-label={`Archivos de ${fullName}`}
+                onClick={() => setOpen(true)}
+              />
+            }
+          >
+            <FolderOpenIcon />
+          </TooltipTrigger>
+          <TooltipContent>{`Archivos de ${fullName}`}</TooltipContent>
+        </Tooltip>
       )}
       <SupportFilesSheet
         open={open}

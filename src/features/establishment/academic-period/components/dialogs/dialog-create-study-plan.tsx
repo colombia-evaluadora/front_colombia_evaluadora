@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/input-group"
 import { Switch } from "@/components/ui/switch"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import {
   Combobox,
   ComboboxField,
@@ -274,27 +275,24 @@ export function CreateStudyPlanDialog({
         }
       }}
     >
-      <DialogTrigger
-        render={
-          isEditing ? (
-            <Button variant="ghost" color="neutral" size="icon-sm" />
-          ) : (
-            <Button color="primary" size="sm" />
-          )
-        }
-      >
-        {isEditing ? (
-          <>
+      {isEditing ? (
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <DialogTrigger render={<Button variant="ghost" color="neutral" size="icon-sm" />} />
+            }
+          >
             <span className="sr-only">Editar plan de estudio</span>
             <PencilIcon />
-          </>
-        ) : (
-          <>
-            <ControlPointIcon data-icon="inline-start" />
-            Agregar
-          </>
-        )}
-      </DialogTrigger>
+          </TooltipTrigger>
+          <TooltipContent>Editar plan de estudio</TooltipContent>
+        </Tooltip>
+      ) : (
+        <DialogTrigger render={<Button color="primary" size="sm" />}>
+          <ControlPointIcon data-icon="inline-start" />
+          Agregar
+        </DialogTrigger>
+      )}
       <DialogPortal>
         <DialogOverlay forceRender className="bg-black/30" />
       </DialogPortal>
@@ -370,14 +368,21 @@ export function CreateStudyPlanDialog({
                               setPickerOpen(false)
                             }}
                           >
-                            <InputGroupButton
-                              variant="ghost"
-                              size="icon-xs"
-                              aria-label="Mostrar opciones"
-                              onClick={() => setPickerOpen((o) => !o)}
-                            >
-                              <CaretDownIcon className="pointer-events-none size-3.5" />
-                            </InputGroupButton>
+                            <Tooltip>
+                              <TooltipTrigger
+                                render={
+                                  <InputGroupButton
+                                    variant="ghost"
+                                    size="icon-xs"
+                                    aria-label="Mostrar opciones"
+                                    onClick={() => setPickerOpen((o) => !o)}
+                                  />
+                                }
+                              >
+                                <CaretDownIcon className="pointer-events-none size-3.5" />
+                              </TooltipTrigger>
+                              <TooltipContent>Mostrar opciones</TooltipContent>
+                            </Tooltip>
                             <ComboboxFieldContent anchor={pickerAnchorRef}>
                               <ComboboxGroup>
                                 {asignaturaOptions.length === 0 ? (

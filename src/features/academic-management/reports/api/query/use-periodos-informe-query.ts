@@ -5,7 +5,12 @@ import { evalCol } from "@/lib/eval-col-client"
 import type { PeriodoInforme } from "@/features/academic-management/reports/api/types"
 
 interface PeriodoRow {
-  pk_tperiodo_evaluacion: number
+  /** El resto del módulo nombra esta columna `fk_tperiodo_evaluacion`
+   *  (`/informes/grupo`); se aceptan las dos porque la doc no trae un ejemplo
+   *  de respuesta de este endpoint y con la clave equivocada el id llega
+   *  `undefined` y todos los checkboxes salen marcados. */
+  fk_tperiodo_evaluacion?: number
+  pk_tperiodo_evaluacion?: number
   nombre: string
   fecha_inicio: string
   fecha_fin: string
@@ -18,7 +23,7 @@ interface PeriodoRow {
 
 function toPeriodo(row: PeriodoRow): PeriodoInforme {
   return {
-    id: row.pk_tperiodo_evaluacion,
+    id: row.fk_tperiodo_evaluacion ?? row.pk_tperiodo_evaluacion ?? 0,
     nombre: row.nombre,
     fechaInicio: row.fecha_inicio,
     fechaFin: row.fecha_fin,
@@ -31,32 +36,30 @@ function toPeriodo(row: PeriodoRow): PeriodoInforme {
 }
 
 export interface PeriodosInformeParams {
+  sedeId: number | null
   /** Número de año (2026), no una FK: `TANO_LECTIVO` es por establecimiento. */
-  anio?: number
-  establecimientoId?: number
-  sedeId?: number
-}
-
-async function fetchPeriodos(params: PeriodosInformeParams): Promise<PeriodoInforme[]> {
-  // Se omite la clave en vez de mandarla vacía: el binder rechaza `""`.
-  const body: Record<string, number> = {}
-  if (params.anio != null) body.ANIO = params.anio
-  if (params.establecimientoId != null) body.FK_TESTABLECIMIENTO = params.establecimientoId
-  if (params.sedeId != null) body.FK_TSEDE = params.sedeId
-
-  const rows = await evalCol.postRows<PeriodoRow>("/informes/periodos", body)
-  return rows.map(toPeriodo)
+  anio: number | null
+  jornadaId: number | null
 }
 
 export const periodosInformeQueryKey = (params: PeriodosInformeParams) =>
   ["informes", "periodos", params] as const
 
-/** `POST /informes/periodos`. Sin parámetros devuelve el año en curso
- *  dentro del alcance del usuario. */
-export function usePeriodosInformeQuery(params: PeriodosInformeParams = {}) {
+/** `POST /informes/periodos`. `FK_TSEDE` y `FK_TLV_JORNADA` son obligatorios
+ *  desde el cambio de contrato: antes aceptaba `{}` y devolvía todo el año de
+ *  todas las sedes del alcance, con nombres repetidos e indistinguibles. */
+export function usePeriodosInformeQuery(params: PeriodosInformeParams) {
   return useQuery({
     queryKey: periodosInformeQueryKey(params),
-    queryFn: () => fetchPeriodos(params),
+    queryFn: async (): Promise<PeriodoInforme[]> => {
+      const rows = await evalCol.postRows<PeriodoRow>("/informes/periodos", {
+        FK_TSEDE: params.sedeId,
+        ANIO: params.anio,
+        FK_TLV_JORNADA: params.jornadaId,
+      })
+      return rows.map(toPeriodo)
+    },
+    enabled: params.sedeId != null && params.jornadaId != null,
     staleTime: 1000 * 60 * 5,
   })
 }

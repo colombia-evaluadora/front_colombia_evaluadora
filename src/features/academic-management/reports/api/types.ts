@@ -19,6 +19,55 @@ export type EstadoNota =
 
 export type ObservacionEstado = "APROBADA" | "MODIFICADA"
 
+/** La terna sede + año + jornada resuelve un periodo académico, y de ahí
+ *  salen los períodos de evaluación y los grupos. */
+export interface SedeInforme {
+  id: number
+  nombre: string
+  establecimientoId: number
+  establecimientoNombre: string
+}
+
+export interface AnioInforme {
+  anio: number
+  esActual: boolean
+}
+
+/** Una fila por período académico, no por jornada distinta: la terna puede
+ *  resolver más de uno y ningún índice lo impide. */
+export interface JornadaInforme {
+  id: number
+  nombre: string
+  periodoAcademicoId: number
+  periodoAcademicoNombre: string
+  fechaInicio: string
+  fechaFin: string
+  enCurso: boolean
+}
+
+export interface GrupoPeriodo {
+  grupoId: number
+  grupoCodigo: string | null
+  grupoNombre: string
+  /** Armada con la misma convención del planeador — los códigos negativos de
+   *  preescolar son correctos. */
+  grupoEtiqueta: string
+  capacidad: number | null
+  estudiantes: number
+  /** La del grupo, que casi nunca es la del período académico: el endpoint no
+   *  filtra por ella, solo la devuelve. */
+  jornadaId: number | null
+  jornadaNombre: string | null
+  gradoId: number
+  gradoCodigo: string | null
+  gradoNombre: string
+  nivelEnsenanzaId: number | null
+  nivelEnsenanzaNombre: string | null
+  directorId: number | null
+  directorNombre: string | null
+  periodoAcademicoId: number
+}
+
 export interface PeriodoInforme {
   id: number
   nombre: string

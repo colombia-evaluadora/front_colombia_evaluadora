@@ -16,6 +16,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { useUpdateAcademicPeriodReservation } from "@/features/establishment/academic-period/api/mutations/update-academic-period-reservation"
 import { useAcademicPeriodQuery } from "@/features/establishment/academic-period/api/query/use-academic-period"
@@ -90,20 +91,27 @@ export function ActivateReservationDialog({ period }: ActivateReservationDialogP
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger
-        render={
-          <Button
-            variant="ghost"
-            color="neutral"
-            size="icon-sm"
-            disabled={!canActivate}
-            aria-label="Activar periodo de reserva de cupos"
-          />
-        }
-      >
-        <span className="sr-only">Activar reserva de cupos</span>
-        <CheckIcon />
-      </AlertDialogTrigger>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <AlertDialogTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  color="neutral"
+                  size="icon-sm"
+                  disabled={!canActivate}
+                  aria-label="Activar periodo de reserva de cupos"
+                />
+              }
+            />
+          }
+        >
+          <span className="sr-only">Activar reserva de cupos</span>
+          <CheckIcon />
+        </TooltipTrigger>
+        <TooltipContent>Activar periodo de reserva de cupos</TooltipContent>
+      </Tooltip>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Activar reserva de cupos</AlertDialogTitle>

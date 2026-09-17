@@ -1102,7 +1102,7 @@ function ManageEmployeeDialogContent({ open, onOpenChange, employeeId }: ManageE
     setAdditionalInfoDialogOpen(nextOpen)
   }
 
-  const mainTitle = isEditMode ? "Editar usuario" : "Agregar usuario"
+  const mainTitle = isEditMode ? "Editar funcionario" : "Agregar funcionario"
 
   return (
     <>
