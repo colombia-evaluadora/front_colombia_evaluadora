@@ -31,7 +31,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useUnidadDetalleQuery } from "@/features/planeador/api/query/use-unidades-query"
 import { useUnidadReferenteQuery } from "@/features/planeador/api/query/use-unidad-referente-query"
-import { useUnidadesTabsQuery } from "@/features/planeador/api/query/use-unidades-tabs-query"
+import { resolveInstrumentoLabel, useUnidadesTabsQuery } from "@/features/planeador/api/query/use-unidades-tabs-query"
 import { UNIDAD_TAB_FALLBACK } from "@/features/planeador/components/planeador-tabs"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
@@ -558,9 +558,7 @@ function UnidadAsociadaSection({
             // Instrumento (rótulo real) del Grado ya elegido — ver el
             // comentario sobre `unidadTabs` más arriba. Sin Grado/Asignatura
             // todavía elegidos cae al mismo fallback que `PlaneadorTabs`.
-            const instrumentoLabel =
-              (gradoId != null && unidadTabs?.find((t) => t.gradoIds.includes(gradoId))?.instrumento) ||
-              UNIDAD_TAB_FALLBACK
+            const instrumentoLabel = resolveInstrumentoLabel(gradoId, unidadTabs, UNIDAD_TAB_FALLBACK)
 
             return (
               <form.Field name="unidad">
@@ -787,11 +785,22 @@ function UnidadFichaYEvidencias({
   criteriosDisabledIds: number[]
 }) {
   const { data: unidad } = useUnidadDetalleQuery(unidadId)
-  // El árbol de evidencias a ofrecer sale del referente curricular de
-  // GRADO + ASIGNATURA (`GET /planeador/referente-curricular`), no de la
-  // unidad — cambiar de asignatura cambia el referente y con él las
-  // evidencias disponibles, sin importar qué unidad siga elegida.
+  // El árbol COMPLETO de nivel 1 (enunciados) + nivel 2 (evidencias) sale
+  // del referente curricular de GRADO + ASIGNATURA (`GET /planeador/
+  // referente-curricular`) — pero acá solo interesan los enunciados que la
+  // UNIDAD ya relacionó (`unidad.enunciadosDba`, elegidos en
+  // `UnidadInfoGeneralFields`/`CrearUnidadPopover`), no el catálogo entero:
+  // esta actividad marca evidencias de un enunciado que su unidad ya
+  // adoptó, no cualquier enunciado del nivel educativo.
   const { data: referente } = useReferenteCurricularQuery(gradoId, asignaturaId)
+  const { data: unidadTabs } = useUnidadesTabsQuery()
+  const instrumentoLabel = resolveInstrumentoLabel(gradoId, unidadTabs, UNIDAD_TAB_FALLBACK)
+  const enunciadosDeLaUnidad =
+    referente && unidad
+      ? referente.enunciados.filter((enunciado) =>
+          unidad.enunciadosDba.some((elegido) => elegido.id === enunciado.id),
+        )
+      : []
 
   return (
     <div className="flex flex-col gap-4">
@@ -801,11 +810,12 @@ function UnidadFichaYEvidencias({
         objetivos={unidad?.objetivos ?? []}
         contenidos={unidad?.contenidos ?? []}
       />
-      {referente && referente.enunciados.length > 0 && (
+      {referente && enunciadosDeLaUnidad.length > 0 && (
         <EnunciadosEvidenciasChecklist
+          instrumentoLabel={instrumentoLabel}
           nivel1Etiqueta={referente.nivel1Etiqueta}
           nivel2Etiqueta={referente.nivel2Etiqueta}
-          enunciados={referente.enunciados}
+          enunciados={enunciadosDeLaUnidad}
           seleccionadas={seleccionadas}
           onToggle={onToggle}
           disabledIds={disabledIds}
