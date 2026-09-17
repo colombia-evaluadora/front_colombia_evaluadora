@@ -123,13 +123,6 @@ export function ListaAgregableField({
             agregar()
           }
         }}
-        // Sin esto, tipear algo y clickear "Guardar" (u otro campo) sin
-        // pasar por el "+"/Enter perdía el texto en silencio: `draft` es
-        // estado local de este componente, nunca llegaba a `items`, que es
-        // lo único que lee el form al guardar. El blur de este input ocurre
-        // en el mousedown, ANTES del click de "Guardar" — para cuando ese
-        // click corre, `items` ya tiene lo que faltaba agregar.
-        onBlur={agregar}
       />
 
       {items.length > 0 && (
@@ -186,6 +179,9 @@ interface ListaAgregableCajaProps {
   items: string[]
   onChange: (items: string[]) => void
   placeholder?: string
+  /** Deshabilita el input de alta y las filas ya agregadas (editar/quitar)
+   *  — mismo criterio que `disabled` en `ListaAgregableCajaSelect`. */
+  disabled?: boolean
 }
 
 /**
@@ -216,6 +212,7 @@ export function ListaAgregableCaja({
   items,
   onChange,
   placeholder = "Agregar",
+  disabled = false,
 }: ListaAgregableCajaProps) {
   const [draft, setDraft] = useState("")
 
@@ -268,6 +265,7 @@ export function ListaAgregableCaja({
                     aria-label={`Editar ${columnLabel.toLowerCase()} ${index + 1}`}
                     value={item}
                     onChange={(e) => editar(index, e.target.value)}
+                    disabled={disabled}
                   />
                   <InputGroupAddon align="inline-end">
                     <Tooltip>
@@ -279,6 +277,7 @@ export function ListaAgregableCaja({
                             color="neutral"
                             aria-label={`Quitar "${item}"`}
                             onClick={() => quitar(index)}
+                            disabled={disabled}
                           />
                         }
                       >
@@ -307,13 +306,17 @@ export function ListaAgregableCaja({
               agregar()
             }
           }}
-          // Mismo criterio que `ListaAgregableField`: sin esto, tipear y
-          // guardar sin pasar por "Agregar"/Enter perdía el texto en
-          // silencio (`draft` nunca llegaba a `items`).
-          onBlur={agregar}
+          disabled={disabled}
         />
         {draft.trim() && (
-          <Button type="button" variant="fill" color="primary" size="default" onClick={agregar}>
+          <Button
+            type="button"
+            variant="fill"
+            color="primary"
+            size="default"
+            onClick={agregar}
+            disabled={disabled}
+          >
             <PlusCircleIcon data-icon="inline-start" />
             Agregar {columnLabel.toLowerCase()}
           </Button>
