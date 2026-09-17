@@ -169,6 +169,7 @@ export function UnidadInfoGeneralFields({
     enunciados: enunciadosDisponibles,
     nombre: referenteNombre,
     descripcion: referenteDescripcion,
+    nivel1Etiqueta,
     isPending: isPendingEnunciados,
   } = useEnunciadosDbaQuery(draft.gradoId, draft.asignaturaId)
 
@@ -380,7 +381,10 @@ export function UnidadInfoGeneralFields({
       <ListaAgregableCajaSelect
         title={referenteNombre ?? "Derechos Básicos de Aprendizaje"}
         description={referenteDescripcion ?? "Selecciona los enunciados asociados."}
-        columnLabel="Enunciados"
+        // Nunca el literal fijo "Enunciados": este mismo picker se usa para
+        // Preescolar, donde el nivel 1 real es "Propósito", no "Enunciado"
+        // (ver el comentario de `nivel1Etiqueta` en `use-enunciados-dba.ts`).
+        columnLabel={`${nivel1Etiqueta}s`}
         items={draft.enunciadosDba}
         options={enunciadosDisponibles}
         onChange={(enunciadosDba) => onChange({ enunciadosDba })}
