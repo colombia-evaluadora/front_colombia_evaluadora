@@ -19,6 +19,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { useDeleteStudyPlanItem } from "@/features/establishment/academic-period/api/mutations/delete-study-plan"
 import { deleteSubject } from "@/features/establishment/academic-period/api/mutations/delete-subject"
@@ -136,10 +137,17 @@ export function DeleteStudyPlanDialog({ item, subjectLabel = "Asignatura" }: Del
         else setOpen(true)
       }}
     >
-      <AlertDialogTrigger render={<Button variant="ghost" color="neutral" size="icon-sm" />}>
-        <span className="sr-only">Eliminar {subjectWord}</span>
-        <TrashIcon />
-      </AlertDialogTrigger>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <AlertDialogTrigger render={<Button variant="ghost" color="neutral" size="icon-sm" />} />
+          }
+        >
+          <span className="sr-only">Eliminar {subjectWord}</span>
+          <TrashIcon />
+        </TooltipTrigger>
+        <TooltipContent>Eliminar {subjectWord}</TooltipContent>
+      </Tooltip>
       <AlertDialogPortal>
         <AlertDialogOverlay forceRender className="bg-black/30" />
       </AlertDialogPortal>

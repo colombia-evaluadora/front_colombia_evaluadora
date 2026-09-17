@@ -21,6 +21,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { useExportGradeGroups } from "@/features/establishment/academic-period/api/mutations/export-grade-groups"
 import type {
@@ -60,13 +61,20 @@ export function ExportGradeGroupsDialog({ filters }: ExportGradeGroupsDialogProp
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger
-        render={
-          <Button variant="outline" color="muted" size="icon-sm" aria-label="Exportar grupos" />
-        }
-      >
-        <FileDownloadOutlinedIcon />
-      </DialogTrigger>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <DialogTrigger
+              render={
+                <Button variant="outline" color="muted" size="icon-sm" aria-label="Exportar grupos" />
+              }
+            />
+          }
+        >
+          <FileDownloadOutlinedIcon />
+        </TooltipTrigger>
+        <TooltipContent>Exportar grupos</TooltipContent>
+      </Tooltip>
       {/* `forceRender`: este Dialog se abre anidado dentro del Dialog de
           crear/editar grado (ya abierto) — mismo fix que
           dialog-select-general-area.tsx. */}

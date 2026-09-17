@@ -38,6 +38,12 @@ interface UnidadReferenteEnunciadoRow {
 interface UnidadReferenteRow {
   referente?: { id: number } | null
   fk_referente_curricular?: number | null
+  /** Nombre y finalidad del referente, tal como los captura Referente
+   *  Curricular ("DBA", "Garantizar aprendizajes estructurantes…"). Los
+   *  devuelve `fn_unidad_referente_detalle` (V255) desde siempre; es lo que
+   *  rotula la sección de enunciados, en vez de un literal fijo. */
+  referente_nombre?: string | null
+  referente_descripcion?: string | null
   enfoque_valor?: "EVALUATIVO" | "FORMATIVO" | null
   es_evaluativo?: boolean | null
   tipo_evaluacion_valor?: string | null
@@ -56,6 +62,10 @@ export interface UnidadReferente {
   tieneReferente: boolean
   esFormativo: boolean
   tipoEvaluacion: string | null
+  /** Rótulo y finalidad reales del referente. `null` cuando no hay referente
+   *  vigente: ahí la UI cae a su texto por defecto. */
+  nombre: string | null
+  descripcion: string | null
   /** Solo los YA relacionados (`relacionadoConUnidad`) — los demás no
    *  tienen `pkTunidadEnunciado` con qué desvincularlos. */
   enunciados: UnidadReferenteEnunciado[]
@@ -65,6 +75,8 @@ const SIN_REFERENTE: UnidadReferente = {
   tieneReferente: false,
   esFormativo: false,
   tipoEvaluacion: null,
+  nombre: null,
+  descripcion: null,
   enunciados: [],
 }
 
@@ -88,6 +100,8 @@ function toUnidadReferente(row: UnidadReferenteRow | undefined): UnidadReferente
     tieneReferente: true,
     esFormativo,
     tipoEvaluacion: row!.tipo_evaluacion_valor ?? null,
+    nombre: row!.referente_nombre ?? null,
+    descripcion: row!.referente_descripcion ?? null,
     enunciados: (row!.enunciados ?? [])
       .filter((e) => e.relacionadoConUnidad && e.pkTunidadEnunciado != null)
       .map((e) => ({ id: e.pk, text: e.texto, pkRelacion: e.pkTunidadEnunciado! })),

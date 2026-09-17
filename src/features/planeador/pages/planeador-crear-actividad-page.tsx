@@ -175,7 +175,7 @@ function PlaneadorCrearActividadPageContent() {
 
     if (recursosOmitidos.length > 0) {
       queueNotice(
-        `Actividad creada. No se guardaron estos materiales de tipo "Archivo" (todavía no hay carga de archivos): ${recursosOmitidos.join(", ")}.`,
+        `Actividad creada. No se guardaron estos materiales de tipo "Archivo" (sin un archivo cargado): ${recursosOmitidos.join(", ")}.`,
         { variant: "error" },
       )
     } else {

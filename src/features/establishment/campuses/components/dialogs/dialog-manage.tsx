@@ -255,7 +255,7 @@ export function ManageCampusDialog({
     if (isEditMode && campusId) {
       await updateMutation.mutateAsync({
         campusId,
-        values: { ...formValues, id: campusId },
+        values: { ...formValues, id: campusId, establishmentId: formValues.establishmentId ?? undefined },
       })
       return
     }

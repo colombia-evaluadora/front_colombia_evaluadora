@@ -1,6 +1,7 @@
 import type { ColumnDef } from "@tanstack/react-table"
 
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { Checkbox } from "@/components/ui/checkbox"
 import { PencilIcon } from "@/components/ui/icons"
 import { DataTableColumnHeader } from "@/components/data-table"
@@ -19,16 +20,23 @@ function ActionsCell({ campus, onEdit }: { campus: Campus; onEdit: (id: number) 
   return (
     <div className="flex items-center justify-end gap-1">
       {puedeEditar ? (
-        <Button
-          type="button"
-          variant="ghost"
-          color="neutral"
-          size="icon-sm"
-          aria-label="Editar sede"
-          onClick={() => onEdit(campus.id)}
-        >
-          <PencilIcon />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                type="button"
+                variant="ghost"
+                color="neutral"
+                size="icon-sm"
+                aria-label="Editar sede"
+                onClick={() => onEdit(campus.id)}
+              />
+            }
+          >
+            <PencilIcon />
+          </TooltipTrigger>
+          <TooltipContent>Editar sede</TooltipContent>
+        </Tooltip>
       ) : null}
       <DeleteCampusDialog campus={campus} />
     </div>

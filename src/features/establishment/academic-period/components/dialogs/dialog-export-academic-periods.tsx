@@ -19,6 +19,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { useExportAcademicPeriods } from "@/features/establishment/academic-period/api/mutations/export-academic-periods"
 import type {
@@ -55,18 +56,25 @@ export function ExportAcademicPeriodsDialog({ filters }: ExportAcademicPeriodsDi
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger
-        render={
-          <Button
-            variant="outline"
-            color="muted"
-            size="icon-sm"
-            aria-label="Exportar periodos filtrados"
-          />
-        }
-      >
-        <FileDownloadOutlinedIcon aria-hidden="true" />
-      </DialogTrigger>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <DialogTrigger
+              render={
+                <Button
+                  variant="outline"
+                  color="muted"
+                  size="icon-sm"
+                  aria-label="Exportar periodos filtrados"
+                />
+              }
+            />
+          }
+        >
+          <FileDownloadOutlinedIcon aria-hidden="true" />
+        </TooltipTrigger>
+        <TooltipContent>Exportar periodos filtrados</TooltipContent>
+      </Tooltip>
       <DialogContent showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>

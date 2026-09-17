@@ -168,7 +168,7 @@ function EditarActividadPageContent({
       onSuccess: ({ recursosOmitidos }) => {
         if (recursosOmitidos.length > 0) {
           notify(
-            `No se guardaron estos materiales de tipo "Archivo" (todavía no hay carga de archivos): ${recursosOmitidos.join(", ")}.`,
+            `No se guardaron estos materiales de tipo "Archivo" (sin un archivo cargado): ${recursosOmitidos.join(", ")}.`,
             { variant: "error" },
           )
         }

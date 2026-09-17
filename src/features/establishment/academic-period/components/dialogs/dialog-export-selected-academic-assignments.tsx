@@ -19,6 +19,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { useExportSelectedAcademicAssignments } from "@/features/establishment/academic-period/api/mutations/export-selected-academic-assignments"
 import type { ExportFormat } from "@/features/establishment/institution/api/types/export"
@@ -61,21 +62,28 @@ export function ExportSelectedAcademicAssignmentsDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger
-        render={
-          <Button
-            variant="outline"
-            color="muted"
-            size="sm"
-            aria-label={`Exportar ${count} seleccionados`}
-          />
-        }
-      >
-        <FileDownloadOutlinedIcon data-icon="inline-start" aria-hidden="true" />
-        <span aria-hidden="true" className="tabular-nums">
-          ({count})
-        </span>
-      </DialogTrigger>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <DialogTrigger
+              render={
+                <Button
+                  variant="outline"
+                  color="muted"
+                  size="sm"
+                  aria-label={`Exportar ${count} seleccionados`}
+                />
+              }
+            />
+          }
+        >
+          <FileDownloadOutlinedIcon data-icon="inline-start" aria-hidden="true" />
+          <span aria-hidden="true" className="tabular-nums">
+            ({count})
+          </span>
+        </TooltipTrigger>
+        <TooltipContent>{`Exportar ${count} seleccionados`}</TooltipContent>
+      </Tooltip>
       <DialogContent showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
