@@ -138,6 +138,7 @@ export function TeachingLevelsMultiSelect({
                     data-overflow={isHidden ? "true" : undefined}
                     variant="soft"
                     color="muted"
+                    title={level.nombre}
                     className={cn(
                       "text-xs normal-case",
                       !isTruncated && !isHidden && "shrink-0",
@@ -189,6 +190,7 @@ export function TeachingLevelsMultiSelect({
             checked={value.includes(level.id)}
             onCheckedChange={() => toggle(level.id)}
             className="capitalize"
+            title={level.nombre}
           >
             {level.nombre}
           </DropdownMenuCheckboxItem>
