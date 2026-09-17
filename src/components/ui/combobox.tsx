@@ -19,6 +19,7 @@ import {
   InputGroupInput,
 } from "@/components/ui/input-group"
 import { CaretDownIcon, XIcon, CheckIcon } from "@/components/ui/icons"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 const Combobox = ComboboxPrimitive.Root
 
@@ -666,16 +667,17 @@ function ComboboxFieldContent({
   )
 }
 
-function ComboboxFieldItem({ className, children, value, ...props }: ComboboxPrimitive.Item.Props) {
+const comboboxFieldItemClassName =
+  "group/combobox-field-item relative flex w-full cursor-pointer items-center gap-2.5 rounded-md py-2 pr-8 pl-3 text-sm transition-colors outline-hidden select-none data-highlighted:bg-secondary-22 data-highlighted:text-foreground not-data-[variant=destructive]:data-highlighted:**:text-foreground data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5"
+
+function ComboboxFieldItem({ className, children, value, title, ...props }: ComboboxPrimitive.Item.Props) {
   const { query, register } = React.useContext(ComboboxFilterContext)
   const id = React.useId()
 
+  const text = nodeToText(children)
   // El valor entra en la búsqueda además del label: muchas listas se conocen por
   // su código (DANE, NIT) y ese código no siempre está en el texto visible.
-  const haystack =
-    typeof value === "string" || typeof value === "number"
-      ? `${nodeToText(children)} ${value}`
-      : nodeToText(children)
+  const haystack = typeof value === "string" || typeof value === "number" ? `${text} ${value}` : text
   const visible = query === "" || matchesQuery(haystack, query)
 
   React.useEffect(() => {
@@ -685,16 +687,8 @@ function ComboboxFieldItem({ className, children, value, ...props }: ComboboxPri
 
   if (!visible) return null
 
-  return (
-    <ComboboxPrimitive.Item
-      data-slot="combobox-field-item"
-      value={value}
-      className={cn(
-        "group/combobox-field-item relative flex w-full cursor-pointer items-center gap-2.5 rounded-md py-2 pr-8 pl-3 text-sm transition-colors outline-hidden select-none data-highlighted:bg-secondary-22 data-highlighted:text-foreground not-data-[variant=destructive]:data-highlighted:**:text-foreground data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
-        className,
-      )}
-      {...props}
-    >
+  const itemContent = (
+    <>
       {/*
         block + min-w-0 en vez de flex: el text-overflow no aplica al contenido
         anónimo de un flex container, así que con display:flex la opción larga se
@@ -709,7 +703,45 @@ function ComboboxFieldItem({ className, children, value, ...props }: ComboboxPri
       >
         <CheckIcon className="pointer-events-none" />
       </ComboboxPrimitive.ItemIndicator>
-    </ComboboxPrimitive.Item>
+    </>
+  )
+
+  // Mismo problema que `SelectItem` (`select.tsx`): la opción se trunca con
+  // "…" y dos opciones distintas pueden quedar indistinguibles sin ver el
+  // texto completo. `text` ya sale de `nodeToText` (la misma que arma el
+  // haystack de búsqueda), así que cubre también hijos compuestos (ícono +
+  // texto), no solo children de tipo string.
+  const label = title ?? (text || undefined)
+
+  if (!label) {
+    return (
+      <ComboboxPrimitive.Item
+        data-slot="combobox-field-item"
+        value={value}
+        className={cn(comboboxFieldItemClassName, className)}
+        {...props}
+      >
+        {itemContent}
+      </ComboboxPrimitive.Item>
+    )
+  }
+
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <ComboboxPrimitive.Item
+            data-slot="combobox-field-item"
+            value={value}
+            className={cn(comboboxFieldItemClassName, className)}
+            {...props}
+          />
+        }
+      >
+        {itemContent}
+      </TooltipTrigger>
+      <TooltipContent side="right">{label}</TooltipContent>
+    </Tooltip>
   )
 }
 

@@ -98,6 +98,10 @@ export function UnidadFicha({
 }
 
 interface EnunciadosEvidenciasChecklistProps {
+  /** Rótulo real del instrumento ("Unidad temática", "Proyecto pedagógico",
+   *  …) — ver `resolveInstrumentoLabel` en `use-unidades-tabs-query.ts`.
+   *  Nunca un literal fijo: varía por nivel educativo. */
+  instrumentoLabel: string
   nivel1Etiqueta: string
   nivel2Etiqueta: string
   enunciados: ReferenteEnunciado[]
@@ -117,19 +121,23 @@ interface EnunciadosEvidenciasChecklistProps {
 }
 
 /**
- * Sección "Enunciado y evidencias de la unidad temática": un grupo por cada
- * enunciado del referente curricular de GRADO + ASIGNATURA de la actividad
- * (`GET /planeador/referente-curricular`, `useReferenteCurricularQuery` —
- * confirmado real, trae ya el árbol completo acotado a ese referente), con
- * un checkbox por cada una de sus evidencias (nivel 2, hijas de ese
- * enunciado). Al cambiar de grado/asignatura cambia el referente y con él
- * este árbol entero — no depende de qué unidad esté elegida.
+ * Sección "Enunciado y evidencias del <instrumento>": un grupo por cada
+ * enunciado que la UNIDAD ya relacionó (`unidad.enunciadosDba`, elegidos en
+ * `UnidadInfoGeneralFields`/`CrearUnidadPopover`) — no todo el catálogo del
+ * referente curricular de GRADO + ASIGNATURA (`GET /planeador/referente-
+ * curricular`, `useReferenteCurricularQuery`), que trae TODOS los
+ * enunciados posibles de ese nivel educativo, los haya adoptado la unidad o
+ * no. El caller (`UnidadFichaYEvidencias`/`UnidadFichaYEvidenciasDetalle`)
+ * ya filtra `enunciados` antes de pasarlos acá. Cada enunciado muestra un
+ * checkbox por cada una de sus evidencias (nivel 2, hijas de ese enunciado).
  *
- * Los rótulos ("Enunciado"/"Evidencia" vs "Propósito"/"Imprescindible")
- * son SIEMPRE los que trae `nivel1Etiqueta`/`nivel2Etiqueta` — nunca un
- * literal fijo, varían por nivel educativo.
+ * Los rótulos ("Enunciado"/"Evidencia" vs "Propósito"/"Imprescindible", y el
+ * nombre del instrumento en el título) son SIEMPRE los que trae
+ * `nivel1Etiqueta`/`nivel2Etiqueta`/`instrumentoLabel` — nunca un literal
+ * fijo, varían por nivel educativo.
  */
 export function EnunciadosEvidenciasChecklist({
+  instrumentoLabel,
   nivel1Etiqueta,
   nivel2Etiqueta,
   enunciados,
@@ -142,9 +150,9 @@ export function EnunciadosEvidenciasChecklist({
   if (enunciados.length === 0) {
     return (
       <div className={cn("flex flex-col gap-3", className)}>
-        <h4 className="text-sm font-semibold">Enunciado y evidencias de la unidad temática</h4>
+        <h4 className="text-sm font-semibold">Enunciado y evidencias del {instrumentoLabel.toLowerCase()}</h4>
         <p className="text-muted-foreground text-sm">
-          Esta asignatura todavía no tiene {pluralizar(nivel1Etiqueta)} definidos.
+          Esta unidad todavía no tiene {pluralizar(nivel1Etiqueta)} relacionados.
         </p>
       </div>
     )
@@ -152,7 +160,7 @@ export function EnunciadosEvidenciasChecklist({
 
   return (
     <div className={cn("flex flex-col gap-4", className)}>
-      <h4 className="text-sm font-semibold">Enunciado y evidencias de la unidad temática</h4>
+      <h4 className="text-sm font-semibold">Enunciado y evidencias del {instrumentoLabel.toLowerCase()}</h4>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {enunciados.map((enunciado) => (

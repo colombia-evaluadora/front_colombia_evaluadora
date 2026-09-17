@@ -14,6 +14,14 @@ export interface EstudianteFilas {
   filas: FilaInforme[]
 }
 
+/** La columna "Pe" muestra solo el número. Acepta vacío porque el nombre
+ *  del período depende de una columna del backend que ya llegó `undefined`
+ *  una vez, y un rótulo faltante no debería tumbar la tabla entera. */
+export function numeroPeriodo(nombre: string | null | undefined): string {
+  if (!nombre) return "—"
+  return nombre.match(/\d+/)?.[0] ?? nombre
+}
+
 /** Las columnas salen de los datos, no de un catálogo fijo: cada grupo tiene
  *  su propio plan de estudio. */
 export function columnasDeFilas(filas: FilaInforme[]): ColumnaAsignatura[] {

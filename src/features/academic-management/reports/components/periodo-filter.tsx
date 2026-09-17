@@ -8,9 +8,16 @@ interface PeriodoFilterProps {
   seleccionados: number[]
   onChange: (periodos: number[]) => void
   cargando?: boolean
+  mensajeVacio?: string
 }
 
-export function PeriodoFilter({ periodos, seleccionados, onChange, cargando }: PeriodoFilterProps) {
+export function PeriodoFilter({
+  periodos,
+  seleccionados,
+  onChange,
+  cargando,
+  mensajeVacio = "No hay períodos de evaluación para esta combinación.",
+}: PeriodoFilterProps) {
   function toggle(periodo: number) {
     if (seleccionados.includes(periodo)) {
       onChange(seleccionados.filter((p) => p !== periodo))
@@ -24,9 +31,7 @@ export function PeriodoFilter({ periodos, seleccionados, onChange, cargando }: P
       <legend className="px-1 text-sm font-semibold text-muted-foreground">Período e informe</legend>
       {cargando && <span className="text-sm text-muted-foreground">Cargando períodos…</span>}
       {!cargando && periodos.length === 0 && (
-        <span className="text-sm text-muted-foreground">
-          No hay períodos de evaluación para este año.
-        </span>
+        <span className="text-sm text-muted-foreground">{mensajeVacio}</span>
       )}
       {periodos.map((periodo) => (
         <div key={periodo.id} className="flex items-center gap-2">

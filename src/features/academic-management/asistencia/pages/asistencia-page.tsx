@@ -5,6 +5,7 @@ import { TableScreen, TableScreenBody, TableScreenHeader, TableScreenTitle } fro
 import { NoticeOutlet, NoticeProvider, useNotify } from "@/components/notice/notice-context"
 import { Button } from "@/components/ui/button"
 import { ClipboardCheckIcon } from "@/components/ui/icons"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { paths } from "@/config/paths"
 import { asistenciaRoute } from "@/router"
@@ -158,21 +159,28 @@ function AsistenciaPageContent() {
       <TableScreenBody>
         <div className="mb-4 flex items-center justify-between gap-4">
           <AsistenciaMonthDayPicker selected={selectedDay} onSelect={setSelectedDay} />
-          <Button
-            variant="outline"
-            color="neutral"
-            size="icon-sm"
-            aria-label="Ir a Seguimiento"
-            render={
-              <Link
-                to={paths.app.asistenciaSeguimiento.getHref()}
-                search={{ sede: sedeId ?? undefined }}
-              />
-            }
-            nativeButton={false}
-          >
-            <ClipboardCheckIcon />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  variant="outline"
+                  color="neutral"
+                  size="icon-sm"
+                  aria-label="Ir a Seguimiento"
+                  render={
+                    <Link
+                      to={paths.app.asistenciaSeguimiento.getHref()}
+                      search={{ sede: sedeId ?? undefined }}
+                    />
+                  }
+                  nativeButton={false}
+                />
+              }
+            >
+              <ClipboardCheckIcon />
+            </TooltipTrigger>
+            <TooltipContent>Ir a Seguimiento</TooltipContent>
+          </Tooltip>
         </div>
 
         <div className="mb-4">

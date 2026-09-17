@@ -2,6 +2,8 @@ import { useQuery } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
 
+import { texto } from "@/features/academic-management/reports/api/columnas"
+
 import type {
   CambioPendiente,
   PlanillaPendiente,
@@ -9,11 +11,14 @@ import type {
 
 interface AlertaRow {
   fk_tgrupo: number
-  grupo: string
+  grupo?: string
+  grupo_nombre?: string
   fk_tasignatura: number
-  asignatura: string
+  asignatura?: string
+  asignatura_nombre?: string
   fk_tperiodo_evaluacion: number
-  periodo: string
+  periodo?: string
+  periodo_nombre?: string
   fk_tfuncionario: number | null
   docente: string | null
   docentes_asignados: number | null
@@ -24,11 +29,11 @@ interface AlertaRow {
 function toPlanillaPendiente(row: AlertaRow): PlanillaPendiente {
   return {
     grupoId: row.fk_tgrupo,
-    grupoNombre: row.grupo,
+    grupoNombre: texto(row.grupo, row.grupo_nombre),
     asignaturaId: row.fk_tasignatura,
-    asignaturaNombre: row.asignatura,
+    asignaturaNombre: texto(row.asignatura, row.asignatura_nombre),
     periodoId: row.fk_tperiodo_evaluacion,
-    periodoNombre: row.periodo,
+    periodoNombre: texto(row.periodo, row.periodo_nombre),
     funcionarioId: row.fk_tfuncionario,
     docente: row.docente,
     actividades: row.actividades ?? 0,
@@ -39,11 +44,11 @@ function toPlanillaPendiente(row: AlertaRow): PlanillaPendiente {
 function toCambioPendiente(row: AlertaRow): CambioPendiente {
   return {
     grupoId: row.fk_tgrupo,
-    grupoNombre: row.grupo,
+    grupoNombre: texto(row.grupo, row.grupo_nombre),
     asignaturaId: row.fk_tasignatura,
-    asignaturaNombre: row.asignatura,
+    asignaturaNombre: texto(row.asignatura, row.asignatura_nombre),
     periodoId: row.fk_tperiodo_evaluacion,
-    periodoNombre: row.periodo,
+    periodoNombre: texto(row.periodo, row.periodo_nombre),
     funcionarioId: row.fk_tfuncionario,
     docente: row.docente,
     estudiantesAfectados: row.estudiantes_afectados ?? 0,

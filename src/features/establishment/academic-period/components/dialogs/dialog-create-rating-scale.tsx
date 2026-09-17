@@ -44,6 +44,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { useCreateRatingScalesBulk } from "@/features/establishment/academic-period/api/mutations/create-rating-scales-bulk"
 import { useEvaluationCriteriaQuery } from "@/features/establishment/academic-period/api/query/use-evaluation-criteria"
@@ -872,24 +873,38 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                                 {/* `true`: la fila en edición mantiene el bloque
                                   fijo, no sujeto al hover. */}
                                 <div className={actionsOverlayClass(true)}>
-                                  <Button
-                                    type="button"
-                                    color="primary"
-                                    size="icon-sm"
-                                    aria-label="Guardar cambios"
-                                    onClick={saveEditRow}
-                                  >
-                                    <CheckIcon />
-                                  </Button>
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="icon-sm"
-                                    aria-label="Cancelar edición"
-                                    onClick={cancelEdit}
-                                  >
-                                    <XIcon />
-                                  </Button>
+                                  <Tooltip>
+                                    <TooltipTrigger
+                                      render={
+                                        <Button
+                                          type="button"
+                                          color="primary"
+                                          size="icon-sm"
+                                          aria-label="Guardar cambios"
+                                          onClick={saveEditRow}
+                                        />
+                                      }
+                                    >
+                                      <CheckIcon />
+                                    </TooltipTrigger>
+                                    <TooltipContent>Guardar cambios</TooltipContent>
+                                  </Tooltip>
+                                  <Tooltip>
+                                    <TooltipTrigger
+                                      render={
+                                        <Button
+                                          type="button"
+                                          variant="outline"
+                                          size="icon-sm"
+                                          aria-label="Cancelar edición"
+                                          onClick={cancelEdit}
+                                        />
+                                      }
+                                    >
+                                      <XIcon />
+                                    </TooltipTrigger>
+                                    <TooltipContent>Cancelar edición</TooltipContent>
+                                  </Tooltip>
                                 </div>
                               </TableCell>
                             </TableRow>
@@ -912,17 +927,24 @@ export function CreateRatingScaleDialog({ academicPeriodId }: CreateRatingScaleD
                             {actionsSpacerCell}
                             <TableCell className={ACTIONS_CELL_CLASS}>
                               <div className={actionsOverlayClass()}>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  color="neutral"
-                                  size="icon-sm"
-                                  aria-label={`Editar ${d.nombre}`}
-                                  disabled={editingIndex !== null}
-                                  onClick={() => startEdit(index)}
-                                >
-                                  <PencilIcon />
-                                </Button>
+                                <Tooltip>
+                                  <TooltipTrigger
+                                    render={
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        color="neutral"
+                                        size="icon-sm"
+                                        aria-label={`Editar ${d.nombre}`}
+                                        disabled={editingIndex !== null}
+                                        onClick={() => startEdit(index)}
+                                      />
+                                    }
+                                  >
+                                    <PencilIcon />
+                                  </TooltipTrigger>
+                                  <TooltipContent>{`Editar ${d.nombre}`}</TooltipContent>
+                                </Tooltip>
                                 <ConfirmRemoveButton
                                   label={`Quitar ${d.nombre}`}
                                   description={`Se quitará la escala «${d.nombre}». Esta acción no se puede deshacer.`}

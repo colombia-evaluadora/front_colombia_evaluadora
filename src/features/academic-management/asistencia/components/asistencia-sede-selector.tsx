@@ -9,6 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 
 import { useSedesOpcionesQuery } from "@/features/academic-management/asistencia/api/query/use-sedes-opciones-query"
@@ -70,17 +71,24 @@ export function AsistenciaSedeSelector({ sedeId, onChange }: AsistenciaSedeSelec
   return (
     <div className="flex min-w-0 max-w-96 items-center gap-1">
       {canScrollLeft && (
-        <Button
-          type="button"
-          variant="ghost"
-          color="neutral"
-          size="icon-xs"
-          aria-label="Ver sedes anteriores"
-          className="shrink-0"
-          onClick={() => scrollBy(-SCROLL_STEP)}
-        >
-          <CaretLeftIcon />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                type="button"
+                variant="ghost"
+                color="neutral"
+                size="icon-xs"
+                aria-label="Ver sedes anteriores"
+                className="shrink-0"
+                onClick={() => scrollBy(-SCROLL_STEP)}
+              />
+            }
+          >
+            <CaretLeftIcon />
+          </TooltipTrigger>
+          <TooltipContent>Ver sedes anteriores</TooltipContent>
+        </Tooltip>
       )}
 
       <div
@@ -118,34 +126,48 @@ export function AsistenciaSedeSelector({ sedeId, onChange }: AsistenciaSedeSelec
       </div>
 
       {canScrollRight && (
-        <Button
-          type="button"
-          variant="ghost"
-          color="neutral"
-          size="icon-xs"
-          aria-label="Ver más sedes"
-          className="shrink-0"
-          onClick={() => scrollBy(SCROLL_STEP)}
-        >
-          <CaretRightIcon />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                type="button"
+                variant="ghost"
+                color="neutral"
+                size="icon-xs"
+                aria-label="Ver más sedes"
+                className="shrink-0"
+                onClick={() => scrollBy(SCROLL_STEP)}
+              />
+            }
+          >
+            <CaretRightIcon />
+          </TooltipTrigger>
+          <TooltipContent>Ver más sedes</TooltipContent>
+        </Tooltip>
       )}
 
       <DropdownMenu>
-        <DropdownMenuTrigger
-          render={
-            <Button
-              type="button"
-              variant="ghost"
-              color="neutral"
-              size="icon-xs"
-              aria-label="Ver todas las sedes"
-              className="shrink-0"
-            />
-          }
-        >
-          <CaretDownIcon />
-        </DropdownMenuTrigger>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <DropdownMenuTrigger
+                render={
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    color="neutral"
+                    size="icon-xs"
+                    aria-label="Ver todas las sedes"
+                    className="shrink-0"
+                  />
+                }
+              />
+            }
+          >
+            <CaretDownIcon />
+          </TooltipTrigger>
+          <TooltipContent>Ver todas las sedes</TooltipContent>
+        </Tooltip>
         <DropdownMenuContent align="end" className="min-w-72">
           {(sedes ?? []).map((sede) => (
             <DropdownMenuItem

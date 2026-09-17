@@ -348,71 +348,78 @@ export function UnidadInfoGeneralFields({
         isPending={isPendingEnunciados}
       />
 
-      <FieldSet className="gap-2">
-        {/* `<legend>` a mano, no `FieldLegend`: esa lleva `text-xs uppercase`
-            fijos en su clase base (ver el mismo arreglo en
-            `ListaAgregableCaja`, `field-lista-agregable.tsx`) — se ve como
-            el label chico de un field, no como título de sección. */}
-        <legend className="mb-0 text-base font-semibold">
-          Forma en que se van a calcular las actividades.
-        </legend>
-        <FieldDescription>
-          Selecciona el método que se va a utilizar para definir el resultado a partir de las
-          actividades calificadas al estudiante.
-        </FieldDescription>
+      {/* Una unidad de enfoque Formativo no admite actividades sumativas
+          (ver el bloqueo de "Es evaluativa" en `UnidadAsociadaSection`,
+          `form-editar-actividad.tsx`) — sin actividades sumativas no hay
+          nada que "calcular" a partir de ellas, así que el método de
+          cálculo no aplica y no tiene sentido pedirlo acá. */}
+      {enfoqueDerivado !== "Formativo" && (
+        <FieldSet className="gap-2">
+          {/* `<legend>` a mano, no `FieldLegend`: esa lleva `text-xs uppercase`
+              fijos en su clase base (ver el mismo arreglo en
+              `ListaAgregableCaja`, `field-lista-agregable.tsx`) — se ve como
+              el label chico de un field, no como título de sección. */}
+          <legend className="mb-0 text-base font-semibold">
+            Forma en que se van a calcular las actividades.
+          </legend>
+          <FieldDescription>
+            Selecciona el método que se va a utilizar para definir el resultado a partir de las
+            actividades calificadas al estudiante.
+          </FieldDescription>
 
-        <RadioGroup
-          value={draft.metodoCalculo}
-          onValueChange={(v) => v && onChange({ metodoCalculo: v as MetodoCalculo })}
-          className="grid gap-3 sm:grid-cols-3"
-        >
-          {METODO_CALCULO_OPTIONS.map((option) => {
-            const info = METODO_CALCULO_INFO[option]
-            const checked = draft.metodoCalculo === option
-            return (
-              <label
-                key={option}
-                className={cn(
-                  "flex cursor-pointer flex-col gap-1.5 rounded-md border p-3",
-                  checked ? "border-primary bg-primary-22" : "hover:bg-muted-22",
-                )}
-              >
-                <span className="flex items-center gap-2 text-sm font-semibold">
-                  <RadioGroupItem value={option} />
-                  {info.label}
-                </span>
-                <span className="text-muted-foreground text-sm">{info.description}</span>
-              </label>
-            )
-          })}
-        </RadioGroup>
+          <RadioGroup
+            value={draft.metodoCalculo}
+            onValueChange={(v) => v && onChange({ metodoCalculo: v as MetodoCalculo })}
+            className="grid gap-3 sm:grid-cols-3"
+          >
+            {METODO_CALCULO_OPTIONS.map((option) => {
+              const info = METODO_CALCULO_INFO[option]
+              const checked = draft.metodoCalculo === option
+              return (
+                <label
+                  key={option}
+                  className={cn(
+                    "flex cursor-pointer flex-col gap-1.5 rounded-md border p-3",
+                    checked ? "border-primary bg-primary-22" : "hover:bg-muted-22",
+                  )}
+                >
+                  <span className="flex items-center gap-2 text-sm font-semibold">
+                    <RadioGroupItem value={option} />
+                    {info.label}
+                  </span>
+                  <span className="text-muted-foreground text-sm">{info.description}</span>
+                </label>
+              )
+            })}
+          </RadioGroup>
 
-        {/* Un aviso por método, mismo estilo — cada uno aclara qué le va a
-            pedir (o no) el diálogo de "Agregar actividad" al vincular. */}
-        {draft.metodoCalculo === "Ponderado" && (
-          <div className="border-blue-stroke bg-blue-22 text-blue flex items-start gap-2 rounded-md border p-3 text-xs">
-            <InfoIcon className="mt-0.5 size-4 shrink-0" />
-            Al vincular una actividad, deberás asignar el porcentaje que tendrá, ya que se usa
-            cálculo por ponderación.
-          </div>
-        )}
+          {/* Un aviso por método, mismo estilo — cada uno aclara qué le va a
+              pedir (o no) el diálogo de "Agregar actividad" al vincular. */}
+          {draft.metodoCalculo === "Ponderado" && (
+            <div className="border-blue-stroke bg-blue-22 text-blue flex items-start gap-2 rounded-md border p-3 text-xs">
+              <InfoIcon className="mt-0.5 size-4 shrink-0" />
+              Al vincular una actividad, deberás asignar el porcentaje que tendrá, ya que se usa
+              cálculo por ponderación.
+            </div>
+          )}
 
-        {draft.metodoCalculo === "Promedio simple" && (
-          <div className="border-blue-stroke bg-blue-22 text-blue flex items-start gap-2 rounded-md border p-3 text-xs">
-            <InfoIcon className="mt-0.5 size-4 shrink-0" />
-            Al vincular una actividad no necesitas asignarle un porcentaje: el resultado se
-            calcula como el promedio simple de todas las actividades vinculadas.
-          </div>
-        )}
+          {draft.metodoCalculo === "Promedio simple" && (
+            <div className="border-blue-stroke bg-blue-22 text-blue flex items-start gap-2 rounded-md border p-3 text-xs">
+              <InfoIcon className="mt-0.5 size-4 shrink-0" />
+              Al vincular una actividad no necesitas asignarle un porcentaje: el resultado se
+              calcula como el promedio simple de todas las actividades vinculadas.
+            </div>
+          )}
 
-        {draft.metodoCalculo === "Suma de puntos" && (
-          <div className="border-blue-stroke bg-blue-22 text-blue flex items-start gap-2 rounded-md border p-3 text-xs">
-            <InfoIcon className="mt-0.5 size-4 shrink-0" />
-            Al vincular una actividad, deberás asignar el puntaje que tendrá, ya que se usa
-            cálculo por suma de puntos.
-          </div>
-        )}
-      </FieldSet>
+          {draft.metodoCalculo === "Suma de puntos" && (
+            <div className="border-blue-stroke bg-blue-22 text-blue flex items-start gap-2 rounded-md border p-3 text-xs">
+              <InfoIcon className="mt-0.5 size-4 shrink-0" />
+              Al vincular una actividad, deberás asignar el puntaje que tendrá, ya que se usa
+              cálculo por suma de puntos.
+            </div>
+          )}
+        </FieldSet>
+      )}
     </div>
   )
 }
