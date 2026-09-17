@@ -75,6 +75,11 @@ function toActividadResumen(row: ActividadMiaRow & { pk_tactividad: number }): A
     unidad: { id: 0, nombre: row.unidad ?? "" },
     evidenciasIds: [],
     criteriosUnidadIds: [],
+    // El resumen de "Mis actividades" no trae la selección de estudiantes
+    // puntuales (no hay endpoint confirmado para leerla, ver el comentario
+    // de `Actividad.matriculasIds`) — mismo default que una actividad nueva.
+    matriculasIds: [],
+    asignarTodoElGrupo: true,
     asignatura: row.asignatura ?? "",
     grado: row.grado ?? "",
     grupo: row.grupo ?? "",
