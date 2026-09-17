@@ -296,7 +296,14 @@ export function DataTable({
                         colSpan={columnCount}
                         className="whitespace-normal bg-muted/20 p-4"
                       >
-                        {subRow}
+                        {/* El div (no el <tr>, que no reenvía ref) solo se
+                            monta al abrir la subfila -- el ref dispara el
+                            scroll una vez por apertura, no en cada render. */}
+                        <div
+                          ref={(el) => el?.scrollIntoView({ behavior: "smooth", block: "nearest" })}
+                        >
+                          {subRow}
+                        </div>
                       </TableCell>
                     </TableRow>
                   )}

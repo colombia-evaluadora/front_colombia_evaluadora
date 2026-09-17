@@ -20,6 +20,7 @@ import {
   PopoverTitle,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import {
@@ -54,6 +55,10 @@ import {
 } from "@/features/academic-management/reports/lib/agrupar-filas"
 import { GradesTable } from "@/features/academic-management/reports/components/grades-table"
 import { HistorialCambiosSheet } from "@/features/academic-management/reports/components/historial-cambios-sheet"
+import {
+  InformeFiltros,
+  type FiltrosInforme,
+} from "@/features/academic-management/reports/components/informe-filtros"
 import { ObservacionesTable } from "@/features/academic-management/reports/components/observaciones-table"
 import { ObservacionSheet } from "@/features/academic-management/reports/components/observacion-sheet"
 import {
@@ -206,7 +211,16 @@ function ReportsPageContent() {
   const { notify } = useNotify()
   const navigate = useNavigate()
 
-  const periodosQuery = usePeriodosInformeQuery()
+  const [filtros, setFiltros] = React.useState<FiltrosInforme>({
+    sedeId: null,
+    anio: null,
+    jornada: null,
+  })
+
+  const periodosQuery = usePeriodosInformeQuery({
+    anio: filtros.anio ?? undefined,
+    sedeId: filtros.sedeId ?? undefined,
+  })
   const gruposQuery = useDocenteGruposQuery()
 
   const [periodos, setPeriodos] = React.useState<number[]>([])
@@ -216,8 +230,24 @@ function ReportsPageContent() {
   const [seleccionPorGrupo, setSeleccionPorGrupo] = React.useState<Record<number, Set<number>>>({})
   const [observacionAbierta, setObservacionAbierta] = React.useState<FilaInforme | null>(null)
 
-  const periodosDisponibles = React.useMemo(() => periodosQuery.data ?? [], [periodosQuery.data])
+  // La jornada no es parámetro de `/informes/periodos`: se filtra acá, y un
+  // período sin jornada aplica a todas.
+  const periodosDisponibles = React.useMemo(() => {
+    const todos = periodosQuery.data ?? []
+    if (!filtros.jornada) return todos
+    return todos.filter((p) => p.jornada == null || p.jornada === filtros.jornada)
+  }, [periodosQuery.data, filtros.jornada])
   const grupos = React.useMemo(() => gruposQuery.data ?? [], [gruposQuery.data])
+
+  // Cambiar de sede/año/jornada deja seleccionados períodos que ya no están en
+  // la lista; si se vacía, el arranque vuelve a sembrar.
+  React.useEffect(() => {
+    if (periodosDisponibles.length === 0) return
+    setPeriodos((prev) => {
+      const validos = prev.filter((id) => periodosDisponibles.some((p) => p.id === id))
+      return validos.length === prev.length ? prev : validos
+    })
+  }, [periodosDisponibles])
 
   // Arranque: el período en curso (o el primero que haya) y la primera pestaña.
   React.useEffect(() => {
@@ -358,6 +388,9 @@ function ReportsPageContent() {
       </TableScreenHeader>
 
       <TableScreenBody>
+        <InformeFiltros filtros={filtros} onChange={setFiltros} />
+        <Separator className="my-4" />
+
         <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
           <PeriodoFilter
             periodos={periodosDisponibles}
