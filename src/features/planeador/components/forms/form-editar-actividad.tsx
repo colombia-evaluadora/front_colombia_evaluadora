@@ -1896,8 +1896,10 @@ function EvaluacionSection({
                 </FieldLabel>
                 <Select value={field.state.value} onValueChange={(v) => v && field.handleChange(v)} >
                   <SelectTrigger id={field.name}>
-                    <SelectValue>
-                      {(value) => (value === "Otro" ? "Otro (personalizado)" : (value as string))}
+                    <SelectValue placeholder="Seleccione">
+                      {(value) =>
+                        !value ? "Seleccione" : value === "Otro" ? "Otro (personalizado)" : (value as string)
+                      }
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
@@ -2022,7 +2024,11 @@ function InstrumentoEvaluacionSection({
   return (
     <form.Subscribe selector={(state) => state.values.instrumento}>
       {(instrumento) =>
-        instrumento === "Lista de cotejo" ? (
+        // Sin instrumento elegido no hay nada que definir todavía — antes
+        // caía al mismo `else` que "Rúbrica" y mostraba de arranque la
+        // sección de Criterios sin que el docente hubiera elegido nada en
+        // "Instrumento de evaluación".
+        !instrumento ? null : instrumento === "Lista de cotejo" ? (
           <ListaCotejoSection form={form} />
         ) : instrumento === "Escala de valoración" ? (
           <EscalaValoracionSection form={form} unidades={unidades} tipoEvaluacion={tipoEvaluacion} />
