@@ -215,17 +215,17 @@ export function UnidadInfoGeneralFields({
   // afecta el DEFECTO cuando el referente no personalizó nada.
   const subjectLabel = useStudyPlanSubjectLabel(draft.gradoId, false)
 
+  // Grado + Asignatura son el punto de partida de la unidad: el resto de
+  // los campos (nombre, descripción, objetivos, contenidos, DBA, método de
+  // cálculo) no tiene sentido completarlo antes de saber a qué grado/
+  // asignatura pertenece — mismo criterio que `EditarActividadForm` en
+  // `form-editar-actividad.tsx`.
+  const hasGradoAsignatura = draft.gradoId != null && draft.asignaturaId != null
+  const disabled = !hasGradoAsignatura
+
   return (
     <div className="flex flex-col gap-4">
       <div className="grid gap-4 sm:grid-cols-3">
-        <Field variant="outlined">
-          <FieldLabel>Nombre</FieldLabel>
-          <Input
-            placeholder="Ej: Diseño de prototipo"
-            value={draft.nombre}
-            onChange={(e) => onChange({ nombre: e.target.value })}
-          />
-        </Field>
         <Field variant="outlined">
           <FieldLabel>Grado</FieldLabel>
           <Select
@@ -329,6 +329,15 @@ export function UnidadInfoGeneralFields({
             </SelectContent>
           </Select>
         </Field>
+        <Field variant="outlined">
+          <FieldLabel>Nombre</FieldLabel>
+          <Input
+            placeholder="Ej: Diseño de prototipo"
+            value={draft.nombre}
+            onChange={(e) => onChange({ nombre: e.target.value })}
+            disabled={disabled}
+          />
+        </Field>
       </div>
 
       <Field variant="outlined">
@@ -337,6 +346,7 @@ export function UnidadInfoGeneralFields({
           className={TEXTAREA_OUTLINED}
           rows={3}
           placeholder="Propósito pedagógico y dinámica general"
+          disabled={disabled}
           value={draft.descripcion}
           onChange={(e) => onChange({ descripcion: e.target.value })}
         />
@@ -349,6 +359,7 @@ export function UnidadInfoGeneralFields({
         items={draft.objetivos}
         onChange={(objetivos) => onChange({ objetivos })}
         placeholder="Escribe un nuevo objetivo"
+        disabled={disabled}
       />
 
       <ListaAgregableCaja
@@ -358,6 +369,7 @@ export function UnidadInfoGeneralFields({
         items={draft.contenidos}
         onChange={(contenidos) => onChange({ contenidos })}
         placeholder="Escribe un nuevo componente"
+        disabled={disabled}
       />
 
       {/* Enunciados de DBA ofrecidos según el Grado de la unidad: grado →
@@ -372,7 +384,7 @@ export function UnidadInfoGeneralFields({
         items={draft.enunciadosDba}
         options={enunciadosDisponibles}
         onChange={(enunciadosDba) => onChange({ enunciadosDba })}
-        disabled={!draft.grado}
+        disabled={disabled || !draft.grado}
         isPending={isPendingEnunciados}
       />
 
@@ -399,6 +411,7 @@ export function UnidadInfoGeneralFields({
             value={draft.metodoCalculo}
             onValueChange={(v) => v && onChange({ metodoCalculo: v as MetodoCalculo })}
             className="grid gap-3 sm:grid-cols-3"
+            disabled={disabled}
           >
             {METODO_CALCULO_OPTIONS.map((option) => {
               const info = METODO_CALCULO_INFO[option]

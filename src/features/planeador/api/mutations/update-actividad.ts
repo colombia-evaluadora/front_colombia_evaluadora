@@ -47,6 +47,13 @@ async function updateActividad({ actividadId, data }: UpdateActividadInput): Pro
   }
   if (data.grupoId != null) body.FK_TGRUPO = data.grupoId
   if (data.asignaturaId != null) body.FK_TASIGNATURA = data.asignaturaId
+  // Solo si el docente eligió alguien a mano en "Estudiantes" esta vez —
+  // `data.matriculasIds` siempre arranca en `[]` (el detalle real no trae
+  // de vuelta la selección previa, ver el comentario de `Actividad.
+  // matriculasIds`), así que nunca se manda `ASIGNAR_TODO_EL_GRUPO` acá:
+  // haría un PUT parcial que sin querer resetea a "todo el grupo" una
+  // actividad que ya tenía estudiantes puntuales asignados.
+  if (data.matriculasIds.length > 0) body.FK_TMATRICULAS = data.matriculasIds
   const tipoActividadId = await resolveTipoActividadId(data.tipo)
   if (tipoActividadId != null) body.FK_TLV_TIPO_ACTIVIDAD = tipoActividadId
   // Alternativos, no coexisten (ver el comentario de `Actividad.notaMaxima`

@@ -16,7 +16,7 @@ import {
   updateUnidadInfoGeneral,
 } from "@/mocks/db/unidades-tematicas"
 import { nextId } from "@/mocks/db/next-id"
-import { getCalificacionesByActividad } from "@/mocks/db/calificaciones"
+import { buildEstudiantes, getCalificacionesByActividad } from "@/mocks/db/calificaciones"
 import { campusesDb } from "@/mocks/db/campuses"
 import { establishmentsRowsDb } from "@/mocks/db/establishments"
 
@@ -111,6 +111,7 @@ const ACTIVIDAD_LIST_URL = "/api/eval-col/planeador/actividades"
 const ACTIVIDAD_STATS_URL = "/api/eval-col/planeador/actividades/stats"
 const ACTIVIDAD_CALENDARIO_URL = "/api/eval-col/planeador/actividades/calendario"
 const ACTIVIDAD_MIAS_URL = "/api/eval-col/planeador/actividades/mias"
+const ACTIVIDAD_ESTUDIANTES_GRUPO_URL = "/api/eval-col/planeador/actividades/estudiantes-grupo"
 const ACTIVIDAD_DETAIL_URL = "/api/eval-col/planeador/actividades/:id"
 const ACTIVIDAD_CALIFICACIONES_URL =
   "/api/eval-col/planeador/actividades/:id/calificaciones"
@@ -508,6 +509,30 @@ export const planeadorHandlers = [
       dia: porDia.dia,
       dia_anterior: porDia.diaAnterior,
       dia_siguiente: porDia.diaSiguiente,
+    }))
+    return HttpResponse.json({ rows })
+  }),
+
+  // Registrada antes que `ACTIVIDAD_DETAIL_URL` (`:id`) — mismo cuidado que
+  // el resto de rutas estáticas de este archivo: si no, "estudiantes-grupo"
+  // calzaría ahí como si fuera un id. Reusa `buildEstudiantes` (mismo
+  // generador determinista que ya usa `getCalificacionesByActividad`) con un
+  // grado/grupo sintético a partir del `grupoId` — el mock no modela una
+  // tabla `TMATRICULA` real, así que no hay de dónde sacar el grado/grupo
+  // "de verdad" del grupo pedido.
+  http.get(ACTIVIDAD_ESTUDIANTES_GRUPO_URL, async ({ request }) => {
+    await delay(150)
+    const url = new URL(request.url)
+    const grupoId = Number(url.searchParams.get("grupo"))
+    if (!grupoId) {
+      return HttpResponse.json({ message: "grupo es obligatorio" }, { status: 400 })
+    }
+    const estudiantes = buildEstudiantes(String(grupoId % 12), String(Math.floor(grupoId / 12) % 5))
+    const rows = estudiantes.map((e) => ({
+      fk_tmatricula: grupoId * 1000 + e.id,
+      fk_testudiante: grupoId * 1000 + e.id,
+      estudiante: `${e.nombres} ${e.apellidos}`,
+      documento: String(1000000000 + grupoId * 1000 + e.id),
     }))
     return HttpResponse.json({ rows })
   }),
