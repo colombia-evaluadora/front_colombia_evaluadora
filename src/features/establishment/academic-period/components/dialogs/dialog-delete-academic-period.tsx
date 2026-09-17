@@ -17,6 +17,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { useDeleteAcademicPeriod } from "@/features/establishment/academic-period/api/mutations/delete-academic-period"
 import type { AcademicPeriod } from "@/features/establishment/academic-period/api/types/academic-period"
@@ -52,10 +53,17 @@ export function DeleteAcademicPeriodDialog({ period }: DeleteAcademicPeriodDialo
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger render={<Button variant="ghost" color="neutral" size="icon-sm" />}>
-        <span className="sr-only">Eliminar periodo</span>
-        <TrashIcon />
-      </AlertDialogTrigger>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <AlertDialogTrigger render={<Button variant="ghost" color="neutral" size="icon-sm" />} />
+          }
+        >
+          <span className="sr-only">Eliminar periodo</span>
+          <TrashIcon />
+        </TooltipTrigger>
+        <TooltipContent>Eliminar periodo</TooltipContent>
+      </Tooltip>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Eliminar</AlertDialogTitle>

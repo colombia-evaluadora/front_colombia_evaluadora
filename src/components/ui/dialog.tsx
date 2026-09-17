@@ -4,6 +4,7 @@ import { Dialog as DialogPrimitive } from "@base-ui/react/dialog"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { XIcon } from "@/components/ui/icons"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 function Dialog({ ...props }: DialogPrimitive.Root.Props) {
   return <DialogPrimitive.Root data-slot="dialog" {...props} />
@@ -55,20 +56,27 @@ function DialogContent({
       >
         {children}
         {showCloseButton && (
-          <DialogPrimitive.Close
-            data-slot="dialog-close"
-            render={
-              <Button
-                variant="ghost"
-                color="muted"
-                className="absolute top-5 right-5"
-                size="icon-sm"
-              />
-            }
-          >
-            <XIcon className="size-4" />
-            <span className="sr-only">Cerrar</span>
-          </DialogPrimitive.Close>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <DialogPrimitive.Close
+                  data-slot="dialog-close"
+                  render={
+                    <Button
+                      variant="ghost"
+                      color="muted"
+                      className="absolute top-5 right-5"
+                      size="icon-sm"
+                    />
+                  }
+                />
+              }
+            >
+              <XIcon className="size-4" />
+              <span className="sr-only">Cerrar</span>
+            </TooltipTrigger>
+            <TooltipContent>Cerrar</TooltipContent>
+          </Tooltip>
         )}
       </DialogPrimitive.Popup>
     </DialogPortal>

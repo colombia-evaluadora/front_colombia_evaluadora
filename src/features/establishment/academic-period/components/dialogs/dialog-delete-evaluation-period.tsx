@@ -17,6 +17,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { useDeleteEvaluationPeriod } from "@/features/establishment/academic-period/api/mutations/delete-evaluation-period"
 import type { EvaluationPeriod } from "@/features/establishment/academic-period/api/types/evaluation-period"
@@ -46,10 +47,17 @@ export function DeleteEvaluationPeriodDialog({
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger render={<Button variant="ghost" color="neutral" size="icon-sm" />}>
-        <span className="sr-only">Eliminar periodo de evaluación</span>
-        <TrashIcon />
-      </AlertDialogTrigger>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <AlertDialogTrigger render={<Button variant="ghost" color="neutral" size="icon-sm" />} />
+          }
+        >
+          <span className="sr-only">Eliminar periodo de evaluación</span>
+          <TrashIcon />
+        </TooltipTrigger>
+        <TooltipContent>Eliminar periodo de evaluación</TooltipContent>
+      </Tooltip>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Eliminar</AlertDialogTitle>

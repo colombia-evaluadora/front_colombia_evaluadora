@@ -19,6 +19,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { useDeleteGradeGroup } from "@/features/establishment/academic-period/api/mutations/delete-grade-group"
 import type { GradeGroup } from "@/features/establishment/academic-period/api/types/grade-group"
@@ -50,10 +51,17 @@ export function DeleteGradeGroupDialog({ gradeGroup }: DeleteGradeGroupDialogPro
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger render={<Button variant="ghost" color="neutral" size="icon-sm" />}>
-        <span className="sr-only">Eliminar grupo</span>
-        <TrashIcon />
-      </AlertDialogTrigger>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <AlertDialogTrigger render={<Button variant="ghost" color="neutral" size="icon-sm" />} />
+          }
+        >
+          <span className="sr-only">Eliminar grupo</span>
+          <TrashIcon />
+        </TooltipTrigger>
+        <TooltipContent>Eliminar grupo</TooltipContent>
+      </Tooltip>
       {/* `forceRender`: este AlertDialog se abre anidado dentro del Dialog de
           crear/editar grado (ya abierto) — sin forzar su propio overlay, no
           bloquea el fondo (mismo fix que dialog-select-general-area.tsx). */}

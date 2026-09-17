@@ -17,6 +17,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { useDeleteAreaSubject } from "@/features/establishment/academic-period/api/mutations/delete-area-subject"
 import type { AreaSubject } from "@/features/establishment/academic-period/api/types/area-subject"
@@ -48,10 +49,17 @@ export function DeleteAreaSubjectDialog({ areaSubject }: DeleteAreaSubjectDialog
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger render={<Button variant="ghost" color="neutral" size="icon-sm" />}>
-        <span className="sr-only">Eliminar área/asignatura</span>
-        <TrashIcon />
-      </AlertDialogTrigger>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <AlertDialogTrigger render={<Button variant="ghost" color="neutral" size="icon-sm" />} />
+          }
+        >
+          <span className="sr-only">Eliminar área/asignatura</span>
+          <TrashIcon />
+        </TooltipTrigger>
+        <TooltipContent>Eliminar área/asignatura</TooltipContent>
+      </Tooltip>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Eliminar</AlertDialogTitle>

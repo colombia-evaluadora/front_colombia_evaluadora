@@ -153,10 +153,12 @@ export function UnidadInfoGeneralFields({
     }
   }, [draft.enfoquePedagogico, enfoqueDerivado, onChange])
 
-  const { enunciados: enunciadosDisponibles, isPending: isPendingEnunciados } = useEnunciadosDbaQuery(
-    draft.gradoId,
-    draft.asignaturaId,
-  )
+  const {
+    enunciados: enunciadosDisponibles,
+    nombre: referenteNombre,
+    descripcion: referenteDescripcion,
+    isPending: isPendingEnunciados,
+  } = useEnunciadosDbaQuery(draft.gradoId, draft.asignaturaId)
 
   // Grado/Asignatura salen de `GET /planeador/docentes/grado-asignatura`
   // (mismo endpoint real que ya usa el filtro de la Planilla): son los
@@ -189,7 +191,7 @@ export function UnidadInfoGeneralFields({
     <div className="flex flex-col gap-4">
       <div className="grid gap-4 sm:grid-cols-3">
         <Field variant="outlined">
-          <FieldLabel>Nombre de la unidad</FieldLabel>
+          <FieldLabel>Nombre</FieldLabel>
           <Input
             placeholder="Ej: Diseño de prototipo"
             value={draft.nombre}
@@ -306,15 +308,15 @@ export function UnidadInfoGeneralFields({
         <Textarea
           className={TEXTAREA_OUTLINED}
           rows={3}
-          placeholder="Propósito pedagógico y dinámica general de la unidad"
+          placeholder="Propósito pedagógico y dinámica general"
           value={draft.descripcion}
           onChange={(e) => onChange({ descripcion: e.target.value })}
         />
       </Field>
 
       <ListaAgregableCaja
-        title="Objetivos específicos de la unidad"
-        description="Define los objetivos específicos que se esperan alcanzar con esta unidad."
+        title="Objetivos específicos"
+        description="Define los objetivos específicos que se esperan alcanzar."
         columnLabel="Objetivo"
         items={draft.objetivos}
         onChange={(objetivos) => onChange({ objetivos })}
@@ -322,8 +324,8 @@ export function UnidadInfoGeneralFields({
       />
 
       <ListaAgregableCaja
-        title="Contenidos de la unidad"
-        description="Agrega los componentes o temas que se abordarán en esta unidad."
+        title="Contenidos"
+        description="Agrega los componentes o temas que se abordarán."
         columnLabel="Contenido (componente)"
         items={draft.contenidos}
         onChange={(contenidos) => onChange({ contenidos })}
@@ -336,8 +338,8 @@ export function UnidadInfoGeneralFields({
           Asignatura. Deshabilitado sin grado elegido, mismo criterio que
           el `<Select>` de Asignatura de arriba. */}
       <ListaAgregableCajaSelect
-        title="Derechos Básicos de Aprendizaje"
-        description="Selecciona los enunciados de DBA asociados a esta unidad."
+        title={referenteNombre ?? "Derechos Básicos de Aprendizaje"}
+        description={referenteDescripcion ?? "Selecciona los enunciados asociados."}
         columnLabel="Enunciados"
         items={draft.enunciadosDba}
         options={enunciadosDisponibles}
@@ -352,11 +354,11 @@ export function UnidadInfoGeneralFields({
             `ListaAgregableCaja`, `field-lista-agregable.tsx`) — se ve como
             el label chico de un field, no como título de sección. */}
         <legend className="mb-0 text-base font-semibold">
-          Forma en que se van a calcular las actividades dentro de la unidad.
+          Forma en que se van a calcular las actividades.
         </legend>
         <FieldDescription>
-          Selecciona el método que se va a utilizar para definir el resultado de la unidad a
-          partir de las actividades calificadas al estudiante.
+          Selecciona el método que se va a utilizar para definir el resultado a partir de las
+          actividades calificadas al estudiante.
         </FieldDescription>
 
         <RadioGroup
@@ -390,24 +392,24 @@ export function UnidadInfoGeneralFields({
         {draft.metodoCalculo === "Ponderado" && (
           <div className="border-blue-stroke bg-blue-22 text-blue flex items-start gap-2 rounded-md border p-3 text-xs">
             <InfoIcon className="mt-0.5 size-4 shrink-0" />
-            Al vincular una actividad, deberás asignar el porcentaje que tendrá dentro de la
-            unidad, ya que esta unidad utiliza cálculo por ponderación
+            Al vincular una actividad, deberás asignar el porcentaje que tendrá, ya que se usa
+            cálculo por ponderación.
           </div>
         )}
 
         {draft.metodoCalculo === "Promedio simple" && (
           <div className="border-blue-stroke bg-blue-22 text-blue flex items-start gap-2 rounded-md border p-3 text-xs">
             <InfoIcon className="mt-0.5 size-4 shrink-0" />
-            Al vincular una actividad no necesitas asignarle un porcentaje: esta unidad calcula el
-            resultado como el promedio simple de todas las actividades vinculadas
+            Al vincular una actividad no necesitas asignarle un porcentaje: el resultado se
+            calcula como el promedio simple de todas las actividades vinculadas.
           </div>
         )}
 
         {draft.metodoCalculo === "Suma de puntos" && (
           <div className="border-blue-stroke bg-blue-22 text-blue flex items-start gap-2 rounded-md border p-3 text-xs">
             <InfoIcon className="mt-0.5 size-4 shrink-0" />
-            Al vincular una actividad, deberás asignar el puntaje que tendrá dentro de la
-            unidad, ya que esta unidad utiliza cálculo por suma de puntos
+            Al vincular una actividad, deberás asignar el puntaje que tendrá, ya que se usa
+            cálculo por suma de puntos.
           </div>
         )}
       </FieldSet>

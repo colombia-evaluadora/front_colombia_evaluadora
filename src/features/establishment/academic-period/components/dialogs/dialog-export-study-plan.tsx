@@ -21,6 +21,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { useExportStudyPlan } from "@/features/establishment/academic-period/api/mutations/export-study-plan"
 import type { ExportFormat } from "@/features/establishment/academic-period/api/types/study-plan"
@@ -58,18 +59,25 @@ export function ExportStudyPlanDialog({ academicPeriodId }: ExportStudyPlanDialo
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger
-        render={
-          <Button
-            variant="outline"
-            color="muted"
-            size="icon-sm"
-            aria-label="Exportar plan de estudio"
-          />
-        }
-      >
-        <FileDownloadOutlinedIcon />
-      </DialogTrigger>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <DialogTrigger
+              render={
+                <Button
+                  variant="outline"
+                  color="muted"
+                  size="icon-sm"
+                  aria-label="Exportar plan de estudio"
+                />
+              }
+            />
+          }
+        >
+          <FileDownloadOutlinedIcon />
+        </TooltipTrigger>
+        <TooltipContent>Exportar plan de estudio</TooltipContent>
+      </Tooltip>
       {/* `forceRender`: este Dialog se abre anidado dentro del Dialog de
           crear/editar grado (ya abierto) — mismo fix que
           dialog-select-general-area.tsx. */}

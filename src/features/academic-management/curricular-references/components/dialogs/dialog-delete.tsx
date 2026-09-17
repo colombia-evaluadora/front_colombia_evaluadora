@@ -14,6 +14,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { getErrorMessage } from "@/lib/api-client"
 
 import { useDelete } from "@/features/academic-management/curricular-references/api/mutations/use-delete"
@@ -50,19 +51,26 @@ export function DeleteCurricularReferenceDialog({
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger
-        render={
-          <Button
-            type="button"
-            variant="ghost"
-            color="neutral"
-            size="icon-sm"
-            aria-label={`Eliminar ${label}`}
-          />
-        }
-      >
-        <TrashIcon />
-      </AlertDialogTrigger>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <AlertDialogTrigger
+              render={
+                <Button
+                  type="button"
+                  variant="ghost"
+                  color="neutral"
+                  size="icon-sm"
+                  aria-label={`Eliminar ${label}`}
+                />
+              }
+            />
+          }
+        >
+          <TrashIcon />
+        </TooltipTrigger>
+        <TooltipContent>{`Eliminar ${label}`}</TooltipContent>
+      </Tooltip>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Eliminar</AlertDialogTitle>

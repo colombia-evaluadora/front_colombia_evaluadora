@@ -9,6 +9,14 @@ export interface Campus {
   commune: string
   address: string
   phone: string
+  /**
+   * `FK_TESTABLECIMIENTO` de la sede. Opcional porque solo lo trae el
+   * detalle (`fn_sed_buscar_por_pk`), no el listado. Se usa en edición
+   * para filtrar el catálogo de zonas al EE al que pertenece la sede
+   * —ver `dialog-manage.tsx`—: el EE es inmutable, así que el formulario
+   * no lo edita ni lo manda, solo lo lee.
+   */
+  establishmentId?: number
 }
 
 /**
@@ -21,7 +29,7 @@ export interface Campus {
  * alta, y solo aparece el selector cuando el usuario logueado es super
  * admin (los demás roles solo pueden crear sedes en su propio EE).
  */
-export type CampusDraft = Omit<Campus, "id"> & { establishmentId: number | null }
+export type CampusDraft = Omit<Campus, "id" | "establishmentId"> & { establishmentId: number | null }
 
 /** Opción liviana para el selector de establecimiento (super admin). */
 export interface EstablishmentOption {

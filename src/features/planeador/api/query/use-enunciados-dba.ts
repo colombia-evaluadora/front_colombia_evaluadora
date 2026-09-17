@@ -20,6 +20,10 @@ export function useEnunciadosDbaQuery(gradoId: number | undefined, asignaturaId:
   const { data, isPending } = useReferenteCurricularQuery(gradoId, asignaturaId)
   return {
     enunciados: data?.enunciados ?? [],
+    // El referente define cómo se llama la sección y para qué sirve; el
+    // llamador cae a su texto por defecto mientras no haya referente.
+    nombre: data?.nombre ?? null,
+    descripcion: data?.descripcion ?? null,
     isPending: gradoId != null && isPending,
   }
 }

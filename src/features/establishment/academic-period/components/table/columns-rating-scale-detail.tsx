@@ -3,6 +3,7 @@ import { CheckIcon, PencilIcon, SpinnerIcon, XIcon } from "@/components/ui/icons
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { Checkbox } from "@/components/ui/checkbox"
 import { DataTableColumnHeader } from "@/components/data-table"
 import { Input } from "@/components/ui/input"
@@ -267,45 +268,66 @@ export function createRatingScaleDetailColumns({
         if (isEditing(scale)) {
           return (
             <>
-              <Button
-                type="button"
-                color="primary"
-                size="icon-sm"
-                aria-label="Guardar cambios"
-                disabled={isSaving}
-                aria-busy={isSaving}
-                onClick={() => onSave(scale)}
-              >
-                {isSaving ? <SpinnerIcon className="animate-spin" /> : <CheckIcon />}
-              </Button>
-              <Button
-                type="button"
-                variant="fill"
-                color="neutral"
-                size="icon-sm"
-                aria-label="Cancelar edición"
-                disabled={isSaving}
-                onClick={onCancel}
-              >
-                <XIcon />
-              </Button>
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      type="button"
+                      color="primary"
+                      size="icon-sm"
+                      aria-label="Guardar cambios"
+                      disabled={isSaving}
+                      aria-busy={isSaving}
+                      onClick={() => onSave(scale)}
+                    />
+                  }
+                >
+                  {isSaving ? <SpinnerIcon className="animate-spin" /> : <CheckIcon />}
+                </TooltipTrigger>
+                <TooltipContent>Guardar cambios</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      type="button"
+                      variant="fill"
+                      color="neutral"
+                      size="icon-sm"
+                      aria-label="Cancelar edición"
+                      disabled={isSaving}
+                      onClick={onCancel}
+                    />
+                  }
+                >
+                  <XIcon />
+                </TooltipTrigger>
+                <TooltipContent>Cancelar edición</TooltipContent>
+              </Tooltip>
             </>
           )
         }
 
         return (
           <>
-            <Button
-              type="button"
-              variant="ghost"
-              color="neutral"
-              size="icon-sm"
-              aria-label="Editar escala de valoración"
-              disabled={editingCodigo !== null}
-              onClick={() => onStartEdit(scale)}
-            >
-              <PencilIcon />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    color="neutral"
+                    size="icon-sm"
+                    aria-label="Editar escala de valoración"
+                    disabled={editingCodigo !== null}
+                    onClick={() => onStartEdit(scale)}
+                  />
+                }
+              >
+                <PencilIcon />
+              </TooltipTrigger>
+              <TooltipContent>Editar escala de valoración</TooltipContent>
+            </Tooltip>
             <DeleteRatingScaleDialog scale={{ ...scale, codigo: bandaIdForLevel(scale, levelId) }} />
           </>
         )

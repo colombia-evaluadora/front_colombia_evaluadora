@@ -21,6 +21,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { useExportSelectedStudyPlanItems } from "@/features/establishment/academic-period/api/mutations/export-selected-study-plan-items"
 import type { ExportFormat } from "@/features/establishment/academic-period/api/types/study-plan"
@@ -66,21 +67,28 @@ export function ExportSelectedStudyPlanItemsDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger
-        render={
-          <Button
-            variant="outline"
-            color="muted"
-            size="sm"
-            aria-label={`Exportar ${count} seleccionados`}
-          />
-        }
-      >
-        <FileDownloadOutlinedIcon data-icon="inline-start" aria-hidden="true" />
-        <span aria-hidden="true" className="tabular-nums">
-          ({count})
-        </span>
-      </DialogTrigger>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <DialogTrigger
+              render={
+                <Button
+                  variant="outline"
+                  color="muted"
+                  size="sm"
+                  aria-label={`Exportar ${count} seleccionados`}
+                />
+              }
+            />
+          }
+        >
+          <FileDownloadOutlinedIcon data-icon="inline-start" aria-hidden="true" />
+          <span aria-hidden="true" className="tabular-nums">
+            ({count})
+          </span>
+        </TooltipTrigger>
+        <TooltipContent>{`Exportar ${count} seleccionados`}</TooltipContent>
+      </Tooltip>
       {/* `forceRender`: este Dialog se abre anidado dentro del Dialog de
           crear/editar grado (ya abierto) — mismo fix que
           dialog-select-general-area.tsx. */}
