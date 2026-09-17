@@ -5,6 +5,7 @@ import { Input, inputTriggerVariants, inputVariants, useInputVariant } from "@/c
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { ConfirmRemoveButton } from "@/components/confirm-remove-button"
 import { cn } from "@/lib/utils"
 import { getErrorMessage } from "@/lib/api-client"
@@ -151,16 +152,25 @@ export function AreaSelect({ academicPeriodId, value, onChange }: AreaSelectProp
               aria-label="Nombre de la nueva área"
             />
             <InputGroupAddon align="inline-end">
-              <Button
-                type="button"
-                color="primary"
-                size="icon-sm"
-                aria-label={draftMatch ? `Seleccionar "${draftMatch.label}"` : "Agregar área"}
-                disabled={!draft.trim()}
-                onClick={agregar}
-              >
-                {draftMatch ? <CheckIcon /> : <PlusIcon weight="bold" />}
-              </Button>
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      type="button"
+                      color="primary"
+                      size="icon-sm"
+                      aria-label={draftMatch ? `Seleccionar "${draftMatch.label}"` : "Agregar área"}
+                      disabled={!draft.trim()}
+                      onClick={agregar}
+                    />
+                  }
+                >
+                  {draftMatch ? <CheckIcon /> : <PlusIcon weight="bold" />}
+                </TooltipTrigger>
+                <TooltipContent>
+                  {draftMatch ? `Seleccionar "${draftMatch.label}"` : "Agregar área"}
+                </TooltipContent>
+              </Tooltip>
             </InputGroupAddon>
           </InputGroup>
           {draftMatch && (

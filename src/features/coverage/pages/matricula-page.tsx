@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button"
 import { ControlPointIcon, GearIcon } from "@/components/ui/icons"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { Link } from "@tanstack/react-router"
 import { paths } from "@/config/paths"
 
@@ -13,16 +14,23 @@ export function MatriculaPage() {
     <MatriculaDataTable
       title="Matrícula"
       titleAction={
-        <Button
-          render={<Link to={paths.app.coberturaMatriculaConfiguracion.getHref()} />}
-          variant="outline"
-          color="neutral"
-          size="icon-sm"
-          aria-label="Configuración de parámetros requeridos"
-          nativeButton={false}
-        >
-          <GearIcon />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                render={<Link to={paths.app.coberturaMatriculaConfiguracion.getHref()} />}
+                variant="outline"
+                color="neutral"
+                size="icon-sm"
+                aria-label="Configuración de parámetros requeridos"
+                nativeButton={false}
+              />
+            }
+          >
+            <GearIcon />
+          </TooltipTrigger>
+          <TooltipContent>Configuración de parámetros requeridos</TooltipContent>
+        </Tooltip>
       }
       action={
         puedeCrear ? (

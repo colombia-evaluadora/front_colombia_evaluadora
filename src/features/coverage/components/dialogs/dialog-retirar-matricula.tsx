@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { PersonRemoveIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useNotify } from "@/components/notice/notice-context"
 
 import { getErrorMessage } from "@/lib/api-client"
@@ -52,24 +53,35 @@ export function RetirarMatriculaDialog({ matricula, trigger = "icon" }: RetirarM
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger
-        render={
-          trigger === "button" ? (
-            <Button type="button" variant="outline" color="primary" size="sm" aria-label={`Retirar a ${fullName}`} />
-          ) : (
-            <Button
-              type="button"
-              variant="ghost"
-              color="neutral"
-              size="icon-sm"
-              aria-label={`Retirar a ${fullName}`}
-            />
-          )
-        }
-      >
-        <PersonRemoveIcon data-icon={trigger === "button" ? "inline-start" : undefined} />
-        {trigger === "button" && "Retirar"}
-      </AlertDialogTrigger>
+      {trigger === "button" ? (
+        <AlertDialogTrigger
+          render={<Button type="button" variant="outline" color="primary" size="sm" aria-label={`Retirar a ${fullName}`} />}
+        >
+          <PersonRemoveIcon data-icon="inline-start" />
+          Retirar
+        </AlertDialogTrigger>
+      ) : (
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <AlertDialogTrigger
+                render={
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    color="neutral"
+                    size="icon-sm"
+                    aria-label={`Retirar a ${fullName}`}
+                  />
+                }
+              />
+            }
+          >
+            <PersonRemoveIcon />
+          </TooltipTrigger>
+          <TooltipContent>{`Retirar a ${fullName}`}</TooltipContent>
+        </Tooltip>
+      )}
       <AlertDialogContent className="sm:max-w-md">
         <AlertDialogHeader>
           <AlertDialogTitle>Confirmación de retiro</AlertDialogTitle>

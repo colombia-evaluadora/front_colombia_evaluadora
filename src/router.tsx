@@ -43,6 +43,10 @@ import { campusesSearchSchema } from "@/features/establishment/campuses/api/sche
 import { employeesSearchSchema } from "@/features/establishment/employees/api/schema"
 import { curricularReferencesSearchSchema } from "@/features/academic-management/curricular-references/api/schema"
 import {
+  informesSearchSchema,
+  planillaInformeSearchSchema,
+} from "@/features/academic-management/reports/api/schema"
+import {
   asistenciaManualSearchSchema,
   asistenciaSearchSchema,
   asistenciaSeguimientoSearchSchema,
@@ -690,6 +694,7 @@ const CurricularReferenceDetailPage = lazyRouteComponent(
 export const gestionAcademicaInformesRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.gestionAcademicaInformes.path,
+  validateSearch: informesSearchSchema,
   staticData: { breadcrumb: [GESTION_ACADEMICA_CRUMB, { label: "Informes" }] },
   component: ReportsPage,
 })
@@ -699,6 +704,7 @@ const INFORMES_CRUMB = { label: "Informes", to: paths.app.gestionAcademicaInform
 export const planillaInformeRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: paths.app.gestionAcademicaInformesPlanilla.path,
+  validateSearch: planillaInformeSearchSchema,
   staticData: { breadcrumb: [GESTION_ACADEMICA_CRUMB, INFORMES_CRUMB, { label: "Planilla de calificación" }] },
   component: PlanillaInformePage,
 })

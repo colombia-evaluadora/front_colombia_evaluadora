@@ -30,6 +30,7 @@ import {
   ComboboxGroup,
 } from "@/components/ui/combobox"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { useCreateGrade } from "@/features/establishment/academic-period/api/mutations/create-grade"
 import { useUpdateGrade } from "@/features/establishment/academic-period/api/mutations/update-grade"
@@ -320,27 +321,24 @@ export function CreateGradeDialog({ jornada, academicPeriodId, grade }: CreateGr
         else requestClose()
       }}
     >
-      <DialogTrigger
-        render={
-          isEditing ? (
-            <Button variant="ghost" color="neutral" size="icon-sm" />
-          ) : (
-            <Button color="primary" size="sm" />
-          )
-        }
-      >
-        {isEditing ? (
-          <>
+      {isEditing ? (
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <DialogTrigger render={<Button variant="ghost" color="neutral" size="icon-sm" />} />
+            }
+          >
             <span className="sr-only">Editar grado</span>
             <PencilIcon />
-          </>
-        ) : (
-          <>
-            <ControlPointIcon data-icon="inline-start" />
-            Agregar
-          </>
-        )}
-      </DialogTrigger>
+          </TooltipTrigger>
+          <TooltipContent>Editar grado</TooltipContent>
+        </Tooltip>
+      ) : (
+        <DialogTrigger render={<Button color="primary" size="sm" />}>
+          <ControlPointIcon data-icon="inline-start" />
+          Agregar
+        </DialogTrigger>
+      )}
       <DialogContent
         className="flex max-h-[90dvh] flex-col overflow-hidden p-0 sm:max-w-5xl"
         showCloseButton={false}

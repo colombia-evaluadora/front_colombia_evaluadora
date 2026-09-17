@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 import type { AssignmentSubject } from "@/features/establishment/academic-period/api/types/academic-assignment"
 
@@ -122,16 +123,23 @@ export function AssignmentTransfer({
                       <span className="truncate text-sm">
                         {s.nombre} {s.gradoGrupo} {s.jornada}
                       </span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        className="text-muted-foreground"
-                        aria-label={`Asignar ${s.nombre} ${s.gradoGrupo} ${s.jornada}`}
-                        onClick={() => onAssign([s.id])}
-                      >
-                        <ArrowRightIcon />
-                      </Button>
+                      <Tooltip>
+                        <TooltipTrigger
+                          render={
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon-sm"
+                              className="text-muted-foreground"
+                              aria-label={`Asignar ${s.nombre} ${s.gradoGrupo} ${s.jornada}`}
+                              onClick={() => onAssign([s.id])}
+                            />
+                          }
+                        >
+                          <ArrowRightIcon />
+                        </TooltipTrigger>
+                        <TooltipContent>{`Asignar ${s.nombre} ${s.gradoGrupo} ${s.jornada}`}</TooltipContent>
+                      </Tooltip>
                     </li>
                   ))}
                 </ul>
@@ -182,26 +190,32 @@ export function AssignmentTransfer({
                       key={s.id}
                       className="flex animate-in items-center justify-between gap-2 px-1 py-1.5 duration-200 fade-in slide-in-from-left-4"
                     >
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        className="text-muted-foreground"
-                        disabled={s.bloqueadoPreescolar}
-                        aria-label={
-                          s.bloqueadoPreescolar
+                      <Tooltip>
+                        <TooltipTrigger
+                          render={
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon-sm"
+                              className="text-muted-foreground"
+                              disabled={s.bloqueadoPreescolar}
+                              aria-label={
+                                s.bloqueadoPreescolar
+                                  ? `${s.nombre} ${s.gradoGrupo} ${s.jornada} — asignada automáticamente al director de grupo, no se puede quitar acá`
+                                  : `Quitar ${s.nombre} ${s.gradoGrupo} ${s.jornada}`
+                              }
+                              onClick={() => onUnassign([s.id])}
+                            />
+                          }
+                        >
+                          {s.bloqueadoPreescolar ? <LockIcon /> : <ArrowLeftIcon />}
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {s.bloqueadoPreescolar
                             ? `${s.nombre} ${s.gradoGrupo} ${s.jornada} — asignada automáticamente al director de grupo, no se puede quitar acá`
-                            : `Quitar ${s.nombre} ${s.gradoGrupo} ${s.jornada}`
-                        }
-                        title={
-                          s.bloqueadoPreescolar
-                            ? "Asignada automáticamente al director de grupo — no se puede quitar acá"
-                            : undefined
-                        }
-                        onClick={() => onUnassign([s.id])}
-                      >
-                        {s.bloqueadoPreescolar ? <LockIcon /> : <ArrowLeftIcon />}
-                      </Button>
+                            : `Quitar ${s.nombre} ${s.gradoGrupo} ${s.jornada}`}
+                        </TooltipContent>
+                      </Tooltip>
                       <span className="flex flex-1 items-center gap-2 truncate text-sm font-semibold">
                         {s.nombre}
                         <Badge variant="soft" color="muted">

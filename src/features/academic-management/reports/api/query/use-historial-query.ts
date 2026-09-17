@@ -2,6 +2,8 @@ import { useQuery } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
 
+import { texto } from "@/features/academic-management/reports/api/columnas"
+
 import type {
   HistorialCambio,
   HistorialDetalle,
@@ -18,11 +20,14 @@ interface HistorialDetalleRow {
 interface HistorialRow {
   pk_thistorial: number
   fk_tgrupo: number
-  grupo: string
+  grupo?: string
+  grupo_nombre?: string
   fk_tasignatura: number | null
-  asignatura: string | null
+  asignatura?: string | null
+  asignatura_nombre?: string | null
   fk_tperiodo_evaluacion: number
-  periodo: string
+  periodo?: string
+  periodo_nombre?: string
   usuario: string | null
   fecha: string
   momento: string
@@ -44,11 +49,11 @@ function toCambio(row: HistorialRow): HistorialCambio {
   return {
     id: row.pk_thistorial,
     grupoId: row.fk_tgrupo,
-    grupoNombre: row.grupo,
+    grupoNombre: texto(row.grupo, row.grupo_nombre),
     asignaturaId: row.fk_tasignatura,
-    asignaturaNombre: row.asignatura,
+    asignaturaNombre: texto(row.asignatura, row.asignatura_nombre),
     periodoId: row.fk_tperiodo_evaluacion,
-    periodoNombre: row.periodo,
+    periodoNombre: texto(row.periodo, row.periodo_nombre),
     usuario: row.usuario,
     fecha: row.fecha,
     momento: row.momento,

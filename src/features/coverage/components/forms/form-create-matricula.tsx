@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/icons"
 import { FileUpload, FileUploadTrigger } from "@/components/ui/file-upload"
 import { FormSectionHeading } from "@/components/form-section-heading"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useNotify } from "@/components/notice/notice-context"
 
 import { getErrorMessage } from "@/lib/api-client"
@@ -1481,39 +1482,60 @@ function SupportFileRow({ file, onRemove, showDownload = false }: SupportFileRow
       </span>
       <span className="flex shrink-0 items-center gap-0.5">
         <span className="mr-1 text-xs text-muted-foreground">{formatFileSize(file.size)}</span>
-        <Button
-          type="button"
-          variant="ghost"
-          color="neutral"
-          size="icon-sm"
-          aria-label={`Ver ${file.name}`}
-          onClick={() => previewFile(file)}
-        >
-          <EyeIcon />
-        </Button>
-        {showDownload && (
-          <Button
-            type="button"
-            variant="ghost"
-            color="neutral"
-            size="icon-sm"
-            aria-label={`Descargar ${file.name}`}
-            onClick={() => downloadFile(file)}
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                type="button"
+                variant="ghost"
+                color="neutral"
+                size="icon-sm"
+                aria-label={`Ver ${file.name}`}
+                onClick={() => previewFile(file)}
+              />
+            }
           >
-            <FileDownloadOutlinedIcon />
-          </Button>
+            <EyeIcon />
+          </TooltipTrigger>
+          <TooltipContent>{`Ver ${file.name}`}</TooltipContent>
+        </Tooltip>
+        {showDownload && (
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  type="button"
+                  variant="ghost"
+                  color="neutral"
+                  size="icon-sm"
+                  aria-label={`Descargar ${file.name}`}
+                  onClick={() => downloadFile(file)}
+                />
+              }
+            >
+              <FileDownloadOutlinedIcon />
+            </TooltipTrigger>
+            <TooltipContent>{`Descargar ${file.name}`}</TooltipContent>
+          </Tooltip>
         )}
         {onRemove && (
-          <Button
-            type="button"
-            variant="ghost"
-            color="neutral"
-            size="icon-sm"
-            aria-label={`Eliminar ${file.name}`}
-            onClick={() => onRemove(file)}
-          >
-            <TrashIcon />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  type="button"
+                  variant="ghost"
+                  color="neutral"
+                  size="icon-sm"
+                  aria-label={`Eliminar ${file.name}`}
+                  onClick={() => onRemove(file)}
+                />
+              }
+            >
+              <TrashIcon />
+            </TooltipTrigger>
+            <TooltipContent>{`Eliminar ${file.name}`}</TooltipContent>
+          </Tooltip>
         )}
       </span>
     </div>
@@ -1576,19 +1598,26 @@ function SupportFilesSheetField({
           {required ? "*" : ""}
         </span>
         {canAttach && (
-          <FileUploadTrigger
-            render={
-              <Button
-                type="button"
-                variant="ghost"
-                color="primary"
-                size="icon-sm"
-                aria-label={`Adjuntar ${config.label}`}
-              />
-            }
-          >
-            <PaperclipIcon />
-          </FileUploadTrigger>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <FileUploadTrigger
+                  render={
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      color="primary"
+                      size="icon-sm"
+                      aria-label={`Adjuntar ${config.label}`}
+                    />
+                  }
+                />
+              }
+            >
+              <PaperclipIcon />
+            </TooltipTrigger>
+            <TooltipContent>{`Adjuntar ${config.label}`}</TooltipContent>
+          </Tooltip>
         )}
       </div>
       {rejection && <p className="text-xs text-red">{rejection}</p>}
@@ -1671,39 +1700,62 @@ function ExistingFileRow({ file, removable, markedForRemoval, onToggleRemove }: 
       </span>
       <span className="flex shrink-0 items-center gap-0.5">
         <span className="mr-1 text-xs text-muted-foreground">{formatFileSize(file.sizeBytes)}</span>
-        <Button
-          type="button"
-          variant="ghost"
-          color="neutral"
-          size="icon-sm"
-          disabled={isPending || !url}
-          aria-label={`Ver ${file.name}`}
-          onClick={handleView}
-        >
-          <EyeIcon />
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          color="neutral"
-          size="icon-sm"
-          disabled={isPending || !url}
-          aria-label={`Descargar ${file.name}`}
-          onClick={handleDownload}
-        >
-          <FileDownloadOutlinedIcon />
-        </Button>
-        {removable && (
-          <Button
-            type="button"
-            variant="ghost"
-            color="neutral"
-            size="icon-sm"
-            aria-label={markedForRemoval ? `Deshacer eliminar ${file.name}` : `Eliminar ${file.name}`}
-            onClick={onToggleRemove}
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                type="button"
+                variant="ghost"
+                color="neutral"
+                size="icon-sm"
+                disabled={isPending || !url}
+                aria-label={`Ver ${file.name}`}
+                onClick={handleView}
+              />
+            }
           >
-            {markedForRemoval ? <ArrowCounterClockwiseIcon /> : <TrashIcon />}
-          </Button>
+            <EyeIcon />
+          </TooltipTrigger>
+          <TooltipContent>{`Ver ${file.name}`}</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                type="button"
+                variant="ghost"
+                color="neutral"
+                size="icon-sm"
+                disabled={isPending || !url}
+                aria-label={`Descargar ${file.name}`}
+                onClick={handleDownload}
+              />
+            }
+          >
+            <FileDownloadOutlinedIcon />
+          </TooltipTrigger>
+          <TooltipContent>{`Descargar ${file.name}`}</TooltipContent>
+        </Tooltip>
+        {removable && (
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  type="button"
+                  variant="ghost"
+                  color="neutral"
+                  size="icon-sm"
+                  aria-label={markedForRemoval ? `Deshacer eliminar ${file.name}` : `Eliminar ${file.name}`}
+                  onClick={onToggleRemove}
+                />
+              }
+            >
+              {markedForRemoval ? <ArrowCounterClockwiseIcon /> : <TrashIcon />}
+            </TooltipTrigger>
+            <TooltipContent>
+              {markedForRemoval ? `Deshacer eliminar ${file.name}` : `Eliminar ${file.name}`}
+            </TooltipContent>
+          </Tooltip>
         )}
       </span>
     </div>
@@ -1872,16 +1924,23 @@ export function MatriculaSupportFilesSection({
                 {required ? "*" : ""}
               </span>
               {(field.multiple || files.length === 0) && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  color="primary"
-                  size="icon-sm"
-                  aria-label={`Adjuntar ${field.label}`}
-                  onClick={() => setOpen(true)}
-                >
-                  <PaperclipIcon />
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger
+                    render={
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        color="primary"
+                        size="icon-sm"
+                        aria-label={`Adjuntar ${field.label}`}
+                        onClick={() => setOpen(true)}
+                      />
+                    }
+                  >
+                    <PaperclipIcon />
+                  </TooltipTrigger>
+                  <TooltipContent>{`Adjuntar ${field.label}`}</TooltipContent>
+                </Tooltip>
               )}
             </div>
 

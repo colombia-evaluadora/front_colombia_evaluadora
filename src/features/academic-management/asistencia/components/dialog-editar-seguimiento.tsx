@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { FileUpload, FileUploadTrigger } from "@/components/ui/file-upload"
 import { EyeIcon, PaperclipIcon, PencilIcon, SpinnerIcon, XIcon } from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
@@ -46,15 +47,22 @@ function VerSoporteButton({ archivoLocal, fkSoporteArchivo }: { archivoLocal: Fi
   }
 
   return (
-    <button
-      type="button"
-      aria-label="Ver soporte"
-      disabled={!puedeVer || isPending}
-      className="text-muted-foreground hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
-      onClick={handleVer}
-    >
-      <EyeIcon className="size-3.5 shrink-0" />
-    </button>
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <button
+            type="button"
+            aria-label="Ver soporte"
+            disabled={!puedeVer || isPending}
+            className="text-muted-foreground hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
+            onClick={handleVer}
+          />
+        }
+      >
+        <EyeIcon className="size-3.5 shrink-0" />
+      </TooltipTrigger>
+      <TooltipContent>Ver soporte</TooltipContent>
+    </Tooltip>
   )
 }
 
@@ -136,13 +144,20 @@ export function EditarSeguimientoDialog({ row }: EditarSeguimientoDialogProps) {
         else handleOpenChange(next)
       }}
     >
-      <DialogTrigger
-        render={
-          <Button variant="ghost" color="neutral" size="icon-xs" aria-label={`Editar registro de ${row.estudiante}`}>
-            <PencilIcon />
-          </Button>
-        }
-      />
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <DialogTrigger
+              render={
+                <Button variant="ghost" color="neutral" size="icon-xs" aria-label={`Editar registro de ${row.estudiante}`} />
+              }
+            />
+          }
+        >
+          <PencilIcon />
+        </TooltipTrigger>
+        <TooltipContent>{`Editar registro de ${row.estudiante}`}</TooltipContent>
+      </Tooltip>
       <DialogContent showCloseButton={false} inert={confirmDiscardOpen}>
         <DialogHeader>
           <DialogTitle>Editar asistencia</DialogTitle>
@@ -214,17 +229,24 @@ export function EditarSeguimientoDialog({ row }: EditarSeguimientoDialogProps) {
               </FileUpload>
               {haySoporte && <VerSoporteButton archivoLocal={soporteNuevo} fkSoporteArchivo={soporteExistenteFk} />}
               {haySoporte && (
-                <button
-                  type="button"
-                  aria-label="Quitar soporte"
-                  className="text-muted-foreground hover:text-foreground"
-                  onClick={() => {
-                    setSoporteNuevo(null)
-                    setSoporteEliminado(true)
-                  }}
-                >
-                  <XIcon className="size-3.5 shrink-0" />
-                </button>
+                <Tooltip>
+                  <TooltipTrigger
+                    render={
+                      <button
+                        type="button"
+                        aria-label="Quitar soporte"
+                        className="text-muted-foreground hover:text-foreground"
+                        onClick={() => {
+                          setSoporteNuevo(null)
+                          setSoporteEliminado(true)
+                        }}
+                      />
+                    }
+                  >
+                    <XIcon className="size-3.5 shrink-0" />
+                  </TooltipTrigger>
+                  <TooltipContent>Quitar soporte</TooltipContent>
+                </Tooltip>
               )}
             </div>
           </Field>
