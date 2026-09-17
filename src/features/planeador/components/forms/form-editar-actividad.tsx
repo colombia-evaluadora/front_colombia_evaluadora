@@ -3660,6 +3660,13 @@ function CrearUnidadPopover({
     isPending: isPendingEnunciados,
   } = useEnunciadosDbaQuery(gradoId, asignaturaId)
 
+  // Mismo criterio que `UnidadInfoGeneralFields`: una unidad de enfoque
+  // Formativo no tiene "Método de cálculo" (esa unidad no admite actividades
+  // sumativas, ver el comentario de `UnidadAsociadaSection` más arriba), así
+  // que el campo no tiene sentido mostrarlo acá tampoco.
+  const { data: referenteDeGradoAsignatura } = useReferenteCurricularQuery(gradoId, asignaturaId)
+  const esFormativa = referenteDeGradoAsignatura?.esFormativo ?? false
+
   const hasGradoAsignatura = gradoId != null && asignaturaId != null
 
   const reset = () => {
@@ -3806,24 +3813,26 @@ function CrearUnidadPopover({
             />
           </div>
 
-          <Field variant="outlined" className="border-t pt-4">
-            <FieldLabel>Método de cálculo</FieldLabel>
-            <Select
-              value={metodoCalculo}
-              onValueChange={(v) => v && setMetodoCalculo(v as MetodoCalculo)}
-            >
-              <SelectTrigger>
-                <SelectValue>{(v) => METODO_CALCULO_INFO[v as MetodoCalculo]?.label ?? v}</SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {METODO_CALCULO_OPTIONS.map((option) => (
-                  <SelectItem key={option} value={option}>
-                    {METODO_CALCULO_INFO[option].label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Field>
+          {!esFormativa && (
+            <Field variant="outlined" className="border-t pt-4">
+              <FieldLabel>Método de cálculo</FieldLabel>
+              <Select
+                value={metodoCalculo}
+                onValueChange={(v) => v && setMetodoCalculo(v as MetodoCalculo)}
+              >
+                <SelectTrigger>
+                  <SelectValue>{(v) => METODO_CALCULO_INFO[v as MetodoCalculo]?.label ?? v}</SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {METODO_CALCULO_OPTIONS.map((option) => (
+                    <SelectItem key={option} value={option}>
+                      {METODO_CALCULO_INFO[option].label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+          )}
         </div>
 
         <div className="flex justify-end border-t p-4">
