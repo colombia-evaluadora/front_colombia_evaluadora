@@ -912,7 +912,17 @@ export const planeadorHandlers = [
                   : esEvaluativa
                     ? "La actividad es sumativa: hace falta un instrumento de evaluación."
                     : "La actividad no es sumativa: no hace falta instrumento.",
-                instrumentosPermitidos: ["Rúbrica", "Lista de cotejo", "Escala de valoración", "Otro"],
+                // `{pk, valor, etiqueta}`, no strings sueltos — mismo shape
+                // que `fn_actividad_instrumentos_permitidos` real (ver
+                // `toInstrumentosPermitidos` en `use-instrumento-evaluacion-
+                // catalog.ts`, que hace el mapeo a los strings que compara
+                // el resto del form).
+                instrumentosPermitidos: [
+                  { pk: 51998, valor: "RUBRICA", etiqueta: "Rúbrica" },
+                  { pk: 52008, valor: "LISTA_COTEJO", etiqueta: "Lista de cotejo" },
+                  { pk: 51983, valor: "ESCALA_VALORACION", etiqueta: "Escala de valoración" },
+                  { pk: 52007, valor: "OTRO", etiqueta: "Otro (personalizado)" },
+                ],
               },
               ponderacion: {
                 visible: ponderacionVisible,
