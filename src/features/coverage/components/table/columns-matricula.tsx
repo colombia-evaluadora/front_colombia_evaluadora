@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router"
 import type { ColumnDef } from "@tanstack/react-table"
 
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { Checkbox } from "@/components/ui/checkbox"
 import { DataTableColumnHeader } from "@/components/data-table"
 import { EyeIcon, PencilIcon } from "@/components/ui/icons"
@@ -158,29 +159,43 @@ export const columnsMatricula: ColumnDef<Matricula>[] = [
     header: () => <span className="sr-only">Acciones</span>,
     cell: ({ row }) => (
       <div className="flex items-center justify-end gap-1">
-        <Button
-          type="button"
-          variant="ghost"
-          color="neutral"
-          size="icon-sm"
-          aria-label={`Ver ${row.original.firstName} ${row.original.lastName}`}
-          render={<Link to={paths.app.coberturaMatriculaDetalle.getHref(row.original.id)} />}
-          nativeButton={false}
-        >
-          <EyeIcon />
-        </Button>
-        {!NOT_EDITABLE_STATUSES.includes(row.original.status) && (
-          <Button
-            type="button"
-            variant="ghost"
-            color="neutral"
-            size="icon-sm"
-            aria-label={`Editar ${row.original.firstName} ${row.original.lastName}`}
-            render={<Link to={paths.app.coberturaMatriculaEditar.getHref(row.original.id)} />}
-            nativeButton={false}
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                type="button"
+                variant="ghost"
+                color="neutral"
+                size="icon-sm"
+                aria-label={`Ver ${row.original.firstName} ${row.original.lastName}`}
+                render={<Link to={paths.app.coberturaMatriculaDetalle.getHref(row.original.id)} />}
+                nativeButton={false}
+              />
+            }
           >
-            <PencilIcon />
-          </Button>
+            <EyeIcon />
+          </TooltipTrigger>
+          <TooltipContent>{`Ver ${row.original.firstName} ${row.original.lastName}`}</TooltipContent>
+        </Tooltip>
+        {!NOT_EDITABLE_STATUSES.includes(row.original.status) && (
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  type="button"
+                  variant="ghost"
+                  color="neutral"
+                  size="icon-sm"
+                  aria-label={`Editar ${row.original.firstName} ${row.original.lastName}`}
+                  render={<Link to={paths.app.coberturaMatriculaEditar.getHref(row.original.id)} />}
+                  nativeButton={false}
+                />
+              }
+            >
+              <PencilIcon />
+            </TooltipTrigger>
+            <TooltipContent>{`Editar ${row.original.firstName} ${row.original.lastName}`}</TooltipContent>
+          </Tooltip>
         )}
         <FilesMatriculaDialog matricula={row.original} />
         <RetirarMatriculaDialog matricula={row.original} />

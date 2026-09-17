@@ -15,6 +15,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { useDeleteRatingScaleValoracionesBulk } from "@/features/establishment/academic-period/api/mutations/delete-rating-scale-valoraciones-bulk"
 import {
@@ -80,21 +81,28 @@ export function DeleteSelectedRatingScaleValoracionesDialog({
           asignaturas del alta de área/asignatura): ícono de papelera solo,
           dentro del banner de selección — no un botón "Eliminar (n)"
           separado. */}
-      <AlertDialogTrigger
-        render={
-          <Button
-            type="button"
-            variant="ghost"
-            color="neutral"
-            size="icon-sm"
-          />
-        }
-      >
-        <span className="sr-only">
-          Eliminar {valoracionCount} valoracion(es) seleccionada(s)
-        </span>
-        <TrashIcon />
-      </AlertDialogTrigger>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <AlertDialogTrigger
+              render={
+                <Button
+                  type="button"
+                  variant="ghost"
+                  color="neutral"
+                  size="icon-sm"
+                />
+              }
+            />
+          }
+        >
+          <span className="sr-only">
+            Eliminar {valoracionCount} valoracion(es) seleccionada(s)
+          </span>
+          <TrashIcon />
+        </TooltipTrigger>
+        <TooltipContent>Eliminar {valoracionCount} valoracion(es) seleccionada(s)</TooltipContent>
+      </Tooltip>
       <AlertDialogContent size="sm">
         <AlertDialogHeader>
           <AlertDialogTitle>Eliminar</AlertDialogTitle>

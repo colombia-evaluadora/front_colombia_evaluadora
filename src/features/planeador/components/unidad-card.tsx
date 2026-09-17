@@ -114,17 +114,24 @@ export function UnidadCard({
           "group-focus-within/unidad:pointer-events-auto group-focus-within/unidad:opacity-100",
         )}
       >
-        <Button
-          variant="ghost"
-          color="neutral"
-          size="icon-sm"
-          disabled={!onEdit}
-          onClick={onEdit}
-          aria-label={`Editar ${unidad.nombre}`}
-          className="size-6"
-        >
-          <PencilIcon />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                variant="ghost"
+                color="neutral"
+                size="icon-sm"
+                disabled={!onEdit}
+                onClick={onEdit}
+                aria-label={`Editar ${unidad.nombre}`}
+                className="size-6"
+              />
+            }
+          >
+            <PencilIcon />
+          </TooltipTrigger>
+          <TooltipContent>{`Editar ${unidad.nombre}`}</TooltipContent>
+        </Tooltip>
         <DialogDeleteUnidad
           unidad={unidad}
           onDeleted={onDeleted}

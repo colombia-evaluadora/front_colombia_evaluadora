@@ -38,19 +38,26 @@ export function PlaneadorRecursoPreviewPage() {
   return (
     <TableScreen>
       <TableScreenHeader>
-        <Button
-          variant="ghost"
-          color="neutral"
-          size="sm"
-          className="w-fit"
-          type="button"
-          onClick={() => router.history.back()}
+        <TableScreenTitle
+          description={recurso.descripcion || undefined}
+          // "Volver" es la acción de navegación del encabezado — mismo slot
+          // que usan las páginas de detalle de Auditoría (`action` de
+          // `TableScreenTitle`), no un botón suelto ANTES del título: así
+          // queda alineado en la misma fila, dentro de la caja del
+          // encabezado, en vez de flotar afuera con su propio margen.
+          action={
+            <Button
+              variant="ghost"
+              color="neutral"
+              size="sm"
+              type="button"
+              onClick={() => router.history.back()}
+            >
+              <ArrowLeftIcon data-icon="inline-start" />
+              Volver
+            </Button>
+          }
         >
-          <ArrowLeftIcon data-icon="inline-start" />
-          Volver
-        </Button>
-
-        <TableScreenTitle description={recurso.descripcion || undefined}>
           {recurso.titulo || recurso.fuente || recurso.url || "Vista previa del recurso"}
         </TableScreenTitle>
       </TableScreenHeader>

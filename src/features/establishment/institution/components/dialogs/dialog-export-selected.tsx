@@ -18,6 +18,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { useExportSelected } from "@/features/establishment/institution/api/mutations/export-selected"
 import type { ExportFormat } from "@/features/establishment/institution/api/types/export"
@@ -61,19 +62,26 @@ export function ExportSelectedEstablishmentsDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger
-        render={
-          <Button
-            variant="outline"
-            color="muted"
-            size="sm"
-            aria-label={`Exportar ${count} establecimientos seleccionados`}
-          >
-            <FileDownloadOutlinedIcon data-icon="inline-start" />
-            <span className="tabular-nums">({count})</span>
-          </Button>
-        }
-      />
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <DialogTrigger
+              render={
+                <Button
+                  variant="outline"
+                  color="muted"
+                  size="sm"
+                  aria-label={`Exportar ${count} establecimientos seleccionados`}
+                />
+              }
+            />
+          }
+        >
+          <FileDownloadOutlinedIcon data-icon="inline-start" />
+          <span className="tabular-nums">({count})</span>
+        </TooltipTrigger>
+        <TooltipContent>{`Exportar ${count} establecimientos seleccionados`}</TooltipContent>
+      </Tooltip>
       <DialogContent showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>

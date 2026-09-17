@@ -19,6 +19,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { useExportEvaluationPeriods } from "@/features/establishment/academic-period/api/mutations/export-evaluation-periods"
 import type {
@@ -60,18 +61,25 @@ export function ExportEvaluationPeriodsDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger
-        render={
-          <Button
-            variant="outline"
-            color="muted"
-            size="icon-sm"
-            aria-label="Exportar periodos de evaluación"
-          />
-        }
-      >
-        <FileDownloadOutlinedIcon />
-      </DialogTrigger>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <DialogTrigger
+              render={
+                <Button
+                  variant="outline"
+                  color="muted"
+                  size="icon-sm"
+                  aria-label="Exportar periodos de evaluación"
+                />
+              }
+            />
+          }
+        >
+          <FileDownloadOutlinedIcon />
+        </TooltipTrigger>
+        <TooltipContent>Exportar periodos de evaluación</TooltipContent>
+      </Tooltip>
       <DialogContent showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>

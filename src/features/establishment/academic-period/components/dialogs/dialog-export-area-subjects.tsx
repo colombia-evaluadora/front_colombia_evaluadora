@@ -19,6 +19,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { useExportAreaSubjects } from "@/features/establishment/academic-period/api/mutations/export-area-subjects"
 import type { ExportFormat } from "@/features/establishment/academic-period/api/types/area-subject"
@@ -55,18 +56,25 @@ export function ExportAreaSubjectsDialog({ academicPeriodId }: ExportAreaSubject
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger
-        render={
-          <Button
-            variant="outline"
-            color="muted"
-            size="icon-sm"
-            aria-label="Exportar áreas, asignaturas y especialidades"
-          />
-        }
-      >
-        <FileDownloadOutlinedIcon />
-      </DialogTrigger>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <DialogTrigger
+              render={
+                <Button
+                  variant="outline"
+                  color="muted"
+                  size="icon-sm"
+                  aria-label="Exportar áreas, asignaturas y especialidades"
+                />
+              }
+            />
+          }
+        >
+          <FileDownloadOutlinedIcon />
+        </TooltipTrigger>
+        <TooltipContent>Exportar áreas, asignaturas y especialidades</TooltipContent>
+      </Tooltip>
       <DialogContent showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Exportar</DialogTitle>
