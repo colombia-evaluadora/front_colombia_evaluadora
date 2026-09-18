@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils"
 import type { PlanillaCelda, PlanillaColumna, PlanillaFila } from "@/features/planeador/api/types/planilla"
 import { NOTA_MINIMA_APROBATORIA, notaEnEscalaCinco } from "@/features/planeador/api/types/calificacion"
 import { CeldaNotaPopover } from "@/features/planeador/components/planilla/celda-nota-popover"
-import { CeldaObservacionPopover } from "@/features/planeador/components/planilla/celda-observacion-popover"
+import { CeldaObservacionTrigger } from "@/features/planeador/components/planilla/celda-observacion-trigger"
 import { esColumnaFormativa } from "@/features/planeador/lib/actividad-formativa"
 import { useStudyPlanSubjectLabel } from "@/features/establishment/academic-period/api/query/use-study-plan-subject-label"
 
@@ -218,8 +218,9 @@ export function PlanillaGrid({ columnas, verPor, filas, onAbrirBulk, gradoId }: 
                             <span className="text-muted-foreground">Observar</span>
                           )}
                           {celda && (
-                            <CeldaObservacionPopover
+                            <CeldaObservacionTrigger
                               pkTactividadEstudiante={celda.pkTactividadEstudiante}
+                              contexto={columna.titulo}
                               fecha={fechaParaGuardar(columna, celda)}
                               estudianteNombre={fila.nombreEstudiante}
                               observacionActual={celda.observacion}

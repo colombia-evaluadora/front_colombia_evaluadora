@@ -18,7 +18,9 @@ interface PlanillaColumnaRow {
   ponderacion: number | null
   nota_maxima: number | null
   es_evaluativa: "S" | "N"
-  es_formativa: "S" | "N" | null
+  /** Boolean de verdad (V450 lo calcula con fn_actividad_es_formativa), a
+   *  diferencia de `es_evaluativa`, que es el bool_sn de la columna. */
+  es_formativa: boolean | "S" | "N" | null
   metodo_valoracion: string | null
   // Datetime ISO completo, no `yyyy-MM-dd` (mismo patrón confirmado en
   // `/actividades/mias` — se normaliza acá igual).
@@ -44,7 +46,7 @@ function toPlanillaColumna(row: PlanillaColumnaRow): PlanillaColumna {
     ponderacion: row.ponderacion,
     notaMaxima: row.nota_maxima,
     esEvaluativa: row.es_evaluativa === "S",
-    esFormativa: row.es_formativa === "S",
+    esFormativa: row.es_formativa === true || row.es_formativa === "S",
     metodoValoracion: row.metodo_valoracion ?? null,
     fechaInicio: toDateOnly(row.fecha_inicio),
     fechaCierre: toDateOnly(row.fecha_cierre),

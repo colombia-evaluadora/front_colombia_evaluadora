@@ -2,11 +2,15 @@ import { useEffect, useState } from "react"
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
+import { Field, FieldLabel } from "@/components/ui/field"
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet"
-import { Textarea } from "@/components/ui/textarea"
+import { Textarea, TEXTAREA_OUTLINED } from "@/components/ui/textarea"
 import { CheckIcon, InfoIcon, SpinnerIcon } from "@/components/ui/icons"
+import { cn } from "@/lib/utils"
 
+import { ArchivoImage } from "@/features/files/components/archivo-image"
 import { OBSERVACION_MAX_CARACTERES as MAX_CARACTERES } from "@/features/planeador/lib/observacion"
+import type { CeldaEvidencia } from "@/features/planeador/api/types/planilla"
 
 function iniciales(nombreCompleto: string): string {
   const partes = nombreCompleto.trim().split(/\s+/)
@@ -27,6 +31,9 @@ interface ObservacionEstudianteSheetProps {
   estudiante: EstudianteObservable | null
   /** Subtítulo del encabezado: la actividad sobre la que se observa. */
   contexto: string
+  /** Imágenes ya adjuntas. Solo lectura: subirlas necesita el empalme con
+   *  el file-service, que todavía no está. */
+  evidencias?: CeldaEvidencia[]
   guardando?: boolean
   onOpenChange: (open: boolean) => void
   onGuardar: (estudiante: EstudianteObservable, texto: string) => void
@@ -45,6 +52,7 @@ interface ObservacionEstudianteSheetProps {
 export function ObservacionEstudianteSheet({
   estudiante,
   contexto,
+  evidencias = [],
   guardando,
   onOpenChange,
   onGuardar,
@@ -82,22 +90,36 @@ export function ObservacionEstudianteSheet({
         </SheetHeader>
 
         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-8">
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="observacion-estudiante" className="text-xs font-semibold uppercase">
-              Observación
-            </label>
+          <Field variant="outlined">
+            <FieldLabel htmlFor="observacion-estudiante">Observación</FieldLabel>
             <Textarea
               id="observacion-estudiante"
               value={texto}
               maxLength={MAX_CARACTERES}
               onChange={(e) => setTexto(e.target.value)}
               placeholder="Escribe la observación de este estudiante para esta actividad…"
-              className="min-h-40 resize-y rounded-md border border-input px-3 py-2"
+              className={cn("min-h-40 resize-y", TEXTAREA_OUTLINED)}
             />
             <span className="self-end text-xs text-muted-foreground">
               {texto.length}/{MAX_CARACTERES}
             </span>
-          </div>
+          </Field>
+
+          {evidencias.length > 0 && (
+            <div className="flex flex-col gap-1.5">
+              <p className="text-xs font-semibold uppercase">Evidencias</p>
+              <div className="flex flex-wrap gap-2">
+                {evidencias.map((evidencia) => (
+                  <ArchivoImage
+                    key={evidencia.pk}
+                    archivoId={evidencia.fkTarchivo}
+                    alt={evidencia.nombre ?? `Evidencia de ${estudiante?.nombreCompleto ?? ""}`}
+                    className="size-20"
+                  />
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="flex items-start gap-2 rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground">
             <InfoIcon className="mt-0.5 size-3.5 shrink-0" />

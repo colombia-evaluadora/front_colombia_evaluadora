@@ -47,6 +47,12 @@ interface AdvancedFiltersPopoverProps {
    */
   applyDisabled?: boolean
   /**
+   * Opcional: agrega "Limpiar filtros" en el pie. Solo para los buscadores con
+   * varios ejes, donde volver cada campo a "Todos" a mano es tedioso; el resto
+   * se limpia con la X de la barra.
+   */
+  onClear?: () => void
+  /**
    * Ancho del panel según cuánto tenga que mostrar. `sm` para uno o dos
    * controles —un panel ancho con un solo select es casi todo espacio en
    * blanco—; `lg` cuando hay secciones que repartir en columnas.
@@ -64,6 +70,7 @@ export function AdvancedFiltersPopover({
   formId,
   onApply,
   applyDisabled = false,
+  onClear,
   size = "lg",
   children,
   className,
@@ -159,10 +166,15 @@ export function AdvancedFiltersPopover({
         </div>
 
         {/*
-          Sin "Limpiar todo": esa acción es la X de la barra, que está siempre a
-          la vista y no obliga a abrir el panel.
+          "Limpiar filtros" es opcional (`onClear`) y no reemplaza a la X de la
+          barra, que limpia además la búsqueda y está siempre a la vista.
         */}
-        <div className="flex justify-end px-4 pb-4">
+        <div className="flex items-center justify-end gap-2 px-4 pb-4">
+          {onClear && (
+            <Button type="button" variant="ghost" color="neutral" size="sm" onClick={onClear} className="mr-auto">
+              Limpiar filtros
+            </Button>
+          )}
           <Button
             type={formId ? "submit" : "button"}
             form={formId}
