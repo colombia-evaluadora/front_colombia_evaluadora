@@ -41,7 +41,16 @@ export const asistenciaHandlers = [
 
     const mias = url.searchParams.get("MIAS") === "true"
     const todas = generarSesionesMes(sede, anio, mes)
-    const rows: SesionCalendario[] = mias ? soloMisClases(todas) : todas
+    const sesiones: SesionCalendario[] = mias ? soloMisClases(todas) : todas
+    // El backend manda el NOMBRE en `grado`/`jornada` y el código en
+    // `grado_valor`/`jornada_valor`; el front los reacomoda al normalizar.
+    const rows = sesiones.map(({ grado, grado_nombre, jornada, jornada_nombre, ...sesion }) => ({
+      ...sesion,
+      grado: grado_nombre,
+      grado_valor: grado,
+      jornada: jornada_nombre,
+      jornada_valor: jornada,
+    }))
     return HttpResponse.json(rows)
   }),
 
@@ -60,10 +69,9 @@ export const asistenciaHandlers = [
   http.post("*/api/eval-col/asistencias/query", async ({ request }) => {
     await delay(250)
 
-    const sede = Number(new URL(request.url).searchParams.get("SEDE") ?? 0)
     const { FILTERS, SORTING, PAGEINDEX, PAGESIZE } = (await request.json()) as AsistenciaQueryRequest
 
-    const filtrados = generarSeguimiento(sede, FILTERS ?? {})
+    const filtrados = generarSeguimiento(FILTERS?.SEDE ?? 0, FILTERS ?? {})
 
     const sortId = SORTING?.ID
     const sorted = sortId
@@ -109,6 +117,28 @@ export const asistenciaHandlers = [
         ...(bloqueParam != null && { BLOQUE: Number(bloqueParam) }),
       }),
     )
+  }),
+
+  // Edita la corrida completa: IDS son los `pks` de la fila agrupada.
+  http.post("*/api/eval-col/asistencias/editar-masivo", async ({ request }) => {
+    await delay(250)
+
+    const { IDS = [], ...body } = (await request.json()) as AsistenciaEditarRequest & { IDS?: number[] }
+
+    for (const pkTasistencia of IDS) {
+      aplicarEdicionAsistencia(pkTasistencia, {
+        ...(body.TIPO_ASISTENCIA != null && {
+          tipo_asistencia_valor: body.TIPO_ASISTENCIA,
+          tipo_asistencia: TIPO_ASISTENCIA_NOMBRE[body.TIPO_ASISTENCIA],
+        }),
+        ...(body.LIMPIAR_OBSERVACION
+          ? { observacion: null }
+          : body.OBSERVACION != null && { observacion: body.OBSERVACION }),
+        ...(body.LIMPIAR_ARCHIVO && { tiene_soporte: false, fk_soporte_archivo: null, soporte_nombre: null }),
+      })
+    }
+
+    return HttpResponse.json(IDS.length)
   }),
 
   http.patch("*/api/eval-col/asistencias/:id", async ({ request, params }) => {

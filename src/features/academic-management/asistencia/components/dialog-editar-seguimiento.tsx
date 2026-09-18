@@ -117,7 +117,7 @@ export function EditarSeguimientoDialog({ row }: EditarSeguimientoDialogProps) {
 
     editar.mutate(
       {
-        pkTasistencia: row.pk_tasistencia,
+        pks: row.pks ?? [row.pk_tasistencia],
         body: {
           ...(tipoNum !== row.tipo_asistencia_valor && { TIPO_ASISTENCIA: tipoNum }),
           ...(observacionTrim !== (row.observacion ?? "") && {

@@ -27,7 +27,7 @@ import type { CalificacionEstudiante, EstadoAsistencia } from "@/features/planea
 import { itemsPonderables, porcentajeFinal } from "@/features/planeador/api/types/calificacion"
 import { formatDate } from "@/features/planeador/lib/format-date"
 import { DialogCalificarActividad } from "@/features/planeador/components/dialogs/dialog-calificar-actividad"
-import { CeldaObservacionPopover } from "@/features/planeador/components/planilla/celda-observacion-popover"
+import { CeldaObservacionTrigger } from "@/features/planeador/components/planilla/celda-observacion-trigger"
 import { esActividadFormativa } from "@/features/planeador/lib/actividad-formativa"
 
 interface CalificacionesViewProps {
@@ -166,8 +166,9 @@ function CalificacionRow({ actividad, formativa, estudiante, onGuardado }: Calif
       </td>
       <td className="px-2 py-3 align-middle">
         {formativa ? (
-          <CeldaObservacionPopover
+          <CeldaObservacionTrigger
             pkTactividadEstudiante={estudiante.id}
+            contexto={actividad.nombre}
             fecha={estudiante.fechaAsistencia ?? null}
             estudianteNombre={nombreCompleto}
             observacionActual={estudiante.observacion ?? null}

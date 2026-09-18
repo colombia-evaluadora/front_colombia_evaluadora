@@ -118,6 +118,8 @@ export interface AsistenciaEditarRequest {
 export interface AsistenciaQueryFilters {
   FECHA_DESDE?: string | null
   FECHA_HASTA?: string | null
+  /** Acota al alcance de la sede elegida; el permiso por rol lo resuelve el backend aparte. */
+  SEDE?: number | null
   GRUPO?: number | null
   ASIGNATURA?: number | null
   /** Formativo (preescolar): filtra por actividad -- `ASIGNATURA` no encuentra estas filas (`FK_TASIGNATURA` queda `NULL`). */
@@ -138,10 +140,22 @@ export interface AsistenciaQueryRequest {
 }
 
 export interface AsistenciaQueryRow {
+  /** Primer registro de la corrida -- clave de fila; para editar se usan `pks`. */
   pk_tasistencia: number
+  /** Todos los registros que colapsaron en esta fila (bloques consecutivos de la misma asignatura). */
+  pks: number[]
+  registros: number
+  bloques: number[]
+  /** Bloques que llevan el estado de la fila -- todos si la corrida entera lo comparte. */
+  bloques_estado: number[]
+  hora_inicio_estado: string | null
+  hora_fin_estado: string | null
   estudiante: string
   documento: string
   grupo: string
+  /** NOMBRE de TGRADO ("Segundo"); `grado_valor` es el CODIGO ("2"), que es lo que se pinta. */
+  grado: string
+  grado_valor: string
   // Mismo gap que en `SesionCalendario.jornada` -- ver esa nota.
   jornada: string
   asignatura: string
@@ -155,7 +169,10 @@ export interface AsistenciaQueryRow {
   tiene_soporte: boolean
   fk_soporte_archivo: number | null
   soporte_nombre: string | null
+  // Las 4 cuentan estudiantes distintos del set filtrado completo, no de la página,
+  // y no suman entre sí: un estudiante puede asistir a una sesión y faltar a otra.
   total_estudiantes: number
+  asistieron: number
   ausentes: number
   tarde: number
   total_count: number

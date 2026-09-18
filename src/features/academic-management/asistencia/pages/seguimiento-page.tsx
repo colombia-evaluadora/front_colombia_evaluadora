@@ -1,3 +1,5 @@
+"use no memo"
+
 import * as React from "react"
 import { Link } from "@tanstack/react-router"
 
@@ -24,7 +26,12 @@ import { SeguimientoSummaryCards } from "@/features/academic-management/asistenc
 import { columnsSeguimiento } from "@/features/academic-management/asistencia/components/columns-seguimiento"
 import { SearchSeguimiento } from "@/features/academic-management/asistencia/components/search/search-seguimiento"
 import { ExportSeguimientoDialog } from "@/features/academic-management/asistencia/components/dialog-export-seguimiento"
-import { catalogosDeSesiones, EMPTY_SEGUIMIENTO_FILTERS } from "@/features/academic-management/asistencia/api/ui-mappings"
+import {
+  catalogosDeSesiones,
+  EMPTY_SEGUIMIENTO_FILTERS,
+  gradosDeJornada,
+  nombreDeOpcion,
+} from "@/features/academic-management/asistencia/api/ui-mappings"
 import type { SeguimientoFiltersValues, TipoAsistencia } from "@/features/academic-management/asistencia/api/types/asistencia"
 
 function SeguimientoSinSede() {
@@ -106,11 +113,12 @@ function SeguimientoTable({ sede }: { sede: number }) {
   // el reporte lo genera reporting-service con la MISMA fn_asistencia_listar_seguimiento
   // sin paginar, así que tiene que ver exactamente lo que ve la tabla.
   const queryFilters = {
+    SEDE: sede,
     FECHA_DESDE: filters.fechaDesde || null,
     FECHA_HASTA: filters.fechaHasta || null,
     SEARCH: search || null,
-    JORNADA: filters.jornada || null,
-    GRADO: filters.grado || null,
+    JORNADA: nombreDeOpcion(jornadaOptions, filters.jornada),
+    GRADO: nombreDeOpcion(gradosDeJornada(grupoCatalog, filters.jornada), filters.grado),
     GRUPO: filters.grupo ? Number(filters.grupo) : null,
     ASIGNATURA: filters.asignatura ? Number(filters.asignatura) : null,
     TIPO_ASISTENCIA: filters.tipoAsistencia ? (Number(filters.tipoAsistencia) as TipoAsistencia) : null,
@@ -122,7 +130,6 @@ function SeguimientoTable({ sede }: { sede: number }) {
       PAGEINDEX: pageIndex,
       PAGESIZE: pageSize,
     },
-    sede,
     hasFilter,
   )
 
@@ -133,18 +140,13 @@ function SeguimientoTable({ sede }: { sede: number }) {
   const totalCount = rows[0]?.total_count ?? 0
   // El esqueleto es solo para la espera real de la query; sin filtros o con respuesta
   // vacía los contadores son ceros de verdad, no un "cargando" permanente.
+  // Las 4 llegan como ventanas sobre el set filtrado completo: calcularlas acá
+  // las dejaría midiendo solo la página visible.
   const cargando = hasFilter && !resultado
   const totalEstudiantes = cargando ? undefined : (rows[0]?.total_estudiantes ?? 0)
+  const asistieron = cargando ? undefined : (rows[0]?.asistieron ?? 0)
   const ausentes = cargando ? undefined : (rows[0]?.ausentes ?? 0)
-  const tarde = cargando
-    ? undefined
-    : rows[0]?.tarde ??
-      new Set(
-        rows.filter((r) => r.tipo_asistencia_valor === 5 || r.tipo_asistencia_valor === 6).map((r) => r.documento),
-      ).size
-  const asistieron = cargando
-    ? undefined
-    : new Set(rows.filter((r) => r.tipo_asistencia_valor === 1).map((r) => r.documento)).size
+  const tarde = cargando ? undefined : (rows[0]?.tarde ?? 0)
   const pageCount = Math.max(1, Math.ceil(totalCount / pageSize))
 
   const { table } = useDataTable({

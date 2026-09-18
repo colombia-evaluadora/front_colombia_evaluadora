@@ -38,6 +38,7 @@ import {
   ProhibitIcon,
   XIcon,
 } from "@/components/ui/icons"
+import { getErrorMessage } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
 
 import { paths } from "@/config/paths"
@@ -278,8 +279,8 @@ function PlanillaInformeContent() {
         return
       }
       navigate({ to: paths.app.gestionAcademicaInformes.getHref(), search })
-    } catch {
-      notify("No se pudieron aprobar los cambios.", { variant: "error" })
+    } catch (error) {
+      notify(getErrorMessage(error), { variant: "error" })
     }
   }
 

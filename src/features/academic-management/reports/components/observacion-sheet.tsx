@@ -1,6 +1,7 @@
 import * as React from "react"
 
 import { useNotify } from "@/components/notice/notice-context"
+import { getErrorMessage } from "@/lib/api-client"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet"
@@ -57,8 +58,8 @@ export function ObservacionSheet({ fila, guardando, onOpenChange, onGuardar }: O
       }
       setTexto(generada.texto)
       setBorrador({ texto: generada.texto, observacionesOrigen: generada.observacionesOrigen })
-    } catch {
-      notify("No se pudo generar la observación.", { variant: "error" })
+    } catch (error) {
+      notify(getErrorMessage(error), { variant: "error" })
     }
   }
 
