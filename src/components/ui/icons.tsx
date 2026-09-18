@@ -17,6 +17,7 @@ import {
   MdAssignmentTurnedIn,
   MdAttachFile,
   MdAttachMoney,
+  MdAudiotrack,
   MdAutorenew,
   MdBackspace,
   MdBadge,
@@ -153,6 +154,7 @@ export const ArrowDownIcon = makeIcon(MdArrowDownward)
 export const ArrowLeftIcon = makeIcon(MdArrowBack)
 export const ArrowRightIcon = makeIcon(MdArrowForward)
 export const ArrowUpIcon = makeIcon(MdArrowUpward)
+export const AudioIcon = makeIcon(MdAudiotrack)
 export const BankIcon = makeIcon(MdOutlineAccountBalance)
 export const BellIcon = makeIcon(MdOutlineNotifications)
 export const BookIcon = makeIcon(MdMenuBook)
