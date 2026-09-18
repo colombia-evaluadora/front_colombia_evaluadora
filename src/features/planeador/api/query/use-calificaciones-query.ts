@@ -5,12 +5,18 @@ import { env } from "@/config/env"
 
 import type { CalificacionEstudiante, EstadoAsistencia } from "@/features/planeador/api/types/calificacion"
 
-function calificacionesUrl(id: number): string {
-  return `/planeador/actividades/${id}/calificaciones`
+function calificacionesUrl(id: number, fecha?: string): string {
+  const base = `/planeador/actividades/${id}/calificaciones`
+  return fecha ? `${base}?fecha=${fecha}` : base
 }
 
-export const calificacionesQueryKey = (id: number) =>
-  ["planeador", "actividad", id, "calificaciones"] as const
+/** La fecha va DESPUÉS del sufijo `"calificaciones"`, no dentro: así una
+ *  invalidación por `calificacionesQueryKey(id)` sigue alcanzando a todas las
+ *  fechas (react-query matchea por prefijo). */
+export const calificacionesQueryKey = (id: number, fecha?: string) =>
+  fecha
+    ? (["planeador", "actividad", id, "calificaciones", fecha] as const)
+    : (["planeador", "actividad", id, "calificaciones"] as const)
 
 /**
  * Fila real de `GET /planeador/actividades/:id/calificaciones` (confirmada
@@ -33,7 +39,14 @@ interface CalificacionRow {
   pk_tmatricula: number
   nombre_estudiante: string
   instrumento: string | null
+  /** Eco de `?fecha=` (hoy por defecto), NO una fecha con asistencia — para
+   *  `BODY.FECHA` va `fecha_asistencia` (V442). */
   fecha: string
+  /** V442/V443: el día, dentro de la ventana de la actividad, en que ESE
+   *  estudiante tiene asistencia que el gate acepta. `null` = todavía no se
+   *  puede calificar ni observar. */
+  fecha_asistencia: string | null
+  es_formativa: boolean | null
   pk_tasistencia: number | null
   fk_tlv_tipo_asistencia: number | null
   tipo_asistencia: string | null
@@ -72,6 +85,8 @@ function toCalificacionEstudiante(row: CalificacionRow): CalificacionEstudiante 
     // directo en vez de recalcularlo de `notas` (ver el campo de abajo).
     notas: [],
     calificacion: row.calificacion,
+    observacion: row.nota_observacion,
+    fechaAsistencia: row.fecha_asistencia ? row.fecha_asistencia.slice(0, 10) : null,
   }
 }
 
@@ -81,8 +96,10 @@ function toCalificacionEstudiante(row: CalificacionRow): CalificacionEstudiante 
  * — el mock ya entrega `CalificacionEstudiante` completa, el real entrega
  * `CalificacionRow` y hay que traducirla (`toCalificacionEstudiante`).
  */
-async function fetchCalificaciones(id: number): Promise<CalificacionEstudiante[]> {
-  const rows = await evalCol.getRows<CalificacionEstudiante | CalificacionRow>(calificacionesUrl(id))
+async function fetchCalificaciones(id: number, fecha?: string): Promise<CalificacionEstudiante[]> {
+  const rows = await evalCol.getRows<CalificacionEstudiante | CalificacionRow>(
+    calificacionesUrl(id, fecha),
+  )
   if (env.ENABLE_API_MOCKING) return rows as CalificacionEstudiante[]
   return (rows as CalificacionRow[]).map(toCalificacionEstudiante)
 }
@@ -92,18 +109,25 @@ async function fetchCalificaciones(id: number): Promise<CalificacionEstudiante[]
  * Planilla, que necesita pedir las calificaciones de VARIAS actividades a la
  * vez con `useQueries` en vez de un solo `useQuery` por id.
  */
-export function calificacionesQueryOptions(id: number) {
+export function calificacionesQueryOptions(id: number, fecha?: string) {
   return queryOptions({
-    queryKey: calificacionesQueryKey(id),
-    queryFn: () => fetchCalificaciones(id),
+    queryKey: calificacionesQueryKey(id, fecha),
+    queryFn: () => fetchCalificaciones(id, fecha),
     staleTime: 1000 * 60,
   })
 }
 
-export function useCalificacionesQuery(id: number | undefined) {
+/** `fecha` (`yyyy-MM-dd`) es la que el backend cruza con la asistencia. Sin
+ *  ella cae a `CURRENT_DATE` del servidor, que puede no ser el día de la
+ *  actividad — y entonces la columna ASISTENCIA dice "sin registrar" aunque la
+ *  asistencia esté tomada. */
+export function useCalificacionesQuery(id: number | undefined, fecha?: string) {
   return useQuery({
-    queryKey: id !== undefined ? calificacionesQueryKey(id) : ["planeador", "actividad", "none", "calificaciones"],
-    queryFn: () => fetchCalificaciones(id!),
+    queryKey:
+      id !== undefined
+        ? calificacionesQueryKey(id, fecha)
+        : ["planeador", "actividad", "none", "calificaciones"],
+    queryFn: () => fetchCalificaciones(id!, fecha),
     enabled: id !== undefined,
     staleTime: 1000 * 60,
   })

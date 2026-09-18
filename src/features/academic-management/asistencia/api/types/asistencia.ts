@@ -33,6 +33,10 @@ export interface AsistenciaCalendarioParams {
   MES: number
   GRUPO?: number
   ASIGNATURA?: number
+  /** "Mis clases": el backend resuelve el docente desde el token y acota por
+   *  `TDOCENTE_ASIGNATURA`. Sin esto, lo único que filtra es el alcance del
+   *  rol -- para un docente, toda su sede. */
+  MIAS?: boolean
 }
 
 export interface ResumenHoras {
@@ -50,6 +54,8 @@ export interface AsistenciaResumenHorasParams {
   FECHA: string
   GRUPO?: number
   ASIGNATURA?: number
+  /** Ver `AsistenciaCalendarioParams.MIAS`. */
+  MIAS?: boolean
 }
 
 export interface AsistenciaRegistroManual {
