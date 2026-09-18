@@ -51,6 +51,7 @@ import {
   ListaAgregableCajaSelect,
 } from "@/features/planeador/components/forms/field-lista-agregable"
 import { useEnunciadosDbaQuery } from "@/features/planeador/api/query/use-enunciados-dba"
+import { RECURSO_ARCHIVO_ACCEPT } from "@/features/planeador/lib/recurso-preview"
 import {
   CriteriosUnidadChecklist,
   EnunciadosEvidenciasChecklist,
@@ -1399,6 +1400,10 @@ function RecursoForm({
             )}
             <Input
               type={draft.tipo === "Archivo" ? "file" : "url"}
+              // Los cuatro tipos que la vista previa sabe mostrar. Es guía,
+              // no validación: el `accept` se puede esquivar y quien decide
+              // de verdad es `file-service`.
+              {...(draft.tipo === "Archivo" ? { accept: RECURSO_ARCHIVO_ACCEPT } : {})}
               placeholder={fuentePlaceholder}
               // `<input type="file">` no acepta `value` programático (el
               // browser solo permite setearlo a `""` por seguridad —
