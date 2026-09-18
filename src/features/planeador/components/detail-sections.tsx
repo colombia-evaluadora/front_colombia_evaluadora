@@ -8,7 +8,7 @@ import { paths } from "@/config/paths"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
 import { useUnidadDetalleQuery } from "@/features/planeador/api/query/use-unidades-query"
-import { useReferenteCurricularQuery } from "@/features/planeador/api/query/use-referente-curricular-query"
+import { useUnidadReferenteQuery } from "@/features/planeador/api/query/use-unidad-referente-query"
 import {
   instrumentoLabelFromReferente,
   useUnidadesTabsQuery,
@@ -278,23 +278,17 @@ function UnidadFichaYEvidenciasDetalle({
   const navigate = useNavigate()
   const { notify } = useNotify()
   const { data: unidad } = useUnidadDetalleQuery(actividad.unidad.id)
-  // Mismo criterio que en `form-editar-actividad.tsx`: el árbol de
-  // evidencias sale del referente curricular de GRADO + ASIGNATURA de la
-  // actividad, no de la unidad.
-  const { data: referente } = useReferenteCurricularQuery(actividad.gradoId, actividad.asignaturaId)
-  const { data: unidadTabs } = useUnidadesTabsQuery()
-  // Por `referente.id` (grado+ASIGNATURA), no por `gradoId` a secas — ver el
-  // comentario de `instrumentoLabelFromReferente` en `use-unidades-tabs-query.ts`.
-  const instrumentoLabel = instrumentoLabelFromReferente(referente?.id, unidadTabs, UNIDAD_TAB_FALLBACK)
   // Mismo criterio que `UnidadFichaYEvidencias` en `form-editar-actividad.tsx`:
-  // solo los enunciados que la UNIDAD ya relacionó (`unidad.enunciadosDba`),
-  // no el catálogo entero del referente.
-  const enunciadosDeLaUnidad =
-    referente && unidad
-      ? referente.enunciados.filter((enunciado) =>
-          unidad.enunciadosDba.some((elegido) => elegido.id === enunciado.id),
-        )
-      : []
+  // el árbol de enunciados (ya acotado a los que la UNIDAD relacionó) +
+  // evidencias, y los rótulos `nivel1Etiqueta`/`nivel2Etiqueta`, salen de
+  // `GET /planeador/unidades/:id/referente` — no hace falta cruzar contra
+  // grado+asignatura ni contra `unidad.enunciadosDba` a mano.
+  const { data: referente } = useUnidadReferenteQuery(actividad.unidad.id)
+  const { data: unidadTabs } = useUnidadesTabsQuery()
+  // Por `referente.id` (`pk_referente_curricular`), no por `gradoId` a
+  // secas — ver el comentario de `instrumentoLabelFromReferente` en
+  // `use-unidades-tabs-query.ts`.
+  const instrumentoLabel = instrumentoLabelFromReferente(referente?.id ?? undefined, unidadTabs, UNIDAD_TAB_FALLBACK)
   const [pendingId, setPendingId] = useState<number | null>(null)
   // `actividad.evidenciasIds` ya trae lo guardado de verdad (`fn_actividad_
   // buscar_por_pk`, V224/V440, ver `use-actividad-detalle-query.ts`). Este
@@ -338,13 +332,13 @@ function UnidadFichaYEvidenciasDetalle({
           navigate({ to: paths.app.planeadorUnidadEditar.getHref(String(actividad.unidad.id)) })
         }
       />
-      {referente && enunciadosDeLaUnidad.length > 0 && (
+      {referente && referente.enunciados.length > 0 && (
         <EnunciadosEvidenciasChecklist
           className="mt-4"
           instrumentoLabel={instrumentoLabel}
           nivel1Etiqueta={referente.nivel1Etiqueta}
           nivel2Etiqueta={referente.nivel2Etiqueta}
-          enunciados={enunciadosDeLaUnidad}
+          enunciados={referente.enunciados}
           seleccionadas={seleccionadas}
           onToggle={handleToggle}
           disabledIds={seleccionadas}
