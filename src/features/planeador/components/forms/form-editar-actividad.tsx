@@ -461,6 +461,17 @@ function RecuperacionSection({
   actividadId: number
 }) {
   const recuperacion = camposEfectivos?.recuperacion
+  // Mientras el backend no mande `campos_disponibles.recuperacion` (todavía
+  // no desplegado en producción a la fecha de este comentario — confirmado
+  // contra una respuesta real de `GET .../configuracion-actividad`, que
+  // solo trae `criterio`/`evaluacion`/`ponderacion`), `recuperacion` cae al
+  // placeholder oculto (`defaultRecuperacionCampoDisponible`) y sus
+  // catálogos quedan vacíos. Sin este chequeo, prender el toggle abría los
+  // `<Select>` de destino/tipo de aplicación/tipo de cálculo sin ninguna
+  // opción para elegir — parecía roto en vez de simplemente no disponible
+  // todavía. Con los catálogos vacíos, la config extra no se ofrece: el
+  // toggle queda solo, igual que antes de que este bloque existiera.
+  const catalogosDisponibles = (recuperacion?.catalogos.destino.length ?? 0) > 0
 
   return (
     <form.Subscribe selector={(state) => state.values.esEvaluativa}>
@@ -487,7 +498,7 @@ function RecuperacionSection({
 
             <form.Subscribe selector={(state) => state.values.esRecuperacion}>
               {(esRecuperacionValue) =>
-                !esRecuperacionValue ? null : (
+                !esRecuperacionValue || !catalogosDisponibles ? null : (
                   <div className="grid gap-x-4 gap-y-5 rounded-md border border-input p-3 sm:grid-cols-2">
                     <form.Field name="recuperacionDestino">
                       {(field) => (
