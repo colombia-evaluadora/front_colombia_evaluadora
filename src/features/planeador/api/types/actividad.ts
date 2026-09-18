@@ -287,6 +287,14 @@ export interface Actividad {
   modalidad: Modalidad
   /** Si la actividad es sumativa (pondera/suma a la nota final) o no. */
   esEvaluativa: boolean
+  /**
+   * `es_formativa` del detalle real (V442): la unidad de la actividad tiene un
+   * referente NO evaluativo, así que no lleva nota y se registra con
+   * observación. Lo resuelve el backend (`fn_actividad_es_formativa`); no se
+   * deduce del instrumento ni de `esEvaluativa`, que es otro concepto.
+   * `undefined` en mock y en el listado (solo lo trae el detalle).
+   */
+  esFormativa?: boolean
   instrumento: string
   /** Peso de la actividad en la nota final (0-100). Solo aplica —y solo se
    *  muestra en el form— cuando `esEvaluativa` es `true` Y la unidad calcula

@@ -26,6 +26,17 @@ interface PlanillaCeldaRow {
   nota: number | null
   calificable: "S" | "N" | null
   observacion: string | null
+  esFormativa?: boolean | "S" | "N" | null
+  fechaAsistencia?: string | null
+  tieneAsistencia?: boolean | null
+  evidencias?: CeldaEvidenciaRow[] | null
+}
+
+interface CeldaEvidenciaRow {
+  pk: number
+  fkTarchivo: number
+  nombre?: string | null
+  fecha?: string | null
 }
 
 interface PlanillaFilaRow {
@@ -40,7 +51,22 @@ interface PlanillaFilaRow {
 }
 
 function toCelda(row: PlanillaCeldaRow): PlanillaCelda {
-  return { ...row }
+  const { esFormativa, fechaAsistencia, tieneAsistencia, evidencias, ...resto } = row
+  return {
+    ...resto,
+    esFormativa: esFormativa === true || esFormativa === "S",
+    fechaAsistencia: fechaAsistencia ? fechaAsistencia.slice(0, 10) : null,
+    // Sin el campo se asume que hay asistencia: si no la hay, el gate del
+    // backend lo dice al guardar — bloquear la celda por un campo ausente
+    // dejaría la planilla entera sin poder calificar.
+    tieneAsistencia: tieneAsistencia !== false,
+    evidencias: (evidencias ?? []).map((e) => ({
+      pk: e.pk,
+      fkTarchivo: e.fkTarchivo,
+      nombre: e.nombre ?? null,
+      fecha: e.fecha ?? null,
+    })),
+  }
 }
 
 function toFila(row: PlanillaFilaRow): PlanillaFila {

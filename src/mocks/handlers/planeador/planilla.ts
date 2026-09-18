@@ -6,6 +6,8 @@ import {
   asignaturaIdDe,
   calificacionANotas,
   decodePkTactividadEstudiante,
+  esFormativaMock,
+  getObservacion,
   getOverride,
   gradoIdDe,
   grupoIdDe,
@@ -15,6 +17,7 @@ import {
   ponderacionItemCotejo,
   ponderacionNivelEscala,
   ponderacionNivelRubrica,
+  setObservacion,
   setOverride,
   tipoInstrumentoDe,
 } from "@/mocks/db/planilla"
@@ -39,6 +42,8 @@ const INSTRUMENTO_URL = "/api/eval-col/planeador/actividades/:id/instrumento"
 const CALIFICAR_CELDA_URL = "/api/eval-col/planeador/actividades/estudiantes/:id/calificar"
 const CALIFICAR_BULK_URL = "/api/eval-col/planeador/actividades/:id/calificar-bulk/:tipo"
 const NOTA_ESTUDIANTE_URL = "/api/eval-col/planeador/actividades/estudiantes/:id/nota"
+const OBSERVAR_URL = "/api/eval-col/planeador/actividades/estudiantes/:id/observar"
+const OBSERVAR_GRUPAL_URL = "/api/eval-col/planeador/actividades/:id/observar-grupal"
 
 /** Actividades del (grado, grupo, asignatura) pedidos — mismos ids
  *  hasheados que ya devuelve `/planeador/docentes/grupos` y
@@ -86,6 +91,8 @@ export const planeadorPlanillaHandlers = [
         ponderacion: actividad.esEvaluativa ? actividad.ponderacion : null,
         nota_maxima: null,
         es_evaluativa: actividad.esEvaluativa ? "S" : "N",
+        es_formativa: esFormativaMock(actividad) ? "S" : "N",
+        metodo_valoracion: null,
         fecha_inicio: actividad.fechaInicio,
         fecha_cierre: actividad.fechaCierre,
         estudiantes_asignados: actividad.totalEstudiantes,
@@ -142,7 +149,14 @@ export const planeadorPlanillaHandlers = [
           definitiva: porcentaje,
           nota: porcentaje,
           calificable: noAsistio ? "N" : "S",
-          observacion: base?.asistencia.justificacion ?? null,
+          observacion:
+            getObservacion(actividad.id, estudiante.id) ??
+            base?.asistencia.justificacion ??
+            null,
+          esFormativa: esFormativaMock(actividad),
+          fechaAsistencia: actividad.fechaInicio.slice(0, 10),
+          tieneAsistencia: !noAsistio,
+          evidencias: [],
         }
       })
 
@@ -322,10 +336,61 @@ export const planeadorPlanillaHandlers = [
           instrumento: tipo,
           calificacion: porcentaje,
           calificable: base?.asistencia.estado === "no-asistio" ? "N" : "S",
-          observacion: base?.asistencia.justificacion ?? null,
+          observacion:
+            getObservacion(actividadId, estudianteId) ??
+            base?.asistencia.justificacion ??
+            null,
           detalle,
+          evidencias: [],
         },
       ],
     })
+  }),
+
+  // Observar a UN estudiante (actividad formativa): mismo gate de asistencia
+  // que calificar, y la observación pisa a la que hubiera (grupal incluida).
+  http.put(OBSERVAR_URL, async ({ params, request }) => {
+    await delay(200)
+    const pk = Number(params.id)
+    const { actividadId, estudianteId } = decodePkTactividadEstudiante(pk)
+    const actividad = planeadorDb.find((a) => a.id === actividadId)
+    if (!actividad) {
+      return HttpResponse.json({ message: "Actividad no encontrada." }, { status: 404 })
+    }
+    const body = (await request.json()) as { OBSERVACION: string; FECHA: string }
+    const asistencia = getCalificacionesByActividad(actividadId, planeadorDb).find(
+      (e) => e.id === estudianteId,
+    )?.asistencia
+    if (asistencia?.estado === "no-asistio") {
+      return HttpResponse.json(
+        {
+          error: `No se puede observar: no hay asistencia registrada para esta asignatura el ${body.FECHA}`,
+          sqlState: "22023",
+        },
+        { status: 400 },
+      )
+    }
+    setObservacion(actividadId, estudianteId, body.OBSERVACION)
+    return HttpResponse.json({ rows: [{ status: "OK" }] })
+  }),
+
+  // Observación grupal: se aplica a todo el roster y OMITE (no falla) a quien
+  // no tenga asistencia válida — devuelve cuántos quedaron observados.
+  http.post(OBSERVAR_GRUPAL_URL, async ({ params, request }) => {
+    await delay(250)
+    const actividadId = Number(params.id)
+    const actividad = planeadorDb.find((a) => a.id === actividadId)
+    if (!actividad) {
+      return HttpResponse.json({ message: "Actividad no encontrada." }, { status: 404 })
+    }
+    const body = (await request.json()) as { OBSERVACION: string; FECHA: string }
+    const observados = getCalificacionesByActividad(actividadId, planeadorDb).filter(
+      (estudiante) => {
+        if (estudiante.asistencia.estado === "no-asistio") return false
+        setObservacion(actividadId, estudiante.id, body.OBSERVACION)
+        return true
+      },
+    ).length
+    return HttpResponse.json({ rows: [{ estudiantes_observados: observados }] })
   }),
 ]

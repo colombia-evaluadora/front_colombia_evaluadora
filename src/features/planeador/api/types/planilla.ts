@@ -19,6 +19,11 @@ export interface PlanillaColumna {
   ponderacion: number | null
   notaMaxima: number | null
   esEvaluativa: boolean
+  /** Referente FORMATIVO: la actividad no lleva nota, se observa
+   *  (`PUT .../observar`). Es independiente de `esEvaluativa`, que es un flag
+   *  manual de la actividad con default `S`. */
+  esFormativa: boolean
+  metodoValoracion: string | null
   /** `yyyy-MM-dd`. */
   fechaInicio: string
   /** `yyyy-MM-dd`. */
@@ -35,6 +40,15 @@ export type EstadoCelda = "NO_CALIFICABLE" | "SIN_CALIFICAR" | (string & {})
 /** Una celda (estudiante × actividad) de `GET /planeador/planilla/calificaciones`.
  *  El backend ya la devuelve en camelCase (a diferencia del resto del sobre,
  *  que es snake_case) — confirmado contra la respuesta real. */
+/** Imagen adjunta a la observación de un estudiante (`TACTIVIDAD_SOPORTE`).
+ *  El binario no viaja acá: `fkTarchivo` lo resuelve `ArchivoImage`. */
+export interface CeldaEvidencia {
+  pk: number
+  fkTarchivo: number
+  nombre: string | null
+  fecha: string | null
+}
+
 export interface PlanillaCelda {
   ordenColumna: number
   pkTactividad: number
@@ -47,6 +61,16 @@ export interface PlanillaCelda {
   nota: number | null
   calificable: "S" | "N" | null
   observacion: string | null
+  /** Ver `PlanillaColumna.esFormativa` — se repite por celda porque es lo que
+   *  decide si abrir el popover de observación o el de nota. */
+  esFormativa: boolean
+  /** `yyyy-MM-dd` — la fecha que hay que mandar en `BODY.FECHA` al calificar u
+   *  observar: el día, dentro de la ventana de la actividad, en que ESE
+   *  estudiante tiene asistencia que el gate del backend acepta. Mandar la
+   *  fecha de inicio de la actividad daba 22023 casi siempre. */
+  fechaAsistencia: string | null
+  tieneAsistencia: boolean
+  evidencias: CeldaEvidencia[]
 }
 
 export interface PlanillaFila {

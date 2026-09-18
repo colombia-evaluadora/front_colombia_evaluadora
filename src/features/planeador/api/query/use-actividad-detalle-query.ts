@@ -76,6 +76,7 @@ interface ActividadDetalleRow {
   semana_cronograma: string | null
   material_requerido: string | null
   es_evaluativa: "S" | "N"
+  es_formativa: boolean | null
   es_recuperacion: "S" | "N"
   requiere_archivo: "S" | "N"
   requiere_texto: "S" | "N"
@@ -267,6 +268,7 @@ function toActividadDetalle(
     semana: row.semana_cronograma ?? "",
     modalidad: (row.modalidad ?? "Presencial") as Actividad["modalidad"],
     esEvaluativa: row.es_evaluativa === "S",
+    esFormativa: row.es_formativa === true,
     instrumento: row.instrumento_evaluacion ?? "",
     ponderacion: row.ponderacion ?? 0,
     notaMaxima: row.nota_maxima ?? undefined,
@@ -331,7 +333,15 @@ async function fetchActividadDetalle(id: number): Promise<Actividad> {
     throw new Error(`No se encontró la actividad ${id}.`)
   }
   if (env.ENABLE_API_MOCKING) {
-    return { ...(first as Actividad), recursos: (first as Actividad).recursos ?? [] }
+    const mock = first as Actividad
+    return {
+      ...mock,
+      recursos: mock.recursos ?? [],
+      // El mock no modela el referente curricular, que es lo que decide
+      // `es_formativa` en el real: se aproxima con lo que sí tiene, para que
+      // el camino de observación siga siendo alcanzable sin backend.
+      esFormativa: Boolean(mock.unidad?.id) && !mock.esEvaluativa,
+    }
   }
   const [tipoRecursoOptions, tipoAdaptacionOptions, aplicaAOptions] = await Promise.all([
     fetchTipoRecursoOptions(),
