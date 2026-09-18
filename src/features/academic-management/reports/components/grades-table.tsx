@@ -2,6 +2,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { CaretDownIcon, CaretUpIcon, InfoIcon } from "@/components/ui/icons"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
+import { RatingSymbolView } from "@/features/establishment/academic-period/components/rating-symbol"
 
 import type {
   AsignaturaInforme,
@@ -31,7 +32,19 @@ function CeldaAsignatura({ asignatura }: { asignatura: AsignaturaInforme | undef
   }
 
   if (!asignatura.esNumerico) {
-    return <span>{asignatura.simbolo ?? asignatura.valoracion ?? "—"}</span>
+    // El símbolo de una escala cualitativa suele ser una IMAGEN (las caritas
+    // de `TESCALA`), no un carácter: `RatingSymbolView` la resuelve y cae al
+    // texto sola cuando el valor no es una imagen o no carga.
+    if (asignatura.simbolo) {
+      return (
+        <RatingSymbolView
+          value={asignatura.simbolo}
+          label={asignatura.valoracion ?? asignatura.nombre}
+          className="mx-auto"
+        />
+      )
+    }
+    return <span>{asignatura.valoracion ?? "—"}</span>
   }
 
   if (asignatura.estado === "requerido") {
