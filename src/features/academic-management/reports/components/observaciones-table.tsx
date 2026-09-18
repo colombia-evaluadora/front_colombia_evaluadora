@@ -5,7 +5,7 @@ import { EyeIcon, PlusIcon } from "@/components/ui/icons"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 import type { FilaInforme } from "@/features/academic-management/reports/api/types"
-import { numeroPeriodo } from "@/features/academic-management/reports/lib/agrupar-filas"
+import { etiquetaPeriodo } from "@/features/academic-management/reports/lib/agrupar-filas"
 import type { EstudianteFilas } from "@/features/academic-management/reports/lib/agrupar-filas"
 
 interface ObservacionesTableProps {
@@ -74,7 +74,7 @@ export function ObservacionesTable({
                 <div className="flex flex-col divide-y divide-border">
                   {estudiante.filas.map((fila) => (
                     <span key={fila.periodoId} className="px-2 py-3 leading-6" title={fila.periodoNombre}>
-                      {numeroPeriodo(fila.periodoNombre)}
+                      {etiquetaPeriodo(fila)}
                     </span>
                   ))}
                 </div>

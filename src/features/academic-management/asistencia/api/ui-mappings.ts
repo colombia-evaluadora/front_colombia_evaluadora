@@ -346,6 +346,5 @@ export const EMPTY_SEGUIMIENTO_FILTERS: SeguimientoFiltersValues = {
   grado: "",
   grupo: "",
   asignatura: "",
-  actividad: "",
   tipoAsistencia: "",
 }

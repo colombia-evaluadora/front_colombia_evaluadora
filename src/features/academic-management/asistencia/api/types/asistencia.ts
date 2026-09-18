@@ -118,6 +118,10 @@ export interface AsistenciaQueryFilters {
   ACTIVIDAD?: number | null
   TIPO_ASISTENCIA?: TipoAsistencia | null
   SEARCH?: string | null
+  /** NOMBRE de la jornada, tal como lo devuelve el calendario -- no el pk ni el VALOR. */
+  JORNADA?: string | null
+  /** NOMBRE del grado, tal como lo devuelve el calendario. */
+  GRADO?: string | null
 }
 
 export interface AsistenciaQueryRequest {
@@ -163,6 +167,5 @@ export interface SeguimientoFiltersValues {
   grado: string
   grupo: string
   asignatura: string
-  actividad: string
   tipoAsistencia: string
 }
