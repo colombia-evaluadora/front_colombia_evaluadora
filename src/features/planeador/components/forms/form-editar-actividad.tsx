@@ -510,7 +510,21 @@ function RecuperacionSection({
                           </FieldLabel>
                           <Select
                             value={field.state.value || "__none__"}
-                            onValueChange={(v) => field.handleChange(!v || v === "__none__" ? "" : v)}
+                            onValueChange={(v) => {
+                              field.handleChange(!v || v === "__none__" ? "" : v)
+                              // Cambiar "¿Esta recuperación aplica para?"
+                              // invalida TODO lo que dependía del valor
+                              // anterior (la actividad puntual elegida,
+                              // cómo se aplica, cómo se calcula, el %) —
+                              // sin este reset quedaban valores viejos
+                              // guardados pero ocultos, que podían
+                              // reaparecer con datos de otra combinación al
+                              // volver a elegir la misma opción de antes.
+                              form.setFieldValue("recuperacionActividadId", undefined)
+                              form.setFieldValue("recuperacionTipoAplicacion", "")
+                              form.setFieldValue("recuperacionTipoCalculo", "")
+                              form.setFieldValue("recuperacionValorPonderacion", undefined)
+                            }}
                             disabled={disabled}
                           >
                             <SelectTrigger id={field.name}>
@@ -549,7 +563,16 @@ function RecuperacionSection({
                                 <FieldLabel>¿Qué actividad deseas recuperar?</FieldLabel>
                                 <ActividadRecuperarCascada
                                   value={field.state.value}
-                                  onChange={field.handleChange}
+                                  onChange={(v) => {
+                                    field.handleChange(v)
+                                    // Mismo motivo que el reset de
+                                    // "¿Esta recuperación aplica para?":
+                                    // cambiar LA actividad a recuperar
+                                    // invalida cómo se aplica/calcula.
+                                    form.setFieldValue("recuperacionTipoAplicacion", "")
+                                    form.setFieldValue("recuperacionTipoCalculo", "")
+                                    form.setFieldValue("recuperacionValorPonderacion", undefined)
+                                  }}
                                   excludeActividadId={actividadId}
                                   disabled={disabled}
                                 />
@@ -560,15 +583,24 @@ function RecuperacionSection({
                       }
                     </form.Subscribe>
 
-                    {/* Igual que "Actividad a recuperar" (gateada por
-                        `destino`) o "Valor de ponderación" (gateada por
+                    {/* Igual que "Valor de ponderación" (gateada por
                         `tipoCalculo`): sin elegir "¿Esta recuperación aplica
                         para?" todavía no hay nada que aplicar/calcular, así
                         que el resto de la cascada se oculta en vez de
-                        mostrarse vacío. */}
-                    <form.Subscribe selector={(state) => state.values.recuperacionDestino}>
-                      {(destino) =>
-                        !destino ? null : (
+                        mostrarse vacío. Con `destino = ACTIVIDAD` además hay
+                        que esperar a que se elija LA actividad puntual
+                        (`recuperacionActividadId`) — mismo criterio que
+                        "Actividad a recuperar" arriba: hasta no saber sobre
+                        qué actividad se está recuperando, tampoco hay nada
+                        que aplicar/calcular todavía. */}
+                    <form.Subscribe
+                      selector={(state) => ({
+                        destino: state.values.recuperacionDestino,
+                        actividadId: state.values.recuperacionActividadId,
+                      })}
+                    >
+                      {({ destino, actividadId }) =>
+                        !destino || (destino === "ACTIVIDAD" && !actividadId) ? null : (
                           <form.Field name="recuperacionTipoAplicacion">
                             {(field) => (
                               <Field variant="outlined">
@@ -577,7 +609,17 @@ function RecuperacionSection({
                                   className="flex min-h-11 flex-wrap items-center gap-x-6 gap-y-2 rounded-md border border-input px-3 py-2"
                                   value={field.state.value}
                                   disabled={disabled}
-                                  onValueChange={field.handleChange}
+                                  onValueChange={(v) => {
+                                    field.handleChange(v)
+                                    // "Reemplazar" no calcula nada (la nota
+                                    // anterior se descarta entera) — si
+                                    // había un "Promediado"/"Ponderado" +
+                                    // % elegidos con "Computar", quedan sin
+                                    // sentido y tienen que limpiarse, no
+                                    // solo ocultarse.
+                                    form.setFieldValue("recuperacionTipoCalculo", "")
+                                    form.setFieldValue("recuperacionValorPonderacion", undefined)
+                                  }}
                                 >
                                   {(recuperacion?.catalogos.tipoAplicacion ?? []).map((opcion) => (
                                     <label key={opcion.valor} className="flex items-center gap-2 text-sm">
@@ -608,9 +650,26 @@ function RecuperacionSection({
                       }
                     </form.Subscribe>
 
-                    <form.Subscribe selector={(state) => state.values.recuperacionDestino}>
-                      {(destino) =>
-                        !destino ? null : (
+                    {/* Mismo gate que "¿Cómo se aplicará la nota de
+                        recuperación?" arriba, más: NO tiene sentido con
+                        `tipoAplicacion = REEMPLAZAR` — reemplazar sustituye
+                        el 100% de la nota, no hay nada que "calcular" (esa
+                        cascada solo aplica a "Computar con la nota
+                        anterior"). Sin este chequeo, cambiar de Computar a
+                        Reemplazar después de haber elegido Ponderado + %
+                        dejaba ese banner/campo mostrándose igual. */}
+                    <form.Subscribe
+                      selector={(state) => ({
+                        destino: state.values.recuperacionDestino,
+                        actividadId: state.values.recuperacionActividadId,
+                        tipoAplicacion: state.values.recuperacionTipoAplicacion,
+                      })}
+                    >
+                      {({ destino, actividadId, tipoAplicacion }) =>
+                        !destino ||
+                        (destino === "ACTIVIDAD" && !actividadId) ||
+                        !tipoAplicacion ||
+                        tipoAplicacion === "REEMPLAZAR" ? null : (
                           <form.Field name="recuperacionTipoCalculo">
                             {(field) => (
                               <Field variant="outlined">
@@ -622,7 +681,14 @@ function RecuperacionSection({
                                   className="flex min-h-11 flex-wrap items-center gap-x-6 gap-y-2 rounded-md border border-input px-3 py-2"
                                   value={field.state.value}
                                   disabled={disabled}
-                                  onValueChange={field.handleChange}
+                                  onValueChange={(v) => {
+                                    field.handleChange(v)
+                                    // Un % de ponderación de otro modo (o
+                                    // de "Promediado", que ni lo pide) no
+                                    // aplica al elegir de nuevo — mismo
+                                    // criterio que los resets de arriba.
+                                    form.setFieldValue("recuperacionValorPonderacion", undefined)
+                                  }}
                                 >
                                   {(recuperacion?.catalogos.tipoCalculo ?? []).map((opcion) => (
                                     <label key={opcion.valor} className="flex items-center gap-2 text-sm">
