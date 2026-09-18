@@ -1930,9 +1930,12 @@ function RecursoItem({
       <div className="min-w-0 flex-1 pr-24">
         <p
           className="truncate text-sm font-semibold"
-          title={recurso.url || recurso.fuente}
+          title={recurso.fuente || recurso.url}
         >
-          {recurso.url || recurso.fuente || "(sin URL)"}
+          {/* Para un archivo manda el nombre; para un enlace, la URL. Antes
+              la URL iba primero siempre, y un material de archivo guardado
+              —que no tiene URL de este lado— se veía como "(sin URL)". */}
+          {recurso.fuente || recurso.url || "(sin URL)"}
         </p>
         {recurso.descripcion && (
           <p className="text-muted-foreground truncate text-xs" title={recurso.descripcion}>
@@ -1982,7 +1985,11 @@ function RecursoItem({
                 type="button"
                 aria-label="Ver recurso"
                 render={
-                  recurso.url
+                  // Un material ya guardado no tiene `url` de este lado — su
+                  // binario vive en el servidor y se pide por `archivoId`.
+                  // Sin esta segunda condición el ojito quedaba apagado justo
+                  // para los archivos que sí se pueden previsualizar.
+                  recurso.url || recurso.archivoId !== undefined
                     ? (
                       <Link
                         to={paths.app.planeadorRecursoPreview.getHref()}
@@ -1992,6 +1999,9 @@ function RecursoItem({
                           fuente: recurso.fuente,
                           titulo: recurso.titulo,
                           descripcion: recurso.descripcion,
+                          // Un material ya guardado no tiene bytes de este
+                          // lado: la vista previa los pide con este id.
+                          archivoId: recurso.archivoId,
                         }}
                         onClick={onVerRecurso}
                       />
