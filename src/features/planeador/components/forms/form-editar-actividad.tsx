@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { DatePicker } from "@/components/date-picker"
-import { Field, FieldLabel } from "@/components/ui/field"
+import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
 import { cn } from "@/lib/utils"
 import { parseDateValue, formatDateValue } from "@/lib/date-value"
 import { toDigitsOrRangeInput, toPositiveDigitsInput } from "@/lib/text-input"
@@ -40,6 +40,7 @@ import { UNIDAD_TAB_FALLBACK } from "@/features/planeador/components/planeador-t
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
 import { useConfiguracionActividadQuery } from "@/features/planeador/api/query/use-configuracion-actividad-query"
+import { useProgramacionActividadQuery } from "@/features/planeador/api/query/use-programacion-actividad-query"
 import { useReferenteCurricularQuery } from "@/features/planeador/api/query/use-referente-curricular-query"
 import { useDocenteGruposQuery } from "@/features/planeador/api/query/use-docente-grupos-query"
 import { useDocenteGradoAsignaturaQuery } from "@/features/planeador/api/query/use-docente-grado-asignatura-query"
@@ -1732,6 +1733,16 @@ function RecursoItem({
 }
 
 function ProgramacionSection({ form, disabled }: { form: FormActividad; disabled: boolean }) {
+  // Topes reales de esta sección (ventana del periodo académico, días
+  // hábiles del horario, duración y semana admitidas) — sin esto, el único
+  // aviso de una fecha/duración fuera de rango era el 22023 de
+  // `fn_actividad_crear`/`_actualizar` al guardar (`fn_actividad_
+  // programacion_assert`, V422). `grupoId`/`asignaturaId` ya viven en el
+  // form (ver `AsignaturaGradoSection`), de ahí sale la ventana.
+  const grupoId = useSelector(form.store, (state) => state.values.grupoId)
+  const asignaturaId = useSelector(form.store, (state) => state.values.asignaturaId)
+  const { data: programacion } = useProgramacionActividadQuery(grupoId, asignaturaId)
+
   return (
     <Card className="gap-4 p-4">
       <h3 className="text-base font-semibold">Programación</h3>
@@ -1745,8 +1756,14 @@ function ProgramacionSection({ form, disabled }: { form: FormActividad; disabled
                 id={field.name}
                 value={parseDateValue(field.state.value)}
                 onChange={(date) => field.handleChange(formatDateValue(date))}
+                minDate={programacion?.fechaInicio.min ?? undefined}
+                maxDate={programacion?.fechaInicio.max ?? undefined}
+                enabledDaysOfWeek={programacion?.fechaInicio.diasHabiles ?? undefined}
                 disabled={disabled}
               />
+              {programacion?.fechaInicio.motivo && (
+                <FieldDescription>{programacion.fechaInicio.motivo}</FieldDescription>
+              )}
             </Field>
           )}
         </form.Field>
@@ -1762,9 +1779,19 @@ function ProgramacionSection({ form, disabled }: { form: FormActividad; disabled
                     id={field.name}
                     value={parseDateValue(field.state.value)}
                     onChange={(date) => field.handleChange(formatDateValue(date))}
-                    minDate={parseDateValue(fechaInicio)}
+                    // La fecha ya elegida en "Fecha inicio" manda sobre el
+                    // mínimo del backend: no tiene sentido ofrecer un cierre
+                    // anterior a un inicio que el propio docente ya puso.
+                    minDate={
+                      parseDateValue(fechaInicio) ?? programacion?.fechaCierre.min ?? undefined
+                    }
+                    maxDate={programacion?.fechaCierre.max ?? undefined}
+                    enabledDaysOfWeek={programacion?.fechaCierre.diasHabiles ?? undefined}
                     disabled={disabled}
                   />
+                  {programacion?.fechaCierre.motivo && (
+                    <FieldDescription>{programacion.fechaCierre.motivo}</FieldDescription>
+                  )}
                 </Field>
               )}
             </form.Field>
@@ -1790,6 +1817,15 @@ function ProgramacionSection({ form, disabled }: { form: FormActividad; disabled
                 onChange={(e) => field.handleChange(toPositiveDigitsInput(e.target.value, 3))}
                 disabled={disabled}
               />
+              {programacion?.duracionEstimada.min != null && programacion.duracionEstimada.max != null && (
+                <FieldDescription>
+                  Entre {programacion.duracionEstimada.min} y {programacion.duracionEstimada.max}{" "}
+                  {(programacion.duracionEstimada.unidad ?? "bloques").toLowerCase()}.
+                </FieldDescription>
+              )}
+              {programacion?.duracionEstimada.motivo && (
+                <FieldDescription>{programacion.duracionEstimada.motivo}</FieldDescription>
+              )}
             </Field>
           )}
         </form.Field>
@@ -1809,6 +1845,15 @@ function ProgramacionSection({ form, disabled }: { form: FormActividad; disabled
                 onChange={(e) => field.handleChange(toDigitsOrRangeInput(e.target.value))}
                 disabled={disabled}
               />
+              {programacion?.semanaCronograma.min != null && programacion.semanaCronograma.max != null && (
+                <FieldDescription>
+                  Entre la semana {programacion.semanaCronograma.min} y la {programacion.semanaCronograma.max} del
+                  periodo académico.
+                </FieldDescription>
+              )}
+              {programacion?.semanaCronograma.motivo && (
+                <FieldDescription>{programacion.semanaCronograma.motivo}</FieldDescription>
+              )}
             </Field>
           )}
         </form.Field>
