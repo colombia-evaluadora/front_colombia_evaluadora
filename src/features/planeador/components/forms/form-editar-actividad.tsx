@@ -1323,9 +1323,13 @@ function RecursoForm({
   // Placeholder contextual del campo "Fuente" según el tipo. La idea es
   // que el ejemplo que ve el usuario matchee lo que va a tipear —si es
   // URL, una URL de ejemplo; si es archivo, el nombre de un archivo, etc.
+  // REV: el de "Unidad virtual" pedía un NOMBRE, pero el campo es
+  // `type="url"` y lo que escribe va a `draft.url` — el mismo lugar que el
+  // tipo "URL". Un ejemplo de enlace de repositorio dice qué se espera de
+  // verdad, y de paso es la forma que la vista previa sabe embeber.
   const fuentePlaceholder =
     draft.tipo === "Unidad virtual"
-      ? "Nombre de la unidad virtual o repositorio"
+      ? "https://drive.google.com/file/d/..."
       : draft.tipo === "Archivo"
         ? "Nombre del archivo"
         : "https://..."

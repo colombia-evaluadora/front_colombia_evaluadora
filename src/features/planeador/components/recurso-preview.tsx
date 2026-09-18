@@ -205,18 +205,85 @@ function ImagePreview({ url, nombre }: { url: string; nombre?: string }) {
   )
 }
 
+/** Botón de escape para las vistas que viven dentro de un iframe.
+ *
+ *  Un iframe hacia otro dominio no avisa cuando lo rechazan: si el servidor
+ *  manda `X-Frame-Options` o el archivo es privado, el marco queda en blanco
+ *  y no hay evento que lo delate (leer su contenido sería cruzar el origen).
+ *  Por eso el enlace se ofrece siempre, no como reacción a un error que no
+ *  podemos detectar. */
+function AbrirAparte({ url, etiqueta }: { url: string; etiqueta: string }) {
+  return (
+    <div className="mt-2 flex justify-end">
+      <Button
+        variant="ghost"
+        color="neutral"
+        size="sm"
+        type="button"
+        render={<a href={url} target="_blank" rel="noopener noreferrer" />}
+      >
+        <InsertLinkOutlinedIcon data-icon="inline-start" />
+        {etiqueta}
+      </Button>
+    </div>
+  )
+}
+
 /** PDF: el browser lo renderiza nativamente dentro del iframe si el servidor
  *  lo expone con `Content-Type: application/pdf`. Si no, el iframe queda en
  *  blanco o muestra el error del browser — preferible a un placeholder que
  *  mienta sobre el contenido. */
 function PdfPreview({ url }: { url: string }) {
   return (
-    <div className="mx-auto w-full max-w-4xl overflow-hidden rounded-md border bg-card">
-      <iframe
-        src={url}
-        title="Vista previa del PDF"
-        className="h-[80vh] w-full"
-      />
+    <div className="mx-auto w-full max-w-4xl">
+      <div className="bg-card overflow-hidden rounded-md border">
+        <iframe
+          src={url}
+          title="Vista previa del PDF"
+          className="h-[80vh] w-full"
+        />
+      </div>
+      {!url.startsWith("blob:") && <AbrirAparte url={url} etiqueta="Abrir el PDF aparte" />}
+    </div>
+  )
+}
+
+/**
+ * Visor del propio repositorio (Google Drive, Docs) embebido.
+ *
+ * Es lo que resuelve el caso que no se puede resolver de otra forma: un
+ * enlace de Drive no dice si del otro lado hay un PDF, una foto, un video o
+ * un audio, y su visor sí lo sabe. Delegar le pasa los cuatro casos a quien
+ * tiene la información.
+ *
+ * No lleva `sandbox`. Un visor de Drive necesita scripts y su propio origen
+ * para andar, y `allow-scripts` + `allow-same-origin` juntos dejan al marco
+ * quitarse el sandbox solo, así que la restricción sería más declarativa que
+ * real — y a cambio arriesga dejarlo en blanco. Es el mismo trato que el
+ * embebido de YouTube de más arriba.
+ */
+function EmbedPreview({
+  url,
+  proveedor,
+  urlOriginal,
+}: {
+  url: string
+  proveedor: string
+  urlOriginal: string
+}) {
+  return (
+    <div className="mx-auto w-full max-w-4xl">
+      <div className="bg-card overflow-hidden rounded-md border">
+        <iframe
+          src={url}
+          title={`Vista previa en ${proveedor}`}
+          className="h-[80vh] w-full"
+          // `allow` es lo que habilita que el reproductor de Drive pueda
+          // sonar y ponerse en pantalla completa desde adentro del marco.
+          allow="autoplay; encrypted-media; fullscreen"
+        />
+      </div>
+      <AbrirAparte url={urlOriginal} etiqueta={`Abrir en ${proveedor}`} />
     </div>
   )
 }
@@ -265,6 +332,36 @@ function DocxPreview({ url }: { url: string }) {
         className="space-y-3 text-sm leading-relaxed"
         dangerouslySetInnerHTML={{ __html: html }}
       />
+    </div>
+  )
+}
+
+/**
+ * Plataforma de video o audio que `react-player` ya sabe embeber: Vimeo,
+ * Twitch, Wistia, Spotify, TikTok, streams HLS/DASH.
+ *
+ * La lista no se escribe acá a mano: se le pregunta a la librería con
+ * `ReactPlayer.canPlay`, que es la misma función con la que decide internamente
+ * qué reproductor usar. Escribir nuestra propia lista de dominios significaría
+ * mantenerla sincronizada con la suya para siempre, y quedar cortos cada vez
+ * que agreguen una plataforma.
+ *
+ * La consulta vive en el componente y no en `resolveRecursoPreview` a
+ * propósito: ese archivo es lógica pura y lo importa también el formulario
+ * (por `RECURSO_ARCHIVO_ACCEPT`), así que meterle un import de `react-player`
+ * arrastraría el reproductor entero al bundle de una pantalla que no lo usa.
+ */
+function puedeReactPlayer(url: string): boolean {
+  // `canPlay` está declarado como opcional en los tipos de react-player v3
+  // (`Partial<{...}>`), así que se comprueba antes de llamarlo en vez de
+  // confiar en que siempre viene.
+  return typeof ReactPlayer.canPlay === "function" && ReactPlayer.canPlay(url)
+}
+
+function PlataformaPreview({ url }: { url: string }) {
+  return (
+    <div className="mx-auto aspect-video w-full max-w-4xl overflow-hidden rounded-md border bg-black">
+      <ReactPlayer src={url} controls width="100%" height="100%" />
     </div>
   )
 }
@@ -322,6 +419,8 @@ function WebPreview({ url }: { url: string }) {
  * - Imagen   → `<img>` plano
  * - PDF      → `<iframe>` (el browser lo renderiza nativo)
  * - .docx    → `mammoth.convertToHtml` (parseo client-side, sin MS Office)
+ * - Drive    → el visor del propio repositorio, embebido (ver `EmbedPreview`)
+ * - Plataforma → `react-player`, para lo que esa librería ya sabe embeber
  * - Web      → screenshot vía `fetchFromApi`, con fallback a `<Microlink>`
  *
  * Los recursos tipo "Archivo" pasan por el mismo camino que el resto. Antes
@@ -412,6 +511,21 @@ export function RecursoPreview({ recurso }: { recurso: Recurso }) {
     }
     return <WebPreview url={resolved.value} />
   }
-  // "web": enlace sin extensión reconocible (Drive, sitio genérico).
+  if (resolved.kind === "embed") {
+    return (
+      <EmbedPreview
+        url={resolved.value}
+        proveedor={resolved.proveedor ?? "el repositorio"}
+        urlOriginal={resolved.urlOriginal ?? url}
+      />
+    )
+  }
+  // "web": no se reconoció nada por la URL. Antes del screenshot se le
+  // pregunta a react-player, que cubre plataformas (Vimeo, Spotify, Twitch…)
+  // cuyas URLs tampoco tienen extensión y que hasta ahora terminaban como una
+  // captura de pantalla en vez de un reproductor.
+  if (puedeReactPlayer(resolved.value)) {
+    return <PlataformaPreview url={resolved.value} />
+  }
   return <WebPreview url={resolved.value} />
 }
