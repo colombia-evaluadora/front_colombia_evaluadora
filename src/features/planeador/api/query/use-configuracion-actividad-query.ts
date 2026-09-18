@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
-import type { Actividad } from "@/features/planeador/api/types/actividad"
+import { defaultRecuperacionCampoDisponible, type Actividad } from "@/features/planeador/api/types/actividad"
 import { toInstrumentosPermitidos } from "@/features/planeador/api/query/use-instrumento-evaluacion-catalog"
 
 /**
@@ -24,10 +24,11 @@ type CamposDisponibles = NonNullable<Actividad["camposDisponibles"]>
 /** Misma fila cruda que `GET .../actividades/:id` — `evaluacion.
  *  instrumentosPermitidos` viene como `{pk, valor, etiqueta}[]`, no
  *  `string[]` (ver `toInstrumentosPermitidos`). */
-type CamposDisponiblesRaw = Omit<CamposDisponibles, "evaluacion"> & {
+type CamposDisponiblesRaw = Omit<CamposDisponibles, "evaluacion" | "recuperacion"> & {
   evaluacion: Omit<CamposDisponibles["evaluacion"], "instrumentosPermitidos"> & {
     instrumentosPermitidos: Parameters<typeof toInstrumentosPermitidos>[0]
   }
+  recuperacion?: CamposDisponibles["recuperacion"]
 }
 
 interface ConfiguracionActividadRow {
@@ -60,6 +61,7 @@ async function fetchConfiguracionActividad(
       ...campos.evaluacion,
       instrumentosPermitidos: toInstrumentosPermitidos(campos.evaluacion.instrumentosPermitidos),
     },
+    recuperacion: campos.recuperacion ?? defaultRecuperacionCampoDisponible(),
   }
 }
 

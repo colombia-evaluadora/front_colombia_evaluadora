@@ -25,6 +25,11 @@ export function crearActividadVacia(): Actividad {
     nombre: "",
     tipo: "Proyecto",
     esRecuperacion: false,
+    recuperacionDestino: "",
+    recuperacionActividadId: undefined,
+    recuperacionTipoAplicacion: "",
+    recuperacionTipoCalculo: "",
+    recuperacionValorPonderacion: undefined,
     // `0` es el sentinel de "sin unidad" — ningún PK real es 0.
     unidad: { id: 0, nombre: "" },
     evidenciasIds: [],

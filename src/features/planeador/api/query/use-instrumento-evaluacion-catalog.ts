@@ -56,13 +56,21 @@ export interface InstrumentoEvaluacionOption {
  * literal corto `"Otro"`. Tolera además un array ya en forma de strings
  * (el mock, `src/mocks/handlers/planeador.ts`), para no duplicar esta
  * función en dos shapes distintas según el origen de los datos.
+ *
+ * Desde que las tres configuraciones de `campos_disponibles` se unificaron
+ * (V440), la fila trae `etiqueta` Y `nombre` con el mismo texto — se cae a
+ * `nombre` cuando falte `etiqueta` (o venga de un endpoint viejo que solo
+ * mande una de las dos) para no filtrar filas válidas por quedarse con
+ * `undefined`.
  */
 export function toInstrumentosPermitidos(
-  rows: (string | { pk?: number; valor?: string; etiqueta?: string })[] | undefined,
+  rows: (string | { pk?: number; valor?: string; etiqueta?: string; nombre?: string })[] | undefined,
 ): string[] {
   return (rows ?? [])
     .map((row) =>
-      typeof row === "string" ? row : (INSTRUMENTO_EVALUACION_POR_CODIGO[row.valor ?? ""] ?? row.etiqueta),
+      typeof row === "string"
+        ? row
+        : (INSTRUMENTO_EVALUACION_POR_CODIGO[row.valor ?? ""] ?? row.etiqueta ?? row.nombre),
     )
     .filter((nombre): nombre is string => !!nombre)
 }

@@ -26,6 +26,11 @@ interface PlanillaCeldaRow {
   nota: number | null
   calificable: "S" | "N" | null
   observacion: string | null
+  /** Opcionales acá (aunque `PlanillaCelda` los deje obligatorios): toleran
+   *  una respuesta vieja sin estas columnas — `toCelda` les pone default. */
+  esFormativa?: boolean
+  fechaAsistencia?: string | null
+  tieneAsistencia?: boolean
 }
 
 interface PlanillaFilaRow {
@@ -40,7 +45,15 @@ interface PlanillaFilaRow {
 }
 
 function toCelda(row: PlanillaCeldaRow): PlanillaCelda {
-  return { ...row }
+  return {
+    ...row,
+    esFormativa: row.esFormativa ?? false,
+    fechaAsistencia: row.fechaAsistencia ?? null,
+    // Sin la columna (respuesta vieja), no hay forma de saber si falta
+    // asistencia — se asume `true` para no pintar gris de más algo que
+    // antes se dejaba calificar sin este chequeo.
+    tieneAsistencia: row.tieneAsistencia ?? true,
+  }
 }
 
 function toFila(row: PlanillaFilaRow): PlanillaFila {

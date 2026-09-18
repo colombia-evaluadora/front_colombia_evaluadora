@@ -111,7 +111,8 @@ const ACTIVIDAD_LIST_URL = "/api/eval-col/planeador/actividades"
 const ACTIVIDAD_STATS_URL = "/api/eval-col/planeador/actividades/stats"
 const ACTIVIDAD_CALENDARIO_URL = "/api/eval-col/planeador/actividades/calendario"
 const ACTIVIDAD_MIAS_URL = "/api/eval-col/planeador/actividades/mias"
-const ACTIVIDAD_ESTUDIANTES_GRUPO_URL = "/api/eval-col/planeador/actividades/estudiantes-grupo"
+const PLANEADOR_ESTUDIANTES_URL = "/api/eval-col/planeador/estudiantes"
+const ACTIVIDAD_CONFIGURACION_CONTEXTO_URL = "/api/eval-col/planeador/actividades/configuracion"
 const ACTIVIDAD_DETAIL_URL = "/api/eval-col/planeador/actividades/:id"
 const ACTIVIDAD_CALIFICACIONES_URL =
   "/api/eval-col/planeador/actividades/:id/calificaciones"
@@ -119,6 +120,7 @@ const ACTIVIDAD_EVIDENCIAS_URL = "/api/eval-col/planeador/actividades/:id/eviden
 const ACTIVIDAD_CRITERIOS_URL = "/api/eval-col/planeador/actividades/:id/criterios"
 const ACTIVIDAD_MATERIALES_URL = "/api/eval-col/planeador/actividades/:id/materiales"
 const ACTIVIDAD_ADAPTACIONES_URL = "/api/eval-col/planeador/actividades/:id/adaptaciones"
+const ACTIVIDAD_ESTUDIANTES_SET_URL = "/api/eval-col/planeador/actividades/:id/estudiantes"
 const ACTIVIDAD_CREATE_URL = "/api/eval-col/planeador/actividades"
 const ACTIVIDAD_DELETE_URL = "/api/eval-col/planeador/actividades/:id"
 const ACTIVIDAD_EXPORT_ALL_URL = "/api/eval-col/planeador/actividades/export-all"
@@ -331,6 +333,11 @@ function actividadFromImportRow(raw: Record<string, unknown>, id: number): Activ
     nombre,
     tipo: String(raw.tipo ?? ""),
     esRecuperacion: false,
+    recuperacionDestino: "",
+    recuperacionActividadId: undefined,
+    recuperacionTipoAplicacion: "",
+    recuperacionTipoCalculo: "",
+    recuperacionValorPonderacion: undefined,
     unidad: { id: 0, nombre: String(raw.unidad ?? "") },
     evidenciasIds: [],
     criteriosUnidadIds: [],
@@ -505,6 +512,7 @@ export const planeadorHandlers = [
       instrumento_evaluacion: row.instrumento,
       ponderacion: row.ponderacion,
       es_evaluativa: row.esEvaluativa ? "S" : "N",
+      es_recuperacion: row.esRecuperacion ? "S" : "N",
       estudiantes_asignados: row.totalEstudiantes,
       estudiantes_evaluados: row.evaluados,
       total_count: page.totalCount,
@@ -515,28 +523,84 @@ export const planeadorHandlers = [
     return HttpResponse.json({ rows })
   }),
 
-  // Registrada antes que `ACTIVIDAD_DETAIL_URL` (`:id`) — mismo cuidado que
-  // el resto de rutas estáticas de este archivo: si no, "estudiantes-grupo"
-  // calzaría ahí como si fuera un id. Reusa `buildEstudiantes` (mismo
-  // generador determinista que ya usa `getCalificacionesByActividad`) con un
-  // grado/grupo sintético a partir del `grupoId` — el mock no modela una
-  // tabla `TMATRICULA` real, así que no hay de dónde sacar el grado/grupo
-  // "de verdad" del grupo pedido.
-  http.get(ACTIVIDAD_ESTUDIANTES_GRUPO_URL, async ({ request }) => {
+  // `GET /planeador/estudiantes?GRUPO=` (`fn_planeador_estudiantes_
+  // candidatos_listar`, V422) — endpoint oficial que reemplaza al propio
+  // `/planeador/actividades/estudiantes-grupo` que nunca se mergeó. Reusa
+  // `buildEstudiantes` (mismo generador determinista que ya usa
+  // `getCalificacionesByActividad`) con un grado/grupo sintético a partir
+  // del `grupoId` — el mock no modela una tabla `TMATRICULA` real, así que
+  // no hay de dónde sacar el grado/grupo "de verdad" del grupo pedido.
+  http.get(PLANEADOR_ESTUDIANTES_URL, async ({ request }) => {
     await delay(150)
     const url = new URL(request.url)
-    const grupoId = Number(url.searchParams.get("grupo"))
+    const grupoId = Number(url.searchParams.get("GRUPO"))
     if (!grupoId) {
-      return HttpResponse.json({ message: "grupo es obligatorio" }, { status: 400 })
+      return HttpResponse.json({ message: "GRUPO es obligatorio" }, { status: 400 })
     }
     const estudiantes = buildEstudiantes(String(grupoId % 12), String(Math.floor(grupoId / 12) % 5))
     const rows = estudiantes.map((e) => ({
-      fk_tmatricula: grupoId * 1000 + e.id,
+      pk_tmatricula: grupoId * 1000 + e.id,
       fk_testudiante: grupoId * 1000 + e.id,
       estudiante: `${e.nombres} ${e.apellidos}`,
-      documento: String(1000000000 + grupoId * 1000 + e.id),
+      fk_tgrupo: grupoId,
+      grupo: `Grupo ${grupoId}`,
+      asignado: false,
+      pk_tactividad_estudiante: null,
+      total_count: estudiantes.length,
     }))
     return HttpResponse.json({ rows })
+  }),
+
+  // Registrada antes que `ACTIVIDAD_DETAIL_URL` (`:id`) por el mismo motivo
+  // que `ACTIVIDAD_ESTUDIANTES_GRUPO_URL`. Ventana sintética pero plausible:
+  // hoy±ventana del "periodo académico", días hábiles lunes a viernes — el
+  // mock no modela `TPERIODO_ACADEMICO`/horario real, solo sirve para probar
+  // que el front bloquea fechas/duración fuera de rango en vez de esperar
+  // el 22023 de guardar.
+  http.get(ACTIVIDAD_CONFIGURACION_CONTEXTO_URL, async ({ request }) => {
+    await delay(150)
+    const url = new URL(request.url)
+    if (!url.searchParams.get("GRUPO") || !url.searchParams.get("ASIGNATURA")) {
+      return HttpResponse.json({ message: "GRUPO y ASIGNATURA son obligatorios" }, { status: 400 })
+    }
+    const hoy = new Date()
+    const min = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1)
+    const max = new Date(hoy.getFullYear(), hoy.getMonth() + 4, 0)
+    const diasHabiles = [1, 2, 3, 4, 5]
+    const rangoFecha = {
+      min: min.toISOString().slice(0, 10),
+      max: max.toISOString().slice(0, 10),
+      diasHabiles,
+      motivo: null,
+    }
+    return HttpResponse.json({
+      rows: [
+        {
+          configuracion: {
+            programacion: {
+              periodoAcademico: {
+                pk: 1,
+                nombre: "Año escolar 2026",
+                fechaInicio: rangoFecha.min,
+                fechaFin: rangoFecha.max,
+                semanas: 20,
+              },
+              intensidadHoraria: {
+                bloquesPorSemana: 4,
+                diasHabiles: diasHabiles.map((valor) => ({
+                  valor,
+                  nombre: ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"][valor],
+                })),
+              },
+              fechaInicio: rangoFecha,
+              fechaCierre: rangoFecha,
+              semanaCronograma: { min: 1, max: 20, motivo: null },
+              duracionEstimada: { min: 1, max: 76, unidad: "BLOQUES", motivo: null },
+            },
+          },
+        },
+      ],
+    })
   }),
 
   // Detalle: id desconocido → 404 con mensaje. El cliente espera el sobre
@@ -675,6 +739,24 @@ export const planeadorHandlers = [
       return HttpResponse.json({ message: "Actividad no encontrada." }, { status: 404 })
     }
     return HttpResponse.json({ status: "ok" })
+  }),
+
+  // Endpoint suelto de "Estudiantes" (`FK_TMATRICULAS[]`/
+  // `ASIGNAR_TODO_EL_GRUPO`, ver `set-estudiantes-actividad.ts`) — el mock
+  // no modela un padrón real por matrícula, así que solo confirma la
+  // operación y actualiza el sentinel `asignarTodoElGrupo`.
+  http.put(ACTIVIDAD_ESTUDIANTES_SET_URL, async ({ params, request }) => {
+    await delay(200)
+    const id = Number(params.id)
+    const index = planeadorDb.findIndex((row) => row.id === id)
+    if (index === -1) {
+      return HttpResponse.json({ message: "Actividad no encontrada." }, { status: 404 })
+    }
+    const body = (await request.json()) as { FK_TMATRICULAS?: number[]; ASIGNAR_TODO_EL_GRUPO?: boolean }
+    const actual = planeadorDb[index]!
+    actual.asignarTodoElGrupo = Boolean(body.ASIGNAR_TODO_EL_GRUPO)
+    actual.matriculasIds = body.FK_TMATRICULAS ?? []
+    return HttpResponse.json({ status: "ok", total_asignados: actual.matriculasIds.length })
   }),
 
   // NOTA: `PUT/GET /actividades/:id/instrumento` NO se registra acá — ya
@@ -967,6 +1049,36 @@ export const planeadorHandlers = [
                     : unidad.metodoCalculo === "Suma de puntos"
                       ? "PUNTAJE"
                       : null,
+              },
+              // La sección "Es una recuperación" — mismos dos gates que
+              // `evaluacionVisible` (referente EVALUATIVO Y ES_EVALUATIVA
+              // <> 'N'): una unidad formativa o una actividad no sumativa
+              // no tienen nota que recuperar.
+              recuperacion: {
+                visible: evaluacionVisible,
+                requerido: false,
+                motivo: evaluacionVisible
+                  ? "Opcional: la actividad puede registrarse como recuperación de otra actividad o de la nota final."
+                  : "La actividad no es sumativa: no hay nota que recuperar.",
+                catalogos: {
+                  destino: [
+                    { pk: 61001, valor: "ACTIVIDAD", nombre: "Una actividad" },
+                    { pk: 61002, valor: "NOTA_FINAL", nombre: "La nota final" },
+                  ],
+                  tipoAplicacion: [
+                    { pk: 61011, valor: "COMPUTAR", nombre: "Computar con la nota anterior" },
+                    { pk: 61012, valor: "REEMPLAZAR", nombre: "Reemplazar la nota actual" },
+                  ],
+                  tipoCalculo: [
+                    { pk: 61021, valor: "PROMEDIADO", nombre: "Promediado" },
+                    { pk: 61022, valor: "PONDERADO", nombre: "Ponderado" },
+                  ],
+                },
+                reglas: {
+                  actividadRecuperarRequeridaSi: "destino = ACTIVIDAD",
+                  valorPonderacionRequeridoSi: "tipoCalculo = PONDERADO",
+                  valorPonderacionRango: { min: 0, max: 100 },
+                },
               },
             },
           },
