@@ -23,7 +23,7 @@ const SCROLL_STEP = 160
 
 
 export function AsistenciaSedeSelector({ sedeId, onChange }: AsistenciaSedeSelectorProps) {
-  const { data: sedes, isPending } = useSedesOpcionesQuery()
+  const { data: sedes, isPending, isError } = useSedesOpcionesQuery()
   const scrollRef = React.useRef<HTMLDivElement>(null)
   const buttonRefs = React.useRef(new Map<number, HTMLButtonElement>())
   const [canScrollLeft, setCanScrollLeft] = React.useState(false)
@@ -66,6 +66,16 @@ export function AsistenciaSedeSelector({ sedeId, onChange }: AsistenciaSedeSelec
         <Skeleton className="h-8 w-24" />
       </div>
     )
+  }
+
+  // Sin sedes el componente renderizaba un contenedor vacío: un 403 del
+  // catálogo y "no tenés ninguna sede" se veían igual que si el selector no
+  // existiera. Cada caso dice lo suyo.
+  if (isError) {
+    return <p className="text-xs text-red">No se pudo cargar el listado de sedes.</p>
+  }
+  if (!sedes || sedes.length === 0) {
+    return <p className="text-xs text-muted-foreground">Sin sedes asignadas</p>
   }
 
   return (

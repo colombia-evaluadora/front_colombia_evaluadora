@@ -87,7 +87,7 @@ export function ObservarActividadGrupal({
         <div className="min-w-0">
           <h2 className="truncate text-base font-bold">Observación grupal: {titulo}</h2>
           <p className="text-muted-foreground text-xs">
-            Actividad formativa — no lleva nota, se registra una observación.
+            Actividad formativa, se registra una observación.
           </p>
         </div>
       </div>

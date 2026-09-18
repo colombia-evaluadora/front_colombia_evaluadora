@@ -206,7 +206,7 @@ export function CalificacionesAprobacionView({
     <div className="flex h-full min-h-0 flex-col gap-4">
       <h4 className="text-base font-semibold">
         {formativa
-          ? "Actividad formativa — no lleva nota"
+          ? "Actividad formativa"
           : `Instrumento: ${instrumento?.instrumentoNombre ?? actividad.instrumento ?? "Sin definir"}`}
       </h4>
 

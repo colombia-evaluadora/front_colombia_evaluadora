@@ -155,11 +155,21 @@ export function generarSesionesMes(sedeId: number, anio: number, mes: number): S
   return sesiones
 }
 
+/** El docente mockeado dicta solo en 601: con `MIAS=true` el backend real acota
+ *  por TDOCENTE_ASIGNATURA, y acá se imita con un subconjunto fijo para que se
+ *  note la diferencia contra el alcance de sede. */
+const GRUPOS_DEL_DOCENTE = [601]
+
+export function soloMisClases(sesiones: SesionCalendario[]): SesionCalendario[] {
+  return sesiones.filter((s) => GRUPOS_DEL_DOCENTE.includes(s.fk_grupo))
+}
+
 /** Resumen de horas para las tarjetas del encabezado, a partir de las mismas sesiones generadas. */
-export function generarResumenHoras(sedeId: number, fecha: Date): ResumenHoras {
+export function generarResumenHoras(sedeId: number, fecha: Date, mias = false): ResumenHoras {
   const anio = fecha.getFullYear()
   const mes = fecha.getMonth() + 1
-  const sesionesMes = generarSesionesMes(sedeId, anio, mes)
+  const todas = generarSesionesMes(sedeId, anio, mes)
+  const sesionesMes = mias ? soloMisClases(todas) : todas
   const registradas = sesionesMes.filter((s) => s.estado_sesion === "REGISTRADA")
 
   const startOfWeek = new Date(fecha)

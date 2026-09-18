@@ -19,9 +19,6 @@ export interface PlanillaColumna {
   ponderacion: number | null
   notaMaxima: number | null
   esEvaluativa: boolean
-  /** Referente FORMATIVO: la actividad no lleva nota, se observa
-   *  (`PUT .../observar`). Es independiente de `esEvaluativa`, que es un flag
-   *  manual de la actividad con default `S`. */
   esFormativa: boolean
   metodoValoracion: string | null
   /** `yyyy-MM-dd`. */
