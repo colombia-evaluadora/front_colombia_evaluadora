@@ -143,6 +143,16 @@ export const planeadorPlanillaHandlers = [
           nota: porcentaje,
           calificable: noAsistio ? "N" : "S",
           observacion: base?.asistencia.justificacion ?? null,
+          // El mock no modela unidades formativas para la planilla todavía
+          // (el flujo de observación con evidencias es aparte) — siempre
+          // sale evaluativa.
+          esFormativa: false,
+          // El mock solo conoce la fecha de inicio de la actividad, no un
+          // calendario de asistencia real por estudiante — sirve para
+          // probar que el front manda ESTA fecha (no la de la actividad)
+          // al calificar.
+          fechaAsistencia: noAsistio ? null : actividad.fechaInicio,
+          tieneAsistencia: !noAsistio,
         }
       })
 
