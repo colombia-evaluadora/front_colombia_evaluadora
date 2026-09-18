@@ -505,6 +505,7 @@ export const planeadorHandlers = [
       instrumento_evaluacion: row.instrumento,
       ponderacion: row.ponderacion,
       es_evaluativa: row.esEvaluativa ? "S" : "N",
+      es_recuperacion: row.esRecuperacion ? "S" : "N",
       estudiantes_asignados: row.totalEstudiantes,
       estudiantes_evaluados: row.evaluados,
       total_count: page.totalCount,
