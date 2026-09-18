@@ -24,7 +24,9 @@ import { RecursoPreview } from "@/features/planeador/components/recurso-preview"
  */
 export function PlaneadorRecursoPreviewPage() {
   const router = useRouter()
-  const search = useSearch({ strict: false }) as Partial<Record<keyof Recurso, string>>
+  const search = useSearch({ strict: false }) as Partial<Record<keyof Recurso, string>> & {
+    archivoId?: number
+  }
 
   const recurso: Recurso = {
     id: 0,
@@ -33,6 +35,9 @@ export function PlaneadorRecursoPreviewPage() {
     fuente: search.fuente ?? "",
     titulo: search.titulo ?? "",
     descripcion: search.descripcion ?? "",
+    // Solo lo traen los materiales ya guardados: con él la vista previa pide
+    // el token de lectura en vez de esperar bytes en `url`.
+    ...(search.archivoId !== undefined ? { archivoId: Number(search.archivoId) } : {}),
   }
 
   return (
