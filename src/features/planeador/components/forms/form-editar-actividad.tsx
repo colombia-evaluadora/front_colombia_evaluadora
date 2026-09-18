@@ -568,26 +568,48 @@ function RecuperacionSection({
                       )}
                     </form.Field>
 
-                    <form.Field name="recuperacionTipoCalculo">
-                      {(field) => (
-                        <Field variant="outlined">
-                          <FieldLabel>¿Cómo deseas calcular la nota de la actividad?</FieldLabel>
-                          <RadioGroup
-                            className="flex min-h-11 flex-wrap items-center gap-x-6 gap-y-2 rounded-md border border-input px-3 py-2"
-                            value={field.state.value}
-                            disabled={disabled}
-                            onValueChange={field.handleChange}
-                          >
-                            {(recuperacion?.catalogos.tipoCalculo ?? []).map((opcion) => (
-                              <label key={opcion.valor} className="flex items-center gap-2 text-sm">
-                                <RadioGroupItem value={opcion.valor} className="data-checked:bg-primary" />
-                                {opcion.nombre}
-                              </label>
-                            ))}
-                          </RadioGroup>
-                        </Field>
+                    {/* "Reemplazar" es lo único que necesita aclaración: la
+                        nota anterior se pierde por completo. "Computar con
+                        la nota anterior" no lleva banner — su propio nombre
+                        ya dice qué hace. */}
+                    <form.Subscribe selector={(state) => state.values.recuperacionTipoAplicacion}>
+                      {(tipoAplicacion) =>
+                        tipoAplicacion !== "REEMPLAZAR" ? null : (
+                          <div className="border-blue-stroke bg-blue-22 text-blue col-span-full flex items-start gap-2 rounded-md border p-3 text-sm">
+                            <InfoIcon className="mt-0.5 size-4 shrink-0" />
+                            La nota de recuperación reemplazará el 100% de la nota final actual.
+                          </div>
+                        )
+                      }
+                    </form.Subscribe>
+
+                    <form.Subscribe selector={(state) => state.values.recuperacionDestino}>
+                      {(destino) => (
+                        <form.Field name="recuperacionTipoCalculo">
+                          {(field) => (
+                            <Field variant="outlined">
+                              <FieldLabel>
+                                ¿Cómo deseas calcular la nota{" "}
+                                {destino === "NOTA_FINAL" ? "final" : "de la actividad"}?
+                              </FieldLabel>
+                              <RadioGroup
+                                className="flex min-h-11 flex-wrap items-center gap-x-6 gap-y-2 rounded-md border border-input px-3 py-2"
+                                value={field.state.value}
+                                disabled={disabled}
+                                onValueChange={field.handleChange}
+                              >
+                                {(recuperacion?.catalogos.tipoCalculo ?? []).map((opcion) => (
+                                  <label key={opcion.valor} className="flex items-center gap-2 text-sm">
+                                    <RadioGroupItem value={opcion.valor} className="data-checked:bg-primary" />
+                                    {opcion.nombre}
+                                  </label>
+                                ))}
+                              </RadioGroup>
+                            </Field>
+                          )}
+                        </form.Field>
                       )}
-                    </form.Field>
+                    </form.Subscribe>
 
                     {/* % de ponderación: solo con `tipoCalculo = PONDERADO`
                         — regla `valorPonderacionRequeridoSi`, rango de
