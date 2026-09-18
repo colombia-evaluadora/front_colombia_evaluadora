@@ -750,14 +750,25 @@ function IdentificacionSection({ form, disabled }: { form: FormActividad; disabl
             <Field variant="outlined">
               <FieldLabel htmlFor={field.name}>Tipo de actividad</FieldLabel>
               <Select
-                value={field.state.value}
-                onValueChange={(value) => field.handleChange(value as Actividad["tipo"])}
+                // `__none__` es el sentinel de "sin elegir" — mismo criterio
+                // que el resto de los `<Select>` del form (Asignatura,
+                // Unidad temática asociada, Modalidad, …): antes "Tipo de
+                // actividad" arrancaba en el primer valor del catálogo
+                // (`crearActividadVacia`) porque no tenía dónde representar
+                // "todavía sin elegir".
+                value={field.state.value || "__none__"}
+                onValueChange={(value) =>
+                  field.handleChange(!value || value === "__none__" ? "" : (value as Actividad["tipo"]))
+                }
                 disabled={disabled}
               >
                 <SelectTrigger id={field.name}>
-                  <SelectValue />
+                  <SelectValue placeholder="Seleccione">
+                    {(value) => (value === "__none__" ? "Seleccione" : (value as string))}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="__none__">Seleccione</SelectItem>
                   {tiposActividad.map((tipo) => (
                     <SelectItem key={tipo} value={tipo}>
                       {tipo}
@@ -1000,9 +1011,6 @@ function UnidadSection({
   evidenciasOriginales: number[]
   criteriosUnidadOriginales: number[]
 }) {
-  const gradoId = useSelector(form.store, (state) => state.values.gradoId)
-  const asignaturaId = useSelector(form.store, (state) => state.values.asignaturaId)
-
   return (
     <form.Subscribe selector={(state) => state.values.unidad}>
       {(unidad) => {
@@ -1016,8 +1024,6 @@ function UnidadSection({
                   <UnidadFichaYEvidencias
                     unidadId={seleccionada.id}
                     nombreFallback={seleccionada.nombre}
-                    gradoId={gradoId}
-                    asignaturaId={asignaturaId}
                     seleccionadas={evidenciasField.state.value}
                     onToggle={(evidenciaId) => {
                       const actual = evidenciasField.state.value
@@ -1050,14 +1056,12 @@ function UnidadSection({
 }
 
 /** Separado de `UnidadSection` solo para poder llamar
- *  `useUnidadDetalleQuery`/`useReferenteCurricularQuery` de forma
- *  incondicional (reglas de hooks) — `UnidadSection` decide arriba si hay
- *  unidad elegida antes de montar esto. */
+ *  `useUnidadDetalleQuery`/`useUnidadReferenteQuery` de forma incondicional
+ *  (reglas de hooks) — `UnidadSection` decide arriba si hay unidad elegida
+ *  antes de montar esto. */
 function UnidadFichaYEvidencias({
   unidadId,
   nombreFallback,
-  gradoId,
-  asignaturaId,
   seleccionadas,
   onToggle,
   disabledIds,
@@ -1067,8 +1071,6 @@ function UnidadFichaYEvidencias({
 }: {
   unidadId: number
   nombreFallback: string
-  gradoId: number | undefined
-  asignaturaId: number | undefined
   seleccionadas: number[]
   onToggle: (evidenciaId: number) => void
   disabledIds: number[]
@@ -1077,26 +1079,22 @@ function UnidadFichaYEvidencias({
   criteriosDisabledIds: number[]
 }) {
   const { data: unidad } = useUnidadDetalleQuery(unidadId)
-  // El árbol COMPLETO de nivel 1 (enunciados) + nivel 2 (evidencias) sale
-  // del referente curricular de GRADO + ASIGNATURA (`GET /planeador/
-  // referente-curricular`) — pero acá solo interesan los enunciados que la
-  // UNIDAD ya relacionó (`unidad.enunciadosDba`, elegidos en
-  // `UnidadInfoGeneralFields`/`CrearUnidadPopover`), no el catálogo entero:
-  // esta actividad marca evidencias de un enunciado que su unidad ya
-  // adoptó, no cualquier enunciado del nivel educativo.
-  const { data: referente } = useReferenteCurricularQuery(gradoId, asignaturaId)
+  // El árbol de nivel 1 (enunciados) + nivel 2 (evidencias), YA acotado a
+  // los enunciados que esta UNIDAD relacionó (`relacionadoConUnidad`,
+  // resuelto del lado del backend), sale directo de `GET /planeador/
+  // unidades/:id/referente` — confirmado contra una respuesta real: cada
+  // fila trae sus propias `evidencias` anidadas y los rótulos
+  // `nivel_1_etiqueta`/`nivel_2_etiqueta`. Antes se pedía el referente por
+  // GRADO + ASIGNATURA (`useReferenteCurricularQuery`) y se cruzaba a mano
+  // contra `unidad.enunciadosDba` — dos queries y un filtro cliente para
+  // llegar al mismo árbol que esta ruta ya entrega filtrado.
+  const { data: referente } = useUnidadReferenteQuery(unidadId)
   const { data: unidadTabs } = useUnidadesTabsQuery()
-  // Por `referente.id` (grado+ASIGNATURA), no por `gradoId` a secas: evita
-  // que el título diga un instrumento distinto del que en verdad tienen
-  // `nivel1Etiqueta`/`nivel2Etiqueta` de ESTE MISMO referente — ver el
-  // comentario de `instrumentoLabelFromReferente`.
-  const instrumentoLabel = instrumentoLabelFromReferente(referente?.id, unidadTabs, UNIDAD_TAB_FALLBACK)
-  const enunciadosDeLaUnidad =
-    referente && unidad
-      ? referente.enunciados.filter((enunciado) =>
-          unidad.enunciadosDba.some((elegido) => elegido.id === enunciado.id),
-        )
-      : []
+  // Por `referente.id` (`pk_referente_curricular`), no por `gradoId` a
+  // secas: evita que el título diga un instrumento distinto del que en
+  // verdad tienen `nivel1Etiqueta`/`nivel2Etiqueta` de ESTE MISMO referente
+  // — ver el comentario de `instrumentoLabelFromReferente`.
+  const instrumentoLabel = instrumentoLabelFromReferente(referente?.id ?? undefined, unidadTabs, UNIDAD_TAB_FALLBACK)
 
   return (
     <div className="flex flex-col gap-4">
@@ -1107,12 +1105,12 @@ function UnidadFichaYEvidencias({
         objetivos={unidad?.objetivos ?? []}
         contenidos={unidad?.contenidos ?? []}
       />
-      {referente && enunciadosDeLaUnidad.length > 0 && (
+      {referente && referente.enunciados.length > 0 && (
         <EnunciadosEvidenciasChecklist
           instrumentoLabel={instrumentoLabel}
           nivel1Etiqueta={referente.nivel1Etiqueta}
           nivel2Etiqueta={referente.nivel2Etiqueta}
-          enunciados={enunciadosDeLaUnidad}
+          enunciados={referente.enunciados}
           seleccionadas={seleccionadas}
           onToggle={onToggle}
           disabledIds={disabledIds}
@@ -1172,6 +1170,7 @@ function AsignaturaGradoSection({ form }: { form: FormActividad }) {
 
   const asignaturaId = useSelector(form.store, (state) => state.values.asignaturaId)
   const hasGradoAsignatura = hasGradoGrupo && asignaturaId != null
+  const asignarTodoElGrupo = useSelector(form.store, (state) => state.values.asignarTodoElGrupo)
   const { data: matriculas = [], isPending: isPendingMatriculas } = useActividadMatriculasGrupoQuery(
     hasGradoAsignatura ? grupoId : undefined,
   )
@@ -1401,9 +1400,10 @@ function AsignaturaGradoSection({ form }: { form: FormActividad }) {
                 id={field.name}
                 estudiantes={matriculas}
                 value={field.state.value}
-                onChange={(matriculaIds) => {
+                allSelected={asignarTodoElGrupo}
+                onChange={({ matriculaIds, allSelected }) => {
                   field.handleChange(matriculaIds)
-                  form.setFieldValue("asignarTodoElGrupo", matriculaIds.length === 0)
+                  form.setFieldValue("asignarTodoElGrupo", allSelected)
                 }}
                 disabled={!hasGradoAsignatura}
                 // `isPending` de una query DESHABILITADA (`enabled: false`)
