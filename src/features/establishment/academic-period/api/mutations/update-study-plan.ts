@@ -43,6 +43,8 @@ export function useUpdateStudyPlanItem({ mutationConfig }: UseUpdateStudyPlanIte
       queryClient.invalidateQueries({ queryKey: ["study-plan-available"] })
       queryClient.invalidateQueries({ queryKey: ["assignment-subjects"] })
       queryClient.invalidateQueries({ queryKey: ["teacher-assignments"] })
+      // En preescolar el backend arma el horario solo al guardar el plan (V437).
+      queryClient.invalidateQueries({ queryKey: ["horario"] })
       mutationConfig?.onSuccess?.(...args)
     },
   })

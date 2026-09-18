@@ -39,6 +39,20 @@ function subjectStyles(hex: string) {
 
 type Schedule = Record<string, Record<string, string | undefined>>
 
+/** Celdas del backend -> grilla local, indexada por grupo / día / slot. */
+function aSchedulesPorGrupo(entries: ScheduleEntry[]): Record<string, Schedule> {
+  const byGroup: Record<string, Schedule> = {}
+  for (const e of entries) {
+    const dayLocal = DAYS.find((d) => d.dayId === e.diaId)?.id
+    if (!dayLocal) continue
+    const groupKey = String(e.grupoId)
+    byGroup[groupKey] ??= {}
+    byGroup[groupKey][dayLocal] ??= {}
+    byGroup[groupKey][dayLocal][`c${e.bloque + 1}`] = String(e.planItemId)
+  }
+  return byGroup
+}
+
 interface CellInfo {
   skip: boolean
   rowSpan: number
@@ -123,7 +137,6 @@ export const ScheduleBuilder = forwardRef<
   >({})
   const [draggingId, setDraggingId] = useState<string | null>(null)
   const [dragOver, setDragOver] = useState<string | null>(null)
-  const [hydrated, setHydrated] = useState(false)
   const [saving, setSaving] = useState(false)
   // Snapshot del horario tal como quedó guardado — compararlo contra el
   // estado actual es lo que decide si el botón "Guardar" debe mostrarse.
@@ -133,24 +146,17 @@ export const ScheduleBuilder = forwardRef<
 
   const { data: horarioEntries } = useHorarioQuery(gradeId)
   useEffect(() => {
-    if (!hydrated && horarioEntries) {
-      let byGroup: Record<string, Schedule> = {}
-      if (horarioEntries.length) {
-        for (const e of horarioEntries) {
-          const dayLocal = DAYS.find((d) => d.dayId === e.diaId)?.id
-          if (!dayLocal) continue
-          const groupKey = String(e.grupoId)
-          const slotId = `c${e.bloque + 1}`
-          byGroup[groupKey] ??= {}
-          byGroup[groupKey][dayLocal] ??= {}
-          byGroup[groupKey][dayLocal][slotId] = String(e.planItemId)
-        }
-        setSchedulesByGroup(byGroup)
-      }
-      savedSnapshotRef.current = JSON.stringify(byGroup)
-      setHydrated(true)
-    }
-  }, [horarioEntries, hydrated])
+    if (!horarioEntries) return
+    const byGroup = aSchedulesPorGrupo(horarioEntries)
+    const incoming = JSON.stringify(byGroup)
+    if (incoming === savedSnapshotRef.current) return
+    // Se rehidrata cada vez que el backend trae celdas distintas -- en preescolar
+    // el horario lo genera él solo al guardar el plan de estudio (V437) -- pero
+    // nunca se pisa lo que el usuario tenga sin guardar.
+    if (JSON.stringify(schedulesByGroup) !== savedSnapshotRef.current) return
+    setSchedulesByGroup(byGroup)
+    savedSnapshotRef.current = incoming
+  }, [horarioEntries, schedulesByGroup])
 
   const isDirty = JSON.stringify(schedulesByGroup) !== savedSnapshotRef.current
 

@@ -2,8 +2,6 @@ import { useQuery } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
 
-import { texto } from "@/features/academic-management/reports/api/columnas"
-
 import type {
   AsignaturaInforme,
   EstadoNota,
@@ -32,12 +30,11 @@ interface AsignaturaRow {
 
 interface FilaInformeRow {
   fk_tmatricula: number
-  fk_testudiante: number
   estudiante: string
   documento: string | null
   fk_tperiodo_evaluacion: number
-  periodo?: string
-  periodo_nombre?: string
+  periodo_nombre: string
+  periodo_abreviacion: string | null
   modo_periodo: ModoPeriodo
   formato: FormatoPeriodo
   es_cualitativo: boolean | null
@@ -76,11 +73,11 @@ function toAsignatura(row: AsignaturaRow): AsignaturaInforme {
 function toFila(row: FilaInformeRow): FilaInforme {
   return {
     matriculaId: row.fk_tmatricula,
-    estudianteId: row.fk_testudiante,
     nombreCompleto: row.estudiante,
     documento: row.documento ?? "",
     periodoId: row.fk_tperiodo_evaluacion,
-    periodoNombre: texto(row.periodo, row.periodo_nombre),
+    periodoNombre: row.periodo_nombre,
+    periodoAbreviacion: row.periodo_abreviacion,
     modoPeriodo: row.modo_periodo,
     formato: row.formato,
     esCualitativo: row.es_cualitativo ?? row.formato === "cualitativo",
