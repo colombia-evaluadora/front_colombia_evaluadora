@@ -333,6 +333,11 @@ function actividadFromImportRow(raw: Record<string, unknown>, id: number): Activ
     nombre,
     tipo: String(raw.tipo ?? ""),
     esRecuperacion: false,
+    recuperacionDestino: "",
+    recuperacionActividadId: undefined,
+    recuperacionTipoAplicacion: "",
+    recuperacionTipoCalculo: "",
+    recuperacionValorPonderacion: undefined,
     unidad: { id: 0, nombre: String(raw.unidad ?? "") },
     evidenciasIds: [],
     criteriosUnidadIds: [],
@@ -1044,6 +1049,36 @@ export const planeadorHandlers = [
                     : unidad.metodoCalculo === "Suma de puntos"
                       ? "PUNTAJE"
                       : null,
+              },
+              // La sección "Es una recuperación" — mismos dos gates que
+              // `evaluacionVisible` (referente EVALUATIVO Y ES_EVALUATIVA
+              // <> 'N'): una unidad formativa o una actividad no sumativa
+              // no tienen nota que recuperar.
+              recuperacion: {
+                visible: evaluacionVisible,
+                requerido: false,
+                motivo: evaluacionVisible
+                  ? "Opcional: la actividad puede registrarse como recuperación de otra actividad o de la nota final."
+                  : "La actividad no es sumativa: no hay nota que recuperar.",
+                catalogos: {
+                  destino: [
+                    { pk: 61001, valor: "ACTIVIDAD", nombre: "Una actividad" },
+                    { pk: 61002, valor: "NOTA_FINAL", nombre: "La nota final" },
+                  ],
+                  tipoAplicacion: [
+                    { pk: 61011, valor: "COMPUTAR", nombre: "Computar con la nota anterior" },
+                    { pk: 61012, valor: "REEMPLAZAR", nombre: "Reemplazar la nota actual" },
+                  ],
+                  tipoCalculo: [
+                    { pk: 61021, valor: "PROMEDIADO", nombre: "Promediado" },
+                    { pk: 61022, valor: "PONDERADO", nombre: "Ponderado" },
+                  ],
+                },
+                reglas: {
+                  actividadRecuperarRequeridaSi: "destino = ACTIVIDAD",
+                  valorPonderacionRequeridoSi: "tipoCalculo = PONDERADO",
+                  valorPonderacionRango: { min: 0, max: 100 },
+                },
               },
             },
           },

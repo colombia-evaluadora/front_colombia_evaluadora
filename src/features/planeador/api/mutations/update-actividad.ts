@@ -71,6 +71,23 @@ async function updateActividad({ actividadId, data }: UpdateActividadInput): Pro
     const instrumentoId = await resolveInstrumentoEvaluacionId(data.instrumento)
     if (instrumentoId != null) body.FK_TLV_INSTRUMENTO_EVALUACION = instrumentoId
   }
+  // `RECUPERACION` (configurarla) y `QUITAR_RECUPERACION` (volverla a
+  // normal) son excluyentes — mismo contrato que `p_recuperacion`/
+  // `p_quitar_recuperacion` de `fn_actividad_actualizar`. Si el docente
+  // apagó el toggle acá, se manda `QUITAR_RECUPERACION: true`; si sigue
+  // prendido, se manda la config completa (aunque no haya cambiado, es más
+  // simple que diferenciar "no se tocó" de "se tocó pero quedó igual").
+  if (data.esEvaluativa && data.esRecuperacion) {
+    body.RECUPERACION = {
+      destino: data.recuperacionDestino,
+      fkActividadRecuperar: data.recuperacionActividadId,
+      tipoAplicacion: data.recuperacionTipoAplicacion,
+      tipoCalculo: data.recuperacionTipoCalculo,
+      valorPonderacion: data.recuperacionValorPonderacion,
+    }
+  } else if (!data.esRecuperacion) {
+    body.QUITAR_RECUPERACION = true
+  }
   return api.put(`/eval-col/planeador/actividades/${actividadId}`, body)
 }
 

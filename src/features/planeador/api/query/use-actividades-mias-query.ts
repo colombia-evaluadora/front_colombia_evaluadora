@@ -75,6 +75,15 @@ function toActividadResumen(row: ActividadMiaRow & { pk_tactividad: number }): A
     // no importa acá: la card del rail no lo muestra.
     tipo: "Otro",
     esRecuperacion: row.es_recuperacion === "S",
+    // El resumen de "Mis actividades" no trae la config de recuperación
+    // (destino/tipoAplicacion/tipoCalculo/%) — la card del rail solo lee
+    // `esRecuperacion` para el badge, así que estos quedan vacíos; abrir el
+    // detalle real (`useActividadDetalleQuery`) sí los trae.
+    recuperacionDestino: "",
+    recuperacionActividadId: undefined,
+    recuperacionTipoAplicacion: "",
+    recuperacionTipoCalculo: "",
+    recuperacionValorPonderacion: undefined,
     unidad: { id: 0, nombre: row.unidad ?? "" },
     evidenciasIds: [],
     criteriosUnidadIds: [],
