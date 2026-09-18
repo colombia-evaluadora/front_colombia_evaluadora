@@ -27,6 +27,8 @@ import type { CalificacionEstudiante, EstadoAsistencia } from "@/features/planea
 import { itemsPonderables, porcentajeFinal } from "@/features/planeador/api/types/calificacion"
 import { formatDate } from "@/features/planeador/lib/format-date"
 import { DialogCalificarActividad } from "@/features/planeador/components/dialogs/dialog-calificar-actividad"
+import { CeldaObservacionPopover } from "@/features/planeador/components/planilla/celda-observacion-popover"
+import { esActividadFormativa } from "@/features/planeador/lib/actividad-formativa"
 
 interface CalificacionesViewProps {
   actividad: Actividad
@@ -49,8 +51,9 @@ interface CalificacionesViewProps {
  */
 export function CalificacionesView({ actividad }: CalificacionesViewProps) {
   const { data: calificaciones = [], isPending, isError, refetch } =
-    useCalificacionesQuery(actividad.id)
+    useCalificacionesQuery(actividad.id, actividad.fechaInicio)
   const queryClient = useQueryClient()
+  const formativa = esActividadFormativa(actividad)
 
   if (isPending) {
     return (
@@ -91,7 +94,9 @@ export function CalificacionesView({ actividad }: CalificacionesViewProps) {
                 Fecha: {formatDate(actividad.fechaInicio)}
               </span>
             </th>
-            <th className="px-4 py-3 text-left font-semibold uppercase">Nota</th>
+            <th className="px-4 py-3 text-left font-semibold uppercase">
+              {formativa ? "Observación" : "Nota"}
+            </th>
             <th className="w-12 px-2 py-3" aria-label="Acciones" />
           </tr>
         </thead>
@@ -100,6 +105,7 @@ export function CalificacionesView({ actividad }: CalificacionesViewProps) {
             <CalificacionRow
               key={estudiante.id}
               actividad={actividad}
+              formativa={formativa}
               estudiante={estudiante}
               onGuardado={() =>
                 queryClient.invalidateQueries({ queryKey: calificacionesQueryKey(actividad.id) })
@@ -114,11 +120,14 @@ export function CalificacionesView({ actividad }: CalificacionesViewProps) {
 
 interface CalificacionRowProps {
   actividad: Actividad
+  /** Referente FORMATIVO: la fila muestra la observación y su popover en vez
+   *  de la nota y el diálogo de calificar. */
+  formativa: boolean
   estudiante: CalificacionEstudiante
   onGuardado: () => void
 }
 
-function CalificacionRow({ actividad, estudiante, onGuardado }: CalificacionRowProps) {
+function CalificacionRow({ actividad, formativa, estudiante, onGuardado }: CalificacionRowProps) {
   const porcentaje =
     estudiante.calificacion ?? porcentajeFinal(estudiante.notas, itemsPonderables(actividad))
   const mostrarJustificacion =
@@ -141,23 +150,42 @@ function CalificacionRow({ actividad, estudiante, onGuardado }: CalificacionRowP
         </div>
       </td>
       <td className="px-4 py-3 align-middle">
-        {porcentaje !== null ? (
+        {formativa ? (
+          estudiante.observacion?.trim() ? (
+            <span className="line-clamp-2 text-xs" title={estudiante.observacion}>
+              {estudiante.observacion}
+            </span>
+          ) : (
+            <span className="text-muted-foreground">Observar</span>
+          )
+        ) : porcentaje !== null ? (
           <span className="font-semibold">{porcentaje}%</span>
         ) : (
           <span className="text-muted-foreground">Agregar</span>
         )}
       </td>
       <td className="px-2 py-3 align-middle">
-        <DialogCalificarActividad
-          actividadId={actividad.id}
-          actividadNombre={actividad.nombre}
-          asignatura={actividad.asignatura}
-          gradoId={actividad.gradoId}
-          pkTactividadEstudiante={estudiante.id}
-          estudianteNombre={nombreCompleto}
-          fecha={actividad.fechaInicio}
-          onGuardado={onGuardado}
-        />
+        {formativa ? (
+          <CeldaObservacionPopover
+            pkTactividadEstudiante={estudiante.id}
+            fecha={estudiante.fechaAsistencia ?? null}
+            estudianteNombre={nombreCompleto}
+            observacionActual={estudiante.observacion ?? null}
+            evidenciasActuales={[]}
+            onGuardado={onGuardado}
+          />
+        ) : (
+          <DialogCalificarActividad
+            actividadId={actividad.id}
+            actividadNombre={actividad.nombre}
+            asignatura={actividad.asignatura}
+            gradoId={actividad.gradoId}
+            pkTactividadEstudiante={estudiante.id}
+            estudianteNombre={nombreCompleto}
+            fecha={estudiante.fechaAsistencia ?? actividad.fechaInicio}
+            onGuardado={onGuardado}
+          />
+        )}
       </td>
     </tr>
   )
@@ -174,9 +202,22 @@ function AsistenciaSelect({ estado }: { estado: EstadoAsistencia }) {
   return (
     <Field variant="outlined" className="min-w-36">
       <FieldLabel htmlFor={id}>Asistencia</FieldLabel>
-      <Select value={estado} onValueChange={() => {}}>
+      {/* Refleja lo registrado en Asistencia; no se edita desde acá (la
+          asistencia se toma en su propio módulo), de ahí el `disabled`. */}
+      <Select value={estado} onValueChange={() => {}} disabled>
         <SelectTrigger id={id}>
-          <SelectValue />
+          <SelectValue>
+            {(value) => {
+              const opt = ASISTENCIA_OPTIONS.find((o) => o.value === value)
+              if (!opt) return null
+              return (
+                <span className="flex items-center gap-2">
+                  <opt.Icon className={cn("size-4", opt.iconClass)} />
+                  {opt.label}
+                </span>
+              )
+            }}
+          </SelectValue>
         </SelectTrigger>
         <SelectContent>
           {ASISTENCIA_OPTIONS.map((opt) => (

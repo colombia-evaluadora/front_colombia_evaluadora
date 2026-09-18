@@ -8,6 +8,7 @@ import {
   generarSesionesMes,
   registrarArchivoSubido,
   registrarAsistenciaManual,
+  soloMisClases,
   TIPO_ASISTENCIA_NOMBRE,
 } from "@/mocks/db/asistencia/asistencia"
 
@@ -38,7 +39,9 @@ export const asistenciaHandlers = [
     const anio = Number(url.searchParams.get("ANIO") ?? new Date().getFullYear())
     const mes = Number(url.searchParams.get("MES") ?? new Date().getMonth() + 1)
 
-    const rows: SesionCalendario[] = generarSesionesMes(sede, anio, mes)
+    const mias = url.searchParams.get("MIAS") === "true"
+    const todas = generarSesionesMes(sede, anio, mes)
+    const rows: SesionCalendario[] = mias ? soloMisClases(todas) : todas
     return HttpResponse.json(rows)
   }),
 
@@ -50,7 +53,7 @@ export const asistenciaHandlers = [
     const fechaParam = url.searchParams.get("FECHA")
     const fecha = fechaParam ? new Date(fechaParam) : new Date()
 
-    const resumen: ResumenHoras = generarResumenHoras(sede, fecha)
+    const resumen: ResumenHoras = generarResumenHoras(sede, fecha, url.searchParams.get("MIAS") === "true")
     return HttpResponse.json(resumen)
   }),
 

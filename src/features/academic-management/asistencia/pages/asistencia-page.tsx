@@ -9,7 +9,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 
 import { paths } from "@/config/paths"
 import { asistenciaRoute } from "@/router"
-import { useAuth } from "@/features/auth/hooks/use-auth"
+import { useEsDocente } from "@/features/academic-management/asistencia/api/use-es-docente"
 import { useSedesOpcionesQuery } from "@/features/academic-management/asistencia/api/query/use-sedes-opciones-query"
 import { useAsistenciaCalendarioQuery } from "@/features/academic-management/asistencia/api/query/use-asistencia-calendario-query"
 import { useAsistenciaResumenHorasQuery } from "@/features/academic-management/asistencia/api/query/use-asistencia-resumen-horas-query"
@@ -31,8 +31,6 @@ function toIsoDate(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
 }
 
-const DOCENTE_ROLE = "CEVAL-DOCENTE"
-
 
 export function AsistenciaPage() {
   return (
@@ -44,8 +42,7 @@ export function AsistenciaPage() {
 
 function AsistenciaPageContent() {
   const { notify } = useNotify()
-  const { user } = useAuth()
-  const isDocente = user?.roles.includes(DOCENTE_ROLE) ?? false
+  const isDocente = useEsDocente()
   const { data: sedes } = useSedesOpcionesQuery()
   const navigate = useNavigate()
   const search = asistenciaRoute.useSearch()
@@ -73,11 +70,11 @@ function AsistenciaPageContent() {
   const mes = selectedDay.getMonth() + 1
 
   const { data: sesiones } = useAsistenciaCalendarioQuery(
-    { SEDE: sedeId ?? 0, ANIO: anio, MES: mes },
+    { SEDE: sedeId ?? 0, ANIO: anio, MES: mes, MIAS: isDocente },
     sedeId !== null,
   )
   const { data: resumen } = useAsistenciaResumenHorasQuery(
-    { SEDE: sedeId ?? 0, FECHA: toIsoDate(selectedDay) },
+    { SEDE: sedeId ?? 0, FECHA: toIsoDate(selectedDay), MIAS: isDocente },
     sedeId !== null,
   )
 
