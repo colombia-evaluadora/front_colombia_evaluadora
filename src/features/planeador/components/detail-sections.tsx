@@ -296,13 +296,12 @@ function UnidadFichaYEvidenciasDetalle({
         )
       : []
   const [pendingId, setPendingId] = useState<number | null>(null)
-  // `actividad.evidenciasIds` siempre llega `[]` (ver el comentario de
-  // `evidenciasIdsFromUnidadConfiguracion`): sin un ejemplo real del campo
-  // que marca "ya relacionada" en el backend, no hay de dónde precargar el
-  // estado guardado. Lo que SÍ se puede sostener es lo agregado en esta
-  // misma sesión: sin este estado local, cada `agregarEvidencia` exitoso
-  // invalida el detalle, el refetch vuelve a traer `evidenciasIds: []`, y
-  // el checkbox recién tildado se destildaba solo.
+  // `actividad.evidenciasIds` ya trae lo guardado de verdad (`fn_actividad_
+  // buscar_por_pk`, V224/V440, ver `use-actividad-detalle-query.ts`). Este
+  // estado local sigue haciendo falta para el instante entre que
+  // `agregarEvidencia` responde y el refetch del detalle (que invalida la
+  // query) termina de llegar: sin él, el checkbox recién tildado se veía
+  // destildar un momento hasta que la foto nueva llegara.
   const [agregadasEnSesion, setAgregadasEnSesion] = useState<number[]>([])
   const seleccionadas = [...actividad.evidenciasIds, ...agregadasEnSesion]
 
