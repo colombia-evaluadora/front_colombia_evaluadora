@@ -214,23 +214,21 @@ function toCamposDisponibles(raw: CamposDisponiblesRow | null): Actividad["campo
 }
 
 /**
- * `row.materiales` no tiene un ejemplo real capturado con datos (siempre
- * vino `[]` — ver el comentario largo de `interface ActividadDetalleRow`),
- * así que no hay forma de confirmar los nombres EXACTOS de sus campos. En
- * vez de dejarlo en `[]` (como antes, perdiendo lo guardado por
- * `useUpdateMaterialesActividad`), se lee de forma tolerante asumiendo que
- * el backend devuelve el mismo JSONB que `PUT .../materiales` guardó
- * (`{tipoRecurso, url, descripcion}`, ver `update-materiales-actividad.ts`)
- * — probando también la variante `snake_case` por si el motor la normaliza
- * al leer, igual que hace el resto de esta fila con sus pares
- * `fk_x`/`x` ya confirmados.
+ * Cada material del detalle. La forma está confirmada contra
+ * `fn_actividad_buscar_por_pk` en el servidor:
  *
- * Los recursos de tipo "Archivo" viajan como `multipart/form-data` (ver
- * `update-materiales-actividad.ts`), pero no hay un ejemplo real de cómo el
- * backend devuelve esos materiales en el detalle (¿`fkTarchivo`? ¿una URL de
- * descarga?) — hasta confirmarlo, esta lectura tolerante no intenta
- * resolverlos y caen al mismo fallback `"URL"` que cualquier campo
- * desconocido.
+ * ```
+ * {pk, orden, tipoRecurso, url, fkTarchivo, descripcion}
+ * ```
+ *
+ * Se sigue leyendo de forma tolerante (probando la variante `snake_case`)
+ * porque es el criterio del resto de esta fila, pero ya no es a ciegas.
+ *
+ * Un material de tipo "Archivo" trae `fkTarchivo` en vez de `url`: el
+ * backend exige exactamente uno de los dos. Ese id es lo que después
+ * permite reenviarlo al guardar sin volver a subirlo y previsualizarlo con
+ * un token de vista. El NOMBRE del archivo no viene acá — lo completa
+ * `fetchMaterialArchivos` (V427), que es de donde sale la extensión.
  */
 function recursoFromMaterialRaw(raw: unknown, tipoRecursoOptions: TipoRecursoOption[], index: number): Recurso {
   const item = (raw ?? {}) as Record<string, unknown>
@@ -245,18 +243,69 @@ function recursoFromMaterialRaw(raw: unknown, tipoRecursoOptions: TipoRecursoOpt
   }
   const url = item.url ?? item.URL
   const descripcion = item.descripcion ?? item.DESCRIPCION
+  const pk = item.pk ?? item.pk_tactividad_material
+  const archivoId = item.fkTarchivo ?? item.fk_tarchivo
   return {
-    // Ni el body de `PUT .../materiales` ni (hasta donde se confirmó) el
-    // detalle traen un id propio por recurso — solo sirve de key en la
-    // lista, así que el índice alcanza (mismo criterio que `syntheticId`
-    // en `use-instrumento-actividad-form-query.ts`).
-    id: index,
+    // El `pk` del material sirve de key estable; el índice queda de respaldo
+    // para un backend que no lo mande (el mock, por ejemplo).
+    id: typeof pk === "number" ? pk : index,
     titulo: "",
     fuente: "",
     tipo,
     url: typeof url === "string" ? url : "",
     descripcion: typeof descripcion === "string" ? descripcion : "",
+    ...(typeof archivoId === "number" ? { archivoId } : {}),
   }
+}
+
+/** Fila de `GET /planeador/actividades/:id/materiales/archivos` (V427). */
+interface MaterialArchivoRow {
+  pk_tactividad_material: number
+  fk_tarchivo: number
+  nombre: string
+  extension: string | null
+  peso: number
+}
+
+/**
+ * Nombre de cada archivo de los materiales, por `fk_tarchivo`.
+ *
+ * Va en una llamada aparte porque el detalle devuelve el id del archivo pero
+ * no su nombre, y sin nombre no hay extensión: ni se puede rotular la fila
+ * ni se puede decidir si la vista previa es una imagen, un audio, un video o
+ * un PDF. Ver la cabecera de V427 para por qué se resolvió así y no
+ * agregando la clave al detalle.
+ *
+ * Nunca hace fallar la carga de la actividad: si esta llamada se cae, los
+ * materiales se muestran igual, solo que sin nombre.
+ */
+async function fetchMaterialArchivos(id: number): Promise<Map<number, string>> {
+  try {
+    const rows = await evalCol.getRows<MaterialArchivoRow>(
+      `/planeador/actividades/${id}/materiales/archivos`,
+    )
+    return new Map(rows.map((row) => [row.fk_tarchivo, nombreConExtension(row)]))
+  } catch {
+    return new Map()
+  }
+}
+
+/**
+ * El nombre con el que se muestra y se clasifica el archivo.
+ *
+ * `TARCHIVO.NOMBRE` casi siempre trae la extensión (446.098 de 480.002 filas
+ * activas), pero las históricas migradas no — y sin sufijo la vista previa no
+ * puede saber si es un PDF o una foto. Para esas, el backend ya resolvió la
+ * extensión desde la clave del objeto y la manda aparte: se la pegamos acá.
+ *
+ * Se pega al nombre en vez de viajar como un campo aparte porque el nombre es
+ * justamente de donde el resolver saca el tipo, y porque mostrar
+ * "guia2compsocioemo10°.pdf" en la lista dice más que el nombre pelado.
+ */
+function nombreConExtension(row: MaterialArchivoRow): string {
+  const yaTiene = /\.[A-Za-z0-9]{2,5}$/.test(row.nombre)
+  if (yaTiene || !row.extension) return row.nombre
+  return `${row.nombre}.${row.extension}`
 }
 
 /**
@@ -416,12 +465,30 @@ async function fetchActividadDetalle(id: number): Promise<Actividad> {
   if (env.ENABLE_API_MOCKING) {
     return { ...(first as Actividad), recursos: (first as Actividad).recursos ?? [] }
   }
-  const [tipoRecursoOptions, tipoAdaptacionOptions, aplicaAOptions] = await Promise.all([
+  const [tipoRecursoOptions, tipoAdaptacionOptions, aplicaAOptions, nombresArchivo] = await Promise.all([
     fetchTipoRecursoOptions(),
     fetchTipoAdaptacionOptions(),
     fetchAplicaAOptions(),
+    fetchMaterialArchivos(id),
   ])
-  return toActividadDetalle(first as ActividadDetalleRow, tipoRecursoOptions, tipoAdaptacionOptions, aplicaAOptions)
+  const actividad = toActividadDetalle(
+    first as ActividadDetalleRow,
+    tipoRecursoOptions,
+    tipoAdaptacionOptions,
+    aplicaAOptions,
+  )
+  // El nombre del archivo llena `fuente` y `titulo`, que es de donde la lista
+  // saca la etiqueta y la vista previa la extensión. Sin esto, un material
+  // guardado se ve como una fila en blanco.
+  return {
+    ...actividad,
+    recursos: actividad.recursos.map((recurso) => {
+      if (recurso.archivoId === undefined) return recurso
+      const nombre = nombresArchivo.get(recurso.archivoId)
+      if (!nombre) return recurso
+      return { ...recurso, fuente: recurso.fuente || nombre, titulo: recurso.titulo || nombre }
+    }),
+  }
 }
 
 export function useActividadDetalleQuery(id: number | undefined) {

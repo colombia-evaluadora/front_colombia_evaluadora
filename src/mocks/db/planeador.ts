@@ -899,3 +899,38 @@ export function addActividad(actividad: Actividad): Actividad {
   planeadorDb.unshift(actividad)
   return actividad
 }
+
+// ── Subida de un material tipo Archivo (paso 1 de 2, V426) ─────────────────
+// El paso 2 (PUT .../materiales) solo manda el `fkTarchivo`: el nombre del
+// archivo se pierde ahí, igual que en el real. Se guarda acá para poder
+// seguir mostrándolo en la lista de recursos — mismo truco que
+// `registrarArchivoSubido` en el mock de asistencia.
+//
+// Se guarda además un object URL del binario para que la VISTA PREVIA de un
+// archivo ya "guardado" funcione también con el mock: el real la resuelve
+// acuñando un token contra `file-service`, y acá ese token se responde con
+// esta URL (ver el handler de `/files/view-token/:id`). Vale mientras viva
+// la pestaña — el mock no tiene dónde persistir bytes, así que los del seed
+// no tienen ninguna y caen al estado de error, que es la verdad.
+interface ArchivoMaterialMock {
+  nombre: string
+  url: string
+}
+
+const archivosMaterial = new Map<number, ArchivoMaterialMock>()
+let siguientePkArchivoMaterial = 700000
+
+export function registrarArchivoMaterial(archivo: File): number {
+  const pk = siguientePkArchivoMaterial++
+  archivosMaterial.set(pk, { nombre: archivo.name, url: URL.createObjectURL(archivo) })
+  return pk
+}
+
+export function nombreArchivoMaterial(pk: number): string {
+  return archivosMaterial.get(pk)?.nombre ?? `Archivo ${pk}`
+}
+
+/** `null` si ese id no se subió en esta sesión — no hay bytes que servir. */
+export function urlArchivoMaterial(pk: number): string | null {
+  return archivosMaterial.get(pk)?.url ?? null
+}

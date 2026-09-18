@@ -3,7 +3,10 @@ import { http, HttpResponse, delay } from "msw"
 import {
   addActividad,
   deleteActividadById,
+  nombreArchivoMaterial,
   planeadorDb,
+  registrarArchivoMaterial,
+  urlArchivoMaterial,
 } from "@/mocks/db/planeador"
 import {
   addActividadToUnidad,
@@ -119,6 +122,12 @@ const ACTIVIDAD_CALIFICACIONES_URL =
 const ACTIVIDAD_EVIDENCIAS_URL = "/api/eval-col/planeador/actividades/:id/evidencias"
 const ACTIVIDAD_CRITERIOS_URL = "/api/eval-col/planeador/actividades/:id/criterios"
 const ACTIVIDAD_MATERIALES_URL = "/api/eval-col/planeador/actividades/:id/materiales"
+// Paso 1 de la subida de un material tipo Archivo (V451). Va por /files
+// porque el que intercepta es file-service, no el query-service.
+const ACTIVIDAD_MATERIAL_ARCHIVO_URL =
+  "*/api/files/eval-col/planeador/actividades/:id/materiales/archivo"
+const ACTIVIDAD_MATERIAL_ARCHIVOS_URL =
+  "/api/eval-col/planeador/actividades/:id/materiales/archivos"
 const ACTIVIDAD_ADAPTACIONES_URL = "/api/eval-col/planeador/actividades/:id/adaptaciones"
 const ACTIVIDAD_ESTUDIANTES_SET_URL = "/api/eval-col/planeador/actividades/:id/estudiantes"
 const ACTIVIDAD_CREATE_URL = "/api/eval-col/planeador/actividades"
@@ -675,14 +684,70 @@ export const planeadorHandlers = [
     return HttpResponse.json({ status: "ok" })
   }),
 
+  // Paso 1 de un material tipo "Archivo": sube UN binario y devuelve su
+  // `pk_tarchivo` (V451). El real pasa por `file-service`, que registra el
+  // archivo y reemplaza el campo por el id; acá alcanza con acuñar uno y
+  // recordar el nombre, que es lo único que el paso 2 pierde.
+  http.post(ACTIVIDAD_MATERIAL_ARCHIVO_URL, async ({ request }) => {
+    await delay(200)
+    const form = await request.formData()
+    const archivo = form.get("ARCHIVO")
+    if (!(archivo instanceof File)) {
+      return HttpResponse.json({ message: "Falta el archivo." }, { status: 400 })
+    }
+    return HttpResponse.json({ fk_tarchivo: registrarArchivoMaterial(archivo) })
+  }),
+
+  // Nombre y extensión de los archivos de los materiales (V427). El real los
+  // saca de `TARCHIVO`; acá, de lo que se subió en esta sesión.
+  http.get(ACTIVIDAD_MATERIAL_ARCHIVOS_URL, async ({ params }) => {
+    await delay(150)
+    const id = Number(params.id)
+    const actual = planeadorDb.find((row) => row.id === id)
+    if (!actual) {
+      return HttpResponse.json({ message: "Actividad no encontrada." }, { status: 404 })
+    }
+    const filas = actual.recursos
+      .filter((recurso) => recurso.archivoId !== undefined)
+      .map((recurso, index) => {
+        const nombre = nombreArchivoMaterial(recurso.archivoId!)
+        return {
+          pk_tactividad_material: index + 1,
+          fk_tarchivo: recurso.archivoId!,
+          nombre,
+          extension: nombre.match(/\.([A-Za-z0-9]{2,5})$/)?.[1]?.toLowerCase() ?? null,
+          peso: 0,
+        }
+      })
+    return HttpResponse.json(filas)
+  }),
+
+  // Token de vista de un archivo. El real lo acuña `file-service` y devuelve
+  // una URL firmada de vida corta; acá se responde con el object URL del
+  // binario que se subió en esta sesión. Un id que no salga de esta pestaña
+  // (los del seed) no tiene bytes: 404, y la vista previa lo dice.
+  http.post("*/api/files/view-token/:archivoId", async ({ params }) => {
+    await delay(100)
+    const url = urlArchivoMaterial(Number(params.archivoId))
+    if (!url) {
+      return HttpResponse.json({ message: "Archivo no disponible en el mock." }, { status: 404 })
+    }
+    return HttpResponse.json({ token: "mock", url, expiresIn: 300 })
+  }),
+
   // Reemplazo COMPLETO de los materiales de apoyo (colección Postman
-  // `planeador-guia-completa`, 4.7) — el request viaja como
-  // `multipart/form-data`: `MATERIALES` es un campo STRING con el array
-  // serializado (regla de los campos JSONB del motor) y cada recurso tipo
-  // "Archivo" trae su binario aparte, bajo `archivo_<archivoIndex>` (ver
-  // `update-materiales-actividad.ts`). El mock no reversa `tipoRecurso` (id
-  // numérico) a `Recurso.tipo` (label) para los demás casos — alcanza con
-  // asumir "URL".
+  // `planeador-guia-completa`, 4.7). `MATERIALES` es un campo STRING con el
+  // array serializado (regla de los campos JSONB del motor), y cada material
+  // trae EXACTAMENTE uno de `url` o `fkTarchivo` — que es lo que valida
+  // `fn_actividad_material_reemplazar`.
+  //
+  // REV — antes esto leía un `multipart/form-data` con partes `archivo_<i>`.
+  // Ese contrato no existía en el backend (ver `update-materiales-actividad.ts`):
+  // el mock estaba validando una forma que el servidor real rechazaba.
+  //
+  // El mock no reversa `tipoRecurso` (id numérico) a `Recurso.tipo` (label):
+  // decide por si el material trae `fkTarchivo` o `url`, que para reconstruir
+  // la lista alcanza.
   http.put(ACTIVIDAD_MATERIALES_URL, async ({ params, request }) => {
     await delay(200)
     const id = Number(params.id)
@@ -690,22 +755,26 @@ export const planeadorHandlers = [
     if (index === -1) {
       return HttpResponse.json({ message: "Actividad no encontrada." }, { status: 404 })
     }
-    const formData = await request.formData()
-    const materiales = JSON.parse(String(formData.get("MATERIALES"))) as {
+    const body = (await request.json()) as { MATERIALES?: string }
+    const materiales = JSON.parse(String(body.MATERIALES ?? "[]")) as {
       url?: string
       descripcion?: string
-      archivoIndex?: number
+      fkTarchivo?: number
     }[]
     const actual = planeadorDb[index]!
     actual.recursos = materiales.map((material, i) => {
-      if (material.archivoIndex !== undefined) {
-        const archivo = formData.get(`archivo_${material.archivoIndex}`)
-        const nombre = archivo instanceof File ? archivo.name : ""
+      if (material.fkTarchivo !== undefined) {
+        const nombre = nombreArchivoMaterial(material.fkTarchivo)
         return {
           id: nextId(actual.recursos.map((r) => r.id)) + i,
           titulo: nombre,
           fuente: nombre,
           tipo: "Archivo",
+          archivoId: material.fkTarchivo,
+          // El binario ya no está del lado del front: para verlo hay que
+          // pedirle al backend un token de vista con este id. Mientras el
+          // detalle no devuelva `fkTarchivo`, la url queda vacía igual que
+          // en el real.
           url: "",
           descripcion: material.descripcion ?? "",
         }

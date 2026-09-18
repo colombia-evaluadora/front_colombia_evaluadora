@@ -33,6 +33,20 @@ export interface Recurso {
   tipo: RecursoTipo
   url: string
   descripcion: string
+  /**
+   * `PK_TARCHIVO` de un material de tipo "Archivo" YA GUARDADO. Solo lo traen
+   * los que vienen del backend: uno recién elegido en el formulario todavía
+   * no está subido y viaja como blob URL en `url`.
+   *
+   * Sirve para dos cosas, y las dos importan:
+   *
+   * - **Guardar sin perderlo.** `PUT .../materiales` es de reemplazo total y
+   *   exige `url` o `fkTarchivo`; sin este id, un archivo guardado se caería
+   *   de la lista en el siguiente guardado.
+   * - **Previsualizarlo.** Con el id se acuña el token de vista
+   *   (`useArchivoViewUrl`) que da una URL servible a un `<img>`/`<video>`.
+   */
+  archivoId?: number
 }
 
 /**
