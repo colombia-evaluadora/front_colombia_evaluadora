@@ -651,6 +651,7 @@ function RecuperacionSection({
                                   id={field.name}
                                   inputMode="numeric"
                                   placeholder="Ej: 100"
+                                  maxLength={3}
                                   value={field.state.value?.toString() ?? ""}
                                   onChange={(e) => {
                                     const digits = toPositiveDigitsInput(e.target.value, 3)
@@ -734,6 +735,7 @@ function IdentificacionSection({ form, disabled }: { form: FormActividad; disabl
                 id={field.name}
                 name={field.name}
                 placeholder="Agregar"
+                maxLength={50}
                 value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
                 onBlur={field.handleBlur}
@@ -1432,6 +1434,7 @@ function MaterialesSection({ form, disabled }: { form: FormActividad; disabled: 
               id={field.name}
               name={field.name}
               placeholder="Ej: Cuaderno, colores, computador portátil…"
+              maxLength={500}
               value={field.state.value}
               onChange={(e) => field.handleChange(e.target.value)}
               onBlur={field.handleBlur}
@@ -1772,6 +1775,7 @@ function RecursoForm({
               // de verdad es `file-service`.
               {...(draft.tipo === "Archivo" ? { accept: RECURSO_ARCHIVO_ACCEPT } : {})}
               placeholder={fuentePlaceholder}
+              maxLength={500}
               // `<input type="file">` no acepta `value` programático (el
               // browser solo permite setearlo a `""` por seguridad —
               // cualquier otro valor tira `InvalidStateError` y revienta
@@ -1825,6 +1829,7 @@ function RecursoForm({
           className={TEXTAREA_OUTLINED}
           rows={2}
           placeholder="Ej: Video introductorio (7 min)"
+          maxLength={500}
           value={draft.descripcion}
           onChange={(e) => onChange({ descripcion: e.target.value })}
           disabled={disabled}
@@ -2148,6 +2153,7 @@ function ProgramacionSection({ form, disabled }: { form: FormActividad; disabled
                 id={field.name}
                 inputMode="numeric"
                 placeholder="Ej: 20"
+                maxLength={3}
                 value={field.state.value}
                 onChange={(e) => field.handleChange(toPositiveDigitsInput(e.target.value, 3))}
                 // A diferencia de Fecha inicio/cierre (bloqueadas en el propio
@@ -2194,6 +2200,7 @@ function ProgramacionSection({ form, disabled }: { form: FormActividad; disabled
                 id={field.name}
                 inputMode="numeric"
                 placeholder="Ej: 10-12"
+                maxLength={5}
                 value={field.state.value}
                 onChange={(e) => field.handleChange(toDigitsOrRangeInput(e.target.value))}
                 // Mismo criterio que "Duración estimada": clampea cada
@@ -2775,6 +2782,7 @@ function ListaCotejoItemCard({
             id={`${item.id}-descripcion`}
             className={TEXTAREA_OUTLINED}
             rows={2}
+            maxLength={500}
             value={item.descripcion}
             onChange={(e) => onChange({ ...item, descripcion: e.target.value })}
             disabled={disabled}
@@ -2941,6 +2949,7 @@ function EscalaValoracionSection({
                         <Input
                           id={`${escala.id}-criterios-generales`}
                           placeholder="Criterio A, Criterio B"
+                          maxLength={50}
                           value={escala.criteriosGenerales}
                           onChange={(e) => updateEscala({ criteriosGenerales: e.target.value })}
                           disabled={disabled}
@@ -3046,6 +3055,7 @@ function EscalaValoracionSection({
                             className={TEXTAREA_OUTLINED}
                             rows={3}
                             placeholder="Agregar"
+                            maxLength={500}
                             value={escala.interpretacionRangos}
                             onChange={(e) =>
                               updateEscala({ interpretacionRangos: e.target.value })
@@ -3133,6 +3143,7 @@ function EscalaValoracionSection({
                                     su institución. */}
                                 <Input
                                   variant="outlined"
+                                  maxLength={50}
                                   value={nivel.nombre}
                                   onChange={(e) => updateNivel(nIndex, { nombre: e.target.value })}
                                   disabled={disabled}
@@ -3140,6 +3151,7 @@ function EscalaValoracionSection({
                                 <Input
                                   variant="outlined"
                                   placeholder="Interpretación / descriptor"
+                                  maxLength={50}
                                   value={nivel.descripcion}
                                   onChange={(e) =>
                                     updateNivel(nIndex, { descripcion: e.target.value })
@@ -3258,6 +3270,7 @@ function InstrumentoPersonalizadoSection({
                 <Input
                   id="instrumentoPersonalizado-descripcion"
                   placeholder="Agregar descripción breve"
+                  maxLength={50}
                   value={value.descripcion}
                   onChange={(e) => patch({ descripcion: e.target.value })}
                   disabled={disabled}
@@ -3499,6 +3512,7 @@ function CriterioItem({
         <FieldLabel>Nombre del criterio</FieldLabel>
         <Input
           placeholder="Ej: Expresión oral de ideas y experiencias"
+          maxLength={50}
           value={criterio.nombre}
           onChange={(e) => onChange({ ...criterio, nombre: e.target.value })}
           disabled={disabled}
@@ -3542,6 +3556,7 @@ function CriterioItem({
             className={TEXTAREA_OUTLINED}
             rows={2}
             placeholder="Describe el desempeño esperado en este nivel"
+            maxLength={500}
             value={criterio.excelente}
             onChange={(e) => onChange({ ...criterio, excelente: e.target.value })}
             disabled={disabled}
@@ -3625,6 +3640,7 @@ function CriterioItem({
               className={TEXTAREA_OUTLINED}
               rows={2}
               placeholder="Describe el desempeño esperado en este nivel"
+              maxLength={500}
               value={nivel.descripcion}
               onChange={(e) => {
                 const next = criterio.niveles.slice()
@@ -3713,6 +3729,7 @@ function CriterioItem({
         <div className="flex items-center gap-0">
           <Input
             placeholder="Agregar"
+            maxLength={50}
             value={nivelInput}
             onChange={(e) => setNivelInput(e.target.value)}
             disabled={disabled}
@@ -4028,6 +4045,7 @@ function AdaptacionItem({
           <Input
             type="url"
             placeholder="https://…"
+            maxLength={500}
             value={adaptacion.versionModificadaRef}
             onChange={(e) =>
               onChange({ ...adaptacion, versionModificadaRef: e.target.value })
@@ -4237,6 +4255,7 @@ function SeguimientoSection({ form, disabled }: { form: FormActividad; disabled:
               id={field.name}
               rows={4}
               placeholder="Ej: Reforzar con ejemplos del contexto local, revisar individualmente la participación de los estudiantes con bajo rendimiento…"
+              maxLength={500}
               value={field.state.value}
               onChange={(e) => field.handleChange(e.target.value)}
               disabled={disabled}
@@ -4433,6 +4452,7 @@ function CrearUnidadPopover({
             <FieldLabel>Nombre</FieldLabel>
             <Input
               placeholder="Agregar"
+              maxLength={50}
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
             />
@@ -4443,6 +4463,7 @@ function CrearUnidadPopover({
             <Textarea
               rows={3}
               placeholder="Propósito pedagógico y dinámica general"
+              maxLength={500}
               value={descripcion}
               onChange={(e) => setDescripcion(e.target.value)}
               className={TEXTAREA_OUTLINED}
