@@ -559,26 +559,38 @@ function RecuperacionSection({
                       }
                     </form.Subscribe>
 
-                    <form.Field name="recuperacionTipoAplicacion">
-                      {(field) => (
-                        <Field variant="outlined">
-                          <FieldLabel>¿Cómo se aplicará la nota de recuperación?</FieldLabel>
-                          <RadioGroup
-                            className="flex min-h-11 flex-wrap items-center gap-x-6 gap-y-2 rounded-md border border-input px-3 py-2"
-                            value={field.state.value}
-                            disabled={disabled}
-                            onValueChange={field.handleChange}
-                          >
-                            {(recuperacion?.catalogos.tipoAplicacion ?? []).map((opcion) => (
-                              <label key={opcion.valor} className="flex items-center gap-2 text-sm">
-                                <RadioGroupItem value={opcion.valor} className="data-checked:bg-primary" />
-                                {opcion.nombre}
-                              </label>
-                            ))}
-                          </RadioGroup>
-                        </Field>
-                      )}
-                    </form.Field>
+                    {/* Igual que "Actividad a recuperar" (gateada por
+                        `destino`) o "Valor de ponderación" (gateada por
+                        `tipoCalculo`): sin elegir "¿Esta recuperación aplica
+                        para?" todavía no hay nada que aplicar/calcular, así
+                        que el resto de la cascada se oculta en vez de
+                        mostrarse vacío. */}
+                    <form.Subscribe selector={(state) => state.values.recuperacionDestino}>
+                      {(destino) =>
+                        !destino ? null : (
+                          <form.Field name="recuperacionTipoAplicacion">
+                            {(field) => (
+                              <Field variant="outlined">
+                                <FieldLabel>¿Cómo se aplicará la nota de recuperación?</FieldLabel>
+                                <RadioGroup
+                                  className="flex min-h-11 flex-wrap items-center gap-x-6 gap-y-2 rounded-md border border-input px-3 py-2"
+                                  value={field.state.value}
+                                  disabled={disabled}
+                                  onValueChange={field.handleChange}
+                                >
+                                  {(recuperacion?.catalogos.tipoAplicacion ?? []).map((opcion) => (
+                                    <label key={opcion.valor} className="flex items-center gap-2 text-sm">
+                                      <RadioGroupItem value={opcion.valor} className="data-checked:bg-primary" />
+                                      {opcion.nombre}
+                                    </label>
+                                  ))}
+                                </RadioGroup>
+                              </Field>
+                            )}
+                          </form.Field>
+                        )
+                      }
+                    </form.Subscribe>
 
                     {/* "Reemplazar" es lo único que necesita aclaración: la
                         nota anterior se pierde por completo. "Computar con
@@ -596,31 +608,33 @@ function RecuperacionSection({
                     </form.Subscribe>
 
                     <form.Subscribe selector={(state) => state.values.recuperacionDestino}>
-                      {(destino) => (
-                        <form.Field name="recuperacionTipoCalculo">
-                          {(field) => (
-                            <Field variant="outlined">
-                              <FieldLabel>
-                                ¿Cómo deseas calcular la nota{" "}
-                                {destino === "NOTA_FINAL" ? "final" : "de la actividad"}?
-                              </FieldLabel>
-                              <RadioGroup
-                                className="flex min-h-11 flex-wrap items-center gap-x-6 gap-y-2 rounded-md border border-input px-3 py-2"
-                                value={field.state.value}
-                                disabled={disabled}
-                                onValueChange={field.handleChange}
-                              >
-                                {(recuperacion?.catalogos.tipoCalculo ?? []).map((opcion) => (
-                                  <label key={opcion.valor} className="flex items-center gap-2 text-sm">
-                                    <RadioGroupItem value={opcion.valor} className="data-checked:bg-primary" />
-                                    {opcion.nombre}
-                                  </label>
-                                ))}
-                              </RadioGroup>
-                            </Field>
-                          )}
-                        </form.Field>
-                      )}
+                      {(destino) =>
+                        !destino ? null : (
+                          <form.Field name="recuperacionTipoCalculo">
+                            {(field) => (
+                              <Field variant="outlined">
+                                <FieldLabel>
+                                  ¿Cómo deseas calcular la nota{" "}
+                                  {destino === "NOTA_FINAL" ? "final" : "de la actividad"}?
+                                </FieldLabel>
+                                <RadioGroup
+                                  className="flex min-h-11 flex-wrap items-center gap-x-6 gap-y-2 rounded-md border border-input px-3 py-2"
+                                  value={field.state.value}
+                                  disabled={disabled}
+                                  onValueChange={field.handleChange}
+                                >
+                                  {(recuperacion?.catalogos.tipoCalculo ?? []).map((opcion) => (
+                                    <label key={opcion.valor} className="flex items-center gap-2 text-sm">
+                                      <RadioGroupItem value={opcion.valor} className="data-checked:bg-primary" />
+                                      {opcion.nombre}
+                                    </label>
+                                  ))}
+                                </RadioGroup>
+                              </Field>
+                            )}
+                          </form.Field>
+                        )
+                      }
                     </form.Subscribe>
 
                     {/* % de ponderación: solo con `tipoCalculo = PONDERADO`
@@ -1252,6 +1266,12 @@ function AsignaturaGradoSection({ form }: { form: FormActividad }) {
                 form.setFieldValue("asignaturaId", undefined)
                 form.setFieldValue("asignatura", "")
                 form.setFieldValue("unidad", { id: 0, nombre: "" })
+                // "Estudiantes" depende del padrón de ESTE grupo+asignatura
+                // (`useActividadMatriculasGrupoQuery`) — sin grupo no hay
+                // padrón contra el cual siquiera validar los ids ya
+                // elegidos, así que se limpian junto con el resto.
+                form.setFieldValue("matriculasIds", [])
+                form.setFieldValue("asignarTodoElGrupo", true)
                 return
               }
               const combo = docenteGrupos.find((g) => String(g.grupoId) === v)
@@ -1260,11 +1280,16 @@ function AsignaturaGradoSection({ form }: { form: FormActividad }) {
               form.setFieldValue("grado", combo.gradoNombre)
               form.setFieldValue("grupoId", combo.grupoId)
               form.setFieldValue("grupo", grupoLabel(combo))
-              // Asignatura y unidad dependen de "Grado / Grupo": cambiarlo
-              // invalida lo que había elegido en las dos.
+              // Asignatura, unidad y "Estudiantes" dependen de "Grado /
+              // Grupo": cambiarlo invalida lo que había elegido en las tres
+              // (los `matriculaIds` seleccionados son PKs del padrón del
+              // grupo ANTERIOR — dejarlos pegados los manda al nuevo grupo
+              // sin que el docente haya elegido a esos estudiantes ahí).
               form.setFieldValue("asignaturaId", undefined)
               form.setFieldValue("asignatura", "")
               form.setFieldValue("unidad", { id: 0, nombre: "" })
+              form.setFieldValue("matriculasIds", [])
+              form.setFieldValue("asignarTodoElGrupo", true)
             }}
           >
             <SelectTrigger id="grado-grupo">
@@ -1307,12 +1332,25 @@ function AsignaturaGradoSection({ form }: { form: FormActividad }) {
                   if (v === "__none__") {
                     field.handleChange(undefined)
                     form.setFieldValue("asignatura", "")
+                    // "Estudiantes" depende de Grado/Grupo Y Asignatura —
+                    // sin asignatura no hay padrón contra el que validar los
+                    // `matriculaIds` ya elegidos (mismo criterio que al
+                    // limpiar "Grado / Grupo").
+                    form.setFieldValue("matriculasIds", [])
+                    form.setFieldValue("asignarTodoElGrupo", true)
                     return
                   }
                   const par = asignaturas.find((a) => String(a.asignaturaId) === v)
                   if (!par) return
                   field.handleChange(par.asignaturaId)
                   form.setFieldValue("asignatura", par.asignaturaNombre)
+                  // Cambiar de Asignatura cambia el padrón que ofrece
+                  // "Estudiantes" (`useActividadMatriculasGrupoQuery` depende
+                  // de grupo+asignatura) — los `matriculaIds` ya elegidos
+                  // eran de la asignatura ANTERIOR, así que quedan sin
+                  // sentido acá y se limpian junto con el resto.
+                  form.setFieldValue("matriculasIds", [])
+                  form.setFieldValue("asignarTodoElGrupo", true)
                 }}
                 disabled={!hasGradoGrupo}
               >
@@ -1969,6 +2007,39 @@ function RecursoItem({
   )
 }
 
+/** "Entre 1 y 76", "Al menos 1" o "Hasta 76" según qué extremos trajo el
+ *  backend (`ProgramacionActividad.duracionEstimada`/`.semanaCronograma`
+ *  pueden traer un solo lado, ver `use-programacion-actividad-query.ts`) —
+ *  evita que la descripción del campo asuma que siempre llegan los dos. */
+function rangoLabel(min: number | null, max: number | null): string {
+  if (min != null && max != null) return `Entre ${min} y ${max}`
+  if (min != null) return `Al menos ${min}`
+  if (max != null) return `Hasta ${max}`
+  return ""
+}
+
+/** Ajusta `value` (ya sanitizado a dígitos por `toPositiveDigitsInput`) al
+ *  rango `[min, max]` del backend — se llama en `onBlur`, no en cada tecla,
+ *  para no trabar al usuario a mitad de tipeo (ver el comentario en el
+ *  campo "Duración estimada"). Cadena vacía o límites ausentes: no hay nada
+ *  que ajustar. */
+function clampDigits(value: string, min: number | undefined | null, max: number | undefined | null): string {
+  if (!value) return value
+  const n = Number(value)
+  if (min != null && n < min) return String(min)
+  if (max != null && n > max) return String(max)
+  return value
+}
+
+/** Mismo criterio que `clampDigits`, pero para el campo "Semana del
+ *  cronograma", que además del número simple admite un rango ("10-12") —
+ *  cada extremo del rango se ajusta por separado. */
+function clampDigitsOrRange(value: string, min: number | undefined | null, max: number | undefined | null): string {
+  if (!value) return value
+  const partes = value.split("-").map((parte) => clampDigits(parte, min, max))
+  return partes.join("-")
+}
+
 function ProgramacionSection({ form, disabled }: { form: FormActividad; disabled: boolean }) {
   // Topes reales de esta sección (ventana del periodo académico, días
   // hábiles del horario, duración y semana admitidas) — sin esto, el único
@@ -2052,14 +2123,32 @@ function ProgramacionSection({ form, disabled }: { form: FormActividad; disabled
                 placeholder="Ej: 20"
                 value={field.state.value}
                 onChange={(e) => field.handleChange(toPositiveDigitsInput(e.target.value, 3))}
+                // A diferencia de Fecha inicio/cierre (bloqueadas en el propio
+                // picker), acá no hay forma de impedir tipear un número fuera
+                // de rango mientras se escribe sin trabar al usuario a mitad
+                // de tipeo (escribir "3" cuando el mínimo es "30" clampearía
+                // antes de poder completar "35"). Se ajusta recién al perder
+                // el foco, mismo criterio no intrusivo que el resto de la
+                // app usa para validar rangos numéricos libres.
+                onBlur={(e) => {
+                  field.handleBlur()
+                  field.handleChange(
+                    clampDigits(
+                      e.target.value,
+                      programacion?.duracionEstimada.min,
+                      programacion?.duracionEstimada.max,
+                    ),
+                  )
+                }}
                 disabled={disabled}
               />
-              {programacion?.duracionEstimada.min != null && programacion.duracionEstimada.max != null && (
-                <FieldDescription>
-                  Entre {programacion.duracionEstimada.min} y {programacion.duracionEstimada.max}{" "}
-                  {(programacion.duracionEstimada.unidad ?? "bloques").toLowerCase()}.
-                </FieldDescription>
-              )}
+              {programacion?.duracionEstimada &&
+                (programacion.duracionEstimada.min != null || programacion.duracionEstimada.max != null) && (
+                  <FieldDescription>
+                    {rangoLabel(programacion.duracionEstimada.min, programacion.duracionEstimada.max)}{" "}
+                    {(programacion.duracionEstimada.unidad ?? "bloques").toLowerCase()}.
+                  </FieldDescription>
+                )}
               {programacion?.duracionEstimada.motivo && (
                 <FieldDescription>{programacion.duracionEstimada.motivo}</FieldDescription>
               )}
@@ -2080,14 +2169,29 @@ function ProgramacionSection({ form, disabled }: { form: FormActividad; disabled
                 placeholder="Ej: 10-12"
                 value={field.state.value}
                 onChange={(e) => field.handleChange(toDigitsOrRangeInput(e.target.value))}
+                // Mismo criterio que "Duración estimada": clampea cada
+                // extremo del rango recién al perder el foco, no en cada
+                // tecla.
+                onBlur={(e) => {
+                  field.handleBlur()
+                  field.handleChange(
+                    clampDigitsOrRange(
+                      e.target.value,
+                      programacion?.semanaCronograma.min,
+                      programacion?.semanaCronograma.max,
+                    ),
+                  )
+                }}
                 disabled={disabled}
               />
-              {programacion?.semanaCronograma.min != null && programacion.semanaCronograma.max != null && (
-                <FieldDescription>
-                  Entre la semana {programacion.semanaCronograma.min} y la {programacion.semanaCronograma.max} del
-                  periodo académico.
-                </FieldDescription>
-              )}
+              {programacion?.semanaCronograma &&
+                (programacion.semanaCronograma.min != null || programacion.semanaCronograma.max != null) && (
+                  <FieldDescription>
+                    Entre la semana{" "}
+                    {rangoLabel(programacion.semanaCronograma.min, programacion.semanaCronograma.max)} del periodo
+                    académico.
+                  </FieldDescription>
+                )}
               {programacion?.semanaCronograma.motivo && (
                 <FieldDescription>{programacion.semanaCronograma.motivo}</FieldDescription>
               )}
