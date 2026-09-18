@@ -29,8 +29,10 @@ import type { InstrumentoActividad } from "@/features/planeador/api/types/planil
 interface CeldaNotaPopoverProps {
   actividadId: number
   pkTactividadEstudiante: number
-  /** `yyyy-MM-dd` — fecha de la actividad, la que exige el backend al
-   *  calificar (`PlanillaColumna.fechaInicio`). */
+  /** `yyyy-MM-dd` — la fecha con asistencia válida de ESTE estudiante
+   *  (`PlanillaCelda.fechaAsistencia`), no `PlanillaColumna.fechaInicio`:
+   *  el gate de calificar exige asistencia para la fecha exacta que se
+   *  manda, y casi nunca coincide con el día en que arrancó la actividad. */
   fecha: string
   estudianteNombre: string
 }
