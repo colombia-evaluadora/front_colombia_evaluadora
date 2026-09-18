@@ -651,13 +651,17 @@ function RecuperacionSection({
                     </form.Subscribe>
 
                     {/* Mismo gate que "¿Cómo se aplicará la nota de
-                        recuperación?" arriba, más: NO tiene sentido con
-                        `tipoAplicacion = REEMPLAZAR` — reemplazar sustituye
-                        el 100% de la nota, no hay nada que "calcular" (esa
-                        cascada solo aplica a "Computar con la nota
-                        anterior"). Sin este chequeo, cambiar de Computar a
-                        Reemplazar después de haber elegido Ponderado + %
-                        dejaba ese banner/campo mostrándose igual. */}
+                        recuperación?" arriba, más esperar a que se elija esa
+                        opción. NO se oculta con `tipoAplicacion = REEMPLAZAR`
+                        a pesar de que en ese caso el cálculo no se USE
+                        (fn_actividad_recuperacion_aplicar, V408, ignora el
+                        tipo de cálculo con REEMPLAZAR): el backend real
+                        (fn_actividad_recuperacion_configurar, V224) exige
+                        SIEMPRE destino + tipoAplicacion + tipoCalculo, sin
+                        excepción — ocultarlo dejaría un PUT/POST sin un
+                        campo obligatorio y el guardado fallaría con 22023
+                        "La recuperacion requiere destino, tipoAplicacion y
+                        tipoCalculo". */}
                     <form.Subscribe
                       selector={(state) => ({
                         destino: state.values.recuperacionDestino,
@@ -666,10 +670,7 @@ function RecuperacionSection({
                       })}
                     >
                       {({ destino, actividadId, tipoAplicacion }) =>
-                        !destino ||
-                        (destino === "ACTIVIDAD" && !actividadId) ||
-                        !tipoAplicacion ||
-                        tipoAplicacion === "REEMPLAZAR" ? null : (
+                        !destino || (destino === "ACTIVIDAD" && !actividadId) || !tipoAplicacion ? null : (
                           <form.Field name="recuperacionTipoCalculo">
                             {(field) => (
                               <Field variant="outlined">
