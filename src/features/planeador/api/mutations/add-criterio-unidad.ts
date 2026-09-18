@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api-client"
 import { env } from "@/config/env"
 import type { MutationConfig } from "@/lib/react-query"
-import { unidadDetalleQueryKey } from "@/features/planeador/api/query/use-unidades-query"
+import { unidadCriteriosQueryKey } from "@/features/planeador/api/query/use-unidad-criterios-query"
 import type { CriterioUnidad } from "@/features/planeador/api/types/unidad-tematica"
 
 interface AddCriterioInput {
@@ -50,9 +50,10 @@ interface UseAddCriterioUnidadOptions {
 }
 
 /**
- * Agrega un criterio a la rúbrica de una unidad. Invalida el detalle de esa
- * unidad —no el listado, que no muestra criterios— para que la tabla de
- * "Rúbricas" del panel refleje el nuevo criterio apenas se cierra el diálogo.
+ * Agrega un criterio a la rúbrica de una unidad. Invalida
+ * `GET /unidades/:id/criterios` —no el detalle de la unidad, que en el
+ * backend real nunca trae criterios— para que la tabla de "Rúbricas" del
+ * panel refleje el nuevo criterio apenas se cierra el diálogo.
  */
 export function useAddCriterioUnidad({ mutationConfig }: UseAddCriterioUnidadOptions = {}) {
   const queryClient = useQueryClient()
@@ -61,7 +62,7 @@ export function useAddCriterioUnidad({ mutationConfig }: UseAddCriterioUnidadOpt
   return useMutation({
     mutationFn: addCriterioUnidad,
     onSuccess: (data, variables, ...rest) => {
-      queryClient.invalidateQueries({ queryKey: unidadDetalleQueryKey(variables.unidadId) })
+      queryClient.invalidateQueries({ queryKey: unidadCriteriosQueryKey(variables.unidadId) })
       onSuccess?.(data, variables, ...rest)
     },
     ...restConfig,

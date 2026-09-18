@@ -989,6 +989,34 @@ export const planeadorHandlers = [
     })
   }),
 
+  // Criterios de la rúbrica de la unidad — endpoint aparte del detalle
+  // (`GET /planeador/unidades/:id` real nunca los trae, ver
+  // `use-unidad-criterios-query.ts`). Responde con la forma real
+  // (`pk_tcriterio_unidad`, `niveles[].indicador`...), no con
+  // `CriterioUnidad` tal cual vive en `unidadesTematicasDb`.
+  http.get(UNIDAD_CRITERIO_CREATE_URL, async ({ params }) => {
+    await delay(150)
+    const id = Number(params.id)
+    const unidad = unidadesTematicasDb.find((row) => row.id === id)
+    if (!unidad) {
+      return HttpResponse.json({ message: "Unidad temática no encontrada." }, { status: 404 })
+    }
+    const rows = unidad.criterios.map((criterio, index) => ({
+      pk_tcriterio_unidad: criterio.id,
+      orden: index + 1,
+      descripcion: criterio.nombre,
+      niveles: criterio.niveles.map((nivel, nivelIndex) => ({
+        pk: nivelIndex + 1,
+        orden: nivelIndex + 1,
+        fkTescalaValoracion: nivel.valoracionId ?? nivelIndex + 1,
+        valoracion: nivel.nombre,
+        indicador: nivel.descripcion,
+      })),
+      active: true,
+    }))
+    return HttpResponse.json({ rows })
+  }),
+
   // Agregar criterio a la rúbrica de una unidad. El diálogo manda los
   // campos de texto (sin id); acá se le asigna uno y se empuja al array en
   // memoria de la unidad. 404 si la unidad no existe.
