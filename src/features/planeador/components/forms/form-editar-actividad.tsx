@@ -497,7 +497,7 @@ function RecuperacionSection({
                           </FieldLabel>
                           <Select
                             value={field.state.value || "__none__"}
-                            onValueChange={(v) => field.handleChange(v === "__none__" ? "" : v)}
+                            onValueChange={(v) => field.handleChange(!v || v === "__none__" ? "" : v)}
                             disabled={disabled}
                           >
                             <SelectTrigger id={field.name}>
