@@ -329,6 +329,7 @@ function UnidadFichaYEvidenciasDetalle({
   return (
     <div className={className}>
       <UnidadFicha
+        instrumentoLabel={instrumentoLabel}
         nombre={unidad?.nombre ?? actividad.unidad.nombre}
         descripcion={unidad?.descripcion ?? ""}
         objetivos={unidad?.objetivos ?? []}

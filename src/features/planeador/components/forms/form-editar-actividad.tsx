@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { DatePicker } from "@/components/date-picker"
-import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
+import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
 import { cn } from "@/lib/utils"
 import { parseDateValue, formatDateValue } from "@/lib/date-value"
 import { toDigitsOrRangeInput, toPositiveDigitsInput } from "@/lib/text-input"
@@ -1099,6 +1099,7 @@ function UnidadFichaYEvidencias({
   return (
     <div className="flex flex-col gap-4">
       <UnidadFicha
+        instrumentoLabel={instrumentoLabel}
         nombre={unidad?.nombre ?? nombreFallback}
         descripcion={unidad?.descripcion ?? ""}
         objetivos={unidad?.objetivos ?? []}
@@ -1798,11 +1799,11 @@ function RecursoForm({
                     return
                   }
                   const blobUrl = URL.createObjectURL(file)
-                  // El form guarda el nombre del archivo en `fuente` y se
-                  // lo pasa al resolver, que lo usa como fallback para
-                  // detectar la extensión — los blob URLs no tienen
-                  // extensión en el path y no queríamos meterla en el
-                  // hash (algunos parsers se confunden con el `#`).
+                  // El form guarda el nombre del archivo en `fuente` y se 
+                  // lo pasa al resolver, que lo usa como fallback para 
+                  // detectar la extensión — los blob URLs no tienen 
+                  // extensión en el path y no queríamos meterla en el 
+                  // hash (algunos parsers se confunden con el `#`). 
                   onChange({
                     url: blobUrl,
                     fuente: file.name,
@@ -2049,59 +2050,85 @@ function ProgramacionSection({ form, disabled }: { form: FormActividad; disabled
   // form (ver `AsignaturaGradoSection`), de ahí sale la ventana.
   const grupoId = useSelector(form.store, (state) => state.values.grupoId)
   const asignaturaId = useSelector(form.store, (state) => state.values.asignaturaId)
-  const { data: programacion } = useProgramacionActividadQuery(grupoId, asignaturaId)
+  const unidadId = useSelector(form.store, (state) => state.values.unidad.id)
+  const { data: programacion } = useProgramacionActividadQuery(grupoId, asignaturaId, unidadId)
+  // Mismo criterio que "Inicio/Fin del período académico" en
+  // `form-academic-period.tsx` (Establecimiento): el error solo se muestra
+  // tras tocar el campo O tras un intento de guardar (`submissionAttempts`,
+  // estado nativo de TanStack Form) — no apenas se monta el form, que sería
+  // mostrar "obligatorio" en un campo que el docente ni llegó a mirar
+  // todavía.
+  const submissionAttempts = useSelector(form.store, (state) => state.submissionAttempts)
+  const requerido = (value: string) => (value ? undefined : "Este campo es obligatorio.")
 
   return (
     <Card className="gap-4 p-4">
       <h3 className="text-base font-semibold">Programación</h3>
       <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
-        <form.Field name="fechaInicio">
-          {(field) => (
-            <Field variant="outlined">
-              <FieldLabel htmlFor={field.name}>Fecha inicio</FieldLabel>
-              <DatePicker
-                mode="date"
-                id={field.name}
-                value={parseDateValue(field.state.value)}
-                onChange={(date) => field.handleChange(formatDateValue(date))}
-                minDate={programacion?.fechaInicio.min ?? undefined}
-                maxDate={programacion?.fechaInicio.max ?? undefined}
-                enabledDaysOfWeek={programacion?.fechaInicio.diasHabiles ?? undefined}
-                disabled={disabled}
-              />
-              {programacion?.fechaInicio.motivo && (
-                <FieldDescription>{programacion.fechaInicio.motivo}</FieldDescription>
-              )}
-            </Field>
-          )}
+        <form.Field name="fechaInicio" validators={{ onChange: ({ value }) => requerido(value) }}>
+          {(field) => {
+            const isInvalid = (field.state.meta.isTouched || submissionAttempts > 0) && !field.state.meta.isValid
+            return (
+              <Field variant="outlined" data-invalid={isInvalid}>
+                <FieldLabel htmlFor={field.name}>Fecha inicio*</FieldLabel>
+                <DatePicker
+                  mode="date"
+                  id={field.name}
+                  value={parseDateValue(field.state.value)}
+                  onChange={(date) => {
+                    field.handleChange(formatDateValue(date))
+                    field.handleBlur()
+                  }}
+                  minDate={programacion?.fechaInicio.min ?? undefined}
+                  maxDate={programacion?.fechaInicio.max ?? undefined}
+                  enabledDaysOfWeek={programacion?.fechaInicio.diasHabiles ?? undefined}
+                  disabled={disabled}
+                  aria-invalid={isInvalid}
+                />
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                {programacion?.fechaInicio.motivo && (
+                  <FieldDescription>{programacion.fechaInicio.motivo}</FieldDescription>
+                )}
+              </Field>
+            )
+          }}
         </form.Field>
 
         <form.Subscribe selector={(state) => state.values.fechaInicio}>
           {(fechaInicio) => (
-            <form.Field name="fechaCierre">
-              {(field) => (
-                <Field variant="outlined">
-                  <FieldLabel htmlFor={field.name}>Fecha de entrega o cierre</FieldLabel>
-                  <DatePicker
-                    mode="date"
-                    id={field.name}
-                    value={parseDateValue(field.state.value)}
-                    onChange={(date) => field.handleChange(formatDateValue(date))}
-                    // La fecha ya elegida en "Fecha inicio" manda sobre el
-                    // mínimo del backend: no tiene sentido ofrecer un cierre
-                    // anterior a un inicio que el propio docente ya puso.
-                    minDate={
-                      parseDateValue(fechaInicio) ?? programacion?.fechaCierre.min ?? undefined
-                    }
-                    maxDate={programacion?.fechaCierre.max ?? undefined}
-                    enabledDaysOfWeek={programacion?.fechaCierre.diasHabiles ?? undefined}
-                    disabled={disabled}
-                  />
-                  {programacion?.fechaCierre.motivo && (
-                    <FieldDescription>{programacion.fechaCierre.motivo}</FieldDescription>
-                  )}
-                </Field>
-              )}
+            <form.Field name="fechaCierre" validators={{ onChange: ({ value }) => requerido(value) }}>
+              {(field) => {
+                const isInvalid =
+                  (field.state.meta.isTouched || submissionAttempts > 0) && !field.state.meta.isValid
+                return (
+                  <Field variant="outlined" data-invalid={isInvalid}>
+                    <FieldLabel htmlFor={field.name}>Fecha de entrega o cierre*</FieldLabel>
+                    <DatePicker
+                      mode="date"
+                      id={field.name}
+                      value={parseDateValue(field.state.value)}
+                      onChange={(date) => {
+                        field.handleChange(formatDateValue(date))
+                        field.handleBlur()
+                      }}
+                      // La fecha ya elegida en "Fecha inicio" manda sobre el
+                      // mínimo del backend: no tiene sentido ofrecer un cierre
+                      // anterior a un inicio que el propio docente ya puso.
+                      minDate={
+                        parseDateValue(fechaInicio) ?? programacion?.fechaCierre.min ?? undefined
+                      }
+                      maxDate={programacion?.fechaCierre.max ?? undefined}
+                      enabledDaysOfWeek={programacion?.fechaCierre.diasHabiles ?? undefined}
+                      disabled={disabled}
+                      aria-invalid={isInvalid}
+                    />
+                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                    {programacion?.fechaCierre.motivo && (
+                      <FieldDescription>{programacion.fechaCierre.motivo}</FieldDescription>
+                    )}
+                  </Field>
+                )
+              }}
             </form.Field>
           )}
         </form.Subscribe>
