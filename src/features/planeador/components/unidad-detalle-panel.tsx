@@ -226,6 +226,16 @@ function ResumenItem({
 }
 
 function InformacionGeneral({ unidad }: { unidad: UnidadTematica }) {
+  // `unidad.enfoquePedagogico` SIEMPRE llega "Evaluativo" desde este listado
+  // (el backend real no guarda un enfoque propio por unidad, ver el
+  // comentario de `toUnidadTematica` en `use-unidades-query.ts`) — hay que
+  // derivarlo en vivo del referente curricular de GRADO + ASIGNATURA, mismo
+  // criterio que ya usa `useEnfoquePedagogicoDerivado` en
+  // `UnidadInfoGeneralFields` (edición) y el mismo `useReferenteCurricularQuery`
+  // que ya pide esta pantalla más abajo para los enunciados/evidencias.
+  const { data: referente } = useReferenteCurricularQuery(unidad.gradoId, unidad.asignaturaId)
+  const esFormativa = referente?.esFormativo ?? false
+
   return (
     <div className="flex flex-col gap-6">
       {/* `referenteVigente === false`: el referente curricular que esta
@@ -268,7 +278,7 @@ function InformacionGeneral({ unidad }: { unidad: UnidadTematica }) {
             aunque `UnidadDraft.metodoCalculo` para una unidad Formativa
             siga trayendo el default ("Ponderado") sin que el docente lo haya
             elegido. */}
-        {unidad.enfoquePedagogico !== "Formativo" && (
+        {!esFormativa && (
           <>
             <h4 className="text-sm font-semibold">
               Forma en que se van a calcular las actividades dentro de la unidad
@@ -282,7 +292,7 @@ function InformacionGeneral({ unidad }: { unidad: UnidadTematica }) {
         <div
           className={cn(
             "divide-border grid gap-4 sm:grid-cols-2 md:grid-cols-4 md:gap-0 md:divide-x",
-            unidad.enfoquePedagogico !== "Formativo" && "mt-4",
+            !esFormativa && "mt-4",
           )}
         >
           <ResumenItem Icon={GraduationCapIcon} label="Grado:" value={unidad.grado} />
