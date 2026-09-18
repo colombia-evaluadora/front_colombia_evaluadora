@@ -17,11 +17,16 @@ import { api } from "@/lib/api-client"
  * cumplen — sin este query el formulario deja elegir cualquier fecha/
  * duración y el error solo aparece al guardar, sin decir por qué.
  *
- * Solo se pide `GRUPO`+`ASIGNATURA` (los dos de los que depende la
- * ventana): `UNIDAD`/`ES_EVALUATIVA` sirven para los otros bloques de
- * `campos_disponibles` (criterio/evaluación/ponderación), que ya resuelven
- * `useConfiguracionActividadQuery`/`useReferenteCurricularQuery` por su
- * cuenta — pedirlos acá solo para `programacion` sería spamear queries.
+ * `GRUPO`+`ASIGNATURA` son obligatorios (de ahí sale la ventana). `UNIDAD`
+ * es OPCIONAL pero, si la actividad ya tiene una unidad elegida
+ * ("Unidad temática asociada"/"Proyecto pedagógico"), hay que mandarlo: la
+ * unidad puede acotar la ventana más todavía (su propia vigencia, dentro
+ * del periodo académico del grado) — confirmado en vivo, sin `UNIDAD` la
+ * respuesta sigue trayendo los topes genéricos de grado+asignatura, sin
+ * angostarlos a la unidad puntual. `ES_EVALUATIVA` sí sigue sin pedirse
+ * acá: sirve para otros bloques de `campos_disponibles` (evaluación/
+ * ponderación), que ya resuelven `useConfiguracionActividadQuery`/
+ * `useReferenteCurricularQuery` por su cuenta.
  */
 interface DiaHabil {
   valor: number
@@ -76,11 +81,24 @@ function toDate(value: string | null): Date | null {
   return Number.isNaN(date.getTime()) ? null : date
 }
 
+/**
+ * El backend numera los días 1-7 con DOMINGO = 1 (confirmado real: la
+ * respuesta trae `intensidadHoraria.diasHabiles` con nombre, y `valor: 2`
+ * viene etiquetado "Lunes", `valor: 4` "Miércoles" — 1 = domingo, no 0).
+ * `DatePicker.enabledDaysOfWeek`/`date-fns` usan la convención de
+ * `Date.getDay()` (0-6, DOMINGO = 0) — sin esta conversión, cada `valor`
+ * del backend calzaba con el día siguiente en el calendario (Lunes real
+ * bloqueado como si fuera Martes, etc.).
+ */
+function toDiaSemanaJs(valorBackend: number): number {
+  return valorBackend - 1
+}
+
 function toRangoFecha(raw: RangoFecha | undefined): ProgramacionActividad["fechaInicio"] {
   return {
     min: toDate(raw?.min ?? null),
     max: toDate(raw?.max ?? null),
-    diasHabiles: raw?.diasHabiles ?? null,
+    diasHabiles: raw?.diasHabiles?.map(toDiaSemanaJs) ?? null,
     motivo: raw?.motivo ?? null,
   }
 }
@@ -88,10 +106,10 @@ function toRangoFecha(raw: RangoFecha | undefined): ProgramacionActividad["fecha
 async function fetchProgramacionActividad(
   grupoId: number,
   asignaturaId: number,
+  unidadId: number | undefined,
 ): Promise<ProgramacionActividad | undefined> {
-  const body = await api.get(
-    `/eval-col/planeador/actividades/configuracion?GRUPO=${grupoId}&ASIGNATURA=${asignaturaId}`,
-  )
+  const query = `GRUPO=${grupoId}&ASIGNATURA=${asignaturaId}${unidadId != null ? `&UNIDAD=${unidadId}` : ""}`
+  const body = await api.get(`/eval-col/planeador/actividades/configuracion?${query}`)
   const programacion = firstRow(body)?.configuracion?.programacion
   if (!programacion) return undefined
   return {
@@ -111,21 +129,34 @@ async function fetchProgramacionActividad(
   }
 }
 
-export const programacionActividadQueryKey = (grupoId: number, asignaturaId: number) =>
-  ["planeador", "actividades", "configuracion", "programacion", grupoId, asignaturaId] as const
+export const programacionActividadQueryKey = (
+  grupoId: number,
+  asignaturaId: number,
+  unidadId: number | undefined,
+) => ["planeador", "actividades", "configuracion", "programacion", grupoId, asignaturaId, unidadId] as const
 
 /**
  * Topes reales de la sección "Programación", para bloquearlos en el
  * calendario/inputs en vez de dejar que el 22023 de `fn_actividad_crear`/
  * `_actualizar` sea la única señal de que una fecha o duración no aplica.
+ *
+ * `unidadId`: el `id` de "Unidad temática asociada" ya elegida en el form
+ * (`0`/`undefined` = sin unidad, mismo sentinel que el resto del form —
+ * ver `UnidadAsociadaSection`) — se manda como `UNIDAD` para que la ventana
+ * venga acotada a esa unidad puntual, no solo a grado+asignatura.
  */
-export function useProgramacionActividadQuery(grupoId: number | undefined, asignaturaId: number | undefined) {
+export function useProgramacionActividadQuery(
+  grupoId: number | undefined,
+  asignaturaId: number | undefined,
+  unidadId?: number,
+) {
   const enabled = grupoId != null && asignaturaId != null
+  const unidadIdEfectivo = unidadId || undefined
   return useQuery({
     queryKey: enabled
-      ? programacionActividadQueryKey(grupoId, asignaturaId)
+      ? programacionActividadQueryKey(grupoId, asignaturaId, unidadIdEfectivo)
       : (["planeador", "actividades", "configuracion", "programacion", "none"] as const),
-    queryFn: () => fetchProgramacionActividad(grupoId!, asignaturaId!),
+    queryFn: () => fetchProgramacionActividad(grupoId!, asignaturaId!, unidadIdEfectivo),
     enabled,
     staleTime: 1000 * 60,
   })

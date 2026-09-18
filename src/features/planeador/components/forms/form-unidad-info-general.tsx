@@ -334,6 +334,7 @@ export function UnidadInfoGeneralFields({
           <FieldLabel>Nombre</FieldLabel>
           <Input
             placeholder="Ej: Diseño de prototipo"
+            maxLength={50}
             value={draft.nombre}
             onChange={(e) => onChange({ nombre: e.target.value })}
             disabled={disabled}
@@ -347,6 +348,7 @@ export function UnidadInfoGeneralFields({
           className={TEXTAREA_OUTLINED}
           rows={3}
           placeholder="Propósito pedagógico y dinámica general"
+          maxLength={500}
           disabled={disabled}
           value={draft.descripcion}
           onChange={(e) => onChange({ descripcion: e.target.value })}

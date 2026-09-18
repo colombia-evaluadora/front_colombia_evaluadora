@@ -73,11 +73,18 @@ async function updateActividad({ actividadId, data }: UpdateActividadInput): Pro
   }
   // `RECUPERACION` (configurarla) y `QUITAR_RECUPERACION` (volverla a
   // normal) son excluyentes — mismo contrato que `p_recuperacion`/
-  // `p_quitar_recuperacion` de `fn_actividad_actualizar`. Si el docente
-  // apagó el toggle acá, se manda `QUITAR_RECUPERACION: true`; si sigue
-  // prendido, se manda la config completa (aunque no haya cambiado, es más
-  // simple que diferenciar "no se tocó" de "se tocó pero quedó igual").
-  if (data.esEvaluativa && data.esRecuperacion) {
+  // `p_quitar_recuperacion` de `fn_actividad_actualizar`. `recuperacionDestino`
+  // solo llega lleno si el backend ya expone los catálogos
+  // (`campos_disponibles.recuperacion`, ver `RecuperacionSection` — todavía
+  // no desplegado en producción a la fecha de este comentario, confirmado
+  // contra una respuesta real de `GET .../configuracion-actividad`).
+  //
+  // NUNCA se manda `QUITAR_RECUPERACION` sin esa prueba de que el backend
+  // soporta el parámetro: mandarlo siempre que `esRecuperacion` sea `false`
+  // (el caso de la inmensa mayoría de las actividades, que no son
+  // recuperación) rompía el PUT general de CUALQUIER actividad mientras el
+  // backend no reconociera ese parámetro — no solo el flujo de recuperación.
+  if (data.esEvaluativa && data.esRecuperacion && data.recuperacionDestino) {
     body.RECUPERACION = {
       destino: data.recuperacionDestino,
       fkActividadRecuperar: data.recuperacionActividadId,
@@ -85,8 +92,6 @@ async function updateActividad({ actividadId, data }: UpdateActividadInput): Pro
       tipoCalculo: data.recuperacionTipoCalculo,
       valorPonderacion: data.recuperacionValorPonderacion,
     }
-  } else if (!data.esRecuperacion) {
-    body.QUITAR_RECUPERACION = true
   }
   return api.put(`/eval-col/planeador/actividades/${actividadId}`, body)
 }
