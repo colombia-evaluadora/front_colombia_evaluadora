@@ -120,6 +120,7 @@ const ACTIVIDAD_EVIDENCIAS_URL = "/api/eval-col/planeador/actividades/:id/eviden
 const ACTIVIDAD_CRITERIOS_URL = "/api/eval-col/planeador/actividades/:id/criterios"
 const ACTIVIDAD_MATERIALES_URL = "/api/eval-col/planeador/actividades/:id/materiales"
 const ACTIVIDAD_ADAPTACIONES_URL = "/api/eval-col/planeador/actividades/:id/adaptaciones"
+const ACTIVIDAD_ESTUDIANTES_SET_URL = "/api/eval-col/planeador/actividades/:id/estudiantes"
 const ACTIVIDAD_CREATE_URL = "/api/eval-col/planeador/actividades"
 const ACTIVIDAD_DELETE_URL = "/api/eval-col/planeador/actividades/:id"
 const ACTIVIDAD_EXPORT_ALL_URL = "/api/eval-col/planeador/actividades/export-all"
@@ -733,6 +734,24 @@ export const planeadorHandlers = [
       return HttpResponse.json({ message: "Actividad no encontrada." }, { status: 404 })
     }
     return HttpResponse.json({ status: "ok" })
+  }),
+
+  // Endpoint suelto de "Estudiantes" (`FK_TMATRICULAS[]`/
+  // `ASIGNAR_TODO_EL_GRUPO`, ver `set-estudiantes-actividad.ts`) — el mock
+  // no modela un padrón real por matrícula, así que solo confirma la
+  // operación y actualiza el sentinel `asignarTodoElGrupo`.
+  http.put(ACTIVIDAD_ESTUDIANTES_SET_URL, async ({ params, request }) => {
+    await delay(200)
+    const id = Number(params.id)
+    const index = planeadorDb.findIndex((row) => row.id === id)
+    if (index === -1) {
+      return HttpResponse.json({ message: "Actividad no encontrada." }, { status: 404 })
+    }
+    const body = (await request.json()) as { FK_TMATRICULAS?: number[]; ASIGNAR_TODO_EL_GRUPO?: boolean }
+    const actual = planeadorDb[index]!
+    actual.asignarTodoElGrupo = Boolean(body.ASIGNAR_TODO_EL_GRUPO)
+    actual.matriculasIds = body.FK_TMATRICULAS ?? []
+    return HttpResponse.json({ status: "ok", total_asignados: actual.matriculasIds.length })
   }),
 
   // NOTA: `PUT/GET /actividades/:id/instrumento` NO se registra acá — ya

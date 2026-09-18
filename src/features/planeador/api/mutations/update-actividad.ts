@@ -31,8 +31,16 @@ interface UpdateActividadInput {
  * `PONDERACION` de esta actividad (el peso en la nota final, campo
  * distinto) contra la unidad recién vinculada, con 400 de por medio.
  *
+ * Tampoco toca "Estudiantes": `FK_TMATRICULAS`/`ASIGNAR_TODO_EL_GRUPO`
+ * tienen su propio endpoint suelto (`PUT .../estudiantes`, ver
+ * `set-estudiantes-actividad.ts`) documentado junto con evidencias/
+ * criterios/materiales/adaptaciones como "cambios puntuales" — antes se
+ * mandaba `FK_TMATRICULAS` acá mismo, pero por ese camino nunca se podía
+ * mandar `ASIGNAR_TODO_EL_GRUPO` (no había forma de volver una actividad a
+ * "todo el grupo" después de haberla puntualizado).
+ *
  * Mismo alcance acotado que `create-actividad.ts` fuera de esto: no toca
- * materiales, adaptaciones, recuperación, evidencias ni criterios.
+ * materiales, adaptaciones, evidencias ni criterios.
  */
 async function updateActividad({ actividadId, data }: UpdateActividadInput): Promise<unknown> {
   if (env.ENABLE_API_MOCKING) {
@@ -47,13 +55,6 @@ async function updateActividad({ actividadId, data }: UpdateActividadInput): Pro
   }
   if (data.grupoId != null) body.FK_TGRUPO = data.grupoId
   if (data.asignaturaId != null) body.FK_TASIGNATURA = data.asignaturaId
-  // Solo si el docente eligió alguien a mano en "Estudiantes" esta vez —
-  // `data.matriculasIds` siempre arranca en `[]` (el detalle real no trae
-  // de vuelta la selección previa, ver el comentario de `Actividad.
-  // matriculasIds`), así que nunca se manda `ASIGNAR_TODO_EL_GRUPO` acá:
-  // haría un PUT parcial que sin querer resetea a "todo el grupo" una
-  // actividad que ya tenía estudiantes puntuales asignados.
-  if (data.matriculasIds.length > 0) body.FK_TMATRICULAS = data.matriculasIds
   const tipoActividadId = await resolveTipoActividadId(data.tipo)
   if (tipoActividadId != null) body.FK_TLV_TIPO_ACTIVIDAD = tipoActividadId
   // Alternativos, no coexisten (ver el comentario de `Actividad.notaMaxima`
