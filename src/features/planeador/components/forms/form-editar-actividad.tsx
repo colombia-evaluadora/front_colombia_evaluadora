@@ -1516,6 +1516,7 @@ function RecursosSection({
                   aria-label={collapsed ? "Expandir sección de recursos" : "Colapsar sección de recursos"}
                   aria-expanded={!collapsed}
                   onClick={() => setCollapsed((v) => !v)}
+                  disabled={disabled}
                 />
               }
             >
