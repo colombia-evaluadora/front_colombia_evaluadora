@@ -22,6 +22,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useDataTable } from "@/hooks/use-data-table"
 import { paths } from "@/config/paths"
+import { cn } from "@/lib/utils"
 
 import { useUnidadDetalleQuery } from "@/features/planeador/api/query/use-unidades-query"
 import { useReferenteCurricularQuery } from "@/features/planeador/api/query/use-referente-curricular-query"
@@ -257,14 +258,33 @@ function InformacionGeneral({ unidad }: { unidad: UnidadTematica }) {
       </div>
 
       <div className="bg-muted/10 rounded-md border p-4">
-        <h4 className="text-sm font-semibold">
-          Forma en que se van a calcular las actividades dentro de la unidad
-        </h4>
-        <p className="text-muted-foreground text-sm">
-          Método Seleccionado:{" "}
-          <span className="text-primary font-semibold">{unidad.metodoCalculo}</span>
-        </p>
-        <div className="divide-border mt-4 grid gap-4 sm:grid-cols-2 md:grid-cols-4 md:gap-0 md:divide-x">
+        {/* Una unidad de enfoque Formativo no admite actividades sumativas
+            (mismo bloqueo que ya aplica `UnidadAsociadaSection` en el form de
+            Actividad, y el mismo `enfoqueDerivado !== "Formativo"` que ya
+            oculta este bloque en la edición, `UnidadInfoGeneralFields`) —
+            sin actividades sumativas no hay nada que "calcular" a partir de
+            ellas, así que el método de cálculo no aplica y no tiene sentido
+            mostrarlo acá tampoco. Antes el panel de VER lo mostraba siempre,
+            aunque `UnidadDraft.metodoCalculo` para una unidad Formativa
+            siga trayendo el default ("Ponderado") sin que el docente lo haya
+            elegido. */}
+        {unidad.enfoquePedagogico !== "Formativo" && (
+          <>
+            <h4 className="text-sm font-semibold">
+              Forma en que se van a calcular las actividades dentro de la unidad
+            </h4>
+            <p className="text-muted-foreground text-sm">
+              Método Seleccionado:{" "}
+              <span className="text-primary font-semibold">{unidad.metodoCalculo}</span>
+            </p>
+          </>
+        )}
+        <div
+          className={cn(
+            "divide-border grid gap-4 sm:grid-cols-2 md:grid-cols-4 md:gap-0 md:divide-x",
+            unidad.enfoquePedagogico !== "Formativo" && "mt-4",
+          )}
+        >
           <ResumenItem Icon={GraduationCapIcon} label="Grado:" value={unidad.grado} />
           <ResumenItem Icon={BookIcon} label="Asignatura:" value={unidad.asignatura} />
           <ResumenItem

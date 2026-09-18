@@ -3,6 +3,7 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { inputTriggerVariants, inputVariants, useInputVariant } from "@/components/ui/input"
@@ -79,6 +80,23 @@ export function EstudiantesMultiSelect({
         {estudiantes.length === 0 ? (
           <div className="text-muted-foreground px-3 py-2 text-sm">Sin estudiantes en este grupo.</div>
         ) : (
+          <>
+            {/* Todos tildados = "Deseleccionar todos"; cualquier otro estado
+                (ninguno o algunos) = "Seleccionar todos" — mismo criterio
+                que un checkbox "maestro" de tabla: clickearlo siempre lleva
+                a un extremo (todos o ninguno), nunca a un estado intermedio. */}
+            <DropdownMenuCheckboxItem
+              checked={value.length === estudiantes.length}
+              onCheckedChange={() =>
+                onChange(value.length === estudiantes.length ? [] : estudiantes.map((e) => e.id))
+              }
+            >
+              {value.length === estudiantes.length ? "Deseleccionar todos" : "Seleccionar todos"}
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuSeparator />
+          </>
+        )}
+        {estudiantes.length > 0 &&
           estudiantes.map((estudiante) => (
             <DropdownMenuCheckboxItem
               key={estudiante.id}
@@ -87,8 +105,7 @@ export function EstudiantesMultiSelect({
             >
               {estudiante.nombre}
             </DropdownMenuCheckboxItem>
-          ))
-        )}
+          ))}
       </DropdownMenuContent>
     </DropdownMenu>
   )
