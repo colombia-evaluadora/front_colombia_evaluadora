@@ -1091,9 +1091,10 @@ export const planeadorHandlers = [
   // elegida pero SIN actividad todavía (colección Postman
   // `planeador-flujo-unidad-actividad`, paso 6) — mismo `campos_disponibles`
   // que ya trae el detalle real de actividad, para que `EvaluacionSection`
-  // use la misma fuente de verdad al crear que al editar. `ES_EVALUATIVA`
-  // es lo único que no sale de la unidad: lo que el usuario acaba de marcar
-  // en el `<Select>` de "¿Es evaluación sumativa?".
+  // use la misma fuente de verdad al crear que al editar. `ES_SUMATIVA`
+  // (no `ES_EVALUATIVA` — ver el comentario de `use-configuracion-
+  // actividad-query.ts`) es lo único que no sale de la unidad: lo que el
+  // usuario acaba de marcar en el `<Select>` de "¿Es evaluación sumativa?".
   http.get(UNIDAD_CONFIGURACION_ACTIVIDAD_URL, async ({ params, request }) => {
     await delay(150)
     const id = Number(params.id)
@@ -1101,7 +1102,7 @@ export const planeadorHandlers = [
     if (!unidad) {
       return HttpResponse.json({ message: "Unidad temática no encontrada." }, { status: 404 })
     }
-    const esEvaluativa = new URL(request.url).searchParams.get("ES_EVALUATIVA") === "S"
+    const esEvaluativa = new URL(request.url).searchParams.get("ES_SUMATIVA") === "S"
     const esFormativa = unidad.enfoquePedagogico === "Formativo"
     const evaluacionVisible = esEvaluativa && !esFormativa
     const ponderacionVisible = evaluacionVisible && unidad.metodoCalculo !== "Promedio simple"
