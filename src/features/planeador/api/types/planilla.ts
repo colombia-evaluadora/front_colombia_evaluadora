@@ -47,6 +47,20 @@ export interface PlanillaCelda {
   nota: number | null
   calificable: "S" | "N" | null
   observacion: string | null
+  /** `esFormativa`/`es_formativa` — si la unidad de esta actividad es
+   *  formativa: decide si la celda abre calificación o solo observación.
+   *  No confundir con `PlanillaColumna.esEvaluativa`, que es un flag manual
+   *  de `TACTIVIDAD` con default `'S'`, no del referente de la unidad. */
+  esFormativa: boolean
+  /** `yyyy-MM-dd` — la fecha DENTRO de la ventana de la actividad en la que
+   *  ESTE estudiante tiene asistencia válida (sin ella el gate de calificar
+   *  responde 400, casi siempre, porque el endpoint cae a `CURRENT_DATE`
+   *  si no se manda nada). Es la que hay que mandar como `BODY.FECHA` al
+   *  calificar — nunca `PlanillaColumna.fechaInicio` ni "hoy". */
+  fechaAsistencia: string | null
+  /** `false` → la celda se pinta gris: no se puede calificar hasta que se
+   *  registre asistencia. Es una foto del momento de la lectura. */
+  tieneAsistencia: boolean
 }
 
 export interface PlanillaFila {

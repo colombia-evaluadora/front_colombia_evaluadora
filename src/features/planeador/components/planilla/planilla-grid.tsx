@@ -189,6 +189,24 @@ export function PlanillaGrid({ columnas, verPor, filas, onAbrirBulk, gradoId }: 
                   }
 
                   const nota = celda ? formatNota(celda.calificacion) : null
+                  // Sin asistencia no se puede calificar (el gate del
+                  // backend responde 400) — foto del momento de la lectura,
+                  // se pinta gris igual que "No calificable" en vez de
+                  // ofrecer un lápiz que va a fallar al guardar.
+                  const sinAsistencia = celda != null && !celda.tieneAsistencia
+                  if (sinAsistencia) {
+                    return (
+                      <td key={columna.pkTactividad} className="bg-muted/40 px-4 py-3 align-middle">
+                        <span
+                          className="text-muted-foreground inline-flex items-center"
+                          aria-label="Sin asistencia registrada"
+                          title="No se puede calificar: falta registrar la asistencia de este estudiante."
+                        >
+                          <ProhibitIcon className="size-4" />
+                        </span>
+                      </td>
+                    )
+                  }
                   return (
                     <td key={columna.pkTactividad} className="px-4 py-3 align-middle">
                       <div className="flex items-center gap-1.5">
@@ -208,7 +226,12 @@ export function PlanillaGrid({ columnas, verPor, filas, onAbrirBulk, gradoId }: 
                           <CeldaNotaPopover
                             actividadId={columna.pkTactividad}
                             pkTactividadEstudiante={celda.pkTactividadEstudiante}
-                            fecha={columna.fechaInicio}
+                            // La fecha DENTRO de la ventana en la que ESTE
+                            // estudiante tiene asistencia válida -- nunca la
+                            // fecha de inicio de la actividad, que casi
+                            // siempre no coincide con un día que el
+                            // estudiante haya asistido.
+                            fecha={celda.fechaAsistencia ?? columna.fechaInicio}
                             estudianteNombre={fila.nombreEstudiante}
                           />
                         )}

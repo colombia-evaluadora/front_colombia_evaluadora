@@ -49,6 +49,9 @@ interface ActividadMiaRow {
   instrumento_evaluacion: string | null
   ponderacion: number | null
   es_evaluativa: "S" | "N"
+  /** Nuevo en el listado (antes había que abrir el detalle para saberlo) —
+   *  opcional para tolerar una respuesta vieja sin la columna. */
+  es_recuperacion?: "S" | "N"
   estudiantes_asignados: number
   estudiantes_evaluados: number
   total_count: number
@@ -71,7 +74,16 @@ function toActividadResumen(row: ActividadMiaRow & { pk_tactividad: number }): A
     // el union `ActividadTipo` del front (pensado para el form de alta) —
     // no importa acá: la card del rail no lo muestra.
     tipo: "Otro",
-    esRecuperacion: false,
+    esRecuperacion: row.es_recuperacion === "S",
+    // El resumen de "Mis actividades" no trae la config de recuperación
+    // (destino/tipoAplicacion/tipoCalculo/%) — la card del rail solo lee
+    // `esRecuperacion` para el badge, así que estos quedan vacíos; abrir el
+    // detalle real (`useActividadDetalleQuery`) sí los trae.
+    recuperacionDestino: "",
+    recuperacionActividadId: undefined,
+    recuperacionTipoAplicacion: "",
+    recuperacionTipoCalculo: "",
+    recuperacionValorPonderacion: undefined,
     unidad: { id: 0, nombre: row.unidad ?? "" },
     evidenciasIds: [],
     criteriosUnidadIds: [],
