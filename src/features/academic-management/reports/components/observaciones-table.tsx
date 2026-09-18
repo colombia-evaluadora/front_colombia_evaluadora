@@ -3,10 +3,15 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { EyeIcon, PlusIcon } from "@/components/ui/icons"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { cn } from "@/lib/utils"
 
 import type { FilaInforme } from "@/features/academic-management/reports/api/types"
 import { etiquetaPeriodo } from "@/features/academic-management/reports/lib/agrupar-filas"
 import type { EstudianteFilas } from "@/features/academic-management/reports/lib/agrupar-filas"
+
+/** Alto de cada sub-fila (una por período). Lo comparten la columna "Pe" y la
+ *  de observación para que queden alineadas. */
+const SUBFILA_CLASS = "flex h-12 items-center"
 
 interface ObservacionesTableProps {
   estudiantes: EstudianteFilas[]
@@ -73,7 +78,15 @@ export function ObservacionesTable({
               <td className="border-l border-border p-0 text-center align-top text-muted-foreground">
                 <div className="flex flex-col divide-y divide-border">
                   {estudiante.filas.map((fila) => (
-                    <span key={fila.periodoId} className="px-2 py-3 leading-6" title={fila.periodoNombre}>
+                    <span
+                      key={fila.periodoId}
+                      // Alto fijo, igual al de la celda de observación: las dos
+                      // columnas apilan sus sub-filas por separado, así que si
+                      // una mide distinto la diferencia se acumula y la última
+                      // fila queda desalineada.
+                      className={cn(SUBFILA_CLASS, "justify-center px-2")}
+                      title={fila.periodoNombre}
+                    >
                       {etiquetaPeriodo(fila)}
                     </span>
                   ))}
@@ -82,7 +95,7 @@ export function ObservacionesTable({
               <td className="border-l border-border p-0 align-top">
                 <div className="flex flex-col divide-y divide-border">
                   {estudiante.filas.map((fila) => (
-                    <div key={fila.periodoId} className="flex max-w-md items-center gap-1.5 px-3 py-3">
+                    <div key={fila.periodoId} className={cn(SUBFILA_CLASS, "max-w-md gap-1.5 px-3")}>
                       <Tooltip>
                         <TooltipTrigger
                           render={

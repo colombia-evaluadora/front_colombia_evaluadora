@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { DatePicker } from "@/components/date-picker"
-import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
+import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
 import { cn } from "@/lib/utils"
 import { parseDateValue, formatDateValue } from "@/lib/date-value"
 import { toDigitsOrRangeInput, toPositiveDigitsInput } from "@/lib/text-input"
@@ -462,6 +462,17 @@ function RecuperacionSection({
   actividadId: number
 }) {
   const recuperacion = camposEfectivos?.recuperacion
+  // Mientras el backend no mande `campos_disponibles.recuperacion` (todavía
+  // no desplegado en producción a la fecha de este comentario — confirmado
+  // contra una respuesta real de `GET .../configuracion-actividad`, que
+  // solo trae `criterio`/`evaluacion`/`ponderacion`), `recuperacion` cae al
+  // placeholder oculto (`defaultRecuperacionCampoDisponible`) y sus
+  // catálogos quedan vacíos. Sin este chequeo, prender el toggle abría los
+  // `<Select>` de destino/tipo de aplicación/tipo de cálculo sin ninguna
+  // opción para elegir — parecía roto en vez de simplemente no disponible
+  // todavía. Con los catálogos vacíos, la config extra no se ofrece: el
+  // toggle queda solo, igual que antes de que este bloque existiera.
+  const catalogosDisponibles = (recuperacion?.catalogos.destino.length ?? 0) > 0
 
   return (
     <form.Subscribe selector={(state) => state.values.esEvaluativa}>
@@ -488,7 +499,7 @@ function RecuperacionSection({
 
             <form.Subscribe selector={(state) => state.values.esRecuperacion}>
               {(esRecuperacionValue) =>
-                !esRecuperacionValue ? null : (
+                !esRecuperacionValue || !catalogosDisponibles ? null : (
                   <div className="grid gap-x-4 gap-y-5 rounded-md border border-input p-3 sm:grid-cols-2">
                     <form.Field name="recuperacionDestino">
                       {(field) => (
@@ -548,26 +559,38 @@ function RecuperacionSection({
                       }
                     </form.Subscribe>
 
-                    <form.Field name="recuperacionTipoAplicacion">
-                      {(field) => (
-                        <Field variant="outlined">
-                          <FieldLabel>¿Cómo se aplicará la nota de recuperación?</FieldLabel>
-                          <RadioGroup
-                            className="flex min-h-11 flex-wrap items-center gap-x-6 gap-y-2 rounded-md border border-input px-3 py-2"
-                            value={field.state.value}
-                            disabled={disabled}
-                            onValueChange={field.handleChange}
-                          >
-                            {(recuperacion?.catalogos.tipoAplicacion ?? []).map((opcion) => (
-                              <label key={opcion.valor} className="flex items-center gap-2 text-sm">
-                                <RadioGroupItem value={opcion.valor} className="data-checked:bg-primary" />
-                                {opcion.nombre}
-                              </label>
-                            ))}
-                          </RadioGroup>
-                        </Field>
-                      )}
-                    </form.Field>
+                    {/* Igual que "Actividad a recuperar" (gateada por
+                        `destino`) o "Valor de ponderación" (gateada por
+                        `tipoCalculo`): sin elegir "¿Esta recuperación aplica
+                        para?" todavía no hay nada que aplicar/calcular, así
+                        que el resto de la cascada se oculta en vez de
+                        mostrarse vacío. */}
+                    <form.Subscribe selector={(state) => state.values.recuperacionDestino}>
+                      {(destino) =>
+                        !destino ? null : (
+                          <form.Field name="recuperacionTipoAplicacion">
+                            {(field) => (
+                              <Field variant="outlined">
+                                <FieldLabel>¿Cómo se aplicará la nota de recuperación?</FieldLabel>
+                                <RadioGroup
+                                  className="flex min-h-11 flex-wrap items-center gap-x-6 gap-y-2 rounded-md border border-input px-3 py-2"
+                                  value={field.state.value}
+                                  disabled={disabled}
+                                  onValueChange={field.handleChange}
+                                >
+                                  {(recuperacion?.catalogos.tipoAplicacion ?? []).map((opcion) => (
+                                    <label key={opcion.valor} className="flex items-center gap-2 text-sm">
+                                      <RadioGroupItem value={opcion.valor} className="data-checked:bg-primary" />
+                                      {opcion.nombre}
+                                    </label>
+                                  ))}
+                                </RadioGroup>
+                              </Field>
+                            )}
+                          </form.Field>
+                        )
+                      }
+                    </form.Subscribe>
 
                     {/* "Reemplazar" es lo único que necesita aclaración: la
                         nota anterior se pierde por completo. "Computar con
@@ -585,31 +608,33 @@ function RecuperacionSection({
                     </form.Subscribe>
 
                     <form.Subscribe selector={(state) => state.values.recuperacionDestino}>
-                      {(destino) => (
-                        <form.Field name="recuperacionTipoCalculo">
-                          {(field) => (
-                            <Field variant="outlined">
-                              <FieldLabel>
-                                ¿Cómo deseas calcular la nota{" "}
-                                {destino === "NOTA_FINAL" ? "final" : "de la actividad"}?
-                              </FieldLabel>
-                              <RadioGroup
-                                className="flex min-h-11 flex-wrap items-center gap-x-6 gap-y-2 rounded-md border border-input px-3 py-2"
-                                value={field.state.value}
-                                disabled={disabled}
-                                onValueChange={field.handleChange}
-                              >
-                                {(recuperacion?.catalogos.tipoCalculo ?? []).map((opcion) => (
-                                  <label key={opcion.valor} className="flex items-center gap-2 text-sm">
-                                    <RadioGroupItem value={opcion.valor} className="data-checked:bg-primary" />
-                                    {opcion.nombre}
-                                  </label>
-                                ))}
-                              </RadioGroup>
-                            </Field>
-                          )}
-                        </form.Field>
-                      )}
+                      {(destino) =>
+                        !destino ? null : (
+                          <form.Field name="recuperacionTipoCalculo">
+                            {(field) => (
+                              <Field variant="outlined">
+                                <FieldLabel>
+                                  ¿Cómo deseas calcular la nota{" "}
+                                  {destino === "NOTA_FINAL" ? "final" : "de la actividad"}?
+                                </FieldLabel>
+                                <RadioGroup
+                                  className="flex min-h-11 flex-wrap items-center gap-x-6 gap-y-2 rounded-md border border-input px-3 py-2"
+                                  value={field.state.value}
+                                  disabled={disabled}
+                                  onValueChange={field.handleChange}
+                                >
+                                  {(recuperacion?.catalogos.tipoCalculo ?? []).map((opcion) => (
+                                    <label key={opcion.valor} className="flex items-center gap-2 text-sm">
+                                      <RadioGroupItem value={opcion.valor} className="data-checked:bg-primary" />
+                                      {opcion.nombre}
+                                    </label>
+                                  ))}
+                                </RadioGroup>
+                              </Field>
+                            )}
+                          </form.Field>
+                        )
+                      }
                     </form.Subscribe>
 
                     {/* % de ponderación: solo con `tipoCalculo = PONDERADO`
@@ -626,6 +651,7 @@ function RecuperacionSection({
                                   id={field.name}
                                   inputMode="numeric"
                                   placeholder="Ej: 100"
+                                  maxLength={3}
                                   value={field.state.value?.toString() ?? ""}
                                   onChange={(e) => {
                                     const digits = toPositiveDigitsInput(e.target.value, 3)
@@ -709,6 +735,7 @@ function IdentificacionSection({ form, disabled }: { form: FormActividad; disabl
                 id={field.name}
                 name={field.name}
                 placeholder="Agregar"
+                maxLength={50}
                 value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
                 onBlur={field.handleBlur}
@@ -1074,6 +1101,7 @@ function UnidadFichaYEvidencias({
   return (
     <div className="flex flex-col gap-4">
       <UnidadFicha
+        instrumentoLabel={instrumentoLabel}
         nombre={unidad?.nombre ?? nombreFallback}
         descripcion={unidad?.descripcion ?? ""}
         objetivos={unidad?.objetivos ?? []}
@@ -1241,6 +1269,12 @@ function AsignaturaGradoSection({ form }: { form: FormActividad }) {
                 form.setFieldValue("asignaturaId", undefined)
                 form.setFieldValue("asignatura", "")
                 form.setFieldValue("unidad", { id: 0, nombre: "" })
+                // "Estudiantes" depende del padrón de ESTE grupo+asignatura
+                // (`useActividadMatriculasGrupoQuery`) — sin grupo no hay
+                // padrón contra el cual siquiera validar los ids ya
+                // elegidos, así que se limpian junto con el resto.
+                form.setFieldValue("matriculasIds", [])
+                form.setFieldValue("asignarTodoElGrupo", true)
                 return
               }
               const combo = docenteGrupos.find((g) => String(g.grupoId) === v)
@@ -1249,11 +1283,16 @@ function AsignaturaGradoSection({ form }: { form: FormActividad }) {
               form.setFieldValue("grado", combo.gradoNombre)
               form.setFieldValue("grupoId", combo.grupoId)
               form.setFieldValue("grupo", grupoLabel(combo))
-              // Asignatura y unidad dependen de "Grado / Grupo": cambiarlo
-              // invalida lo que había elegido en las dos.
+              // Asignatura, unidad y "Estudiantes" dependen de "Grado /
+              // Grupo": cambiarlo invalida lo que había elegido en las tres
+              // (los `matriculaIds` seleccionados son PKs del padrón del
+              // grupo ANTERIOR — dejarlos pegados los manda al nuevo grupo
+              // sin que el docente haya elegido a esos estudiantes ahí).
               form.setFieldValue("asignaturaId", undefined)
               form.setFieldValue("asignatura", "")
               form.setFieldValue("unidad", { id: 0, nombre: "" })
+              form.setFieldValue("matriculasIds", [])
+              form.setFieldValue("asignarTodoElGrupo", true)
             }}
           >
             <SelectTrigger id="grado-grupo">
@@ -1296,12 +1335,25 @@ function AsignaturaGradoSection({ form }: { form: FormActividad }) {
                   if (v === "__none__") {
                     field.handleChange(undefined)
                     form.setFieldValue("asignatura", "")
+                    // "Estudiantes" depende de Grado/Grupo Y Asignatura —
+                    // sin asignatura no hay padrón contra el que validar los
+                    // `matriculaIds` ya elegidos (mismo criterio que al
+                    // limpiar "Grado / Grupo").
+                    form.setFieldValue("matriculasIds", [])
+                    form.setFieldValue("asignarTodoElGrupo", true)
                     return
                   }
                   const par = asignaturas.find((a) => String(a.asignaturaId) === v)
                   if (!par) return
                   field.handleChange(par.asignaturaId)
                   form.setFieldValue("asignatura", par.asignaturaNombre)
+                  // Cambiar de Asignatura cambia el padrón que ofrece
+                  // "Estudiantes" (`useActividadMatriculasGrupoQuery` depende
+                  // de grupo+asignatura) — los `matriculaIds` ya elegidos
+                  // eran de la asignatura ANTERIOR, así que quedan sin
+                  // sentido acá y se limpian junto con el resto.
+                  form.setFieldValue("matriculasIds", [])
+                  form.setFieldValue("asignarTodoElGrupo", true)
                 }}
                 disabled={!hasGradoGrupo}
               >
@@ -1382,6 +1434,7 @@ function MaterialesSection({ form, disabled }: { form: FormActividad; disabled: 
               id={field.name}
               name={field.name}
               placeholder="Ej: Cuaderno, colores, computador portátil…"
+              maxLength={500}
               value={field.state.value}
               onChange={(e) => field.handleChange(e.target.value)}
               onBlur={field.handleBlur}
@@ -1722,6 +1775,7 @@ function RecursoForm({
               // de verdad es `file-service`.
               {...(draft.tipo === "Archivo" ? { accept: RECURSO_ARCHIVO_ACCEPT } : {})}
               placeholder={fuentePlaceholder}
+              maxLength={500}
               // `<input type="file">` no acepta `value` programático (el
               // browser solo permite setearlo a `""` por seguridad —
               // cualquier otro valor tira `InvalidStateError` y revienta
@@ -1749,11 +1803,11 @@ function RecursoForm({
                     return
                   }
                   const blobUrl = URL.createObjectURL(file)
-                  // El form guarda el nombre del archivo en `fuente` y se
-                  // lo pasa al resolver, que lo usa como fallback para
-                  // detectar la extensión — los blob URLs no tienen
-                  // extensión en el path y no queríamos meterla en el
-                  // hash (algunos parsers se confunden con el `#`).
+                  // El form guarda el nombre del archivo en `fuente` y se 
+                  // lo pasa al resolver, que lo usa como fallback para 
+                  // detectar la extensión — los blob URLs no tienen 
+                  // extensión en el path y no queríamos meterla en el 
+                  // hash (algunos parsers se confunden con el `#`). 
                   onChange({
                     url: blobUrl,
                     fuente: file.name,
@@ -1775,6 +1829,7 @@ function RecursoForm({
           className={TEXTAREA_OUTLINED}
           rows={2}
           placeholder="Ej: Video introductorio (7 min)"
+          maxLength={500}
           value={draft.descripcion}
           onChange={(e) => onChange({ descripcion: e.target.value })}
           disabled={disabled}
@@ -1958,6 +2013,39 @@ function RecursoItem({
   )
 }
 
+/** "Entre 1 y 76", "Al menos 1" o "Hasta 76" según qué extremos trajo el
+ *  backend (`ProgramacionActividad.duracionEstimada`/`.semanaCronograma`
+ *  pueden traer un solo lado, ver `use-programacion-actividad-query.ts`) —
+ *  evita que la descripción del campo asuma que siempre llegan los dos. */
+function rangoLabel(min: number | null, max: number | null): string {
+  if (min != null && max != null) return `Entre ${min} y ${max}`
+  if (min != null) return `Al menos ${min}`
+  if (max != null) return `Hasta ${max}`
+  return ""
+}
+
+/** Ajusta `value` (ya sanitizado a dígitos por `toPositiveDigitsInput`) al
+ *  rango `[min, max]` del backend — se llama en `onBlur`, no en cada tecla,
+ *  para no trabar al usuario a mitad de tipeo (ver el comentario en el
+ *  campo "Duración estimada"). Cadena vacía o límites ausentes: no hay nada
+ *  que ajustar. */
+function clampDigits(value: string, min: number | undefined | null, max: number | undefined | null): string {
+  if (!value) return value
+  const n = Number(value)
+  if (min != null && n < min) return String(min)
+  if (max != null && n > max) return String(max)
+  return value
+}
+
+/** Mismo criterio que `clampDigits`, pero para el campo "Semana del
+ *  cronograma", que además del número simple admite un rango ("10-12") —
+ *  cada extremo del rango se ajusta por separado. */
+function clampDigitsOrRange(value: string, min: number | undefined | null, max: number | undefined | null): string {
+  if (!value) return value
+  const partes = value.split("-").map((parte) => clampDigits(parte, min, max))
+  return partes.join("-")
+}
+
 function ProgramacionSection({ form, disabled }: { form: FormActividad; disabled: boolean }) {
   // Topes reales de esta sección (ventana del periodo académico, días
   // hábiles del horario, duración y semana admitidas) — sin esto, el único
@@ -1967,59 +2055,85 @@ function ProgramacionSection({ form, disabled }: { form: FormActividad; disabled
   // form (ver `AsignaturaGradoSection`), de ahí sale la ventana.
   const grupoId = useSelector(form.store, (state) => state.values.grupoId)
   const asignaturaId = useSelector(form.store, (state) => state.values.asignaturaId)
-  const { data: programacion } = useProgramacionActividadQuery(grupoId, asignaturaId)
+  const unidadId = useSelector(form.store, (state) => state.values.unidad.id)
+  const { data: programacion } = useProgramacionActividadQuery(grupoId, asignaturaId, unidadId)
+  // Mismo criterio que "Inicio/Fin del período académico" en
+  // `form-academic-period.tsx` (Establecimiento): el error solo se muestra
+  // tras tocar el campo O tras un intento de guardar (`submissionAttempts`,
+  // estado nativo de TanStack Form) — no apenas se monta el form, que sería
+  // mostrar "obligatorio" en un campo que el docente ni llegó a mirar
+  // todavía.
+  const submissionAttempts = useSelector(form.store, (state) => state.submissionAttempts)
+  const requerido = (value: string) => (value ? undefined : "Este campo es obligatorio.")
 
   return (
     <Card className="gap-4 p-4">
       <h3 className="text-base font-semibold">Programación</h3>
       <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
-        <form.Field name="fechaInicio">
-          {(field) => (
-            <Field variant="outlined">
-              <FieldLabel htmlFor={field.name}>Fecha inicio</FieldLabel>
-              <DatePicker
-                mode="date"
-                id={field.name}
-                value={parseDateValue(field.state.value)}
-                onChange={(date) => field.handleChange(formatDateValue(date))}
-                minDate={programacion?.fechaInicio.min ?? undefined}
-                maxDate={programacion?.fechaInicio.max ?? undefined}
-                enabledDaysOfWeek={programacion?.fechaInicio.diasHabiles ?? undefined}
-                disabled={disabled}
-              />
-              {programacion?.fechaInicio.motivo && (
-                <FieldDescription>{programacion.fechaInicio.motivo}</FieldDescription>
-              )}
-            </Field>
-          )}
+        <form.Field name="fechaInicio" validators={{ onChange: ({ value }) => requerido(value) }}>
+          {(field) => {
+            const isInvalid = (field.state.meta.isTouched || submissionAttempts > 0) && !field.state.meta.isValid
+            return (
+              <Field variant="outlined" data-invalid={isInvalid}>
+                <FieldLabel htmlFor={field.name}>Fecha inicio*</FieldLabel>
+                <DatePicker
+                  mode="date"
+                  id={field.name}
+                  value={parseDateValue(field.state.value)}
+                  onChange={(date) => {
+                    field.handleChange(formatDateValue(date))
+                    field.handleBlur()
+                  }}
+                  minDate={programacion?.fechaInicio.min ?? undefined}
+                  maxDate={programacion?.fechaInicio.max ?? undefined}
+                  enabledDaysOfWeek={programacion?.fechaInicio.diasHabiles ?? undefined}
+                  disabled={disabled}
+                  aria-invalid={isInvalid}
+                />
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                {programacion?.fechaInicio.motivo && (
+                  <FieldDescription>{programacion.fechaInicio.motivo}</FieldDescription>
+                )}
+              </Field>
+            )
+          }}
         </form.Field>
 
         <form.Subscribe selector={(state) => state.values.fechaInicio}>
           {(fechaInicio) => (
-            <form.Field name="fechaCierre">
-              {(field) => (
-                <Field variant="outlined">
-                  <FieldLabel htmlFor={field.name}>Fecha de entrega o cierre</FieldLabel>
-                  <DatePicker
-                    mode="date"
-                    id={field.name}
-                    value={parseDateValue(field.state.value)}
-                    onChange={(date) => field.handleChange(formatDateValue(date))}
-                    // La fecha ya elegida en "Fecha inicio" manda sobre el
-                    // mínimo del backend: no tiene sentido ofrecer un cierre
-                    // anterior a un inicio que el propio docente ya puso.
-                    minDate={
-                      parseDateValue(fechaInicio) ?? programacion?.fechaCierre.min ?? undefined
-                    }
-                    maxDate={programacion?.fechaCierre.max ?? undefined}
-                    enabledDaysOfWeek={programacion?.fechaCierre.diasHabiles ?? undefined}
-                    disabled={disabled}
-                  />
-                  {programacion?.fechaCierre.motivo && (
-                    <FieldDescription>{programacion.fechaCierre.motivo}</FieldDescription>
-                  )}
-                </Field>
-              )}
+            <form.Field name="fechaCierre" validators={{ onChange: ({ value }) => requerido(value) }}>
+              {(field) => {
+                const isInvalid =
+                  (field.state.meta.isTouched || submissionAttempts > 0) && !field.state.meta.isValid
+                return (
+                  <Field variant="outlined" data-invalid={isInvalid}>
+                    <FieldLabel htmlFor={field.name}>Fecha de entrega o cierre*</FieldLabel>
+                    <DatePicker
+                      mode="date"
+                      id={field.name}
+                      value={parseDateValue(field.state.value)}
+                      onChange={(date) => {
+                        field.handleChange(formatDateValue(date))
+                        field.handleBlur()
+                      }}
+                      // La fecha ya elegida en "Fecha inicio" manda sobre el
+                      // mínimo del backend: no tiene sentido ofrecer un cierre
+                      // anterior a un inicio que el propio docente ya puso.
+                      minDate={
+                        parseDateValue(fechaInicio) ?? programacion?.fechaCierre.min ?? undefined
+                      }
+                      maxDate={programacion?.fechaCierre.max ?? undefined}
+                      enabledDaysOfWeek={programacion?.fechaCierre.diasHabiles ?? undefined}
+                      disabled={disabled}
+                      aria-invalid={isInvalid}
+                    />
+                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                    {programacion?.fechaCierre.motivo && (
+                      <FieldDescription>{programacion.fechaCierre.motivo}</FieldDescription>
+                    )}
+                  </Field>
+                )
+              }}
             </form.Field>
           )}
         </form.Subscribe>
@@ -2039,16 +2153,35 @@ function ProgramacionSection({ form, disabled }: { form: FormActividad; disabled
                 id={field.name}
                 inputMode="numeric"
                 placeholder="Ej: 20"
+                maxLength={3}
                 value={field.state.value}
                 onChange={(e) => field.handleChange(toPositiveDigitsInput(e.target.value, 3))}
+                // A diferencia de Fecha inicio/cierre (bloqueadas en el propio
+                // picker), acá no hay forma de impedir tipear un número fuera
+                // de rango mientras se escribe sin trabar al usuario a mitad
+                // de tipeo (escribir "3" cuando el mínimo es "30" clampearía
+                // antes de poder completar "35"). Se ajusta recién al perder
+                // el foco, mismo criterio no intrusivo que el resto de la
+                // app usa para validar rangos numéricos libres.
+                onBlur={(e) => {
+                  field.handleBlur()
+                  field.handleChange(
+                    clampDigits(
+                      e.target.value,
+                      programacion?.duracionEstimada.min,
+                      programacion?.duracionEstimada.max,
+                    ),
+                  )
+                }}
                 disabled={disabled}
               />
-              {programacion?.duracionEstimada.min != null && programacion.duracionEstimada.max != null && (
-                <FieldDescription>
-                  Entre {programacion.duracionEstimada.min} y {programacion.duracionEstimada.max}{" "}
-                  {(programacion.duracionEstimada.unidad ?? "bloques").toLowerCase()}.
-                </FieldDescription>
-              )}
+              {programacion?.duracionEstimada &&
+                (programacion.duracionEstimada.min != null || programacion.duracionEstimada.max != null) && (
+                  <FieldDescription>
+                    {rangoLabel(programacion.duracionEstimada.min, programacion.duracionEstimada.max)}{" "}
+                    {(programacion.duracionEstimada.unidad ?? "bloques").toLowerCase()}.
+                  </FieldDescription>
+                )}
               {programacion?.duracionEstimada.motivo && (
                 <FieldDescription>{programacion.duracionEstimada.motivo}</FieldDescription>
               )}
@@ -2067,16 +2200,32 @@ function ProgramacionSection({ form, disabled }: { form: FormActividad; disabled
                 id={field.name}
                 inputMode="numeric"
                 placeholder="Ej: 10-12"
+                maxLength={5}
                 value={field.state.value}
                 onChange={(e) => field.handleChange(toDigitsOrRangeInput(e.target.value))}
+                // Mismo criterio que "Duración estimada": clampea cada
+                // extremo del rango recién al perder el foco, no en cada
+                // tecla.
+                onBlur={(e) => {
+                  field.handleBlur()
+                  field.handleChange(
+                    clampDigitsOrRange(
+                      e.target.value,
+                      programacion?.semanaCronograma.min,
+                      programacion?.semanaCronograma.max,
+                    ),
+                  )
+                }}
                 disabled={disabled}
               />
-              {programacion?.semanaCronograma.min != null && programacion.semanaCronograma.max != null && (
-                <FieldDescription>
-                  Entre la semana {programacion.semanaCronograma.min} y la {programacion.semanaCronograma.max} del
-                  periodo académico.
-                </FieldDescription>
-              )}
+              {programacion?.semanaCronograma &&
+                (programacion.semanaCronograma.min != null || programacion.semanaCronograma.max != null) && (
+                  <FieldDescription>
+                    Entre la semana{" "}
+                    {rangoLabel(programacion.semanaCronograma.min, programacion.semanaCronograma.max)} del periodo
+                    académico.
+                  </FieldDescription>
+                )}
               {programacion?.semanaCronograma.motivo && (
                 <FieldDescription>{programacion.semanaCronograma.motivo}</FieldDescription>
               )}
@@ -2633,6 +2782,7 @@ function ListaCotejoItemCard({
             id={`${item.id}-descripcion`}
             className={TEXTAREA_OUTLINED}
             rows={2}
+            maxLength={500}
             value={item.descripcion}
             onChange={(e) => onChange({ ...item, descripcion: e.target.value })}
             disabled={disabled}
@@ -2799,6 +2949,7 @@ function EscalaValoracionSection({
                         <Input
                           id={`${escala.id}-criterios-generales`}
                           placeholder="Criterio A, Criterio B"
+                          maxLength={50}
                           value={escala.criteriosGenerales}
                           onChange={(e) => updateEscala({ criteriosGenerales: e.target.value })}
                           disabled={disabled}
@@ -2904,6 +3055,7 @@ function EscalaValoracionSection({
                             className={TEXTAREA_OUTLINED}
                             rows={3}
                             placeholder="Agregar"
+                            maxLength={500}
                             value={escala.interpretacionRangos}
                             onChange={(e) =>
                               updateEscala({ interpretacionRangos: e.target.value })
@@ -2991,6 +3143,7 @@ function EscalaValoracionSection({
                                     su institución. */}
                                 <Input
                                   variant="outlined"
+                                  maxLength={50}
                                   value={nivel.nombre}
                                   onChange={(e) => updateNivel(nIndex, { nombre: e.target.value })}
                                   disabled={disabled}
@@ -2998,6 +3151,7 @@ function EscalaValoracionSection({
                                 <Input
                                   variant="outlined"
                                   placeholder="Interpretación / descriptor"
+                                  maxLength={50}
                                   value={nivel.descripcion}
                                   onChange={(e) =>
                                     updateNivel(nIndex, { descripcion: e.target.value })
@@ -3116,6 +3270,7 @@ function InstrumentoPersonalizadoSection({
                 <Input
                   id="instrumentoPersonalizado-descripcion"
                   placeholder="Agregar descripción breve"
+                  maxLength={50}
                   value={value.descripcion}
                   onChange={(e) => patch({ descripcion: e.target.value })}
                   disabled={disabled}
@@ -3357,6 +3512,7 @@ function CriterioItem({
         <FieldLabel>Nombre del criterio</FieldLabel>
         <Input
           placeholder="Ej: Expresión oral de ideas y experiencias"
+          maxLength={50}
           value={criterio.nombre}
           onChange={(e) => onChange({ ...criterio, nombre: e.target.value })}
           disabled={disabled}
@@ -3400,6 +3556,7 @@ function CriterioItem({
             className={TEXTAREA_OUTLINED}
             rows={2}
             placeholder="Describe el desempeño esperado en este nivel"
+            maxLength={500}
             value={criterio.excelente}
             onChange={(e) => onChange({ ...criterio, excelente: e.target.value })}
             disabled={disabled}
@@ -3483,6 +3640,7 @@ function CriterioItem({
               className={TEXTAREA_OUTLINED}
               rows={2}
               placeholder="Describe el desempeño esperado en este nivel"
+              maxLength={500}
               value={nivel.descripcion}
               onChange={(e) => {
                 const next = criterio.niveles.slice()
@@ -3571,6 +3729,7 @@ function CriterioItem({
         <div className="flex items-center gap-0">
           <Input
             placeholder="Agregar"
+            maxLength={50}
             value={nivelInput}
             onChange={(e) => setNivelInput(e.target.value)}
             disabled={disabled}
@@ -3886,6 +4045,7 @@ function AdaptacionItem({
           <Input
             type="url"
             placeholder="https://…"
+            maxLength={500}
             value={adaptacion.versionModificadaRef}
             onChange={(e) =>
               onChange({ ...adaptacion, versionModificadaRef: e.target.value })
@@ -4095,6 +4255,7 @@ function SeguimientoSection({ form, disabled }: { form: FormActividad; disabled:
               id={field.name}
               rows={4}
               placeholder="Ej: Reforzar con ejemplos del contexto local, revisar individualmente la participación de los estudiantes con bajo rendimiento…"
+              maxLength={500}
               value={field.state.value}
               onChange={(e) => field.handleChange(e.target.value)}
               disabled={disabled}
@@ -4291,6 +4452,7 @@ function CrearUnidadPopover({
             <FieldLabel>Nombre</FieldLabel>
             <Input
               placeholder="Agregar"
+              maxLength={50}
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
             />
@@ -4301,6 +4463,7 @@ function CrearUnidadPopover({
             <Textarea
               rows={3}
               placeholder="Propósito pedagógico y dinámica general"
+              maxLength={500}
               value={descripcion}
               onChange={(e) => setDescripcion(e.target.value)}
               className={TEXTAREA_OUTLINED}

@@ -566,7 +566,14 @@ export const planeadorHandlers = [
     const hoy = new Date()
     const min = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1)
     const max = new Date(hoy.getFullYear(), hoy.getMonth() + 4, 0)
-    const diasHabiles = [1, 2, 3, 4, 5]
+    // El backend real numera domingo = 1 (1-7), no domingo = 0 como
+    // `Date.getDay()` — confirmado por la propia respuesta real, que trae
+    // `intensidadHoraria.diasHabiles` con nombre: `valor: 2` viene
+    // etiquetado "Lunes". El mock tiene que reproducir esa misma numeración
+    // (no la de `Date.getDay()`) para ejercitar de verdad la conversión que
+    // hace `toDiaSemanaJs` en `use-programacion-actividad-query.ts` — lunes
+    // a viernes acá es `[2, 3, 4, 5, 6]`, no `[1, 2, 3, 4, 5]`.
+    const diasHabiles = [2, 3, 4, 5, 6]
     const rangoFecha = {
       min: min.toISOString().slice(0, 10),
       max: max.toISOString().slice(0, 10),
@@ -589,7 +596,7 @@ export const planeadorHandlers = [
                 bloquesPorSemana: 4,
                 diasHabiles: diasHabiles.map((valor) => ({
                   valor,
-                  nombre: ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"][valor],
+                  nombre: ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"][valor - 1],
                 })),
               },
               fechaInicio: rangoFecha,
