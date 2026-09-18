@@ -18,7 +18,6 @@ import {
   EMPTY_SEGUIMIENTO_FILTERS,
   gradosDeJornada,
   gruposDeGradoJornada,
-  type ActividadCatalogEntry,
   type AsignaturaCatalogEntry,
   type CodigoNombreOption,
   type GrupoCatalogEntry,
@@ -36,13 +35,8 @@ interface SearchSeguimientoProps {
   grupoCatalog: GrupoCatalogEntry[]
   asignaturaCatalog: AsignaturaCatalogEntry[]
   asignaturasPorGrupo: Map<number, AsignaturaCatalogEntry[]>
-  actividadCatalog: ActividadCatalogEntry[]
-  actividadesPorGrupo: Map<number, ActividadCatalogEntry[]>
   tipoAsistenciaOptions: TipoAsistenciaOption[]
 }
-
-const PREFIJO_ASIGNATURA = "asig:"
-const PREFIJO_ACTIVIDAD = "act:"
 
 const TODOS_ITEM = { value: "", label: "Todos" }
 
@@ -61,8 +55,6 @@ export function SearchSeguimiento({
   grupoCatalog,
   asignaturaCatalog,
   asignaturasPorGrupo,
-  actividadCatalog,
-  actividadesPorGrupo,
   tipoAsistenciaOptions,
 }: SearchSeguimientoProps) {
   const [open, setOpen] = useState(false)
@@ -77,6 +69,10 @@ export function SearchSeguimiento({
 
   const jornadaItems = useMemo(() => [TODOS_ITEM, ...jornadaOptions], [jornadaOptions])
 
+  // Ningún filtro es obligatorio, pero elegir uno acota las opciones del siguiente:
+  // jornada -> grado -> grupo -> asignatura. Vacío arriba = sin acotar abajo.
+  // gradosDeJornada deduplica por CODIGO, así que un grado presente en dos jornadas
+  // aparece una sola vez cuando no hay jornada elegida.
   const gradoItems = useMemo(
     () => [TODOS_ITEM, ...gradosDeJornada(grupoCatalog, draft.jornada)],
     [grupoCatalog, draft.jornada],
@@ -92,43 +88,17 @@ export function SearchSeguimiento({
     [grupoCatalog, draft.jornada, draft.grado],
   )
   const asignaturaItems = useMemo(() => {
-    if (!draft.grupo) return [TODOS_ITEM]
-    const grupoId = Number(draft.grupo)
-    const asignaturas = asignaturasPorGrupo.get(grupoId) ?? []
-    const actividades = actividadesPorGrupo.get(grupoId) ?? []
-    return [
-      TODOS_ITEM,
-      ...asignaturas.map((a) => ({ value: `${PREFIJO_ASIGNATURA}${a.value}`, label: a.label })),
-      ...actividades.map((a) => ({ value: `${PREFIJO_ACTIVIDAD}${a.value}`, label: a.label })),
-    ]
-  }, [asignaturasPorGrupo, actividadesPorGrupo, draft.grupo])
-
-  const draftAsignaturaValue = draft.actividad
-    ? `${PREFIJO_ACTIVIDAD}${draft.actividad}`
-    : draft.asignatura
-      ? `${PREFIJO_ASIGNATURA}${draft.asignatura}`
-      : ""
-
-  function handleAsignaturaChange(value: string | null) {
-    if (!value) {
-      setDraft((d) => ({ ...d, asignatura: "", actividad: "" }))
-    } else if (value.startsWith(PREFIJO_ACTIVIDAD)) {
-      setDraft((d) => ({ ...d, actividad: value.slice(PREFIJO_ACTIVIDAD.length), asignatura: "" }))
-    } else {
-      setDraft((d) => ({ ...d, asignatura: value.slice(PREFIJO_ASIGNATURA.length), actividad: "" }))
-    }
-  }
+    const asignaturas = draft.grupo
+      ? (asignaturasPorGrupo.get(Number(draft.grupo)) ?? [])
+      : asignaturaCatalog
+    return [TODOS_ITEM, ...asignaturas.map((a) => ({ value: String(a.value), label: a.label }))]
+  }, [asignaturaCatalog, asignaturasPorGrupo, draft.grupo])
   const tipoAsistenciaItems = useMemo(
     () => [TODOS_ITEM, ...tipoAsistenciaOptions.map((o) => ({ value: String(o.value), label: o.label }))],
     [tipoAsistenciaOptions],
   )
 
-  // Asignatura/Actividad dependen de Grupo (sus opciones salen de asignaturasPorGrupo/actividadesPorGrupo),
-  // así que solo esas dos exigen tener un Grupo elegido; Jornada/Grado/Grupo se pueden usar sueltos.
-  const canApply = !(draft.asignatura || draft.actividad) || Boolean(draft.grupo)
-
   function handleApply() {
-    if (!canApply) return
     applyFilters(draft)
     setOpen(false)
   }
@@ -159,18 +129,13 @@ export function SearchSeguimiento({
           asignaturaCatalog.map((a) => ({ value: String(a.value), label: a.label })),
         ),
         optionTerm(
-          "actividad",
-          "actividad",
-          actividadCatalog.map((a) => ({ value: String(a.value), label: a.label })),
-        ),
-        optionTerm(
           "tipo",
           "tipoAsistencia",
           tipoAsistenciaOptions.map((o) => ({ value: String(o.value), label: o.label })),
         ),
       ],
     }),
-    [jornadaOptions, grupoCatalog, asignaturaCatalog, actividadCatalog, tipoAsistenciaOptions],
+    [jornadaOptions, grupoCatalog, asignaturaCatalog, tipoAsistenciaOptions],
   )
 
   const combinedFilters = useMemo<QueryFilters>(() => ({ ...filters, search }), [filters, search])
@@ -198,16 +163,10 @@ export function SearchSeguimiento({
       open={open}
       onOpenChange={setOpen}
       onApply={handleApply}
-      applyDisabled={!canApply}
       size="lg"
       className="sm:w-full max-w-4xl"
     >
       <div className="flex flex-col gap-3 px-4">
-        {!canApply && (
-          <p className="text-xs text-yellow">
-            Asignatura y Actividad dependen del Grupo: elegí también un Grupo para poder aplicar el filtro.
-          </p>
-        )}
         <FieldSet>
           <FieldLegend variant="label">Rango de fecha</FieldLegend>
           <div className="grid grid-cols-2 gap-3">
@@ -240,9 +199,10 @@ export function SearchSeguimiento({
             <ComboboxField
               items={Object.fromEntries(jornadaItems.map((item) => [item.value, item.label]))}
               value={draft.jornada}
-              // Raíz de esta cadena: cambiarla borra Grado/Grupo/Asignatura.
+              // Cambiarla reencuadra Grado/Grupo/Asignatura: lo elegido abajo
+              // puede no existir en la jornada nueva, así que se limpia.
               onValueChange={(value) =>
-                setDraft((d) => ({ ...d, jornada: value ?? "", grado: "", grupo: "", asignatura: "", actividad: "" }))
+                setDraft((d) => ({ ...d, jornada: value ?? "", grado: "", grupo: "", asignatura: "" }))
               }
             >
               <ComboboxFieldTrigger id="seguimiento-jornada" size="sm" className="w-full">
@@ -261,15 +221,14 @@ export function SearchSeguimiento({
           <Field orientation="vertical" variant="outlined" className="gap-2">
             <FieldLabel htmlFor="seguimiento-grado">Grado</FieldLabel>
             <ComboboxField
-              disabled={!draft.jornada}
               items={Object.fromEntries(gradoItems.map((item) => [item.value, item.label]))}
               value={draft.grado}
               onValueChange={(value) =>
-                setDraft((d) => ({ ...d, grado: value ?? "", grupo: "", asignatura: "", actividad: "" }))
+                setDraft((d) => ({ ...d, grado: value ?? "", grupo: "", asignatura: "" }))
               }
             >
               <ComboboxFieldTrigger id="seguimiento-grado" size="sm" className="w-full">
-                <ComboboxFieldValue placeholder={draft.jornada ? "Todos" : "Elegí Jornada primero"} />
+                <ComboboxFieldValue placeholder="Todos" />
               </ComboboxFieldTrigger>
               <ComboboxFieldContent>
                 {gradoItems.map((item) => (
@@ -287,8 +246,7 @@ export function SearchSeguimiento({
               disabled={!draft.grado}
               items={Object.fromEntries(grupoItems.map((item) => [item.value, item.label]))}
               value={draft.grupo}
-              // Depende de Grado -- al cambiarlo, Asignatura/Actividad se borra.
-              onValueChange={(value) => setDraft((d) => ({ ...d, grupo: value ?? "", asignatura: "", actividad: "" }))}
+              onValueChange={(value) => setDraft((d) => ({ ...d, grupo: value ?? "", asignatura: "" }))}
             >
               <ComboboxFieldTrigger id="seguimiento-grupo" size="sm" className="w-full">
                 <ComboboxFieldValue placeholder={draft.grado ? "Todos" : "Elegí Grado primero"} />
@@ -306,13 +264,12 @@ export function SearchSeguimiento({
           <Field orientation="vertical" variant="outlined" className="gap-2">
             <FieldLabel htmlFor="seguimiento-asignatura">Asignatura</FieldLabel>
             <ComboboxField
-              disabled={!draft.grupo}
               items={Object.fromEntries(asignaturaItems.map((item) => [item.value, item.label]))}
-              value={draftAsignaturaValue}
-              onValueChange={handleAsignaturaChange}
+              value={draft.asignatura}
+              onValueChange={(value) => setDraft((d) => ({ ...d, asignatura: value ?? "" }))}
             >
               <ComboboxFieldTrigger id="seguimiento-asignatura" size="sm" className="w-full">
-                <ComboboxFieldValue placeholder={draft.grupo ? "Todos" : "Elegí Grupo primero"} />
+                <ComboboxFieldValue placeholder="Todos" />
               </ComboboxFieldTrigger>
               <ComboboxFieldContent>
                 {asignaturaItems.map((item) => (

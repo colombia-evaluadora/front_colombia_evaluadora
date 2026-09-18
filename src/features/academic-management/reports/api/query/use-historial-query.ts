@@ -2,59 +2,57 @@ import { useQuery } from "@tanstack/react-query"
 
 import { evalCol } from "@/lib/eval-col-client"
 
-import { texto } from "@/features/academic-management/reports/api/columnas"
-
 import type {
   HistorialCambio,
   HistorialDetalle,
 } from "@/features/academic-management/reports/api/types"
 
 interface HistorialDetalleRow {
-  matricula: number
+  fk_tmatricula: number
   estudiante: string
-  documento: string | null
-  promedio: number | null
-  asignaturas: number | null
+  guardadas: number | null
+  actualizadas: number | null
 }
 
 interface HistorialRow {
-  pk_thistorial: number
-  fk_tgrupo: number
-  grupo?: string
-  grupo_nombre?: string
-  fk_tasignatura: number | null
-  asignatura?: string | null
-  asignatura_nombre?: string | null
-  fk_tperiodo_evaluacion: number
-  periodo?: string
-  periodo_nombre?: string
-  usuario: string | null
+  pk_tinforme_guardado: number
   fecha: string
   momento: string
+  fk_tgrupo: number
+  grupo_nombre: string | null
+  fk_tasignatura: number | null
+  asignatura_nombre: string | null
+  origen: string | null
+  fk_tperiodo_evaluacion: number
+  periodo_nombre: string | null
+  periodo_abreviacion: string | null
+  fk_tusuario: number | null
+  guardado_por: string | null
   estudiantes: number | null
   detalle: HistorialDetalleRow[] | null
 }
 
 function toDetalle(row: HistorialDetalleRow): HistorialDetalle {
   return {
-    matriculaId: row.matricula,
+    matriculaId: row.fk_tmatricula,
     estudiante: row.estudiante,
-    documento: row.documento ?? "",
-    promedio: row.promedio,
-    asignaturas: row.asignaturas ?? 0,
+    guardadas: row.guardadas ?? 0,
+    actualizadas: row.actualizadas ?? 0,
   }
 }
 
 function toCambio(row: HistorialRow): HistorialCambio {
   return {
-    id: row.pk_thistorial,
+    id: row.pk_tinforme_guardado,
     grupoId: row.fk_tgrupo,
-    grupoNombre: texto(row.grupo, row.grupo_nombre),
+    grupoNombre: row.grupo_nombre ?? "",
     asignaturaId: row.fk_tasignatura,
-    asignaturaNombre: texto(row.asignatura, row.asignatura_nombre),
+    asignaturaNombre: row.asignatura_nombre,
+    origen: row.origen,
     periodoId: row.fk_tperiodo_evaluacion,
-    periodoNombre: texto(row.periodo, row.periodo_nombre),
-    usuario: row.usuario,
+    periodoNombre: row.periodo_nombre ?? "",
+    periodoAbreviacion: row.periodo_abreviacion,
+    usuario: row.guardado_por,
     fecha: row.fecha,
     momento: row.momento,
     estudiantes: row.estudiantes ?? (row.detalle?.length ?? 0),
