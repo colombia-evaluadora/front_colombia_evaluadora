@@ -53,6 +53,10 @@ async function updateActividad({ actividadId, data }: UpdateActividadInput): Pro
     FECHA_INICIO: data.fechaInicio,
     FECHA_CIERRE: data.fechaCierre,
     MATERIAL_REQUERIDO: data.materiales,
+    // Mismo arreglo que `create-actividad.ts`: "Seguimiento" se capturaba
+    // pero nunca viajaba en el PUT.
+    GENERA_EVIDENCIAS: data.generaEvidencias ? "S" : "N",
+    OBSERVACIONES_DOCENTE: data.observaciones,
   }
   // Mismo arreglo que `create-actividad.ts`: se capturaban en el form pero
   // nunca viajaban en el PUT.
