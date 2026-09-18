@@ -10,6 +10,7 @@ import {
   WarningCircleIcon,
 } from "@/components/ui/icons"
 
+import { useArchivoViewUrl } from "@/features/files/api/query/use-archivo-view-url"
 import type { Recurso } from "@/features/planeador/api/types/actividad"
 import {
   recursoHostLabel,
@@ -409,6 +410,71 @@ function WebPreview({ url }: { url: string }) {
   )
 }
 
+/**
+ * Un material de tipo "Archivo" YA GUARDADO, que se pide por su
+ * `PK_TARCHIVO`.
+ *
+ * No se puede apuntar un `<img>`/`<video>` directo al archivo: esas etiquetas
+ * no mandan el header `Authorization`, así que el backend tiene un paso
+ * previo — se acuña un token de un solo archivo y de vida corta, y la URL que
+ * vuelve ya lo lleva en el query-string. `useArchivoViewUrl` lo resuelve y lo
+ * renueva antes de que expire; es el mismo mecanismo que ya usan matrícula y
+ * asistencia para sus imágenes.
+ *
+ * El TIPO no sale de esa URL sino del nombre del archivo, que el detalle
+ * completa desde `GET .../materiales/archivos` (V427). Por eso el resolver
+ * recibe la URL ya firmada junto con el nombre: la URL no tiene extensión en
+ * el path, igual que un blob.
+ */
+function ArchivoGuardadoPreview({
+  archivoId,
+  nombre,
+}: {
+  archivoId: number
+  nombre?: string
+}) {
+  const { data: url, isPending, isError } = useArchivoViewUrl(archivoId)
+
+  if (isPending) return <RecursoPreviewCargando />
+
+  if (isError || !url) {
+    return (
+      <RecursoPreviewVacio
+        titulo={nombre || `Archivo ${archivoId}`}
+        mensaje="No se pudo obtener el permiso de lectura de este archivo. Puede que ya no exista o que tu sesión no alcance a verlo."
+      />
+    )
+  }
+
+  // Sin nombre no hay extensión y no hay forma de saber qué renderizar. Pasa
+  // con materiales guardados antes de que el detalle trajera los nombres.
+  const resuelto = resolveRecursoPreview(url, nombre)
+  if (!resuelto) {
+    return (
+      <RecursoPreviewVacio
+        titulo={nombre || `Archivo ${archivoId}`}
+        mensaje="No se reconoce el tipo de este archivo por su nombre. La vista previa admite imágenes, audio, video y PDF."
+      />
+    )
+  }
+
+  if (resuelto.kind === "video") return <VideoPreview url={resuelto.value} nombre={nombre} />
+  if (resuelto.kind === "audio") return <AudioPreview url={resuelto.value} nombre={nombre} />
+  if (resuelto.kind === "image") return <ImagePreview url={resuelto.value} nombre={nombre} />
+  if (resuelto.kind === "documento" && resuelto.fileType === ".pdf") {
+    return <PdfPreview url={resuelto.value} />
+  }
+  if (resuelto.kind === "documento" && (resuelto.fileType === ".docx" || resuelto.fileType === ".doc")) {
+    return <DocxPreview url={resuelto.value} />
+  }
+  return (
+    <RecursoPreviewVacio
+      titulo={nombre || `Archivo ${archivoId}`}
+      mensaje={`No hay vista previa para los archivos ${resuelto.fileType ?? "de este tipo"}. La vista previa admite imágenes, audio, video y PDF.`}
+    />
+  )
+}
+
 /* ───── componente principal ────────────────────────────────────────── */
 
 /**
@@ -441,6 +507,15 @@ export function RecursoPreview({ recurso }: { recurso: Recurso }) {
   // etiqueta que tipeó el usuario. En los dos casos es el mejor rótulo que
   // hay para el reproductor.
   const nombre = recurso.fuente?.trim() || undefined
+
+  // Un archivo ya guardado se resuelve por su id, no por la url: el detalle
+  // no devuelve ninguna (el binario vive detrás de un token de vista). Se
+  // comprueba ANTES que `url` porque un recurso recién reemplazado en el
+  // formulario puede tener las dos cosas, y ahí manda el blob: es lo que el
+  // usuario acaba de elegir.
+  if (recurso.archivoId !== undefined && !url.startsWith("blob:")) {
+    return <ArchivoGuardadoPreview archivoId={recurso.archivoId} nombre={nombre} />
+  }
 
   if (!url) {
     return (
