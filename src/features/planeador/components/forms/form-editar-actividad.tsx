@@ -2546,7 +2546,7 @@ function EvaluacionSection({
                       {(notaMaximaField) => (
                         <Field variant="outlined">
                           <FieldLabel htmlFor={notaMaximaField.name}>
-                            Puntaje máximo{ponderacionInfo.requerido ? " *" : ""}
+                            Puntaje{ponderacionInfo.requerido ? " *" : ""}
                           </FieldLabel>
                           <Input
                             id={notaMaximaField.name}
