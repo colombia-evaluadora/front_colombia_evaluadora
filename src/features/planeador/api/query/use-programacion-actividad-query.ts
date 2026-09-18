@@ -76,11 +76,24 @@ function toDate(value: string | null): Date | null {
   return Number.isNaN(date.getTime()) ? null : date
 }
 
+/**
+ * El backend numera los días 1-7 con DOMINGO = 1 (confirmado real: la
+ * respuesta trae `intensidadHoraria.diasHabiles` con nombre, y `valor: 2`
+ * viene etiquetado "Lunes", `valor: 4` "Miércoles" — 1 = domingo, no 0).
+ * `DatePicker.enabledDaysOfWeek`/`date-fns` usan la convención de
+ * `Date.getDay()` (0-6, DOMINGO = 0) — sin esta conversión, cada `valor`
+ * del backend calzaba con el día siguiente en el calendario (Lunes real
+ * bloqueado como si fuera Martes, etc.).
+ */
+function toDiaSemanaJs(valorBackend: number): number {
+  return valorBackend - 1
+}
+
 function toRangoFecha(raw: RangoFecha | undefined): ProgramacionActividad["fechaInicio"] {
   return {
     min: toDate(raw?.min ?? null),
     max: toDate(raw?.max ?? null),
-    diasHabiles: raw?.diasHabiles ?? null,
+    diasHabiles: raw?.diasHabiles?.map(toDiaSemanaJs) ?? null,
     motivo: raw?.motivo ?? null,
   }
 }
