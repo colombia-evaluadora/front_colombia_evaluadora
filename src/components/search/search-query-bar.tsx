@@ -36,6 +36,8 @@ interface SearchQueryBarProps {
   onValueChange: (value: string) => void
   /** Limpia texto y filtros de una vez. */
   onClearAll: () => void
+  /** Opcional: "Limpiar filtros" dentro del panel -- ver `AdvancedFiltersPopover`. */
+  onClearFilters?: () => void
   /** Filtros puestos en total: decide si el embudo se ve activo. */
   activeFilterCount: number
   /** Cuántos de esos son avanzados: es el número del badge. */
@@ -62,6 +64,7 @@ export function SearchQueryBar({
   value,
   onValueChange,
   onClearAll,
+  onClearFilters,
   activeFilterCount,
   badgeCount,
   open,
@@ -122,6 +125,7 @@ export function SearchQueryBar({
           badgeCount={badgeCount}
           formId={formId}
           onApply={onApply}
+          onClear={onClearFilters}
           applyDisabled={applyDisabled}
           size={size}
         >

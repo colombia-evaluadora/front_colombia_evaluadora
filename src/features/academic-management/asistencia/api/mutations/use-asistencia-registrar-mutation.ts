@@ -1,6 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { api } from "@/lib/api-client"
+
+import { invalidarPlaneadorPorAsistencia } from "@/features/planeador/api/query/invalidar-por-asistencia"
 import { postMultipart } from "@/lib/files"
 
 import type {
@@ -46,6 +48,7 @@ export function useAsistenciaRegistrarMutation() {
     mutationFn: registrarAsistencia,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["asistencia"] })
+      invalidarPlaneadorPorAsistencia(queryClient)
     },
   })
 }

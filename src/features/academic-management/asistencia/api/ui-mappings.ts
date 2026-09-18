@@ -203,6 +203,21 @@ export function formatHoraRango(horaInicio: string | null, horaFin: string | nul
   return `${formatHora(horaInicio)} - ${formatHora(horaFin)}`
 }
 
+/**
+ * "Bloque 1" / "Bloques 1-5" / "Bloques 2, 4" -- `null` si la sesión no tiene
+ * bloques (toma suelta o formativa). `TASISTENCIA.BLOQUE` arranca en 0, y un
+ * "Bloque 0" no significa nada para quien lee la tabla: se numeran desde 1.
+ */
+export function etiquetaBloques(bloques: number[] | undefined): string | null {
+  if (!bloques || bloques.length === 0) return null
+  const numeros = bloques.map((b) => b + 1)
+  if (numeros.length === 1) return `Bloque ${numeros[0]}`
+  const consecutivos = numeros.every((b, i) => i === 0 || b === numeros[i - 1] + 1)
+  return consecutivos
+    ? `Bloques ${numeros[0]}-${numeros[numeros.length - 1]}`
+    : `Bloques ${numeros.join(", ")}`
+}
+
 export function gradoDeGrupo(grupo: string): string {
   return `${grupo.slice(0, -2) || grupo}°`
 }
@@ -332,6 +347,17 @@ export function gradosDeJornada(catalog: GrupoCatalogEntry[], jornada: string): 
   return [...porCodigo.entries()]
     .map(([value, label]) => ({ value, label }))
     .sort((a, b) => a.label.localeCompare(b.label))
+}
+
+/**
+ * Nombre de la opción cuyo código es `codigo`, o el propio código si no está en
+ * el catálogo. `fn_asistencia_listar_seguimiento` compara JORNADA y GRADO contra
+ * el NOMBRE (`TLISTA_VALOR.NOMBRE` / `TGRADO.NOMBRE`), no contra el código que
+ * usan los combos como `value`.
+ */
+export function nombreDeOpcion(opciones: CodigoNombreOption[], codigo: string): string | null {
+  if (!codigo) return null
+  return opciones.find((o) => o.value === codigo)?.label ?? codigo
 }
 
 /** Grupos de `(jornada, grado)` -- vacío en cualquiera de los dos = sin acotar por ese eje. */

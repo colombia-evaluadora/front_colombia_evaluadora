@@ -91,7 +91,7 @@ export const planeadorPlanillaHandlers = [
         ponderacion: actividad.esEvaluativa ? actividad.ponderacion : null,
         nota_maxima: null,
         es_evaluativa: actividad.esEvaluativa ? "S" : "N",
-        es_formativa: esFormativaMock(actividad) ? "S" : "N",
+        es_formativa: esFormativaMock(actividad),
         metodo_valoracion: null,
         fecha_inicio: actividad.fechaInicio,
         fecha_cierre: actividad.fechaCierre,

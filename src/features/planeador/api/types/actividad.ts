@@ -263,8 +263,9 @@ export interface Actividad {
    * `_actualizar` (V224) ya aceptan este array en `FK_TMATRICULAS`; el
    * padrón para elegirlos sale de `useActividadMatriculasGrupoQuery`.
    * Vacío mientras no se elige nadie a mano (`asignarTodoElGrupo` manda en
-   * ese caso) o si el detalle real no trae de vuelta la selección (no hay
-   * endpoint confirmado para leerla al editar, solo para escribirla).
+   * ese caso). Al editar una actividad existente, `use-actividad-detalle-
+   * query.ts` la rellena con `row.estudiantes[].pkTmatricula` (V452,
+   * confirmado real) — ya no arranca vacía asumiendo "todo el grupo".
    */
   matriculasIds: number[]
   /**

@@ -195,11 +195,10 @@ function EditarActividadPageContent({
   })
   // `PUT .../estudiantes` — endpoint suelto de "Estudiantes", igual que
   // materiales/adaptaciones (ver `set-estudiantes-actividad.ts`). Se llama
-  // solo si el docente eligió alguien a mano ESTA vez (`matriculasIds`
-  // siempre arranca en `[]` al abrir el form, ver el comentario de
-  // `Actividad.matriculasIds`): sin este chequeo, guardar sin tocar
-  // "Estudiantes" mandaría `ASIGNAR_TODO_EL_GRUPO` y resetearía una
-  // actividad que ya tenía estudiantes puntuales asignados.
+  // solo si la selección de verdad cambió frente a lo que ya traía el
+  // detalle (`matriculasIds` arranca con la selección REAL, V452 — ver
+  // `use-actividad-detalle-query.ts`), mismo criterio de "solo si cambió"
+  // que `updateMateriales`/`updateAdaptaciones` más abajo.
   const setEstudiantes = useSetEstudiantesActividad({
     mutationConfig: {
       onError: (error) => notify(getErrorMessage(error), { variant: "error" }),
@@ -284,13 +283,21 @@ function EditarActividadPageContent({
       agregarCriterio.mutate({ actividadId: actividad.id, criterioUnidadId })
     }
 
-    // "Estudiantes": solo si el docente eligió alguien a mano esta vez (ver
-    // el comentario de `setEstudiantes` arriba).
-    if (values.matriculasIds.length > 0) {
+    // "Estudiantes": solo si de verdad cambió (ver el comentario de
+    // `setEstudiantes` arriba) — cubre tanto puntualizar a un subconjunto
+    // como volver a "Todo el grupo" (`asignarTodoElGrupo` pasa de `false` a
+    // `true`, que antes nunca se mandaba porque `matriculasIds` quedaba
+    // vacío en ese caso).
+    const estudiantesCambiaron =
+      values.asignarTodoElGrupo !== actividad.asignarTodoElGrupo ||
+      (!values.asignarTodoElGrupo &&
+        JSON.stringify([...values.matriculasIds].sort((a, b) => a - b)) !==
+          JSON.stringify([...actividad.matriculasIds].sort((a, b) => a - b)))
+    if (estudiantesCambiaron) {
       setEstudiantes.mutate({
         actividadId: actividad.id,
         matriculasIds: values.matriculasIds,
-        asignarTodoElGrupo: false,
+        asignarTodoElGrupo: values.asignarTodoElGrupo,
       })
     }
   }
