@@ -30,6 +30,7 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useUnidadDetalleQuery } from "@/features/planeador/api/query/use-unidades-query"
+import { useUnidadCriteriosQuery } from "@/features/planeador/api/query/use-unidad-criterios-query"
 import { useUnidadReferenteQuery } from "@/features/planeador/api/query/use-unidad-referente-query"
 import {
   instrumentoLabelFromReferente,
@@ -1094,6 +1095,10 @@ function UnidadFichaYEvidencias({
   criteriosDisabledIds: number[]
 }) {
   const { data: unidad } = useUnidadDetalleQuery(unidadId)
+  // `unidad.criterios` queda siempre vacío contra el backend real —viven en
+  // `GET /unidades/:id/criterios`, aparte del detalle— mismo motivo que
+  // `useUnidadCriteriosQuery` en `unidad-detalle-panel.tsx`.
+  const { data: criterios = [] } = useUnidadCriteriosQuery(unidadId)
   // El árbol de nivel 1 (enunciados) + nivel 2 (evidencias), YA acotado a
   // los enunciados que esta UNIDAD relacionó (`relacionadoConUnidad`,
   // resuelto del lado del backend), sale directo de `GET /planeador/
@@ -1131,9 +1136,9 @@ function UnidadFichaYEvidencias({
           disabledIds={disabledIds}
         />
       )}
-      {unidad && unidad.criterios.length > 0 && (
+      {criterios.length > 0 && (
         <CriteriosUnidadChecklist
-          criterios={unidad.criterios}
+          criterios={criterios}
           seleccionados={criteriosSeleccionados}
           onToggle={onToggleCriterio}
           disabledIds={criteriosDisabledIds}
