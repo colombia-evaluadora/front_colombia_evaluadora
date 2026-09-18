@@ -4,6 +4,7 @@ import { InfoIcon, PencilIcon, SpinnerIcon } from "@/components/ui/icons"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 
+import { UNIDAD_TAB_FALLBACK } from "@/features/planeador/components/planeador-tabs"
 import type { ReferenteEnunciado } from "@/features/planeador/api/query/use-referente-curricular-query"
 import type { CriterioUnidad } from "@/features/planeador/api/types/unidad-tematica"
 
@@ -25,6 +26,12 @@ interface UnidadFichaProps {
   descripcion: string
   objetivos: string[]
   contenidos: string[]
+  /** Rótulo real del instrumento ("Proyecto pedagógico" en Preescolar,
+   *  "Unidad temática" en el resto) — mismo dato que ya resuelve el resto
+   *  del form/detalle (`resolveInstrumentoLabel`/`instrumentoLabelFromReferente`).
+   *  Default `UNIDAD_TAB_FALLBACK`: antes el título decía "Unidad temática
+   *  seleccionada" siempre, aunque la unidad fuera un Proyecto pedagógico. */
+  instrumentoLabel?: string
   /** Si se pasa, muestra el lápiz de "editar" arriba a la derecha. */
   onEditar?: () => void
   className?: string
@@ -32,8 +39,8 @@ interface UnidadFichaProps {
 
 /**
  * Ficha de la unidad temática elegida en una actividad — 3 columnas
- * (Descripción / Objetivos / Contenidos) con el título "Unidad temática
- * seleccionada: <nombre>" y un lápiz opcional para ir a editar la unidad.
+ * (Descripción / Objetivos / Contenidos) con el título "<instrumento>
+ * seleccionado: <nombre>" y un lápiz opcional para ir a editar la unidad.
  *
  * Presentacional pura (sin fetch propio): tanto `UnidadSection`
  * (`form-editar-actividad.tsx`, al elegir la unidad en el form) como
@@ -48,13 +55,16 @@ export function UnidadFicha({
   descripcion,
   objetivos,
   contenidos,
+  instrumentoLabel = UNIDAD_TAB_FALLBACK,
   onEditar,
   className,
 }: UnidadFichaProps) {
   return (
     <fieldset className={cn("rounded-md border bg-card px-4 pb-4", className)}>
       <legend className="flex w-full items-center justify-between gap-2 px-1.5 text-sm font-semibold">
-        <span>Unidad temática seleccionada: {nombre}</span>
+        <span>
+          {instrumentoLabel}: {nombre}
+        </span>
         {onEditar && (
           <Tooltip>
             <TooltipTrigger

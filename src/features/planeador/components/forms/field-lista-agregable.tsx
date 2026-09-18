@@ -115,6 +115,7 @@ export function ListaAgregableField({
       <Input
         variant="outlined"
         placeholder={placeholder}
+        maxLength={50}
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
         onKeyDown={(e) => {
@@ -139,6 +140,7 @@ export function ListaAgregableField({
               <InputGroup className={cn(FILA_OUTLINED, "bg-card")}>
                 <InputGroupInput
                   aria-label={`Editar ítem ${index + 1} de "${label}"`}
+                  maxLength={50}
                   value={item}
                   onChange={(e) => editar(index, e.target.value)}
                 />
@@ -263,6 +265,7 @@ export function ListaAgregableCaja({
                 <InputGroup className={FILA_OUTLINED}>
                   <InputGroupInput
                     aria-label={`Editar ${columnLabel.toLowerCase()} ${index + 1}`}
+                    maxLength={50}
                     value={item}
                     onChange={(e) => editar(index, e.target.value)}
                     disabled={disabled}
@@ -298,6 +301,7 @@ export function ListaAgregableCaja({
           variant="outlined"
           className="flex-1"
           placeholder={placeholder}
+          maxLength={50}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => {

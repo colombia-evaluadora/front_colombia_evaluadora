@@ -100,7 +100,12 @@ async function createActividad(actividad: Actividad): Promise<CreateActividadRes
   // `fkActividadRecuperar` sii `destino: "ACTIVIDAD"` y `valorPonderacion`
   // (0-100) sii `tipoCalculo: "PONDERADO"`; el form ya solo deja esos
   // campos cargados cuando corresponde (ver `RecuperacionSection`).
-  if (actividad.esEvaluativa && actividad.esRecuperacion) {
+  // `recuperacionDestino` solo se llena si el backend ya expone los
+  // catálogos (`campos_disponibles.recuperacion`, todavía no desplegado en
+  // producción a la fecha de este comentario) — sin este chequeo, prender
+  // el toggle sin esos catálogos mandaría un `RECUPERACION` a medio llenar
+  // que el backend rechazaría.
+  if (actividad.esEvaluativa && actividad.esRecuperacion && actividad.recuperacionDestino) {
     body.RECUPERACION = {
       destino: actividad.recuperacionDestino,
       fkActividadRecuperar: actividad.recuperacionActividadId,
