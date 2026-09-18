@@ -53,7 +53,6 @@ import {
   ListaAgregableCajaSelect,
 } from "@/features/planeador/components/forms/field-lista-agregable"
 import { useEnunciadosDbaQuery } from "@/features/planeador/api/query/use-enunciados-dba"
-import { RECURSO_ARCHIVO_ACCEPT } from "@/features/planeador/lib/recurso-preview"
 import {
   CriteriosUnidadChecklist,
   EnunciadosEvidenciasChecklist,
@@ -1417,13 +1416,9 @@ function RecursoForm({
   // Placeholder contextual del campo "Fuente" según el tipo. La idea es
   // que el ejemplo que ve el usuario matchee lo que va a tipear —si es
   // URL, una URL de ejemplo; si es archivo, el nombre de un archivo, etc.
-  // REV: el de "Unidad virtual" pedía un NOMBRE, pero el campo es
-  // `type="url"` y lo que escribe va a `draft.url` — el mismo lugar que el
-  // tipo "URL". Un ejemplo de enlace de repositorio dice qué se espera de
-  // verdad, y de paso es la forma que la vista previa sabe embeber.
   const fuentePlaceholder =
     draft.tipo === "Unidad virtual"
-      ? "https://drive.google.com/file/d/..."
+      ? "Nombre de la unidad virtual o repositorio"
       : draft.tipo === "Archivo"
         ? "Nombre del archivo"
         : "https://..."
@@ -1499,10 +1494,6 @@ function RecursoForm({
             )}
             <Input
               type={draft.tipo === "Archivo" ? "file" : "url"}
-              // Los cuatro tipos que la vista previa sabe mostrar. Es guía,
-              // no validación: el `accept` se puede esquivar y quien decide
-              // de verdad es `file-service`.
-              {...(draft.tipo === "Archivo" ? { accept: RECURSO_ARCHIVO_ACCEPT } : {})}
               placeholder={fuentePlaceholder}
               // `<input type="file">` no acepta `value` programático (el
               // browser solo permite setearlo a `""` por seguridad —
