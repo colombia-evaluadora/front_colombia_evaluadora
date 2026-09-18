@@ -12,8 +12,8 @@ function draftId(): number {
  * un objeto completo, no admite `Partial<Actividad>`—, así que crear una
  * actividad arranca de esta ficha en blanco en vez de `undefined`.
  *
- * `tipo`/`modalidad`/`instrumento` no tienen una opción "Seleccione" en sus
- * `<Select>` (a diferencia de `unidad`/`aplicaA`/etc.), así que acá
+ * `modalidad`/`instrumento` no tienen una opción "Seleccione" en sus
+ * `<Select>` (a diferencia de `unidad`/`aplicaA`/`tipo`/etc.), así que acá
  * arrancan en el primer valor válido de su lista en vez de `""` — value
  * vacío ahí dejaría el trigger sin ninguna opción resaltada al abrir el
  * desplegable.
@@ -23,7 +23,10 @@ export function crearActividadVacia(): Actividad {
   return {
     id,
     nombre: "",
-    tipo: "Proyecto",
+    // Arranca sin elegir ("Seleccione") — `IdentificacionSection` ya
+    // resuelve `""` al sentinel `__none__` de su `<Select>`, mismo criterio
+    // que Asignatura/Unidad temática asociada.
+    tipo: "",
     esRecuperacion: false,
     recuperacionDestino: "",
     recuperacionActividadId: undefined,
