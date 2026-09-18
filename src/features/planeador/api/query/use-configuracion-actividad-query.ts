@@ -5,7 +5,7 @@ import { defaultRecuperacionCampoDisponible, type Actividad } from "@/features/p
 import { toInstrumentosPermitidos } from "@/features/planeador/api/query/use-instrumento-evaluacion-catalog"
 
 /**
- * `GET /planeador/unidades/:id/configuracion-actividad?ES_EVALUATIVA=S|N`
+ * `GET /planeador/unidades/:id/configuracion-actividad?ES_SUMATIVA=S|N`
  * (confirmado real, colección Postman `planeador-flujo-unidad-actividad`,
  * paso 6): el equivalente de `campos_disponibles` de
  * `GET /actividades/:id/configuracion` (guía completa, 5.1) para cuando la
@@ -15,9 +15,12 @@ import { toInstrumentosPermitidos } from "@/features/planeador/api/query/use-ins
  * ANTES de crear, con la misma forma que ya usa el detalle real
  * (`Actividad.camposDisponibles`).
  *
- * `ES_EVALUATIVA` va en MAYÚSCULAS y como `S`/`N` en la query — el binder
- * del motor solo hace `toUpperCase()`, así que `?esEvaluativa=` se ignora en
- * silencio (mismo aviso documentado en la colección Postman).
+ * El parámetro de ESTA ruta es `ES_SUMATIVA`, no `ES_EVALUATIVA` (que sí es
+ * el nombre correcto para el campo `ES_EVALUATIVA` del body de
+ * `POST`/`PUT /planeador/actividades` — son dos cosas distintas, no un
+ * alias). Va en MAYÚSCULAS y como `S`/`N` en la query — el binder del motor
+ * solo hace `toUpperCase()`, así que `?esSumativa=` se ignora en silencio
+ * (mismo aviso documentado en la colección Postman).
  */
 type CamposDisponibles = NonNullable<Actividad["camposDisponibles"]>
 
@@ -51,7 +54,7 @@ async function fetchConfiguracionActividad(
   esEvaluativa: boolean,
 ): Promise<CamposDisponibles | undefined> {
   const body = await api.get(
-    `/eval-col/planeador/unidades/${unidadId}/configuracion-actividad?ES_EVALUATIVA=${esEvaluativa ? "S" : "N"}`,
+    `/eval-col/planeador/unidades/${unidadId}/configuracion-actividad?ES_SUMATIVA=${esEvaluativa ? "S" : "N"}`,
   )
   const campos = firstRow(body)?.configuracion?.campos_disponibles
   if (!campos) return undefined
