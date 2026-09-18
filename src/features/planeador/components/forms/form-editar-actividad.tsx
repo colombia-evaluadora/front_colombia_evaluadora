@@ -46,6 +46,7 @@ import { useDocenteGruposQuery } from "@/features/planeador/api/query/use-docent
 import { useDocenteGradoAsignaturaQuery } from "@/features/planeador/api/query/use-docente-grado-asignatura-query"
 import { useActividadMatriculasGrupoQuery } from "@/features/planeador/api/query/use-actividad-matriculas-grupo-query"
 import { EstudiantesMultiSelect } from "@/features/planeador/components/forms/estudiantes-multi-select"
+import { ActividadRecuperarCascada } from "@/features/planeador/components/forms/actividad-recuperar-cascada"
 import { useStudyPlanSubjectLabel } from "@/features/establishment/academic-period/api/query/use-study-plan-subject-label"
 import { useTipoActividadCatalogQuery } from "@/features/planeador/api/query/use-tipo-actividad-catalog"
 import { useInstrumentoEvaluacionCatalogQuery } from "@/features/planeador/api/query/use-instrumento-evaluacion-catalog"
@@ -351,7 +352,12 @@ export function EditarActividadForm({
           reclasifica la actividad entera ("esto no es la evaluación
           normal, es su recuperación"), así que se responde antes de
           completar cualquier otro campo. */}
-      <EsRecuperacionToggle form={form} disabled={disabled} />
+      <RecuperacionSection
+        form={form}
+        disabled={disabled}
+        camposEfectivos={camposEfectivos}
+        actividadId={actividad.id}
+      />
       {/* Identificación + Asignatura/Grado en UNA sola grilla —antes vivían
           en dos `<Card>` separadas y se veían como dos cajas sueltas, aunque
           las dos son "de dónde depende la actividad" (Grado/Asignatura,
@@ -422,9 +428,9 @@ function useHasGradoAsignatura(form: FormActividad): boolean {
 }
 
 /**
- * Toggle "Es una recuperación", arriba de todo el form. Solo tiene
- * sentido para una actividad sumativa —una formativa no pondera nota,
- * así que no hay nada que "recuperar"—, por eso se lee `esEvaluativa`
+ * Toggle "Es una recuperación" + su configuración, arriba de todo el form.
+ * Solo tiene sentido para una actividad sumativa —una formativa no pondera
+ * nota, así que no hay nada que "recuperar"—, por eso se lee `esEvaluativa`
  * del store (mismo flag que gobierna la ponderación en `EvaluacionSection`
  * y `InstrumentoEvaluacionSection`) y el control desaparece por completo
  * cuando es `false`, en vez de deshabilitarse: no es que falte
@@ -434,29 +440,217 @@ function useHasGradoAsignatura(form: FormActividad): boolean {
  * a no-sumativa, el valor sigue guardado en el form (no se resetea a
  * `false`): si vuelve a marcar sumativa, reaparece en el estado que
  * dejó. Forzar un reset ahí sería más sorpresa que ayuda.
+ *
+ * La configuración (destino/actividad a recuperar/tipo de aplicación/tipo
+ * de cálculo/% de ponderación) sale de `camposEfectivos.recuperacion` —
+ * MISMA fuente de verdad que ya usa `EvaluacionSection`, con sus catálogos
+ * `{pk, valor, nombre}` (se decide por `valor`) y las reglas que valida
+ * `fn_actividad_recuperacion_configurar` (actividad obligatoria sii
+ * `destino = ACTIVIDAD`, % obligatorio y 0-100 sii `tipoCalculo =
+ * PONDERADO`) para no descubrirlas a base de 400.
  */
-function EsRecuperacionToggle({ form, disabled }: { form: FormActividad; disabled: boolean }) {
+function RecuperacionSection({
+  form,
+  disabled,
+  camposEfectivos,
+  actividadId,
+}: {
+  form: FormActividad
+  disabled: boolean
+  camposEfectivos: ReturnType<typeof useCamposEvaluacionEfectivos>["camposEfectivos"]
+  actividadId: number
+}) {
+  const recuperacion = camposEfectivos?.recuperacion
+
   return (
     <form.Subscribe selector={(state) => state.values.esEvaluativa}>
       {(esEvaluativa) =>
         !esEvaluativa ? null : (
-          <form.Field name="esRecuperacion">
-            {(field) => (
-              <label
-                htmlFor={field.name}
-                className="flex w-full items-center gap-3 rounded-md border border-input px-3 py-2.5 text-sm"
-              >
-                <Switch
-                  id={field.name}
-                  checked={field.state.value}
-                  onCheckedChange={field.handleChange}
-                  disabled={disabled}
-                  className="rounded-full [&_[data-slot=switch-thumb]]:rounded-full"
-                />
-                Es una recuperación
-              </label>
-            )}
-          </form.Field>
+          <div className="flex flex-col gap-4">
+            <form.Field name="esRecuperacion">
+              {(field) => (
+                <label
+                  htmlFor={field.name}
+                  className="flex w-full items-center gap-3 rounded-md border border-input px-3 py-2.5 text-sm"
+                >
+                  <Switch
+                    id={field.name}
+                    checked={field.state.value}
+                    onCheckedChange={field.handleChange}
+                    disabled={disabled}
+                    className="rounded-full [&_[data-slot=switch-thumb]]:rounded-full"
+                  />
+                  Es una recuperación
+                </label>
+              )}
+            </form.Field>
+
+            <form.Subscribe selector={(state) => state.values.esRecuperacion}>
+              {(esRecuperacionValue) =>
+                !esRecuperacionValue ? null : (
+                  <div className="grid gap-x-4 gap-y-5 rounded-md border border-input p-3 sm:grid-cols-2">
+                    <form.Field name="recuperacionDestino">
+                      {(field) => (
+                        <Field variant="outlined">
+                          <FieldLabel htmlFor={field.name}>
+                            ¿Esta recuperación aplica para?{recuperacion?.requerido ? " *" : ""}
+                          </FieldLabel>
+                          <Select
+                            value={field.state.value || "__none__"}
+                            onValueChange={(v) => field.handleChange(v === "__none__" ? "" : v)}
+                            disabled={disabled}
+                          >
+                            <SelectTrigger id={field.name}>
+                              <SelectValue placeholder="Seleccione">
+                                {(v) =>
+                                  v === "__none__"
+                                    ? "Seleccione"
+                                    : (recuperacion?.catalogos.destino.find((o) => o.valor === v)?.nombre ??
+                                      (v as string))
+                                }
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="__none__">Seleccione</SelectItem>
+                              {(recuperacion?.catalogos.destino ?? []).map((opcion) => (
+                                <SelectItem key={opcion.valor} value={opcion.valor}>
+                                  {opcion.nombre}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </Field>
+                      )}
+                    </form.Field>
+
+                    {/* Actividad a recuperar: solo tiene sentido con
+                        `destino = ACTIVIDAD` (recuperar la NOTA FINAL no
+                        apunta a ninguna actividad puntual) — regla
+                        `actividadRecuperarRequeridaSi` de `reglas`. */}
+                    <form.Subscribe selector={(state) => state.values.recuperacionDestino}>
+                      {(destino) =>
+                        destino !== "ACTIVIDAD" ? null : (
+                          <form.Field name="recuperacionActividadId">
+                            {(field) => (
+                              <Field variant="outlined">
+                                <FieldLabel>¿Qué actividad deseas recuperar?</FieldLabel>
+                                <ActividadRecuperarCascada
+                                  value={field.state.value}
+                                  onChange={field.handleChange}
+                                  excludeActividadId={actividadId}
+                                  disabled={disabled}
+                                />
+                              </Field>
+                            )}
+                          </form.Field>
+                        )
+                      }
+                    </form.Subscribe>
+
+                    <form.Field name="recuperacionTipoAplicacion">
+                      {(field) => (
+                        <Field variant="outlined">
+                          <FieldLabel>¿Cómo se aplicará la nota de recuperación?</FieldLabel>
+                          <RadioGroup
+                            className="flex min-h-11 flex-wrap items-center gap-x-6 gap-y-2 rounded-md border border-input px-3 py-2"
+                            value={field.state.value}
+                            disabled={disabled}
+                            onValueChange={field.handleChange}
+                          >
+                            {(recuperacion?.catalogos.tipoAplicacion ?? []).map((opcion) => (
+                              <label key={opcion.valor} className="flex items-center gap-2 text-sm">
+                                <RadioGroupItem value={opcion.valor} className="data-checked:bg-primary" />
+                                {opcion.nombre}
+                              </label>
+                            ))}
+                          </RadioGroup>
+                        </Field>
+                      )}
+                    </form.Field>
+
+                    <form.Field name="recuperacionTipoCalculo">
+                      {(field) => (
+                        <Field variant="outlined">
+                          <FieldLabel>¿Cómo deseas calcular la nota de la actividad?</FieldLabel>
+                          <RadioGroup
+                            className="flex min-h-11 flex-wrap items-center gap-x-6 gap-y-2 rounded-md border border-input px-3 py-2"
+                            value={field.state.value}
+                            disabled={disabled}
+                            onValueChange={field.handleChange}
+                          >
+                            {(recuperacion?.catalogos.tipoCalculo ?? []).map((opcion) => (
+                              <label key={opcion.valor} className="flex items-center gap-2 text-sm">
+                                <RadioGroupItem value={opcion.valor} className="data-checked:bg-primary" />
+                                {opcion.nombre}
+                              </label>
+                            ))}
+                          </RadioGroup>
+                        </Field>
+                      )}
+                    </form.Field>
+
+                    {/* % de ponderación: solo con `tipoCalculo = PONDERADO`
+                        — regla `valorPonderacionRequeridoSi`, rango de
+                        `valorPonderacionRango` (0-100 por defecto). */}
+                    <form.Subscribe selector={(state) => state.values.recuperacionTipoCalculo}>
+                      {(tipoCalculo) =>
+                        tipoCalculo !== "PONDERADO" ? null : (
+                          <form.Field name="recuperacionValorPonderacion">
+                            {(field) => (
+                              <Field variant="outlined">
+                                <FieldLabel htmlFor={field.name}>Valor de ponderación (%)</FieldLabel>
+                                <Input
+                                  id={field.name}
+                                  inputMode="numeric"
+                                  placeholder="Ej: 100"
+                                  value={field.state.value?.toString() ?? ""}
+                                  onChange={(e) => {
+                                    const digits = toPositiveDigitsInput(e.target.value, 3)
+                                    const max = recuperacion?.reglas.valorPonderacionRango.max ?? 100
+                                    const parsed = digits === "" ? undefined : Math.min(Number(digits), max)
+                                    field.handleChange(parsed)
+                                  }}
+                                  disabled={disabled}
+                                />
+                              </Field>
+                            )}
+                          </form.Field>
+                        )
+                      }
+                    </form.Subscribe>
+
+                    {/* Explica el efecto de la opción elegida arriba —
+                        "Ponderado" reparte el % entre recuperación y nota
+                        actual, "Promediado" (cualquier valor que no sea
+                        PONDERADO) promedia las dos notas sin pedir %. */}
+                    <form.Subscribe
+                      selector={(state) => ({
+                        tipoCalculo: state.values.recuperacionTipoCalculo,
+                        valorPonderacion: state.values.recuperacionValorPonderacion,
+                      })}
+                    >
+                      {({ tipoCalculo, valorPonderacion }) => {
+                        if (!tipoCalculo) return null
+                        const mensaje =
+                          tipoCalculo === "PONDERADO"
+                            ? valorPonderacion != null
+                              ? `Este porcentaje corresponde al valor de la recuperación. El valor restante (${100 - valorPonderacion}%) se aplicará a la nota actual.`
+                              : null
+                            : "El resultado será el promedio entre la nota actual de la actividad y la nota de recuperación."
+                        if (!mensaje) return null
+                        return (
+                          <div className="border-blue-stroke bg-blue-22 text-blue col-span-full flex items-start gap-2 rounded-md border p-3 text-sm">
+                            <InfoIcon className="mt-0.5 size-4 shrink-0" />
+                            {mensaje}
+                          </div>
+                        )
+                      }}
+                    </form.Subscribe>
+                  </div>
+                )
+              }
+            </form.Subscribe>
+          </div>
         )
       }
     </form.Subscribe>

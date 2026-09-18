@@ -230,7 +230,7 @@ export function FiltroPlanillaCascada({ value, onChange }: FiltroPlanillaCascada
   )
 }
 
-interface FiltroColumnaProps<T extends string | number> {
+export interface FiltroColumnaProps<T extends string | number> {
   items: { key: T; label: string }[]
   selectedKey: T | null
   onSelect: (key: T) => void
@@ -239,7 +239,10 @@ interface FiltroColumnaProps<T extends string | number> {
   className?: string
 }
 
-function FiltroColumna<T extends string | number>({
+/** Exportada para que otras cascadas Grado→Grupo→Asignatura→algo (ej.
+ *  `ActividadRecuperarCascada`) reusen la misma columna en vez de duplicar
+ *  este `<ul>`. */
+export function FiltroColumna<T extends string | number>({
   items,
   selectedKey,
   onSelect,
