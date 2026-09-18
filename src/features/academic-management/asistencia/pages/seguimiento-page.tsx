@@ -15,7 +15,10 @@ import { paths } from "@/config/paths"
 import { asistenciaSeguimientoRoute } from "@/router"
 import { useAsistenciaSeguimientoQuery } from "@/features/academic-management/asistencia/api/query/use-asistencia-seguimiento-query"
 import { useAsistenciaCalendarioQuery } from "@/features/academic-management/asistencia/api/query/use-asistencia-calendario-query"
-import { useTipoAsistenciaCatalogQuery } from "@/features/academic-management/asistencia/api/query/use-tipo-asistencia-catalog-query"
+import {
+  TIPOS_JUSTIFICADOS,
+  useTipoAsistenciaCatalogQuery,
+} from "@/features/academic-management/asistencia/api/query/use-tipo-asistencia-catalog-query"
 import { SeguimientoSummaryCards } from "@/features/academic-management/asistencia/components/seguimiento-summary-cards"
 import { columnsSeguimiento } from "@/features/academic-management/asistencia/components/columns-seguimiento"
 import { SearchSeguimiento } from "@/features/academic-management/asistencia/components/search/search-seguimiento"
@@ -44,15 +47,16 @@ function SeguimientoSinSede() {
   )
 }
 
-function SeguimientoSinFiltro() {
+function SeguimientoSinFiltroMensaje() {
   return (
-    <div className="flex flex-col items-center gap-2 py-16 text-center">
-      <FunnelIcon className="size-8 text-muted-foreground" aria-hidden="true" />
-      <p className="max-w-sm text-sm text-muted-foreground">
-        Aplica al menos un filtro (búsqueda, rango de fecha, jornada, grado, grupo, asignatura o tipo de
-        asistencia) para ver los registros.
-      </p>
-    </div>
+    <span className="flex flex-col items-center gap-2 py-4">
+      <FunnelIcon className="size-6 text-muted-foreground" aria-hidden="true" />
+      <span className="font-medium text-foreground">Elegí al menos un filtro para ver los registros</span>
+      <span className="max-w-lg whitespace-normal text-sm text-muted-foreground">
+        Buscá por nombre, grupo o asignatura, o abrí el panel de filtros para acotar por rango de fecha,
+        jornada, grado, grupo, asignatura o tipo de asistencia.
+      </span>
+    </span>
   )
 }
 
@@ -72,18 +76,23 @@ function SeguimientoTable({ sede }: { sede: number }) {
     grupos: grupoCatalog,
     asignaturas: asignaturaCatalog,
     asignaturasPorGrupo,
-    actividades: actividadCatalog,
-    actividadesPorGrupo,
     jornadas: jornadaOptions,
   } = React.useMemo(() => catalogosDeSesiones(sesionesDelMes ?? []), [sesionesDelMes])
-  const { data: tipoAsistenciaOptions = [] } = useTipoAsistenciaCatalogQuery()
+  const { data: tipoAsistenciaCatalog = [] } = useTipoAsistenciaCatalogQuery()
+  // El filtro no ofrece los "trajo justificación"; el catálogo completo sigue
+  // intacto para editar un registro (dialog-editar-seguimiento).
+  const tipoAsistenciaOptions = React.useMemo(
+    () => tipoAsistenciaCatalog.filter((o) => !TIPOS_JUSTIFICADOS.includes(o.value)),
+    [tipoAsistenciaCatalog],
+  )
 
 
   const hasFilter = Boolean(
     search ||
+      filters.jornada ||
+      filters.grado ||
       filters.grupo ||
       filters.asignatura ||
-      filters.actividad ||
       filters.tipoAsistencia ||
       filters.fechaDesde ||
       filters.fechaHasta,
@@ -97,9 +106,10 @@ function SeguimientoTable({ sede }: { sede: number }) {
     FECHA_DESDE: filters.fechaDesde || null,
     FECHA_HASTA: filters.fechaHasta || null,
     SEARCH: search || null,
+    JORNADA: filters.jornada || null,
+    GRADO: filters.grado || null,
     GRUPO: filters.grupo ? Number(filters.grupo) : null,
     ASIGNATURA: filters.asignatura ? Number(filters.asignatura) : null,
-    ACTIVIDAD: filters.actividad ? Number(filters.actividad) : null,
     TIPO_ASISTENCIA: filters.tipoAsistencia ? (Number(filters.tipoAsistencia) as TipoAsistencia) : null,
   }
   const { data, isPending, isError, refetch } = useAsistenciaSeguimientoQuery(
@@ -113,20 +123,25 @@ function SeguimientoTable({ sede }: { sede: number }) {
     hasFilter,
   )
 
-  const rows = data?.rows ?? []
+  // Al quitar los filtros la query queda deshabilitada pero `placeholderData` conserva
+  // la respuesta anterior: sin filtros la pantalla tiene que vaciarse igual.
+  const resultado = hasFilter ? data : undefined
+  const rows = resultado?.rows ?? []
   const totalCount = rows[0]?.total_count ?? 0
-  const totalEstudiantes = rows[0]?.total_estudiantes
-  const ausentes = rows[0]?.ausentes
-  const tarde =
-    rows[0]?.tarde ??
-    (data
-      ? new Set(
-          rows.filter((r) => r.tipo_asistencia_valor === 5 || r.tipo_asistencia_valor === 6).map((r) => r.documento),
-        ).size
-      : undefined)
-  const asistieron = data
-    ? new Set(rows.filter((r) => r.tipo_asistencia_valor === 1).map((r) => r.documento)).size
-    : undefined
+  // El esqueleto es solo para la espera real de la query; sin filtros o con respuesta
+  // vacía los contadores son ceros de verdad, no un "cargando" permanente.
+  const cargando = hasFilter && !resultado
+  const totalEstudiantes = cargando ? undefined : (rows[0]?.total_estudiantes ?? 0)
+  const ausentes = cargando ? undefined : (rows[0]?.ausentes ?? 0)
+  const tarde = cargando
+    ? undefined
+    : rows[0]?.tarde ??
+      new Set(
+        rows.filter((r) => r.tipo_asistencia_valor === 5 || r.tipo_asistencia_valor === 6).map((r) => r.documento),
+      ).size
+  const asistieron = cargando
+    ? undefined
+    : new Set(rows.filter((r) => r.tipo_asistencia_valor === 1).map((r) => r.documento)).size
   const pageCount = Math.max(1, Math.ceil(totalCount / pageSize))
 
   const { table } = useDataTable({
@@ -165,8 +180,6 @@ function SeguimientoTable({ sede }: { sede: number }) {
           grupoCatalog={grupoCatalog}
           asignaturaCatalog={asignaturaCatalog}
           asignaturasPorGrupo={asignaturasPorGrupo}
-          actividadCatalog={actividadCatalog}
-          actividadesPorGrupo={actividadesPorGrupo}
           tipoAsistenciaOptions={tipoAsistenciaOptions}
         />
 
@@ -175,42 +188,38 @@ function SeguimientoTable({ sede }: { sede: number }) {
         </div>
       </div>
 
-      {hasFilter ? (
-        <>
-          <div className="mb-4">
-            <SeguimientoSummaryCards
-              totalEstudiantes={totalEstudiantes}
-              asistieron={asistieron}
-              ausentes={ausentes}
-              tarde={tarde}
-            />
-          </div>
+      {/* Sin filtros la pantalla conserva la misma estructura (tarjetas + tabla) en estado
+          vacío: se ve qué se va a obtener y, en la tabla, qué falta hacer para obtenerlo. */}
+      <div className="mb-4">
+        <SeguimientoSummaryCards
+          totalEstudiantes={totalEstudiantes}
+          asistieron={asistieron}
+          ausentes={ausentes}
+          tarde={tarde}
+        />
+      </div>
 
-          <DataTable
-            table={table}
-            isPending={isPending}
-            isError={isError}
-            onRetry={refetch}
-            emptyMessage="Sin registros de asistencia."
-            errorMessage="Ocurrió un error al cargar el seguimiento."
-          />
+      <DataTable
+        table={table}
+        isPending={hasFilter && isPending}
+        isError={hasFilter && isError}
+        onRetry={refetch}
+        emptyMessage={
+          hasFilter ? "Sin registros de asistencia para los filtros aplicados." : <SeguimientoSinFiltroMensaje />
+        }
+        errorMessage="Ocurrió un error al cargar el seguimiento."
+      />
 
-          {data && (
-            <Pagination
-              pageIndex={pageIndex}
-              pageCount={pageCount}
-              canPrev={pageIndex > 0}
-              canNext={pageIndex < pageCount - 1}
-              onPageChange={goToPage}
-              totalCount={totalCount}
-              pageSize={pageSize}
-              onPageSizeChange={setPageSize}
-            />
-          )}
-        </>
-      ) : (
-        <SeguimientoSinFiltro />
-      )}
+      <Pagination
+        pageIndex={pageIndex}
+        pageCount={pageCount}
+        canPrev={pageIndex > 0}
+        canNext={pageIndex < pageCount - 1}
+        onPageChange={goToPage}
+        totalCount={totalCount}
+        pageSize={pageSize}
+        onPageSizeChange={setPageSize}
+      />
     </>
   )
 }
