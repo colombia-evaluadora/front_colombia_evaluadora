@@ -157,10 +157,17 @@ export function EnunciadosEvidenciasChecklist({
   pendingId = null,
   className,
 }: EnunciadosEvidenciasChecklistProps) {
+  // "Propósitos e imprescindibles del…" en Preescolar, "Enunciados y
+  // evidencias del…" en el resto — nunca el literal "Enunciado y
+  // evidencias" fijo (lo que decía antes): el título tiene que salir de
+  // `nivel1Etiqueta`/`nivel2Etiqueta`, los mismos rótulos reales que ya
+  // resuelve `EnunciadosEvidenciasChecklist` para el resto de sus textos.
+  const titulo = capitalizar(`${pluralizar(nivel1Etiqueta)} y ${pluralizar(nivel2Etiqueta)} del ${instrumentoLabel.toLowerCase()}`)
+
   if (enunciados.length === 0) {
     return (
       <div className={cn("flex flex-col gap-3", className)}>
-        <h4 className="text-sm font-semibold">Enunciado y evidencias del {instrumentoLabel.toLowerCase()}</h4>
+        <h4 className="text-sm font-semibold">{titulo}</h4>
         <p className="text-muted-foreground text-sm">
           Esta unidad todavía no tiene {pluralizar(nivel1Etiqueta)} relacionados.
         </p>
@@ -170,7 +177,7 @@ export function EnunciadosEvidenciasChecklist({
 
   return (
     <div className={cn("flex flex-col gap-4", className)}>
-      <h4 className="text-sm font-semibold">Enunciado y evidencias del {instrumentoLabel.toLowerCase()}</h4>
+      <h4 className="text-sm font-semibold">{titulo}</h4>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {enunciados.map((enunciado) => (
@@ -277,4 +284,10 @@ export function CriteriosUnidadChecklist({
  *  regla general de plural en español. */
 function pluralizar(etiqueta: string): string {
   return `${etiqueta.toLowerCase()}s`
+}
+
+/** Mayúscula inicial para un título armado a partir de rótulos ya en
+ *  minúscula (`pluralizar`) — sin esto el `<h4>` arrancaba en minúscula. */
+function capitalizar(texto: string): string {
+  return texto.charAt(0).toUpperCase() + texto.slice(1)
 }

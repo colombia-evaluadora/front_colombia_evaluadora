@@ -8,6 +8,7 @@ import type { MutationConfig } from "@/lib/react-query"
 import { actividadesQueryKey } from "@/features/planeador/api/query/use-actividades-query"
 import { resolveTipoActividadId } from "@/features/planeador/api/query/use-tipo-actividad-catalog"
 import { resolveInstrumentoEvaluacionId } from "@/features/planeador/api/query/use-instrumento-evaluacion-catalog"
+import { resolveModalidadId } from "@/features/planeador/api/query/use-modalidad-catalog"
 import type { Actividad } from "@/features/planeador/api/types/actividad"
 
 /**
@@ -61,6 +62,35 @@ async function createActividad(actividad: Actividad): Promise<CreateActividadRes
     FECHA_INICIO: actividad.fechaInicio,
     FECHA_CIERRE: actividad.fechaCierre,
     MATERIAL_REQUERIDO: actividad.materiales,
+    // "Seguimiento" (`generaEvidencias`/`observaciones`) se capturaba en el
+    // form pero nunca viajaba acá — mismo hueco que Programación arriba.
+    // `GENERA_EVIDENCIAS` sigue la convención "S"/"N" de `ES_EVALUATIVA`
+    // (no confirmado que sea booleano nativo, pero es la convención que ya
+    // usa el resto de los flags de esta misma función).
+    GENERA_EVIDENCIAS: actividad.generaEvidencias ? "S" : "N",
+    OBSERVACIONES_DOCENTE: actividad.observaciones,
+  }
+  // Pendientes, a propósito: `actividad.tipoEvidencia` (→
+  // `FK_TLV_TIPO_EVIDENCIA`, necesita una categoría de catálogo sin
+  // confirmar) y `actividad.requiereValidacion` (→ el campo `REQUIERE_*`
+  // que la doc no nombra exacto) — mandarlos a ciegas arriesga un valor que
+  // el backend rechace, a diferencia de `resolveModalidadId` (que si falla
+  // resuelve `undefined` y simplemente no se manda nada).
+  // "Duración estimada"/"Semana del cronograma" (sección Programación) se
+  // capturaban en el form pero nunca viajaban acá — se perdían en silencio
+  // al guardar. `DURACION_ESTIMADA` es siempre un número (el form ya lo
+  // sanitiza a solo dígitos, `toPositiveDigitsInput`); `SEMANA_CRONOGRAMA`
+  // se manda tal cual porque admite tanto un número suelto como un rango
+  // ("10-12", `toDigitsOrRangeInput`).
+  if (actividad.duracionEstimada) body.DURACION_ESTIMADA = Number(actividad.duracionEstimada)
+  if (actividad.semana) body.SEMANA_CRONOGRAMA = actividad.semana
+  // `resolveModalidadId` es best-effort — ver su propio comentario: la
+  // categoría `TLISTA_VALOR` que resuelve no está confirmada contra el
+  // backend real, así que puede no resolver nada (`undefined`) sin que eso
+  // sea un error.
+  if (actividad.modalidad) {
+    const modalidadId = await resolveModalidadId(actividad.modalidad)
+    if (modalidadId != null) body.FK_TLV_MODALIDAD = modalidadId
   }
   // "Estudiantes" (mutuamente excluyentes, ver el comentario de
   // `Actividad.matriculasIds`): sin ninguno elegido a mano, todo el grupo

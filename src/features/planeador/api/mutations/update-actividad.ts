@@ -8,6 +8,7 @@ import { actividadesQueryKey } from "@/features/planeador/api/query/use-activida
 import { actividadDetalleQueryKey } from "@/features/planeador/api/query/use-actividad-detalle-query"
 import { resolveTipoActividadId } from "@/features/planeador/api/query/use-tipo-actividad-catalog"
 import { resolveInstrumentoEvaluacionId } from "@/features/planeador/api/query/use-instrumento-evaluacion-catalog"
+import { resolveModalidadId } from "@/features/planeador/api/query/use-modalidad-catalog"
 import type { Actividad } from "@/features/planeador/api/types/actividad"
 
 interface UpdateActividadInput {
@@ -52,6 +53,20 @@ async function updateActividad({ actividadId, data }: UpdateActividadInput): Pro
     FECHA_INICIO: data.fechaInicio,
     FECHA_CIERRE: data.fechaCierre,
     MATERIAL_REQUERIDO: data.materiales,
+    // Mismo arreglo que `create-actividad.ts`: "Seguimiento" se capturaba
+    // pero nunca viajaba en el PUT.
+    GENERA_EVIDENCIAS: data.generaEvidencias ? "S" : "N",
+    OBSERVACIONES_DOCENTE: data.observaciones,
+  }
+  // Mismo arreglo que `create-actividad.ts`: se capturaban en el form pero
+  // nunca viajaban en el PUT.
+  if (data.duracionEstimada) body.DURACION_ESTIMADA = Number(data.duracionEstimada)
+  if (data.semana) body.SEMANA_CRONOGRAMA = data.semana
+  // Ver el comentario de `resolveModalidadId`: categoría sin confirmar
+  // contra el backend real, best-effort.
+  if (data.modalidad) {
+    const modalidadId = await resolveModalidadId(data.modalidad)
+    if (modalidadId != null) body.FK_TLV_MODALIDAD = modalidadId
   }
   if (data.grupoId != null) body.FK_TGRUPO = data.grupoId
   if (data.asignaturaId != null) body.FK_TASIGNATURA = data.asignaturaId

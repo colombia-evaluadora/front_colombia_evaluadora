@@ -127,7 +127,11 @@ export function ActividadDetallePanel({
         <div className="flex shrink-0 items-center gap-0.5">
           {/* Editar navega a la ruta de edición propia; Marcar cambia el panel
               a la vista de calificaciones; las demás siguen deshabilitadas
-              (sin endpoints en esta iteración). */}
+              (sin endpoints en esta iteración). El nombre de la actividad se
+              suma al label ("Editar {nombre}") — mismo criterio que
+              `ActividadCard`: "Editar" a secas no distingue nada cuando el
+              panel puede reabrirse con cualquier actividad. Mientras carga
+              (`actividad` todavía `undefined`) cae al label a secas. */}
           <Tooltip>
             <TooltipTrigger
               render={
@@ -136,13 +140,13 @@ export function ActividadDetallePanel({
                   color="neutral"
                   size="icon-sm"
                   render={<Link to={paths.app.planeadorActividadEditar.getHref(String(actividadId))} />}
-                  aria-label="Editar"
+                  aria-label={actividad ? `Editar ${actividad.nombre}` : "Editar"}
                 />
               }
             >
               <PencilIcon />
             </TooltipTrigger>
-            <TooltipContent>Editar</TooltipContent>
+            <TooltipContent>{actividad ? `Editar ${actividad.nombre}` : "Editar"}</TooltipContent>
           </Tooltip>
           {ACCIONES.filter((a) => a.label !== "Editar").map(({ label, Icon }) => {
             const handler =
@@ -151,6 +155,7 @@ export function ActividadDetallePanel({
                 : label === "Aprobar"
                   ? onShowApproval
                   : undefined
+            const labelConNombre = actividad ? `${label} ${actividad.nombre}` : label
             return (
               <Tooltip key={label}>
                 <TooltipTrigger
@@ -161,13 +166,13 @@ export function ActividadDetallePanel({
                       size="icon-sm"
                       disabled={!handler}
                       onClick={handler}
-                      aria-label={label}
+                      aria-label={labelConNombre}
                     />
                   }
                 >
                   <Icon />
                 </TooltipTrigger>
-                <TooltipContent>{label}</TooltipContent>
+                <TooltipContent>{labelConNombre}</TooltipContent>
               </Tooltip>
             )
           })}

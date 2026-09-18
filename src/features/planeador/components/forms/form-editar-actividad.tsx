@@ -750,14 +750,25 @@ function IdentificacionSection({ form, disabled }: { form: FormActividad; disabl
             <Field variant="outlined">
               <FieldLabel htmlFor={field.name}>Tipo de actividad</FieldLabel>
               <Select
-                value={field.state.value}
-                onValueChange={(value) => field.handleChange(value as Actividad["tipo"])}
+                // `__none__` es el sentinel de "sin elegir" — mismo criterio
+                // que el resto de los `<Select>` del form (Asignatura,
+                // Unidad temática asociada, Modalidad, …): antes "Tipo de
+                // actividad" arrancaba en el primer valor del catálogo
+                // (`crearActividadVacia`) porque no tenía dónde representar
+                // "todavía sin elegir".
+                value={field.state.value || "__none__"}
+                onValueChange={(value) =>
+                  field.handleChange(!value || value === "__none__" ? "" : (value as Actividad["tipo"]))
+                }
                 disabled={disabled}
               >
                 <SelectTrigger id={field.name}>
-                  <SelectValue />
+                  <SelectValue placeholder="Seleccione">
+                    {(value) => (value === "__none__" ? "Seleccione" : (value as string))}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="__none__">Seleccione</SelectItem>
                   {tiposActividad.map((tipo) => (
                     <SelectItem key={tipo} value={tipo}>
                       {tipo}
@@ -810,6 +821,18 @@ function UnidadAsociadaSection({
   // aplicable (a diferencia de las pestañas, que muestran TODOS los que
   // dicta el docente) — se busca por `gradoId` dentro de `unidadTabs`.
   const { data: unidadTabs } = useUnidadesTabsQuery()
+  // "¿Es formativa?" de la unidad la decide el referente curricular de
+  // GRADO + ASIGNATURA, no `UnidadTematica.enfoquePedagogico`: ese campo
+  // SIEMPRE llega "Evaluativo" desde `useUnidadesQuery` (el backend real no
+  // guarda un enfoque propio por unidad — ver el comentario de
+  // `toUnidadTematica` en `use-unidades-query.ts`), así que comparar contra
+  // ese campo (versión anterior de este handler) nunca detectaba una unidad
+  // Formativa. Todas las unidades de `unidadesDelGrado` comparten el MISMO
+  // grado+asignatura, así que comparten el mismo enfoque — un solo query acá
+  // alcanza, no hace falta uno por unidad.
+  const gradoIdSel = useSelector(form.store, (state) => state.values.gradoId)
+  const asignaturaIdSel = useSelector(form.store, (state) => state.values.asignaturaId)
+  const { data: referenteActual } = useReferenteCurricularQuery(gradoIdSel, asignaturaIdSel)
 
   return (
     <>
@@ -899,7 +922,10 @@ function UnidadAsociadaSection({
                           // mismo —no queda esperando a que la reabra— para que
                           // el resto del form (ponderación, lista de cotejo/
                           // rúbrica, "Es una recuperación") reaccione de una.
-                          if (next.enfoquePedagogico === "Formativo") {
+                          // `referenteActual` (no `next.enfoquePedagogico`, ver
+                          // el comentario de arriba) es el enfoque real del
+                          // grado+asignatura compartido por toda `unidadesDelGrado`.
+                          if (referenteActual?.esFormativo) {
                             form.setFieldValue("esEvaluativa", false)
                           }
                           // `ponderacion`/`notaMaxima` son alternativos y
@@ -1000,9 +1026,6 @@ function UnidadSection({
   evidenciasOriginales: number[]
   criteriosUnidadOriginales: number[]
 }) {
-  const gradoId = useSelector(form.store, (state) => state.values.gradoId)
-  const asignaturaId = useSelector(form.store, (state) => state.values.asignaturaId)
-
   return (
     <form.Subscribe selector={(state) => state.values.unidad}>
       {(unidad) => {
@@ -1016,8 +1039,6 @@ function UnidadSection({
                   <UnidadFichaYEvidencias
                     unidadId={seleccionada.id}
                     nombreFallback={seleccionada.nombre}
-                    gradoId={gradoId}
-                    asignaturaId={asignaturaId}
                     seleccionadas={evidenciasField.state.value}
                     onToggle={(evidenciaId) => {
                       const actual = evidenciasField.state.value
@@ -1050,14 +1071,12 @@ function UnidadSection({
 }
 
 /** Separado de `UnidadSection` solo para poder llamar
- *  `useUnidadDetalleQuery`/`useReferenteCurricularQuery` de forma
- *  incondicional (reglas de hooks) — `UnidadSection` decide arriba si hay
- *  unidad elegida antes de montar esto. */
+ *  `useUnidadDetalleQuery`/`useUnidadReferenteQuery` de forma incondicional
+ *  (reglas de hooks) — `UnidadSection` decide arriba si hay unidad elegida
+ *  antes de montar esto. */
 function UnidadFichaYEvidencias({
   unidadId,
   nombreFallback,
-  gradoId,
-  asignaturaId,
   seleccionadas,
   onToggle,
   disabledIds,
@@ -1067,8 +1086,6 @@ function UnidadFichaYEvidencias({
 }: {
   unidadId: number
   nombreFallback: string
-  gradoId: number | undefined
-  asignaturaId: number | undefined
   seleccionadas: number[]
   onToggle: (evidenciaId: number) => void
   disabledIds: number[]
@@ -1077,26 +1094,22 @@ function UnidadFichaYEvidencias({
   criteriosDisabledIds: number[]
 }) {
   const { data: unidad } = useUnidadDetalleQuery(unidadId)
-  // El árbol COMPLETO de nivel 1 (enunciados) + nivel 2 (evidencias) sale
-  // del referente curricular de GRADO + ASIGNATURA (`GET /planeador/
-  // referente-curricular`) — pero acá solo interesan los enunciados que la
-  // UNIDAD ya relacionó (`unidad.enunciadosDba`, elegidos en
-  // `UnidadInfoGeneralFields`/`CrearUnidadPopover`), no el catálogo entero:
-  // esta actividad marca evidencias de un enunciado que su unidad ya
-  // adoptó, no cualquier enunciado del nivel educativo.
-  const { data: referente } = useReferenteCurricularQuery(gradoId, asignaturaId)
+  // El árbol de nivel 1 (enunciados) + nivel 2 (evidencias), YA acotado a
+  // los enunciados que esta UNIDAD relacionó (`relacionadoConUnidad`,
+  // resuelto del lado del backend), sale directo de `GET /planeador/
+  // unidades/:id/referente` — confirmado contra una respuesta real: cada
+  // fila trae sus propias `evidencias` anidadas y los rótulos
+  // `nivel_1_etiqueta`/`nivel_2_etiqueta`. Antes se pedía el referente por
+  // GRADO + ASIGNATURA (`useReferenteCurricularQuery`) y se cruzaba a mano
+  // contra `unidad.enunciadosDba` — dos queries y un filtro cliente para
+  // llegar al mismo árbol que esta ruta ya entrega filtrado.
+  const { data: referente } = useUnidadReferenteQuery(unidadId)
   const { data: unidadTabs } = useUnidadesTabsQuery()
-  // Por `referente.id` (grado+ASIGNATURA), no por `gradoId` a secas: evita
-  // que el título diga un instrumento distinto del que en verdad tienen
-  // `nivel1Etiqueta`/`nivel2Etiqueta` de ESTE MISMO referente — ver el
-  // comentario de `instrumentoLabelFromReferente`.
-  const instrumentoLabel = instrumentoLabelFromReferente(referente?.id, unidadTabs, UNIDAD_TAB_FALLBACK)
-  const enunciadosDeLaUnidad =
-    referente && unidad
-      ? referente.enunciados.filter((enunciado) =>
-          unidad.enunciadosDba.some((elegido) => elegido.id === enunciado.id),
-        )
-      : []
+  // Por `referente.id` (`pk_referente_curricular`), no por `gradoId` a
+  // secas: evita que el título diga un instrumento distinto del que en
+  // verdad tienen `nivel1Etiqueta`/`nivel2Etiqueta` de ESTE MISMO referente
+  // — ver el comentario de `instrumentoLabelFromReferente`.
+  const instrumentoLabel = instrumentoLabelFromReferente(referente?.id ?? undefined, unidadTabs, UNIDAD_TAB_FALLBACK)
 
   return (
     <div className="flex flex-col gap-4">
@@ -1107,12 +1120,12 @@ function UnidadFichaYEvidencias({
         objetivos={unidad?.objetivos ?? []}
         contenidos={unidad?.contenidos ?? []}
       />
-      {referente && enunciadosDeLaUnidad.length > 0 && (
+      {referente && referente.enunciados.length > 0 && (
         <EnunciadosEvidenciasChecklist
           instrumentoLabel={instrumentoLabel}
           nivel1Etiqueta={referente.nivel1Etiqueta}
           nivel2Etiqueta={referente.nivel2Etiqueta}
-          enunciados={enunciadosDeLaUnidad}
+          enunciados={referente.enunciados}
           seleccionadas={seleccionadas}
           onToggle={onToggle}
           disabledIds={disabledIds}
@@ -1172,6 +1185,7 @@ function AsignaturaGradoSection({ form }: { form: FormActividad }) {
 
   const asignaturaId = useSelector(form.store, (state) => state.values.asignaturaId)
   const hasGradoAsignatura = hasGradoGrupo && asignaturaId != null
+  const asignarTodoElGrupo = useSelector(form.store, (state) => state.values.asignarTodoElGrupo)
   const { data: matriculas = [], isPending: isPendingMatriculas } = useActividadMatriculasGrupoQuery(
     hasGradoAsignatura ? grupoId : undefined,
   )
@@ -1401,9 +1415,10 @@ function AsignaturaGradoSection({ form }: { form: FormActividad }) {
                 id={field.name}
                 estudiantes={matriculas}
                 value={field.state.value}
-                onChange={(matriculaIds) => {
+                allSelected={asignarTodoElGrupo}
+                onChange={({ matriculaIds, allSelected }) => {
                   field.handleChange(matriculaIds)
-                  form.setFieldValue("asignarTodoElGrupo", matriculaIds.length === 0)
+                  form.setFieldValue("asignarTodoElGrupo", allSelected)
                 }}
                 disabled={!hasGradoAsignatura}
                 // `isPending` de una query DESHABILITADA (`enabled: false`)
@@ -2066,9 +2081,27 @@ function ProgramacionSection({ form, disabled }: { form: FormActividad; disabled
   const submissionAttempts = useSelector(form.store, (state) => state.submissionAttempts)
   const requerido = (value: string) => (value ? undefined : "Este campo es obligatorio.")
 
+  // Contexto informativo de la ventana de arriba — el backend ya lo manda
+  // (`periodoAcademico`/`intensidadHoraria`) pero antes se descartaba sin
+  // mostrarlo: el docente veía los topes de fecha aplicados sin saber DE
+  // DÓNDE salían ("¿por qué no me deja elegir un martes?").
+  const periodoLabel = programacion?.periodoAcademico
+    ? `${programacion.periodoAcademico.nombre} (${programacion.periodoAcademico.fechaInicio?.toLocaleDateString("es-CO") ?? "…"} – ${programacion.periodoAcademico.fechaFin?.toLocaleDateString("es-CO") ?? "…"})`
+    : null
+  const intensidadLabel = programacion?.intensidadHoraria
+    ? `Se dicta ${programacion.intensidadHoraria.diasHabiles.map((d) => d.nombre).join(", ")} · ${programacion.intensidadHoraria.bloquesPorSemana} bloque${programacion.intensidadHoraria.bloquesPorSemana === 1 ? "" : "s"} por semana`
+    : null
+
   return (
     <Card className="gap-4 p-4">
-      <h3 className="text-base font-semibold">Programación</h3>
+      <div>
+        <h3 className="text-base font-semibold">Programación</h3>
+        {(periodoLabel || intensidadLabel) && (
+          <p className="text-muted-foreground mt-1 text-xs">
+            {[periodoLabel, intensidadLabel].filter(Boolean).join(" · ")}
+          </p>
+        )}
+      </div>
       <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
         <form.Field name="fechaInicio" validators={{ onChange: ({ value }) => requerido(value) }}>
           {(field) => {
@@ -2500,52 +2533,35 @@ function EvaluacionSection({
                 3. definición del instrumento  →  4. ¿Cuánto pesa?
               Si la respuesta a (1) es "No", (4) desaparece (no aplica).
 
-              Además de `esEvaluativa`, (4) también depende del `metodoCalculo`
-              de la unidad temática elegida — mismo criterio de tres vías que
-              `esPonderado` en `DialogAgregarActividad` (ver el comentario de
-              ese componente), pero completo acá:
-                - "Ponderado"     → el docente escribe el % (`ponderacion`).
-                - "Suma de puntos" → el docente escribe el puntaje máximo
-                  (`notaMaxima`) y el sistema calcula el % resultante — no
-                  coexiste con `ponderacion`, son campos alternativos.
-                - "Promedio simple" → ninguno de los dos aplica: cada
-                  actividad pesa igual, no hay nada que repartir ni puntuar. */}
-          <form.Subscribe selector={(state) => [state.values.esEvaluativa, state.values.unidad.id] as const}>
-            {([esEvaluativa, unidadId]) => {
+              (4) sale de `camposEfectivos.ponderacion` — la MISMA fuente de
+              verdad que ya resuelve el backend (`visible`/`modo`/`motivo`),
+              no de re-derivar el `metodoCalculo` de la unidad en el cliente
+              (versión anterior de esta sección): `modo` ya viene resuelto
+              como "PORCENTAJE" (→ `ponderacion`, unidad "Ponderado") o
+              "PUNTAJE" (→ `notaMaxima`, unidad "Suma de puntos"); sin
+              `visible` (p. ej. "Promedio simple", donde nada de esto
+              aplica) se muestra el `motivo` que ya trae la respuesta, en
+              vez de un texto fijo adivinando por qué. */}
+          <form.Subscribe selector={(state) => state.values.esEvaluativa}>
+            {(esEvaluativa) => {
               if (!esEvaluativa) return null
-              const metodoCalculo = unidades.find((u) => u.id === unidadId)?.metodoCalculo
-              if (metodoCalculo === "Ponderado") {
-                return (
-                  <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2">
-                    <form.Field name="ponderacion">
-                      {(ponderacionField) => (
-                        <Field variant="outlined">
-                          <FieldLabel htmlFor={ponderacionField.name}>
-                            Ponderación (%){camposEfectivos?.ponderacion.requerido ? " *" : ""}
-                          </FieldLabel>
-                          <Input
-                            id={ponderacionField.name}
-                            type="number"
-                            min={0}
-                            max={100}
-                            value={ponderacionField.state.value}
-                            onChange={(e) => ponderacionField.handleChange(Number(e.target.value))}
-                            disabled={disabled}
-                          />
-                        </Field>
-                      )}
-                    </form.Field>
+              const ponderacionInfo = camposEfectivos?.ponderacion
+              if (!ponderacionInfo?.visible) {
+                return ponderacionInfo?.motivo ? (
+                  <div className="border-blue-stroke bg-blue-22 text-blue flex items-start gap-2 rounded-md border p-3 text-sm">
+                    <InfoIcon className="mt-0.5 size-4 shrink-0" />
+                    {ponderacionInfo.motivo}
                   </div>
-                )
+                ) : null
               }
-              if (metodoCalculo === "Suma de puntos") {
+              if (ponderacionInfo.modo === "PUNTAJE") {
                 return (
                   <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2">
                     <form.Field name="notaMaxima">
                       {(notaMaximaField) => (
                         <Field variant="outlined">
                           <FieldLabel htmlFor={notaMaximaField.name}>
-                            Puntaje máximo{camposEfectivos?.ponderacion.requerido ? " *" : ""}
+                            Puntaje{ponderacionInfo.requerido ? " *" : ""}
                           </FieldLabel>
                           <Input
                             id={notaMaximaField.name}
@@ -2563,22 +2579,30 @@ function EvaluacionSection({
                   </div>
                 )
               }
-              if (metodoCalculo === "Promedio simple") {
-                // Ni Ponderación ni Puntaje aplican con "Promediar
-                // actividades" — sin esto la sección de Evaluación
-                // terminaba en el instrumento sin ningún aviso de por qué
-                // no hay nada más que completar. Mismo texto que ya usa
-                // `UnidadInfoGeneralFields` para este método.
-                return (
-                  <div className="border-blue-stroke bg-blue-22 text-blue flex items-start gap-2 rounded-md border p-3 text-sm">
-                    <InfoIcon className="mt-0.5 size-4 shrink-0" />
-                    Esta unidad promedia sus actividades: no necesitas asignarle un porcentaje ni un
-                    puntaje a esta — el resultado se calcula como el promedio simple de todas las
-                    actividades vinculadas.
-                  </div>
-                )
-              }
-              return null
+              // `modo === "PORCENTAJE"`, o `visible` sin `modo` todavía
+              // resuelto: cae al campo de siempre en vez de no mostrar nada.
+              return (
+                <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2">
+                  <form.Field name="ponderacion">
+                    {(ponderacionField) => (
+                      <Field variant="outlined">
+                        <FieldLabel htmlFor={ponderacionField.name}>
+                          Ponderación (%){ponderacionInfo.requerido ? " *" : ""}
+                        </FieldLabel>
+                        <Input
+                          id={ponderacionField.name}
+                          type="number"
+                          min={0}
+                          max={100}
+                          value={ponderacionField.state.value}
+                          onChange={(e) => ponderacionField.handleChange(Number(e.target.value))}
+                          disabled={disabled}
+                        />
+                      </Field>
+                    )}
+                  </form.Field>
+                </div>
+              )
             }}
           </form.Subscribe>
         </>
