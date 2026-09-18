@@ -27,6 +27,7 @@ import { cn } from "@/lib/utils"
 import { useUnidadDetalleQuery } from "@/features/planeador/api/query/use-unidades-query"
 import { useReferenteCurricularQuery } from "@/features/planeador/api/query/use-referente-curricular-query"
 import { useUnidadActividadesQuery } from "@/features/planeador/api/query/use-unidad-actividades-query"
+import { useUnidadCriteriosQuery } from "@/features/planeador/api/query/use-unidad-criterios-query"
 import { useNivelesDesempenoNombres } from "@/features/planeador/api/query/use-niveles-desempeno"
 import { createUnidadActividadesColumns } from "@/features/planeador/components/table/columns-unidad-actividades"
 import { createUnidadCriteriosColumns } from "@/features/planeador/components/table/columns-unidad-criterios"
@@ -329,10 +330,14 @@ export function Rubricas({ unidad }: { unidad: UnidadTematica }) {
     () => createUnidadCriteriosColumns(nombresNiveles),
     [nombresNiveles],
   )
-  const { sorted, sorting, setSorting } = useSortedRows(unidad.criterios)
+  // `GET /planeador/unidades/:id/criterios` (real) — no se lee `unidad.criterios`
+  // del detalle: ese campo queda siempre vacío contra el backend real (viven
+  // en este endpoint aparte, mismo criterio que `Actividades` más abajo).
+  const { data: criterios = [], isPending, isError, refetch } = useUnidadCriteriosQuery(unidad.id)
+  const { sorted, sorting, setSorting } = useSortedRows(criterios)
   const [dialogOpen, setDialogOpen] = React.useState(false)
 
-  // Sin `Pagination`: los criterios vienen enteros dentro del detalle y son
+  // Sin `Pagination`: los criterios vienen enteros en una sola llamada y son
   // pocos, así que entran todos en una sola página.
   const { table } = useDataTable({
     columns,
@@ -354,13 +359,11 @@ export function Rubricas({ unidad }: { unidad: UnidadTematica }) {
         actionLabel="Agregar criterio"
         onAction={() => setDialogOpen(true)}
       />
-      {/* `isPending`/`isError` en falso: las filas llegan dentro del detalle
-          de la unidad, así que su carga y su error ya los maneja el panel. */}
       <DataTable
         table={table}
-        isPending={false}
-        isError={false}
-        onRetry={() => {}}
+        isPending={isPending}
+        isError={isError}
+        onRetry={refetch}
         emptyMessage="Esta unidad no tiene criterios definidos."
       />
       <DialogAgregarCriterio unidadId={unidad.id} open={dialogOpen} onOpenChange={setDialogOpen} />
