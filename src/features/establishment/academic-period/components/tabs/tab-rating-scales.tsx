@@ -1,6 +1,6 @@
 ﻿"use no memo"
 
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useMemo, useRef, useState } from "react"
 import { SUCCESS_MESSAGES } from "@/lib/success-messages"
 import type { SortingState } from "@tanstack/react-table"
 import { PlusIcon, SpinnerIcon } from "@/components/ui/icons"
@@ -43,6 +43,7 @@ import { RatingSymbolSelect } from "@/features/establishment/academic-period/com
 import { createRatingScaleLevelColumns } from "@/features/establishment/academic-period/components/table/columns-rating-scales"
 import {
   createRatingScaleDetailColumns,
+  type CreateRatingScaleDetailColumnsOptions,
   toScaleDraft,
   type EditableScale,
 } from "@/features/establishment/academic-period/components/table/columns-rating-scale-detail"
@@ -373,7 +374,8 @@ function ScalesSubTable({
     })
   }
 
-  const columns = createRatingScaleDetailColumns({
+  const columnOptionsRef = useRef({} as CreateRatingScaleDetailColumnsOptions)
+  columnOptionsRef.current = {
     range,
     symbols,
     tipoOptions,
@@ -385,7 +387,9 @@ function ScalesSubTable({
     onSave: saveEdit,
     onCancel: cancelEdit,
     isSaving: updateMutation.isPending,
-  })
+  }
+
+  const columns = useMemo(() => createRatingScaleDetailColumns(columnOptionsRef), [])
 
   const { table, selectedIds, hasSelection, resetSelection } = useDataTable({
     columns,

@@ -10,14 +10,17 @@ import type {
   TipoAsistencia,
 } from "@/features/academic-management/asistencia/api/types/asistencia"
 
+// `grupo` es el NOMBRE de TGRUPO ("02"), no el curso: el curso va aparte en
+// `grado` y la pantalla los pega ("6" + "02" -> "602"). Los nombres no se
+// repiten entre grados porque los filtros del mock buscan el grupo por nombre.
 const GRUPOS = [
-  { fk_grupo: 601, grupo: "601", grado: "6", gradoNombre: "Sexto", jornada: "C", jornadaNombre: "Completa" },
-  { fk_grupo: 602, grupo: "602", grado: "6", gradoNombre: "Sexto", jornada: "T", jornadaNombre: "Tarde" },
-  { fk_grupo: 701, grupo: "701", grado: "7", gradoNombre: "Séptimo", jornada: "C", jornadaNombre: "Completa" },
-  { fk_grupo: 801, grupo: "801", grado: "8", gradoNombre: "Octavo", jornada: "T", jornadaNombre: "Tarde" },
+  { fk_grupo: 601, grupo: "01", grado: "6", gradoNombre: "Sexto", jornada: "C", jornadaNombre: "Completa" },
+  { fk_grupo: 602, grupo: "02", grado: "6", gradoNombre: "Sexto", jornada: "T", jornadaNombre: "Tarde" },
+  { fk_grupo: 701, grupo: "03", grado: "7", gradoNombre: "Séptimo", jornada: "C", jornadaNombre: "Completa" },
+  { fk_grupo: 801, grupo: "04", grado: "8", gradoNombre: "Octavo", jornada: "T", jornadaNombre: "Tarde" },
 ]
 
-const GRUPO_PREESCOLAR = { fk_grupo: 101, grupo: "PJ", grado: "PJ", gradoNombre: "Pre-Jardín", jornada: "M", jornadaNombre: "Mañana" }
+const GRUPO_PREESCOLAR = { fk_grupo: 101, grupo: "05", grado: "-1", gradoNombre: "Pre-Jardín", jornada: "M", jornadaNombre: "Mañana" }
 
 const ASIGNATURAS = [
   { fk_asignatura: 1, asignatura: "Cognitiva" },
@@ -268,34 +271,50 @@ function generarTodosLosRegistros(sedeId: number): AsistenciaQueryRow[] {
         : null
       const tieneSoporte = observacion !== null && (i + j) % 2 === 0
 
-      registros.push({
-        pk_tasistencia: pk++,
-        estudiante: estudiante.nombre,
-        documento: estudiante.documento,
-        grupo: grupo.grupo,
-        jornada: grupo.jornada,
-        asignatura: asignatura.asignatura,
-        fecha: `${anio}-${String(mes).padStart(2, "0")}-${String(dia).padStart(2, "0")}`,
-        bloque: 1,
-        hora_inicio: null,
-        hora_fin: null,
-        tipo_asistencia_valor: tipoFinal,
-        tipo_asistencia: TIPO_ASISTENCIA_NOMBRE[tipoFinal],
-        observacion,
-        tiene_soporte: tieneSoporte,
-        fk_soporte_archivo: tieneSoporte ? pk : null,
-        soporte_nombre: tieneSoporte ? ARCHIVOS_SOPORTE[(i + j) % ARCHIVOS_SOPORTE.length] : null,
-        es_formativa: false,
-        fk_tactividad: null,
-        actividad: null,
-        // Ventanas (total_estudiantes/ausentes/tarde/total_count) las
-        // calcula el handler sobre el set YA filtrado -- acá quedan en 0
-        // como placeholder.
-        total_estudiantes: 0,
-        ausentes: 0,
-        tarde: 0,
-        total_count: 0,
-      })
+      // Bloques SEGUIDOS de la misma asignatura: el backend los devuelve como
+      // registros sueltos y `generarSeguimiento` los colapsa en una fila.
+      const fechaIso = `${anio}-${String(mes).padStart(2, "0")}-${String(dia).padStart(2, "0")}`
+      for (let bloque = 1; bloque <= 1 + ((i + j) % 3); bloque++) {
+        // El estado del patrón cae en UN bloque de la corrida; el resto asiste.
+        // Así se ve "Llegó tarde · Bloque 2" y no toda la corrida marcada.
+        const tipoBloque: TipoAsistencia = bloque === 1 + ((i + j) % 2) ? tipoFinal : 1
+        registros.push({
+          pk_tasistencia: pk++,
+          estudiante: estudiante.nombre,
+          documento: estudiante.documento,
+          grupo: grupo.grupo,
+          grado: grupo.gradoNombre,
+          grado_valor: grupo.grado,
+          jornada: grupo.jornada,
+          asignatura: asignatura.asignatura,
+          fecha: fechaIso,
+          bloque,
+          hora_inicio: horaBloque(fechaIso, bloque, 0),
+          hora_fin: horaBloque(fechaIso, bloque, HORAS_BLOQUE),
+          tipo_asistencia_valor: tipoBloque,
+          tipo_asistencia: TIPO_ASISTENCIA_NOMBRE[tipoBloque],
+          observacion,
+          tiene_soporte: tieneSoporte,
+          fk_soporte_archivo: tieneSoporte ? pk : null,
+          soporte_nombre: tieneSoporte ? ARCHIVOS_SOPORTE[(i + j) % ARCHIVOS_SOPORTE.length] : null,
+          es_formativa: false,
+          fk_tactividad: null,
+          actividad: null,
+          // Agrupación y ventanas las resuelve `generarSeguimiento` sobre el set
+          // YA filtrado -- acá quedan en 0 como placeholder.
+          pks: [],
+          registros: 0,
+          bloques: [],
+          bloques_estado: [],
+          hora_inicio_estado: null,
+          hora_fin_estado: null,
+          total_estudiantes: 0,
+          asistieron: 0,
+          ausentes: 0,
+          tarde: 0,
+          total_count: 0,
+        })
+      }
     })
   })
 
@@ -318,6 +337,8 @@ function generarTodosLosRegistros(sedeId: number): AsistenciaQueryRow[] {
         estudiante: estudiante.nombre,
         documento: estudiante.documento,
         grupo: GRUPO_PREESCOLAR.grupo,
+        grado: GRUPO_PREESCOLAR.gradoNombre,
+        grado_valor: GRUPO_PREESCOLAR.grado,
         jornada: GRUPO_PREESCOLAR.jornada,
         asignatura: "",
         fecha: `${anio}-${String(mes).padStart(2, "0")}-${String(dia).padStart(2, "0")}`,
@@ -333,7 +354,14 @@ function generarTodosLosRegistros(sedeId: number): AsistenciaQueryRow[] {
         es_formativa: true,
         fk_tactividad: actividad.fk_tactividad,
         actividad: actividad.actividad,
+        pks: [],
+        registros: 0,
+        bloques: [],
+        bloques_estado: [],
+        hora_inicio_estado: null,
+        hora_fin_estado: null,
         total_estudiantes: 0,
+        asistieron: 0,
         ausentes: 0,
         tarde: 0,
         total_count: 0,
@@ -359,7 +387,68 @@ export function aplicarEdicionAsistencia(pkTasistencia: number, patch: Partial<A
   editOverrides.set(pkTasistencia, { ...editOverrides.get(pkTasistencia), ...patch })
 }
 
-/** Filtra + calcula las 3 ventanas (total_estudiantes/ausentes/total_count) sobre el set filtrado completo. */
+/** Qué estado manda en una corrida mezclada, 1 = gana -- calca `fn_asistencia_tipo_prioridad`. */
+const PRIORIDAD_TIPO: Record<TipoAsistencia, number> = { 5: 1, 6: 2, 2: 3, 3: 4, 1: 5 }
+
+/**
+ * Colapsa los bloques CONSECUTIVOS de una misma (estudiante, fecha, asignatura
+ * o actividad) en una fila, como `fn_asistencia_listar_seguimiento`: el estado
+ * de la corrida sale de `PRIORIDAD_TIPO` (la tardanza manda sobre la
+ * inasistencia) y `pks` lleva todos los registros para poder editarla entera.
+ * Una toma sin bloque no se agrupa con nadie.
+ */
+function agruparCorridas(rows: AsistenciaQueryRow[]): AsistenciaQueryRow[] {
+  const sesiones = new Map<string, AsistenciaQueryRow[]>()
+  for (const row of rows) {
+    const clave =
+      row.bloque === null
+        ? `suelta-${row.pk_tasistencia}`
+        : `${row.documento}|${row.grupo}|${row.fecha}|${row.asignatura}|${row.fk_tactividad}`
+    sesiones.set(clave, [...(sesiones.get(clave) ?? []), row])
+  }
+
+  const corridas: AsistenciaQueryRow[][] = []
+  for (const sesion of sesiones.values()) {
+    let corrida: AsistenciaQueryRow[] = []
+    for (const row of [...sesion].sort((a, b) => (a.bloque ?? 0) - (b.bloque ?? 0))) {
+      const anterior = corrida[corrida.length - 1]
+      // Un hueco entre bloques abre una corrida nueva.
+      if (anterior && row.bloque !== (anterior.bloque ?? 0) + 1) {
+        corridas.push(corrida)
+        corrida = []
+      }
+      corrida.push(row)
+    }
+    if (corrida.length > 0) corridas.push(corrida)
+  }
+
+  return corridas.map((corrida) => {
+    const porGravedad = [...corrida].sort(
+      (a, b) => PRIORIDAD_TIPO[a.tipo_asistencia_valor] - PRIORIDAD_TIPO[b.tipo_asistencia_valor],
+    )
+    const ganador = porGravedad[0]
+    const conSoporte = porGravedad.find((r) => r.tiene_soporte) ?? ganador
+    // Los bloques que llevan el estado ganador: dónde ocurrió lo que la fila reporta.
+    const delEstado = corrida.filter((r) => r.tipo_asistencia_valor === ganador.tipo_asistencia_valor)
+    return {
+      ...ganador,
+      pk_tasistencia: corrida[0].pk_tasistencia,
+      pks: corrida.map((r) => r.pk_tasistencia),
+      registros: corrida.length,
+      bloques: corrida.map((r) => r.bloque).filter((b): b is number => b !== null),
+      bloques_estado: delEstado.map((r) => r.bloque).filter((b): b is number => b !== null),
+      hora_inicio_estado: delEstado[0]?.hora_inicio ?? null,
+      hora_fin_estado: delEstado[delEstado.length - 1]?.hora_fin ?? null,
+      bloque: corrida[0].bloque,
+      observacion: porGravedad.find((r) => r.observacion !== null)?.observacion ?? null,
+      tiene_soporte: conSoporte.tiene_soporte,
+      fk_soporte_archivo: conSoporte.fk_soporte_archivo,
+      soporte_nombre: conSoporte.soporte_nombre,
+    }
+  })
+}
+
+/** Filtra, agrupa por corrida de bloques y calcula las 4 ventanas sobre el set filtrado completo. */
 export function generarSeguimiento(
   sedeId: number,
   filters: AsistenciaQueryFilters,
@@ -371,11 +460,17 @@ export function generarSeguimiento(
 
   if (filters.FECHA_DESDE) rows = rows.filter((r) => r.fecha >= filters.FECHA_DESDE!)
   if (filters.FECHA_HASTA) rows = rows.filter((r) => r.fecha <= filters.FECHA_HASTA!)
+  // JORNADA y GRADO llegan como NOMBRE, no como código: fn_asistencia_listar_seguimiento
+  // los compara contra TLISTA_VALOR.NOMBRE / TGRADO.NOMBRE.
   if (filters.JORNADA) {
-    rows = rows.filter((r) => [...GRUPOS, GRUPO_PREESCOLAR].find((g) => g.grupo === r.grupo)?.jornada === filters.JORNADA)
+    rows = rows.filter(
+      (r) => [...GRUPOS, GRUPO_PREESCOLAR].find((g) => g.grupo === r.grupo)?.jornadaNombre === filters.JORNADA,
+    )
   }
   if (filters.GRADO) {
-    rows = rows.filter((r) => [...GRUPOS, GRUPO_PREESCOLAR].find((g) => g.grupo === r.grupo)?.grado === filters.GRADO)
+    rows = rows.filter(
+      (r) => [...GRUPOS, GRUPO_PREESCOLAR].find((g) => g.grupo === r.grupo)?.gradoNombre === filters.GRADO,
+    )
   }
   if (filters.GRUPO != null) {
     rows = rows.filter((r) => [...GRUPOS, GRUPO_PREESCOLAR].find((g) => g.grupo === r.grupo)?.fk_grupo === filters.GRUPO)
@@ -387,9 +482,6 @@ export function generarSeguimiento(
   }
   if (filters.ACTIVIDAD != null) {
     rows = rows.filter((r) => r.es_formativa && r.fk_tactividad === filters.ACTIVIDAD)
-  }
-  if (filters.TIPO_ASISTENCIA != null) {
-    rows = rows.filter((r) => r.tipo_asistencia_valor === filters.TIPO_ASISTENCIA)
   }
   if (filters.SEARCH) {
     const needle = normaliza(filters.SEARCH)
@@ -403,15 +495,29 @@ export function generarSeguimiento(
     )
   }
 
-  // Ventanas sobre el set filtrado COMPLETO: ausentes/tarde cuentan
-  // ESTUDIANTES DISTINTOS (documento), no registros -- mismo criterio que
-  // el backend real.
-  const totalEstudiantes = new Set(rows.map((r) => r.documento)).size
-  const ausentes = new Set(rows.filter((r) => r.tipo_asistencia_valor === 2 || r.tipo_asistencia_valor === 3).map((r) => r.documento)).size
-  const tarde = new Set(rows.filter((r) => r.tipo_asistencia_valor === 5 || r.tipo_asistencia_valor === 6).map((r) => r.documento)).size
-  const totalCount = rows.length
+  // El tipo filtra el estado de la FILA ya agrupada, no el de cada bloque: pedir
+  // "Llegó tarde" trae la corrida entera marcada así, no solo el bloque tarde.
+  const agrupadas = agruparCorridas(rows).filter(
+    (r) => filters.TIPO_ASISTENCIA == null || r.tipo_asistencia_valor === filters.TIPO_ASISTENCIA,
+  )
 
-  return rows.map((r) => ({ ...r, total_estudiantes: totalEstudiantes, ausentes, tarde, total_count: totalCount }))
+  // Ventanas sobre el set filtrado COMPLETO: cuentan ESTUDIANTES DISTINTOS
+  // (documento), no registros -- mismo criterio que el backend real.
+  const distintos = (filtro: (r: AsistenciaQueryRow) => boolean) =>
+    new Set(agrupadas.filter(filtro).map((r) => r.documento)).size
+  const totalEstudiantes = new Set(agrupadas.map((r) => r.documento)).size
+  const asistieron = distintos((r) => r.tipo_asistencia_valor === 1)
+  const ausentes = distintos((r) => r.tipo_asistencia_valor === 2 || r.tipo_asistencia_valor === 3)
+  const tarde = distintos((r) => r.tipo_asistencia_valor === 5 || r.tipo_asistencia_valor === 6)
+
+  return agrupadas.map((r) => ({
+    ...r,
+    total_estudiantes: totalEstudiantes,
+    asistieron,
+    ausentes,
+    tarde,
+    total_count: agrupadas.length,
+  }))
 }
 
 // ── Padrón de sesión (GET /asistencias/sesion/estudiantes, pantalla

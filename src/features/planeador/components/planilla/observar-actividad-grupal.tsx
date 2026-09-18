@@ -1,9 +1,11 @@
 import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
+import { DatePicker } from "@/components/date-picker"
 import { Field, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
+import { TEXTAREA_OUTLINED } from "@/components/ui/textarea"
 import { Textarea } from "@/components/ui/textarea"
+import { formatDateValue, parseDateValue } from "@/lib/date-value"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
@@ -101,6 +103,7 @@ export function ObservarActividadGrupal({
           onChange={(event) => setObservacion(event.target.value)}
           placeholder="Qué se observó en el desempeño del grupo"
           rows={6}
+          className={TEXTAREA_OUTLINED}
         />
         <span className="text-muted-foreground self-end text-xs">
           {observacion.length}/{OBSERVACION_MAX_CARACTERES}
@@ -109,11 +112,10 @@ export function ObservarActividadGrupal({
 
       <Field variant="outlined">
         <FieldLabel htmlFor="fecha-observacion-grupal">Fecha</FieldLabel>
-        <Input
+        <DatePicker
           id="fecha-observacion-grupal"
-          type="date"
-          value={fecha}
-          onChange={(event) => setFecha(event.target.value)}
+          value={parseDateValue(fecha)}
+          onChange={(date) => setFecha(formatDateValue(date))}
         />
       </Field>
 

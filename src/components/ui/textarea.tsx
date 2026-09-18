@@ -16,4 +16,10 @@ function Textarea({ className, ...props }: React.ComponentProps<"textarea">) {
   )
 }
 
-export { Textarea }
+/** `Textarea` no hereda la variante `outlined` del `Field` (sí lo hace
+ *  `Input`, que la toma del contexto): estas clases —copiadas de
+ *  `inputVariants({variant: "outlined"})`— la igualan a mano. */
+const TEXTAREA_OUTLINED =
+  "rounded-md border border-input px-3 py-2 hover:border-ring focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/20 aria-invalid:border-red aria-invalid:focus-visible:border-red aria-invalid:focus-visible:ring-red/20"
+
+export { Textarea, TEXTAREA_OUTLINED }

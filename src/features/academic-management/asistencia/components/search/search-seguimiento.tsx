@@ -103,6 +103,13 @@ export function SearchSeguimiento({
     setOpen(false)
   }
 
+  // Solo los filtros: la búsqueda libre se queda. Aplica en el acto para que la
+  // tabla responda sin tener que confirmar el panel vacío.
+  function handleClearFilters() {
+    setDraft(EMPTY_SEGUIMIENTO_FILTERS)
+    applyFilters(EMPTY_SEGUIMIENTO_FILTERS)
+  }
+
   function handleClearAll() {
     onClearAll()
     setDraft(EMPTY_SEGUIMIENTO_FILTERS)
@@ -158,6 +165,7 @@ export function SearchSeguimiento({
       value={queryText}
       onValueChange={setQueryText}
       onClearAll={handleClearAll}
+      onClearFilters={handleClearFilters}
       activeFilterCount={activeFilterCount}
       badgeCount={badgeCount}
       open={open}

@@ -1,0 +1,118 @@
+import { useState } from "react"
+
+import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { useNotify } from "@/components/notice/notice-context"
+import { getErrorMessage } from "@/lib/api-client"
+import { ChatCircleDotsIcon, ChatCircleTextIcon } from "@/components/ui/icons"
+
+import { useNotaEstudianteQuery } from "@/features/planeador/api/query/use-nota-estudiante-query"
+import { useObservarEstudianteMutation } from "@/features/planeador/api/mutations/use-observar-estudiante"
+import { ObservacionEstudianteSheet } from "@/features/planeador/components/planilla/observacion-estudiante-sheet"
+import type { CeldaEvidencia } from "@/features/planeador/api/types/planilla"
+
+interface CeldaObservacionTriggerProps {
+  pkTactividadEstudiante: number
+  /** `yyyy-MM-dd` — `PlanillaCelda.fechaAsistencia`: el día con asistencia
+   *  válida de ESE estudiante. `null` = no hay ninguno y el backend va a
+   *  rechazar la observación, así que no se deja abrir. */
+  fecha: string | null
+  estudianteNombre: string
+  /** Subtítulo del panel: la actividad sobre la que se observa. */
+  contexto: string
+  /** Lo que ya trae la celda — evita esperar el `GET .../nota` para saber si
+   *  el estudiante tiene o no observación. */
+  observacionActual: string | null
+  evidenciasActuales: CeldaEvidencia[]
+  /** Para las vistas que no viven de la query de la Planilla (la de detalle
+   *  de una actividad) — la invalidación propia de la mutación no las
+   *  alcanza. */
+  onGuardado?: () => void
+}
+
+/**
+ * Abre la observación de UNA celda (estudiante × actividad formativa) en el
+ * mismo panel lateral que usa la vista de aprobación, en vez de un popover
+ * anclado a la celda: el texto llega a 500 caracteres y en el popover se leía
+ * en una ventanita de dos líneas.
+ */
+export function CeldaObservacionTrigger({
+  pkTactividadEstudiante,
+  fecha,
+  estudianteNombre,
+  contexto,
+  observacionActual,
+  evidenciasActuales,
+  onGuardado,
+}: CeldaObservacionTriggerProps) {
+  const [abierto, setAbierto] = useState(false)
+  const { notify } = useNotify()
+
+  const { data: notaActual } = useNotaEstudianteQuery(abierto ? pkTactividadEstudiante : undefined)
+
+  const observar = useObservarEstudianteMutation({
+    mutationConfig: {
+      onSuccess: () => {
+        notify("Observación guardada.")
+        setAbierto(false)
+        onGuardado?.()
+      },
+      onError: (error) => {
+        notify(getErrorMessage(error), { variant: "error" })
+      },
+    },
+  })
+
+  const tieneObservacion = Boolean(observacionActual?.trim())
+  const Icono = tieneObservacion ? ChatCircleTextIcon : ChatCircleDotsIcon
+  const etiqueta = tieneObservacion
+    ? `Editar la observación de ${estudianteNombre}`
+    : `Observar a ${estudianteNombre}`
+
+  return (
+    <>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Button
+              variant="ghost"
+              color="neutral"
+              size="icon-xs"
+              disabled={fecha === null}
+              aria-label={etiqueta}
+              onClick={() => setAbierto(true)}
+            />
+          }
+        >
+          <Icono className="size-3.5" />
+        </TooltipTrigger>
+        <TooltipContent>
+          {fecha === null ? `Sin asistencia registrada para ${estudianteNombre}` : etiqueta}
+        </TooltipContent>
+      </Tooltip>
+
+      <ObservacionEstudianteSheet
+        estudiante={
+          abierto
+            ? {
+                id: pkTactividadEstudiante,
+                nombreCompleto: estudianteNombre,
+                observacion: notaActual?.observacion ?? observacionActual,
+                fecha,
+              }
+            : null
+        }
+        contexto={contexto}
+        evidencias={notaActual?.evidencias.length ? notaActual.evidencias : evidenciasActuales}
+        guardando={observar.isPending}
+        onOpenChange={(open) => {
+          if (!open) setAbierto(false)
+        }}
+        onGuardar={(estudiante, texto) => {
+          if (!fecha) return
+          observar.mutate({ pkTactividadEstudiante: estudiante.id, observacion: texto.trim(), fecha })
+        }}
+      />
+    </>
+  )
+}
