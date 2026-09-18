@@ -62,7 +62,20 @@ async function createActividad(actividad: Actividad): Promise<CreateActividadRes
     FECHA_INICIO: actividad.fechaInicio,
     FECHA_CIERRE: actividad.fechaCierre,
     MATERIAL_REQUERIDO: actividad.materiales,
+    // "Seguimiento" (`generaEvidencias`/`observaciones`) se capturaba en el
+    // form pero nunca viajaba acá — mismo hueco que Programación arriba.
+    // `GENERA_EVIDENCIAS` sigue la convención "S"/"N" de `ES_EVALUATIVA`
+    // (no confirmado que sea booleano nativo, pero es la convención que ya
+    // usa el resto de los flags de esta misma función).
+    GENERA_EVIDENCIAS: actividad.generaEvidencias ? "S" : "N",
+    OBSERVACIONES_DOCENTE: actividad.observaciones,
   }
+  // Pendientes, a propósito: `actividad.tipoEvidencia` (→
+  // `FK_TLV_TIPO_EVIDENCIA`, necesita una categoría de catálogo sin
+  // confirmar) y `actividad.requiereValidacion` (→ el campo `REQUIERE_*`
+  // que la doc no nombra exacto) — mandarlos a ciegas arriesga un valor que
+  // el backend rechace, a diferencia de `resolveModalidadId` (que si falla
+  // resuelve `undefined` y simplemente no se manda nada).
   // "Duración estimada"/"Semana del cronograma" (sección Programación) se
   // capturaban en el form pero nunca viajaban acá — se perdían en silencio
   // al guardar. `DURACION_ESTIMADA` es siempre un número (el form ya lo
