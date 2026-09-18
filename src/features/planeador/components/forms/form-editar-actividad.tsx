@@ -474,6 +474,11 @@ function RecuperacionSection({
   // todavía. Con los catálogos vacíos, la config extra no se ofrece: el
   // toggle queda solo, igual que antes de que este bloque existiera.
   const catalogosDisponibles = (recuperacion?.catalogos.destino.length ?? 0) > 0
+  // Mismo criterio que `fechaInicio`/`fechaCierre` más abajo en el form: el
+  // error de un campo no se muestra hasta que el docente lo tocó o hasta
+  // que intentó guardar — así el primer vistazo a "Es una recuperación" no
+  // se ve todo en rojo.
+  const submissionAttempts = useSelector(form.store, (state) => state.submissionAttempts)
 
   return (
     <form.Subscribe selector={(state) => state.values.esEvaluativa}>
@@ -494,6 +499,42 @@ function RecuperacionSection({
                     className="rounded-full [&_[data-slot=switch-thumb]]:rounded-full"
                   />
                   Es una recuperación
+                  {/* % de la config de recuperación ya completada — la
+                      cuenta EXACTAMENTE los campos que
+                      `fn_actividad_recuperacion_configurar` (V224) exige en
+                      este momento (varía: `recuperacionActividadId` solo
+                      cuenta con `destino = ACTIVIDAD`, `recuperacionValor
+                      Ponderacion` solo con `tipoCalculo = PONDERADO`), para
+                      que el 100% coincida exactamente con "ya se puede
+                      guardar sin que el backend la rechace". */}
+                  {field.state.value && catalogosDisponibles && (
+                    <form.Subscribe
+                      selector={(state) => ({
+                        destino: state.values.recuperacionDestino,
+                        actividadId: state.values.recuperacionActividadId,
+                        tipoAplicacion: state.values.recuperacionTipoAplicacion,
+                        tipoCalculo: state.values.recuperacionTipoCalculo,
+                        valorPonderacion: state.values.recuperacionValorPonderacion,
+                      })}
+                    >
+                      {(v) => {
+                        const requeridos: unknown[] = [v.destino, v.tipoAplicacion, v.tipoCalculo]
+                        if (v.destino === "ACTIVIDAD") requeridos.push(v.actividadId)
+                        if (v.tipoCalculo === "PONDERADO") requeridos.push(v.valorPonderacion)
+                        const completos = requeridos.filter((x) => x != null && x !== "").length
+                        const porcentaje = Math.round((completos / requeridos.length) * 100)
+                        return (
+                          <Badge
+                            variant="soft"
+                            color={porcentaje === 100 ? "success" : "orange"}
+                            className="ml-auto"
+                          >
+                            {porcentaje}%
+                          </Badge>
+                        )
+                      }}
+                    </form.Subscribe>
+                  )}
                 </label>
               )}
             </form.Field>
@@ -502,52 +543,74 @@ function RecuperacionSection({
               {(esRecuperacionValue) =>
                 !esRecuperacionValue || !catalogosDisponibles ? null : (
                   <div className="grid gap-x-4 gap-y-5 rounded-md border border-input p-3 sm:grid-cols-2">
-                    <form.Field name="recuperacionDestino">
-                      {(field) => (
-                        <Field variant="outlined">
-                          <FieldLabel htmlFor={field.name}>
-                            ¿Esta recuperación aplica para?{recuperacion?.requerido ? " *" : ""}
-                          </FieldLabel>
-                          <Select
-                            value={field.state.value || "__none__"}
-                            onValueChange={(v) => {
-                              field.handleChange(!v || v === "__none__" ? "" : v)
-                              // Cambiar "¿Esta recuperación aplica para?"
-                              // invalida TODO lo que dependía del valor
-                              // anterior (la actividad puntual elegida,
-                              // cómo se aplica, cómo se calcula, el %) —
-                              // sin este reset quedaban valores viejos
-                              // guardados pero ocultos, que podían
-                              // reaparecer con datos de otra combinación al
-                              // volver a elegir la misma opción de antes.
-                              form.setFieldValue("recuperacionActividadId", undefined)
-                              form.setFieldValue("recuperacionTipoAplicacion", "")
-                              form.setFieldValue("recuperacionTipoCalculo", "")
-                              form.setFieldValue("recuperacionValorPonderacion", undefined)
-                            }}
-                            disabled={disabled}
-                          >
-                            <SelectTrigger id={field.name}>
-                              <SelectValue placeholder="Seleccione">
-                                {(v) =>
-                                  v === "__none__"
-                                    ? "Seleccione"
-                                    : (recuperacion?.catalogos.destino.find((o) => o.valor === v)?.nombre ??
-                                      (v as string))
-                                }
-                              </SelectValue>
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="__none__">Seleccione</SelectItem>
-                              {(recuperacion?.catalogos.destino ?? []).map((opcion) => (
-                                <SelectItem key={opcion.valor} value={opcion.valor}>
-                                  {opcion.nombre}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </Field>
-                      )}
+                    {/* Los 5 campos de esta sección validan igual que
+                        `fn_actividad_recuperacion_configurar` (V224) del
+                        backend real: si "Es una recuperación" está
+                        prendido, destino/tipoAplicacion/tipoCalculo son
+                        SIEMPRE obligatorios (más la actividad puntual sii
+                        destino=ACTIVIDAD, y el % sii tipoCalculo=PONDERADO
+                        — ver los validators de esos campos abajo). Sin
+                        esto, el front dejaba pasar un guardado a medio
+                        llenar que el backend rechazaba con un 22023 que el
+                        docente veía como un error genérico, sin saber cuál
+                        de los 5 campos le faltó. */}
+                    <form.Field
+                      name="recuperacionDestino"
+                      validators={{
+                        onChange: ({ value }) =>
+                          value ? undefined : "Selecciona a qué aplica la recuperación.",
+                      }}
+                    >
+                      {(field) => {
+                        const isInvalid =
+                          (field.state.meta.isTouched || submissionAttempts > 0) && !field.state.meta.isValid
+                        return (
+                          <Field variant="outlined" data-invalid={isInvalid}>
+                            <FieldLabel htmlFor={field.name}>
+                              ¿Esta recuperación aplica para?{recuperacion?.requerido ? " *" : ""}
+                            </FieldLabel>
+                            <Select
+                              value={field.state.value || "__none__"}
+                              onValueChange={(v) => {
+                                field.handleChange(!v || v === "__none__" ? "" : v)
+                                // Cambiar "¿Esta recuperación aplica para?"
+                                // invalida TODO lo que dependía del valor
+                                // anterior (la actividad puntual elegida,
+                                // cómo se aplica, cómo se calcula, el %) —
+                                // sin este reset quedaban valores viejos
+                                // guardados pero ocultos, que podían
+                                // reaparecer con datos de otra combinación al
+                                // volver a elegir la misma opción de antes.
+                                form.setFieldValue("recuperacionActividadId", undefined)
+                                form.setFieldValue("recuperacionTipoAplicacion", "")
+                                form.setFieldValue("recuperacionTipoCalculo", "")
+                                form.setFieldValue("recuperacionValorPonderacion", undefined)
+                              }}
+                              disabled={disabled}
+                            >
+                              <SelectTrigger id={field.name} aria-invalid={isInvalid}>
+                                <SelectValue placeholder="Seleccione">
+                                  {(v) =>
+                                    v === "__none__"
+                                      ? "Seleccione"
+                                      : (recuperacion?.catalogos.destino.find((o) => o.valor === v)?.nombre ??
+                                        (v as string))
+                                  }
+                                </SelectValue>
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="__none__">Seleccione</SelectItem>
+                                {(recuperacion?.catalogos.destino ?? []).map((opcion) => (
+                                  <SelectItem key={opcion.valor} value={opcion.valor}>
+                                    {opcion.nombre}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                          </Field>
+                        )
+                      }}
                     </form.Field>
 
                     {/* Actividad a recuperar: solo tiene sentido con
@@ -557,27 +620,38 @@ function RecuperacionSection({
                     <form.Subscribe selector={(state) => state.values.recuperacionDestino}>
                       {(destino) =>
                         destino !== "ACTIVIDAD" ? null : (
-                          <form.Field name="recuperacionActividadId">
-                            {(field) => (
-                              <Field variant="outlined">
-                                <FieldLabel>¿Qué actividad deseas recuperar?</FieldLabel>
-                                <ActividadRecuperarCascada
-                                  value={field.state.value}
-                                  onChange={(v) => {
-                                    field.handleChange(v)
-                                    // Mismo motivo que el reset de
-                                    // "¿Esta recuperación aplica para?":
-                                    // cambiar LA actividad a recuperar
-                                    // invalida cómo se aplica/calcula.
-                                    form.setFieldValue("recuperacionTipoAplicacion", "")
-                                    form.setFieldValue("recuperacionTipoCalculo", "")
-                                    form.setFieldValue("recuperacionValorPonderacion", undefined)
-                                  }}
-                                  excludeActividadId={actividadId}
-                                  disabled={disabled}
-                                />
-                              </Field>
-                            )}
+                          <form.Field
+                            name="recuperacionActividadId"
+                            validators={{
+                              onChange: ({ value }) => (value ? undefined : "Elige la actividad a recuperar."),
+                            }}
+                          >
+                            {(field) => {
+                              const isInvalid =
+                                (field.state.meta.isTouched || submissionAttempts > 0) &&
+                                !field.state.meta.isValid
+                              return (
+                                <Field variant="outlined" data-invalid={isInvalid}>
+                                  <FieldLabel>¿Qué actividad deseas recuperar?</FieldLabel>
+                                  <ActividadRecuperarCascada
+                                    value={field.state.value}
+                                    onChange={(v) => {
+                                      field.handleChange(v)
+                                      // Mismo motivo que el reset de
+                                      // "¿Esta recuperación aplica para?":
+                                      // cambiar LA actividad a recuperar
+                                      // invalida cómo se aplica/calcula.
+                                      form.setFieldValue("recuperacionTipoAplicacion", "")
+                                      form.setFieldValue("recuperacionTipoCalculo", "")
+                                      form.setFieldValue("recuperacionValorPonderacion", undefined)
+                                    }}
+                                    excludeActividadId={actividadId}
+                                    disabled={disabled}
+                                  />
+                                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                                </Field>
+                              )
+                            }}
                           </form.Field>
                         )
                       }
@@ -601,35 +675,54 @@ function RecuperacionSection({
                     >
                       {({ destino, actividadId }) =>
                         !destino || (destino === "ACTIVIDAD" && !actividadId) ? null : (
-                          <form.Field name="recuperacionTipoAplicacion">
-                            {(field) => (
-                              <Field variant="outlined">
-                                <FieldLabel>¿Cómo se aplicará la nota de recuperación?</FieldLabel>
-                                <RadioGroup
-                                  className="flex min-h-11 flex-wrap items-center gap-x-6 gap-y-2 rounded-md border border-input px-3 py-2"
-                                  value={field.state.value}
-                                  disabled={disabled}
-                                  onValueChange={(v) => {
-                                    field.handleChange(v)
-                                    // "Reemplazar" no calcula nada (la nota
-                                    // anterior se descarta entera) — si
-                                    // había un "Promediado"/"Ponderado" +
-                                    // % elegidos con "Computar", quedan sin
-                                    // sentido y tienen que limpiarse, no
-                                    // solo ocultarse.
-                                    form.setFieldValue("recuperacionTipoCalculo", "")
-                                    form.setFieldValue("recuperacionValorPonderacion", undefined)
-                                  }}
-                                >
-                                  {(recuperacion?.catalogos.tipoAplicacion ?? []).map((opcion) => (
-                                    <label key={opcion.valor} className="flex items-center gap-2 text-sm">
-                                      <RadioGroupItem value={opcion.valor} className="data-checked:bg-primary" />
-                                      {opcion.nombre}
-                                    </label>
-                                  ))}
-                                </RadioGroup>
-                              </Field>
-                            )}
+                          <form.Field
+                            name="recuperacionTipoAplicacion"
+                            validators={{
+                              onChange: ({ value }) =>
+                                value ? undefined : "Elige cómo se aplicará la nota.",
+                            }}
+                          >
+                            {(field) => {
+                              const isInvalid =
+                                (field.state.meta.isTouched || submissionAttempts > 0) &&
+                                !field.state.meta.isValid
+                              return (
+                                <Field variant="outlined" data-invalid={isInvalid}>
+                                  <FieldLabel>¿Cómo se aplicará la nota de recuperación?</FieldLabel>
+                                  <RadioGroup
+                                    className="flex min-h-11 flex-wrap items-center gap-x-6 gap-y-2 rounded-md border border-input px-3 py-2"
+                                    value={field.state.value}
+                                    disabled={disabled}
+                                    aria-invalid={isInvalid}
+                                    onValueChange={(v) => {
+                                      field.handleChange(v)
+                                      // Sigue el mismo criterio de "resetear
+                                      // lo que depende de este campo" que
+                                      // el destino de arriba — igual que
+                                      // `tipoCalculo` no se deriva de este
+                                      // valor (los dos son obligatorios
+                                      // siempre, ver el `form.Field` de
+                                      // `recuperacionTipoCalculo` más abajo),
+                                      // volver a elegir invalida lo que ya
+                                      // se había marcado.
+                                      form.setFieldValue("recuperacionTipoCalculo", "")
+                                      form.setFieldValue("recuperacionValorPonderacion", undefined)
+                                    }}
+                                  >
+                                    {(recuperacion?.catalogos.tipoAplicacion ?? []).map((opcion) => (
+                                      <label key={opcion.valor} className="flex items-center gap-2 text-sm">
+                                        <RadioGroupItem
+                                          value={opcion.valor}
+                                          className="data-checked:bg-primary"
+                                        />
+                                        {opcion.nombre}
+                                      </label>
+                                    ))}
+                                  </RadioGroup>
+                                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                                </Field>
+                              )
+                            }}
                           </form.Field>
                         )
                       }
@@ -671,35 +764,51 @@ function RecuperacionSection({
                     >
                       {({ destino, actividadId, tipoAplicacion }) =>
                         !destino || (destino === "ACTIVIDAD" && !actividadId) || !tipoAplicacion ? null : (
-                          <form.Field name="recuperacionTipoCalculo">
-                            {(field) => (
-                              <Field variant="outlined">
-                                <FieldLabel>
-                                  ¿Cómo deseas calcular la nota{" "}
-                                  {destino === "NOTA_FINAL" ? "final" : "de la actividad"}?
-                                </FieldLabel>
-                                <RadioGroup
-                                  className="flex min-h-11 flex-wrap items-center gap-x-6 gap-y-2 rounded-md border border-input px-3 py-2"
-                                  value={field.state.value}
-                                  disabled={disabled}
-                                  onValueChange={(v) => {
-                                    field.handleChange(v)
-                                    // Un % de ponderación de otro modo (o
-                                    // de "Promediado", que ni lo pide) no
-                                    // aplica al elegir de nuevo — mismo
-                                    // criterio que los resets de arriba.
-                                    form.setFieldValue("recuperacionValorPonderacion", undefined)
-                                  }}
-                                >
-                                  {(recuperacion?.catalogos.tipoCalculo ?? []).map((opcion) => (
-                                    <label key={opcion.valor} className="flex items-center gap-2 text-sm">
-                                      <RadioGroupItem value={opcion.valor} className="data-checked:bg-primary" />
-                                      {opcion.nombre}
-                                    </label>
-                                  ))}
-                                </RadioGroup>
-                              </Field>
-                            )}
+                          <form.Field
+                            name="recuperacionTipoCalculo"
+                            validators={{
+                              onChange: ({ value }) =>
+                                value ? undefined : "Elige cómo se calculará la nota.",
+                            }}
+                          >
+                            {(field) => {
+                              const isInvalid =
+                                (field.state.meta.isTouched || submissionAttempts > 0) &&
+                                !field.state.meta.isValid
+                              return (
+                                <Field variant="outlined" data-invalid={isInvalid}>
+                                  <FieldLabel>
+                                    ¿Cómo deseas calcular la nota{" "}
+                                    {destino === "NOTA_FINAL" ? "final" : "de la actividad"}?
+                                  </FieldLabel>
+                                  <RadioGroup
+                                    className="flex min-h-11 flex-wrap items-center gap-x-6 gap-y-2 rounded-md border border-input px-3 py-2"
+                                    value={field.state.value}
+                                    disabled={disabled}
+                                    aria-invalid={isInvalid}
+                                    onValueChange={(v) => {
+                                      field.handleChange(v)
+                                      // Un % de ponderación de otro modo (o
+                                      // de "Promediado", que ni lo pide) no
+                                      // aplica al elegir de nuevo — mismo
+                                      // criterio que los resets de arriba.
+                                      form.setFieldValue("recuperacionValorPonderacion", undefined)
+                                    }}
+                                  >
+                                    {(recuperacion?.catalogos.tipoCalculo ?? []).map((opcion) => (
+                                      <label key={opcion.valor} className="flex items-center gap-2 text-sm">
+                                        <RadioGroupItem
+                                          value={opcion.valor}
+                                          className="data-checked:bg-primary"
+                                        />
+                                        {opcion.nombre}
+                                      </label>
+                                    ))}
+                                  </RadioGroup>
+                                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                                </Field>
+                              )
+                            }}
                           </form.Field>
                         )
                       }
@@ -711,26 +820,39 @@ function RecuperacionSection({
                     <form.Subscribe selector={(state) => state.values.recuperacionTipoCalculo}>
                       {(tipoCalculo) =>
                         tipoCalculo !== "PONDERADO" ? null : (
-                          <form.Field name="recuperacionValorPonderacion">
-                            {(field) => (
-                              <Field variant="outlined">
-                                <FieldLabel htmlFor={field.name}>Valor de ponderación (%)</FieldLabel>
-                                <Input
-                                  id={field.name}
-                                  inputMode="numeric"
-                                  placeholder="Ej: 100"
-                                  maxLength={3}
-                                  value={field.state.value?.toString() ?? ""}
-                                  onChange={(e) => {
-                                    const digits = toPositiveDigitsInput(e.target.value, 3)
-                                    const max = recuperacion?.reglas.valorPonderacionRango.max ?? 100
-                                    const parsed = digits === "" ? undefined : Math.min(Number(digits), max)
-                                    field.handleChange(parsed)
-                                  }}
-                                  disabled={disabled}
-                                />
-                              </Field>
-                            )}
+                          <form.Field
+                            name="recuperacionValorPonderacion"
+                            validators={{
+                              onChange: ({ value }) =>
+                                value != null ? undefined : "Ingresa el porcentaje de ponderación.",
+                            }}
+                          >
+                            {(field) => {
+                              const isInvalid =
+                                (field.state.meta.isTouched || submissionAttempts > 0) &&
+                                !field.state.meta.isValid
+                              return (
+                                <Field variant="outlined" data-invalid={isInvalid}>
+                                  <FieldLabel htmlFor={field.name}>Valor de ponderación (%)</FieldLabel>
+                                  <Input
+                                    id={field.name}
+                                    inputMode="numeric"
+                                    placeholder="Ej: 100"
+                                    maxLength={3}
+                                    value={field.state.value?.toString() ?? ""}
+                                    onChange={(e) => {
+                                      const digits = toPositiveDigitsInput(e.target.value, 3)
+                                      const max = recuperacion?.reglas.valorPonderacionRango.max ?? 100
+                                      const parsed = digits === "" ? undefined : Math.min(Number(digits), max)
+                                      field.handleChange(parsed)
+                                    }}
+                                    disabled={disabled}
+                                    aria-invalid={isInvalid}
+                                  />
+                                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                                </Field>
+                              )
+                            }}
                           </form.Field>
                         )
                       }
