@@ -31,8 +31,16 @@ interface UpdateActividadInput {
  * `PONDERACION` de esta actividad (el peso en la nota final, campo
  * distinto) contra la unidad recién vinculada, con 400 de por medio.
  *
+ * Tampoco toca "Estudiantes": `FK_TMATRICULAS`/`ASIGNAR_TODO_EL_GRUPO`
+ * tienen su propio endpoint suelto (`PUT .../estudiantes`, ver
+ * `set-estudiantes-actividad.ts`) documentado junto con evidencias/
+ * criterios/materiales/adaptaciones como "cambios puntuales" — antes se
+ * mandaba `FK_TMATRICULAS` acá mismo, pero por ese camino nunca se podía
+ * mandar `ASIGNAR_TODO_EL_GRUPO` (no había forma de volver una actividad a
+ * "todo el grupo" después de haberla puntualizado).
+ *
  * Mismo alcance acotado que `create-actividad.ts` fuera de esto: no toca
- * materiales, adaptaciones, recuperación, evidencias ni criterios.
+ * materiales, adaptaciones, evidencias ni criterios.
  */
 async function updateActividad({ actividadId, data }: UpdateActividadInput): Promise<unknown> {
   if (env.ENABLE_API_MOCKING) {
@@ -47,13 +55,6 @@ async function updateActividad({ actividadId, data }: UpdateActividadInput): Pro
   }
   if (data.grupoId != null) body.FK_TGRUPO = data.grupoId
   if (data.asignaturaId != null) body.FK_TASIGNATURA = data.asignaturaId
-  // Solo si el docente eligió alguien a mano en "Estudiantes" esta vez —
-  // `data.matriculasIds` siempre arranca en `[]` (el detalle real no trae
-  // de vuelta la selección previa, ver el comentario de `Actividad.
-  // matriculasIds`), así que nunca se manda `ASIGNAR_TODO_EL_GRUPO` acá:
-  // haría un PUT parcial que sin querer resetea a "todo el grupo" una
-  // actividad que ya tenía estudiantes puntuales asignados.
-  if (data.matriculasIds.length > 0) body.FK_TMATRICULAS = data.matriculasIds
   const tipoActividadId = await resolveTipoActividadId(data.tipo)
   if (tipoActividadId != null) body.FK_TLV_TIPO_ACTIVIDAD = tipoActividadId
   // Alternativos, no coexisten (ver el comentario de `Actividad.notaMaxima`
@@ -69,6 +70,28 @@ async function updateActividad({ actividadId, data }: UpdateActividadInput): Pro
   if (data.esEvaluativa) {
     const instrumentoId = await resolveInstrumentoEvaluacionId(data.instrumento)
     if (instrumentoId != null) body.FK_TLV_INSTRUMENTO_EVALUACION = instrumentoId
+  }
+  // `RECUPERACION` (configurarla) y `QUITAR_RECUPERACION` (volverla a
+  // normal) son excluyentes — mismo contrato que `p_recuperacion`/
+  // `p_quitar_recuperacion` de `fn_actividad_actualizar`. `recuperacionDestino`
+  // solo llega lleno si el backend ya expone los catálogos
+  // (`campos_disponibles.recuperacion`, ver `RecuperacionSection` — todavía
+  // no desplegado en producción a la fecha de este comentario, confirmado
+  // contra una respuesta real de `GET .../configuracion-actividad`).
+  //
+  // NUNCA se manda `QUITAR_RECUPERACION` sin esa prueba de que el backend
+  // soporta el parámetro: mandarlo siempre que `esRecuperacion` sea `false`
+  // (el caso de la inmensa mayoría de las actividades, que no son
+  // recuperación) rompía el PUT general de CUALQUIER actividad mientras el
+  // backend no reconociera ese parámetro — no solo el flujo de recuperación.
+  if (data.esEvaluativa && data.esRecuperacion && data.recuperacionDestino) {
+    body.RECUPERACION = {
+      destino: data.recuperacionDestino,
+      fkActividadRecuperar: data.recuperacionActividadId,
+      tipoAplicacion: data.recuperacionTipoAplicacion,
+      tipoCalculo: data.recuperacionTipoCalculo,
+      valorPonderacion: data.recuperacionValorPonderacion,
+    }
   }
   return api.put(`/eval-col/planeador/actividades/${actividadId}`, body)
 }

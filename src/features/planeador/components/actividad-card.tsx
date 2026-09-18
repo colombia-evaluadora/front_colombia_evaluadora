@@ -153,6 +153,15 @@ export function ActividadCard({
         <h3 className="min-w-0 text-xs leading-snug font-bold break-words">{actividad.nombre}</h3>
       </div>
 
+      {/* `esRecuperacion` ahora llega en el propio resumen del listado
+          (`es_recuperacion`, antes solo se sabía abriendo el detalle) —
+          badge chico, no compite con el título ni con el status. */}
+      {actividad.esRecuperacion && (
+        <span className="text-amber-700 dark:text-amber-400 w-fit rounded-full border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-[0.5625rem] font-semibold dark:border-amber-800 dark:bg-amber-950">
+          Recuperación
+        </span>
+      )}
+
       <p className="text-muted-foreground text-[0.625rem] leading-snug">
         {/* `gradoGrupo` ya viene resuelto por el backend (ver el comentario
             de `Actividad.gradoGrupo`) — concatenar `grado`+`grupo` a mano

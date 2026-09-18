@@ -62,12 +62,9 @@ function celdaDe(fila: PlanillaFila, columna: PlanillaColumna): PlanillaCelda | 
   return fila.celdas.find((c) => c.pkTactividad === columna.pkTactividad)
 }
 
-/**
- * Sin instrumento la actividad es formativa: no hay `pkCriterio`/`pkNivel`
- *  que mandar, así que va por observación. El flag del backend
- *  (`es_formativa`) se respeta cuando viene, pero el instrumento nulo alcanza
- *  por sí solo — es el caso de preescolar.
- */
+/** Lo decide el backend (`fn_actividad_es_formativa`): la actividad cuelga
+ *  de una unidad con referente NO evaluativo. No se deduce del instrumento —
+ *  una actividad evaluativa sin instrumento definido también lo trae nulo. */
 function esFormativa(columna: PlanillaColumna, celda?: PlanillaCelda): boolean {
   return esColumnaFormativa(columna) || celda?.esFormativa === true
 }
@@ -251,6 +248,24 @@ export function PlanillaGrid({ columnas, verPor, filas, onAbrirBulk, gradoId }: 
                   }
 
                   const nota = celda ? formatNota(celda.calificacion) : null
+                  // Sin asistencia no se puede calificar (el gate del
+                  // backend responde 400) — foto del momento de la lectura,
+                  // se pinta gris igual que "No calificable" en vez de
+                  // ofrecer un lápiz que va a fallar al guardar.
+                  const sinAsistencia = celda != null && !celda.tieneAsistencia
+                  if (sinAsistencia) {
+                    return (
+                      <td key={columna.pkTactividad} className="bg-muted/40 px-4 py-3 align-middle">
+                        <span
+                          className="text-muted-foreground inline-flex items-center"
+                          aria-label="Sin asistencia registrada"
+                          title="No se puede calificar: falta registrar la asistencia de este estudiante."
+                        >
+                          <ProhibitIcon className="size-4" />
+                        </span>
+                      </td>
+                    )
+                  }
                   return (
                     <td key={columna.pkTactividad} className="px-4 py-3 align-middle">
                       <div className="flex items-center gap-1.5">

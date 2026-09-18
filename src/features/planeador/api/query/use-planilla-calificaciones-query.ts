@@ -26,6 +26,9 @@ interface PlanillaCeldaRow {
   nota: number | null
   calificable: "S" | "N" | null
   observacion: string | null
+  /** Opcionales acá (aunque `PlanillaCelda` los deje obligatorios): toleran
+   *  una respuesta vieja sin estas columnas — `toCelda` les pone default. En
+   *  `esFormativa` se tolera además el bool_sn sin convertir. */
   esFormativa?: boolean | "S" | "N" | null
   fechaAsistencia?: string | null
   tieneAsistencia?: boolean | null
@@ -56,9 +59,9 @@ function toCelda(row: PlanillaCeldaRow): PlanillaCelda {
     ...resto,
     esFormativa: esFormativa === true || esFormativa === "S",
     fechaAsistencia: fechaAsistencia ? fechaAsistencia.slice(0, 10) : null,
-    // Sin el campo se asume que hay asistencia: si no la hay, el gate del
-    // backend lo dice al guardar — bloquear la celda por un campo ausente
-    // dejaría la planilla entera sin poder calificar.
+    // Sin la columna (respuesta vieja), no hay forma de saber si falta
+    // asistencia — se asume `true` para no pintar gris de más algo que
+    // antes se dejaba calificar sin este chequeo.
     tieneAsistencia: tieneAsistencia !== false,
     evidencias: (evidencias ?? []).map((e) => ({
       pk: e.pk,

@@ -154,7 +154,7 @@ export const planeadorPlanillaHandlers = [
             base?.asistencia.justificacion ??
             null,
           esFormativa: esFormativaMock(actividad),
-          fechaAsistencia: actividad.fechaInicio.slice(0, 10),
+          fechaAsistencia: noAsistio ? null : actividad.fechaInicio.slice(0, 10),
           tieneAsistencia: !noAsistio,
           evidencias: [],
         }

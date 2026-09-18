@@ -31,6 +31,15 @@ type PickerBaseProps = VariantProps<typeof inputVariants> & {
   /** Primer día seleccionable -- los anteriores quedan deshabilitados. Por ejemplo, el "Hasta" de un rango usa `minDate` = la fecha "Desde" elegida. */
   minDate?: Date
   disabledRanges?: { from: Date; to: Date }[]
+  /** Días de la semana que SÍ se pueden elegir — convención de
+   *  `Date.getDay()` (0 = domingo … 6 = sábado). El backend numera los días
+   *  1-7 con domingo = 1 (confirmado real: `intensidadHoraria.diasHabiles`
+   *  trae `valor: 2` etiquetado "Lunes"), así que quien arma este array
+   *  tiene que restarle 1 a cada `valor` que venga de ahí — ver
+   *  `toDiaSemanaJs` en `use-programacion-actividad-query.ts` — antes de
+   *  pasarlo acá; el resto queda deshabilitado en el calendario.
+   *  `undefined`/vacío no restringe nada. */
+  enabledDaysOfWeek?: number[]
   onClose?: () => void
 }
 
@@ -91,6 +100,7 @@ function DatePicker(props: DatePickerProps) {
     maxDate,
     minDate,
     disabledRanges,
+    enabledDaysOfWeek,
     onClose,
     "aria-invalid": ariaInvalid,
     "aria-describedby": ariaDescribedby,
@@ -203,6 +213,17 @@ function DatePicker(props: DatePickerProps) {
                 ...(maxDate ? [{ after: maxDate }] : []),
                 ...(minDate ? [{ before: minDate }] : []),
                 ...(disabledRanges ?? []),
+                // react-day-picker deshabilita por los días que SÍ vienen en
+                // `dayOfWeek` -- se manda el complemento de los hábiles.
+                ...(enabledDaysOfWeek && enabledDaysOfWeek.length > 0
+                  ? [
+                      {
+                        dayOfWeek: [0, 1, 2, 3, 4, 5, 6].filter(
+                          (day) => !enabledDaysOfWeek.includes(day),
+                        ),
+                      },
+                    ]
+                  : []),
               ]}
             />
             {/* En `datetime` la hora va detrás de un botón: el panel de reloj

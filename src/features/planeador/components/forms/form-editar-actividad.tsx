@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { DatePicker } from "@/components/date-picker"
-import { Field, FieldLabel } from "@/components/ui/field"
+import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
 import { cn } from "@/lib/utils"
 import { parseDateValue, formatDateValue } from "@/lib/date-value"
 import { toDigitsOrRangeInput, toPositiveDigitsInput } from "@/lib/text-input"
@@ -40,11 +40,13 @@ import { UNIDAD_TAB_FALLBACK } from "@/features/planeador/components/planeador-t
 import { useNotify } from "@/components/notice/notice-context"
 import { getErrorMessage } from "@/lib/api-client"
 import { useConfiguracionActividadQuery } from "@/features/planeador/api/query/use-configuracion-actividad-query"
+import { useProgramacionActividadQuery } from "@/features/planeador/api/query/use-programacion-actividad-query"
 import { useReferenteCurricularQuery } from "@/features/planeador/api/query/use-referente-curricular-query"
 import { useDocenteGruposQuery } from "@/features/planeador/api/query/use-docente-grupos-query"
 import { useDocenteGradoAsignaturaQuery } from "@/features/planeador/api/query/use-docente-grado-asignatura-query"
 import { useActividadMatriculasGrupoQuery } from "@/features/planeador/api/query/use-actividad-matriculas-grupo-query"
 import { EstudiantesMultiSelect } from "@/features/planeador/components/forms/estudiantes-multi-select"
+import { ActividadRecuperarCascada } from "@/features/planeador/components/forms/actividad-recuperar-cascada"
 import { useStudyPlanSubjectLabel } from "@/features/establishment/academic-period/api/query/use-study-plan-subject-label"
 import { useTipoActividadCatalogQuery } from "@/features/planeador/api/query/use-tipo-actividad-catalog"
 import { useInstrumentoEvaluacionCatalogQuery } from "@/features/planeador/api/query/use-instrumento-evaluacion-catalog"
@@ -53,6 +55,7 @@ import {
   ListaAgregableCajaSelect,
 } from "@/features/planeador/components/forms/field-lista-agregable"
 import { useEnunciadosDbaQuery } from "@/features/planeador/api/query/use-enunciados-dba"
+import { RECURSO_ARCHIVO_ACCEPT } from "@/features/planeador/lib/recurso-preview"
 import {
   CriteriosUnidadChecklist,
   EnunciadosEvidenciasChecklist,
@@ -350,7 +353,12 @@ export function EditarActividadForm({
           reclasifica la actividad entera ("esto no es la evaluación
           normal, es su recuperación"), así que se responde antes de
           completar cualquier otro campo. */}
-      <EsRecuperacionToggle form={form} disabled={disabled} />
+      <RecuperacionSection
+        form={form}
+        disabled={disabled}
+        camposEfectivos={camposEfectivos}
+        actividadId={actividad.id}
+      />
       {/* Identificación + Asignatura/Grado en UNA sola grilla —antes vivían
           en dos `<Card>` separadas y se veían como dos cajas sueltas, aunque
           las dos son "de dónde depende la actividad" (Grado/Asignatura,
@@ -421,9 +429,9 @@ function useHasGradoAsignatura(form: FormActividad): boolean {
 }
 
 /**
- * Toggle "Es una recuperación", arriba de todo el form. Solo tiene
- * sentido para una actividad sumativa —una formativa no pondera nota,
- * así que no hay nada que "recuperar"—, por eso se lee `esEvaluativa`
+ * Toggle "Es una recuperación" + su configuración, arriba de todo el form.
+ * Solo tiene sentido para una actividad sumativa —una formativa no pondera
+ * nota, así que no hay nada que "recuperar"—, por eso se lee `esEvaluativa`
  * del store (mismo flag que gobierna la ponderación en `EvaluacionSection`
  * y `InstrumentoEvaluacionSection`) y el control desaparece por completo
  * cuando es `false`, en vez de deshabilitarse: no es que falte
@@ -433,29 +441,265 @@ function useHasGradoAsignatura(form: FormActividad): boolean {
  * a no-sumativa, el valor sigue guardado en el form (no se resetea a
  * `false`): si vuelve a marcar sumativa, reaparece en el estado que
  * dejó. Forzar un reset ahí sería más sorpresa que ayuda.
+ *
+ * La configuración (destino/actividad a recuperar/tipo de aplicación/tipo
+ * de cálculo/% de ponderación) sale de `camposEfectivos.recuperacion` —
+ * MISMA fuente de verdad que ya usa `EvaluacionSection`, con sus catálogos
+ * `{pk, valor, nombre}` (se decide por `valor`) y las reglas que valida
+ * `fn_actividad_recuperacion_configurar` (actividad obligatoria sii
+ * `destino = ACTIVIDAD`, % obligatorio y 0-100 sii `tipoCalculo =
+ * PONDERADO`) para no descubrirlas a base de 400.
  */
-function EsRecuperacionToggle({ form, disabled }: { form: FormActividad; disabled: boolean }) {
+function RecuperacionSection({
+  form,
+  disabled,
+  camposEfectivos,
+  actividadId,
+}: {
+  form: FormActividad
+  disabled: boolean
+  camposEfectivos: ReturnType<typeof useCamposEvaluacionEfectivos>["camposEfectivos"]
+  actividadId: number
+}) {
+  const recuperacion = camposEfectivos?.recuperacion
+  // Mientras el backend no mande `campos_disponibles.recuperacion` (todavía
+  // no desplegado en producción a la fecha de este comentario — confirmado
+  // contra una respuesta real de `GET .../configuracion-actividad`, que
+  // solo trae `criterio`/`evaluacion`/`ponderacion`), `recuperacion` cae al
+  // placeholder oculto (`defaultRecuperacionCampoDisponible`) y sus
+  // catálogos quedan vacíos. Sin este chequeo, prender el toggle abría los
+  // `<Select>` de destino/tipo de aplicación/tipo de cálculo sin ninguna
+  // opción para elegir — parecía roto en vez de simplemente no disponible
+  // todavía. Con los catálogos vacíos, la config extra no se ofrece: el
+  // toggle queda solo, igual que antes de que este bloque existiera.
+  const catalogosDisponibles = (recuperacion?.catalogos.destino.length ?? 0) > 0
+
   return (
     <form.Subscribe selector={(state) => state.values.esEvaluativa}>
       {(esEvaluativa) =>
         !esEvaluativa ? null : (
-          <form.Field name="esRecuperacion">
-            {(field) => (
-              <label
-                htmlFor={field.name}
-                className="flex w-full items-center gap-3 rounded-md border border-input px-3 py-2.5 text-sm"
-              >
-                <Switch
-                  id={field.name}
-                  checked={field.state.value}
-                  onCheckedChange={field.handleChange}
-                  disabled={disabled}
-                  className="rounded-full [&_[data-slot=switch-thumb]]:rounded-full"
-                />
-                Es una recuperación
-              </label>
-            )}
-          </form.Field>
+          <div className="flex flex-col gap-4">
+            <form.Field name="esRecuperacion">
+              {(field) => (
+                <label
+                  htmlFor={field.name}
+                  className="flex w-full items-center gap-3 rounded-md border border-input px-3 py-2.5 text-sm"
+                >
+                  <Switch
+                    id={field.name}
+                    checked={field.state.value}
+                    onCheckedChange={field.handleChange}
+                    disabled={disabled}
+                    className="rounded-full [&_[data-slot=switch-thumb]]:rounded-full"
+                  />
+                  Es una recuperación
+                </label>
+              )}
+            </form.Field>
+
+            <form.Subscribe selector={(state) => state.values.esRecuperacion}>
+              {(esRecuperacionValue) =>
+                !esRecuperacionValue || !catalogosDisponibles ? null : (
+                  <div className="grid gap-x-4 gap-y-5 rounded-md border border-input p-3 sm:grid-cols-2">
+                    <form.Field name="recuperacionDestino">
+                      {(field) => (
+                        <Field variant="outlined">
+                          <FieldLabel htmlFor={field.name}>
+                            ¿Esta recuperación aplica para?{recuperacion?.requerido ? " *" : ""}
+                          </FieldLabel>
+                          <Select
+                            value={field.state.value || "__none__"}
+                            onValueChange={(v) => field.handleChange(!v || v === "__none__" ? "" : v)}
+                            disabled={disabled}
+                          >
+                            <SelectTrigger id={field.name}>
+                              <SelectValue placeholder="Seleccione">
+                                {(v) =>
+                                  v === "__none__"
+                                    ? "Seleccione"
+                                    : (recuperacion?.catalogos.destino.find((o) => o.valor === v)?.nombre ??
+                                      (v as string))
+                                }
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="__none__">Seleccione</SelectItem>
+                              {(recuperacion?.catalogos.destino ?? []).map((opcion) => (
+                                <SelectItem key={opcion.valor} value={opcion.valor}>
+                                  {opcion.nombre}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </Field>
+                      )}
+                    </form.Field>
+
+                    {/* Actividad a recuperar: solo tiene sentido con
+                        `destino = ACTIVIDAD` (recuperar la NOTA FINAL no
+                        apunta a ninguna actividad puntual) — regla
+                        `actividadRecuperarRequeridaSi` de `reglas`. */}
+                    <form.Subscribe selector={(state) => state.values.recuperacionDestino}>
+                      {(destino) =>
+                        destino !== "ACTIVIDAD" ? null : (
+                          <form.Field name="recuperacionActividadId">
+                            {(field) => (
+                              <Field variant="outlined">
+                                <FieldLabel>¿Qué actividad deseas recuperar?</FieldLabel>
+                                <ActividadRecuperarCascada
+                                  value={field.state.value}
+                                  onChange={field.handleChange}
+                                  excludeActividadId={actividadId}
+                                  disabled={disabled}
+                                />
+                              </Field>
+                            )}
+                          </form.Field>
+                        )
+                      }
+                    </form.Subscribe>
+
+                    {/* Igual que "Actividad a recuperar" (gateada por
+                        `destino`) o "Valor de ponderación" (gateada por
+                        `tipoCalculo`): sin elegir "¿Esta recuperación aplica
+                        para?" todavía no hay nada que aplicar/calcular, así
+                        que el resto de la cascada se oculta en vez de
+                        mostrarse vacío. */}
+                    <form.Subscribe selector={(state) => state.values.recuperacionDestino}>
+                      {(destino) =>
+                        !destino ? null : (
+                          <form.Field name="recuperacionTipoAplicacion">
+                            {(field) => (
+                              <Field variant="outlined">
+                                <FieldLabel>¿Cómo se aplicará la nota de recuperación?</FieldLabel>
+                                <RadioGroup
+                                  className="flex min-h-11 flex-wrap items-center gap-x-6 gap-y-2 rounded-md border border-input px-3 py-2"
+                                  value={field.state.value}
+                                  disabled={disabled}
+                                  onValueChange={field.handleChange}
+                                >
+                                  {(recuperacion?.catalogos.tipoAplicacion ?? []).map((opcion) => (
+                                    <label key={opcion.valor} className="flex items-center gap-2 text-sm">
+                                      <RadioGroupItem value={opcion.valor} className="data-checked:bg-primary" />
+                                      {opcion.nombre}
+                                    </label>
+                                  ))}
+                                </RadioGroup>
+                              </Field>
+                            )}
+                          </form.Field>
+                        )
+                      }
+                    </form.Subscribe>
+
+                    {/* "Reemplazar" es lo único que necesita aclaración: la
+                        nota anterior se pierde por completo. "Computar con
+                        la nota anterior" no lleva banner — su propio nombre
+                        ya dice qué hace. */}
+                    <form.Subscribe selector={(state) => state.values.recuperacionTipoAplicacion}>
+                      {(tipoAplicacion) =>
+                        tipoAplicacion !== "REEMPLAZAR" ? null : (
+                          <div className="border-blue-stroke bg-blue-22 text-blue col-span-full flex items-start gap-2 rounded-md border p-3 text-sm">
+                            <InfoIcon className="mt-0.5 size-4 shrink-0" />
+                            La nota de recuperación reemplazará el 100% de la nota final actual.
+                          </div>
+                        )
+                      }
+                    </form.Subscribe>
+
+                    <form.Subscribe selector={(state) => state.values.recuperacionDestino}>
+                      {(destino) =>
+                        !destino ? null : (
+                          <form.Field name="recuperacionTipoCalculo">
+                            {(field) => (
+                              <Field variant="outlined">
+                                <FieldLabel>
+                                  ¿Cómo deseas calcular la nota{" "}
+                                  {destino === "NOTA_FINAL" ? "final" : "de la actividad"}?
+                                </FieldLabel>
+                                <RadioGroup
+                                  className="flex min-h-11 flex-wrap items-center gap-x-6 gap-y-2 rounded-md border border-input px-3 py-2"
+                                  value={field.state.value}
+                                  disabled={disabled}
+                                  onValueChange={field.handleChange}
+                                >
+                                  {(recuperacion?.catalogos.tipoCalculo ?? []).map((opcion) => (
+                                    <label key={opcion.valor} className="flex items-center gap-2 text-sm">
+                                      <RadioGroupItem value={opcion.valor} className="data-checked:bg-primary" />
+                                      {opcion.nombre}
+                                    </label>
+                                  ))}
+                                </RadioGroup>
+                              </Field>
+                            )}
+                          </form.Field>
+                        )
+                      }
+                    </form.Subscribe>
+
+                    {/* % de ponderación: solo con `tipoCalculo = PONDERADO`
+                        — regla `valorPonderacionRequeridoSi`, rango de
+                        `valorPonderacionRango` (0-100 por defecto). */}
+                    <form.Subscribe selector={(state) => state.values.recuperacionTipoCalculo}>
+                      {(tipoCalculo) =>
+                        tipoCalculo !== "PONDERADO" ? null : (
+                          <form.Field name="recuperacionValorPonderacion">
+                            {(field) => (
+                              <Field variant="outlined">
+                                <FieldLabel htmlFor={field.name}>Valor de ponderación (%)</FieldLabel>
+                                <Input
+                                  id={field.name}
+                                  inputMode="numeric"
+                                  placeholder="Ej: 100"
+                                  maxLength={3}
+                                  value={field.state.value?.toString() ?? ""}
+                                  onChange={(e) => {
+                                    const digits = toPositiveDigitsInput(e.target.value, 3)
+                                    const max = recuperacion?.reglas.valorPonderacionRango.max ?? 100
+                                    const parsed = digits === "" ? undefined : Math.min(Number(digits), max)
+                                    field.handleChange(parsed)
+                                  }}
+                                  disabled={disabled}
+                                />
+                              </Field>
+                            )}
+                          </form.Field>
+                        )
+                      }
+                    </form.Subscribe>
+
+                    {/* Explica el efecto de la opción elegida arriba —
+                        "Ponderado" reparte el % entre recuperación y nota
+                        actual, "Promediado" (cualquier valor que no sea
+                        PONDERADO) promedia las dos notas sin pedir %. */}
+                    <form.Subscribe
+                      selector={(state) => ({
+                        tipoCalculo: state.values.recuperacionTipoCalculo,
+                        valorPonderacion: state.values.recuperacionValorPonderacion,
+                      })}
+                    >
+                      {({ tipoCalculo, valorPonderacion }) => {
+                        if (!tipoCalculo) return null
+                        const mensaje =
+                          tipoCalculo === "PONDERADO"
+                            ? valorPonderacion != null
+                              ? `Este porcentaje corresponde al valor de la recuperación. El valor restante (${100 - valorPonderacion}%) se aplicará a la nota actual.`
+                              : null
+                            : "El resultado será el promedio entre la nota actual de la actividad y la nota de recuperación."
+                        if (!mensaje) return null
+                        return (
+                          <div className="border-blue-stroke bg-blue-22 text-blue col-span-full flex items-start gap-2 rounded-md border p-3 text-sm">
+                            <InfoIcon className="mt-0.5 size-4 shrink-0" />
+                            {mensaje}
+                          </div>
+                        )
+                      }}
+                    </form.Subscribe>
+                  </div>
+                )
+              }
+            </form.Subscribe>
+          </div>
         )
       }
     </form.Subscribe>
@@ -491,6 +735,7 @@ function IdentificacionSection({ form, disabled }: { form: FormActividad; disabl
                 id={field.name}
                 name={field.name}
                 placeholder="Agregar"
+                maxLength={50}
                 value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
                 onBlur={field.handleBlur}
@@ -856,6 +1101,7 @@ function UnidadFichaYEvidencias({
   return (
     <div className="flex flex-col gap-4">
       <UnidadFicha
+        instrumentoLabel={instrumentoLabel}
         nombre={unidad?.nombre ?? nombreFallback}
         descripcion={unidad?.descripcion ?? ""}
         objetivos={unidad?.objetivos ?? []}
@@ -1023,6 +1269,12 @@ function AsignaturaGradoSection({ form }: { form: FormActividad }) {
                 form.setFieldValue("asignaturaId", undefined)
                 form.setFieldValue("asignatura", "")
                 form.setFieldValue("unidad", { id: 0, nombre: "" })
+                // "Estudiantes" depende del padrón de ESTE grupo+asignatura
+                // (`useActividadMatriculasGrupoQuery`) — sin grupo no hay
+                // padrón contra el cual siquiera validar los ids ya
+                // elegidos, así que se limpian junto con el resto.
+                form.setFieldValue("matriculasIds", [])
+                form.setFieldValue("asignarTodoElGrupo", true)
                 return
               }
               const combo = docenteGrupos.find((g) => String(g.grupoId) === v)
@@ -1031,11 +1283,16 @@ function AsignaturaGradoSection({ form }: { form: FormActividad }) {
               form.setFieldValue("grado", combo.gradoNombre)
               form.setFieldValue("grupoId", combo.grupoId)
               form.setFieldValue("grupo", grupoLabel(combo))
-              // Asignatura y unidad dependen de "Grado / Grupo": cambiarlo
-              // invalida lo que había elegido en las dos.
+              // Asignatura, unidad y "Estudiantes" dependen de "Grado /
+              // Grupo": cambiarlo invalida lo que había elegido en las tres
+              // (los `matriculaIds` seleccionados son PKs del padrón del
+              // grupo ANTERIOR — dejarlos pegados los manda al nuevo grupo
+              // sin que el docente haya elegido a esos estudiantes ahí).
               form.setFieldValue("asignaturaId", undefined)
               form.setFieldValue("asignatura", "")
               form.setFieldValue("unidad", { id: 0, nombre: "" })
+              form.setFieldValue("matriculasIds", [])
+              form.setFieldValue("asignarTodoElGrupo", true)
             }}
           >
             <SelectTrigger id="grado-grupo">
@@ -1078,12 +1335,25 @@ function AsignaturaGradoSection({ form }: { form: FormActividad }) {
                   if (v === "__none__") {
                     field.handleChange(undefined)
                     form.setFieldValue("asignatura", "")
+                    // "Estudiantes" depende de Grado/Grupo Y Asignatura —
+                    // sin asignatura no hay padrón contra el que validar los
+                    // `matriculaIds` ya elegidos (mismo criterio que al
+                    // limpiar "Grado / Grupo").
+                    form.setFieldValue("matriculasIds", [])
+                    form.setFieldValue("asignarTodoElGrupo", true)
                     return
                   }
                   const par = asignaturas.find((a) => String(a.asignaturaId) === v)
                   if (!par) return
                   field.handleChange(par.asignaturaId)
                   form.setFieldValue("asignatura", par.asignaturaNombre)
+                  // Cambiar de Asignatura cambia el padrón que ofrece
+                  // "Estudiantes" (`useActividadMatriculasGrupoQuery` depende
+                  // de grupo+asignatura) — los `matriculaIds` ya elegidos
+                  // eran de la asignatura ANTERIOR, así que quedan sin
+                  // sentido acá y se limpian junto con el resto.
+                  form.setFieldValue("matriculasIds", [])
+                  form.setFieldValue("asignarTodoElGrupo", true)
                 }}
                 disabled={!hasGradoGrupo}
               >
@@ -1164,6 +1434,7 @@ function MaterialesSection({ form, disabled }: { form: FormActividad; disabled: 
               id={field.name}
               name={field.name}
               placeholder="Ej: Cuaderno, colores, computador portátil…"
+              maxLength={500}
               value={field.state.value}
               onChange={(e) => field.handleChange(e.target.value)}
               onBlur={field.handleBlur}
@@ -1299,6 +1570,7 @@ function RecursosSection({
                   aria-label={collapsed ? "Expandir sección de recursos" : "Colapsar sección de recursos"}
                   aria-expanded={!collapsed}
                   onClick={() => setCollapsed((v) => !v)}
+                  disabled={disabled}
                 />
               }
             >
@@ -1416,9 +1688,13 @@ function RecursoForm({
   // Placeholder contextual del campo "Fuente" según el tipo. La idea es
   // que el ejemplo que ve el usuario matchee lo que va a tipear —si es
   // URL, una URL de ejemplo; si es archivo, el nombre de un archivo, etc.
+  // REV: el de "Unidad virtual" pedía un NOMBRE, pero el campo es
+  // `type="url"` y lo que escribe va a `draft.url` — el mismo lugar que el
+  // tipo "URL". Un ejemplo de enlace de repositorio dice qué se espera de
+  // verdad, y de paso es la forma que la vista previa sabe embeber.
   const fuentePlaceholder =
     draft.tipo === "Unidad virtual"
-      ? "Nombre de la unidad virtual o repositorio"
+      ? "https://drive.google.com/file/d/..."
       : draft.tipo === "Archivo"
         ? "Nombre del archivo"
         : "https://..."
@@ -1494,7 +1770,12 @@ function RecursoForm({
             )}
             <Input
               type={draft.tipo === "Archivo" ? "file" : "url"}
+              // Los cuatro tipos que la vista previa sabe mostrar. Es guía,
+              // no validación: el `accept` se puede esquivar y quien decide
+              // de verdad es `file-service`.
+              {...(draft.tipo === "Archivo" ? { accept: RECURSO_ARCHIVO_ACCEPT } : {})}
               placeholder={fuentePlaceholder}
+              maxLength={500}
               // `<input type="file">` no acepta `value` programático (el
               // browser solo permite setearlo a `""` por seguridad —
               // cualquier otro valor tira `InvalidStateError` y revienta
@@ -1522,11 +1803,11 @@ function RecursoForm({
                     return
                   }
                   const blobUrl = URL.createObjectURL(file)
-                  // El form guarda el nombre del archivo en `fuente` y se
-                  // lo pasa al resolver, que lo usa como fallback para
-                  // detectar la extensión — los blob URLs no tienen
-                  // extensión en el path y no queríamos meterla en el
-                  // hash (algunos parsers se confunden con el `#`).
+                  // El form guarda el nombre del archivo en `fuente` y se 
+                  // lo pasa al resolver, que lo usa como fallback para 
+                  // detectar la extensión — los blob URLs no tienen 
+                  // extensión en el path y no queríamos meterla en el 
+                  // hash (algunos parsers se confunden con el `#`). 
                   onChange({
                     url: blobUrl,
                     fuente: file.name,
@@ -1548,6 +1829,7 @@ function RecursoForm({
           className={TEXTAREA_OUTLINED}
           rows={2}
           placeholder="Ej: Video introductorio (7 min)"
+          maxLength={500}
           value={draft.descripcion}
           onChange={(e) => onChange({ descripcion: e.target.value })}
           disabled={disabled}
@@ -1731,42 +2013,127 @@ function RecursoItem({
   )
 }
 
+/** "Entre 1 y 76", "Al menos 1" o "Hasta 76" según qué extremos trajo el
+ *  backend (`ProgramacionActividad.duracionEstimada`/`.semanaCronograma`
+ *  pueden traer un solo lado, ver `use-programacion-actividad-query.ts`) —
+ *  evita que la descripción del campo asuma que siempre llegan los dos. */
+function rangoLabel(min: number | null, max: number | null): string {
+  if (min != null && max != null) return `Entre ${min} y ${max}`
+  if (min != null) return `Al menos ${min}`
+  if (max != null) return `Hasta ${max}`
+  return ""
+}
+
+/** Ajusta `value` (ya sanitizado a dígitos por `toPositiveDigitsInput`) al
+ *  rango `[min, max]` del backend — se llama en `onBlur`, no en cada tecla,
+ *  para no trabar al usuario a mitad de tipeo (ver el comentario en el
+ *  campo "Duración estimada"). Cadena vacía o límites ausentes: no hay nada
+ *  que ajustar. */
+function clampDigits(value: string, min: number | undefined | null, max: number | undefined | null): string {
+  if (!value) return value
+  const n = Number(value)
+  if (min != null && n < min) return String(min)
+  if (max != null && n > max) return String(max)
+  return value
+}
+
+/** Mismo criterio que `clampDigits`, pero para el campo "Semana del
+ *  cronograma", que además del número simple admite un rango ("10-12") —
+ *  cada extremo del rango se ajusta por separado. */
+function clampDigitsOrRange(value: string, min: number | undefined | null, max: number | undefined | null): string {
+  if (!value) return value
+  const partes = value.split("-").map((parte) => clampDigits(parte, min, max))
+  return partes.join("-")
+}
+
 function ProgramacionSection({ form, disabled }: { form: FormActividad; disabled: boolean }) {
+  // Topes reales de esta sección (ventana del periodo académico, días
+  // hábiles del horario, duración y semana admitidas) — sin esto, el único
+  // aviso de una fecha/duración fuera de rango era el 22023 de
+  // `fn_actividad_crear`/`_actualizar` al guardar (`fn_actividad_
+  // programacion_assert`, V422). `grupoId`/`asignaturaId` ya viven en el
+  // form (ver `AsignaturaGradoSection`), de ahí sale la ventana.
+  const grupoId = useSelector(form.store, (state) => state.values.grupoId)
+  const asignaturaId = useSelector(form.store, (state) => state.values.asignaturaId)
+  const unidadId = useSelector(form.store, (state) => state.values.unidad.id)
+  const { data: programacion } = useProgramacionActividadQuery(grupoId, asignaturaId, unidadId)
+  // Mismo criterio que "Inicio/Fin del período académico" en
+  // `form-academic-period.tsx` (Establecimiento): el error solo se muestra
+  // tras tocar el campo O tras un intento de guardar (`submissionAttempts`,
+  // estado nativo de TanStack Form) — no apenas se monta el form, que sería
+  // mostrar "obligatorio" en un campo que el docente ni llegó a mirar
+  // todavía.
+  const submissionAttempts = useSelector(form.store, (state) => state.submissionAttempts)
+  const requerido = (value: string) => (value ? undefined : "Este campo es obligatorio.")
+
   return (
     <Card className="gap-4 p-4">
       <h3 className="text-base font-semibold">Programación</h3>
       <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
-        <form.Field name="fechaInicio">
-          {(field) => (
-            <Field variant="outlined">
-              <FieldLabel htmlFor={field.name}>Fecha inicio</FieldLabel>
-              <DatePicker
-                mode="date"
-                id={field.name}
-                value={parseDateValue(field.state.value)}
-                onChange={(date) => field.handleChange(formatDateValue(date))}
-                disabled={disabled}
-              />
-            </Field>
-          )}
+        <form.Field name="fechaInicio" validators={{ onChange: ({ value }) => requerido(value) }}>
+          {(field) => {
+            const isInvalid = (field.state.meta.isTouched || submissionAttempts > 0) && !field.state.meta.isValid
+            return (
+              <Field variant="outlined" data-invalid={isInvalid}>
+                <FieldLabel htmlFor={field.name}>Fecha inicio*</FieldLabel>
+                <DatePicker
+                  mode="date"
+                  id={field.name}
+                  value={parseDateValue(field.state.value)}
+                  onChange={(date) => {
+                    field.handleChange(formatDateValue(date))
+                    field.handleBlur()
+                  }}
+                  minDate={programacion?.fechaInicio.min ?? undefined}
+                  maxDate={programacion?.fechaInicio.max ?? undefined}
+                  enabledDaysOfWeek={programacion?.fechaInicio.diasHabiles ?? undefined}
+                  disabled={disabled}
+                  aria-invalid={isInvalid}
+                />
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                {programacion?.fechaInicio.motivo && (
+                  <FieldDescription>{programacion.fechaInicio.motivo}</FieldDescription>
+                )}
+              </Field>
+            )
+          }}
         </form.Field>
 
         <form.Subscribe selector={(state) => state.values.fechaInicio}>
           {(fechaInicio) => (
-            <form.Field name="fechaCierre">
-              {(field) => (
-                <Field variant="outlined">
-                  <FieldLabel htmlFor={field.name}>Fecha de entrega o cierre</FieldLabel>
-                  <DatePicker
-                    mode="date"
-                    id={field.name}
-                    value={parseDateValue(field.state.value)}
-                    onChange={(date) => field.handleChange(formatDateValue(date))}
-                    minDate={parseDateValue(fechaInicio)}
-                    disabled={disabled}
-                  />
-                </Field>
-              )}
+            <form.Field name="fechaCierre" validators={{ onChange: ({ value }) => requerido(value) }}>
+              {(field) => {
+                const isInvalid =
+                  (field.state.meta.isTouched || submissionAttempts > 0) && !field.state.meta.isValid
+                return (
+                  <Field variant="outlined" data-invalid={isInvalid}>
+                    <FieldLabel htmlFor={field.name}>Fecha de entrega o cierre*</FieldLabel>
+                    <DatePicker
+                      mode="date"
+                      id={field.name}
+                      value={parseDateValue(field.state.value)}
+                      onChange={(date) => {
+                        field.handleChange(formatDateValue(date))
+                        field.handleBlur()
+                      }}
+                      // La fecha ya elegida en "Fecha inicio" manda sobre el
+                      // mínimo del backend: no tiene sentido ofrecer un cierre
+                      // anterior a un inicio que el propio docente ya puso.
+                      minDate={
+                        parseDateValue(fechaInicio) ?? programacion?.fechaCierre.min ?? undefined
+                      }
+                      maxDate={programacion?.fechaCierre.max ?? undefined}
+                      enabledDaysOfWeek={programacion?.fechaCierre.diasHabiles ?? undefined}
+                      disabled={disabled}
+                      aria-invalid={isInvalid}
+                    />
+                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                    {programacion?.fechaCierre.motivo && (
+                      <FieldDescription>{programacion.fechaCierre.motivo}</FieldDescription>
+                    )}
+                  </Field>
+                )
+              }}
             </form.Field>
           )}
         </form.Subscribe>
@@ -1786,10 +2153,38 @@ function ProgramacionSection({ form, disabled }: { form: FormActividad; disabled
                 id={field.name}
                 inputMode="numeric"
                 placeholder="Ej: 20"
+                maxLength={3}
                 value={field.state.value}
                 onChange={(e) => field.handleChange(toPositiveDigitsInput(e.target.value, 3))}
+                // A diferencia de Fecha inicio/cierre (bloqueadas en el propio
+                // picker), acá no hay forma de impedir tipear un número fuera
+                // de rango mientras se escribe sin trabar al usuario a mitad
+                // de tipeo (escribir "3" cuando el mínimo es "30" clampearía
+                // antes de poder completar "35"). Se ajusta recién al perder
+                // el foco, mismo criterio no intrusivo que el resto de la
+                // app usa para validar rangos numéricos libres.
+                onBlur={(e) => {
+                  field.handleBlur()
+                  field.handleChange(
+                    clampDigits(
+                      e.target.value,
+                      programacion?.duracionEstimada.min,
+                      programacion?.duracionEstimada.max,
+                    ),
+                  )
+                }}
                 disabled={disabled}
               />
+              {programacion?.duracionEstimada &&
+                (programacion.duracionEstimada.min != null || programacion.duracionEstimada.max != null) && (
+                  <FieldDescription>
+                    {rangoLabel(programacion.duracionEstimada.min, programacion.duracionEstimada.max)}{" "}
+                    {(programacion.duracionEstimada.unidad ?? "bloques").toLowerCase()}.
+                  </FieldDescription>
+                )}
+              {programacion?.duracionEstimada.motivo && (
+                <FieldDescription>{programacion.duracionEstimada.motivo}</FieldDescription>
+              )}
             </Field>
           )}
         </form.Field>
@@ -1805,10 +2200,35 @@ function ProgramacionSection({ form, disabled }: { form: FormActividad; disabled
                 id={field.name}
                 inputMode="numeric"
                 placeholder="Ej: 10-12"
+                maxLength={5}
                 value={field.state.value}
                 onChange={(e) => field.handleChange(toDigitsOrRangeInput(e.target.value))}
+                // Mismo criterio que "Duración estimada": clampea cada
+                // extremo del rango recién al perder el foco, no en cada
+                // tecla.
+                onBlur={(e) => {
+                  field.handleBlur()
+                  field.handleChange(
+                    clampDigitsOrRange(
+                      e.target.value,
+                      programacion?.semanaCronograma.min,
+                      programacion?.semanaCronograma.max,
+                    ),
+                  )
+                }}
                 disabled={disabled}
               />
+              {programacion?.semanaCronograma &&
+                (programacion.semanaCronograma.min != null || programacion.semanaCronograma.max != null) && (
+                  <FieldDescription>
+                    Entre la semana{" "}
+                    {rangoLabel(programacion.semanaCronograma.min, programacion.semanaCronograma.max)} del periodo
+                    académico.
+                  </FieldDescription>
+                )}
+              {programacion?.semanaCronograma.motivo && (
+                <FieldDescription>{programacion.semanaCronograma.motivo}</FieldDescription>
+              )}
             </Field>
           )}
         </form.Field>
@@ -1907,6 +2327,17 @@ function useCamposEvaluacionEfectivos(
     !camposDisponiblesAplica && unidadId != null ? unidadId : undefined,
     esEvaluativaValue,
   )
+  // Señal PURA de "¿el referente de la unidad es Evaluativo?", sin mezclar
+  // el `esEvaluativa` que el usuario tenga elegido AHORA en el toggle: se
+  // pide siempre con `ES_EVALUATIVA=S`, que en la fórmula del backend
+  // (`visible = referente_evaluativo AND ES_EVALUATIVA <> 'N'`) deja
+  // `visible` igual a "es evaluativo". Sin esto, una actividad que arranca
+  // (o quedó guardada) con `esEvaluativa: false` bloqueaba su propio
+  // selector "¿Es evaluación sumativa?" — nunca se podía poner en "Sí" —
+  // aunque el referente de la unidad fuera Evaluativo: `camposEfectivos`
+  // abajo ya viene calculado CON ese `false`, así que usarlo también para
+  // decidir si el referente es formativo era un candado, no una detección.
+  const { data: configuracionReferente } = useConfiguracionActividadQuery(unidadId, true)
   const { data: referenteDeGradoAsignatura } = useReferenteCurricularQuery(
     sinUnidadNiDetalle ? gradoId : undefined,
     sinUnidadNiDetalle ? asignaturaId : undefined,
@@ -1928,9 +2359,16 @@ function useCamposEvaluacionEfectivos(
   // los asteriscos de "obligatorio" y el catálogo de instrumentos permitidos.
   const camposEfectivos = camposDisponiblesAplica ? camposDisponibles : configuracionEnVivo
 
-  const esFormativa = camposEfectivos
-    ? camposEfectivos.evaluacion.visible === false
-    : !sinGradoNiAsignatura && (referenteDeGradoAsignatura?.esFormativo ?? false)
+  // Con unidad, `esFormativa` sale de `configuracionReferente` (fijo en
+  // `ES_EVALUATIVA=S`, ver arriba) — NUNCA de `camposEfectivos`, que sí
+  // varía con el `esEvaluativa` actual del form y por eso no sirve para
+  // decidir si el referente ADMITE ponerlo en "Sí". Sin unidad (huérfana o
+  // alta sin unidad todavía), `referenteDeGradoAsignatura?.esFormativo` ya
+  // es independiente del toggle.
+  const esFormativa =
+    unidadId != null
+      ? configuracionReferente != null && configuracionReferente.evaluacion.visible === false
+      : !sinGradoNiAsignatura && (referenteDeGradoAsignatura?.esFormativo ?? false)
 
   return { camposEfectivos, esFormativa, tipoEvaluacion }
 }
@@ -2344,6 +2782,7 @@ function ListaCotejoItemCard({
             id={`${item.id}-descripcion`}
             className={TEXTAREA_OUTLINED}
             rows={2}
+            maxLength={500}
             value={item.descripcion}
             onChange={(e) => onChange({ ...item, descripcion: e.target.value })}
             disabled={disabled}
@@ -2510,6 +2949,7 @@ function EscalaValoracionSection({
                         <Input
                           id={`${escala.id}-criterios-generales`}
                           placeholder="Criterio A, Criterio B"
+                          maxLength={50}
                           value={escala.criteriosGenerales}
                           onChange={(e) => updateEscala({ criteriosGenerales: e.target.value })}
                           disabled={disabled}
@@ -2615,6 +3055,7 @@ function EscalaValoracionSection({
                             className={TEXTAREA_OUTLINED}
                             rows={3}
                             placeholder="Agregar"
+                            maxLength={500}
                             value={escala.interpretacionRangos}
                             onChange={(e) =>
                               updateEscala({ interpretacionRangos: e.target.value })
@@ -2702,6 +3143,7 @@ function EscalaValoracionSection({
                                     su institución. */}
                                 <Input
                                   variant="outlined"
+                                  maxLength={50}
                                   value={nivel.nombre}
                                   onChange={(e) => updateNivel(nIndex, { nombre: e.target.value })}
                                   disabled={disabled}
@@ -2709,6 +3151,7 @@ function EscalaValoracionSection({
                                 <Input
                                   variant="outlined"
                                   placeholder="Interpretación / descriptor"
+                                  maxLength={50}
                                   value={nivel.descripcion}
                                   onChange={(e) =>
                                     updateNivel(nIndex, { descripcion: e.target.value })
@@ -2827,6 +3270,7 @@ function InstrumentoPersonalizadoSection({
                 <Input
                   id="instrumentoPersonalizado-descripcion"
                   placeholder="Agregar descripción breve"
+                  maxLength={50}
                   value={value.descripcion}
                   onChange={(e) => patch({ descripcion: e.target.value })}
                   disabled={disabled}
@@ -3068,6 +3512,7 @@ function CriterioItem({
         <FieldLabel>Nombre del criterio</FieldLabel>
         <Input
           placeholder="Ej: Expresión oral de ideas y experiencias"
+          maxLength={50}
           value={criterio.nombre}
           onChange={(e) => onChange({ ...criterio, nombre: e.target.value })}
           disabled={disabled}
@@ -3111,6 +3556,7 @@ function CriterioItem({
             className={TEXTAREA_OUTLINED}
             rows={2}
             placeholder="Describe el desempeño esperado en este nivel"
+            maxLength={500}
             value={criterio.excelente}
             onChange={(e) => onChange({ ...criterio, excelente: e.target.value })}
             disabled={disabled}
@@ -3194,6 +3640,7 @@ function CriterioItem({
               className={TEXTAREA_OUTLINED}
               rows={2}
               placeholder="Describe el desempeño esperado en este nivel"
+              maxLength={500}
               value={nivel.descripcion}
               onChange={(e) => {
                 const next = criterio.niveles.slice()
@@ -3282,6 +3729,7 @@ function CriterioItem({
         <div className="flex items-center gap-0">
           <Input
             placeholder="Agregar"
+            maxLength={50}
             value={nivelInput}
             onChange={(e) => setNivelInput(e.target.value)}
             disabled={disabled}
@@ -3597,6 +4045,7 @@ function AdaptacionItem({
           <Input
             type="url"
             placeholder="https://…"
+            maxLength={500}
             value={adaptacion.versionModificadaRef}
             onChange={(e) =>
               onChange({ ...adaptacion, versionModificadaRef: e.target.value })
@@ -3806,6 +4255,7 @@ function SeguimientoSection({ form, disabled }: { form: FormActividad; disabled:
               id={field.name}
               rows={4}
               placeholder="Ej: Reforzar con ejemplos del contexto local, revisar individualmente la participación de los estudiantes con bajo rendimiento…"
+              maxLength={500}
               value={field.state.value}
               onChange={(e) => field.handleChange(e.target.value)}
               disabled={disabled}
@@ -3892,6 +4342,7 @@ function CrearUnidadPopover({
     enunciados: enunciadosDisponibles,
     nombre: referenteNombre,
     descripcion: referenteDescripcion,
+    nivel1Etiqueta,
     isPending: isPendingEnunciados,
   } = useEnunciadosDbaQuery(gradoId, asignaturaId)
 
@@ -4001,6 +4452,7 @@ function CrearUnidadPopover({
             <FieldLabel>Nombre</FieldLabel>
             <Input
               placeholder="Agregar"
+              maxLength={50}
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
             />
@@ -4011,6 +4463,7 @@ function CrearUnidadPopover({
             <Textarea
               rows={3}
               placeholder="Propósito pedagógico y dinámica general"
+              maxLength={500}
               value={descripcion}
               onChange={(e) => setDescripcion(e.target.value)}
               className={TEXTAREA_OUTLINED}
@@ -4039,7 +4492,10 @@ function CrearUnidadPopover({
             <ListaAgregableCajaSelect
               title={referenteNombre ?? "Derechos Básicos de Aprendizaje"}
               description={referenteDescripcion ?? "Selecciona los enunciados asociados."}
-              columnLabel="Enunciados"
+              // Mismo motivo que en `UnidadInfoGeneralFields`: nunca el
+              // literal fijo "Enunciados" — este popover también crea
+              // unidades de Preescolar, donde el nivel 1 real es "Propósito".
+              columnLabel={`${nivel1Etiqueta}s`}
               items={enunciadosDba}
               options={enunciadosDisponibles}
               onChange={setEnunciadosDba}

@@ -6,7 +6,14 @@ import { estadoDerivadoToStatus } from "@/features/planeador/lib/estado-derivado
 import { fetchTipoRecursoOptions, type TipoRecursoOption } from "@/features/planeador/api/query/use-tipo-recurso-catalog"
 import { fetchTipoAdaptacionOptions, type TipoAdaptacionOption } from "@/features/planeador/api/query/use-tipo-adaptacion-catalog"
 import { fetchAplicaAOptions, type AplicaAOption } from "@/features/planeador/api/query/use-aplica-a-catalog"
-import type { Actividad, Adaptacion, Recurso, RecursoTipo } from "@/features/planeador/api/types/actividad"
+import {
+  defaultRecuperacionCampoDisponible,
+  type Actividad,
+  type Adaptacion,
+  type ListaValorOption,
+  type Recurso,
+  type RecursoTipo,
+} from "@/features/planeador/api/types/actividad"
 
 /**
  * `GET /planeador/actividades/:id` (confirmado real, colección Postman
@@ -88,10 +95,57 @@ interface ActividadDetalleRow {
   estudiantes_evaluados: number
   materiales: unknown[]
   adaptaciones: unknown[]
-  recuperacion: unknown
+  /** Config de recuperación YA guardada de esta actividad — distinta de
+   *  `campos_disponibles.recuperacion`, que es el catálogo/reglas para
+   *  ARMAR el formulario. `null` cuando no es de recuperación. */
+  recuperacion: RecuperacionGuardadaRow | null
+  // `fn_actividad_buscar_por_pk` (V224/V440): evidencias/criterios YA
+  // relacionados con esta actividad, con el pk de la RELACIÓN (no el del
+  // enunciado/criterio) — es el mismo pk que exige
+  // `PATCH .../evidencias/:id` / `PATCH .../criterios/:id` para quitarlos.
+  evidencias: EvidenciaRelacionadaRow[] | null
+  criterios: CriterioRelacionadoRow[] | null
   campos_disponibles: CamposDisponiblesRow | null
   unidad_configuracion: unknown
   active: boolean
+}
+
+interface EvidenciaRelacionadaRow {
+  pk: number
+  fkReferenteEnunciado: number
+  texto: string
+  fkPadre: number | null
+  textoPadre: string | null
+}
+
+interface CriterioRelacionadoRow {
+  pk: number
+  fkTcriterioUnidad: number
+  descripcion: string
+  codigo: string | null
+  orden: number
+}
+
+/**
+ * `fn_actividad_buscar_por_pk` (V224): "objeto con destino/tipoAplicacion/
+ * tipoCalculo/valorPonderacion + nombres resueltos, o NULL si no es de
+ * recuperación" (documentado en el comentario de la función), pero sin un
+ * ejemplo real capturado de los nombres EXACTOS de sus campos. Se asume el
+ * mismo patrón `*Valor` (código estable de `TLISTA_VALOR`) que ya usa
+ * `evaluacion.instrumentosPermitidos`/`ponderacion.modo` en este mismo
+ * bloque — lectura tolerante (`??`) para no romper si el nombre real
+ * difiere una vez se confirme contra una respuesta real.
+ */
+interface RecuperacionGuardadaRow {
+  pk: number
+  destino?: string | null
+  destinoValor?: string | null
+  fkActividadRecuperar: number | null
+  tipoAplicacion?: string | null
+  tipoAplicacionValor?: string | null
+  tipoCalculo?: string | null
+  tipoCalculoValor?: string | null
+  valorPonderacion: number | null
 }
 
 /** Confirmado contra una respuesta real (actividad huérfana, sin unidad):
@@ -105,10 +159,27 @@ interface CampoDisponibleRow {
   motivo: string
 }
 
+interface RecuperacionCampoDisponibleRow {
+  visible: boolean
+  requerido: boolean
+  motivo: string
+  catalogos: {
+    destino: ListaValorOption[]
+    tipoAplicacion: ListaValorOption[]
+    tipoCalculo: ListaValorOption[]
+  }
+  reglas: {
+    actividadRecuperarRequeridaSi: string
+    valorPonderacionRequeridoSi: string
+    valorPonderacionRango: { min: number; max: number }
+  }
+}
+
 interface CamposDisponiblesRow {
   criterio: CampoDisponibleRow
   evaluacion: CampoDisponibleRow & { instrumentosPermitidos: string[] }
   ponderacion: CampoDisponibleRow & { modo: string | null }
+  recuperacion?: RecuperacionCampoDisponibleRow
 }
 
 function toDateOnly(value: string | null): string {
@@ -116,22 +187,31 @@ function toDateOnly(value: string | null): string {
 }
 
 /**
- * Ids de las evidencias ya marcadas para ESTA actividad — deberían salir de
- * `unidad_configuracion` (paso 8 de la colección Postman
- * `planeador-flujo-unidad-actividad` confirma que el campo existe y trae el
- * árbol de enunciados/evidencias), pero no hay un ejemplo real capturado de
- * CUÁL es el flag que marca "esta evidencia ya está en la actividad".
- *
- * Un primer intento adivinando el nombre del flag terminó marcando
- * evidencias como ya relacionadas cuando no lo estaban (deshabilitaba el
- * checkbox sin que hubiera nada guardado) — peor que no mostrar nada. Hasta
- * tener una respuesta real de este campo, se deja siempre en `[]`: el
- * checklist de evidencias arranca sin nada tildado ni deshabilitado en el
- * panel de detalle (se puede volver a marcar sin problema — el mock/backend
- * ya tolera un alta repetida sin duplicar).
+ * Ids de las evidencias (nivel 2, `PK_REFERENTE_ENUNCIADO`) ya marcadas
+ * para ESTA actividad — antes no había ejemplo real de qué campo lo
+ * confirmaba y quedaba fijo en `[]`; ahora `fn_actividad_buscar_por_pk`
+ * (V224/V440) trae la columna `evidencias` con el pk de la RELACIÓN
+ * (`TACTIVIDAD_EVIDENCIA`) y `fkReferenteEnunciado` (el id real de la
+ * evidencia, que es lo que compara el checklist).
  */
-function evidenciasIdsFromUnidadConfiguracion(_raw: unknown): number[] {
-  return []
+function evidenciasIdsFromRow(raw: EvidenciaRelacionadaRow[] | null): number[] {
+  return (raw ?? []).map((evidencia) => evidencia.fkReferenteEnunciado)
+}
+
+/**
+ * Igual que `evidenciasIdsFromRow`, pero para los criterios de la rúbrica
+ * de la unidad (`TACTIVIDAD_CRITERIO_UNIDAD`, columna `criterios` de
+ * `fn_actividad_buscar_por_pk`).
+ */
+function criteriosUnidadIdsFromRow(raw: CriterioRelacionadoRow[] | null): number[] {
+  return (raw ?? []).map((criterio) => criterio.fkTcriterioUnidad)
+}
+
+/** Completa `recuperacion` con el placeholder oculto cuando la fila no lo
+ *  trae (ver `defaultRecuperacionCampoDisponible`). */
+function toCamposDisponibles(raw: CamposDisponiblesRow | null): Actividad["camposDisponibles"] {
+  if (!raw) return undefined
+  return { ...raw, recuperacion: raw.recuperacion ?? defaultRecuperacionCampoDisponible() }
 }
 
 /**
@@ -240,6 +320,12 @@ function toActividadDetalle(
     nombre: row.titulo,
     tipo: row.tipo_actividad ?? "Otro",
     esRecuperacion: row.es_recuperacion === "S",
+    recuperacionDestino: row.recuperacion?.destino ?? row.recuperacion?.destinoValor ?? "",
+    recuperacionActividadId: row.recuperacion?.fkActividadRecuperar ?? undefined,
+    recuperacionTipoAplicacion:
+      row.recuperacion?.tipoAplicacion ?? row.recuperacion?.tipoAplicacionValor ?? "",
+    recuperacionTipoCalculo: row.recuperacion?.tipoCalculo ?? row.recuperacion?.tipoCalculoValor ?? "",
+    recuperacionValorPonderacion: row.recuperacion?.valorPonderacion ?? undefined,
     // `unidad`/`fk_tunidad` vienen `null` (no un objeto) cuando la
     // actividad es huérfana — `{id: 0, nombre: ""}` es el sentinel que ya
     // usa el resto del front para "sin unidad".
@@ -247,11 +333,8 @@ function toActividadDetalle(
       row.fk_tunidad != null
         ? { id: row.fk_tunidad, nombre: row.unidad ?? "" }
         : { id: 0, nombre: "" },
-    evidenciasIds: evidenciasIdsFromUnidadConfiguracion(row.unidad_configuracion),
-    // Mismo motivo que `evidenciasIds`: no hay un ejemplo real confirmado de
-    // qué campo marca "este criterio de la unidad ya está relacionado con
-    // la actividad" — arranca en `[]`, el checklist solo agrega.
-    criteriosUnidadIds: [],
+    evidenciasIds: evidenciasIdsFromRow(row.evidencias),
+    criteriosUnidadIds: criteriosUnidadIdsFromRow(row.criterios),
     asignatura: row.asignatura ?? "",
     grado: row.grado ?? "",
     gradoId: row.fk_tgrado ?? undefined,
@@ -308,7 +391,7 @@ function toActividadDetalle(
     // `FK_TMATRICULAS`/`ASIGNAR_TODO_EL_GRUPO` si el docente lo toca.
     matriculasIds: [],
     asignarTodoElGrupo: true,
-    camposDisponibles: row.campos_disponibles ?? undefined,
+    camposDisponibles: toCamposDisponibles(row.campos_disponibles),
   }
 }
 

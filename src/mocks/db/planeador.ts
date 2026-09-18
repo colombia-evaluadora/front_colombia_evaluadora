@@ -16,7 +16,25 @@ import type { Actividad } from "@/features/planeador/api/types/actividad"
  * mostrar —la pantalla de Planeador aparecería vacía y los tests no
  * podrían asertar sobre datos.
  */
-export const planeadorDb: Actividad[] = [
+/** Campos de recuperación con `Actividad` completa (no los tipea el seed de
+ *  abajo, ninguna de estas 12 actividades es una recuperación) — se
+ *  completan con `.map()` en vez de repetirlos en cada literal. */
+const RECUPERACION_VACIA: Pick<
+  Actividad,
+  | "recuperacionDestino"
+  | "recuperacionActividadId"
+  | "recuperacionTipoAplicacion"
+  | "recuperacionTipoCalculo"
+  | "recuperacionValorPonderacion"
+> = {
+  recuperacionDestino: "",
+  recuperacionActividadId: undefined,
+  recuperacionTipoAplicacion: "",
+  recuperacionTipoCalculo: "",
+  recuperacionValorPonderacion: undefined,
+}
+
+const PLANEADOR_SEED: Omit<Actividad, keyof typeof RECUPERACION_VACIA>[] = [
   {
     id: 601,
     nombre: "Proyecto final: Diseño de prototipo 1",
@@ -852,6 +870,11 @@ export const planeadorDb: Actividad[] = [
     },
   },
 ]
+
+export const planeadorDb: Actividad[] = PLANEADOR_SEED.map((actividad) => ({
+  ...actividad,
+  ...RECUPERACION_VACIA,
+}))
 
 /**
  * Quita una actividad por id. Devuelve `true` si la encontró y borró,
