@@ -69,6 +69,13 @@ function firstRow(body: unknown): ConfiguracionContextoRow | undefined {
 }
 
 export interface ProgramacionActividad {
+  periodoAcademico: { nombre: string; fechaInicio: Date | null; fechaFin: Date | null; semanas: number } | null
+  intensidadHoraria: {
+    bloquesPorSemana: number
+    // Ya convertidos a la convención de `Date.getDay()`, mismo criterio
+    // que `fechaInicio`/`fechaCierre.diasHabiles` — ver `toDiaSemanaJs`.
+    diasHabiles: { valorJs: number; nombre: string }[]
+  } | null
   fechaInicio: { min: Date | null; max: Date | null; diasHabiles: number[] | null; motivo: string | null }
   fechaCierre: { min: Date | null; max: Date | null; diasHabiles: number[] | null; motivo: string | null }
   semanaCronograma: { min: number | null; max: number | null; motivo: string | null }
@@ -113,6 +120,23 @@ async function fetchProgramacionActividad(
   const programacion = firstRow(body)?.configuracion?.programacion
   if (!programacion) return undefined
   return {
+    periodoAcademico: programacion.periodoAcademico
+      ? {
+          nombre: programacion.periodoAcademico.nombre,
+          fechaInicio: toDate(programacion.periodoAcademico.fechaInicio),
+          fechaFin: toDate(programacion.periodoAcademico.fechaFin),
+          semanas: programacion.periodoAcademico.semanas,
+        }
+      : null,
+    intensidadHoraria: programacion.intensidadHoraria
+      ? {
+          bloquesPorSemana: programacion.intensidadHoraria.bloquesPorSemana,
+          diasHabiles: programacion.intensidadHoraria.diasHabiles.map((dia) => ({
+            valorJs: toDiaSemanaJs(dia.valor),
+            nombre: dia.nombre,
+          })),
+        }
+      : null,
     fechaInicio: toRangoFecha(programacion.fechaInicio),
     fechaCierre: toRangoFecha(programacion.fechaCierre),
     semanaCronograma: {

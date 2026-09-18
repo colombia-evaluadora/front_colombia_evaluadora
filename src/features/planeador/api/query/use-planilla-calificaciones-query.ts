@@ -27,10 +27,19 @@ interface PlanillaCeldaRow {
   calificable: "S" | "N" | null
   observacion: string | null
   /** Opcionales acá (aunque `PlanillaCelda` los deje obligatorios): toleran
-   *  una respuesta vieja sin estas columnas — `toCelda` les pone default. */
-  esFormativa?: boolean
+   *  una respuesta vieja sin estas columnas — `toCelda` les pone default. En
+   *  `esFormativa` se tolera además el bool_sn sin convertir. */
+  esFormativa?: boolean | "S" | "N" | null
   fechaAsistencia?: string | null
-  tieneAsistencia?: boolean
+  tieneAsistencia?: boolean | null
+  evidencias?: CeldaEvidenciaRow[] | null
+}
+
+interface CeldaEvidenciaRow {
+  pk: number
+  fkTarchivo: number
+  nombre?: string | null
+  fecha?: string | null
 }
 
 interface PlanillaFilaRow {
@@ -45,14 +54,21 @@ interface PlanillaFilaRow {
 }
 
 function toCelda(row: PlanillaCeldaRow): PlanillaCelda {
+  const { esFormativa, fechaAsistencia, tieneAsistencia, evidencias, ...resto } = row
   return {
-    ...row,
-    esFormativa: row.esFormativa ?? false,
-    fechaAsistencia: row.fechaAsistencia ?? null,
+    ...resto,
+    esFormativa: esFormativa === true || esFormativa === "S",
+    fechaAsistencia: fechaAsistencia ? fechaAsistencia.slice(0, 10) : null,
     // Sin la columna (respuesta vieja), no hay forma de saber si falta
     // asistencia — se asume `true` para no pintar gris de más algo que
     // antes se dejaba calificar sin este chequeo.
-    tieneAsistencia: row.tieneAsistencia ?? true,
+    tieneAsistencia: tieneAsistencia !== false,
+    evidencias: (evidencias ?? []).map((e) => ({
+      pk: e.pk,
+      fkTarchivo: e.fkTarchivo,
+      nombre: e.nombre ?? null,
+      fecha: e.fecha ?? null,
+    })),
   }
 }
 

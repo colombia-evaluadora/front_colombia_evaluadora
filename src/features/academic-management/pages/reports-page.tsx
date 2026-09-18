@@ -369,7 +369,11 @@ function ReportsPageContent() {
     }
   }
 
-  async function handleGuardarObservacion(fila: FilaInforme, texto: string) {
+  async function handleGuardarObservacion(
+    fila: FilaInforme,
+    texto: string,
+    borrador: { texto: string; observacionesOrigen: number } | null,
+  ) {
     const limpio = texto.trim()
     try {
       if (limpio === "") {
@@ -385,6 +389,8 @@ function ReportsPageContent() {
           matriculaId: fila.matriculaId,
           periodoId: fila.periodoId,
           observacion: limpio,
+          observacionIa: borrador?.texto,
+          observacionesOrigen: borrador?.observacionesOrigen,
         })
         notify("Observación guardada.")
       }

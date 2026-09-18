@@ -1,11 +1,19 @@
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { CaretDownIcon, CaretUpIcon, ClipboardCheckIcon, ProhibitIcon } from "@/components/ui/icons"
+import {
+  CaretDownIcon,
+  CaretUpIcon,
+  ChatCircleTextIcon,
+  ClipboardCheckIcon,
+  ProhibitIcon,
+} from "@/components/ui/icons"
 import { cn } from "@/lib/utils"
 
 import type { PlanillaCelda, PlanillaColumna, PlanillaFila } from "@/features/planeador/api/types/planilla"
 import { NOTA_MINIMA_APROBATORIA, notaEnEscalaCinco } from "@/features/planeador/api/types/calificacion"
 import { CeldaNotaPopover } from "@/features/planeador/components/planilla/celda-nota-popover"
+import { CeldaObservacionPopover } from "@/features/planeador/components/planilla/celda-observacion-popover"
+import { esColumnaFormativa } from "@/features/planeador/lib/actividad-formativa"
 import { useStudyPlanSubjectLabel } from "@/features/establishment/academic-period/api/query/use-study-plan-subject-label"
 
 interface PlanillaGridProps {
@@ -52,6 +60,22 @@ function agruparPorUnidad(columnas: PlanillaColumna[]): GrupoUnidad[] {
 
 function celdaDe(fila: PlanillaFila, columna: PlanillaColumna): PlanillaCelda | undefined {
   return fila.celdas.find((c) => c.pkTactividad === columna.pkTactividad)
+}
+
+/** Lo decide el backend (`fn_actividad_es_formativa`): la actividad cuelga
+ *  de una unidad con referente NO evaluativo. No se deduce del instrumento —
+ *  una actividad evaluativa sin instrumento definido también lo trae nulo. */
+function esFormativa(columna: PlanillaColumna, celda?: PlanillaCelda): boolean {
+  return esColumnaFormativa(columna) || celda?.esFormativa === true
+}
+
+/** `BODY.FECHA` de calificar/observar: el día con asistencia válida de ESE
+ *  estudiante, no la fecha de inicio de la actividad — ver
+ *  `PlanillaCelda.fechaAsistencia`. */
+function fechaParaGuardar(columna: PlanillaColumna, celda?: PlanillaCelda): string | null {
+  if (!celda) return columna.fechaInicio
+  if (celda.fechaAsistencia) return celda.fechaAsistencia
+  return celda.tieneAsistencia ? columna.fechaInicio : null
 }
 
 /** El backend ya devuelve `calificacion`/`definitiva` calculados — acá solo
@@ -173,8 +197,43 @@ export function PlanillaGrid({ columnas, verPor, filas, onAbrirBulk, gradoId }: 
                 </td>
                 {columnas.map((columna) => {
                   const celda = celdaDe(fila, columna)
-                  const bloqueada = celda?.estado === "NO_CALIFICABLE"
-                  if (bloqueada) {
+
+                  // El caso formativo va ANTES que `NO_CALIFICABLE`: una
+                  // actividad sin nota llega siempre con ese estado y
+                  // `calificable: "N"` —es su normalidad, no un bloqueo—, así
+                  // que tratarlo como tal tapaba la observación con el ícono
+                  // rojo y dejaba el popover inalcanzable.
+                  if (esFormativa(columna, celda)) {
+                    return (
+                      <td key={columna.pkTactividad} className="px-4 py-3 align-middle">
+                        <div className="flex items-center gap-1.5">
+                          {celda?.observacion?.trim() ? (
+                            <span
+                              className="line-clamp-2 min-w-0 flex-1 text-xs"
+                              title={celda.observacion}
+                            >
+                              {celda.observacion}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">Observar</span>
+                          )}
+                          {celda && (
+                            <CeldaObservacionPopover
+                              pkTactividadEstudiante={celda.pkTactividadEstudiante}
+                              fecha={fechaParaGuardar(columna, celda)}
+                              estudianteNombre={fila.nombreEstudiante}
+                              observacionActual={celda.observacion}
+                              evidenciasActuales={celda.evidencias}
+                            />
+                          )}
+                        </div>
+                      </td>
+                    )
+                  }
+
+                  // Con nota, `NO_CALIFICABLE` sí es un bloqueo real (la causa
+                  // habitual es que falte la asistencia de ese día).
+                  if (celda?.estado === "NO_CALIFICABLE") {
                     return (
                       <td key={columna.pkTactividad} className="px-4 py-3 align-middle">
                         <span
@@ -226,12 +285,7 @@ export function PlanillaGrid({ columnas, verPor, filas, onAbrirBulk, gradoId }: 
                           <CeldaNotaPopover
                             actividadId={columna.pkTactividad}
                             pkTactividadEstudiante={celda.pkTactividadEstudiante}
-                            // La fecha DENTRO de la ventana en la que ESTE
-                            // estudiante tiene asistencia válida -- nunca la
-                            // fecha de inicio de la actividad, que casi
-                            // siempre no coincide con un día que el
-                            // estudiante haya asistido.
-                            fecha={celda.fechaAsistencia ?? columna.fechaInicio}
+                            fecha={fechaParaGuardar(columna, celda) ?? columna.fechaInicio}
                             estudianteNombre={fila.nombreEstudiante}
                           />
                         )}
@@ -259,6 +313,10 @@ function ColumnaHeader({
   columna: PlanillaColumna
   onAbrirBulk: (columna: PlanillaColumna) => void
 }) {
+  const formativa = esFormativa(columna)
+  const accion = formativa
+    ? `Observar "${columna.titulo}" en bloque`
+    : `Calificar "${columna.titulo}" en bloque`
   return (
     <th className={cn(ANCHO_COLUMNA_ACTIVIDAD, "px-4 py-3 text-left font-semibold uppercase")}>
       <div className="flex items-start gap-1.5">
@@ -275,13 +333,17 @@ function ColumnaHeader({
                 size="icon-xs"
                 className="shrink-0"
                 onClick={() => onAbrirBulk(columna)}
-                aria-label={`Calificar "${columna.titulo}" en bloque`}
+                aria-label={accion}
               />
             }
           >
-            <ClipboardCheckIcon className="size-4" />
+            {formativa ? (
+              <ChatCircleTextIcon className="size-4" />
+            ) : (
+              <ClipboardCheckIcon className="size-4" />
+            )}
           </TooltipTrigger>
-          <TooltipContent>Calificar "{columna.titulo}" en bloque</TooltipContent>
+          <TooltipContent>{accion}</TooltipContent>
         </Tooltip>
       </div>
     </th>
